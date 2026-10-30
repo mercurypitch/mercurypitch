@@ -197,14 +197,16 @@ PASSES = [
          bias=TURN['left'], enter=('celebrate', cue('stop-c-home', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('o10', 'end')),
          sings={'stop-c-home': 'sing', 'land-c': 'sing'}, leads={'stop-c-home': 0.3}),
     # S11d to S11f: both leap back into their corners at floor level, each from its own edge, turned
-    # toward each other: Tavi LEAP before o11, Merc as b36 ends (not while his own voice runs); Tavi talks
+    # toward each other: Tavi 0.25 s after LEAP before o11, so she lands as s11's pull out lands (o11 - 0.55)
+    # and the strip it brings back has settled beside her corner first; Merc as b36 ends (not while his
+    # own voice runs); Tavi talks
     # o11, Merc b37 and b38; both hop out before the act 4 card. Leaps, not drops: they return within
     # chapter 3 (film round 2, item 1; DECISIONS 131). Merc's pass faces left and is mirrored, as m10's,
     # so his hop arcs out left.
     dict(id='m11-blue', who='blue', span=(cue('b36', 'end', 0.05), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
          bias=TURN['left'], enter=('celebrate', cue('b36', 'end', 0.05)), drop=LEAP_LEN, exit=('hop', cue('b38', 'end', -0.19))),
-    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -LEAP), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
-         bias=TURN['left'], enter=('celebrate', cue('o11', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('b38', 'end', -0.19))),
+    dict(id='m11-orange', who='orange', span=(cue('o11', 'start', -LEAP + 0.25), ended(cue('b38', 'end', -0.19))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('o11', 'start', -LEAP + 0.25)), drop=LEAP_LEN, exit=('hop', cue('b38', 'end', -0.19))),
     # S12 to S16: one unbroken pass each, from the drop before b39 to past the film's end (trap 15),
     # rendered at 520; the scenes move and scale their boxes (360 in S12, 300 and 240 in S13, 300 in S14
     # and S15, 520 in S16). Merc rides sing-a and sings the count-in; Tavi rides sing-b; both idle

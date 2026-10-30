@@ -2177,3 +2177,45 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - To do: s11 and s07 stills (script l4entr/polish2/lead/leap-stills.sh) once m11 and m08 render; the
     BUILD-GUIDE confirmation rows (S10, S11c, the m08 splice row); DECISIONS 131 (draft
     l4entr/polish2/lead/DECISIONS-131.draft.md). Builders B and F still running.
+- 22:2x m10, m11-orange (first cut) and m11-blue passes done; m08-orange rendering, then m11-orange again.
+  - s11 stills (HOSTS=1): Merc's leap clean (lands x 31-169 at 321.61, 38 px+ from the strip at x 240;
+    lab/entrances/s11-m11-merc-leap.jpg). Tavi's first cut landed at 320.78, before the pull (321.03): the
+    returning strip came within 4 px of her squash at 320.80. Fix: m11-orange opens at o11 - LEAP + 0.25
+    (320.45, air 320.60-321.03, settled 321.25), landing with the pull, as the fall did. merc-shots.py and
+    merc-tags.py run (s11 tag updated); docs updated (STORYBOARD 11c, m11 row, entrances note; BUILD-GUIDE s11;
+    tools/CHANGES.md; DECISIONS-131 draft). Re-render queued after m08 (bxw1ocoeb). Then re-check s11 stills.
+  - m10 landing: 38 px+ from stair 1/the keys; mouth point stands.
+  - Builder B REPORTED and ACCEPTED (lead's one review: diff clean, s05 untouched, F-grp s 1.4 about (110, 620),
+    push 123.50-124.25, pull 130.15-130.95, key names leave for it; sheets look right). Docs: HANDOFFS § Framings
+    F-grp, § Camera moves two rows, S6 brackets note; STORYBOARD 6a, 6c, F0 spans; BUILD-GUIDE s06 kit line.
+    DECISIONS 132 drafted (l4entr/polish2/lead/DECISIONS-132.draft.md). One agent running (F).
+  - Next: m08 stills (s07, and the S7-S8 cut), m11-orange stills, BUILD-GUIDE confirmation rows (S10, S11c, the
+    m08 splice row), DECISIONS 131-133 into DECISIONS.md, review F, full check, freeze, film-03, FILM3 critic.
+- 22:4x Polish round 2 complete (no agents running).
+  - m08-orange done 22:33; m11-orange re-rendered 22:38 (lands with the pull at 321.03; strip settled, 32 px+).
+    m08 verified on s07/s08 stills (56 px from the strip at rest; S7-S8 cut: her pixels match). Proofs in
+    lab/entrances/ (s07-m08-*, s07-s08-cut-m08, s10-m10-*, s11-m11-*). BUILD-GUIDE confirmation rows S7h/S7-S8
+    (replaces the m08 splice row), S10 and S11c rewritten.
+  - Builder F REPORTED and ACCEPTED (one review: diffs clean, S14 untouched; the bead flies from o14's end on one
+    film-time curve in both scenes, crosses the cut at (1157.3, 470.7)/(1140.6, 468.1), turns blue 478.88-479.38,
+    lands on the blue orbit point at 479.48; never an empty frame 478.2-479.0). Docs: HANDOFFS § S15, § S15 to S16,
+    § S16; STORYBOARD 15/16; BUILD-GUIDE s15 Out, s16 Merc line.
+  - DECISIONS 131 (leaps + pill), 132 (B), 133 (F) appended (backup l4entr/polish2/lead/DECISIONS.md.before-131).
+  - Critic prompt ready: l4entr/critics/FILM3-ready.txt (report review/film-03/REPORT.md; previous film-02).
+  - 22:39 full check started (bp9mkk15q, log l4entr/polish2/check-full.log). Next: 0 errors (warnings ~75), then
+    bash l4entr/freeze.sh $S/l4film03proj (no MISMATCH), then
+    WORKERS=2 setsid nohup bash render-l4.sh film-03 60 high $S/l4film03proj >/dev/null 2>&1 &
+    watcher wait-l4.sh film-03 0 1200; on done, a fresh FILM3 critic (motion-critic, xhigh) from FILM3-ready.txt.
+- 22:45 full check PASSED: 0 errors, 65 warnings (14 of them duplicate_media_discovery_risk, one per scene
+  with Merc passes, as before), 2 info (s01 text_occluded, known), contrast 59/59. Pre-freeze: merc-shots
+  0 would change, whole.js current, 68 tags 0 stale, clock-lint silent on all 16. Task 212 closed.
+- 22:48 frozen $S/l4film03proj (16 compositions, 148 kit files, no MISMATCH). 22:49:26 film-03 started
+  (WORKERS=2, 60 fps, high, segments of 1500, to /dev/shm/l4film). Watcher b478or7o3 = wait-l4.sh film-03 0 1200
+  (2 h tool limit: re-arm with the log's current byte size as offset if it times out). film-02 took 4 h 34 m
+  with two seam repairs (main capture 2 h 15 m), so expect done ~01:00-03:30. Extract cache left in place
+  (344 MB at start; no builder running). Memory 1.4 GB used at start.
+  Next on DONE: check status (seams CLEAN, film ~483.73 s, music-only, contact sheet, measure), glance at the
+  contact sheet, then a fresh FILM3 critic (motion-critic, xhigh) from l4entr/critics/FILM3-ready.txt when
+  get_session rate_limit is "allowed". Save its text verbatim to review/film-03/REPORT.md; LEDGER row 32;
+  DECISIONS triage; SHIP -> DELIVERY (#207) from l4entr/DELIVERY.draft.md, ONE MORE PASS -> polish round 3.
+  FILM2's item 2 (end card held 4.1 s, 5 s asked) and the m12 stagger ride with the re-voice (owner).

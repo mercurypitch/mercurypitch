@@ -505,8 +505,10 @@ the hero view, y 323) after that.
   riser labels 2 2 1 2 2 2 1, hairlines drawn; the strip with C major's keys at full and the rest at
   45 %, no key names (gone at 145.8); no sum, brackets or legend.
 - Kit: `L.bracket` (ink, ticks down, riding the world: stairs 1 to 4 x 242 to 714, stairs 5 to 8
-  x 722 to 1194, at the heights HANDOFFS § S6's brackets gives); `L.frameRig` (F0 throughout since the polish round: no push,
-  truck or pull; DECISIONS 126); `L.bead4` (group-low
+  x 722 to 1194, at the heights HANDOFFS § S6's brackets gives); `L.frameRig` (F0 since the polish round, DECISIONS 126, but for
+  one push to a local `F_GRP`, s 1.4 about (110, 620), from "Both" landing on "climb" (123.50 to
+  124.25) and a pull back to F0 from b14's end (130.15 to 130.95), both power2.inOut; the strip's key
+  names leave for it; DECISIONS 132); `L.bead4` (group-low
   and group-high; the hop from stair 4 to stair 5 lands on G4, 120.83);
   the copy of stairs 1 to 4 (one closed shape drawn from `L.ST` under the risers and labels, as
   HANDOFFS § S6's brackets has it, moving by (+480, -182), 124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
@@ -661,8 +663,8 @@ the hero view, y 323) after that.
   `L.strip`.
 - Merc: m09-orange and m10-blue in the corners for o10, both hopping out at `at('o10', 'end')` (Merc
   starting b35 as he goes); m11-orange leaps back into her corner from the right edge (`leap: true`,
-  DECISIONS 131): its pass opens 1.38 s before o11 (320.20; in the air 320.35 to 320.78), as the
-  pull out runs; m11-blue leaps into his from the left edge (`leap: true, leapDx: -300`) at
+  DECISIONS 131): its pass opens 1.13 s before o11 (320.45; in the air 320.60 to 321.03), so she
+  lands as the pull out lands; m11-blue leaps into his from the left edge (`leap: true, leapDx: -300`) at
   `at('b36', 'end', 0.05)` (321.03; in the air 321.18 to 321.61), as his own line ends; nothing comes
   within 20 px of either column (Tavi x 1700 to 1900, Merc x 10 to 210, from the frame's top down)
   in any frame of the pull or the leaps; both hop out at `at('b38', 'end', -0.19)`.
@@ -788,7 +790,9 @@ the hero view, y 323) after that.
 - Row: 15. Group F.
 - In: S14 to S15 (above). The scene cuts on `next` 0.15 s before it.
 - Out (to s16, same group): HANDOFFS § S15 to S16: the Mercs in the corners at 300; S15's type gone
-  (478.5).
+  (478.5); the bead in flight across the cut, from `at('o14', 'end')` to `at('end', 'start', 0.95)` on
+  two cubics read by arc length on sine.inOut and drawn from film time, the same code in s16-end
+  (DECISIONS 133).
 - Kit: `L.kicker('Next time')`; the carried rung landing as a chrome bead at (560, 520) by 471.9
   (HANDOFFS § S14 to S15); '"support"' (serif italic 160 px with its quotation marks, centred,
   baseline 420, landing with the kicker on the cut's mark, 470.39 (polish round), and scaling 1.2 once on its word, 473.14; DECISIONS 108); the long note (the bead drawing a level line from x
@@ -808,7 +812,9 @@ the hero view, y 323) after that.
 - Merc: m12 (both): they grow to 520 and move to (330, 840) and (1590, 840) from `at('end', 'start',
   0.07)` for 0.6 s; the celebration is the passes' own (one hop, sparkles off, from
   `merc-shots.py`), and the scene draws a chrome ring under each on landing; the passes run to the
-  film's end (trap 15).
+  film's end (trap 15). The blue bead is S15's chrome bead on the same flight, drawn from the cut onto
+  its orbit point by end + 0.95 and turned blue by a scene-local `tint()` (the kit's `L.bead` takes a
+  colour only when made); the orange bead rises from inside Tavi (DECISIONS 133).
 - Checks: the call to action is the one hold the quality bar allows; the card is complete by 479.9 (s16 1.37), each element
   landing over 0.3 s or more; the address lands before the hop and keeps 20 px or more from both
   heads' ink and glow at its top (479.73), and the lower lines keep 20 px or more from the hosts on
@@ -836,9 +842,9 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | Inside B, S6d | m06b's leap in from the right edge (in the air 134.70 to 135.13, settled by 135.35), before o6 (135.92), at floor level, far below the sum (baseline 260) | director, s06 lab stills (30 Oct) | `lab/entrances/s06-m06b-leap.jpg` |
 | Inside C, S7a | the act 2 card ends at x 1528, 170 px clear of Tavi's column (x 1700); the strip's last key ends at x 1675, 25 px clear; the splat's spray reaches x 1678, beside that key, for about 0.1 s at 148.02 | director, s07 lab stills (m07's old pass under the new tag, its new intro) | `lab/entrances/s07-m07-card.png`, `s07-m07-splat-zoom.png` |
 | Inside D, S9d | the pull to F0 (248.71 to 249.51, 0.8 s from o9 - 1.35 on the second "doh", power2.inOut) lands as Tavi's fall ends (m09-in drops 248.96 to 249.81, down before o9 at 250.06); the strip's keys pass behind her column from about 249.02 to 249.35 (DECISIONS 83) and she lands on bare floor beside its last key (x 1675) | director, s09 lab stills with m09-in's intro | `lab/entrances/s09-m09-pull.png`, `s09-m09-column-zoom.png` |
-| Inside D, S11c | the pull to F0 (320.23 to 321.03, 0.8 s from o11 - 1.35, power2.inOut) lands as Tavi's fall ends (m11 drops 320.48 to 321.33: the splat at 321.10, standing by 321.40, eyes open by 321.50, before o11 at 321.58); the strip's right end passes behind her column from about 320.50 to 320.89 and is at x 1675, 25 px clear, when she lands (DECISIONS 83); the axis label "finishes it best" keeps 23 px over her column's top and leaves its x range by 320.60; Merc drops 321.03 to 321.88 with the world at F0: stair 1 and the keys from x 240, 30 px clear of his column (x 10 to 210); with his main pass in, he is first seen high above his corner at 321.20, lands by 321.60, splats 321.70 to 321.75 and stands by 322.20, eyes open, 5.7 s before b37 | director, s11 lab stills with both intros, then with m11-blue's main (12:20) | `lab/entrances/s11-m11-tavi-corner.png`, `s11-m11-tavi-landing.png`, `s11-m11-merc-corner.png`, `s11-m11-merc-landing.png` |
-| Inside C, S7 to S8: m08's splice (203.65) | m08-orange-in hands over to m08-orange at film frame 12219: the same film frame differs by p99.9 8, max 15, no pixel over 24; the step seen there (p99.9 8, max 101, 5 pixels over 24) is the size of either pass's own step | director, both passes decoded | `lab/entrances/splices.txt` |
+| Inside D, S11c | the pull to F0 (320.23 to 321.03, 0.8 s from o11 - 1.35, power2.inOut) lands as Tavi's leap lands (m11-orange from the right edge, opening 0.25 s after LEAP for that, DECISIONS 131: first in frame at about 320.79, in the air to 321.03, settled by 321.25, before o11 at 321.58); the axis, the kicker and the credits have left by 320.44, before she is in frame; the strip comes back ahead of her and has settled at x 1675 as she lands, 32 px or more from her squash (321.03 to 321.3) and 48 px or more at rest (at LEAP, the first cut, its end came within 4 px of her squash at 320.80); Merc leaps in from the left edge (m11-blue, in the air 321.18 to 321.61, settled by 321.83) with the world at F0: first in frame at about 321.4, he lands inside his column (x 31 to 169 at 321.61, 25 to 202 at the squash), 38 px or more from the strip's left end (x 240) | director, s11 lab stills with the new passes (30 Oct, 22:2x to 22:4x) | `lab/entrances/s11-m11-tavi-leap.jpg`, `s11-m11-tavi-landing-zoom.jpg`, `s11-m11-tavi-full.jpg`, `s11-m11-merc-leap.jpg`, `s11-m11-both-full.jpg` |
+| Inside C, S7h and S7 to S8: m08's leap | Tavi leaps in from the right edge at F0 once the pull has landed (in the air 198.13 to 198.56, settled by 198.78; DECISIONS 131), first in frame at about 198.3; at rest her body (x 1732 to 1869) keeps 56 px from the strip's end (x 1676), and in the air she passes above it; one pass, with no head and no splice; on the S7 to S8 cut her pixels match (x 1732 to 1869, y 684 to 848 on both sides, her corner's mean difference 0.52) | director, s07 and s08 lab stills (30 Oct) | `lab/entrances/s07-m08-leap.jpg`, `s07-m08-leap-full.jpg`, `s07-s08-cut-m08.jpg` |
 | Inside D, S9: m09's splice (254.50) | m09-orange-in hands over to m09-orange at film frame 15270: the same film frame differs by p99.9 11, 9 edge pixels over 24 (encoding noise on the outline); the step seen there (p99.9 10, 6 pixels over 24) is the size of the head's own step | director, both passes decoded | `lab/entrances/splices.txt`, `m09-splice.png` |
-| Inside D, S10 | Merc's mouth point (156, 797), not the provisional (130, 715), at the bead's launch (283.27) on the m10-blue pass (he drops 282.20 to 283.05, DECISIONS 81; pass frame 64, mouth at (78, 144) facing left, mirrored at feet (110, 840), size 300); the hop to stair 1 then peaks at y 602 and clears stair 1's corner (242, 664) by 34 px | director, the pass decoded and the s10 lab still at the launch | `lab/entrances/s10-m10-mouth.png`, `s10-m10-hop.png` (283.27 to 283.63) |
+| Inside D, S10 | Merc's mouth point (156, 797), not the provisional (130, 715), at the bead's launch (283.27) on the m10-blue pass (he leaps in from the left edge, in the air 282.35 to 282.78, settled by 283.00, DECISIONS 131; pass frame 64, mouth at (78, 144) facing left, within 2 px of the old drop pass's, mirrored at feet (110, 840), size 300); the hop to stair 1 then peaks at y 602 and clears stair 1's corner (242, 664) by 34 px; from his landing he keeps 38 px or more from stair 1 and the keys (x 240) | director, the pass decoded and the s10 lab stills (30 Oct) | `lab/entrances/s10-m10-leap.jpg`, `s10-m10-launch.jpg`, `s10-m10-mouth.png`, `s10-m10-hop.png` (283.27 to 283.63) |
 | Inside E, S12a | the tip's curves | | |
 | Inside E, S13d | the reverse tip's curves, the Mercs' move | | |

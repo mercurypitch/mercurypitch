@@ -176,11 +176,11 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | s05-steps | polish round (30 Oct) | polish/leap-sheet.jpg | 60 fps, 13:55 | 0.4 s (0.3/30), longest 0.1: pass | polish: as round 4 | clean | current (2 tags) |
-| s06-groups | polish round (30 Oct) | polish/*.jpg | 60 fps, 13:52 | 0.8 s (0.7/30), longest 0.2: pass | polish: clean | clean | current (4 tags) |
+| s06-groups | polish round 2 (30 Oct) | polish2/*.jpg | 60 fps, 22:11 | 0.7 s (0.6/30), longest 0.2: pass | polish2: clean | clean | current (4 tags) |
 
 ## Next
 
-1. Polish round reported to the director (30 Oct, 14:10). Await the film critic.
+1. Polish round 2 (film round 2 item 4) reported to the director (30 Oct, 22:20).
 
 ## Polish round (30 Oct, from 13:30): film-01 items 4 and 9, B-05 items 2 and 3, decision 123's check
 
@@ -248,7 +248,7 @@ Scratch in lab/s06-groups/polish/ (harness.mjs runs a JS body in a page with the
 
 Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish2/BRIEF-B.md.
 Scratch in lab/s06-groups/polish2/; renders into /dev/shm/l4lab-B/ (TMPDIR /dev/shm, 1 worker), clips moved to lab.
-Before: the 13:52 clip's frames and measure copied to /dev/shm/l4lab-B/before/ (old-*.png, measure-old/).
+Before: the 13:52 clip's frames went into polish2/before-after-sheet.jpg and its measure summary into polish2/measure-before-summary.md (the /dev/shm copies are deleted).
 
 - Plan: a local framing F_GRP { s 1.4, ox -44, oy -248 } (about world (110, 620)): the content box (upper bracket's
   line top 268, the copy's halo to 749, x 229 to 1207) lands at screen x 277 to 1646, y 127 to 801. Push from
@@ -266,3 +266,22 @@ Before: the 13:52 clip's frames and measure copied to /dev/shm/l4lab-B/before/ (
 - Stills (22:02, snapshot into /dev/shm then sheets): lab/s06-groups/polish2/push-sheet.jpg, hold-sheet.jpg,
   pull-sheet.jpg, fgrp-at-13.37s.jpg, fgrp-at-14.5s.jpg, fgrp-at-18.8s.jpg, before-after-14.5s.jpg.
 - Clip render started 22:05 (polish2/render.sh, 1 worker, 60 fps).
+- Clip (22:11, lab/s06-groups/clip.mp4, 60 fps, 1 worker; measure in lab/s06-groups/measure): holds 0.7 s (0.6 per 30 s),
+  longest 0.2 (was 0.8 s, 0.7 per 30 s, longest 0.2): 2.90 (0.2, Tavi), 12.10 (0.1), then 28.9 to 34.9 with Tavi on
+  screen; the 18.70 hold is gone, so the no-Merc stretch has 0.1 s. Single-frame events exactly as before (1.400, 1.583,
+  25.583 to 32.383, all with Tavi on screen); none from 12 to 21.5. Largest frame change 8.74 at 13.000 (the push's
+  middle; s05's CU-A push peaks at 7.84). frames.csv against the 13:52 clip's: equal outside the GOPs the change
+  touches (12.5 to 25.0, keyframes every 4.167 s); after 20.3 the differences are encoding only (mean change within
+  0.08, changed share within 0.009 %), so m06a's hop out and m06b's leap in are as before.
+- Seams (polish2/seams.log): s06 frame 0 and frame 2112 against the 13:52 clip's: max 0. S5 last (s05 clip) against
+  S6 first: outside the corners max 51, 181 px over 24, as the polish round.
+- Text sweep (polish2/sweep-report.txt): s06 clean, nothing flagged (no LOW, EDGE or BAND). Lab check over the move
+  (33 samples, 12.5 to 20.5 every 0.25 s, polish2/lab-check-s06.log): layout 0 issues, contrast 107/107. Root check
+  (polish2/root-check.log): passed, 0 errors, 66 warnings; mine the same 8 as the polish round (file too large x2,
+  duplicate media x2, nested media start x4; s06's line count 595 to 614). clock-lint silent on both; merc-tags 2 and
+  4 tags, 0 stale; the shared block identical in both files.
+- Dense sheets: polish2/dense/dense-013.00s-20fps.jpg (push), dense-014.60s-10fps.jpg and dense-016.40s-10fps.jpg (the
+  copy's travel, landing, pairs and fade), dense-019.67s-20fps.jpg (pull); frame-exact polish2/exact/dense-012.99s-60fps.jpg
+  and dense-019.67s-60fps.jpg. Before and after: polish2/before-after-sheet.jpg (top the 13:52 clip, bottom new).
+- Share of the frame: the staircase with its brackets (x 242 to 1194, y 268 to 736) is 21.5 % of the frame at F0 and
+  42.1 % in F_GRP (the stairs alone 17.6 % and 34.5 %).

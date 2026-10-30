@@ -156,6 +156,7 @@ to 1880; 40 px from the rows (1680), 44 from the strip (1676), 46 from stair 8 o
 | CU-B       | 2    | -760    | -880    | (760, 880)        | S5d            | a pan of 480 px: stairs 3 to 5 with their treads (stair 3 x 204 to 428, tread 240), keys E4 to C5; the E-F riser at x 436 from y 240 to 188, where CU-A held the C-D riser; stair 2 and D4 cut by the left edge     |
 | F-low      | 1.8  | 99.6    | -704    | -                 | none (polish)  | stairs 1 to 4 x 535 to 1385 (treads 491 to 257), the lower bracket (§ S6's brackets), names baseline 599, keys C4 to F4 x 532 to 1388, y 664 to 880, key letters at 848                                             |
 | F-high     | 1.8  | -764.4  | -450    | -                 | none (polish)  | stairs 5 to 8 x 535 to 1385, treads 418 to 184, the upper bracket (§ S6's brackets), names baseline 853; the strip under the caption band (from y 918), carrying nothing named                                      |
+| F-grp      | 1.4  | -44     | -248    | (110, 620)        | S6c, 124.25 to 130.15 | stairs 1 to 8 x 295 to 1628, treads 682 (stair 1) to 245 (stair 8), foot 782, names baseline 766; the lower bracket x 295 to 956 at y 385, the upper x 967 to 1628 at y 130; the copy's whole path with its halo x 277 to 1646, y 227 to 801; riser labels x 406 to 1458, y 200 to 688; 127 px to the top, 274 px to each side, 117 px above the caption band; the frame-fixed legend 119 px above the lower bracket; the strip y 816 to 984, its key names gone; in s06 as `F_GRP`, not in `L.FRAMES` (DECISIONS 132) |
 | F-white    | 1.25 | -75     | -211.5  | (300, 846)        | S7d            | the dashed staircase x 378 to 1568, treads 554 (stair 1) to 164, foot 644, its "?" at (1498, 101); the strip y 739 to 889; the top-left lane clear                                                                  |
 | CU-D       | 2    | -836    | -464    | (836, 464)        | S7g            | D's stairs 3 to 7 x 368 to 1552: real treads 552 (stair 3) and 188 (stair 7), dashed 604 and 240, 52 px apart; names baseline 880                                                                                   |
 | F-keys-D   | 1.6  | -380.8  | -440    | (634.7, 733.3)    | S7h            | the strip x 3 to 2301, y 776 to 968 (black keys to 898), F♯4 x 717 to 819, C♯5 x 1485 to 1587 (black-key names at 875, above the caption band); D's names baseline 635; stairs 7 and 8 in frame (the real stair 7's tread y 82, the dashed one's 123; stair 8's tread y 40, x 1734 to 1914) and the top "S" at baseline 69 (ink y 22 to 70). oy -440 since the polish round, set in S7 itself: the kit's `L.FRAMES` entry still reads -528 and no scene reads it |
@@ -188,6 +189,8 @@ equally.
 | 79.80-81.30   | push         | F0         | CU-A       | power2.inOut                    |                                                                                                                                                                                     |
 | 86.60-88.20   | pan          | CU-A       | CU-B       | sine.inOut                      | 480 px left                                                                                                                                                                         |
 | 90.80-92.40   | pull         | CU-B       | F0         | power2.inOut                    | the legend lands after it                                                                                                                                                           |
+| 123.50-124.25 | push         | F0         | F-grp      | power2.inOut                    | from "Both", landing on "climb" as the copy lifts (124.30); the strip's key names leave over 123.50 to 123.70 (DECISIONS 132) |
+| 130.15-130.95 | pull         | F-grp      | F0         | power2.inOut                    | from b14's end, at rest 0.4 s before "semitones" (131.35) and never less than 0.2 s on a re-voice; the brackets and the legend leave over its tail (130.60 to 130.90); the key names come back over 130.95 to 131.15 |
 | 159.00-163.30 | push         | F0         | F-white    | sine.inOut                      | slow, from inside the predict pause                                                                                                                                                 |
 | 169.30-170.30 | pull         | F-white    | F0         | power2.inOut                    | the real staircase returns to full as it lands (169.9 to 170.3)                                                                                                                     |
 | 185.60-186.60 | push         | F0         | CU-D       | power2.inOut                    | the step rows (x 140 to 596, y 345 to 450) stay 50 px or more from every stair throughout                                                                                           |
@@ -314,7 +317,8 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
   at y 452, stairs 5 to 8 from x 722 to 1194 at y 270, each 82 px above its group's top tread, 4 px
   ink with 10 px ticks, drawn over the bead's glow and echo rings (polish round, DECISIONS 126: S6
-  plays at F0 throughout, so F-low and F-high are no longer used; they stay in `L.FRAMES`). The tone hops under a bracket peak
+  plays at F0 but for one push to F-grp for the copy, 123.50 to 130.95 (DECISIONS 132), so F-low and
+  F-high are no longer used; they stay in `L.FRAMES`). The tone hops under a bracket peak
   30 px above the higher stair and the semitone hops cross flat 15 px above it, so the bead's edge
   keeps 20.8 px or more below each line (31.8 px on the tone hops) (its glow, 57 px from its centre, still reaches the line).
   S6c's copy of stairs 1 to 4 is one closed shape (a 4 px chrome outline over a soft 10 px halo, a
@@ -596,16 +600,26 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   248.8) on S14's last frame and (1478.4, 251.5) on S15's first; its path, times and landing are
   unchanged, and its nearest approach to '"support"''s ink is 44.0 px (470.78).
 - **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
-  type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
+  type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; the bead does not fade with them:
+  from o14's end it flies on across the cut (§ S15 to S16, DECISIONS 133); '"support"' serif italic 160 px
   centred, baseline 420, landing with the kicker on the cut's own mark, `at('next')` (470.39; first visible 470.41, the word opaque by 470.52 and the kicker by 470.57, power2.out; polish round) and scaling 1.2 once on its word (473.14; DECISIONS 108); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
-- **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
+- **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5). The chrome bead is in
+  flight across the cut (DECISIONS 133), on one curve both scenes compute from film time, r 22 at scale
+  1, opacity 1: (1157.3, 470.7) on S15's last frame (478.5167) and (1140.6, 468.1) on S16's first
+  (478.5333), about 16.7 px a frame.
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
   and 1452 to 1728; at rest their glow tops at y 512 to 516 and their bodies at 516 to 530 (y 507 is
   the box's top, not the ink). One celebration hop, the pass's own, about 79 px high (479.4 to 480.0,
   its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220, revealed by a wipe with a feathered edge (about 60 px)
   from end + 0.25 (its letters from about 478.93, whole by 479.61; the orb opens at end + 0.15, the
-  waterline at + 0.27), the beads bobbing beside it (they rise from end + 0.15 in a 0.8 s flight,
-  leaving from inside their Mercs, squash 0.25 s, settled by 479.73). Since the polish round
+  waterline at + 0.27), the beads bobbing beside it. The orange bead rises from inside Tavi from end + 0.15 in a 0.8 s
+  flight. The blue bead is S15's chrome bead (DECISIONS 133), in flight since o14's end (478.13) on two
+  cubics read by arc length on sine.inOut, (1360, 520), (1180, 455), (900, 440), (700, 432) and (700,
+  432), (560, 425), (505, 300), (482, 106), 1099 px, peaking at 22.2 px a frame at 478.83; it turns
+  blue over 478.88 to 479.38, eases from scale 1 to its orbit's from the cut, and lands on its orbit
+  point (481.9, 105.7) at end + 0.95 (479.48). Its nearest approaches, on ink at 5 % opacity or more:
+  '"support"' 77 px, "what keeps it steady?" 80 px, "Find your pitch." 52 px (479.00, at 10 %), the
+  address 70 px, the orb 90 px, Merc 187 px. Both squash 0.25 s and are settled by 479.73. Since the polish round
   (DECISIONS 125) the card lands before and through the hop, in reading order: "Find your pitch."
   serif italic 112 px, baseline 326 (ink y 242 to 350, x 641 to 1264), from end + 0.45 over 0.6 s
   (478.98 to 479.58); the address Outfit 600 56 px, baseline 412 (ink y 369 to 424, x 356 to 1567),

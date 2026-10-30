@@ -275,3 +275,28 @@ events in the card pause (icon pulses that register, then the address once more)
   power2.inOut); tint chrome -> blue over FLYE - 0.6 (0.5 s, sine.inOut); squash at FLYE as before; opacity 1
   from 0. Orange unchanged. Proxy: S15 at D = S16 at 0, (1145.0, 468.8) scale 1, chrome; from 0.95 the blue
   bead and every card pixel as before.
+- 22:16 check (root-check-p2.log): 0 errors, but a new warning, s16-end composition_file_too_large (324 lines;
+  the rule is <= 300 structural lines). FLIGHT compacted (same points, same numbers, identical in both scenes),
+  the blue bead folded into fly() and comments trimmed: s16-end 298 lines, s15-next 193. Probe after: unchanged.
+- 22:19 renders (tools/polish2-render.sh: 1 worker, /dev/shm, measure-p2); the F-p1 clips parked in
+  /dev/shm/l4lab-F/p1/ for the before/after compares. s16 rendered 22:19-22:21: holds 0.0 s (p1: 0.1 at its start);
+  single-frame events as p1 (2.683, 3.100, 3.200, 4.233 jumps). Text sweep s15 + s16 clean (sweep-p2.log).
+- 22:21-22:23 s15 rendered (holds 0.2 s, 1.70 and 5.90 = 471.94 and 476.14, as p1; the 8.017 / 8.067 jumps of
+  the old bead's lift are gone; other single-frame events as p1). Clips: lab/s15-next/clip.mp4,
+  lab/s16-end/clip.mp4 (60 fps); measures lab/<s>/measure-p2.
+  Bead in the clips (tools/clipflight.py, every frame S15 7.8 s to end, S16 0 to 1.5 s): found in every frame
+  478.04 to 479.98; measured centres within 0.5 px of the computed ones from 478.34 (before that the finder
+  merges the bead with the line and the echo ring). S15 last lab frame (film 478.5263) (1147.5, 469.5) 45 x 45,
+  S16 first (478.529) (1145.0, 468.5) 44 x 45, both chrome; computed (1147.7, 469.2) and (1145.0, 468.8). Film grid:
+  478.5167 (1157.3, 470.7), 478.5333 (1140.6, 468.1). Lands (481.5, 105.5) at 479.479, blue, squash to 479.729.
+  Compares (480 px box means, codec noise is max ~14): S15 frame 0 = p1's (max 0); S15 up to 478.126 = p1's;
+  after it only the beads differ; S15 last vs S16 first outside the bead max 46 (Merc edges), middle max 17;
+  S16 from 0.95 s = p1's (max 12-14 at 480 px; last frame max 0). Proxy: S16 outside 80 px of the beads max 1
+  at every 30 fps step 0 to 1.24 (the card builds as before).
+  Gaps (proxy ink, while the type is at 5 % or more): '"support"' 77 px or more, "what keeps it steady?" 80,
+  tag 52 (479.00, at 10 %), address 70 (479.10), orb 90, the blue Merc's body box 187; peak 22.2 px a frame
+  (478.83). Stills: lab/s16-end/polish2/ (flight-sheet-clips.jpg, cut-bead-crop.png, landing-crop.png,
+  handoff-s16-first-0.000.png), lab/s15-next/polish2/ (handoff-s15-first-0.000.png, handoff-s15-last-8.283.png).
+- 22:25-22:31 check re-run (root-check-p2.log): 0 errors; group F's warnings as p1 (duplicate_media x3, s14
+  file length); contrast 59/59. clock-lint silent on all three; merc-tags 12 tags, 0 stale. /dev/shm/l4lab-F
+  deleted (the p1 clips with it); the per-frame bead log is lab/s16-end/polish2/clipflight.txt. Round done.

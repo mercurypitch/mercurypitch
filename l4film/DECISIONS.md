@@ -1590,3 +1590,117 @@ replaced it. The builder's record: critics never read it.
          these are noted for the next film.
      - For a human, in DELIVERY.md, as decision 122: the whooshes by ear, the viewer's-turn
        silence, phone speakers, the final voices and captions.
+131. **The director's part of the second polish round (FILM2 items 1 and 6): four leaps and the
+     pill.**
+     - **The leaps (item 1, by decision 130's rule).** m08-orange (Tavi, S7h), m10-blue (Merc, S10b),
+       m11-orange (Tavi, S11c) and m11-blue (Merc, S11c to S11d) no longer fall. Each enters with one
+       cycle of the renderer's `celebrate` jump, as m06a and m06b do (decision 123):
+       - the pass opens LEAP (1.38 s) before its host's first sound. m11-orange opens 0.25 s later, so
+         she lands as s11's pull out lands (o11 - 0.55). Opened at LEAP, she landed while the strip
+         was still coming back, and its end came within 4 px of her squash (320.80). m11-blue still
+         opens as b36 ends (+0.05);
+       - the host is off frame through the 0.15 s crouch, in the air 0.43 s, and settled 0.8 s after
+         the pass opens;
+       - Tavi comes in from beyond the right edge (`leap: true`) and Merc from beyond the left, on
+         his mirrored box (`leap: true, leapDx: -300`).
+
+       | Pass       | Opens  | In the air       | Settled |
+       | ---------- | ------ | ---------------- | ------- |
+       | m08-orange | 197.98 | 198.13 to 198.56 | 198.78  |
+       | m10-blue   | 282.20 | 282.35 to 282.78 | 283.00  |
+       | m11-orange | 320.45 | 320.60 to 321.03 | 321.25  |
+       | m11-blue   | 321.03 | 321.18 to 321.61 | 321.83  |
+
+     - **What goes with the falls.**
+       - m08 is one pass again: its head m08-orange-in and the splice at 203.65 are gone.
+       - m10's and both m11s' tall intros are gone. The intros left are m04's, m07's, m09's and
+         both m12s'.
+       - Every exit and every pass end stays where it was.
+     - **What was checked.**
+       - m10's pass still opens at 282.20. At the bead's launch (283.27, pass frame 64) his mouth
+         measures within 2 px of the old pass's (78, 144). s10's `MOUTH` (156, 797) and the hop to
+         stair 1 stand.
+       - m08 (s07): Tavi leaps in at F0 once the pull has landed and is first in frame at about 198.3.
+         At rest she keeps 56 px from the strip's end. It is one pass, with no head and no splice. On
+         the S7 to S8 cut her pixels match on both sides (her corner's mean difference 0.52).
+       - m10 (s10): from his landing Merc keeps 38 px or more from stair 1 and the keys.
+       - m11 (s11): Merc lands inside his column, 38 px or more from the strip's left end. Tavi's
+         landing moved, as above. She is now first in frame at about 320.79 and lands with the pull at
+         321.03. The strip has settled by then, 32 px or more from her squash.
+       - clock-lint is silent on s07, s08, s10 and s11. `merc-whole.py` and `merc-tags.py` are current
+         (68 tags, 0 stale).
+       - Proofs in `lab/entrances/`: `s07-m08-leap.jpg`, `s07-m08-leap-full.jpg`,
+         `s07-s08-cut-m08.jpg`, `s10-m10-leap.jpg`, `s10-m10-launch.jpg`, `s11-m11-tavi-leap.jpg`,
+         `s11-m11-tavi-landing-zoom.jpg`, `s11-m11-tavi-full.jpg`, `s11-m11-merc-leap.jpg` and
+         `s11-m11-both-full.jpg`.
+     - **The pill (item 6).** s09's "fixed do: do = C" pill widens first (0 to 0.45 of its 0.6 s,
+       power2.inOut), then its words roll (0.45 to 1). The old words show until they have rolled out
+       and the new ones from the first frame of their roll, so the box never cuts a glyph. Proof:
+       `lab/s09-names/polish2/pill-before-after.png`.
+     - **The docs.**
+       - STORYBOARD: rows 7h, 10b, 11c and 11d, the m08, m10 and m11 pass rows, and the entrances
+         note.
+       - BUILD-GUIDE: the s07, s10 and s11 Merc lines and their confirmation rows.
+       - HANDOFFS: § Camera moves (320.23), § S7 to S8 and § S10.
+       - `tools/CHANGES.md`.
+132. **Group B's second polish round (s06, FILM2 item 4): accepted on the lead's one review.**
+     - **The push.** One push to F-grp from "Both", landing on "climb" (123.50 to 124.25,
+       power2.inOut).
+       - F-grp is s 1.4 about the world point (110, 620). It is a local `F_GRP` in s06, as s11's
+         `F_EXP` is (decision 98), not in `L.FRAMES`.
+       - The framing holds through the copy's travel, landing and fade, and through "One more tone
+         joins them".
+     - **The pull.** A pull back to F0 from b14's end (130.15 to 130.95, power2.inOut). It is at rest
+       0.4 s before "semitones", and its length is capped so it rests 0.2 s or more before that on any
+       re-voice.
+     - **Size and time at F0.**
+       - In F-grp the staircase with its brackets fills 42.1 % of the frame (21.5 % at F0).
+       - F0 now holds 92.4 to 123.5 and 130.95 to 159.0 (31.1 s and 28.1 s), not 66 s in one span.
+     - **Kept: the builder's own call.** The strip's key names (E, F, B and C) leave over the push and
+       come back as the pull lands (130.95 to 131.15). In F-grp their baseline would sit at y 963,
+       inside the caption band.
+     - **Unchanged.**
+       - s05, and s06's first and last frames (max difference 0).
+       - m06a's hop out and m06b's leap in. No host is on screen during the move.
+     - **Checks.**
+       - `check`: 0 errors.
+       - Lab check over the move: layout 0 issues, contrast 107 of 107.
+       - Holds: 0.7 s, the longest 0.2 s.
+       - The push's largest frame change is 8.74 (S5's push to CU-A peaks at 7.84).
+     - **Docs.**
+       - HANDOFFS: § Framings (F-grp), § Camera moves (two rows), the note on S6's brackets.
+       - STORYBOARD: rows 6a and 6c, and the F0 spans.
+       - BUILD-GUIDE: s06's kit line.
+133. **Group F's second polish round (s15 and s16, FILM2 item 3): accepted on the lead's one review.**
+     - **The flight.** S15's chrome bead no longer fades with the type. As o14 ends (478.13) it sets off
+       from the long note's end, at full, and flies on across the cut. It lands as the end card's blue
+       bead, with its squash, at end + 0.95 (479.48), on the blue orbit's point (481.9, 105.7).
+       - Both scenes draw the flight from film time with the same code: two cubics read by arc length
+         on sine.inOut, 1099 px, peaking at 22.2 px a frame.
+       - At the cut the bead is at (1157.3, 470.7) on S15's last frame and (1140.6, 468.1) on S16's
+         first.
+       - It turns blue over 478.88 to 479.38 and eases to its orbit's scale.
+       - From 479.48 its orbit is the same as before.
+     - **What leaves the card.** The blue bead's rise from inside Merc is gone. The orange bead's rise
+       from Tavi stays.
+     - **The frame never empties.** The bead is on every frame from 478.04 to 479.98. Before, 478.5 to
+       478.75 held only the Mercs.
+     - **Unchanged.**
+       - S15's type, line, rings and kicker still leave from o14's end + 0.07 and are gone by 478.50.
+       - The card is untouched and complete by 479.85. Every pixel more than 80 px from a bead
+         matches the previous round.
+       - S14, and S15's first frame (max difference 0).
+     - **Nearest approaches** (on ink at 5 % opacity or more): '"support"' 77 px, "what keeps it
+       steady?" 80 px, "Find your pitch." 52 px (at 10 %), the address 70 px, the orb 90 px, Merc 187 px.
+     - **Kept: the builder's own calls.**
+       - The blue bead's colour change is a scene-local `tint()` in s16-end, because the kit's `L.bead`
+         takes a colour only when it is made. It is noted for the kit after this film.
+       - s16-end was compacted to 298 lines to stay under the file-length limit, with no value changed.
+     - **Checks.**
+       - `check`: 0 errors. Group F's warnings are as before. Contrast 59 of 59.
+       - The text sweep is clean, and clock-lint is silent.
+       - s16's holds went from 0.1 s to 0.0 s, and s15's are unchanged.
+     - **Docs.**
+       - HANDOFFS: § S15, § S15 to S16, § S16.
+       - STORYBOARD: rows 15 and 16 (Carried: "Mercs, the bead").
+       - BUILD-GUIDE: the s15 Out line and the s16 Merc line.

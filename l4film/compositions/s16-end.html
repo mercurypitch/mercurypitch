@@ -13,15 +13,13 @@
         ;(function () {
           /* S16, the end card (STORYBOARD row 16; HANDOFFS § S15 to S16, § S16), adapted from Lesson 2's s17-end:
              the MercuryPitch lockup forms, "Find your pitch." and the address land above the Mercs' heads, the skip
-             line and the Scale Runner path between their bodies; the orange bead rises from behind Tavi into a small
-             orbit beside the lockup, and the blue one arrives from S15: S15's chrome bead, in flight across the cut
-             (FLIGHT, the same code in s15-next; polish round 2, DECISIONS 130), turns blue as it rises and lands in
-             the blue orbit's place with the squash the rise had. The Mercs grow from 300 in the corners to 520 at (330, 840)
-             and (1590, 840); their celebration (one hop, sparkles off) is the passes' own, and the scene draws one
-             chrome ring under each as it lands. The passes run to the film's end (trap 15). The call to action is
-             the film's one hold: since film round 1 (DECISIONS 122) the card is complete by end + 1.37 (479.9), as
-             soon as the hosts' celebration hop allows, every element landing over 0.3 s or more, so it holds 3.8 s.
-             Every time is the end cue plus a duration. */
+             line and the Scale Runner path between their bodies; the orange bead rises from behind Tavi into a small orbit
+             beside the lockup, and S15's chrome bead flies on across the cut (FLIGHT, as in s15-next; DECISIONS 130) into
+             the other, turning blue. The Mercs grow from 300 in the corners to 520 at (330, 840) and (1590, 840); their
+             celebration (one hop, sparkles off) is the passes' own, and the scene draws one chrome ring under each as it
+             lands. The passes run to the film's end (trap 15). The call to action is the film's one hold: since film round 1
+             (DECISIONS 122) the card is complete by end + 1.37 (479.9), as soon as the hosts' celebration hop allows, every
+             element landing over 0.3 s or more, so it holds 3.8 s. Every time is a cue plus a duration. */
           const SID = 's16-end'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -45,11 +43,10 @@
           // enough (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait
           const URL = at('end', 'start', 0.55)
           const SKIP = at('end', 'start', 0.75)           // the skip line, then the Scale Runner path, 0.12 s apart (0.45 s)
-          // the orange bead rises from behind Tavi as he starts to move, and passes the address's end (y 370 to 426)
+          // the orange bead rises from behind Tavi as she starts to move, and passes the address's end (y 370 to 426)
           // by end + 0.4, before it lands; in orbit by end + 0.95 and settled by end + 1.2. The blue bead is S15's, in
           // flight since o14's end (FLY0), and lands at the same moment (FLY + FLYD), settled by end + 1.2 as before
-          const FLY = at('end', 'start', 0.15)
-          const FLYD = 0.8
+          const FLY = at('end', 'start', 0.15), FLYD = 0.8
           const FLY0 = at('o14', 'end'), FLYE = at('end', 'start', 0.95)
           const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in
           // the card's layout (film round 1): the lockup as Lesson 2's (y 40 to 220), "Find your pitch." (serif italic),
@@ -146,46 +143,35 @@
           })
 
           /* ---------------------------------------------------------------- the beads: arrive, then orbit beside the lockup */
-          // S15 to S16 (polish round 2, DECISIONS 130): the bead's flight from the long note's end (1360, 520) into the end
-          // card's blue bead, the same code in s15-next, so both scenes draw it from film time on the same pixels on either
-          // side of the cut. It lifts off the line and goes left at about y 440, under the space '"support"' leaves and
-          // above where the end card's lower lines will stand, then turns up left of "Find your pitch." and rises to the
-          // blue bead's place, left of the lockup's orb (FEND; s16-end adds the last few pixels to its orbit). Each part
-          // passes before the type that lands there; a polyline of 401 points read by arc length, on sine.inOut.
-          const FEND = [482, 106]
-          const FLIGHT = (() => {
-            const SEG = [[[1360, 520], [1180, 455], [900, 440], [700, 432]], [[700, 432], [560, 425], [505, 300], FEND]], N = 200
-            const pts = []
-            SEG.forEach(([p0, p1, p2, p3], k) => {
-              for (let i = k ? 1 : 0; i <= N; i++) {
-                const s = i / N, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
-                pts.push([a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]])
-              }
-            })
-            const cum = [0]
-            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
-            const total = cum[cum.length - 1]
-            return (u) => {
-              const s = L.clamp(u) * total
-              let i = 1
-              while (i < cum.length - 1 && cum[i] < s) i++
-              const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
-              return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
+          // S15 to S16 (polish round 2, DECISIONS 130): the bead's flight from the long note's end into the end card's blue
+          // bead, the same code in s15-next and s16-end and drawn from film time, so it is on the same pixels either side of
+          // the cut: off the line and left at about y 440, under the space '"support"' leaves and above the end card's lower
+          // lines, then up left of "Find your pitch." to the blue bead's place left of the orb (FEND; s16-end draws the last
+          // pixels onto its orbit), each part passing before the type that lands there; 401 points read by arc length
+          const FEND = [482, 106], FP = [], FC = [0]
+          for (const [p0, p1, p2, p3] of [[[1360, 520], [1180, 455], [900, 440], [700, 432]], [[700, 432], [560, 425], [505, 300], FEND]]) {
+            for (let i = FP.length ? 1 : 0; i <= 200; i++) {
+              const s = i / 200, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+              FP.push([a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]])
             }
-          })()
-          const flightAt = (t, t0, t1) => (t < t0 ? null : FLIGHT(P(t, t0, t1 - t0, 'sine.inOut')))
+          }
+          for (let i = 1; i < FP.length; i++) FC.push(FC[i - 1] + Math.hypot(FP[i][0] - FP[i - 1][0], FP[i][1] - FP[i - 1][1]))
+          const flightAt = (t, t0, t1) => {             // null before t0, then on sine.inOut along the path to t1
+            if (t < t0) return null
+            const s = P(t, t0, t1 - t0, 'sine.inOut') * FC[FC.length - 1]
+            let i = 1
+            while (i < FC.length - 1 && FC[i] < s) i++
+            const f = (s - FC[i - 1]) / (FC[i] - FC[i - 1] || 1)
+            return [0, 1].map((k) => lerp(FP[i - 1][k], FP[i][k], f))
+          }
           const beadLayer = sv('g', {}, mid)
           const BB = L.bead(beadLayer, { r: 22, color: C.blue }), OB = L.bead(beadLayer, { r: 22, color: C.orange })
-          // the blue bead comes in as S15's chrome one and turns blue as it rises (a scene helper: the kit's L.bead takes
-          // its colour once; this re-tints its body gradient's middle stop, its halo's two stops and its rim)
-          const tintOf = (b) => { const st = b.g.querySelectorAll('stop'); return [st[1], st[3], st[4]] }
-          const BBT = tintOf(BB), BBR = BB.body.children[1]
-          const rgbOf = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-          const CHR = rgbOf(C.chrome), BLU = rgbOf(C.blue)
+          // a scene helper: it re-tints the blue bead's body stop, halo stops and rim (the kit's L.bead takes a colour once)
+          const BBT = [...BB.g.querySelectorAll('stop')].filter((e, i) => i === 1 || i > 2).concat(BB.body.children[1])
+          const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), CHR = rgb(C.chrome), BLU = rgb(C.blue)
           const tint = (c) => {
             const col = c >= 1 ? C.blue : c <= 0 ? C.chrome : `rgb(${CHR.map((v, i) => Math.round(lerp(v, BLU[i], c))).join(',')})`
-            for (const s of BBT) s.setAttribute('stop-color', col)
-            BBR.setAttribute('stroke', col)
+            for (const e of BBT) e.setAttribute(e.tagName === 'stop' ? 'stop-color' : 'stroke', col)
           }
           const squash = (b, sx, sy) => b.body.setAttribute('transform', `translate(0 ${b.r}) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(0 ${-b.r})`)
           // Lesson 1's orbit: a speed that slows to a drift, integrated from the arrival; blue goes round once while
@@ -270,39 +256,27 @@
               Ln.g.setAttribute('transform', `translate(0 ${f2(12 * (1 - P(t, Ln.tIn, 0.45, 'power3.out')))})`)
             }
 
-            // the beads: each rises from behind its Merc into a small tilted orbit beside the lockup, every point
-            // 70 px clear of the lockup's ends
+            // the beads: orange rises from inside Tavi as she moves (y 0.385 of her size above her feet); blue is S15's, on
+            // FLIGHT, drawn from the cut (kb: power2.inOut from 0, so the cut's frames are S15's curve) the last pixels onto
+            // its orbit's moving place and from 1 to its scale, turning blue over its rise (FLYE - 0.6, 0.5 s); each lands
+            // in a small tilted orbit beside the lockup, every point 70 px clear of its ends, and squashes as it lands
             const left = X + 12 * k, right = X + content * k
             const ORB = { b: { cx: left - 70 - 130, cy: 130, rx: 130, ry: 34 }, o: { cx: right + 70 + 130, cy: 130, rx: 130, ry: 34 } }
-            // each leaves from inside its Merc as he moves (x, and y 0.385 of his size above his feet: y 640 at 520)
             const fromY = 840 - 0.385 * lerp(300, 520, mu)
             const fly = (b, which, fromX, base, w) => {
               const o = ORB[which], th = base + w * angle(t)
               const op = { x: o.cx + o.rx * Math.cos(th), y: o.cy + o.ry * Math.sin(th), z: Math.sin(th) }
-              const u = P(t, FLY, FLYD, 'none'), e = L.easeInOut(u)
-              const p = { x: lerp(fromX, op.x, e), y: lerp(fromY, op.y, e) - 120 * Math.sin(Math.PI * u) }
-              const s = lerp(0.7, 0.86 + 0.24 * (op.z + 1) / 2, e)
+              const u = P(t, FLY, FLYD, 'none'), e = L.easeInOut(u), kb = P(t, 0, FLYE, 'power2.inOut'), fl = which === 'b' && flightAt(t, FLY0, FLYE)
+              const p = fl ? { x: fl[0] + kb * (op.x - FEND[0]), y: fl[1] + kb * (op.y - FEND[1]) } : { x: lerp(fromX, op.x, e), y: lerp(fromY, op.y, e) - 120 * Math.sin(Math.PI * u) }
+              const s = lerp(fl ? 1 : 0.7, 0.86 + 0.24 * (op.z + 1) / 2, fl ? kb : e)
               b.g.setAttribute('transform', `translate(${f2(p.x)} ${f2(p.y)}) scale(${s.toFixed(3)})`)
-              b.g.setAttribute('opacity', P(t, FLY, 0.25).toFixed(3))
+              b.g.setAttribute('opacity', fl ? '1' : P(t, FLY, 0.25).toFixed(3))
               const a = t - (FLY + FLYD), sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
               squash(b, 1 - 0.18 * sq, 1 + 0.28 * sq)
             }
+            fly(BB, 'b', 0, 1.75 * Math.PI, WB)
             fly(OB, 'o', lerp(POSE[1].x0, POSE[1].x1, mu), 1.25 * Math.PI, WO)
-            // the blue bead: S15's, on its flight (from FLY0, before the cut) until it lands (FLYE = FLY + FLYD); from the
-            // cut it is drawn the last few pixels onto its orbit's moving place (as the rise was) and from 1 to the orbit's
-            // scale, both on power2.inOut from 0, so the cut's frames are S15's curve; it turns from chrome to blue over
-            // its rise (FLYE - 0.6, 0.5 s) and squashes as it lands, as the rise did
-            {
-              const o = ORB.b, th = 1.75 * Math.PI + WB * angle(t)
-              const op = { x: o.cx + o.rx * Math.cos(th), y: o.cy + o.ry * Math.sin(th), z: Math.sin(th) }
-              const w = P(t, 0, FLYE, 'power2.inOut'), [fx, fy] = flightAt(t, FLY0, FLYE)
-              const s = lerp(1, 0.86 + 0.24 * (op.z + 1) / 2, w)
-              BB.g.setAttribute('transform', `translate(${f2(fx + w * (op.x - FEND[0]))} ${f2(fy + w * (op.y - FEND[1]))}) scale(${s.toFixed(3)})`)
-              BB.g.setAttribute('opacity', '1')
-              tint(P(t, FLYE - 0.6, 0.5, 'sine.inOut'))
-              const a = t - FLYE, sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
-              squash(BB, 1 - 0.18 * sq, 1 + 0.28 * sq)
-            }
+            tint(P(t, FLYE - 0.6, 0.5, 'sine.inOut'))
 
             // one chrome ring under each Merc as the celebration's hop lands (Lesson 1's ring; gold is the semitones')
             const ra = t - LAND, ru = L.clamp(ra / 0.9), on = ra < 0 || ra > 0.9 ? 0 : 1
