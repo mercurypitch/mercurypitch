@@ -186,7 +186,7 @@ export function Glass(props: GlassProps): JSX.Element {
           {(sealed) => (
             <path
               d={`M${x(sealed())} 5v20`}
-              stroke="#e7c67d"
+              stroke="#eef0ff"
               stroke-width="1.6"
               class={
                 props.previous !== undefined && props.previous !== null

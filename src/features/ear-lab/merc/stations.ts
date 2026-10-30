@@ -15,12 +15,9 @@
 // practice otherwise, and said so. Wild reads the Field Book's own
 // rating.
 //
-// Each station has a painting of its own (owner, 28 Oct), a portrait in
-// ./paintings named station-<faculty>.webp: the Regulator Room with its desk
-// cleared for Resolution, the organ loft for Function, the observatory
-// study for Shape, the stained-glass studio for Colour and the clock
-// tower's workroom for Time, all five in the Regulator Room's frame.
-// Wild keeps the glasshouse.
+// A station's drills sit on the room's dark stage in that station's own
+// two lights (room.module.css); its paintings went with the brass (owner,
+// 30 Oct: docs/plans/ear-lab-native-look.md).
 // ============================================================
 
 import type { Instrument } from '@/features/ear-lab/instruments'
@@ -107,39 +104,6 @@ export function stationCast(faculty: FacultyId): string {
 }
 
 // ── A painting per station ──────────────────────────────────────
-
-/** The stations' paintings, by file: `station-<faculty>.webp`. Plain
- *  default imports (an image's default is its URL), so a build without
- *  the room folds each one away like any other of its pictures
- *  (PREMIUM_IMAGES, apps/mercurypitch/vite.config.ts). */
-const PAINTINGS: Record<string, string> = import.meta.glob<string>(
-  './paintings/station-*.webp',
-  { eager: true, import: 'default' },
-)
-
-const GLASSHOUSE = '/ear-lab/glasshouse-bench-portrait.webp'
-/** The Regulator Room as the bench has it, its loupe and fork on the
- *  desk: only if the cleared one were ever missing. */
-const REGULATOR_ROOM = '/ear-lab/regulator-room-portrait.webp'
-
-/** The world a station's drills sit in. A drill at no station
- *  (Calibration, anything unmapped) sits at Resolution's cleared desk,
- *  so no painted instrument ever stands behind a drawn one. */
-export function stationPainting(faculty: FacultyId | null): string {
-  if (faculty === 'wild') return GLASSHOUSE
-  return (
-    PAINTINGS[`./paintings/station-${faculty ?? 'resolution'}.webp`] ??
-    PAINTINGS['./paintings/station-resolution.webp'] ??
-    REGULATOR_ROOM
-  )
-}
-
-/** Whether a station's world is lit by the Regulator Room's lamp, whose
- *  bulb the room dims where it sits: every station's but the glasshouse,
- *  which keeps its own light. */
-export function sharesTheLamp(faculty: FacultyId | null): boolean {
-  return faculty !== 'wild'
-}
 
 // ── A station's number ──────────────────────────────────────────
 

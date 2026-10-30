@@ -1,5 +1,5 @@
 // ============================================================
-// The run line: where the run is, under the room's header. A staircase
+// The run chip: where the run is, under the room's header. A staircase
 // says its level and about how many questions are left, with the trace
 // of the way it came; a rated run counts its rounds in neutral dots
 // that fill as rounds pass and never say right or wrong; a calibration
@@ -75,13 +75,13 @@ export function RunLine(props: { line: RoomRunLine }): JSX.Element {
                   <polyline
                     points={trace().line}
                     fill="none"
-                    stroke="#c5ced8"
+                    stroke="#efeaff"
                     stroke-width="1.4"
                     stroke-linejoin="round"
                   />
                   <For each={trace().turns}>
                     {(turn) => (
-                      <circle cx={turn.x} cy={turn.y} r="2.2" fill="#e7c67d" />
+                      <circle cx={turn.x} cy={turn.y} r="2.2" fill="#c3b4ff" />
                     )}
                   </For>
                 </svg>

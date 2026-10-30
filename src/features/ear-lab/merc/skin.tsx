@@ -4,13 +4,15 @@
 // under the room each of those is one of these.
 //
 //   - Lead pads (Practice run, Begin, Calibration) are the room's one
-//     filled button and its outlined secondary. Once a run is on they
-//     draw nothing: the pinned row is the lamp and Next.
+//     filled button and its outlined secondary; a console of several
+//     (the desk's three drills) is a list of glass tiles instead. Once a
+//     run is on they draw nothing: the pinned row is the lamp and Next.
 //   - Pads are the room's grid: two up, three up, two by two, four by
 //     three, or the degree ladder, at 92, 64 or 54 px.
-//   - A pad waiting for an answer is lit with a brass edge; a pad not
-//     chosen steps back; the pick says "Your pick" and the truth "The
-//     answer", in words as well as colour.
+//   - A pad waiting for an answer is lit with a violet edge that
+//     breathes; a pad not chosen steps back; the pick says "Your pick"
+//     and the truth "The answer", in words as well as colour. A keycap
+//     means nothing on a phone: no pad shows one.
 //   - The tap pad ticks under the thumb.
 //   - The answer-mode toggle moves out of the console into "?".
 //   - Hairline's loupe stands upright (RoomLoupe.tsx).
@@ -62,8 +64,17 @@ function RoomPlayPad(props: PlayPadProps): JSX.Element {
         data-merc="lead"
         onClick={press}
       >
-        <span>{props.label}</span>
-        <Show when={props.sub}>{(sub) => <small>· {sub()}</small>}</Show>
+        <Show when={props.icon}>
+          <span class={styles.leadIcon} aria-hidden="true">
+            {props.icon}
+          </span>
+        </Show>
+        <span class={styles.leadText}>
+          <span class={styles.leadLabel}>{props.label}</span>
+          <Show when={props.sub}>
+            {(sub) => <small class={styles.leadSub}>{sub()}</small>}
+          </Show>
+        </span>
       </button>
     </Show>
   )
@@ -133,7 +144,7 @@ function RoomStagePad(props: StagePadProps): JSX.Element {
         />
       </Show>
       <span class={styles.padCaption} aria-hidden="true">
-        {caption() ?? props.keycap ?? ''}
+        {caption() ?? ''}
       </span>
       <span class={styles.padLabel} aria-hidden="true">
         {props.label}

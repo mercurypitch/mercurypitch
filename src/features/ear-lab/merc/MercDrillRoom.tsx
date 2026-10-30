@@ -6,16 +6,15 @@
 //
 //   - The header: Close, the drill and the run it is in (practice run,
 //     rated run, today's short run, sealed calibration), and "?".
-//   - The run line: a staircase's level and about how many are left,
+//   - The run chip: a staircase's level and about how many are left,
 //     with its trace; a rated run's rounds in neutral dots.
-//   - The world: the station's painting, one crop in the Regulator
-//     Room's frame, the instrument in the lamp light on a contact shadow
-//     (stations.ts); Wild keeps the glasshouse.
-//   - The console: Merc and his bubble (the task in full on the first
-//     question, then nothing until the verdict), the drill's own pads,
-//     and the pinned row: Hear it again, Compare on a miss whose pick
-//     the drill can sound (the answer, then the pick), and the lamp or
-//     Next.
+//   - The stage: the dark ground in its station's own two lights
+//     (room.module.css), the instrument filling most of the screen.
+//   - The console, at the foot of the stage: Merc and his bubble (the
+//     task in full on the first question, the question again whenever
+//     an answer is due, the verdict after), the drill's own pads, and
+//     the pinned row: Hear it again, Compare on a miss whose pick the
+//     drill can sound (the answer, then the pick), and the lamp or Next.
 //
 // Merc listens while the sound plays, waits while the singer answers,
 // nods at a right answer and gives a wrong one nothing; he celebrates
@@ -68,7 +67,7 @@ import { noteReturn, recordTodayMove, roomOrigin, setRoomOrigin, todayMoveOf, } 
 import { CalibrationBefore, ExitConfirm, HelpSheet, SoundStopped, } from './Sheets'
 import { ROOM_SKIN } from './skin'
 import { watchSoundStop } from './sound-stop'
-import { drillName, sharesTheLamp, stationOf, stationPainting, } from './stations'
+import { drillName, stationOf } from './stations'
 import { mercStill } from './stills'
 
 /** Two-sound questions, said "pair" in the room's words. */
@@ -123,7 +122,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
   )
   // eslint-disable-next-line solid/reactivity -- a room is mounted per drill
   const station = stationOf(props.drillId)
-  const painting = stationPainting(station)
 
   // ── The room over the tab ─────────────────────────────────────
 
@@ -520,7 +518,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
       <StageSkinContext.Provider value={ROOM_SKIN}>
         <section
           class={styles.room}
-          classList={{ [styles.ownLight]: !sharesTheLamp(station) }}
+          data-station={station ?? undefined}
           data-ear-drill={props.drillId}
           data-testid="ear-stage"
           data-merc-room=""
@@ -530,10 +528,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
           onPointerUp={onPointerUp}
         >
           <div class={styles.world}>
-            <div class={styles.painting} aria-hidden="true">
-              <img src={painting} alt="" draggable={false} />
-            </div>
-            <div class={styles.shade} aria-hidden="true" />
             <Show
               when={!done()}
               fallback={
@@ -591,7 +585,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
             </div>
             <button
               type="button"
-              class={`${styles.round} ${styles.roundBrass}`}
+              class={styles.round}
               aria-label={`About ${props.cardName ?? props.name}, and its settings`}
               data-testid="merc-help-open"
               onClick={() => setHelpOpen('help')}

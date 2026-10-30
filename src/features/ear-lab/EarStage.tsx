@@ -634,6 +634,9 @@ function BenchTapPad(props: TapPadProps): JSX.Element {
       }}
       disabled={props.disabled === true}
       data-testid="ear-tap-pad"
+      // The room paints the pad itself, and reads its states here.
+      data-armed={props.armed === true ? '' : undefined}
+      data-hit={hit() ? '' : undefined}
       onPointerDown={(event) => {
         // Secondary mouse buttons are not taps; touch and pen report 0.
         const at = pointerTap(event)
