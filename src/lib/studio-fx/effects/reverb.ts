@@ -30,6 +30,8 @@ const MAX_PRE_DELAY_SECONDS = 0.25
 const SWAP_TIME_CONSTANT = 0.04
 /** Six time constants: the outgoing convolver is below -50 dB by then. */
 const SWAP_SECONDS = SWAP_TIME_CONSTANT * 6
+/** Twelve: below -100 dB, so its impulse can go without a step. */
+const RELEASE_SECONDS = SWAP_TIME_CONSTANT * 12
 const CACHE_LIMIT = 8
 
 const impulseCache = new WeakMap<BaseAudioContext, Map<string, AudioBuffer>>()
@@ -106,6 +108,7 @@ function createImpulseSwitcher(options: ImpulseSwitcherOptions) {
   let fadeEndsAt = Number.NEGATIVE_INFINITY
   let pending: ImpulseSetting | null = null
   let retryScheduled = false
+  let swaps = 0
   const timers = new Set<() => void>()
 
   const later = (callback: () => void, seconds: number): void => {
@@ -128,6 +131,14 @@ function createImpulseSwitcher(options: ImpulseSwitcherOptions) {
     feed.disconnect(slot.convolver)
     slot.attached = false
   }
+  /**
+   * A slot that has faded out also lets its impulse go: a loaded convolver
+   * is the most memory a reverb holds, and the next swap loads a new one.
+   */
+  const release = (slot: ConvolverSlot): void => {
+    detach(slot)
+    if (slot.convolver.buffer !== null) slot.convolver.buffer = null
+  }
 
   const swapTo = (setting: ImpulseSetting): void => {
     const outgoing = active
@@ -143,6 +154,11 @@ function createImpulseSwitcher(options: ImpulseSwitcherOptions) {
     later(() => {
       if (active !== outgoing) detach(slots[outgoing])
     }, SWAP_SECONDS)
+    // A later swap fades a slot of its own and lets that one go itself.
+    const swap = ++swaps
+    later(() => {
+      if (swap === swaps) release(slots[outgoing])
+    }, RELEASE_SECONDS)
   }
 
   const setNow = (setting: ImpulseSetting): void => {
@@ -150,7 +166,7 @@ function createImpulseSwitcher(options: ImpulseSwitcherOptions) {
     slots[active].convolver.buffer = impulseBuffer(ctx, setting)
     writeParam(slots[active].gain.gain, 1, ctx, false)
     writeParam(slots[1 - active].gain.gain, 0, ctx, false)
-    detach(slots[1 - active])
+    release(slots[1 - active])
     activeKey = impulseKey(setting)
   }
 
