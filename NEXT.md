@@ -1901,3 +1901,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   1,057 credits, Plus). Owner told to allow it at claude.ai/customize/connectors. The agent stops
   after PLAN.md if the tool is still missing; resume or respawn it once the tool appears.
   No pnpm from it until film-01.status ends in "done".
+- 09:0x art agent reported: no generate tool, so no PR; 0 of 200 credits (balance 1,057). Plan ready
+  in sing-art/PLAN.md (514 lines): gpt_image_2_5 high 4k (the ear-rooms settings), portrait first,
+  landscape from it as a reference; nano_banana_2 masked fixes; rooms F1 Rehearsal Attic, F2 Choir
+  Room (free), P1 Echo Cistern, P2 Snowfall Pavilion, P3 Ghost Light Stage (premium, P3 only if the
+  first measured cost allows); exact catalog entries, migration 0072, worker map, tests, commits.
+  Found: native packaging bundles only the one cover (native-assets.mjs, mobile workflow paths,
+  probe-bundle.mjs insists on one); Premium Studio's surface filter lacks Sing; the room name and
+  the alley door stay "Retro Analog Studio" whatever the cover (separate change). Lead's call on
+  its wording question: image models are named in the PR as provenance (as docs/plans/ear-rooms.md
+  does); the ban is on assistant model names and attribution. Next: when the owner allows the
+  generate tool, a fresh agent runs PLAN.md from § 2 (generation needs no memory; pnpm only after
+  the film is done). Slot freed: the FILM1 critic can take it.
