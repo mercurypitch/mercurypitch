@@ -81,7 +81,7 @@ These are the rules that break things when ignored.
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 13.2k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 13.3k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.6k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -148,9 +148,9 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `studio` | [studio-audio-client.ts](../../src/lib/studio/audio/studio-audio-client.ts) | 11.1k | Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Stud... |
+| `studio` | [studio-audio-client.ts](../../src/lib/studio/audio/studio-audio-client.ts) | 11.6k | Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Stud... |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
-| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.8k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
+| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.2k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |

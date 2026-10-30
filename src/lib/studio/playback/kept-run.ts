@@ -46,6 +46,7 @@ import type { StudioAsset, StudioProject } from '../model/types'
 import type { StudioDrafts, StudioLiveSettings } from './in-place'
 import { fitsInPlace, followInPlace } from './in-place'
 import { replanLanes } from './lane-replan'
+import { livePlaybackProfile } from './playback-quality'
 import type { StudioRun } from './run'
 import { openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS } from './run'
 import { seekEarliest } from './seek'
@@ -115,6 +116,8 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     assets: readonly StudioAsset[],
     drafts: StudioDrafts,
   ): boolean {
+    // A graph built at another playback quality is built again (playback-quality.ts).
+    if (run.graph.profile() !== livePlaybackProfile()) return false
     return (
       fitsInPlace(run, project, drafts) || replanLanes(run, project, assets)
     )

@@ -4,6 +4,7 @@
 
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
+import { keepsOnlyLatency } from '@/lib/studio-fx/fx-profile'
 import { createCompressorUnit } from './compressor'
 import { createDeesserUnit } from './deesser'
 import { createDelayUnit } from './delay'
@@ -11,6 +12,7 @@ import { createDynamicEqUnit } from './dyneq'
 import { createEqUnit } from './eq'
 import { createExciterUnit } from './exciter'
 import { createGainUnit } from './gain'
+import { createLatencyOnlyUnit } from './latency-only'
 import { createLimiterUnit } from './limiter'
 import { createReverbUnit } from './reverb'
 import { createSaturationUnit } from './saturation'
@@ -23,6 +25,8 @@ export function createEffectUnit(
   spec: EffectSpec,
   env: EffectEnv,
 ): EffectUnit {
+  if (keepsOnlyLatency(env.profile, spec.kind))
+    return createLatencyOnlyUnit(ctx, spec, env)
   switch (spec.kind) {
     case 'gain':
       return createGainUnit(ctx, spec, env)

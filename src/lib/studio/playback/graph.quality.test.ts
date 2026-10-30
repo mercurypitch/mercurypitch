@@ -1,5 +1,5 @@
 // Studio graph quality tests — lanes built at the profile the graph is given, and reverbs sharing the reverb bus.
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeNode } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { reaches } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -18,6 +18,7 @@ const LIGHT: StudioFxProfile = {
   id: 'light',
   oversample: { saturation: '2x', exciter: 'none', limiter: 'none' },
   reverbBus: false,
+  lite: [],
 }
 
 /** One lane with a saturation, built at LIGHT, playing. */
@@ -55,21 +56,26 @@ function playingGraph() {
   const ctx = new PlaybackContext()
   ctx.currentTime = 1
   const buffer = ctx.createBuffer(1, frames, 48000) as unknown as AudioBuffer
+  const tick = vi.fn()
   const graph = buildStudioGraph(
     ctx.asContext,
     plan,
     new Map([[asset.id, buffer]]),
     1.5,
-    { profile: LIGHT },
+    {
+      profile: LIGHT,
+      quality: { tick },
+    },
   )
   graph.scheduleUntil(3)
-  return { ctx, graph }
+  return { ctx, graph, tick }
 }
 
 describe('Studio graph playback quality', () => {
-  it('builds its lanes at the profile it is given', () => {
+  it('builds its lanes at the profile it is given, and tells live quality of each tick', () => {
     const f = playingGraph()
     expect(f.graph.profile()).toBe(LIGHT)
+    expect(f.tick).toHaveBeenCalledWith(f.ctx.asContext)
     f.graph.dispose()
   })
 })

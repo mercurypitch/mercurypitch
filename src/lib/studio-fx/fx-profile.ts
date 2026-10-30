@@ -14,6 +14,9 @@
 /** The effects whose shapers run oversampled at full quality. */
 export type StudioShaperEffect = 'saturation' | 'exciter' | 'limiter'
 
+/** The dynamics effects a profile can leave as their lookahead alone (effects/latency-only.ts). */
+export type StudioLiteEffect = 'dyneq' | 'deesser'
+
 /** What a live chain may trade for less work. */
 export interface StudioFxProfile {
   /** A name for logs and tests; the tier it came from. */
@@ -30,6 +33,11 @@ export interface StudioFxProfile {
    * own pre-delay, cuts and mix; its decay picks the space.
    */
   readonly reverbBus: boolean
+  /**
+   * Dynamics effects that keep only their lookahead: they pass the signal
+   * as they do while their band is quiet, and never cut.
+   */
+  readonly lite: readonly StudioLiteEffect[]
 }
 
 /** Every effect as export renders it. */
@@ -37,6 +45,7 @@ export const FULL_FX_PROFILE: StudioFxProfile = {
   id: 'full',
   oversample: { saturation: '4x', exciter: '4x', limiter: '4x' },
   reverbBus: false,
+  lite: [],
 }
 
 /** The shared reverb spaces a reverb bus offers, by decay. */
@@ -64,6 +73,14 @@ export const REVERB_SPACES: Readonly<
 export function reverbSpace(decayS: number): StudioReverbSpace {
   if (decayS < 1.35) return 'room'
   return decayS < 2.4 ? 'hall' : 'long'
+}
+
+/** Whether `profile` keeps only the lookahead of an effect of `kind`. */
+export function keepsOnlyLatency(
+  profile: StudioFxProfile | undefined,
+  kind: string,
+): boolean {
+  return profile?.lite.some((lite) => lite === kind) === true
 }
 
 /** The oversampling `profile` asks of `effect`'s shapers; 4x without a profile. */

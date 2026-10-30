@@ -228,6 +228,7 @@ describe('shapers at a lighter playback quality', () => {
       limiter: oversample,
     },
     reverbBus: false,
+    lite: [],
   })
 
   for (const kind of ['saturation', 'exciter', 'limiter'] as const) {
@@ -267,6 +268,58 @@ describe('shapers at a lighter playback quality', () => {
     expect(
       ctx.ofType<FakeShaper>('shaper').map((shaper) => shaper.oversample),
     ).toEqual(['4x', '4x'])
+  })
+})
+
+describe('dynamics at Light playback quality', () => {
+  const light: StudioFxProfile = {
+    ...FULL_FX_PROFILE,
+    id: 'light',
+    lite: ['dyneq', 'deesser'],
+  }
+
+  it('keeps a dynamic EQ band and a de-esser as their lookahead alone', () => {
+    for (const kind of ['dyneq', 'deesser']) {
+      const { ctx, env } = setup(false)
+      const unit = createEffectUnit(ctx.asContext, spec(kind), {
+        ...env,
+        profile: light,
+      })
+      // One null-compressor twin, the lookahead; no band, no compressor that cuts.
+      expect(ctx.ofType<FakeBiquad>('biquad')).toHaveLength(0)
+      const compressors = ctx.ofType<FakeCompressor>('compressor')
+      expect(compressors).toHaveLength(1)
+      expect(compressors[0].threshold.value).toBe(0)
+      expect((unit.input as unknown as FakeNode).targets).toEqual([
+        compressors[0],
+      ])
+      expect(compressors[0].targets).toEqual([unit.output])
+    }
+  })
+
+  it('leaves a following dynamic EQ band a plain wire, and every other effect whole', () => {
+    const { ctx, env } = setup(false)
+    const unit = createEffectUnit(ctx.asContext, spec('dyneq'), {
+      ...env,
+      profile: light,
+    })
+    unit.follow!(ctx.createGain() as unknown as AudioNode)
+    expect((unit.input as unknown as FakeNode).targets).toEqual([unit.output])
+    unit.follow!(null)
+    expect((unit.input as unknown as FakeNode).targets).toHaveLength(1)
+    expect((unit.input as unknown as FakeNode).targets[0].nodeType).toBe(
+      'compressor',
+    )
+    const other = setup(false)
+    createEffectUnit(other.ctx.asContext, spec('compressor'), {
+      ...other.env,
+      profile: light,
+    })
+    expect(
+      other.ctx
+        .ofType<FakeCompressor>('compressor')
+        .some((c) => c.threshold.value !== 0),
+    ).toBe(true)
   })
 })
 

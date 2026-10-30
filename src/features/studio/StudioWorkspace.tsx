@@ -5,6 +5,7 @@ import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { schedulePlaybackBenchmark } from '@/lib/studio/playback/playback-benchmark'
 import { createReactiveMatch } from '@/lib/use-viewport'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import { useStudioTransport } from './audio/useStudioTransport'
@@ -22,6 +23,7 @@ import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
 import { StudioTrackDetails } from './panels/StudioTrackDetails'
+import { StudioPlaybackNotice } from './sound/StudioPlaybackNotice'
 import { StudioSoundPanel } from './sound/StudioSoundPanel'
 import { useStudioComparison } from './sound/useStudioComparison'
 import { useStudioSound } from './sound/useStudioSound'
@@ -305,6 +307,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         !transport.pending() && !finishing() && project().clips.length > 0,
     })
     onCleanup(remove)
+    // Auto's device benchmark (playback-quality.ts), once, never while playing.
+    onCleanup(schedulePlaybackBenchmark({ busy: transport.playing }))
     onCleanup(
       installStudioMixShortcut({
         scope: () => workspace,
@@ -582,6 +586,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           </button>
         </div>
       </Show>
+      <StudioPlaybackNotice onShow={() => openPanel('sound')} />
       <Show when={transport.error() ?? (deskOpen() ? sound.error() : null)}>
         {(error) => (
           <p class={styles.inlineError} role="alert">

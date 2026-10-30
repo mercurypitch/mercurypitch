@@ -1,5 +1,5 @@
 // Studio Sound tests — native sliders keep one gesture per command and reset from saved sound.
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
@@ -118,7 +118,8 @@ describe('Studio sound controls', () => {
       targetLufs: -16,
       maxLimitingDb: 3,
     })
-    expect(screen.getAllByRole('radio')).toHaveLength(3)
+    const master = screen.getByRole('group', { name: 'Master' })
+    expect(within(master).getAllByRole('radio')).toHaveLength(3)
   })
 })
 

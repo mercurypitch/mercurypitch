@@ -6,6 +6,7 @@ import { applyStudioCommand } from '../model/commands'
 import type { StudioProject } from '../model/types'
 import { KEEP_HIDDEN_MS, KEEP_IDLE_MS } from './kept-run'
 import { PlaybackContext } from './playback.test-fixtures'
+import { setPlaybackChoice, TIER_PROFILES } from './playback-quality'
 import { RUN_OPEN_SECONDS } from './run'
 import { envelopeOf, FIRST_HEARD, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
 
@@ -265,6 +266,26 @@ describe('Studio transport kept run', () => {
     expect(graphs).toHaveLength(2)
     expect(graphs[0].dispose).toHaveBeenCalledOnce()
     expect(graphs[0].resume).not.toHaveBeenCalled()
+    await finish(f)
+  })
+
+  it('builds afresh when the playback quality changed while paused', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const graphs = freshGraphs(f)
+    await pausedAtOneSecond(f)
+    graphs[0].profile.mockReturnValue(TIER_PROFILES.best)
+    setPlaybackChoice('light')
+    try {
+      f.ctx.currentTime = 3
+      expect(await f.transport.play(f.project, [f.asset])).toBe(true)
+      expect(graphs).toHaveLength(2)
+      expect(graphs[0].resume).not.toHaveBeenCalled()
+      expect(graphs[0].dispose).toHaveBeenCalledOnce()
+      expect(f.buildGraph.mock.calls[1][4].profile).toBe(TIER_PROFILES.light)
+    } finally {
+      setPlaybackChoice('auto')
+    }
     await finish(f)
   })
 

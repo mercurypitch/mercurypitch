@@ -15,7 +15,8 @@ import { createStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
-import type { buildStudioGraph, StudioGraph } from './graph'
+import type { buildStudioGraph, StudioGraph, StudioGraphQuality } from './graph'
+import { livePlaybackProfile, notePlayout } from './playback-quality'
 
 export { openRunEnvelope, RUN_OPEN_SECONDS } from './open-envelope'
 
@@ -43,6 +44,11 @@ export function seekEarliest(ctx: AudioContext): number {
     Math.max(callback, 256 / ctx.sampleRate) +
     SEEK_SCHEDULING_SECONDS
   )
+}
+
+/** A playing run's ticks watch for underruns (playback-quality.ts). */
+const LIVE_QUALITY: StudioGraphQuality = {
+  tick: (ctx) => notePlayout(ctx, performance.now()),
 }
 
 /** How far ahead of the clock a run schedules its clips. */
@@ -289,6 +295,8 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
         repeat: parts.repeat,
         silentLanes: parts.silentLanes,
         master: { spec: parts.master },
+        profile: livePlaybackProfile(),
+        quality: LIVE_QUALITY,
       },
     )
     envelope = ctx.createGain()

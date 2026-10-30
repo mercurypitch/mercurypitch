@@ -10,6 +10,7 @@ import common from '../StudioPage.module.css'
 import { StudioComparisonControls } from './StudioComparisonControls'
 import { StudioFlavourChoices, studioSoundAdjusted, } from './StudioFlavourChoices'
 import { StudioMacroControl } from './StudioMacroControl'
+import { StudioPlaybackQuality } from './StudioPlaybackQuality'
 import styles from './StudioSound.module.css'
 import type { StudioComparisonController } from './useStudioComparison'
 import type { StudioSoundController } from './useStudioSound'
@@ -176,6 +177,7 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
           )}
         </Show>
       </section>
+      <StudioPlaybackQuality />
     </div>
   )
 }
