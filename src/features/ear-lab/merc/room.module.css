@@ -106,7 +106,8 @@
   position: absolute;
   inset: 0 0 auto;
   height: 82%;
-  background: url('./stills/glasshouse-night.webp') 50% 0 / cover no-repeat;
+  /* The picture comes in by import, as --room-backdrop (stills.ts). */
+  background: var(--room-backdrop) 50% 0 / cover no-repeat;
   opacity: 0.42;
   mask-image: linear-gradient(
     180deg,

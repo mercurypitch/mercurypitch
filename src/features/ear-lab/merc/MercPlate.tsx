@@ -43,7 +43,6 @@ const SEAL_MS = 1400
 
 export function ThresholdPlateView(props: {
   plate: ThresholdPlate
-  drillId: string
   short: boolean
 }): JSX.Element {
   const clock = useEntryClock(STAIRS_MS.settled)
@@ -186,6 +185,8 @@ function RunDots(props: {
                   i() < props.filled &&
                   !outcome.correct &&
                   outcome.skipped !== true,
+                [styles.dotSkipped]:
+                  i() < props.filled && outcome.skipped === true,
               }}
               data-dot={
                 i() >= props.filled
@@ -532,11 +533,7 @@ export function PlateOnDesk(props: {
               <Show
                 when={threshold().markedIndex !== undefined}
                 fallback={
-                  <ThresholdPlateView
-                    plate={threshold()}
-                    drillId={props.drillId}
-                    short={props.short}
-                  />
+                  <ThresholdPlateView plate={threshold()} short={props.short} />
                 }
               >
                 <SealedPlateView plate={threshold()} faculty={props.faculty} />

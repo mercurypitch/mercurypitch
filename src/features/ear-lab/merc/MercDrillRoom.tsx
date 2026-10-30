@@ -70,7 +70,7 @@ import { CalibrationBefore, ExitConfirm, HelpSheet, SoundStopped, } from './Shee
 import { ROOM_SKIN } from './skin'
 import { watchSoundStop } from './sound-stop'
 import { drillName, stationOf } from './stations'
-import { mercStill } from './stills'
+import { mercStill, WILD_BACKDROP } from './stills'
 
 /** Two-sound questions, said "pair" in the room's words. */
 const PAIR_DRILLS = new Set(['hairline', 'beat-hunt', 'desk-weight'])
@@ -522,6 +522,11 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
           <section
             class={styles.room}
             data-station={station ?? undefined}
+            style={
+              station === 'wild'
+                ? { '--room-backdrop': `url(${WILD_BACKDROP})` }
+                : undefined
+            }
             data-ear-drill={props.drillId}
             data-testid="ear-stage"
             data-merc-room=""

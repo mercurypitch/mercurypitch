@@ -123,18 +123,13 @@ export function useEntryClock(until: number): EntryClock {
       running: () => !reduced && t() < until,
     },
   )
-  const back = (): void => {
-    if (shown()) loop.start()
-  }
-  if (!reduced) {
-    loop.start()
-    document.addEventListener('visibilitychange', back)
-  }
+  if (!reduced) loop.start()
+  // eslint-disable-next-line solid/reactivity -- read when the screen comes back, an event, untracked
+  startWhenShown(loop, () => !reduced && t() < until)
 
   onCleanup(() => {
     alive = false
     loop.stop()
-    document.removeEventListener('visibilitychange', back)
   })
 
   return { t, reduced }

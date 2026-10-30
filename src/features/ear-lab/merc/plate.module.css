@@ -160,6 +160,15 @@
   box-shadow: none;
 }
 
+/* A round skipped (unclear) stays a ring, dashed, so it does not read as
+   one still to fill. */
+.dotSkipped {
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed rgb(255 255 255 / 45%);
+  box-sizing: border-box;
+}
+
 /* A staircase's misses, on a glass pill. */
 .slipPill {
   justify-self: stretch;
