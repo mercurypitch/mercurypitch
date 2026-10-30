@@ -94,6 +94,52 @@ export function useStageClock(): StageClock {
   return { beat: room.beat, t, ambient, reduced }
 }
 
+/** A drawing's entrance: ms since it came on the stage. */
+export interface EntryClock {
+  t: Accessor<number>
+  reduced: boolean
+}
+
+/**
+ * The clock of a drawing that plays once as it comes on the stage (the
+ * plate counting up, the Field Book's song filling in), advanced once a
+ * screen frame until `until`, when the drawing is whole, and left there.
+ * A screen put away and brought back finds it where the time says. Under
+ * reduced motion it stands at STILL_MS from the first, so the drawing is
+ * whole at once.
+ */
+export function useEntryClock(until: number): EntryClock {
+  const reduced = prefersReducedMotion()
+  const [t, setT] = createSignal(reduced ? STILL_MS : 0)
+  const startedAt = performance.now()
+  let alive = true
+  const shown = (): boolean =>
+    typeof document === 'undefined' || document.visibilityState !== 'hidden'
+
+  const loop = createFrameLoop(
+    () => setT(Math.min(until, performance.now() - startedAt)),
+    {
+      alive: () => alive && shown(),
+      running: () => !reduced && t() < until,
+    },
+  )
+  const back = (): void => {
+    if (shown()) loop.start()
+  }
+  if (!reduced) {
+    loop.start()
+    document.addEventListener('visibilitychange', back)
+  }
+
+  onCleanup(() => {
+    alive = false
+    loop.stop()
+    document.removeEventListener('visibilitychange', back)
+  })
+
+  return { t, reduced }
+}
+
 /**
  * When each sound of a train arrived, in the clock's ambient ms, in the
  * order they came. `lit` counts the train's sounds from 1 as the drill

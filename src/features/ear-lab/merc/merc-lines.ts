@@ -407,6 +407,20 @@ export function staircaseStats(
   } · ${replaysWord(replays)}`
 }
 
+/** A staircase's slips, beside "Where it slipped": "7 misses, none above
+ *  10.4 ¢", "1 miss, at 10.4 ¢"; where higher is better, "none below". */
+export function staircaseSlipLine(args: {
+  count: number
+  edge: number
+  lowerIsBetter: boolean
+  format: (value: number) => string
+  unitShort: string
+}): string {
+  const at = `${args.format(args.edge)} ${args.unitShort.trim()}`.trim()
+  if (args.count === 1) return `1 miss, at ${at}`
+  return `${args.count} misses, none ${args.lowerIsBetter ? 'above' : 'below'} ${at}`
+}
+
 export function timesWord(count: number): string {
   if (count === 1) return 'once'
   if (count === 2) return 'twice'

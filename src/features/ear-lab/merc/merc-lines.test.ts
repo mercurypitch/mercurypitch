@@ -137,6 +137,30 @@ describe("Merc's lines", () => {
     expect(lines.ratingMoveLine(1230, 1240)).toBe('Down 10 from 1240')
   })
 
+  it('say where a staircase slipped, in its own direction', () => {
+    const hairline = {
+      lowerIsBetter: true,
+      format: (value: number) => value.toFixed(1),
+      unitShort: '¢',
+    }
+    expect(lines.staircaseSlipLine({ ...hairline, count: 7, edge: 10.4 })).toBe(
+      '7 misses, none above 10.4 ¢',
+    )
+    expect(lines.staircaseSlipLine({ ...hairline, count: 1, edge: 10.4 })).toBe(
+      '1 miss, at 10.4 ¢',
+    )
+    // Span's notes climb as the ear holds more.
+    expect(
+      lines.staircaseSlipLine({
+        count: 3,
+        edge: 5,
+        lowerIsBetter: false,
+        format: (value) => value.toFixed(0),
+        unitShort: ' notes',
+      }),
+    ).toBe('3 misses, none below 5 notes')
+  })
+
   it('hold back the replay before a rated or sealed answer, and say why', () => {
     expect(lines.onceLines('rated')).toEqual([
       'Rated runs play once.',

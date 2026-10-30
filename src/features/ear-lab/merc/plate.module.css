@@ -1,90 +1,76 @@
 /* ============================================================
    The plates: a run's reading, a rated run's rating, a calibration's
    seal, as a result on the room's stage (docs/plans/ear-lab-native-
-   look.md): the number in the kit's 700 weight, the words in Inter, the
-   round dots teal and red, and the slips on a glass card. AA contrast at
-   every size, the smallest line 13px.
+   look.md, phase 3): no card around it, the kicker at the left and the
+   run's badge at the right, the number in the kit's 700 weight, the
+   staircase or the dots under it, and the slips on a glass card or a
+   glass pill. AA contrast at every size, nothing under 13px.
    ============================================================ */
 
 .wrap {
   position: relative;
   z-index: 2;
+  align-self: start;
+  width: 100%;
+  max-height: 100%;
   display: grid;
   justify-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
+  gap: 14px;
+  padding: 20px 24px 12px;
+  box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .plate {
   position: relative;
-  width: min(100%, 360px);
-  box-sizing: border-box;
-  padding: 18px 22px 16px;
-  border-radius: 24px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  background:
-    radial-gradient(90% 60% at 50% 0%, rgb(124 77 255 / 12%), transparent 70%),
-    linear-gradient(180deg, rgb(16 22 48 / 88%), rgb(8 12 28 / 88%));
-  box-shadow: 0 18px 40px rgb(0 0 0 / 45%);
-  color: #f4f1ff;
+  width: min(100%, 342px);
+  display: grid;
+  justify-items: center;
   text-align: center;
-  animation: plate-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* The brass plate's screws: the glass card has none. */
-.screw,
-.screwTl,
-.screwTr,
-.screwBl,
-.screwBr {
-  display: none;
+  color: var(--room-text);
+  font-family: var(--room-sans);
+  animation: plate-in 320ms var(--room-ease) both;
 }
 
 .kickerRow {
+  justify-self: stretch;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 10px;
 }
 
 .kicker {
   margin: 0;
-  font:
-    600 13px/1 'Inter Variable',
-    'Inter',
-    sans-serif;
+  font: 600 13px/1 var(--room-sans);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #a9b2c8;
+  color: var(--room-text-3);
 }
 
 .badge {
-  min-height: 24px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
-  border-radius: 12px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 13px;
   border: 1px solid rgb(255 255 255 / 20%);
   background: rgb(10 18 44 / 60%);
-  font:
-    600 13px/1 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #e7e3f7;
+  font: 500 13px/1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .value {
-  margin: 8px 0 0;
+  margin: 14px 0 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 6px;
-  font-family: 'Inter Variable', 'Inter', sans-serif;
   font-variant-numeric: tabular-nums;
-  color: #fbf9ff;
+  color: var(--room-text);
 }
 
 .number {
@@ -101,124 +87,140 @@
   color: #d9d2ff;
 }
 
-.direction {
-  margin: 4px 0 0;
-  font:
-    500 13px/1.2 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #a9b2c8;
+/* A rated run's move, beside the number once the dots have filled. */
+.delta {
+  align-self: flex-start;
+  margin: 6px 0 0 4px;
+  font: 600 15px/1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
-.meaning {
-  margin: 8px 0 0;
-  font:
-    400 15px/1.35 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #b6bdd1;
+.deltaUp {
+  color: var(--room-right-pale);
 }
 
-.rule {
-  height: 1px;
-  margin: 12px 0 10px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(255 255 255 / 18%),
-    transparent
-  );
-}
-
-.strong {
-  margin: 0;
-  font:
-    600 15px/1.3 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #f4f1ff;
-}
-
+.direction,
+.meaning,
 .stats {
-  margin: 4px 0 0;
-  font:
-    500 13px/1.3 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #a9b2c8;
+  margin: 6px 0 0;
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
 }
 
-.small {
-  margin: 8px 0 0;
-  font:
-    400 13px/1.35 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #a9b2c8;
-}
-
-.dots {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
+.direction {
   margin-top: 10px;
 }
 
+/* A staircase or a seal's tracks, as wide as the plate. */
+.chart {
+  justify-self: stretch;
+  margin: 16px 0 4px;
+}
+
+.strong {
+  margin: 14px 0 0;
+  font: 600 15px/1.3 var(--room-sans);
+  color: var(--room-text);
+}
+
+.small {
+  margin: 10px 0 0;
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
+}
+
+/* The run's rounds: rings that fill in order, teal or red. */
+.dots {
+  max-width: 300px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  margin: 20px 0 6px;
+}
+
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: #2ee6c9;
+  background: rgb(255 255 255 / 8%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 30%);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dotRight {
+  background: var(--room-right);
+  box-shadow: none;
 }
 
 .dotMiss {
-  background: #ff6a5c;
+  background: var(--room-wrong);
+  box-shadow: none;
 }
 
-.dotSkip {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 32%);
+/* A staircase's misses, on a glass pill. */
+.slipPill {
+  justify-self: stretch;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border-radius: 21px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(10 18 44 / 60%);
+  text-align: left;
 }
 
-/* The glass under a plate, on the room. */
+.slipDot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--room-wrong);
+}
+
+.slipPillTitle {
+  flex: none;
+  font: 600 13px/1.2 var(--room-sans);
+  white-space: nowrap;
+  color: #e9e6f8;
+}
+
+.slipPillCount {
+  margin-left: auto;
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
+  text-align: right;
+}
+
+/* The glass on a seal's plate: the mercury rising to the new mark. */
 .glassRow {
-  width: min(100%, 360px);
+  justify-self: stretch;
   display: grid;
-  gap: 4px;
-  padding: 8px 12px;
-  box-sizing: border-box;
-  border-radius: 16px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  background: rgb(10 18 44 / 62%);
+  justify-items: center;
+  margin: 16px 0 0;
 }
 
-.glassCaption {
-  margin: 0;
-  font:
-    400 13px/1.3 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #a9b2c8;
-}
-
-/* "Where it slipped": this run's slips, counted. */
+/* "Where it slipped": this run's slips, counted, on a glass card. */
 .slips {
-  width: min(100%, 360px);
+  width: min(100%, 342px);
   box-sizing: border-box;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 22px;
   border: 1px solid rgb(255 255 255 / 14%);
-  background: rgb(10 18 44 / 62%);
+  background: var(--room-glass-deep);
+  animation: plate-in 320ms var(--room-ease) 120ms both;
 }
 
 .slipsTitle {
-  margin: 0 0 8px;
-  font:
-    600 15px/1.2 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #f4f1ff;
+  margin: 0 0 10px;
+  font: 600 15px/1.2 var(--room-sans);
+  color: var(--room-text);
 }
 
 .slipList {
@@ -226,7 +228,7 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
 .slip {
@@ -234,32 +236,22 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: 6px;
-  font:
-    400 14px/1.2 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #b6bdd1;
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .slipName {
-  font:
-    600 15px/1 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #f4f1ff;
+  font: 600 15px/1 var(--room-sans);
+  color: var(--room-text);
 }
 
 .slipHeard {
-  font:
-    600 15px/1 'Inter Variable',
-    'Inter',
-    sans-serif;
-  color: #ffb1a8;
+  font: 600 15px/1 var(--room-sans);
+  color: var(--room-wrong-pale);
 }
 
 .slipCount {
   margin-left: auto;
-  color: #a9b2c8;
 }
 
 /* A slip's offer: a pair practice on its two. A row of its own under the
@@ -267,15 +259,13 @@
 .practise {
   flex-basis: 100%;
   min-height: 44px;
+  margin-top: 6px;
   padding: 0 14px;
   border-radius: 22px;
   border: 1px solid rgb(190 170 255 / 45%);
   background: rgb(154 135 240 / 14%);
-  color: #f4f1ff;
-  font:
-    600 14px/1.25 'Inter Variable',
-    'Inter',
-    sans-serif;
+  color: #e9e6f8;
+  font: 600 13px/1.25 var(--room-sans);
   text-align: center;
   cursor: pointer;
 }
@@ -298,15 +288,13 @@
 }
 
 .plain {
-  min-height: 48px;
-  border-radius: 24px;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 26px;
   border: 1.5px solid rgb(255 255 255 / 30%);
   background: none;
-  color: #f4f1ff;
-  font:
-    600 15px/1 'Inter Variable',
-    'Inter',
-    sans-serif;
+  color: var(--room-text);
+  font: 600 16px/1 var(--room-sans);
   cursor: pointer;
 }
 
@@ -323,8 +311,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .plate {
+  .plate,
+  .slips {
     animation-name: plate-fade;
+  }
+
+  .dot {
+    transition: none;
   }
 }
 
