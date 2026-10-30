@@ -215,3 +215,29 @@ Running notes so a container restart or a usage-limit pause can resume. Builder 
   above (was 19), 26 px over the stop line (was 23); the volume line 11 px under the line above (was 12).
 - Not an item, measured only: the stop line's second line ("feels uncomfortable.", 1.05 about (380, 556))
   steps 1 px three times (S13 17.70, 18.00, 18.30); not changed.
+- 15:26 / 15:31 lab clips (60 fps, hosts, 2 workers, temp and output on /dev/shm/l4lab-E, then moved):
+  S12 holds 0.3 s, longest 0.2 (as round 3); single-frame events 0.250 only (the act 4 dim; round 3 also had
+  17.667 / 17.833, "wait"'s pulse). S13 holds 0.5 s inside, longest 0.1, final 0.3 (as round 3); single-frame
+  events none (round 3: 10.167, the volume line's step).
+- Clip frames (twitchclip.sh), residual steps >= 0.5 px, round-3 clip -> polish clip: S12 "wait" 5, 5, 5, 6
+  -> 0; "wait on ti" 4 -> 0; volume 2 -> 0; baselines 3.0 / 3.0 / 1.0 px of travel -> 0.0.
+- Volume swell in the clip (box mean luma change a frame): round 3 moved over 9 frames (9.450 to 9.583), its
+  largest change 26.9 in the first frame; now 18 frames (9.467 to 9.750), building to 10.6 mid-rise.
+- Seams (seek HOSTS=1 at the film frames): S11 to S12 max 10, none over 16; S12 to S13 1441 px over 16, Merc
+  1262, Tavi 179, the guide 0; S13 to S14 max 10, none over 16: all as round 3. Before/after compositions at
+  the first and last frames (no hosts): identical (max 0).
+- hyperframes check: 0 errors, passed; my scenes' warnings the same 16 as film-01's check (12 nested media
+  start, 2 file length, 2 duplicate media). clock-lint silent; merc-tags --check 0 stale; text sweep clean.
+- Clips: lab/s12-sing/clip.mp4, lab/s13-your-turn/clip.mp4 (round-3 clips kept as clip-r3.mp4 only while
+  compared; the nohosts, r1 and r2 clips deleted). Sheets: lab/s12-sing/polish/wait-kymo.png,
+  lab/s13-your-turn/polish/kymo.png, lab/s13-your-turn/polish/peaks.png; seam diffs lab/s12-sing/polish/seams/.
+- 16:30 every frame compared, before against after composition (cmpseek.sh: exact stills at k/60, no hosts):
+  S12 136 of 1901 frames differ, in the four "wait" pulses only (11.77-12.32, 12.77-13.32, 17.40-17.95,
+  27.30-27.85), all inside x 1118-1212, y 162-199; S13 77 of 1955, in two runs only, 9.45-10.15 inside the
+  volume line (x 381-760, y 367-399) and 27.15-27.70 inside "wait on ti" (x 380-576, y 458-495). Lists:
+  lab/*/polish/cmp-before-after.txt. Round-3 clips deleted after the comparisons; /dev/shm/l4lab-E cleared.
+- Polish round done.
+- Lead, 16:4x, after the round: the stop line's two lines now pulse each about its own left bottom,
+  (380, 548) and (380, 592) (S13; was both about (380, 556)). twitchrun.sh on the line: 3 steps to 0,
+  baseline travel 2.0 to 0.0 px; cmpseek against lab/s13-your-turn/polish/before-stop/: 39 frames differ,
+  all in the second line (17.65 to 18.28); the gap between the lines at the peak 7 to 5 px. DECISIONS 129.

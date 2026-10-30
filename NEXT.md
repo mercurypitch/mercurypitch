@@ -2103,3 +2103,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   critic). Lead: clock-lint silent, proofs viewed (ring 14.2 s, ghost 18.3 s, crane 46 s). Docs
   updated: HANDOFFS § Framings + § Inside C, STORYBOARD 7c/8d/signature 2, BUILD-GUIDE s07/s08
   (backups l4entr/polishC/*.before-C). Extract cache 998 MB, left until E is done. Running: E only.
+- 16:4x group E reported (both items; DECISIONS 129; no handoff moved, first/last frames identical):
+  S12 "wait", S13 "wait on ti" and the volume line pulse about their own baselines (frame steps 5-6 /
+  4 / 2 to 0); the volume swell rises over 0.3 s, sine.inOut. Lead, after it: the stop line's two lines
+  each about its own left bottom (380, 548) / (380, 592) (3 steps to 0; 39 frames differ, all in line 2;
+  gap at the peak 7 to 5 px; before copy lab/s13-your-turn/polish/before-stop/, measures l4entr/polishE/).
+  Docs: STORYBOARD § Type (the baseline exception) and 13b, HANDOFFS § Inside E (guide, care block);
+  backups l4entr/polishE/*.before-E. All six groups done, nothing running. Extract cache cleared (1647 MB).
+  16:44 full check started (l4entr/polishE/check-full.log). Next: 0 errors, then
+  bash l4entr/freeze.sh $S/l4film02proj (no MISMATCH), then
+  WORKERS=2 setsid nohup bash render-l4.sh film-02 60 high $S/l4film02proj >/dev/null 2>&1 &
+  then a fresh FILM2 critic from critics/FILM2.txt (RENDERNAME film-02; DISKNOTE: film may sit in
+  /dev/shm/l4film) when the rate limit reads "allowed".

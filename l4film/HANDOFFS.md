@@ -420,7 +420,7 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   242, 196. The path at 97.67 px a second: D3 600 to 678, E3 678 to 756, F♯3 756 to 834, G3 834 to
   913, A3 913 to 991, B3 991 to 1069, C♯4 1069 to 1264 (the hold), the rest to 1323, D4 1323 to
   1440; an amber band 14 px tall on its lane's centre, at 35 % until lit. "wait" Outfit 600 40 px
-  centred at x 1166, baseline 196. The house centred at x 1381, y 90 to 142, 21 px above a bead on
+  centred at x 1166, baseline 196 (its pulse scales about its centre bottom, (1166, 196)). The house centred at x 1381, y 90 to 142, 21 px above a bead on
   do's segment (y 163 to 207). The chip "one octave up" at x 600, baseline 120. Merc feet (240,
   840), Tavi (1700, 840), size 360: bodies x 145 to 335 and 1605 to 1795, Merc's 184 px clear of the
   names (the widest, "do", from x 519) and Tavi's 165 px of the lanes. The beads drop onto the
@@ -465,8 +465,8 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
   no line past x 960 (35 px clear of the shortest lane name), nothing below y 864, 40 px clear of
   Merc's body and about 30 px of his arcs: "Your turn." serif italic 120 px, baseline 200 (x 380 to 820),
   landing at 373.55, once the names have passed; care lines from 373.85, 0.3 s
-  after it, Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442 (the longest 445 px);
-  "wait on ti" Outfit 600 40 px at 492 (its pulse scales from its left edge, x 380); the stop line Outfit 600 40 px, ink, at 548 and 592 ("Stop
+  after it, Outfit 500 32 px, ink, baselines 262 and 302, 352 and 392, 442 (the longest 445 px; the 392 line swells about its left bottom, (380, 392));
+  "wait on ti" Outfit 600 40 px at 492 (its pulse scales about its left bottom, (380, 492)); the stop line Outfit 600 40 px, ink, at 548 and 592, each line's pulse about its own left bottom ("Stop
   immediately if anything" 520 px, "feels uncomfortable."); the doctor lines Inter 30 px, ink-2,
   five lines at baselines 640, 677, 714, 751 and 788, landing at 373.9 once the guide has stopped,
   broken where the font puts them within 560 px (495, 555, 542, 534 and 363 px): "If hoarseness or

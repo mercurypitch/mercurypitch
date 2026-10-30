@@ -1525,3 +1525,28 @@ replaced it. The builder's record: critics never read it.
      check 0 errors, 75 warnings (these scenes' 14 unchanged); clock-lint silent (rechecked by the
      lead); merc-tags 10 + 4, 0 stale. HANDOFFS (§ Framings, F-keys-D; § Inside C), STORYBOARD (7c,
      8d, signature 2) and BUILD-GUIDE (s07, s08) carry the new values.
+
+129. **Group E's polish round (s12 and s13: E-03's held items 1 and 2), and one line more by the
+     lead: all in, accepted on the builder's numbers, the lead's look at the proofs and the lead's
+     own measure of the last line; no handoff value, carried object, first or last frame moved.**
+     (1) The 40 px pulsing labels scale about their own baselines, so the baseline Chrome puts on
+     whole pixels never moves: S12's "wait" about its centre bottom (1166, 196), S13's "wait on
+     ti" and "at about speaking volume" about their left bottoms, (380, 492) and (380, 392). Frame
+     steps of 0.5 px or more, on seek stills and clip frames alike: "wait" 5, 5, 5 and 6 to 0 on
+     its four pulses, "wait on ti" 4 to 0, the volume line 2 to 0; baseline travel 3.0, 3.0 and
+     1.0 px to 0. S12's single-frame events at 17.667 and 17.833 and S13's at 10.167 are gone.
+     (2) The volume line's swell rises over 0.3 s, sine.inOut (was 0.15 s, power2.out, full in
+     0.12 s): its largest change in a frame 0.0143 to 0.0044 in scale; the fall is unchanged.
+     (3) The builder found the stop line's second line ("feels uncomfortable.", 1.05 about the
+     block's middle, (380, 556)) stepping 1 px three times (S13 17.70, 18.00 and 18.30) and left
+     it, as no item named it. The lead scaled each line about its own left bottom, (380, 548) and
+     (380, 592), and measured it with the builder's tools: 3 steps to 0 and 2.0 px of baseline
+     travel to 0 (the first line 0 and 0, before and after). 39 frames differ, all inside the
+     second line's box (x 380 to 767, y 561 to 593; S13 17.65 to 18.28); every other frame of the
+     pulse window, the scene every 0.5 s and its last frame are identical. The lines' gap at the
+     peak is 5 px (7 before, and 7 at rest), as the second line now grows up into it. Holds as
+     round 3 (S12 0.3 s, S13 0.5 s inside); seams as round 3; check 0 errors with these scenes' 16
+     warnings unchanged; clock-lint silent (rechecked by the lead after the last line); merc-tags
+     0 stale. STORYBOARD § Type names the exception to "each about its own centre", row 13b the
+     volume line's rise; HANDOFFS (§ Inside E: the guide, the care block) carries the origins. The
+     kit's header in motion.js describes the default and is not touched.

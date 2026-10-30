@@ -419,8 +419,10 @@
               // bottom, on its baseline (380, 392), so the baseline Chrome puts on whole pixels never moves (E-03's twitch)
               const sc = 1 + L.PULSE.tile * P(t, A.volume, 0.3, 'sine.inOut') * (1 - P(t, A.volEnd - 0.5, 0.5, 'sine.in')), cy = 392
               CARE[3].el.setAttribute('transform', `translate(${CX} ${cy}) scale(${sc.toFixed(4)}) translate(${-CX} ${-cy})`)
-              const ss = L.pulse(t, A.immediately, 'tile', { long: true }), sy = 556
-              for (const c of [CARE[6], CARE[7]]) c.el.setAttribute('transform', `translate(${CX} ${sy}) scale(${ss.toFixed(4)}) translate(${-CX} ${-sy})`)
+              // the stop line: each line about its own left bottom, on its baseline (380, 548) and (380, 592); about the
+              // block's middle (556) the second line's baseline stepped a whole pixel three times as it settled
+              const ss = L.pulse(t, A.immediately, 'tile', { long: true })
+              for (const c of [CARE[6], CARE[7]]) c.el.setAttribute('transform', `translate(${CX} ${c.y}) scale(${ss.toFixed(4)}) translate(${-CX} ${-c.y})`)
             }
             {
               const sc = L.pulse(t, A.tiYT, 'label')
