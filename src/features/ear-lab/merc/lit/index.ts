@@ -10,6 +10,7 @@ import type { Component } from 'solid-js'
 import type { BeadChainProps } from '@/features/ear-lab/BeadChain'
 import type { BeatPendulumsProps } from '@/features/ear-lab/BeatPendulums'
 import type { EscapementLatticeProps } from '@/features/ear-lab/EscapementLattice'
+import type { FieldBookPageProps } from '@/features/ear-lab/FieldBookPage'
 import type { GearTrainProps } from '@/features/ear-lab/GearTrain'
 import type { IndexArcProps } from '@/features/ear-lab/IndexArc'
 import type { InstrumentSkin } from '@/features/ear-lab/instrument-skin'
@@ -26,6 +27,7 @@ import { LitChain } from './LitChain'
 import { LitDesk } from './LitDesk'
 import { LitDial } from './LitDial'
 import { LitDiscs } from './LitDiscs'
+import { LitFieldBook } from './LitFieldBook'
 import { LitLanes } from './LitLanes'
 import { LitOrbs } from './LitOrbs'
 import { LitPendulum } from './LitPendulum'
@@ -55,4 +57,6 @@ export const LIT_INSTRUMENTS = {
   // Function
   TuningFork: LitProbe satisfies Component<TuningForkProps>,
   PullBeam: LitBeam satisfies Component<PullBeamProps>,
+  // The Wild: the Field Book's page, the song's own timeline
+  FieldBookPage: LitFieldBook satisfies Component<FieldBookPageProps>,
 } as const satisfies InstrumentSkin

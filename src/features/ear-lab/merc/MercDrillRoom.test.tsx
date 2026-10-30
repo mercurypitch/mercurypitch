@@ -12,7 +12,8 @@ import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BeatPendulums } from '@/features/ear-lab/BeatPendulums'
-import { Pads, StagePad } from '@/features/ear-lab/EarStage'
+import { ConsoleStack, Pads, PlayPad, StagePad, } from '@/features/ear-lab/EarStage'
+import { FieldBookPage } from '@/features/ear-lab/FieldBookPage'
 import type { RoomBeat, StageRoom } from '@/features/ear-lab/stage-room'
 import { askRoomBack } from '@/stores/native-shell-store'
 import { MercDrillRoom } from './MercDrillRoom'
@@ -346,5 +347,50 @@ describe('a pair practice', () => {
     expect(screen.getByTestId('ear-stage-status')).toHaveTextContent(
       '6 of 8. Minor 6th slipped to Perfect 5th twice.',
     )
+  })
+})
+
+describe("the Field Book's page", () => {
+  it('says the key on its chip, in the Wild, with the song as a timeline', () => {
+    const [key, setKey] = createSignal<string | null>(null)
+    render(() => (
+      <MercDrillRoom
+        drillId="field-book"
+        name="09 Shadow Of The Gods"
+        mode="the Field Book"
+        progress={key() ?? 'reading'}
+        chip={() => ({ label: 'Key', value: key() ?? 'reading' })}
+        status="Reading the song: opening the vocal · 12%"
+        instrument={() => (
+          <FieldBookPage
+            pct={key() === null ? 12 : null}
+            keyName={key()}
+            counts={key() === null ? null : { home: 0, echo: 0, bassline: 0 }}
+            phase="opening the vocal"
+            duration={252}
+          />
+        )}
+        console={() => (
+          <ConsoleStack>
+            <PlayPad label="Home in the Wild" sub="once the song is read" />
+            <PlayPad label="Echo in the Wild" sub="once the song is read" />
+          </ConsoleStack>
+        )}
+        onBack={() => undefined}
+      />
+    ))
+    expect(screen.getByTestId('merc-chip')).toHaveTextContent('Keyreading')
+    expect(screen.getByTestId('ear-stage')).toHaveAttribute(
+      'data-station',
+      'wild',
+    )
+    // The room draws its own page: the song's timeline, not the web's.
+    expect(
+      document.querySelector('[data-instrument="song-timeline"]'),
+    ).not.toBeNull()
+    expect(document.querySelector('[data-instrument="field-book"]')).toBeNull()
+
+    setKey('E minor')
+    expect(screen.getByTestId('merc-chip')).toHaveTextContent('KeyE minor')
   })
 })

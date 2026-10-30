@@ -14,6 +14,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { WildKind, WildTrack } from '@/lib/ear/wild'
 import { keyLabel } from '@/lib/ear/wild'
+import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { earPlayerRating } from '@/stores/ear-lab-store'
 import { getUvrSession } from '@/stores/uvr-store'
 import { IconBassLine, IconChain, IconFork } from './ear-icons'
@@ -123,6 +124,18 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
       : null
   }
 
+  /** The song's length: the warm stems', or as the separation measured
+   *  it, or not yet known. */
+  const duration = (): number | null => {
+    const stems = state().reading?.stems
+    if (stems) return stems.vocal.duration
+    const measured = Object.values(session()?.stemMeta ?? {}).map(
+      (meta) => meta.duration ?? 0,
+    )
+    const longest = Math.max(0, ...measured)
+    return longest > 0 ? longest : null
+  }
+
   // Read the song when the page opens; the store shares one reading.
   createEffect(() => {
     const current = session()
@@ -214,6 +227,7 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
         name={title()}
         mode="the Field Book"
         progress={keyWord() ?? 'reading'}
+        chip={() => ({ label: 'Key', value: keyWord() ?? 'reading' })}
         status={status()}
         instrument={() => (
           <FieldBookPage
@@ -222,6 +236,9 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
             }
             keyName={keyWord()}
             counts={counts()}
+            phase={phaseWord(state().progress)}
+            duration={duration()}
+            book={state().reading?.book ?? null}
           />
         )}
         console={() => (
@@ -256,11 +273,14 @@ export function FieldBookView(props: FieldBookViewProps): JSX.Element {
             <Show when={state().status === 'error'}>
               <ConsoleWarning>{state().error}</ConsoleWarning>
             </Show>
-            <ConsoleNote>
-              Three drills on this song: the degree the voice lands on, a phrase
-              it sings tapped back, and where the root moves under it. Each
-              rates on the Field Book's own track.
-            </ConsoleNote>
+            {/* The room's tiles say each drill's count and rating. */}
+            <Show when={!EAR_LAB_WITH_MERC}>
+              <ConsoleNote>
+                Three drills on this song: the degree the voice lands on, a
+                phrase it sings tapped back, and where the root moves under it.
+                Each rates on the Field Book's own track.
+              </ConsoleNote>
+            </Show>
           </ConsoleStack>
         )}
         onBack={props.onBack}

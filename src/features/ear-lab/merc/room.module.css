@@ -99,6 +99,25 @@
   --room-glow-b: rgb(154 135 240 / 14%);
 }
 
+/* The Wild keeps its glasshouse, at night: faint over the top of the
+   stage, and gone before the console. */
+.room[data-station='wild']::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 82%;
+  background: url('./stills/glasshouse-night.webp') 50% 0 / cover no-repeat;
+  opacity: 0.42;
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 20%,
+    #000 40%,
+    transparent 78%
+  );
+  pointer-events: none;
+}
+
 .room :where(button) {
   font-family: inherit;
   color: inherit;
@@ -676,6 +695,41 @@
 
 :is(.primary:has(~ .primary), .primary ~ .primary) .leadSub::before {
   content: none;
+}
+
+.leadChevron {
+  display: none;
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadChevron {
+  flex: none;
+  display: grid;
+  margin-left: auto;
+  color: rgb(244 241 255 / 60%);
+  transform: rotate(-90deg);
+}
+
+/* A drill with nothing to ask yet, or none in this song: a dashed tile,
+   not a faded one, so its line stays readable. */
+:is(.primary:has(~ .primary), .primary ~ .primary):disabled {
+  opacity: 1;
+  border: 1.5px dashed rgb(255 255 255 / 22%);
+  background: transparent;
+  color: rgb(244 241 255 / 55%);
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary):disabled .leadIcon {
+  border-style: dashed;
+  background: transparent;
+  color: rgb(244 241 255 / 50%);
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary):disabled .leadSub {
+  color: rgb(244 241 255 / 50%);
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary):disabled .leadChevron {
+  visibility: hidden;
 }
 
 /* ── Answer pads ───────────────────────────────────────────── */

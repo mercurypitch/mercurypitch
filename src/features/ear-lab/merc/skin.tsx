@@ -20,7 +20,7 @@
 
 import type { JSX } from 'solid-js'
 import { children, createComponent, onMount, Show } from 'solid-js'
-import { IconCheck, IconClose } from '@/features/ear-lab/ear-icons'
+import { IconCheck, IconChevron, IconClose } from '@/features/ear-lab/ear-icons'
 import type { EndPlateProps, ModeToggleProps, PadsProps, PlayPadProps, StagePadProps, TapPadProps, } from '@/features/ear-lab/EarStage'
 import type { StageSkin } from '@/features/ear-lab/EarStage'
 import { EndPlate, TapPad } from '@/features/ear-lab/EarStage'
@@ -74,6 +74,10 @@ function RoomPlayPad(props: PlayPadProps): JSX.Element {
           <Show when={props.sub}>
             {(sub) => <small class={styles.leadSub}>{sub()}</small>}
           </Show>
+        </span>
+        {/* Shown only where the pads are a choice of drills, as tiles. */}
+        <span class={styles.leadChevron} aria-hidden="true">
+          <IconChevron size={20} />
         </span>
       </button>
     </Show>

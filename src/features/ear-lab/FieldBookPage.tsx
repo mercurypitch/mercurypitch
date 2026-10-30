@@ -9,13 +9,23 @@
 
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { WildBook } from '@/lib/ear/wild'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface FieldBookPageProps {
+export interface FieldBookPageProps {
   /** 0..100 while reading; null once read or before. */
   pct: number | null
   keyName: string | null
   counts: { home: number; echo: number; bassline: number } | null
+  /** What the reading is doing: "opening the vocal". The native room's
+   *  page says it; this one has the stage's line. */
+  phase?: string
+  /** The song's length in seconds, once known, for the room's timeline. */
+  duration?: number | null
+  /** The book once read: where in the song each item sits, for the room's
+   *  timeline. This page counts them. */
+  book?: WildBook | null
 }
 
 const ROWS: { key: 'home' | 'echo' | 'bassline'; label: string; y: number }[] =
@@ -25,7 +35,7 @@ const ROWS: { key: 'home' | 'echo' | 'bassline'; label: string; y: number }[] =
     { key: 'bassline', label: 'Root motions', y: 176 },
   ]
 
-export function FieldBookPage(props: FieldBookPageProps): JSX.Element {
+function DrawnFieldBookPage(props: FieldBookPageProps): JSX.Element {
   const ticks = (count: number) => Math.min(24, count)
   return (
     <svg
@@ -121,3 +131,5 @@ export function FieldBookPage(props: FieldBookPageProps): JSX.Element {
     </svg>
   )
 }
+
+export const FieldBookPage = skinnable('FieldBookPage', DrawnFieldBookPage)
