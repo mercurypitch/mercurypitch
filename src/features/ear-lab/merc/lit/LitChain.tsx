@@ -60,21 +60,19 @@ export function LitChain(props: BeadChainProps): JSX.Element {
   const beadY = (i: number): number => {
     const degree = props.reveal?.expected[i]
     if (degree === undefined) return stageY()
-    const drop = easeOutBack(progress(clock.t(), 100 + i * 100, 700 + i * 100))
+    const drop = easeOutBack(progress(clock.t(), 60 + i * 60, 460 + i * 60))
     return lerp(stageY(), rungY(degree), drop)
   }
   /** How far the verdict rings have come in, for bead `i`. */
   const marked = (i: number): number =>
-    props.reveal === null
-      ? 0
-      : progress(clock.t(), 700 + i * 100, 1000 + i * 100)
+    props.reveal === null ? 0 : progress(clock.t(), 460 + i * 60, 700 + i * 60)
   const lineD = (): string => {
     if (props.reveal === null) return ''
     const points: Point[] = Array.from({ length: count() }, (_, i) => [
       beadX(i),
       beadY(i),
     ])
-    return partialD(points, progress(clock.t(), 500, 1400)).d
+    return partialD(points, progress(clock.t(), 250, 850)).d
   }
   const slip = (): number => props.reveal?.perNote.indexOf(false) ?? -1
 
@@ -283,7 +281,7 @@ export function LitChain(props: BeadChainProps): JSX.Element {
           )}
           class={`${styles.caption} ${styles.red} ${styles.edged}`}
           text-anchor="middle"
-          opacity={hundredth(progress(clock.t(), 1200, 1600))}
+          opacity={hundredth(progress(clock.t(), 700, 950))}
           data-part="slip"
         >
           first slip at note {slip() + 1}

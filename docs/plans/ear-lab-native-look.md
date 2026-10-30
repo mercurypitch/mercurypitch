@@ -116,7 +116,12 @@ the desk, the Wild drills on the bead chain, the progression train and the
 fork) take the lit version with it, and their screenshots go in the same PR.
 
 The bead chain landed with Colour (Bassline's ladder of roots), so Span and
-Echo took the lit ladder there too, Echo with its cadence lamps.
+Echo took the lit ladder there too, Echo with its cadence lamps. Time,
+Colour, Shape and Function went in one PR after Resolution's, a commit each.
+
+Every reveal is drawn whole within about a second: the room holds a reveal
+1.5 s by default and 1 s at the least, against the mock-ups' longer beats,
+so a name or a fall that came in at two seconds would never be seen.
 
 A station's PR also brings its drills' pads to the mock-ups where the room's
 skin left them. The Time PR did it for every station: each pad but the big

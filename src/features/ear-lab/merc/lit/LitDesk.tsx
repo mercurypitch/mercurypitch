@@ -38,7 +38,7 @@ export function LitDesk(props: MixingDeskProps): JSX.Element {
   const count = (): number => Math.max(1, props.labels.length)
   const stripX = (i: number): number => 195 + (i - (count() - 1) / 2) * SPACING
   const revealed = (): number =>
-    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 150, 900))
+    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 150, 750))
 
   /** A strip's level, 0 to 1: alike at rest, moving while it plays. */
   const level = (i: number): number => {

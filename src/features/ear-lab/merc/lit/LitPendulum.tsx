@@ -71,7 +71,7 @@ export function LitPendulum(props: MetronomeColumnProps): JSX.Element {
   const listening = (): boolean =>
     props.reveal === null && (props.lit > 0 || clock.beat() === 'listen')
   const revealed = (): number =>
-    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 200, 1000))
+    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 150, 750))
   const way = (): 1 | -1 | 0 =>
     props.reveal?.way === 'faster' ? 1 : props.reveal?.way === 'slower' ? -1 : 0
 

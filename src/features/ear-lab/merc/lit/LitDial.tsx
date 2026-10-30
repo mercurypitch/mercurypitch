@@ -46,9 +46,9 @@ export function LitDial(props: IndexArcProps): JSX.Element {
   const clock = useStageClock()
   const arrivals = useArrivals(() => props.sounding, clock)
   const revealed = (): number =>
-    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 100, 900))
+    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 100, 700))
   const named = (): number =>
-    props.reveal === null ? 0 : progress(clock.t(), 700, 1100)
+    props.reveal === null ? 0 : progress(clock.t(), 250, 650)
 
   /** Where the needle stood when the reveal came, to sweep from. */
   const [from, setFrom] = createSignal(6)
