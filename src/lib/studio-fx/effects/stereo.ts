@@ -17,12 +17,17 @@
 // width, while the mono fold-down (L + R) / 2 cancels d exactly. A mono-safe
 // widener: a track widened here never comb-filters on a mono speaker.
 // fx-lab widens with delays in the same 8-30 ms range and the same band.
+//
+// A path that is silent from the start is left out of the graph, where it
+// costs nothing: the Haas copy at 0 %, and the whole side at 0 % width with
+// no Haas (a bass folded to mono). Its output would be exactly zero, so the
+// sound is the same. It joins the first time it is turned up and then stays.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { WET_ONLY } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
-import { assembleUnit, connectSeries, createButterworth, createButterworth4, createEffectShell, highCutFrequency, lowCutFrequency, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { assembleUnit, connectSeries, createButterworth, createButterworth4, createEffectShell, highCutFrequency, lowCutFrequency, PARAM_GLIDE_SECONDS, writeParam, } from '@/lib/studio-fx/effect-shell'
 
 const HAAS_LOW_HZ = 180
 const HAAS_HIGH_HZ = 15000
@@ -30,6 +35,12 @@ const HAAS_HIGH_HZ = 15000
 export const HAAS_MAX_GAIN = 0.5
 const MAX_HAAS_SECONDS = 0.05
 const TIME_GLIDE_SECONDS = 0.05
+/**
+ * A Haas copy that joins while playing holds at zero this long first, until
+ * its delay is full and its filters settled, then fades in as any change
+ * does: its first samples are a step from nothing.
+ */
+const HAAS_PRIME_SECONDS = MAX_HAAS_SECONDS + 0.01
 
 function gainOf(ctx: BaseAudioContext, value: number): GainNode {
   const node = ctx.createGain()
@@ -52,18 +63,15 @@ interface HaasPath {
   readonly nodes: readonly AudioNode[]
 }
 
-function createHaasPath(
-  ctx: BaseAudioContext,
-  mid: AudioNode,
-  side: AudioNode,
-): HaasPath {
+/** The Haas copy from `mid`, its level out unconnected: it joins the side when first turned up. */
+function createHaasPath(ctx: BaseAudioContext, mid: AudioNode): HaasPath {
   const highpass = createButterworth(ctx, 'highpass')
   highpass.frequency.value = HAAS_LOW_HZ
   const lowpass = createButterworth(ctx, 'lowpass')
   lowpass.frequency.value = highCutFrequency(HAAS_HIGH_HZ, ctx.sampleRate)
   const delay = ctx.createDelay(MAX_HAAS_SECONDS)
   const level = gainOf(ctx, 0)
-  connectSeries([mid, highpass, lowpass, delay, level, side])
+  connectSeries([mid, highpass, lowpass, delay, level])
   return { delay, level, nodes: [highpass, lowpass, delay, level] }
 }
 
@@ -93,11 +101,12 @@ export function createStereoUnit(
   splitter.connect(negateRight, 1)
   negateRight.connect(side)
   connectSeries([side, width, sideBus, ...monoLow])
-  const haas = createHaasPath(ctx, mid, sideBus)
+  const haas = createHaasPath(ctx, mid)
   mid.connect(left)
   mid.connect(right)
-  monoLow[1].connect(left)
-  connectSeries([monoLow[1], negateSide, right])
+  monoLow[1].connect(negateSide)
+  let sideJoined = false
+  let haasJoined = false
   left.connect(merger, 0, 0)
   right.connect(merger, 0, 1)
   merger.connect(shell.wet)
@@ -106,6 +115,18 @@ export function createStereoUnit(
   const apply = (p: EffectParams<'stereo'>, glide: boolean): void => {
     const write = (param: AudioParam, value: number): void =>
       writeParam(param, value, ctx, glide)
+    const haasOn = p.haasAmount > 0
+    if (!sideJoined && (p.widthPct > 0 || haasOn)) {
+      // Silent until now, so its filters hold no state: joining is exact.
+      sideJoined = true
+      monoLow[1].connect(left)
+      negateSide.connect(right)
+    }
+    const haasJoining = haasOn && !haasJoined
+    if (haasJoining) {
+      haasJoined = true
+      haas.level.connect(sideBus)
+    }
     write(width.gain, p.widthPct / 100)
     for (const stage of monoLow) {
       write(stage.frequency, lowCutFrequency(p.monoBelowHz))
@@ -117,7 +138,17 @@ export function createStereoUnit(
       glide,
       TIME_GLIDE_SECONDS,
     )
-    write(haas.level.gain, (p.haasAmount / 100) * HAAS_MAX_GAIN)
+    const haasLevel = (p.haasAmount / 100) * HAAS_MAX_GAIN
+    if (haasJoining && glide) {
+      const now = ctx.currentTime
+      haas.level.gain.cancelScheduledValues(now)
+      haas.level.gain.setValueAtTime(0, now)
+      haas.level.gain.setTargetAtTime(
+        haasLevel,
+        now + HAAS_PRIME_SECONDS,
+        PARAM_GLIDE_SECONDS,
+      )
+    } else write(haas.level.gain, haasLevel)
   }
   apply(spec.params, false)
 

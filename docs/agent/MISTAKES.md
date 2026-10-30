@@ -2420,13 +2420,16 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Rule:** the foot of the screen is a stack (tab bar, banner, confirm-email pill, toasts); each layer publishes its room on `<html>` with `publishFootSpace` and stands on the ones below. Anything else pinned to the bottom stands on `--consent-banner-space`, and on `--verify-banner-space` where the pill can be. To see the real banner, build with a tag id set and run the browser with `timezoneId: 'Europe/Zagreb'`. On a phone, use dev.mercurypitch.com or a PR preview: `build:dev` sets `VITE_CONSENT_PREVIEW=true`, so the bar shows with no Google tag (on a Europe clock, or from Settings › About › Cookie settings) and nothing is sent to Google. Clear `mp.consent.v1` in site storage to be asked again.
 **See:** `src/lib/foot-space.ts`, `src/e2e/toast-above-confirm-bar.spec.ts`, `src/tests/foot-stack-css.test.ts`, `src/components/ConsentBanner.preview.test.tsx`
 
-## Measure the compressor lookahead before judging a chain offline
+### Measure the compressor lookahead before judging a chain offline
 
-An offline probe that builds a chain without first running
-`measureCompressorLatency` gets fresh null compressors as latency twins
-(compressor-twin.ts), and they dip like any new compressor. Judged that
-way, the voice chain's dynamic EQs looked 3.6 dB down 60 ms after the
-build and immune to the release settle; with the lookahead measured, as
-every live build has it, they were 0.36 dB down without the settle and
-0.01 dB with it. Call it (or render through `measureChainLatencyFrames`)
-before comparing a fresh chain with a settled one.
+**Symptom:** the voice chain's dynamic EQs looked 3.6 dB down 60 ms after the build, and immune to the release settle.
+**Cause:** an offline probe that builds a chain without first running `measureCompressorLatency` gets fresh null compressors as latency twins (compressor-twin.ts), and they dip like any new compressor. With the lookahead measured, as every live build has it, the bands were 0.36 dB down without the settle and 0.01 dB with it.
+**Rule:** call `measureCompressorLatency` (or render through `measureChainLatencyFrames`) before comparing a fresh chain with a settled one.
+**See:** `src/lib/studio-fx/compressor-twin.ts`
+
+### Prove a Studio change exact on one chain, not on the whole graph
+
+**Symptom:** a change that leaves silent stereo paths out of the graph rendered the 24-lane fixture up to 1.25e-4 (-78 dBFS) away from the build before it.
+**Cause:** two offline renders of the same full Studio graph are not bit-identical: the same build rendered twice was 7.6e-5 apart (RMS -97 dB). One chain through `renderThroughChain` comes much closer: the stereo change came out 0 apart on every role's setting, and the keys, bass and other chains render bit-identical run to run. The voice and backing-vocal chains do not: the same build twice was 3.7e-6 and 6.0e-7 apart (headless Chromium 148, 30 Oct 2026).
+**Rule:** prove a change exact by rendering a chain or an effect through `renderThroughChain`, which already removes the chain's own latency (do not shift the two outputs again), and render the old build twice as a control. Read any difference against that control's floor, not against zero.
+**See:** `src/lib/studio-fx/render.ts`

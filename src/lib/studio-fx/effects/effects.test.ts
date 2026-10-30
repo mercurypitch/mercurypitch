@@ -353,7 +353,11 @@ describe('reverb ducking', () => {
 describe('tilt', () => {
   it('moves a 4 kHz shelf by the brightness and a 250 Hz shelf half as far the other way', () => {
     const { ctx, env } = setup(false)
-    createEffectUnit(ctx.asContext, spec('tilt', { brightnessDb: 4 }), env)
+    const unit = createEffectUnit(
+      ctx.asContext,
+      spec('tilt', { brightnessDb: 4 }),
+      env,
+    )
     const shelves = ctx.ofType<FakeBiquad>('biquad')
     expect(
       shelves.map((s) => [s.type, s.frequency.value, s.gain.destination]),
@@ -361,6 +365,33 @@ describe('tilt', () => {
       ['lowshelf', 250, -2],
       ['highshelf', 4000, 4],
     ])
+    // Built tilted, its straight path has nowhere to go.
+    const through = (unit.input as unknown as FakeNode).targets.find(
+      (node) => node.nodeType === 'gain' && (node as FakeGain).gain.value === 0,
+    ) as FakeGain
+    expect(through.targets).toEqual([])
+  })
+
+  it('passes a flat tilt straight through, and crossfades its shelves in the first time it moves', () => {
+    const { ctx, env } = setup(true)
+    ctx.currentTime = 1
+    const unit = createEffectUnit(ctx.asContext, spec('tilt'), env)
+    const [low, high] = ctx.ofType<FakeBiquad>('biquad')
+    const input = unit.input as unknown as FakeNode
+    expect(input.targets).not.toContain(low)
+    unit.setParams(spec('tilt', { brightnessDb: 3 }).params)
+    expect(input.targets).toContain(low)
+    const shelved = high.targets[0] as FakeGain
+    const through = input.targets.find(
+      (node) => node !== low && (node as FakeGain).gain.value === 1,
+    ) as FakeGain
+    // Both paths carry the same signal while the shelves are flat.
+    expect(shelved.gain.destination).toBe(1)
+    expect(through.gain.destination).toBe(0)
+    expect(high.gain.destination).toBe(3)
+    // Flat again, the shelves stay in: they are identities at 0 dB.
+    unit.setParams(spec('tilt').params)
+    expect(input.targets).toContain(low)
   })
 })
 
@@ -482,6 +513,55 @@ describe('stereo', () => {
       .map((filter) => filter.frequency.destination)
     // The two mono-low stages switch out; the Haas band filter stays at 180 Hz.
     expect(highpasses.sort((a, b) => a - b)).toEqual([0, 0, 180])
+  })
+
+  it('leaves a Haas copy at 0 % out of the graph, and fades it in once its delay fills when turned up while playing', () => {
+    const { ctx, env } = setup(true)
+    ctx.currentTime = 2
+    const unit = createEffectUnit(
+      ctx.asContext,
+      spec('stereo', { haasMs: 20, haasAmount: 0 }),
+      env,
+    )
+    const haasDelay = ctx
+      .ofType<FakeDelay>('delay')
+      .find((delay) => delay.delayTime.destination === 0.02)!
+    const level = haasDelay.targets[0] as FakeGain
+    expect(level.targets).toEqual([])
+    unit.setParams(spec('stereo', { haasMs: 20, haasAmount: 60 }).params)
+    expect(level.targets).toHaveLength(1)
+    // Its first samples are a step from nothing: held at zero past them.
+    expect(level.gain.events.slice(-2)).toEqual([
+      { kind: 'set', time: 2, value: 0 },
+      { kind: 'target', time: 2.06, value: 0.3, timeConstant: 0.02 },
+    ])
+    // Turned down again it stays: leaving while it sounds would step the side.
+    unit.setParams(spec('stereo', { haasMs: 20, haasAmount: 0 }).params)
+    expect(level.targets).toHaveLength(1)
+  })
+
+  it('leaves the whole side out at 0 % width with no Haas, and joins it when widened', () => {
+    const { ctx, env } = setup(true)
+    const unit = createEffectUnit(
+      ctx.asContext,
+      spec('stereo', { widthPct: 0, monoBelowHz: 100 }),
+      env,
+    )
+    const stages = ctx
+      .ofType<FakeBiquad>('biquad')
+      .filter(
+        (filter) =>
+          filter.type === 'highpass' && filter.frequency.destination === 100,
+      )
+    const last = stages.find((stage) =>
+      stages.every((other) => !stage.targets.includes(other)),
+    )!
+    const negateSide = last.targets[0] as FakeGain
+    expect(last.targets).toHaveLength(1)
+    expect(negateSide.targets).toEqual([])
+    unit.setParams(spec('stereo', { widthPct: 50, monoBelowHz: 100 }).params)
+    expect(last.targets).toHaveLength(2)
+    expect(negateSide.targets).toHaveLength(1)
   })
 })
 
