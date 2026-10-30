@@ -65,7 +65,7 @@ export function LitDiscs(props: GearTrainProps): JSX.Element {
   const tones = (): number[] =>
     props.reveal ? [0, ...props.reveal.intervals].slice(0, 4) : []
   const revealed = (): number =>
-    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 100, 900))
+    props.reveal === null ? 0 : easeInOut(progress(clock.t(), 100, 700))
 
   /** When the chord began to sound, in the clock's ambient ms. */
   const [soundAt, setSoundAt] = createSignal(0)
@@ -138,7 +138,7 @@ export function LitDiscs(props: GearTrainProps): JSX.Element {
           const y = (): number => {
             if (props.reveal === null || !real()) return discY(GHOSTS[i])
             const settle = easeInOut(
-              progress(clock.t(), 100 + i * 90, 900 + i * 90),
+              progress(clock.t(), 80 + i * 60, 620 + i * 60),
             )
             return lerp(discY(GHOSTS[i]), discY(tones()[i]), settle)
           }

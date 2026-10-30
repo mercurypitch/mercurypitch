@@ -42,7 +42,7 @@ export function LitOrbs(props: ProgressionTrainProps): JSX.Element {
   const orbX = (k: number): number =>
     200.5 - ((count() - 1) * SPACING) / 2 + k * SPACING
   const revealed = (): number =>
-    props.reveal === null ? 0 : easeOut(progress(clock.t(), 100, 1100))
+    props.reveal === null ? 0 : easeOut(progress(clock.t(), 100, 700))
 
   const age = (k: number): number | null =>
     props.reveal === null ? arrivalAge(arrivals(), k, clock) : null
@@ -53,7 +53,7 @@ export function LitOrbs(props: ProgressionTrainProps): JSX.Element {
   const orbY = (k: number): number => {
     const degree = props.reveal?.degrees[k]
     if (degree === undefined) return LEVEL
-    const lift = easeOutBack(progress(clock.t(), 100 + k * 110, 800 + k * 110))
+    const lift = easeOutBack(progress(clock.t(), 80 + k * 80, 600 + k * 80))
     return lerp(LEVEL, degreeY(degree), lift)
   }
   const pathD = (): string => {
