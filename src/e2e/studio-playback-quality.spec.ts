@@ -27,6 +27,10 @@ test.describe('Studio playback quality', () => {
     const choice = (label: string) =>
       quality.getByRole('radio', { name: new RegExp(`^${label}`) })
     await expect(choice('Auto')).toBeChecked()
+    // Auto names the tier it plays this song at.
+    await expect(choice('Auto')).toHaveAccessibleName(
+      /^Auto \((Best|Balanced|Light)\)/,
+    )
     await expect(quality).toContainText('Export always uses Best.')
 
     const toggle = studio.getByRole('button', {

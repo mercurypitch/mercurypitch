@@ -12,19 +12,23 @@
 //
 // The choice is the device's, not the project's: it is kept in this
 // browser's storage, and a project opened elsewhere plays at that device's
-// tier. Auto picks from what the browser says about the device (cores,
-// memory) and a short offline render of a voice chain, measured once, kept,
-// and used from the next session: within a session the tier changes only by
-// the listener's choice or a step down, so a paused graph is never built
-// again for a measurement. While playing on Auto, a run of underruns (the
-// browser's playout statistics, where it has them) steps down one tier for
-// the session, with a notice; the next session starts from Auto's own pick
-// again.
+// tier. Auto picks per song: the best tier whose estimated load
+// (song-load.ts) stays under AUTO_LOAD_CEILING of the audio thread, from
+// the lanes that sound and a short offline render of a voice chain, measured
+// once on the device and kept. Until that render is in, the browser's hints
+// (cores, memory) cap the tier. While playing on Auto, a run of underruns
+// (the browser's playout statistics, where it has them) steps down one tier
+// for the session, with a notice; the next session starts from Auto's own
+// pick again.
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
+import type { StudioPlaybackTier } from './playback-tiers'
+import { PLAYBACK_TIERS } from './playback-tiers'
+import type { StudioSongShape } from './song-load'
+import { songLoad, studioSongChains } from './song-load'
 
-export const PLAYBACK_TIERS = ['best', 'balanced', 'light'] as const
-export type StudioPlaybackTier = (typeof PLAYBACK_TIERS)[number]
+export type { StudioPlaybackTier } from './playback-tiers'
+export { PLAYBACK_TIERS } from './playback-tiers'
 export type StudioPlaybackChoice = 'auto' | StudioPlaybackTier
 
 export const PLAYBACK_TIER_LABELS: Readonly<
@@ -65,22 +69,15 @@ export interface StudioDeviceHints {
   readonly voiceChainUs?: number
 }
 
-/** A 128-frame quantum at 48 kHz, in microseconds: the audio thread's budget for one. */
-const QUANTUM_US = (128 / 48000) * 1e6
 /**
- * A 12-lane song (the medium profiling fixture, with the live master)
- * costs this many voice chains at each tier: 10.3, 8.0 and 5.8, rendered
- * offline in Chromium 148 on 30 Oct 2026.
+ * Auto keeps a song's estimated load (song-load.ts) under this share of
+ * the audio thread. On this desktop the 12-lane fixture played clean at
+ * Light (49.9 % of the thread) and underran at Balanced (63.4 %), where
+ * the estimate reads 59.8 to 66.6 % over the benchmark's spread (161.9 to
+ * 180.3 us): at 60 % Auto would sometimes pick Balanced there, at 55 % it
+ * never does.
  */
-export const SONG_IN_VOICE_CHAINS: Readonly<
-  Record<StudioPlaybackTier, number>
-> = {
-  best: 10,
-  balanced: 8,
-  light: 6,
-}
-/** Auto leaves this much of the audio thread free for everything else it does. */
-const AUTO_LOAD_CEILING = 0.5
+export const AUTO_LOAD_CEILING = 0.55
 
 function lower(
   a: StudioPlaybackTier,
@@ -102,34 +99,24 @@ function hintedTier({
 }
 
 /**
- * The most one voice chain may cost here, offline in microseconds per 128
- * frames, for Auto to pick `tier`: a 12-lane song then uses at most half
- * the audio thread.
+ * Auto's pick for a song: the best tier whose estimated load on this device
+ * stays under AUTO_LOAD_CEILING, Light when none does. Before the device's
+ * benchmark is in, the browser's hints cap it, and Balanced at most: Best
+ * needs the device to show it can carry it.
  */
-export function autoTierLimitUs(tier: StudioPlaybackTier): number {
-  return (AUTO_LOAD_CEILING * QUANTUM_US) / SONG_IN_VOICE_CHAINS[tier]
-}
-
-/** The best tier whose limit the measured voice chain is within. */
-function measuredTier(voiceChainUs: number): StudioPlaybackTier {
+export function pickAutoTier(
+  hints: StudioDeviceHints,
+  song: StudioSongShape,
+): StudioPlaybackTier {
+  const { voiceChainUs } = hints
+  if (voiceChainUs === undefined || !(voiceChainUs > 0))
+    return lower(hintedTier(hints), 'balanced')
+  const chains = studioSongChains(song)
   return (
-    PLAYBACK_TIERS.find((tier) => voiceChainUs <= autoTierLimitUs(tier)) ??
-    'light'
+    PLAYBACK_TIERS.find(
+      (tier) => songLoad(chains, tier, voiceChainUs) <= AUTO_LOAD_CEILING,
+    ) ?? 'light'
   )
-}
-
-/**
- * Auto's pick: the lower of what the hints allow and what the benchmark
- * measured. Without a benchmark yet, Balanced at most: Best needs the
- * device to show it can carry it.
- */
-export function pickAutoTier(hints: StudioDeviceHints): StudioPlaybackTier {
-  const hinted = hintedTier(hints)
-  const measured =
-    hints.voiceChainUs !== undefined && Number.isFinite(hints.voiceChainUs)
-      ? measuredTier(hints.voiceChainUs)
-      : 'balanced'
-  return lower(hinted, measured)
 }
 
 /** One tier down, Light the floor. */
@@ -257,12 +244,13 @@ function browserHints(): StudioDeviceHints {
   }
 }
 
+/** What Auto knows, beyond the song: a new object whenever any of it changes. */
 export interface StudioPlaybackQualityState {
   readonly choice: StudioPlaybackChoice
-  /** The tier live playback runs at now. */
-  readonly tier: StudioPlaybackTier
-  /** Auto's own pick on this device, before any step down. */
-  readonly autoTier: StudioPlaybackTier
+  /** The tier Auto stepped down to for underruns this session, if it did. */
+  readonly steppedTo: StudioPlaybackTier | null
+  /** Whether this device's benchmark is in, so Auto can size each song. */
+  readonly measured: boolean
   /** Set when Auto stepped down this session. */
   readonly notice: string | null
 }
@@ -276,22 +264,30 @@ let hints: StudioDeviceHints = {
 }
 let steppedTo: StudioPlaybackTier | null = null
 let notice: string | null = null
-/** Set once this session's benchmark is in: it counts from the next session. */
-let measured = false
 const listeners = new Set<Listener>()
 const watch = createUnderrunWatch()
 
-function currentTier(): StudioPlaybackTier {
-  if (choice !== 'auto') return choice
-  const auto = pickAutoTier(hints)
+/** The tier Auto plays `song` at: its own pick, under any step down this session. */
+export function autoPlaybackTier(song: StudioSongShape): StudioPlaybackTier {
+  const auto = pickAutoTier(hints, song)
   return steppedTo === null ? auto : lower(auto, steppedTo)
+}
+
+/** The tier live playback builds `song` at now. */
+export function livePlaybackTier(song: StudioSongShape): StudioPlaybackTier {
+  return choice === 'auto' ? autoPlaybackTier(song) : choice
+}
+
+/** The effect profile live playback builds `song` with now. */
+export function livePlaybackProfile(song: StudioSongShape): StudioFxProfile {
+  return TIER_PROFILES[livePlaybackTier(song)]
 }
 
 export function playbackQualityState(): StudioPlaybackQualityState {
   return {
     choice,
-    tier: currentTier(),
-    autoTier: pickAutoTier(hints),
+    steppedTo,
+    measured: hints.voiceChainUs !== undefined,
     notice,
   }
 }
@@ -306,11 +302,6 @@ export function subscribePlaybackQuality(listener: Listener): () => void {
   return () => listeners.delete(listener)
 }
 
-/** The effect profile live playback builds with now. */
-export function livePlaybackProfile(): StudioFxProfile {
-  return TIER_PROFILES[currentTier()]
-}
-
 /** The listener's own choice, kept on this device. A step down ends with it. */
 export function setPlaybackChoice(next: StudioPlaybackChoice): void {
   choice = next
@@ -321,35 +312,50 @@ export function setPlaybackChoice(next: StudioPlaybackChoice): void {
   publish()
 }
 
-/** Keep the benchmark (playback-benchmark.ts) on this device, for Auto from the next session. */
+/**
+ * Keep the benchmark (playback-benchmark.ts) on this device. Auto sizes
+ * songs with it from the next Play: a paused graph built at the tier the
+ * hints allowed is built again if the song's tier differs.
+ */
 export function recordPlaybackBenchmark(voiceChainUs: number): void {
   if (!(voiceChainUs > 0) || !Number.isFinite(voiceChainUs)) return
-  measured = true
+  hints = { ...hints, voiceChainUs }
   storeBenchmark(voiceChainUs)
+  publish()
 }
 
 /** Whether Auto still needs its benchmark on this device. */
 export function needsPlaybackBenchmark(): boolean {
-  return !measured && hints.voiceChainUs === undefined
+  return hints.voiceChainUs === undefined
 }
 
 /**
  * A reading of the playing context's playout statistics, when the browser
- * has them: on Auto, a run of underruns steps down one tier for the
- * session. Called from the playing graph's schedule tick.
+ * has them: on Auto, a run of underruns while a run built at `tier` plays
+ * steps down one tier from it for the session. Called from the playing
+ * graph's schedule tick. A run built before a step down plays on at its own
+ * tier until the next Play, so its underruns do not step down again.
  */
-export function notePlayout(ctx: BaseAudioContext, now: number): void {
+export function notePlayout(
+  ctx: BaseAudioContext,
+  now: number,
+  tier: StudioPlaybackTier,
+): void {
   if (choice !== 'auto') return
   const stats = (
     ctx as BaseAudioContext & { playoutStats?: StudioPlayoutStats }
   ).playoutStats
   if (!stats) return
   if (!watch.read(stats, now)) return
-  const tier = currentTier()
-  if (tier === 'light') return
-  steppedTo = stepDown(tier)
-  notice = `Playback was breaking up, so Studio moved to ${PLAYBACK_TIER_LABELS[steppedTo]} for this session. It applies from the next Play.`
   watch.restart(now)
+  const next = stepDown(tier)
+  if (
+    next === tier ||
+    (steppedTo !== null && lower(next, steppedTo) === steppedTo)
+  )
+    return
+  steppedTo = next
+  notice = `Playback was breaking up, so Studio moved to ${PLAYBACK_TIER_LABELS[next]} for this session. It applies from the next Play.`
   publish()
 }
 
@@ -361,7 +367,6 @@ export function resetPlaybackQualityForTests(
   hints = { ...next, voiceChainUs: next.voiceChainUs ?? readStoredBenchmark() }
   steppedTo = null
   notice = null
-  measured = false
   listeners.clear()
   watch.restart(-Infinity)
 }
