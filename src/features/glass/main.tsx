@@ -8,7 +8,10 @@
 // renderer arrives later as a lazy chunk behind the Start tap.
 // ============================================================
 
+// quiet-console comes before every app module: it silences production
+// console narration before anything can log (src/lib/quiet-console.ts).
 import { render } from 'solid-js/web'
+import '@/lib/quiet-console'
 import './glass.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { armDeveloperConsole } from '@/components/developer-console-arming'

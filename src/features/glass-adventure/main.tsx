@@ -2,7 +2,10 @@
 // Glassworks campaign entry — MercuryPitch's standalone museum front door
 // ============================================================
 
+// quiet-console comes before every app module: it silences production
+// console narration before anything can log (src/lib/quiet-console.ts).
 import { render } from 'solid-js/web'
+import '@/lib/quiet-console'
 import '@fontsource-variable/gabarito'
 import '@/lib/pitch-engine-assets'
 import './glass-adventure.css'
