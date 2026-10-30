@@ -441,3 +441,26 @@ describe('skill threads across a rescore', () => {
     expect(threads.map((t) => t.label)).toEqual(['Arpeggio Jumper'])
   })
 })
+
+describe("the league card's zone", () => {
+  // The cut moves up only members with points (league-cut.ts), and the
+  // phone draws this card beside its own Leagues screen: a place in the top
+  // three with no points this week is held, not promoted.
+  it('holds a place in the top three that has no points this week', () => {
+    const model = fixture()
+    const league = model.league
+    if (league === null) throw new Error('the fixture has a league')
+    const snapshot = buildProgressPageSnapshot(
+      { ...model, league: { ...league, points: 0 } },
+      { accountHeld: true },
+    )
+    expect(snapshot.league?.zoneLabel).toBe('Holding zone')
+  })
+
+  it('promotes the same place once it has points', () => {
+    expect(
+      buildProgressPageSnapshot(fixture(), { accountHeld: true }).league
+        ?.zoneLabel,
+    ).toBe('Promotion zone')
+  })
+})
