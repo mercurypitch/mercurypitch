@@ -1775,3 +1775,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   A round 4 sent (S2 curve, S3 swell about the baseline; re-render s02, s03). Agents now: F + A.
 - Queue: critic B-04 (B4.txt) -> C small (C-fix2); A-04 after A's round 4 (freeze s01, s04 now; s02,
   s03 after); F-04 after F; C-03 after C. Then the film render.
+- 01:3x builder A handed back round 4 ($S/l4entr/A-round4-report.txt): S2 on Lesson 2's curve
+  (shares 1.00/0.78/0.48/0.29 vs 1.00/0.76/0.50/0.31); S3 unchanged (L.spell already scales names
+  about the baseline; glyph bottom row fixed at y 772). DECISIONS 113. Frozen a4/ (all four);
+  critic prompt critics/A4.txt (previous A-03, report review/component-A-04/). C small round sent
+  (C-fix2, 60 fps). Agents now: F + C. Disk 1.49 GB.
+- Queue: critic B-04 (B4.txt) and A-04 (A4.txt) as slots free; F-04 after F (freeze new S14, S15;
+  S16 from f3); C-03 after C (freeze c3/). Then the film render (no builder rendering).

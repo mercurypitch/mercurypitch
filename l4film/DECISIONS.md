@@ -1156,3 +1156,20 @@ replaced it. The builder's record: critics never read it.
        centres twitch about 1 px).
      - Builder A's round 4 makes those two changes (S2's curve, the swell's origin) and renders S2
        and S3 again; a fresh critic, A-04, then verifies all four.
+
+113. **S1 to S4 after builder A's round 4, as built.**
+     - **S2:** the field's shrink runs 34.18 to 34.64 on Lesson 2's curve (radius power2.out,
+       centre power3.out); the title (from 34.44) and the chime notes keep their times. Mean frame
+       luma at 0, 0.05, 0.10 and 0.15 s after 34.18 is 114.9, 90.1, 55.0 and 33.0: as shares of the
+       first frame 1.00, 0.78, 0.48 and 0.29, against Lesson 2's 1.00, 0.76, 0.50 and 0.31 (the
+       levels differ because S1's last frame is not Lesson 2's). S2 has no holds.
+     - **S3:** no change and no new render. The kit's L.spell already scales every stair name about
+       its anchor on the baseline (translate to the baseline point, scale, translate back by the
+       anchor's x), so the "do" swell (42.20 to 43.15) was centre-bottom all along: the glyphs'
+       bottom row stays at y 772 in every 60 fps frame and only the cap top moves (741 to 734 and
+       back to 740). Decision 112's note on the swell's origin needed no build.
+     - Seams: S1 to S2 mean 0.397, largest 5; S2's last still against S3's first differs by 0.
+       Check 0 errors in S1 to S4, clock-lint silent, merc-tags 8 tags and 0 stale; the text sweep
+       finds only S1's known EDGE at 33.75.
+     - Critic A-04 verifies all four from frozen copies: S1, S3 and S4 as rendered for round 3, and
+       the new S2.

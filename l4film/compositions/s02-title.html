@@ -168,7 +168,7 @@
 
           /* ---------------------------------------------------------------- anchors */
           const TT = at('title')
-          const SHRINK = 0.3                                      // the field shrinks into the bead (power2.out, Lesson 2's curve; DECISIONS 106)
+          const SHRINK = 0.46                                     // the field shrinks into the bead: Lesson 2's own curve (DECISIONS 112)
           const TITLE_IN = at('title', 'start', 0.26)             // the title and its kicker land as it settles
           const FYP_IN = at('title', 'start', 0.76)               // "Find Your Pitch" under the title
           const CHIME = (k) => TF.CHIME(k) - T0                   // scene time
@@ -354,13 +354,14 @@
             lockBox.style.opacity = (fIn * (1 - fOut)).toFixed(3)
             lockBox.style.transform = `translateY(${(22 * (1 - fIn) - 60 * fOut).toFixed(2)}px)`
 
-            /* the field: S1's last frame, shrinking into a chrome bead on the staff's middle line (power2.out, as
-               Lesson 2's field does: component critic A-03 item 2); the vignette comes back as it goes; from FLY0
-               the bead flies back into the house (TF, from film time) */
-            const u = P(t, 0, SHRINK, 'power2.out')
+            /* the field: S1's last frame, shrinking into a chrome bead on the staff's middle line on Lesson 2's own
+               curve (its s02: over 0.46 s, the radius on power2.out and the centre a little faster, on power3.out;
+               DECISIONS 112); the vignette comes back as it goes; from FLY0 the bead flies back into the house (TF,
+               from film time) */
+            const u = P(t, 0, SHRINK, 'power2.out'), uc = P(t, 0, SHRINK, 'power3.out')
             const rest = TF.zmap(TF.REST[0], TF.REST[1] + TF.disp(TF.REST[0], Tf), Tf)
             const rBead = 22 * z
-            let bx = lerp(960, rest[0], u), by = lerp(540, rest[1], u)
+            let bx = lerp(960, rest[0], uc), by = lerp(540, rest[1], uc)
             let br = lerp(FIELD.R, rBead, u)
             if (t >= BACK) { const f = TF.flight(Tf); bx = f.x; by = f.y; br = f.r }
             field.draw({ x: bx, y: by, r: br, a: smooth(26, 80, br), T: Tf, soft: lerp(0.8, 0.1, u) })

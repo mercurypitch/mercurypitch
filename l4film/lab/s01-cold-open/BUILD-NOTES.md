@@ -237,3 +237,15 @@ inside the Merc videos' transparent boxes, visible on the frame). The run fails 
   "84 Merc tags, 0 updated", so it wrote nothing.
 - Board row 3b says the naming wave is 0.07 s apart; the build has 0.1 s since round 1 (not raised by any
   critic). Left as built; flagged.
+
+## Round 4 (30 Oct 01:15; DECISIONS 112)
+
+- s02: SHRINK 0.46 s; radius u = P(0, 0.46, power2.out), centre uc = P(0, 0.46, power3.out) (Lesson 2's
+  s02). Backup lab/s02-title/s02-before-r5.html. Mean luma at 0/.05/.10/.15 s: 114.9, 90.1, 55.0, 33.0
+  (Lesson 2 122, 93, 61, 38; round 3 114.9, 70.5, 31.9, 21.7). Clip 60 fps 01:21 (204 frames), round 3's
+  kept as clip-r4.mp4; measure-r5: no holds.
+- s03: no change. The kit's L.spell.draw already scales about (anchor x, baseline): translate(px py)
+  scale(s) translate(-ax 0). Measured on the 60 fps clip over 42.20-43.15: baseline row 772 every frame,
+  bottom-edge centroid 769.86-769.97; only the cap top moves (741 -> 734 -> 740). Clip left as is.
+- Seams: s01->s02 0.397 (5); s02->s03 clip 0.515 (bead step), stills 3.4 / 0 max 0.
+- check passed (0 errors, s01-s04 warnings only), merc-tags 0 stale, sweep as before.
