@@ -69,6 +69,8 @@ export const SING_TOUR: CoachTour = {
         },
       },
       target: '[data-tour="singing-transport"], [data-tour="sing.mic"]',
+      // A wide screen's mic is on the bar: shown if the singer dismissed it.
+      screen: ['sing.bar'],
       merc: 'point',
       title: 'Start the mic',
       body: 'Tap the mic and Merc starts listening. Only you can hear you.',
@@ -79,6 +81,8 @@ export const SING_TOUR: CoachTour = {
       waitFor: 'pitch-detected',
       sound: 'hold-tone',
       target: LINE,
+      // The line is drawn in Melody; Notation shows sheet music in its place.
+      screen: ['sing.melody'],
       corner: 'top-right',
       merc: 'listen',
       title: 'Sing any note',
@@ -88,6 +92,7 @@ export const SING_TOUR: CoachTour = {
       id: 'line',
       kind: 'show',
       target: LINE,
+      screen: ['sing.melody'],
       corner: 'top-right',
       merc: 'point',
       title: 'That line is your voice',

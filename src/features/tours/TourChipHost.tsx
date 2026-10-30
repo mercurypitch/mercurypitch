@@ -26,9 +26,11 @@
 //   another door (the showcase's end, First Light's Map) spends the offer
 //   too (room-tour.ts), so the chip never offers a tour that was just shown.
 // - Nothing while `paused` (First Light, the plan, What's New, the takeover
-//   still deciding) or while Merc has the screen (coachBusy: a Merc tour,
-//   asked for or running, or the showcase); the legacy spotlight is checked
-//   when an offer is due. The pause is a memo, so a re-read that says the
+//   still deciding), while Merc has the screen (coachBusy: a Merc tour,
+//   asked for or running, or the showcase), or while something is open over
+//   the page the tour shows (a drill, Zen: src/lib/tour-screen.ts), whose
+//   tour would point past it; the legacy spotlight is checked when an offer
+//   is due. The pause is a memo, so a re-read that says the
 //   same thing changes nothing. When it lifts, the offer waits a microtask:
 //   First Light's Map lifts it in the same handler that starts a room's
 //   tour, and the offer must not land on that tour.
@@ -61,6 +63,7 @@ import { tabLabel } from '@/features/tabs/constants'
 import { coachActive, coachBusy } from '@/lib/coach-state'
 import { trackTour } from '@/lib/guide-funnel'
 import type { TourKey } from '@/lib/tour-ids'
+import { tourDetours } from '@/lib/tour-screen'
 import { hasPageTour, pageTourKey, tourOfferRetired, walkthroughActive, } from '@/stores'
 import type { ActiveTab } from '@/types'
 import { COACH_TOURS } from './coach-tours'
@@ -183,7 +186,10 @@ export interface TourChipHostProps {
 
 export function TourChipHost(props: TourChipHostProps): JSX.Element {
   const [chip, setChip] = createSignal<Chip | null>(null)
-  const pausedNow = createMemo(() => props.paused() || coachBusy())
+  const pausedNow = createMemo(
+    () =>
+      props.paused() || coachBusy() || tourDetours([props.tab()]).length > 0,
+  )
   // The tabs whose offer a Merc tour that did not load handed back, by key.
   const handedBack = new Set<string>()
 

@@ -46,8 +46,10 @@ import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
+import { TAB_EAR_LAB } from '@/features/tabs/constants'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EAR_LAB_WITH_MERC, PREMIUM_EXERCISES } from '@/lib/native-build'
+import { provideTourDetour } from '@/lib/tour-screen'
 import { disarmSprintSegment } from '@/stores/ear-lab-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
@@ -88,6 +90,13 @@ const MercBench: Component<MercBenchProps> = EAR_LAB_WITH_MERC
     )
   : () => null
 
+/** A view as the tour's question names it: 'the-pull' is "The Pull". */
+const viewName = (view: EarLabView): string =>
+  view
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
   // A build without the premium exercises registers no opener, and the
@@ -108,6 +117,17 @@ export function EarLabPage(): JSX.Element {
     disarmSprintSegment()
     setView('dashboard')
   }
+  // A drill or the calibration hides the bench the Ear Lab tour walks, so a
+  // tour asks before it goes back there (src/lib/tour-screen.ts).
+  onCleanup(
+    // eslint-disable-next-line solid/reactivity -- tracked where the tour offer reads it
+    provideTourDetour((tab) => {
+      const open = view()
+      return tab !== TAB_EAR_LAB || open === 'dashboard'
+        ? null
+        : { name: viewName(open), close: back }
+    }),
+  )
 
   // A drill asked for from elsewhere (The Ascent's ear week). Cleared
   // as it is consumed, so coming back to the tab later lands on the

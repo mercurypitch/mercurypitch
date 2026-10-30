@@ -21,7 +21,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { isTabAvailable, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
+import { isTabAvailable, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_STUDIO_NIGHT, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -31,9 +31,12 @@ import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { STUDIO_LIBRARY_TOUR_STEPS, studioTourSteps } from '@/lib/studio-tour'
 import type { TourKey } from '@/lib/tour-ids'
+import type { TourSettingName } from '@/lib/tour-screen'
+import { startWhenClear } from '@/lib/tour-screen'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
+import { activeTab } from './ui-store'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
@@ -107,6 +110,14 @@ export interface WalkthroughStep {
    * tour starts, rather than showing its words about nothing.
    */
   whenPresent?: boolean
+  /**
+   * How the page has to be set for the step: Compose's Piano Roll rather
+   * than Sheet Music, Path's Ascent rather than the plain list. Set as the
+   * step shows and put back the way the singer had it once the tour ends
+   * (src/lib/tour-screen.ts). For a view a click reaches, `navigate` does
+   * the same without putting it back.
+   */
+  screen?: readonly TourSettingName[]
 }
 export interface WalkthroughSection {
   id: string
@@ -463,6 +474,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Piano Roll',
     targetSelector: '[data-tour="compose.piano-roll"]',
+    screen: ['compose.piano-roll'],
     description:
       'Click on the grid to add notes. Drag them to adjust pitch or timing. Right-click a note to delete it.',
     placement: 'bottom',
@@ -472,6 +484,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Play the keys',
     targetSelector: '.roll-piano',
+    screen: ['compose.piano-roll'],
     description:
       'The left keyboard is playable — press a key to hear its lane, or drag across keys for a glissando. In the Drums preset every key auditions its kit piece.',
     placement: 'right',
@@ -481,6 +494,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Edit tools',
     targetSelector: '.roll-group[data-name="Edit"]',
+    screen: ['compose.piano-roll'],
     description:
       'Three ways to touch the grid: Place adds notes, Erase removes them, and Select picks notes for moving, copying, or applying effects.',
     placement: 'bottom',
@@ -490,6 +504,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Notes & rows',
     targetSelector: '.roll-group[data-name="Notes"]',
+    screen: ['compose.piano-roll'],
     description:
       'Choose the note length you place, add or trim rows to widen the pitch range, and shift the whole melody up or down.',
     placement: 'bottom',
@@ -499,6 +514,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Instrument',
     targetSelector: '.roll-group[data-name="Instrument"]',
+    screen: ['compose.piano-roll'],
     description:
       'Pick the sound your melody plays back with — from clean synth tones to piano and beyond.',
     placement: 'bottom',
@@ -508,6 +524,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Import & export',
     targetSelector: '.roll-group[data-name="I/O"]',
+    screen: ['compose.piano-roll'],
     description:
       'Bring a MIDI file into the editor, export your melody as MIDI, or clear the grid and start fresh.',
     placement: 'bottom',
@@ -586,6 +603,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Hover hints',
     targetSelector: '#roll-hint-toggle',
+    screen: ['compose.piano-roll'],
     description:
       'With Hints on, hovering a placed note names it right at the cursor — the note, or the drum piece (with a preview hit while stopped). Toggle them here in the View group.',
     placement: 'bottom',
@@ -597,6 +615,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Expressive effects',
     targetSelector: '.roll-group[data-name="Effects"]',
+    screen: ['compose.piano-roll'],
     description:
       'Bring a melody to life with effects. The recipe is always the same: pick a note (or two) with the Select tool, then click an effect — or press its keyboard shortcut.',
     placement: 'bottom',
@@ -606,6 +625,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Select notes first',
     targetSelector: '.roll-tool-btn[data-tool="select"]',
+    screen: ['compose.piano-roll'],
     description:
       'Switch to the Select tool, click a note, and Shift+click a second one for two-note effects. The status bar always tells you how many notes the current effect needs.',
     placement: 'bottom',
@@ -615,6 +635,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Slides',
     targetSelector: '#roll-action-slide-up',
+    screen: ['compose.piano-roll'],
     description:
       'With two notes selected, Slide bends the pitch from one into the next — perfect for glides and scoops. Slide up or down with the S and Shift+S shortcuts.',
     placement: 'bottom',
@@ -624,6 +645,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Ease in & out',
     targetSelector: '#roll-action-ease-in',
+    screen: ['compose.piano-roll'],
     description:
       'Ease is a gentler glide that stays level at one end instead of sliding the whole way — a softer alternative to a slide. Shortcuts: E and Shift+E.',
     placement: 'bottom',
@@ -633,6 +655,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Vibrato, tremolo & trill',
     targetSelector: '#roll-action-vibrato',
+    screen: ['compose.piano-roll'],
     description:
       'These animate a single note: vibrato wavers the pitch, tremolo pulses the volume, and trill flutters between two pitches. After you apply one, a small popover lets you set its depth, rate or interval. Shortcuts: V, T and Shift+T.',
     placement: 'bottom',
@@ -642,6 +665,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Staccato',
     targetSelector: '#roll-action-staccato',
+    screen: ['compose.piano-roll'],
     description:
       'Staccato clips a note short for a crisp, detached feel — the popover controls just how short. Shortcut: Shift+K.',
     placement: 'bottom',
@@ -651,6 +675,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Chords',
     targetSelector: '#roll-action-chord',
+    screen: ['compose.piano-roll'],
     description:
       'Turn a single note into a full chord — power, major, minor, sus and more — then choose the type from the popover. Shortcut: C.',
     placement: 'bottom',
@@ -1174,6 +1199,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring, and you can tap the on-screen keys too.',
     targetSelector: '[data-tour="piano.canvas"]',
+    screen: ['piano.melody'],
     placement: 'top',
     requiredTab: TAB_PIANO,
     viewport: 'desktop',
@@ -1230,6 +1256,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Notes fall toward the on-screen keyboard — tap the keys or sing them in time. Pinch to zoom the lanes in or out.',
     targetSelector: '[data-tour="piano-canvas"]',
+    screen: ['piano.melody'],
     placement: 'top',
     requiredTab: TAB_PIANO,
     viewport: 'mobile',
@@ -1692,6 +1719,7 @@ const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Find shared content by name, and sort the feed by most recent, most popular, or highest rated.',
     targetSelector: '.search-filter-bar',
+    screen: ['community.feed'],
     placement: 'bottom',
     requiredTab: TAB_COMMUNITY,
   },
@@ -1708,6 +1736,7 @@ const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Load and play what others have shared, copy a link to pass along, or open a melody straight into practice.',
     targetSelector: '.community-content',
+    screen: ['community.feed'],
     placement: 'top',
     requiredTab: TAB_COMMUNITY,
   },
@@ -1869,6 +1898,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'A guided path through the craft of singing — seven themed weeks, from foundations and breath to range, ear, agility, tone and recovery.',
     targetSelector: '.path-trail',
+    screen: ['path.ascent'],
     placement: 'bottom',
     requiredTab: TAB_PATH,
   },
@@ -1877,6 +1907,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Each orb is a week. Its ring has seven segments — one lights for every day you meet your ~5-minute practice goal. Seven days completes the week and unlocks the next orb.',
     targetSelector: '.path-orb-current',
+    screen: ['path.ascent'],
     placement: 'bottom',
     requiredTab: TAB_PATH,
   },
@@ -1885,6 +1916,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Tap any orb to open its guidebook: what to focus on, the goals, and the drills this week leans into. Completed weeks stay open — replay them any time.',
     targetSelector: '.path-week-card',
+    screen: ['path.ascent'],
     // The guide only mounts once an orb is expanded. The class sits on the
     // orb's wrapper; the CLICKABLE toggle is the inner button, and its
     // aria-expanded is what makes the reveal click idempotent.
@@ -1897,6 +1929,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
     targetSelector: '.path-cta',
+    screen: ['path.ascent'],
     reveal: '.path-orb-current button[aria-expanded]',
     placement: 'top',
     requiredTab: TAB_PATH,
@@ -2250,6 +2283,26 @@ function closeRunningTour(): void {
   runningTourKey = null
 }
 
+/** Tours that are not one tab's, as the question before them names them. */
+const TOUR_NAMES: Partial<Record<TourKey, string>> = {
+  voice: 'voice control',
+  mixer: 'mixer',
+  'practice-modes': 'practice modes',
+}
+
+/** The tour, as the question before it names it: "the Exercises tour". */
+function tourName(key: TourKey, steps: readonly WalkthroughStep[]): string {
+  const first = steps[0]
+  const named =
+    TOUR_NAMES[key] ??
+    (key === 'guide'
+      ? GUIDE_SECTIONS.find((section) => section.id === first?.section)?.title
+      : first?.requiredTab === undefined
+        ? undefined
+        : tabLabel(first.requiredTab))
+  return named === undefined ? 'the tour' : `the ${named} tour`
+}
+
 /**
  * Start an arbitrary spotlight tour from a list of steps (no-op if none is
  * left to show).
@@ -2259,9 +2312,20 @@ function closeRunningTour(): void {
  * only when this one will really start: it is reported through the funnel
  * (done on its last step, exit on any other) and nothing else, so no guide
  * section is marked completed and the walkthrough-seen key is not written.
+ *
+ * Something open over a page the tour shows (a drill, Zen) would hide what
+ * its steps point at, so the tour asks to close it first and starts on a
+ * yes (src/lib/tour-screen.ts). With nothing open it starts at once.
  */
 export function startTour(steps: WalkthroughStep[], key: TourKey): void {
   if (!TOURS_AVAILABLE) return
+  const here = untrack(activeTab)
+  const tabs = [...new Set(steps.map((step) => step.requiredTab ?? here))]
+  startWhenClear(tabs, tourName(key, steps), () => runTour(steps, key))
+}
+
+/** Starts the tour `startTour` was asked for, with nothing open over it. */
+function runTour(steps: WalkthroughStep[], key: TourKey): void {
   const shown = steps.filter(
     (step) =>
       step.whenPresent !== true ||

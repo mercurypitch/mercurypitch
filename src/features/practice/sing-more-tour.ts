@@ -33,6 +33,8 @@ export const SING_MORE_TOUR: CoachTour = {
       id: 'repeat',
       kind: 'show',
       target: '[data-tour="sing.mode"], [data-tour="sing.repeat"]',
+      // Merc's run is drawn on the line, in Melody, and Repeat is on the bar.
+      screen: ['sing.melody', 'sing.bar'],
       keepCorner: true,
       corner: 'top-right',
       merc: 'point',
@@ -45,6 +47,7 @@ export const SING_MORE_TOUR: CoachTour = {
       kind: 'show',
       viewport: 'desktop',
       target: '[data-tour="sing.rest"]',
+      screen: ['sing.melody', 'sing.bar'],
       keepCorner: true,
       corner: 'top-right',
       merc: 'point',

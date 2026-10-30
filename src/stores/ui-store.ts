@@ -20,6 +20,7 @@ import type { ZenExerciseDefinition } from '@/features/zen/types'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+import { provideTourDetour, provideTourSetting } from '@/lib/tour-screen'
 import type { MelodyItem } from '@/types'
 import { nativeShellApi } from './native-shell-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
@@ -145,6 +146,29 @@ export const [editorView, setEditorView] =
 export const [singingSheetView, setSingingSheetView] =
   createSignal<boolean>(false)
 export const [pianoSheetView, setPianoSheetView] = createSignal<boolean>(false)
+
+// A tour step about the pitch line, the falling notes or the piano roll sets
+// the view it needs, and the view goes back once the tour ends
+// (src/lib/tour-screen.ts). Split shows the piano roll too.
+// eslint-disable-next-line solid/reactivity -- read once, untracked, as a step shows
+provideTourSetting('sing.melody', () => {
+  if (!singingSheetView()) return null
+  setSingingSheetView(false)
+  return () => setSingingSheetView(true)
+})
+// eslint-disable-next-line solid/reactivity -- read once, untracked, as a step shows
+provideTourSetting('piano.melody', () => {
+  if (!pianoSheetView()) return null
+  setPianoSheetView(false)
+  return () => setPianoSheetView(true)
+})
+// eslint-disable-next-line solid/reactivity -- read once, untracked, as a step shows
+provideTourSetting('compose.piano-roll', () => {
+  const was = editorView()
+  if (was === 'piano-roll' || was === 'split') return null
+  setEditorView('piano-roll')
+  return () => setEditorView(was)
+})
 
 // ── Library Modal ───────────────────────────────────────────
 
@@ -275,6 +299,18 @@ export function closeChallengeStage(): void {
 }
 
 exposeForE2E('__exitChallengeStage', closeChallengeStage)
+
+// Zen, a challenge stage and focus mode cover every tab's page, so a tour
+// asks before it closes the one that is up (src/lib/tour-screen.ts).
+// eslint-disable-next-line solid/reactivity -- tracked where the tour offer reads it
+provideTourDetour(() => {
+  if (singingZenLaunch() !== null)
+    return { name: 'Zen', close: closeSingingZen }
+  if (challengeStageLaunch() !== null)
+    return { name: 'the challenge', close: closeChallengeStage }
+  if (focusMode()) return { name: 'focus mode', close: exitFocusMode }
+  return null
+})
 
 // ── Karaoke Focus Mode (StemMixer fullscreen) ────────────────────
 

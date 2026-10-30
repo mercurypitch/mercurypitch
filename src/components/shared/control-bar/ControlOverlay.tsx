@@ -10,8 +10,9 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { createPersistedSignal } from '@/lib/storage'
+import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { applyPersistedValue, createPersistedSignal } from '@/lib/storage'
+import { provideTourSetting } from '@/lib/tour-screen'
 import { isMobile } from '@/lib/use-viewport'
 import styles from './ControlOverlay.module.css'
 
@@ -108,6 +109,18 @@ export const ControlOverlay: Component<ControlOverlayProps> = (props) => {
     `mp-${prefix}-control-hidden`,
     false,
   )
+  // Merc's Sing tour points at the bar's mic, play modes and rests: a bar
+  // dismissed comes back for it, and goes again once the tour ends, written
+  // through the flag so that holds after this bar has gone (tour-screen.ts).
+  if (prefix === 'singing') {
+    onCleanup(
+      provideTourSetting('sing.bar', () => {
+        if (!untrack(hidden)) return null
+        setHidden(false)
+        return () => applyPersistedValue(`mp-${prefix}-control-hidden`, 'true')
+      }),
+    )
+  }
   // Committed horizontal nudge, px from centre (0 = centred). Applied as the
   // relatively-positioned bar's `left` — NOT a transform, so the inner
   // <select>s don't sit under a transformed ancestor (the iOS Safari bug the

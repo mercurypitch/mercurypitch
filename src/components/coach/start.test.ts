@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { coachActive } from '@/lib/coach-state'
 import type { CoachTour } from '@/lib/coach-types'
 import type * as GpuGateModule from '@/lib/merc/gpu-gate'
+import { provideTourSetting } from '@/lib/tour-screen'
 import { COACH_ROOT_ID, endCoachTour, startCoachTour } from './start'
 
 const { trackTour } = vi.hoisted(() => ({ trackTour: vi.fn() }))
@@ -456,6 +457,89 @@ describe('"Show me more"', () => {
     await vi.waitFor(() => expect(coachActive()).toBeNull())
     expect(roots()).toHaveLength(0)
     expect(document.activeElement).toBe(control)
+  })
+
+  describe('the page its steps set', () => {
+    /** Singing's view as the page holds it, and how often a tour put it back. */
+    const page = { notation: true, putBack: 0 }
+    let remove: () => void = () => undefined
+
+    beforeEach(() => {
+      page.notation = true
+      page.putBack = 0
+      remove = provideTourSetting('sing.melody', () => {
+        if (!page.notation) return null
+        page.notation = false
+        return () => {
+          page.notation = true
+          page.putBack += 1
+        }
+      })
+    })
+    afterEach(() => remove())
+
+    /** A tour whose steps need the Melody view. */
+    const onMelody = (key: CoachTour['key'], title: string): CoachTour => {
+      const plain = tour(key, title)
+      return {
+        ...plain,
+        steps: plain.steps.map((step) => ({
+          ...step,
+          screen: ['sing.melody'],
+        })),
+      }
+    }
+
+    it('sets it as the step shows and puts it back once the tour ends', async () => {
+      const handle = await startCoachTour(onMelody('sing', 'That line'))
+      expect(page.notation).toBe(false)
+
+      handle.end()
+      await settle()
+      expect(page.notation).toBe(true)
+      expect(page.putBack).toBe(1)
+    })
+
+    it('keeps it set into the tour "Show me more" starts, and puts it back after that one', async () => {
+      await startCoachTour({
+        ...onMelody('sing', 'That line'),
+        more: {
+          key: 'sing-more',
+          label: 'Show me more',
+          load: async () => onMelody('sing-more', 'Repeat goes round'),
+        },
+      })
+
+      press('Show me more')
+      await showing('Repeat goes round')
+      // Not put back between the two: the page did not flick to Notation.
+      expect(page.putBack).toBe(0)
+      expect(page.notation).toBe(false)
+
+      press('Done')
+      await settle()
+      expect(page.notation).toBe(true)
+      expect(page.putBack).toBe(1)
+    })
+
+    it('puts it back when the tour "Show me more" offers does not load', async () => {
+      const steps = deferred<CoachTour>()
+      await startCoachTour({
+        ...onMelody('sing', 'That line'),
+        more: {
+          key: 'sing-more',
+          label: 'Show me more',
+          load: () => steps.promise,
+        },
+      })
+
+      press('Show me more')
+      await settle()
+      steps.reject(new Error('chunk failed'))
+
+      await vi.waitFor(() => expect(page.notation).toBe(true))
+      expect(page.putBack).toBe(1)
+    })
   })
 
   it('never shows the tour it offers once the page has moved on', async () => {

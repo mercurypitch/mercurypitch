@@ -1,6 +1,7 @@
 import { DAYS_PER_WEEK } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { createPersistedSignal } from '@/lib/storage'
+import { provideTourSetting } from '@/lib/tour-screen'
 
 export type PathView = 'ascent' | 'path'
 
@@ -19,6 +20,14 @@ const [view, setView] = createPersistedSignal<PathView>(
 
 export const pathView = view
 export const setPathView = setView
+
+// The Path tour points at the Ascent's orbs and trail: from the plain list
+// it shows the Ascent, and the list comes back once the tour ends.
+provideTourSetting('path.ascent', () => {
+  if (view() === 'ascent') return null
+  setView('ascent')
+  return () => setView('path')
+})
 
 export type PathDayState = 'complete' | 'current' | 'available' | 'locked'
 

@@ -30,6 +30,7 @@
 import type { CoachEventName } from '@/lib/coach-events'
 import type { MercState } from '@/lib/merc/constants'
 import type { TourKey } from '@/lib/tour-ids'
+import type { TourSettingName } from '@/lib/tour-screen'
 
 export type CoachStepKind = 'show' | 'do' | 'watch'
 
@@ -109,6 +110,13 @@ interface CoachStepBase {
   aside?: () => CoachAside | null
   /** Run while the step shows, from its first moment (see CoachStepRun). */
   run?: () => CoachStepRun
+  /**
+   * How the page has to be set for the step: Singing's Melody view, where
+   * the line is drawn, or its bar shown. Set as the step shows and put back
+   * the way the singer had it once the tour ends, and a "Show me more" tour
+   * after it with it (src/lib/tour-screen.ts).
+   */
+  screen?: readonly TourSettingName[]
   /**
    * On a wide screen the bubble stands in its corner (`corner`) even with a
    * ring, rather than beside it: a stop whose ring is on a control while the
