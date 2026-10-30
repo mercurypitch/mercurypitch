@@ -2078,3 +2078,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   updated (backups l4entr/polishB/). B's cache entries removed. Nothing running.
   14:09 rate limit still allowed_warning (resets 14:10): at the 14:13 one-shot, start C AND D (B
   is done, so two at a time = C + D), then E when one of them reports.
+- 14:2x rate limit "allowed" (new window resets 18:30Z): groups C (BRIEF-C) and D (BRIEF-D)
+  started together, xhigh. Running: C, D. Next: E when one reports; after all six, the full check,
+  a frozen copy, film-02 (render-l4.sh, WORKERS=2), fresh FILM2 critic (critics/FILM2.txt).
+  Higgsfield reconnected but still has no generate tool (#209 stays blocked).
