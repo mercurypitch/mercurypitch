@@ -1198,3 +1198,18 @@ replaced it. The builder's record: critics never read it.
        Check 0 errors, clock-lint, merc-tags (12 tags, 0 stale) and the text sweep are clean.
      - Critic F-04 verifies all three from frozen copies (S14 and S15 new; S16 round 2's, as F-03
        saw it).
+
+115. **S14 to S16 after component critic F-04 (all three KEEP): group F's component rounds close.**
+     - Item 1, the gold semitone corner reading half-drawn (72 to 92 px along the upper tread at
+       S14's push-in scale, ending round), is the third F critic in a row to name it (F-02, F-03,
+       F-04). It stays for now: the run along the tread is what makes the semitone read gold at
+       phone width (decision 85). The film critic's first round sees it at film scale; if it names
+       it too, the kit changes once for every scene, by one of the critic's two options (end the
+       gold at the riser's top corner, or run it the tread's full width).
+     - Items 2 and 3 are cosmetic and wait for the polish round after the film critic's first
+       round, with D's and E's (decisions 107 and 111):
+       - Item 2: the frame holds only the rung and the Mercs for 0.77 s across the cut (469.94 to
+         470.71). The film critic judges it with the narration and the music under it; the
+         critic's fix is to scale the travelling rung up about 2.5 times so it reads as an object.
+       - Item 3: the gear's faint halo (luma over 30) comes within 6 px of "first:" and of
+         "Settings" (8 px asked); widen its slot 2 px on each side or shrink the halo.

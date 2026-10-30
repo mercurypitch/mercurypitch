@@ -1789,3 +1789,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   b114/). Frozen f4/ (S14, S15 new; S16 = f3). Critic F-04 launched (critics/F4.txt).
   Agents now: C (rendering) + critic F-04.
 - Queue: B-04 (B4.txt), A-04 (A4.txt) as slots free; C-03 after C (freeze c3/; C3.txt ready).
+- 02:0x critic F-04 (saved): KEEP S14, S15, S16; group F closes. DECISIONS 115: gold corner stays
+  for the film critic (3rd F critic to name it; options: end at the riser's top corner, or full
+  tread width); 0.77 s near-empty across the S14/S15 cut and the gear halo (6 px) wait for the
+  polish round after the film critic's first. LEDGER 25. Critic B-04 launched (b4/).
+  Agents now: C (rendering) + critic B-04.
+- Queue: A-04 (A4.txt) when a slot frees; C-03 after C (freeze c3/; C3.txt ready). Groups now:
+  D KEEP x3, E KEEP x2, F KEEP x3; A, B, C verifying. Then the film render (no builder rendering).
