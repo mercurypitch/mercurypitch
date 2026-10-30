@@ -97,6 +97,27 @@ export function patternOf(itemId: string): MetrePattern | undefined {
   return METRE_PATTERNS.find((pattern) => pattern.itemId === itemId)
 }
 
+/**
+ * How a bar of `pattern` groups, for the reveal: an eighths bar in the
+ * runs its kick and snare open (7/8 as 2 + 2 + 3, 6/8 as 3 + 3), a
+ * quarters bar whole.
+ */
+export function metreGroups(pattern: MetrePattern): number[] {
+  const { beats, unit } = pattern.metre
+  if (unit === 4) return [beats]
+  const starts = [
+    ...new Set(
+      pattern.steps
+        .filter(
+          (hit) =>
+            hit.step === 0 || hit.voice === 'kick' || hit.voice === 'snare',
+        )
+        .map((hit) => hit.step),
+    ),
+  ].sort((a, b) => a - b)
+  return starts.map((start, i) => (starts[i + 1] ?? beats) - start)
+}
+
 /** The length of one step in ms at a quarter of `quarterMs`. */
 export function stepMs(metre: MetreId, quarterMs: number): number {
   return metre.unit === 8 ? quarterMs / 2 : quarterMs

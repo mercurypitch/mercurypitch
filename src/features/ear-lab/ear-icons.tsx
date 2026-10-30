@@ -179,6 +179,34 @@ export function IconMetronome(p: IconProps): JSX.Element {
   )
 }
 
+/** Drift's answers: a tempo held, gained and lost. */
+export function IconSteady(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3.5 12h17" />
+      <path d="M6 9v6M10 9v6M14 9v6M18 9v6" />
+    </svg>
+  )
+}
+
+export function IconFaster(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3.5 18.5C9 18 14 14 20 6" />
+      <path d="M14.5 6H20v5.5" />
+    </svg>
+  )
+}
+
+export function IconSlower(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3.5 5.5C9 6 14 10 20 18" />
+      <path d="M14.5 18H20v-5.5" />
+    </svg>
+  )
+}
+
 export function IconTwelve(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

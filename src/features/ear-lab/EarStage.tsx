@@ -735,6 +735,9 @@ export interface StagePadProps {
   keycap?: string
   label: string
   sub?: string
+  /** Drawn over the name in the native room; the bench shows its
+   *  keycap instead. */
+  icon?: JSX.Element
   state?: PadState
   /** A lamp on the pad, lit while the stimulus it stands for sounds —
    *  "the first" has a referent on screen. Absent: no lamp. */

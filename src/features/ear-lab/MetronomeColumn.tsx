@@ -12,8 +12,9 @@ import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { DriftWay } from '@/lib/ear/beat'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface MetronomeColumnProps {
+export interface MetronomeColumnProps {
   /** Clicks in the train. */
   count: number
   /** 1-based index of the click sounding; 0 for none. */
@@ -27,7 +28,7 @@ const PIVOT_X = 260
 const PIVOT_Y = 190
 const ARM_LEN = 130
 
-export function MetronomeColumn(props: MetronomeColumnProps): JSX.Element {
+function DrawnMetronomeColumn(props: MetronomeColumnProps): JSX.Element {
   const lean = () =>
     props.reveal?.way === 'faster'
       ? 22
@@ -117,3 +118,8 @@ export function MetronomeColumn(props: MetronomeColumnProps): JSX.Element {
     </svg>
   )
 }
+
+export const MetronomeColumn = skinnable(
+  'MetronomeColumn',
+  DrawnMetronomeColumn,
+)

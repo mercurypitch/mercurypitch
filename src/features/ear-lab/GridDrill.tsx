@@ -182,7 +182,11 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
           running={run.phase() === 'stimulus'}
           reveal={
             run.phase() === 'reveal' && pattern()
-              ? { index: pattern()?.displacedIndex ?? 0, early: early() }
+              ? {
+                  index: pattern()?.displacedIndex ?? 0,
+                  early: early(),
+                  ms: Math.abs(pattern()?.shiftMs ?? 0),
+                }
               : null
           }
         />
