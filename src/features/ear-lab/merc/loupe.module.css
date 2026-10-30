@@ -1,6 +1,7 @@
 /* Hairline's loupe, upright (RoomLoupe.tsx). Sized in the drawing's own
    units, which the room's figure shows at about one to one on a phone:
-   the words in the glass stay at 13 px or more there. */
+   the words in the glass stay at 13 px or more there. Lit glass in the
+   room's language: a violet rim, white hairlines, teal for the answer. */
 
 .loupe {
   display: block;
@@ -11,34 +12,34 @@
 }
 
 .rail {
-  stroke: var(--merc-brass, #c9a45e);
-  stroke-width: 2;
+  stroke: rgb(200 205 235 / 50%);
+  stroke-width: 1.5;
   stroke-linecap: round;
 }
 
 .tick {
-  stroke: var(--merc-brass, #c9a45e);
-  stroke-width: 1.2;
+  stroke: rgb(200 205 235 / 50%);
+  stroke-width: 1.1;
   stroke-linecap: round;
 }
 
 .tickMajor {
-  stroke-width: 2;
+  stroke-width: 1.6;
 }
 
 .caption {
-  font: 500 14px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--merc-muted, #b9b1a4);
+  font: 500 14px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--room-text-3, #a9b2c8);
 }
 
 .lead {
-  stroke: rgb(239 230 214 / 18%);
+  stroke: rgb(255 255 255 / 18%);
   stroke-width: 1;
   stroke-dasharray: 3 4;
 }
 
 .hair {
-  stroke: var(--merc-mercury, #c5ced8);
+  stroke: #eef0ff;
   stroke-width: 2.5;
   stroke-linecap: round;
 }
@@ -48,39 +49,38 @@
 }
 
 .higher {
-  stroke: var(--merc-brass-bright, #e7c67d);
+  stroke: var(--room-right-pale, #8ff5e3);
 }
 
 .mover {
-  transition: transform 260ms var(--merc-ease, ease);
+  transition: transform 260ms var(--room-ease, ease);
 }
 
 .disc {
-  fill: #0f1216;
+  fill: #0a1029;
   fill-opacity: 0.96;
-  stroke: var(--merc-brass, #c9a45e);
+  stroke: var(--room-lit, #9a87f0);
   stroke-width: 3;
 }
 
 .glass {
-  stroke: rgb(201 164 94 / 35%);
+  stroke: rgb(154 135 240 / 35%);
   stroke-width: 1;
 }
 
 .readout {
-  font-family: var(--merc-serif, Georgia, serif);
-  font-size: 20px;
-  fill: var(--merc-mercury, #c5ced8);
+  font: 600 20px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: #ffffff;
 }
 
 .tag {
-  font: 600 15px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--merc-brass-bright, #e7c67d);
+  font: 600 15px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--room-right-pale, #8ff5e3);
 }
 
 .magnification {
-  font: 600 15px var(--merc-sans, 'Inter Variable', system-ui, sans-serif);
-  fill: var(--merc-muted, #b9b1a4);
+  font: 600 15px var(--room-sans, 'Inter Variable', system-ui, sans-serif);
+  fill: var(--room-text-3, #a9b2c8);
 }
 
 @media (prefers-reduced-motion: reduce) {

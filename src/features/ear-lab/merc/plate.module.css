@@ -1,7 +1,9 @@
 /* ============================================================
-   The engraved plates: a run's reading, a rated run's rating, a
-   calibration's seal. Brass, screwed to the bench, dark ink: AA
-   contrast at every size, the smallest line 13px.
+   The plates: a run's reading, a rated run's rating, a calibration's
+   seal, as a result on the room's stage (docs/plans/ear-lab-native-
+   look.md): the number in the kit's 700 weight, the words in Inter, the
+   round dots teal and red, and the slips on a glass card. AA contrast at
+   every size, the smallest line 13px.
    ============================================================ */
 
 .wrap {
@@ -20,44 +22,24 @@
   width: min(100%, 360px);
   box-sizing: border-box;
   padding: 18px 22px 16px;
-  border-radius: 14px;
-  border: 1px solid #f3dfae;
-  background: linear-gradient(160deg, #efd8a2 0%, #dcbd7a 55%, #cfae69 100%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 248 225 / 70%),
-    inset 0 -2px 6px rgb(80 55 20 / 35%),
-    0 18px 40px rgb(0 0 0 / 55%);
-  color: #24190a;
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgb(124 77 255 / 12%), transparent 70%),
+    linear-gradient(180deg, rgb(16 22 48 / 88%), rgb(8 12 28 / 88%));
+  box-shadow: 0 18px 40px rgb(0 0 0 / 45%);
+  color: #f4f1ff;
   text-align: center;
   animation: plate-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.screw {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #8a6a38;
-}
-
-.screwTl {
-  left: 10px;
-  top: 10px;
-}
-
-.screwTr {
-  right: 10px;
-  top: 10px;
-}
-
-.screwBl {
-  left: 10px;
-  bottom: 10px;
-}
-
+/* The brass plate's screws: the glass card has none. */
+.screw,
+.screwTl,
+.screwTr,
+.screwBl,
 .screwBr {
-  right: 10px;
-  bottom: 10px;
+  display: none;
 }
 
 .kickerRow {
@@ -74,23 +56,24 @@
     600 13px/1 'Inter Variable',
     'Inter',
     sans-serif;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3a2a12;
+  color: #a9b2c8;
 }
 
 .badge {
-  min-height: 22px;
+  min-height: 24px;
   display: inline-flex;
   align-items: center;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid #5a4214;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  background: rgb(10 18 44 / 60%);
   font:
     600 13px/1 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #3a2a12;
+  color: #e7e3f7;
 }
 
 .value {
@@ -98,41 +81,42 @@
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 4px;
-  font-family:
-    'Crimson Pro Variable', 'Crimson Pro', 'Iowan Old Style', Georgia, serif;
-  color: #24190a;
+  gap: 6px;
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #fbf9ff;
 }
 
 .number {
-  font-size: 80px;
-  line-height: 0.9;
-  font-weight: 600;
+  font-size: 72px;
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .unit {
-  font-size: 38px;
+  font-size: 32px;
   line-height: 1;
+  font-weight: 600;
+  color: #d9d2ff;
 }
 
 .direction {
   margin: 4px 0 0;
   font:
-    600 13px/1.2 'Inter Variable',
+    500 13px/1.2 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #3a2a12;
+  color: #a9b2c8;
 }
 
 .meaning {
   margin: 8px 0 0;
   font:
-    italic 400 17px/1.3 'Crimson Pro Variable',
-    'Crimson Pro',
-    'Iowan Old Style',
-    Georgia,
-    serif;
-  color: #2f2210;
+    400 15px/1.35 'Inter Variable',
+    'Inter',
+    sans-serif;
+  color: #b6bdd1;
 }
 
 .rule {
@@ -141,7 +125,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(58 42 18 / 55%),
+    rgb(255 255 255 / 18%),
     transparent
   );
 }
@@ -149,10 +133,10 @@
 .strong {
   margin: 0;
   font:
-    600 14px/1.3 'Inter Variable',
+    600 15px/1.3 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #2f2210;
+  color: #f4f1ff;
 }
 
 .stats {
@@ -161,7 +145,7 @@
     500 13px/1.3 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #3a2a12;
+  color: #a9b2c8;
 }
 
 .small {
@@ -170,31 +154,31 @@
     400 13px/1.35 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #3a2a12;
+  color: #a9b2c8;
 }
 
 .dots {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   margin-top: 10px;
 }
 
 .dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #2f6f66;
+  background: #2ee6c9;
 }
 
 .dotMiss {
-  background: #7d2f37;
+  background: #ff6a5c;
 }
 
 .dotSkip {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px #5a4214;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 32%);
 }
 
 /* The glass under a plate, on the room. */
@@ -204,8 +188,9 @@
   gap: 4px;
   padding: 8px 12px;
   box-sizing: border-box;
-  border-radius: 12px;
-  background: rgb(10 11 13 / 72%);
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(10 18 44 / 62%);
 }
 
 .glassCaption {
@@ -214,26 +199,26 @@
     400 13px/1.3 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #b9b1a4;
+  color: #a9b2c8;
 }
 
 /* "Where it slipped": this run's slips, counted. */
 .slips {
   width: min(100%, 360px);
   box-sizing: border-box;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgb(239 230 214 / 14%);
-  background: rgb(20 23 28 / 92%);
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(10 18 44 / 62%);
 }
 
 .slipsTitle {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font:
     600 15px/1.2 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #efe6d6;
+  color: #f4f1ff;
 }
 
 .slipList {
@@ -241,7 +226,7 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .slip {
@@ -253,32 +238,28 @@
     400 14px/1.2 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #d8cfbf;
+  color: #b6bdd1;
 }
 
 .slipName {
   font:
-    italic 400 16px/1 'Crimson Pro Variable',
-    'Crimson Pro',
-    'Iowan Old Style',
-    Georgia,
-    serif;
-  color: #efe6d6;
+    600 15px/1 'Inter Variable',
+    'Inter',
+    sans-serif;
+  color: #f4f1ff;
 }
 
 .slipHeard {
   font:
-    italic 400 16px/1 'Crimson Pro Variable',
-    'Crimson Pro',
-    'Iowan Old Style',
-    Georgia,
-    serif;
-  color: #f0a3ab;
+    600 15px/1 'Inter Variable',
+    'Inter',
+    sans-serif;
+  color: #ffb1a8;
 }
 
 .slipCount {
   margin-left: auto;
-  color: #b9b1a4;
+  color: #a9b2c8;
 }
 
 /* A slip's offer: a pair practice on its two. A row of its own under the
@@ -286,16 +267,16 @@
 .practise {
   flex-basis: 100%;
   min-height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgb(239 230 214 / 18%);
-  background: none;
-  color: #efe6d6;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 1px solid rgb(190 170 255 / 45%);
+  background: rgb(154 135 240 / 14%);
+  color: #f4f1ff;
   font:
     600 14px/1.25 'Inter Variable',
     'Inter',
     sans-serif;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -305,18 +286,23 @@
   gap: 10px;
 }
 
+/* The buttons under the main one share the row, or one fills it. */
 .pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.pair > * {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .plain {
-  min-height: 44px;
-  border-radius: 12px;
-  border: 1px solid rgb(239 230 214 / 18%);
+  min-height: 48px;
+  border-radius: 24px;
+  border: 1.5px solid rgb(255 255 255 / 30%);
   background: none;
-  color: #efe6d6;
+  color: #f4f1ff;
   font:
     600 15px/1 'Inter Variable',
     'Inter',

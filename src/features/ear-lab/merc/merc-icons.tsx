@@ -36,11 +36,13 @@ export function IconReplay(p: IconProps): JSX.Element {
 }
 
 /** The "?" in the header. */
+/** "?" in a ring, the shell's monoline help glyph. */
 export function IconQuestion(p: IconProps): JSX.Element {
   return (
-    <svg {...frame(p.size)} class={p.class} stroke-width="2">
-      <path d="M9.2 9.3a2.9 2.9 0 1 1 4.2 2.6c-.9.5-1.4 1.1-1.4 2.1v.6" />
-      <path d="M12 17.6v.3" />
+    <svg {...frame(p.size)} class={p.class} stroke-width="1.8">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.2-2.4 3.6" />
+      <path d="M12 17h.01" />
     </svg>
   )
 }

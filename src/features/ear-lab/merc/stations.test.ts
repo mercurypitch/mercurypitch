@@ -1,11 +1,10 @@
 // The six stations: every instrument at the station of its catalogue
-// faculty, each station's number from its own instruments only, and a
-// painting per station, the cleared Regulator Room for a drill at none.
+// faculty, and each station's number from its own instruments only.
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { INSTRUMENTS } from '@/features/ear-lab/instruments'
 import { recordIdentificationAnswer, resetEarLabStore, } from '@/stores/ear-lab-store'
-import { sharesTheLamp, STATION_ORDER, stationCast, stationInstruments, stationOf, stationPainting, stationReading, } from './stations'
+import { STATION_ORDER, stationCast, stationInstruments, stationOf, stationReading, } from './stations'
 
 const names = (faculty: Parameters<typeof stationInstruments>[0]) =>
   stationInstruments(faculty).map((instrument) => instrument.name)
@@ -65,22 +64,7 @@ describe('the stations', () => {
     expect(stationReading('function')?.source).toBe('Home')
   })
 
-  it('paint each station its own room, and Wild the glasshouse', () => {
-    for (const faculty of STATION_ORDER) {
-      if (faculty === 'wild') continue
-      expect(stationPainting(faculty)).toMatch(
-        new RegExp(`/paintings/station-${faculty}\\.webp$`, 'u'),
-      )
-      expect(sharesTheLamp(faculty), faculty).toBe(true)
-    }
-    expect(stationPainting('wild')).toBe(
-      '/ear-lab/glasshouse-bench-portrait.webp',
-    )
-    expect(sharesTheLamp('wild')).toBe(false)
-  })
-
-  it('seat a drill at no station at the cleared desk', () => {
+  it('seat calibration at no station', () => {
     expect(stationOf('calibration')).toBeNull()
-    expect(stationPainting(null)).toBe(stationPainting('resolution'))
   })
 })

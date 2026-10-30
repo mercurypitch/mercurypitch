@@ -41,9 +41,13 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
         aria-label="Your phrase so far"
       >
         <For each={props.answered}>
-          {(degree) => <span class={styles.phraseChip}>{word(degree)}</span>}
+          {(degree) => (
+            <span class={styles.phraseChip} data-chip="">
+              {word(degree)}
+            </span>
+          )}
         </For>
-        <span class={styles.phraseCount}>
+        <span class={styles.phraseCount} data-count="">
           {props.answered.length} of {props.expectedLength}
         </span>
         <Show when={props.armed && props.answered.length > 0}>
@@ -101,14 +105,19 @@ export function SungStrip(props: SungStripProps): JSX.Element {
         classList={{ [styles.micLampOn]: props.listening }}
         style={{ '--mic-level': String(micLevelFraction(props.level)) }}
         data-testid="ear-mic-lamp"
+        data-on={props.listening ? '' : undefined}
         aria-hidden="true"
       >
         <IconMic size={14} />
       </span>
       <For each={props.degrees}>
-        {(degree) => <span class={styles.phraseChip}>{word(degree)}</span>}
+        {(degree) => (
+          <span class={styles.phraseChip} data-chip="">
+            {word(degree)}
+          </span>
+        )}
       </For>
-      <span class={styles.phraseCount}>
+      <span class={styles.phraseCount} data-count="">
         {props.degrees.length} of {props.expectedLength}
       </span>
     </div>

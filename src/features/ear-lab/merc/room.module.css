@@ -1,33 +1,39 @@
 /* ============================================================
-   The drill room — the Ear Lab with Merc, on a phone.
-   One world (the Regulator Room's painting, one fixed crop, the
-   instrument in the lamp light), a header, the run line, and Merc's
-   console pinned to the bottom. Every number in the room is on a dark
-   backing of 60% or more, and nothing under 13px stands on the world.
+   The drill room — the Ear Lab with Merc, on a phone, in the native
+   app's language (docs/plans/ear-lab-native-look.md): the dark stage
+   lit in its station's two colours, glass for the buttons, the chip and
+   Merc's bubble, lit violet for your turn, teal for the answer and red
+   for a miss, and Inter for every word. The header, the run chip, the
+   stage and Merc's console stand on the one ground; nothing under 13px,
+   no target under 44.
    ============================================================ */
 
 .room {
-  --merc-room: #0a0b0d;
-  --merc-slate: #14171c;
-  --merc-console: #0d0f12;
-  --merc-brass: #c9a45e;
-  --merc-brass-bright: #e7c67d;
-  --merc-brass-pale: #f0d697;
-  --merc-mercury: #c5ced8;
-  --merc-signal: #5fc7b8;
-  --merc-signal-pale: #8fe0d4;
-  --merc-garnet: #a3454f;
-  --merc-garnet-pale: #f0a3ab;
-  --merc-parchment: #efe6d6;
-  --merc-ink: #1d1812;
-  --merc-muted: #b9b1a4;
-  --merc-dim: #8d97a3;
-  --merc-line: rgb(239 230 214 / 14%);
-  --merc-serif:
-    'Crimson Pro Variable', 'Crimson Pro', 'Iowan Old Style', Georgia, serif;
-  --merc-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --merc-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --merc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --room-ink: #050816;
+  --room-text: #f4f1ff;
+  --room-text-2: #b6bdd1;
+  --room-text-3: #a9b2c8;
+  --room-glass: rgb(22 28 50 / 66%);
+  --room-glass-deep: rgb(10 18 44 / 62%);
+  --room-glass-line: rgb(255 255 255 / 15%);
+  --room-line: rgb(255 255 255 / 8%);
+  --room-lit: #9a87f0;
+  --room-lit-pale: #c9bcff;
+  --room-lit-edge: rgb(166 148 255 / 72%);
+  --room-lit-fill: #7c4dff;
+  --room-cyan: #9fe6ff;
+  --room-right: #2ee6c9;
+  --room-right-pale: #8ff5e3;
+  --room-wrong: #ff6a5c;
+  --room-wrong-pale: #ffb1a8;
+  --room-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --room-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* The station's light, violet and blue until a station says. */
+  --room-a: #9a87f0;
+  --room-b: #5d8cff;
+  --room-glow-a: rgb(154 135 240 / 22%);
+  --room-glow-b: rgb(93 140 255 / 14%);
 
   position: fixed;
   inset: 0;
@@ -35,15 +41,62 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   /* Clip, not hidden: a hidden box is still a scroll container, and a
-     focus move scrolled the room sideways onto the painting's overhang. */
+     focus move scrolled the room sideways. */
   overflow: clip;
   padding-top: env(safe-area-inset-top, 0px);
-  background: var(--merc-room);
-  color: var(--merc-parchment);
-  font: 400 16px/1.5 var(--merc-sans);
+  background:
+    radial-gradient(90% 46% at 50% 36%, var(--room-glow-a), transparent 70%),
+    radial-gradient(70% 34% at 82% 62%, var(--room-glow-b), transparent 70%),
+    linear-gradient(180deg, #050816 0%, #0a1030 44%, #070b1d 72%, #05081a 100%);
+  background-color: var(--room-ink);
+  color: var(--room-text);
+  font: 400 16px/1.5 var(--room-sans);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
+}
+
+/* Each station's own pair of lights, as each premium room has its own. */
+.room[data-station='resolution'] {
+  --room-a: #9a87f0;
+  --room-b: #5d8cff;
+  --room-glow-a: rgb(154 135 240 / 22%);
+  --room-glow-b: rgb(93 140 255 / 14%);
+}
+
+.room[data-station='time'] {
+  --room-a: #7fdcf5;
+  --room-b: #5d8cff;
+  --room-glow-a: rgb(127 220 245 / 20%);
+  --room-glow-b: rgb(93 140 255 / 14%);
+}
+
+.room[data-station='colour'] {
+  --room-a: #de8cf0;
+  --room-b: #9a87f0;
+  --room-glow-a: rgb(222 140 240 / 20%);
+  --room-glow-b: rgb(154 135 240 / 14%);
+}
+
+.room[data-station='shape'] {
+  --room-a: #6f9bff;
+  --room-b: #7fdcf5;
+  --room-glow-a: rgb(111 155 255 / 22%);
+  --room-glow-b: rgb(127 220 245 / 12%);
+}
+
+.room[data-station='function'] {
+  --room-a: #b8a6ff;
+  --room-b: #de8cf0;
+  --room-glow-a: rgb(184 166 255 / 22%);
+  --room-glow-b: rgb(222 140 240 / 12%);
+}
+
+.room[data-station='wild'] {
+  --room-a: #7fdcf5;
+  --room-b: #9a87f0;
+  --room-glow-a: rgb(127 220 245 / 18%);
+  --room-glow-b: rgb(154 135 240 / 14%);
 }
 
 .room :where(button) {
@@ -53,7 +106,7 @@
 }
 
 .room :where(button:focus-visible, [role='slider']:focus-visible) {
-  outline: 2px solid var(--merc-brass-bright);
+  outline: 2px solid var(--room-lit-pale);
   outline-offset: 2px;
 }
 
@@ -69,7 +122,7 @@
   border: 0;
 }
 
-/* ── The world ─────────────────────────────────────────────── */
+/* ── The stage ─────────────────────────────────────────────── */
 
 .world {
   grid-row: 3;
@@ -77,74 +130,6 @@
   min-height: 0;
   display: grid;
   place-items: center;
-  /* The painting is laid out from the figure's centre, so the lamp
-     light lands on the instrument whatever the console's height. */
-}
-
-.painting {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: max(133.4vw, 420px);
-  aspect-ratio: 9 / 16;
-  transform: translate(-50%, -57%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.painting img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  user-select: none;
-}
-
-/* The bulb's glare, dimmed where it sits on the painting. */
-.painting::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    15% 2.8% at 32.7% 48.9%,
-    rgb(10 11 13 / 62%),
-    transparent 100%
-  );
-}
-
-.ownLight .painting::after {
-  background: none;
-}
-
-/* The room around the world: dark at the top for the header and the
-   run line, which stand outside the world's box, so the room shades
-   them itself... */
-.room::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 1;
-  height: calc(env(safe-area-inset-top, 0px) + 220px);
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgb(10 11 13 / 92%) 0,
-    rgb(10 11 13 / 70%) 45%,
-    rgb(10 11 13 / 0%) 100%
-  );
-}
-
-/* ...and dark at the bottom where the console rises. */
-.shade {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgb(10 11 13 / 0%) 62%,
-    rgb(10 11 13 / 72%) 100%
-  );
 }
 
 .figure {
@@ -155,27 +140,13 @@
   max-height: 100%;
   display: grid;
   place-items: center;
-  padding: 8px 16px 18px;
+  padding: 8px 16px 12px;
   box-sizing: border-box;
 }
 
 .figure > :global(*) {
   max-width: 100%;
   max-height: 100%;
-}
-
-/* The instrument stands on the desk: a contact shadow under it. */
-.figure::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  width: 58%;
-  height: 16px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 58%), transparent);
-  z-index: -1;
 }
 
 /* ── Header ────────────────────────────────────────────────── */
@@ -186,15 +157,16 @@
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  padding: 8px 16px 0;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 16px 0;
   box-sizing: border-box;
   /* The app bar's own rules reach every <header> (AppHeader.css): not
      its colour here. */
   background: none;
 }
 
+/* The shell's glass round button: Close and "?". */
 .round {
   flex: none;
   width: 44px;
@@ -203,14 +175,12 @@
   place-items: center;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgb(239 230 214 / 16%);
-  background: rgb(20 23 28 / 86%);
-  color: #d8cfbf;
+  border: 1px solid var(--room-glass-line);
+  background: var(--room-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #ebe8f8;
   cursor: pointer;
-}
-
-.roundBrass {
-  color: var(--merc-brass);
 }
 
 .identity {
@@ -219,15 +189,13 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: rgb(10 11 13 / 62%);
+  padding-left: 2px;
 }
 
 .name {
   margin: 0;
-  font: 600 17px/1.15 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 600 17px/1.15 var(--room-sans);
+  color: #f6f4ff;
   overflow-wrap: anywhere;
   /* Nor its title: a gradient clipped to the text, and a pointer. */
   background: none;
@@ -236,51 +204,59 @@
 }
 
 .mode {
-  font: 400 13px/1.2 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.15 var(--room-sans);
+  color: var(--room-text-3);
 }
 
-/* ── Run line ──────────────────────────────────────────────── */
+/* ── The run chip ──────────────────────────────────────────── */
 
 .runLine {
   grid-row: 2;
   position: relative;
   z-index: 3;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
   min-height: 40px;
   padding: 6px 16px 0;
   box-sizing: border-box;
 }
 
+/* The room kit's violet chip: where the run is, never whether you are
+   right. */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 32px;
   max-width: 100%;
-  padding: 2px 12px;
+  padding: 2px 13px;
   box-sizing: border-box;
   border-radius: 999px;
-  background: rgb(20 23 28 / 86%);
-  border: 1px solid rgb(239 230 214 / 12%);
+  border: 1px solid rgb(190 160 255 / 34%);
+  background: rgb(155 120 255 / 16%);
+  color: #efe9ff;
 }
 
 .pillWrong {
-  border-color: rgb(163 69 79 / 65%);
+  border-color: rgb(255 106 92 / 60%);
 }
 
 .level {
-  font: 600 13px/1.2 var(--merc-mono);
-  color: var(--merc-brass-bright);
+  font: 600 13px/1.2 var(--room-sans);
+  color: #efe9ff;
   white-space: nowrap;
 }
 
 .left {
-  font: 500 13px/1.2 var(--merc-sans);
-  color: #d8cfbf;
+  font: 500 13px/1.2 var(--room-sans);
+  color: rgb(239 233 255 / 72%);
   white-space: nowrap;
+}
+
+.left b {
+  font-weight: 600;
+  color: #efe9ff;
 }
 
 .trace {
@@ -291,29 +267,29 @@
 .dots {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 1.4px solid rgb(239 230 214 / 40%);
+  border: 1.3px solid rgb(239 233 255 / 42%);
   box-sizing: border-box;
 }
 
 .dotAnswered {
-  background: rgb(239 230 214 / 62%);
+  background: rgb(239 233 255 / 72%);
   border-color: transparent;
 }
 
 .dotNow {
-  border-color: var(--merc-brass-bright);
-  box-shadow: 0 0 0 2px rgb(231 198 125 / 20%);
+  border-color: #c6b8ff;
+  box-shadow: 0 0 0 2px rgb(198 184 255 / 25%);
 }
 
-/* ── Console ───────────────────────────────────────────────── */
+/* ── Console: Merc at the foot of the stage, then the pads ─── */
 
 .console {
   grid-row: 4;
@@ -321,23 +297,15 @@
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-radius: 24px 24px 0 0;
-  border-top: 1px solid var(--merc-line);
-  background: linear-gradient(
-    180deg,
-    rgb(18 20 25 / 97%) 0%,
-    var(--merc-console) 100%
-  );
-  box-shadow: 0 -18px 36px rgb(0 0 0 / 45%);
+  gap: 10px;
+  padding: 4px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 .mercRow {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: flex-end;
+  gap: 6px;
   min-height: 72px;
 }
 
@@ -348,42 +316,62 @@
   height: 72px;
 }
 
-/* Merc's own contact shadow on the console's desk. */
+/* Merc in his own light, on a contact shadow. */
+.mercBox::before {
+  content: '';
+  position: absolute;
+  inset: 4px 2px 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(110 140 255 / 42%),
+    rgb(154 135 240 / 12%) 60%,
+    transparent
+  );
+  z-index: -1;
+}
+
 .mercBox::after {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: 2px;
-  width: 50px;
-  height: 8px;
+  bottom: 0;
+  width: 44px;
+  height: 7px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 70%), transparent);
+  background: radial-gradient(closest-side, rgb(0 0 0 / 75%), transparent);
   z-index: -1;
 }
 
+/* The room kit's glass bubble. */
 .bubble {
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
-  margin-top: 4px;
-  padding: 9px 13px;
-  border-radius: 14px;
-  background: var(--merc-parchment);
-  color: var(--merc-ink);
-  box-shadow: 0 8px 22px rgb(0 0 0 / 35%);
+  margin-bottom: 14px;
+  padding: 10px 14px 11px;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(12 20 48 / 82%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 35%);
+  color: #f6f3ff;
   transition: opacity 180ms ease;
 }
 
 .bubble::before {
   content: '';
   position: absolute;
-  left: -5px;
-  top: 22px;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: var(--merc-parchment);
+  left: -6px;
+  bottom: 14px;
+  width: 11px;
+  height: 11px;
+  border-left: 1px solid rgb(255 255 255 / 14%);
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  border-bottom-left-radius: 2px;
+  background: rgb(12 20 48 / 96%);
   transform: rotate(45deg);
 }
 
@@ -394,19 +382,22 @@
 
 .say {
   margin: 0;
-  font: 600 18px/1.22 var(--merc-serif);
+  font: 500 15px/1.36 var(--room-sans);
+  text-wrap: pretty;
 }
 
+/* Compare's hint, under the verdict. */
 .aside {
-  margin: 2px 0 0;
-  font: italic 400 15px/1.25 var(--merc-serif);
-  color: #4a3a28;
+  margin: 4px 0 0;
+  font: 400 13px/1.3 var(--room-sans);
+  color: #b2bad0;
 }
 
+/* Where the staircase goes next: "Gap 12.5¢ → 10.5¢". */
 .move {
-  margin: 4px 0 0;
-  font: 600 13px/1.2 var(--merc-mono);
-  color: #4a3a28;
+  margin: 5px 0 0;
+  font: 600 13px/1.2 var(--room-sans);
+  color: var(--room-lit-pale);
 }
 
 .controls {
@@ -419,8 +410,8 @@
 /* The drills' own console notes, warnings and links, in the room's ink. */
 .controls :where(p) {
   margin: 0;
-  font: 400 14px/1.4 var(--merc-sans);
-  color: #d8cfbf;
+  font: 400 14px/1.4 var(--room-sans);
+  color: var(--room-text-2);
 }
 
 .controls :where([role='radiogroup']) {
@@ -431,23 +422,65 @@
 .controls :where([role='radiogroup'] button) {
   flex: 1 1 0;
   min-height: 44px;
-  border-radius: 12px;
-  border: 1px solid rgb(239 230 214 / 18%);
-  background: none;
-  font: 600 15px/1 var(--merc-sans);
-  color: #d8cfbf;
+  border-radius: 22px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  background: var(--room-glass-deep);
+  font: 600 15px/1 var(--room-sans);
+  color: var(--room-text);
 }
 
 .controls :where([role='radiogroup'] button[aria-checked='true']) {
-  border-color: rgb(231 198 125 / 60%);
-  background: rgb(231 198 125 / 10%);
-  color: var(--merc-brass-bright);
+  border-color: var(--room-lit-edge);
+  background: rgb(154 135 240 / 20%);
+  color: #f3f0ff;
 }
 
 .controls :where(button:not([data-merc])) {
   min-height: 44px;
   font-size: 15px;
 }
+
+/* A phrase answered note by note (Span, Echo, Bassline): one glass
+   strip, each note given back a violet chip, the count at its end. */
+.controls :global([data-testid='ear-phrase-strip']) {
+  min-height: 36px;
+  gap: 6px;
+  padding: 4px 12px 4px 10px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: var(--room-glass-deep);
+}
+
+.controls :global([data-testid='ear-phrase-strip'] [data-chip]) {
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgb(190 170 255 / 30%);
+  background: rgb(154 135 240 / 20%);
+  color: #efe9ff;
+  font: 600 13px/1 var(--room-sans);
+}
+
+.controls :global([data-testid='ear-phrase-strip'] [data-count]) {
+  font: 500 13px/1 var(--room-sans);
+  color: var(--room-text-3);
+}
+
+.controls :global([data-testid='ear-mic-lamp']) {
+  border-color: rgb(255 255 255 / 15%);
+  background: var(--room-glass);
+  color: var(--room-text-3);
+}
+
+.controls :global([data-testid='ear-mic-lamp'][data-on]) {
+  border-color: var(--room-lit-edge);
+  background: rgb(154 135 240 / calc(10% + 30% * var(--mic-level, 0)));
+  box-shadow: 0 0 calc(2px + 18px * var(--mic-level, 0))
+    rgb(154 135 240 / calc(0.2 + 0.6 * var(--mic-level, 0)));
+  color: var(--room-lit-pale);
+}
+
+/* ── The pinned row: Hear it again, Compare, the run's words ─ */
 
 .bottomRow {
   display: flex;
@@ -463,27 +496,28 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid rgb(239 230 214 / 18%);
-  background: none;
-  color: #d8cfbf;
-  font: 500 14px/1 var(--merc-sans);
+  padding: 0 15px 0 12px;
+  border-radius: 22px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  background: var(--room-glass-deep);
+  color: var(--room-text);
+  font: 600 14px/1 var(--room-sans);
   white-space: nowrap;
   cursor: pointer;
+  transition: opacity 200ms ease;
 }
 
 .again:disabled {
-  opacity: 0.42;
+  opacity: 0.4;
   cursor: default;
 }
 
 .status {
-  flex: 1 1 9rem;
+  flex: 1 1 0;
   min-width: 0;
   margin-left: auto;
-  font: 500 13px/1.25 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.3 var(--room-sans);
+  color: var(--room-text-3);
   text-align: right;
 }
 
@@ -491,17 +525,23 @@
   margin-left: auto;
   height: 44px;
   min-width: 96px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 0 20px;
-  border-radius: 12px;
-  border: 1px solid rgb(231 198 125 / 55%);
-  background: rgb(231 198 125 / 8%);
-  color: var(--merc-brass-bright);
-  font: 600 15px/1 var(--merc-sans);
+  border-radius: 22px;
+  border: 0;
+  background: var(--room-lit-fill);
+  box-shadow: 0 6px 20px rgb(124 77 255 / 42%);
+  color: #fff;
+  font: 600 15px/1 var(--room-sans);
   cursor: pointer;
 }
 
 /* ── Lead pads (the run not yet on) ────────────────────────── */
 
+/* The one filled button in the kit's violet. */
 .primary {
   width: 100%;
   min-height: 52px;
@@ -509,21 +549,23 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   box-sizing: border-box;
-  border-radius: 14px;
-  border: 1px solid var(--merc-brass-pale);
-  background: linear-gradient(180deg, #e9cc8a 0%, var(--merc-brass) 100%);
-  color: #1b1408;
-  font: 600 17px/1.15 var(--merc-sans);
+  border-radius: 26px;
+  border: 0;
+  background: var(--room-lit-fill);
+  box-shadow: 0 6px 20px rgb(124 77 255 / 42%);
+  color: #fff;
+  font: 600 16px/1.15 var(--room-sans);
   cursor: pointer;
 }
 
 .primary small {
-  font: 500 14px/1.1 var(--merc-sans);
-  color: #4a3a1a;
+  font: 500 14px/1.1 var(--room-sans);
+  color: rgb(255 255 255 / 80%);
 }
 
+/* And the glass outline for the rest. */
 .secondary {
   width: 100%;
   min-height: 48px;
@@ -531,19 +573,19 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   box-sizing: border-box;
-  border-radius: 14px;
-  border: 1px solid rgb(231 198 125 / 55%);
+  border-radius: 26px;
+  border: 1.5px solid rgb(255 255 255 / 30%);
   background: none;
-  color: var(--merc-brass-bright);
-  font: 600 15px/1.15 var(--merc-sans);
+  color: var(--room-text);
+  font: 600 15px/1.15 var(--room-sans);
   cursor: pointer;
 }
 
 .secondary small {
-  font: 500 13px/1.1 var(--merc-sans);
-  color: rgb(231 198 125 / 82%);
+  font: 500 13px/1.1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .primary:disabled,
@@ -552,8 +594,75 @@
   cursor: default;
 }
 
+/* A lead pad's name and its line, on one line: "Practice run · about a
+   minute". Its icon stays home; the label says it. */
+.leadText {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 6px;
+  min-width: 0;
+}
+
+.leadSub::before {
+  content: '· ';
+}
+
 .leadIcon {
+  display: none;
+}
+
+/* A console of several lead pads is a choice, not one main action (the
+   desk's three drills): each a glass tile, its icon in a lit circle and
+   its name over its line, as the Field Book's drills are. */
+.primary:has(~ .primary),
+.primary ~ .primary {
+  min-height: 64px;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 16px 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 13%);
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 8%),
+    rgb(255 255 255 / 3%)
+  );
+  box-shadow: none;
+  color: var(--room-text);
+  text-align: left;
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadIcon {
   flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgb(190 170 255 / 28%);
+  background: rgb(154 135 240 / 16%);
+  color: #d7ceff;
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadText {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadLabel {
+  font-size: 17px;
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadSub {
+  color: rgb(244 241 255 / 66%);
+}
+
+:is(.primary:has(~ .primary), .primary ~ .primary) .leadSub::before {
+  content: none;
 }
 
 /* ── Answer pads ───────────────────────────────────────────── */
@@ -563,32 +672,69 @@
 
   display: grid;
   grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
   container: merc-pads / inline-size;
 }
 
 .pads[data-shape='two'] {
-  --pad-h: 92px;
+  --pad-h: 96px;
 }
 
 .pads[data-shape='two']:has(> :nth-child(3)) {
   --pad-h: 64px;
 }
 
+.pads[data-shape='three'] {
+  --pad-h: 84px;
+}
+
 .pads[data-shape='grid34'] {
-  --pad-h: 54px;
-
-  gap: 8px;
+  --pad-h: 52px;
 }
 
+/* The degree keys: edge to edge in one row, their tops rising with the
+   scale, so the keys' shape is the ladder. */
 .pads[data-shape='ladder'] {
-  --pad-h: 92px;
+  --pad-h: 62px;
 
-  gap: 6px;
+  align-items: end;
+  gap: 3px;
 }
 
-/* Twelve keys take two rows, and shorter ones. */
+.pads[data-shape='ladder'] > :nth-child(2) {
+  --pad-h: 65.5px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(3) {
+  --pad-h: 69px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(4) {
+  --pad-h: 72.5px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(5) {
+  --pad-h: 76px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(6) {
+  --pad-h: 79.5px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(7) {
+  --pad-h: 83px;
+}
+
+.pads[data-shape='ladder'] > :nth-child(8) {
+  --pad-h: 86.5px;
+}
+
+/* Twelve keys take two rows, level and shorter. */
 .pads[data-shape='ladder']:has(> :nth-child(9)) {
+  gap: 6px 3px;
+}
+
+.pads[data-shape='ladder']:has(> :nth-child(9)) > * {
   --pad-h: 54px;
 }
 
@@ -600,174 +746,215 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 10px 12px;
+  padding: 10px 14px;
   box-sizing: border-box;
-  border-radius: 16px;
-  border: 1px solid var(--merc-line);
-  background: rgb(239 230 214 / 3%);
-  color: rgb(239 230 214 / 70%);
+  border-radius: 20px;
+  border: 1px solid rgb(255 255 255 / 13%);
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 8%),
+    rgb(255 255 255 / 3%)
+  );
+  color: var(--room-text);
   text-align: left;
   cursor: pointer;
   transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    opacity 160ms ease;
+    transform 140ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease,
+    opacity 280ms ease,
+    color 220ms ease;
 }
 
 .pads[data-shape='ladder'] .pad,
 .pads[data-shape='grid34'] .pad {
   align-items: center;
-  justify-content: center;
-  padding: 4px 2px;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 4px 2px 9px;
   text-align: center;
+}
+
+.pads[data-shape='ladder'] .pad {
+  border-radius: 14px 14px 10px 10px;
+}
+
+.pads[data-shape='grid34'] .pad {
+  justify-content: center;
+  border-radius: 16px;
 }
 
 .pad:disabled {
   cursor: default;
 }
 
-/* Waiting for the singer: lit, with a brass edge. */
+.pad:active:not(:disabled) {
+  transform: scale(0.955);
+  border-color: #c4b6ff;
+  background: rgb(154 135 240 / 36%);
+}
+
+/* Your turn: a lit violet edge that breathes. */
 .pad[data-look='waiting'] {
-  border: 1.5px solid rgb(231 198 125 / 55%);
-  background: rgb(239 230 214 / 6%);
-  color: var(--merc-parchment);
-  box-shadow: inset 0 0 0 1px rgb(231 198 125 / 8%);
+  border: 1.5px solid var(--room-lit-edge);
+  background: linear-gradient(
+    180deg,
+    rgb(154 135 240 / 18%),
+    rgb(154 135 240 / 7%)
+  );
+  animation: breathe 2.8s ease-in-out infinite;
 }
 
 /* The sound is still playing: quiet, not yet a choice. */
 .pad[data-look='resting'] {
-  color: rgb(239 230 214 / 55%);
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 3%);
+  color: rgb(244 241 255 / 52%);
 }
 
 /* Answered, and not the one picked or the truth: it steps back. */
 .pad[data-look='unchosen'] {
-  opacity: 0.45;
-  border-style: solid;
+  opacity: 0.34;
 }
 
 .pad[data-look='picked-right'] {
-  border: 2px solid var(--merc-signal);
-  background: rgb(95 199 184 / 14%);
-  color: var(--merc-parchment);
+  border: 2px solid var(--room-right);
+  background: rgb(46 230 201 / 15%);
 }
 
 .pad[data-look='truth'] {
-  border: 2px dashed var(--merc-signal);
-  background: rgb(95 199 184 / 8%);
-  color: var(--merc-parchment);
+  border: 2px dashed var(--room-right);
+  background: rgb(46 230 201 / 7%);
 }
 
 .pad[data-look='picked-wrong'] {
-  border: 2px solid var(--merc-garnet);
-  background: rgb(163 69 79 / 20%);
-  color: var(--merc-parchment);
+  border: 2px solid var(--room-wrong);
+  background: rgb(255 106 92 / 15%);
 }
 
 .padCaption {
-  font: 600 13px/1 var(--merc-sans);
+  font: 600 13px/1 var(--room-sans);
   min-height: 13px;
-  color: var(--merc-muted);
+  color: var(--room-text-3);
 }
 
 .pad[data-look='picked-right'] .padCaption,
 .pad[data-look='truth'] .padCaption {
-  color: var(--merc-signal-pale);
+  color: var(--room-right-pale);
 }
 
 .pad[data-look='picked-wrong'] .padCaption {
-  color: var(--merc-garnet-pale);
+  color: var(--room-wrong-pale);
 }
 
 .padKey {
-  font: 600 13px/1 var(--merc-mono);
+  font: 600 13px/1 var(--room-sans);
   color: inherit;
   opacity: 0.8;
 }
 
 .padLabel {
-  font: 600 19px/1.05 var(--merc-sans);
+  font: 600 20px/1.08 var(--room-sans);
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
 
-.pads[data-shape='ladder'] .padLabel {
-  font-size: 22px;
-}
-
-.pads[data-shape='ladder'] .padSub {
-  font: italic 400 16px/1 var(--merc-serif);
+.pads[data-shape='two'] .padLabel {
+  font-size: 23px;
 }
 
 .pads[data-shape='grid34'] .padLabel {
-  font-size: 18px;
-}
-
-.pads[data-shape='grid34'] .padSub {
-  font-size: 13px;
+  font-size: 19px;
 }
 
 .padSub {
-  font: 500 13px/1.1 var(--merc-sans);
-  color: inherit;
-  opacity: 0.85;
+  font: 500 13px/1.2 var(--room-sans);
+  color: rgb(244 241 255 / 66%);
+}
+
+.pad[data-look='resting'] .padSub {
+  color: rgb(244 241 255 / 40%);
 }
 
 .padMark {
   position: absolute;
-  right: 10px;
-  top: 10px;
+  right: 11px;
+  top: 9px;
   display: grid;
 }
 
 .pad[data-look='picked-right'] .padMark,
 .pad[data-look='truth'] .padMark {
-  color: var(--merc-signal);
+  color: var(--room-right);
 }
 
 .pad[data-look='picked-wrong'] .padMark {
-  color: var(--merc-garnet-pale);
+  color: #ff8d81;
 }
 
 .padLamp {
   position: absolute;
-  left: 10px;
-  top: 10px;
-  width: 8px;
-  height: 8px;
+  left: 15px;
+  top: 14px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: rgb(239 230 214 / 18%);
+  background: rgb(255 255 255 / 16%);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .padLampOn {
-  background: var(--merc-brass-bright);
-  box-shadow: 0 0 10px rgb(231 198 125 / 70%);
+  background: var(--room-cyan);
+  box-shadow:
+    0 0 12px #7fdcf5,
+    0 0 0 4px rgb(127 220 245 / 20%);
+}
+
+/* The lamp goes once the verdict is out: the words say it then. */
+.pad:is(
+    [data-look='picked-right'],
+    [data-look='truth'],
+    [data-look='picked-wrong'],
+    [data-look='unchosen']
+  )
+  .padLamp {
+  opacity: 0;
 }
 
 /* The lamp sits where the caption starts: the caption steps aside. */
 .pads:not([data-shape='ladder'], [data-shape='grid34']) .padLamp + .padCaption {
-  padding-left: 14px;
+  padding-left: 16px;
 }
 
 /* The small keys (the ladder, the twelve): no caption line at rest (a
    keycap means nothing on a phone), and once the answer is out the
-   caption takes the second line's place under the name, with no mark
-   over it. */
+   mark stands over the name in place of the second line. */
 .pads:is([data-shape='ladder'], [data-shape='grid34']) .padCaption {
-  order: 2;
-  min-height: 0;
-}
-
-.pads:is([data-shape='ladder'], [data-shape='grid34'])
-  .pad:not(
-    [data-look='picked-right'],
-    [data-look='picked-wrong'],
-    [data-look='truth']
-  )
-  .padCaption,
-.pads:is([data-shape='ladder'], [data-shape='grid34']) .padMark {
   display: none;
 }
 
-.pads:is([data-shape='ladder'], [data-shape='grid34'])
+/* On a key the mark stands over the name in place of its second line;
+   on the small pads it sits in the corner and the line stays. */
+.pads[data-shape='ladder'] .padMark {
+  left: 50%;
+  right: auto;
+  top: 7px;
+  transform: translateX(-50%);
+}
+
+.pads[data-shape='grid34'] .padMark {
+  top: 6px;
+  right: 6px;
+}
+
+.pads[data-shape='grid34'] .padMark :global(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.pads[data-shape='ladder']
   .pad:is(
     [data-look='picked-right'],
     [data-look='picked-wrong'],
@@ -783,6 +970,11 @@
 @container merc-pads (max-width: 22rem) {
   .pads[data-shape='ladder'] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .pads[data-shape='ladder'] > * {
+    --pad-h: 62px;
   }
 
   .pads[data-shape='grid34'] {
@@ -790,9 +982,52 @@
   }
 }
 
-/* The tap pad, for the rhythm drills. */
+/* The tap pad, for the rhythm drills: the whole width, one target. */
 .tapHost {
   display: grid;
+}
+
+.tapHost :global([data-testid='ear-tap-pad']) {
+  min-height: 112px;
+  justify-content: center;
+  justify-items: center;
+  grid-template-columns: auto;
+  border: 1px solid rgb(255 255 255 / 13%);
+  border-radius: 28px;
+  background: rgb(255 255 255 / 3%);
+  color: rgb(244 241 255 / 52%);
+  text-align: center;
+}
+
+.tapHost :global([data-testid='ear-tap-pad'] > svg) {
+  display: none;
+}
+
+.tapHost :global([data-testid='ear-tap-pad'] > span) {
+  font: 700 26px/1 var(--room-sans);
+}
+
+.tapHost :global([data-testid='ear-tap-pad'] > small) {
+  margin-top: 4px;
+  font: 500 13px/1.2 var(--room-sans);
+  color: inherit;
+}
+
+.tapHost :global([data-testid='ear-tap-pad'][data-armed]) {
+  border: 1.5px solid var(--room-lit-edge);
+  background: linear-gradient(
+    180deg,
+    rgb(154 135 240 / 18%),
+    rgb(154 135 240 / 7%)
+  );
+  color: var(--room-text);
+  box-shadow: none;
+}
+
+.tapHost :global([data-testid='ear-tap-pad'][data-hit]) {
+  border-color: #c4b6ff;
+  background: rgb(154 135 240 / 36%);
+  box-shadow: 0 0 24px rgb(154 135 240 / 35%);
 }
 
 /* ── Sheets: Close's question and the "?" ──────────────────── */
@@ -801,7 +1036,7 @@
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: rgb(4 5 7 / 66%);
+  background: rgb(3 5 14 / 66%);
   animation: fade-in 160ms ease both;
 }
 
@@ -816,11 +1051,12 @@
   overscroll-behavior: contain;
   padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  border-radius: 24px 24px 0 0;
-  border-top: 1px solid rgb(239 230 214 / 16%);
-  background: linear-gradient(180deg, #17191e 0%, #111317 40%);
+  border-radius: 26px 26px 0 0;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  background: linear-gradient(180deg, #0f1430 0%, #0a0f24 40%);
   box-shadow: 0 -20px 40px rgb(0 0 0 / 50%);
-  animation: rise 240ms var(--merc-ease) both;
+  color: var(--room-text);
+  animation: rise 240ms var(--room-ease) both;
 }
 
 .grabber {
@@ -828,7 +1064,7 @@
   height: 5px;
   margin: 8px auto 0;
   border-radius: 3px;
-  background: rgb(239 230 214 / 28%);
+  background: rgb(255 255 255 / 28%);
 }
 
 .sheetHead {
@@ -841,8 +1077,9 @@
 .sheetTitle {
   flex: 1 1 auto;
   margin: 0;
-  font: 600 24px/1.1 var(--merc-serif);
-  color: var(--merc-parchment);
+  font: 600 22px/1.15 var(--room-sans);
+  letter-spacing: -0.01em;
+  color: var(--room-text);
 }
 
 .sheetSection {
@@ -851,22 +1088,22 @@
 
 .sheetKicker {
   margin: 0 0 6px;
-  font: 600 13px/1 var(--merc-sans);
-  letter-spacing: 0.18em;
+  font: 600 13px/1 var(--room-sans);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--merc-brass);
+  color: var(--room-lit-pale);
 }
 
 .sheetText {
   margin: 0 0 8px;
-  font: 400 15px/1.45 var(--merc-sans);
-  color: #d8cfbf;
+  font: 400 15px/1.45 var(--room-sans);
+  color: var(--room-text-2);
 }
 
 .sheetMeasures {
   margin: 0 0 6px;
-  font: 600 14px/1.2 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 600 14px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .choiceRow {
@@ -883,26 +1120,26 @@
   justify-content: center;
   gap: 2px;
   padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid rgb(239 230 214 / 18%);
-  background: none;
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background: var(--room-glass-deep);
   text-align: left;
   cursor: pointer;
 }
 
 .choice b {
-  font: 600 15px/1.1 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 600 15px/1.1 var(--room-sans);
+  color: var(--room-text);
 }
 
 .choice small {
-  font: 400 13px/1.2 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 400 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .choice[aria-checked='true'] {
-  border-color: rgb(231 198 125 / 60%);
-  background: rgb(231 198 125 / 10%);
+  border-color: var(--room-lit-edge);
+  background: rgb(154 135 240 / 18%);
 }
 
 .slider {
@@ -915,12 +1152,12 @@
 .slider input {
   width: 100%;
   min-height: 44px;
-  accent-color: var(--merc-brass);
+  accent-color: var(--room-lit);
 }
 
 .slider output {
-  font: 600 14px/1 var(--merc-mono);
-  color: var(--merc-brass-bright);
+  font: 600 14px/1 var(--room-sans);
+  color: var(--room-lit-pale);
 }
 
 .confirm {
@@ -931,22 +1168,24 @@
   z-index: 11;
   transform: translateY(-50%);
   padding: 20px;
-  border-radius: 20px;
-  border: 1px solid rgb(239 230 214 / 16%);
-  background: #15171c;
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: #0e1330;
   box-shadow: 0 24px 60px rgb(0 0 0 / 60%);
+  color: var(--room-text);
   animation: fade-in 160ms ease both;
 }
 
 .confirmTitle {
   margin: 0;
-  font: 600 24px/1.15 var(--merc-serif);
+  font: 600 22px/1.15 var(--room-sans);
+  letter-spacing: -0.01em;
 }
 
 .confirmBody {
   margin: 6px 0 18px;
-  font: 400 15px/1.4 var(--merc-sans);
-  color: #d8cfbf;
+  font: 400 15px/1.4 var(--room-sans);
+  color: var(--room-text-2);
 }
 
 .confirmActions {
@@ -957,21 +1196,21 @@
 
 .quiet {
   min-height: 48px;
-  border-radius: 14px;
-  border: 1px solid rgb(239 230 214 / 20%);
-  background: rgb(239 230 214 / 4%);
-  color: var(--merc-parchment);
-  font: 600 15px/1.1 var(--merc-sans);
+  border-radius: 24px;
+  border: 1.5px solid rgb(255 255 255 / 30%);
+  background: none;
+  color: var(--room-text);
+  font: 600 15px/1.1 var(--room-sans);
   cursor: pointer;
 }
 
 .danger {
   min-height: 48px;
-  border-radius: 14px;
-  border: 1px solid rgb(163 69 79 / 70%);
-  background: rgb(163 69 79 / 22%);
-  color: var(--merc-parchment);
-  font: 600 15px/1.1 var(--merc-sans);
+  border-radius: 24px;
+  border: 1.5px solid rgb(255 106 92 / 70%);
+  background: rgb(255 106 92 / 14%);
+  color: var(--room-text);
+  font: 600 15px/1.1 var(--room-sans);
   cursor: pointer;
 }
 
@@ -980,9 +1219,9 @@
 .prelude {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgb(231 198 125 / 34%);
-  background: rgb(10 11 13 / 72%);
+  border-radius: 18px;
+  border: 1px solid rgb(166 148 255 / 34%);
+  background: var(--room-glass-deep);
   list-style: none;
   display: grid;
   gap: 8px;
@@ -992,13 +1231,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font: 500 15px/1.3 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 500 15px/1.3 var(--room-sans);
+  color: var(--room-text);
 }
 
 .prelude svg {
   flex: none;
-  color: var(--merc-brass-bright);
+  color: var(--room-lit-pale);
 }
 
 /* ── Notices: a cut sound, a moved route ───────────────────── */
@@ -1006,11 +1245,11 @@
 .notice {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgb(231 198 125 / 40%);
-  background: rgb(231 198 125 / 8%);
-  font: 500 14px/1.35 var(--merc-sans);
-  color: var(--merc-parchment);
+  border-radius: 14px;
+  border: 1px solid rgb(166 148 255 / 40%);
+  background: rgb(154 135 240 / 10%);
+  font: 500 14px/1.35 var(--room-sans);
+  color: var(--room-text);
 }
 
 @keyframes fade-in {
@@ -1035,14 +1274,37 @@
   }
 }
 
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(154 135 240 / 0%),
+      0 0 16px rgb(154 135 240 / 10%);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 3px rgb(154 135 240 / 14%),
+      0 0 28px rgb(154 135 240 / 30%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     animation: fade-in 160ms ease both;
   }
 
+  .pad[data-look='waiting'] {
+    animation: none;
+  }
+
   .bubble,
   .pad {
     transition: opacity 160ms ease;
+  }
+
+  .pad:active:not(:disabled) {
+    transform: none;
   }
 }
 
@@ -1051,7 +1313,7 @@
   margin: 14px 0 16px;
   padding: 0;
   list-style: none;
-  border-top: 1px solid rgb(239 230 214 / 8%);
+  border-top: 1px solid var(--room-line);
 }
 
 .term {
@@ -1059,13 +1321,13 @@
   align-items: flex-start;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgb(239 230 214 / 8%);
+  border-bottom: 1px solid var(--room-line);
 }
 
 .term svg {
   flex: none;
   margin-top: 2px;
-  color: var(--merc-brass-bright);
+  color: var(--room-lit-pale);
 }
 
 .term span {
@@ -1074,13 +1336,13 @@
 }
 
 .term b {
-  font: 600 15px/1.2 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 600 15px/1.2 var(--room-sans);
+  color: var(--room-text);
 }
 
 .term small {
-  font: 400 13px/1.3 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 400 13px/1.3 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 /* The room's sheets, lent to the tab: the room's tokens and stacking,
@@ -1090,10 +1352,6 @@
   z-index: var(--z-sheet, 600);
   background: transparent;
   pointer-events: none;
-}
-
-.sheetHost::before {
-  content: none;
 }
 
 .sheetHostInner {

@@ -28,7 +28,7 @@ const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
 /** The premium rooms that paint pictures today, by folder, the Warm-up's
- *  path, and the Ear Lab with Merc (Merc's stills, the stations' paintings). */
+ *  path, and the Ear Lab with Merc (Merc's stills). */
 const ROOMS = [
   'long-note',
   'echo',
@@ -161,22 +161,16 @@ describe("the Cloud offer's art in a native build", () => {
 
 describe("the Ear Lab with Merc's serif, and a picture asked for by URL", () => {
   const dir = join(FEATURES, 'ear-lab', 'merc')
-  const stations = join(dir, 'stations.ts')
+  const stills = join(dir, 'stills.ts')
   const entry = join(dir, 'entry.ts')
   const serif = [
     '@fontsource-variable/crimson-pro/wght.css',
     '@fontsource-variable/crimson-pro/wght-italic.css',
   ]
 
-  it("has the stations' paintings, so the room's pictures above are not only Merc's", () => {
-    expect(picturesIn(join(dir, 'paintings'))).toEqual(
-      expect.arrayContaining([
-        'station-resolution.webp',
-        'station-function.webp',
-        'station-shape.webp',
-        'station-colour.webp',
-        'station-time.webp',
-      ]),
+  it("has Merc's stills, so the picture asked for by URL below is real", () => {
+    expect(picturesIn(join(dir, 'stills'))).toEqual(
+      expect.arrayContaining(['merc-point.webp']),
     )
   })
 
@@ -187,7 +181,7 @@ describe("the Ear Lab with Merc's serif, and a picture asked for by URL", () => 
       expect(typeof id === 'string' && id.startsWith('\0'), sheet).toBe(true)
     }
     // A query names the same file: ?url folds as the bare import does.
-    const byUrl = fold('./paintings/station-time.webp?url', stations)
+    const byUrl = fold('./stills/merc-point.webp?url', stills)
     expect(typeof byUrl === 'string' && byUrl.startsWith('\0')).toBe(true)
     // Only Crimson Pro: the app's own fonts are left to Vite.
     expect(fold('@fontsource-variable/inter/wght.css', entry)).toBeNull()
@@ -198,6 +192,6 @@ describe("the Ear Lab with Merc's serif, and a picture asked for by URL", () => 
     for (const sheet of serif) {
       expect(fold(sheet, entry), sheet).toBeNull()
     }
-    expect(fold('./paintings/station-time.webp?url', stations)).toBeNull()
+    expect(fold('./stills/merc-point.webp?url', stills)).toBeNull()
   }, 60000)
 })
