@@ -600,6 +600,16 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
             <Show when={running() ? (room?.line() ?? null) : null}>
               {(line) => <RunLine line={line()} />}
             </Show>
+            <Show when={running() || done() ? null : (props.chip?.() ?? null)}>
+              {(chip) => (
+                <div class={styles.runLine} data-testid="merc-chip">
+                  <div class={styles.pill}>
+                    <span class={styles.left}>{chip().label}</span>
+                    <span class={styles.level}>{chip().value}</span>
+                  </div>
+                </div>
+              )}
+            </Show>
 
             <Show
               when={!done()}

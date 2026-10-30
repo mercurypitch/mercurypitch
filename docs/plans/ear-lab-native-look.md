@@ -141,6 +141,28 @@ as the verdict, teal or red.
    mercury from the old mark to the new. A staircase's slips are read off its
    trace, each step back up a miss.
 
+As built, both in one PR:
+
+- The plate stands on the stage without a card, the kicker at the left and
+  the run's badge at the right. A practice run's staircase draws on a log
+  scale, each turn and miss lit as the line reaches it, while the number
+  counts along it and then settles on the reading. Its misses are the
+  verdicts the trace now keeps (`TracePoint.correct`), "7 misses, none above
+  10.4 ¢" on a pill. Its glass gives way to the staircase, as the mock-up
+  draws it: the bench keeps the glass and its practice line.
+- A rated run's dots fill in order while the number moves from the rating
+  the run found, its move written beside it once they have. Practise is
+  offered under the slip that happened most, as the mock-up has it.
+- A seal counts from the old mark as the mercury rises, and draws its three
+  tracks from the calibration's own trace, each named with its reading. It
+  ends on Done, with what the Index counts under it.
+- The Field Book is the Wild's room, the glasshouse at night faint behind it.
+  Its key sits on the chip, its drills are glass tiles with a chevron, dashed
+  while there is nothing to ask, and the page is the song's timeline:
+  landings, phrases and root motions by time, counted, over its minutes. The
+  mock-up's line of the voice is left out: drawn from the book it would show
+  each phrase's shape and each landing's height before the drills ask them.
+
 ### Phase 4: the device pass
 
 iPhone SE to Pro Max and a small Android, reduced motion, VoiceOver and

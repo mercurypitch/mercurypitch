@@ -45,10 +45,11 @@ export function stationTitle(faculty: FacultyId): string {
 
 /** The station a drill sits at: its catalogue faculty, the one its
  *  readings count toward. The desk's drills and the Field Book's are
- *  catalogued apart, and say so by their ids. */
+ *  catalogued apart, and say so by their ids; the Field Book's own page
+ *  is the Wild's too. */
 export function stationOf(drillId: string | null): FacultyId | null {
   if (drillId === null) return null
-  if (drillId.startsWith('wild')) return 'wild'
+  if (drillId.startsWith('wild') || drillId === 'field-book') return 'wild'
   if (drillId.startsWith('desk')) return 'colour'
   return (
     findThresholdDrill(drillId)?.faculty ??

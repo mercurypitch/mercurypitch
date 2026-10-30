@@ -67,4 +67,9 @@ describe('the stations', () => {
   it('seat calibration at no station', () => {
     expect(stationOf('calibration')).toBeNull()
   })
+
+  it("seat the Field Book's page with its drills, in the Wild", () => {
+    expect(stationOf('field-book')).toBe('wild')
+    expect(stationOf('wild-echo')).toBe('wild')
+  })
 })
