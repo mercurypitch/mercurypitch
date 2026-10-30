@@ -1,0 +1,94 @@
+name: LFS pull
+description: >-
+  git lfs pull through the Actions cache: restores the LFS objects a set of
+  paths needs, asks LFS only for the ones the cache lacks, and saves the set
+  when the cache had no entry for it. A run reaches LFS only when an object in
+  the set changes. Run after checkout.
+
+# LFS bandwidth is billed by the byte, and downloads from Actions count. Before
+# this action every job that needed the Glassworks assets pulled the whole set
+# from LFS (58 objects, 301 MB on 30 Oct 2026). One PR Gate run with Beside Cue
+# in scope pulled it 64 times, 57 of them in the adventure matrix, and on
+# 30 Oct 2026 the organisation's LFS budget stopped every pull. git lfs fetch
+# asks the server only for the objects the local store lacks, so a store
+# restored from the cache leaves it nothing to download.
+#
+# The key is the set's object ids (lfs-set.sh), not its paths or the commit: a
+# change that touches no LFS object in the set keeps the key. A miss restores
+# the newest entry under the prefix, so only the changed objects come from LFS,
+# and the save first drops the objects the set no longer names, so an entry
+# holds one set and does not grow with each asset change. An entry cannot be
+# overwritten, so a save is tried only when the restore missed, and a save that
+# loses a race with a parallel job warns rather than failing the build.
+#
+# PR Gate's scope job runs this with warm-only before its fan-out, so a new set
+# costs one LFS download per run rather than one per job. An entry saved on
+# main serves every pull request; a pull request's own entry serves only its
+# later runs.
+
+inputs:
+  include:
+    description: The LFS paths to pull, as a comma-separated git lfs --include list.
+    required: false
+    default: apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**
+  warm-only:
+    description: >-
+      'true' only makes sure the cache holds the set, for the jobs that follow.
+      When it does, nothing is downloaded and the files stay pointers.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Key the set on its LFS objects
+      id: key
+      shell: bash
+      env:
+        LFS_INCLUDE: ${{ inputs.include }}
+      run: |
+        key=$(bash "$GITHUB_ACTION_PATH/lfs-set.sh" key)
+        echo "key=$key" >> "$GITHUB_OUTPUT"
+
+    - name: Look the set up in the cache
+      id: lookup
+      if: inputs.warm-only == 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: .git/lfs/objects
+        key: ${{ steps.key.outputs.key }}
+        lookup-only: true
+        enableCrossOsArchive: true
+
+    - name: Restore from the cache
+      id: restore
+      if: steps.lookup.outputs.cache-hit != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: .git/lfs/objects
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: lfs-pull-v1-
+        enableCrossOsArchive: true
+
+    - name: Pull what the cache lacks
+      if: steps.lookup.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        LFS_INCLUDE: ${{ inputs.include }}
+      run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
+
+    - name: Drop the objects the set no longer names
+      if: steps.lookup.outputs.cache-hit != 'true' && steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        LFS_INCLUDE: ${{ inputs.include }}
+      run: bash "$GITHUB_ACTION_PATH/lfs-set.sh" prune
+
+    - name: Save to the cache
+      if: steps.lookup.outputs.cache-hit != 'true' && steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: .git/lfs/objects
+        key: ${{ steps.key.outputs.key }}
+        enableCrossOsArchive: true

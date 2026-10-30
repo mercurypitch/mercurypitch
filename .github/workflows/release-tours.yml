@@ -48,10 +48,7 @@ jobs:
       # build:tours stages the Glassworks assets from these LFS paths and
       # refuses a pointer file, the same as the production build in build.yml.
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
 
       - uses: ./.github/actions/setup
 
