@@ -79,6 +79,15 @@ describe("the Field Book's page in the room", () => {
     )
   })
 
+  it('says a song is not read yet before the reading, or after it failed', () => {
+    render(() => (
+      <LitFieldBook pct={null} keyName={null} counts={null} duration={252} />
+    ))
+    expect(part('heading')[0]).toHaveTextContent('Not read yet · 4:12')
+    expect(part('count')).toHaveLength(0)
+    expect(part('timeline')).toHaveLength(0)
+  })
+
   it('lays a read song out by time, counted by kind, over its minutes', () => {
     read(song(6))
     expect(part('heading')[0]).toHaveTextContent('Read: E minor · 4:12')

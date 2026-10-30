@@ -144,8 +144,11 @@ export function LitFieldBook(props: FieldBookPageProps): JSX.Element {
   const heading = (): string => {
     if (props.pct !== null) return `Reading: ${props.phase ?? 'the song'}`
     const song = length()
-    const key = props.keyName ?? 'the song'
-    return song === null ? `Read: ${key}` : `Read: ${key} · ${clockTime(song)}`
+    const at = song === null ? '' : ` · ${clockTime(song)}`
+    // Not reading and not read: before the reading starts, or after it
+    // failed, which the console and Merc say.
+    if (props.counts === null) return `Not read yet${at}`
+    return `Read: ${props.keyName ?? 'the song'}${at}`
   }
   const rows = [
     { label: 'Landings', y: LANDINGS_Y, kind: 'home' },
@@ -155,7 +158,7 @@ export function LitFieldBook(props: FieldBookPageProps): JSX.Element {
   const label = (): string => {
     const counts = props.counts
     if (props.pct !== null) return `The song's timeline: reading, ${props.pct}%`
-    if (counts === null) return "The song's timeline"
+    if (counts === null) return "The song's timeline, not read yet"
     return `The song's timeline: ${props.keyName ?? 'read'}; ${counts.home} landings, ${counts.echo} phrases, ${counts.bassline} root motions`
   }
 

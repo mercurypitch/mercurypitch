@@ -316,15 +316,10 @@ export function calibrationBefore(args: {
 
 // ── Plates ──────────────────────────────────────────────────────
 
-/** What a drill's number means, under it on the plate. */
+/** What a rated drill's number means, under it on the plate. A
+ *  staircase's plate says its unit and which way is better instead, as
+ *  the mock-up draws it, with the staircase under it. */
 export const MEANING: Readonly<Record<string, string>> = {
-  hairline: 'The finest difference your ear still resolves.',
-  'beat-hunt': 'The faintest beating your ear still catches.',
-  'the-grid': 'The smallest timing flaw your ear still catches.',
-  drift: 'The smallest change of tempo you still catch.',
-  span: 'How many notes your ear holds at once.',
-  'desk-colour': 'The smallest boost you still place.',
-  'desk-weight': 'The smallest weight you still hear added.',
   home: 'How surely you place a note in its key.',
   gravity: 'How surely you place any note over a key.',
   'the-pull': 'How surely you feel where a note wants to go.',

@@ -482,9 +482,10 @@ const KARAOKE_STAGE_2 = [
   ],
   // His stills there, imported by the chunk at the size it shows them:
   // the coach's own live in the web's public/, which no native build lists.
+  // And the Wild's glasshouse at night, behind the Field Book.
   [
-    /\/merc-(?:point|listen|celebrate)-[\w-]{8}\.webp$/u,
-    "Merc's stills in the Ear Lab with Merc",
+    /\/(?:merc-(?:point|listen|celebrate)|glasshouse-night)-[\w-]{8}\.webp$/u,
+    "Merc's stills and the Wild's glasshouse in the Ear Lab with Merc",
   ],
 ]
 
