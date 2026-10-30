@@ -159,8 +159,8 @@ function isLaunchOffer(id: string): boolean {
  * art (src/features/karaoke-room/assets/) rides the same switch: the offer
  * is Stage 2, and it would ride into the store build the same way. So do
  * the Ear Lab with Merc's pictures (src/features/ear-lab/merc/: Merc's
- * stills and the stations' paintings), whose chunk folds away with
- * EAR_LAB_WITH_MERC: measured 28 Oct, the store build carried the stills.
+ * stills), whose chunk folds away with EAR_LAB_WITH_MERC: measured 28 Oct,
+ * the store build carried the stills.
  * `assert-bundle.mjs` STAGE 2 checks the bundle;
  * src/premium-images-build.test.ts checks this switch on every PR.
  */

@@ -486,11 +486,6 @@ const KARAOKE_STAGE_2 = [
     /\/merc-(?:point|listen|celebrate)-[\w-]{8}\.webp$/u,
     "Merc's stills in the Ear Lab with Merc",
   ],
-  // And the stations' paintings, station-<faculty> in the same chunk.
-  [
-    /\/station-(?:resolution|function|shape|colour|time)-[\w-]{8}\.webp$/u,
-    "the stations' paintings in the Ear Lab with Merc",
-  ],
 ]
 
 /**
