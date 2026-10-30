@@ -1353,16 +1353,19 @@ replaced it. The builder's record: critics never read it.
      - Group E: held items 1 and 2 (decision 111).
      - Group F: FILM1 2 (the practise card exits over 0.3 s or more, the travelling rung grows
        about 2.5x, as held item 2 proposed, and "NEXT TIME" and "support" land within 0.3 s), 3 (the
-       end card is complete by 480.2 and its two lower lines measure at least 44 px tall); held
-       item 3 (decision 115).
+       end card is complete by 479.9, as soon as the hosts' celebration hop allows (decision 95),
+       or by about 480.3 if the address has to wait for the hop; its two lower lines measure at
+       least 44 px tall); held item 3 (decision 115).
      - Mine: FILM1 5, in part: Tavi's two falls through the top-right labels (1:50 and 2:15, s05
        and s06) become floor-level leaps in from the right edge, each starting 0.25 s earlier, as
        held B item 1 asked; the kit gets the leap as an opt-in entry and the other four falls stay.
        FILM1 3's hold, not now: S16 is 5.2 s and the m12 host passes end 0.08 s after its last
        frame (140.634 s), so lengthening the film would leave the hosts without frames. Group F
-       completes the card about 0.9 s into S16 instead (a full hold of about 4.3 s), and at the
-       re-voice, which re-times the film and re-renders every host pass anyway, the end sting in
-       script.json grows from 5.0 to 6.5 s (a full hold of about 5.8 s). The YouTube end screen
+       completes the card about 1.4 s into S16 instead (a full hold of about 3.8 s; the hop's top
+       at 479.73 keeps the address from landing sooner), and at the re-voice, which re-times the
+       film and re-renders every host pass anyway, the end sting in script.json grows from 5.0 to
+       6.5 s (a full hold of about 5.3 s), and the re-rendered m12 pass can hop earlier or lower so
+       that the address need not wait for it. The YouTube end screen
        starts on "Next time" (YOUTUBE.md), so none of its elements waits on the card.
      - Dropped, not named by the film critic: held A item 1 (S4's empty lower third), held D item 5
        (the dust motes) and held F item 1 (the gold corner).
@@ -1371,3 +1374,36 @@ replaced it. The builder's record: critics never read it.
      - Not actionable: audio.md's "harsh" flags (the music-only render holds only the pad, so the
        narration counts as an effect); the zooms that read as zooms, not dollies, which the kit's
        depth cues (decisions 89, 93 and 106) were meant to answer, noted for the next film.
+
+123. **Tavi's entrances in S5g and S6d are leaps in from the right edge at floor level (critic FILM1
+     item 5, in part; component critic B-05's held item 1).** FILM1 saw the same fall six times and,
+     at 1:50 and 2:15, Tavi falling through the top-right labels. These two become the film's
+     floor-level entrances; the other four falls stay (m04 at 1:02, m07 at 3:18, Merc's m10 at 4:42
+     and both Mercs at 5:43).
+     - The passes. m06a-orange and m06b-orange open on one cycle of the renderer's celebrate jump in
+       place (CEL in src/lib/merc/sim-choreo.ts: a crouch of 0.15 s, 0.43 s in the air, a landing
+       squash with its small splash, settled by 0.8 s), started LEAP (1.38 s) before her first word
+       (o5, o6), so she lands 0.80 s before it, 0.25 s sooner than the drop's splat, and is settled
+       0.58 s before she speaks: in the air 109.65 to 110.08 and 134.70 to 135.13 (s05 40.30, s06
+       23.82, as B-05 asked). No tall intro: a leap starts whole. `tools/merc-shots.py` gives them
+       `enter=('celebrate', ...)` with the entrance's length as `drop` (LEAP_LEN 0.8).
+     - The kit. `L.mercGate(..., { leap: true })` holds the box 300 px off her corner, the whole
+       box beyond the right edge, through the crouch, and carries her in while she is in the air: straight across,
+       as a ballistic leap is, with 70 px of arc on top of the renderer's own (about 33 px at 300),
+       so it reads as a leap and not a skim. The reflection, which rides inside the box, is lowered
+       twice the lift, so it stays a mirror image about the floor; the floor patch comes up as she
+       lands. Every other pass ignores the option. Group B's shared `tavi` helper passes it through,
+       and s05's m06a and s06's m06b turn it on.
+     - So Tavi now lands inside S5 (110.08), and S5's last 0.8 s show her in her corner: HANDOFFS
+       § S5 to S6 has her landed and settled at the cut, not dropping in.
+     - The renders: the repo's node_modules is gone from this container, so both passes were
+       rendered with the container's Playwright 1.56.1 (PLAYWRIGHT_MODULE) driving the same Chromium
+       1194 and the same prebuilt Merc bundle (assets/merc-lib) as every other pass.
+     - Seen on lab stills (lab/entrances/s05-m06a-leap.jpg, s06-m06b-leap.jpg): she is off frame
+       through the crouch, comes in at the top of her arc about 0.2 s into her time in the air (109.83), lands with the
+       squash and its small gold splash, and her eyes open again about 0.3 s later; on screen for
+       about 0.25 s. The carry was 360 px first; 300 shows more of the arc's top. Left for the film
+       critic: the renderer's floor light rides up with the box's extra lift (up to 70 px, for about
+       0.2 s) and reads as her own glow; if it reads as a floating light, the long fall's mask is the
+       fix. The S5 to S6 cut is two consecutive pass frames (mean difference 0.08).
+

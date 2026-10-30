@@ -229,3 +229,9 @@ entries here; from this one on, every change is logged.
   it writes this project's `SCRIPT.md`, the voiced clock.
 - **web-video.sh: lesson-02 names**, and the poster's default time is 1.6 s into `s02-title`,
   read from `assets/scenes.js`, so it follows every re-time (it was a typed 24.4 s).
+- **merc-shots.py: Tavi's two leaps** (DECISIONS 123). m06a-orange and m06b-orange enter with one
+  cycle of the renderer's `celebrate` jump (LEAP, 1.38 s before her first word; LEAP_LEN 0.8 as the
+  pass's `drop`), so they have no tall intro and `merc-whole.py` gives them 0; `L.mercGate`'s `leap`
+  carries the jump in from beyond the right edge. Rendered with the container's Playwright
+  (`PLAYWRIGHT_MODULE=/opt/node-tools/node_modules/playwright/index.mjs`) on the same Chromium 1194:
+  the repo's node_modules is gone from this container.

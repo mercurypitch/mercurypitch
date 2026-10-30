@@ -12,28 +12,6 @@ window.MERC_INTRO = {
    "until": 3727
   }
  ],
- "m06a-orange": [
-  {
-   "drawn": 225,
-   "frames": 44,
-   "from": 6587,
-   "pad": 208,
-   "shot": "m06a-orange",
-   "tall": true,
-   "until": 6627
-  }
- ],
- "m06b-orange": [
-  {
-   "drawn": 225,
-   "frames": 44,
-   "from": 8089,
-   "pad": 208,
-   "shot": "m06b-orange",
-   "tall": true,
-   "until": 8129
-  }
- ],
  "m07-orange": [
   {
    "drawn": 225,

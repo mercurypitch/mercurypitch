@@ -62,6 +62,8 @@ FILES=(
   s2/lessons/25-minor-properly/RESEARCH.md s2/lessons/25-minor-properly/ARTICLE-PLAN.md s2/lessons/26-second-voice/RESEARCH.md s2/lessons/26-second-voice/ARTICLE-PLAN.md
   s2/lessons/27-sevenths-inversions/RESEARCH.md s2/lessons/27-sevenths-inversions/ARTICLE-PLAN.md s2/lessons/28-cadences-form/RESEARCH.md s2/lessons/28-cadences-form/ARTICLE-PLAN.md
   sing-art/BRIEF.md sing-art/PLAN.md sing-art/LEDGER.md
+  l4entr/polish/make-briefs.py l4entr/polish/items-A.md l4entr/polish/items-B.md l4entr/polish/items-C.md l4entr/polish/items-D.md l4entr/polish/items-E.md l4entr/polish/items-F.md
+  l4entr/polish/BRIEF-A.md l4entr/polish/BRIEF-B.md l4entr/polish/BRIEF-C.md l4entr/polish/BRIEF-D.md l4entr/polish/BRIEF-E.md l4entr/polish/BRIEF-F.md l4entr/leap/DECISION-123.md
   l4film/review/component-A-04/REPORT.md l4film/review/component-B-05/REPORT.md l4film/review/component-C-03/REPORT.md l4film/review/component-D-04/REPORT.md l4film/review/component-E-03/REPORT.md l4film/review/component-F-04/REPORT.md l4film/review/film-01/REPORT.md
 )
 

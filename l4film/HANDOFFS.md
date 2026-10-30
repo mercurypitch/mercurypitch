@@ -302,12 +302,12 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
   growing from stair 1's tread, 0.3 s); the E-F riser's outline at 89.69 and its gold fill on "Yes"
   (90.77). The legend at x 140, baselines 200 and 252 (Outfit 600 44 px), frame-fixed, landing after
   the pull (92.4).
-- **S5 to S6 (110.88).** F0. Tavi down since 110.63 (m06a drops 109.78 to 110.63 and spans the
-  cut): feet (1800, 840), size 300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters,
+- **S5 to S6 (110.88).** F0. Tavi down since 110.08 and settled by 110.30 (m06a's leap in from the right
+  edge, in the air 109.65 to 110.08, spans the cut; DECISIONS 123): feet (1800, 840), size 300, body x 1720 to 1880, y 648 to 840. The staircase on C, letters,
   all seven risers measured and labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5
   named. The tally (Outfit 600 64 px) at x 1270, baseline 260, its ink x 1271 to 1668, on the same
-  pixels either side of the cut and 73 px or more from Tavi's falling body (as built, DECISIONS
-  110).
+  pixels either side of the cut, and well clear of Tavi, who comes in at floor level (DECISIONS
+  110, 123).
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
   at y 462, stairs 5 to 8 from x 722 to 1194 at y 280, each 72 px above its group's top tread and
   drawn over the bead's glow and echo rings (as built, DECISIONS 110 and 120): the upper line at

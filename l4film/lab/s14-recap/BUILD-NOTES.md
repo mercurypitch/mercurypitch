@@ -203,3 +203,11 @@ events in the card pause (icon pulses that register, then the address once more)
   only the rung (3 px between the lab frames); S15 -> S16 (round 2's s16 clip) 0.0042 %, max 45, the Mercs now on
   S15's last lab frame. Checks: clock-lint clean, merc-tags 12 tags 0 stale, npm run check 0 errors (contrast 59/59),
   text sweep clean (sweep-r7.log). Scratch in /dev/shm deleted.
+
+## Polish round (30 Oct, film critic FILM1; DECISIONS 122; brief polish/BRIEF-F.md)
+
+- Items: 1 the empty frame before the tease (card exit 0.3 s or more, the rung growing about 2.5x on its
+  travel, "NEXT TIME" and '"support"' within 0.3 s of the cut); 2 the end card complete by 479.9 (s16 1.37)
+  and its two lower lines at Outfit 500 52 px or more; 3 the gear's halo 8 px from its words.
+- Backups: lab/<s>/<s>.p1-before.html (the F-03 files). Renders: TMPDIR=/dev/shm, --output /dev/shm/l4lab-F/,
+  then mv into the lab folder; one at a time, --workers 2 at most.

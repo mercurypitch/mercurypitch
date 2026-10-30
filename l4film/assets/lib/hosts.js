@@ -14,14 +14,20 @@
 //       in from 12 px below, over 0.25 s, staggered 0.05 s (k = 0 for the first). Returns two layers,
 //       [{ text, a, dy }, { text, a, dy }].
 //   L.mercGate(layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null,
-//                       hopDx = 360, mirror = false, floor = true, fade = 18 })
+//                       hopDx = 360, mirror = false, floor = true, fade = 18, leap = false, leapDx = 300 })
 //       A Merc pass placed in screen space (pass `layer` = room.top) for PRODUCTION-PIPELINE trap 23.
 //       A drop comes in through the top of its square, so the box and its reflection stay at 0 until
 //       the pass's first whole frame (L.MERC_WHOLE, written by tools/merc-whole.py) plus one, because
 //       HyperFrames 0.8.97 can show the frame before the one a tag's times name; then the box fades in
 //       over `fade` frames while the scene eases it down its last 60 px (0.4 s, power2.out), so the
 //       entrance still reads as a fall. A pass that starts whole (L.MERC_WHOLE 0) shows at once, with
-//       no ease. `hop` is the scene time a hop out starts: the renderer's hop lands inside its square,
+//       no ease. `leap` (DECISIONS 123) is for a pass that opens on the renderer's celebrate jump in
+//       place (tools/merc-shots.py LEAP: crouch 0.15 s, then 0.43 s in the air): the box holds `leapDx`
+//       px off its corner (+300 puts the whole box beyond the right edge) through the crouch and carries her in while she
+//       is in the air, straight across, as a ballistic leap is, with LEAP_LIFT px of arc on top of the
+//       renderer's own (about 28 px at size 300), so it reads as a leap and not a skim; the reflection
+//       stays on the floor under her and the floor patch comes up as she lands. Every other pass
+//       ignores it. `hop` is the scene time a hop out starts: the renderer's hop lands inside its square,
 //       so the box is carried `hopDx` px through the hop's time in the air (from hop + 0.15 over
 //       0.42 s, power1.in): +360 out to the right, -360 out to the left. `mirror` flips a pass rendered
 //       facing left (DECISIONS 74). `floor` lays a local floor patch under the corner for an F0 scene
@@ -81,6 +87,8 @@
   L.MERC_WHOLE = window.MERC_WHOLE || {}
   L.MERC_INTRO = window.MERC_INTRO || {}
   const INTRO_FADE = 6   // frames: the first segment's fade in, where the fall starts
+  // the leap in (DECISIONS 123): the renderer's celebrate jump (CEL in src/lib/merc/sim-choreo.ts)
+  const LEAP_CROUCH = 0.15, LEAP_AIR = 0.43, LEAP_LIFT = 70
   const FALL_N = 33      // frames: the renderer's fall (DROP_T, 0.55 s at 60 fps), contact on the 33rd
   // Per drawn size, measured on every tall render (each size's talls agree to 2 rows): the body's
   // lowest drawn row at frame 0 and at frame 33, between which it follows the fall's parabola to a
@@ -157,7 +165,7 @@
     }
   }
 
-  L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, fade = 18 } = {}) => {
+  L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, fade = 18, leap = false, leapDx = 300 } = {}) => {
     const P = L.prog
     const S0 = L.scene(sid).start
     const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
@@ -219,11 +227,17 @@
       const j = Math.floor((S0 + t) * 60 + 1e-6) - P0          // the pass frame on screen now
       const inSpan = t >= ds && t <= ds + dd
       const shown = !inSpan || j < whole ? 0 : drops ? L.ease('sine.out')(Math.min(1, (j - whole + 1) / fade)) : 1
-      const dy = drops ? -60 * (1 - P(t, tWhole, 0.4, 'power2.out')) : 0
-      const dx = hop == null ? 0 : hopDx * P(t, hop + 0.15, 0.42, 'power1.in')
+      // the leap in: how far through her time in the air she is (0 until the crouch ends)
+      const u = leap ? Math.min(1, Math.max(0, (j / 60 - LEAP_CROUCH) / LEAP_AIR)) : 1
+      const lift = leap ? LEAP_LIFT * 4 * u * (1 - u) : 0
+      const dy = (drops ? -60 * (1 - P(t, tWhole, 0.4, 'power2.out')) : 0) - lift
+      const dx = (hop == null ? 0 : hopDx * P(t, hop + 0.15, 0.42, 'power1.in')) + (leap ? leapDx * (1 - u) : 0)
       m.box.style.opacity = shown.toFixed(3)
       m.box.style.transform = `translate(${f1(dx)}px, ${f1(dy)}px)${flip}`
-      if (patch) patch.style.opacity = (shown * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4))).toFixed(3)
+      // the reflection rides inside the box: while she is lifted it is lowered twice the lift, so it
+      // stays a mirror image about the floor line
+      if (leap && m.refl) m.refl.style.transform = `translate(0px, ${f1(2 * lift)}px) scaleY(-1)`
+      if (patch) patch.style.opacity = (shown * u * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4))).toFixed(3)
       return shown > 0.004 && Math.abs(dx) < 220 ? L.mercBox(x + dx, feetY + dy, size) : null
     }
   }

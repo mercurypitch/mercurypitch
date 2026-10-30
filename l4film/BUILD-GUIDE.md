@@ -471,7 +471,7 @@ the hero view, y 323) after that.
 
 - Rows: 5a to 5g. Group B.
 - In: A to B (fixed, above). The scene cuts on `act1` 0.15 s before it.
-- Out (to s06, same group): HANDOFFS § S5 to S6: F0; Tavi down since 110.63 (m06a spans the
+- Out (to s06, same group): HANDOFFS § S5 to S6: F0; Tavi down since 110.08 (m06a's leap, DECISIONS 123, spans the
   cut: feet (1800, 840), 300); the staircase on C with letters, all seven risers measured and
   labelled T T S T T T S, the legend at x 140; E4, F4, B4 and C5 named.
 - Kit: `L.strip` (sliding up from y +240, 69.55 to 70.45, power3.out, via `dy`; the eight keys up to
@@ -486,7 +486,8 @@ the hero view, y 323) after that.
   runs at their onsets); `L.echoRings`; `L.pulse`; `L.kicker('1 · Measure the steps')`; "a major
   scale" (serif italic 110 px at x 1250, baseline 300); the legend (frame-fixed, top left, after the
   pull).
-- Merc: m06a-orange drops in at `at('o5', 'start', -1.1)` (109.78, as b12 ends); its pass spans
+- Merc: m06a-orange leaps in from the right edge (`leap: true`, DECISIONS 123): its pass opens 1.38 s
+  before o5 (109.50), she is in the air 109.65 to 110.08 and settled by 110.30; its pass spans
   the S5 to S6 cut.
 - Checks: the tightest spans, 74.8 to 75.24 (`word('b8', 13, 'start', 0.46)` to `at('scale-c')`),
   82.2 to 82.5 (`word('b9', 7)` to `word('b9', 7, 'start', 0.29)`), 92.4 to 93.3 (`word('b10', 3,
@@ -513,8 +514,8 @@ the hero view, y 323) after that.
   moving by (+480, -182), 124.3 to 125.6, power2.inOut); the sum (Outfit 600 50 px at x 1270, baseline 260; DECISIONS 110) and "= 12"; the
   octave bracket (chrome, vertical, x 1232, y 664 to 352) and "= 1 octave" (serif italic 96 px at x
   1262, baseline 543); `L.pulse`; `L.echoRings`.
-- Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange drops in at
-  `at('o6', 'start', -1.1)` (134.82, as b15 ends), talks o6, listens to b16, and hops out right at `at('b16', 'end',
+- Merc: m06a-orange talks o5 and hops out right at `at('o5', 'end', 0.09)`; m06b-orange leaps in from
+  the right edge (`leap: true`, DECISIONS 123: its pass opens 1.38 s before o6, 134.55; in the air 134.70 to 135.13), talks o6, listens to b16, and hops out right at `at('b16', 'end',
   -0.55)`.
 - Checks: S6a to S6c (114.8 to 130.5) with no Merc: the push, the truck, the pull; S6b's truck reads
   as a truck (the layers part), not a pan; **critic 03 item 2**: the bead's hops in S6b keep clear of
@@ -824,9 +825,9 @@ lab still (still paths beside it). Until then, the HANDOFFS value is the one to 
 | Inside D, S10 to S11 (295.94) | s10's last frame against s11's first: max 22, no pixel over 24 | builder D | `lab/s11-why/tools/hdiff.py` |
 | D to E, 341.24 | s11's last frame: stair 1 at x 361 to 474, both houses lit, on D, F♯4 and C♯5 lit, no labels; s11's last against s12's first (29 Oct, 12:30, m11's passes in): max 17, 0.002 % over 8, none over 24 | builder D; director | `lab/s09-names/BUILD-NOTES.md`, `lab/entrances/seam-s11-last.png`, `seam-s12-first.png` |
 | Inside A, S4d | Tavi's drop seen whole (m04, 61.45 to 62.30): in high over her corner (body from y 360), the whole fall, the splat (62.05), standing by 62.37, before o3 (62.54); the stripe field ends at x 1680, 20 px clear of her column | director, s04 lab stills with the pass and its intro | `lab/entrances/s04-m04-corner.png` |
-| Inside B, S5g | Tavi's drop seen whole (m06a, 109.78 to 110.63): in high over her corner, the whole fall, the splat, standing by 110.70, before o5 (110.88) | director, s05 lab stills with the pass and its intro | `lab/entrances/s05-m06a-corner.png` |
-| Inside B, S5 to S6 (110.88) | Tavi on screen from s06's first frame (m06a's pass shown at once) | director | `lab/entrances/s06-m06b-corner.png` (first two) |
-| Inside B, S6c | m06b's drop seen whole (134.82 to 135.67), down before o6 (135.92); the sum's digits stay above y 260, 63 px over her column | director | `lab/entrances/s06-m06b-corner.png` |
+| Inside B, S5g | Tavi's leap in from the right edge (m06a, DECISIONS 123): off frame through the crouch, in at the arc's top at about 109.83, landed with the squash at 110.08, settled by 110.30, before o5 (110.88) | director, s05 lab stills (30 Oct) | `lab/entrances/s05-m06a-leap.jpg` |
+| Inside B, S5 to S6 (110.88) | Tavi in her corner on both sides of the cut: s05's last frame against s06's first are consecutive pass frames (mean difference 0.08, only along her edges) | director (30 Oct) | `lab/entrances/s05-s06-cut-leap.jpg` |
+| Inside B, S6d | m06b's leap in from the right edge (in the air 134.70 to 135.13, settled by 135.35), before o6 (135.92), at floor level, far below the sum (baseline 260) | director, s06 lab stills (30 Oct) | `lab/entrances/s06-m06b-leap.jpg` |
 | Inside C, S7a | the act 2 card ends at x 1528, 170 px clear of Tavi's column (x 1700); the strip's last key ends at x 1675, 25 px clear; the splat's spray reaches x 1678, beside that key, for about 0.1 s at 148.02 | director, s07 lab stills (m07's old pass under the new tag, its new intro) | `lab/entrances/s07-m07-card.png`, `s07-m07-splat-zoom.png` |
 | Inside D, S9d | the pull to F0 (248.71 to 249.51, 0.8 s from o9 - 1.35 on the second "doh", power2.inOut) lands as Tavi's fall ends (m09-in drops 248.96 to 249.81, down before o9 at 250.06); the strip's keys pass behind her column from about 249.02 to 249.35 (DECISIONS 83) and she lands on bare floor beside its last key (x 1675) | director, s09 lab stills with m09-in's intro | `lab/entrances/s09-m09-pull.png`, `s09-m09-column-zoom.png` |
 | Inside D, S11c | the pull to F0 (320.23 to 321.03, 0.8 s from o11 - 1.35, power2.inOut) lands as Tavi's fall ends (m11 drops 320.48 to 321.33: the splat at 321.10, standing by 321.40, eyes open by 321.50, before o11 at 321.58); the strip's right end passes behind her column from about 320.50 to 320.89 and is at x 1675, 25 px clear, when she lands (DECISIONS 83); the axis label "finishes it best" keeps 23 px over her column's top and leaves its x range by 320.60; Merc drops 321.03 to 321.88 with the world at F0: stair 1 and the keys from x 240, 30 px clear of his column (x 10 to 210); with his main pass in, he is first seen high above his corner at 321.20, lands by 321.60, splats 321.70 to 321.75 and stands by 322.20, eyes open, 5.7 s before b37 | director, s11 lab stills with both intros, then with m11-blue's main (12:20) | `lab/entrances/s11-m11-tavi-corner.png`, `s11-m11-tavi-landing.png`, `s11-m11-merc-corner.png`, `s11-m11-merc-landing.png` |

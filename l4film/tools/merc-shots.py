@@ -25,7 +25,8 @@ Times in the shot files are relative to the pass start (shot time).
 
 Lesson 4 (STORYBOARD § Merc performances and its notes for this tool): every
 entrance and exit is a named state with a start and a fixed length (`enter`: a
-`drop` of DROP; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
+`drop` of DROP, or for Tavi's two leaps in from the right edge a `celebrate` of
+LEAP_LEN, given as the pass's `drop`; `exit`: a `hop` of 0.6 s; the slides out of S1 and every move
 in S13 and S16 are the scene moving his box), and each pass ends 0.05 s after
 its exit ends; m12, which has no exit, runs past the film's end. A drop starts
 LAND before its host's first word, so the fall and the splat are over before
@@ -105,6 +106,12 @@ LAND = 1.1          # a drop starts this long before its host's first word: fall
 TALL_FRAMES = 44    # a drop's tall intro (merc-pass.mjs --tall --until): its first 44 frames, the fall and the splat
 SWITCH = 40         # the pass frame where a pass takes over from its tall intro: inside the splat's hold (0.61 to
                     # 0.79 s), where he is still, so the hand-over cannot show even if a tag runs a frame early
+# A leap in from the right edge (DECISIONS 123): one cycle of the renderer's celebrate jump in place
+# (CEL in sim-choreo.ts: crouch 0.15 s, 0.43 s in the air, settled by 0.8 s) on the pass's first frame,
+# which L.mercGate's `leap` carries in from beyond the frame's right edge while she is in the air. It
+# starts LEAP before her first word, so she lands 0.80 s before it: 0.25 s sooner than a drop's
+# splat (critic B-05 item 1), and settled 0.58 s before she speaks.
+LEAP, LEAP_LEN = 1.38, 0.8
 
 
 def run(midis, step, last):
@@ -154,12 +161,14 @@ PASSES = [
     # S4d: drops in at the bottom right before o3, talks o3, hops out right on b7's start.
     dict(id='m04-orange', who='orange', span=(cue('o3', 'start', -LAND), ended(cue('b7', 'start', 0.29))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o3', 'start', -LAND)), exit=('hop', cue('b7', 'start', 0.29))),
-    # S5g to S6a: drops in before o5 (the pass spans the S5 to S6 cut), talks o5, hops out right after it.
-    dict(id='m06a-orange', who='orange', span=(cue('o5', 'start', -LAND), ended(cue('o5', 'end', 0.09))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o5', 'start', -LAND)), exit=('hop', cue('o5', 'end', 0.09))),
-    # S6d: drops in before o6, talks o6, idles through b16, hops out right at its end.
-    dict(id='m06b-orange', who='orange', span=(cue('o6', 'start', -LAND), ended(cue('b16', 'end', -0.55))), size=300, view='hero',
-         bias=TURN['left'], enter=('drop', cue('o6', 'start', -LAND)), exit=('hop', cue('b16', 'end', -0.55))),
+    # S5g to S6a: leaps in from the right edge before o5 (the pass spans the S5 to S6 cut), talks o5, hops
+    # out right after it. A leap, not a drop: a fall came through S5's top-right labels (critic FILM1 item 5).
+    dict(id='m06a-orange', who='orange', span=(cue('o5', 'start', -LEAP), ended(cue('o5', 'end', 0.09))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('o5', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('o5', 'end', 0.09))),
+    # S6d: leaps in from the right edge before o6 (a fall came through the sum's row), talks o6, idles
+    # through b16, hops out right at its end.
+    dict(id='m06b-orange', who='orange', span=(cue('o6', 'start', -LEAP), ended(cue('b16', 'end', -0.55))), size=300, view='hero',
+         bias=TURN['left'], enter=('celebrate', cue('o6', 'start', -LEAP)), drop=LEAP_LEN, exit=('hop', cue('b16', 'end', -0.55))),
     # S7b: drops in before o7, talks o7, hops out right after it.
     dict(id='m07-orange', who='orange', span=(cue('o7', 'start', -LAND), ended(cue('o7', 'end', 0.07))), size=300, view='hero',
          bias=TURN['left'], enter=('drop', cue('o7', 'start', -LAND)), exit=('hop', cue('o7', 'end', 0.07))),

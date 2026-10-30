@@ -2000,7 +2000,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Freed /dev/shm: extract cache (4.4 GB) and the fallbacks (old film, l4fix) deleted; cgroup 1.2 GB.
   11:4x FILM1 critic launched (fresh motion-critic, xhigh, paths + disk note only; report to
   P/review/film-01/REPORT.md). Rate limit allowed. One agent running.
-- 12:2x FILM1 reported: ONE MORE PASS (P/review/film-01/REPORT.md, saved verbatim; LEDGER row 30;
+- 12:0x FILM1 reported: ONE MORE PASS (P/review/film-01/REPORT.md, saved verbatim; LEDGER row 30;
   DECISIONS 122 = the triage, corrected so the film does NOT grow now). Ten items: (1) the recall's
   tiles pop on at 47.617 (12.8 % of pixels in one frame); (2) an empty frame before the tease,
   469.85-471.0; (3) the end card complete for only 2.7 s, lower lines 34 px; (4) the brackets are
@@ -2017,3 +2017,27 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Polish round: $S/l4entr/polish/ (BRIEF-common.md, make-briefs.py, items-<G>.md -> BRIEF-<G>.md).
   Waves (two at a time, xhigh): A + F, then B + C (after my leap entry), then D + E. Then a fresh
   frozen copy, film-02 with the new render-l4.sh (seam loop), fresh critic FILM2.
+- 12:1x polish wave 1 launched (two builders, xhigh, rate limit allowed): group A (s01-s04,
+  BRIEF-A) and group F (s14-s16, BRIEF-F). F.2 rewritten before launch: decision 95's celebration
+  hop (479.4-480.0, top 479.73, heads' glow to y 453) sets the limit, so the card completes by
+  479.9 (s16 1.37) if the address can rest by 479.6 with >= 20 px from both heads at 479.73, else
+  the fallback (address first visible 479.93, over 0.3 s, card complete about 480.3); lower lines
+  Outfit 500 >= 52 px. DECISIONS 122 corrected to match (backup l4entr/DECISIONS.before-122b.md).
+  BRIEF-common's disk rule: render into /dev/shm/l4lab-<G>/ and mv the clip (the renderer refuses
+  below 1024 MB free at temp and output; / has ~1105 MB).
+- 12:3x Tavi's leaps done (DECISIONS 123; l4entr/leap/DECISION-123.md): m06a and m06b open on the
+  renderer's celebrate jump (merc-shots.py LEAP 1.38, LEAP_LEN 0.8; intros 11 -> 9), and hosts.js's
+  opt-in `leap` (300 px carry from beyond the right edge, 70 px arc, reflection lowered 2x lift,
+  floor patch x u) brings it in at floor level. In the air 109.65-110.08 and 134.70-135.13; lands
+  0.25 s sooner than the falls, inside S5. Group B's `tavi` helper passes `leap`; tags rewritten
+  (no seg tags). Passes re-rendered 12:24/12:29 (merc-pass.mjs now needs
+  PLAYWRIGHT_MODULE=/opt/node-tools/node_modules/playwright/index.mjs, Playwright 1.56.1 on
+  chromium-1194, since the repo's node_modules is gone). whole.js 0 for both. Proofs:
+  P/lab/entrances/s05-m06a-leap.jpg, s06-m06b-leap.jpg, s05-s06-cut-leap.jpg (cut mean diff 0.082).
+  STORYBOARD 5g/6d, HANDOFFS § S5 to S6, BUILD-GUIDE s05/s06 sheets, tools/CHANGES.md updated
+  (backups l4entr/leap/*.before-123). check: 0 errors, 75 warnings (79 before: the seg tags' 4
+  nested-start warnings went). Caveat for the critic: the floor light lifts with the 70 px arc.
+  BRIEF-B generated (item 4 tells B the leap is done; check collisions and the cut).
+  push-notes now carries polish/items-*.md, BRIEF-*.md, make-briefs.py, leap/DECISION-123.md.
+  Next: A and F reports -> review each, HANDOFFS § S16 from F, DECISIONS; then wave 2 (B + C),
+  then D + E; then frozen copy, film-02 (render-l4.sh, WORKERS=2, seam loop), fresh FILM2 critic.

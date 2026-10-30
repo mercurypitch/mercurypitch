@@ -249,3 +249,11 @@ inside the Merc videos' transparent boxes, visible on the frame). The run fails 
   bottom-edge centroid 769.86-769.97; only the cap top moves (741 -> 734 -> 740). Clip left as is.
 - Seams: s01->s02 0.397 (5); s02->s03 clip 0.515 (bead step), stills 3.4 / 0 max 0.
 - check passed (0 errors, s01-s04 warnings only), merc-tags 0 stale, sweep as before.
+
+## Polish round (30 Oct from 12:17; brief scratchpad/l4entr/polish/BRIEF-A.md, items 1 to 5)
+
+Context read: film-01 report (items 1, 8, 10), A-04 report (items 2, 3). Scratch in /dev/shm/l4lab-A (renders
+go there, then mv into lab/<id>/). s03 and s04 compositions still equal their lab sources assembled (checked
+12:25), so s04 edits go into lab/s04-recall/s04-src.html first, then assemble.py.
+Before numbers (lab clip r4, 60 fps): s04 tile entrance: frames 0.43 to 0.55 s near still (mean change under
+0.01), hold sample at 0.40 s; the pop frame 0.583 s (47.628) changes 12.0 % of pixels (4.0 % the next).

@@ -5,17 +5,15 @@
     <div id="s06-groups" data-composition-id="s06-groups" data-start="0" data-duration="35.216" data-width="1920" data-height="1080">
       <div class="scene" id="s06-groups-scene"></div>
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s06-groups -->
-      <video id="s06-groups-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="1.108"></video>
-      <video id="s06-groups-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="1.108"></video>
-      <video id="s06-groups-m06b-orange" data-merc="m06b-orange" class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="23.927" data-duration="10.834" data-media-start="0.008"></video>
-      <video id="s06-groups-m06b-orange-refl" data-merc="m06b-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="23.927" data-duration="10.834" data-media-start="0.008"></video>
-      <video id="s06-groups-m06b-orange-seg1" data-merc="m06b-orange" data-merc-seg="m06b-orange:1" class="clip" muted playsinline src="assets/merc/m06b-orange-tall-merc.webm" data-start="23.927" data-duration="0.700" data-media-start="0.008"></video>
-      <video id="s06-groups-m06b-orange-seg1-refl" data-merc="m06b-orange" data-merc-seg="m06b-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m06b-orange-tall-merc.webm" data-start="23.927" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s06-groups-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="1.392"></video>
+      <video id="s06-groups-m06a-orange-refl" data-merc="m06a-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="1.392"></video>
+      <video id="s06-groups-m06b-orange" data-merc="m06b-orange" class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="23.661" data-duration="11.100" data-media-start="0.008"></video>
+      <video id="s06-groups-m06b-orange-refl" data-merc="m06b-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m06b-orange-merc.webm" data-start="23.661" data-duration="11.100" data-media-start="0.008"></video>
       <script>
         ;(function () {
           /* S6, Two groups and a joint (STORYBOARD rows 6a to 6d; HANDOFFS § Inside B, § S5 to S6, § B to C).
-             In (S5 to S6): F0; Tavi's m06a dropping in (feet (1800, 840), 300, hero, turned left), seen from
-             this scene's first frames; the staircase on C with letters, all seven risers measured and labelled
+             In (S5 to S6): F0; Tavi in her corner (feet (1800, 840), 300, hero, turned left), landed in S5 from
+             her leap in (pass m06a); the staircase on C with letters, all seven risers measured and labelled
              T T S T T T S, hairlines, C major's keys at full, the legend at x 140; E4, F4, B4 and C5 named.
              Out (to s07, fixed, B to C): F0 (since the pull landed at 124.0), no Mercs (m06b ended 145.65),
              the kicker lane empty; the staircase on C at full, letters C to C, risers measured, riser labels
@@ -58,11 +56,12 @@
             }
           }
           // 2. Tavi in her F0 corner (feet (1800, 840), 300, hero view), screen space in the top layer, placed by
-          //    L.mercGate (assets/lib/hosts.js) as every scene places a Merc: her drop seen whole from its intro
-          //    (DECISIONS 81, the segment tags from tools/merc-tags.py); her hop out carries the box 360 px right
-          //    through the hop's time in the air (from hop + 0.15 over 0.42 s, power1.in); a local floor patch under
-          //    her corner comes and goes with her. Returns draw(t) -> her screen body box, or null when unseen.
-          const tavi = (layer, { pass, tag, hop = null }) => L.mercGate(layer, { sid: SID, pass, tag, x: 1800, size: 300, hop })
+          //    L.mercGate (assets/lib/hosts.js) as every scene places a Merc. m06a and m06b open on her leap in
+          //    from beyond the right edge at floor level (`leap`, DECISIONS 123: the pass's celebrate jump, carried
+          //    300 px in while she is in the air); her hop out carries the box 360 px right through the hop's time
+          //    in the air (from hop + 0.15 over 0.42 s, power1.in); a local floor patch under her corner comes and
+          //    goes with her. Returns draw(t) -> her screen body box, or null when unseen.
+          const tavi = (layer, { pass, tag, hop = null, leap = false }) => L.mercGate(layer, { sid: SID, pass, tag, x: 1800, size: 300, hop, leap })
           // 3. A label switch (STORYBOARD § Type): the old label slides up 12 px as it fades, the new one in from
           //    12 px below, 0.25 s, staggered 0.05 s stair by stair (k = 0 for the first). § Type's "a replacement
           //    starts once the one before has gone": the old one leaves in the first half, the new one comes in
@@ -330,7 +329,7 @@
 
           /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
           const taviA = tavi(room.top, { pass: 'm06a-orange', tag: SID + '-m06a-orange', hop: A.hopA })
-          const taviB = tavi(room.top, { pass: 'm06b-orange', tag: SID + '-m06b-orange', hop: A.hopB })
+          const taviB = tavi(room.top, { pass: 'm06b-orange', tag: SID + '-m06b-orange', hop: A.hopB, leap: true })
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
           const hud = L.stageOf(room.hud)
