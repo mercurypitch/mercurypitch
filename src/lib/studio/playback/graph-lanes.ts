@@ -18,6 +18,8 @@ import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { scheduleStudioSegmentGain } from './edge-envelope'
+import type { StudioLaneSend, StudioReverbBuses } from './graph-reverb-bus'
+import { connectLaneSends, disconnectLaneSends } from './graph-reverb-bus'
 import type { StudioLaneIdle } from './lane-idle'
 import { disposeLaneIdle, LIVE_LANE, quietNewLane } from './lane-idle'
 import type { StudioLaneTimeline, StudioPlanned, StudioScheduled, } from './lane-timeline'
@@ -38,6 +40,8 @@ export interface StudioRetiringChain {
   readonly balanceDb: number
   /** When its output and its sources have faded out, so it can go. */
   readonly silentAt: number
+  /** Its reverb sends (graph-reverb-bus.ts), fading out with it. */
+  readonly sends: readonly StudioLaneSend[]
 }
 
 export interface StudioGraphLane {
@@ -68,6 +72,8 @@ export interface StudioGraphLane {
   readonly sets: Set<StudioSourceSet>
   /** Whether its chain runs, drains or sits out of the mix while no one hears it (lane-idle.ts). */
   idle: StudioLaneIdle
+  /** What its reverbs send to shared spaces (graph-reverb-bus.ts); empty at full quality. */
+  sends: readonly StudioLaneSend[]
 }
 
 /** The broadband dynamics in a chain, whose reductions add up to the lane's. */
@@ -97,6 +103,8 @@ export interface StudioLanePlace {
   readonly fromFrame: number
   /** How much work the lane's chain does (fx-profile.ts). */
   readonly profile?: StudioFxProfile
+  /** The shared reverb spaces, when the profile sends reverbs there. */
+  readonly buses?: StudioReverbBuses
 }
 
 /** A lane's faders after `fade`, into `output`: split, a gain per side, merge. */
@@ -148,6 +156,15 @@ export function buildGraphLane(
       feed.compensation,
     )
     const current = openStudioSourceSet(ctx, feed, null)
+    const sends = place.buses
+      ? connectLaneSends(
+          ctx,
+          chain.sends(),
+          chain.getSpec(),
+          faders.mixes.map((mix) => mix.gain.value),
+          place.buses,
+        )
+      : []
     const built: StudioGraphLane = {
       trackId: lane.track.id,
       feed,
@@ -164,6 +181,7 @@ export function buildGraphLane(
       current,
       sets: new Set([current]),
       idle: LIVE_LANE,
+      sends,
     }
     if (!lane.audible) quietNewLane(ctx, built)
     return built
@@ -212,11 +230,16 @@ export function mixLane(
     audible ? laneGains({ ...track, balanceGainDb }) : [0, 0]
   const values = gains(held?.balanceDb ?? track.balanceGainDb)
   const next = gains(track.balanceGainDb)
-  for (const [index, gain] of lane.mixes.entries()) {
-    gain.gain.cancelScheduledValues(now)
-    gain.gain.setTargetAtTime(values[index], now, MIX_GLIDE_SECONDS)
-    if (held) gain.gain.setTargetAtTime(next[index], held.at, MIX_GLIDE_SECONDS)
-  }
+  // A lane's sends move with its faders, so its reverb follows it.
+  const sends = [...lane.sends, ...(lane.retiring?.sends ?? [])]
+  const pairs = [lane.mixes, ...sends.map((send) => send.mixes)]
+  for (const mixes of pairs)
+    for (const [index, gain] of mixes.entries()) {
+      gain.gain.cancelScheduledValues(now)
+      gain.gain.setTargetAtTime(values[index], now, MIX_GLIDE_SECONDS)
+      if (held)
+        gain.gain.setTargetAtTime(next[index], held.at, MIX_GLIDE_SECONDS)
+    }
   lane.balanceDb = track.balanceGainDb
 }
 
@@ -380,6 +403,7 @@ export function disposeRetiringChain(lane: StudioGraphLane): void {
   old.feed.input.disconnect()
   old.chain.dispose()
   old.fade.disconnect()
+  disconnectLaneSends(old.sends)
   old.release?.()
 }
 
@@ -388,6 +412,7 @@ export function disposeGraphLane(lane: StudioGraphLane): void {
   silenceLane(lane)
   disposeRetiringChain(lane)
   disposeLaneIdle(lane)
+  disconnectLaneSends(lane.sends)
   lane.feed.input.disconnect()
   lane.chain.dispose()
   lane.fade.disconnect()

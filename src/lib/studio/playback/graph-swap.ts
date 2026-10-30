@@ -25,6 +25,10 @@
 // Keys and backing vocals start over their settled level instead (1.2 dB
 // at 0.3 s), as they do in any newly built run.
 //
+// A lane whose reverbs send to the shared reverb spaces (graph-reverb-bus.ts)
+// crosses its sends with its chain, on the same frames: the new chain's
+// sends come in as the old chain's go.
+//
 // What a swap cannot do goes to a new run (handoff.ts), each for a reason
 // of its own: a chain slower than the slowest lane, which every other lane
 // would have to wait for; a lane the graph did not build; a graph parked
@@ -39,6 +43,8 @@ import type { StudioGraphState } from './graph-passes'
 import { laneRun, passStart, swapping } from './graph-passes'
 import type { ReplanPlace } from './graph-replan'
 import { rebase, replanPlace } from './graph-replan'
+import type { StudioLaneSend } from './graph-reverb-bus'
+import { connectLaneSends, crossLaneSends, disconnectLaneSends, sendTrim, } from './graph-reverb-bus'
 import { quietSwappedLane } from './lane-idle'
 import { laneTimeline, plannedSegments } from './lane-timeline'
 import { EQUAL_POWER_FADE, openStudioSourceSet, SAME_AUDIO_CROSSFADE_SECONDS, SEEK_CROSSFADE_SECONDS, } from './seek-crossfade'
@@ -62,13 +68,16 @@ interface BuiltChain {
   readonly fade: GainNode
   /** What its sources will feed, in front of it (lane-idle.ts). */
   readonly inlet: GainNode
+  /** Its reverbs' sends into the lane's shared spaces, silent until it crosses. */
+  readonly sends: readonly StudioLaneSend[]
 }
 
 /** Take down chains built for a swap that does not happen. */
 function dropChains(built: readonly BuiltChain[]): void {
-  for (const { chain, fade, inlet } of built) {
+  for (const { chain, fade, inlet, sends } of built) {
     inlet.disconnect()
     fade.disconnect()
+    disconnectLaneSends(sends)
     chain.dispose()
   }
 }
@@ -91,7 +100,17 @@ function buildChains(
       fade.connect(lanes[index].split)
       const inlet = state.ctx.createGain()
       inlet.connect(chain.input)
-      built.push({ chain, fade, inlet })
+      const sends = state.buses
+        ? connectLaneSends(
+            state.ctx,
+            chain.sends(),
+            swap.spec,
+            lanes[index].mixes.map((mix) => mix.gain.value),
+            state.buses,
+          )
+        : []
+      for (const send of sends) send.input.gain.value = 0
+      built.push({ chain, fade, inlet, sends })
     }
     return built
   } catch {
@@ -120,6 +139,14 @@ function crossChains(
   lane.fade.gain.linearRampToValueAtTime(0, end)
   next.fade.gain.setValueAtTime(0, at)
   next.fade.gain.linearRampToValueAtTime(1, end)
+  crossLaneSends(
+    lane.sends,
+    sendTrim(lane.chain.getSpec()),
+    next.sends,
+    sendTrim(next.chain.getSpec()),
+    at,
+    end,
+  )
   lane.retiring = {
     chain: lane.chain,
     fade: lane.fade,
@@ -128,9 +155,11 @@ function crossChains(
     at,
     balanceDb: lane.balanceDb,
     silentAt: end + SEEK_CROSSFADE_SECONDS,
+    sends: lane.sends,
   }
   lane.chain = next.chain
   lane.fade = next.fade
+  lane.sends = next.sends
   lane.release = swap.release
   const idle = lane.idle
   lane.feed = {
@@ -183,7 +212,21 @@ export function finishSwaps(state: StudioGraphState): void {
     disposeRetiringChain(lane)
     lane.fade.gain.cancelScheduledValues(0)
     lane.fade.gain.value = 1
+    const trim = sendTrim(lane.chain.getSpec())
+    for (const { input } of lane.sends) {
+      input.gain.cancelScheduledValues(0)
+      input.gain.value = trim
+    }
   }
+}
+
+/** When a lane crossing to a new chain starts and ends crossing; null when it is not. */
+export function laneCrossing(
+  lane: StudioGraphLane,
+): { readonly at: number; readonly end: number } | null {
+  if (!lane.retiring) return null
+  const { at } = lane.retiring
+  return { at, end: at + SAME_AUDIO_CROSSFADE_SECONDS }
 }
 
 /**

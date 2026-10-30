@@ -56,6 +56,11 @@ export interface StudioIdleLane {
   readonly split: AudioNode
   readonly chain: { getSpec(): ChainSpec }
   readonly retiring: object | null
+  /** Its reverb sends (graph-reverb-bus.ts): out of the mix with it. */
+  readonly sends: readonly {
+    readonly input: AudioNode
+    readonly split: AudioNode
+  }[]
 }
 
 /** How long a chain rings on after its input stops, plus room. */
@@ -99,6 +104,7 @@ export function wakeLane(ctx: BaseAudioContext, lane: StudioIdleLane): void {
   const inlet = lane.feed.input as GainNode
   if (idle.phase === 'idle') {
     lane.fade.connect(lane.split)
+    for (const send of lane.sends) send.input.connect(send.split)
     inlet.disconnect(idle.keepAlive)
     idle.keepAlive.disconnect()
   }
@@ -123,6 +129,7 @@ export function settleIdleLanes(
     // The keep-alive first: nothing may pull the sources less in between.
     lane.feed.input.connect(keepAlive).connect(ctx.destination)
     lane.fade.disconnect(lane.split)
+    for (const send of lane.sends) send.input.disconnect(send.split)
     lane.idle = { phase: 'idle', keepAlive }
   }
 }

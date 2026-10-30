@@ -9,6 +9,7 @@ import { FAST_SETTLE_SECONDS } from '@/lib/studio-fx/effect-shell'
 import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, fakeShaperRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { measureShaperDelays, resetShaperDelaysForTests, } from '@/lib/studio-fx/shaper-delay'
 import { createEffectUnit } from './index'
 
@@ -226,6 +227,7 @@ describe('shapers at a lighter playback quality', () => {
       exciter: oversample,
       limiter: oversample,
     },
+    reverbBus: false,
   })
 
   for (const kind of ['saturation', 'exciter', 'limiter'] as const) {
@@ -265,6 +267,46 @@ describe('shapers at a lighter playback quality', () => {
     expect(
       ctx.ofType<FakeShaper>('shaper').map((shaper) => shaper.oversample),
     ).toEqual(['4x', '4x'])
+  })
+})
+
+describe('reverb on a reverb bus', () => {
+  const bus = { ...FULL_FX_PROFILE, id: 'bus', reverbBus: true }
+
+  it('sends its pre-delayed, cut and mixed signal to the space its decay picks, and convolves nothing', () => {
+    for (const [decayS, space] of [
+      [0.8, 'room'],
+      [1.5, 'hall'],
+      [2.8, 'long'],
+    ] as const) {
+      const { ctx, env } = setup(false)
+      const unit = createEffectUnit(
+        ctx.asContext,
+        spec('reverb', { decayS, mix: 26, duck: 0 }),
+        { ...env, profile: bus },
+      )
+      expect(unit.send?.space).toBe(space)
+      expect(ctx.ofType<FakeConvolver>('convolver')).toHaveLength(0)
+      const send = unit.send!.output as unknown as FakeNode
+      // The send is the wet path; none of it returns to the unit's output.
+      expect(reaches(send, unit.output as unknown as FakeNode)).toBe(false)
+      expect(
+        reaches(
+          unit.input as unknown as FakeNode,
+          unit.output as unknown as FakeNode,
+        ),
+      ).toBe(true)
+    }
+  })
+
+  it('keeps a ducked reverb on its own, as at full quality', () => {
+    const { ctx, env } = setup(false)
+    const unit = createEffectUnit(ctx.asContext, spec('reverb', { duck: 60 }), {
+      ...env,
+      profile: bus,
+    })
+    expect(unit.send).toBeUndefined()
+    expect(ctx.ofType<FakeConvolver>('convolver').length).toBeGreaterThan(0)
   })
 })
 

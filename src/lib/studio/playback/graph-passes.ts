@@ -12,6 +12,7 @@ import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioGraphLane, StudioLaneRun } from './graph-lanes'
 import { crossLane, dropPassesAfter, openLane } from './graph-lanes'
+import type { StudioReverbBuses } from './graph-reverb-bus'
 import { laneTimeline } from './lane-timeline'
 import { EQUAL_POWER_FADE } from './seek-crossfade'
 
@@ -44,6 +45,8 @@ export interface StudioGraphState {
   pendingAt: number
   /** How much work its lane chains do (fx-profile.ts); a swap builds with it. */
   profile: StudioFxProfile
+  /** The shared reverb spaces its lanes send to, when the profile has them (graph-reverb-bus.ts). */
+  readonly buses: StudioReverbBuses | null
 }
 
 /** How long one pass of the plan lasts. */

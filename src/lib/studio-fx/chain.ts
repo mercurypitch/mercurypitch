@@ -31,7 +31,7 @@
 
 import type { ChainSpec, EffectSpec, ParamValues } from './chain-spec'
 import { CHAIN_SPEC_VERSION, normalizeChainSpec, normalizeEffectParams, } from './chain-spec'
-import type { EffectEnv, EffectUnit } from './effect-shell'
+import type { EffectEnv, EffectUnit, StudioEffectSend } from './effect-shell'
 import { isRealtimeRunning, writeParam } from './effect-shell'
 import { createEffectUnit } from './effects'
 import type { StudioFxProfile } from './fx-profile'
@@ -54,6 +54,8 @@ export interface StudioFxChain {
   readReductionDb(id: string): number
   /** Settle every new compressor from `at` (effect-shell.ts `settleRelease`). */
   settle(at: number): void
+  /** What its reverbs send to shared spaces (fx-profile.ts `reverbBus`). */
+  sends(): readonly StudioEffectSend[]
   dispose(): void
 }
 
@@ -205,6 +207,8 @@ export function createStudioFxChain(
       slot.unit.setParams(merged)
     },
     readReductionDb: (id) => findSlot(id)?.unit.readReductionDb() ?? 0,
+    sends: () =>
+      slots.flatMap(({ unit }) => (unit.send === undefined ? [] : [unit.send])),
     settle(at) {
       for (const { unit } of slots) unit.settle?.(at)
     },

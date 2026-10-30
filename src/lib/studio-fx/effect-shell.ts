@@ -19,7 +19,7 @@
 import type { MixGains, ShaperCurve } from './dsp'
 import { BUTTERWORTH_Q_DB, BUTTERWORTH4_Q_DB, createIdentityCurve, DRY_ONLY, IDENTITY_DOMAIN, } from './dsp'
 import type { EffectKind } from './effect-definitions'
-import type { StudioFxProfile } from './fx-profile'
+import type { StudioFxProfile, StudioReverbSpace } from './fx-profile'
 import { shaperRun } from './shaper-delay'
 
 /** What the chain lends each effect. */
@@ -42,6 +42,8 @@ export interface EffectUnit {
   readReductionDb(): number
   /** Settle fresh compressors from `at` (settleRelease); absent without any. */
   settle?(at: number): void
+  /** A reverb sending to a shared space (fx-profile.ts `reverbBus`); absent otherwise. */
+  readonly send?: StudioEffectSend
   /**
    * Run beside the effect before it rather than after it (dynamic EQ,
    * chain.ts): take the detected signal from `source`, the input of the
@@ -52,6 +54,12 @@ export interface EffectUnit {
    */
   follow?(source: AudioNode | null): void
   dispose(): void
+}
+
+/** What an effect sends to a shared reverb space, after its own mix. */
+export interface StudioEffectSend {
+  readonly output: AudioNode
+  readonly space: StudioReverbSpace
 }
 
 export const PARAM_GLIDE_SECONDS = 0.02
@@ -173,6 +181,7 @@ export interface UnitParts {
   ) => void
   readonly readReductionDb?: () => number
   readonly settle?: (at: number) => void
+  readonly send?: StudioEffectSend
   readonly follow?: (source: AudioNode | null) => void
   readonly onDispose?: () => void
 }
@@ -192,6 +201,7 @@ export function assembleUnit(parts: UnitParts): EffectUnit {
       if (!disposed) parts.apply(params, env.isLive())
     },
     readReductionDb: () => (disposed ? 0 : (parts.readReductionDb?.() ?? 0)),
+    send: parts.send,
     follow:
       parts.follow &&
       ((source) => {

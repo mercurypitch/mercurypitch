@@ -23,6 +23,7 @@ import { equalPowerMix } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
 import { assembleUnit, connectSeries, createButterworth, createEffectShell, highCutFrequency, lowCutFrequency, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { reverbSpace } from '@/lib/studio-fx/fx-profile'
 import { generateReverbImpulse } from '@/lib/studio-fx/reverb-impulse'
 import { createDucker } from './ducker'
 
@@ -212,11 +213,57 @@ function createSlot(ctx: BaseAudioContext): ConvolverSlot {
   return { convolver, gain, attached: false }
 }
 
+/**
+ * A reverb on a reverb bus (fx-profile.ts `reverbBus`): its pre-delay and
+ * cuts, then its mix, sent to the shared space its decay picks. The cuts
+ * are linear, so filtering before the shared convolver sounds as after it.
+ * Its dry passes through as before; nothing of the reverb returns here.
+ */
+function createReverbSend(
+  ctx: BaseAudioContext,
+  spec: EffectSpecOf<'reverb'>,
+  env: EffectEnv,
+): EffectUnit {
+  const shell = createEffectShell(
+    ctx,
+    spec.enabled,
+    equalPowerMix(spec.params.mix / 100),
+  )
+  const preDelay = ctx.createDelay(MAX_PRE_DELAY_SECONDS)
+  const lowCut = createButterworth(ctx, 'highpass')
+  const highCut = createButterworth(ctx, 'lowpass')
+  connectSeries([shell.input, preDelay, lowCut, highCut, shell.wet])
+  shell.input.connect(shell.dry)
+  shell.wet.disconnect(shell.output)
+  const apply = (p: EffectParams<'reverb'>, glide: boolean): void => {
+    writeParam(preDelay.delayTime, p.preDelayMs / 1000, ctx, glide)
+    writeParam(lowCut.frequency, lowCutFrequency(p.lowCutHz), ctx, glide)
+    writeParam(
+      highCut.frequency,
+      highCutFrequency(p.highCutHz, ctx.sampleRate),
+      ctx,
+      glide,
+    )
+    shell.setBalance(equalPowerMix(p.mix / 100), glide)
+  }
+  apply(spec.params, false)
+  return assembleUnit({
+    kind: 'reverb',
+    env,
+    shell,
+    nodes: [preDelay, lowCut, highCut],
+    apply: (params, glide) => apply(params as EffectParams<'reverb'>, glide),
+    send: { output: shell.wet, space: reverbSpace(spec.params.decayS) },
+  })
+}
+
 export function createReverbUnit(
   ctx: BaseAudioContext,
   spec: EffectSpecOf<'reverb'>,
   env: EffectEnv,
 ): EffectUnit {
+  if (env.profile?.reverbBus === true && spec.params.duck === 0)
+    return createReverbSend(ctx, spec, env)
   const shell = createEffectShell(
     ctx,
     spec.enabled,
