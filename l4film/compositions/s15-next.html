@@ -14,7 +14,8 @@
           /* S15, Next time (STORYBOARD row 15; HANDOFFS § S14 to S15, § S15, § S15 to S16): Lesson 5's hook.
              In: the Mercs in the corners at 300; the ladder and the card gone but for the ladder's top rung, do,
              gliding to (560, 520) on one curve in film time (carryAt, the same in s14-recap) through "Next time.",
-             where it condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
+             down the right side and along y 520, under '"support"', which lands with the kicker on "Next"; it
+             condenses into the chrome bead (471.9), just before "Singers". Out (to s16): the Mercs in the corners at 300; S15's type gone (478.5).
              Merc talks b54 and b55, Tavi o14. The bead hovers (from film time) where the long note starts; on "a
              long note" it draws a level line from x 560 to 1360 at y 520; the line wavers once on "pushing".
              Every time is a cue, a word or a duration. */
@@ -34,9 +35,9 @@
             cardEnd: at('card', 'end'),                   // S14's card fades; its top rung is carried (carryAt)
             land: at('card', 'end', 2.2),                 // the rung lands at (560, 520) as the chrome bead
             kick: word('b54', 'Next'), kickOut: at('o14', 'end'),
-            support: word('b55', 'Singers'),              // '"support"' lands as the sentence starts, a second before its word
+            support: word('b54', 'Next'),                 // '"support"' lands with the kicker: the next lesson's word
+            supportW: word('b55', 'support'),             // it scales 1.2 once as it is said
             long: word('b55', 'long'),                    // the bead draws the level line (1.3 s)
-            that: word('o14', 'that'),                    // '"support"' pulses: "that" is support
             pushing: word('o14', 'pushing'),              // the line wavers once (0.8 s)
             what: word('o14', 'what'),                    // "what keeps it steady?" lands
             steady: word('o14', 'steady?'),               // the bead scales 1.2
@@ -57,13 +58,37 @@
           const line = L.glowPath(gNote, { color: C.chrome, width: 4, glow: 16 })
           const echo = L.echoRings(gNote, { dur: 0.9, grow: 3.5, width: 3, max: 2 })
           // S14 to S15 (HANDOFFS § S14 to S15): the ladder's top rung, do, brightens to full (469.7 to 469.9) and glides
-          // to (560, 520) (469.9 to 471.9, 2.0 s, power2.inOut; DECISIONS 102), condensing into the bead over its last
-          // 0.4 s. carryAt is the same function in s14-recap, of scene time and the card's end in that scene's time, so
+          // to (560, 520) (469.9 to 471.9, 2.0 s, power2.inOut; DECISIONS 102), down the right side and along y 520
+          // (DECISIONS 108), condensing into the bead over its last 0.4 s. carryAt is the same function in s14-recap, of scene time and the card's end in that scene's time, so
           // both scenes draw it from film time on the same pixels on either side of the cut.
+          const CARRY = (() => {
+            // the path (DECISIONS 108): straight down the right side from the top rung's card-time place, curving left
+            // onto y 520 at x 1000, then along y 520 (the line the long note draws later) to the bead's place; 24 px or
+            // more from '"support"''s ink once the word lands (470.71). A polyline of 201 points on the curve, read by
+            // arc length, so the glide's ease runs along the path at an even pace.
+            const P0 = [1482, 230], P1 = [1482, 330], P2 = [1250, 520], P3 = [1000, 520], END = [560, 520], N = 200
+            const pts = []
+            for (let i = 0; i <= N; i++) {
+              const s = i / N, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+              pts.push([a * P0[0] + b * P1[0] + c * P2[0] + d * P3[0], a * P0[1] + b * P1[1] + c * P2[1] + d * P3[1]])
+            }
+            pts.push(END)
+            const cum = [0]
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+            const total = cum[cum.length - 1]
+            return (u) => {
+              const s = L.clamp(u) * total
+              let i = 1
+              while (i < cum.length - 1 && cum[i] < s) i++
+              const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+              return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
+            }
+          })()
           const carryAt = (t, tc) => {
             if (t < tc) return null
             const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
-            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
+            const [x, y] = CARRY(u)
+            return { x, y, len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gNote)
           const bead = L.bead(gNote, { r: 22, color: C.chrome })
@@ -121,7 +146,7 @@
               el.setAttribute('opacity', (P(t, t0, 0.2) * (1 - out)).toFixed(3))
               el.setAttribute('transform', `translate(0 ${f1(rise * (1 - P(t, t0, 0.7, 'power2.out')) + lift)}) translate(960 ${cy}) scale(${s.toFixed(4)}) translate(-960 ${-cy})`)
             }
-            land(supportT, A.support, L.pulse(t, A.that, 'label'), 370)
+            land(supportT, A.support, L.pulse(t, A.supportW, 'label'), 370)
             land(steadyT, A.what)
           })
           window.__timelines = window.__timelines || {}

@@ -255,8 +255,8 @@ Outside these moves the camera is still. S8 holds F0 from 196.6 to 229.2 (signat
 - **S1 to S2 (34.18).** The same full-frame field on both sides of the cut: a smooth radial
   field, chrome `#c3ccd6` at 75 % over the ground at the frame's centre falling to 35 % at the
   corners, no edges, mean brightness 110 to 125 of 255 (Lesson 2's field peaks at 122). S2 shrinks
-  it into the bead on the staff's middle line over 34.18 to 34.48 (power2.out, Lesson 2's curve;
-  DECISIONS 106); the title lands from
+  it into the bead on the staff's middle line over 34.18 to 34.64, as Lesson 2's own S2 does (the
+  radius on power2.out, the centre on power3.out; DECISIONS 112); the title lands from
   34.44; the five notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and 34.59.
 - **S2 to S3 (37.58).** Both scenes draw the staircase and the bead from the same module and from
   `T`. The staff fades 36.9 to 37.5 while the staircase on D fades up under it in F-cold (36.9 to

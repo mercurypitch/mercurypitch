@@ -212,3 +212,28 @@ s02->s03 0.516 (bead step), s03->s04 0.431 (39).
 npm run check: 0 errors on s01-s04 (warnings only; 2 infos text_occluded at s01 26.87, the "do" names
 inside the Merc videos' transparent boxes, visible on the frame). The run fails on s06's layout error
 (builder B). Contrast 59/59. Sweep (scratch/sweep-r3-report.txt): s02-s04 clean, s01 the known EDGE at 33.75.
+
+## Round A-03 (30 Oct from 00:45; review/component-A-03/REPORT.md: s01, s03 KEEP; s02, s04 REVISE; DECISIONS 106)
+
+- Item 1 (s04): "measure" lights: stair n lit (40 % chrome) P(MEASURE + 0.1(n-1), 0.2, power2.out), i.e.
+  68.04 to 68.94; all back from UNLIGHT = at('b7','end',0.05) = 68.95 over 0.35 s (power2.inOut), done 69.30.
+  The "measure" riser ripple, its block pulses and tread flashes are gone (rippleAt removed); the
+  "seven steps" flash stays. Backup lab/s04-recall/scratch/s04-src-before-r4.html.
+- Item 2 (s02): the field's shrink u = P(t, 0, 0.3, 'power2.out') (was expo.out). Backup
+  lab/s02-title/s02-before-r4.html. Mean luma at 0/0.05/0.10/0.15 s: before 114.9, 34.0, 20.7, 20.2; after
+  114.9, 70.5, 31.9, 21.7 (Lesson 2 per A-03: 122, 93, 61, 38; its own shrink is 0.46 s, radius
+  power2.out, centre power3.out).
+- Item 4 (s03): start1 = t < LIGHT0 + 0.15 ? clamp((t - LANDED + 0.05) / 0.3) : 0 (held to the wave's
+  peak). First render: holds 0.5 s (1.6 per 30 s), longest 0.4 (42.48-42.88). Added: stair 1's name swells
+  1.2 at LANDED (long), so the held light does not read still. Second render: 0.1 s (0.3 per 30 s).
+- Clips 60 fps (pass60.sh; round 2's kept as clip-r3.mp4): s03 00:55 and 01:08, s04 00:58, s01 01:05,
+  s02 01:07. Measures in lab/<id>/measure-r4.
+- Holds: s01 0.2 (0.2/30), s02 none, s03 0.1 + 0.2 final, s04 0.4 (0.5/30) + 0.1 final.
+- Seams, clip to clip: s01->s02 0.397 (5), s02->s03 0.53 (bead), s03->s04 0.445, s04->s05 (s05's
+  00:45 60 fps clip) 0.309 (33, all at stair edges).
+- npm run check passed (0 errors; s01-s04 warnings only, 2 infos at s01 26.87 as before). merc-tags
+  --check: 8 tags, 0 stale. Sweep (scratch/sweep-r4-report.txt): s02-s04 clean, s01 the known EDGE.
+- Note: one stray `merc-tags.py --help` ran over every scene (it takes no --help); it reported
+  "84 Merc tags, 0 updated", so it wrote nothing.
+- Board row 3b says the naming wave is 0.07 s apart; the build has 0.1 s since round 1 (not raised by any
+  critic). Left as built; flagged.

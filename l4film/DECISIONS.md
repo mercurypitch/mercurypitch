@@ -1133,3 +1133,26 @@ replaced it. The builder's record: critics never read it.
          punch on a line asking for a moderate voice; it rises over about 0.3 s, eased in and out.
      - Nothing else is open in S12 or S13: the do names ease back, the doctor lines, the "wait"
        landing and the chip settle with no step, and the arrow clears Tavi's bead.
+
+112. **S1 to S4 after builder A's round 3 (component critic A-03's items 1, 2 and 4), as built, and
+     S2's curve taken from Lesson 2 itself.**
+     - **As built** (all four at 60 fps, after the 00:21 kit change): on "measure" each stair's fill
+       lights to 40 % chrome in turn (0.2 s each, 0.1 s apart, 68.04 to 68.94) and all eight go back
+       to unlit together over 68.95 to 69.30; the tread flash, the block swell and the in-turn riser
+       ripple on that word are gone (the riser flash on "seven steps" stays). S4's last frame
+       against S5's first: mean 0.31, largest 33. S3's stair 1 lights as the slide lands (42.15 to
+       42.45) and stays lit to the naming wave (43.05); to keep S3 inside the hold bar (that change
+       alone left a 0.4 s hold and 1.6 s per 30 s), its name "do" swells 1.2 as it lands (42.20 to
+       43.15). Holds s01 0.2, s02 0, s03 0.1, s04 0.4 s; check 0 errors in S1 to S4.
+     - **S2's curve:** power2.out over the same 0.3 s still empties the field about twice as fast as
+       Lesson 2's (mean luma 114.9, 70.5, 31.9, 21.7 at 0.05 s steps, against 122, 93, 61, 38).
+       Builder A found Lesson 2's own S2 runs the shrink over 0.46 s, the radius on power2.out and
+       the centre on power3.out. S2 is the series' title card, so it takes Lesson 2's curve exactly:
+       34.18 to 34.64 (row 2, HANDOFFS § S1 to S2 and the s02 sheet now say so). The title (from
+       34.44) and the chime notes (34.23 to 34.59) keep their times, as in Lesson 2.
+     - **Row 3b** takes the build: the naming wave runs 0.1 s apart (42.9 to 43.6), as it has since
+       round 1, and stair 1's name swells as it lands. The swell scales about the name's baseline,
+       so it does not step a pixel (component critic E-03 found 40 px labels pulsing about their
+       centres twitch about 1 px).
+     - Builder A's round 4 makes those two changes (S2's curve, the swell's origin) and renders S2
+       and S3 again; a fresh critic, A-04, then verifies all four.

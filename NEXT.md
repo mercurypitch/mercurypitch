@@ -1769,3 +1769,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   60 fps high --strict, 4 workers; music-only mux from assets/audio/music-only.wav; contact sheet;
   measure render + audio). Only 4 CPUs: run it when no builder renders (critics only). Film critic
   brief critics/FILM1.txt (replace RENDERNAME; report review/film-01/REPORT.md).
+- 01:2x builder A handed back round 3 ($S/l4entr/A-round3-report.txt): measure lights, S2 power2.out,
+  S3 stair 1 held lit + "do" swell (hold bar). A found Lesson 2's own S2 shrink = 0.46 s (radius
+  power2.out, centre power3.out): DECISIONS 112 takes it (34.18-34.64); row 3b = 0.1 s apart as built.
+  A round 4 sent (S2 curve, S3 swell about the baseline; re-render s02, s03). Agents now: F + A.
+- Queue: critic B-04 (B4.txt) -> C small (C-fix2); A-04 after A's round 4 (freeze s01, s04 now; s02,
+  s03 after); F-04 after F; C-03 after C. Then the film render.

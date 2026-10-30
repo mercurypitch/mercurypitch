@@ -247,14 +247,39 @@
           /* ---------------------------------------------------------------- S14 to S15: the top rung carried across the cut */
           // HANDOFFS § S14 to S15. The ladder's top rung, do (card time: x 1454 to 1510 at y 230, 4 px, 45 %), brightens
           // to full as the rest fades (469.7 to 469.9) and glides to (560, 520) (469.9 to 471.9, 2.0 s, power2.inOut;
-          // DECISIONS 102), so it carries the frame through "Next time." and lands just before "Singers", condensing into
+          // DECISIONS 102, 108: down the right side, then along y 520, clear of S15's '"support"'), so it carries the
+          // frame through "Next time." and lands just before "Singers", condensing into
           // the chrome bead over its last 0.4 s (a capsule shortening and thickening to the bead's 44 px, the bead itself
           // in over the last 0.15 s). carryAt is the same function in s15-next, of scene time and the card's end in that
           // scene's time, so both scenes draw it from film time on the same pixels on either side of the cut.
+          const CARRY = (() => {
+            // the path (DECISIONS 108): straight down the right side from the top rung's card-time place, curving left
+            // onto y 520 at x 1000, then along y 520 (the line the long note draws later) to the bead's place; 24 px or
+            // more from '"support"''s ink once the word lands (470.71). A polyline of 201 points on the curve, read by
+            // arc length, so the glide's ease runs along the path at an even pace.
+            const P0 = [1482, 230], P1 = [1482, 330], P2 = [1250, 520], P3 = [1000, 520], END = [560, 520], N = 200
+            const pts = []
+            for (let i = 0; i <= N; i++) {
+              const s = i / N, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+              pts.push([a * P0[0] + b * P1[0] + c * P2[0] + d * P3[0], a * P0[1] + b * P1[1] + c * P2[1] + d * P3[1]])
+            }
+            pts.push(END)
+            const cum = [0]
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+            const total = cum[cum.length - 1]
+            return (u) => {
+              const s = L.clamp(u) * total
+              let i = 1
+              while (i < cum.length - 1 && cum[i] < s) i++
+              const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)
+              return [L.lerp(pts[i - 1][0], pts[i][0], f), L.lerp(pts[i - 1][1], pts[i][1], f)]
+            }
+          })()
           const carryAt = (t, tc) => {
             if (t < tc) return null
             const br = P(t, tc, 0.2, 'none'), u = P(t, tc + 0.2, 2.0, 'power2.inOut'), c = P(t, tc + 1.8, 0.4, 'power2.in')
-            return { x: lerp(1482, 560, u), y: lerp(230, 520, u), len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
+            const [x, y] = CARRY(u)
+            return { x, y, len: 52 * (1 - c), th: lerp(4, 44, c), op: lerp(0.45, 1, br), bead: P(t, tc + 2.05, 0.15, 'none') }
           }
           const gCarry = L.svg('g', {}, mid)
           const capsule = L.svg('rect', { fill: C.chrome, display: 'none' }, gCarry)
@@ -282,10 +307,10 @@
           L.svg('rect', { x: 120, y: 140, width: 880, height: 190, rx: 16, fill: C.obsidian, 'fill-opacity': 0.85, stroke: C.chrome, 'stroke-opacity': 0.25, 'stroke-width': 2 }, gPanel)
           const CARD_T = "font: 600 40px 'Outfit', sans-serif; white-space: pre;"
           const CARDS = [
-            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.c1Out, q: 'q1', lead: 0.2 },
-            { lines: ['Start a major scale on D.', 'Which two black keys does it need?'], tIn: [A.c2a, A.c2b], tOut: A.out2, q: 'q2', lead: 0.2 },
-            { lines: ['From ti up to do:', 'a tone, or a semitone?'], tIn: [A.c3a, A.c3b], tOut: A.out3, q: 'q3', lead: 0 },
-            { lines: ['In a major scale from G,', 'which note is do?'], tIn: [A.c4a, A.c4b], tOut: A.out4, q: 'q4', lead: 0 },
+            { lines: ['What pattern of steps', 'makes a major scale?'], tIn: [A.c1a, A.c1b], tOut: A.c1Out, q: 'q1' },
+            { lines: ['Start a major scale on D.', 'Which two black keys does it need?'], tIn: [A.c2a, A.c2b], tOut: A.out2, q: 'q2' },
+            { lines: ['From ti up to do:', 'a tone, or a semitone?'], tIn: [A.c3a, A.c3b], tOut: A.out3, q: 'q3' },
+            { lines: ['In a major scale from G,', 'which note is do?'], tIn: [A.c4a, A.c4b], tOut: A.out4, q: 'q4' },
           ]
           for (const K of CARDS) {
             K.els = K.lines.map((s, i) => L.svg('text', { x: 150, y: 220 + 60 * i, fill: C.ink, opacity: 0, style: CARD_T, text: s }, hud))
@@ -314,11 +339,11 @@
           const LINES = [
             { y: 540, size: 48, weight: 600, fill: ink, tIn: A.l1, runs: ['Practise it free: ', { text: 'mercurypitch.com/pitch-training', key: 'url' }] },
             { y: 610, size: 40, weight: 500, fill: ink, tIn: A.l2, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32, key: 0 }, ' › Yes, skip'] },
-            { y: 670, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
+            { y: 670, size: 40, weight: 500, fill: ink, tIn: A.set, runs: ['Set your range first: ', { icon: 'gear', size: 36, key: 1, padL: 2, padR: 1 }, ' Settings › Practice › ', { text: 'Singing Voice Range', key: 'range' }] },
             { y: 730, size: 40, weight: 500, fill: ink, tIn: A.first, runs: ['then ', { icon: 'bell', size: 36, key: 2 }, ' Exercises › Scale Runner'] },
             { y: 790, size: 40, weight: 500, fill: ink, tIn: A.sing, runs: ['sing in the octave it plays'] },
             // the phone line as the card pause begins, once b53's captions have gone
-            { y: 850, size: 32, weight: 500, fill: ink2, tIn: A.card, runs: ['On a phone, Settings and Exercises are under ', { icon: 'dots', size: 28, key: 3, color: ink2 }, ' More'] },
+            { y: 850, size: 32, weight: 500, fill: ink2, tIn: A.card, runs: ['On a phone, Settings and Exercises are under ', { icon: 'dots', size: 28, key: 3, color: ink2, padL: 1, padR: 1 }, ' More'] },
           ]
           const icons = [], runsBy = {}
           for (const Ln of LINES) {
@@ -347,12 +372,12 @@
           L.afterFonts(() => {
             for (const Ln of LINES) {
               let w = 0
-              for (const R of Ln.parts) R.w = R.icon ? R.size : (R.el.getComputedTextLength ? R.el.getComputedTextLength() : R.text.length * Ln.size * 0.5)
+              for (const R of Ln.parts) R.w = R.icon ? R.size + (R.padL || 0) + (R.padR || 0) : (R.el.getComputedTextLength ? R.el.getComputedTextLength() : R.text.length * Ln.size * 0.5)
               for (const R of Ln.parts) w += R.w
               Ln.x0 = 960 - w / 2; Ln.w = w
               let x = Ln.x0
               for (const R of Ln.parts) {
-                if (R.icon) { R.cx = x + R.size / 2; R.cy = Ln.y - 0.35 * Ln.size }
+                if (R.icon) { R.cx = x + (R.padL || 0) + R.size / 2; R.cy = Ln.y - 0.35 * Ln.size }
                 else { R.el.setAttribute('x', f1(x)); R.x = x }
                 x += R.w
               }
@@ -544,16 +569,14 @@
             // S14 to S15: the top rung, carried
             drawCarry(carryAt(t, A.cardEnd))
 
-            // type (hud): the kicker, the four cards and their ring timers; each card brings its panel and takes it as
-            // its lines leave (0.43 s, ending with its second line). Cards 1 and 2 bring it over the 0.2 s before their
-            // first line, rising 12 px; cards 3 and 4 follow a card that left half a second before, so their panel
-            // comes in with their first line, on its curve, and never shows empty between two cards
+            // type (hud): the kicker, the four cards and their ring timers; each card brings its panel in with its first
+            // line, on the line's own curve (0.2 s), rising 12 px, and takes it as its lines leave (0.43 s, ending with
+            // its second line), so the panel never shows empty (DECISIONS 102, 108)
             {
               let pa = 0, pdy = 0
               for (const K of CARDS) {
-                const tp = K.tIn[0] - K.lead
-                const k = (K.lead ? P(t, tp, 0.2, 'power1.out') : P(t, tp, 0.2)) * (1 - P(t, K.tOut, 0.43))
-                if (k > pa) { pa = k; pdy = 12 * (1 - P(t, tp, 0.5, 'power2.out')) }
+                const k = P(t, K.tIn[0], 0.2) * (1 - P(t, K.tOut, 0.43))
+                if (k > pa) { pa = k; pdy = 12 * (1 - P(t, K.tIn[0], 0.5, 'power2.out')) }
               }
               gPanel.setAttribute('opacity', pa.toFixed(3))
               gPanel.setAttribute('transform', `translate(0 ${f1(pdy)})`)
@@ -578,7 +601,7 @@
             icons.forEach((R, k) => {
               const times = [ICONP[k]].concat(k === 1 ? [A.settings] : [])
               const pop = lerp(0.4, 1, P(t, R.ln.tIn + 0.15, 0.5, 'back.out(2)'))
-              const s = (R.size / 24) * pop * L.pulse(t, times, 0.25, { long: true })   // 1.25: clear of its words
+              const s = (R.size / 24) * pop * L.pulse(t, times, 0.15, { long: true })   // 1.15: 8 px or more from its words
               // the gear turns one tooth (45 degrees) on "Settings"
               const rot = k === 1 ? 45 * P(t, A.settings, 0.8, 'power1.inOut') : 0
               R.g.setAttribute('transform', `translate(${f1(R.cx ?? 960)} ${f1(R.cy ?? 0)}) rotate(${rot.toFixed(2)}) scale(${s.toFixed(4)}) translate(-12 -12)`)

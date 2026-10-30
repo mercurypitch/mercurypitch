@@ -413,7 +413,7 @@ the hero view, y 323) after that.
   ripple each, all keyed off `at('title')`): the title "The major scale and home" (chrome serif
   italic 140 px, one line, centred, baseline 380), its kicker "LESSON 04", "Find Your Pitch"
   (Outfit 48 px) under it.
-- In: HANDOFFS § S1 to S2: the same field; it shrinks into the bead over 34.18 to 34.48 (power2.out; DECISIONS 106);
+- In: HANDOFFS § S1 to S2: the same field; it shrinks into the bead over 34.18 to 34.64 (Lesson 2's own curve: the radius on power2.out, the centre on power3.out; DECISIONS 112);
   the title lands from 34.44; the notes hop in with the chimes at 34.23, 34.32, 34.41, 34.50 and
   34.59 (the sting's own offsets from `at('title')`).
 - Out (to s03, same builder): from 36.6 (`at('title', 'start', 2.42)`) the type and notes exit up;
