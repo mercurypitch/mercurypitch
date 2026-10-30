@@ -38,8 +38,26 @@
 //
 // Every effect has a stable id, so the mix macros (mix-macros.ts) and a live
 // chain can change values without rebuilding anything.
+//
+// The voice's and the drums' safety limiters stay in the templates, and in
+// every saved project, but a lane plays and exports without them
+// (withoutSafetyLimiter): limiting happens once, on the master, which
+// catches the sum. A lane limiter cost each of those lanes 10 ms of
+// lookahead, and the slowest lane sets how soon every Play is heard.
 
+import type { ChainSpec } from './chain-spec'
 import type { EffectKind } from './effect-definitions'
+
+/** The id of a role chain's own limiter, which lanes leave to the master. */
+export const SAFETY_LIMITER_ID = 'safety'
+
+/** A lane's chain as it plays and exports: without the role's safety limiter. */
+export function withoutSafetyLimiter(spec: ChainSpec): ChainSpec {
+  const kept = spec.effects.filter(
+    (effect) => !(effect.id === SAFETY_LIMITER_ID && effect.kind === 'limiter'),
+  )
+  return kept.length === spec.effects.length ? spec : { ...spec, effects: kept }
+}
 
 export const TRACK_ROLES = [
   'voice',
@@ -193,7 +211,7 @@ function voiceTemplate(bpm: number | undefined): EffectDraft[] {
     band('nasal', 1100, 1.2, -34, { attackMs: 18, releaseMs: 180 }),
     band('harsh', 7500, 0.8, -40, { attackMs: 8, releaseMs: 90 }),
     exciter('air', { frequencyHz: 4500, driveDb: 24, amount: 25 }),
-    limiter('safety', { ceilingDb: -1, releaseMs: 100 }),
+    limiter(SAFETY_LIMITER_ID, { ceilingDb: -1, releaseMs: 100 }),
     delay('echo', {
       ...echo,
       pingPong: 35,
@@ -487,7 +505,7 @@ const DRUMS: readonly EffectDraft[] = [
     highCutHz: 9000,
     mix: 9,
   }),
-  limiter('safety', { ceilingDb: -1, releaseMs: 60 }),
+  limiter(SAFETY_LIMITER_ID, { ceilingDb: -1, releaseMs: 60 }),
 ]
 
 const BACKING: readonly EffectDraft[] = [

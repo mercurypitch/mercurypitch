@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { normalizeChainSpec } from './chain-spec'
 import type { EffectDraft, TrackRole } from './role-chains'
-import { normalizeTrackRole, ROLE_BALANCE_DB, ROLE_LABELS, roleTemplate, tempoMs, TRACK_ROLES, } from './role-chains'
+import { normalizeTrackRole, ROLE_BALANCE_DB, ROLE_LABELS, roleTemplate, tempoMs, TRACK_ROLES, withoutSafetyLimiter, } from './role-chains'
 
 function find(role: TrackRole, id: string): EffectDraft {
   const effect = roleTemplate(role, { bpm: 120 }).find((e) => e.id === id)
@@ -11,6 +12,24 @@ function find(role: TrackRole, id: string): EffectDraft {
 function kinds(role: TrackRole): string[] {
   return roleTemplate(role, { bpm: 120 }).map((effect) => effect.kind)
 }
+
+describe('lane limiting', () => {
+  it('leaves only the role safety limiter to the master', () => {
+    const spec = normalizeChainSpec({
+      effects: [
+        { id: 'safety', kind: 'limiter' },
+        { id: 'ceiling', kind: 'limiter' },
+        { id: 'safety-gain', kind: 'gain' },
+      ],
+    })
+    expect(withoutSafetyLimiter(spec).effects.map((e) => e.id)).toEqual([
+      'ceiling',
+      'safety-gain',
+    ])
+    const none = normalizeChainSpec({ effects: [{ kind: 'tilt' }] })
+    expect(withoutSafetyLimiter(none)).toBe(none)
+  })
+})
 
 describe('role templates', () => {
   it('give every role its own chain: no two roles share one', () => {
