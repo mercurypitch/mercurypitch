@@ -6,6 +6,7 @@
 import type { SessionSource, UserActivity, UserActivityKind, } from '@/db/entities'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { badgeArtSrc } from '@/lib/badge-art'
+import { leagueZoneOf } from '@/lib/league-board'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { buildCabinet } from './cabinet-view'
 import type { ProgressActivityWeek, ProgressCoverageLabel, ProgressHistoryItem, ProgressModel, ProgressOneMoment, ProgressScorePoint, } from './model'
@@ -933,22 +934,24 @@ function buildMilestones(model: ProgressModel): ProgressMilestoneView[] {
     }))
 }
 
+/**
+ * The card's zone, from the cut the Leaderboard and the phone's Leagues
+ * screen draw (league-board.ts): only a member with points moves up, so a
+ * place in the top ten with none is the holding zone, not promotion.
+ */
 function leagueZone(model: ProgressModel): string | undefined {
   const league = model.league
-  if (
-    league?.eligible !== true ||
-    league.league === undefined ||
-    league.rank === null ||
-    league.rank === undefined ||
-    league.cohortSize === undefined
-  ) {
-    return undefined
+  if (league === null || league === undefined) return undefined
+  switch (leagueZoneOf(league)) {
+    case 'promote':
+      return 'Promotion zone'
+    case 'demote':
+      return 'Relegation zone'
+    case 'hold':
+      return 'Holding zone'
+    case null:
+      return undefined
   }
-  if (league.rank <= league.league.promoteCount) return 'Promotion zone'
-  if (league.rank > league.cohortSize - league.league.relegateCount) {
-    return 'Relegation zone'
-  }
-  return 'Holding zone'
 }
 
 function buildLeague(model: ProgressModel): ProgressLeagueView | undefined {
