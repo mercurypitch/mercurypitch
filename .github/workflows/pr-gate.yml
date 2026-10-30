@@ -171,6 +171,12 @@ jobs:
                     # Pitch job below and mercurypitch-mobile.yml.
                     mercurypitch=true
                     ;;
+                  .github/actions/lfs-pull/*)
+                    # The browser shards and the Beside Cue jobs pull their
+                    # game assets through it.
+                    root=true
+                    beside=true
+                    ;;
                   *)
                     root=true
                     ;;
@@ -205,6 +211,17 @@ jobs:
             echo "| Jam Worker | $jam |"
             echo "| Mercury Pitch (native) | $mercurypitch |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The browser shards and every Beside Cue job below restore the game
+      # assets from the Actions cache (.github/actions/lfs-pull). Filling it
+      # here, once, before they start means a new asset set costs one LFS
+      # download per run rather than one per job: the adventure matrix alone
+      # is 57 jobs.
+      - name: Fill the LFS cache
+        if: steps.scope.outputs.root == 'true' || steps.scope.outputs.beside == 'true'
+        uses: ./.github/actions/lfs-pull
+        with:
+          warm-only: 'true'
 
   validate:
     name: Validate changed files
@@ -311,10 +328,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       # Each shard builds its own dist rather than downloading a shared
       # artifact. `dist` is 69 MB, so publishing it once and pulling it four
@@ -405,10 +419,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Check Beside Cue
         run: pnpm beside-cue:check
@@ -443,10 +454,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Install Chromium for Beside Cue browser tests
         run: node scripts/install-ci-browser.mjs chromium
@@ -544,10 +552,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Install browser for Glass Adventure paths
         run: node scripts/install-ci-browser.mjs ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}

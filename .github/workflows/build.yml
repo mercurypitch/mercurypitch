@@ -142,10 +142,7 @@ jobs:
 
       - name: Hydrate runtime game assets
         if: steps.preview-scope.outputs.deploy == 'true'
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
 
       - name: Debug Info
         if: steps.preview-scope.outputs.deploy == 'true'

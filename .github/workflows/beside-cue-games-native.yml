@@ -20,6 +20,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/actions/setup/**'
+      - '.github/actions/lfs-pull/**'
       - '.github/workflows/beside-cue-games-native.yml'
   push:
     branches: [main]
@@ -37,6 +38,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - '.github/actions/setup/**'
+      - '.github/actions/lfs-pull/**'
       - '.github/workflows/beside-cue-games-native.yml'
   workflow_dispatch:
 
@@ -55,10 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -106,10 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Hydrate runtime game assets
-        run: >-
-          git lfs pull
-          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
-          --exclude=""
+        uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Build and verify the offline games profile
         run: >-

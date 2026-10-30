@@ -443,9 +443,9 @@ jobs:
 
       - name: Hydrate native testing profile assets
         if: env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
-        env:
-          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
-        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
+        uses: ./.github/actions/lfs-pull
+        with:
+          include: ${{ inputs.native-test-profile-lfs-include }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -848,9 +848,9 @@ jobs:
 
       - name: Hydrate native testing profile assets
         if: env.HAS_ASC == 'true' && env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
-        env:
-          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
-        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
+        uses: ./.github/actions/lfs-pull
+        with:
+          include: ${{ inputs.native-test-profile-lfs-include }}
 
       - name: Set up pnpm
         if: env.HAS_ASC == 'true'
@@ -1203,9 +1203,9 @@ jobs:
 
       - name: Hydrate native testing profile assets
         if: env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
-        env:
-          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
-        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
+        uses: ./.github/actions/lfs-pull
+        with:
+          include: ${{ inputs.native-test-profile-lfs-include }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
