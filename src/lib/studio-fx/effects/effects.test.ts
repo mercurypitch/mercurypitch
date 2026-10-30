@@ -538,12 +538,23 @@ describe('reverb impulse changes', () => {
     unit.setParams(spec('reverb', { decayS: 2 }).params)
     unit.setParams(spec('reverb', { decayS: 3 }).params)
     unit.setParams(spec('reverb', { decayS: 4 }).params)
-    expect(a.loads.length + b.loads.length).toBe(2)
+    const loaded = () => [...a.loads, ...b.loads].filter(Boolean).length
+    expect(loaded()).toBe(2)
     ctx.currentTime = 1
     scheduler.advance(1000)
-    expect(a.loads.length + b.loads.length).toBe(3)
-    const latest = a.loads.at(-1)!
+    expect(loaded()).toBe(3)
+    const latest = a.loads.filter(Boolean).at(-1)!
     expect(latest.length).toBe(4 * 48000)
+  })
+
+  it('lets the faded-out impulse go once a swap is over', () => {
+    const { ctx, unit, a, b, scheduler } = reverb(true)
+    unit.setParams(spec('reverb', { decayS: 3 }).params)
+    expect(a.buffer).not.toBeNull()
+    ctx.currentTime = 1
+    scheduler.advance(1000)
+    expect(a.buffer).toBeNull()
+    expect(b.buffer?.length).toBe(3 * 48000)
   })
 
   it('ignores a change that only returns to the impulse already playing', () => {
