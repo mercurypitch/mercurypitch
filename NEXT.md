@@ -1837,3 +1837,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   their "S"; ghost masked around labels. Holds 0.6 s. DECISIONS 120, HANDOFFS § S6's brackets as
   built (backup b120/). Frozen b5/ (S5 = b4, S6 new). Critic B-05 launched (critics/B5.txt).
   Agents now: critic B-05 only. film-01 rendering.
+- 04:5x critic B-05 (saved): KEEP S5, S6; group B closes: ALL SIX GROUPS KEEP. DECISIONS 121 (three
+  cosmetic items; Tavi's falls 0.25 s earlier if the film critic names the landing). LEDGER 29.
+- Polish round after FILM1 (one per group, plus the film critic's items): A 118 (S2 crisp disc,
+  "measure" riser sweep, S4 lower third?), B 121 (ring cap in F-high, ghost stubs; landings are
+  mine: Merc pass timing), C 119 (S7 top "S" rides out, F-keys-D oy -440, ring timer, title steps
+  per 104), D 107 (S10 names by 281.5, S11 sharps at rest by 320.23, S9 pill), E 111 (pulse about
+  the baseline, swell 0.3 s), F 115 (gold corner -> film critic, near-empty cut, gear halo).
+- film-01: frame 5232/29024 at 04:48 (~370 frames/min): render ends about 05:50, then music-only,
+  sheet, measure. A background waiter re-invokes me when the status says done.

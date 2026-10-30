@@ -1314,3 +1314,19 @@ replaced it. The builder's record: critics never read it.
      - Holds 0.6 s (0.5 per 30 s), longest 0.2; the handoffs as in round 4 (S5 to S6 168 px over 24
        outside Tavi's corner, S6 to S7 156). Check 0 errors. The film-01 copy (04:22) carries this
        S6. Critic B-05 verifies S5 (unchanged, b4's clip) and the new S6 from frozen copies (b5/).
+
+121. **S5 and S6 after component critic B-05 (both KEEP): group B's component rounds close, and with
+     them every group's.**
+     - B-04's items 1, 3 and 5 FIXED; 2 and 4 STILL PRESENT as decided (decisions 86 and 91).
+     - Three cosmetic items wait for the polish round after the film critic's first round:
+       - Item 1: Tavi still settles under her first syllable (6 to 12 px of drift; s05 41.0 to s06
+         0.1 and s06 24.5 to 25.2, clip). It is the third critic to raise it. The film critic judges
+         it with the sound; if it is named again, both falls start 0.25 s earlier (s05 40.30, s06
+         23.82, the curve unchanged) so each landing settles about 0.15 s before her line.
+       - Item 2: in F-high the C5 echo ring grows to about 120 px at 1.8x, crossing the bracket
+         line, touching the "S" (11.98) and coming within 20 px of the frame's top: in framings
+         over 1.5x the ring stops at twice the bead's radius, or has faded by then (as decision 117
+         capped S7's).
+       - Item 3: the label masks leave 15 to 20 px stubs of the ghost's treads floating just before
+         an "S" and a "T" (14.2 and 14.4): a tread segment that would end within 24 px of a label
+         is dropped instead of clipped.
