@@ -486,6 +486,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** Compute absolute boundaries once and use `nextTime - startTime` for curve duration. Verify fractional epochs in a native AudioParam; a fake that only records calls misses this failure.
 **See:** `src/lib/studio/playback/edge-envelope.ts` and `src/e2e/studio-audio-envelope.spec.ts`.
 
+### A value curve scheduled in the past overlaps the event after it
+
+**Symptom:** Under heavy load a Studio Play failed with "setValueAtTime(0.878482, 3.178666666666667) overlaps setValueCurveAtTime(..., 3.178666666666667, 0.003000000000000114)" and nothing sounded.
+**Cause:** Chromium moves an automation event whose time has passed up to its clock, and a moved value curve keeps its duration, so it covers the next event, which lands inside it. A clip's edge envelope written 1 to 19 ms late threw every time in headless Chromium 148; written two render quanta past the clock, never.
+**Rule:** Never write automation for a time the clock may have passed: start a late source and its envelope together a little past the clock. Test with a param that moves past times up to the clock and refuses overlaps as Chromium does, not one that only records calls.
+**See:** `src/lib/studio/playback/graph-lanes.ts` (`sourceStart`) and `src/lib/studio/playback/graph.late.test.ts`.
+
 ### Take a silent chain out of the graph; a zero gain in front of it saves almost nothing
 
 **Symptom:** Muting 23 of 24 Studio lanes left the audio thread at 99 % and underrunning; a gain of 0 in front of each chain only cut 15 % offline.
