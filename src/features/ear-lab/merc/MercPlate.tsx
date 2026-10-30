@@ -1,19 +1,24 @@
 // ============================================================
-// The room's plates: what a finished run reads, engraved.
+// The room's plates: what a finished run reads, as a result on the
+// stage (docs/plans/ear-lab-native-look.md, phase 3).
 //
-//   - A staircase's reading: the number in its unit and which way is
-//     better, what it means, against the last reading, how many
-//     questions, turns and replays, Practice or a short run's
-//     Provisional, and no letter grade.
-//   - A rated run's rating: the number, "higher is surer", its move
-//     against the rating the run found, rounds and names, the dots of
-//     the run in order, and where it slipped, as counts. A slip between
+//   - A staircase's reading: the number counting along the staircase as
+//     its way draws, the turns and misses on it, then the reading across
+//     it; against the last reading, how many questions, turns and
+//     replays, Practice or a short run's Provisional, where it slipped,
+//     and no letter grade.
+//   - A rated run's rating: the number moving from the rating the run
+//     found as the run's dots fill in order, "higher is surer", the move,
+//     rounds and names, and where it slipped, as counts. A slip between
 //     two of the drill's items offers a pair practice on them.
 //   - A pair practice's tally: the rounds named right, the two it was
 //     on, and the rating it left alone.
-//   - A calibration's seal: the Mercury Index, its move from the last
-//     seal, the three tracks, and the glass with the mercury rising to
-//     the new mark and the old one left faint.
+//   - A calibration's seal: the Mercury Index counting from the old mark
+//     to the new, the three tracks, and the glass with the mercury rising
+//     to the new mark and the old one left faint.
+//
+// The numbers that count are drawn for the eye; the reading itself is
+// in the words a screen reader gets, once.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -21,29 +26,43 @@ import { For, Match, Show, Switch } from 'solid-js'
 import { dateLabel } from '@/features/ear-lab/instruments'
 import type { PlateSlip, PracticePlate, RatingPlate, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
 import { calibrationHistory } from '@/stores/ear-lab-store'
-import { Glass, practiceEstimate } from './Glass'
-import { comparedLine, directionWord, INDEX_MEANING, MEANING, practiseLabel, ratingMoveLine, roundsLine, SEALED_SMALL_PRINT, sealedMoveLine, staircaseStats, timesWord, tracksLine, untouchedLine, } from './merc-lines'
+import { Glass } from './Glass'
+import { useEntryClock } from './lit/clock'
+import { easeOut, lerp, progress } from './lit/draw'
+import { countedLevel, LitStaircase, LitTracks, STAIRS_MS, TRACKS_MS, } from './lit/LitStaircase'
+import { byTrack, staircaseMisses } from './lit/staircase'
+import { comparedLine, directionWord, INDEX_MEANING, MEANING, practiseLabel, ratingMoveLine, roundsLine, SEALED_SMALL_PRINT, sealedMoveLine, staircaseSlipLine, staircaseStats, timesWord, tracksLine, untouchedLine, } from './merc-lines'
 import styles from './plate.module.css'
 import roomStyles from './room.module.css'
 
-function Screws(): JSX.Element {
-  return (
-    <>
-      <span class={`${styles.screw} ${styles.screwTl}`} aria-hidden="true" />
-      <span class={`${styles.screw} ${styles.screwTr}`} aria-hidden="true" />
-      <span class={`${styles.screw} ${styles.screwBl}`} aria-hidden="true" />
-      <span class={`${styles.screw} ${styles.screwBr}`} aria-hidden="true" />
-    </>
-  )
-}
+/** When a rated run's dots fill, and when its move shows beside the
+ *  number. */
+const DOTS_MS = { from: 300, to: 2700, moved: 3100 } as const
+/** How long the seal's number counts: as long as the mercury rises. */
+const SEAL_MS = 1400
 
 export function ThresholdPlateView(props: {
   plate: ThresholdPlate
   drillId: string
   short: boolean
 }): JSX.Element {
+  const clock = useEntryClock(STAIRS_MS.settled)
   const value = () => props.plate.value
   const unit = () => props.plate.unitShort.trim() || props.plate.unit
+  /** A practice run's way; a calibration's tracks are the seal's. */
+  const stairs = () =>
+    props.plate.calibration
+      ? []
+      : (props.plate.trace ?? []).filter((point) => point.track === undefined)
+  const drawn = (): boolean => value() !== null && stairs().length >= 2
+  const shown = (): string => {
+    const reading = value()
+    if (reading === null) return '—'
+    return props.plate.format(
+      drawn() ? countedLevel(stairs(), reading, clock.t()) : reading,
+    )
+  }
+  const misses = () => staircaseMisses(stairs(), props.plate.lowerIsBetter)
   return (
     <section
       class={styles.plate}
@@ -52,7 +71,6 @@ export function ThresholdPlateView(props: {
       data-testid="ear-stage-plate"
       data-plate="threshold"
     >
-      <Screws />
       <div class={styles.kickerRow}>
         <p class={styles.kicker}>{value() === null ? 'Stopped' : 'Reading'}</p>
         <span class={styles.badge}>
@@ -66,11 +84,20 @@ export function ThresholdPlateView(props: {
         </span>
       </div>
       <p class={styles.value}>
-        <span class={styles.number}>
-          {value() === null ? '—' : props.plate.format(value() as number)}
+        <span class={styles.number} aria-hidden="true">
+          {shown()}
         </span>
-        <Show when={value() !== null}>
-          <span class={styles.unit}>{unit()}</span>
+        <Show when={value()}>
+          {(reading) => (
+            <>
+              <span class={styles.unit} aria-hidden="true">
+                {unit()}
+              </span>
+              <span class={roomStyles.srOnly}>
+                {props.plate.format(reading())} {unit()}
+              </span>
+            </>
+          )}
         </Show>
       </p>
       <Show when={value() !== null}>
@@ -78,10 +105,18 @@ export function ThresholdPlateView(props: {
           {props.plate.unit} · {directionWord(props.plate.lowerIsBetter)}
         </p>
       </Show>
-      <Show when={MEANING[props.drillId]}>
-        {(meaning) => <p class={styles.meaning}>{meaning()}</p>}
+      <Show when={drawn() ? value() : null}>
+        {(reading) => (
+          <div class={styles.chart}>
+            <LitStaircase
+              points={stairs()}
+              reading={reading()}
+              unitShort={props.plate.unitShort}
+              t={clock.t()}
+            />
+          </div>
+        )}
       </Show>
-      <div class={styles.rule} aria-hidden="true" />
       <Show when={value()}>
         {(reading) => (
           <p class={styles.strong}>
@@ -102,7 +137,28 @@ export function ThresholdPlateView(props: {
           props.plate.replays,
         )}
       </p>
-      <p class={styles.small}>{props.plate.note}</p>
+      <Show when={misses().edge}>
+        {(edge) => (
+          <p class={styles.slipPill} data-testid="merc-plate-slips">
+            <span class={styles.slipDot} aria-hidden="true" />
+            <span class={styles.slipPillTitle}>Where it slipped</span>
+            <span class={styles.slipPillCount}>
+              {staircaseSlipLine({
+                count: misses().count,
+                edge: edge(),
+                lowerIsBetter: props.plate.lowerIsBetter,
+                format: props.plate.format,
+                unitShort: props.plate.unitShort,
+              })}
+            </span>
+          </p>
+        )}
+      </Show>
+      {/* Why there is nothing to read, or nothing marked. A reading's
+          own note is the glass's business, on the bench. */}
+      <Show when={value() === null || props.plate.calibration}>
+        <p class={styles.small}>{props.plate.note}</p>
+      </Show>
     </section>
   )
 }
@@ -111,19 +167,35 @@ export function ThresholdPlateView(props: {
  *  the tap, then starts it. */
 type PractiseHandler = (start: () => void) => void
 
-/** The run's answers in order, as dots: right, missed or skipped. */
-function RunDots(props: { outcomes: RatingPlate['outcomes'] }): JSX.Element {
+/** The run's answers in order, as dots: right, missed or skipped, the
+ *  first `filled` of them lit and the rest still to come. */
+function RunDots(props: {
+  outcomes: RatingPlate['outcomes']
+  filled: number
+}): JSX.Element {
   return (
     <Show when={props.outcomes.length > 0}>
       <div class={styles.dots} role="list" aria-label="Round by round">
         <For each={props.outcomes}>
-          {(outcome) => (
+          {(outcome, i) => (
             <span
               class={styles.dot}
               classList={{
-                [styles.dotMiss]: !outcome.correct && outcome.skipped !== true,
-                [styles.dotSkip]: outcome.skipped === true,
+                [styles.dotRight]: i() < props.filled && outcome.correct,
+                [styles.dotMiss]:
+                  i() < props.filled &&
+                  !outcome.correct &&
+                  outcome.skipped !== true,
               }}
+              data-dot={
+                i() >= props.filled
+                  ? 'coming'
+                  : outcome.correct
+                    ? 'right'
+                    : outcome.skipped === true
+                      ? 'skipped'
+                      : 'missed'
+              }
               role="listitem"
               aria-label={`${outcome.title}: ${
                 outcome.correct
@@ -140,12 +212,17 @@ function RunDots(props: { outcomes: RatingPlate['outcomes'] }): JSX.Element {
   )
 }
 
-/** "Where it slipped": the run's slips, counted, each between two of the
- *  drill's items with its offer of practice on them. */
+/** "Where it slipped": the run's slips, counted, the most often first,
+ *  and under the first slip between two of the drill's items its offer
+ *  of practice on them. */
 function SlipList(props: {
   slips: readonly PlateSlip[]
   onPractise?: PractiseHandler
 }): JSX.Element {
+  const offered = () =>
+    props.onPractise === undefined
+      ? -1
+      : props.slips.findIndex((slip) => slip.practise !== undefined)
   return (
     <Show when={props.slips.length > 0}>
       <section class={styles.slips} aria-labelledby="merc-slips-title">
@@ -154,15 +231,13 @@ function SlipList(props: {
         </h2>
         <ul class={styles.slipList}>
           <For each={props.slips}>
-            {(slip) => (
+            {(slip, i) => (
               <li class={styles.slip}>
                 <span class={styles.slipName}>{slip.expected}</span>
                 heard as
                 <span class={styles.slipHeard}>{slip.answered}</span>
                 <span class={styles.slipCount}>{timesWord(slip.count)}</span>
-                <Show
-                  when={props.onPractise === undefined ? null : slip.practise}
-                >
+                <Show when={i() === offered() ? slip.practise : null}>
                   {(start) => (
                     <button
                       type="button"
@@ -189,6 +264,21 @@ export function RatingPlateView(props: {
   short: boolean
   onPractise?: PractiseHandler
 }): JSX.Element {
+  const clock = useEntryClock(DOTS_MS.moved)
+  const total = () => props.plate.outcomes.length
+  const p = () => progress(clock.t(), DOTS_MS.from, DOTS_MS.to)
+  /** The dots lit so far: one after another, all of them by the end. */
+  const filled = (): number =>
+    p() >= 1 ? total() : Math.min(total(), Math.floor(p() * (total() + 1)))
+  /** The number, moving with the dots, or with time where there are
+   *  none to move with. */
+  const shown = (): number => {
+    const { rating, before } = props.plate
+    if (props.plate.rounds === 0) return rating
+    const moved = total() > 0 ? filled() / total() : easeOut(p())
+    return Math.round(lerp(before, rating, moved))
+  }
+  const delta = () => props.plate.rating - props.plate.before
   return (
     <>
       <section
@@ -198,7 +288,6 @@ export function RatingPlateView(props: {
         data-testid="ear-stage-plate"
         data-plate="rating"
       >
-        <Screws />
         <div class={styles.kickerRow}>
           <p class={styles.kicker}>Reading</p>
           <span class={styles.badge}>
@@ -206,13 +295,28 @@ export function RatingPlateView(props: {
           </span>
         </div>
         <p class={styles.value}>
-          <span class={styles.number}>{props.plate.rating}</span>
+          <span class={styles.number} aria-hidden="true">
+            {shown()}
+          </span>
+          <Show when={props.plate.rounds > 0 && delta() !== 0}>
+            <span
+              class={styles.delta}
+              classList={{ [styles.deltaUp]: delta() > 0 }}
+              style={{
+                opacity: progress(clock.t(), DOTS_MS.to, DOTS_MS.moved),
+              }}
+              aria-hidden="true"
+            >
+              {delta() > 0 ? `+${delta()}` : `−${-delta()}`}
+            </span>
+          </Show>
+          <span class={roomStyles.srOnly}>{props.plate.rating}</span>
         </p>
         <p class={styles.direction}>{props.plate.source} · higher is surer</p>
         <Show when={MEANING[props.drillId]}>
           {(meaning) => <p class={styles.meaning}>{meaning()}</p>}
         </Show>
-        <div class={styles.rule} aria-hidden="true" />
+        <RunDots outcomes={props.plate.outcomes} filled={filled()} />
         <Show
           when={props.plate.rounds > 0}
           fallback={
@@ -244,7 +348,6 @@ export function RatingPlateView(props: {
         <For each={props.plate.lines ?? []}>
           {(line) => <p class={styles.small}>{line}</p>}
         </For>
-        <RunDots outcomes={props.plate.outcomes} />
       </section>
       <SlipList slips={props.plate.slips} onPractise={props.onPractise} />
     </>
@@ -267,7 +370,6 @@ export function PracticePlateView(props: {
         data-testid="ear-stage-plate"
         data-plate="practice"
       >
-        <Screws />
         <div class={styles.kickerRow}>
           <p class={styles.kicker}>Practice</p>
           <span class={styles.badge}>Nothing rated</span>
@@ -283,7 +385,10 @@ export function PracticePlateView(props: {
         <p class={styles.direction}>
           {props.plate.against[0]} against {props.plate.against[1]}
         </p>
-        <div class={styles.rule} aria-hidden="true" />
+        <RunDots
+          outcomes={props.plate.outcomes}
+          filled={props.plate.outcomes.length}
+        />
         <Show
           when={answered()}
           fallback={
@@ -307,7 +412,6 @@ export function PracticePlateView(props: {
         <For each={props.plate.lines ?? []}>
           {(line) => <p class={styles.small}>{line}</p>}
         </For>
-        <RunDots outcomes={props.plate.outcomes} />
       </section>
       <SlipList slips={props.plate.slips} onPractise={props.onPractise} />
     </>
@@ -319,6 +423,7 @@ export function SealedPlateView(props: {
   plate: ThresholdPlate
   faculty: string
 }): JSX.Element {
+  const clock = useEntryClock(Math.max(SEAL_MS, TRACKS_MS.to))
   const index = () => props.plate.markedIndex ?? 0
   // The run just marked the newest seal; the one before it is the
   // faint line and the move's starting point.
@@ -328,105 +433,81 @@ export function SealedPlateView(props: {
       ? null
       : { index: before.index, on: dateLabel(before.at) }
   }
+  const shown = (): number => {
+    const old = previous()
+    if (old === null) return index()
+    const p = easeOut(progress(clock.t(), 0, SEAL_MS))
+    return Math.round(lerp(old.index, index(), p))
+  }
+  const unit = () => props.plate.unitShort.trim()
   const tracks = () =>
-    tracksLine(
-      props.plate.tracks ?? [],
-      props.plate.format,
-      props.plate.unitShort.trim(),
+    byTrack(props.plate.trace ?? [], props.plate.tracks?.length ?? 3)
+  const readings = () =>
+    (props.plate.tracks ?? []).map((value) =>
+      value === null ? null : props.plate.format(value),
     )
+  const tracksWords = () =>
+    tracksLine(props.plate.tracks ?? [], props.plate.format, unit())
   return (
-    <>
-      <section
-        class={styles.plate}
-        aria-label="The sealed reading"
-        role="status"
-        data-testid="ear-stage-plate"
-        data-plate="sealed"
-      >
-        <Screws />
-        <div class={styles.kickerRow}>
-          <p class={styles.kicker}>Mercury Index</p>
-          <span class={styles.badge}>Sealed</span>
+    <section
+      class={styles.plate}
+      aria-label="The sealed reading"
+      role="status"
+      data-testid="ear-stage-plate"
+      data-plate="sealed"
+    >
+      <div class={styles.kickerRow}>
+        <p class={styles.kicker}>Mercury Index</p>
+        <span class={styles.badge}>Sealed</span>
+      </div>
+      <p class={styles.value}>
+        <span class={styles.number} aria-hidden="true">
+          {shown()}
+        </span>
+        <span class={roomStyles.srOnly}>{index()}</span>
+      </p>
+      <p class={styles.strong}>{sealedMoveLine(index(), previous())}</p>
+      <p class={styles.direction}>{INDEX_MEANING}</p>
+      <Show when={tracks().some((track) => track.length >= 2)}>
+        <div class={styles.chart}>
+          <LitTracks
+            tracks={tracks()}
+            readings={readings()}
+            unitShort={props.plate.unitShort}
+            t={clock.t()}
+          />
         </div>
-        <p class={styles.value}>
-          <span class={styles.number}>{index()}</span>
-        </p>
-        <p class={styles.strong}>{sealedMoveLine(index(), previous())}</p>
-        <p class={styles.meaning}>{INDEX_MEANING}</p>
-        <div class={styles.rule} aria-hidden="true" />
-        <Show when={props.plate.value}>
-          {(value) => (
-            <p class={styles.strong}>
-              {props.faculty}, sealed: {props.plate.format(value())}{' '}
-              {props.plate.unitShort.trim()}
-            </p>
-          )}
-        </Show>
-        <p class={styles.stats}>
-          <Show when={tracks() !== ''}>Tracks {tracks()} · </Show>
-          {props.plate.trials} questions
-        </p>
-        <p class={styles.small}>{SEALED_SMALL_PRINT}</p>
-      </section>
+      </Show>
+      <Show when={props.plate.value}>
+        {(value) => (
+          <p class={styles.strong}>
+            {props.faculty}, sealed: {props.plate.format(value())} {unit()}
+          </p>
+        )}
+      </Show>
+      <p class={styles.stats}>
+        <Show when={tracksWords() !== ''}>Tracks {tracksWords()} · </Show>
+        {props.plate.trials} questions
+      </p>
       <div class={styles.glassRow}>
         <Glass
           sealed={index()}
           sealedOn={dateLabel(Date.now())}
           estimate={null}
           previous={previous()?.index ?? null}
-          width={320}
+          width={314}
         />
-        <p class={styles.glassCaption}>
-          Marked {dateLabel(Date.now())}.
-          <Show when={previous()}>
-            {(old) => ` The faint line is the old mark, ${old().index}.`}
-          </Show>
-        </p>
       </div>
-    </>
+      <p class={styles.small}>{SEALED_SMALL_PRINT}</p>
+    </section>
   )
 }
 
-/** The glass under a practice plate: where the Column stands now. */
-export function GlassUnderPlate(): JSX.Element {
-  const sealed = () => calibrationHistory().at(0) ?? null
-  const estimate = () => practiceEstimate()
-  return (
-    <div class={styles.glassRow}>
-      <Glass
-        sealed={sealed()?.index ?? null}
-        sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
-        estimate={estimate()}
-        width={320}
-      />
-      <p class={styles.glassCaption}>
-        <Show
-          when={sealed()}
-          fallback={`Not sealed yet${
-            estimate() === null
-              ? ''
-              : ` · practice estimate ${estimate()}, not marked`
-          }`}
-        >
-          {(run) =>
-            `Index ${run().index}, sealed ${dateLabel(run().at)}${
-              estimate() === null
-                ? ''
-                : ` · practice estimate ${estimate()}, not marked`
-            }`
-          }
-        </Show>
-      </p>
-    </div>
-  )
-}
-
-// ── On the desk, and under it ───────────────────────────────────
+// ── On the stage, and under it ──────────────────────────────────
 
 /** The plate a run ended on, where the instrument stood: a staircase's
- *  reading with the glass under it, a calibration's seal, a rating, or
- *  a pair practice's tally. A drill that hands the room no plate shows
- *  its own. */
+ *  reading, a calibration's seal, a rating, or a pair practice's tally.
+ *  A drill that hands the room no plate shows its own. */
 export function PlateOnDesk(props: {
   plate: RoomPlate | null
   /** The drill's own plate, for a drill with no room data. */
@@ -451,14 +532,11 @@ export function PlateOnDesk(props: {
               <Show
                 when={threshold().markedIndex !== undefined}
                 fallback={
-                  <>
-                    <ThresholdPlateView
-                      plate={threshold()}
-                      drillId={props.drillId}
-                      short={props.short}
-                    />
-                    <GlassUnderPlate />
-                  </>
+                  <ThresholdPlateView
+                    plate={threshold()}
+                    drillId={props.drillId}
+                    short={props.short}
+                  />
                 }
               >
                 <SealedPlateView plate={threshold()} faculty={props.faculty} />
@@ -497,7 +575,8 @@ export function PlateOnDesk(props: {
 
 /** What next, under the plate: the main button follows the context, and
  *  Calibrate is the outlined second where a seal is on offer, then Run
- *  again and Done. A seal's own plate offers the rulers instead. */
+ *  again and Done. A seal's own plate is done with: Done, then the
+ *  rulers. */
 export function PlateNext(props: {
   sealed: boolean
   label: string
@@ -515,14 +594,7 @@ export function PlateNext(props: {
       <Show
         when={!props.sealed}
         fallback={
-          <div class={styles.pair}>
-            <button
-              type="button"
-              class={styles.plain}
-              onClick={() => props.onRulers()}
-            >
-              What the Index counts
-            </button>
+          <>
             <button
               type="button"
               class={roomStyles.primary}
@@ -531,7 +603,14 @@ export function PlateNext(props: {
             >
               Done
             </button>
-          </div>
+            <button
+              type="button"
+              class={styles.plain}
+              onClick={() => props.onRulers()}
+            >
+              What the Index counts
+            </button>
+          </>
         }
       >
         <button

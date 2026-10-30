@@ -33,11 +33,16 @@ export function identificationBeat(
   return phase === 'playing' ? 'listen' : phase
 }
 
-/** One verdict on a staircase, for the run line's trace. */
+/** One verdict on a staircase, for the run line's trace and the plate's. */
 export interface TracePoint {
   level: number
   /** The verdict turned the staircase round. */
   turn: boolean
+  /** False for a miss. The run line never shows it: the plate marks the
+   *  misses. */
+  correct?: boolean
+  /** A calibration's track, from 0. */
+  track?: number
 }
 
 /** The live line under the room's header. Never a rating, never a
@@ -99,6 +104,9 @@ export interface ThresholdPlate {
   provisional: boolean
   /** The shipped note under the number: what it means for the glass. */
   note: string
+  /** The staircase's way, a point an answer, for the plate to draw: a
+   *  calibration's three tracks interleaved, each point with its track. */
+  trace?: readonly TracePoint[]
   trials: number
   turns: number
   replays: number

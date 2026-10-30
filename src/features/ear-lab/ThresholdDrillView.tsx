@@ -246,8 +246,9 @@ export function ThresholdDrillView(
       }
     })
 
-    // The staircase as it went: one point per verdict, marked where it
-    // turned round.
+    // The staircase as it went: one point per verdict at the level it
+    // was asked at, marked where it turned round and where it missed; a
+    // calibration's points carry their track.
     const [trace, setTrace] = createSignal<TracePoint[]>([])
     let turnsSeen = 0
     createEffect(() => {
@@ -257,12 +258,15 @@ export function ThresholdDrillView(
           setTrace([])
           turnsSeen = 0
         }
-        if (now !== 'reveal' || calibrating()) return
+        if (now !== 'reveal') return
         const turns = props.run.reversalsDone()
-        setTrace((points) => [
-          ...points,
-          { level: props.run.level(), turn: turns > turnsSeen },
-        ])
+        const point: TracePoint = {
+          level: props.run.level(),
+          turn: turns > turnsSeen,
+          correct: props.run.lastCorrect() === true,
+        }
+        if (calibrating()) point.track = props.run.activeTrack()
+        setTrace((points) => [...points, point])
         turnsSeen = turns
       })
     })
@@ -299,6 +303,7 @@ export function ThresholdDrillView(
         provisional:
           reading !== null && 'provisional' in reading && reading.provisional,
         note: note(result.markedIndex),
+        trace: trace(),
         tracks: result.trackValues,
         trials: result.trials,
         turns: props.run.reversalsDone(),
