@@ -88,7 +88,6 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
 
@@ -99,7 +98,18 @@ jobs:
             beside=false
             shared_manifest=false
 
-            if [[ -z "$BASE_SHA" ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            # The first parent of GitHub's test merge is main as it is now, so
+            # the diff from it is exactly this pull request's change.
+            # pull_request.base.sha can be older than main, and then main's
+            # newer commits count as the pull request's own (PR Gate's scope
+            # step has the same rule and the case that showed it). A checkout
+            # that is not a merge has no such parent and deploys a preview.
+            base_sha=""
+            if git rev-parse --verify --quiet 'HEAD^2' > /dev/null; then
+              base_sha="$(git rev-parse 'HEAD^1')"
+            fi
+
+            if [[ -z "$base_sha" ]]; then
               deploy=true
             else
               while IFS= read -r file; do
@@ -126,7 +136,7 @@ jobs:
                     deploy=true
                     ;;
                 esac
-              done < <(git diff --name-only "$BASE_SHA" "$GITHUB_SHA")
+              done < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
 
               if [[ "$deploy" == false && "$shared_manifest" == true && "$beside" == false ]]; then
                 deploy=true

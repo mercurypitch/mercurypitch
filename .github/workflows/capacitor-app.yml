@@ -7,17 +7,25 @@ name: Capacitor app
 # exists. This file is what a second app reuses instead of a second copy.
 # There is exactly one place to fix a build lesson.
 #
-# Three ways in, and each answers a different question:
+# The ways in, and the question each answers:
 #
-#   pull request      Can this change be held, and does it still build for the
-#                     store? An installable Android APK, plus an iOS archive
-#                     that is signed and then thrown away.
 #   push to main      What does the merged app do? The Android build and a
-#                     TestFlight upload from the merge commit, which is not the
-#                     code any PR tested — a PR is built against its own base.
-#                     This is the build to trust when a report says "on main".
-#   release tag       The release. The same upload with the tag's version as
-#                     the marketing version, plus the store artifacts.
+#                     signed iOS archive of the merge commit, which is not the
+#                     code any PR tested. This is the build to trust when a
+#                     report says "on main". It uploads to TestFlight only for
+#                     a caller that sets testflight-upload-from to
+#                     main-and-tags, and no caller does (see below).
+#   release tag       The release. The TestFlight upload with the tag's
+#                     version as the marketing version, plus the store
+#                     artifacts.
+#   dispatch          A build of any branch on demand: the installable Android
+#                     APK, the iOS simulator app, and the archive that proves
+#                     the branch still builds for the store.
+#   pull request      No caller runs on one since 30 Oct 2026 (maff's
+#                     decision): PR Gate's Linux jobs check what a pull request
+#                     can break, and a dispatch builds a branch for a phone.
+#                     The handling stays: a pull request archives and never
+#                     uploads.
 #
 # WHY A PULL REQUEST DOES NOT UPLOAD (maff, 2026-09-04). It did, from
 # 2026-09-01, and the reason was good: a signed upload is the only way to get
@@ -36,6 +44,13 @@ name: Capacitor app
 # part that costs. So a pull request keeps the first and drops the second, and
 # TestFlight comes from main and from tags, where every build is one somebody
 # means to install.
+#
+# WHY MAIN DOES NOT UPLOAD EITHER (maff, 2026-10-30). The same quota and the
+# same builds nobody installs: in the week to 30 Oct Beside Cue uploaded 15
+# builds from main, five of them for web version bumps that changed nothing in
+# the app. testflight-upload-from defaults to "tags" and both callers use it,
+# so TestFlight builds come from release tags only. Every push to main that
+# touches an app still archives it.
 #
 # Android is untouched. Its release artifact is an APK attached to the run —
 # nothing is published to a store, so there is no quota to spend.
@@ -126,8 +141,8 @@ on:
         default: 'mock'
       testflight-upload-from:
         description: >-
-          Which refs actually upload to App Store Connect: "main-and-tags", or
-          "tags" for an app whose main moves often. Every ref still ARCHIVES —
+          Which refs actually upload to App Store Connect: "tags", the default
+          since 2026-10-30, or "main-and-tags". Every ref still ARCHIVES —
           that is what proves the app compiles, signs, and matches its profile.
           App Store Connect meters uploads per app per day and answers a run
           over the line with error 90382 AFTER the archive is built, so an app
@@ -135,7 +150,7 @@ on:
           nobody installs and is then refused the one that was wanted.
         required: false
         type: string
-        default: 'main-and-tags'
+        default: 'tags'
       ios-export-method:
         description: >-
           ExportOptions method for the ad-hoc release job. "release-testing" is
@@ -326,9 +341,9 @@ permissions:
 jobs:
   # Which merges are worth a native build.
   #
-  # The caller's pull_request trigger already has a `paths:` filter, and a tag
-  # is always a release, so this only ever has a real decision to make for a
-  # push to main: two apps share a repository, and most merges to main touch
+  # A tag is always a release, and a dispatch or a pull request asks for a
+  # build, so this only ever has a real decision to make for a push to main:
+  # two apps share a repository, and most merges to main touch
   # neither this app nor anything it compiles in. Building those would spend a
   # macOS runner and put an identical binary in TestFlight, where every build
   # has to be told apart from the one before it by hand.
@@ -809,11 +824,11 @@ jobs:
           fi
 
   # A signed release archive on every run, and an upload on the runs that
-  # mean it: main and tags (maff, 2026-09-04 — see the header for why a
-  # pull request stopped uploading). The simulator artifact below cannot
-  # run on hardware, so this upload is still the only way to hold a build
-  # on an iPhone; internal TestFlight testers get it a few minutes after
-  # processing, no UDID registration.
+  # mean it: the refs testflight-upload-from names, release tags by default
+  # (see the header for why neither a pull request nor main uploads). The
+  # simulator artifact below cannot run on hardware, so this upload is still
+  # the only way to hold a build on an iPhone; internal TestFlight testers
+  # get it a few minutes after processing, no UDID registration.
   #
   # Build numbers must rise monotonically per marketing version for
   # TestFlight to accept the upload; github.run_number does exactly that.
@@ -1119,8 +1134,8 @@ jobs:
             archive
 
           if [[ "$UPLOAD" != "true" ]]; then
-            # A pull request stops here. The archive above is the whole
-            # point of the job on this trigger: it proves the app compiles
+            # A ref that does not upload stops here. The archive above is
+            # the whole point of the job then: it proves the app compiles
             # for a device, that the distribution certificate imported, and
             # that the profile still matches the bundle id -- which are the
             # three things that break between releases. Exporting an IPA as
@@ -1177,10 +1192,10 @@ jobs:
     name: iOS
     needs: changes
     # Skipped on a push to main, and only there. This job's product is a
-    # simulator build, which is the compile check the pull request already
-    # ran on the same tree; the TestFlight job above is what makes the
-    # merge commit into something a device can hold. A tag still needs it,
-    # because the release IPA is exported here.
+    # simulator build, and on main the iOS Release archive above already
+    # proves the merge commit compiles and signs. A tag still needs it,
+    # because the release IPA is exported here, and a dispatch runs it for
+    # the simulator app.
     if: inputs.run-ios-adhoc && needs.changes.outputs.app == 'true' && (github.event_name != 'push' || github.ref_type == 'tag')
     runs-on: macos-latest
     timeout-minutes: 60
@@ -1463,10 +1478,10 @@ jobs:
             -exportPath "$RUNNER_TEMP/export"
 
       # Only a signed release ref reaches here, because that is the only ref
-      # that exports an IPA at all: a pull request stops at the archive, and
+      # that exports an IPA at all: every other ref stops at the archive, and
       # the TestFlight job hands its archive straight to App Store Connect
       # with destination=upload and never writes one. The Android row above
-      # is what watches size on an ordinary pull request.
+      # is what watches size on an ordinary push to main.
       #
       # This is where the IPA stops: it is never uploaded. The repository is
       # public, so anyone signed in to GitHub can download a run's artifacts,

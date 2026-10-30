@@ -159,9 +159,13 @@ other than `main`.
 
 For a cross-workspace change, run each affected typecheck once. Keep tests
 focused on the changed behaviour during development. Open draft PRs early and
-let cloud CI run the complete affected-code format, lint, typecheck, test, and
-build matrix. A later docs-only or CI-fix commit does not trigger another full
-local pass.
+let cloud CI run the affected-code format, lint, typecheck, unit test and build
+checks and the `@smoke` browser set. By maff's decision of 30 Oct 2026 the full
+browser suite, the Beside Cue browser suites and the native builds run on
+`main` after the merge, not on the PR. So run a changed spec that is not tagged
+`@smoke` locally, or dispatch the full gate on the branch with
+`gh workflow run pr-gate.yml --ref <branch>`. A later docs-only or CI-fix
+commit does not trigger another full local pass.
 
 `pnpm test:tours` takes 20+ minutes. It is a **release gate, not a per-change
 gate** — do not run it per PR, even when editing tour steps. Only _new_ misses

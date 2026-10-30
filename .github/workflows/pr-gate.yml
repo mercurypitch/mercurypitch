@@ -36,6 +36,19 @@ concurrency:
 # off its outputs, so a docs-only PR still installs nothing and a Beside Cue PR
 # does not typecheck MercuryPitch. A skipped job reports `skipped`, not
 # `success`, which is why `gate` at the bottom is the single required check.
+#
+# What runs also depends on the event, by maff's decision of 30 Oct 2026. A
+# pull request runs the smoke tier: scope, validate, lint, the ratchet, units,
+# the @smoke browser set (e2e-smoke), the workers, the Beside Cue checks and
+# the Mercury Pitch bundle. The full browser suite (e2e), the legacy Beside Cue
+# browser suite and the 57-job adventure matrix run on main and on a dispatch
+# only. A pull request with Beside Cue in scope used to start 74 to 85 jobs
+# and 250 to 300 Linux runner minutes (sample medians, 23 to 30 Oct), about
+# four times the 20 jobs the plan runs at once. The price is that a
+# regression only those suites catch now shows on main after the merge;
+# docs/agent/TESTING.md has the numbers. To run everything on a branch first,
+# dispatch this workflow on it (`gh workflow run pr-gate.yml --ref <branch>`);
+# that run's `PR Gate` check counts. scripts/ci-tiers.test.mjs holds the split.
 
 jobs:
   scope:
@@ -66,7 +79,6 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BASE_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
@@ -88,7 +100,19 @@ jobs:
             mercurypitch=true
           else
             if [[ "$EVENT_NAME" == "pull_request" ]]; then
-              base_sha="$PR_BASE_SHA"
+              # The checkout is GitHub's test merge of this pull request into
+              # main as it is now, and its first parent is that main, so the
+              # diff from it is exactly what the pull request changes.
+              # pull_request.base.sha can be older than main: on PR 1174 (a
+              # skills PR, 23 Oct 2026) main's newer commits, a pr-gate.yml
+              # change among them, counted as the PR's own and set every
+              # scope, adventure matrix included. A checkout that is not a
+              # merge has no such parent; it leaves the base empty and is
+              # validated in full.
+              base_sha=""
+              if git rev-parse --verify --quiet 'HEAD^2' > /dev/null; then
+                base_sha="$(git rev-parse 'HEAD^1')"
+              fi
             else
               base_sha="$PUSH_BASE_SHA"
             fi
@@ -315,10 +339,12 @@ jobs:
       - name: Test MercuryPitch units
         run: pnpm run test:run --shard=${{ matrix.shard }}/2
 
+  # The whole browser suite, on main and on a dispatch. A pull request runs
+  # e2e-smoke below instead.
   e2e:
     name: Browser tests (${{ matrix.shard }}/4)
     needs: scope
-    if: needs.scope.outputs.root == 'true'
+    if: needs.scope.outputs.root == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -361,12 +387,13 @@ jobs:
         # to Ubuntu sources without changing package signature checks.
         run: node scripts/install-ci-browser.mjs chromium
 
-      # The whole suite, on pull requests as well as main. It used to be
-      # `--grep @smoke` on a PR and everything only after merge, which meant
-      # 626 tests first ran on code that was already merged: main went red on
-      # exercise-idle-layout.spec.ts from a change this gate had passed.
-      # Sharded, full coverage costs less wall-clock than the old smoke step.
-      # The @smoke tags stay in the specs — they are still useful locally.
+      # The whole suite, on main and on a dispatch. From 31 Aug to 30 Oct
+      # 2026 it ran on every pull request as well. Before that a pull request
+      # ran `--grep @smoke` and main went red on exercise-idle-layout.spec.ts
+      # from a change this gate had passed. maff chose the smoke tier for pull
+      # requests again on 30 Oct 2026, knowing that hole comes back: a test
+      # outside the @smoke set first runs on code that is already merged. Tag
+      # a test @smoke when a pull request must not merge without it.
       - name: Test MercuryPitch browser paths
         run: pnpm run test:e2e --shard=${{ matrix.shard }}/4
 
@@ -375,6 +402,55 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report
+          retention-days: 7
+
+  # A pull request's browser tier: the @smoke set, 513 of the suite's 1,957
+  # tests in 139 of its 224 files (counted 30 Oct 2026), on two shards. Its
+  # steps are e2e's, so build:e2e and the bundle audits in it still run on
+  # every pull request that can change MercuryPitch: they were first to catch
+  # 2 of the 20 real defects in a sample of 30 failed PR runs (2 to 30 Oct).
+  e2e-smoke:
+    name: Browser smoke (${{ matrix.shard }}/2)
+    needs: scope
+    if: needs.scope.outputs.root == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        uses: ./.github/actions/lfs-pull
+      - uses: ./.github/actions/setup
+      # The same build as e2e, for the same reasons: see the comment there.
+      - name: Build MercuryPitch for browser tests
+        run: pnpm run build:e2e
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          # e2e's key, so one stored copy serves both jobs.
+          key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        run: node scripts/install-ci-browser.mjs chromium
+
+      - name: Test MercuryPitch smoke paths
+        run: pnpm run test:e2e --grep @smoke --shard=${{ matrix.shard }}/2
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report-shard-${{ matrix.shard }}
           path: playwright-report
           retention-days: 7
 
@@ -437,14 +513,15 @@ jobs:
           VITE_BESIDE_CUE_GAMES: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build --outDir build/games-enabled
 
-      # The Android and iOS native builds live in beside-cue-mobile.yml, which
-      # runs the same Gradle gate and additionally publishes an installable APK
-      # per pull request. Keeping them here too would build Android twice.
+      # The Android and iOS native builds live in beside-cue-mobile.yml. It
+      # runs on main, on bc-v* tags and when dispatched, not on pull requests
+      # (30 Oct 2026). Dispatch it on a branch for an installable APK.
 
+  # Main and dispatch only, like e2e. Its 25 spec files run nowhere else.
   beside-cue-browser:
     name: Beside Cue browser tests (legacy ${{ matrix.shard }}/2)
     needs: scope
-    if: needs.scope.outputs.beside == 'true'
+    if: needs.scope.outputs.beside == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -480,10 +557,13 @@ jobs:
             apps/beside-cue/test-results
           retention-days: 7
 
+  # Main and dispatch only, like e2e. In four weeks of pull requests its only
+  # real catches were two runs of one Glassworks branch, and it was the first
+  # failing job in 6 of 7 sampled flakes.
   beside-cue-adventure-browser:
     name: Beside Cue adventure (${{ matrix.spec }})
     needs: scope
-    if: needs.scope.outputs.beside == 'true'
+    if: needs.scope.outputs.beside == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -623,15 +703,17 @@ jobs:
         # never runs cap sync, so there is no --android-assets to pass.
         run: node apps/mercurypitch/scripts/assert-bundle.mjs apps/mercurypitch/dist
 
-      # The Android and iOS native builds live in mercurypitch-mobile.yml,
-      # which additionally publishes an installable APK per pull request.
-      # Keeping them here too would build Android twice.
+      # The Android and iOS native builds live in mercurypitch-mobile.yml. It
+      # runs on main, on mp-v* tags and when dispatched, not on pull requests
+      # (30 Oct 2026), so this job is the native check a pull request gets.
+      # Dispatch that workflow on a branch for an installable APK.
 
   gate:
     name: PR Gate
     # The single required status check. Branch protection cannot name a
-    # matrix's individual jobs stably, and a job skipped by `scope` reports
-    # `skipped` rather than `success`, so neither can be required directly.
+    # matrix's individual jobs stably, and a job skipped by `scope` or by its
+    # event reports `skipped` rather than `success`, so neither can be
+    # required directly.
     needs:
       [
         scope,
@@ -640,6 +722,7 @@ jobs:
         metrics,
         units,
         e2e,
+        e2e-smoke,
         workers,
         beside-cue,
         beside-cue-browser,
@@ -659,8 +742,10 @@ jobs:
           echo "Job results: $RESULTS"
 
           # `skipped` is a pass: it means the scope step decided that surface
-          # could not be affected by this change. `failure` and `cancelled`
-          # are not, and neither is anything else that shows up here.
+          # could not be affected by this change, or that the job belongs to
+          # another event (e2e-smoke on main, the full browser suites on a
+          # pull request). `failure` and `cancelled` are not, and neither is
+          # anything else that shows up here.
           for result in $RESULTS; do
             case "$result" in
               success|skipped) ;;

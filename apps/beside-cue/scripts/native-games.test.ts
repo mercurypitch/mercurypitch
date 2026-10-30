@@ -689,7 +689,14 @@ describe('explicit native games profile', () => {
     )
 
     expect(caller).toContain("tags: ['bc-v*']")
-    expect(caller).toContain('packages/glass-game/**')
+    // A push to main that changes the games builds the profile. Pull
+    // requests no longer run the workflow (30 Oct 2026), so the regex the
+    // reusable workflow filters pushes with is the only filter.
+    const changed = /changed-paths-regex: '([^']+)'/u.exec(caller)?.[1]
+    expect(changed).toBeDefined()
+    expect(
+      new RegExp(changed!, 'u').test('packages/glass-game/src/index.ts'),
+    ).toBe(true)
     expect(caller).toContain('native-test-profile-script: native:games')
     expect(caller).toContain(
       'native-test-android-gradle-property: besideCueGames=1',

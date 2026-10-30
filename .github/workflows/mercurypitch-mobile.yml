@@ -6,10 +6,19 @@ name: Mercury Pitch Mobile
 #
 # What is different here, and deliberately:
 #
-#   The path filter is wide. `apps/mercurypitch` aliases `@` to the web app's
-#   own `src/`, so the native app IS the web app plus a shell — a change under
-#   `src/` really does change what ships to a phone, and a filter that ignored
-#   it would let a regression reach TestFlight untested.
+#   No pull request runs this (maff, 30 Oct 2026). It added five jobs, about
+#   10 Linux and 14 to 17 macOS runner minutes, to every pull request that
+#   touched `src/`, and in four weeks it caught one defect the Linux build
+#   missed (an iOS-only Vite failure, 25 Oct). PR Gate's `mercurypitch` job
+#   builds and asserts the same bundle on Linux for every pull request that
+#   can change it. A push to main builds Android and archives iOS here; for an
+#   installable APK from a branch, dispatch this workflow on it.
+#
+#   The path filter (changed-paths-regex below) is wide. `apps/mercurypitch`
+#   aliases `@` to the web app's own `src/`, so the native app IS the web app
+#   plus a shell — a change under `src/` really does change what ships to a
+#   phone, and a filter that ignored it would let a regression reach
+#   TestFlight untested.
 #
 #   Which is exactly why TestFlight uploads come from TAGS ONLY. main moves
 #   several times a day here; App Store Connect meters uploads per app per day
@@ -21,55 +30,6 @@ name: Mercury Pitch Mobile
 # does not use the `v*` tags that ship mercurypitch.com to production.
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/mercurypitch/**'
-      - 'packages/audio-io/**'
-      - 'packages/mobile-runtime/**'
-      - 'packages/pitch-engine/**'
-      - 'packages/ios-audio-session/**'
-      - 'src/**'
-      # The public/ tree the native bundle carries. Kept in step with
-      # apps/mercurypitch/native-assets.mjs: the manifest names these files,
-      # the build copies them, and assert-bundle fails when one of them is
-      # gone -- so a change to the art has to run the build that checks it.
-      # Deliberately narrow rather than `public/**`: the night-app packs and
-      # the drum kits change often and ship nowhere near a phone.
-      - 'public/models/**'
-      - 'public/brand-mark.svg'
-      - 'public/favicon.svg'
-      - 'public/karaoke-night-stage.webp'
-      - 'public/karaoke-night/tokyo-cyber-*.webp'
-      - 'public/mic/guide-vocal-*.webp'
-      - 'public/characters/**'
-      - 'public/drum-night/pocket-console-landscape.webp'
-      - 'public/ear-lab/regulator-room-landscape.webp'
-      - 'public/ear-lab/regulator-room-portrait.webp'
-      - 'public/ear-lab/glasshouse-bench-landscape.webp'
-      - 'public/ear-lab/glasshouse-bench-portrait.webp'
-      - 'public/exercises/examples/**'
-      - 'public/guitar-night/velvet-rehearsal.webp'
-      - 'public/jam/room-stage.webp'
-      - 'public/legends/**'
-      - 'public/piano-night/afterglow-studio-landscape.webp'
-      - 'public/sing/retro-analog-studio*.webp'
-      - 'public/rooms/alley/**'
-      - 'public/badges/*.webp'
-      - 'public/leagues/l*.webp'
-      - 'public/leagues/locked.webp'
-      - 'public/leaderboard/place-*.webp'
-      - 'public/progress/*.webp'
-      - 'gradle/signing.gradle'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      # The size gate's measurement lives in a script, not inline in the
-      # workflow -- a change to it that no native build ran is a gate nobody
-      # checked.
-      - '.github/scripts/**'
-      - '.github/workflows/mercurypitch-mobile.yml'
-      - '.github/workflows/capacitor-app.yml'
-      - '.github/actions/fetch-assets/**'
   # No `paths:` on a trigger that also carries tags — a tag placed on a commit
   # already on main contains no commits, so the filter would match nothing and
   # skip the release. The reusable workflow's `changes` job filters pushes and
@@ -80,8 +40,8 @@ on:
   workflow_dispatch:
     inputs:
       # Which db-worker the build compiles in (apps/mercurypitch/api-base.mjs).
-      # `dev` for everything that is tested -- and every push, pull request
-      # and tag builds `dev`, because only a dispatch has inputs. `production`
+      # `dev` for everything that is tested -- and every push and tag
+      # builds `dev`, because only a dispatch has inputs. `production`
       # is picked by hand, for the build that goes to a store, and nothing
       # else in this repository can set it.
       #
@@ -144,7 +104,15 @@ jobs:
       tag-prefix: mp-v
       signing-env-prefix: MERCURYPITCH
       profile-build-setting: MERCURYPITCH_PROFILE
-      # Kept in step with the pull_request `paths:` filter above.
+      # Which pushes to main build. Wide on purpose (see the header). The
+      # public/ entries are the tree the native bundle carries, kept in step
+      # with apps/mercurypitch/native-assets.mjs: the manifest names these
+      # files, the build copies them, and assert-bundle fails when one of them
+      # is gone, so a change to the art has to run the build that checks it.
+      # Deliberately narrow rather than all of public/: the night-app packs
+      # and the drum kits change often and ship nowhere near a phone. The size
+      # gate's measurement lives in .github/scripts/, and a change to it that
+      # no native build ran is a gate nobody checked.
       changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|legends)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/(regulator-room|glasshouse-bench)-(landscape|portrait)|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|public/karaoke-night/tokyo-cyber-[^/]*\.webp$|public/mic/guide-vocal-[^/]*\.webp$|public/rooms/alley/|public/badges/[^/]*\.webp$|public/leagues/(l[1-7]|locked)\.webp$|public/leaderboard/place-[^/]*\.webp$|public/progress/(resonance-atlas|mercury-pressing)\.webp$|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/actions/fetch-assets/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
       # Exported to the build and to assert-bundle alike, so the check reads
       # the same answer the build compiled in. Every build is dev -- the debug
