@@ -12,15 +12,24 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface MixingDeskProps {
+export interface MixingDeskProps {
   labels: readonly string[]
   /** A render is playing. */
   playing: boolean
   /** 1-based strip whose render is sounding, when the drill compares
    *  several; 0 for none. */
   highlight: number
-  reveal: { index: number; name: string } | null
+  /** The answer once told: its strip and its name; the strip of a wrong
+   *  pick; and for a boost, its words ("+6.0 dB · upper-mid"), which the
+   *  room writes over an EQ bell raised on the band. */
+  reveal: {
+    index: number
+    name: string
+    picked?: number
+    lift?: string
+  } | null
 }
 
 const LEFT = 96
@@ -29,7 +38,7 @@ const FADER_TOP = 76
 const FADER_BOTTOM = 176
 const CAP_Y = 118
 
-export function MixingDesk(props: MixingDeskProps): JSX.Element {
+function DrawnMixingDesk(props: MixingDeskProps): JSX.Element {
   const step = () => (RIGHT - LEFT) / Math.max(1, props.labels.length)
   const x = (i: number) => LEFT + step() * (i + 0.5)
   return (
@@ -131,3 +140,5 @@ export function MixingDesk(props: MixingDeskProps): JSX.Element {
     </svg>
   )
 }
+
+export const MixingDesk = skinnable('MixingDesk', DrawnMixingDesk)

@@ -101,6 +101,16 @@
   fill: #ffffff;
 }
 
+/* A numeral on a lit orb: dark ink on the light. */
+.numeral {
+  font:
+    700 18px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #061024;
+}
+
 .teal {
   fill: #8ff5e3;
 }

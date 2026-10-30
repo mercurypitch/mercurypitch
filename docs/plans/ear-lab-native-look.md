@@ -115,6 +115,9 @@ The other drills that draw one of these instruments (Critique and Weight on
 the desk, the Wild drills on the bead chain, the progression train and the
 fork) take the lit version with it, and their screenshots go in the same PR.
 
+The bead chain landed with Colour (Bassline's ladder of roots), so Span and
+Echo took the lit ladder there too, Echo with its cadence lamps.
+
 A station's PR also brings its drills' pads to the mock-ups where the room's
 skin left them. The Time PR did it for every station: each pad but the big
 pair stands with its words centred, The Grid's four in one row, Drift's with

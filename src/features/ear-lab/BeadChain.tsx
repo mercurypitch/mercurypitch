@@ -14,6 +14,7 @@ import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { degreeSolfege } from '@/lib/ear/phrase'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
 export interface ChainReveal {
   expected: readonly number[]
@@ -21,7 +22,7 @@ export interface ChainReveal {
   perNote: readonly boolean[]
 }
 
-interface BeadChainProps {
+export interface BeadChainProps {
   /** Caption words per degree; solfège in a major key by default. */
   words?: (degree: number) => string
   /** Notes in the phrase. */
@@ -29,6 +30,12 @@ interface BeadChainProps {
   /** 1-based index of the note sounding now; 0 for none. */
   sounding: number
   reveal: ChainReveal | null
+  /** For the room's ladder: the scale's eight rungs (Span, Echo), or the
+   *  seven chord roots over the held tonic (Bassline). */
+  ladder?: 'scale' | 'roots'
+  /** For the room's cadence lamps (Echo): the 1-based chord of the
+   *  cadence sounding, 0 for none. Absent: no cadence. */
+  cadence?: number
 }
 
 const LEFT = 100
@@ -47,7 +54,7 @@ function degreeY(degree: number): number {
   return LOW_Y - ((degree - 1) / 7) * (LOW_Y - HIGH_Y)
 }
 
-export function BeadChain(props: BeadChainProps): JSX.Element {
+function DrawnBeadChain(props: BeadChainProps): JSX.Element {
   const word = (degree: number) => (props.words ?? degreeSolfege)(degree)
   const count = () => Math.max(1, props.reveal?.expected.length ?? props.count)
   const radius = () => Math.min(9, Math.max(5, 120 / count()))
@@ -165,3 +172,5 @@ export function BeadChain(props: BeadChainProps): JSX.Element {
     </svg>
   )
 }
+
+export const BeadChain = skinnable('BeadChain', DrawnBeadChain)
