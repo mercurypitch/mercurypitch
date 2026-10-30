@@ -91,7 +91,10 @@ string[]`), expand an `aria-expanded` collapse toggle (`reveal`), and
   stage open over its page (`provideTourDetour`), and before it leaves a
   tab with unsaved work. Targets only count when genuinely visible
   (`checkVisibility`); a missing target hides the spotlight and centres the
-  tooltip.
+  tooltip. Before ringing a target it scrolls it clear of anything pinned
+  over the page, such as the phone's tab bar or Path's view switch
+  (`walkthrough-dom.ts`). The walker checks that a spotlight exists, not
+  that nothing covers it, so a covered target needs a look on a phone.
 - **Stable hooks**: prefer `data-tour="<page>.<thing>"` attributes (or
   existing `id`/`data-testid`) as `targetSelector`. Collapsible sidebar
   sections expose `data-collapsible="<storageKey>"` on their header for

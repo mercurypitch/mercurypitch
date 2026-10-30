@@ -116,14 +116,17 @@ catalogue.
 
 The user **shall** be able to re-run any walkthrough, including completed ones.
 
-## The page under the tour — `REQ-WALK-021..025`
+## The page under the tour — `REQ-WALK-021..026`
 
-These hold for the Guide's spotlight tours and Merc's coach tours alike.
-**Source:** `src/lib/tour-screen.ts`, `src/features/tours/TourScreenHost.tsx`.
+These hold for the Guide's spotlight tours and Merc's coach tours alike,
+apart from REQ-WALK-026, which is the spotlight's.
+**Source:** `src/lib/tour-screen.ts`, `src/features/tours/TourScreenHost.tsx`,
+`src/components/walkthrough-dom.ts`.
 **Tests:** `src/lib/tour-screen.test.ts`,
 `src/features/tours/TourScreenHost.test.tsx`,
 `src/tests/walkthrough-tour-screen.test.tsx`,
-`src/components/coach/start.test.ts`.
+`src/components/coach/start.test.ts`,
+`src/components/walkthrough-dom.test.ts`.
 
 ### REQ-WALK-021 — Unsaved work asks first
 
@@ -154,6 +157,13 @@ put each view back the way the user had it once the tour ends.
 
 **WHEN** Zen, a challenge stage or focus mode opens while a tour runs, the
 tour **shall** end.
+
+### REQ-WALK-026 — A target shows clear of the bars
+
+**WHEN** the Guide's spotlight rings a step's target, it **shall** first
+scroll the target clear of the window's edges, the boxes that scroll it, and
+anything pinned over the page (the phone's tab bar, Path's view switch): the
+whole target when it fits, its top when it is taller.
 
 ## Verification note
 

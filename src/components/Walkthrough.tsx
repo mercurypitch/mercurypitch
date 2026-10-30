@@ -635,7 +635,11 @@ export const Walkthrough: Component = () => {
 
   return (
     <Show when={walkthroughActive()}>
-      <div class={styles.walkthroughOverlay} onClick={() => endWalkthrough()}>
+      <div
+        class={styles.walkthroughOverlay}
+        data-tour-layer
+        onClick={() => endWalkthrough()}
+      >
         <div ref={highlightRef} class={styles.walkthroughHighlight} />
 
         <div
