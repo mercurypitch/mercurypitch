@@ -95,6 +95,51 @@ describe('First Light terrace beds', () => {
       material.dispose()
     }
   })
+  it('follows each bed with irregular elongated flower drifts rather than repeated round bouquets', () => {
+    const material = new MeshBasicMaterial()
+    const owned = new Set<BufferGeometry>()
+    const flowers = createFirstIslandFlowers(material, owned, 0)
+    try {
+      let instance = 0
+      for (const bed of FIRST_ISLAND_TERRACE_BEDS)
+        for (const [index, lobe] of bed.lobes.entries()) {
+          const prior = bed.lobes[Math.max(0, index - 1)]!
+          const next = bed.lobes[Math.min(bed.lobes.length - 1, index + 1)]!
+          const direction = new Vector3(
+            next.x - prior.x,
+            0,
+            next.z - prior.z,
+          ).normalize()
+          const across = new Vector3(-direction.z, 0, direction.x)
+          const alongPositions: number[] = []
+          const acrossPositions: number[] = []
+          const population = 2 * (lobe.flowers ?? (lobe.radius < 0.2 ? 6 : 9))
+          for (let flower = 0; flower < population; flower++) {
+            const matrix = new Matrix4()
+            flowers.getMatrixAt(instance++, matrix)
+            const point = new Vector3()
+              .setFromMatrixPosition(matrix)
+              .sub(new Vector3(lobe.x, 0, lobe.z))
+            alongPositions.push(point.dot(direction))
+            acrossPositions.push(point.dot(across))
+          }
+          const span = Math.max(...alongPositions) - Math.min(...alongPositions)
+          const width =
+            Math.max(...acrossPositions) - Math.min(...acrossPositions)
+          expect(span).toBeGreaterThan(lobe.radius * 1.1)
+          expect(width).toBeLessThan(lobe.radius * 0.5)
+          // A visibly varied edge avoids making the low drifts two straight rows.
+          expect(
+            new Set(acrossPositions.map((value) => value.toFixed(4))).size,
+          ).toBeGreaterThan(population / 2)
+        }
+    } finally {
+      flowers.dispose()
+      for (const geometry of owned) geometry.dispose()
+      material.dispose()
+    }
+  })
+
   it('overlaps neighbouring lobes into strips while retaining separate clear routes', () => {
     const strips = FIRST_ISLAND_TERRACE_BEDS.filter(
       (bed) => bed.lobes.length > 1,

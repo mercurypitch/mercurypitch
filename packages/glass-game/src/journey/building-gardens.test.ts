@@ -150,7 +150,12 @@ describe('building gardens', () => {
         // The cornices, urns and other islands keep neutral atlas colours.
         expect(geometryStages.get(geometry)).toBe('first-light-isle')
         expect(geometry.getAttribute('position').getY(vertex)).toBeLessThan(0.3)
-        expect(rgb).toEqual([128 / 255, 165 / 255, 113 / 255])
+        // Cool dark leaves and warmer tips retain contrast with the flowers.
+        expect([
+          [91 / 255, 145 / 255, 116 / 255],
+          [116 / 255, 162 / 255, 121 / 255],
+          [139 / 255, 173 / 255, 131 / 255],
+        ]).toContainEqual(rgb)
       }
     }
     // One corolla batch adds no texture/shadow pass; the garden triangle cap stays.
