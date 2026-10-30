@@ -1854,3 +1854,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   film-01 restarted 06:27:39 from the same frozen copy (checksums OK). Waiter fires on done, a
   stall, a fallback or 5 min of log quiet. If segment 14/20 (frames 19500-20999) stalls again:
   RESUME=1 with screenshot capture for the rest.
+- 08:0x: the segmented film-01 finished 18 of 20 pieces (07:58); pieces 15/20 and 16/20 (frames
+  21000-23999, s12-s13) hung at 07:34. Cause: the shell's memory cgroup (13.36 GiB; v1 at
+  /sys/fs/cgroup/memory/process_api/.../claude-code-bash) OOM-killed two chrome renderers, in both
+  runs (dmesg at 05:31 and 07:33; memory.oom_control oom_kill 4). The 4.4 GB extract cache in
+  /dev/shm is charged to it, plus up to ~1.9 GB per renderer. Not a scene bug. render-l4.sh now
+  takes WORKERS (default 3); resume started 08:01:07 with RESUME=1 WORKERS=2 (same plan hash).
+  wait-l4.sh <name> <log offset> waits for done, a new OOM kill, a stall line or 5 min quiet.
