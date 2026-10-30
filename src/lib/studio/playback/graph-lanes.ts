@@ -12,6 +12,7 @@
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import type { StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
 import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
@@ -94,6 +95,8 @@ export interface StudioLanePlace {
   /** When pass 0's first frame enters a lane with no compensation. */
   readonly passStart: number
   readonly fromFrame: number
+  /** How much work the lane's chain does (fx-profile.ts). */
+  readonly profile?: StudioFxProfile
 }
 
 /** A lane's faders after `fade`, into `output`: split, a gain per side, merge. */
@@ -130,7 +133,7 @@ export function buildGraphLane(
 ): StudioGraphLane {
   if (lane.compensationSeconds === null)
     throw new Error('Studio chain timing has not been measured.')
-  const chain = createStudioFxChain(ctx, lane.spec)
+  const chain = createStudioFxChain(ctx, lane.spec, { profile: place.profile })
   try {
     const fade = ctx.createGain()
     chain.output.connect(fade)

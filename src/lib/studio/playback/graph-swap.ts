@@ -82,7 +82,9 @@ function buildChains(
   const built: BuiltChain[] = []
   try {
     for (const [index, swap] of swaps.entries()) {
-      const chain = createStudioFxChain(state.ctx, swap.spec)
+      const chain = createStudioFxChain(state.ctx, swap.spec, {
+        profile: state.profile,
+      })
       const fade = state.ctx.createGain()
       fade.gain.value = 0
       chain.output.connect(fade)

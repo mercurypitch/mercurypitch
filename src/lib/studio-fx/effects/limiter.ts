@@ -24,6 +24,7 @@ import { createHardClampCurve, createSoftClipCurve, dbToGain, HARD_CLAMP_DOMAIN,
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
 import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createShaperPath, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { shaperOversample } from '@/lib/studio-fx/fx-profile'
 
 const LIMITER_HEADROOM_DB = 1.5
 const LIMITER_RATIO = 20
@@ -48,10 +49,11 @@ export function createLimiterUnit(
   compressor.ratio.value = LIMITER_RATIO
   compressor.attack.value = LIMITER_ATTACK_SECONDS
   const cancelAutoMakeup = ctx.createGain()
-  const soft = createShaperPath(ctx, limiterCurves().soft)
-  const hard = createShaperPath(ctx, limiterCurves().hard, 'none')
+  const oversample = shaperOversample(env.profile, 'limiter')
+  const soft = createShaperPath(ctx, limiterCurves().soft, oversample)
+  const hard = createShaperPath(ctx, limiterCurves().hard, null)
   const dryCompressor = createCompressorTwin(ctx)
-  const dryShaper = createIdentityShaperPath(ctx)
+  const dryShaper = createIdentityShaperPath(ctx, oversample)
   connectSeries([shell.input, drive, compressor, cancelAutoMakeup, soft.input])
   connectSeries([soft.output, hard.input])
   hard.output.connect(shell.wet)

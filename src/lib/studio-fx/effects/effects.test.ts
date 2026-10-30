@@ -7,7 +7,9 @@ import { EFFECT_KINDS } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv } from '@/lib/studio-fx/effect-shell'
 import { FAST_SETTLE_SECONDS } from '@/lib/studio-fx/effect-shell'
 import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, fakeShaperRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { measureShaperDelays, resetShaperDelaysForTests, } from '@/lib/studio-fx/shaper-delay'
 import { createEffectUnit } from './index'
 
 function spec(
@@ -211,6 +213,58 @@ describe('settling a fresh compressor before its first sound', () => {
     expect(createEffectUnit(ctx.asContext, spec('eq'), env).settle).toBe(
       undefined,
     )
+  })
+})
+
+describe('shapers at a lighter playback quality', () => {
+  afterEach(() => resetShaperDelaysForTests())
+
+  const profile = (oversample: OverSampleType): StudioFxProfile => ({
+    id: oversample,
+    oversample: {
+      saturation: oversample,
+      exciter: oversample,
+      limiter: oversample,
+    },
+  })
+
+  for (const kind of ['saturation', 'exciter', 'limiter'] as const) {
+    it(`${kind}: its shaper and its twin run at the asked oversampling, each as late as at 4x`, async () => {
+      await measureShaperDelays(
+        48000,
+        fakeShaperRenderContext({ none: 0, '2x': 128, '4x': 192 }),
+      )
+      for (const [oversample, makeUp] of [
+        ['2x', 64],
+        ['none', 192],
+      ] as const) {
+        const { ctx, env } = setup(false)
+        createEffectUnit(ctx.asContext, spec(kind), {
+          ...env,
+          profile: profile(oversample),
+        })
+        const shapers = ctx.ofType<FakeShaper>('shaper')
+        const oversampled = shapers.filter((s) => s.oversample !== 'none')
+        if (oversample === '2x') expect(oversampled).toHaveLength(2)
+        const makeUps = ctx
+          .ofType<FakeDelay>('delay')
+          .filter((d) => Math.abs(d.delayTime.value * 48000 - makeUp) < 1e-6)
+        // The processed shaper and the twin beside it, never the plain hard clip.
+        expect(makeUps).toHaveLength(2)
+      }
+    })
+  }
+
+  it('runs every shaper at 4x with no profile, as export does', async () => {
+    await measureShaperDelays(
+      48000,
+      fakeShaperRenderContext({ none: 0, '2x': 128, '4x': 192 }),
+    )
+    const { ctx, env } = setup(false)
+    createEffectUnit(ctx.asContext, spec('saturation'), env)
+    expect(
+      ctx.ofType<FakeShaper>('shaper').map((shaper) => shaper.oversample),
+    ).toEqual(['4x', '4x'])
   })
 })
 

@@ -27,6 +27,7 @@ import type { ChainSpec } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
 import { measureCompressorLatency } from './compressor-twin'
 import { delayTailSeconds } from './dsp'
+import { measureShaperDelays } from './shaper-delay'
 
 const TAIL_MARGIN_SECONDS = 0.05
 const MAX_TAIL_SECONDS = 30
@@ -131,7 +132,10 @@ export async function measureChainLatencyFrames(
   // Every chain build follows a measurement, so twins can be plain delays.
   // Beside this render, not before it: a twin's delay equals the lookahead
   // either way, so the latency read here does not depend on which it is.
-  const twins = measureCompressorLatency(sampleRate)
+  const twins = Promise.all([
+    measureCompressorLatency(sampleRate),
+    measureShaperDelays(sampleRate),
+  ])
   const bypassed = normalizeChainSpec({
     effects: chainSpec.effects.map((effect) => ({ ...effect, enabled: false })),
   })

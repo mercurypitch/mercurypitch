@@ -17,6 +17,7 @@ import { createSaturationCurve, dbToGain, linearMix, SATURATION_DOMAIN, } from '
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
 import { assembleUnit, createButterworth, createEffectShell, createIdentityShaperPath, createShaperPath, highCutFrequency, writeParam, } from '@/lib/studio-fx/effect-shell'
+import { shaperOversample } from '@/lib/studio-fx/fx-profile'
 
 let sharedCurve: ShaperCurve | null = null
 
@@ -35,9 +36,10 @@ export function createSaturationUnit(
     spec.enabled,
     linearMix(spec.params.mix / 100),
   )
-  const drive = createShaperPath(ctx, saturationCurve())
+  const oversample = shaperOversample(env.profile, 'saturation')
+  const drive = createShaperPath(ctx, saturationCurve(), oversample)
   const tone = createButterworth(ctx, 'lowpass')
-  const dryTwin = createIdentityShaperPath(ctx)
+  const dryTwin = createIdentityShaperPath(ctx, oversample)
   shell.input.connect(drive.input)
   drive.output.connect(tone)
   tone.connect(shell.wet)
