@@ -601,14 +601,29 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
               {(line) => <RunLine line={line()} />}
             </Show>
             <Show when={running() || done() ? null : (props.chip?.() ?? null)}>
-              {(chip) => (
-                <div class={styles.runLine} data-testid="merc-chip">
-                  <div class={styles.pill}>
-                    <span class={styles.left}>{chip().label}</span>
-                    <span class={styles.level}>{chip().value}</span>
+              {(chip) => {
+                // The chip's first word is where it starts; a new one is
+                // the reading settling, and the chip rings once.
+                let first: string | undefined
+                return (
+                  <div class={styles.runLine} data-testid="merc-chip">
+                    <Show when={chip().value} keyed>
+                      {(value) => {
+                        first ??= value
+                        return (
+                          <div
+                            class={styles.pill}
+                            data-settled={value === first ? undefined : ''}
+                          >
+                            <span class={styles.left}>{chip().label}</span>
+                            <span class={styles.level}>{value}</span>
+                          </div>
+                        )
+                      }}
+                    </Show>
                   </div>
-                </div>
-              )}
+                )
+              }}
             </Show>
 
             <Show

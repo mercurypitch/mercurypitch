@@ -298,6 +298,48 @@
   cursor: pointer;
 }
 
+/* A short phone (360 x 640, 375 x 667): a smaller number and a shorter
+   staircase, so more of the plate shows above the console before it
+   scrolls. */
+@media (max-height: 700px) {
+  .wrap {
+    gap: 10px;
+    padding-top: 6px;
+  }
+
+  .value {
+    margin-top: 10px;
+  }
+
+  .number {
+    font-size: 56px;
+  }
+
+  .unit {
+    font-size: 26px;
+  }
+
+  .chart {
+    margin: 10px 0 2px;
+  }
+
+  .chart > svg {
+    max-height: 104px;
+  }
+
+  .dots {
+    margin: 14px 0 4px;
+  }
+
+  .strong {
+    margin-top: 10px;
+  }
+
+  .slipPill {
+    margin-top: 12px;
+  }
+}
+
 @keyframes plate-in {
   from {
     opacity: 0;
