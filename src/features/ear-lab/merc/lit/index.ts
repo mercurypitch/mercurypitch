@@ -17,8 +17,11 @@ import type { MetreLatticeProps } from '@/features/ear-lab/MetreLattice'
 import type { MetronomeColumnProps } from '@/features/ear-lab/MetronomeColumn'
 import type { MixingDeskProps } from '@/features/ear-lab/MixingDesk'
 import type { ProgressionTrainProps } from '@/features/ear-lab/ProgressionTrain'
+import type { PullBeamProps } from '@/features/ear-lab/PullBeam'
 import type { RhythmDrumProps } from '@/features/ear-lab/RhythmDrum'
 import type { StylusTraceProps } from '@/features/ear-lab/StylusTrace'
+import type { TuningForkProps } from '@/features/ear-lab/TuningFork'
+import { LitBeam } from './LitBeam'
 import { LitChain } from './LitChain'
 import { LitDesk } from './LitDesk'
 import { LitDial } from './LitDial'
@@ -26,6 +29,7 @@ import { LitDiscs } from './LitDiscs'
 import { LitLanes } from './LitLanes'
 import { LitOrbs } from './LitOrbs'
 import { LitPendulum } from './LitPendulum'
+import { LitProbe } from './LitProbe'
 import { LitRhythm } from './LitRhythm'
 import { LitRods } from './LitRods'
 import { LitStrings } from './LitStrings'
@@ -48,4 +52,7 @@ export const LIT_INSTRUMENTS = {
   // Shape
   StylusTrace: LitTrace satisfies Component<StylusTraceProps>,
   IndexArc: LitDial satisfies Component<IndexArcProps>,
+  // Function
+  TuningFork: LitProbe satisfies Component<TuningForkProps>,
+  PullBeam: LitBeam satisfies Component<PullBeamProps>,
 } as const satisfies InstrumentSkin

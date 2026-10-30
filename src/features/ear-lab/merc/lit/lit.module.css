@@ -101,6 +101,16 @@
   fill: #ffffff;
 }
 
+/* A degree written in a glass orb. */
+.title {
+  font:
+    700 28px 'Inter Variable',
+    'Inter',
+    system-ui,
+    sans-serif;
+  fill: #ffffff;
+}
+
 /* A numeral on a lit orb: dark ink on the light. */
 .numeral {
   font:

@@ -187,6 +187,13 @@ export function padShape(
   return { shape: 'two', cols: 2 }
 }
 
+/** Gravity's twelve degree keys stand as an octave, the seven naturals
+ *  along the bottom and the five between them above; any other set of
+ *  keys keeps its ladder. */
+export function keyLayout(shape: string, count: number): string {
+  return shape === 'ladder' && count === 12 ? 'octave' : shape
+}
+
 /** Whether a drill's pads stand with their words centred: all but the
  *  big pair ("The first", "The second") and the small keys, which lay
  *  out their own. */
@@ -198,14 +205,15 @@ export function padsCentred(shape: string, count: number): boolean {
 function RoomPads(props: PadsProps): JSX.Element {
   const grid = () => padShape(props.columns, props.compact === true)
   const pads = children(() => props.children)
+  const layout = () => keyLayout(grid().shape, pads.toArray().length)
   return (
     <div
       class={styles.pads}
-      data-shape={grid().shape}
+      data-shape={layout()}
       data-centred={
         padsCentred(grid().shape, pads.toArray().length) ? '' : undefined
       }
-      style={{ '--cols': String(grid().cols) }}
+      style={{ '--cols': String(layout() === 'octave' ? 14 : grid().cols) }}
       role="group"
       aria-label={props.label}
       data-testid="ear-stage-pads"

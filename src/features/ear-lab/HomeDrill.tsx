@@ -524,6 +524,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           }
           ringing={phase() === 'probe'}
           listening={phase() === 'answer' && controller.mode() === 'mic'}
+          scale={set.degrees}
           reveal={
             phase() === 'reveal' && target()
               ? {
@@ -531,6 +532,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   solfege: target()?.solfege ?? '',
                   correct:
                     controller.answeredDegree() === null ? null : correct(),
+                  semitone: target()?.semitone,
+                  picked:
+                    controller.answeredDegree() === null || correct()
+                      ? null
+                      : (set.degrees.find(
+                          (d) => d.degree === controller.answeredDegree(),
+                        )?.semitone ?? null),
                 }
               : null
           }
