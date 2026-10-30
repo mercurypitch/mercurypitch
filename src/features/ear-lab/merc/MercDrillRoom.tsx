@@ -39,6 +39,7 @@ import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import { IconClose } from '@/features/ear-lab/ear-icons'
 import type { EarStageProps, ModeToggleProps, } from '@/features/ear-lab/EarStage'
 import { StageSkinContext, useStageKeys } from '@/features/ear-lab/EarStage'
+import { InstrumentSkinContext } from '@/features/ear-lab/instrument-skin'
 import { setRevealRule } from '@/features/ear-lab/reveal-pacing'
 import type { RoomBeat, RoomCompare, RoomPlate, ThresholdPlate, } from '@/features/ear-lab/stage-room'
 import { requestRoomStart } from '@/features/ear-lab/stage-room'
@@ -51,6 +52,7 @@ import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/noti
 import { setPendingEarDrill } from '@/stores/ui-store'
 import { useWakeAudio } from './audio-wake'
 import { practiceEstimate } from './Glass'
+import { LIT_INSTRUMENTS } from './lit'
 import { IconQuestion } from './merc-icons'
 import type { SoundStop } from './merc-lines'
 import { calibrationBefore, compareHint, exitWords, modeWords, practiceLine, practicePlateLine, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
@@ -516,92 +518,137 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
   return (
     <RoomContext.Provider value={state}>
       <StageSkinContext.Provider value={ROOM_SKIN}>
-        <section
-          class={styles.room}
-          data-station={station ?? undefined}
-          data-ear-drill={props.drillId}
-          data-testid="ear-stage"
-          data-merc-room=""
-          data-beat={beat()}
-          aria-label={props.name}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
-        >
-          <div class={styles.world}>
+        <InstrumentSkinContext.Provider value={LIT_INSTRUMENTS}>
+          <section
+            class={styles.room}
+            data-station={station ?? undefined}
+            data-ear-drill={props.drillId}
+            data-testid="ear-stage"
+            data-merc-room=""
+            data-beat={beat()}
+            aria-label={props.name}
+            onPointerDown={onPointerDown}
+            onPointerUp={onPointerUp}
+          >
+            <div class={styles.world}>
+              <Show
+                when={!done()}
+                fallback={
+                  <div class={plateStyles.wrap}>
+                    <PlateOnDesk
+                      plate={plate()}
+                      own={props.plate?.()}
+                      drillId={props.drillId}
+                      short={short()}
+                      faculty={facultyOf()}
+                      onPractise={(start) => {
+                        // Inside the tap, as Run again: iOS lets the audio
+                        // wake only there.
+                        wake()
+                        start()
+                      }}
+                    />
+                  </div>
+                }
+              >
+                <figure
+                  class={styles.figure}
+                  onPointerDown={() => {
+                    // A touch on the instrument holds a verdict that was
+                    // counting down: the singer is looking.
+                    if (beat() === 'reveal') room?.pause?.()
+                  }}
+                >
+                  {props.instrument()}
+                </figure>
+              </Show>
+            </div>
+
+            <header class={styles.header}>
+              <button
+                type="button"
+                class={styles.round}
+                aria-label={
+                  done()
+                    ? doneLabel(roomOrigin())
+                    : running()
+                      ? 'End the run'
+                      : 'Close'
+                }
+                data-testid="merc-close"
+                onClick={close}
+              >
+                <IconClose size={18} />
+              </button>
+              <div class={styles.identity}>
+                <h1 class={styles.name}>{name()}</h1>
+                <span class={styles.mode} data-testid="merc-mode">
+                  {modeLine()}
+                </span>
+              </div>
+              <button
+                type="button"
+                class={styles.round}
+                aria-label={`About ${props.cardName ?? props.name}, and its settings`}
+                data-testid="merc-help-open"
+                onClick={() => setHelpOpen('help')}
+              >
+                <IconQuestion size={20} />
+              </button>
+            </header>
+
+            <Show when={running() ? (room?.line() ?? null) : null}>
+              {(line) => <RunLine line={line()} />}
+            </Show>
+
             <Show
               when={!done()}
               fallback={
-                <div class={plateStyles.wrap}>
-                  <PlateOnDesk
-                    plate={plate()}
-                    own={props.plate?.()}
-                    drillId={props.drillId}
-                    short={short()}
-                    faculty={facultyOf()}
-                    onPractise={(start) => {
-                      // Inside the tap, as Run again: iOS lets the audio
-                      // wake only there.
+                <section class={styles.console} aria-label="What next">
+                  <div class={styles.mercRow}>
+                    <div class={styles.mercBox}>
+                      <MercPresence
+                        state={pose}
+                        stillSrc={mercStill(pose())}
+                        size={72}
+                        testId="merc-room-merc"
+                      />
+                    </div>
+                    <div class={styles.bubble}>
+                      <p class={styles.say}>{plateLine()}</p>
+                    </div>
+                  </div>
+                  <PlateNext
+                    sealed={
+                      plate()?.kind === 'threshold' &&
+                      (plate() as ThresholdPlate).markedIndex !== undefined
+                    }
+                    label={action().label}
+                    again={action().kind !== 'again'}
+                    calibrate={
+                      room?.calibrate !== undefined &&
+                      plate()?.kind === 'threshold' &&
+                      !ritual()
+                    }
+                    onFollow={followAction}
+                    onCalibrate={() =>
+                      askCalibration(() => room?.calibrate?.())
+                    }
+                    onAgain={() => {
                       wake()
-                      start()
+                      room?.again?.()
                     }}
+                    onDone={() => leave(true)}
+                    onRulers={() => setHelpOpen('rulers')}
                   />
-                </div>
+                </section>
               }
             >
-              <figure
-                class={styles.figure}
-                onPointerDown={() => {
-                  // A touch on the instrument holds a verdict that was
-                  // counting down: the singer is looking.
-                  if (beat() === 'reveal') room?.pause?.()
-                }}
+              <section
+                class={styles.console}
+                aria-label="Answer"
+                data-testid="ear-stage-console"
               >
-                {props.instrument()}
-              </figure>
-            </Show>
-          </div>
-
-          <header class={styles.header}>
-            <button
-              type="button"
-              class={styles.round}
-              aria-label={
-                done()
-                  ? doneLabel(roomOrigin())
-                  : running()
-                    ? 'End the run'
-                    : 'Close'
-              }
-              data-testid="merc-close"
-              onClick={close}
-            >
-              <IconClose size={18} />
-            </button>
-            <div class={styles.identity}>
-              <h1 class={styles.name}>{name()}</h1>
-              <span class={styles.mode} data-testid="merc-mode">
-                {modeLine()}
-              </span>
-            </div>
-            <button
-              type="button"
-              class={styles.round}
-              aria-label={`About ${props.cardName ?? props.name}, and its settings`}
-              data-testid="merc-help-open"
-              onClick={() => setHelpOpen('help')}
-            >
-              <IconQuestion size={20} />
-            </button>
-          </header>
-
-          <Show when={running() ? (room?.line() ?? null) : null}>
-            {(line) => <RunLine line={line()} />}
-          </Show>
-
-          <Show
-            when={!done()}
-            fallback={
-              <section class={styles.console} aria-label="What next">
                 <div class={styles.mercRow}>
                   <div class={styles.mercBox}>
                     <MercPresence
@@ -611,140 +658,99 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                       testId="merc-room-merc"
                     />
                   </div>
-                  <div class={styles.bubble}>
-                    <p class={styles.say}>{plateLine()}</p>
+                  <div
+                    class={styles.bubble}
+                    classList={{ [styles.bubbleHidden]: bubble() === null }}
+                    data-testid="merc-bubble"
+                    aria-hidden="true"
+                  >
+                    <p class={styles.say}>{bubble()?.say ?? ' '}</p>
+                    <Show when={bubble()?.aside}>
+                      {(line) => <p class={styles.move}>{line()}</p>}
+                    </Show>
+                    <Show when={bubble()?.hint}>
+                      {(line) => (
+                        <p class={styles.aside} data-testid="merc-compare-hint">
+                          {line()}
+                        </p>
+                      )}
+                    </Show>
                   </div>
                 </div>
-                <PlateNext
-                  sealed={
-                    plate()?.kind === 'threshold' &&
-                    (plate() as ThresholdPlate).markedIndex !== undefined
-                  }
-                  label={action().label}
-                  again={action().kind !== 'again'}
-                  calibrate={
-                    room?.calibrate !== undefined &&
-                    plate()?.kind === 'threshold' &&
-                    !ritual()
-                  }
-                  onFollow={followAction}
-                  onCalibrate={() => askCalibration(() => room?.calibrate?.())}
-                  onAgain={() => {
-                    wake()
-                    room?.again?.()
-                  }}
-                  onDone={() => leave(true)}
-                  onRulers={() => setHelpOpen('rulers')}
-                />
-              </section>
-            }
-          >
-            <section
-              class={styles.console}
-              aria-label="Answer"
-              data-testid="ear-stage-console"
-            >
-              <div class={styles.mercRow}>
-                <div class={styles.mercBox}>
-                  <MercPresence
-                    state={pose}
-                    stillSrc={mercStill(pose())}
-                    size={72}
-                    testId="merc-room-merc"
+
+                <div class={styles.controls} ref={controls}>
+                  {props.console()}
+                </div>
+
+                <Show when={running()}>
+                  <PinnedRow
+                    room={room}
+                    beat={beat()}
+                    run={run()}
+                    compare={compare()}
                   />
-                </div>
-                <div
-                  class={styles.bubble}
-                  classList={{ [styles.bubbleHidden]: bubble() === null }}
-                  data-testid="merc-bubble"
-                  aria-hidden="true"
-                >
-                  <p class={styles.say}>{bubble()?.say ?? ' '}</p>
-                  <Show when={bubble()?.aside}>
-                    {(line) => <p class={styles.move}>{line()}</p>}
-                  </Show>
-                  <Show when={bubble()?.hint}>
-                    {(line) => (
-                      <p class={styles.aside} data-testid="merc-compare-hint">
-                        {line()}
-                      </p>
-                    )}
-                  </Show>
-                </div>
-              </div>
+                </Show>
+              </section>
+            </Show>
 
-              <div class={styles.controls} ref={controls}>
-                {props.console()}
-              </div>
+            <p
+              class={styles.srOnly}
+              aria-live="polite"
+              data-testid="ear-stage-status"
+            >
+              {heard()}
+            </p>
 
-              <Show when={running()}>
-                <PinnedRow
-                  room={room}
-                  beat={beat()}
-                  run={run()}
-                  compare={compare()}
+            <Show when={helpOpen()}>
+              {(open) => (
+                <HelpSheet
+                  name={props.cardName ?? props.name}
+                  drillId={props.drillId}
+                  measures={props.measures}
+                  description={props.description}
+                  answerMode={answerMode()}
+                  running={running()}
+                  rulersFirst={open() === 'rulers'}
+                  onClose={() => setHelpOpen(false)}
                 />
-              </Show>
-            </section>
-          </Show>
+              )}
+            </Show>
 
-          <p
-            class={styles.srOnly}
-            aria-live="polite"
-            data-testid="ear-stage-status"
-          >
-            {heard()}
-          </p>
-
-          <Show when={helpOpen()}>
-            {(open) => (
-              <HelpSheet
-                name={props.cardName ?? props.name}
-                drillId={props.drillId}
-                measures={props.measures}
-                description={props.description}
-                answerMode={answerMode()}
-                running={running()}
-                rulersFirst={open() === 'rulers'}
-                onClose={() => setHelpOpen(false)}
+            <Show when={exitOpen()}>
+              <ExitConfirm
+                {...exitText()}
+                onLeave={endRun}
+                onStay={() => setExitOpen(false)}
               />
-            )}
-          </Show>
+            </Show>
 
-          <Show when={exitOpen()}>
-            <ExitConfirm
-              {...exitText()}
-              onLeave={endRun}
-              onStay={() => setExitOpen(false)}
-            />
-          </Show>
-
-          <Show when={soundStop()}>
-            <SoundStopped
-              {...stoppedText()}
-              onResume={resumeSound}
-              onLeave={endRun}
-            />
-          </Show>
-
-          <Show when={calibrating()}>
-            {(begin) => (
-              <CalibrationBefore
-                {...calibrationText()}
-                onBegin={() => {
-                  const go = begin()
-                  setCalibrating(null)
-                  wake()
-                  go()
-                }}
-                onLater={() => {
-                  setCalibrating(null)
-                  if (ritual() && beat() === 'idle') leave(false)
-                }}
+            <Show when={soundStop()}>
+              <SoundStopped
+                {...stoppedText()}
+                onResume={resumeSound}
+                onLeave={endRun}
               />
-            )}
-          </Show>
-        </section>
+            </Show>
+
+            <Show when={calibrating()}>
+              {(begin) => (
+                <CalibrationBefore
+                  {...calibrationText()}
+                  onBegin={() => {
+                    const go = begin()
+                    setCalibrating(null)
+                    wake()
+                    go()
+                  }}
+                  onLater={() => {
+                    setCalibrating(null)
+                    if (ritual() && beat() === 'idle') leave(false)
+                  }}
+                />
+              )}
+            </Show>
+          </section>
+        </InstrumentSkinContext.Provider>
       </StageSkinContext.Provider>
     </RoomContext.Provider>
   )

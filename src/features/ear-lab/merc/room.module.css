@@ -132,15 +132,18 @@
   place-items: center;
 }
 
+/* The instrument takes the stage's whole width, as the mock-ups draw it
+   (390 units a phone's width), and scales down to fit a short phone. */
 .figure {
   position: relative;
   z-index: 1;
   margin: 0;
-  width: min(100%, 420px);
+  width: min(100%, 440px);
+  height: 100%;
   max-height: 100%;
   display: grid;
   place-items: center;
-  padding: 8px 16px 12px;
+  padding: 4px 0 8px;
   box-sizing: border-box;
 }
 

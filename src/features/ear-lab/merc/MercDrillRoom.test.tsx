@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-li
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { BeatPendulums } from '@/features/ear-lab/BeatPendulums'
 import { Pads, StagePad } from '@/features/ear-lab/EarStage'
 import type { RoomBeat, StageRoom } from '@/features/ear-lab/stage-room'
 import { askRoomBack } from '@/stores/native-shell-store'
@@ -38,6 +39,7 @@ interface Harness {
 function mount(
   run: 'practice' | 'rated' = 'rated',
   more: Partial<StageRoom> = {},
+  instrument: () => JSX.Element = () => <span>arc</span>,
 ): Harness {
   const [beat, setBeat] = createSignal<RoomBeat>('answer')
   const [tone, setTone] = createSignal<'neutral' | 'right' | 'wrong'>('neutral')
@@ -98,7 +100,7 @@ function mount(
       progress=""
       status={status()}
       tone={tone()}
-      instrument={() => <span>arc</span>}
+      instrument={instrument}
       console={pads}
       done={() => beat() === 'done'}
       onBack={onBack}
@@ -229,6 +231,18 @@ describe('the drill room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect(h.room.resume).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('merc-sound-stopped')).toBeNull()
+  })
+
+  it("draws a drill's instrument its own lit way, with the drill's props", () => {
+    mount('practice', {}, () => <BeatPendulums sounding={1} reveal={null} />)
+    // Beat Hunt's strings of light, not the web's pendulums.
+    expect(document.querySelector('[data-instrument="beat-pendulums"]')).toBe(
+      null,
+    )
+    const strings = document.querySelector('[data-instrument="beat-strings"]')
+    expect(strings?.querySelector('[data-pair="1"][data-sounding]')).not.toBe(
+      null,
+    )
   })
 
   it('asks the question again whenever an answer is due', () => {
