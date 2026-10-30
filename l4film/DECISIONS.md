@@ -1481,3 +1481,19 @@ replaced it. The builder's record: critics never read it.
      HANDOFFS § Framings (F-low, F-high), § Camera (three rows removed), § S6's brackets and § B to
      C, STORYBOARD § Camera plan, rows 6a to 6c and § Build checks, and BUILD-GUIDE's s06 sheet are
      updated to match.
+
+127. **Group D's polish round (s09 to s11, held D1 to D3): all three items in, accepted on the
+     builder's numbers; no handoff moves (all six first and last frames identical to the 29 Oct
+     clips).** (1) S10's names: each of stairs 1 to 3's names now comes back from the moment its
+     column clears the frame's left edge in the pull (found at build time from `cam.map`) or from
+     the "tee" anchor, whichever is first, less 0.2 s, instead of all at the pull + 1.2; only mi's
+     column clears before 281.5, so mi fades in as it clears (10.50 to 10.67 in the scene) and re and
+     do are at full before they reach the frame and ride in with their stairs. The stairs no longer
+     stand in frame unnamed (10.7 to 11.35 before). (2) S11's sharps: the cascade's tiers are 0.15 s
+     apart (0.25 before) with a settle of min(0.6, the time left before the pull), so every tier is
+     at rest two frames before the pull (24.267 against the pull at 24.298) and a re-voice keeps it
+     so. (3) S9's pill: its words sit in a group clipped to the pill's own shape, under the rims, and
+     roll one line upward over the switch while the box widens to the end of it, so the pill is
+     never empty (it was empty 26.60 to 26.78) and nothing stands past the box. Holds as round 4 in
+     all three; check 0 errors with the same warnings; clock-lint silent (rechecked by the lead).
+     STORYBOARD and HANDOFFS carry none of the changed timings, so neither changes.

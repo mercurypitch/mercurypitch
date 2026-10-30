@@ -108,7 +108,11 @@
           cam.to(A.pz, 4.3, 'F-white', 'sine.inOut')                   // 7c: the slow push, from inside the predict
           cam.to(A.now, 1.0, 'F0', 'power2.inOut')                     // 7e
           cam.to(A.push, 1.0, 'CU-D', 'power2.inOut')                  // 7g
-          cam.to(A.crane, 1.0, 'F-keys-D', 'power2.inOut')             // the crane down onto the two black keys
+          // the crane down onto the two black keys. F-keys-D's oy is -440 since the polish round (C-03 item 2), not the
+          // kit's -528 (L.FRAMES is read-only here): stairs 7 and 8 and the top "S" stay in frame (the "S" at baseline
+          // 69, the real stair 7's tread at y 82), the black-key names at baseline 875, above the caption band
+          const F_KEYS_D = { s: 1.6, ox: -380.8, oy: -440 }
+          cam.to(A.crane, 1.0, F_KEYS_D, 'power2.inOut')
           cam.to(A.pull, 1.0, 'F0', 'power2.inOut')                    // 7h
 
           /* ---------------------------------------------------------------- the world (mid layer) */
@@ -206,7 +210,11 @@
             p.el.style.padding = '10px 22px'
             return p
           })
-          const ring = L.ringTimer(room.hud, { x: 620, y: 440, r: 24 })
+          // the predict's ring timer, docked at the pills' right end as the recap cards dock theirs at their panel's
+          // (FILM1 item 6): centred on the pair (y 425, midway between the boxes' 417 and 433), 16 px from the "Yes"
+          // pill's cap (the pills' own spacing) and 28 px clear of its text; it rides the lane with the pills
+          const RING = { x: 484, y: 425 }
+          const ring = L.ringTimer(room.hud, { x: RING.x, y: RING.y, r: 24 })
           // the step rows (HANDOFFS § Inside C): the row names JetBrains Mono 28 px from x 140, the steps Outfit 600 48 px
           // from x 340, each letter centred on the same column in both rows
           const MONO = "font: 500 28px 'JetBrains Mono', monospace; letter-spacing: 0.04em;"
@@ -252,7 +260,9 @@
           for (let n = 1; n <= 7; n++) {
             GROW[n].push(A.pattern19 + 0.1 * (n - 1)); GROWL[n].push(A.pattern19 + 0.1 * (n - 1))
             GROW[n].push(A.keeping + 0.15 * (n - 1))
-            if (n <= 5) GROWL[n].push(A.keeping + 0.15 * (n - 1))     // risers 6 and 7 sit at F-keys-D's top edge
+            // F-keys-D now holds riser 6's label too; riser 7's "S" (ink from y 22) stays unscaled, so it never
+            // grows into the frame's top 20 px
+            if (n <= 6) GROWL[n].push(A.keeping + 0.15 * (n - 1))
           }
           const labelPulse = (t, times) => L.pulse(t, times, 0.25, { long: true })
           // a flash's envelope with an even rise (C-02 N2): up over `up` (power1.out), held, back over `down` (power2.in)
@@ -267,10 +277,10 @@
           WHITE_D.forEach((m, k) => addKey(m, A.climbW + 0.06 * k))
           addKey(6, A.fs); addKey(13, A.cs)                                // as each is named
           const KEYLONG = { 2: [A.note] }
-          // labels a framing would cut at the frame's edge leave before it and return after it: stair 1's letter in
-          // CU-D (its column is cut by the left edge); riser 7's label in F-keys-D (above the frame's top)
+          // a label a framing would cut at the frame's edge leaves before it and returns after it: stair 1's letter in
+          // CU-D (its column is cut by the left edge). Riser 7's "S" no longer fades: it stays on and rides the world
+          // through the crane and the pull (C-03 item 1), and F-keys-D now holds it in frame (item 2)
           const edgeName1 = (t) => clamp(1 - P(t, A.push - 0.1, 0.25) + P(t, A.crane + 0.5, 0.3))
-          const edgeRiser7 = (t) => clamp(1 - P(t, A.crane - 0.05, 0.25) + P(t, A.pull + 0.5, 0.3))
           // the names on the slide (item 4): C's letters leave over its first 30 % (up 10 px, power2.in) and D's arrive
           // over its last 30 % (from 10 px below), all eight together, so no frame holds a stair's two letters at once
           const slideNames = (t, t0, T, from, to) => {
@@ -317,8 +327,7 @@
               riser: (n) => {
                 const semi = SEMI(n)
                 const sc = labelPulse(t, GROWL[n])
-                const e7 = n === 7 ? edgeRiser7(t) : 1
-                const labels = t < A.back ? [{ text: semi ? '1' : '2', a: offA }] : [{ text: semi ? 'S' : 'T', a: onA * e7, scale: sc }]
+                const labels = t < A.back ? [{ text: semi ? '1' : '2', a: offA }] : [{ text: semi ? 'S' : 'T', a: onA, scale: sc }]
                 return { state: semi ? 'semi' : 'tone', scale: L.pulse(t, GROW[n], 'bar'), labels }
               },
             })
@@ -438,11 +447,10 @@
             kick.draw(t, A.o7, A.b17end)
             const leave = P(t, A.climb, 0.22)
             const lu = P(t, A.climb, 0.35, 'power2.in')
-            {
-              const u = P(t, A.predict, 0.7, 'power1.out')
-              predT.setAttribute('opacity', (P(t, A.predict, 0.2) * (1 - leave)).toFixed(3))
-              predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t))} ${f1(24 * (1 - u))})`)
-            }
+            // "Predict." fades in where it sits (C-03 item 4, decision 104: its 24 px rise settled its last 8 px in
+            // whole-pixel steps); it still eases left with the lane and drifts 30 px left as it leaves
+            predT.setAttribute('opacity', (P(t, A.predict, 0.3) * (1 - leave)).toFixed(3))
+            predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t))} 0)`)
             // the pills land on "Is it still doh ray mee?" and stay up through the listen (item 5), the lane easing left
             // in F-white; on "changes" "No" gains its check and scales, "Yes" drops away; both leave on "climb"
             pills.forEach((p, i) => {
@@ -456,6 +464,7 @@
               p.draw({ alpha: a, scale: sc, check, dx: -30 * (1 - u) - 30 * lu + laneDx(t), dy })
             })
             ring.draw(t, A.pz, A.pzEnd - A.pz)
+            ring.g.setAttribute('transform', `translate(${f1(RING.x + laneDx(t))} ${RING.y})`)
             // the step rows: "WHITE KEYS" once the pills have gone, a letter landing on each word as its dashed riser
             // flashes; "MAJOR" and its row with the first word; both leave before the crane
             {
@@ -491,11 +500,10 @@
                 }
               }
             }
-            // "D major" lands as the pull lands, rising 24 px; its "D" scales 1.2 on "named"
+            // "D major" lands as the pull lands, fading in where it sits (C-03 item 4, decision 104: no 24 px rise to
+            // settle in whole-pixel steps); its "D" scales 1.2 on "named"
             {
-              const u = P(t, A.landed, 0.7, 'power2.out')
-              dmG.setAttribute('opacity', P(t, A.landed, 0.2).toFixed(3))
-              dmG.setAttribute('transform', `translate(0 ${f1(24 * (1 - u))})`)
+              dmG.setAttribute('opacity', P(t, A.landed, 0.3).toFixed(3))
               const sc = L.pulse(t, A.named, 'label', { long: true })
               dmD.setAttribute('transform', `translate(${f1(dmCx)} 256) scale(${sc.toFixed(4)}) translate(${f1(-dmCx)} -256)`)
             }

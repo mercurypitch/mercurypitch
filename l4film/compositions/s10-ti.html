@@ -77,8 +77,20 @@
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
+          const PULL_DUR = 1.7
           cam.to(A.push, 1.5, 'CU-C', 'power2.inOut')
-          cam.to(A.pull, 1.7, 'F0', 'power2.inOut')
+          cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
+          // CU-C cuts mi's name at the frame's left edge and holds do and re outside it, so their names leave over
+          // the push. Over the pull each comes back as its column clears the left edge (the stair's left side on
+          // screen), and all of them by "tee" (A.empty): mi's fades in as its column clears; re's and do's are in
+          // before their columns reach the edge, so they ride in whole (component critic D-04 item 1, DECISIONS 107)
+          const NAME_IN = 0.2
+          const clearAt = (n) => {
+            const x = ST.colX(n, 0) - 56
+            for (let tc = A.pull; tc < A.pull + PULL_DUR; tc += 1 / 240) if (cam.map(x, 0, tc)[0] >= 0) return tc
+            return A.pull + PULL_DUR
+          }
+          const NAME_BACK = [1, 2, 3].map((n) => Math.min(clearAt(n), A.empty) - NAME_IN)
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)
@@ -184,9 +196,8 @@
               w: 0, s0: 0,
               rows: { keep: { boxes, cam, t } },
               stair: (n) => {
-                // CU-C cuts stair 3's name at the frame's left edge (and holds 1 and 2 outside it): their names
-                // leave over the push and return as the pull lands
-                const edge = n <= 3 ? clamp(1 - P(t, A.push + 0.3, 0.4) + P(t, A.pull + 1.2, 0.4)) : 1
+                // stairs 1 to 3: their names leave over the push and come back over the pull (NAME_BACK, above)
+                const edge = n <= 3 ? clamp(1 - P(t, A.push + 0.3, 0.4) + P(t, NAME_BACK[n - 1], NAME_IN)) : 1
                 const names = [{ text: SOL[n - 1], a: edge, scale: n === 7 ? L.pulse(t, NAMEP7, 'label') : n === 8 ? L.pulse(t, NAMEP8, 'label') : 1 }]
                 if (n === 8) {
                   // emptied to an outline (as in the cold open), filled blue as the bead lands on it

@@ -143,3 +143,42 @@ set S10's mouth to (156, 797) and re-timed the tags (merc-tags starts a running 
 - Clips at 60 fps (lab/s09-names/tools/clips60.sh, a copy of builder E's hostpass60.sh): s11 23:32, 0.6 s inside
   (0.4 / 30 s), longest 0.2; s10 23:37, 0.7 s (0.8 / 30 s), longest 0.1; s09 23:44, 1.5 s (1.1 / 30 s),
   longest 0.3 (the card at 0.9). The 30 fps round 3 clips are clip-r3.mp4, their measures measure-r3.log.
+
+## Polish round (30 Oct, from 14:30 UTC; polish/BRIEF-D.md, DECISIONS 107, critic D-04 items 1 to 3)
+
+Items: (1) s10's do re mi fade in as each column clears the left edge in the pull, all by A.empty (281.50,
+s10 10.87); (2) s11's sharps at rest by the pull (320.23, s11 24.29); (3) s09's pill widens with "fixed do:
+do = C" inside it, clipped by its edge (255.82 to 256.04). Handoffs stay put. Renders: TMPDIR=/dev/shm,
+--workers 2, --output /dev/shm/l4lab-D/, then mv into lab/<sid>/clip.mp4 (lab/s09-names/tools/render60.sh).
+Proof stills and probes in lab/<sid>/polish/.
+- 14:45 edits in (clock-lint silent on all three):
+  - s10 (item 1): `PULL_DUR`, `NAME_IN` 0.2, `clearAt(n)` (first pull time stair n's left edge, colX - 56, maps to
+    screen x >= 0, scanned at 1/240 s) and `NAME_BACK[n]` = min(clearAt, A.empty) - 0.2; stairs 1-3's `edge` fades
+    in from NAME_BACK. Probe (lab/s10-ti/polish/after-names.txt): mi 10.50 to 10.67 (its column clears at 10.683),
+    re and do 10.67 to 10.85, full before they reach the frame (re's name enters at 10.85, do's at 11.0). Before:
+    all three 11.30 to 11.65.
+  - s11 (item 2): cascade 0.15 s apart (was 0.25), the 0.133 s attack kept, SETTLE = min(0.6, A.pull - 2/60 -
+    CASC[3] - ATTACK) = 0.32 s. Probe (lab/s11-why/polish/after-cascade.txt): every tier at rest from 24.267, the
+    pull at 24.298. Before: the sharps at 1.049 and 50 % chrome at 24.283, at rest at 24.84.
+  - s09 (item 3): makePill clips its words to its own shape (clipPath rect, width per frame, under the rims); the
+    words roll 1.25 x size (60 px) up over mix 0 to 0.5 (old out the top, new in from the foot), the box widens over
+    mix 0.1 to 0.7. Probe page sheet: never empty, never overlapping. Before: empty 26.60 to 26.78 (60 fps clip).
+- Old handoff frames saved: lab/<sid>/polish/first-old.png, last-old.png (from the 29 Oct 60 fps clips).
+- Renders: lab/s09-names/tools/render60.sh <sid> 2 (one at a time).
+- 14:37 s10 clip (60 fps): 0.7 s inside (0.8 / 30 s), longest 0.1 (as round 4); first and last frames identical to
+  the 29 Oct clip's (max diff 0). Sheets lab/s10-ti/polish/names-before-60fps.png, names-after-60fps.png,
+  names-after-dense.png.
+- 14:45 s11 clip: 0.6 s inside (0.4 / 30 s), longest 0.2 (as round 4); first and last frames identical (max diff 0).
+  F-sharp chip luma (lab/s11-why/polish/sharp-luma-after.txt): peak 108 at 23.95, 15.0 (rest) from 24.25; the pull
+  at 24.298. Sheets cascade-before-60fps.png, cascade-after-60fps.png, sharps-after-dense.png.
+- Text sweep (all three, step 0.25): unchanged, s09's EDGE '6' only (lab/s09-names/polish/sweep-report.txt).
+- 14:51 s09 clip: 1.6 s inside (1.2 / 30 s), longest 0.3: one new 0.1 s hold at 26.90 (the pill settled at 26.84,
+  0.18 s sooner than round 4's fade). The widening now runs mix 0.1 to 1 (to A.fixed + 0.6, as before), so that
+  span keeps moving; re-rendering (14:53).
+- 14:56 s09 clip: 1.5 s inside (1.1 / 30 s), longest 0.3 (round 4's numbers; the 26.90 hold gone, motion there 0.091
+  / 170). First and last frames identical to the 29 Oct clip's (max diff 0). Sheets lab/s09-names/polish/
+  pill-before-60fps.png, pill-after-60fps.png, pill-after-1to1.png; probe after-pill.txt.
+- 15:05 check: 0 errors (lint 0 / 75 warnings, runtime, layout, motion 0, contrast 59/59); my scenes' 23 warnings
+  are round 4's (18 nested_media_start_basis, 3 duplicate_media, s09 and s11 file size). Text sweep: s09's EDGE '6'
+  only. clock-lint silent; merc-tags --check clean on all three. Old clip-r3.mp4 files deleted; /dev/shm/l4lab-D
+  removed. Round done; report sent to the director.

@@ -335,15 +335,19 @@
             if (c === DO1) return P(t, A.chipsHome, 0.25)
             return t >= c.back + c.bdur ? 1 : 0
           }
-          // The one cascade, on "just by hearing music" (DECISIONS 92): each tier in turn, top shelf to bottom, 0.25 s
-          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a linear 4-frame attack
-          // (0.133 s, so no frame changes a chip by more than 17 levels) and a 0.6 s settle. The shelves stand 80 px
-          // apart by then, so the chips keep 21 px apart at 1.05
-          const CASC = [0, 1, 2, 3].map((k) => A.just + 0.25 * k)
+          // The one cascade, on "just by hearing music" (DECISIONS 92): each tier in turn, top shelf to bottom, 0.15 s
+          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a linear attack of
+          // 0.133 s (so no frame changes a chip by more than 17 levels) and a sine settle. The settle fits the gap
+          // from "just" to the pull (up to 0.6 s; 0.32 s on this clock), so the bottom shelf is at rest two frames
+          // before the pull starts, with the credits still in place (component critic D-04 item 2, DECISIONS 107).
+          // The shelves stand 80 px apart by then, so the chips keep 21 px apart at 1.05
+          const CASC_GAP = 0.15, ATTACK = 0.4 / 3
+          const CASC = [0, 1, 2, 3].map((k) => A.just + CASC_GAP * k)
+          const SETTLE = Math.min(0.6, A.pull - 2 / 60 - CASC[3] - ATTACK)
           const cascade = (tier, t) => {
             const dt = t - CASC[tier]
-            if (dt < 0 || dt >= 0.4 / 3 + 0.6) return 0
-            return dt < 0.4 / 3 ? dt / (0.4 / 3) : 1 - L.ease('sine.inOut')((dt - 0.4 / 3) / 0.6)
+            if (dt < 0 || dt >= ATTACK + SETTLE) return 0
+            return dt < ATTACK ? dt / ATTACK : 1 - L.ease('sine.inOut')((dt - ATTACK) / SETTLE)
           }
           // do's landing on "doh." (the board's scale 1.05) stays the kit's pulse; it lands moving, so it never pops
           const tierPulse = (tier, t) => Math.max(1 + 0.05 * cascade(tier, t), tier === 0 ? L.pulse(t, A.doh, 'tile') : 1)

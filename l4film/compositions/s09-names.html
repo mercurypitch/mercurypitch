@@ -146,21 +146,27 @@
           const degreesT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'scale degrees' }, hud)
           const solfegeT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'solfège' }, hud)
           // A pill in the hud, left edge at x, its text inset 0.6 of its size, its box 1.6 of its size tall and
-          // centred on the text's cap height. `mix` (0 to 1) switches its words in three steps, so the two never
-          // show together and the new never stands past the box (component critic D-01 item 4): the old words
-          // leave (to 0.3), the box grows to the new width (0.2 to 0.65), the new words land (0.6 to 1). The guess
-          // is L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
+          // centred on the text's cap height. `mix` (0 to 1) switches its words inside the pill's own shape (a clip),
+          // so the two never overlap, nothing stands past the box (component critic D-01 item 4) and the pill is
+          // never empty (D-04 item 3, DECISIONS 107): the words roll one line (1.25 of the size) up, the old out
+          // through the pill's top and the new in from its foot (0 to 0.5), while the box widens to the new words
+          // (0.1 to 1, so the switch moves to its end), clipping them until it has. The guess is L.GUESS (dashed
+          // ink-2), traced on from the top left; the solid rim is ink.
           // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
           const makePill = (parent, { size, items, guess = false }) => {
-            const inset = 0.6 * size, h = 1.6 * size
+            const inset = 0.6 * size, h = 1.6 * size, roll = 1.25 * size
             const g = L.svg('g', { opacity: 0 }, parent)
             const id = SID + '-pill' + makePill.n++
             const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
             const reveal = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: '#fff', 'stroke-width': 12, pathLength: 1, 'stroke-dasharray': '1 1' }, mask)
+            const clip = L.svg('clipPath', { id: id + '-clip' }, g)
+            const clipR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2 }, clip)
             const fillR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'rgba(22,27,34,0.92)' }, g)
+            // the words, under the rims, so the rim draws over the edge that clips them
+            const words = L.svg('g', { 'clip-path': `url(#${id}-clip)` }, g)
             const dash = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, 'stroke-linecap': 'round', mask: `url(#${id})`, display: guess ? 'inline' : 'none' }, g)
             const solidR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.C.ink, 'stroke-width': 2.5, 'stroke-opacity': 0.85, opacity: 0 }, g)
-            const texts = items.map((it) => L.svg('text', { x: inset, y: 0.35 * size, fill: it.fill || L.C.ink, opacity: 0, 'data-layout-allow-overlap': '', style: `font: 600 ${size}px 'Outfit', sans-serif; white-space: pre;`, text: it.text }, g))
+            const texts = items.map((it) => L.svg('text', { x: inset, y: 0.35 * size, fill: it.fill || L.C.ink, opacity: 0, 'data-layout-allow-overlap': '', style: `font: 600 ${size}px 'Outfit', sans-serif; white-space: pre;`, text: it.text }, words))
             const widths = items.map(() => size * 4)
             L.afterFonts(() => texts.forEach((el, i) => { widths[i] = el.getComputedTextLength() }))
             return {
@@ -168,17 +174,19 @@
               draw({ a = 1, reveal: rv = 1, solid = guess ? 0 : 1, mix = 0, scale = 1, x, baseline, pulse = 1 }) {
                 g.setAttribute('opacity', a.toFixed(3))
                 if (a <= 0.004) return
-                const grow = L.ease('power2.inOut')(clamp((mix - 0.2) / 0.45))
+                const grow = L.ease('power2.inOut')(clamp((mix - 0.1) / 0.9))
                 const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], grow) + 2 * inset
-                for (const r of [fillR, dash, solidR, reveal]) r.setAttribute('width', f1(w))
+                for (const r of [fillR, dash, solidR, reveal, clipR]) r.setAttribute('width', f1(w))
                 reveal.setAttribute('stroke-dashoffset', (1 - clamp(rv)).toFixed(4))
                 fillR.setAttribute('opacity', clamp(rv * 1.6).toFixed(3))
                 dash.setAttribute('opacity', (1 - solid).toFixed(3))
                 solidR.setAttribute('opacity', solid.toFixed(3))
+                const u = L.ease('power2.inOut')(clamp(mix / 0.5))
                 texts.forEach((el, i) => {
-                  const u = i === 0 ? 1 - clamp(mix / 0.3) : clamp((mix - 0.6) / 0.4)
-                  el.setAttribute('opacity', (u * clamp(rv * 1.6)).toFixed(3))
-                  el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -10 * (1 - u) : 10 * (1 - u))})`)
+                  // the old words show until they have rolled out, the new from the first frame of the roll
+                  const on = i === 0 ? u < 1 : mix > 0
+                  el.setAttribute('opacity', ((on ? 1 : 0) * clamp(rv * 1.6)).toFixed(3))
+                  el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -roll * u : roll * (1 - u))})`)
                 })
                 const cy = baseline - 0.35 * size * scale, sc = scale * pulse
                 g.setAttribute('transform', `translate(${f1(x)} ${f1(cy)}) scale(${sc.toFixed(4)})`)

@@ -22,7 +22,8 @@
              Component critic C-01: the board's events are lights, not 1.05 pulses (item 1); the tally has its "BLACK
              KEYS" header and spaces that read (item 2); the names switch out, then in, on every slide (item 4); the
              ghosts fit one at a time, the rim flashing as each fits (item 6); the bead drops onto E's moving stair 1
-             (item 7). */
+             (item 7). Polish round (FILM1 item 7): the three ghosts are one, a copy of the staircase's profile lifted
+             off it with a "same shape" label. */
           const SID = 's08-anywhere'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)
@@ -59,7 +60,9 @@
             toE: at('slide-g', 'end', 0.02),                            // 8c: the slide to E, 0.45 s
             e4: at('slide-e'),                                          // "E 4" joins the tally
             eEnd: at('slide-e', 'end'),
-            shape: word('b24', 'shape never changes'),                  // 8d: the three ghost outlines, one at a time
+            shape: word('b24', 'shape never changes'),                  // 8d: the ghost lifts off the staircase
+            never: word('b24', 'never'),                                // its "same shape" label
+            changes: word('b24', 'changes'),                            // it settles back in, the rim flashing
             keys24: word('b24', 'keys under it change'),                // each stair's hairline and its key flash in turn
             every: word('b25', 'Every start'),                          // the four tally entries scale in turn
             exceptC: word('b25', 'except C'),                           // "C 0" scales 1.2
@@ -75,10 +78,14 @@
           const SG = (k) => at('slide-g', 'start', 0.36 * k)            // slide-g's onsets (FACTS 68)
           const SE = (k) => at('slide-e', 'start', 0.36 * k)            // slide-e's onsets
           const TOG = 0.9, TOE = 0.45, TOC = 0.9                        // the slides' lengths (STORYBOARD 8b to 8d)
-          // 8d's ghosts (item 6): each appears where it stood (0.2 s), slides onto E (0.6 s, power2.inOut) and fits,
-          // the staircase's rim flashing as it does; the next starts 0.5 s after the one before
-          const GH = (i) => A.shape + 0.5 * i, GSLIDE = 0.6
-          const FIT = (i) => GH(i) + 0.1 + GSLIDE
+          // 8d's ghost (FILM1 item 7): it fades in 66 px above E's profile and lifts to 92 px (sine.inOut, until the
+          // drop); its label fades in place on "never" (0.4 s, sine.inOut: a 0.3 s fade read as jumps in measure.py);
+          // from 0.45 s after "changes." it drops back to 66 px and goes (0.45 s, power2.in), the label with it, and
+          // the staircase's own profile flashes as it meets it (up 0.15 s, back 0.5 s linear, so no frame of it holds).
+          // At 66 px its treads clear the riser labels (whose ink stands 8 to 37 px above each tread) by 25 px
+          const LIFT0 = 66, LIFT1 = 92
+          const GDROP = A.changes + 0.45, GD = 0.45
+          const FIT = GDROP + GD - 0.15
 
           /* ---------------------------------------------------------------- the world (mid layer); F0 throughout */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -100,18 +107,18 @@
             const core = L.svg('line', { stroke: L.C.chrome, 'stroke-width': 3, 'stroke-linecap': 'round' }, g)
             return { g, lines: [glow, core] }
           })
-          // the three ghost outlines (8d): the staircase's silhouette drawn from L.ST on E (treads through the risers'
-          // centres, as s06's ghost), placed where it stood on C, D and G, sliding onto it one at a time; the rim, the
-          // same outline in place, flashes as each fits. All of it is cut clear of E's two golds (DECISIONS 85: the gap
-          // and the corner along the upper tread), so no line of ours lies on them
-          const outline = (w, s0) => {
-            const ft = ST.foot(s0), xa = ST.colX(1, w) - 56, xb = ST.colX(8, w) + 56
-            let d = `M${xa} ${ft} L${xa} ${ST.tread(1, s0)}`
+          // 8d's ghost (FILM1 item 7: the three outlines from C, D and G tangled with E's staircase): one copy of the
+          // staircase's shape, its step profile on E (treads through the risers' centres, from L.ST), lifted off it
+          // with a "same shape" label beside its top step; it settles back into the staircase as the staircase's own
+          // profile (the rim) flashes. The rim is cut clear of E's two golds (DECISIONS 85: the gap and the corner
+          // along the upper tread), so no line of ours lies on them
+          const profile = (w, s0) => {
+            let d = `M${ST.colX(1, w) - 56} ${ST.tread(1, s0)}`
             for (let n = 1; n <= 7; n++) d += ` L${ST.riserX(n, w)} ${ST.tread(n, s0)} L${ST.riserX(n, w)} ${ST.tread(n + 1, s0)}`
-            return d + ` L${xb} ${ST.tread(8, s0)} L${xb} ${ft} Z`
+            return d + ` L${ST.colX(8, w) + 56} ${ST.tread(8, s0)}`
           }
           const E0 = ST.START.E
-          const ghostD = outline(E0.w, E0.s0)
+          const ghostD = profile(E0.w, E0.s0)
           const goldMask = L.svg('mask', { id: SID + '-gold', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: 1920, height: 1080 }, defs)
           L.svg('rect', { x: 0, y: 0, width: 1920, height: 1080, fill: '#fff' }, goldMask)
           for (const n of [3, 7]) {
@@ -120,15 +127,16 @@
             L.svg('rect', { x: x + 1, y: yHi - 6, width: 66, height: 12, fill: '#000' }, goldMask)             // the corner
           }
           const gGhost = L.svg('g', { mask: `url(#${SID}-gold)` }, mid)
-          const ghosts = ['C', 'D', 'G'].map((k) => {
-            const S = ST.START[k]
-            const g = L.svg('g', { opacity: 0 }, gGhost)
-            L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 3, 'stroke-linejoin': 'round' }, g)
-            return { g, dx: ST.colX(1, S.w) - ST.colX(1, E0.w), dy: ST.tread(1, S.s0) - ST.tread(1, E0.s0) }
-          })
+          // the ghost: a 4 px chrome line over a soft halo (as S6c's copy), drawn at its lift above E
+          const ghost = L.svg('g', { opacity: 0, display: 'none' }, gGhost)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 12, 'stroke-opacity': 0.4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', filter: `url(#${SID}-soft)` }, ghost)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, ghost)
           const rim = L.svg('g', { opacity: 0 }, gGhost)
-          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 10, 'stroke-opacity': 0.45, 'stroke-linejoin': 'round', filter: `url(#${SID}-soft)` }, rim)
-          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.ink, 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, rim)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.chrome, 'stroke-width': 10, 'stroke-opacity': 0.45, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', filter: `url(#${SID}-soft)` }, rim)
+          L.svg('path', { d: ghostD, fill: 'none', stroke: L.C.ink, 'stroke-width': 3.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, rim)
+          // its label, the lesson's own words (S6c), Outfit 600 40 px ink beside the lifted copy's top step: fixed in
+          // place (it fades, it never moves), 30 px or more clear of the ghost's line at every lift
+          const sameT = L.svg('text', { x: 1466, y: 166, fill: L.C.ink, opacity: 0, style: "font: 600 40px 'Outfit', sans-serif; white-space: pre;", text: 'same shape' }, mid)
           // two beads, so slide-g's can fade on its stair while slide-e's drops onto E's moving stair 1 (item 7)
           const gBead = L.svg('g', {}, mid)
           const beadG = L.bead(gBead, { r: 22, color: L.C.chrome })
@@ -278,28 +286,27 @@
               }
             })
 
-            // 8d: the ghosts, one at a time: each appears where it stood on C, D or G (0.2 s, to 40 %), slides onto E
-            // (0.6 s, power2.inOut), fits exactly, and fades (0.3 s) as the rim flashes (up 0.15 s, back 0.35 s; C-02 N2:
-            // a 0.06 s rise snapped on in one frame). The rise is power1.out: with L.env's power2.out (GSAP's cubic) one
-            // 1/60 s frame still carried a quarter of the third flash, alone in a still frame, and measure.py read it as
-            // a jump at 19.000
-            ghosts.forEach((G, i) => {
-              const u = P(t, GH(i) + 0.1, GSLIDE, 'power2.inOut')
-              const a = 0.4 * P(t, GH(i), 0.2) * (1 - P(t, FIT(i), 0.3))
-              G.g.setAttribute('opacity', a.toFixed(3))
-              G.g.setAttribute('display', a <= 0.004 ? 'none' : 'inline')
-              G.g.setAttribute('transform', `translate(${f1(G.dx * (1 - u))} ${f1(G.dy * (1 - u))})`)
-            })
+            // 8d: the ghost lifts off the staircase, labelled "same shape", and settles back into it as the rim flashes.
+            // The rim's rise is power1.out (C-02 N2: with L.env's power2.out, GSAP's cubic, one 1/60 s frame carried a
+            // quarter of a flash, alone in a still frame, and measure.py read it as a jump)
             {
-              const rise = (t0) => (t < t0 ? 0 : t < t0 + 0.15 ? L.ease('power1.out')((t - t0) / 0.15) : 1 - P(t, t0 + 0.15, 0.35, 'power2.in'))
-              const e = Math.max(...[0, 1, 2].map((i) => rise(FIT(i))))
+              const up = P(t, A.shape, GDROP - A.shape, 'sine.inOut'), down = P(t, GDROP, GD, 'power2.in')
+              const lift = LIFT0 + (LIFT1 - LIFT0) * up - (LIFT1 - LIFT0) * down
+              const a = 0.85 * P(t, A.shape, 0.35, 'power1.out') * (1 - down)
+              ghost.setAttribute('opacity', a.toFixed(3))
+              ghost.setAttribute('display', a <= 0.004 ? 'none' : 'inline')
+              ghost.setAttribute('transform', `translate(0 ${f1(-lift)})`)
+              const la = P(t, A.never, 0.4, 'sine.inOut') * (1 - P(t, GDROP, 0.35, 'sine.inOut'))
+              sameT.setAttribute('opacity', la.toFixed(3))
+              sameT.setAttribute('display', la <= 0.004 ? 'none' : 'inline')
+              const e = t < FIT ? 0 : t < FIT + 0.15 ? L.ease('power1.out')((t - FIT) / 0.15) : 1 - P(t, FIT + 0.15, 0.5, 'none')
               rim.setAttribute('opacity', (0.85 * e).toFixed(3))
               rim.setAttribute('display', e <= 0.004 ? 'none' : 'inline')
             }
 
             // the chrome beads: slide-g's on G, slide-e's on E; each drops onto stair 1 (onto the moving stair when its
             // slide is still landing), hops up a stair on each note, and leaves as its sound ends (slide-g's in 0.25 s,
-            // riding stair 8 as the staircase slides to E; slide-e's in 0.6 s, up to the ghosts)
+            // riding stair 8 as the staircase slides to E; slide-e's in 0.6 s, gone as the ghost lifts)
             const run = (onset, end, w1, s1, fade) => {
               const steps = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => ({ t: onset(k), p: ST.rest(k + 1, w1, s1) }))
               if (t >= steps[0].t - 0.2 && t < steps[0].t) return L.bead4.dropAt(t, steps[0].t, ST.rest(1, w, s0))

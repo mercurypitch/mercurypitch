@@ -2082,3 +2082,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   started together, xhigh. Running: C, D. Next: E when one reports; after all six, the full check,
   a frozen copy, film-02 (render-l4.sh, WORKERS=2), fresh FILM2 critic (critics/FILM2.txt).
   Higgsfield reconnected but still has no generate tool (#209 stays blocked).
+- 15:1x group D reported (all three items; DECISIONS 127; no handoff moved, first/last frames
+  identical): S10 names come back as each column clears the edge (mi fades, re/do ride in at full);
+  S11 cascade 0.15 s apart, at rest 2 frames before the pull; S9 pill words clipped inside and
+  rolled, never empty. Lead re-ran clock-lint (silent). No spec text changes. 15:1x group E started
+  (xhigh; rate limit allowed). Running: C, E. Next: when both report, full check, frozen copy,
+  film-02 (render-l4.sh, WORKERS=2), fresh FILM2 critic (critics/FILM2.txt: RENDERNAME, DISKNOTE).

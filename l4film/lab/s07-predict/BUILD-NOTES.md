@@ -192,3 +192,44 @@ bokeh and the Merc tags past a scene's end are the kit's and the director's; not
 - Stills: lab/s07-predict/fix2/ (33) and lab/s08-anywhere/fix2/ (15).
   Sheets: lab/s07-predict/scratch/fix2-N5.png, fix2-N6.png, fix2-N3-N4.png; lab/s08-anywhere/scratch/fix2-rims.png.
 - The s07 53.25 to s08 0.0 handoff outside Tavi's box: max 21, 2 pixels over 16.
+
+## Polish round (film critic FILM1 items 6 and 7, held C-03 items 1, 2 and 4), 30 Oct from 14:30
+
+Brief: $S/l4entr/polish/BRIEF-C.md (items 1 to 5). Renders: TMPDIR=/dev/shm, --workers 2 at most, --output into
+/dev/shm/l4lab-C/ and then mv into the lab folder; one render at a time. "Before" numbers are the fix-2 clips'
+(lab/<sid>/measure/summary.md, 60 fps).
+
+Plan (as started):
+- Item 1: the ring timer docks at the pills' right end, centred on the pair (y 425), 16 px from the "Yes" pill's cap
+  (the pills' own spacing), riding the lane's 50 px ease with the pills; was (620, 440) fixed.
+- Item 2: S8d's three ghosts become one: a copy of the staircase's step profile lifted off it (4 rows up), with a
+  "same shape" label beside its top step, settling back into the staircase as its rim flashes; nothing of it comes
+  within 24 px of a label.
+- Item 3: riser 7's "S" stays on through the crane and the pull (edgeRiser7 removed).
+- Item 4: F-keys-D passed as { s 1.6, ox -380.8, oy -440 } from the scene (L.FRAMES is the kit's, read-only).
+  With it risers 6 and 7 are in frame, so their labels join the "Keeping the pattern" ripple again.
+- Item 5: "Predict." and "D major" fade in place (no 24 px rise).
+
+As built (15:00), before the clips:
+- Item 1: ring at (484, 425) (`RING`), its group translated by the lane's dx each frame (it reaches x 441.7 as it
+  leaves at 162.19). Probe every 1/60 s over 12.65 to 16.15 (scratch/polish/ring-gaps.js, ring-before.txt,
+  ring-after.txt): before (620, 440) its ink came 27.0 px from dashed stair 3's (ink to ink; C-03 read 18 px to
+  the corner) at 15.63; after, 81.3 px from dashed stair 2 at 15.45; 16.2 px from the "Yes" box and 30.6 px from its
+  text, 24.8 and 40.3 from "No"'s.
+- Item 2: s08's ghost is `ghost` (one group, the profile `profile(w, s0)` on E), `sameT` ("same shape", Outfit 600
+  40 px ink at x 1466, baseline 166, in mid), the rim now the same profile. Probe every 1/60 s over 17.2 to 18.9
+  (lab/s08-anywhere/scratch/polish/ghost-gaps.js, gaps-before.txt, gaps-after.txt): before, three ghosts, ink
+  x 242 to 1674 and y 170 to 736, down to -1.5 px from riser 1's "T" (on it), under 24 px in 95 of 102 samples;
+  after, one ghost, ink x 482 to 1433 and y 156 to 493, nearest label 27.8 px (riser 1's "T", as it fades in).
+- Items 3 and 4: probe every 0.05 s over 43.3 to 50.8 (scratch/polish/top-s.js, tops-*.txt): before, the top "S"
+  gone 43.75 to 50.0; after, at alpha 1 throughout, its ink at x 1491 to 1527, y 22 to 70 in F-keys-D. The
+  black-key names settle at baseline 875.4 (787.4 before). Riser 7's label stays out of the "Keeping" label ripple
+  (scaled 1.25 its ink reached y 12); riser 6's joins it.
+- Item 5: both titles fade in place over 0.3 s.
+- Handoff frames (probe, no Mercs): s07 0 and 53.253, s08 0.007 and 29.873, before against after: max 0, no pixel
+  changed. Stills (HyperFrames, with Tavi): lab/s07-predict/polish/; sheets sheet-item1-ring.png,
+  sheet-item3-4-crane.png, sheet-item5-predict.png, sheet-item5-dmajor.png there.
+- Root check 15:00: 0 errors, 75 warnings; my scenes' are the same ones as before (the Merc-tag pair and
+  composition_file_too_large). The fix-2 measures moved to lab/<sid>/measure-fix2 (the "before" numbers); the r3
+  clips are deleted.
+- s07 clip rendering from 14:57 (scratch/polish/render.sh, workers 2).
