@@ -1,8 +1,32 @@
 import { describe, expect, it } from 'vitest'
+import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compileStudioArrangement, studioPanGains } from './arrangement-plan'
 import { studioFixture } from './model.test-fixtures'
 
 describe('shared Studio arrangement plan', () => {
+  it('plays and exports a lane without its role safety limiter, which stays saved', () => {
+    const { project, asset } = studioFixture()
+    const baseSpec = normalizeChainSpec({
+      effects: [
+        { id: 'character', kind: 'compressor' },
+        { id: 'safety', kind: 'limiter' },
+        { id: 'tone', kind: 'tilt' },
+      ],
+    })
+    const track = {
+      ...project.tracks[0],
+      fx: { ...project.tracks[0].fx, baseSpec },
+    }
+    const plan = compileStudioArrangement({ ...project, tracks: [track] }, [
+      asset,
+    ])
+    expect(plan.lanes[0].spec.effects.map((effect) => effect.id)).toEqual([
+      'character',
+      'tone',
+    ])
+    expect(track.fx.baseSpec.effects).toHaveLength(3)
+  })
+
   it('converts actual-context latency to seconds and preserves the 48 kHz project timebase', () => {
     const { project, asset, clip } = studioFixture()
     const two = {

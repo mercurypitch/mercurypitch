@@ -3,6 +3,7 @@ import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { MixMacros } from '@/lib/studio-fx/mix-macros'
 import { applyMixMacros, trackMacros } from '@/lib/studio-fx/mix-macros'
 import { estimateTailSeconds } from '@/lib/studio-fx/render'
+import { withoutSafetyLimiter } from '@/lib/studio-fx/role-chains'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { frameValue, numberValue, requireValue } from './validation-values'
@@ -141,15 +142,17 @@ function laneSegments(
 
 /**
  * A lane's chain as it plays: the track's voiced chain under the song's
- * macros, with the lane's own space offset. Playback moves a running chain to
- * this when the sound changes, so it must stay the plan's only recipe.
+ * macros, with the lane's own space offset, and without its role's safety
+ * limiter (the master limits the sum; role-chains.ts). Playback moves a
+ * running chain to this when the sound changes, so it must stay the plan's
+ * only recipe.
  */
 export function studioLaneSpec(
   track: Pick<StudioTrack, 'fx'>,
   macros: MixMacros,
 ): ChainSpec {
   return applyMixMacros(
-    track.fx.baseSpec,
+    withoutSafetyLimiter(track.fx.baseSpec),
     trackMacros(macros, { space: track.fx.spaceOffset }),
   )
 }
