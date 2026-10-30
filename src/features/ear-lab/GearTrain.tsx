@@ -14,8 +14,9 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
-interface GearTrainProps {
+export interface GearTrainProps {
   sounding: boolean
   /** The chord, once told: intervals above the root in semitones. */
   reveal: { intervals: readonly number[]; name: string } | null
@@ -39,7 +40,7 @@ function wheelX(index: number): number {
   return AXLE_X + (index % 2 === 0 ? -MESH_OFFSET : MESH_OFFSET)
 }
 
-export function GearTrain(props: GearTrainProps): JSX.Element {
+function DrawnGearTrain(props: GearTrainProps): JSX.Element {
   const stack = () =>
     props.reveal ? [0, ...props.reveal.intervals] : GHOST_STACK
 
@@ -130,3 +131,5 @@ export function GearTrain(props: GearTrainProps): JSX.Element {
     </svg>
   )
 }
+
+export const GearTrain = skinnable('GearTrain', DrawnGearTrain)

@@ -469,6 +469,16 @@
   color: var(--room-text-3);
 }
 
+/* Before the first note the strip says whose it is, as the mock-ups do
+   (its aria-label already says it to a screen reader). */
+.controls
+  :global([data-testid='ear-phrase-strip']:not(:has([data-chip]))::before) {
+  content: 'Your phrase';
+  margin-right: auto;
+  font: 500 13px/1 var(--room-sans);
+  color: var(--room-text-3);
+}
+
 .controls :global([data-testid='ear-mic-lamp']) {
   border-color: rgb(255 255 255 / 15%);
   background: var(--room-glass);

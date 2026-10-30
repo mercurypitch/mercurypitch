@@ -99,6 +99,12 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
     setPicked(bandId)
     run.answerCorrect(bandId === band()?.id)
   }
+  /** The strip of a wrong pick, for the desk to edge at the reveal. */
+  const wrongPick = (): number | undefined => {
+    const pick = picked()
+    if (pick === null || pick === band()?.id) return undefined
+    return DESK_BANDS.findIndex((entry) => entry.id === pick)
+  }
   const padState = (bandId: string): PadState => {
     if (run.phase() !== 'reveal') return null
     if (bandId === band()?.id) return 'right'
@@ -135,6 +141,8 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
                     (entry) => entry.id === band()?.id,
                   ),
                   name: `${band()?.label ?? ''} (${band()?.word ?? ''})`,
+                  picked: wrongPick(),
+                  lift: `+${run.level().toFixed(1)} dB · ${band()?.word ?? ''}`,
                 }
               : null
           }

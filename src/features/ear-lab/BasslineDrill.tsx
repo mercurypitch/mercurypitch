@@ -265,6 +265,7 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
         <BeadChain
           count={line().length || 4}
           sounding={sounding()}
+          ladder="roots"
           reveal={
             phase() === 'reveal' && verdict()
               ? {

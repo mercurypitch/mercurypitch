@@ -143,6 +143,12 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
               ? {
                   index: heavier() === 'first' ? 0 : 1,
                   name: `${heavier() === 'first' ? 'The first' : 'The second'} (the shelf)`,
+                  picked:
+                    picked() !== null && picked() !== heavier()
+                      ? picked() === 'first'
+                        ? 0
+                        : 1
+                      : undefined,
                 }
               : null
           }
