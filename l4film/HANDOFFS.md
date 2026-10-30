@@ -561,7 +561,7 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   `src/components/mobile/BottomTabBar.tsx` (`EllipsisIcon`), 28 px in ink-2; the × is the intro's
   close glyph (`src/features/onboarding/FirstLight.tsx`), 32 px in ink. The line at 670 is the
   widest: the builder measures it and keeps it inside x 310 to 1610. On "range" (461.49) its
-  "Singing Voice Range" swells 1.2 from its left edge (to x 1581 at most), never over the "›"
+  "Singing Voice Range" swells 1.2 from its left edge (to x 1586 at most since the polish round), never over the "›"
   before it. As built: lines 1 and 2 at 460.00 and 460.30, the underline at y 554, the phone line at
   465.69. Through the card pause each line's tab icon glows in turn with its line underlined (465.8,
   466.6, 467.4, 468.2), More's last, each icon scaling 1.15 and keeping 8 px or more from the type
@@ -569,29 +569,46 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   105: the address has no sweep of its own). Round 3 as built (DECISIONS 114): the gear's slot is
   2 px wider on the left and 1 px on the right, More's 1 px on each side; at the glows' peaks the
   closest approach to the type is 14 px (×), 8.5 to 8.9 px (gear), 10 px (Exercises) and 9 px
-  (More); the pause's longest hold is 0.1 s (469.19 and 469.39).
-- **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.7 to
-  470.0) but for the ladder's top rung, do, which brightens to full and slides from its card-time
+  (More); the pause's longest hold is 0.1 s (469.19 and 469.39). Polish round (DECISIONS 125): the
+  gear's slot is 6 px wider on the left and 5 px on the right and the gear has its own tighter glow
+  (blur 1.1, the other icons 1.6), so its halo keeps 12.0 px from "first:" and 9.5 px from
+  "Settings"; line 3 sits at x 405 to 1515 at rest.
+- **S14 to S15 (470.24).** The Mercs in the corners at 300; the card and the ladder gone (469.69 to
+  470.21 since the polish round: the card's six lines leave upward in turn, each fading evenly over
+  0.42 s, 0.02 s apart, lifting 16 px; the ladder fades evenly over 0.5 s, lifting 10 px) but for the ladder's top rung, do, which brightens to full and slides from its card-time
   place to (560, 520) over 469.9 to 471.9 (power2.inOut; DECISIONS 102: 2.0 s, so it carries the
   frame through "Next time." and lands just before "Singers") on one curve that both scenes compute
   from film time (`carryAt`), so it sits on the same pixels on both sides of the cut; it condenses
   into S15's chrome bead over its last 0.4 s. From round 3 (DECISIONS 108) the curve keeps 24 px or
-  more from '"support"''s ink once the word lands (470.71): down the right side, then left along y
+  more from '"support"''s ink once the word lands (470.41 since the polish round): down the right side, then left along y
   520 to the bead. Round 3 as built (DECISIONS 114): straight down the right side from (1482,
   230), curving onto y 520 at x 1000, then along y 520 to (560, 520), 1038 px in all, the ease
   read by arc length; its centre is at (1479.2, 250.2) on S14's last film frame (470.233) and
   (1478.4, 253.3) on S15's first (470.250); its nearest approach to '"support"''s ink is 53 px
-  (471.09, under the "pp"); its peak speed is 25.7 px a frame at 60 fps (470.88).
+  (471.09, under the "pp"); its peak speed is 25.7 px a frame at 60 fps (470.88). Polish round (DECISIONS 125): the rung grows
+  2.5 times over the glide's first 0.7 s (469.89 to 470.59), from 56 x 4 to 140 x 10 px, and
+  condenses into the bead from that size; at the cut it is about 95 x 7 px, centred at (1479.0,
+  248.8) on S14's last frame and (1478.4, 251.5) on S15's first; its path, times and landing are
+  unchanged, and its nearest approach to '"support"''s ink is 44.0 px (470.78).
 - **S15.** The bead (the carried rung) at (560, 520) from 471.9; S15's echo rings fade with its
   type (from o14's end + 0.07, 0.3 s), so none crosses the cut to S16; '"support"' serif italic 160 px
-  centred, baseline 420, landing with the kicker on "Next" (470.71) and scaling 1.2 once on its word (473.14; DECISIONS 108); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
+  centred, baseline 420, landing with the kicker on the cut's own mark, `at('next')` (470.39; first visible 470.41, the word opaque by 470.52 and the kicker by 470.57, power2.out; polish round) and scaling 1.2 once on its word (473.14; DECISIONS 108); the long note at y 520 from x 560 to 1360; "what keeps it steady?" serif italic 96 px centred, baseline 680.
 - **S15 to S16 (478.53).** The Mercs in the corners at 300; S15's type gone (478.5).
 - **S16.** The Mercs grow to 520 at (330, 840) and (1590, 840) (478.6 to 479.2): bodies x 192 to 468
   and 1452 to 1728; at rest their glow tops at y 512 to 516 and their bodies at 516 to 530 (y 507 is
   the box's top, not the ink). One celebration hop, the pass's own, about 79 px high (479.4 to 480.0,
-  its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220, revealed by a wipe with a feathered edge (about 60 px), the beads bobbing
-  beside it; "Find your pitch." baseline 330; the address Outfit 600 56 px, baseline 440, its descenders and underline to y 452,
-  rising in from `at('end', 'start', 1.35)` (first visible at 479.93, once the heads are back below y
-  518), so it is never nearer a head than 57 px, and 60 px at rest; the skip line and "then
-  [Exercises icon] Exercises › Scale Runner" Outfit 500 40 px, ink-2, baselines 510 and 570, within
-  x 636 to 1284, 168 px clear of both bodies.
+  its top at 479.73, the glow then up to y 453; DECISIONS 95). Lockup y 40 to 220, revealed by a wipe with a feathered edge (about 60 px)
+  from end + 0.25 (its letters from about 478.93, whole by 479.61; the orb opens at end + 0.15, the
+  waterline at + 0.27), the beads bobbing beside it (they rise from end + 0.15 in a 0.8 s flight,
+  leaving from inside their Mercs, squash 0.25 s, settled by 479.73). Since the polish round
+  (DECISIONS 125) the card lands before and through the hop, in reading order: "Find your pitch."
+  serif italic 112 px, baseline 326 (ink y 242 to 350, x 641 to 1264), from end + 0.45 over 0.6 s
+  (478.98 to 479.58); the address Outfit 600 56 px, baseline 412 (ink y 369 to 424, x 356 to 1567),
+  its underline y 421 to 424, in over 0.3 s from end + 0.55 while rising 18 px over 0.45 s, at
+  rest 479.53, its underline drawn over 479.20 to 479.60; at the hop's top (479.73) it is 27.5 px
+  from the heads' faint glow (31.8 px at luma 30), and 89 px or more above the heads at rest; the
+  skip line and "then [Exercises icon] Exercises › Scale Runner" Outfit 500 54 px, ink-2,
+  baselines 496 and 564, x 523 to 1398 and 582 to 1337, their icons 43.2 and 48.6 px, centred
+  0.35 em above the baseline, landing from end + 0.75 and + 0.87, each over 0.45 s (the second at
+  rest 479.85), 106.9 px or more from both hosts' ink and glow on every frame, the hop included.
+  The card is complete at 479.85 (s16 1.32) and holds 3.88 s.

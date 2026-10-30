@@ -785,7 +785,7 @@ the hero view, y 323) after that.
   (478.5).
 - Kit: `L.kicker('Next time')`; the carried rung landing as a chrome bead at (560, 520) by 471.9
   (HANDOFFS § S14 to S15); '"support"' (serif italic 160 px with its quotation marks, centred,
-  baseline 420, landing with the kicker on "Next", 470.71, and scaling 1.2 once on its word, 473.14; DECISIONS 108); the long note (the bead drawing a level line from x
+  baseline 420, landing with the kicker on the cut's mark, 470.39 (polish round), and scaling 1.2 once on its word, 473.14; DECISIONS 108); the long note (the bead drawing a level line from x
   560 to 1360 at y 520, 474.1 to 475.4, wavering once on "pushing"); "what keeps it steady?" (serif italic 96 px, centred,
   baseline 680).
 - Merc: m12 (both, 300, in the corners): Merc talks b54 and b55, Tavi o14.
@@ -795,17 +795,18 @@ the hero view, y 323) after that.
 - Row: 16. Group F. Adapt Lesson 2's `output/motion/lesson-02/compositions/s17-end.html` (the lockup;
   here the beads bob beside it rather than orbit, and the lockup's wipe has a feathered edge of
   about 60 px; DECISIONS 97) with this film's lines (STORYBOARD 16, HANDOFFS § S16): "Find your pitch." (serif
-  italic 120 px, baseline 330); "Practise it free: mercurypitch.com/pitch-training" (Outfit 600 56
-  px, baseline 440); the skip line and "then [Exercises icon] Exercises › Scale Runner" (Outfit 500
-  40 px, ink-2, baselines 510 and 570, within x 636 to 1284). Lesson 2's file keys its bead window
+  italic 112 px, baseline 326); "Practise it free: mercurypitch.com/pitch-training" (Outfit 600 56
+  px, baseline 412); the skip line and "then [Exercises icon] Exercises › Scale Runner" (Outfit 500
+  54 px, ink-2, baselines 496 and 564, x 523 to 1398 and 582 to 1337; polish round, DECISIONS 125). Lesson 2's file keys its bead window
   to its own `s16-next`; here that is `s15-next`.
 - Merc: m12 (both): they grow to 520 and move to (330, 840) and (1590, 840) from `at('end', 'start',
   0.07)` for 0.6 s; the celebration is the passes' own (one hop, sparkles off, from
   `merc-shots.py`), and the scene draws a chrome ring under each on landing; the passes run to the
   film's end (trap 15).
-- Checks: the call to action is the one hold the quality bar allows; the address sits 60 px above the
-  Mercs' heads at rest and never nearer than 57 px, rising in only once the hop has come down
-  (DECISIONS 95); no frame of the wipe slices the wordmark.
+- Checks: the call to action is the one hold the quality bar allows; the card is complete by 479.9 (s16 1.37), each element
+  landing over 0.3 s or more; the address lands before the hop and keeps 20 px or more from both
+  heads' ink and glow at its top (479.73), and the lower lines keep 20 px or more from the hosts on
+  every frame (DECISIONS 125, which replaces 95's rule); no frame of the wipe slices the wordmark.
 
 ## Handoff confirmations
 

@@ -181,3 +181,29 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 ## Next
 
 1. Round 4 reported. Await the fresh critic.
+
+## Polish round (30 Oct, from 13:30): film-01 items 4 and 9, B-05 items 2 and 3, decision 123's check
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish/BRIEF-B.md.
+Scratch in lab/s06-groups/polish/ (harness.mjs runs a JS body in a page with the kit and fonts).
+
+- Plan, item 1 (s06 copy): a closed silhouette of stairs 1 to 4 (left side, treads, risers through the
+  risers' centres, right side, foot), 15 % chrome fill, 4 px chrome outline plus a soft halo, the E-F segment
+  gold; in on stairs 1 to 4 from climb - 0.25, travels climb + 0.05 over 1.3 s (the row's 124.3 to 125.6),
+  out from word semitone + 0.35 over 0.3 s (127.30 to 127.60). The label mask goes. Measured
+  (polish/contact.js): the copy moves along the staircase's own slope (182/480 = the stairs' rise), so every
+  tread slides through the labels for most of the flight (T1 touches a label 0.21 to 0.99 s of 1.3 s with
+  gaps of 0.04 s) and every riser crosses a label four times; a whole segment is dropped while it touches a
+  label (band + 3 px) or while an end of it is free (its neighbour dropped) within 24 px of one. In practice
+  the outline goes after the first ~0.2 s of travel and comes back in the last 0.06 s; the fill carries the
+  flight.
+- Plan, item 2 (s06): no camera moves; anchors A.push / A.truck / A.pull go. Events in their place: on "two,"
+  (115.49) stairs 1 to 4 light together, stairs 5 to 8 0.35 s later; at the old truck's start (group-low
+  + 1.52) the lower bracket leaves (as before), the upper lights, keys G4 A4 B4 C5 pulse 0.2 s apart (as C4
+  to F4 do on "each"); the stairs go unlit from "Both" (123.50 to 124.00); the legend stays from S5 to b15;
+  the tally still leaves at in - 0.35; key names stay to b16's end; no edge fades. Brackets heavier (4 px,
+  10 px ticks) and 10 px higher (452, 270) so the bead's edge keeps 21 px under them at 1x, as HANDOFFS says.
+  The C5 echo ring at F0 grows to 2x (at 3.5x it crossed the upper bracket and touched the "S" at 1x too).
+- Plan, item 3 (shared block, both scenes): echo rings through a helper that caps the growth at 2x when the
+  camera passes 1.5x during the ring's life. s05's two rings are at F0 (78.60 and 99.90; CU-A starts 79.80,
+  the first ring has faded by 79.50), so nothing changes on screen today; it guards a re-voice.

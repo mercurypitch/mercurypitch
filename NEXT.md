@@ -2056,3 +2056,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   A's four extract-cache entries (590 MB) removed. 13:2x group B builder started (xhigh, BRIEF-B;
   rate limit allowed; memory 9.8 GB with F rendering). Running: F, B. Next: C when F reports,
   then D + E; F's report -> HANDOFFS § S16.
+- 13:4x group F reported (all three items; DECISIONS 125, replacing 95's address rule): card exits
+  in turn 469.69-470.21, rung grows 2.5x on its curve (landing unchanged), kicker + "support" on
+  the cut's mark 470.39 (opaque by 470.57); end card primary path, complete at 479.85, holds 3.88 s
+  (5.38 s after the re-voice's 6.5 s sting), address baseline 412, 27.5 px from the heads' glow at
+  the hop top; lower lines Outfit 500 54 px (ink 51/40 px, mean 45.5); "Find your pitch." 112 px
+  baseline 326; gear halo 12.0/9.5 px (slot +4 a side, own glow), swell to x 1586. Lead looked at
+  S16's last frame; clock-lint silent. HANDOFFS § practise card/S14 to S15/S15/S16, STORYBOARD
+  14g/15/16, BUILD-GUIDE s15/s16 sheets + check updated (backups l4entr/polishF/); DELIVERY draft's
+  re-voice hold now 5.38 s. F's eight extract-cache entries (1.7 GB) removed; B's kept. Memory 1.8 GB.
+  13:45 rate limit read allowed_warning (window resets 14:10), so group C waits: one-shot
+  trig_01RsdsafkzxVthpP1kPgqVBr at 14:13 starts C if the status is "allowed". Running: B only.

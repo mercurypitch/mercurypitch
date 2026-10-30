@@ -211,3 +211,48 @@ events in the card pause (icon pulses that register, then the address once more)
   and its two lower lines at Outfit 500 52 px or more; 3 the gear's halo 8 px from its words.
 - Backups: lab/<s>/<s>.p1-before.html (the F-03 files). Renders: TMPDIR=/dev/shm, --output /dev/shm/l4lab-F/,
   then mv into the lab folder; one at a time, --workers 2 at most.
+- 12:15-13:40 tools (new): lab/s16-end/tools/stills.mjs (stills.mjs with SRC=<file> to load a copy of a scene),
+  hostmask.py + hostclean.py (the hosts' ink and glow per frame, from a hosts-only S16 render, lab/s16-end/projH:
+  room.mid hidden, against its own proxy stills), cardgap.py (each card row's nearest approach to the hosts over a
+  span of frames), settle.py (when each card band stops changing, on a copy with drift, dust, beads and halo
+  breathing off: projH/s16-still.html); lab/s15-next/tools/rungword.py (+ var/*.html: the rung against
+  '"support"'); lab/s14-recap/tools/gearhalo.py (F-04's halo measure, luma > 30, connected to the gear);
+  lab/s14-recap/tools/polish-render.sh (the round's renders: /dev/shm output, 2 workers, then mv).
+  1. S14 exit: the ladder fades evenly over 0.5 s and the card's lines leave up in turn (0.42 s, 0.02 s apart),
+     469.69 to 470.21 (CARD_OUT 0.52; was 0.3 s power2.inOut). carryAt (both scenes): the rung grows 2.5x over
+     the glide's first 0.7 s (469.89 to 470.59; 56 x 4 to 140 x 10) and condenses from there; path, times and the
+     landing (560, 520) unchanged. S15: kicker and '"support"' on at('next') (470.39, was "Next" 470.71);
+     '"support"''s fade on power2.out, the kicker's curve. Rung to word (proxy, every 60 fps frame): 44.0 px
+     nearest (470.78); was 53.4.
+  2. S16 layout: tag 112 px at baseline 326 (was 120 / 330), address baseline 412 (was 440; underline y 421-424),
+     lines Outfit 500 54 px at 496 and 564 (were 40 px at 510 / 570; icons 43.2 and 48.6 px, centred 0.35 em
+     above the baseline). Times: orb end + 0.15, wave + 0.27, wipe + 0.25 (whole by + 1.08), tag + 0.45 (0.6 s),
+     address + 0.55 (in 0.3 s, rise 0.45 s), underline + 0.67 (0.4 s), lines + 0.75 and + 0.87 (0.45 s), beads fly
+     + 0.15 for 0.8 s from inside their moving Mercs (squash 0.25 s). The hop's top (479.73): address 27.5 px from
+     the hosts' faint glow, 31.8 px at luma > 30. Lines 107 px or more from the hosts at every frame.
+  3. Gear slot padL 2 -> 6, padR 1 -> 5 and its own glow filter (stdDeviation 1.1, was 1.6). Clip of the first
+     try (padR 4): 11.0 / 8.1 px (F-03 clip 5.4 / 6.3); codec ringing takes about 2 px on the clip, so padR 5.
+  Renders: s16 13:07-13:08, s15 13:08-13:09, s14 13:10-13:18 (exit then re-timed to even fades and padR 5;
+  re-render from 13:23).
+- 13:23-13:45 final (S14 re-rendered 13:23-13:30 with the even exit and padR 5; s15 and s16 clips from 13:08).
+  Clips: lab/<s>/clip.mp4 (60 fps), measures lab/<s>/measure-p1; F-03's clips and every older lab clip deleted.
+  1. Exit, S14 clip (the card's light over its band, the rung's column left out): 95 to 5 % 64.267 to 64.667
+     (0.40 s, 12 film frames; 99 to 1 % 0.47 s), gone by 470.19; F-03 0.15 s (5 frames). S15 clip: kicker and
+     word first visible 0.167 (470.41), the word full by 0.28, the kicker by 0.33; F-03 0.50 / 0.55. Rung: S14's
+     last lab frame (1479.0, 248.8) 93 x 7 px, S15's first (1478.4, 251.5) 98 x 8 (F-03 (1479.0, 248.6) 55 x 4 and
+     (1478.2, 251.5) 56 x 4); 140 x 10 from 470.59; lands (560, 520) as before. Frame-only stretch now 470.21 to
+     470.41 (rung and Mercs), was 469.96 to 470.79.
+  2. S16 clip: complete by s16 1.32 (479.85; on a copy with drift, dust, beads and halo breathing off, every
+     band pixel-identical to the last frame from 1.25): holds 3.88 s. Hop's top (s16 1.200, 479.73): address
+     27.5 px from the hosts' faint glow (luma > 30: 31.8), at rest 89 px or more. Lines' ink (luma > 90): 51 px
+     (skip line, cap to descender) and 40 px (Scale Runner line, no descenders); F-03 38 and 30 (mean 34, the
+     critic's figure; now 45.5). Lines 106.9 px or more from the hosts at every frame.
+  3. Gear (F-04's measure, on the clips): 12.0 px to "first:", 9.5 to "Settings" (F-03 clip 5.4 / 6.3). Line 3
+     now x 405-1515 at rest; the range swell peaks at x 1586 (was 1581); "Singing" still clear of the "›".
+  Holds (measure-p1): s14 0.5 s (0.2 per 30 s), longest 0.1 (405.99, 423.99, 429.29, 469.19, 469.39: as F-03);
+  s15 0.2 s (471.94, 476.14); s16 0.1 at its start. Handoffs: S14 frame 0 identical to F-03's (max 0); S14's last
+  and S15's first differ from F-03's only in the rung's box (its size) and render-to-render Merc noise (144 px
+  over 24 against 511 for a frame's own step); S15's last and S16's first: middle max 18-20, S16 frame 0
+  identical to F-03's. check 0 errors (group F's warnings as F-03: duplicate_media x3, s14 file length), contrast
+  59/59; clock-lint silent; merc-tags 12 tags, 0 stale; text sweep clean (lab/s14-recap/sweep-p1.log).
+  Stills: lab/s14-recap/polish/, lab/s15-next/polish/, lab/s16-end/polish/.

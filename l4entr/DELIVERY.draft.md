@@ -131,8 +131,8 @@ What changes when the owner's voices replace Kokoro, in order:
 1. Generate the 69 lines on the owner's account, one take a line, text exactly as `script.json`
    (ElevenLabs spends credits: never repeat a request to retry), and import them as Lesson 2 did.
 2. Lengthen the end sting in `script.json` from 5.0 to 6.5 s (DECISIONS 122): S16 grows to about
-   6.7 s and the complete end card holds about 5 s or more (5.3 s if it completes 1.37 s into
-   S16), which the film critic asked for.
+   6.7 s and the complete end card, whole 1.32 s into S16 since the polish round, holds 5.38 s,
+   past the 5 s the film critic asked for.
 3. Re-time: `tools/cues.py`, then `tools/board-clock.py` maps every storyboard time to the new
    clock; the scenes read their times from the cue sheet, so no scene types a second.
 4. Re-render every Merc pass whose span moved (`merc-shots.py`, then `merc-pass.mjs` and

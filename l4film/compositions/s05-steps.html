@@ -205,6 +205,15 @@
             tk.el.setAttribute('opacity', a.toFixed(3))
             tk.el.setAttribute('transform', `translate(${f1(cx)} ${f1(tk.cy)}) scale(${sc.toFixed(4)}) translate(${f1(-cx)} ${f1(-tk.cy)})`)
           }
+          // 8. Echo rings that know the camera (critic B-05 item 2, polish round item 3): a ring that plays while
+          //    the camera is in past 1.5x, at any point of its life, grows to twice its bead's radius at most (at
+          //    1.8x a 3.5x ring reached about 120 px on screen, crossed a bracket and touched an "S"); elsewhere it
+          //    grows to `grow`. Drawn as two of the kit's pools, so a ring keeps the kit's shape and fade.
+          const echoRings = (parent, cam, { dur = 0.9, grow = 3.5, width = 3, near = 2 } = {}) => {
+            const wide = L.echoRings(parent, { dur, grow, width }), close = L.echoRings(parent, { dur, grow: Math.min(grow, near), width })
+            const isClose = (t0) => [0, 1, 2, 3, 4, 5, 6, 7, 8].some((i) => cam.scale(t0 + (dur * i) / 8) > 1.5)
+            return { draw: (t, evs) => { wide.draw(t, evs.filter((e) => !isClose(e.t))); close.draw(t, evs.filter((e) => isClose(e.t))) } }
+          }
           /* ======================= end of group B's shared block */
 
           /* ---------------------------------------------------------------- anchors */
@@ -273,7 +282,9 @@
           const edgeGlow = L.svg('rect', { x: 594, width: 8, y: 760, height: 120, fill: '#e6edf3', opacity: 0, filter: `url(#${SID}-soft)` }, mid)
           const gBead = L.svg('g', {}, mid)
           const bead = L.bead(gBead, { r: 22, color: L.C.chrome })
-          const echo = L.echoRings(mid, { dur: 0.9, grow: 3.5, width: 3 })   // larger than the kit's 0.5 s ring
+          // larger than the kit's 0.5 s ring at F0; capped at 2x in CU-A and CU-B (shared block 8: both of this
+          // scene's rings, 78.60 and 99.90, play at F0 today, so this guards a re-voice)
+          const echo = echoRings(mid, cam, { dur: 0.9, grow: 3.5, width: 3 })
           // label pools built up front, so no frame pays for a first build
           st.stairs.forEach((S, i) => S.names.prepare([SOLFA[i], LETTERS[i]]))
           st.risers.forEach((R) => R.labels.prepare(['T', 'S']))

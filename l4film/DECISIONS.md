@@ -1428,3 +1428,28 @@ replaced it. The builder's record: critics never read it.
      § Build checks, HANDOFFS § S1 to S2 and § S4c's stand-up, and BUILD-GUIDE's s04 sheet and
      confirmation row are updated to match. New small jumps at 48.26 and 48.30 (0.36 % and 0.04 %,
      whole-pixel snaps in the rise's tail) are left for the film critic.
+
+125. **Group F's polish round (s14 to s16, film round 1's items 2 and 3, held F3): all three
+     items in, accepted on the builder's numbers and the lead's look at the end card's last frame;
+     decision 95's address rule is replaced.** (1) The empty frame before the tease: the card's six
+     lines leave upward in turn (each 0.42 s, 0.02 s apart; 95 % to 5 % of their light in 0.40 s,
+     against 0.15 s) and the ladder fades over 0.5 s, so the card is gone at 470.19 instead of
+     469.96; the carried rung grows 2.5 times over its first 0.7 s (56 x 4 to 140 x 10 px) on the
+     same curve, the same times and the same landing, so it reads as the carried object; "NEXT TIME"
+     and '"support"' land on the cut's own mark (470.39, first visible 470.41, opaque by 470.52 and
+     470.57) instead of "Next" (470.71), so only 0.2 s holds the rung and the Mercs alone (0.83 s
+     before). The kicker's last 0.03 s past the 0.3 s asked is accepted. (2) The end card: the
+     primary path; the address lands before the hop, 27.5 px from the heads' glow at its top
+     (479.73), so 95's "60 px at rest, never under 57, rising in once the hop has come down" gives
+     way to the 20 px rule the item set; to raise the address 28 px, "Find your pitch." went from
+     120 to 112 px. The card is complete at 479.85 and holds 3.88 s (2.7 s before; 5.38 s once the
+     end sting grows to 6.5 s at the re-voice, decision 122). The lower lines are Outfit 500 54 px
+     (40 before) and measure 51 and 40 px of ink, a mean of 45.5 (the critic's 34 was the mean of 38
+     and 30); the address stays the largest at 56 px weight 600, and its weight, colour and
+     underline keep the hierarchy. (3) The gear's halo: its slot widened 4 px a side (not 2: the
+     codec's ringing takes about 2 px of a gap) with its own tighter glow, so it keeps 12.0 px from
+     "first:" and 9.5 px from "Settings" (5.4 and 6.3 before); the "Singing Voice Range" swell now
+     peaks at x 1586. S13 to S14 and S15 to S16 unchanged; at S14 to S15 only the rung's size
+     changes. check 0 errors, no new warnings; clock-lint silent; merc-tags 12 tags, 0 stale. HANDOFFS
+     § The practise card, § S14 to S15, § S15 and § S16, STORYBOARD 14g, 15 and 16, and BUILD-GUIDE's
+     s15 and s16 sheets are updated to match.
