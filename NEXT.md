@@ -2115,3 +2115,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   WORKERS=2 setsid nohup bash render-l4.sh film-02 60 high $S/l4film02proj >/dev/null 2>&1 &
   then a fresh FILM2 critic from critics/FILM2.txt (RENDERNAME film-02; DISKNOTE: film may sit in
   /dev/shm/l4film) when the rate limit reads "allowed".
+- 16:50 full check: 0 errors, 75 warnings (baseline), runtime/layout/motion clean (layout 2 info as film-01),
+  contrast 59/59. Frozen to $S/l4film02proj (16 compositions, 148 kit files, no MISMATCH). 16:51:22
+  film-02 started: render-l4.sh film-02 60 high $S/l4film02proj, 2 workers, to /dev/shm/l4film (status
+  renders/film-02.status; watcher wait-l4.sh film-02 0 900). Next: on done, a fresh FILM2 critic from
+  critics/FILM2.txt (rate limit "allowed"). push-notes now pushes even when the tree is unchanged (a run cut
+  off after its commit had left the local ref ahead; pushed 5c9b4bdae).
