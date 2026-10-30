@@ -68,10 +68,8 @@ export function LitChain(props: BeadChainProps): JSX.Element {
     props.reveal === null ? 0 : progress(clock.t(), 460 + i * 60, 700 + i * 60)
   const lineD = (): string => {
     if (props.reveal === null) return ''
-    const points: Point[] = Array.from({ length: count() }, (_, i) => [
-      beadX(i),
-      beadY(i),
-    ])
+    const points: Point[] = []
+    for (let i = 0; i < count(); i++) points.push([beadX(i), beadY(i)])
     return partialD(points, progress(clock.t(), 250, 850)).d
   }
   const slip = (): number => props.reveal?.perNote.indexOf(false) ?? -1

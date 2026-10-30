@@ -92,7 +92,7 @@ export function LitBeam(props: PullBeamProps): JSX.Element {
   const label = (): string => {
     const reveal = props.reveal
     if (reveal !== null)
-      return `A beam tipped toward the ${reveal.side === 1 ? 'first' : 'second'} note: ${reveal.word}${reveal.rest ? `; ${reveal.rest}` : ''}`
+      return `A beam tipped toward the ${reveal.side === 1 ? 'first' : 'second'} note: ${reveal.word}${reveal.rest === undefined || reveal.rest === '' ? '' : `; ${reveal.rest}`}`
     if (props.sounding > 0)
       return `A beam with two pans, the ${props.sounding === 1 ? 'first' : 'second'} note sounding`
     return 'A beam with two pans, level'
