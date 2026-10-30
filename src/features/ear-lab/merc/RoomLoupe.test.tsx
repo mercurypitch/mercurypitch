@@ -1,6 +1,6 @@
 // Hairline's loupe, upright, in the room: higher on screen for higher,
 // the two lines unnamed and even about the middle until the reveal,
-// then the higher one named and the glass's magnification said.
+// then the higher one named under it and the glass's magnification said.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -34,6 +34,19 @@ describe("Hairline's loupe, upright", () => {
     expect(y('0')).toBeLessThan(y('−50¢'))
   })
 
+  it('labels the rail at its ends, and holds a mark there past its reach', () => {
+    render(() => <RoomLoupe gap={300} sounding={0} reveal={null} />)
+
+    const rail = document.querySelector('line[class*="rail"]')
+    const top = Number(rail?.getAttribute('y1'))
+    const plus = [...document.querySelectorAll('text')].find(
+      (text) => text.textContent === '+50¢',
+    )
+    expect(Number(plus?.getAttribute('y'))).toBe(top)
+    // 150 cents up is past the rail's 50: the mark stands at its end.
+    expect(LOUPE_MIDDLE + offset('upper')).toBe(top)
+  })
+
   it('keeps the two lines alike, unnamed and even about the middle while listening', () => {
     render(() => <RoomLoupe gap={12.5} sounding={1} reveal={null} />)
 
@@ -52,8 +65,8 @@ describe("Hairline's loupe, upright", () => {
   })
 
   it.each([
-    ['first', 'The first'],
-    ['second', 'The second'],
+    ['first', 'The first, higher'],
+    ['second', 'The second, higher'],
   ] as const)(
     'names the higher line at the reveal, the %s, and says how far the glass magnifies',
     (reveal, name) => {
@@ -61,20 +74,18 @@ describe("Hairline's loupe, upright", () => {
 
       const tag = textAt('loupe-higher')
       expect(tag.textContent).toBe(name)
-      // Level with the upper line in the glass, not the lower.
-      const middle = LOUPE_MIDDLE
-      expect(Number(tag.getAttribute('y'))).toBeCloseTo(
-        middle + offset('upper-magnified'),
-        5,
-      )
-      expect(textAt('loupe-magnification').textContent).toBe('×8')
+      // Under the upper line in the glass, above the lower.
+      const y = Number(tag.getAttribute('y'))
+      expect(y).toBeGreaterThan(LOUPE_MIDDLE + offset('upper-magnified'))
+      expect(y).toBeLessThan(LOUPE_MIDDLE + offset('lower-magnified'))
+      expect(textAt('loupe-magnification').textContent).toBe('×4')
       expect(
         document
           .querySelector('[data-line="upper-magnified"]')
           ?.getAttribute('class'),
       ).toMatch(/higher/u)
       expect(screen.getByRole('img').getAttribute('aria-label')).toBe(
-        `An upright scale under a loupe: two hairlines 12.5¢ apart, magnified 8 times, the ${reveal} tone higher`,
+        `An upright scale under a loupe: two hairlines 12.5¢ apart, magnified 4 times, the ${reveal} tone higher`,
       )
     },
   )
@@ -82,13 +93,14 @@ describe("Hairline's loupe, upright", () => {
   it('magnifies the gap in the glass by exactly what it says', () => {
     render(() => <RoomLoupe gap={12.5} sounding={0} reveal="second" />)
 
-    expect(offset('upper-magnified') / offset('upper')).toBeCloseTo(8, 5)
+    expect(offset('upper-magnified') / offset('upper')).toBeCloseTo(4, 5)
   })
 
   it('magnifies by a whole number, the most for the finest gaps', () => {
     expect(loupeMagnification(0.5)).toBe(12)
-    expect(loupeMagnification(12.5)).toBe(8)
-    expect(loupeMagnification(50)).toBe(2)
+    expect(loupeMagnification(12.5)).toBe(4)
+    expect(loupeMagnification(25)).toBe(2)
+    expect(loupeMagnification(50)).toBe(1)
     expect(loupeMagnification(104)).toBe(1)
     expect(loupeMagnification(200)).toBe(1)
   })

@@ -25,12 +25,24 @@ function frame(size: number | undefined) {
   }
 }
 
-/** Hear it again: an arrow come round. */
+/** Hear it again: an arrow come round, clockwise as the mock-ups draw it. */
 export function IconReplay(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>
-      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
-      <path d="M4.5 4.5v3.8h3.8" />
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+      <path d="M19.5 4.5v3.8h-3.8" />
+    </svg>
+  )
+}
+
+/** Compare: the answer, then the pick, two arrows passing. */
+export function IconCompare(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M5 8.5h13.5" />
+      <path d="M15.5 5.5l3 3-3 3" />
+      <path d="M19 15.5H5.5" />
+      <path d="M8.5 12.5l-3 3 3 3" />
     </svg>
   )
 }

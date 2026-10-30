@@ -144,10 +144,10 @@ describe("Merc's lines", () => {
       unitShort: '¢',
     }
     expect(lines.staircaseSlipLine({ ...hairline, count: 7, edge: 10.4 })).toBe(
-      '7 misses, none above 10.4 ¢',
+      '7 misses, none above 10.4\u00a0¢',
     )
     expect(lines.staircaseSlipLine({ ...hairline, count: 1, edge: 10.4 })).toBe(
-      '1 miss, at 10.4 ¢',
+      '1 miss, at 10.4\u00a0¢',
     )
     // Span's notes climb as the ear holds more.
     expect(
@@ -158,7 +158,7 @@ describe("Merc's lines", () => {
         format: (value) => value.toFixed(0),
         unitShort: ' notes',
       }),
-    ).toBe('3 misses, none below 5 notes')
+    ).toBe('3 misses, none below 5\u00a0notes')
   })
 
   it('hold back the replay before a rated or sealed answer, and say why', () => {

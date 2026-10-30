@@ -57,6 +57,7 @@ import { IconQuestion } from './merc-icons'
 import type { SoundStop } from './merc-lines'
 import { calibrationBefore, compareHint, exitWords, modeWords, practiceLine, practicePlateLine, ratingPlateLine, sealedPlateLine, soundStoppedWords, thresholdPlateLine, } from './merc-lines'
 import { PlateNext, PlateOnDesk } from './MercPlate'
+import { markMoreBelow } from './more-below'
 import { PinnedRow } from './PinnedRow'
 import plateStyles from './plate.module.css'
 import styles from './room.module.css'
@@ -539,7 +540,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
               <Show
                 when={!done()}
                 fallback={
-                  <div class={plateStyles.wrap}>
+                  <div class={plateStyles.wrap} ref={markMoreBelow}>
                     <PlateOnDesk
                       plate={plate()}
                       own={props.plate?.()}

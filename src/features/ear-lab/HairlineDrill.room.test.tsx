@@ -134,9 +134,11 @@ describe('Hairline in the room', () => {
 
     fireEvent.click(pads()[1])
 
-    expect(screen.getByTestId('loupe-higher').textContent).toBe('The second')
-    // The run's first gap, 50 cents, at twice the scale.
-    expect(screen.getByTestId('loupe-magnification').textContent).toBe('×2')
+    expect(screen.getByTestId('loupe-higher').textContent).toBe(
+      'The second, higher',
+    )
+    // The run's first gap, 50 cents, at the rail's own scale.
+    expect(screen.getByTestId('loupe-magnification').textContent).toBe('×1')
   })
 
   it('lights no pad beside the web loupe, in a build that has the room', async () => {

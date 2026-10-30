@@ -9,13 +9,16 @@
 // unnamed: the gap shows, which way it went does not. Under the lens the
 // two tones are two pulses of light at one height, each lit as its tone
 // sounds, so the eye follows the sound and never the answer. At the
-// reveal the higher line turns teal and is named, its pulse lifts, and
-// the lens says how far it magnifies.
+// reveal the higher line turns teal across the whole glass and is named
+// under it, "The second, higher", its pulse lifts, and the lens says how
+// far it magnifies.
 //
-// The lens magnifies by a whole number, the most up to x12 that keeps the
-// two lines in its middle band with its words above and below. Past about
-// 104 cents even x1 does not; there the lines stand where they are and the
-// words move in between them.
+// The rail reads 50 cents either way, its two marks glowing pills, held at
+// its ends past that. The lens magnifies the rail by a whole number, the
+// most up to x12 that keeps the two lines in its middle band with its words
+// above and below. Past about 52 cents even x1 does not; there the lines
+// stand where they are, held inside the rim, and the words move in between
+// them.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -32,11 +35,14 @@ const WIDTH = 390
 export const LOUPE_MIDDLE = 150
 const MID_Y = LOUPE_MIDDLE
 /** Px per cent, on the rail and in the glass at x1. */
-const PX_PER_CENT = 0.96
+const PX_PER_CENT = 1.92
 /** The rail's reach either way, in cents. */
-const REACH = 100
+const REACH = 50
 const RAIL_X = 334
-const TICKS = Array.from({ length: 21 }, (_, i) => -REACH + i * 10)
+const TICKS = Array.from({ length: 11 }, (_, i) => -REACH + i * 10)
+/** A tone's mark: a pill across the rail. */
+const MARK_X0 = RAIL_X - 13
+const MARK_X1 = RAIL_X + 13
 
 const GLASS_X = 166
 const GLASS_R = 124
@@ -44,6 +50,8 @@ const GLASS_R = 124
  *  clear of them. */
 const BAND = 100
 const MOST = 12
+/** The farthest a line stands from the glass's middle: inside the rim. */
+const IN_RIM = 112
 
 /** The two tones' pulses, under the lens. */
 const PULSE_Y = MID_Y + GLASS_R + 34
@@ -76,13 +84,14 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
   /** Each line's distance from the middle: on the rail, whose ends hold
    *  the widest, and in the glass. */
   const onRail = () => Math.min(REACH, gap() / 2) * PX_PER_CENT
-  const inGlass = () => (gap() / 2) * PX_PER_CENT * magnification()
+  const inGlass = () =>
+    Math.min(IN_RIM, (gap() / 2) * PX_PER_CENT * magnification())
   /** Only at x1, past about 104 cents: the words go in between. */
   const wide = () => inGlass() * 2 > BAND
 
   const readout = () => `${gap().toFixed(1)}¢`
   const higherName = () =>
-    props.reveal === 'first' ? 'The first' : 'The second'
+    props.reveal === 'first' ? 'The first, higher' : 'The second, higher'
   const higherTone = (): 1 | 2 | null =>
     props.reveal === null ? null : props.reveal === 'first' ? 1 : 2
   const label = () =>
@@ -92,11 +101,10 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
         : `, magnified ${magnification()} times, the ${props.reveal} tone higher`
     }`
 
-  /** The name beside the higher line, level with it; with the lines
-   *  close, a little above both, so it names the upper one. Past x1's
-   *  band, just under it. */
+  /** The name centred under the higher line; with the lines too close to
+   *  hold it between them, just above both, so it names the upper one. */
   const tagY = () =>
-    wide() ? MID_Y - inGlass() + 20 : MID_Y - Math.max(inGlass(), 9)
+    inGlass() * 2 >= 48 ? MID_Y - inGlass() + 21 : MID_Y - inGlass() - 17
 
   const shift = (dy: number): JSX.CSSProperties => ({
     transform: `translateY(${dy}px)`,
@@ -172,15 +180,15 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
         )}
       </For>
       <text
-        x={RAIL_X + 12}
-        y={railY(50)}
+        x={RAIL_X + 17}
+        y={railY(REACH)}
         class={styles.caption}
         dominant-baseline="central"
       >
         +50¢
       </text>
       <text
-        x={RAIL_X + 12}
+        x={RAIL_X + 17}
         y={railY(0)}
         class={styles.caption}
         dominant-baseline="central"
@@ -188,24 +196,24 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
         0
       </text>
       <text
-        x={RAIL_X + 12}
-        y={railY(-50)}
+        x={RAIL_X + 17}
+        y={railY(-REACH)}
         class={styles.caption}
         dominant-baseline="central"
       >
         −50¢
       </text>
 
-      {/* From each line on the rail to the same line in the glass. */}
+      {/* From each mark on the rail to the same line in the glass. */}
       <line
-        x1={RAIL_X - 18}
+        x1={MARK_X0 - 4}
         y1={MID_Y - onRail()}
         x2={rimX(inGlass())}
         y2={MID_Y - inGlass()}
         class={styles.lead}
       />
       <line
-        x1={RAIL_X - 18}
+        x1={MARK_X0 - 4}
         y1={MID_Y + onRail()}
         x2={rimX(inGlass())}
         y2={MID_Y + inGlass()}
@@ -214,22 +222,37 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
 
       <g class={styles.mover} style={shift(-onRail())}>
         <line
-          x1={RAIL_X - 18}
-          x2={RAIL_X + 5}
+          x1={MARK_X0}
+          x2={MARK_X1}
           y1={MID_Y}
           y2={MID_Y}
-          class={styles.hair}
+          class={styles.markHalo}
+          classList={{ [styles.higher]: props.reveal !== null }}
+        />
+        <line
+          x1={MARK_X0}
+          x2={MARK_X1}
+          y1={MID_Y}
+          y2={MID_Y}
+          class={styles.mark}
           classList={{ [styles.higher]: props.reveal !== null }}
           data-line="upper"
         />
       </g>
       <g class={styles.mover} style={shift(onRail())}>
         <line
-          x1={RAIL_X - 18}
-          x2={RAIL_X + 5}
+          x1={MARK_X0}
+          x2={MARK_X1}
           y1={MID_Y}
           y2={MID_Y}
-          class={styles.hair}
+          class={styles.markHalo}
+        />
+        <line
+          x1={MARK_X0}
+          x2={MARK_X1}
+          y1={MID_Y}
+          y2={MID_Y}
+          class={styles.mark}
           data-line="lower"
         />
       </g>
@@ -263,9 +286,7 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
         <g class={styles.mover} style={shift(-inGlass())}>
           <line
             x1={GLASS_X - GLASS_R}
-            x2={
-              props.reveal !== null && !wide() ? GLASS_X - 8 : GLASS_X + GLASS_R
-            }
+            x2={GLASS_X + GLASS_R}
             y1={MID_Y}
             y2={MID_Y}
             class={styles.halo}
@@ -273,9 +294,7 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
           />
           <line
             x1={GLASS_X - GLASS_R}
-            x2={
-              props.reveal !== null && !wide() ? GLASS_X - 8 : GLASS_X + GLASS_R
-            }
+            x2={GLASS_X + GLASS_R}
             y1={MID_Y}
             y2={MID_Y}
             class={`${styles.hair} ${styles.magnified}`}
@@ -324,10 +343,10 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
       </text>
       <Show when={props.reveal !== null}>
         <text
-          x={wide() ? GLASS_X : GLASS_X - 2}
+          x={GLASS_X}
           y={tagY()}
           class={`${styles.tag} ${litStyles.edged}`}
-          text-anchor={wide() ? 'middle' : 'start'}
+          text-anchor="middle"
           dominant-baseline="central"
           data-testid="loupe-higher"
         >
@@ -335,7 +354,7 @@ export function RoomLoupe(props: VernierLoupeProps): JSX.Element {
         </text>
         <text
           x={GLASS_X}
-          y={wide() ? MID_Y + 30 : MID_Y + 78}
+          y={wide() ? MID_Y + 30 : MID_Y + 96}
           class={styles.magnification}
           text-anchor="middle"
           data-testid="loupe-magnification"

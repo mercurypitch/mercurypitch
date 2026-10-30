@@ -21,6 +21,9 @@ import { logDomain, logPlace, logTicks } from './staircase'
 const W = 342
 const STAIRS_H = 136
 const TRACKS_H = 116
+/** Room at the scale's side for its grid lines' values: the way stops
+ *  short of them, so no line runs through a value. */
+const VALUES_W = 40
 /** When the practice run's way draws, and when its reading settles. */
 export const STAIRS_MS = { from: 300, to: 2700, settled: 3200 } as const
 /** When a calibration's tracks draw. */
@@ -68,6 +71,8 @@ export function LitStaircase(props: {
   const ids = litIds()
   const left = 6
   const right = W - 6
+  /** Where the way ends: the values stand past it. */
+  const end = right - VALUES_W
   const top = 8
   const bottom = STAIRS_H - 8
   const domain = createMemo(() =>
@@ -78,8 +83,7 @@ export function LitStaircase(props: {
   const at = createMemo(() => {
     const last = Math.max(1, props.points.length - 1)
     return props.points.map(
-      (point, i) =>
-        [left + (i * (right - left)) / last, y(point.level)] as const,
+      (point, i) => [left + (i * (end - left)) / last, y(point.level)] as const,
     )
   })
   const drawn = (): ReturnType<typeof partialD> =>
@@ -141,7 +145,7 @@ export function LitStaircase(props: {
           d={lineD(
             left,
             y(props.reading),
-            left + (right - left) * settle(),
+            left + (end - left) * settle(),
             y(props.reading),
           )}
           fill="none"
@@ -177,9 +181,10 @@ export function LitTracks(props: {
   const drawn = (): number => progress(props.t, TRACKS_MS.from, TRACKS_MS.to)
   const lineOf = (track: readonly TracePoint[]): string => {
     const last = Math.max(1, track.length - 1)
+    const from = left + VALUES_W
     const places = track.map(
       (point, i) =>
-        [left + 10 + (i * (right - left - 10)) / last, y(point.level)] as const,
+        [from + (i * (right - from)) / last, y(point.level)] as const,
     )
     return partialD(places, drawn()).d
   }

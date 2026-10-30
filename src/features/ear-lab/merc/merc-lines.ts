@@ -411,7 +411,12 @@ export function staircaseSlipLine(args: {
   format: (value: number) => string
   unitShort: string
 }): string {
-  const at = `${args.format(args.edge)} ${args.unitShort.trim()}`.trim()
+  // A no-break space: the number and its unit wrap together.
+  const unit = args.unitShort.trim()
+  const at =
+    unit === ''
+      ? args.format(args.edge)
+      : `${args.format(args.edge)}\u00a0${unit}`
   if (args.count === 1) return `1 miss, at ${at}`
   return `${args.count} misses, none ${args.lowerIsBetter ? 'above' : 'below'} ${at}`
 }

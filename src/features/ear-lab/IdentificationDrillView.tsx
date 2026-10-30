@@ -274,7 +274,7 @@ export function IdentificationDrillView(
           if (result === null) return null
           const outcomes = result.outcomes.map((outcome) => ({
             correct: outcome.correct,
-            title: `${props.revealName(outcome.expectedId)}${
+            title: `${sentenceCase(props.revealName(outcome.expectedId))}${
               outcome.correct
                 ? ''
                 : ` (answered ${props.revealName(outcome.answeredId)})`
@@ -469,7 +469,7 @@ export function IdentificationDrillView(
               <OutcomeDots
                 outcomes={result().outcomes.map((outcome) => ({
                   correct: outcome.correct,
-                  title: `${props.revealName(outcome.expectedId)}${
+                  title: `${sentenceCase(props.revealName(outcome.expectedId))}${
                     outcome.correct
                       ? ''
                       : ` (answered ${props.revealName(outcome.answeredId)})`

@@ -30,10 +30,12 @@ import { StylusTrace } from './StylusTrace'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 
+// A name follows "That was" (IdentificationDrillView), so it is written
+// lower case: "That was the same."
 const DIRECTIONS = [
-  { id: 'up', label: 'Up', name: 'Up', icon: () => <IconUp /> },
-  { id: 'down', label: 'Down', name: 'Down', icon: () => <IconDown /> },
-  { id: 'same', label: 'Same', name: 'The same', icon: () => <IconSame /> },
+  { id: 'up', label: 'Up', name: 'up', icon: () => <IconUp /> },
+  { id: 'down', label: 'Down', name: 'down', icon: () => <IconDown /> },
+  { id: 'same', label: 'Same', name: 'the same', icon: () => <IconSame /> },
 ] as const
 
 function asDirection(id: string | null): ContourDirection | null {

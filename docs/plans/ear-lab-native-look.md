@@ -176,6 +176,39 @@ stage and the plate scrolls inside it, and under 700 px the plate's number
 and staircase are smaller. Still to do: the devices themselves, VoiceOver
 and TalkBack.
 
+A design review against the mock-ups (30 Oct) found these, now fixed:
+
+- **The reveal no longer moves the instrument.** The instrument stands at
+  the top of the stage, as the mock-ups place it, and Merc's bubble grows
+  into the room under it. Where a phone leaves no room under it, a tall
+  verdict still makes the instrument smaller by up to a tenth, which only
+  a smaller instrument at rest would avoid: the owner's call.
+- **Hairline's reveal is the mock-up's.**
+  - The higher line runs across the whole glass, named under it: "The
+    second, higher".
+  - The rail reads 50 cents either way, labelled at its ends, its marks
+    glowing pills.
+  - The lens magnifies that rail by what it says, so a 12.5 cent gap reads
+    x4 where the mock-up wrote x8.
+- **Nothing under the plan's floors.** "Your pick" and "The answer" are
+  13 px on every pad. Span's and Echo's eight keys stand edge to edge, 44
+  px or more on a 360 phone.
+- **The phrase strip:**
+  - "Take one back" is a room control on a small glass pill, not the web's
+    link.
+  - The strip never grows when it comes.
+  - Bassline's strip says "Your roots".
+- **The plate:**
+  - The sealed glass's scale is the room's grey and Inter.
+  - A staircase stops short of its scale's values.
+  - A miss's dot is crossed as well as red.
+  - The plate fades at the stage's edge while more lies below.
+- **Small fixes:**
+  - Compare has its icon and lit edge.
+  - Hear it again's arrow turns clockwise.
+  - The tap pad's word and its line stand together.
+  - Contour says "That was the same."
+
 ## How each PR is checked
 
 - The repo's checks: `pnpm check`, the native app's `check`, `pnpm arch`,
