@@ -1765,3 +1765,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   round after the film critic). LEDGER 24. F round 3 sent (F-fix3). Agents now: A + F.
 - Queue: C small (C-fix2) -> critic B-04 (B4.txt); A-04 when A reports; F-04 (S16 from f3) when F
   reports; C-03 after C. Groups now: D KEEP x3, E KEEP x2; B, A, F, C rounds closing.
+- 01:1x integration prep: $S/render-l4.sh ready (root index.html = 16 scenes + assets/audio/full.wav;
+  60 fps high --strict, 4 workers; music-only mux from assets/audio/music-only.wav; contact sheet;
+  measure render + audio). Only 4 CPUs: run it when no builder renders (critics only). Film critic
+  brief critics/FILM1.txt (replace RENDERNAME; report review/film-01/REPORT.md).
