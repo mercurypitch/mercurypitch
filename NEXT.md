@@ -1831,3 +1831,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (600, 425); title settle steps). Rows 8a/8b take the build's lighting. LEDGER 28.
 - Now: B finishing round 5 (S6); then B-05 (freeze b5/: S5 from b4, new S6). Film-01 -> critic
   FILM1 (critics/FILM1.txt; RENDERNAME film-01; music-only film-01-music-only.mp4).
+- 04:4x builder B handed back round 5 ($S/l4entr/B-round5-report.txt): names ride out (3 fade after
+  their outer neighbour, with reasons); brackets 72 px above their top treads (462, 280; upper line
+  screen 52-55); bead edge 21 px under each line (glow still reaches it); semitone hops 7 px over
+  their "S"; ghost masked around labels. Holds 0.6 s. DECISIONS 120, HANDOFFS § S6's brackets as
+  built (backup b120/). Frozen b5/ (S5 = b4, S6 new). Critic B-05 launched (critics/B5.txt).
+  Agents now: critic B-05 only. film-01 rendering.

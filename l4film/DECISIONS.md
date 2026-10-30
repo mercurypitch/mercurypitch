@@ -1293,3 +1293,24 @@ replaced it. The builder's record: critics never read it.
        - Item 4: "Predict." (7.12 to 7.55) and "D major" (50.62 to 51.02) settle their last 8 px
          in whole-pixel steps (decision 104's snap): less travel, or the rise on a sub-pixel
          (composited) transform.
+
+120. **S6 after builder B's round 5 (component critic B-04's items 1, 3 and 5), as built.**
+     - Item 1: the names and riser labels ride out of frame with the world. Three still fade, each
+       because it would otherwise sit half cut by the frame's edge through a held shot (stair 7's
+       "B" in F-low, riser 6's "T" on F-low's top edge, stair 2's "D" in F-high), and each now fades
+       only after its outer neighbour has left the frame and returns before that neighbour comes
+       back: "B" 5.44 to 5.62 (clip), after "C" leaves at 5.42; the "T" 5.60 to 5.78, after the "S";
+       "D" 9.42 to 9.60, after "C" at 9.40, and back 12.20 to 12.42, before riser 1's "T" and "C".
+     - Item 3: both brackets sit 72 px above their group's top tread (world y 462 and 280); the
+       upper line is at screen y 52 to 55 in F-high (26 to 30 before). The tone hops under a bracket
+       peak 30 px above the higher stair (40 before); the semitone hops rise almost straight up,
+       cross flat 15 px above the stair and drop onto it. The bead's edge keeps 21 px or more below
+       each line. Two costs, accepted: the semitone hops pass about 7 screen px above the "S" they
+       cross (12 before), and the bead's glow (57 px from its centre) still reaches each line,
+       adding at most 40 to 46 levels under it, while the lines, drawn over the glow, stay crisp.
+       The C5 echo ring crosses behind the upper line, as it did before.
+     - Item 5: a soft-edged mask removes the ghost outline inside each riser label's box (the ink
+       plus 5 px), so its lines stop short of every label.
+     - Holds 0.6 s (0.5 per 30 s), longest 0.2; the handoffs as in round 4 (S5 to S6 168 px over 24
+       outside Tavi's corner, S6 to S7 156). Check 0 errors. The film-01 copy (04:22) carries this
+       S6. Critic B-05 verifies S5 (unchanged, b4's clip) and the new S6 from frozen copies (b5/).

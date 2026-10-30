@@ -309,11 +309,12 @@ rows C4 to G5, x 220 to 1680, black-key rows shaded. No strip yet: it enters in 
   pixels either side of the cut and 73 px or more from Tavi's falling body (as built, DECISIONS
   110).
 - **S6's brackets.** `L.bracket`, ink, ticks down, riding the world: stairs 1 to 4 from x 242 to 714
-  at y 448, stairs 5 to 8 from x 722 to 1194 at y 266, drawn over the bead's glow and echo rings
-  (as built, DECISIONS 110). From round 5 (DECISIONS 116) the upper bracket's line sits at world y
-  280 or lower (54 px or more inside the frame's top in F-high), the two brackets the same height
-  above their stairs, the bead and its glow 20 px or more below each. The ghost outline in S6c
-  moves by (+480, -182) beneath the riser labels. The sum Outfit 600 50
+  at y 462, stairs 5 to 8 from x 722 to 1194 at y 280, each 72 px above its group's top tread and
+  drawn over the bead's glow and echo rings (as built, DECISIONS 110 and 120): the upper line at
+  screen y 52 to 55 in F-high, the lower at 125 to 129 in F-low. The tone hops under a bracket peak
+  30 px above the higher stair and the semitone hops cross flat 15 px above it, so the bead's edge
+  keeps 21 px or more below each line (its glow, 57 px from its centre, still reaches the line).
+  The ghost outline in S6c moves by (+480, -182), masked out around each riser label. The sum Outfit 600 50
   px at x 1270, baseline 260, 12 px between digits and 19 px either side of each dot, its ink x 1280
   to 1737 at rest; "= 12" reaches x 1746 at its 1.2 pulse (as built, DECISIONS 110). The octave bracket, chrome, at x 1232 from stair 1's tread to stair 8's (y 664
   to 352, twelve rows); "= 1 octave" serif italic 96 px at x 1262, baseline 543, its ink centred on

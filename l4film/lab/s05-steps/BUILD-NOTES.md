@@ -156,6 +156,21 @@ only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
 - Results (60 fps, 00:45 and 00:51): s05 holds 0.4 s (0.3 per 30 s), longest 0.1; s06 0.7 s (0.6 per 30 s),
   longest 0.2. npm run check: passed, 0 errors (lint 0, layout 0, 2 infos in s01), contrast 59/59.
 
+## Round 7 (coordinator's "round 5", S6 only): critic B-04 items 1, 3, 5
+
+- Item 1: names ride out with the world; three fade, each after its outer neighbour has left: "B" from 5.44
+  (stair 8's "C" out 5.42), riser 6's "T" from 5.60 ("S" out 5.60), both back 8.75 to 8.93 (before "S" 9.03,
+  "C" 9.15); "D" from 9.42 (stair 1's "C" out 9.40), back 12.20 to 12.42 (before "C" 12.53).
+  lab/s06-groups/item1/names.mjs.
+- Item 3: brackets y 462 / 280 (72 px above F and C5); upper line at screen 52 to 55 in F-high (was 26 to 30);
+  tone hops under brackets lift 30, semitone hops semiHopAt top 15 (flat top): bead rim 21 px under each line
+  at closest (clip, 8.333 and 11.100); S label 3.8 world (was 6.8); glow still reaches the lines (+40 / +46
+  levels under them); the C5 echo ring crosses behind the upper line (11.52 on). item5/hop-clear.mjs.
+- Item 5: ghost masked out of each riser label's box (ink + 5 px, soft).
+- Clip lab/s06-groups/clip.mp4 (60 fps, 02:24), round 4's kept as clip-r4.mp4. Holds 0.6 s (0.5 per 30 s),
+  longest 0.2. Handoffs: S5/S6 168 px > 24 outside Tavi (max 45); S6/S7 156 (max 52). npm run check passed;
+  80-sample layout check on S6: 0. Text sweep: EDGE only mid-move (5.5, 12.5).
+
 ## Status
 
 | Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
