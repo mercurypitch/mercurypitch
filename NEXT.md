@@ -1861,3 +1861,18 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   /dev/shm is charged to it, plus up to ~1.9 GB per renderer. Not a scene bug. render-l4.sh now
   takes WORKERS (default 3); resume started 08:01:07 with RESUME=1 WORKERS=2 (same plan hash).
   wait-l4.sh <name> <log offset> waits for done, a new OOM kill, a stall line or 5 min quiet.
+- 08:07 container restart (uptime from 08:07:22): /dev/shm cleared, so the frozen copy, the 18 kept
+  pieces, the 4.4 GB extract cache and the resume's output are gone; the resume died. / and the
+  scratchpad survived. Logs kept as renders/film-01-try2.{log,status}.
+- 08:17 new frozen copy ON DISK: $S/l4film01proj (index.html, configs, compositions/ copied; assets and
+  .transcode-cache symlinked; compositions.md5 relative, run from compositions/; kit.md5 = every
+  assets file but voice/, absolute). Identical to the 04:22 freeze: no composition or asset changed
+  after 02:17 (find -newermt), and the copy matches the live compositions. Pieces now land under it
+  ($S/l4film01proj/renders/.hf-segments), so a restart loses only the pieces in progress: re-run
+  with RESUME=1 (same plan hash). render-l4.sh after a whole film: checks its duration against the
+  composition's, removes the pieces, muxes music-only, moves both films into renders/ if / keeps
+  1150 MB, then the contact sheet and measures from wherever they are.
+- 08:20:22 film-01 (third try) started: 3 workers, from $S/l4film01proj, extract cache rebuilt cold.
+  Waiter: bash wait-l4.sh film-01 0 300 (it finds the memory cgroup itself; the path changed with
+  the restart). Expect about 100 min of capture. If a piece is lost to an OOM kill: RESUME=1
+  WORKERS=2. After a restart: re-arm the waiter, and RESUME=1 if the render died.
