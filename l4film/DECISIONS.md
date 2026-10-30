@@ -1260,3 +1260,17 @@ replaced it. The builder's record: critics never read it.
        final hold. The S7 to S8 handoff outside Tavi: largest change 21. Check 0 errors,
        clock-lint silent, merc-tags 14 tags and 0 stale, the text sweep clean. Critic C-03 verifies
        both from frozen copies (c3/).
+
+118. **S1 to S4 after component critic A-04 (all four KEEP): group A's component rounds close.**
+     Its three remaining items are optional and wait for the polish round after the film critic's
+     first round:
+     - Item 1: S4's lower third stays empty from 60.4 to 69.35 (the staircase fills about half the
+       width and a third of the height), from the board's own framing. The film critic judges it in
+       the cut; bringing the strip in on "measure" would move the S4 to S5 handoff into S4.
+     - Item 2: the wave on "measure" (68.10 to 69.25) repeats S3's naming wave (43.05), the same
+       fill, spacing and direction for two different actions. The likely change sweeps the riser
+       bars in turn instead (4 to 8 px, ink, 0.1 s apart), pointing at the steps S5 measures.
+     - Item 3: S2's field closes as a soft glow (luma 109 to 35 over about 200 px), where Lesson
+       2's closes as a hard-edged disc (66 to 19 within about 24 px), and its halo crosses note 3
+       and the ♯ (34.35 to 34.43). S2 is the series' title card, so the field's blur reaches 0 by
+       about 34.28 and the disc closes crisp, as Lesson 2's does.

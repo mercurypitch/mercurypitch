@@ -292,16 +292,29 @@
             L.svg('path', { d, fill: 'none', stroke: c, 'stroke-width': 3, 'stroke-opacity': 0.9, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, ghost)
           }
           const ov = riserOverlays(st)                                  // the semitones' gold (item 2), over the risers
-          st.gAll.insertBefore(ghost, st.gAll.children[1])              // over the blocks, under the risers and labels
+          // Critic B-04 item 5: under the labels in the stacking order, its lines still showed through and round
+          // each "T" and "S" in flight, so they read as struck through; a mask now takes the ghost out of each riser
+          // label's box (its ink plus 5 px, soft edged), so the outline passes behind the labels
+          const gmask = L.svg('mask', { id: SID + '-ghostmask', maskUnits: 'userSpaceOnUse', x: -4000, y: -4000, width: 10000, height: 10000 }, defs)
+          const gmaskBlur = L.svg('filter', { id: SID + '-ghostmask-soft', x: '-50%', y: '-50%', width: '200%', height: '200%' }, defs)
+          L.svg('feGaussianBlur', { stdDeviation: 2 }, gmaskBlur)
+          L.svg('rect', { x: -4000, y: -4000, width: 10000, height: 10000, fill: '#fff' }, gmask)
+          for (let n = 1; n <= 7; n++) {
+            const xr = ST.colX(n, 0) + 55, yb = ST.tread(n, 0) - 8
+            L.svg('rect', { x: xr - 31, y: yb - 35, width: 37, height: 41, rx: 6, fill: '#000', filter: `url(#${SID}-ghostmask-soft)` }, gmask)
+          }
+          const ghostWrap = L.svg('g', { mask: `url(#${SID}-ghostmask)` }, null)
+          ghostWrap.appendChild(ghost)
+          st.gAll.insertBefore(ghostWrap, st.gAll.children[1])          // over the blocks, under the risers and labels
           const feather = featherRows(st, cam)
-          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194) raised 36 px
-          // to y 448 and 266: at 484 the lower one's right tick sat 3 to 5 px over the F-G riser's "T" and read as one
-          // hooked shape with it (critic B-01 item 5); critic B-03 item 4 found the bead 16 px (on screen, F-high)
-          // under the upper one at the top of the B-C hop, its glow over the line, so 10 more (F-high puts the upper
-          // line 29 px below the frame's top). Its 8 px tick ends 41 px above the F-G "T" and 26 px above that
-          // riser's bar; a bead resting on stair 4 or 8 keeps 40 px below its bracket, a hop's top at least 16
-          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 448, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
-          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 266, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          // the brackets (ink, ticks down, riding the world), HANDOFFS' spans (x 242 to 714, 722 to 1194), each 72 px
+          // above its group's top tread (F 534, C5 352): y 462 and 280. At 484 the lower one's right tick sat 3 to 5
+          // px over the F-G riser's "T" (critic B-01 item 5); at 266 the upper one's line sat 26 to 30 px from the
+          // frame's top in F-high, inside title-safe (critic B-04 item 3): at 280 it is at 54. Its 8 px tick ends
+          // 25 px above the F-G "T" and 10 px above that riser's bar; a bead resting on stair 4 or 8 keeps 26 px
+          // below its bracket (47 on screen), a hop's top 11.3 (20 on screen)
+          const brLow = L.bracket(mid, { x1: 242, x2: 714, y: 462, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
+          const brHigh = L.bracket(mid, { x1: 722, x2: 1194, y: 280, dir: 'up', tick: 8, color: L.C.ink, width: 3 })
           // the octave bracket (chrome, vertical, x 1232, stair 1's tread to stair 8's: twelve rows), ticks left
           const brOct = L.bracket(mid, { x1: ST.tread(1, 0), x2: ST.tread(8, 0), y: 1232, dir: 'down', tick: 14, color: L.C.chrome, width: 3, vertical: true })
           const gBead = L.svg('g', {}, mid)
@@ -362,11 +375,17 @@
           // "= 1 octave" lands once the tip is past the bracket's middle (y 508, 170 px along): at y 491 (187 px)
           const OCTLAB = octAt(187 / 340)
           const pairLit = (t, n) => (LITQ[n] || []).reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), LITP[n] ? light(t, LITP[n]) : 0)
-          // labels a held framing would cut at the frame's edge leave before it and return as it ends: riser 6's
-          // "T" (F-low puts it at the frame's top) and stair 7's "B" (off the right edge) through F-low; stair 2's
-          // "D" (off the left edge) through F-high
-          const edgeA = (k, t) => clamp(k === 'r6' || k === 's7' ? 1 - P(t, A.push + 0.6, 0.3) + P(t, A.truck + 0.2, 0.3)
-            : k === 's2' ? 1 - P(t, A.truck + 0.3, 0.3) + P(t, A.pull + 0.3, 0.3) : 1)
+          // the names and riser labels ride out of frame with the world (critic B-04 item 1). Three would park cut by
+          // the frame's edge in a held framing, so they fade, each only once its outer neighbour has left the frame,
+          // and come back before that neighbour enters: stair 7's "B" (half off the right edge in F-low) once stair
+          // 8's "C" has gone in the push (5.42), riser 6's "T" (on the frame's top edge in F-low, under the player's
+          // bar) once riser 7's "S" has gone (5.60), both back over the truck's first 0.25 s, before that "S" (9.03)
+          // and "C" (9.15) come in; stair 2's "D" (half off the left edge in F-high) once stair 1's "C" has gone in
+          // the truck (9.40), back early in the pull, before that "C" comes in (12.53). Times from
+          // lab/s06-groups/item1/names.mjs
+          const edgeA = (k, t) => clamp(k === 's7' ? 1 - P(t, A.push + 0.99, 0.25) + P(t, A.truck, 0.25)
+            : k === 'r6' ? 1 - P(t, A.push + 1.17, 0.25) + P(t, A.truck, 0.25)
+              : k === 's2' ? 1 - P(t, A.truck + 0.7, 0.2) + P(t, A.pull + 0.18, 0.25) : 1)
           for (let n = 1; n <= 7; n++) GROW[n].push(NUMS[n - 1], A.seven + 0.1 * (n - 1))
           const KEYP = { 0: [A.each], 2: [A.each + 0.2], 4: [A.scattered, A.each + 0.4], 5: [A.scattered + 0.1, A.each + 0.6], 11: [A.scattered + 0.2], 12: [A.scattered + 0.3] }
           // a bracket's ink: ink-2 at 60 % until lit, ink at full when lit
@@ -384,6 +403,19 @@
           }
 
           const RS = {}                                                 // the semitones' gold this frame
+          // a semitone's hop under its bracket: up nearly straight (power2.out over its first 35 %), across flat at
+          // `top` px above the higher stair while x travels (sine.inOut, 20 % to 85 %), and down onto its stair
+          // (power2.in over its last 35 %), so it clears the riser's "S" without rising toward the bracket
+          const semiHopAt = (t, t1, p0, p1, { dur = 0.3, top = 15, up = 0.35, dn = 0.35, x0u = 0.2, x1u = 0.85 } = {}) => {
+            const u = clamp((t - (t1 - dur)) / dur)
+            const yTop = Math.min(p0[1], p1[1]) - top
+            const ux = L.ease('sine.inOut')(clamp((u - x0u) / (x1u - x0u)))
+            let y
+            if (u < up) y = lerp(p0[1], yTop, L.ease('power2.out')(u / up))
+            else if (u > 1 - dn) y = lerp(yTop, p1[1], L.ease('power2.in')((u - (1 - dn)) / dn))
+            else y = yTop
+            return [lerp(p0[0], p1[0], ux), y]
+          }
 
           L.clock(tl, D, (t) => {
             cam.apply(t)
@@ -459,13 +491,14 @@
               else if (t >= steps[0].t && t < A.ghEnd + 0.5) {
                 const out = P(t, A.ghEnd, 0.5, 'power1.in')
                 b = { ...L.bead4.runAt(t, steps), a: 1 - out, scale: 1 - 0.4 * out }
-                // the two semitone hops (E-F, B-C) are the small step: their apex 24 above the higher stair, not
-                // 40, and their x on power2.inOut, so the bead stays under its bracket (16.3 px) and clears the "S"
-                // (6.8 px; lab/s06-groups/item5/bracket-clear.mjs). Its middle frame travels 65 px on screen in F-low
-                // (a tone hop's 43); power3.inOut's 81 read as a pop
-                if (b.hopping && SEMI(b.on + 1)) {
-                  const [x, y] = L.bead4.hopAt(t, steps[b.on + 1].t, steps[b.on].p, steps[b.on + 1].p, { lift: 24, ease: 'power2.inOut' })
-                  b.x = x; b.y = y
+                // the hops under a bracket keep the bead 20 px (on screen, F-low and F-high) or more below its line
+                // (critic B-04 item 3): the two tones (D-E, A-B) peak 30 above the higher stair, not 40; the two
+                // semitones (E-F, B-C) on semiHopAt, 15 above, flat across the top, so the bead clears the "S" it
+                // passes over (3.8 px) and its bracket (11.3, 20 on screen); lab/s06-groups/item5/hop-clear.mjs
+                if (b.hopping) {
+                  const n = b.on + 1, i = b.on, args = [t, steps[i + 1].t, steps[i].p, steps[i + 1].p]
+                  const xy = SEMI(n) ? semiHopAt(...args, { top: 15 }) : n === 2 || n === 6 ? L.bead4.hopAt(...args, { lift: 30 }) : null
+                  if (xy) { b.x = xy[0]; b.y = xy[1] }
                 }
               }
               L.bead4.place(bead, b)

@@ -1806,3 +1806,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   c3/. Critic A-04 launched (A4.txt). Agents now: B (round 5) + critic A-04.
 - Queue: C-03 (C3.txt, c3/) when a slot frees; B-05 after B (freeze b5/: S5 from b4, new S6).
   Groups: D, E, F closed (KEEP); A, B, C verifying. Then the film render (no builder rendering).
+- 02:3x critic A-04 (saved): KEEP S1-S4; group A closes. DECISIONS 118: three optional items for
+  the polish round (S4 lower third; "measure" wave -> riser sweep; S2 blur to 0 by 34.28 so the
+  disc closes crisp like Lesson 2's). LEDGER 27. Critic C-03 launched (c3/).
+  Agents now: B (round 5, rendering) + critic C-03.
+- Queue: B-05 after B (freeze b5/: S5 from b4, new S6). Groups: A, D, E, F closed (KEEP); B, C
+  verifying. Then the film render (render-l4.sh, no builder rendering) and critic FILM1.
+- Polish round after the film critic's first (one round per group, with its items): A 118, D 107,
+  E 111, F 115 (+ whatever the film critic finds).
