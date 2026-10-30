@@ -16,16 +16,23 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import styles from './EarInstruments.module.css'
+import { skinnable } from './instrument-skin'
 
 export type ContourDirection = 'up' | 'down' | 'same'
 
-interface StylusTraceProps {
+export interface StylusTraceProps {
   /** Which tone is sounding: 1, 2, or 0. */
   sounding: 0 | 1 | 2
   /** The answer phase: both tones have sounded, the first segment
    *  stays drawn and the stylus waits at its end. */
   armed: boolean
-  reveal: { direction: ContourDirection; wrong: ContourDirection | null } | null
+  /** The way it went, once told, a wrong pick's way, and the gap in
+   *  cents (the room draws the step to scale and writes it). */
+  reveal: {
+    direction: ContourDirection
+    wrong: ContourDirection | null
+    cents?: number
+  } | null
 }
 
 const BASE_Y = 130
@@ -50,7 +57,7 @@ const WORD: Record<ContourDirection, string> = {
   same: 'level',
 }
 
-export function StylusTrace(props: StylusTraceProps): JSX.Element {
+function DrawnStylusTrace(props: StylusTraceProps): JSX.Element {
   /** Anything on the drum yet: from the first tone to the reveal. */
   const traced = () =>
     props.sounding >= 1 || props.armed || props.reveal !== null
@@ -177,3 +184,5 @@ export function StylusTrace(props: StylusTraceProps): JSX.Element {
     </svg>
   )
 }
+
+export const StylusTrace = skinnable('StylusTrace', DrawnStylusTrace)

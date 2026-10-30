@@ -11,14 +11,17 @@ import type { BeadChainProps } from '@/features/ear-lab/BeadChain'
 import type { BeatPendulumsProps } from '@/features/ear-lab/BeatPendulums'
 import type { EscapementLatticeProps } from '@/features/ear-lab/EscapementLattice'
 import type { GearTrainProps } from '@/features/ear-lab/GearTrain'
+import type { IndexArcProps } from '@/features/ear-lab/IndexArc'
 import type { InstrumentSkin } from '@/features/ear-lab/instrument-skin'
 import type { MetreLatticeProps } from '@/features/ear-lab/MetreLattice'
 import type { MetronomeColumnProps } from '@/features/ear-lab/MetronomeColumn'
 import type { MixingDeskProps } from '@/features/ear-lab/MixingDesk'
 import type { ProgressionTrainProps } from '@/features/ear-lab/ProgressionTrain'
 import type { RhythmDrumProps } from '@/features/ear-lab/RhythmDrum'
+import type { StylusTraceProps } from '@/features/ear-lab/StylusTrace'
 import { LitChain } from './LitChain'
 import { LitDesk } from './LitDesk'
+import { LitDial } from './LitDial'
 import { LitDiscs } from './LitDiscs'
 import { LitLanes } from './LitLanes'
 import { LitOrbs } from './LitOrbs'
@@ -26,6 +29,7 @@ import { LitPendulum } from './LitPendulum'
 import { LitRhythm } from './LitRhythm'
 import { LitRods } from './LitRods'
 import { LitStrings } from './LitStrings'
+import { LitTrace } from './LitTrace'
 
 export const LIT_INSTRUMENTS = {
   // Resolution
@@ -41,4 +45,7 @@ export const LIT_INSTRUMENTS = {
   ProgressionTrain: LitOrbs satisfies Component<ProgressionTrainProps>,
   // Colour and Shape: Bassline, Span and Echo share the ladder
   BeadChain: LitChain satisfies Component<BeadChainProps>,
+  // Shape
+  StylusTrace: LitTrace satisfies Component<StylusTraceProps>,
+  IndexArc: LitDial satisfies Component<IndexArcProps>,
 } as const satisfies InstrumentSkin

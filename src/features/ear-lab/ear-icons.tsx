@@ -179,6 +179,31 @@ export function IconMetronome(p: IconProps): JSX.Element {
   )
 }
 
+/** Contour's answers: up, down, the same. */
+export function IconUp(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M12 19V5M6 11l6-6 6 6" />
+    </svg>
+  )
+}
+
+export function IconDown(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
+  )
+}
+
+export function IconSame(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M4 9.5h16M4 14.5h16" />
+    </svg>
+  )
+}
+
 /** Drift's answers: a tempo held, gained and lost. */
 export function IconSteady(p: IconProps): JSX.Element {
   return (
