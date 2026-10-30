@@ -5,6 +5,35 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.26] - 2026-10-31
+
+Every tour opens on the page it shows you, and Settings can test your
+microphone.
+
+### Added
+
+- **Check your microphone in Settings.** Settings > Practice starts with a
+  live check: what the app hears, every input you have, and what took the
+  mic over. First Light's wait for your first note names the mic it hears.
+
+### Changed
+
+- **A tour starts on the page it shows.** Start one from inside an exercise,
+  a drill or Zen and it asks before leaving, and a take you haven't kept
+  asks first. Each step opens the view it points at, and yours comes back.
+- **Jam says when a network blocks it.** On a work or school network that
+  refuses rooms, Jam suggests another network, such as a phone hotspot,
+  instead of blaming a certificate.
+
+### Fixed
+
+- **A tour's spotlight stays in view on a phone.** It no longer lands under
+  the tab bar or Path's view switch.
+- **Stop means stop in the Ear Lab.** A drill's sound that was still
+  starting no longer plays after you press Stop or leave the drill.
+- **A refused microphone shows the way out.** Run again from a drill's
+  result goes back to the drill, where Use Tap instead is offered.
+
 ## [0.9.25] - 2026-10-28
 
 Merc's Sing tour keeps Play the note where you tapped it, and the mic offer
