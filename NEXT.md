@@ -2124,6 +2124,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 18:2x check-in: film-02 at 63% (pieces 13-14 of 20; a pair every ~13.5 min), so render end ~19:05 and
   done ~19:25. Watcher re-armed early (the old one would hit its 2 h limit at 18:51). wait-l4.sh now also
   counts the status file and review/measure-<name>.log as activity: the steps after the render write only
-  those, and the measure step runs ~14 min, so a quiet window on the log alone fired before done. Now
+  those, and the measure step runs ~14 min, so a quiet window on the log alone would fire before done. Now
   wait-l4.sh film-02 1380220 1200 (backup wait-l4.sh.before-status-quiet). Next: unchanged (a fresh FILM2
   critic on done, rate limit "allowed").
+- 20:1x check-in: film-02's render ended 19:06:46 (exit 0), but the seam check found dark first frames
+  (luma 15 against 29-36) at the start of pieces 6, 12, 13 and 18 (150, 300, 325, 450 s; 1 to 4 frames
+  each; renders/film-02.seams), the same race as film-01's pieces 9 and 10. render-l4.sh dropped pieces
+  5 6 11 12 13 17 18 and re-renders them with 1 worker, no recycling (seam re-render 1, 19:07:23); 5, 6, 11,
+  12 and 13 done by 20:16, 17 then 18 to go (~13.5 min each), so render end ~20:45 and done ~21:05 if
+  the seams are clean (up to 3 re-renders). Watcher re-armed: wait-l4.sh film-02 <log size at 20:17> 1200.
+  Next: unchanged (a fresh FILM2 critic on done).
