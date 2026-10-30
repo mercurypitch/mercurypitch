@@ -2134,3 +2134,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   12 and 13 done by 20:16, 17 then 18 to go (~13.5 min each), so render end ~20:45 and done ~21:05 if
   the seams are clean (up to 3 re-renders). Watcher re-armed: wait-l4.sh film-02 <log size at 20:17> 1200.
   Next: unchanged (a fresh FILM2 critic on done).
+- 21:2x film-02 DONE 21:25:51. Seam re-render 1 (5 6 11 12 13 17 18) ended 20:44 with seam 5 bad, so
+  re-render 2 (pieces 4 5) ran, 21:11 CLEAN. Film 483.733 s, 29024 frames at 60 fps; music-only exit 0;
+  films kept in /dev/shm/l4film (/ had 1106 MB free, needs 1353); contact sheet
+  renders/contact-sheet-film-02.jpg (lead glance: all scenes present, nothing black); measure
+  review/measure-film-02/: holds 11.8 s inside (0.7 per 30 s), longest 0.5 s (film-01 11.4 s); no strong
+  single-frame events (252 weaker, film-01 247); largest frame change 13.33 at 34.233 s, the S1 to S2
+  cut (film-01 had 19.90 at 120.167 s); loudness unchanged (-16.0 LUFS, LRA 5.2, TP -1.5). Extract
+  cache kept (4.4 GB, for the next render; cgroup 6.6 GB). 21:3x FILM2 critic launched (fresh
+  motion-critic, xhigh, paths + disk note only: critics/FILM2-ready.txt, films at /dev/shm/l4film; report
+  review/film-02/REPORT.md). Rate limit allowed. One agent running.
+  Next: save its report verbatim, LEDGER row, DECISIONS 130 (triage); SHIP -> DELIVERY from
+  l4entr/DELIVERY.draft.md; ONE MORE PASS -> polish round 2 per its items (two builders at xhigh).
