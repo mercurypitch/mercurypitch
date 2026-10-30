@@ -1120,3 +1120,16 @@ replaced it. The builder's record: critics never read it.
      - Holds S5 0.3 and S6 0.6 s per 30 s at 60 fps, longest 0.2 s. HANDOFFS § S5 to S6 and § S6's
        brackets and the s06 sheet now say the same. Frozen copies for critic B-04 in
        $S/l4entr/b4/.
+
+111. **S12 and S13 after component critic E-03 (both KEEP).**
+     - Both items are cosmetic and wait for builder E's next round, which follows the film critic's
+       first round so that one round carries both:
+       - Item 1: a 40 px label twitches about 1 px vertically while it scales (S12's "wait" pulses,
+         S13's "wait on ti" and "at about speaking volume"), the same whole-pixel baseline snap as
+         decision 104. The likeliest fix is to scale small pulsing labels about their baseline
+         (centre bottom, or left bottom for a left-aligned one), so the baseline itself never moves;
+         the critic's other suggestion, a compositing layer per label, is untested here.
+       - Item 2: S13's "at about speaking volume" swell reaches full size in 0.12 s and reads as a
+         punch on a line asking for a moderate voice; it rises over about 0.3 s, eased in and out.
+     - Nothing else is open in S12 or S13: the do names ease back, the doctor lines, the "wait"
+       landing and the chip settle with no step, and the arrow clears Tavi's bead.

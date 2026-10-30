@@ -1761,3 +1761,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 01:0x critic E-03 launched (frozen e3/). Agents now: A + E-03.
 - Queue: F round 3 (F-fix3) -> C small (C-fix2); critic B-04 (B4.txt); A-04 when A reports; F-04
   (frozen S16 from f3) and C-03 after their rounds. D's polish after the film critic's first round.
+- 01:1x critic E-03 (saved): KEEP S12, S13; DECISIONS 111 (pulse twitch + swell punch wait for E's next
+  round after the film critic). LEDGER 24. F round 3 sent (F-fix3). Agents now: A + F.
+- Queue: C small (C-fix2) -> critic B-04 (B4.txt); A-04 when A reports; F-04 (S16 from f3) when F
+  reports; C-03 after C. Groups now: D KEEP x3, E KEEP x2; B, A, F, C rounds closing.
