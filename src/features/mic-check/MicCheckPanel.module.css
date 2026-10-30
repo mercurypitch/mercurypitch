@@ -14,10 +14,13 @@
 
 /* The stage paints on the theme's deepest surface: the canvas reads this
    background to choose its blend (MicCheckStage.tsx), so keep the colour on
-   this element. */
+   this element. `min-width: 0` keeps it inside a phone's panel: WebKit
+   carries the min-height through the ratio into a 420 px minimum width
+   (MicCheckPanel.css.test.ts). */
 .stage {
   position: relative;
   aspect-ratio: 2 / 1;
+  min-width: 0;
   min-height: 210px;
   max-height: 320px;
   overflow: hidden;
