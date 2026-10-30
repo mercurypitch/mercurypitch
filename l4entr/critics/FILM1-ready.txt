@@ -1,0 +1,15 @@
+Round type: full film, round 1. Judge the whole film against the brief and the quality bar, rank the problems you find with film timestamps, and end with SHIP or ONE MORE PASS.
+
+Project folder: /home/user/mercurypitch/output/motion/lesson-04
+Artifact: /home/user/mercurypitch/output/motion/lesson-04/renders/film-01.mp4 (1920 x 1080, 60 fps, with the full mix)
+Music-only render: /home/user/mercurypitch/output/motion/lesson-04/renders/film-01-music-only.mp4 (the same picture with the music bed alone)
+Spec: /home/user/mercurypitch/output/motion/lesson-04/STORYBOARD.md and /home/user/mercurypitch/output/motion/lesson-04/HANDOFFS.md
+Brief: /home/user/mercurypitch/output/motion/lesson-04/BRIEF.md
+Facts: /home/user/mercurypitch/output/motion/lesson-04/FACTS.md
+Reference study folder: /home/user/mercurypitch/output/motion/lesson-04/study
+SKILL_DIR: /home/user/mercurypitch/.claude/skills/motion-designer
+Write your report to: /home/user/mercurypitch/output/motion/lesson-04/review/film-01/REPORT.md
+
+If you cannot write files, return the full report as your final message.
+
+Operational note: free disk on / is about 1.25 GB and memory is capped at about 13 GB for everything you run (files in /dev/shm count against it, and about 5 GB is already taken), so keep extracted frames and dumps in /dev/shm under about 3 GB at any time and delete them when you are done.

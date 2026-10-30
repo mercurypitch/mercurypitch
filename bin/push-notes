@@ -52,11 +52,25 @@ FILES=(
   l4film/compositions/s01-cold-open.html l4film/compositions/s02-title.html l4film/compositions/s03-promise.html l4film/compositions/s04-recall.html l4film/compositions/s05-steps.html l4film/compositions/s06-groups.html l4film/compositions/s07-predict.html l4film/compositions/s08-anywhere.html l4film/compositions/s09-names.html l4film/compositions/s10-ti.html l4film/compositions/s11-why.html l4film/compositions/s12-sing.html l4film/compositions/s13-your-turn.html l4film/compositions/s14-recap.html l4film/compositions/s15-next.html l4film/compositions/s16-end.html l4film/lab/s01-cold-open/BUILD-NOTES.md l4film/lab/s05-steps/BUILD-NOTES.md l4film/lab/s07-predict/BUILD-NOTES.md l4film/lab/s09-names/BUILD-NOTES.md l4film/lab/s12-sing/BUILD-NOTES.md l4film/lab/s14-recap/BUILD-NOTES.md l4film/captions/chapters.json
   l4film/tools/merc-tags.py l4film/assets/merc/intro.js l4film/merc/intros.json l4film/review/component-B-01/REPORT.md
   l4entr/q/queue.sh l4entr/E-prompt.txt l4entr/F-prompt.txt
+  render-l4.sh wait-l4.sh l4entr/polish/HELD.md l4entr/polish/BRIEF-common.md l4entr/critics/FILM1-ready.txt
+  s2/BRIEF-articles-common.md s2/BRIEF-arc-c.md s2/BRIEF-arc-d.md s2/lessons/ARC-C-REPORT.md s2/lessons/ARC-D-REPORT.md
+  s2/lessons/15-staff/RESEARCH.md s2/lessons/15-staff/ARTICLE-PLAN.md s2/lessons/16-sing-what-you-see/RESEARCH.md s2/lessons/16-sing-what-you-see/ARTICLE-PLAN.md
+  s2/lessons/17-note-lengths/RESEARCH.md s2/lessons/17-note-lengths/ARTICLE-PLAN.md s2/lessons/18-read-a-line/RESEARCH.md s2/lessons/18-read-a-line/ARTICLE-PLAN.md
+  s2/lessons/19-threes-offbeats/RESEARCH.md s2/lessons/19-threes-offbeats/ARTICLE-PLAN.md s2/lessons/20-runs-pentatonic/RESEARCH.md s2/lessons/20-runs-pentatonic/ARTICLE-PLAN.md
+  s2/lessons/21-keys-circle/RESEARCH.md s2/lessons/21-keys-circle/ARTICLE-PLAN.md s2/lessons/22-vibrato/RESEARCH.md s2/lessons/22-vibrato/ARTICLE-PLAN.md
+  s2/lessons/23-perfect-tritone/RESEARCH.md s2/lessons/23-perfect-tritone/ARTICLE-PLAN.md s2/lessons/24-drone-harmony/RESEARCH.md s2/lessons/24-drone-harmony/ARTICLE-PLAN.md
+  s2/lessons/25-minor-properly/RESEARCH.md s2/lessons/25-minor-properly/ARTICLE-PLAN.md s2/lessons/26-second-voice/RESEARCH.md s2/lessons/26-second-voice/ARTICLE-PLAN.md
+  s2/lessons/27-sevenths-inversions/RESEARCH.md s2/lessons/27-sevenths-inversions/ARTICLE-PLAN.md s2/lessons/28-cadences-form/RESEARCH.md s2/lessons/28-cadences-form/ARTICLE-PLAN.md
+  sing-art/BRIEF.md sing-art/PLAN.md sing-art/LEDGER.md
+  l4film/review/component-A-04/REPORT.md l4film/review/component-B-05/REPORT.md l4film/review/component-C-03/REPORT.md l4film/review/component-D-04/REPORT.md l4film/review/component-E-03/REPORT.md l4film/review/component-F-04/REPORT.md l4film/review/film-01/REPORT.md
 )
 
 # The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
 L4=/home/user/mercurypitch/output/motion/lesson-04
 for f in BRIEF.md FACTS.md script.json SCRIPT-DRAFT.md SCRIPT.md DECISIONS.md LEDGER.md tools/script-draft.py tools/gen-root.py tools/mix.py tools/captions.py tools/script-md.py review/script-01/REPORT.md review/script-02/REPORT.md review/script-03/REPORT.md STORYBOARD.md HANDOFFS.md review/storyboard-01/REPORT.md review/storyboard-02/REPORT.md review/storyboard-03/REPORT.md study/RULES.md study/lesson-01/NOTES.md study/lesson-02/NOTES.md study/lesson-01/events.md study/lesson-02/events.md assets/lib/frames.js assets/lib/stairs.js assets/lib/scripts.txt lab/kit-src/stairs.html BUILD-GUIDE.md tools/board-cues.json tools/board-clock.py tools/merc-shots.py tools/CHANGES.md tools/chapters.py assets/lib/hosts.js tools/merc-whole.py tools/merc-pass.mjs assets/merc/whole.js lab/s04-recall/s04-src.html lab/s03-promise/s03-src.html compositions/s01-cold-open.html compositions/s02-title.html compositions/s03-promise.html compositions/s04-recall.html compositions/s05-steps.html compositions/s06-groups.html compositions/s07-predict.html compositions/s08-anywhere.html compositions/s09-names.html compositions/s10-ti.html compositions/s11-why.html compositions/s12-sing.html compositions/s13-your-turn.html compositions/s14-recap.html compositions/s15-next.html compositions/s16-end.html lab/s01-cold-open/BUILD-NOTES.md lab/s05-steps/BUILD-NOTES.md lab/s07-predict/BUILD-NOTES.md lab/s09-names/BUILD-NOTES.md lab/s12-sing/BUILD-NOTES.md lab/s14-recap/BUILD-NOTES.md captions/chapters.json tools/merc-tags.py assets/merc/intro.js merc/intros.json review/component-B-01/REPORT.md; do
+  if [ -f "$L4/$f" ]; then mkdir -p "$S/l4film/$(dirname "$f")" && cp "$L4/$f" "$S/l4film/$f"; fi
+done
+for f in review/component-A-04/REPORT.md review/component-B-05/REPORT.md review/component-C-03/REPORT.md review/component-D-04/REPORT.md review/component-E-03/REPORT.md review/component-F-04/REPORT.md review/film-01/REPORT.md; do
   if [ -f "$L4/$f" ]; then mkdir -p "$S/l4film/$(dirname "$f")" && cp "$L4/$f" "$S/l4film/$f"; fi
 done
 
