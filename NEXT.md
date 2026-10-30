@@ -1814,3 +1814,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   verifying. Then the film render (render-l4.sh, no builder rendering) and critic FILM1.
 - Polish round after the film critic's first (one round per group, with its items): A 118, D 107,
   E 111, F 115 (+ whatever the film critic finds).
+- 02:3x-04:10 both agents (B round 5, critic C-03) stopped on the account's 5-hour usage limit; the
+  container restarted at 04:15 (/dev/shm cleared; / intact). 04:20 resumed both by SendMessage.
+  B's S6 edit (02:17) and clip (02:24) were in place.
+- 04:22 film-01 prep: frozen project /dev/shm/l4film01proj (index.html, compositions/ copied,
+  assets and .transcode-cache symlinked; md5s in compositions.md5, kit.md5). render-l4.sh takes a
+  4th arg SRC (backup render-l4.before-src.sh). Full check running on the copy
+  (renders/film-01-check.log); then: setsid nohup bash $S/render-l4.sh film-01 60 high
+  /dev/shm/l4film01proj. If the container restarts mid-render, /dev/shm (copy + output) is lost.
