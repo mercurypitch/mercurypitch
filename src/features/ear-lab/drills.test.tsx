@@ -308,7 +308,13 @@ describe('Hairline', () => {
     const plate = () => screen.getByTestId('ear-stage-last-call')
     expect(plate().textContent).toContain('Trial 1')
     expect(plate().textContent).toContain(verdict)
-    expect(plate().textContent).toMatch(/Gap [\d.]+¢ → [\d.]+¢/)
+    // Where it goes, or that it holds: a first right answer keeps it.
+    expect(plate().textContent).toMatch(
+      /Gap (?:[\d.]+¢ → [\d.]+¢|holds at [\d.]+¢)/,
+    )
+    // Never a move to where it already is ("50.0¢ → 50.0¢").
+    const move = /Gap ([\d.]+)¢ → ([\d.]+)¢/u.exec(plate().textContent ?? '')
+    if (move !== null) expect(move[1]).not.toBe(move[2])
 
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
     expect(armedPads()).toHaveLength(0)

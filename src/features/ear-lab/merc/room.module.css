@@ -392,6 +392,52 @@
   z-index: -1;
 }
 
+/* Merc listening: two arcs of the sound beside him, as the mock-ups draw
+   him, rippling out while a question plays. */
+.ears {
+  position: absolute;
+  z-index: 2;
+  right: -9px;
+  top: 14px;
+  width: 22px;
+  height: 26px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+
+.ears[data-on] {
+  opacity: 1;
+}
+
+.ears path {
+  fill: none;
+  stroke: var(--room-cyan);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  animation: ear-wave 1.2s ease-out infinite;
+}
+
+.ears path:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ear-wave {
+  0% {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(3px);
+  }
+}
+
 /* The room kit's glass bubble. */
 .bubble {
   position: relative;
@@ -1639,6 +1685,11 @@
   }
 
   .pad[data-look='waiting'] {
+    animation: none;
+  }
+
+  /* Still arcs: Merc is listening, nothing ripples. */
+  .ears path {
     animation: none;
   }
 

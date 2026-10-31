@@ -246,11 +246,18 @@ describe('the drill room', () => {
     )
   })
 
-  it('asks the question again whenever an answer is due', () => {
+  it('asks the question whenever an answer is due', () => {
     const h = mount()
-    // The first question: the task in full.
+    // The first question sounding: the task in full.
+    h.setBeat('listen')
     expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
       'Two notes. Name the interval.',
+    )
+    // Its answer due, the question itself, as the mock-ups have it.
+    h.setStatus('Which interval was that?')
+    h.setBeat('answer')
+    expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
+      'Which interval was that?',
     )
     h.setStatus('That was a perfect fifth.')
     h.setBeat('reveal')

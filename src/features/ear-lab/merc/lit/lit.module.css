@@ -148,6 +148,11 @@
   --inst-serif: 'Inter Variable', 'Inter', system-ui, sans-serif;
 }
 
+/* The Chart's written notes, as sturdy as the mock-ups draw them. */
+.score [data-part='stem'] {
+  stroke-width: 2.2;
+}
+
 .score [data-met='true'] {
   color: #8ff5e3;
 }

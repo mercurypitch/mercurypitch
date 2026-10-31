@@ -180,7 +180,8 @@ export function ThresholdDrillView(
     return []
   }
 
-  /** "Gap 12.0¢ → 9.5¢": where this track's level goes next. */
+  /** "Gap 12.0¢ → 9.5¢": where this track's level goes next, or "Gap
+   *  holds at 12.0¢" when it stays, not a move to where it already is. */
   const consequence = (): string | undefined => {
     const next = props.run.nextLevel()
     return next === null ? undefined : levelMove(next)
@@ -190,7 +191,11 @@ export function ThresholdDrillView(
       ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
       : ''
     const unit = props.unitShort
-    return `${track}${props.levelCaption} ${props.formatValue(props.run.level())}${unit} → ${props.formatValue(next)}${unit}`
+    const now = props.formatValue(props.run.level())
+    const then = props.formatValue(next)
+    return now === then
+      ? `${track}${props.levelCaption} holds at ${now}${unit}`
+      : `${track}${props.levelCaption} ${now}${unit} → ${then}${unit}`
   }
 
   // Room for the console at its tallest from the first question on: the

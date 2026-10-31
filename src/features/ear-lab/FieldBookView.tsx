@@ -17,7 +17,7 @@ import { keyLabel } from '@/lib/ear/wild'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { earPlayerRating } from '@/stores/ear-lab-store'
 import { getUvrSession } from '@/stores/uvr-store'
-import { IconBassLine, IconChain, IconFork } from './ear-icons'
+import { IconBassSteps, IconFork, IconPhrase } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, PlayPad } from './EarStage'
 import { FieldBookPage } from './FieldBookPage'
 import { EarStage } from './stage-switch'
@@ -55,7 +55,7 @@ const DRILLS: {
     track: 'wild-echo',
     label: 'Echo in the Wild',
     keycap: '2',
-    icon: IconChain,
+    icon: IconPhrase,
     count: (counts) => counts.echo,
     unit: 'phrases',
   },
@@ -64,7 +64,7 @@ const DRILLS: {
     track: 'wild-bassline',
     label: 'Bassline in the Wild',
     keycap: '3',
-    icon: IconBassLine,
+    icon: IconBassSteps,
     count: (counts) => counts.bassline,
     unit: 'root motions',
   },

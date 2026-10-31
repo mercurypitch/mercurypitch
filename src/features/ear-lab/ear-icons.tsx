@@ -145,6 +145,28 @@ export function IconChain(p: IconProps): JSX.Element {
   )
 }
 
+/** A phrase: three notes and the way between them, the Field Book's
+ *  Echo, apart from Bassline's steps beside it. */
+export function IconPhrase(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <circle cx="5" cy="15" r="2" />
+      <circle cx="12" cy="8.5" r="2" />
+      <circle cx="19" cy="12.5" r="2" />
+      <path d="M6.6 13.6l3.8-3.6M13.9 9.4l3.3 2" />
+    </svg>
+  )
+}
+
+/** Roots walking in steps: the Field Book's Bassline. */
+export function IconBassSteps(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 17.5h4.5v-4H12V16h4.5V8.5H21" />
+    </svg>
+  )
+}
+
 export function IconSpan(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>
