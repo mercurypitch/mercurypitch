@@ -97,6 +97,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     assets: () => props.studio.assets(),
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
+    audioBusy: () => finishing(),
   })
   // A fader, pan knob or dial is heard while it moves, before it saves.
   const liveMix = createStudioLiveMix({

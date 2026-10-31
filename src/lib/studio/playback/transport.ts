@@ -57,6 +57,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let buildSeconds = 0.1
   let warming: Promise<void> = Promise.resolve()
   let warmAbort: AbortController | null = null
+  let releasing = 0
   const retired = new Set<StudioRun>()
   const retiredTimers = new Map<StudioRun, ReturnType<typeof setTimeout>>()
   // The newest run: heard, or about to be once its handover begins.
@@ -585,7 +586,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
     assets: readonly StudioAsset[],
   ): Promise<void> {
     // A function, so each check reads the state after the awaits before it.
-    const busy = () => disposed || preparing || active !== null || held !== null
+    const busy = () =>
+      disposed || preparing || releasing > 0 || active !== null || held !== null
     if (busy()) return warming
     const abort = new AbortController()
     warmAbort = abort
@@ -710,14 +712,20 @@ export function createStudioTransport(options: StudioTransportOptions) {
       cache.clear()
     },
     async releaseAudio(): Promise<void> {
-      pause()
-      kept.letGo()
-      // Export, Compare and auto-balance need the room a warm-up holds.
-      warmAbort?.abort()
-      await warming
-      cache.clear()
-      await waitForRelease()
-      cache.clear()
+      // No warm-up starts until the release is through (warm()).
+      releasing++
+      try {
+        pause()
+        kept.letGo()
+        // Export, Compare and auto-balance need the room a warm-up holds.
+        warmAbort?.abort()
+        await warming
+        cache.clear()
+        await waitForRelease()
+        cache.clear()
+      } finally {
+        releasing--
+      }
     },
     setSnapshot,
     async seek(

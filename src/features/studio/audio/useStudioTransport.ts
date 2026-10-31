@@ -23,6 +23,12 @@ export interface UseStudioTransportOptions {
   readCanonicalAsset(assetId: string): Promise<Blob>
   audioLease?: AudioContextLease
   beforePlay?: () => void
+  /**
+   * True while Export, Compare or auto-balance holds the audio it released.
+   * No warm-up runs meanwhile; one runs once it is done, so the next Play
+   * finds the song's graph built ahead again.
+   */
+  audioBusy?: Accessor<boolean>
 }
 
 export interface StudioPreviewOptions {
@@ -288,14 +294,19 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
 
   // Warm the playback cache as the song opens, and again once edits settle,
   // so Play starts without reading. Once the clock exists the warm-up also
-  // builds the graph ahead (prebuilt-run.ts).
+  // builds the graph ahead (prebuilt-run.ts). Export, Compare, auto-balance
+  // and a take's preview release the song's audio: it warms again once they
+  // are done.
   let warmTimer: ReturnType<typeof setTimeout> | undefined
   let warmedOnce = false
   createEffect(() => {
     const project = options.project()
     const assets = options.assets()
     clearTimeout(warmTimer)
-    if (!project || project.clips.length === 0 || isPlaying()) return
+    const released =
+      options.audioBusy?.() === true || previewing() || previewPending()
+    if (!project || project.clips.length === 0 || isPlaying() || released)
+      return
     const settle = warmedOnce ? 400 : 0
     warmedOnce = true
     warmTimer = setTimeout(() => {
