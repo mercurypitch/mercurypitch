@@ -228,7 +228,11 @@
         m.box.style.opacity = shown.toFixed(3)
         m.box.style.transform = `translate(${f1(dx)}px, 0px)${flip}`
         const seen = Math.max(any, shown)
-        if (patch) patch.style.opacity = (n >= from ? seen * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4)) : 0).toFixed(3)
+        // `floorEdge` (film round 4): the patch runs on to the frame's edge, where no host covers it, so
+        // it comes up with the long fall, by how far down he has come (u squared), full on the landing frame
+        const s0 = segs[0]
+        const land = floorEdge && s0 && s0.fall ? Math.min(1, Math.max(0, (n - s0.from) / FALL_N)) ** 2 : 1
+        if (patch) patch.style.opacity = (n >= from ? seen * land * (hop == null ? 1 : 1 - P(t, hop + 0.15, 0.4)) : 0).toFixed(3)
         return seen > 0.004 && Math.abs(dx) < 220 ? L.mercBox(x + dx, feetY, size) : null
       }
     }

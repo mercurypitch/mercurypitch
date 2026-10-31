@@ -150,8 +150,9 @@
           // so the two never overlap, nothing stands past the box (component critic D-01 item 4) and the pill is
           // never empty (D-04 item 3, DECISIONS 107): the box first widens to the new words (0 to 0.45), then the
           // words roll one line (1.25 of the size) up, the old out through the pill's top and the new in from its
-          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The roll's clip
-          // is the pill's inner box, 5 px inside the rim, so no word rides over the border (film round 3, item 5).
+          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The roll's window
+          // is the pill's inner box, 5 px inside the rim, so no word rides over the border (film round 3, item 5),
+          // and the words fade out and in across its top and bottom 18 % rather than meet a cut (film round 4).
           // The guess is L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
           // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
           const makePill = (parent, { size, items, guess = false }) => {
@@ -160,12 +161,16 @@
             const id = SID + '-pill' + makePill.n++
             const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
             const reveal = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: '#fff', 'stroke-width': 12, pathLength: 1, 'stroke-dasharray': '1 1' }, mask)
-            const clip = L.svg('clipPath', { id: id + '-clip' }, g)
-            const IN = 5                                     // the roll's clip: the rim (2.5) and as much again inside it
-            const clipR = L.svg('rect', { x: IN, y: -h / 2 + IN, height: h - 2 * IN, rx: h / 2 - IN }, clip)
+            // the roll's window: the pill's inner box, 5 px inside the rim (2.5 px), its top and bottom 18 % a
+            // fade (film round 4: a hard cut there read as the words pushing through the rim), clear of the type
+            const IN = 5
+            const fade = L.svg('linearGradient', { id: id + '-fade', x1: 0, y1: 0, x2: 0, y2: 1 }, g)
+            for (const [o, c] of [[0, '#000'], [0.18, '#fff'], [0.82, '#fff'], [1, '#000']]) L.svg('stop', { offset: o, 'stop-color': c }, fade)
+            const win = L.svg('mask', { id: id + '-win', maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
+            const clipR = L.svg('rect', { x: IN, y: -h / 2 + IN, height: h - 2 * IN, rx: h / 2 - IN, fill: `url(#${id}-fade)` }, win)
             const fillR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'rgba(22,27,34,0.92)' }, g)
-            // the words, under the rims, so the rim draws over the edge that clips them
-            const words = L.svg('g', { 'clip-path': `url(#${id}-clip)` }, g)
+            // the words, under the rims, inside the window
+            const words = L.svg('g', { mask: `url(#${id}-win)` }, g)
             const dash = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, 'stroke-linecap': 'round', mask: `url(#${id})`, display: guess ? 'inline' : 'none' }, g)
             const solidR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.C.ink, 'stroke-width': 2.5, 'stroke-opacity': 0.85, opacity: 0 }, g)
             const texts = items.map((it) => L.svg('text', { x: inset, y: 0.35 * size, fill: it.fill || L.C.ink, opacity: 0, 'data-layout-allow-overlap': '', style: `font: 600 ${size}px 'Outfit', sans-serif; white-space: pre;`, text: it.text }, words))

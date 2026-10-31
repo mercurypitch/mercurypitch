@@ -2370,3 +2370,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   NEXT: ASR check of the takes (faster-whisper env gone: rebuild in /dev/shm if needed), the two DECISIONS 136
   fixes (S12 floor strip full on landing: hosts.js line 231 `seen`; pill label clip), then Tavi's 14 on the
   owner's switch -> import.py (ctc_align, wav2vec2 ONNX) -> cues.py --no-tts -> board-clock -> passes -> ...
+- 13:4x POLISH (DECISIONS 136's two items, owner's "sure you can do those small polish improvements"): BOTH MADE
+  AND VERIFIED in stills. (1) S12 floor strip: hosts.js L.mercGate intro path, `land` = ((n - from)/FALL_N)^2
+  for floorEdge patches with a long fall; per-frame table lab/s12-sing/polish4/floor-patch-opacity-per-frame.txt:
+  Tavi's (right) 0.001 at S12 0.883 -> 1 at 1.416 (film 5:42.66), Merc's (left) 0.001 at 1.283 -> 1 at 1.816
+  (5:43.06); S13 unchanged (its gates start after the intro: factor 1). Sheets in lab/s12-sing/polish4/.
+  (2) Pill: s09-names.html makePill, clipPath -> mask (inner box with an 18 % top/bottom gradient), comment
+  updated; 2x crops S9 26.700-27.000 (film 4:15.94-4:16.24) in lab/s09-names/polish4/: no word crosses the rim,
+  the words fade near it; resting label clear of the fades. ASR of Merc's takes done (b36 "doh" -> flag for a
+  human ear; b52 fixed by the splice). ElevenLabs still on Merc's workspace (list_voices "Orange Merc": none)
+  -> Tavi's 14 wait on the owner. list_computer_folders: none shared (Remote Control not set up).
+  Full check running (bouy7405w -> l4entr/polish4/check.log; baseline 0 errors, 65 warnings).
+  NEXT: check result -> DECISIONS 137 (the two fixes, b52 splice, owner's review) -> push-notes. Then wait for
+  the workspace switch; on it: Tavi o1-o14 (flow, one take each, eleven_v3, voice p2JfZCXWY245UrEylK7q, context
+  "Lesson 4 line oN (Tavi, voice Orange Merc): ...") -> ledger_sync -> fetch.py -> b52-gap.py again -> ASR ->
+  import.py --align-model /dev/shm/w2v -> cues.py --no-tts -> board-clock -> passes -> mix -> captions ->
+  chapters -> script-md -> check -> freeze -> film-05 -> FILM5 critic -> DELIVERY -> web encodes.

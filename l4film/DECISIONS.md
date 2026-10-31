@@ -1841,3 +1841,47 @@ replaced it. The builder's record: critics never read it.
        with the film when it will be ready for my review"). It goes with DELIVERY.md. The final
        voices still wait on the owner's yes (decision 16), and with them a new master, a fresh
        film critic round and this file's re-voice steps.
+
+137. **The owner's review (31 October): the film is "great"; decision 136's two small fixes are in, and the final voices begin.**
+     - The owner watched film-04 and wrote: "I watched the film, is great, sure you can do those
+       small polish improvements and then use elevenlabs to generate voiceovers if you have access,
+       let me know if I need to swap accounts since Tavi is on one merc on another". That is the
+       yes to decision 16's final voices and to decision 136's two fixes. The other optional items
+       (the falls from the top, the recall, the title's blur, the push-ins) stay as built: the
+       owner watched them and asked for none.
+     - **The S12 floor strip** (`assets/lib/hosts.js`, `L.mercGate`, the intro path). A `floorEdge`
+       patch whose first intro segment is a long fall now has its opacity multiplied by
+       ((n - from) / FALL_N) squared: the u squared by which the fall brings the host down. The
+       strip comes up as the host does and is full on the frame the fall ends. Measured frame by
+       frame (`lab/s12-sing/polish4/floor-patch-opacity-per-frame.txt`):
+       - Tavi's strip, on the right, is 0.001 at S12 0.883 and full at 1.416 (film 5:42.66).
+       - Merc's, on the left, is 0.001 at 1.283 and full at 1.816 (5:43.06).
+       - Before, each faded on with the head pass, about 0.5 s before its host landed.
+       - S13's gates run the same m12 passes after their intros end, so there the factor is 1 and
+         nothing changes.
+       - Stills and brightened floor crops: `lab/s12-sing/polish4/`.
+     - **The pill's roll** (`compositions/s09-names.html`, `makePill`). The roll's window was a clip
+       to the pill's inner box (decision 134). It is now a mask of the same box, its top and bottom
+       18 % a gradient, so the outgoing "do = C?" fades out as it nears the rim and "fixed do: do =
+       C" fades in from below; the hard edge had read as the words pushing through the border. At
+       rest the label sits clear of both gradients: its 37 px type leaves 15 px either side in the
+       67 px window, and each gradient is 12 px. 2x crops across S9 26.700 to 27.000 (film 4:15.94
+       to 4:16.24), `lab/s09-names/polish4/`: no word crosses the rim on any frame.
+     - **Merc's 55 lines** on D2 ("Merc V1 Gentle Whimsical D2", eleven_v3, one take each, the text
+       exactly as `script.json`), and one retake of b52: 56 requests, 3,676 credits
+       (`voice-elevenlabs/ledger.jsonl`). Whisper base.en and small.en heard every line as written,
+       spellings of homophones aside, with two exceptions:
+       - b52 ("G. Doh is wherever ..."): both takes ran "G." into "Doh", one word to Whisper.
+         Instead of a third take, `voice-elevenlabs/b52-gap.py` puts 0.30 s of silence into the
+         first take at its quietest 10 ms after "G." (0.282 s in, 8 ms fades), pinned as
+         `8sMZCZaHGec7hS4icZCw+gap` in `takes/selected.json`. Whisper now hears two words.
+       - b36 ("... went to doh"): small.en hears "daw".
+       Both are for a human ear.
+     - The D2 takes, trimmed as `import.py` trims them, run 42.4 s longer than Kokoro's (316.4 s
+       against 273.9 s; the most, b11 +3.6 s, b30 +3.3 s, b15 +2.8 s, b28 +2.6 s). Most of it is the
+       slower delivery. Pauses of 0.45 s or more inside lines total 13.5 s, nearly all at sentence
+       ends, and stay as spoken. Before Tavi's lines, the film runs about 8:47.
+     - **Tavi's 14 lines** (941 characters, about 950 credits) wait for the ElevenLabs connector to
+       reach the workspace that holds Orange Merc: on 31 October it found no voice of that name.
+       The owner is asked to switch it.
+     - The full check after both fixes: {fill}.
