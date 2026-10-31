@@ -36,18 +36,6 @@ export const NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES = Object.freeze(
 )
 
 /**
- * Retired exports kept in public for historical art comparison. Runtime
- * resolves the Cloudway v7 buffers and museum v8/v11 kits through its asset
- * registry; neither old bundle is a fallback or an external glTF dependency.
- */
-export const NATIVE_RETIRED_GAME_ASSETS = [
-  'games/cloudway-v3/cloudway-platform-kit-v3.glb',
-  'games/journey-map-v3/floating-museum-sculpture-kit-v3.glb',
-  'games/journey-map-v10/floating-museum-botanical-kit-v10.glb',
-  'games/journey-map-v10/manifest.json',
-] as const
-
-/**
  * Sixteen-bit source normals remain public for production. Native ships the
  * eight-bit WebP deliveries verified to preserve the renderer's RGBA8 upload.
  */
@@ -62,7 +50,6 @@ export const NATIVE_EXCLUDED_GAME_ASSETS = Object.freeze([
   ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
   ...NATIVE_DESKTOP_ONLY_GAME_ASSETS,
   ...NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES,
-  ...NATIVE_RETIRED_GAME_ASSETS,
   ...NATIVE_SOURCE_NORMAL_GAME_ASSETS,
 ])
 

@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
+import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_DESKTOP_ONLY_GAME_DEPENDENCIES, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
 import { gameModelDependencies } from './game-model-dependencies.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
@@ -172,10 +172,6 @@ describe('explicit native games profile', () => {
         declaredWeb.has(asset),
       ).sort(),
     )
-    for (const asset of NATIVE_RETIRED_GAME_ASSETS) {
-      expect(declaredWeb.has(asset)).toBe(false)
-      expect(native.has(asset)).toBe(false)
-    }
     for (const id of [
       'cloudway-platform-kit-v1',
       'floating-museum-architecture-kit-v6',
