@@ -114,7 +114,8 @@ async function beginAndListen(): Promise<void> {
   expect(hits[1].volume).toBeLessThan(1)
   expect(hits[4].at).toBeCloseTo(hits[0].at + BAR / 1000, 3)
   await vi.advanceTimersByTimeAsync(LEAD + SUBDIVIDE_TIMING.quarterMs + 10)
-  expect(lattice()?.querySelectorAll('[data-part="pallet"]').length).toBe(4)
+  // Seven pallets whatever the metre until the reveal: four would say 4/4.
+  expect(lattice()?.querySelectorAll('[data-part="pallet"]').length).toBe(7)
   expect(lattice()?.querySelector('[data-lit="true"]')).not.toBeNull()
   expect(lattice()?.querySelectorAll('[data-accent="true"]').length).toBe(0)
   expect(lattice()?.querySelector('[data-part="bar-line"]')).toBeNull()

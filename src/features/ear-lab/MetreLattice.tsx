@@ -1,15 +1,18 @@
 // ============================================================
 // MetreLattice — Subdivide's instrument.
 //
-// A lattice of pallets, one per step of the bar, the lamps chasing
-// the kit through two bars. Every pallet is drawn the same — no
-// bar line, no accent — because how the steps group is the
-// question. The reveal lights beat one's lamp in brass, draws the
-// bar line before it, and names the metre.
+// A lattice of pallets, the lamps chasing the kit through two bars.
+// Every pallet is drawn the same — no bar line, no accent — because
+// how the steps group is the question. Until the reveal it stands at
+// seven pallets whatever the metre, and the lamp runs on round them
+// across both bars, so neither the pallets nor where the lamp starts
+// again say how long the bar is: the eye knows no more than the ear.
+// The reveal lays the bar out, one pallet a step, lights beat one's
+// lamp in brass, draws the bar line before it, and names the metre.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import type { MetrePattern } from '@/lib/ear/metre'
 import styles from './EarInstruments.module.css'
 import { skinnable } from './instrument-skin'
@@ -27,6 +30,8 @@ export interface MetreLatticeProps {
 
 const TOP_Y = 84
 const BOTTOM_Y = 176
+/** The pallets before the reveal, whatever the metre: the longest bar's. */
+const UNTOLD = 7
 
 function palletX(i: number, count: number): number {
   const span = Math.min(400, (count - 1) * 68)
@@ -34,13 +39,25 @@ function palletX(i: number, count: number): number {
 }
 
 function DrawnMetreLattice(props: MetreLatticeProps): JSX.Element {
-  const count = () => Math.max(1, props.steps)
+  const count = () => (props.reveal ? Math.max(1, props.steps) : UNTOLD)
+  // The steps sounded so far this question, across both bars: the lamp
+  // runs on round the seven rather than starting again with the bar.
+  const [sounded, setSounded] = createSignal(0)
+  createEffect(
+    on(
+      () => props.lit,
+      (lit, before) => {
+        if (lit <= 0) setSounded(0)
+        else if (lit !== before) setSounded((n) => n + 1)
+      },
+    ),
+  )
   const label = () =>
     props.reveal
       ? `Lattice of ${count()} pallets: ${props.reveal.name}`
       : props.lit > 0
-        ? `Lattice, pallet ${props.lit} of ${count()} lit`
-        : `Lattice of ${count()} pallets at rest`
+        ? 'Lattice, a lamp chasing the kit'
+        : 'Lattice at rest'
 
   return (
     <svg
@@ -65,7 +82,10 @@ function DrawnMetreLattice(props: MetreLatticeProps): JSX.Element {
       <For each={Array.from({ length: count() }, (_, i) => i)}>
         {(i) => {
           const x = () => palletX(i, count())
-          const lit = () => props.lit === i + 1
+          const lit = () =>
+            props.reveal === null &&
+            props.lit > 0 &&
+            (sounded() - 1) % UNTOLD === i
           const accent = () => props.reveal !== null && i === 0
           return (
             <g data-part="pallet" data-lit={lit()} data-accent={accent()}>

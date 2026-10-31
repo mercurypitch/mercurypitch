@@ -2,22 +2,24 @@
 // Subdivide's instrument in the room: the kit's two bars on three lanes,
 // hats, snare and kick (docs/plans/ear-lab-native-look.md).
 //
-// Each hit lands on its lane as it sounds, one step along from the last,
-// with no bar lines and no accent: how the steps group is the question.
-// The steps stand at one spacing whatever the metre, so the spacing says
-// nothing before the ear has heard it. The reveal drops the bar lines in,
-// lights beat one in each bar and draws the grouping under the kick lane:
-// 7/8 as 2 + 2 + 3.
+// Each hit lands on its lane at the "now" line as it sounds and passes
+// left, fading, like tape: the eye sees the last few, never the row, so
+// the bar's length, which names the metre, shows no more than the ear
+// hears it. No bar lines and no accent: how the steps group is the
+// question. Before the sound and while the answer is due the lanes are
+// empty. The reveal lays the two bars out whole, at one spacing, drops
+// the bar lines in, lights beat one in each bar and draws the grouping
+// under the kick lane: 7/8 as 2 + 2 + 3.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { MetreLatticeProps } from '@/features/ear-lab/MetreLattice'
 import type { DrumVoiceId } from '@/lib/drum-voices'
-import { metreGroups, stepMs } from '@/lib/ear/metre'
+import { metreGroups } from '@/lib/ear/metre'
 import { SUBDIVIDE_TIMING } from '@/lib/ear/timing'
 import { arrivalAge, useArrivals, useStageClock } from './clock'
-import { clamp, easeOut, hundredth, lerp, lineD, progress, tenth } from './draw'
+import { easeOut, hundredth, lerp, lineD, progress, tenth } from './draw'
 import { Glow, LitDefs, litIds, Orb, paint, Ring, TEAL_PALE } from './kit'
 import styles from './lit.module.css'
 
@@ -36,6 +38,11 @@ const GROUP_Y = LANE_Y.kick + 30
 type Lane = keyof typeof LANE_Y
 
 const stepX = (k: number): number => FIRST_X + k * STEP
+/** Where a hit lands as it sounds, and how fast it then passes left. */
+const NOW_X = 300
+const PX_PER_MS = 0.14
+/** How long a hit stays in sight once it has sounded. */
+const FADE_MS = 1100
 
 /** Which lane a drum lands on, and how big: a sidestick is played on the
  *  snare's rim, and the cymbals ride with the hats. */
@@ -86,22 +93,9 @@ export function LitLanes(props: MetreLatticeProps): JSX.Element {
   const age = (order: number): number | null =>
     listening() ? arrivalAge(arrivals(), order, clock) : null
 
-  /** The playhead, from the step sounding towards the next, at the pace
-   *  of the last two steps. */
-  const headX = (): number | null => {
-    if (!listening() || props.lit <= 0) return null
-    const k = arrivals().length - 1
-    const since = age(k)
-    if (since === null) return null
-    const times = arrivals()
-    const pace =
-      k >= 1
-        ? times[k] - times[k - 1]
-        : props.pattern
-          ? stepMs(props.pattern.metre, SUBDIVIDE_TIMING.quarterMs)
-          : SUBDIVIDE_TIMING.quarterMs
-    return stepX(k) + clamp(since / Math.max(1, pace), 0, 1) * STEP
-  }
+  /** The now line, where each hit lands as it sounds. */
+  const headX = (): number | null =>
+    listening() && props.lit > 0 ? NOW_X : null
 
   const groups = (): number[] =>
     props.pattern ? metreGroups(props.pattern) : [beats()]
@@ -197,14 +191,24 @@ export function LitLanes(props: MetreLatticeProps): JSX.Element {
       <For each={hits()}>
         {(hit, order) => {
           const since = (): number | null => age(order())
+          /** The reveal's place in the bars; till then, passing left from
+           *  the now line as long as it has sounded. */
+          const x = (): number => {
+            if (props.reveal !== null) return stepX(hit.index)
+            const t = since()
+            return t === null ? NOW_X : tenth(NOW_X - t * PX_PER_MS)
+          }
           const light = (): { shown: number; body: number; glow: number } => {
             if (props.reveal !== null)
               return { shown: 1, body: hit.one ? 1 : 0.6, glow: 0 }
-            if (!listening()) return { shown: 1, body: 0.55, glow: 0 }
+            // No row before the sound or while the answer is due.
+            if (!listening()) return { shown: 0, body: 0, glow: 0 }
             const t = since()
             if (t === null) return { shown: 0, body: 0, glow: 0 }
+            // Under reduced motion the newest stands alone, whole.
+            const arriving = clock.reduced ? 1 : progress(t, 0, 160)
             return {
-              shown: progress(t, 0, 160),
+              shown: arriving * (1 - progress(t, FADE_MS * 0.45, FADE_MS)),
               body: lerp(1, 0.7, progress(t, 0, 600)),
               glow: (1 - progress(t, 0, 400)) * 0.8,
             }
@@ -219,7 +223,7 @@ export function LitLanes(props: MetreLatticeProps): JSX.Element {
             >
               <Orb
                 ids={ids}
-                x={stepX(hit.index)}
+                x={x()}
                 y={LANE_Y[hit.lane]}
                 r={hit.r}
                 teal={props.reveal !== null && hit.one}
@@ -227,7 +231,7 @@ export function LitLanes(props: MetreLatticeProps): JSX.Element {
                 glow={hundredth(light().glow)}
               />
               <Ring
-                x={stepX(hit.index)}
+                x={x()}
                 y={LANE_Y[hit.lane]}
                 t={since() ?? -1}
                 ms={420}

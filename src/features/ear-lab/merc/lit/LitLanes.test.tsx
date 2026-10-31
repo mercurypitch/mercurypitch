@@ -1,6 +1,7 @@
-// Subdivide's lanes: each hit lands on its drum's lane as it sounds, at
-// one spacing whatever the metre and with no bar lines; the reveal drops
-// the bar lines in, lights beat one and groups the bar.
+// Subdivide's lanes: each hit lands on its drum's lane at the now line as
+// it sounds and passes left, fading, so no row ever shows the bar's
+// length; the reveal lays the bars out, drops the bar lines in, lights
+// beat one and groups the bar.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -68,27 +69,39 @@ describe("Subdivide's lanes", () => {
     ).toEqual(['1', '2', '3', '4'])
   })
 
-  it('spaces the steps alike whatever the metre, so the spacing tells nothing', () => {
-    const { unmount } = render(() => (
-      <LitLanes
-        steps={3}
-        lit={0}
-        reveal={null}
-        pattern={pattern('metre:3-4:a')}
-      />
-    ))
-    const waltz = hitX(2)
-    expect(waltz).toBe('95.4')
-    unmount()
+  it('shows no row before the sound or while the answer is due: its length would name the metre', () => {
+    for (const id of ['metre:3-4:a', 'metre:7-8:a']) {
+      const found = pattern(id)
+      const { unmount } = render(() => (
+        <LitLanes
+          steps={found.metre.beats}
+          lit={0}
+          reveal={null}
+          pattern={found}
+        />
+      ))
+      const hits = [...document.querySelectorAll('[data-hit]')]
+      expect(hits.length).toBeGreaterThan(0)
+      expect(hits.every((h) => h.getAttribute('opacity') === '0')).toBe(true)
+      unmount()
+    }
+  })
+
+  it('lands each hit at the now line as it sounds, to pass left from there', () => {
+    const [lit, setLit] = createSignal(0)
     render(() => (
       <LitLanes
         steps={7}
-        lit={0}
+        lit={lit()}
         reveal={null}
         pattern={pattern('metre:7-8:a')}
       />
     ))
-    expect(hitX(2)).toBe(waltz)
+    setLit(1)
+    setLit(2)
+    // No time has passed: both stand at the now line, the bar unlaid.
+    expect(hitX(1)).toBe('300')
+    expect(hitX(2)).toBe('300')
   })
 
   it('drops the bar lines in at the reveal, lights beat one and groups the bar', () => {
