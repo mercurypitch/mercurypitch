@@ -1,18 +1,24 @@
 // Package the accepted V7 master as standard glTF with host-safe external buffers.
+//
+// This is the first of two delivery steps. Its output (cloudway-platform-kit-v7.gltf plus four
+// byte-identical parts) is not what ships any more: PR #1275 re-encoded that delivery losslessly
+// with EXT_meshopt_compression into cloudway-platform-kit-v7-meshopt.gltf and three parts. So
+// this script writes to a gitignored folder and refuses any destination under
+// apps/beside-cue/public, where it would silently replace the shipped Meshopt files.
 
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile, } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 import { format, resolveConfig } from 'prettier'
 
 import { createExternalDelivery, EXTERNAL_BUFFER_LIMIT_BYTES, verifyExternalDelivery, } from './external_gltf_delivery.mjs'
-import { discardStagedCandidate, fileFingerprint, promoteStagedCandidate, stageCandidateForAtomicPromotion, verifyAcceptedFile, verifyAcceptedFileIfPresent, } from './runtime_build_guards.mjs'
+import { discardStagedCandidate, fileFingerprint, promoteStagedCandidate, stageCandidateForAtomicPromotion, verifyAcceptedFile, } from './runtime_build_guards.mjs'
 
 const runFile = promisify(execFile)
 const REPO = resolve(
@@ -25,16 +31,21 @@ const MASTER_DIR = join(
 )
 const MASTER_KIT = join(MASTER_DIR, 'cloudway-platform-kit-v7.glb')
 const MASTER_MANIFEST = join(MASTER_DIR, 'manifest.json')
-const OUTPUT_DIR = process.env.CLOUDWAY_V7_PUBLIC_DIR
-  ? resolve(process.env.CLOUDWAY_V7_PUBLIC_DIR)
-  : join(REPO, 'apps/beside-cue/public/games/cloudway-v7')
+const OUTPUT_DIR = process.env.CLOUDWAY_V7_DELIVERY_DIR
+  ? resolve(process.env.CLOUDWAY_V7_DELIVERY_DIR)
+  : join(
+      REPO,
+      'art/glass-adventure/platform-trials/v7/runtime/external-delivery',
+    )
+const PUBLIC_ROOT = join(REPO, 'apps/beside-cue/public')
+// Receipt keys in accepted-delivery.json. They name where this delivery shipped before
+// PR #1275; files are written to OUTPUT_DIR, never there.
 const CANONICAL_PUBLIC_DIRECTORY = 'apps/beside-cue/public/games/cloudway-v7'
 const GLTF_NAME = 'cloudway-platform-kit-v7.gltf'
 const PART_NAMES = ['01', '02', '03', '04'].map(
   (part) => `cloudway-platform-kit-v7-part-${part}.bin`,
 )
 const MANIFEST_NAME = 'manifest.json'
-const OVERSIZED_PUBLIC_GLB = join(OUTPUT_DIR, 'cloudway-platform-kit-v7.glb')
 const ACCEPTED_INPUTS_PATH = join(
   REPO,
   'art/glass-adventure/platform-trials/v7/runtime/production/accepted-inputs.json',
@@ -80,7 +91,28 @@ async function validate(path, quiet = false) {
   if (!quiet && result.stderr.trim() !== '') process.stderr.write(result.stderr)
 }
 
+async function insidePublicRoot(directory) {
+  const inside = (base, path) => {
+    const rest = relative(base, path)
+    return rest === '' || (!rest.startsWith('..') && !isAbsolute(rest))
+  }
+  if (inside(PUBLIC_ROOT, directory)) return true
+  // Catch a symlinked destination too: compare real paths of the nearest existing ancestor.
+  let existing = directory
+  while (!(await stat(existing).catch(() => null))) existing = dirname(existing)
+  return inside(await realpath(PUBLIC_ROOT), await realpath(existing))
+}
+
 async function main() {
+  if (await insidePublicRoot(OUTPUT_DIR))
+    throw new Error(
+      `Refusing to write ${relative(REPO, OUTPUT_DIR)}: this packager makes the ` +
+        'pre-Meshopt V7 delivery (cloudway-platform-kit-v7.gltf and part-01..04). The game ships ' +
+        'the lossless Meshopt re-encode from PR #1275 (cloudway-platform-kit-v7-meshopt.gltf), ' +
+        'so writing under apps/beside-cue/public would replace it. Leave ' +
+        'CLOUDWAY_V7_DELIVERY_DIR unset to use the gitignored ' +
+        'art/glass-adventure/platform-trials/v7/runtime/external-delivery folder.',
+    )
   const printCandidateReceipt = process.argv.includes(
     '--print-candidate-receipt',
   )
@@ -89,11 +121,6 @@ async function main() {
   )
   const acceptedMaster = acceptedInputs.outputs['1024']
   await verifyAcceptedFile(MASTER_KIT, acceptedMaster, 'V7 runtime master')
-  const removeObsoletePublicGlb = await verifyAcceptedFileIfPresent(
-    OVERSIZED_PUBLIC_GLB,
-    acceptedMaster,
-    'obsolete public V7 GLB',
-  )
 
   const masterBytes = await readFile(MASTER_KIT)
   const masterManifest = JSON.parse(await readFile(MASTER_MANIFEST, 'utf8'))
@@ -255,7 +282,6 @@ async function main() {
         staged.map((candidate) => discardStagedCandidate(candidate.staged)),
       )
     }
-    if (removeObsoletePublicGlb) await rm(OVERSIZED_PUBLIC_GLB)
     console.log(JSON.stringify(publicManifest, null, 2))
   } finally {
     await rm(work, { recursive: true, force: true })
