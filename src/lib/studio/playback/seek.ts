@@ -15,6 +15,7 @@ import type { StudioHandoff } from './handoff'
 import { crossSameFrames } from './handoff'
 import type { StudioRun, StudioRunTiming } from './run'
 import { RUN_LOOKAHEAD_SECONDS, runHeardPosition, seekEarliest } from './run'
+import { wholeFrameAtOrAfter } from './whole-frame'
 
 export { seekEarliest }
 
@@ -95,7 +96,9 @@ export function seekInPlace(
 /**
  * Where a run built for a seek the held run could not follow takes over: at
  * the target, as soon as it is built and the held run's envelope is fully
- * open, as a handover needs. The top once the song ends there.
+ * open, as a handover needs. The top once the song ends there. It plays a
+ * place of its own, so it takes a whole frame (whole-frame.ts); its latency
+ * is whole frames of the same clock, so its graph's epoch is one too.
  */
 export function seekTiming(
   held: StudioRun,
@@ -105,7 +108,10 @@ export function seekTiming(
 ): StudioRunTiming {
   return {
     fromFrame: frame >= endFrame ? 0 : frame,
-    audibleEpoch: Math.max(earliest, held.openAt),
+    audibleEpoch: wholeFrameAtOrAfter(
+      Math.max(earliest, held.openAt),
+      held.ctx.sampleRate,
+    ),
   }
 }
 

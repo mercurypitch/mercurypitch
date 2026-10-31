@@ -25,6 +25,7 @@ import { scheduleStudioSegmentGain } from './edge-envelope'
 import type { StudioFrozenChunk, StudioFrozenLane } from './lane-freeze'
 import { encodeFrozenLane } from './lane-freeze'
 import { segmentEnd } from './lane-timeline'
+import { frameTime } from './whole-frame'
 
 /** Silence before the first clip, for the compressors to settle on: an export's lead. */
 export const FREEZE_PRE_ROLL_FRAMES = 24000
@@ -142,9 +143,11 @@ async function renderRun(
       gain.gain.value = 0
       source.connect(gain)
       gain.connect(chain.input)
-      const when =
-        (FREEZE_PRE_ROLL_FRAMES + segment.startFrame - run.startFrame) /
-        STUDIO_SAMPLE_RATE
+      // On its frame, as a live lane starts it (whole-frame.ts).
+      const when = frameTime(
+        FREEZE_PRE_ROLL_FRAMES + segment.startFrame - run.startFrame,
+        STUDIO_SAMPLE_RATE,
+      )
       scheduleStudioSegmentGain(gain.gain, segment, when)
       source.start(
         when,

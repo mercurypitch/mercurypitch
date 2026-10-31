@@ -20,6 +20,7 @@ import type { StudioFrozenLane } from './lane-freeze'
 import type { StudioPlaybackTier } from './playback-quality'
 import { livePlaybackTier, notePlayout, TIER_PROFILES, } from './playback-quality'
 import type { StudioSongShape } from './song-load'
+import { wholeFrameAtOrAfter } from './whole-frame'
 
 export { openRunEnvelope, RUN_OPEN_SECONDS } from './open-envelope'
 
@@ -35,17 +36,20 @@ const SEEK_SCHEDULING_SECONDS = 0.005
  * 512 frames, 10.7 ms, in desktop Chromium on Linux), and past the
  * scheduling itself. A source started in the past plays late by however
  * far, and lanes started a callback apart would stay that far apart until
- * the next seek.
+ * the next seek. On a whole frame, so what starts there starts on its
+ * sample (whole-frame.ts): the 5 ms alone are 220.5 frames at 44.1 kHz,
+ * and a callback need not be whole frames of the clock either.
  */
 export function seekEarliest(ctx: AudioContext): number {
   const callback =
     Number.isFinite(ctx.baseLatency) && ctx.baseLatency > 0
       ? ctx.baseLatency
       : 0.01
-  return (
+  return wholeFrameAtOrAfter(
     ctx.currentTime +
-    Math.max(callback, 256 / ctx.sampleRate) +
-    SEEK_SCHEDULING_SECONDS
+      Math.max(callback, 256 / ctx.sampleRate) +
+      SEEK_SCHEDULING_SECONDS,
+    ctx.sampleRate,
   )
 }
 
@@ -249,11 +253,15 @@ export interface StudioRunParts {
 
 /**
  * The soonest a run from silence can start: RUN_SETTLE_SECONDS out, so its
- * compressors settle on silence first, and a device callback out at least.
- * Returns the graph's epoch, when its first frame enters a lane.
+ * compressors settle on silence first, and a device callback out at least,
+ * on a whole frame (whole-frame.ts). Returns the graph's epoch, when its
+ * first frame enters a lane.
  */
 function soonestStart(ctx: AudioContext): number {
-  return Math.max(ctx.currentTime + RUN_SETTLE_SECONDS, seekEarliest(ctx))
+  return wholeFrameAtOrAfter(
+    Math.max(ctx.currentTime + RUN_SETTLE_SECONDS, seekEarliest(ctx)),
+    ctx.sampleRate,
+  )
 }
 
 /**
@@ -280,12 +288,12 @@ function startAfterBuild(
  */
 export function buildStudioRun(parts: StudioRunParts): StudioRun {
   const { ctx, plan } = parts
-  const timing = parts.fromSilence
-    ? {
-        fromFrame: parts.timing.fromFrame,
-        audibleEpoch: soonestStart(ctx) + parts.latency,
-      }
-    : parts.timing
+  const { timing } = parts
+  // The graph's epoch: a run from silence takes the soonest whole frame,
+  // and one taking over the place its timing gives (handoff.ts, seek.ts).
+  const epoch = parts.fromSilence
+    ? soonestStart(ctx)
+    : timing.audibleEpoch - parts.latency
   let graph: StudioGraph | undefined
   let envelope: GainNode | undefined
   let meter: StudioRun['meter'] = null
@@ -295,7 +303,7 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       ctx,
       plan,
       parts.buffers.buffers,
-      timing.audibleEpoch - parts.latency,
+      epoch,
       liveGraphOptions(parts, timing.fromFrame),
     )
     envelope = ctx.createGain()
@@ -306,8 +314,7 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     // the first frame, a handover's as much as a Play's.
     graph.settle(ctx.currentTime)
     const audibleEpoch = parts.fromSilence
-      ? startAfterBuild(ctx, graph, timing.audibleEpoch - parts.latency) +
-        parts.latency
+      ? startAfterBuild(ctx, graph, epoch) + parts.latency
       : timing.audibleEpoch
     graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
     meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)

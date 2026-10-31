@@ -6,7 +6,7 @@ import { applyStudioCommand } from '../model/commands'
 import type { StudioAsset, StudioProject } from '../model/types'
 import type { StudioChainSwap } from './graph'
 import { studioChainWorkingBytes } from './graph'
-import { freshGraphs, transportFixture } from './transport.test-fixtures'
+import { freshGraphs, LEAD, transportFixture } from './transport.test-fixtures'
 
 type Fixture = ReturnType<typeof transportFixture>
 type Graph = ReturnType<typeof freshGraphs>[number]
@@ -77,8 +77,9 @@ describe('Studio transport swap', () => {
     const [[swap], earliest] = graphs[0].swapChains.mock.calls[0]
     // The fixture measures every chain at 441 frames: 10 ms at 44.1 kHz.
     expect(swap).toMatchObject({ trackId: 'track-1', spec, latency: 0.01 })
-    // A device callback (10 ms) and 5 ms of scheduling ahead of the clock.
-    expect(earliest).toBeCloseTo(1.015, 9)
+    // A device callback (10 ms) and 5 ms of scheduling ahead of the clock,
+    // on a whole frame.
+    expect(earliest).toBeCloseTo(1 + LEAD, 9)
     expect(graphs[0].scheduleUntil).toHaveBeenLastCalledWith(3)
     // The new chain holds memory of its own beside the run's.
     expect(studioReservedMemoryBytes()).toBe(

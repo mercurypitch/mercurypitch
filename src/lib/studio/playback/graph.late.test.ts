@@ -111,6 +111,20 @@ describe('a Studio source scheduled late', () => {
     graph.dispose()
   })
 
+  it('starts on the next whole frame past the clock, never back into it, when the clock reads between frames', () => {
+    const { ctx, graph, due } = lateLane()
+    ctx.currentTime = due + 0.005 + 0.3 / 48000
+    graph.scheduleUntil(due + 1)
+    const [source] = ctx.ofType<PlaybackSource>('source')
+    const [start] = source.starts[0]
+    const soonest = ctx.currentTime + 256 / 48000
+    expect(start).toBeGreaterThanOrEqual(soonest)
+    expect(start - soonest).toBeLessThan(1 / 48000)
+    expect(start * 48000 - Math.round(start * 48000)).toBeGreaterThanOrEqual(0)
+    expect(start * 48000 - Math.round(start * 48000)).toBeLessThan(1e-6)
+    graph.dispose()
+  })
+
   it('starts on its frame when it is on time', () => {
     const { ctx, graph, due } = lateLane()
     ctx.currentTime = due - 0.5

@@ -18,6 +18,14 @@ import { createStudioTransport } from './transport'
  */
 export const FIRST_HEARD = RUN_SETTLE_SECONDS + 0.02
 
+/**
+ * How far past the clock a seek, a Play after Pause or an edit in place
+ * starts on the fixture's 44.1 kHz context, which reports no device
+ * callback: 10 ms for one and 5 ms to schedule, 661.5 frames, start on the
+ * next whole frame (whole-frame.ts), 662 frames out.
+ */
+export const LEAD = 662 / 44100
+
 /** A built graph that records what the transport asks of it. */
 export function fakeStudioGraph(ctx: PlaybackContext) {
   return {

@@ -147,7 +147,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-audio-client.ts](../../src/lib/studio/audio/studio-audio-client.ts) | 13.5k | Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Stud... |
+| `studio` | [studio-audio-client.ts](../../src/lib/studio/audio/studio-audio-client.ts) | 13.6k | Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Stud... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |

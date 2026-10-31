@@ -503,9 +503,16 @@ must import the inventory in a child Node process as well as through Vitest.
 ### Cross chunked buffers over; never butt two AudioBufferSourceNodes edge to edge
 
 **Symptom:** A frozen Studio lane played from 4 s chunks clicked at each join: a -40 dBFS one-frame error at exactly 8.000 s when the run's epoch sat 37 frames off the render's, nothing when they lined up.
-**Cause:** Start times in seconds carry float noise. A start a hair past a frame begins the source on the next frame and drops its first sample, and each chunk rounds on its own, so a join can lose or double a frame.
+**Cause:** A chunk started between two frames plays interpolated, and its last frame blends its last sample with silence, so two butted chunks leave a one-frame error at their join (Chromium 148, a 0.5-amplitude 440 Hz sine: -56 to -62 dBFS from epochs 0.001, 0.3 and 0.5 frames past one, bit-exact from 400 whole epochs). Float noise alone does not do it, but a 44.1 kHz context resamples every chunk, so there a start is always between frames.
 **Rule:** Give each chunk a few frames of its neighbours and cross adjacent chunks over with complementary linear fades timed from the same frames: the two gains sum to one on every frame however a start rounds. Measured after: the same frozen lane at the two epochs differs by -217 dB.
 **See:** `src/lib/studio/playback/lane-freeze.ts` (`frozenSegments`).
+
+### Start every buffer source on a whole frame of the audio clock
+
+**Symptom:** The same Studio song lost a different amount of treble on each Play. Two Plays asked for half a frame apart differed by -6.1 dBFS worst sample, 5.1 dB down at 15 kHz and 2.0 dB at 10 kHz; a four-lane mix differed by -12.2 dBFS, 4.0 dB down at 15 kHz.
+**Cause:** A source started between two frames plays every sample interpolated between two of its buffer's, a linear filter that dulls the treble by how far between it lands (Chromium 148 and WebKitGTK 2.54; Firefox 150 rounds every start to the nearest frame). A run's epoch was the clock plus the device callback plus 5 ms: 220.5 frames at 44.1 kHz, and a callback need not be whole frames of the context's clock. Float noise is not the problem: a start up to 3e-4 frames past a frame plays from that frame as an exact copy, though one 1e-10 frames before it plays interpolated.
+**Rule:** Put each fresh place on the clock on the next whole frame of `ctx.sampleRate`, rounding up so it is never sooner than asked, derive every later start in whole timeline frames from it, and never let a frame's time fall short of its frame. Measured after: the dry pair is bit-identical, and the four-lane pair sits at its own floor (the same Play rendered twice differs by -73 dBFS: a lane with a reverb never renders the same twice in Chromium).
+**See:** `src/lib/studio/playback/whole-frame.ts` and `scripts/check-studio-epoch-browser.mjs`.
 
 ## Framework
 

@@ -56,6 +56,7 @@ import { livePlaybackProfile } from './playback-quality'
 import type { StudioRun } from './run'
 import { frozenSong, openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS, } from './run'
 import { seekEarliest } from './seek'
+import { wholeFrameAtOrAfter } from './whole-frame'
 
 /** Pause's fade, as a stopped run's: 180 ms down, silent by 240 ms. */
 const FADE_SECONDS = 0.18
@@ -225,7 +226,11 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       // must not free the run they are for.
       const settled = readyAt
       const run = detach()!
-      const epoch = Math.max(seekEarliest(ctx), settled)
+      // On a whole frame, so its sources start on their samples (whole-frame.ts).
+      const epoch = wholeFrameAtOrAfter(
+        Math.max(seekEarliest(ctx), settled),
+        ctx.sampleRate,
+      )
       if (!run.graph.resume(from, epoch, settings.repeat)) {
         releaseRun(run)
         return null

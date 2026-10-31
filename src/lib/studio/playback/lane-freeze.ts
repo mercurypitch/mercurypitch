@@ -17,13 +17,15 @@
 // timeline with the chain's latency taken out, so the lane plays with no
 // compensation of its own and lines up with the live lanes like any other.
 //
-// Two chunks never meet edge to edge. The browser rounds a source's start
-// to a frame, and a start time a hair past a frame (float noise in the
-// epoch) drops the source's first sample: butted chunks then click once
-// every four seconds. So each chunk holds a few frames of its neighbours
-// and adjacent chunks cross over 128 frames with complementary linear
-// fades, timed from the same frames: the two gains sum to one on every
-// frame whichever way a start rounds, and the audio is the render's.
+// Two chunks never meet edge to edge. A chunk started between two frames
+// plays interpolated and blends its last sample with silence, so butted
+// chunks would click once every four seconds wherever a run plays between
+// frames: always on a 44.1 kHz context, which resamples them. Runs start on
+// whole frames (whole-frame.ts), and still each chunk holds a few frames of
+// its neighbours and adjacent chunks cross over 128 frames with
+// complementary linear fades, timed from the same frames: the two gains sum
+// to one on every frame wherever a start lands, and the audio is the
+// render's.
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import type { StudioArrangementPlan, StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
