@@ -133,3 +133,7 @@ public/marketing/
 
 # Local alias to large creator-study browser proofs in the creative archive.
 art/glass-adventure/creator-expansion-proofs
+
+# Pre-Meshopt V7 Cloudway delivery written by package_external_delivery.mjs. The game ships
+# the Meshopt re-encode in apps/beside-cue/public/games/cloudway-v7 instead.
+/art/glass-adventure/platform-trials/v7/runtime/external-delivery/
