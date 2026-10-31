@@ -2489,3 +2489,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   fresh shallow clone + lfs pull sha256 check. Run: bash $S/l4entr/push-film05.sh 2>&1 | tee $S/l4entr/push-film05.log
   Then FILM5 (critics/FILM5-ready.txt verbatim, xhigh, rate_limit allowed). DELIVERY pieces drafted in
   l4entr/delivery-f5-draft.md (times on the new clock for the human-ear list, files rows, re-voice record).
+- 20:59 FILM-05 OOM: two kills (oom_kill 2) at 20:58 with both workers in S12-S13 (pieces 16 and 17, frames
+  24000-27000); rss+shmem peaked 13.42 GB; the renderer reported "capture stalled ... frame 24622"; render end
+  exit 1. Pieces 0-15 complete in segments.json (plan 4ac5740e9832070d); 16 and 17 partial (622/133 frames).
+  RESUMED 21:00:13 with RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 (same compositionHash f7301d911d294fc3);
+  7 pieces left (~9,073 frames, ~80 min). Watcher b20xgf4ih (to ~22:58): reads only status lines after line 3
+  (the failed run's "done" is line 3), stops on oom_kill > 2. Lesson for the next film: one worker through
+  S12-S13 (or 2 workers only before frame ~23,000).
