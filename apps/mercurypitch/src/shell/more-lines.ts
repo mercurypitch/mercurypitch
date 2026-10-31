@@ -15,7 +15,7 @@
 
 import type { LeagueMe } from '@/db/services/league-service'
 import { ordinal } from '@/lib/league-board'
-import { durationInWords } from './duration-words'
+import { closesShortLine } from './legend/legend-lines'
 import { MORE_ACCOUNT_SIGNED_OUT } from './settings/account-copy'
 
 /** "1 song", "3 songs". */
@@ -144,11 +144,10 @@ export function legendLine(facts: LegendRowFacts): string {
   if (challenge === undefined) return 'The line everyone sings'
   if (challenge === null) return 'The next Legend opens soon'
   if (facts.best !== null) return `Sung, best ${facts.best}%`
-  const left = Date.parse(challenge.endsAt) - facts.nowMs
-  if (!Number.isFinite(left)) return 'The line everyone sings'
-  // Takes still count for two days past the close.
-  if (left <= 0) return 'Closing'
-  return `Ends in ${durationInWords(left)}`
+  // The Sing room's card says the close by the same rule (legend-lines.ts).
+  return (
+    closesShortLine(challenge.endsAt, facts.nowMs) ?? 'The line everyone sings'
+  )
 }
 
 /** Settings: a microphone the phone refused is the one thing to say. */

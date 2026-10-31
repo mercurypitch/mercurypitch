@@ -1,38 +1,221 @@
 /* ============================================================
-   The Legend room (slice 3, docs/plans/native-more-and-community.md)
+   The Legend room, in the native rooms' light
    ============================================================
 
    A premium room drawn full-bleed (premium-rooms.ts): the body is the whole
-   screen and does not scroll, so the room keeps clear of the status bar and
-   the floating bar by the shell's --pushed-top and --pushed-bottom, and
-   brings its own scroller for the door. On the kit's dark stage
-   (dark-stage.css), whatever the app's theme. Nothing under 13 px.
+   screen and does not scroll, so the room keeps clear of the shell's bar and
+   the screen's foot by --pushed-top and --pushed-bottom, and brings its own
+   scroller for the door. Drawn in the Ear Lab's native language
+   (docs/plans/ear-lab-native-look.md, merc/room.module.css): the dark stage,
+   glass chips and cards, lit violet for the singer's turn, teal for a lit
+   note and red for a miss, each with a mark, Inter for every word. The
+   approved mock-ups are the canvas "Legend Native Room". Nothing under
+   13 px, no target under 44.
 
    Loaded by the room's lazy chunk alone, so a store build carries none. */
 
-/* The kit's button on the dark stage, in either theme: the stage's accent is
-   a light blue (dark-stage.css), so its label is the stage's darkest ink
-   (7.3:1), never the light theme's white (2.5:1). A token, so the ask's
-   portalled sheet takes it with the rest (portal-skin.ts). */
 .mp-legend {
-  --mp-button-ink: var(--bg-primary);
+  --legend-ink: #050816;
+  --legend-text: #f4f1ff;
+  --legend-text-2: #b6bdd1;
+  --legend-text-3: #a9b2c8;
+  --legend-faint: #8d96ad;
+  --legend-glass: rgb(10 18 44 / 62%);
+  --legend-glass-line: rgb(255 255 255 / 13%);
+  --legend-line: rgb(255 255 255 / 8%);
+  --legend-lit: #9a87f0;
+  --legend-lit-pale: #c9bcff;
+  --legend-lit-fill: #7c4dff;
+  --legend-cyan: #7fdcf5;
+  --legend-right: #2ee6c9;
+  --legend-right-pale: #8ff5e3;
+  --legend-wrong: #ff6a5c;
+  --legend-wrong-pale: #ffb1a8;
+  --legend-sans:
+    'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* The kit's parts, in the room's light: the mic button's lit colour and
+     the ask's sheet. Tokens, so the portalled sheet takes them with the
+     rest (portal-skin.ts). */
+  --mic-lit: var(--legend-lit);
+  --sheet-bg: linear-gradient(180deg, #141c40 0%, #0c1230 60%, #0a0f28 100%);
+  --sheet-border: rgb(255 255 255 / 14%);
+  --sheet-radius: 28px;
+  --sheet-backdrop: rgb(2 4 12 / 62%);
+  --mp-button-ink: var(--legend-ink);
+
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: min(520px, 100dvh);
   padding-top: var(--pushed-top, 0px);
-  padding-bottom: var(--pushed-bottom, 0px);
   overflow: hidden;
   background:
     radial-gradient(
-      120% 60% at 50% 0%,
-      rgba(14, 143, 127, 0.18) 0%,
-      rgba(13, 17, 23, 0) 70%
+      90% 42% at 50% 24%,
+      rgb(154 135 240 / 24%),
+      transparent 70%
     ),
-    var(--bg-primary);
-  color: var(--text-primary);
+    radial-gradient(
+      70% 34% at 84% 58%,
+      rgb(127 220 245 / 10%),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #050816 0%, #0a1030 44%, #070b1d 72%, #05081a 100%);
+  background-color: var(--legend-ink);
+  color: var(--legend-text);
+  font: 400 15px/1.35 var(--legend-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ---------- shared parts ---------- */
+
+.mp-legend-chip {
+  align-self: center;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100% - 32px);
+  height: 32px;
+  margin: 8px auto 0;
+  padding: 0 13px;
+  border: 1px solid rgb(190 160 255 / 34%);
+  border-radius: 999px;
+  background: rgb(155 120 255 / 16%);
+  color: #efe9ff;
+  font: 600 13px/1 var(--legend-sans);
+  white-space: nowrap;
+}
+
+.mp-legend-chip__dim {
+  color: rgb(239 233 255 / 72%);
+  font-weight: 500;
+}
+
+.mp-legend-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mp-legend-dots > i {
+  width: 6px;
+  height: 6px;
+  border: 1.3px solid rgb(239 233 255 / 42%);
+  border-radius: 50%;
+}
+
+.mp-legend-dots > i[data-state='done'] {
+  border-color: transparent;
+  background: rgb(239 233 255 / 72%);
+}
+
+.mp-legend-dots > i[data-state='now'] {
+  border-color: #c6b8ff;
+  box-shadow: 0 0 0 2px rgb(198 184 255 / 25%);
+}
+
+.mp-legend-cap {
+  margin: 0;
+  font: 600 13px/1.2 var(--legend-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--legend-faint);
+}
+
+.mp-legend-card {
+  border: 1px solid var(--legend-glass-line);
+  border-radius: 22px;
+  background: var(--legend-glass);
+}
+
+.mp-legend-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgb(190 170 255 / 40%);
+  border-radius: 12px;
+  background: rgb(154 135 240 / 16%);
+  color: #e6dfff;
+  font: 600 13px/1 var(--legend-sans);
+}
+
+.mp-legend-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 26px;
+  font: 600 16px/1 var(--legend-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mp-legend-btn svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.mp-legend-btn--fill {
+  border: 0;
+  background: var(--legend-lit-fill);
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgb(124 77 255 / 42%);
+}
+
+.mp-legend-btn--line {
+  border: 1.5px solid rgb(255 255 255 / 30%);
+  background: transparent;
+  color: var(--legend-text);
+}
+
+.mp-legend-btn[aria-disabled='true'] {
+  opacity: 0.42;
+  box-shadow: none;
+  cursor: default;
+}
+
+.mp-legend-btn--ghost {
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--legend-lit-pale);
+  font-size: 15px;
+}
+
+.mp-legend-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* "Sign in to sing it" wants the whole width. */
+.mp-legend-pair[data-stack='true'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mp-legend-note {
+  margin: 0;
+  text-align: center;
+  text-wrap: balance;
+  font: 500 13px/1.4 var(--legend-sans);
+  color: var(--legend-text-3);
+}
+
+.mp-legend-note[data-tone='error'] {
+  color: var(--legend-wrong-pale);
+}
+
+/* ---------- the door ---------- */
 
 .mp-legend__scroller {
   flex: 1 1 auto;
@@ -40,137 +223,305 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  /* Clear of the dock, which floats over the foot. */
+  padding-bottom: calc(160px + var(--pushed-bottom, 0px));
 }
 
 .mp-legend-door {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   max-width: 600px;
   margin: 0 auto;
-  padding: 12px 16px 32px;
 }
 
-.mp-legend__caption {
-  margin: 0;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-secondary);
+/* Drawn to scale (its viewBox) to the room's width, and a little smaller
+   on a short phone, so the title still shows under it. */
+.mp-legend-poster {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
 }
 
-.mp-legend__error {
-  margin: 0;
-  font: 500 15px/21px var(--font-body, sans-serif);
-  color: var(--red);
+@media (max-height: 700px) {
+  .mp-legend-poster {
+    width: 84%;
+  }
 }
 
-.mp-legend__link {
-  font: 500 15px/21px var(--font-body, sans-serif);
-  color: var(--accent);
+.mp-legend-poster__row {
+  stroke: rgb(255 255 255 / 7%);
+  stroke-width: 1;
 }
 
-/* ---------- the running Legend ---------- */
+.mp-legend-poster__name {
+  font: 500 13px var(--legend-sans);
+  fill: var(--legend-faint);
+}
+
+.mp-legend-poster__halo,
+.mp-legend-poster__thread {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-legend-poster__halo {
+  stroke-width: 9;
+  opacity: 0.2;
+}
+
+.mp-legend-poster__thread {
+  stroke-width: 2.2;
+}
+
+.mp-legend-poster__glow {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.mp-legend-poster__ring {
+  fill: none;
+  stroke: #d9d0ff;
+  stroke-width: 1.6;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mp-legend-poster__bead[data-on='true'] .mp-legend-poster__glow {
+  opacity: 1;
+}
+
+.mp-legend-poster__bead[data-on='true'] .mp-legend-poster__ring {
+  animation: mp-legend-ring 0.9s ease-out;
+}
+
+@keyframes mp-legend-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
 
 .mp-legend-hero {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 16px;
-  border-radius: 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
 }
 
-.mp-legend-hero__eyebrow {
+.mp-legend-door__when {
   display: flex;
   align-items: center;
   gap: 6px;
   margin: 0;
-  font: 600 13px/18px var(--font-body, sans-serif);
-  letter-spacing: 0.02em;
-  color: var(--teal);
+  font: 600 13px/1.3 var(--legend-sans);
+  color: var(--legend-lit-pale);
 }
 
-.mp-legend-hero__title {
+.mp-legend-door__text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 24px 0;
+}
+
+.mp-legend-door__title {
   margin: 0;
-  font: 700 26px/32px var(--font-body, sans-serif);
-  color: var(--text-primary);
+  font: 700 28px/1.15 var(--legend-sans);
+  letter-spacing: -0.01em;
+  color: #fbf9ff;
   overflow-wrap: anywhere;
 }
 
-.mp-legend-hero__body {
+.mp-legend-door__body {
   margin: 0;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-secondary);
+  font: 400 15px/1.45 var(--legend-sans);
+  color: var(--legend-text-2);
 }
 
-.mp-legend-hero__hear {
+.mp-legend-hear {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 16px;
+  gap: 8px 18px;
+  padding: 16px 24px 0;
 }
 
-.mp-legend-hero__actions {
+.mp-legend-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px 0 13px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 22px;
+  background: rgb(10 18 44 / 62%);
+  color: var(--legend-text);
+  font: 600 14px/1 var(--legend-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mp-legend-pill svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mp-legend-pill[aria-pressed='true'] {
+  border-color: rgb(190 170 255 / 50%);
+  background: rgb(154 135 240 / 20%);
+  color: #f1edff;
+}
+
+.mp-legend-orig {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font: 500 15px/1 var(--legend-sans);
+  color: var(--legend-lit-pale);
+  text-decoration: none;
+}
+
+.mp-legend-orig svg {
+  width: 17px;
+  height: 17px;
+}
+
+.mp-legend-door__range {
+  margin: 12px 24px 0;
+  font: 400 15px/1.45 var(--legend-sans);
+  color: var(--legend-text-2);
+}
+
+.mp-legend-tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--tiles, 3), minmax(0, 1fr));
+  gap: 10px;
+  padding: 18px 24px 0;
+}
+
+.mp-legend-tile {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 4px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 0 14px;
+  border: 1px solid var(--legend-glass-line);
+  border-radius: 18px;
+  background: var(--legend-glass);
 }
 
-/* ---------- the board and the past Legends ---------- */
+.mp-legend-tile b {
+  font: 700 22px/1 var(--legend-sans);
+  color: #fbf9ff;
+}
+
+.mp-legend-tile span {
+  font: 500 13px/1.2 var(--legend-sans);
+  color: var(--legend-text-3);
+}
+
+.mp-legend-tile[data-you='true'] {
+  border-color: rgb(190 170 255 / 42%);
+  background: rgb(154 135 240 / 14%);
+}
+
+.mp-legend-tile[data-you='true'] span {
+  color: #d6ccff;
+}
+
+/* A narrow phone: three tiles still fit "the Founder" on one line. */
+@media (max-width: 380px) {
+  .mp-legend-tiles {
+    gap: 8px;
+    padding-inline: 20px;
+  }
+
+  .mp-legend-tile {
+    padding: 0 10px;
+  }
+}
+
+.mp-legend-door__counts {
+  margin: 14px 24px 0;
+  text-align: center;
+  font: 500 13px/1.3 var(--legend-sans);
+  color: var(--legend-text-3);
+}
 
 .mp-legend-group {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 28px 16px 0;
 }
 
-.mp-legend-group__title {
-  margin: 0;
-  font: 600 13px/18px var(--font-body, sans-serif);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+.mp-legend-group > .mp-legend-cap {
+  padding: 0 8px;
+}
+
+.mp-legend-group__lead {
+  margin: -4px 8px 0;
+  font: 400 15px/1.4 var(--legend-sans);
+  color: var(--legend-text-2);
 }
 
 .mp-legend-podium {
   margin: 0;
   padding: 0;
+  overflow: hidden;
   list-style: none;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
 }
 
 .mp-legend-podium__row {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 48px;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border-subtle);
-  font: 400 15px/20px var(--font-body, sans-serif);
+  min-height: 60px;
+  padding: 0 16px;
+  border-top: 1px solid var(--legend-line);
+  font: 500 15px/1.2 var(--legend-sans);
 }
 
-.mp-legend-podium__row:last-child {
-  border-bottom: 0;
+.mp-legend-podium__row:first-child {
+  border-top: 0;
 }
 
 .mp-legend-podium__row[data-founder='on'] {
-  background: color-mix(in srgb, var(--teal) 10%, transparent);
+  background: rgb(154 135 240 / 8%);
 }
 
 .mp-legend-podium__rank {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  border-radius: 15px;
-  background: var(--bg-tertiary);
-  font: 600 13px/1 var(--font-body, sans-serif);
-  font-variant-numeric: tabular-nums;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 5%);
+  font: 600 14px/1 var(--legend-sans);
+  color: #e7e3f7;
+}
+
+.mp-legend-podium__row[data-rank='1'] .mp-legend-podium__rank {
+  border-color: rgb(196 182 255 / 70%);
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgb(255 255 255 / 35%),
+    rgb(154 135 240 / 45%) 55%,
+    rgb(93 140 255 / 35%)
+  );
+  color: #ffffff;
 }
 
 .mp-legend-podium__name {
@@ -182,45 +533,84 @@
 }
 
 .mp-legend-podium__score {
-  flex: 0 0 auto;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+  flex: none;
+  font-weight: 600;
+  color: #e7e3f7;
 }
 
-.mp-legend__standing {
-  margin: 0;
-  font: 500 15px/21px var(--font-body, sans-serif);
-  color: var(--text-primary);
-}
-
-.mp-legend-past {
+.mp-legend-you {
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  padding: 10px 16px;
+  border-color: rgb(190 170 255 / 34%);
+  border-radius: 18px;
+  background: rgb(154 135 240 / 12%);
+  font: 500 15px/1.35 var(--legend-sans);
+}
+
+.mp-legend-past {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.mp-legend-past__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 0 10px 0 16px;
+  border-top: 1px solid var(--legend-line);
+}
+
+.mp-legend-past__row:first-child {
+  border-top: 0;
 }
 
 .mp-legend-past__text {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .mp-legend-past__title {
-  font: 500 15px/20px var(--font-body, sans-serif);
-  color: var(--text-primary);
+  font: 500 15px/1.2 var(--legend-sans);
+  color: var(--legend-text);
   overflow-wrap: anywhere;
 }
 
 .mp-legend-past__sub {
-  font: 400 13px/18px var(--font-body, sans-serif);
-  color: var(--text-secondary);
+  font: 400 13px/1.2 var(--legend-sans);
+  color: var(--legend-text-3);
+}
+
+.mp-legend-dock {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px calc(16px + var(--pushed-bottom, 0px));
+  background: linear-gradient(
+    180deg,
+    rgb(5 8 26 / 0%),
+    rgb(5 8 26 / 92%) 22%,
+    #05081a
+  );
+}
+
+.mp-legend-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px 24px;
 }
 
 /* ---------- the take ---------- */
@@ -230,85 +620,407 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-}
-
-.mp-legend-take__head {
-  padding: 8px 16px 4px;
-  text-align: center;
-}
-
-.mp-legend-take__title {
-  margin: 0;
-  font: 700 20px/26px var(--font-body, sans-serif);
-  color: var(--text-primary);
-}
-
-.mp-legend-take__hint {
-  min-height: 21px;
-  margin: 4px 0 0;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+  padding-bottom: var(--pushed-bottom, 0px);
 }
 
 .mp-legend-take__stage {
   position: relative;
-  display: flex;
   flex: 1 1 auto;
   min-height: 0;
-  margin: 8px 12px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--bg-secondary);
+  margin-top: 8px;
 }
 
-.mp-legend-take__stage > * {
-  flex: 1 1 auto;
+.mp-legend-lane {
+  position: absolute;
+  inset: 0;
+}
+
+.mp-legend-lane svg {
+  display: block;
+}
+
+.mp-legend-lane__row {
+  stroke: rgb(255 255 255 / 6%);
+  stroke-width: 1;
+}
+
+.mp-legend-lane__note {
+  fill: rgb(255 255 255 / 6%);
+  stroke: rgb(236 232 251 / 42%);
+  stroke-width: 1.4;
+}
+
+.mp-legend-lane__note[data-look='now'] {
+  stroke: #e1d9ff;
+  stroke-width: 2;
+}
+
+.mp-legend-lane__note[data-look='lit'] {
+  stroke: var(--legend-right);
+  stroke-width: 1.6;
+}
+
+.mp-legend-lane__note[data-look='missed'] {
+  fill: rgb(255 106 92 / 7%);
+  stroke: var(--legend-wrong);
+  stroke-width: 1.8;
+}
+
+.mp-legend-lane__voice,
+.mp-legend-lane__voice-halo {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-legend-lane__voice {
+  stroke-width: 3;
+}
+
+.mp-legend-lane__voice-halo {
+  stroke-width: 12;
+  opacity: 0.28;
+}
+
+.mp-legend-lane__badge circle {
+  stroke: #070b1d;
+  stroke-width: 2;
+}
+
+.mp-legend-lane__badge path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-legend-lane__badge[data-look='lit'] circle {
+  fill: var(--legend-right);
+}
+
+.mp-legend-lane__badge[data-look='lit'] path {
+  stroke: #04201c;
+}
+
+.mp-legend-lane__badge[data-look='missed'] circle {
+  fill: var(--legend-wrong);
+}
+
+.mp-legend-lane__badge[data-look='missed'] path {
+  stroke: #2a0703;
+}
+
+.mp-legend-lane__label {
+  font: 600 13px var(--legend-sans);
+  fill: rgb(236 232 251 / 85%);
+}
+
+.mp-legend-lane__label[data-look='now'] {
+  fill: #ffffff;
+}
+
+.mp-legend-lane__names text {
+  font: 500 13px var(--legend-sans);
+  fill: var(--legend-faint);
+  stroke: #070b1d;
+  stroke-width: 4;
+  paint-order: stroke;
+  stroke-linejoin: round;
+}
+
+.mp-legend-lane__pulse {
+  fill: none;
+  stroke: #bff4ff;
+  stroke-width: 1.6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mp-legend-pulse 1.4s ease-out infinite;
+}
+
+@keyframes mp-legend-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+.mp-legend-take__hint {
+  min-height: 21px;
+  margin: 6px 24px 0;
+  text-align: center;
+  font: 500 13px/1.3 var(--legend-sans);
+  color: var(--legend-text-3);
+}
+
+.mp-legend-merc {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  left: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.mp-legend-merc__box {
+  position: relative;
+  flex: none;
+  width: 68px;
+  height: 68px;
+}
+
+.mp-legend-merc__box::before {
+  content: '';
+  position: absolute;
+  inset: 4px 2px 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(110 140 255 / 42%),
+    rgb(154 135 240 / 12%) 60%,
+    transparent
+  );
+}
+
+.mp-legend-bubble {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 292px;
+  margin-bottom: 16px;
+  padding: 10px 14px 11px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 18px;
+  background: rgb(12 20 48 / 82%);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 35%);
+}
+
+.mp-legend-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: 14px;
+  left: -6px;
+  width: 11px;
+  height: 11px;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  border-left: 1px solid rgb(255 255 255 / 14%);
+  border-bottom-left-radius: 2px;
+  background: rgb(12 20 48 / 96%);
+  transform: rotate(45deg);
+}
+
+.mp-legend-bubble__say {
+  margin: 0;
+  font: 500 15px/1.36 var(--legend-sans);
+  color: #f6f3ff;
+}
+
+.mp-legend-bubble__aside {
+  margin: 5px 0 0;
+  font: 600 13px/1.2 var(--legend-sans);
+  color: var(--legend-lit-pale);
 }
 
 .mp-legend-take__dock {
-  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Clear of the mic's ring, which grows past the button while it sounds. */
+  gap: 24px;
+  padding: 18px 16px 20px;
 }
+
+.mp-legend-take__dock-label {
+  font: 600 13px/1 var(--legend-sans);
+  color: #e6dfff;
+}
+
+/* ---------- the result ---------- */
 
 .mp-legend-result {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  margin: 0 12px 12px;
-  border-radius: 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  text-align: center;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 16px calc(20px + var(--pushed-bottom, 0px));
+}
+
+.mp-legend-result__kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.mp-legend-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px 0 9px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 14px;
+  background: rgb(10 18 44 / 60%);
+  color: #e7e3f7;
+  font: 600 13px/1 var(--legend-sans);
+  white-space: nowrap;
+}
+
+.mp-legend-state svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mp-legend-state[data-state='posted'] {
+  border-color: rgb(46 230 201 / 55%);
+  background: rgb(46 230 201 / 12%);
+  color: var(--legend-right-pale);
+}
+
+.mp-legend-state[data-state='failed'] {
+  border-color: rgb(255 106 92 / 60%);
+  background: rgb(255 106 92 / 12%);
+  color: var(--legend-wrong-pale);
+}
+
+.mp-legend-state__spin {
+  animation: mp-legend-spin 1s linear infinite;
+}
+
+@keyframes mp-legend-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mp-legend-result__score {
-  margin: 0;
-  font: 700 40px/46px var(--font-body, sans-serif);
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin: 14px 0 0;
+}
+
+.mp-legend-result__number {
+  font: 700 72px/1 var(--legend-sans);
+  letter-spacing: -0.02em;
+  color: #fbf9ff;
+}
+
+.mp-legend-result__unit {
+  font: 600 32px/1 var(--legend-sans);
+  color: #d9d2ff;
 }
 
 .mp-legend-result__headline {
-  margin: 0;
-  font: 600 17px/22px var(--font-body, sans-serif);
-  color: var(--text-primary);
+  margin: 14px 0 0;
+  text-align: center;
+  font: 700 20px/1.25 var(--legend-sans);
+  color: #fbf9ff;
+}
+
+.mp-legend-result__headline[data-quiet='true'] {
+  font-size: 17px;
+  font-weight: 600;
+  color: #e7e3f7;
 }
 
 .mp-legend-result__line {
-  margin: 0;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-secondary);
+  margin: 8px 16px 0;
+  text-align: center;
+  text-wrap: balance;
+  font: 400 15px/1.45 var(--legend-sans);
+  color: var(--legend-text-2);
+}
+
+.mp-legend-result__trace {
+  margin-top: 22px;
+  padding: 16px 16px 14px;
+}
+
+.mp-legend-trace {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mp-legend-trace__row {
+  stroke: rgb(255 255 255 / 6%);
+  stroke-width: 1;
+}
+
+.mp-legend-trace__note[data-look='lit'] {
+  stroke: var(--legend-right);
+  stroke-width: 1.2;
+}
+
+.mp-legend-trace__note[data-look='missed'] {
+  fill: rgb(255 106 92 / 8%);
+  stroke: var(--legend-wrong);
+  stroke-width: 1.4;
+}
+
+.mp-legend-trace__voice {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-legend-trace__miss circle {
+  fill: var(--legend-wrong);
+  stroke: #0b1230;
+  stroke-width: 1.6;
+}
+
+.mp-legend-trace__miss path {
+  fill: none;
+  stroke: #2a0703;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.mp-legend-result__tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 12px;
+}
+
+.mp-legend-result__lit {
+  font: 600 15px/1.2 var(--legend-sans);
+  color: var(--legend-text);
+}
+
+.mp-legend-result__misses {
+  font: 500 13px/1.2 var(--legend-sans);
+  color: var(--legend-wrong-pale);
+}
+
+.mp-legend-result__you {
+  margin-top: 12px;
+}
+
+.mp-legend-result__merc {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 14px;
 }
 
 .mp-legend-result__actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-}
-
-.mp-legend-result__actions > .mp-set-button {
-  flex: 1 1 0;
+  margin-top: auto;
+  padding-top: 20px;
 }
 
 /* ---------- the ask, before a first ranked take ---------- */
@@ -317,17 +1029,62 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 4px 20px 24px;
+  padding: 12px 8px 8px;
+  color: var(--legend-text);
+}
+
+.mp-legend-consent__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgb(190 170 255 / 45%);
+  border-radius: 50%;
+  background: rgb(154 135 240 / 18%);
+  color: #e3dbff;
+}
+
+.mp-legend-consent__icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .mp-legend-consent__title {
-  margin: 0;
-  font: 700 20px/26px var(--font-body, sans-serif);
-  color: var(--text-primary);
+  margin: 2px 0 0;
+  font: 700 22px/1.2 var(--legend-sans);
+  color: #fbf9ff;
 }
 
 .mp-legend-consent__body {
   margin: 0;
-  font: 400 15px/21px var(--font-body, sans-serif);
-  color: var(--text-secondary);
+  font: 400 15px/1.45 var(--legend-sans);
+  color: var(--legend-text-2);
+}
+
+.mp-legend-consent__body:last-of-type {
+  margin-bottom: 8px;
+}
+
+/* A short phone keeps the words and the choices, not the picture. */
+@media (max-height: 700px) {
+  .mp-legend-consent {
+    gap: 10px;
+    padding-top: 4px;
+  }
+
+  .mp-legend-consent__icon {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-legend-poster__bead[data-on='true'] .mp-legend-poster__ring,
+  .mp-legend-lane__pulse,
+  .mp-legend-state__spin {
+    animation: none;
+  }
+
+  .mp-legend-lane__pulse {
+    opacity: 0;
+  }
 }

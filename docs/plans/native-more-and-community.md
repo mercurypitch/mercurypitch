@@ -373,6 +373,65 @@ everyone sings". `legend-fold.test.ts` holds the sources to all of it.
   `challenge-period-neutral.test.ts` misses it: its JSX-text pattern skips
   text that spans lines.
 
+## Slice 3b: the Legend in the native rooms' light (built)
+
+Slice 3 drew its take with the web's zen canvas (its amber pills) inside the
+native room. The owner asked for the native look the Ear Lab took
+(`docs/plans/ear-lab-native-look.md`) and approved the mock-ups (the canvas
+"Legend Native Room", nine phones). Nothing a take scores changes: the zen
+session and `summarizeChallengeRun` stay, unseen, so a phone's 84 % and a
+browser's 84 % mean the same on one board. Only the drawing moves.
+
+### The language
+
+The dark stage with the Legend's violet and cyan glow, glass cards and
+chips, the filled violet for the one main action and glass outline for the
+rest, Inter for every word (`legend.css`). Lit violet is the singer's turn,
+teal a lit note and red a miss, and a state is never colour alone: a lit or
+missed note carries a check or a cross, and the words beside them count.
+
+### The door
+
+A chip with the line's notes ("8 notes · C4 to G4") over the line itself as
+a poster (`LegendPoster.tsx`): a bead at each note's start on its pitch's row,
+one lit thread through them held for each note's length. Hear the line lights
+each bead as its note sounds (`lineNote` in `legend-take.ts`). Under it the
+close, the title and the description, the hear row, three tiles (what the
+Legend asks for, the Founder's score, the singer's best), the counts, the
+board and the past Legends. Sing it and Practice sit in a dock over the
+scroller's foot.
+
+### The take
+
+`LegendLane.tsx` draws `laneView` (`legend-lane.ts`, pure): the line as glass
+notes passing a now line, one row to a pitch, the voice a lit ribbon up to
+it. The note under the now line is lit violet, brighter as the voice nears
+it; a passed note is teal when the web stage's own highlight cleared it and
+red when it missed (`challengeTargetHighlights`), so the lane and the score
+never disagree. The chip counts the notes lit, with a dot for each note; Merc
+gives the first note during the count-in ("Sung as written, for everyone");
+the room kit's mic button ends the take.
+
+### The result
+
+As the Ear Lab's plate shows a run: a kicker and a state chip (Saving,
+Posted, Not posted, Not ranked), the score at 72 px, the result's headline
+and what the Legend asks, the whole take at once (`LegendTrace.tsx`: every
+note lit or missed under the voice), "7 of 8 lit" and which way a miss went
+("E4 missed, sung flat": the middle of what was sung in the note's window,
+`missesOf`), the singer's standing once the board has it, and Merc's word on
+a posted take. The saving face keeps the number and the trace where the
+posted face has them, so only the words change when the save lands.
+
+### The second way in
+
+The Sing room's exercise picker shows the running Legend above its
+exercises, under a heading of its own, its art lit as the room is. The shell
+words the card and opens the room (`legend-card-wiring.ts`, the `legend`
+member of the native shell API), as it opens an exercise, so the Sing room
+carries none of the Legend's copy and a store build none of the card
+(`assert-bundle.mjs`, STAGE 2).
+
 ---
 
 ## Slice 4: Community, moderation first
@@ -509,6 +568,12 @@ Each is applied as written unless the owner says otherwise.
     its presenter, and the app's card never sees a native take.
 14. **Back leaves the Legend room** (slice 3), as every premium room's does,
     and drops a take in progress; there is no "End the run?" question.
+15. **The Legend is a premium room with two ways in** (slice 3b): More's
+    Together row and a card over the Sing room's exercises. It is not hosted
+    in the Sing room: that room has no score by design and runs on the
+    singer's own song and key.
+16. **The take keeps the web's scoring and loses its canvas** (slice 3b):
+    the zen session scores it, the room draws it.
 
 ## Open, for the owner
 
@@ -525,6 +590,7 @@ Each is applied as written unless the owner says otherwise.
 | 1   | This plan, and the More sheet as a list (#1267) | none               |
 | 2   | Leagues, read-only (#1272)                      | `NATIVE_LEAGUES`   |
 | 3   | The Legend as a room                            | `NATIVE_LEAGUES`   |
+| 3b  | The Legend in the native rooms' light           | `NATIVE_LEAGUES`   |
 | 4a  | Reports, blocks, the name filter (worker)       | none (worker)      |
 | 4b  | Report and Block on the phone, contact line     | none               |
 | 4c  | Community                                       | `NATIVE_COMMUNITY` |

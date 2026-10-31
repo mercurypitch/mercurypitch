@@ -15,7 +15,9 @@
 // calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
 // same way, and so do the Ear Lab with Merc's pictures and serif
-// (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch).
+// (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch),
+// and the Legend room's copies of Merc's stills (shell/legend/stills/;
+// NATIVE_LEAGUES, the same switch again).
 
 import { readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -155,6 +157,37 @@ describe("the Cloud offer's art in a native build", () => {
     const fold = await foldFor('dev')
     for (const name of art) {
       expect(fold(`./assets/${name}`, importer), name).toBeNull()
+    }
+  }, 60000)
+})
+
+describe("the Legend room's stills of Merc in a native build", () => {
+  const legend = fileURLToPath(new URL('./shell/legend/', import.meta.url))
+  const importer = join(legend, 'legend-stills.ts')
+  const stills = picturesIn(join(legend, 'stills'))
+
+  it('has stills to fold, so the checks below are not vacuous', () => {
+    expect(stills).toEqual(
+      expect.arrayContaining([
+        'merc-listen.webp',
+        'merc-celebrate.webp',
+        'merc-point.webp',
+      ]),
+    )
+  })
+
+  it('resolves them to nothing in the store build', async () => {
+    const fold = await foldFor('production')
+    for (const name of stills) {
+      const id = fold(`./stills/${name}`, importer)
+      expect(typeof id === 'string' && id.startsWith('\0'), name).toBe(true)
+    }
+  }, 60000)
+
+  it('leaves them to Vite in a build with the Legend room', async () => {
+    const fold = await foldFor('dev')
+    for (const name of stills) {
+      expect(fold(`./stills/${name}`, importer), name).toBeNull()
     }
   }, 60000)
 })

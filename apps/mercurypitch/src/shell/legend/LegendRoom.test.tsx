@@ -71,6 +71,8 @@ vi.mock('./legend-take', async () => {
             : null,
         saveState: () => now().saveState ?? null,
         linePlaying,
+        lineNote: () => null,
+        level: () => 0,
         start: fakeTake.start,
         stop: vi.fn(),
         done: vi.fn(),
@@ -223,10 +225,10 @@ afterEach(() => {
 describe('the door', () => {
   it('shows the running Legend: its title, its close, and its line', async () => {
     await open()
-    expect(text('.mp-legend-hero__title')).toBe('Vincero')
-    expect(text('.mp-legend-hero__eyebrow')).toBe('Ends in 3 days')
+    expect(text('.mp-legend-door__title')).toBe('Vincero')
+    expect(text('.mp-legend-door__when')).toBe('Ends in 3 days')
     expect(q('[data-testid="legend-sing"]')?.textContent).toBe('Sing it')
-    expect(q('.mp-legend__link')?.getAttribute('href')).toBe(
+    expect(q('.mp-legend-orig')?.getAttribute('href')).toBe(
       'https://example.test/vincero',
     )
   })
@@ -246,7 +248,7 @@ describe('the door', () => {
       '2Ana86%',
       '3Luka80%',
     ])
-    expect(text('[data-testid="legend-you"]')).toBe(
+    expect(text('[data-testid="legend-you"] .mp-legend-you__words')).toBe(
       'Your best 74%, in the top 28% of 18',
     )
   })
@@ -277,7 +279,7 @@ describe('the door', () => {
     q('[data-testid="legend-retry"]')?.click()
     await settle()
     await settle()
-    expect(text('.mp-legend-hero__title')).toBe('Vincero')
+    expect(text('.mp-legend-door__title')).toBe('Vincero')
   })
 
   it('says when the line sits outside the singer’s range, and moves nothing', async () => {

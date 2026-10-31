@@ -35,6 +35,7 @@ import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
+import { newestLevel } from '@/components/room-kit/voice-level'
 import { clearRoomChallengeResult, roomChallengeResult, roomFinalizing, } from '@/features/challenges/challenge-result-store'
 import type { ChallengeRunSummary } from '@/features/challenges/challenge-stage-model'
 import { challengeToZenExercise, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
@@ -92,6 +93,10 @@ export interface LegendTake {
   readonly saveState: Accessor<SaveState | null>
   /** The line plays, at its written pitch. */
   readonly linePlaying: Accessor<boolean>
+  /** The note of the line sounding while it plays, by index, or null. */
+  readonly lineNote: Accessor<number | null>
+  /** How loud the singer is now, 0..1, for the mic's ring; not reactive. */
+  readonly level: () => number
   /** Start a take: call it inside the singer's tap, the mic opens in it. */
   readonly start: (challenge: WeeklyChallenge, kind: TakeKind) => void
   /** End the take now and score what was sung, as the web's End & score. */
@@ -147,6 +152,7 @@ export function createLegendTake(): LegendTake {
   const [sawSaving, setSawSaving] = createSignal(false)
   const [saveLate, setSaveLate] = createSignal(false)
   const [linePlaying, setLinePlaying] = createSignal(false)
+  const [lineNote, setLineNote] = createSignal<number | null>(null)
 
   let disposeSession: (() => void) | null = null
   let listeners = new Set<(frame: PracticeFrame) => void>()
@@ -234,6 +240,7 @@ export function createLegendTake(): LegendTake {
     for (const timer of lineTimers) clearTimeout(timer)
     lineTimers = []
     setLinePlaying(false)
+    setLineNote(null)
   }
 
   const playLine = (picked: WeeklyChallenge): void => {
@@ -255,6 +262,7 @@ export function createLegendTake(): LegendTake {
     const firstBeat = targets[0].startBeat
     const play = (index: number): void => {
       if (token !== lineToken) return
+      setLineNote(index)
       const target = targets[index]
       void capture
         .playTone(
@@ -276,6 +284,7 @@ export function createLegendTake(): LegendTake {
         if (token !== lineToken) return
         lineTimers = []
         setLinePlaying(false)
+        setLineNote(null)
       }, total * 1000),
     )
   }
@@ -459,6 +468,8 @@ export function createLegendTake(): LegendTake {
     outcome,
     saveState,
     linePlaying,
+    lineNote,
+    level: () => newestLevel(capture.peekFrames()),
     start,
     stop,
     done,

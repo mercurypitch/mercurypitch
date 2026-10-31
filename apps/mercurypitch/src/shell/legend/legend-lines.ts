@@ -8,9 +8,12 @@
 // is said as time left, in words. A score is the web's percentage, so the
 // phone and the board say the same number.
 
+import type { WeeklyTier } from '@/features/challenges/weekly-attempt'
 import type { ArchivedWeeklyChallenge, WeeklyBoard, } from '@/features/challenges/weekly-service'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { MelodyItem } from '@/types'
 import { durationInWords } from '../duration-words'
+import type { Miss, MissSide } from './legend-lane'
 
 /** Under the title: how long the Legend has left. */
 export function closesLine(endsAt: string, nowMs: number): string {
@@ -19,6 +22,20 @@ export function closesLine(endsAt: string, nowMs: number): string {
   // The worker counts takes for two days past the close.
   if (left <= 0) return 'Closing: takes still count for a little longer'
   return `Ends in ${durationInWords(left)}`
+}
+
+/** How long a Legend still counts takes past its close (the worker's). */
+export const LEGEND_GRACE_MS = 2 * 86_400_000
+
+/**
+ * The close in a row's or a card's few words: "Ends in 3 days", "Closing"
+ * in the two days' grace, or null once even the grace has gone (a Legend
+ * the phone kept while it could not read the next) or the close is unread.
+ */
+export function closesShortLine(endsAt: string, nowMs: number): string | null {
+  const left = Date.parse(endsAt) - nowMs
+  if (!Number.isFinite(left) || left <= -LEGEND_GRACE_MS) return null
+  return left <= 0 ? 'Closing' : `Ends in ${durationInWords(left)}`
 }
 
 /** A past Legend's close, as a date. */
@@ -88,9 +105,62 @@ export function standingLine(board: WeeklyBoard): string | null {
   return `Your best ${best}%`
 }
 
-/** The score the take reached, said once it is in. */
-export function takeLine(score: number, targetScore: number): string {
-  return score >= targetScore
-    ? `${score}%: the Legend asks for ${targetScore}%, and you reached it`
-    : `${score}%: the Legend asks for ${targetScore}%`
+/** The chip over the door's poster: how many notes, from where to where. */
+export function notesLine(line: readonly { midi: number }[]): string | null {
+  if (line.length === 0) return null
+  const midis = line.map((note) => Math.round(note.midi))
+  const lo = midiToNoteNameOctave(Math.min(...midis))
+  const hi = midiToNoteNameOctave(Math.max(...midis))
+  const count = line.length === 1 ? '1 note' : `${line.length} notes`
+  return lo === hi ? `${count} · ${lo}` : `${count} · ${lo} to ${hi}`
+}
+
+/**
+ * Under a take's score, which the big number already says: what the Legend
+ * asks for, and whether the take reached it. Practice passes no score.
+ */
+export function askLine(score: number | null, targetScore: number): string {
+  return score !== null && score >= targetScore
+    ? `The Legend asks for ${targetScore}%, and you reached it.`
+    : `The Legend asks for ${targetScore}%.`
+}
+
+/** How many of the line's notes the take lit. */
+export function litLine(lit: number, total: number): string {
+  return `${lit} of ${total} lit`
+}
+
+const LONG: Record<MissSide, string> = {
+  flat: 'sung flat',
+  sharp: 'sung sharp',
+  unsung: 'not sung',
+  unsteady: 'unsteady',
+}
+
+const SHORT: Record<MissSide, string> = {
+  flat: 'flat',
+  sharp: 'sharp',
+  unsung: 'not sung',
+  unsteady: 'unsteady',
+}
+
+/**
+ * Which notes a take missed, and which way: "E4 missed, sung flat", "E4
+ * flat, F4 sharp", "4 missed: E4 flat, F4 sharp and 2 more". Null when
+ * every note was lit.
+ */
+export function missLine(misses: readonly Miss[]): string | null {
+  if (misses.length === 0) return null
+  const [a, b] = misses
+  if (b === undefined) return `${a.label} missed, ${LONG[a.side]}`
+  const two = `${a.label} ${SHORT[a.side]}, ${b.label} ${SHORT[b.side]}`
+  if (misses.length === 2) return two
+  return `${misses.length} missed: ${two} and ${misses.length - 2} more`
+}
+
+/** Merc's word on a posted take, by how far it went. */
+export function mercLine(tier: WeeklyTier): string {
+  if (tier === 'beat-founder') return "The Founder's mark is yours now."
+  if (tier === 'completed') return 'That one is on the board.'
+  return 'On the board. Every take trains the climb.'
 }

@@ -165,12 +165,14 @@ function isLaunchOffer(id: string): boolean {
  * is Stage 2, and it would ride into the store build the same way. So do
  * the Ear Lab with Merc's pictures (src/features/ear-lab/merc/: Merc's
  * stills), whose chunk folds away with EAR_LAB_WITH_MERC: measured 28 Oct,
- * the store build carried the stills.
+ * the store build carried the stills. The Legend room's copies of the same
+ * stills (shell/legend/stills/) fold with them: its chunk rides
+ * NATIVE_LEAGUES, the same switch.
  * `assert-bundle.mjs` STAGE 2 checks the bundle;
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_IMAGES =
-  /\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|ear-lab\/merc)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)\.webp$/u
+  /(?:\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|ear-lab\/merc)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)|\/apps\/mercurypitch\/src\/shell\/legend\/stills\/[^/]+)\.webp$/u
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in

@@ -277,4 +277,26 @@ describe('the line', () => {
     take.playLine(legend())
     expect(take.linePlaying()).toBe(false)
   })
+
+  it('names the note sounding, for the door to light, and none once done', () => {
+    vi.useFakeTimers()
+    try {
+      take.playLine(legend())
+      expect(take.lineNote()).toBe(0)
+      // One beat on, at the challenge stage's 60 a minute.
+      vi.advanceTimersByTime(1_001)
+      expect(take.lineNote()).toBeGreaterThan(0)
+      vi.runAllTimers()
+      expect(take.linePlaying()).toBe(false)
+      expect(take.lineNote()).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('names no note once the singer stops it', () => {
+    take.playLine(legend())
+    take.playLine(legend())
+    expect(take.lineNote()).toBeNull()
+  })
 })
