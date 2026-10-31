@@ -199,7 +199,7 @@ leans up to". Read.
 **R16. Ear Lab's Leap names twelve intervals, the tritone among them, up or down at random.**
 `src/lib/ear/banks.ts:36-109` (the twelve, `leap:TT` "Tritone", payload [6], at :72); its comment
 (:33-35): "the frame intervals (octave, fifth, fourth) come easiest, the tritone and the wide minor
-intervals hardest" (seeds, not data). `src/features/ear-lab/LeapDrill.tsx:47-48`: a root from C3 to
+intervals hardest" (seeds, not data). `src/features/ear-lab/LeapDrill.tsx:111-112`: a root from C3 to
 A4 and `const ascending = Math.random() < 0.5`. Read: code.
 
 **R17. Interval Trainer launches take whole semitones 1 to 12, upward**

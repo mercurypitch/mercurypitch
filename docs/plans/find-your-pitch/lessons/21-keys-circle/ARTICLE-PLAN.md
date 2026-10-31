@@ -203,7 +203,7 @@ planner owns Lesson 22's predict; check the tease against it.
 
 **Today:**
 - The Singing tab's key and scale pickers, with its sheet view (the toolbar's sheet button,
-  `src/App.tsx:3982-3986`): the staff writes the key signature (R21-15). The key picker offers C, G, D,
+  `src/App.tsx:4050-4054`): the staff writes the key signature (R21-15). The key picker offers C, G, D,
   A, E, B, F and B♭ only (R21-14), and the staff spells a flat key all in flats and a sharp key all in
   sharps (R21-15). No address opens the sheet view (R18-12), so the card says "open the Singing tab, pick
   a key, then switch to the sheet view".

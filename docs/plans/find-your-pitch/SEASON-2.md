@@ -200,7 +200,7 @@ lesson has a package yet: each card is status "proposed".
 - Checkpoint (unscored sing-along, a theory lesson): after the comfort check, sing do re mi fa so in
   C as the notes light on the staff, in your own clef and octave; nothing listens.
 - Practise: `/?lesson=15#/compose`, then choose Sheet Music or the split view (Compose's views,
-  `src/App.tsx:2263-2287`): notes written in the piano roll appear on the staff, in the bass clef
+  `src/App.tsx:2321-2345`): notes written in the piano roll appear on the staff, in the bass clef
   when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:175-183`). A
   sandbox, not a drill. Needs building: a note-reading drill (§ 5 item 9); the app's only
   note-locating quiz is the guitar's (`src/features/guitar-practice/NoteLocatorQuiz.tsx`).
@@ -302,7 +302,7 @@ lesson has a package yet: each card is status "proposed".
   (Mishra 2014, Psychology of Music 42(2), 131-156, doi:10.1177/0305735612463770; abstract and
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
-  the Singing tab's sheet view moves one, `src/App.tsx:3982-4030`); patterns bracket themselves
+  the Singing tab's sheet view moves one, `src/App.tsx:4050-4098`); patterns bracket themselves
   as the cursor reaches them (a run, a repeat, do-mi-so); the marks of T32 appear one by one over
   the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
@@ -313,8 +313,8 @@ lesson has a package yet: each card is status "proposed".
 - Practise: Sight-Singing (`/pitch-training?lesson=18`, then tap Sight-Singing), which still
   advances on a held note, not on the beat (use-sight-singing-controller.ts:26); The Chart for the
   rhythm (`/ear-lab?lesson=18`, then tap The Chart). The Singing tab's sheet view plays a melody
-  with a cursor (`src/App.tsx:3982-4030`), but no address opens it (`singingSheetView`,
-  `src/stores/ui-store.ts:145`), and whether it scores in that view was **not verified**. Needs
+  with a cursor (`src/App.tsx:4050-4098`), but no address opens it (`singingSheetView`,
+  `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**. Needs
   building: sight-singing in time (§ 5 item 11).
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
   number; the dynamics and articulation marks (ABRSM Grade 1 terms, as the benchmark cites them for
@@ -511,7 +511,7 @@ lesson has a package yet: each card is status "proposed".
   singing it.
 - Practise: Ear Lab's Leap (`/ear-lab?lesson=23`, then tap Leap): twelve choices from the minor
   second to the octave, the tritone among them (`src/lib/ear/banks.ts:36-109`, :72), up or down at
-  random (`src/features/ear-lab/LeapDrill.tsx:48`). Needs building: an Interval Trainer slug
+  random (`src/features/ear-lab/LeapDrill.tsx:112`). Needs building: an Interval Trainer slug
   `perfect-intervals` with intervals 5, 7 and 12 (data, one registry line; launch intervals are
   whole semitones 1 to 12, upward, `src/features/practice-intelligence/launch-override.ts:65-76`),
   and the `ear-drill` subset of perfect intervals and the tritone (§ 5 item 12).
@@ -847,7 +847,7 @@ and First Light does not step aside. Item 21 fixes it.
     advance on the beat rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch
     scored per note, timing shown. Lesson 18, then 28.
 12. **The `ear-drill` launch kind** (CURRICULUM § 4 item 5; code with tests): Ear Lab has no launch
-    of its own today (`pendingEarDrill` is set only from inside the app, `src/stores/ui-store.ts:542`).
+    of its own today (`pendingEarDrill` is set only from inside the app, `src/stores/ui-store.ts:578`).
     Once it exists, Season 2's subsets are data: quarters, halves and eighths (Lesson 17); the 3/4 and
     6/8 bars (Lesson 19); the perfect intervals and the tritone (Lesson 23); Te against Ti in Gravity
     (Lesson 25); major against dominant seventh in Stack (Lesson 27).
@@ -880,7 +880,7 @@ and First Light does not step aside. Item 21 fixes it.
 20. **Keys and the sheet view in the Singing tab** (code with tests): all twelve major keys and
     their relative minors in the key picker, with flat names (eight today,
     `src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`); and an address that opens the sheet
-    view (`singingSheetView` has none, `src/stores/ui-store.ts:145`). Lessons 18 and 21.
+    view (`singingSheetView` has none, `src/stores/ui-store.ts:146`). Lessons 18 and 21.
 21. **Season 2 in the app's lesson plumbing** (code with tests, small): the lesson marker's range
     (`src/lib/lesson-marker.ts:19`); the lesson-answer bounds, which refuse any page or question
     lesson outside 1 to 14 (`workers/db-worker/src/mirror-metrics.ts:61-62`), so Season 2's answers

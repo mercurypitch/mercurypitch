@@ -26,7 +26,7 @@ play button." 25 words.
 
 - What plays first: Merc holds A3 (Tavi's version A4, by the stored voice) for 3 s with a vibrato
   of 6 waves a second, ±50 cents, grown in over 0.3 s, synthesised with the demo voice's vibrato
-  parameter (R18; `demo-voice.ts:33-37`). The pitch line draws it on Lesson 5's band: the wave
+  parameter (R18; `src/lib/demo-voice.ts:33-37`). The pitch line draws it on Lesson 5's band: the wave
   crosses both edges of the ±35-cent band; nothing marks a centre yet.
 - Tavi's sincere guess: "It swings that far out of the band. Isn't it out of tune half the time?"
 - Merc: "Listen, then match it."
@@ -151,7 +151,7 @@ widens it.
 - How did that feel? Lesson 3's four answers and endings, the rest card after Effortful.
 - Works today, and what waits: the kit's hold reader (`kit/hold-take.ts:13-25`) scores every frame
   against ±35 cents, so it would mark a wide vibrato as partly outside (R17). Until a centre-line
-  reading exists (remove the fitted wave as Voice Mirror's steadiness does, `metrics.ts:499-509`;
+  reading exists (remove the fitted wave as Voice Mirror's steadiness does, `src/lib/mirror/metrics.ts:499-509`;
   code with tests, not yet in SEASON-2 § 5), the page either (a) ships with today's reader and
   Hold 2's line drops "counts in full", or (b) waits. Recommended: (b), a small kit item; the
   vibrato description also needs the vibrato view (SEASON-2 § 6.2 item 6).
@@ -204,7 +204,7 @@ Three answers each, shuffled.
 - **Linked: Voice Mirror's hold**, `/mirror?lesson=22`. Its hold records 6 s (Lesson 5 FACTS 59)
   and, when it finds a vibrato between 3.5 and 8.5 a second and at least ±10 cents, shows "Vibrato
   N Hz, ±N cents. That's a feature, not scored against you." and keeps it out of the wobble
-  (`MirrorApp.tsx:2194-2199`; `metrics.ts:72-74`, :499-509). Card text: Lesson 5's Voice Mirror card,
+  (`MirrorApp.tsx:2194-2199`; `src/lib/mirror/metrics.ts:72-74`, :499-509). Card text: Lesson 5's Voice Mirror card,
   plus "If your hold has a vibrato, it tells you its rate and extent, and doesn't count it against
   you." **[coach]**
 - **Missing:** `?lesson=22` is not read (`lesson-marker.ts:11-19`; SEASON-2 § 5 item 21), so First

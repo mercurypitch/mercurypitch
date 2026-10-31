@@ -117,8 +117,8 @@ length.**
 `src/features/ear-lab/SubdivideDrill.tsx:1-10` ("The kit plays two bars — 3/4, 4/4, 5/4, 6/8 or 7/8 —
 with the kick on one"; "A miss plays the bars again, slower"); `src/lib/ear/metre.ts:41-47` (`METRES`);
 :74 and :76 (3/4: `[K, H, H]` and `[K, S, H]`, three steps); :77 (6/8 `[K, H, H, S, H, H]`, the snare on
-the fourth eighth) and :79 (`[K, H, R, K, H, R]`, a kick on the fourth); :100-103 (`stepMs`: an eighth
-metre's step is half a quarter); `src/lib/ear/timing.ts:198-206` (`SUBDIVIDE_TIMING`, "A quarter at
+the fourth eighth) and :79 (`[K, H, R, K, H, R]`, a kick on the fourth); :121-124 (`stepMs`: an eighth
+metre's step is half a quarter); `src/lib/ear/timing.ts:231-239` (`SUBDIVIDE_TIMING`, "A quarter at
 120; eighth-note metres run at half this", `quarterMs: 500`). So a 3/4 bar is 3 x 500 ms and a 6/8 bar
 6 x 250 ms, both 1.5 s (arithmetic). Code read. Strong.
 
