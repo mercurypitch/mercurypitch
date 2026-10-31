@@ -89,6 +89,7 @@ describe('the Legend room, in the sources', () => {
       'Practice without ranking',
       'mp:legend-card',
       'The line everyone sings',
+      'Everyone sings the same notes',
     ]) {
       expect(assert).toContain(`['${marker}',`)
     }

@@ -521,3 +521,62 @@ describe('taps', () => {
     expect(onPick).not.toHaveBeenCalled()
   })
 })
+
+describe('the Legend', () => {
+  const WORDS = {
+    title: 'The Evening Bell',
+    when: 'Ends in 3 days',
+    line: 'Everyone sings the same notes, as written.',
+    best: 'Your best 74%',
+  }
+
+  /** The picker with the shell's Legend, and whether it can open one. */
+  async function openWithLegend(
+    legend: typeof WORDS | null,
+    opens: boolean,
+  ): Promise<{ calls: string[] }> {
+    const { ExercisePicker } = await import('./ExercisePicker')
+    const calls: string[] = []
+    render(() => (
+      <ExercisePicker
+        isOpen
+        close={() => calls.push('close')}
+        onPick={(id) => calls.push(`pick ${id}`)}
+        legend={legend}
+        onLegend={opens ? () => calls.push('legend') : undefined}
+      />
+    ))
+    return { calls }
+  }
+
+  it('sits over the exercises under its own heading, in the shell’s words', async () => {
+    await openWithLegend(WORDS, true)
+
+    const groups = screen.getAllByTestId('sing-exercise-group')
+    expect(groups[0]?.getAttribute('data-group')).toBe('legend')
+    const legend = screen.getByTestId('sing-legend-card')
+    expect(legend.textContent).toContain('The Evening Bell')
+    expect(legend.textContent).toContain('Ends in 3 days')
+    expect(legend.textContent).toContain('Your best 74%')
+  })
+
+  it('closes the sheet, then opens the Legend, once', async () => {
+    const { calls } = await openWithLegend(WORDS, true)
+
+    fireEvent.click(screen.getByTestId('sing-legend-card'))
+
+    expect(calls).toEqual(['close', 'legend'])
+  })
+
+  it('draws no card while none is open', async () => {
+    await openWithLegend(null, true)
+
+    expect(screen.queryByTestId('sing-legend-card')).toBeNull()
+  })
+
+  it('draws no card on a build that cannot open one', async () => {
+    await openWithLegend(WORDS, false)
+
+    expect(screen.queryByTestId('sing-legend-card')).toBeNull()
+  })
+})

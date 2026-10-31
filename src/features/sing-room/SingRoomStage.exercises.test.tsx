@@ -54,7 +54,7 @@ const picker = {
 
 let unregisterShell: (() => void) | undefined
 
-function mountRoom(shell = true): Room {
+function mountRoom(shell = true, legend?: NativeShellApi['legend']): Room {
   const log: string[] = []
   const takesBefore = singTakes().length
   const at = (): string =>
@@ -72,9 +72,26 @@ function mountRoom(shell = true): Room {
       `open ${id}: ${at()}, mic ${micOn ? 'on' : 'off'}, sheets ${sheets}`,
     )
   })
+  // The shell's Legend, logged as an exercise is when it opens.
+  const legendWay =
+    legend === undefined
+      ? undefined
+      : {
+          card: legend.card,
+          open: () => {
+            const sheets = screen.queryAllByRole('dialog', {
+              hidden: true,
+            }).length
+            log.push(
+              `open legend: ${at()}, mic ${micOn ? 'on' : 'off'}, sheets ${sheets}`,
+            )
+            legend.open()
+          },
+        }
   if (shell) {
     unregisterShell = registerShellApi({
       openExercise,
+      ...(legendWay === undefined ? {} : { legend: legendWay }),
     } as unknown as NativeShellApi)
   }
   const openStubMic = async (): Promise<boolean> => {
@@ -314,6 +331,64 @@ describe('in a free run', () => {
 
     expect(singRoomContext().state).toBe('live')
     expect(screen.getByTestId('sing-exercise-row')).toBe(resting)
+  })
+})
+
+describe('the running Legend, over the exercises', () => {
+  const open = vi.fn()
+  const LEGEND = {
+    card: () => ({
+      title: 'The Evening Bell',
+      when: 'Ends in 3 days',
+      line: 'Everyone sings the same notes, as written.',
+      best: null,
+    }),
+    open,
+  }
+
+  afterEach(() => {
+    open.mockClear()
+  })
+
+  it('sits in the picker, and its card opens the Legend once', async () => {
+    const room = mountRoom(true, LEGEND)
+    fireEvent.click(await screen.findByTestId('sing-exercise-browse'))
+    const legend = await screen.findByTestId('sing-legend-card')
+    expect(legend.textContent).toContain('The Evening Bell')
+
+    fireEvent.click(legend)
+
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(room.openExercise).not.toHaveBeenCalled()
+    expect(pickerOpen()).toBe(false)
+    expect(room.log).toEqual([
+      'open legend: state resting, takes +0, mic off, sheets 0',
+    ])
+  })
+
+  it('ends a free run, keeps its take and lets the mic go before it opens', async () => {
+    const room = mountRoom(true, LEGEND)
+    await screen.findByTestId('sing-exercise-browse')
+    startFreeRun()
+    // Four seconds of A3: over the three of voice a take needs to be kept.
+    for (let at = 0; at <= 4000; at += 16) room.frame(at, 220)
+    expect(singRoomContext().state).toBe('live')
+
+    fireEvent.click(await screen.findByTestId('sing-exercise-browse'))
+    fireEvent.click(await screen.findByTestId('sing-legend-card'))
+
+    expect(room.log).toEqual([
+      'mic off: state ended, takes +0',
+      'open legend: state resting, takes +1, mic off, sheets 0',
+    ])
+  })
+
+  it('is not offered while no Legend is open', async () => {
+    mountRoom(true, { card: () => null, open })
+    fireEvent.click(await screen.findByTestId('sing-exercise-browse'))
+    await screen.findAllByTestId('sing-exercise-card')
+
+    expect(screen.queryByTestId('sing-legend-card')).toBeNull()
   })
 })
 

@@ -144,3 +144,20 @@ export const SpotlightGlyph: Component = () => (
     <path d="M10.4 3.5 5.6 9.6M13.6 3.5l4.8 6.1" />
   </svg>
 )
+
+/** The running Legend: a calendar, as More's Together row draws it. */
+export const LegendGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    <path d="M14.5 13.5h2.5v2.5h-2.5z" />
+  </svg>
+)

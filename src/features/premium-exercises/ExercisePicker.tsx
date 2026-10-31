@@ -28,8 +28,10 @@ import { WeekDots } from '@/components/room-kit/WeekDots'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { WeekDot } from '@/lib/warm-up-days'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import type { LegendCardWords } from '@/stores/native-shell-store'
 import type { CatalogueGroup, PremiumExercise } from './catalogue'
 import { catalogueGroups } from './catalogue'
+import { LegendGlyph } from './glyphs'
 import { lastExercise } from './last-exercise'
 import styles from './premium-exercises.module.css'
 
@@ -38,6 +40,13 @@ export interface ExercisePickerProps {
   close: () => void
   /** A card: the sheet has closed, open this exercise. */
   onPick: (id: PremiumExerciseId) => void
+  /**
+   * The running Legend's card, over the exercises under a heading of its
+   * own (NATIVE_LEAGUES): the shell's words, or null while none is open.
+   */
+  legend?: LegendCardWords | null
+  /** Its card: the sheet has closed, open the Legend. */
+  onLegend?: () => void
 }
 
 const CloseGlyph: Component = () => (
@@ -118,6 +127,53 @@ const Card: Component<{
   )
 }
 
+/**
+ * The running Legend, above the exercises: a card like theirs, its art lit
+ * as the Legend room is, with when it closes where an exercise names its
+ * level. The shell words it (native-shell-store.ts, `legend`).
+ */
+const LegendCard: Component<{
+  words: LegendCardWords
+  onOpen: () => void
+}> = (props) => {
+  const headingId = `exercise-group-${createUniqueId()}`
+  return (
+    <section
+      class={styles.group}
+      data-testid="sing-exercise-group"
+      data-group="legend"
+    >
+      <h3 id={headingId} class={styles.groupTitle}>
+        Legend
+      </h3>
+      <ul class={styles.cards} aria-labelledby={headingId}>
+        <li class={styles.cardItem}>
+          <button
+            type="button"
+            class={`${styles.card} ${styles.cardLegend}`}
+            onClick={() => props.onOpen()}
+            data-testid="sing-legend-card"
+          >
+            <span class={styles.cardArt} aria-hidden="true">
+              <LegendGlyph />
+            </span>
+            <span class={styles.cardText}>
+              <span class={styles.cardHead}>
+                <span class={styles.cardTitle}>{props.words.title}</span>
+                <span class={styles.cardLevel}>{props.words.when}</span>
+              </span>
+              <span class={styles.cardLine}>{props.words.line}</span>
+              <Show when={props.words.best}>
+                {(best) => <span class={styles.cardMeta}>{best()}</span>}
+              </Show>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </section>
+  )
+}
+
 /** A heading and its cards; the list is named by the heading. */
 const Group: Component<{
   group: CatalogueGroup
@@ -168,6 +224,17 @@ export const ExercisePicker: Component<ExercisePickerProps> = (props) => {
             <CloseGlyph />
           </button>
         </div>
+        <Show when={props.onLegend === undefined ? null : props.legend}>
+          {(words) => (
+            <LegendCard
+              words={words()}
+              onOpen={() => {
+                props.close()
+                props.onLegend?.()
+              }}
+            />
+          )}
+        </Show>
         <For each={catalogueGroups()}>
           {(group) => <Group group={group} onPick={pick} />}
         </For>

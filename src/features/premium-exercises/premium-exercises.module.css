@@ -280,6 +280,24 @@
   color: var(--accent, #58a6ff);
 }
 
+/* The running Legend's card: lit as the Legend room is, in either theme
+   (its art is the room's violet glass, its ink white on it). */
+.cardLegend {
+  border-color: rgb(154 135 240 / 50%);
+  background: rgb(154 135 240 / 10%);
+}
+
+.cardLegend .cardArt {
+  background: radial-gradient(
+    circle at 35% 28%,
+    #d9d0ff 0%,
+    #9a87f0 48%,
+    #5b6fe0 100%
+  );
+  color: #ffffff;
+  box-shadow: 0 0 18px rgb(154 135 240 / 35%);
+}
+
 .cardArt svg {
   width: 24px;
   height: 24px;
