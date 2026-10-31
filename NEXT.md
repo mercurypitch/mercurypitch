@@ -2230,3 +2230,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Next look: the 02:16 check-in (re-arm a 30 min Monitor on the status then). For film-04 if needed: consider
   HF_SEGMENT_BROWSER_RECYCLE well above 10 with 2 workers (one warm browser per worker, as the repair rounds run),
   which would skip the repair rounds; untested at 2 workers for memory, so only between runs and with a watch on oom_kill.
+- 02:15 CONTAINER RESTART (uptime 4 min at 02:20; /dev/shm wiped: film-02.mp4 + music-only, the extract cache,
+  l4lead). film-03's log stopped growing at 01:25:40, five minutes after my 01:20 turn ended with NO harness task
+  running (the 30 min Monitor had expired and I chose not to re-arm). So the container froze/was reclaimed while
+  idle even though a render ran. RULE: while a render or anything detached runs, ALWAYS keep a harness task armed
+  (re-arm the 30 min Monitor on every expiry); never leave the session with nothing tracked.
+  State after the restart: pieces on disk under $S/l4film03proj/renders/.hf-segments/8497a35e036d0108:
+  completed 0-10 and 14-17 (5 and 6 already repaired 01:09/01:22); missing 11 (partial file), 12, 13, 18, 19.
+  compositions.md5 OK, kit.md5 OK, Chrome warmed (5.6 s cold). 02:24:49 resumed:
+  RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 render-l4.sh film-03 60 high $S/l4film03proj (one browser,
+  pieces in order, as the repair rounds run). Monitor bdk1zaevb (30 min; re-arm on every expiry until DONE).
+  FILM3-ready.txt's note now says film-02.mp4 is gone (sheets in review/film-02/, film-01.mp4 in renders/).
+  film-02 is lost for good (no copy on disk); LEDGER/DELIVERY keep its sheets and REPORT only.
