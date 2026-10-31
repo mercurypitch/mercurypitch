@@ -226,3 +226,19 @@ A design review against the mock-ups (30 Oct) found these, now fixed:
   brass too. The same tokens apply; it is a piece of work of its own.
 - **Answering by voice:** Home, Echo and Span answered by singing take the
   room kit's mic disc in place of the keys (the mock-up's shared parts).
+
+## Decided after the review (owner, 31 Oct)
+
+- **Subdivide shows the eye no more than the ear hears.** The bar's length
+  names the metre: the room's lanes drew the two bars' whole row at the
+  answer beat, and the web's lattice drew one pallet a step before the
+  sound. Now the room's hits land at a "now" line and pass left, fading,
+  like tape, with the lanes empty before the sound and while the answer is
+  due; the web's lattice stands at seven pallets whatever the metre, its
+  lamp running on round them across both bars. Both lay the bar out at the
+  reveal.
+- **The meaning line under a threshold plate's number stays out**, as the
+  mock-ups have it.
+- **The reveal's step down on a phone with no room to spare** is decided on
+  the devices, in the device pass: a smaller instrument at rest is the
+  only cure.
