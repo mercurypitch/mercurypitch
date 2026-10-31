@@ -2432,3 +2432,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   then render (~3 h at 551 s), so film-05 ~midnight. Watcher bas6ndkpu ends ~16:02: RE-ARM each time it wakes
   me. FILM5 prompt ready: l4entr/critics/FILM5-ready.txt (review/film-05/ made). Disk plan unchanged (asked the owner
   whether film-01/film-03 drafts can go).
+- 15:1x OWNER, verbatim: "Yes delete old drafts, make sure new film is not lost". DONE: deleted P/renders/film-01.mp4,
+  film-01-music-only.mp4, film-03.mp4 (325 MB; looked at first: the three 483.7 s drafts); film-04 and its
+  music-only kept. / now 564 MB free. render-l4.sh changed (backup l4entr/revoice/render-l4.before.sh; bash -n ok;
+  copy block tested on dummy files both ways): KEEP_MB 1150 -> 200 (env-overridable); after the film is whole it
+  COPIES the master into renders/ first, checks it with cmp, then the music-only if room; the /dev/shm/l4film copies
+  stay for the critic; anything that does not fit is named in the status file. So: pieces on disk during the render
+  (a restart costs a resume, not the film), the master on disk at the end, and the owner gets a copy by
+  SendUserFile once FILM5 passes.

@@ -4,16 +4,18 @@
 # Progress in renders/<name>.status; the render's own log in renders/<name>.log.
 # Never edit this file while it runs: bash reads a script as it goes.
 # The renderer refuses to start below 1024 MB free at its temp folder and at its output folder, and /
-# is short, so it renders into /dev/shm/l4film and the films move into renders/ only while that leaves
-# KEEP_MB free on /; otherwise they stay in /dev/shm/l4film (RAM: lost if the container restarts) and
-# the status file says so. Keep the frozen copy (SRC) on disk, not in /dev/shm: the finished pieces
-# are written under it, and a container restart clears /dev/shm (08:07 on 30 Oct took 18 of 20).
+# is short, so it renders into /dev/shm/l4film. Then the master, and the music-only if there is room,
+# are copied onto disk in renders/ (checked byte for byte), each only while that leaves KEEP_MB free
+# on /; the copies in /dev/shm/l4film stay for the critic. A film that does not fit stays only in
+# /dev/shm/l4film (RAM: lost if the container restarts), and the status file says so. Keep the frozen
+# copy (SRC) on disk, not in /dev/shm: the finished pieces are written under it, and a container
+# restart clears /dev/shm (08:07 on 30 Oct took 18 of 20).
 NAME=${1:?name}
 FPS=${2:-60}
 Q=${3:-high}
 # the project to render (default the live one; a frozen copy keeps builders' later edits out of it)
 SRC=${4:-/home/user/mercurypitch/output/motion/lesson-04}
-KEEP_MB=1150
+KEEP_MB=${KEEP_MB:-200}
 # Segmented capture: the film renders in SEGF-frame pieces, each worker on its own browser (recycled
 # every 3 pieces), and finished pieces are recorded under $SRC/renders/.hf-segments. One unsegmented
 # 4-worker render of the whole film stalled at frame 20921 (30 Oct). RESUME=1 re-runs only the
@@ -99,14 +101,22 @@ if [ $code -eq 0 ]; then
   ffmpeg -v error -y -i $OUT/$NAME.mp4 -i assets/audio/music-only.wav -map 0:v:0 -map 1:a:0 \
     -c:v copy -c:a aac -movflags +faststart $OUT/$NAME-music-only.mp4
   echo "$(date -u +%T) music-only exit $?" >> $ST
-  need=$(( ($(stat -c %s $OUT/$NAME.mp4) + $(stat -c %s $OUT/$NAME-music-only.mp4)) / 1048576 + KEEP_MB ))
-  free=$(df -m --output=avail / | tail -1 | tr -d ' ')
+  # The master first: it is the film that must not be lost (the owner, 31 Oct).
   FD=$OUT
-  if [ "$free" -gt "$need" ]; then
-    mv $OUT/$NAME.mp4 $OUT/$NAME-music-only.mp4 renders/ && FD=renders && echo "$(date -u +%T) films moved into renders/ (free $free MB, needed $need)" >> $ST
-  else
-    echo "$(date -u +%T) films kept in $OUT: / has $free MB free, needs $need" >> $ST
-  fi
+  for f in $NAME.mp4 $NAME-music-only.mp4; do
+    need=$(( $(stat -c %s $OUT/$f) / 1048576 + 1 + KEEP_MB ))
+    free=$(df -m --output=avail / | tail -1 | tr -d ' ')
+    if [ "$free" -gt "$need" ]; then
+      if cp $OUT/$f renders/$f.part && cmp -s $OUT/$f renders/$f.part && mv renders/$f.part renders/$f; then
+        echo "$(date -u +%T) $f copied into renders/ and checked (free was $free MB)" >> $ST
+      else
+        rm -f renders/$f.part
+        echo "$(date -u +%T) $f copy into renders/ FAILED; it is only in $OUT" >> $ST
+      fi
+    else
+      echo "$(date -u +%T) $f kept only in $OUT: / has $free MB free, needs $need" >> $ST
+    fi
+  done
   ffmpeg -v error -y -i $FD/$NAME.mp4 -vf "fps=1/10,scale=384:-2,tile=6x9" -frames:v 1 \
     renders/contact-sheet-$NAME.jpg
   echo "$(date -u +%T) contact sheet exit $?" >> $ST
