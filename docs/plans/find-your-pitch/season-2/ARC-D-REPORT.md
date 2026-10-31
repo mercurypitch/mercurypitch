@@ -89,8 +89,8 @@ Downloads were read and deleted.
 ## Lesson 26, A second voice
 
 - Settled: diatonic thirds (major on do, fa, so; minor elsewhere), thirds as imperfect consonances,
-  passing tones (OMT); the app's own `jam-modes.ts:100-107` states the lesson's point. "Twinkle" a
-  third higher in C has five major and three minor thirds; a fixed +4 adds C♯, G♯ and F♯.
+  passing tones (OMT); the app's own `jam-modes.ts:100-107` states the lesson's point. Lesson 6's
+  "Twinkle" a third higher in C has five major and three minor thirds; a fixed +4 adds C♯, G♯ and F♯.
 - Contradicts the card: the scored five-note checkpoint and its role swap cannot run on today's kit.
   "Passing note" (British) has no British source read in this pass; OMT says "passing tone".
 - Decisions: 10 (the hosts' tenth labelled once), 1.

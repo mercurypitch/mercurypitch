@@ -144,7 +144,7 @@ major's, and spells the melody all in flats in a flat key, all in sharps otherwi
 
 **R21-17. Ear Lab's Home asks for scale degrees heard in a key.**
 `src/features/ear-lab/HomeDrill.tsx:1-11` ("A cadence plants the key ..., a probe note sets the fork
-ringing, and the answer comes by tap — the seven rungs of the ladder — or by mic"); `src/lib/ear/item-bank.ts:44-56`
+ringing, and the answer comes by tap — the seven rungs of the ladder in the console — or by mic"); `src/lib/ear/item-bank.ts:44-56`
 (`HOME_DEGREES`, Do to Ti, "Sol" spelled so). Code read. Strong.
 
 **R21-18. `?lesson=21` is not a lesson marker today.** R15-19.

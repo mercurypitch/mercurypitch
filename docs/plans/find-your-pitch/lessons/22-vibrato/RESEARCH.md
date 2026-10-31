@@ -203,14 +203,15 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
 ### The app (read at `b803c7d43`)
 
 **R15. Three app voices on vibrato.**
-- Voice Mirror's hold reports a vibrato as a feature: `src/features/mirror/MirrorApp.tsx:2194-2199`,
-  "Vibrato {rate} Hz, ±{extent} cents. That's a feature, not scored against you." It counts a
-  vibrato only between 3.5 and 8.5 Hz (`src/lib/mirror/metrics.ts:72-74`) and only when the fitted
+- Voice Mirror's hold reports a vibrato as a feature: it shows the rate in hertz and the extent in
+  cents, then "That's a feature, not scored against you" (`src/features/mirror/MirrorApp.tsx:2194-2199`).
+  It counts a vibrato only between 3.5 and 8.5 Hz (`src/lib/mirror/metrics.ts:72-74`) and only when the fitted
   wave reaches 10 cents (`:507`), and it takes the wave out of the "wobble" before reporting
   steadiness (`:499-509`).
 - Its extent is the fitted sine's amplitude, the swing either side of the centre: the projection
-  `return (2 * Math.hypot(re, im)) / n` (`:91-116`), described as "Modulation amplitude in cents —
-  shown as "vibrato: 5.6 Hz, ±38 c"" (`:424-428`). That matches Sundberg's ± definition (R1).
+  `return (2 * Math.hypot(re, im)) / n` (`src/lib/mirror/metrics.ts:91-116`), described as
+  "Modulation amplitude in cents — shown as "vibrato: 5.6 Hz, ±38 c"" (`:424-428`). That matches
+  Sundberg's ± definition (R1).
 - The shared analyser searches 3 to 10 Hz (`src/lib/vocal-analyzer.ts:707-710`) and measures depth
   "peak-to-peak" (`:725`); it reports a vibrato when the peak stands out and that depth passes 10
   cents (`:739`). So the analyser's depth and Voice Mirror's extent are different measures; the
@@ -236,7 +237,7 @@ long the line sat inside the band". A ±50-cent vibrato centred on the note woul
 every wave, so time in the band would fall. The checkpoint the card wants ("scored only on the
 note's centre", "a vibrato inside the band counts in full") needs the hold reader to score a centre
 line, for instance by removing the fitted wave as Voice Mirror's steadiness already does
-(metrics.ts:499-509). Read: code. This is engineering, not yet planned in SEASON-2 § 5.
+(`src/lib/mirror/metrics.ts:499-509`). Read: code. This is engineering, not yet planned in SEASON-2 § 5.
 
 **R18. Merc has sung with a small vibrato all season.** The kit's Merc "ooh" adds a 5.5 Hz vibrato
 of ±14 cents, grown in over 0.35 s (`src/features/lessons/kit/sound.ts:188-198`, comment at :189;
