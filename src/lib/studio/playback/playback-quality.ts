@@ -267,6 +267,11 @@ let notice: string | null = null
 const listeners = new Set<Listener>()
 const watch = createUnderrunWatch()
 
+/** This device's measured voice chain in microseconds per 128 frames, once the benchmark is in. */
+export function playbackVoiceChainUs(): number | undefined {
+  return hints.voiceChainUs
+}
+
 /** The tier Auto plays `song` at: its own pick, under any step down this session. */
 export function autoPlaybackTier(song: StudioSongShape): StudioPlaybackTier {
   const auto = pickAutoTier(hints, song)

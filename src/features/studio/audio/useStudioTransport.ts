@@ -9,6 +9,7 @@ import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { createStudioLaneFreezer } from '@/lib/studio/playback/lane-freezer'
 import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
@@ -26,7 +27,8 @@ export interface UseStudioTransportOptions {
   /**
    * True while Export, Compare or auto-balance holds the audio it released.
    * No warm-up runs meanwhile; one runs once it is done, so the next Play
-   * finds the song's graph built ahead again.
+   * finds the song's graph built ahead again. No lane renders ahead
+   * meanwhile either (lane-freezer.ts); rendering goes on once it is done.
    */
   audioBusy?: Accessor<boolean>
 }
@@ -106,9 +108,24 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   const [previewPending, setPreviewPending] = createSignal(false)
   const [previewError, setPreviewError] = createSignal<string | null>(null)
   const [previewing, setPreviewing] = createSignal(false)
+  // A song too heavy for the audio thread renders lanes ahead (lane-freezer.ts).
+  // Each render that lands rebuilds the graph kept for Play, so Play hears it.
+  let rewarmTimer: ReturnType<typeof setTimeout> | undefined
+  const freezer = createStudioLaneFreezer({
+    readCanonicalAsset: options.readCanonicalAsset,
+    changed() {
+      clearTimeout(rewarmTimer)
+      rewarmTimer = setTimeout(() => {
+        const project = options.project()
+        if (!disposed && project && !isPlaying())
+          void runtime.warm(project, options.assets())
+      }, 1500)
+    },
+  })
   const runtime = createStudioTransport({
     lease,
     readCanonicalAsset: options.readCanonicalAsset,
+    freezes: freezer,
     changed: (value) => {
       if (disposed) return
       batch(() => {
@@ -152,6 +169,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
 
   async function releaseAudio(): Promise<void> {
     stopPreview()
+    // Export, Compare and auto-balance need the room; the next edit or Play resumes renders.
+    freezer.pause()
     await Promise.all([runtime.releaseAudio(), ...retiringPreviews])
   }
 
@@ -169,6 +188,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     options.beforePlay?.()
     stopPreview()
     setPreviewError(null)
+    freezer.resume()
     return runtime.play(project, assets)
   }
 
@@ -315,6 +335,17 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   })
   onCleanup(() => clearTimeout(warmTimer))
 
+  // The freezer follows every revision: an edited lane waits, the rest may
+  // render, once Export, Compare or auto-balance give the memory back.
+  createEffect(() => {
+    const project = options.project()
+    const assets = options.assets()
+    if (!project) return
+    freezer.update(project, assets)
+    if (options.audioBusy?.() !== true) freezer.resume()
+  })
+  onCleanup(() => clearTimeout(rewarmTimer))
+
   function onVisibility(): void {
     // A graph Pause kept is let go sooner while nobody can press Play.
     runtime.setPageHidden(document.hidden)
@@ -332,6 +363,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     if (typeof document !== 'undefined')
       document.removeEventListener('visibilitychange', onVisibility)
     void releaseAudio().finally(() => {
+      freezer.dispose()
       runtime.dispose()
       nativeLease?.release()
       pageClock?.release()

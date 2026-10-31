@@ -4,10 +4,12 @@ import type { StudioMasterGain } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { prepareStudioLiveMeter } from '../metering/live-meter'
 import type { StudioAsset, StudioProject } from '../model/types'
+import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioBufferCache } from './buffer-cache'
+import type { StudioFreezeLookup } from './lane-freezer'
 import { firstThatFits } from './live-edit'
 import type { StudioLatencyReader } from './prepare-plan'
-import { planAssets, prepareStudioPlan } from './prepare-plan'
+import { NO_FREEZES, planAssets, prepareStudioPlan } from './prepare-plan'
 
 export interface StudioWarmupOptions {
   readonly lease: AudioContextLease
@@ -15,6 +17,8 @@ export interface StudioWarmupOptions {
   readonly measureLatencies: StudioLatencyReader
   readCanonicalAsset(id: string): Promise<Blob>
   readonly masterGain?: StudioMasterGain
+  /** Lanes rendered ahead (lane-freezer.ts): their clips' audio is not read. */
+  readonly freezes?: StudioFreezeLookup
   /** True once the warm-up is not wanted any more: playback began, or the transport closed. */
   busy(): boolean
 }
@@ -46,33 +50,46 @@ export async function warmStudioPlayback(
       ? [leased]
       : [48000, 44100]
   if (live) await prepareStudioLiveMeter(live)
-  const plans: Awaited<ReturnType<typeof prepareStudioPlan>>[] = []
-  for (const rate of rates) {
-    await options.measureLatencies(
-      [resolveStudioSoundGraph(project, options.masterGain).full],
-      rate,
-    )
-    plans.push(
-      await prepareStudioPlan(
-        project,
-        assets,
+  // Lanes a run would play from a render (lane-freezer.ts) are held while the
+  // audio is read: the read skips their clips and cannot take them back.
+  const held =
+    rates.at(-1) === STUDIO_SAMPLE_RATE
+      ? (options.freezes?.hold(project, assets) ?? null)
+      : null
+  try {
+    const plans: Awaited<ReturnType<typeof prepareStudioPlan>>[] = []
+    for (const rate of rates) {
+      await options.measureLatencies(
+        [resolveStudioSoundGraph(project, options.masterGain).full],
         rate,
-        0,
+      )
+      plans.push(
+        await prepareStudioPlan(
+          project,
+          assets,
+          rate,
+          0,
+          signal,
+          options.measureLatencies,
+          true,
+          rate === STUDIO_SAMPLE_RATE
+            ? (held?.lanes ?? NO_FREEZES)
+            : NO_FREEZES,
+        ),
+      )
+    }
+    const plan = plans.at(-1)
+    if (plan === undefined || options.busy() || signal.aborted) return
+    const lease = await firstThatFits([true, false], (silentLanes) =>
+      options.cache.acquire(
+        planAssets(plan, assets, silentLanes),
+        factory,
+        options.readCanonicalAsset,
         signal,
-        options.measureLatencies,
-        true,
       ),
     )
+    lease.release()
+  } finally {
+    held?.release()
   }
-  const plan = plans.at(-1)
-  if (plan === undefined || options.busy() || signal.aborted) return
-  const lease = await firstThatFits([true, false], (silentLanes) =>
-    options.cache.acquire(
-      planAssets(plan, assets, silentLanes),
-      factory,
-      options.readCanonicalAsset,
-      signal,
-    ),
-  )
-  lease.release()
 }

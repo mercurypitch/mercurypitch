@@ -1,7 +1,9 @@
 // Studio playback warm-up tests — chains measured for the rate Play will use, before its clock exists.
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { compileStudioArrangement } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioBufferCache } from './buffer-cache'
+import { encodeFrozenLane, laneFreezeKey } from './lane-freeze'
 import { warmStudioPlayback } from './warm-up'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -59,5 +61,35 @@ describe('Studio playback warm-up', () => {
       options,
     )
     expect(measuredRates(options)).toEqual(new Set([48000, 44100]))
+  })
+
+  it('holds the lanes rendered ahead while it reads, and reads none of their clips', async () => {
+    const { project, asset } = studioFixture()
+    const options = beforeThePress(48000)
+    const [lane] = compileStudioArrangement(project, [asset]).lanes
+    const audio = new Float32Array(4800).fill(0.25)
+    const frozen = encodeFrozenLane(
+      {
+        trackId: lane.track.id,
+        key: laneFreezeKey(lane),
+        spec: JSON.stringify(lane.spec),
+      },
+      [audio, audio],
+      lane.segments[0].startFrame,
+    )
+    const release = vi.fn()
+    const hold = vi.fn(() => ({
+      lanes: new Map([[lane.track.id, frozen]]),
+      release,
+    }))
+    await warmStudioPlayback(project, [asset], new AbortController().signal, {
+      ...options,
+      freezes: { hold, differs: () => false },
+    })
+    expect(hold).toHaveBeenCalledOnce()
+    // The only lane plays its render: none of its clips' audio is read.
+    expect(options.cache.acquire).toHaveBeenCalledOnce()
+    expect(vi.mocked(options.cache.acquire).mock.calls[0][0]).toEqual([])
+    expect(release).toHaveBeenCalledOnce()
   })
 })

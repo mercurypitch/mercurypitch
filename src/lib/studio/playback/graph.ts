@@ -386,7 +386,8 @@ export function buildStudioGraph(
     },
     setLaneSpec(trackId, spec) {
       const lane = byId.get(trackId)
-      if (state.disposed || !lane) return
+      // A frozen lane's render already carries its sound; an edit that changes it builds a new run.
+      if (state.disposed || !lane || lane.frozen) return
       lane.chain.setSpec(spec)
       lane.dynamics = dynamicsIds(lane.chain.getSpec())
       const trim = sendTrim(lane.chain.getSpec())

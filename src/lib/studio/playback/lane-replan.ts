@@ -19,6 +19,7 @@
 // and a lane still crossing to a new chain.
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
+import { freezesOutdated, freezeStudioPlan } from './lane-freeze'
 import { changedChains } from './live-edit'
 import type { StudioRun } from './run'
 import { RUN_LOOKAHEAD_SECONDS } from './run'
@@ -40,11 +41,16 @@ export function replanLanes(
   assets: readonly StudioAsset[],
 ): boolean {
   if (!keepsChains(run, project)) return false
+  // A frozen lane plays its render on: one whose clips changed needs a new run.
+  if (freezesOutdated(run.frozen, project, assets)) return false
   let plan
   try {
-    plan = compileStudioArrangement(project, assets, {
-      startFrame: run.firstFrame,
-    })
+    plan = freezeStudioPlan(
+      compileStudioArrangement(project, assets, {
+        startFrame: run.firstFrame,
+      }),
+      run.frozen,
+    )
   } catch {
     // An edit the plan cannot take; the new run reports it.
     return false

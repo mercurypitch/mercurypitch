@@ -74,6 +74,8 @@ export interface StudioGraphLane {
   idle: StudioLaneIdle
   /** What its reverbs send to shared spaces (graph-reverb-bus.ts); empty at full quality. */
   sends: readonly StudioLaneSend[]
+  /** It plays a render of its chain through an empty one (lane-freeze.ts): sound edits pass it by. */
+  readonly frozen: boolean
 }
 
 /** The broadband dynamics in a chain, whose reductions add up to the lane's. */
@@ -182,6 +184,7 @@ export function buildGraphLane(
       sets: new Set([current]),
       idle: LIVE_LANE,
       sends,
+      frozen: lane.frozen === true,
     }
     if (!lane.audible) quietNewLane(ctx, built)
     return built

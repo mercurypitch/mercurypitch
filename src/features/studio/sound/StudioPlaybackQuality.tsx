@@ -1,5 +1,5 @@
 // Studio playback quality control — Auto, Best, Balanced or Light for this device, in the Sound panel.
-import { createMemo, For } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import type { StudioPlaybackChoice } from '@/lib/studio/playback/playback-quality'
 import { PLAYBACK_TIER_LABELS } from '@/lib/studio/playback/playback-quality'
 import type { StudioSongShape } from '@/lib/studio/playback/song-load'
@@ -21,11 +21,27 @@ const NOTES: Readonly<Record<StudioPlaybackChoice, string>> = {
   light: 'For slower devices',
 }
 
+/** What the lanes rendered ahead mean for the next Play. */
+function freezeNote(wanted: number, ready: number, rendering: boolean): string {
+  if (rendering)
+    return `Rendering lanes ahead so this song keeps up: ${ready} of ${wanted} done. Rendered lanes play at Best from the next Play.`
+  return wanted === 1
+    ? '1 lane plays from a render made at Best. Edit it and it plays live until it renders again.'
+    : `${wanted} lanes play from renders made at Best. A lane you edit plays live until it renders again.`
+}
+
 /** A device setting, not the project's: it stays usable on a read-only project. */
 export function StudioPlaybackQuality(props: { song: StudioSongShape }) {
   const quality = usePlaybackQuality()
-  // What Auto plays this song at, as the song changes: lanes muted, added or given another sound.
-  const auto = createMemo(() => quality.autoTier(props.song))
+  // What Auto plays this song at, as the song changes: lanes muted, added or
+  // given another sound, or rendered ahead, which then cost only their faders.
+  const auto = createMemo(() =>
+    quality.autoTier({ ...props.song, frozen: quality.freeze().frozen }),
+  )
+  const freezing = () => {
+    const { wanted, ready, rendering } = quality.freeze()
+    return rendering || ready < wanted
+  }
   const label = (choice: StudioPlaybackChoice): string =>
     choice === 'auto'
       ? `Auto (${PLAYBACK_TIER_LABELS[auto()]})`
@@ -54,6 +70,18 @@ export function StudioPlaybackQuality(props: { song: StudioSongShape }) {
         Auto picks a level for this song on this device. Export always uses
         Best. A change applies from the next Play.
       </p>
+      <Show when={quality.freeze().wanted > 0}>
+        <p
+          class={common.help}
+          data-studio-freeze-status={freezing() ? 'rendering' : 'ready'}
+        >
+          {freezeNote(
+            quality.freeze().wanted,
+            quality.freeze().ready,
+            freezing(),
+          )}
+        </p>
+      </Show>
     </fieldset>
   )
 }

@@ -69,6 +69,7 @@ function builtWith(
 
 export function transportFixture(
   overrides: Partial<StudioTransportOptions> = {},
+  sampleRate = 44100,
 ) {
   const song = studioFixture()
   // Two seconds: long enough for an edit to hand over before the song ends.
@@ -91,7 +92,7 @@ export function transportFixture(
       },
     ],
   }
-  const ctx = new PlaybackContext(44100)
+  const ctx = new PlaybackContext(sampleRate)
   const release = vi.fn()
   const cache = {
     acquire: vi.fn().mockResolvedValue({ buffers: new Map(), release }),
