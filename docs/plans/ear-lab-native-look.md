@@ -236,6 +236,24 @@ Answering by voice (31 Oct), brought forward from "Left for later":
 - Echo, Span and the Wild Echo remember the choice, as Home always has, and
   a row's run starts in it.
 
+On a tablet (31 Oct, the owner's Galaxy Tab S9+, about 1280 by 800 on its
+side): the phone's layouts stretched. The bench's hero, drawn in shares of
+the tab's width, lost Merc and his line below its cap, and its glass grew a
+thumb thick; two answer pads were 600 px wide each; First note stood Merc
+taller than the room. Now:
+
+- The bench is a column of 560 px in the middle of the screen. Its hero and
+  glass are drawn to the column, and the painting fades into the night at
+  its sides.
+- The drill room's lower half (Merc's line, the console, the pinned row)
+  and its sheets keep a 600 px column under the instrument. So do the
+  station sheet and the day's close.
+- First note sizes Merc by the room's shorter side: its width upright, its
+  height on its side.
+- The Ear rooms' Level and Songs sheets, the setup before a run, keep a
+  640 px column in the middle of a wide screen, as every sheet in the app now
+  does (the shared mobile `Sheet`).
+
 ## How each PR is checked
 
 - The repo's checks: `pnpm check`, the native app's `check`, `pnpm arch`,

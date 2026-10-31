@@ -1686,6 +1686,23 @@
   }
 }
 
+/* A tablet, held either way: the room's lower half, Merc's line, the
+   console and the pinned row, keeps a phone's width in the middle of the
+   room, as the instrument above it does; the sheets stand over it, as
+   wide. Stretched across 1280 px, two answer pads were 600 px each. */
+@media (min-width: 640px) {
+  .console {
+    width: min(100%, 600px);
+    justify-self: center;
+    box-sizing: border-box;
+  }
+
+  .sheet {
+    max-width: 600px;
+    margin-inline: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     animation: fade-in 160ms ease both;

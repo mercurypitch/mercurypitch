@@ -49,6 +49,20 @@
   height: var(--sheet-max-h, 68dvh);
 }
 
+/* A tablet, or a wide window: the sheet keeps a phone's width or a little
+   more, in the middle of the screen, as a tablet's own sheets stand.
+   Stretched across a Galaxy Tab held sideways (1280 px), a room's Level
+   and Songs sheets read as rows with nothing in them. */
+@media (min-width: 720px) {
+  .backdrop {
+    justify-content: center;
+  }
+
+  .panel {
+    max-width: 640px;
+  }
+}
+
 /* While the finger is down the panel must track it 1:1. */
 .dragging {
   transition: none;

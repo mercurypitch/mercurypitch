@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TRAIL_REACH_CENTS } from '@/components/room-kit/voice-trail'
-import { bandHalfHeight, layoutStage } from './first-note-layout'
+import { bandHalfHeight, layoutStage, MERC_SIZE_W, RESTING_LINE_SHARE, } from './first-note-layout'
 import { LINE_SHARES } from './first-note-songs'
 
 describe("First note's stage", () => {
@@ -23,6 +23,17 @@ describe("First note's stage", () => {
     const stage = layoutStage(390, 844, 0.43, 0.9)
     expect(stage.merc.left).toBeGreaterThan(390 * 0.6)
     expect(stage.merc.left + stage.merc.size).toBeLessThanOrEqual(390)
+  })
+
+  it('keeps Merc to the room on a tablet held on its side', () => {
+    const stage = layoutStage(1280, 800, RESTING_LINE_SHARE, 0.86)
+    expect(stage.merc.size).toBeCloseTo(800 * MERC_SIZE_W)
+    expect(stage.merc.top).toBeGreaterThanOrEqual(0)
+    expect(stage.merc.left + stage.merc.size).toBeLessThanOrEqual(1280)
+    // Upright, as before: a share of the width.
+    expect(
+      layoutStage(390, 844, RESTING_LINE_SHARE, 0.86).merc.size,
+    ).toBeCloseTo(390 * MERC_SIZE_W)
   })
 
   it('draws the band as wide as the level hears', () => {
