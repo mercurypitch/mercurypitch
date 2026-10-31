@@ -145,8 +145,7 @@ export function Glass(props: GlassProps): JSX.Element {
               width="96"
               height="20"
               rx="10"
-              fill="#0a0b0d"
-              stroke="rgba(197, 206, 216, 0.35)"
+              class={styles.glassTag}
             />
             <text
               x={width() / 2}

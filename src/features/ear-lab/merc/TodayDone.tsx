@@ -1,21 +1,23 @@
 // ============================================================
 // The day's close: today's three are done. What each one moved, the
-// day counted (never a streak), the orb the day lit and its name, the
-// Ear Report one tap away, and on a phone that can, a reminder each
-// morning from tomorrow (ReminderRow). No medal, no seal: the headline
-// says it.
+// day counted (never a streak), the orb the day lit and its name, on a
+// phone that can, a reminder each morning from tomorrow (ReminderRow),
+// and the Ear Report as the one filled button, Done under it. No medal,
+// no seal: the headline says it. In the drill room's light, as the
+// bench mock-ups draw it.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, onMount, Show } from 'solid-js'
 import { MercPresence } from '@/components/room-kit/MercPresence'
-import { IconChevron, IconClose } from '@/features/ear-lab/ear-icons'
+import { IconCheck, IconChevron, IconClose } from '@/features/ear-lab/ear-icons'
 import { FACULTY_LABEL, findIdentificationDrill, findThresholdDrill, } from '@/lib/ear/drills'
 import type { PathMilestone } from '@/lib/ear/path'
 import { pathCount } from '@/lib/ear/path'
 import { earToday, sprintHistory, todaysSprint } from '@/stores/ear-lab-store'
 import styles from './bench.module.css'
 import { benchDays, orbLine, REPORT_LINE, TODAY_DONE } from './merc-lines'
+import { PathOrbs } from './PathOrbs'
 import { remindersOffered } from './reminder'
 import { ReminderRow } from './ReminderRow'
 import { todayMoves } from './session'
@@ -33,49 +35,6 @@ function nameOf(drillId: string): string {
     findThresholdDrill(drillId)?.name ??
     findIdentificationDrill(drillId)?.name ??
     drillId
-  )
-}
-
-/** The path as a row of orbs, the one lit today ringed. */
-function Orbs(props: {
-  milestones: readonly PathMilestone[]
-  litToday: string | null
-}): JSX.Element {
-  const step = () => 336 / Math.max(1, props.milestones.length - 1)
-  return (
-    <svg
-      class={styles.orbs}
-      width="100%"
-      height="34"
-      viewBox="0 0 358 34"
-      aria-hidden="true"
-    >
-      <path d="M11 17h336" stroke="rgba(239,230,214,0.18)" stroke-width="2" />
-      <For each={props.milestones}>
-        {(milestone, i) => (
-          <>
-            <circle
-              cx={11 + i() * step()}
-              cy="17"
-              r="7"
-              fill={milestone.lit ? '#e7c67d' : '#14171c'}
-              stroke={milestone.lit ? '#f0d697' : 'rgba(239,230,214,0.3)'}
-              stroke-width="1.5"
-            />
-            <Show when={milestone.id === props.litToday}>
-              <circle
-                cx={11 + i() * step()}
-                cy="17"
-                r="11.5"
-                fill="none"
-                stroke="#e7c67d"
-                stroke-width="1.4"
-              />
-            </Show>
-          </>
-        )}
-      </For>
-    </svg>
   )
 }
 
@@ -160,6 +119,9 @@ export function TodayDone(props: {
               moves().find((entry) => entry.drillId === segment.drillId)
             return (
               <div class={styles.move}>
+                <span class={styles.moveCheck} aria-hidden="true">
+                  <IconCheck size={14} />
+                </span>
                 <span class={styles.moveText}>
                   <b>{nameOf(segment.drillId)}</b>
                   <small>
@@ -188,7 +150,7 @@ export function TodayDone(props: {
 
       <section
         class={styles.card}
-        style={{ 'margin-top': '16px' }}
+        style={{ 'margin-top': '14px' }}
         aria-label="The Ear Path"
       >
         <div class={styles.cardHead}>
@@ -197,22 +159,11 @@ export function TodayDone(props: {
             {count().lit} of {count().of} lit
           </span>
         </div>
-        <Orbs milestones={props.milestones} litToday={litToday()?.id ?? null} />
+        <PathOrbs
+          milestones={props.milestones}
+          litToday={litToday()?.id ?? null}
+        />
         <p class={styles.pathLine}>{pathWords()}</p>
-      </section>
-
-      <section class={styles.card} style={{ 'margin-top': '16px' }}>
-        <button
-          type="button"
-          class={styles.link}
-          onClick={() => props.onReport()}
-        >
-          <span>
-            <b>Ear Report</b>
-            <small>{REPORT_LINE}</small>
-          </span>
-          <IconChevron size={18} />
-        </button>
       </section>
 
       <Show when={remindersOffered()}>
@@ -222,7 +173,18 @@ export function TodayDone(props: {
       <button
         type="button"
         class={styles.primary}
-        style={{ 'margin-top': '20px' }}
+        style={{ 'margin-top': '18px' }}
+        data-testid="merc-day-report"
+        onClick={() => props.onReport()}
+      >
+        Ear Report
+        <IconChevron size={18} class={styles.onward} />
+      </button>
+      <p class={styles.reportLine}>{REPORT_LINE}</p>
+
+      <button
+        type="button"
+        class={styles.quiet}
         data-testid="merc-day-done"
         onClick={() => props.onClose()}
       >

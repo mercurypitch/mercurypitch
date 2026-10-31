@@ -1,7 +1,9 @@
 // The drill room's look (docs/plans/ear-lab-native-look.md): the native
-// app's language, not the brass room it replaced. Its stylesheets carry
-// no brass, parchment or serif, the kit's colours stand where they were,
-// and every station lights the stage in its own two colours.
+// app's language, not the brass room it replaced. Its stylesheets, and
+// the bench's since it was drawn in the same light, carry no brass,
+// parchment or serif; the kit's colours stand where they were, and every
+// station lights the stage in its own two colours, its tile and its
+// sheet too.
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
@@ -11,6 +13,8 @@ const SHEETS = {
   room: 'src/features/ear-lab/merc/room.module.css',
   plate: 'src/features/ear-lab/merc/plate.module.css',
   loupe: 'src/features/ear-lab/merc/loupe.module.css',
+  bench: 'src/features/ear-lab/merc/bench.module.css',
+  rooms: 'src/features/premium-exercises/ear-rooms-row.module.css',
 } as const
 
 /** A sheet's text without its comments, which may name what went. */
@@ -44,6 +48,29 @@ describe("the drill room's stylesheets", () => {
     const room = css(SHEETS.room)
     for (const station of STATION_ORDER) {
       expect(room, station).toContain(`.room[data-station='${station}']`)
+    }
+  })
+
+  it("lights each station's tile and sheet in the same pair", () => {
+    const room = css(SHEETS.room)
+    const bench = css(SHEETS.bench)
+    const pair = (text: string, selector: string): string[] => {
+      const block = text.slice(text.indexOf(selector))
+      return [/--room-a: (#[0-9a-f]+)/u, /--room-b: (#[0-9a-f]+)/u].map(
+        (re) => re.exec(block)?.[1] ?? '',
+      )
+    }
+    const channels = (hex: string): string =>
+      [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(' ')
+    for (const station of STATION_ORDER) {
+      const [a, b] = pair(room, `.room[data-station='${station}']`)
+      const block = bench.slice(bench.indexOf(`[data-faculty='${station}']`))
+      expect(block, station).toMatch(
+        new RegExp(
+          `--station-a: ${channels(a)};\\s*--station-b: ${channels(b)};`,
+          'u',
+        ),
+      )
     }
   })
 })
