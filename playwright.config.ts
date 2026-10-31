@@ -91,7 +91,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      // Headless Chromium still opens a real audio output on a desktop, so a
+      // local run would play through the speakers. Web Audio renders as
+      // usual. A spec that sets its own launchOptions replaces this, so
+      // fakeMicArgs and the specs with their own flags pass --mute-audio too.
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { args: ['--mute-audio'] },
+      },
     },
   ],
   webServer: {

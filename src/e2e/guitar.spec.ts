@@ -11,6 +11,7 @@ test.use({
     args: [
       '--use-fake-ui-for-media-stream',
       '--use-fake-device-for-media-stream',
+      '--mute-audio',
     ],
   },
 })

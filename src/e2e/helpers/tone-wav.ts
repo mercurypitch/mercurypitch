@@ -194,6 +194,7 @@ export function writeStepsWav(
  * loops the file; with `loop: false` (its `%noloop` suffix) it plays it once
  * from each opening of the microphone, then repeats the last slice it read,
  * so a file played once must end in silence, as `writeStepsWav`'s does.
+ * It mutes the output too: these flags replace the project's --mute-audio.
  */
 export function fakeMicArgs(
   wavPath: string,
@@ -204,6 +205,7 @@ export function fakeMicArgs(
     '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream',
     `--use-file-for-fake-audio-capture=${file}`,
+    '--mute-audio',
   ]
 }
 

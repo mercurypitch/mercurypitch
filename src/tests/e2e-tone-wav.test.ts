@@ -261,6 +261,7 @@ describe('fakeMicArgs', () => {
       '--use-fake-ui-for-media-stream',
       '--use-fake-device-for-media-stream',
       '--use-file-for-fake-audio-capture=/tmp/steps.wav',
+      '--mute-audio',
     ])
   })
 
@@ -271,6 +272,7 @@ describe('fakeMicArgs', () => {
       '--use-fake-ui-for-media-stream',
       '--use-fake-device-for-media-stream',
       '--use-file-for-fake-audio-capture=/tmp/steps.wav%noloop',
+      '--mute-audio',
     ])
   })
 })
