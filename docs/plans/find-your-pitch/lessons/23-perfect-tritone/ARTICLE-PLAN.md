@@ -186,7 +186,7 @@ Lesson 6, Step N again". Lesson 10 asked the same two; spacing them again is del
 
 - **Linked: Ear Lab's Leap**, `/ear-lab?lesson=23`, then tap Leap: twelve intervals, minor second
   to octave, the tritone among them, played up or down at random from a root between C3 and A4
-  (`banks.ts:36-109`, :72; `LeapDrill.tsx:47-48`). Card: "Listen for the perfect fourth, fifth and
+  (`banks.ts:36-109`, :72; `LeapDrill.tsx:111-112`). Card: "Listen for the perfect fourth, fifth and
   octave, and the tritone between them."
 - **Works today, sung: `/exercises/leap-ladder`** (Lesson 9's slug): Interval Trainer on the two
   thirds, the fifth, the fourth and the octave, each upward (`slug-map.ts:68-74`). A second card,

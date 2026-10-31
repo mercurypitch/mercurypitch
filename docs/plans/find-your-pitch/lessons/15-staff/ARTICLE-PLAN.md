@@ -219,12 +219,13 @@ sound on this page is synthesised in your browser." The page carries no decorati
 ## Practise links (verified at `b803c7d43`)
 
 - **Compose, Sheet Music view.** Address `mercurypitch.com/?lesson=15#/compose`; the `#/compose` route
-  exists (`src/features/tabs/constants.ts:10`; `src/features/routing/useHashRouter.test.tsx:452`).
-  Compose opens on the Piano Roll (`editorView` defaults to `'piano-roll'`, `src/stores/ui-store.ts:141-142`),
-  so the card says "then choose Sheet Music, or the split view" (`src/App.tsx:2263-2287`). Notes
-  written in the piano roll appear on the staff, in the bass clef when the melody's middle note is
-  below middle C (R15-15). A sandbox, not a drill: the card gives it a goal ("write do re mi fa so in
-  your clef, then play it"), as playbook rule 17 asks.
+  exists (`src/features/tabs/constants.ts:16`; `src/features/routing/useHashRouter.test.tsx:452`).
+  Compose opens on the Piano Roll (`editorView` defaults to `'piano-roll'`, `src/stores/ui-store.ts:142-143`),
+  and Sheet Music and the split view are two of its four views (`src/App.tsx:2321-2345`), so the card
+  says "then choose Sheet Music, or the split view". Notes written in the piano roll appear on the
+  staff, in the bass clef when the melody's middle note is below middle C (R15-15). A sandbox, not a
+  drill: the card gives it a goal ("write do re mi fa so in your clef, then play it"), as playbook
+  rule 17 asks.
 - **Missing:** a note-reading drill (SEASON-2 § 5 item 9); the app's only note quiz is on the guitar
   fretboard (R15-18). And `?lesson=15` is not yet a lesson marker (R15-19), so First Light may intercept
   a first visit until § 5 item 21 ships; until then the card keeps Season 1's first-visit line.
