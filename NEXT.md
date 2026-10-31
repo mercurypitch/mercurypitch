@@ -2504,3 +2504,24 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   then RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 for pieces 21-22 (1,573 frames, fresh browser, ~15 min).
   Lesson: on this box a single browser must be recycled at least every ~8 pieces, or purged with cdp-purge.js when
   rss passes ~3 GB.
+- 22:31 film-05 capture done (render end exit 0; the resume's fresh-browser seams at 24000 and 31500 clean).
+  Seam check said BAD 6 (frame 9000, 2:30.0, ODD 9002-9004) and the script started re-rendering pieces 5-6.
+  22:51 checked by eye and by numbers: the stair diagram pulls back, accelerating through the seam (frame steps
+  2.58 2.94 3.27 across 9000; strip /dev/shm/seam6chk/strip-8997-9006.jpg); no stray frame. The old test flags any
+  frame that differs from both window ends by > 6, which a fast move does. 22:52 stopped the re-render (kill of
+  render-l4.sh's process group at frame 9802, before it could overwrite the film; safety copy
+  /dev/shm/f5keep/film-05.mp4, cmp equal). seamcheck.py corrected: a frame is odd only if it differs from both ends
+  by more than the ends differ from each other (old copy l4entr/seamcheck.py.before-2026-10-31); tested: still
+  flags a stray first frame and a black frame at seam 1 (calm) and seam 6 (move); film-05 now CLEAN. The script's
+  after-render steps run by hand: l4entr/post-film05.sh (mirrors render-l4.sh's code-0 branch; background
+  b8iohyip2, log l4entr/post-film05.log). NEXT: once "film-05.mp4 copied into renders/ and checked" is in the
+  status, bash l4entr/push-film05.sh, then FILM5.
+- 22:56 FILM-05 SAFE: renders/film-05.mp4 (cmp-checked copy, 117,153,174 B, sha256 e44ddab788cc...8162, 9:11.2) and
+  pushed to feat/lesson-04-films as 9cfab93 (Komediruzecki; README row + sha256sum glob; LFS upload 117 MB done).
+  The fresh-clone check could not download: "This repository exceeded its LFS budget" (the org's LFS bandwidth;
+  main's .github/actions/lfs-pull notes the same stop on 30 Oct). GitHub holds both objects: the LFS batch API,
+  asked for an upload of e44ddab7 (film-05) and 5551b70e (film-04), answers no upload needed. So the owner cannot
+  download either film from the branch until the org raises its LFS budget or the cycle resets: tell them, and
+  send web encodes with SendUserFile. push-film05.sh's first run stopped at its LFS guard: "git lfs ls-files |
+  grep -q" under pipefail (git-lfs dies of SIGPIPE after grep quits); the guard now reads the staged pointer
+  (git cat-file -p :path) and checks its oid. Next: FILM5 (rate limit allowed 22:5x).

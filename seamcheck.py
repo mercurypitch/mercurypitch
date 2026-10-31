@@ -3,7 +3,8 @@
 
 A fresh browser can capture a piece's first frames before its seek lands: blank frames, or a
 frame from the film's start (30 Oct, film-01 pieces 9 and 10). Such a frame differs from both
-the frame before the seam and a frame a little after it, which a real cut on the seam does not.
+the frame before the seam and a frame a little after it, which a real cut on the seam does not,
+and by more than those two differ from each other, which a real move through the seam does not.
 
 Usage: seamcheck.py <film.mp4> [--seg 1500] [--fps 60] [--total N]
 Prints one line per seam and, last, "BAD <indexes>" or "CLEAN". Exit 0 clean, 3 bad, 2 error.
@@ -56,7 +57,11 @@ with tempfile.TemporaryDirectory(dir="/dev/shm") as d:
         if len(ims) < n:
             print(f"piece {k}: only {len(ims)} frames read at {t0:.3f} s"); bad.append(k); continue
         before, after = ims[0], ims[-1]
-        odd = [s + i for i, im in enumerate(ims[1:-1]) if diff(im, before) > a.thresh and diff(im, after) > a.thresh]
+        # A stray frame differs from both ends more than the ends differ from each other. A real move
+        # does not: its middle frames sit between the ends (31 Oct, film-05 seam 6 at 2:30, a pull-back
+        # accelerating through the seam, was flagged by the old test, which ignored how far the ends moved).
+        base = diff(before, after)
+        odd = [s + i for i, im in enumerate(ims[1:-1]) if min(diff(im, before), diff(im, after)) > max(a.thresh, base)]
         lum = " ".join(f"{ImageStat.Stat(im).mean[0]:.0f}" for im in ims)
         print(f"piece {k} at frame {s} ({s / a.fps:.3f} s): luma {lum}" + (f"  ODD frames {odd}" if odd else ""))
         if odd:
