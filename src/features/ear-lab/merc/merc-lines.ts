@@ -108,6 +108,12 @@ export const TASK: Readonly<Record<string, string>> = {
   'desk-colour': 'The mixing desk, on your songs',
 }
 
+/** A row's task when its drill will be sung, where tapping is in the words. */
+export const SUNG_TASK: Readonly<Record<string, string>> = {
+  echo: 'Sing the phrase back',
+  home: 'Sing the degree',
+}
+
 /** Each station's line on its sheet. */
 export const STATION_LINE: Record<FacultyId, string> = {
   resolution: 'Hairline is the finest ruler on the bench. Start there.',

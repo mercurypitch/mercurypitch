@@ -26,7 +26,7 @@ import { findThresholdDrill } from '@/lib/ear/drills'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
-import type { ModeToggleProps, StageKey, StageReserve } from './EarStage'
+import type { StageKey, StageReserve } from './EarStage'
 import { ConsoleLead, ConsoleNote, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
@@ -56,8 +56,6 @@ interface ThresholdDrillViewProps {
   descriptionLines?: number
   /** Under the description at idle: a drill's link to its sound. */
   idleAside?: JSX.Element
-  /** The drill's tap-or-sing choice, for the native room's "?". */
-  answerMode?: ModeToggleProps<string>
   /** The task in one line, shown at idle. */
   prompt: string
   listenHint: string
@@ -376,7 +374,7 @@ export function ThresholdDrillView(
       plate,
       again: () => start(again()),
       // Read where it is shown: Span's sung answers are practice only,
-      // and the answer mode can change under "?".
+      // and the answer mode can change between runs.
       get calibrate() {
         return props.practiceOnly?.() === true || ritual()
           ? undefined
@@ -398,7 +396,6 @@ export function ThresholdDrillView(
     <EarStage
       drillId={props.drillId}
       name={name()}
-      answerMode={props.answerMode}
       cardName={props.title}
       measures={props.measures}
       description={props.description}

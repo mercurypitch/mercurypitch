@@ -11,7 +11,6 @@ import { MercPresence } from '@/components/room-kit/MercPresence'
 import { IconCheck, IconClose } from '@/features/ear-lab/ear-icons'
 import { useEarRoom } from '@/features/ear-lab/ear-room-context'
 import { CLICK_VOICES, EAR_VOLUME, formatEarVolume, } from '@/features/ear-lab/ear-sound'
-import type { ModeToggleProps } from '@/features/ear-lab/EarStage'
 import { RulersNote } from '@/features/ear-lab/RulersNote'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { micLatencyMs } from '@/stores/mic-latency-store'
@@ -81,8 +80,6 @@ export function HelpSheet(props: {
   drillId: string
   measures?: string
   description?: string
-  answerMode: ModeToggleProps<string> | null
-  running: boolean
   /** Open on the rulers, from a sealed plate's "What the Index counts". */
   rulersFirst?: boolean
   onClose: () => void
@@ -136,38 +133,6 @@ export function HelpSheet(props: {
                 {(measures) => <p class={styles.sheetMeasures}>{measures()}</p>}
               </Show>
               <p class={styles.sheetText}>{description()}</p>
-            </div>
-          )}
-        </Show>
-
-        <Show when={props.answerMode}>
-          {(toggle) => (
-            <div class={styles.sheetSection}>
-              <p class={styles.sheetKicker} id={`${titleId}-mode`}>
-                {toggle().label}
-              </p>
-              <div
-                class={styles.choiceRow}
-                role="radiogroup"
-                aria-labelledby={`${titleId}-mode`}
-              >
-                <For each={toggle().options}>
-                  {(option) => (
-                    <button
-                      type="button"
-                      role="radio"
-                      class={styles.choice}
-                      aria-checked={toggle().value === option.id}
-                      onClick={() => toggle().onChange(option.id)}
-                    >
-                      <b>{option.label}</b>
-                    </button>
-                  )}
-                </For>
-              </div>
-              <Show when={props.running}>
-                <p class={styles.sheetText}>Takes effect from the next run.</p>
-              </Show>
             </div>
           )}
         </Show>

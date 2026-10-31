@@ -12,7 +12,6 @@ import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BeatPendulums } from '@/features/ear-lab/BeatPendulums'
-import type { ModeToggleProps } from '@/features/ear-lab/EarStage'
 import { ConsoleStack, Pads, PlayPad, StagePad, } from '@/features/ear-lab/EarStage'
 import { FieldBookPage } from '@/features/ear-lab/FieldBookPage'
 import type { RoomBeat, StageRoom } from '@/features/ear-lab/stage-room'
@@ -42,7 +41,6 @@ function mount(
   run: 'practice' | 'rated' = 'rated',
   more: Partial<StageRoom> = {},
   instrument: () => JSX.Element = () => <span>arc</span>,
-  answerMode?: ModeToggleProps<string>,
 ): Harness {
   const [beat, setBeat] = createSignal<RoomBeat>('answer')
   const [tone, setTone] = createSignal<'neutral' | 'right' | 'wrong'>('neutral')
@@ -108,7 +106,6 @@ function mount(
       done={() => beat() === 'done'}
       onBack={onBack}
       room={room}
-      answerMode={answerMode}
     />
   ))
   return { setBeat, setTone, setSounding, setStatus, room, onBack }
@@ -275,51 +272,6 @@ describe('the drill room', () => {
     expect(screen.getByTestId('merc-bubble')).toHaveTextContent(
       'Which interval was that?',
     )
-  })
-})
-
-describe('tap or sing', () => {
-  it('is under "?" from the stage, however the run began', () => {
-    // A station row starts the run as the room opens, before the room's
-    // chunk has loaded, so the idle console the drill puts its toggle on
-    // is never drawn: the room has the choice from its own props.
-    const [mode, setMode] = createSignal('tap')
-    let chosen = ''
-    mount('rated', {}, undefined, {
-      label: 'Answer by',
-      get value() {
-        return mode()
-      },
-      options: [
-        { id: 'tap', label: 'Tap' },
-        { id: 'mic', label: 'Sing or play' },
-      ],
-      onChange: (id) => {
-        chosen = id
-        setMode(id)
-      },
-    })
-    expect(screen.queryByRole('radio')).toBeNull()
-    fireEvent.click(screen.getByTestId('merc-help-open'))
-    const sheet = screen.getByTestId('merc-help')
-    fireEvent.click(within(sheet).getByRole('radio', { name: 'Sing or play' }))
-    expect(chosen).toBe('mic')
-    expect(
-      within(sheet)
-        .getByRole('radio', { name: 'Sing or play' })
-        .getAttribute('aria-checked'),
-    ).toBe('true')
-    expect(
-      within(sheet).getByText('Takes effect from the next run.'),
-    ).toBeTruthy()
-  })
-
-  it('is not offered by a drill that has no choice', () => {
-    mount()
-    fireEvent.click(screen.getByTestId('merc-help-open'))
-    expect(
-      within(screen.getByTestId('merc-help')).queryByRole('radio'),
-    ).toBeNull()
   })
 })
 

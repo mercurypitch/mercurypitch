@@ -1,21 +1,21 @@
 // ============================================================
 // Tap or sing: a drill's choice of how its answers are taken. The web's
 // stage shows it on the idle console, where the drill puts it; the native
-// room offers it under "?" from the stage's own props, so it is there
-// however the run began. A station row starts a run as the room opens,
-// before the room's chunk has loaded, and the idle console is never drawn.
+// app offers it on the station's sheet, before the run
+// (merc/answer-choice.ts). A station row starts a run as the room opens,
+// and the room draws no idle console.
 // ============================================================
 
 import type { ModeToggleProps } from './EarStage'
 
 export type AnswerMode = 'tap' | 'mic'
 
-const ANSWER_MODES: ReadonlyArray<{ id: AnswerMode; label: string }> = [
+export const ANSWER_MODES: ReadonlyArray<{ id: AnswerMode; label: string }> = [
   { id: 'tap', label: 'Tap' },
   { id: 'mic', label: 'Sing or play' },
 ]
 
-/** The toggle a drill hands both its idle console and its stage. */
+/** The toggle a drill puts on its idle console: the web's. */
 export function answerToggle(
   label: string,
   mode: () => AnswerMode,

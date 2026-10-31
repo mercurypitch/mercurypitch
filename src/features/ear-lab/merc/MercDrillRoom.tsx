@@ -746,8 +746,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                   drillId={props.drillId}
                   measures={props.measures}
                   description={props.description}
-                  answerMode={props.answerMode ?? null}
-                  running={running()}
                   rulersFirst={open() === 'rulers'}
                   onClose={() => setHelpOpen(false)}
                 />

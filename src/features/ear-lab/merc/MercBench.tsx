@@ -578,8 +578,6 @@ export function MercBench(props: MercBenchProps): JSX.Element {
                 name="Ear Lab"
                 drillId=""
                 description="Your ear, in units that cannot flatter you. The mercury moves only when a sealed calibration says so."
-                answerMode={null}
-                running={false}
                 onClose={() => setHelp(false)}
               />
             </div>

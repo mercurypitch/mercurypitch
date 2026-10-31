@@ -114,10 +114,6 @@ export interface EarStageProps {
   /** What the native room needs beyond the stage's own props. Built
    *  only behind EAR_LAB_WITH_MERC; the web's stage ignores it. */
   room?: StageRoom
-  /** A drill's tap-or-sing choice (answer-mode.ts). The native room
-   *  offers it under "?"; the web's stage ignores it, as the drill puts
-   *  the same toggle on its idle console. */
-  answerMode?: ModeToggleProps<string>
   /** A chip the native room shows under its header while no run is on:
    *  the Field Book's key. The web's bar has the progress line. */
   chip?: () => { label: string; value: string } | null

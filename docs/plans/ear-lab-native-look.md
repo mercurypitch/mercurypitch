@@ -229,13 +229,12 @@ Answering by voice (31 Oct), brought forward from "Left for later":
   ("Listen first"), lit with rings that move with the voice in the answer
   window ("Your turn"), and an outline once the window closes ("Closed").
   A press on the lit mic closes the answer, as Done does.
-- The choice of Tap or Sing or play reaches "?" from the stage's props. It
-  used to ride on the idle console, which a station row's run never draws:
-  the run starts as the room opens, before the room's chunk has loaded. So
-  on the phone the choice was never offered.
-- Echo, Span and the Wild Echo remember the choice, as Home always has.
-  Made under "?" mid-run, it takes effect from the next run, so a choice
-  that did not outlast the room would never be used.
+- The choice of Tap or Sing or play is asked on the station's sheet, before
+  the run (the owner's call, below). It used to ride on the idle console,
+  which a station row's run never draws: the run starts as the room opens,
+  before the room's chunk has loaded. So on the phone it was never offered.
+- Echo, Span and the Wild Echo remember the choice, as Home always has, and
+  a row's run starts in it.
 
 ## How each PR is checked
 
@@ -254,11 +253,18 @@ Answering by voice (31 Oct), brought forward from "Left for later":
   brass too. The same tokens apply; it is a piece of work of its own. Its
   mock-ups wait on the owner's approval:
   [Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw),
-  five phones, one of them a proposal to choose Tap or Sing or play on the
-  station's sheet, before the run.
+  five phones. The fourth, Tap or Sing or play on the station's sheet, is
+  approved and built (below).
 
 ## Decided after the review (owner, 31 Oct)
 
+- **Tap or sing is asked on the station's sheet, before the run**, not
+  under "?" mid-run. Where a station has drills that can be sung (Function:
+  Home and Gravity, which share Home's choice; Shape: Echo and Span; the
+  Wild: Echo in the Wild), its sheet asks "Answer by: Tap, Sing or play",
+  says which drills take the voice, and the rows to be sung start on a mic.
+  The choice is remembered per drill (`merc/answer-choice.ts`). The sheet
+  keeps its brass until the bench is redrawn; "?" no longer offers it.
 - **Subdivide shows the eye no more than the ear hears.** The bar's length
   names the metre: the room's lanes drew the two bars' whole row at the
   answer beat, and the web's lattice drew one pallet a step before the

@@ -501,7 +501,6 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   return (
     <EarStage
       drillId={copy.drillId}
-      answerMode={answerBy}
       name={copy.name}
       measures={copy.measures}
       description={copy.description}

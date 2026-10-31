@@ -63,7 +63,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
   const [phrase, setPhrase] = createSignal<number[]>([])
   const [answered, setAnswered] = createSignal<number[]>([])
   const [verdict, setVerdict] = createSignal<PhraseVerdict | null>(null)
-  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  // Remembered, as Home's is: the native app asks it on the station's sheet.
   const answerMode = (): AnswerMode => earAnswerMode('span')
   const setAnswerMode = (mode: AnswerMode): void =>
     setEarAnswerMode('span', mode)
@@ -253,7 +253,6 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
       drillId="span"
       measures="Shape · span"
       description="A cadence plants the key, then a phrase sounds: as many notes as the staircase says. Tap it back in order on the ladder; Backspace takes one back. Hold the whole phrase and it grows by a note, slip and it shortens. The reading is notes held: the longest phrase your ear carries whole."
-      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
           <ModeToggle {...answerBy} />
