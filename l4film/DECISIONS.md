@@ -1806,3 +1806,38 @@ replaced it. The builder's record: critics never read it.
        - Proof: `lab/s12-sing/polish3/handovers-4.75-to-4.82-and-16.20-to-16.27-sheet.png`,
          `lab/s12-sing/polish3/tavi-s12-old-new-diff-t10-18.8-25-31.png` and
          `lab/s16-end/polish3/celebrate-film03-new-and-tail-4.5-to-6.18-sheet.jpg`.
+
+136. **Film round 4 (critic FILM4, SHIP): picture lock on the scratch voices; the film goes to the owner.**
+     - The render: film-04, from the 06:47 frozen copy with the third polish round in (decisions 134
+       and 135). The main pass ran 06:48 to 08:50 on two browsers. The seam check found pieces 1, 18
+       and 19 starting before their seek landed; the repair re-rendered 0, 1 and 17 to 19 on one
+       browser, and the seams came out clean at 09:38. 484.733 s (the cue sheet's 484.729). The
+       critic judged that film; master and music-only are copied to `renders/`.
+     - FILM4 marks FILM3's floor box and end card FIXED. The falls are PARTLY fixed: the two at 5:42
+       land 0.38 s apart, and the chapters' first falls remain. The recall and the pill's roll are
+       STILL PRESENT (the label over the pill's border for 4 frames at 4:16.08, one fewer than
+       before), and the cosmetic items are unchanged. Nothing broke: outside the three spans round
+       3 touched, the picture is film-03's pixel for pixel, and the mix differs only by encoding
+       noise. Verdict SHIP; every item left is optional.
+     - Its optional list, and what happens to each:
+       - **The S12 floor strip arrives early** (5:42.1 on the right, 5:42.5 on the left, about 0.5 s
+         before each host lands: a grey strip with a hard top at y 840 in an empty corner). It is
+         new with decision 134's `floorEdge`: the patch fades on with the head pass, as the fall
+         begins (`L.mercGate`, `seen`), and now runs to the frame's edge, where no host covers it.
+         Taken at the re-voice render, which re-renders the m12 pair anyway: the strip's opacity
+         follows the fall and reaches full on the landing frame.
+       - **The pill's label at 4:16.08.** With decision 134's clip, the outgoing label still rises
+         over the pill's top border for 4 frames (one fewer than before). Taken at the re-voice
+         render: the label clips to the pill's inner box.
+       - **The falls from the top (1:01.6, 2:27.6, 4:09.2 and 5:42).** Decision 130's rule keeps
+         them (a fall opens a chapter). The critic would make 2:27.6 and 4:09.2 floor-level leaps
+         like 3:18.3; that is the owner's call on review.
+       - **The recall at 0:46.8, the title's blur, the five like push-ins.** As decisions 122, 130
+         and 134; the owner's review may reopen them.
+     - For a human, in DELIVERY.md, added to decision 134's list: the end. The sting decays to room
+       tone by 8:01.5, so the card's last 3.2 s are near-silent; whether that reads as an ending
+       or as a gap.
+     - The owner asked on 31 October to be sent the film when it is ready for review ("Ping me
+       with the film when it will be ready for my review"). It goes with DELIVERY.md. The final
+       voices still wait on the owner's yes (decision 16), and with them a new master, a fresh
+       film critic round and this file's re-voice steps.

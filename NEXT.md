@@ -2341,3 +2341,16 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   DECISIONS 136. SHIP -> DELIVERY.md from l4entr/DELIVERY.draft.md -> SEND THE OWNER THE FILM (08:14 ask;
   SendUserFile P/renders/film-04.mp4 proactive + PushNotification). ONE MORE PASS -> polish round 4 (round 5
   of the six-round stop rule would be the next film).
+- 10:3x FILM4 = SHIP (critic ~18 min; it could not write files: report saved verbatim to
+  review/film-04/REPORT.md; its sheets in review/film-04/{measure,dense,exact}). FILM3 items 1, 3 FIXED; 2 PARTLY
+  (5:42 staggered 0.38 s; chapter-first falls remain); 4, 5 STILL PRESENT; nothing broke. Optional list:
+  falls from the top (1:01.6, 2:27.6, 4:09.2, 5:42); S12 floor strip fades on ~0.5 s before each landing
+  (5:42.1 R, 5:42.5 L; L.mercGate `seen` = head fade, now runs to the frame edge); pill label over its border
+  4 frames at 4:16.08; recall 0:46.8; title blur + five push-ins. LEDGER 33; DECISIONS 136 (strip + pill ride
+  the re-voice render; falls/recall/blur/push-ins wait on the owner's review). DELIVERY.md written in P
+  (from the draft; re-voice step 5 = decision 136's two items). Music-only copied to P/renders too (/ 493 MB
+  free). SENT TO THE OWNER ~10:40: SendUserFile film-04.mp4 + DELIVERY.md (proactive) + PushNotification.
+  NOTE: the critic says its cleanup deleted loose .png/.jpg at the top level of $S, not only its own; none
+  are referenced by any notes (grep of NEXT, PAUSED, LEAD-NOTES, DECISIONS, LEDGER, l4entr: 0 refs).
+  NOW WAITING ON THE OWNER: their review of film-04; the final ElevenLabs voices (re-voice per DELIVERY.md
+  § At the re-voice); Season 2 decisions; Sing covers (no Higgsfield generate tool). Nothing else queued.
