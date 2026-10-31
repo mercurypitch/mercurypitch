@@ -128,7 +128,11 @@ export function MicCheckPanel() {
 
   return (
     <div class={styles.panel} data-testid="mic-check">
-      <div class={styles.stage} classList={{ [styles.stageLive]: listening() }}>
+      <div
+        class={styles.stage}
+        classList={{ [styles.stageLive]: listening() }}
+        data-tour="settings.mic-check"
+      >
         <MicCheckStage live={check.live} listening={listening()} />
 
         <Show when={check.note()}>

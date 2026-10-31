@@ -604,7 +604,10 @@ export const SettingsPanel: Component<SettingsPanelProps> = (props) => {
         <Show when={activeTab() === 'singing'}>
           {/* Microphone check — first, because every setting below assumes
               the right microphone is reaching us. */}
-          <div class={styles.settingsSection} data-tour="settings.mic-check">
+          {/* The tour rings the check's stage (MicCheckPanel), not this
+              section: with its inputs and log it is taller than the tour
+              allows a spotlight to be. */}
+          <div class={styles.settingsSection}>
             <h3 class={styles.settingsSectionTitle}>Microphone Check</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
