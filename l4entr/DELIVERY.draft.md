@@ -27,8 +27,10 @@ two falls became floor-level leaps (DECISIONS 123). {fill: what the later rounds
 (casting, delivery, lip sync and the pace); the viewer's turn, 6:38 to 6:45, about 7 s of room
 tone at -52 LUFS by design: whether it reads as a broken video on YouTube; the whooshes by ear
 (they sit over silence in their own band, 640 to 1550 Hz); Merc's D3 count-in and the mix in
-general on phone speakers; and the captions against the picture (they are uploaded, never burned
-in). {fill: anything the passing critic left for a human.}
+general on phone speakers; the captions against the picture (they are uploaded, never burned
+in); and the floor under the hosts in S12 and S13 on an OLED phone and after YouTube's encoding
+(film round 3's box edge measures under 1.2 levels now, but a dark gradient is where an encoder
+bands). {fill: anything the passing critic left for a human.}
 
 ## Files
 
@@ -130,9 +132,9 @@ What changes when the owner's voices replace Kokoro, in order:
 
 1. Generate the 69 lines on the owner's account, one take a line, text exactly as `script.json`
    (ElevenLabs spends credits: never repeat a request to retry), and import them as Lesson 2 did.
-2. Lengthen the end sting in `script.json` from 5.0 to 6.5 s (DECISIONS 122): S16 grows to about
-   6.7 s and the complete end card, whole 1.32 s into S16 since the polish round, holds 5.38 s,
-   past the 5 s the film critic asked for.
+2. Keep the end sting at 6.0 s (`script.json`; film round 3, DECISIONS 134, in place of the 6.5 s
+   decision 122 planned for the re-voice): S16 is 6.2 s and the complete end card, whole 1.32 s
+   into S16, holds 4.9 s (5.1 s from where film round 3 read it complete).
 3. Re-time: `tools/cues.py`, then `tools/board-clock.py` maps every storyboard time to the new
    clock; the scenes read their times from the cue sheet, so no scene types a second.
 4. Re-render every Merc pass whose span moved (`merc-shots.py`, then `merc-pass.mjs` and

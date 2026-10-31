@@ -417,7 +417,10 @@ risers measured (no labels), hairlines; the strip with D major's keys, F♯4 and
 
 - **S12a.** The staircase dims to 25 % (341.4 to 341.6); the strip slides down 240 px and out
   (341.6 to 342.2, power2.in); the card in from 341.61, out 343.11 to 343.49; the staircase back to
-  full 343.49 to 343.69. Merc drops in at 342.50 to 343.35 and Tavi at 342.62 to 343.47, under the card.
+  full 343.49 to 343.69. Tavi drops in first, at 342.10 to 342.95, and Merc 0.4 s after her, at
+  342.50 to 343.35, both under the card (film round 3, DECISIONS 134). Their floor patches run on
+  to the frame's edges on their outer sides (`floorEdge`, here and in S13), each fading 103.5 px
+  toward the middle.
 - **The guide (S12).** Lanes x 600 to 1440; lane k (0 D3 to 12 D4) spans `y = 760 - 46 (k + 1)` to
   `760 - 46 k`, centre `737 - 46 k`. Names (Outfit 600 32 px, ink-2) right-aligned at x 556 on lanes
   0, 2, 4, 5, 7, 9, 11, 12 (do re mi fa so la ti do), baselines 748, 656, 564, 518, 426, 334,
@@ -630,4 +633,5 @@ ended 405.2; Tavi has stood there since S13a; m12 spans the cut). Every mark of 
   baselines 496 and 564, x 523 to 1398 and 582 to 1337, their icons 43.2 and 48.6 px, centred
   0.35 em above the baseline, landing from end + 0.75 and + 0.87, each over 0.45 s (the second at
   rest 479.85), 106.9 px or more from both hosts' ink and glow on every frame, the hop included.
-  The card is complete at 479.85 (s16 1.32) and holds 3.88 s.
+  The card is complete at 479.85 (s16 1.32) and holds 4.88 s: the 'end' sting runs 6 s since film
+  round 3 (DECISIONS 134), so S16 lasts 6.2 s and the film ends at 484.73.

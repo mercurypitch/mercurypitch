@@ -1744,3 +1744,51 @@ replaced it. The builder's record: critics never read it.
        - **The camera's tells (item 9, PARTLY).** Noted for the next film, as decisions 122 and 130.
      - For a human, in DELIVERY.md: the floor under the hosts on an OLED phone and after YouTube's
        encoding, as the critic asks; the rest as decision 130.
+135. **The director's part of the third polish round (FILM3 items 1, 2, 3 and 5): as built.**
+     - **The floor (item 1).** `L.mercGate` takes `floorEdge` (`assets/lib/hosts.js`). The patch's
+       outer side runs on to the frame's edge, and its fade toward the middle is a fixed 103.5 px
+       (45 % of the old 230) rather than 45 % of the new width. Off, the patch is as it was.
+       - S12's two gates and S13's gate take it.
+       - S13's `pose()` moves the patch with its host every frame and had reset its left side to
+         x − 110 each time, so the first stills still showed the step at 130. It now keeps the
+         outer side on the frame's edge too.
+       - Measured on HOSTS=1 stills: column means over rows 850 to 900, then the largest step from
+         one column to the next. At the old edges (x 124 to 136 and 1814 to 1826) it is 1.0 to 1.2
+         levels on the left and 0.4 to 0.6 on the right, in S12 and S13 alike. The dither's own
+         alternation is about 0.7. Film-03 measured 5.8 to 6.4 on the left and 8.0 on the right.
+       - The largest steps left in either corner, 1.3 to 2.1, sit on the hosts' reflections. The
+         big ones in S13 at 32.4 s are its stair blocks.
+       - Proof: `lab/s12-sing/polish3/floor-edges-before-after-stretched.png`, with luma 8 to 64
+         stretched to the full range.
+     - **The falls at 5:42 (item 2).** `merc-shots.py`'s `TAVI_FIRST` (0.52 s) moves Tavi's head
+       and the long pass's hidden fall together.
+       - She falls from 342.10 and Merc from 342.50. Before, they were 0.12 s apart.
+       - Three passes re-render: m12-orange-in (240 frames), m12-orange (8,529) and m12-blue (8,498,
+         for the extra second).
+       - Her tall intro is now frames 20526 to 20566 in `merc/intros.json`.
+       - Stills with the hosts (her new head pass, both unchanged tall intros), 342.04 to 343.59:
+         - Tavi's first pixels show at the frame's top at about 342.24. She lands with her squash
+           at about 342.74.
+         - Merc's first pixels show as she lands, and he lands at about 343.19.
+         - Both stand before b39 (343.59). The card stays clear of both.
+         - Proof: `lab/s12-sing/polish3/falls-342.04-to-343.59-sheet.jpg`.
+     - **The end card (item 3).** The 'end' sting is 6 s (`script.json`). `cues.py --no-tts`,
+       `mix.py` and `gen-root.py` give a film of 484.729 s, with S16 at 6.2 s.
+       - Up to 476 s the mix matches the old one to within 2 × 10⁻⁵ (−94 dBFS).
+       - The chime keeps its decay; the mix is at about −55 dBFS from 482.5.
+       - The old mix faded out from 483.0. The new one holds the room tone at about −55 dBFS to the
+         end.
+       - The card, complete by 479.85, now holds 4.9 s.
+     - **The pill (item 5).** s09's roll is clipped to the pill's inner box, 5 px inside the rim
+       (`IN`), and the clip's width follows the pill's.
+       - At 256.03 to 256.13 the glyphs stay at rows 210 and below, under the rim at 204 to 205.
+       - Proof: `lab/s09-names/polish3/pill-clip-zoom-film03-top-new-bottom.png`, with both roll
+         sheets beside it.
+     - **The docs.**
+       - STORYBOARD: the header's length, rows 12a and 16, and the m12 pass row.
+       - HANDOFFS: § Inside E (S12a) and § Inside F (the end card's hold).
+       - BUILD-GUIDE: the clock, `hosts.js`'s `floorEdge`, and the s12, s13 and s16 sheets.
+       - s16's header comment, and `tools/CHANGES.md`.
+     - **Still to check, once the m12 passes land:**
+       - The end card to 484.7 with the hosts alive, and the floor again on the new passes.
+       - Then `merc-whole.py`, `merc-tags.py`, clock-lint and the full check.

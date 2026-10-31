@@ -5,10 +5,10 @@
     <div id="s16-end" data-composition-id="s16-end" data-start="0" data-duration="6.200" data-width="1920" data-height="1080">
       <div class="scene" id="s16-end-scene"></div>
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s16-end -->
-      <video id="s16-end-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="5.213" data-media-start="135.342"></video>
-      <video id="s16-end-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="5.213" data-media-start="135.342"></video>
-      <video id="s16-end-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="5.213" data-media-start="135.342"></video>
-      <video id="s16-end-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="5.213" data-media-start="135.342"></video>
+      <video id="s16-end-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="6.213" data-media-start="135.342"></video>
+      <video id="s16-end-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="6.213" data-media-start="135.342"></video>
+      <video id="s16-end-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="6.213" data-media-start="135.858"></video>
+      <video id="s16-end-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="6.213" data-media-start="135.858"></video>
       <script>
         ;(function () {
           /* S16, the end card (STORYBOARD row 16; HANDOFFS § S15 to S16, § S16), adapted from Lesson 2's s17-end:
@@ -19,7 +19,9 @@
              celebration (one hop, sparkles off) is the passes' own, and the scene draws one chrome ring under each as it
              lands. The passes run to the film's end (trap 15). The call to action is the film's one hold: since film round 1
              (DECISIONS 122) the card is complete by end + 1.37 (479.9), as soon as the hosts' celebration hop allows, every
-             element landing over 0.3 s or more, so it holds 3.8 s. Every time is a cue plus a duration. */
+             element landing over 0.3 s or more. Film round 3 (DECISIONS 134) made the 'end' sting 6 s, one more second
+             of room tone, so it holds 4.8 s (5.1 s from 479.6, where the critic reads it complete). Every time is a cue
+             plus a duration. */
           const SID = 's16-end'
           const D = L.dur(SID)
           const at = (cue, edge, off) => L.at(SID, cue, edge, off)

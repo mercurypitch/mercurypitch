@@ -26,8 +26,9 @@ edit them.
 ## The clock: never type a second
 
 The storyboard and HANDOFFS are timed to the Kokoro scratch clock of 29 October, **483.73 s
-(8:03.7)**, frozen in `tools/board-cues.json`. Today `cues.json` is that same clock, so a storyboard
-time is today's film time. It will move: the owner's ElevenLabs voices replace the scratch ones
+(8:03.7)**, frozen in `tools/board-cues.json`. Today `cues.json` is that same clock but for the
+'end' sting, 6 s since film round 3 (DECISIONS 134; the film is 484.73 s), so a storyboard time is
+today's film time. It will move: the owner's ElevenLabs voices replace the scratch ones
 before the final render (BRIEF: about 8:41 to 8:50 voiced), and every scene shifts. A scene that
 keys off cues and words follows untouched; a scene with a typed second goes wrong.
 
@@ -236,7 +237,7 @@ the same list. Every maker builds once and draws per frame. World positions are 
 | `marks.js` | type and marks | `L.kicker(hud, text)`, `L.chapterCard(hud, { num, title, baseline: 480, tIn, tOut })` (`tOut` is when its 0.38 s exit starts), `L.ringTimer`, `L.pill(layer, text, ...)`, `L.spell` (labels with ♯ and ♭ paths), `L.bracket`, `L.arrow`, `L.guessRing`, `L.GUESS`, `L.INKDARK`, `L.stageOf` |
 | `tiles.js` (Lesson 2) | S4's tile row | `L.tiles(svg, opts)`, `.draw((tile) => ({ dx, dy, scale, lit, labelA, ... }), rowT)`; `L.tileBrackets(svg, row)` with `.add(ma, mb, y, labelY)` |
 | **`frames.js`** (new) | the camera as framings (HANDOFFS § Framings, § Camera moves) | `L.FRAMES` (every named framing), `L.frameRig(room, { from })`: `.to(at, dur, 'CU-A' \| { s, ox, oy }, ease)` (push, pull, truck and crane: the layers part), `.pan(at, dur, { x, y }, ease)` (every layer alike), `.curve(at, dur, fn)`, `.hermite(at, dur, to)` (from the moves so far, at their rates, to rest: S9's second leg), `.apply(t)`, `.map`, `.inv`, `.scale`, `.state`, `.matrix` |
-| **`hosts.js`** (wave 1) | the hosts and counted events, promoted from groups A and B | `L.mercGate(room.top, { sid, pass, tag, x, feetY, size, hop, hopDx, mirror, floor, fade })` (a pass placed for trap 23: a drop pass with an intro, DECISIONS 81, plays its segments first, the tall render of the whole fall from its first frame with a 6-frame fade and then any head, and shows the pass from the intro's last frame; a pass without one is hidden until its first whole frame and faded in while eased down its last 60 px; either is carried through a hop out; returns the body box for `rows.keep.boxes`), `L.light(t, times, up, down)` (the counted 40 % light), `L.swap` (§ Type's label switch), `L.filmDust(layer)` (draw it from film time), `L.MERC_WHOLE` (from `assets/merc/whole.js`), `L.MERC_INTRO` (from `assets/merc/intro.js`) |
+| **`hosts.js`** (wave 1) | the hosts and counted events, promoted from groups A and B | `L.mercGate(room.top, { sid, pass, tag, x, feetY, size, hop, hopDx, mirror, floor, floorEdge, fade })` (`floorEdge` runs the floor patch's outer side on to the frame's edge, for a host standing in from his corner, S12 and S13, DECISIONS 134; a pass placed for trap 23: a drop pass with an intro, DECISIONS 81, plays its segments first, the tall render of the whole fall from its first frame with a 6-frame fade and then any head, and shows the pass from the intro's last frame; a pass without one is hidden until its first whole frame and faded in while eased down its last 60 px; either is carried through a hop out; returns the body box for `rows.keep.boxes`), `L.light(t, times, up, down)` (the counted 40 % light), `L.swap` (§ Type's label switch), `L.filmDust(layer)` (draw it from film time), `L.MERC_WHOLE` (from `assets/merc/whole.js`), `L.MERC_INTRO` (from `assets/merc/intro.js`) |
 | **`stairs.js`** (new) | the staircase world (HANDOFFS § World) | `L.ST` (geometry: `.H`, `.colX(n, w)`, `.tread(n, s0)`, `.foot(s0)`, `.rest(n, w, s0)`, `.houseBox`, `.keyX(m)`, `.scale(s0)`, `.START`); `L.stairs(svg, { x0, x1, k0, k1 })`: `.draw({ w, s0, a, rows, stair(n), riser(n), houses })`; `L.strip(svg)`: `.draw({ a, dy, key(m), hair })`; `L.house(parent)`; `L.bead4` (`.hopAt`, `.squash`, `.dropAt`, `.riseAt`, `.runAt`, `.place`); `L.mercBox`; `L.MEASURE` |
 
 `spiral.js`, `keyboard.js`, `ruler.js`, `monitor.js`, `lanes.js` and `stepbars.js` are Lessons 1 and
@@ -691,8 +692,10 @@ the hero view, y 323) after that.
   each onset; DECISIONS 99), lifting and dimming in the rest; DECISIONS 96: each crossing within 40 ms of the voice's onset as measured from the sung
   track, and a bead parks with its right edge at x 1440 at the latest); `L.arrow`; the chip "one octave up" (`L.pill`, mono 30 px); `L.echoRings`.
 - Merc: m12-blue (feet (240, 840)) and m12-orange (feet (1700, 840)), rendered at 520 and shown at
-  360, front, turned toward each other; Merc drops in at `at('b39', 'start', -1.1)` (342.50) and
-  Tavi 0.12 s after him, both under the act 4 card and down as it leaves; the card's type keeps
+  360, front, turned toward each other; Tavi drops in first (342.10, `TAVI_FIRST` in
+  `merc-shots.py`) and Merc 0.4 s after her, at `at('b39', 'start', -1.1)` (342.50), both under the
+  act 4 card and down as it leaves (film round 3, DECISIONS 134: 0.12 s apart, the two falls read
+  as one); both gates take `floorEdge`, so neither floor patch shows an outer edge; the card's type keeps
   20 px from both columns (Merc x 144 to 336, Tavi x 1604 to 1796, from the frame's top down).
 - Checks: the tip and S13d's reverse tip read as the same staircase changing shape, with no frame
   where it is absent (a 2 s clip of 343.6 to 345.6 first); the beads drop onto the path 22 px or more
@@ -726,7 +729,8 @@ the hero view, y 323) after that.
   (1800, 840), her recap corner (20 px from the lanes' end, 40 px from the frame's edge); through
   your-turn both idle (the passes draw no arcs); over the breath, from `at('your-turn', 'end', 0.16)`
   for 1.2 s, Merc moves to (110, 840) at 300 on 6p² − 8p³ + 3p⁴ (DECISIONS 99), clear of every row
-  and stair as he goes (the rows are masked); Tavi stays.
+  and stair as he goes (the rows are masked); Tavi stays. The gate takes `floorEdge`, and `pose()`
+  keeps each floor patch's outer side on the frame's edge as the hosts move (DECISIONS 134).
 - Checks: nothing in S13 suggests the film or the app hears the viewer (no microphone, no listening
   ring, no ring timer, no Merc listening, nothing of the app's drawing over the turn); S12's marks
   leave first (372.94 to 373.24) while the band thins into the path in place (no frame without a
@@ -800,7 +804,7 @@ the hero view, y 323) after that.
   baseline 680).
 - Merc: m12 (both, 300, in the corners): Merc talks b54 and b55, Tavi o14.
 
-### s16-end: End card (478.53 to 483.73)
+### s16-end: End card (478.53 to 484.73)
 
 - Row: 16. Group F. Adapt Lesson 2's `output/motion/lesson-02/compositions/s17-end.html` (the lockup;
   here the beads bob beside it rather than orbit, and the lockup's wipe has a feathered edge of
@@ -816,7 +820,7 @@ the hero view, y 323) after that.
   its orbit point by end + 0.95 and turned blue by a scene-local `tint()` (the kit's `L.bead` takes a
   colour only when made); the orange bead rises from inside Tavi (DECISIONS 133).
 - Checks: the call to action is the one hold the quality bar allows; the card is complete by 479.9 (s16 1.37), each element
-  landing over 0.3 s or more; the address lands before the hop and keeps 20 px or more from both
+  landing over 0.3 s or more, and holds 4.8 s to the film's end (the 'end' sting runs 6 s, DECISIONS 134); the address lands before the hop and keeps 20 px or more from both
   heads' ink and glow at its top (479.73), and the lower lines keep 20 px or more from the hosts on
   every frame (DECISIONS 125, which replaces 95's rule); no frame of the wipe slices the wordmark.
 

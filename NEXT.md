@@ -2279,3 +2279,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   full check (0 errors); freeze $S/l4film04proj; render film-04 (WORKERS=2, Monitor re-armed, film to
   /dev/shm/l4film + backup renders/film-04.mp4 if / has room); FILM4-ready.txt; fresh FILM4 critic (xhigh,
   rate limit "allowed"); LEDGER 33, DECISIONS 136. Round 3 of the six allowed.
+- 04:2x round 3 progress (lead): docs DONE (STORYBOARD header/12a/16/m12 row, HANDOFFS S12a + end card hold,
+  BUILD-GUIDE clock/floorEdge/s12/s13/s16, s16 header comment, tools/CHANGES.md entry, DECISIONS 135 written
+  with the floor + pill + sting measurements; backups *.before-135 in l4entr/polish3/lead/). merc-tags.py run
+  (68 tags, 0 stale; before-tags copies in l4entr/polish3/lead/before-tags/). FALLS VERIFIED on HOSTS=1 stills
+  (Tavi in ~342.24, lands ~342.74; Merc lands ~343.19; both down before b39 343.59): proof
+  lab/s12-sing/polish3/falls-342.04-to-343.59-sheet.jpg; floor proof lab/s12-sing/polish3/floor-edges-...png;
+  pill proof lab/s09-names/polish3/. Mix check: matches the old within -94 dBFS to 476 s; room tone -55 dBFS
+  to 484.73. FILM4-ready.txt written (critics/). DELIVERY.draft.md: sting kept at 6.0 s, OLED floor check added.
+  LEFT after the passes (~07:00): merc-whole.py (whole.js is stale until both land), merc-tags --check,
+  captions/chapters/script-md/board-clock, clock-lint s12-s16, end-card stills (s16 4.5-6.2, hosts alive
+  to 484.7) + floor on new passes, remove DECISIONS 135's "still to check" lines as they pass, full check,
+  freeze l4film04proj, render film-04.

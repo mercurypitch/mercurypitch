@@ -245,3 +245,13 @@ entries here; from this one on, every change is logged.
   read; the intros are now m04, m07, m09 and both m12s. `L.mercGate` takes Merc's leaps from the
   left with `leapDx: -300` (s10 and s11). Regenerate: the four passes (`merc-pass.mjs`), then
   `merc-whole.py` and `merc-tags.py`.
+- **merc-shots.py: Tavi falls first at 5:42** (DECISIONS 134, film round 3). Both hosts dropped in
+  during the act 4 card 0.12 s apart, and the critic read the two falls as one. `TAVI_FIRST`
+  (0.52 s) moves Tavi's head (m12-orange-in, now 342.10 to 346.10) and the long pass's hidden drop
+  (m12-orange, from 342.68) together, so she falls 0.4 s before Merc; her tall intro follows in
+  `merc/intros.json` (frames 20526 to 20566, the head 20566 to 20760). The long passes also end
+  1 s later (the film's end + 0.1, 484.83), since the 'end' sting in `script.json` is now 6 s (film
+  round 3 asked for 5 s of finished end card; it had 4.1). Tested: the run wrote exactly those
+  three shot files, and `--check` now finds none to change. Regenerate: the three passes
+  (`merc-pass.mjs`), then `merc-whole.py` and `merc-tags.py`; for the sting, `cues.py --no-tts`,
+  `mix.py` and `gen-root.py` (done: 484.729 s, the mix unchanged before 476 s).
