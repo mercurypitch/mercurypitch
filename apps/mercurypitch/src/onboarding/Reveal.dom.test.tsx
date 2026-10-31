@@ -111,7 +111,7 @@ describe('the reveal', () => {
     expect(view?.container.querySelector('h2')?.textContent).toBe(
       ONBOARDING_COPY.revealTitle,
     )
-    expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
+    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(q('onboarding-card-type')?.textContent).toBe('Baritone')
     expect(q('onboarding-find-twin')?.textContent).toBe(
       ONBOARDING_COPY.findTwin,
@@ -144,7 +144,7 @@ describe('the reveal', () => {
   it('has no type and no twin row for a range no voice type overlaps', () => {
     show(UNDER_ALL, ways(true, true))
 
-    expect(q('onboarding-card-range')?.textContent).toBe('G#0 to D#1')
+    expect(q('onboarding-card-range')?.textContent).toBe('G#0\u2013D#1')
     expect(q('onboarding-card-type')).toBeNull()
     expect(q('onboarding-find-twin')).toBeNull()
   })

@@ -392,6 +392,11 @@ export function useRange(options: RangeOptions = {}): RangeController {
       else start()
     },
     retry: start,
-    leave: shut,
+    // Back to ready as well as quiet, so a start still opening the mic no
+    // longer stands and its answer opens nothing (openRoomMic).
+    leave: () => {
+      if (listening(untrack(state).phase)) stopListening()
+      else shut()
+    },
   }
 }

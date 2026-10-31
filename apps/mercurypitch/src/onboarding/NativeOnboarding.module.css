@@ -83,6 +83,15 @@
   display: contents;
 }
 
+/* Up to three seconds while the Cloud offer's asks are out, after Not now or
+   the line's Continue: the button that was tapped shows it is working, so
+   the tap is seen to have landed. */
+.notNow[aria-busy='true'],
+.primary[aria-busy='true'] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .beat {
   flex: 1 1 auto;
   min-height: 0;
@@ -264,7 +273,8 @@
   border: 1px solid rgba(230, 237, 243, 0.3);
   border-radius: 999px;
   color: var(--text-secondary);
-  font: 600 12px/1.2 var(--font-body, sans-serif);
+  /* 13px, the smallest the native app sets anything (the house rule). */
+  font: 600 13px/1.2 var(--font-body, sans-serif);
   letter-spacing: 0.02em;
 }
 
@@ -764,6 +774,17 @@
   .guideMerc {
     width: 60px;
     height: 60px;
+  }
+}
+
+/* A phone too short for Merc and Keep's sheet both: below about 780 px the
+   sheet (some 570 to 590 px of it) would cover more of him than his feet,
+   and on a 360 by 640 screen all of him. He steps out while Keep is up, and
+   is back on the next beat; where there is room he stands over the sheet
+   (KeepView.tsx). The probe holds both sides of the line. */
+@media (max-height: 780px) {
+  .keepStage .merc {
+    display: none;
   }
 }
 

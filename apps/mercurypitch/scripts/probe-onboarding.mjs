@@ -99,9 +99,10 @@ const RANGE_TIMEOUT_MS = 60_000
  */
 const LINE_TIMEOUT_MS = 60_000
 
-/** A phone, an iPad upright and an iPad on its side. */
+/** A phone, a small phone, an iPad upright and an iPad on its side. */
 export const ONBOARDING_FRAMES = [
   { width: 390, height: 844 },
+  { width: 360, height: 640 },
   { width: 820, height: 1180 },
   { width: 1180, height: 820 },
 ]
@@ -1086,7 +1087,8 @@ async function reveal(page, kit, range, see = SEE_VOICE) {
   await expectBeat(page, kit, 'reveal', 'See my voice')
   await settleAnimations(page, LAYER)
   const card = (await page.locator(CARD_RANGE).textContent())?.trim() ?? ''
-  if (card !== `${range.low} to ${range.high}`) {
+  // Written as Keep's card and Progress write a range: "E2\u2013G4".
+  if (card !== `${range.low}\u2013${range.high}`) {
     throw new Error(`reveal: the card says "${card}"`)
   }
   await expectLayout(page, 'reveal')
@@ -1172,9 +1174,11 @@ async function expectKeep(
       const notNow = document.querySelector(
         '[data-testid="onboarding-not-now"]',
       )
-      const merc = document
+      // Null when he stepped out: a phone too short for him and the sheet.
+      const mercBox = document
         .querySelector('[data-testid="onboarding-merc"]')
         ?.getBoundingClientRect()
+      const merc = mercBox && mercBox.height > 0 ? mercBox : null
       return {
         variant: root?.getAttribute('data-variant') ?? null,
         arrival: root?.getAttribute('data-arrival') ?? null,
@@ -1236,6 +1240,14 @@ async function expectKeep(
   if (!seen.onTop) wrong.push('something covers Keep')
   if (over) {
     if (seen.beat !== 'keep') wrong.push(`the layer is on ${seen.beat}`)
+    // He steps out only where the phone is too short for him and the sheet
+    // both (the module's 780 px rule), and stands over it everywhere else.
+    const tall = (page.viewportSize()?.height ?? 0) > 780
+    if (seen.merc === null && tall) {
+      wrong.push(
+        'Merc stepped out on a phone tall enough for him and the sheet',
+      )
+    }
     if (seen.layerNotNow?.hidden !== true || seen.layerNotNow?.inert !== true) {
       wrong.push(`the layer's Not now is ${JSON.stringify(seen.layerNotNow)}`)
     }
@@ -1255,11 +1267,13 @@ async function expectKeep(
   }
   if (wrong.length > 0) throw new Error(`${how}: Keep ${wrong.join('; ')}`)
   const merc =
-    !over || seen.merc === null || seen.sheetTop === null
+    !over || seen.sheetTop === null
       ? ''
-      : seen.merc.bottom <= seen.sheetTop
-        ? `, Merc whole over the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
-        : `, Merc over the sheet, his feet behind it (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
+      : seen.merc === null
+        ? ', Merc stepped out (a phone too short for him and the sheet)'
+        : seen.merc.bottom <= seen.sheetTop
+          ? `, Merc whole over the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
+          : `, Merc over the sheet, his feet behind it (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
   const card =
     seen.range === null
       ? 'no card'

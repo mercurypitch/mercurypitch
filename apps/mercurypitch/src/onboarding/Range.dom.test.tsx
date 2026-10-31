@@ -369,5 +369,26 @@ describe('the range', () => {
     controller?.leave()
 
     expect(s.calls.release).toBe(released + 1)
+    expect(controller?.state().phase).toBe('ready')
+  })
+
+  it('drops a mic still opening when the onboarding leaves', async () => {
+    const s = stand()
+    let open = (): void => undefined
+    s.answer = async () =>
+      new Promise<void>((resolve) => {
+        open = resolve
+      })
+    show(s)
+    q('onboarding-mic')?.click()
+    await settle()
+    expect(controller?.state().phase).toBe('starting')
+
+    controller?.leave()
+    open()
+    await settle()
+
+    expect(controller?.state().phase).toBe('ready')
+    expect(s.calls.startWindow).toBe(0)
   })
 })

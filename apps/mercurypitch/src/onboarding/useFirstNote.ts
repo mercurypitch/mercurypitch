@@ -379,6 +379,12 @@ export function useFirstNote(
       if (untrack(still)) drawExample(DEMO_SEC)
     },
     leave: () => {
+      // Back to hello as well as quiet: a start still opening the mic then
+      // no longer stands, so its answer opens nothing (openRoomMic). Shutting
+      // the capture alone left the beat in `starting`, and the late answer
+      // brought it back to life under whatever came next.
+      const { phase } = untrack(state)
+      if (phase === 'starting' || phase === 'listen') dispatch({ type: 'stop' })
       shut()
       if (demoFrame !== 0) cancelAnimationFrame(demoFrame)
       demoFrame = 0

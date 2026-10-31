@@ -34,7 +34,7 @@ import type { Stand } from './onboarding-capture.test-fixtures'
 import { flushFrame, noteTake, settle, stand, stubFrames, } from './onboarding-capture.test-fixtures'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { ONBOARDING_KEY, resetOnboardingFlagForTests, settleOnboarding, } from './onboarding-flag'
-import { installNativeOnboarding, LEAVE_MS, onboardingExit, onboardingMounted, openOnboarding, openRangeFinder, } from './onboarding-layer'
+import { abandonOnboarding, installNativeOnboarding, LEAVE_MS, onboardingExit, onboardingMounted, openOnboarding, openRangeFinder, } from './onboarding-layer'
 import { slideWindow } from './range-frames.test-fixtures'
 import { GREET_MS } from './useFirstNote'
 
@@ -355,6 +355,32 @@ describe('NativeOnboarding', () => {
     expect(q('onboarding-merc')).toBe(merc)
   })
 
+  it('lets the app go when the layer fails: done, the alley, and no Not now counted', () => {
+    mount('onboarding')
+    expect(onboardingShown()).toBe(true)
+
+    abandonOnboarding()
+
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(counted()).not.toContain('native_onboarding_not_now')
+  })
+
+  it('keeps focus in the dialog as a beat gives way to the next', async () => {
+    const s = mount('onboarding')
+    await nameNote(s)
+    const findRange = q('onboarding-find-range')
+    findRange?.focus()
+    expect(document.activeElement).toBe(findRange)
+
+    findRange?.click()
+    await settle()
+
+    expect(beat()).toBe('range')
+    expect(layer()?.contains(document.activeElement)).toBe(true)
+  })
+
   it('skips the range: Merc says it is there for later, then Keep comes', async () => {
     const s = mount('onboarding')
     await nameNote(s)
@@ -382,7 +408,7 @@ describe('NativeOnboarding', () => {
     expect(layer()?.getAttribute('aria-label')).toBe(
       ONBOARDING_COPY.revealTitle,
     )
-    expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
+    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(said()).toBe(ONBOARDING_COPY.voiceprint)
     q('onboarding-continue')?.click()
     expect(beat()).toBe('keep')
@@ -751,7 +777,7 @@ describe('a range this phone already keeps', () => {
     q('onboarding-find-twin')?.click()
 
     expect(beat()).toBe('reveal')
-    expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
+    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(q('onboarding-twin')?.textContent).toBe('Paul Robeson')
     expect(s.calls.acquire).toBe(1)
     q('onboarding-continue')?.click()

@@ -619,11 +619,14 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     const busy = q('onboarding-not-now')?.getAttribute('aria-busy')
     const findRange = q('onboarding-find-range')
     const stillUp = onboardingShown()
+    // Nothing read out over the way out while its asks are out.
+    const quiet = said()
     q('onboarding-not-now')?.click()
     answer()
     await settleAll()
 
     expect(busy).toBe('true')
+    expect(quiet).toBe('')
     expect(outOfReach(findRange)).toBe(true)
     expect(stillUp).toBe(true)
     expect(onboardingShown()).toBe(false)
@@ -740,9 +743,16 @@ describe('beat 9, the Cloud offer', () => {
     await singLine(s)
     await continueLine()
     expect(beat()).toBe('offer')
+    // Done already, and counted: an app closed on the offer never opens the
+    // onboarding again, nor comes back to count it.
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    const doneCount = (): number =>
+      funnel.sent.filter((event) => event === 'native_onboarding_done').length
+    expect(doneCount()).toBe(1)
 
     closeCloudOffer('not-now')
     await settle()
+    expect(doneCount()).toBe(1)
 
     expect(onboardingShown()).toBe(false)
     expect(onboardingExit()).toBe('finished')
