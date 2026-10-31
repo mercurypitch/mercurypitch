@@ -20,7 +20,13 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..')
 // work: 492078 bytes, unchanged to the byte. Neither touches this graph — one
 // is CI topology, the other CSS — so the ceiling cannot come back down on their
 // account. It falls when a chunk leaves the room's static set, not before.
-const MAX_STATIC_JAVASCRIPT_BYTES = 520_000
+//
+// 2026-11-01: 521k. quiet-console (src/lib/quiet-console.ts) must run before
+// any other module in every page entry, this room's included, so production
+// keeps console.log/info/debug quiet. It is a 471-byte chunk; with its import
+// the room's first paint measured 520,682 bytes against 520,000, from about
+// 519,950 before it. The ceiling moves by that cost plus a little slack.
+const MAX_STATIC_JAVASCRIPT_BYTES = 521_000
 
 const FORBIDDEN_CHUNKS = [
   /(?:^|\/)(?:index|advanced|library|pitch-core)-[^/]+\.js$/,
