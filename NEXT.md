@@ -2354,3 +2354,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   are referenced by any notes (grep of NEXT, PAUSED, LEAD-NOTES, DECISIONS, LEDGER, l4entr: 0 refs).
   NOW WAITING ON THE OWNER: their review of film-04; the final ElevenLabs voices (re-voice per DELIVERY.md
   § At the re-voice); Season 2 decisions; Sing covers (no Higgsfield generate tool). Nothing else queued.
+- 13:2x 31 Oct OWNER, verbatim: "I watched the film, is great, sure you can do those small polish improvements and
+  then use elevenlabs to generate voiceovers if you have access, let me know if I need to swap accounts since Tavi
+  is on one merc on another, then see how we will move that to the cloud flare do you have some neat access to
+  upload it or should I just download and upload it from my ox later?"
+  DONE: Merc's 55 lines on D2 (connector on workspace 59db9195...), flow ncKl5accT3dVuHIYYTbW "Find Your Pitch
+  Lesson 4 - Merc (D2)", one take each, eleven_v3, context "Lesson 4 line bN", 3626 credits; all 55 completed;
+  ledger_sync -> voice-elevenlabs/ledger.jsonl 188 rows (L1/L2 133 rows identical to before; backup
+  l4entr/ledger.before-l4.jsonl); fetch.py -> takes/L4-b*.mp3 (55). Told the owner: switch the connector to
+  Orange Merc's workspace (73756a1b...) for Tavi's 14 lines (~950 credits); Cloudflare: no access from here
+  (CLOUDFLARE_API_TOKEN only in GitHub secrets; L1/L2 FILM_SOURCES still null): either the owner uploads the
+  web encodes (tools/web-video.sh: 1080p + 720p MP4) via the R2 dashboard and sends URLs, then I wire
+  FILM_SOURCES/captions/chapters in a PR; or an R2 token (R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
+  R2_ACCOUNT_ID, R2_BUCKET) in the environment's settings + network allow *.r2.cloudflarestorage.com.
+  NEXT: ASR check of the takes (faster-whisper env gone: rebuild in /dev/shm if needed), the two DECISIONS 136
+  fixes (S12 floor strip full on landing: hosts.js line 231 `seen`; pill label clip), then Tavi's 14 on the
+  owner's switch -> import.py (ctc_align, wav2vec2 ONNX) -> cues.py --no-tts -> board-clock -> passes -> ...
