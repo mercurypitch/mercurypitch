@@ -1,4 +1,10 @@
 // Audit the V7 Cloudway runtime kit, exact source lineage and current crescent cost.
+//
+// The runtime delivery is the Meshopt re-encode from PR #1275 (EXT_meshopt_compression, no
+// quantization or filters). This audit decodes it with the MeshoptDecoder that glTF Transform
+// uses and proves it lossless against the accepted master in runtime/master/: every decoded
+// accessor and every texture image matches byte for byte, and the glTF JSON matches outside
+// storage. The source-lineage checks below then run on the decoded runtime, as before.
 
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -8,7 +14,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
-import { verifyExternalDelivery } from './external_gltf_delivery.mjs'
+import { EXTERNAL_BUFFER_LIMIT_BYTES, parseGlb, } from './external_gltf_delivery.mjs'
 
 const REPO = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -28,7 +34,7 @@ const MASTER_KIT = join(
 )
 const RUNTIME_KIT = join(
   REPO,
-  'apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf',
+  'apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-meshopt.gltf',
 )
 const RUNTIME_MANIFEST = join(
   REPO,
@@ -66,6 +72,109 @@ async function gltfTransform() {
     ...require('@gltf-transform/core'),
     ...require('@gltf-transform/extensions'),
     ...require('@gltf-transform/functions'),
+    MeshoptDecoder: require('meshoptimizer').MeshoptDecoder,
+  }
+}
+
+const MESHOPT = 'EXT_meshopt_compression'
+
+// glTF JSON with storage locations removed: what a lossless re-encode must leave unchanged.
+function jsonOutsideStorage(json) {
+  const copy = structuredClone(json)
+  for (const key of [
+    'bufferViews',
+    'buffers',
+    'extensionsUsed',
+    'extensionsRequired',
+  ])
+    delete copy[key]
+  for (const accessor of copy.accessors ?? []) {
+    delete accessor.bufferView
+    delete accessor.byteOffset
+  }
+  for (const image of copy.images ?? []) delete image.bufferView
+  return copy
+}
+
+function assertExtensionListGainsOnlyMeshopt(master = [], runtime = [], label) {
+  assert.deepEqual(
+    [...runtime].filter((name) => name !== MESHOPT).sort(),
+    [...master].sort(),
+    `Runtime ${label} may add only ${MESHOPT} to the master's list.`,
+  )
+}
+
+function verifyLosslessReencode(
+  masterJson,
+  runtimeJson,
+  masterDocument,
+  runtimeDocument,
+  dependencyBytes,
+) {
+  assert(
+    runtimeJson.extensionsUsed?.includes(MESHOPT),
+    `Runtime kit is expected to use ${MESHOPT}.`,
+  )
+  assertExtensionListGainsOnlyMeshopt(
+    masterJson.extensionsUsed,
+    runtimeJson.extensionsUsed,
+    'extensionsUsed',
+  )
+  assertExtensionListGainsOnlyMeshopt(
+    masterJson.extensionsRequired,
+    runtimeJson.extensionsRequired,
+    'extensionsRequired',
+  )
+  assert.deepEqual(
+    jsonOutsideStorage(runtimeJson),
+    jsonOutsideStorage(masterJson),
+    'Runtime glTF JSON differs from the accepted master outside storage.',
+  )
+  dependencyBytes.forEach((bytes, index) =>
+    assert(
+      bytes.byteLength <= EXTERNAL_BUFFER_LIMIT_BYTES,
+      `Runtime part ${index + 1} exceeds the static-host part limit.`,
+    ),
+  )
+
+  const masterAccessors = masterDocument.getRoot().listAccessors()
+  const runtimeAccessors = runtimeDocument.getRoot().listAccessors()
+  assert.equal(runtimeAccessors.length, masterAccessors.length)
+  let decodedAccessorBytes = 0
+  masterAccessors.forEach((master, index) => {
+    const runtime = runtimeAccessors[index]
+    const expected = accessorRecord(master)
+    assert.deepEqual(
+      accessorRecord(runtime),
+      expected,
+      `Decoded runtime accessor ${index} differs from the accepted master.`,
+    )
+    decodedAccessorBytes += expected.payloadBytes
+  })
+
+  const masterTextures = masterDocument.getRoot().listTextures()
+  const runtimeTextures = runtimeDocument.getRoot().listTextures()
+  assert.equal(runtimeTextures.length, masterTextures.length)
+  masterTextures.forEach((master, index) =>
+    assert.deepEqual(
+      textureRecord(runtimeTextures[index]),
+      textureRecord(master),
+      `Runtime texture ${index} differs from the accepted master.`,
+    ),
+  )
+
+  return {
+    decoder: `meshoptimizer MeshoptDecoder via glTF Transform`,
+    decodedAccessorsIdentical: true,
+    accessorCount: masterAccessors.length,
+    decodedAccessorBytes,
+    texturesIdentical: true,
+    textureCount: masterTextures.length,
+    jsonIdenticalOutsideStorage: true,
+    maximumPartBytes: Math.max(
+      ...dependencyBytes.map((part) => part.byteLength),
+    ),
+    limitBytes: EXTERNAL_BUFFER_LIMIT_BYTES,
   }
 }
 
@@ -330,10 +439,14 @@ function marbleMaterialContract(root) {
 }
 
 async function main() {
-  const { ALL_EXTENSIONS, NodeIO, getBounds } = await gltfTransform()
-  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+  const { ALL_EXTENSIONS, NodeIO, getBounds, MeshoptDecoder } =
+    await gltfTransform()
+  await MeshoptDecoder.ready
+  const io = new NodeIO()
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({ 'meshopt.decoder': MeshoptDecoder })
   const manifest = JSON.parse(await readFile(RUNTIME_MANIFEST, 'utf8'))
-  assert.equal(manifest.bundle.file, 'cloudway-platform-kit-v7.gltf')
+  assert.equal(manifest.bundle.file, 'cloudway-platform-kit-v7-meshopt.gltf')
   const dependencyPaths = manifest.bundle.dependencies.map((dependency) =>
     join(dirname(RUNTIME_KIT), dependency.file),
   )
@@ -342,16 +455,24 @@ async function main() {
     readFile(RUNTIME_KIT, 'utf8'),
     ...dependencyPaths.map((path) => readFile(path)),
   ])
-  const externalDelivery = verifyExternalDelivery(
-    masterBytes,
-    JSON.parse(runtimeDocument),
-    dependencyBytes,
+  assert.equal(
+    sha256Bytes(masterBytes),
+    manifest.bundle.acceptedMaster.sha256,
+    'The runtime manifest names a different accepted master.',
   )
-  const [v6, acceptedMarble, runtime] = await Promise.all([
+  const [v6, acceptedMarble, runtime, master] = await Promise.all([
     io.read(V6_KIT),
     io.read(MARBLE_DELIVERY_2K),
     io.read(RUNTIME_KIT),
+    io.readBinary(masterBytes),
   ])
+  const losslessReencode = verifyLosslessReencode(
+    parseGlb(masterBytes).document,
+    JSON.parse(runtimeDocument),
+    master,
+    runtime,
+    dependencyBytes,
+  )
   const runtimeFile = await fileRecord(RUNTIME_KIT)
   assert.equal(runtimeFile.sha256, manifest.bundle.sha256)
   assert.equal(runtimeFile.bytes, manifest.bundle.bytes)
@@ -435,19 +556,11 @@ async function main() {
   const report = {
     status: 'passed',
     purpose:
-      'Fresh-import audit of the public external-buffer V7 kit, accepted source lineage and current crescent submission cost.',
+      'Fresh-import audit of the public Meshopt external-buffer V7 kit, its lossless match to the accepted master, accepted source lineage and current crescent submission cost.',
     runtimeFile,
     runtimeDependencies,
     acceptedMaster: await fileRecord(MASTER_KIT),
-    externalDelivery: {
-      byteIdenticalBufferViews: true,
-      bufferViewCount: externalDelivery.bufferViews.length,
-      bufferViewBytes: externalDelivery.bufferViews.reduce(
-        (total, view) => total + view.bytes,
-        0,
-      ),
-      limitBytes: externalDelivery.limitBytes,
-    },
+    losslessReencode,
     manifestHashVerified: true,
     logicalAssetId: manifest.assetId,
     roots: ROOT_NAMES,
