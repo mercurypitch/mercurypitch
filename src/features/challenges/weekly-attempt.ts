@@ -18,6 +18,7 @@ import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import type { ExerciseType } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
 import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
+import type { ChallengeResultPresenter } from '@/lib/domain/weekly-attempt-context'
 import { activeWeeklyAttempt, clearActiveWeeklyAttempt, setActiveWeeklyAttempt, } from '@/lib/domain/weekly-attempt-context'
 import { removeNotification, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -35,6 +36,8 @@ export interface WeeklyAttemptTarget {
   founderScore?: number | null
   /** The authored line, retained so a miss can open as unscored Zen practice. */
   targetItems?: MelodyItem[]
+  /** Who shows the result; left out, the app's result card. */
+  presenter?: ChallengeResultPresenter
 }
 
 export const WEEKLY_ATTEMPT_SOURCE_VERSION = 1
@@ -216,8 +219,9 @@ export async function recordWeeklyAttempt(entry: {
         badgeGranted,
         targetItems: a.targetItems,
         voiceCapture: entry.voiceCapture,
+        ...(a.presenter === undefined ? {} : { presenter: a.presenter }),
       })
-    })
+    }, a.presenter)
   } catch {
     // The drill result stands even if persistence fails.
   }
@@ -225,6 +229,9 @@ export async function recordWeeklyAttempt(entry: {
     clearWeeklyAttempt()
     return true
   }
+  // The native Legend room says a failed save in the room, with the
+  // phone's own way to sign in; the app's toasts are not for it.
+  if (!sessionSaved && a.presenter === 'native-room') return true
   if (!sessionSaved) {
     // Say WHY. "We couldn't save that" names the effect and withholds the
     // cause, which leaves a singer retrying a line that will fail again for

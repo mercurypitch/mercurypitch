@@ -18,8 +18,17 @@ export interface ActiveWeeklyAttemptContext {
   rewardBadgeId?: string | null
   founderScore?: number | null
   targetItems?: MelodyItem[]
+  /**
+   * Who shows this attempt's result: left out, the app's result card; the
+   * native Legend room (`'native-room'`) draws its own, and the card never
+   * sees it (challenge-result-store.ts).
+   */
+  presenter?: ChallengeResultPresenter
   ownerId: string
 }
+
+/** Who draws a Legend attempt's result. See `presenter` above. */
+export type ChallengeResultPresenter = 'native-room'
 
 const [activeWeeklyAttempt, setActiveWeeklyAttemptSignal] =
   createSignal<ActiveWeeklyAttemptContext | null>(null)

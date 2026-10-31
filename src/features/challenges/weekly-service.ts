@@ -147,16 +147,30 @@ function base(): string {
   return API_BASE_URL ?? ''
 }
 
-export async function getActiveWeekly(): Promise<WeeklyChallenge | null> {
-  if (base() === '') return null
+/**
+ * The running Legend, or why there is none: `ok` with `null` is a server
+ * with nothing running; `unreachable` is no answer. The native room tells
+ * the two apart; `getActiveWeekly` reads both as null.
+ */
+export type ActiveWeeklyRead =
+  | { status: 'ok'; challenge: WeeklyChallenge | null }
+  | { status: 'unreachable' }
+
+export async function readActiveWeekly(): Promise<ActiveWeeklyRead> {
+  if (base() === '') return { status: 'unreachable' }
   try {
     const res = await fetch(`${base()}/api/weekly/active`)
-    if (!res.ok) return null
+    if (!res.ok) return { status: 'unreachable' }
     const data = (await res.json()) as { challenge: WeeklyChallenge | null }
-    return data.challenge
+    return { status: 'ok', challenge: data.challenge ?? null }
   } catch {
-    return null
+    return { status: 'unreachable' }
   }
+}
+
+export async function getActiveWeekly(): Promise<WeeklyChallenge | null> {
+  const read = await readActiveWeekly()
+  return read.status === 'ok' ? read.challenge : null
 }
 
 export async function getWeeklyBoard(id: string): Promise<WeeklyBoard | null> {

@@ -25,7 +25,7 @@ vi.mock('@/db', () => ({
 }))
 vi.mock('@/db/seed', () => ({ getUserId: () => mocks.userId }))
 
-import { grantBoardConsent, hasBoardConsent } from './board-consent'
+import { grantBoardConsent, hasBoardConsent, revokeBoardConsent, } from './board-consent'
 
 const existingProfile: UserProfile = {
   id: 'singer-1',
@@ -199,5 +199,55 @@ describe('hasBoardConsent', () => {
     expect(await hasBoardConsent()).toBe(false)
     mocks.findById.mockRejectedValueOnce(new Error('Offline'))
     expect(await hasBoardConsent()).toBe(false)
+  })
+})
+
+describe('a consent already given', () => {
+  it('is kept with the date it was given on, not written again', async () => {
+    mocks.profile = {
+      ...existingProfile,
+      leaderboardOptIn: true,
+      leaderboardOptInAt: '2026-09-01T00:00:00.000Z',
+    }
+    expect(await grantBoardConsent()).toBe(true)
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(mocks.profile?.leaderboardOptInAt).toBe('2026-09-01T00:00:00.000Z')
+  })
+})
+
+describe('revokeBoardConsent', () => {
+  it('takes the name off every board, and its date with it', async () => {
+    mocks.profile = {
+      ...existingProfile,
+      leaderboardOptIn: true,
+      leaderboardOptInAt: '2026-10-01T00:00:00.000Z',
+    }
+    expect(await revokeBoardConsent()).toBe(true)
+    expect(mocks.profile?.leaderboardOptIn).toBe(false)
+    expect(mocks.profile?.leaderboardOptInAt).toBeNull()
+    expect(mocks.profile?.displayName).toBe('Chosen name')
+    expect(await hasBoardConsent()).toBe(false)
+  })
+
+  it('writes nothing for a singer with no profile, who never consented', async () => {
+    expect(await revokeBoardConsent()).toBe(true)
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.update).not.toHaveBeenCalled()
+  })
+
+  it('says it was not stored when the write fails', async () => {
+    mocks.profile = { ...existingProfile, leaderboardOptIn: true }
+    mocks.update.mockRejectedValueOnce(new Error('offline'))
+    expect(await revokeBoardConsent()).toBe(false)
+  })
+
+  it('belongs to the account that asked, not one signed in meanwhile', async () => {
+    mocks.profile = { ...existingProfile, leaderboardOptIn: true }
+    mocks.update.mockImplementationOnce(async (_id, patch) => {
+      mocks.profile = { ...existingProfile, ...patch }
+      mocks.userId = 'singer-2'
+      return mocks.profile
+    })
+    expect(await revokeBoardConsent()).toBe(false)
   })
 })
