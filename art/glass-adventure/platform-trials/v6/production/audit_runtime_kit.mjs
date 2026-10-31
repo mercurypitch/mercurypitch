@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..')
+// The V3 kit left apps/beside-cue/public/games in PR #1275. This art copy holds the same
+// bytes (sha256 e96bb263..., recorded as sameBytesAt in the cloudway-v3 runtime manifest).
 const LEGACY_KIT = join(
   REPO,
-  'apps/beside-cue/public/games/cloudway-v3/cloudway-platform-kit-v3.glb',
+  'art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3-runtime.glb',
 )
 const FROST_DELIVERY = join(
   REPO,
