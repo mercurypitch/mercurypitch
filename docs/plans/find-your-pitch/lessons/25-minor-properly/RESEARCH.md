@@ -19,8 +19,9 @@ OMT's music examples and tables are images; no fact rests on them unless the tex
    as three different minors. The plan takes that framing: one minor key, whose sixth and seventh
    move.
 4. **The app's walkthrough error on C minor's relative major is gone.** app-pedagogy.md recorded
-   "C Minor ... Uses the same notes as relative major (A Major)" at `walkthrough.ts:906`; the string
-   is not in `src` at `b803c7d43` (R13).
+   "C Minor ... Uses the same notes as relative major (A Major)" at line 906 of `walkthrough.ts`. That
+   line now reads "Uses the same notes as its relative major (Eb Major)"
+   (`src/types/walkthrough.ts:906`), and the old string is not in `src` (R13).
 
 ## Claims
 

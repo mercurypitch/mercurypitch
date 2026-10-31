@@ -137,7 +137,7 @@ text (for example Apel, _The Notation of Polyphonic Music_) is read. Go deeper o
 
 **R17-13. The app writes whole to sixteenth notes, dotted values and triplets, in 4-beat bars only,
 and never a tie.**
-`src/lib/ear/rhythm-notation.ts:24` (`WRITTEN_BAR = 4`, "Beats in a written bar"); :57-70 (`VALUES`:
+`src/lib/ear/rhythm-notation.ts:23-24` (`WRITTEN_BAR = 4`, "Beats in a written bar"); :57-70 (`VALUES`:
 4, 3 dotted, 2, 1.5 dotted, 1, 0.75 dotted, 2/3 triplet, 0.5, 0.375 dotted, 1/3 triplet, 0.25, 1/6
 triplet beats); :1-17 (a value is matched "to the longest written value that fits without crossing a
 barline, and anything left over becomes rests"). A search of the module and `RhythmScore.tsx` for "tie"
@@ -156,16 +156,16 @@ first tap, which anchors the take.**
 moment the round opens, four clicks count the tempo in, and then everything stops. The bar waits for
 the player ... silence until the first tap, which anchors the take"; "From that tap the beat ticks under
 the bar"); its prompt, "A written bar over the click. Tap it at sight." (:49);
-`src/lib/ear/timing.ts:90-100` (`PULSE_TIMING`: `beats: 4`, `periodMs: 600`, so 100 BPM; a soft rail
+`src/lib/ear/timing.ts:119-129` (`PULSE_TIMING`: `beats: 4`, `periodMs: 600`, so 100 BPM; a soft rail
 ticks up to 8 beats while waiting); `src/features/ear-lab/RhythmScore.tsx:1-12` (one line, heads on
 it, stems up, beams over the top). Pulse is the mirror: it plays the bar, then you tap it back
 (`src/features/ear-lab/PulseDrill.tsx:1-20`; prompt "A bar of onsets, then a bar of yours. Tap the call
 back.", :53). Code read. Strong.
 
 **R17-16. No address opens one Ear Lab drill, or a subset of its patterns.**
-`src/stores/ui-store.ts:534-548` (`pendingEarDrill`, "An Ear Lab drill someone asked for from
-elsewhere in the app"); its only setters are `startEarDrill` (:546-547) and the Merc drill room
-(`src/features/ear-lab/merc/MercDrillRoom.tsx:395`). Code read. Strong.
+`src/stores/ui-store.ts:570-584` (`pendingEarDrill`, "An Ear Lab drill someone asked for from
+elsewhere in the app"); its only setters are `startEarDrill` (:582-583) and the Merc drill room
+(`src/features/ear-lab/merc/MercDrillRoom.tsx:434`). Code read. Strong.
 
 **R17-17. `?lesson=17` is not a lesson marker today.** R15-19.
 

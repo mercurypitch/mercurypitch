@@ -153,7 +153,7 @@ _Behind Bars_ (2011), before a script says it.
 comment: "melodies centred below it read better in bass". Code read. Strong.
 
 **R15-16. Compose has four views: Piano Roll, Sheet Music, split piano roll and sheet music, Session
-Editor.** `src/App.tsx:2263-2287` (`COMPOSE_VIEWS`). Code read. Strong.
+Editor.** `src/App.tsx:2321-2345` (`COMPOSE_VIEWS`). Code read. Strong.
 
 **R15-17. The app's voice presets put lower voices below the treble staff.** `VOCAL_RANGES`,
 `src/stores/settings-store.ts:91-149`: Soprano C4 to C6 (:92), Mezzo-Soprano A3 to A5 (:102), Alto F3 to
