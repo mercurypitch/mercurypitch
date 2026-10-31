@@ -10,6 +10,7 @@
 
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import type { MicState } from '@/components/room-kit/mic-state'
 import { degreeSolfege, PHRASE_DEGREES } from '@/lib/ear/phrase'
 import { micLevelFraction } from '@/lib/mic-level'
 import { IconMic } from './ear-icons'
@@ -76,6 +77,14 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
       </Show>
     </>
   )
+}
+
+/** Where a sung answer is, for its mic: the window open on the answer,
+ *  closed at the reveal, and waiting while the phrase plays. */
+export function sungMicState(phase: string): MicState {
+  if (phase === 'answer') return 'sing'
+  if (phase === 'reveal') return 'done'
+  return 'wait'
 }
 
 interface SungStripProps {

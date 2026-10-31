@@ -29,7 +29,6 @@ const room = (beat: RoomState['beat']): RoomState => ({
   running: () => true,
   ritual: () => false,
   askCalibration: (begin) => begin(),
-  offerAnswerMode: () => undefined,
   tapped: () => undefined,
 })
 

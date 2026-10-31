@@ -1,11 +1,9 @@
 // ============================================================
 // What the room tells the console parts it draws for the drills: where
-// the question is, how it was judged, and where a drill's own choice of
-// answering (tap or sing) goes now that it lives under "?".
+// the question is and how it was judged.
 // ============================================================
 
 import { createContext, useContext } from 'solid-js'
-import type { ModeToggleProps } from '@/features/ear-lab/EarStage'
 import type { RoomBeat } from '@/features/ear-lab/stage-room'
 
 export interface RoomState {
@@ -19,8 +17,6 @@ export interface RoomState {
   ritual: () => boolean
   /** A calibration asked for from a lead pad: "before you start" first. */
   askCalibration: (begin: () => void) => void
-  /** A drill's tap-or-sing choice, shown under "?" instead of the console. */
-  offerAnswerMode: (toggle: ModeToggleProps<string>) => void
   /** A tap on a rhythm drill's pad. */
   tapped: () => void
 }
@@ -32,7 +28,6 @@ const fallback: RoomState = {
   running: () => false,
   ritual: () => false,
   askCalibration: (begin) => begin(),
-  offerAnswerMode: () => undefined,
   tapped: () => undefined,
 }
 

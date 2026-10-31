@@ -560,6 +560,31 @@
   color: var(--room-text-3);
 }
 
+/* A sung answer: the room kit's mic in place of the keys, lit in the
+   room's violet, with the word for where the answer is under it. The
+   mic shows the voice, so the strip's own lamp goes. */
+.micHost {
+  --mic-lit: var(--room-lit);
+
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+}
+
+.micWord {
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
+}
+
+.micHost[data-mic='sing'] .micWord {
+  color: var(--room-lit-pale);
+}
+
+.controls :global([data-testid='ear-mic-lamp']) {
+  display: none;
+}
+
 /* Before the first note the strip says whose it is, as the mock-ups do
    (its aria-label already says it to a screen reader). */
 .controls
@@ -609,20 +634,6 @@
   outline: 2px solid var(--room-lit-pale);
   outline-offset: -6px;
   border-radius: 16px;
-}
-
-.controls :global([data-testid='ear-mic-lamp']) {
-  border-color: rgb(255 255 255 / 15%);
-  background: var(--room-glass);
-  color: var(--room-text-3);
-}
-
-.controls :global([data-testid='ear-mic-lamp'][data-on]) {
-  border-color: var(--room-lit-edge);
-  background: rgb(154 135 240 / calc(10% + 30% * var(--mic-level, 0)));
-  box-shadow: 0 0 calc(2px + 18px * var(--mic-level, 0))
-    rgb(154 135 240 / calc(0.2 + 0.6 * var(--mic-level, 0)));
-  color: var(--room-lit-pale);
 }
 
 /* ── The pinned row: Hear it again, Compare, the run's words ─ */

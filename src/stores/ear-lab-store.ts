@@ -95,6 +95,29 @@ const [homeMode, setHomeMode] = createPersistedSignal<'tap' | 'mic'>(
 export const homeAnswerMode = homeMode
 export const setHomeAnswerMode = setHomeMode
 
+/** How Echo, Span and the Wild Echo take their answers, a choice each,
+ *  kept as Home's is. On the native app the choice is made under "?"
+ *  while the run a station row started is on, and takes effect from
+ *  the next run, so a choice that did not outlast the room would never
+ *  be used. */
+const [answerModes, setAnswerModes] = createPersistedSignal<
+  Record<string, 'tap' | 'mic'>
+>(
+  `${KEY_PREFIX}answer_modes`,
+  {},
+  {
+    validator: (value): value is Record<string, 'tap' | 'mic'> =>
+      typeof value === 'object' && value !== null && !Array.isArray(value),
+  },
+)
+
+export const earAnswerMode = (drillId: string): 'tap' | 'mic' =>
+  answerModes()[drillId] === 'mic' ? 'mic' : 'tap'
+
+export function setEarAnswerMode(drillId: string, mode: 'tap' | 'mic'): void {
+  setAnswerModes((prev) => ({ ...prev, [drillId]: mode }))
+}
+
 // ── Pacing ──────────────────────────────────────────────────────
 
 /** One rule for every drill: after the verdict the run either holds
@@ -649,4 +672,5 @@ export function resetEarLabStore(): void {
   setAutoAdvance(true)
   setRevealHold(REVEAL_HOLD.defaultMs)
   setInfoOpen({})
+  setAnswerModes({})
 }

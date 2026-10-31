@@ -20,6 +20,7 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { levelFromRms } from '@/components/room-kit/voice-level'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { cadenceChordMidis, roveRootMidi } from '@/lib/ear/item-bank'
@@ -28,12 +29,14 @@ import { judgePhrase, phraseMidis, randomPhrase, solfegeOf, } from '@/lib/ear/ph
 import { scorePhraseFree, sungDegrees } from '@/lib/ear/sung-notes'
 import { SPAN_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
-import { latestThresholdReading } from '@/stores/ear-lab-store'
+import { earAnswerMode, latestThresholdReading, setEarAnswerMode, } from '@/stores/ear-lab-store'
+import type { AnswerMode } from './answer-mode'
+import { answerToggle } from './answer-mode'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
-import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
+import { ConsoleNote, ConsoleStack, ConsoleWarning, MicPad, ModeToggle, } from './EarStage'
 import { soundRung } from './ladder-voice'
-import { PhraseConsole, SungStrip } from './PhraseConsole'
+import { PhraseConsole, sungMicState, SungStrip } from './PhraseConsole'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import { useSingCapture } from './use-sing-capture'
 import { useSungAnswer } from './use-sung-answer'
@@ -43,13 +46,6 @@ import { useThresholdRun } from './use-threshold-run'
 interface SpanDrillProps {
   onBack: () => void
 }
-
-type AnswerMode = 'tap' | 'mic'
-
-const MODES: { id: AnswerMode; label: string }[] = [
-  { id: 'tap', label: 'Tap' },
-  { id: 'mic', label: 'Sing or play' },
-]
 
 export const SPAN_SING_ID = 'span-sing'
 
@@ -67,7 +63,11 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
   const [phrase, setPhrase] = createSignal<number[]>([])
   const [answered, setAnswered] = createSignal<number[]>([])
   const [verdict, setVerdict] = createSignal<PhraseVerdict | null>(null)
-  const [answerMode, setAnswerMode] = createSignal<AnswerMode>('tap')
+  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  const answerMode = (): AnswerMode => earAnswerMode('span')
+  const setAnswerMode = (mode: AnswerMode): void =>
+    setEarAnswerMode('span', mode)
+  const answerBy = answerToggle('Answer by', answerMode, setAnswerMode)
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-span-drill')
   let rootMidi = 48
@@ -253,14 +253,10 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
       drillId="span"
       measures="Shape · span"
       description="A cadence plants the key, then a phrase sounds: as many notes as the staircase says. Tap it back in order on the ladder; Backspace takes one back. Hold the whole phrase and it grows by a note, slip and it shortens. The reading is notes held: the longest phrase your ear carries whole."
+      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
-          <ModeToggle
-            label="Answer by"
-            value={answerMode()}
-            options={MODES}
-            onChange={setAnswerMode}
-          />
+          <ModeToggle {...answerBy} />
           <Show when={answerMode() === 'mic'}>
             <ConsoleNote>
               Sing or play the phrase back at your own pace once it has sounded:
@@ -327,7 +323,9 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
               level={sung.level()}
               listening={run.phase() === 'answer'}
             />
-            <PlayPad
+            <MicPad
+              mic={sungMicState(run.phase())}
+              level={() => levelFromRms(sung.level())}
               label={listeningPad().label}
               sub={listeningPad().sub}
               keycap="Space"
