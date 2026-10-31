@@ -2450,3 +2450,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   FILM-05: as soon as it renders with clean seams, push it to the same branch the same way (it is ~120 MiB), so it
   is off the machine before the critic reads it; README row for it; then SendUserFile on SHIP.
 - 16:03 watcher bas6ndkpu expired (no failures; Q3 done m12-blue-in, m09-orange-in, m09-orange; m08-orange 1890/2008; m12-orange 3750/9357, m12-blue 3270/9326). Re-armed as by7dc2jbd (to ~18:02). / 552 MB free, shm 2.1 GB.
+- 18:0x watcher by7dc2jbd expired 18:01 (no failures). Q3 QUEUE DONE 17:18:03 (all 15 exit 0). Q1 m12-orange
+  8460/9357, Q2 m12-blue 7590/9326 at 18:01; then m01-orange / m01-blue (2320 frames each). ETA passes ~19:30.
+  Re-armed as bwvn31m0v (to ~20:00). DONE meanwhile (no pass needed): merc-tags.py on every scene (69 stale ->
+  68 tags 0 stale; before copies l4entr/revoice/before-tags/), clock-lint silent (all scenes). DELIVERY.md: the
+  narration bullet and the generation-ledger row filled (ElevenLabs Eleven v3, 71 requests, 4,744 credits; b52 gap,
+  o2 retake); the top, files, measured and how-made sections wait for film-05 + FILM5.
+  DISK PLAN (/ 527 MB): freeze to $S/l4film05proj (pieces ~120 MB on /, removed once whole) -> master copy needs
+  ~321 free, music-only the same -> ~255 MB left after measure + critic sheets. Web encodes go to /dev/shm.
