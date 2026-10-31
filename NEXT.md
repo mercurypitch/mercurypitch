@@ -2496,3 +2496,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   7 pieces left (~9,073 frames, ~80 min). Watcher b20xgf4ih (to ~22:58): reads only status lines after line 3
   (the failed run's "done" is line 3), stops on oom_kill > 2. Lesson for the next film: one worker through
   S12-S13 (or 2 workers only before frame ~23,000).
+- 22:16 CHECK-IN; 22:18 SECOND OOM (oom_kill 3) at frame 32,192 of 33,073 (piece 21 of 0-22). Cause: with
+  HF_SEGMENT_BROWSER_RECYCLE=0 the one renderer process grew from 0.8 GB (21:01) to 5.35 GB (22:17, ~100 MB a minute
+  at the end) on top of 7.7 GB of shmem (extract cache 4.9 GB + tools); the cap is 13,677 MiB. A CDP purge
+  (l4entr/tools/cdp-purge.js: Memory.simulatePressureNotification critical + HeapProfiler.collectGarbage) was
+  written but the kill came first. Pieces 0-20 are in segments.json; 21 partial. Next: wait for render end exit 1,
+  then RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 for pieces 21-22 (1,573 frames, fresh browser, ~15 min).
+  Lesson: on this box a single browser must be recycled at least every ~8 pieces, or purged with cdp-purge.js when
+  rss passes ~3 GB.
