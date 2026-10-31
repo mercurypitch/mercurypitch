@@ -39,6 +39,7 @@ import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { installLeagueRefresh } from './leagues/league-store'
+import { installLegendCard } from './legend/legend-card-wiring'
 import { installLegendRefresh } from './legend/legend-store'
 import { MoreSheet } from './MoreSheet'
 import { NoticePill } from './NoticePill'
@@ -300,6 +301,7 @@ export const NativeShell: Component = () => {
         // picker and its options. Absent on a build without them, so the
         // room draws no way in (premium-exercise-wiring.ts).
         ...installPremiumExercises(),
+        ...installLegendCard(),
       }),
     )
 

@@ -47,6 +47,7 @@ import type { MidiWindow } from '@/lib/voice-window'
 import { createVoiceWindowFollower, voiceWindowFor } from '@/lib/voice-window'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import type { LegendCardWords } from '@/stores/native-shell-store'
 import { nativeShellApi, registerRunControls, roomArrivalHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
@@ -176,6 +177,8 @@ interface ExercisePickerProps {
   isOpen: boolean
   close: () => void
   onPick: (id: PremiumExerciseId) => void
+  legend?: LegendCardWords | null
+  onLegend?: () => void
 }
 
 const ExerciseRow: Component<ExerciseRowProps> = PREMIUM_EXERCISES
@@ -533,6 +536,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * to this room at rest.
    */
   const leaveForExercise = (id: PremiumExerciseId): void => {
+    windDownForRoom()
+    nativeShellApi()?.openExercise?.(id)
+  }
+
+  /** The running Legend from its card over the exercises, the same way. */
+  const leaveForLegend = (): void => {
+    windDownForRoom()
+    nativeShellApi()?.legend?.open()
+  }
+
+  /** What every room pushed over this one is owed: the mic, and no run. */
+  const windDownForRoom = (): void => {
     haptics.tapLight()
     if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
     if (runIsLive(ctx()) || runIsPaused(ctx())) {
@@ -541,7 +556,6 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     }
     closeAllRoomSheets()
     if (props.micActive()) props.stopMic()
-    nativeShellApi()?.openExercise?.(id)
   }
 
   /**
@@ -1153,6 +1167,12 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             isOpen={exercisesOpen()}
             close={() => setExercisesOpen(false)}
             onPick={leaveForExercise}
+            legend={nativeShellApi()?.legend?.card() ?? null}
+            onLegend={
+              nativeShellApi()?.legend === undefined
+                ? undefined
+                : leaveForLegend
+            }
           />
         </Suspense>
       ) : null}

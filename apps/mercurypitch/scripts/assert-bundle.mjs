@@ -505,6 +505,9 @@ const KARAOKE_STAGE_2 = [
   ['Practice without ranking', "the Legend room's ask before a ranked take"],
   ['mp:legend-card', "the Legend the More sheet's row names"],
   ['The line everyone sings', "the More sheet's Legend row"],
+  // The Sing room's card over its exercises is worded by the shell
+  // (legend-card-wiring.ts), so a store build carries none of its words.
+  ['Everyone sings the same notes', "the Sing room's Legend card"],
 ]
 
 /**

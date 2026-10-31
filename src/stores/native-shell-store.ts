@@ -130,6 +130,23 @@ export interface PinnedRoomToggle {
   readonly onToggle: () => void
 }
 
+/** What the Sing room's Legend card says; the shell words it. */
+export interface LegendCardWords {
+  readonly title: string
+  /** When it closes, in words: "Ends in 3 days", "Closing". */
+  readonly when: string
+  /** One line on what a Legend is. */
+  readonly line: string
+  /** The singer's best on it, "Your best 74%", or null. */
+  readonly best: string | null
+}
+
+/** The running Legend as a way in, for a room that offers one. */
+export interface LegendWay {
+  readonly card: () => LegendCardWords | null
+  readonly open: () => void
+}
+
 /** What a room can ask the shell for. */
 export interface NativeShellApi {
   /**
@@ -192,6 +209,15 @@ export interface NativeShellApi {
    * exercises registers none, and the room draws no way in.
    */
   openExercise?: (id: PremiumExerciseId) => void
+  /**
+   * The running Legend as a way in over the Sing room's exercises, beside
+   * More's Together row (NATIVE_LEAGUES): the card's words, read as they
+   * change and null while no Legend is open, and the room it opens. The
+   * shell words the card, so the room carries none of the Legend's copy.
+   * Optional, like `openExercise`: a build without Leagues registers none,
+   * and the picker draws no card.
+   */
+  legend?: LegendWay
   /**
    * The Karaoke subscription, bought and restored through the store (plan
    * S8 §6.7). The purchase port it wraps lives in the app, which the room
