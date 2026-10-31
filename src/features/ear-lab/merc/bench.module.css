@@ -797,6 +797,54 @@
   color: var(--merc-brass-bright);
 }
 
+/* Tap or sing, for the drills here that can be sung, asked before the run
+   rather than under "?" mid-run: the owner's call, 31 Oct. */
+.voice {
+  margin-top: 14px;
+}
+
+.voiceKicker {
+  margin: 0;
+  font: 500 13px/16px var(--merc-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--merc-brass);
+}
+
+.voiceRow {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.voiceOption {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--merc-line);
+  background: rgb(255 255 255 / 3%);
+  color: var(--merc-parchment);
+  font: 600 15px/1.2 var(--merc-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.voiceOption[aria-checked='true'] {
+  border-color: rgb(231 198 125 / 70%);
+  background: rgb(231 198 125 / 12%);
+  color: var(--merc-brass-pale);
+}
+
+.voiceNote {
+  margin: 8px 2px 0;
+  font: 400 13px/1.4 var(--merc-sans);
+  color: var(--merc-muted);
+}
+
 .empty {
   margin: 14px 0 0;
   font: 400 15px/1.45 var(--merc-sans);

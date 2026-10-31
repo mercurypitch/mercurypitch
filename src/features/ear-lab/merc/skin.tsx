@@ -17,8 +17,8 @@
 //   - A sung answer's pad is the room kit's mic, in place of the keys:
 //     still while the question plays, lit with a ring the voice moves,
 //     an outline once the window closes.
-//   - The answer-mode toggle moves out of the console into "?", which
-//     takes it from the stage's props.
+//   - The answer-mode toggle leaves the console: the station's sheet asks
+//     Tap or Sing or play before the run (answer-choice.ts).
 //   - Hairline's loupe stands upright (RoomLoupe.tsx).
 // ============================================================
 
@@ -325,8 +325,8 @@ function RoomEndPlate(props: EndPlateProps): JSX.Element {
   )
 }
 
-/** Tap or sing: chosen under "?", which takes it from the stage's
- *  answerMode, so the console shows none. */
+/** Tap or sing: asked on the station's sheet before the run, so the
+ *  console shows none. */
 function RoomModeToggle(): JSX.Element {
   return null
 }

@@ -52,7 +52,7 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
     { buffer: stems.instrumental, gain: 0.3 },
   ]
   const playback = useWildPlayback()
-  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  // Remembered, as Home's is: the native app asks it on the station's sheet.
   const answerMode = (): AnswerMode => earAnswerMode('wild-echo')
   const setAnswerMode = (mode: AnswerMode): void =>
     setEarAnswerMode('wild-echo', mode)
@@ -250,7 +250,6 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
       }}
       onStart={() => void handleStart()}
       runMode={() => (sungRun() ? 'sung answers' : 'rating run')}
-      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
           <ModeToggle {...answerBy} />

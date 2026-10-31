@@ -63,7 +63,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   const [sounding, setSounding] = createSignal(0)
   /** The cadence's chord sounding, 1-based; 0 for none. */
   const [cadence, setCadence] = createSignal(0)
-  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  // Remembered, as Home's is: the native app asks it on the station's sheet.
   const answerMode = (): AnswerMode => earAnswerMode('echo')
   const setAnswerMode = (mode: AnswerMode): void =>
     setEarAnswerMode('echo', mode)
@@ -305,7 +305,6 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
       }}
       onStart={() => void handleStart()}
       runMode={() => (sungRun() ? 'sung answers' : 'rating run')}
-      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
           <ModeToggle {...answerBy} />

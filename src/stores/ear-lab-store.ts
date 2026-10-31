@@ -96,10 +96,9 @@ export const homeAnswerMode = homeMode
 export const setHomeAnswerMode = setHomeMode
 
 /** How Echo, Span and the Wild Echo take their answers, a choice each,
- *  kept as Home's is. On the native app the choice is made under "?"
- *  while the run a station row started is on, and takes effect from
- *  the next run, so a choice that did not outlast the room would never
- *  be used. */
+ *  kept as Home's is. On the native app the choice is made on the
+ *  station's sheet, and the run a row starts takes the one its drill
+ *  remembers, so it has to outlast the room. */
 const [answerModes, setAnswerModes] = createPersistedSignal<
   Record<string, 'tap' | 'mic'>
 >(

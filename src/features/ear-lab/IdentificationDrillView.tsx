@@ -23,7 +23,7 @@ import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay } from './ear-icons'
-import type { ModeToggleProps, PadState, StageKey } from './EarStage'
+import type { PadState, StageKey } from './EarStage'
 import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { slipsOf } from './slips'
@@ -73,8 +73,6 @@ interface IdentificationDrillViewProps {
   answerKeys?: () => StageKey[]
   /** Under the description at idle: a mode toggle, a mic warning. */
   idleAside?: JSX.Element
-  /** The drill's tap-or-sing choice, for the native room's "?". */
-  answerMode?: ModeToggleProps<string>
   /** Starts a run; the controller's start unless the drill has to
    *  acquire something (a microphone) first. */
   onStart?: () => void
@@ -356,7 +354,6 @@ export function IdentificationDrillView(
     <EarStage
       drillId={props.drillId}
       name={props.title}
-      answerMode={props.answerMode}
       measures={props.measures}
       description={props.description}
       mode={

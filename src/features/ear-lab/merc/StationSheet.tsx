@@ -3,22 +3,26 @@
 // start, and a row per instrument that names its task and shows its
 // reading. A tap on a row starts that drill; there is no Start pinned
 // under the list. Wild lists the Field Book's songs instead, or says
-// how to get one.
+// how to get one. Where a drill here can be sung, the sheet asks Tap or
+// Sing or play first, and a row that will be sung starts on a mic.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, onCleanup, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { MercPresence } from '@/components/room-kit/MercPresence'
-import { IconClose, IconEar, IconPlay } from '@/features/ear-lab/ear-icons'
+import type { AnswerMode } from '@/features/ear-lab/answer-mode'
+import { ANSWER_MODES } from '@/features/ear-lab/answer-mode'
+import { IconClose, IconEar, IconMic, IconPlay, } from '@/features/ear-lab/ear-icons'
 import { INSTRUMENT_ICON } from '@/features/ear-lab/instrument-icons'
 import type { Instrument } from '@/features/ear-lab/instruments'
 import { fieldBookSessions, setFieldBookSessionId, songName, } from '@/features/ear-lab/wild-store'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { FacultyId } from '@/lib/ear/drills'
 import { setActiveTab } from '@/stores/ui-store'
+import { answerModeOf, setStationAnswerMode, stationAnswerMode, sungDrills, voiceLine, } from './answer-choice'
 import styles from './bench.module.css'
-import { FIELD_BOOK_EMPTY, STATION_LINE, STATION_MEASURES, TASK, } from './merc-lines'
+import { FIELD_BOOK_EMPTY, STATION_LINE, STATION_MEASURES, SUNG_TASK, TASK, } from './merc-lines'
 import { instrumentName, rowReading, stationInstruments, stationTitle, } from './stations'
 import { mercStill } from './stills'
 
@@ -55,6 +59,15 @@ export function StationSheet(props: {
   })
 
   const lead = () => stationInstruments(props.faculty)[0]
+  /** The switch shows where songs or drills it governs are listed. */
+  const asksVoice = () =>
+    sungDrills(props.faculty).length > 0 &&
+    (props.faculty !== 'wild' || fieldBookSessions().length > 0)
+  const sung = (drillId: string | null): boolean =>
+    drillId !== null &&
+    sungDrills(props.faculty).includes(drillId) &&
+    answerModeOf(drillId) === 'mic'
+  const modeIcon = (id: AnswerMode) => (id === 'mic' ? IconMic : IconPlay)
   const Icon = () =>
     props.faculty === 'wild' || lead() === undefined
       ? IconEar
@@ -109,6 +122,42 @@ export function StationSheet(props: {
           </div>
         </div>
 
+        <Show when={asksVoice()}>
+          <div class={styles.voice} data-testid="merc-station-voice">
+            <p class={styles.voiceKicker} id={`${titleId}-voice`}>
+              Answer by
+            </p>
+            <div
+              class={styles.voiceRow}
+              role="radiogroup"
+              aria-labelledby={`${titleId}-voice`}
+            >
+              <For each={ANSWER_MODES}>
+                {(option) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    class={styles.voiceOption}
+                    aria-checked={
+                      stationAnswerMode(props.faculty) === option.id
+                    }
+                    onClick={() =>
+                      setStationAnswerMode(props.faculty, option.id)
+                    }
+                  >
+                    <Dynamic
+                      component={modeIcon(option.id)}
+                      size={option.id === 'mic' ? 18 : 14}
+                    />
+                    <span>{option.label}</span>
+                  </button>
+                )}
+              </For>
+            </div>
+            <p class={styles.voiceNote}>{voiceLine(props.faculty)}</p>
+          </div>
+        </Show>
+
         <Show
           when={props.faculty === 'wild'}
           fallback={
@@ -117,7 +166,11 @@ export function StationSheet(props: {
                 {(instrument) => {
                   const reading = () => rowReading(instrument)
                   const task = () =>
-                    TASK[instrument.drillId ?? ''] ?? instrument.answer
+                    (sung(instrument.drillId)
+                      ? SUNG_TASK[instrument.drillId ?? '']
+                      : undefined) ??
+                    TASK[instrument.drillId ?? ''] ??
+                    instrument.answer
                   const said = () => {
                     const now = reading()
                     if (now === null) return 'Unmeasured'
@@ -133,9 +186,12 @@ export function StationSheet(props: {
                         classList={{
                           [styles.lit]: props.lit === instrument.drillId,
                         }}
-                        aria-label={`Start ${instrumentName(instrument)}: ${task()}. ${said()}.`}
+                        aria-label={`Start ${instrumentName(instrument)}${
+                          sung(instrument.drillId) ? ', sung' : ''
+                        }: ${task()}. ${said()}.`}
                         data-testid="merc-station-row"
                         data-drill={instrument.drillId ?? instrument.view}
+                        data-sung={sung(instrument.drillId) ? '' : undefined}
                         onClick={() => props.onStart(instrument)}
                       >
                         <span class={styles.rowIcon} aria-hidden="true">
@@ -171,7 +227,12 @@ export function StationSheet(props: {
                           </Show>
                         </span>
                         <span class={styles.rowGo} aria-hidden="true">
-                          <IconPlay size={12} />
+                          <Show
+                            when={sung(instrument.drillId)}
+                            fallback={<IconPlay size={12} />}
+                          >
+                            <IconMic size={16} />
+                          </Show>
                         </span>
                       </button>
                     </li>
