@@ -2480,3 +2480,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   $S/l4film05proj (only unfinished pieces re-run). AFTER: confirm "film-05.mp4 copied into renders/ and checked"
   in the status; push film-05.mp4 to feat/lesson-04-films (LFS, /dev/shm/films; commit as Komediruzecki with -c
   user.name/-c user.email: the global git name is "Claude"); README row; then FILM5 critic.
+- 20:2x CHECK-IN: film-05 capture at ~16,600/33,073 frames (segments 11 and 12 of 23), ~120 frames/min per
+  worker, capture ETA ~21:30, then seams and post-steps. Memory: non-reclaimable ~10.4 GB of the 13.36 GiB cap
+  (extract cache 5.0 GB in /dev/shm), peak so far 12.2 GB at 19:17, oom 0. / 501 MB free. Watcher br5om22se
+  expires ~21:10: re-arm it. READY: l4entr/push-film05.sh (bash -n ok, README edit dry-run ok): checks seams
+  CLEAN, cmp with the disk copy, streams h264 1920x1080 60/1 + aac, duration 551.205 +- 0.1; copies into
+  /dev/shm/films, README row + sha256sum glob, commits as Komediruzecki, pushes with retries, ls-remote check,
+  fresh shallow clone + lfs pull sha256 check. Run: bash $S/l4entr/push-film05.sh 2>&1 | tee $S/l4entr/push-film05.log
+  Then FILM5 (critics/FILM5-ready.txt verbatim, xhigh, rate_limit allowed). DELIVERY pieces drafted in
+  l4entr/delivery-f5-draft.md (times on the new clock for the human-ear list, files rows, re-voice record).
