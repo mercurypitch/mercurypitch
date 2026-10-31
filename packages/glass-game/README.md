@@ -126,7 +126,7 @@ policy; native-device memory and microphone isolation still require playtesting.
 
 `host.createMusic` is optional so another host can provide or omit its own output adapter. The browser adapter lazily loads the approved M01 museum and M03 garden music with A01/A02/A03 ambience; scene selection is presentation data in `content/soundscapes.ts`. M02 is not used. Audio starts from a player gesture, preserves loop positions across encounters, and stores mute/music/ambience preferences independently from progress.
 
-`ui/soundscape.ts` coordinates voice and playback intent. Microphone permission and audio unlock begin in the Start gesture, but pitch detection waits until `silenceForVoice()` resolves after the soundtrack's release. Cancellation, late loads and foreground recovery cannot restart a retired output. The pause dialog exposes separate music and ambience sliders. Original WAVs and derivation receipts are under `art/glass-adventure/audio/v1`; the shipped five MP3 loops total about 6.2 MB.
+`ui/soundscape.ts` coordinates voice and playback intent. Microphone permission and audio unlock begin in the Start gesture, but pitch detection waits until `silenceForVoice()` resolves after the soundtrack's release. Cancellation, late loads and foreground recovery cannot restart a retired output. The pause dialog exposes separate music and ambience sliders. Derivation receipts and the lossless loop FLACs are under `art/glass-adventure/audio/v1`; the original WAV masters are archived (see `art/glass-adventure/ARCHIVE.md`). The shipped five MP3 loops total about 6.2 MB.
 
 ## Focused verification
 

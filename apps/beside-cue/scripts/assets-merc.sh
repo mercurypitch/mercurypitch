@@ -4,13 +4,13 @@
 # The sculpt stage (import + decimate, minutes) is cached in
 # art/merc/merc-sculpt.blend and only reruns with --resculpt, so the
 # usual run of this script is the seconds-long part: face, rig, clips,
-# fixed renders in art/merc/preview/, two loader motion sheets, and the glb the app
-# loads. Change a blink in make_merc.py, run this, look at the sheet.
+# fixed renders and two loader motion sheets in art/merc/preview/, and the glb
+# the app loads. Change a blink in make_merc.py, run this, look at the sheet.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SCULPT=art/merc/merc-sculpt.blend
-PROOF_DIR=../../art/glass-adventure/loader/v1/proofs
+PROOF_DIR=art/merc/preview
 resculpt=false
 for arg in "$@"; do
   if [[ "$arg" == "--resculpt" ]]; then

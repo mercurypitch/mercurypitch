@@ -1,7 +1,6 @@
 // Cloudway mobile flow — real touch discovers Sing and explains restored locked progress.
 
 import { expect, test, type BrowserContext, type CDPSession, type Page, } from '@playwright/test'
-import { fileURLToPath } from 'node:url'
 import { CLOUDWAY_CURRENT_TRIAL } from '../../../packages/glass-game/src/content/cloudway-layouts'
 import { installCloudwayVisit } from './helpers/cloudway-platform-proof'
 
@@ -23,12 +22,6 @@ const VIEWPORTS = [
 ] as const
 
 const preferenceKey = `beside-cue:glass-adventure:tutorial:${CLOUDWAY_CURRENT_TRIAL.id}:cloudway-first-crossing:v2`
-const proofDirectory = fileURLToPath(
-  new URL(
-    '../../../art/glass-adventure/proofs/mobile-playability-2026-09-24/',
-    import.meta.url,
-  ),
-)
 
 async function prepareVisit(page: Page): Promise<void> {
   await installCloudwayVisit(page, { realRendering: false })
@@ -354,7 +347,7 @@ for (const viewport of VIEWPORTS) {
 
     if (process.env.GLASS_MOBILE_FLOW_PROOF === '1')
       await page.screenshot({
-        path: `${proofDirectory}sing-${viewport.label}.png`,
+        path: test.info().outputPath(`sing-${viewport.label}.png`),
       })
 
     const button = await sing.boundingBox()
