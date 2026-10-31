@@ -2440,3 +2440,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   stay for the critic; anything that does not fit is named in the status file. So: pieces on disk during the render
   (a restart costs a resume, not the film), the master on disk at the end, and the owner gets a copy by
   SendUserFile once FILM5 passes.
+- 15:2x OWNER, verbatim: "Not sure if I can download the film 4 anyway so maybe we can add to the branch and I fetch it
+  from git, no PRs should not have a problem with that or simply send me a download link for film 4". DONE: new
+  films-only orphan branch feat/lesson-04-films (f7835cb; no PR, never merged): lesson-04/film-04.mp4 in Git LFS
+  (104.6 MiB, over GitHub's 100 MiB plain-file cap; the repo already uses LFS) + README (sha256, how to download).
+  Built in a throwaway repo /dev/shm/films (RAM; nothing on /). VERIFIED: a fresh clone + git lfs pull from GitHub
+  gave sha256 5551b70e... = the local master. Link:
+  https://github.com/mercurypitch/mercurypitch/blob/feat/lesson-04-films/lesson-04/film-04.mp4
+  FILM-05: as soon as it renders with clean seams, push it to the same branch the same way (it is ~120 MiB), so it
+  is off the machine before the critic reads it; README row for it; then SendUserFile on SHIP.
