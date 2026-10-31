@@ -2427,3 +2427,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   "in the console"; L22 full paths + literal Voice Mirror quote; L25 walkthrough; ARC-D "Twinkle"). plan-cites
   check on the Season 2 docs: 256 citations, 0 findings. Whole plan on main: 184 findings, all in Season 1 docs
   (pre-existing drift on main, not this branch's; a possible follow-up for the owner).
+- 14:38 PASSES: the m12 sing passes are 9357 (orange) and 9326 (blue) frames, ~2 s/frame with three queues: Q1/Q2
+  finish m12 at ~19:30-20:00, then m01-orange/m01-blue; Q3 has 13 more after m12-blue-in. ETA all ~20:00-21:00 UTC,
+  then render (~3 h at 551 s), so film-05 ~midnight. Watcher bas6ndkpu ends ~16:02: RE-ARM each time it wakes
+  me. FILM5 prompt ready: l4entr/critics/FILM5-ready.txt (review/film-05/ made). Disk plan unchanged (asked the owner
+  whether film-01/film-03 drafts can go).
