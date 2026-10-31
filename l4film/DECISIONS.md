@@ -1789,6 +1789,20 @@ replaced it. The builder's record: critics never read it.
        - HANDOFFS: § Inside E (S12a) and § Inside F (the end card's hold).
        - BUILD-GUIDE: the clock, `hosts.js`'s `floorEdge`, and the s12, s13 and s16 sheets.
        - s16's header comment, and `tools/CHANGES.md`.
-     - **Still to check, once the m12 passes land:**
-       - The end card to 484.7 with the hosts alive, and the floor again on the new passes.
-       - Then `merc-whole.py`, `merc-tags.py`, clock-lint and the full check.
+     - **Checked on the new m12 passes** (m12-orange done 06:29 and m12-blue 06:37 on 31 Oct, both
+       exit 0):
+       - `merc-whole.py` writes the same `whole.js` as before (m12-orange and m12-blue 28, their
+         heads 34). `merc-tags.py --check` finds 68 tags, 0 stale. clock-lint is silent.
+       - The floor, measured the same way at the same ten times in S12 and S13: 1.0 to 1.2 at the
+         old left edge and 0.4 to 0.6 at the right, as on the old passes.
+       - Each head hands over to its long pass without a step: Tavi at S12 4.783, Merc at 16.233.
+         The frame-to-frame change across each handover is no larger than on either side of it.
+       - In S12, Tavi's idle sway and the rings of her sound arcs run 0.52 s earlier than before,
+         since her pass now starts 0.52 s sooner and both follow the pass's own clock. Her states
+         keep their film times, and she never sings over Merc, so nothing falls out of step. From
+         S13 on, her frames match the old pass's to within 8 pixels.
+       - The celebrate at 479.40 matches film-03 pose for pose. Both hosts keep moving to the last
+         frame (S16 6.18, 484.71) under the complete card.
+       - Proof: `lab/s12-sing/polish3/handovers-4.75-to-4.82-and-16.20-to-16.27-sheet.png`,
+         `lab/s12-sing/polish3/tavi-s12-old-new-diff-t10-18.8-25-31.png` and
+         `lab/s16-end/polish3/celebrate-film03-new-and-tail-4.5-to-6.18-sheet.jpg`.

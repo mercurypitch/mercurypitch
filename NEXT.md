@@ -2297,3 +2297,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   (re-arm it, or a 30 min Monitor, if it expires first; passes due ~06:40-07:00). Extract cache note: HF's own GC
   (2 GiB cap, 1 h min age, LRU) evicts the stale m12 frame dirs (/dev/shm/hyperframes-extract-cache-0, 4.4 GB)
   after the first extraction of film-04, and its key includes mtime+size, so no stale-frame risk; nothing to delete.
+- 06:4x m12 passes DONE (m12-orange 06:29:22, m12-blue 06:37:52, both exit 0; 1072 and 1162 ms/frame).
+  merc-whole.py: whole.js unchanged (m12-* 28, heads 34; --check current); merc-tags --check 68 tags 0 stale;
+  clock-lint s12-s16 silent. HOSTS=1 stills on the new passes: floor same as DECISIONS 135 (1.0-1.2 left,
+  0.4-0.6 right; tool l4entr/polish3/lead/floor-steps.py reproduces 135's numbers); head->long handovers clean
+  (Tavi s12 4.783, Merc 16.233: no step); Tavi's s12 idle sway and arc rings run 0.52 s earlier (pass clock),
+  her states keep film times, never sings over Merc; s13 on matches the old pass; celebrate 479.40 matches
+  film-03; hosts alive to s16 6.18 under the complete card. DECISIONS 135's "still to check" replaced with
+  these results; proofs lab/s12-sing/polish3/handovers-*.png, tavi-s12-old-new-diff-*.png,
+  lab/s16-end/polish3/celebrate-film03-new-and-tail-*.jpg. Full check running (log
+  l4entr/polish3/lead/check-r3.log). NEXT: check 0 errors -> freeze $S/l4film04proj -> render film-04
+  (WORKERS=2 setsid nohup bash $S/render-l4.sh film-04 60 high $S/l4film04proj; watcher armed) -> FILM4 critic.
