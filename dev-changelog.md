@@ -11,12 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.26] - 2026-10-31
 
-165 commits since `v0.9.25` (b803c7d43), from 20 PRs: #1219 (92 commits),
-#1266 (14), #1263 (10), #1264 (6), #1265 (6), #1250 (5), #1253 (5), #1251
-(4), #1249 (3), #1260 (3), #1261 (3), #1252 (2), #1255 (2), #1259 (2),
-#1262 (2), #1269 (2), #1254 (1), #1257 (1), #1258 (1) and #1268 (1). #1261
-and #1269 came in with merge commits of their own. Every commit came through
-a PR.
+165 commits since `v0.9.25` (b803c7d43) before these notes (#1270), from 20
+PRs: #1219 (92 commits), #1266 (14), #1263 (10), #1264 (6), #1265 (6), #1250
+(5), #1253 (5), #1251 (4), #1249 (3), #1260 (3), #1261 (3), #1252 (2), #1255
+(2), #1259 (2), #1262 (2), #1269 (2), #1254 (1), #1257 (1), #1258 (1) and
+#1268 (1). After the notes, #1271 (2) fixed the one step Release Tours failed
+on the release commit. #1261, #1269, #1270 and #1271 came in with merge
+commits of their own. Every commit came through a PR.
 
 On the web:
 
@@ -108,6 +109,12 @@ On the web:
   - Tests: 50 new unit cases, each failing against a deliberate break, and
     every First Light browser spec passes. Not tried: a real microphone,
     Safari, iOS or Android.
+- **The microphone step rings the check's stage** (#1271).
+  - Release Tours on the release commit (run 41146766261) failed the 70%
+    rule on #1253's new Settings step, "Check your microphone": it rang the
+    whole section, 612x744 at 1280x800 and 362x731 at 390x844. The hook
+    moves to the stage in `MicCheckPanel.tsx`, the box with Start mic check
+    (about 574x287 and 328x164). The step is unchanged.
 - **Jam rooms tell a blocked network from certificate trouble** (#1254).
   - A failed room socket on mercurypitch.com said "this is usually the
     certificate", advice that fits only a LAN dev server. The message now
