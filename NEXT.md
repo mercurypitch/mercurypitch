@@ -2242,3 +2242,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   pieces in order, as the repair rounds run). Monitor bdk1zaevb (30 min; re-arm on every expiry until DONE).
   FILM3-ready.txt's note now says film-02.mp4 is gone (sheets in review/film-02/, film-01.mp4 in renders/).
   film-02 is lost for good (no copy on disk); LEDGER/DELIVERY keep its sheets and REPORT only.
+- 03:19:00 film-03 resumed render ended exit 0; 03:19:28 seams CLEAN (first try), film 483.733 s (composition
+  483.729), pieces removed, music-only made; films kept in /dev/shm/l4film (/ had 972 MB, needs 1354).
+  BACKUP: renders/film-03.mp4 (cmp OK; / now ~844 MB free). If /dev/shm is wiped again, copy it back to
+  /dev/shm/l4film/ and remake the music-only with render-l4.sh's ffmpeg line (-c:v copy + assets/audio/music-only.wav).
+  Contact sheet renders/contact-sheet-film-03.jpg: lead glance, all 16 scenes and the hosts present, the tease
+  ends on "support" with its bead at 470 s, last row black as on film-01's. Measure steps running (status "done" ~03:34).
+- 03:2x FILM3 critic spawned (motion-critic, xhigh, background; rate limit "allowed"; prompt = critics/FILM3-ready.txt
+  verbatim). On its return: save its text verbatim to review/film-03/REPORT.md (unless it wrote it), LEDGER row 32,
+  DECISIONS triage (134), NEXT.md, push-notes. SHIP -> DELIVERY (#207); ONE MORE PASS -> polish round 3.
+  Keep-alive: the critic run counts as activity, but keep a Monitor armed on the status until "done" anyway.
