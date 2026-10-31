@@ -481,7 +481,7 @@ test('context loss pauses, retries the view, and waits for explicit resume @smok
 test('a missing required asset leaves an honest retryable start screen @smoke', async ({
   page,
 }) => {
-  const missingMerc = /\/glass3d\/merc-v2\.glb(?:\?.*)?$/
+  const missingMerc = /\/glass3d\/merc-v2-meshopt\.glb(?:\?.*)?$/
   const failMerc = (route: Route) =>
     route.fulfill({ status: 404, contentType: 'application/octet-stream' })
   await page.route(missingMerc, failMerc)

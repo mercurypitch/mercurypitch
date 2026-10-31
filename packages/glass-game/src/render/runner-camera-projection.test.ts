@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import type { Mesh } from 'three'
 import { PerspectiveCamera, SkinnedMesh, Vector3 } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
@@ -29,10 +30,9 @@ let merc: Awaited<ReturnType<typeof loadAdventureMerc>>
 beforeEach(async () => {
   // Only file delivery is substituted; the real GLB, loader, animation and
   // production Merc adapter determine every measured vertex.
-  const gltf = await new GLTFLoader().parseAsync(
-    Uint8Array.from(bytes).buffer,
-    '',
-  )
+  const gltf = await new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .parseAsync(Uint8Array.from(bytes).buffer, '')
   vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValueOnce(gltf)
   merc = await loadAdventureMerc('fixture://shipped-merc')
   merc.root.scale.setScalar(

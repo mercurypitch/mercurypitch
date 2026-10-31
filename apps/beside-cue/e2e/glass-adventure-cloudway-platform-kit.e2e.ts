@@ -30,7 +30,7 @@ const MANIFEST = JSON.parse(
     }[]
   }
 }
-const KIT_URL = '/games/cloudway-v7/cloudway-platform-kit-v7.gltf'
+const KIT_URL = '/games/cloudway-v7/cloudway-platform-kit-v7-meshopt.gltf'
 const CRESCENT = CLOUDWAY_LAYOUT_AUDITIONS.crescent
 const COMPARISON_KIT = process.env.CLOUDWAY_V7_COMPARISON_KIT
 const RENDER_PROOF = process.env.CLOUDWAY_V7_RENDER_PROOF === '1'
@@ -520,26 +520,35 @@ test('live input boards and rides the preserved V6 Glide surface to its safe res
   expect(errors).toEqual([])
 })
 
-test('plain GLTFLoader retains the current PBR channels and exact collider roots', async ({
+test('GLTFLoader with the Meshopt decoder retains the current PBR channels and exact collider roots', async ({
   page,
 }) => {
   await page.goto('/?devSeed', { waitUntil: 'domcontentloaded' })
   const audit = await page.evaluate(async (url) => {
     const modulePath = '/@id/three/addons/loaders/GLTFLoader.js'
+    const decoderPath = '/@id/three/addons/libs/meshopt_decoder.module.js'
+    const { MeshoptDecoder } = (await import(
+      /* @vite-ignore */ decoderPath
+    )) as { MeshoptDecoder: unknown }
     const { GLTFLoader } = (await import(/* @vite-ignore */ modulePath)) as {
       GLTFLoader: new () => {
-        loadAsync(assetUrl: string): Promise<{
-          scene: {
-            children: readonly {
-              name: string
-              userData: Record<string, unknown>
-            }[]
-            traverse(visit: (node: Record<string, unknown>) => void): void
-          }
-        }>
+        setMeshoptDecoder(decoder: unknown): {
+          loadAsync(assetUrl: string): Promise<{
+            scene: {
+              children: readonly {
+                name: string
+                userData: Record<string, unknown>
+              }[]
+              traverse(visit: (node: Record<string, unknown>) => void): void
+            }
+          }>
+        }
       }
     }
-    const asset = await new GLTFLoader().loadAsync(url)
+    // The delivery stores geometry as lossless Meshopt streams.
+    const asset = await new GLTFLoader()
+      .setMeshoptDecoder(MeshoptDecoder)
+      .loadAsync(url)
     const materialRecords: {
       node: string
       material: string

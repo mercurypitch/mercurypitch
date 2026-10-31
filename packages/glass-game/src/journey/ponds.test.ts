@@ -1,17 +1,29 @@
 // Museum pond clearance — compare the authored water garden with the shipped Conservatory plinth.
 
 import { readFileSync } from 'node:fs'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { describe, expect, it } from 'vitest'
+import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 
-function conservatoryPlinthRadius(): number {
+interface MeshoptView {
+  readonly byteOffset?: number
+  readonly byteLength: number
+  readonly byteStride: number
+  readonly count: number
+  readonly mode: string
+  readonly filter?: string
+}
+
+async function conservatoryPlinthRadius(): Promise<number> {
   const bytes = readFileSync(
     new URL(
-      '../../../../apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
+      `../../../../apps/beside-cue/public/games/${GLASS_GAME_ASSET_FILES['floating-museum-architecture-kit-v6']}`,
       import.meta.url,
     ),
   )
   const jsonEnd = 20 + bytes.readUInt32LE(12)
+  const binStart = jsonEnd + 8
   const document = JSON.parse(bytes.subarray(20, jsonEnd).toString())
   const node = document.nodes.find(
     (candidate: { name: string }) =>
@@ -33,15 +45,33 @@ function conservatoryPlinthRadius(): number {
   expect(accessor.componentType).toBe(5126)
   expect(accessor.type).toBe('VEC3')
   const view = document.bufferViews[accessor.bufferView]
-  const offset =
-    jsonEnd + 8 + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0)
+  // The delivery stores vertex views as lossless Meshopt streams.
+  const meshopt = view.extensions?.EXT_meshopt_compression as
+    | MeshoptView
+    | undefined
+  let data: Buffer
+  if (meshopt) {
+    await MeshoptDecoder.ready
+    const start = binStart + (meshopt.byteOffset ?? 0)
+    const decoded = await MeshoptDecoder.decodeGltfBufferAsync(
+      meshopt.count,
+      meshopt.byteStride,
+      bytes.subarray(start, start + meshopt.byteLength),
+      meshopt.mode,
+      meshopt.filter,
+    )
+    data = Buffer.from(decoded.buffer, decoded.byteOffset, decoded.byteLength)
+  } else {
+    const start = binStart + (view.byteOffset ?? 0)
+    data = bytes.subarray(start, start + view.byteLength)
+  }
   let radius = 0
   for (let index = 0; index < accessor.count; index++) {
-    const point = offset + index * (view.byteStride ?? 12)
-    if (bytes.readFloatLE(point + 4) > 0.18) continue
+    const point = (accessor.byteOffset ?? 0) + index * (view.byteStride ?? 12)
+    if (data.readFloatLE(point + 4) > 0.18) continue
     radius = Math.max(
       radius,
-      Math.hypot(bytes.readFloatLE(point), bytes.readFloatLE(point + 8)),
+      Math.hypot(data.readFloatLE(point), data.readFloatLE(point + 8)),
     )
   }
   expect(radius).toBeGreaterThan(1)
@@ -49,7 +79,7 @@ function conservatoryPlinthRadius(): number {
 }
 
 describe('museum water garden placement', () => {
-  it('keeps the complete pond coping clear of the actual Conservatory base', () => {
+  it('keeps the complete pond coping clear of the actual Conservatory base', async () => {
     const stage = FLOATING_MUSEUM_JOURNEY.stages.find(
       (candidate) => candidate.kind === 'conservatory',
     )!
@@ -57,7 +87,7 @@ describe('museum water garden placement', () => {
       (candidate) => candidate.stageId === stage.id,
     )!
     const source = spillway.source!
-    const baseRadius = conservatoryPlinthRadius() * stage.scale
+    const baseRadius = (await conservatoryPlinthRadius()) * stage.scale
     // Includes both the widest coping cross-section and its supporting stone bed.
     const borderRadius = Math.max(
       0.023,

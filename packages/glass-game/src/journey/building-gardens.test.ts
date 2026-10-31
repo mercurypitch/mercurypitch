@@ -54,9 +54,9 @@ describe('building gardens', () => {
     source = await loadKit(
       'journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
     )
-    map = await loadKit('journey-map-v1/floating-museum-map-kit-v1.glb')
+    map = await loadKit('journey-map-v1/floating-museum-map-kit-v1-meshopt.glb')
     architecture = await loadKit(
-      'journey-map-v8/floating-museum-architecture-kit-v8.glb',
+      'journey-map-v8/floating-museum-architecture-kit-v8-meshopt.glb',
     )
   })
 

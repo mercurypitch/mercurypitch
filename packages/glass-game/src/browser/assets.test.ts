@@ -30,7 +30,7 @@ describe('Glassworks asset contract', () => {
 
   it('resolves the same authored ID beneath any host-owned base', () => {
     expect(glassGameAssetUrl('merc', '/games')).toBe(
-      '/games/glass3d/merc-v2.glb',
+      '/games/glass3d/merc-v2-meshopt.glb',
     )
     expect(glassGameAssetUrl('museum-window-v4', '/glass-game-assets')).toBe(
       '/glass-game-assets/adventure-v4/museum-window-bay.glb',
@@ -77,18 +77,31 @@ describe('Glassworks asset contract', () => {
     expect(required.has('adventure-v6/manifest.json')).toBe(true)
     expect(required.has('adventure-v6/amber-cadence-urn-qa-v2.glb')).toBe(true)
     expect(
-      required.has('adventure-v6/celadon-lark-decanter-fracture-v4.glb'),
+      required.has(
+        'adventure-v6/celadon-lark-decanter-fracture-v4-meshopt.glb',
+      ),
     ).toBe(true)
+    expect(
+      required.has('adventure-v6/celadon-lark-decanter-fracture-v4.glb'),
+    ).toBe(false)
     expect(required.has('adventure-v7/manifest.json')).toBe(true)
     expect(required.has('adventure-v7/listening-garden.webp')).toBe(true)
     expect(required.has('adventure-v7/wave-keeper.webp')).toBe(true)
+    expect(
+      required.has('journey-map-v1/floating-museum-map-kit-v1-meshopt.glb'),
+    ).toBe(true)
     expect(required.has('journey-map-v1/floating-museum-map-kit-v1.glb')).toBe(
-      true,
+      false,
     )
     expect(required.has('journey-map-v1/manifest.json')).toBe(true)
     expect(
-      required.has('journey-map-v8/floating-museum-architecture-kit-v8.glb'),
+      required.has(
+        'journey-map-v8/floating-museum-architecture-kit-v8-meshopt.glb',
+      ),
     ).toBe(true)
+    expect(
+      required.has('journey-map-v8/floating-museum-architecture-kit-v8.glb'),
+    ).toBe(false)
     expect(required.has('journey-map-v8/manifest.json')).toBe(true)
     expect(
       required.has('journey-map-v10/floating-museum-botanical-kit-v10.glb'),
@@ -112,12 +125,23 @@ describe('Glassworks asset contract', () => {
       expect(required.has(dependency), dependency).toBe(true)
     expect(required.has('journey-map-v4/manifest.json')).toBe(false)
     expect(required.has('journey-map-v7/manifest.json')).toBe(false)
-    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.gltf')).toBe(true)
+    expect(
+      required.has('cloudway-v7/cloudway-platform-kit-v7-meshopt.gltf'),
+    ).toBe(true)
+    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.gltf')).toBe(
+      false,
+    )
     expect(required.has('cloudway-v7/cloudway-platform-kit-v7.glb')).toBe(false)
+    for (const part of ['01', '02', '03'])
+      expect(
+        required.has(
+          `cloudway-v7/cloudway-platform-kit-v7-meshopt-part-${part}.bin`,
+        ),
+      ).toBe(true)
     for (const part of ['01', '02', '03', '04'])
       expect(
         required.has(`cloudway-v7/cloudway-platform-kit-v7-part-${part}.bin`),
-      ).toBe(true)
+      ).toBe(false)
     expect(required.has('cloudway-v7/manifest.json')).toBe(true)
     expect(required.has('cloudway-v6/cloudway-platform-kit-v6.glb')).toBe(false)
     expect(required.has('cloudway-v6/manifest.json')).toBe(false)
@@ -143,10 +167,10 @@ describe('Glassworks asset contract', () => {
       'crystal-interiors-v2/living-crystal-platform-v2.glb',
     )
     expect(glassGameAssetPath('cloudway-lab-rose-hex-crumble-mobile-v3')).toBe(
-      'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb',
+      'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v4.glb',
     )
     expect(glassGameAssetPath('cloudway-lab-frost-gold-arch-desktop-v1')).toBe(
-      'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb',
+      'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v2.glb',
     )
     expect(glassGameAssetPath('results-singing-medal-v1')).toBe(
       'results-ui-v1/singing-medal.webp',

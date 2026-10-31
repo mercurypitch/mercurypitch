@@ -3,9 +3,16 @@
   "assetId": "merc-v2",
   "status": "production-reviewed animated character",
   "runtime": {
-    "file": "apps/beside-cue/public/games/glass3d/merc-v2.glb",
-    "bytes": 987068,
-    "sha256": "a6b99aaeb464cfff4be6d7459de0881116af924894766c17b32319c458c089de",
+    "file": "apps/beside-cue/public/games/glass3d/merc-v2-meshopt.glb",
+    "bytes": 537864,
+    "sha256": "154a9e470069dbfab4b4be53e42667c09ca50ba7a9a5994a0e2597c420dde9ac",
+    "losslessReencode": {
+      "date": "2026-10-31",
+      "method": "EXT_meshopt_compression without filters or quantization: vertex, skin and animation views in ATTRIBUTES mode, index views in INDICES mode. The glTF JSON outside bufferViews and buffers is unchanged, and every accessor decodes to the same bytes in the same order.",
+      "fromFile": "apps/beside-cue/public/games/glass3d/merc-v2.glb",
+      "fromBytes": 987068,
+      "fromSha256": "a6b99aaeb464cfff4be6d7459de0881116af924894766c17b32319c458c089de"
+    },
     "legacyBeforeFile": "apps/beside-cue/public/games/glass3d/merc.glb",
     "legacyBeforeSha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
   },

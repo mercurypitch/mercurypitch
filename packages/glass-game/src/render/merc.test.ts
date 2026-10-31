@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { BufferGeometry, Mesh } from 'three'
 import { Box3, Group, MeshPhysicalMaterial, SkinnedMesh, Vector3 } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
@@ -63,13 +64,15 @@ it('matches Merc move cadence to pace while bounding feathered and future speeds
 
 async function parseActualMerc() {
   const source = await readFile(actualMercUrl())
-  return new GLTFLoader().parseAsync(
-    source.buffer.slice(
-      source.byteOffset,
-      source.byteOffset + source.byteLength,
-    ),
-    '',
-  )
+  return new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .parseAsync(
+      source.buffer.slice(
+        source.byteOffset,
+        source.byteOffset + source.byteLength,
+      ),
+      '',
+    )
 }
 
 function repositoryFile(relativePath: string): string {

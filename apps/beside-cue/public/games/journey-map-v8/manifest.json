@@ -5,11 +5,20 @@
   "assets": [
     {
       "id": "floating-museum-architecture-kit-v6",
-      "file": "floating-museum-architecture-kit-v8.glb",
+      "file": "floating-museum-architecture-kit-v8-meshopt.glb",
       "source": "art/glass-adventure/journey-map/v8/exports/floating-museum-architecture-kit-v8.glb",
       "sourceReceipt": "art/glass-adventure/journey-map/v8/exports/floating-museum-architecture-kit-v8.json",
-      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
-      "bytes": 25448308,
+      "sha256": "9de64fc3a5813f8473cbf936e986aca5af67fc9451c056a45cbd840798f7a7b4",
+      "bytes": 19730036,
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "floating-museum-architecture-kit-v8.glb",
+          "bytes": 25448308,
+          "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615"
+        },
+        "method": "Lossless EXT_meshopt_compression with no quantization or filters. Vertex, skin and animation views use ATTRIBUTES mode and index views use INDICES mode, so every accessor decodes to the same bytes in the same order. The glTF JSON outside bufferViews and buffers is unchanged."
+      },
       "root": "map_museum_polish_kit_root",
       "nodes": ["map_twin_connector", "map_conservatory"]
     }
@@ -26,7 +35,7 @@
     "connectorAperturePassed": true,
     "uv0Present": true,
     "v7ConnectorLogicalRecordsAndPayloadsExact": true,
-    "noDracoOrMeshopt": true,
+    "sourceExportNoDracoOrMeshopt": true,
     "runtimeIntegration": "Actual WebGL desktop and tablet-sized desktop review passed; exact loaded model hashes verified.",
     "gltfErrors": 0,
     "reviewedTangentRepair": "Three degenerate tangent rows repaired from UV derivatives in the source export; all positions, normals, UVs, indices and maps preserved.",

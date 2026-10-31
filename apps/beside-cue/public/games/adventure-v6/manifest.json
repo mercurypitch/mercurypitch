@@ -91,7 +91,7 @@
     },
     {
       "id": "celadon-lark-decanter-fracture-v4",
-      "file": "celadon-lark-decanter-fracture-v4.glb",
+      "file": "celadon-lark-decanter-fracture-v4-meshopt.glb",
       "node": "breakable_l2_high_celadon_decanter",
       "intactNode": "breakable_l2_high_celadon_decanter_intact",
       "shardPrefix": "breakable_l2_high_celadon_decanter_shard_",
@@ -99,14 +99,23 @@
       "source": "art/glass-adventure/v6-level2/celadon-production-v4/sources/celadon-lark-decanter-fracture-v4.blend",
       "sourceSha256": "301cdba45fcb131d77f1c5b77ddf39e42ce609407456c270baf4e427b82c27d2",
       "runtimeSource": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-v4.glb",
-      "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+      "sha256": "28bec42b75b588b707a3cbc4e8e1f832f740ca41f30717747afbcb36952b93ec",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "celadon-lark-decanter-fracture-v4.glb",
+          "bytes": 5820204,
+          "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346"
+        },
+        "method": "Lossless EXT_meshopt_compression with no quantization or filters. Vertex, skin and animation views use ATTRIBUTES mode and index views use INDICES mode, so every accessor decodes to the same bytes in the same order. The glTF JSON outside bufferViews and buffers is unchanged. PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders."
+      },
       "dimensions": [0.3776974081993103, 0.3776567578315735, 1.149999976158142],
       "intactTriangles": 26512,
       "triangles": 63592,
       "textureCount": 3,
       "maximumTextureDimensions": [1024, 1024],
       "collision": "The embedded collider is validation-only; gameplay uses the existing required-display mount and loads only the declared intact and 18 independently closed shard nodes.",
-      "bytes": 5820204,
+      "bytes": 3951848,
       "attributeRepair": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-attribute-repair-v4.json"
     }
   ]
