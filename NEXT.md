@@ -2223,3 +2223,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   used of 16 (s12-s13 next, where renderers peak); / 912 MB free. Watcher b478or7o3 still armed (its 2 h
   tool limit ends ~00:49: re-arm wait-l4.sh film-03 <log size> 1200). If the container restarts: pieces are on
   disk under $S/l4film03proj/renders/.hf-segments, so warm Chrome, then RESUME=1 WORKERS=2 render-l4.sh.
+- 00:50 watcher b478or7o3 hit its 2 h tool limit (not restarted, per the tool's note); Monitor b9oqrsh1o (30 min)
+  watches the status instead. 00:56:51 film-03 capture ended exit 0 (2 h 7 m, no OOM). 00:57:20 seams: BAD 6 12 13 19
+  (the same recycle race as film-02's 6 12 13 18); render-l4.sh re-renders pieces 5 6 11 12 13 18 19 on one worker,
+  no recycling (film-02's took 1 h 37 m, then pieces 4-5 in 27 m), so expect seams ~02:35, done ~02:50-03:20.
+  Next look: the 02:16 check-in (re-arm a 30 min Monitor on the status then). For film-04 if needed: consider
+  HF_SEGMENT_BROWSER_RECYCLE well above 10 with 2 workers (one warm browser per worker, as the repair rounds run),
+  which would skip the repair rounds; untested at 2 workers for memory, so only between runs and with a watch on oom_kill.
