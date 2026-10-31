@@ -2330,3 +2330,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   of 20); main pass ETA ~08:45. Memory fine (16 GB box: rss 4.4 GB, shm 6.4 GB, 5.2 GB available).
   Watcher note: PID 12855 is the stale launcher shell that matches "render-l4[.]sh film-04"; the real render
   script is PID 12857 (kill -0 12857 for liveness when re-arming).
+- 09:50 FILM-04 DONE: main pass exit 0 at 08:50:35; seams BAD 1 18 19 -> re-rendered pieces 0 1 17 18 19 on 1
+  worker (09:38) -> CLEAN; film 484.733 s (composition 484.729); music-only, contact sheet
+  (renders/contact-sheet-film-04.jpg, looked: all scenes and hosts present), measure (review/measure-film-04/:
+  holds 11.9 s, 0.7 per 30 s, longest 0.5 s, no final hold; -16.0 LUFS, LRA 5.2 LU, -1.5 dBTP). Films in
+  /dev/shm/l4film (film-04.mp4 109,665,040 B, music-only 105,763,844 B); master COPIED to
+  P/renders/film-04.mp4 (cmp identical; / then 567 MB free). get_session rate_limit "allowed" ->
+  FILM4 CRITIC spawned ~09:55 (motion-critic, xhigh, background) with critics/FILM4-ready.txt verbatim.
+  NEXT: save its returned text verbatim to review/film-04/REPORT.md (if it did not write it); LEDGER row 33;
+  DECISIONS 136. SHIP -> DELIVERY.md from l4entr/DELIVERY.draft.md -> SEND THE OWNER THE FILM (08:14 ask;
+  SendUserFile P/renders/film-04.mp4 proactive + PushNotification). ONE MORE PASS -> polish round 4 (round 5
+  of the six-round stop rule would be the next film).
