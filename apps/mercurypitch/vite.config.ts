@@ -98,6 +98,7 @@ const KARAOKE_STAGE_2 = [
   // league the More sheet's row names, which the sheet and the shell import
   // statically and which reads storage as it is made.
   '/apps/mercurypitch/src/shell/leagues/league-store.ts',
+  '/apps/mercurypitch/src/shell/legend/legend-store.ts',
 ]
 
 function isKaraokeStage2(id: string): boolean {

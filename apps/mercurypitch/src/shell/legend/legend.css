@@ -1,0 +1,333 @@
+/* ============================================================
+   The Legend room (slice 3, docs/plans/native-more-and-community.md)
+   ============================================================
+
+   A premium room drawn full-bleed (premium-rooms.ts): the body is the whole
+   screen and does not scroll, so the room keeps clear of the status bar and
+   the floating bar by the shell's --pushed-top and --pushed-bottom, and
+   brings its own scroller for the door. On the kit's dark stage
+   (dark-stage.css), whatever the app's theme. Nothing under 13 px.
+
+   Loaded by the room's lazy chunk alone, so a store build carries none. */
+
+/* The kit's button on the dark stage, in either theme: the stage's accent is
+   a light blue (dark-stage.css), so its label is the stage's darkest ink
+   (7.3:1), never the light theme's white (2.5:1). A token, so the ask's
+   portalled sheet takes it with the rest (portal-skin.ts). */
+.mp-legend {
+  --mp-button-ink: var(--bg-primary);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: min(520px, 100dvh);
+  padding-top: var(--pushed-top, 0px);
+  padding-bottom: var(--pushed-bottom, 0px);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 60% at 50% 0%,
+      rgba(14, 143, 127, 0.18) 0%,
+      rgba(13, 17, 23, 0) 70%
+    ),
+    var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.mp-legend__scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mp-legend-door {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 12px 16px 32px;
+}
+
+.mp-legend__caption {
+  margin: 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-legend__error {
+  margin: 0;
+  font: 500 15px/21px var(--font-body, sans-serif);
+  color: var(--red);
+}
+
+.mp-legend__link {
+  font: 500 15px/21px var(--font-body, sans-serif);
+  color: var(--accent);
+}
+
+/* ---------- the running Legend ---------- */
+
+.mp-legend-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.mp-legend-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: 600 13px/18px var(--font-body, sans-serif);
+  letter-spacing: 0.02em;
+  color: var(--teal);
+}
+
+.mp-legend-hero__title {
+  margin: 0;
+  font: 700 26px/32px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-legend-hero__body {
+  margin: 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-legend-hero__hear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.mp-legend-hero__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------- the board and the past Legends ---------- */
+
+.mp-legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mp-legend-group__title {
+  margin: 0;
+  font: 600 13px/18px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.mp-legend-podium {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.mp-legend-podium__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  font: 400 15px/20px var(--font-body, sans-serif);
+}
+
+.mp-legend-podium__row:last-child {
+  border-bottom: 0;
+}
+
+.mp-legend-podium__row[data-founder='on'] {
+  background: color-mix(in srgb, var(--teal) 10%, transparent);
+}
+
+.mp-legend-podium__rank {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: var(--bg-tertiary);
+  font: 600 13px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-legend-podium__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-legend-podium__score {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-legend__standing {
+  margin: 0;
+  font: 500 15px/21px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-legend-past {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.mp-legend-past__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-legend-past__title {
+  font: 500 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-legend-past__sub {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* ---------- the take ---------- */
+
+.mp-legend-take {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mp-legend-take__head {
+  padding: 8px 16px 4px;
+  text-align: center;
+}
+
+.mp-legend-take__title {
+  margin: 0;
+  font: 700 20px/26px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-legend-take__hint {
+  min-height: 21px;
+  margin: 4px 0 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-legend-take__stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 8px 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.mp-legend-take__stage > * {
+  flex: 1 1 auto;
+}
+
+.mp-legend-take__dock {
+  padding: 8px 16px 16px;
+}
+
+.mp-legend-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  margin: 0 12px 12px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.mp-legend-result__score {
+  margin: 0;
+  font: 700 40px/46px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-legend-result__headline {
+  margin: 0;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-legend-result__line {
+  margin: 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-legend-result__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mp-legend-result__actions > .mp-set-button {
+  flex: 1 1 0;
+}
+
+/* ---------- the ask, before a first ranked take ---------- */
+
+.mp-legend-consent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 20px 24px;
+}
+
+.mp-legend-consent__title {
+  margin: 0;
+  font: 700 20px/26px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-legend-consent__body {
+  margin: 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}

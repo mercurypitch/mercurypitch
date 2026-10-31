@@ -19,7 +19,7 @@
 // The screen ids are the stack's own (PushedScreen); a room joins by
 // adding its line here.
 
-import type { PushedScreen } from './run-shell-store'
+import type { PushedScreen } from './pushed-screen-ids'
 
 export interface PremiumRoomScreen {
   /**
@@ -39,6 +39,8 @@ export const PREMIUM_ROOM_SCREENS: Readonly<
   'warm-up': { fullBleed: true },
   'home-note': { fullBleed: true },
   'first-note': { fullBleed: true },
+  // The Legend (NATIVE_LEAGUES): a line on a dark stage, its own scroller.
+  legend: { fullBleed: true },
 }
 
 /** Is this screen a premium room (a phone holds it in portrait)? */

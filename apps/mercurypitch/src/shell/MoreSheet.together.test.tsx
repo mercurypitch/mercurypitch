@@ -14,6 +14,9 @@ const held = vi.hoisted(() => ({
   league: null as LeagueMe | null,
   /** The store's verdict on when the league was read. */
   thisWeek: true,
+  /** The running Legend the phone kept, and the singer's best on it. */
+  legend: undefined as { endsAt: string } | null | undefined,
+  best: null as number | null,
 }))
 
 vi.mock('@/lib/native-build', async (importOriginal) => ({
@@ -24,6 +27,11 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 vi.mock('./leagues/league-store', () => ({
   leagueCard: () => held.league,
   leagueReadThisWeek: () => held.thisWeek,
+}))
+
+vi.mock('./legend/legend-store', () => ({
+  legendCard: () => held.legend,
+  legendStanding: () => (held.best === null ? null : { best: held.best }),
 }))
 
 vi.mock('./settings/account-state', () => ({
@@ -59,7 +67,11 @@ function league(): LeagueMe {
   }
 }
 
-function openSheet(onPushLeagues = vi.fn(), onClose = vi.fn()): void {
+function openSheet(
+  onPushLeagues = vi.fn(),
+  onClose = vi.fn(),
+  onPushLegend = vi.fn(),
+): void {
   view = renderShell(() => (
     <MoreSheet
       open={() => true}
@@ -68,6 +80,7 @@ function openSheet(onPushLeagues = vi.fn(), onClose = vi.fn()): void {
       onPushAccount={vi.fn()}
       onPushDeveloper={vi.fn()}
       onPushLeagues={onPushLeagues}
+      onPushLegend={onPushLegend}
     />
   ))
 }
@@ -81,6 +94,8 @@ beforeEach(() => {
   held.signedIn = true
   held.league = league()
   held.thisWeek = true
+  held.legend = undefined
+  held.best = null
 })
 
 afterEach(() => {
@@ -129,6 +144,45 @@ describe('the Together group', () => {
       document.querySelector('[data-more-item="leagues"]') as HTMLButtonElement
     ).click()
     expect(onPushLeagues).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the Legend row', () => {
+  it('stands beside Leagues in the Together group', () => {
+    openSheet()
+    expect(
+      document.querySelector(
+        '.mp-more-group--together [data-more-item="legend"]',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('says something true before the phone has read anything', () => {
+    openSheet()
+    expect(line('legend')).toBe('The line everyone sings')
+  })
+
+  it('says when the running Legend closes, and the best once sung', () => {
+    held.legend = {
+      endsAt: new Date(Date.now() + 74 * 3_600_000).toISOString(),
+    }
+    openSheet()
+    expect(line('legend')).toBe('Ends in 3 days')
+    view?.unmount()
+    held.best = 82
+    openSheet()
+    expect(line('legend')).toBe('Sung, best 82%')
+  })
+
+  it('pushes the room, closing the sheet on the way', () => {
+    const onPushLegend = vi.fn()
+    const onClose = vi.fn()
+    openSheet(vi.fn(), onClose, onPushLegend)
+    ;(
+      document.querySelector('[data-more-item="legend"]') as HTMLButtonElement
+    ).click()
+    expect(onPushLegend).toHaveBeenCalledTimes(1)
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

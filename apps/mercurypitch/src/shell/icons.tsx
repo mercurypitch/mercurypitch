@@ -372,6 +372,15 @@ export const TrashIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** Legend: the calendar a Legend closes on, its day marked. */
+export const CalendarIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    <path d="M14.5 13.5h2.5v2.5h-2.5z" />
+  </svg>
+)
+
 /** Leaderboards: the cup. */
 export const TrophyIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>

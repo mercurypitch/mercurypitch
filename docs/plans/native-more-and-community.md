@@ -1,9 +1,8 @@
 # The native More sheet as a list, and Together on the phone
 
-Status: slice 1 approved by the owner (30 Oct 2026, from the screenshots
-shared in its session; PR #1267); slice 2 built (Leagues, read-only),
-stacked on slice 1's PR; slices 3 and 4 planned. Each slice is its own PR,
-stacked on the one before until that one merges.
+Status: slices 1 and 2 merged (the More sheet as a list, #1267; Leagues,
+read-only, #1272); slice 3 built (the Legend as a native room); slice 4
+planned. Each slice is its own PR.
 
 The native app's More sheet (`apps/mercurypitch/src/shell/MoreSheet.tsx`) was
 six square tiles in a four-column grid: 11 px labels, a third of the sheet
@@ -105,11 +104,11 @@ nothing in the list animates. Hover lives behind `@media (hover: hover)`.
 
 ### The groups
 
-| Group    | Tint                     | Rows                                                          |
-| -------- | ------------------------ | ------------------------------------------------------------- |
-| Rooms    | violet `#7c4dff` (4.8:1) | Karaoke, Piano, Guitar                                        |
-| Together | teal `#0e8f7f` (4.0:1)   | Leagues, This week's challenge, Community: each on its switch |
-| You      | slate `#64748b` (4.7:1)  | Account, Developer (test builds), Settings last               |
+| Group    | Tint                     | Rows                                            |
+| -------- | ------------------------ | ----------------------------------------------- |
+| Rooms    | violet `#7c4dff` (4.8:1) | Karaoke, Piano, Guitar                          |
+| Together | teal `#0e8f7f` (4.0:1)   | Leagues, Legend, Community: each on its switch  |
+| You      | slate `#64748b` (4.7:1)  | Account, Developer (test builds), Settings last |
 
 The ratios are the white glyph on the chip (WCAG 1.4.11 asks 3:1). The tints
 are fixed rather than themed: a chip is the same thing in the dark. With no
@@ -282,53 +281,97 @@ it. New shell icon: none (`TrophyIcon` exists).
 
 ---
 
-## Slice 3: the weekly challenge as a native room
+## Slice 3: the Legend as a native room (built)
 
-Behind `NATIVE_LEAGUES`, from the Together group's "This week's challenge".
+Behind `NATIVE_LEAGUES`, from the Together group's row. Named **Legend**, as
+the web names it, and never "This week's challenge": a Legend runs one to
+eight weeks and stays open two days past its close
+(`challenge-period-neutral.test.ts`), so no copy names a period, and the
+close is said as time left.
+
+### The row
+
+"Legend", a calendar chip, and a line from `legend-store.ts` (`mp:legend-card`):
+"Ends in 3 days" (rounded to the nearest day or hour, as Leagues' cut now is,
+`duration-words.ts`), "Sung, best 82%" once the singer has a take, "Closing"
+in the two days' grace, "The next Legend opens soon" with none running, and
+"The line everyone sings" before the phone has read anything. The store keeps
+the running Legend's id, title and close for anyone, and the singer's own
+best for the account that sang it; never a name from the board. It is keyed
+on the Legend's id and close, never the running week (MISTAKES.md, "A
+watermark that names the running week must include it next time"): read at a
+cold start, on a return to the front unless the last read is fresh and its
+Legend still open, after every posted take (`weeklyAttemptVersion`), and
+again for an account the last read was not made for.
 
 ### The room
 
-A full-bleed pushed screen, `'legend'`, hosted like the premium rooms
-(`LongNoteScreen.tsx`): in `PREMIUM_ROOM_SCREENS`, held upright, the rail
-hidden during a take (`setExerciseFocus`), Android Back answered
-(`registerRoomBack`, MercDrillRoom's pattern), the run ended on app leave
-(`room-life.ts`). It does not reuse App's `ChallengeStage` (option (a) in
-the research): that stage is web chrome at `--z-focus`, over the rail and
-under no Back, with browser copy.
+A full-bleed premium room, `'legend'` (`premium-rooms.ts`): held upright, the
+rail away, its own scroller for the door. Back is the bar's, as in every
+premium room: it leaves the room, and leaving drops a take and lets its
+attempt go. Opening it from More with a run on screen parks the run first
+(`parkRun`), and the shell's transport steps aside under any full-bleed room,
+as the rail does.
 
-Under it, unchanged: `challengeToZenExercise`, the scoring
-(`summarizeChallengeRun`), `recordChallengeStageResult` and
-`recordExerciseResult` down to `recordWeeklyAttempt`, the badges and the
-result. The capture is `useExerciseCapture` (the premium rooms' mic, opened
-inside the tap for iOS), adapted to the `PracticeFrame` stream the zen
-session reads.
+The door is the running Legend: its close, its title and line, Hear the line
+(the line played at its written pitch, its first note in the tap), Hear the
+original when the Legend links one, Sing it and Practice, the top three and
+the singer's standing in words ("Your best 74%, in the top 28% of 18"; never
+their rank beside the top rows', which count the Founder), and the past
+Legends, each to practise. Out of range, it says so before the take: "This
+Legend is written above your baritone range, a feat for another voice. Sing
+it anyway if you like: it is scored as written."
 
-### The rules it keeps
+### The take (`legend-take.ts`)
 
-- **Never transposed.** The notes are sung at written pitch; an
-  out-of-range singer is told before the take, never shifted. No
-  `octaveShiftIntoRange`.
-- **One armed attempt counts once.** `beginWeeklyAttempt` before a ranked
-  take; `clearWeeklyAttempt()` on leaving unless the take completed, and
-  before any practice run, so a leftover armed attempt cannot claim the next
-  sight-singing drill.
-- **Consent before the first ranked take,** stored or not taken. The native
-  ask is a kit sheet, not the web's `ConfirmDialog`: "Show my name on public
-  boards" (one consent, every board: `grantBoardConsent()`), "Practice
-  without ranking", "Not now". The same switch goes on the native Account
-  screen, so it can be turned off again.
-- **A cursor keys on the challenge id,** never on the running week with an
-  exclusive bound.
+- **Never transposed.** No octave shift reaches the session.
+- **The same scoring and the same funnel.** A fresh zen session per take
+  (`loopLimit: 1`), fed the room's mic frames (`useExerciseCapture`, opened
+  in the tap, no audio clock asked for) as the web's practice frames on the
+  same clock; `summarizeChallengeRun` scores it; a ranked take goes through
+  `recordChallengeStageResult` to the board. The phone has no take
+  recorder, so its replay is reported unsupported, which never costs the
+  score.
+- **One armed attempt counts once.** A ranked take arms in its tap; practice
+  clears any armed attempt; the attempt is let go when the singer leaves the
+  take, when the mic will not open, at Done, and when the room goes. The
+  web's stage keeps one armed after a failed save; the room does not.
+- **The room shows its own result.** The attempt names the room as its
+  presenter (`presenter: 'native-room'`), so its saving and its result go to
+  `roomFinalizing` and `roomChallengeResult` (challenge-result-store.ts),
+  which the app's result card never reads: the card cannot draw over the
+  room. The result says "Saving your take", then the web's tier headline and
+  the score against what the Legend asks, or that it was not posted.
 
-### Around the room
+### Consent and the account
 
-The hero becomes the room's door: title, "Ends in 3 days" (from `endsAt`,
-in words), Hear it, the top three and your standing in plain words. The
-past challenges become a list on the same screen with Practice. The More
-row's line needs a cache like Leagues': `weekly-store.ts`, filled on the
-foreground and by the room ("Ends in 3 days", "Sung, best 82" without a
-percent sign, "Closing today"). New shell icon: a calendar week, drawn in
-the house style (24 box, 1.8 stroke, round caps).
+A ranked take needs a signed-in account (decision 12). Consent is read ahead,
+on each account change, because the mic must open in the tap with no wait
+in between. The first ranked take asks, in a kit sheet: "Show my name on
+public boards" (`grantBoardConsent`; the next tap starts the take), "Practice
+without ranking" (starts practice in that tap), or "Not now". The Account
+screen gains "Show my name on public boards" (Leagues, Legends and the
+leaderboard), on every build: off, `revokeBoardConsent` takes the name off
+every board at once, past podiums included.
+
+### The fold
+
+The room is a lazy chunk behind the switch, `pushScreen('legend')` refuses
+without it, `legend-store.ts` is in the native config's side-effect-free list,
+and the More sheet reads it only inside the folded group. STAGE 2 markers:
+`shell-legend`, "Practice without ranking", `mp:legend-card`, "The line
+everyone sings". `legend-fold.test.ts` holds the sources to all of it.
+
+### Found while building it (web, not changed here)
+
+- The web stage clears an armed attempt on leave only when the take did not
+  complete, so a failed save leaves it armed and the next sight-singing drill
+  posts to the Legend board.
+- "Practice in Zen" from the web's result card hands the line to Zen with an
+  octave shift, so the replay is transposed.
+- The web stage's practice copy names a period ("This week has ended"), and
+  `challenge-period-neutral.test.ts` misses it: its JSX-text pattern skips
+  text that spans lines.
 
 ---
 
@@ -460,6 +503,12 @@ Each is applied as written unless the owner says otherwise.
     make. That changes the web's card too, for the same singers.
 11. **The phone keeps no board** (slice 2): the singer's own league and
     place for the More row, never the other members' names.
+12. **A ranked Legend take needs a signed-in account** (slice 3), as Leagues
+    do; practice is anyone's.
+13. **The Legend room presents its own result** (slice 3): the attempt names
+    its presenter, and the app's card never sees a native take.
+14. **Back leaves the Legend room** (slice 3), as every premium room's does,
+    and drops a take in progress; there is no "End the run?" question.
 
 ## Open, for the owner
 
@@ -474,8 +523,8 @@ Each is applied as written unless the owner says otherwise.
 | PR  | What                                            | Switch             |
 | --- | ----------------------------------------------- | ------------------ |
 | 1   | This plan, and the More sheet as a list (#1267) | none               |
-| 2   | Leagues, read-only                              | `NATIVE_LEAGUES`   |
-| 3   | The weekly challenge as a room                  | `NATIVE_LEAGUES`   |
+| 2   | Leagues, read-only (#1272)                      | `NATIVE_LEAGUES`   |
+| 3   | The Legend as a room                            | `NATIVE_LEAGUES`   |
 | 4a  | Reports, blocks, the name filter (worker)       | none (worker)      |
 | 4b  | Report and Block on the phone, contact line     | none               |
 | 4c  | Community                                       | `NATIVE_COMMUNITY` |

@@ -48,8 +48,19 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('first-note')).toBe(true)
   })
 
+  it('draws the Legend full-bleed, held upright on a phone', () => {
+    expect(PREMIUM_ROOM_SCREENS.legend).toEqual({ fullBleed: true })
+    expect(isFullBleed('legend')).toBe(true)
+    expect(isPremiumRoom('legend')).toBe(true)
+  })
+
   it('leaves every other screen under the opaque bar, free to turn', () => {
-    for (const screen of ['settings', 'karaoke', 'developer'] as const) {
+    for (const screen of [
+      'settings',
+      'karaoke',
+      'developer',
+      'leagues',
+    ] as const) {
       expect(isFullBleed(screen)).toBe(false)
       expect(isPremiumRoom(screen)).toBe(false)
     }

@@ -37,6 +37,8 @@ export interface AccountCard {
   provider: string
   /** Asked for product news by email. */
   newsletter: boolean
+  /** Agreed to be named on public boards (`leaderboardOptIn`). */
+  boards: boolean
 }
 
 const STORAGE_KEY = 'mp:account-card'
@@ -63,6 +65,7 @@ function cardOf(value: unknown): AccountCard | null {
     email: card.email,
     provider: card.provider,
     newsletter: card.newsletter === true,
+    boards: card.boards === true,
   }
 }
 
@@ -137,6 +140,7 @@ function cardFrom(me: MeResponse): AccountCard {
     email: me.user.email ?? '',
     provider: me.user.authProvider,
     newsletter: me.user.newsletterOptIn === true,
+    boards: me.profile?.leaderboardOptIn === true,
   }
 }
 
@@ -168,6 +172,18 @@ export async function refreshAccount(): Promise<void> {
   // own path, and this is then a no-op.
   handleCloudSessionRejected()
   setReach('idle')
+}
+
+/**
+ * The public-boards answer, stored: the kept card shows it at once, so a
+ * read of the account that gets no answer cannot draw the switch back.
+ */
+export function keepBoardsAnswer(on: boolean): void {
+  const card = kept()
+  if (card === null || card.id !== currentAccountId()) return
+  const next = { ...card, boards: on }
+  setKept(next)
+  writeStored(next)
 }
 
 /** Drop the kept card: sign-out and deletion call this on the way out. */

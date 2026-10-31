@@ -39,3 +39,18 @@ describe('pushing Leagues', () => {
     expect(moreOpen()).toBe(false)
   })
 })
+
+describe('pushing the Legend room', () => {
+  it('is refused on a build without it', () => {
+    pushScreen('legend')
+    expect(pushed()).toBeNull()
+  })
+
+  it('lands on a build with it, full-bleed, and closes More on the way', () => {
+    build.leagues = true
+    openMore()
+    pushScreen('legend')
+    expect(pushed()).toBe('legend')
+    expect(moreOpen()).toBe(false)
+  })
+})

@@ -28,7 +28,7 @@ import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
-import type { PushedScreen } from './run-shell-store'
+import type { PushedScreen } from './pushed-screen-ids'
 import { pushScreen } from './run-shell-store'
 
 /** What the shell adds to the API it registers for the rooms. */

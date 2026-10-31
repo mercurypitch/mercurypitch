@@ -64,6 +64,7 @@ import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
 import { isFullBleed } from './premium-rooms'
+import type { PushedScreen, SettingsChild } from './pushed-screen-ids'
 
 export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
 
@@ -76,38 +77,7 @@ export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
  */
 export type RailVariant = 'r1' | 'r2'
 
-/**
- * A screen pushed over the tab, with its own Back.
- *
- * Settings is the root of a stack of them: it is a short grouped list whose
- * rows push screens of their own (S6, decision D1 A), and each of those can
- * push again. Developer stands on its own, reached from More, and so does the
- * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A), and
- * Leagues, reached from More's Together group (NATIVE_LEAGUES).
- */
-export type PushedScreen =
-  | 'settings'
-  | 'account'
-  | 'account-name'
-  | 'devices'
-  | 'delete-account'
-  | 'microphone'
-  | 'room-noise'
-  | 'storage'
-  | 'this-phone'
-  | 'appearance'
-  | 'about'
-  | 'karaoke'
-  | 'karaoke-studio'
-  | 'long-note'
-  | 'echo'
-  | 'lip-roll'
-  | 'ng-slides'
-  | 'warm-up'
-  | 'home-note'
-  | 'first-note'
-  | 'developer'
-  | 'leagues'
+export type { PushedScreen, SettingsChild } from './pushed-screen-ids'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000
@@ -304,17 +274,21 @@ const runOnScreen = createMemo<boolean>(() => {
 const roomOwnsTransport = (): boolean =>
   nativeRunControls()?.ownsTransport === true
 
-/** Is there a run on this screen that the shell's transport should drive? */
-export const transportVisible = createMemo<boolean>(
-  () => runOnScreen() && !roomOwnsTransport(),
-)
-
 /**
  * A premium room drawn full-bleed is on top of the stack (premium-rooms.ts,
  * decision D1): its art fills the screen, and the dock steps aside for the
  * whole of it.
  */
 export const fullBleedOnTop = createMemo<boolean>(() => isFullBleed(pushed()))
+
+/**
+ * Is there a run on this screen that the shell's transport should drive?
+ * Not under a full-bleed room: the dock steps aside for the whole of it, the
+ * transport with the rail (the Legend room parks a run as it opens).
+ */
+export const transportVisible = createMemo<boolean>(
+  () => runOnScreen() && !roomOwnsTransport() && !fullBleedOnTop(),
+)
 
 /**
  * The native onboarding is over the tab (src/onboarding/onboarding-layer.ts).
@@ -464,8 +438,9 @@ const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
  */
 export function pushScreen(screen: PushedScreen): void {
   if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
-  // Leagues the same way, on a build without them (NATIVE_LEAGUES).
-  if (screen === 'leagues' && !NATIVE_LEAGUES) return
+  // Leagues and the Legend the same way, on a build without them
+  // (NATIVE_LEAGUES).
+  if ((screen === 'leagues' || screen === 'legend') && !NATIVE_LEAGUES) return
   closeColumn()
   closeMore()
   setPushedStack((stack) => {
@@ -475,20 +450,6 @@ export function pushScreen(screen: PushedScreen): void {
     return [...stack, screen]
   })
 }
-
-/** A screen that is only ever reached through Settings. */
-export type SettingsChild = Exclude<
-  PushedScreen,
-  | 'settings'
-  | 'developer'
-  | 'karaoke-studio'
-  | 'long-note'
-  | 'echo'
-  | 'lip-roll'
-  | 'ng-slides'
-  | 'warm-up'
-  | 'leagues'
->
 
 /**
  * Settings, with one of its own screens over it when the caller names one.
@@ -552,6 +513,19 @@ export function parkRun(): void {
   nativeRunControls()?.park()
   // What the run is once the room that owns it unmounts. Held until the
   // singer comes back to it, or until the owner is let go of.
+  setParkedLatch('paused')
+}
+
+/**
+ * Let a run on this screen go quiet for a room pushed over it: its sound
+ * stops and its mic is let go, as a park does, and it comes back paused.
+ * No tab changes, so no park mark is left for the run's room to spend on
+ * its next, unrelated leave (`consumeRunParked`).
+ */
+export function quietRunForRoom(): void {
+  const state = untrack(runState)
+  if (state !== 'active' && state !== 'paused') return
+  nativeRunControls()?.park()
   setParkedLatch('paused')
 }
 

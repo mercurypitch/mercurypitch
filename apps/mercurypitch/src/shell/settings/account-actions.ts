@@ -12,9 +12,10 @@ import type { UserProfile } from '@/db/entities'
 import { logout } from '@/db/services/auth-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { getUserId } from '@/db/services/user-service'
+import { grantBoardConsent, revokeBoardConsent, } from '@/features/challenges/board-consent'
 import { showNotification } from '@/stores/notifications-store'
 import { forgetAccountFill } from './account-fill'
-import { forgetAccountCard, refreshAccount } from './account-state'
+import { forgetAccountCard, keepBoardsAnswer, refreshAccount, } from './account-state'
 
 /**
  * The profile's display name: the one leaderboards and shared content show.
@@ -41,6 +42,18 @@ export async function saveAccountName(name: string): Promise<void> {
 /** Product news by email, on or off. Throws when the account refuses. */
 export async function setProductNews(on: boolean): Promise<void> {
   await setNewsletterOptIn(on)
+  await refreshAccount()
+}
+
+/**
+ * The singer's name on public boards, on or off: one consent for every
+ * board, Leagues and Legends and the leaderboard alike (board-consent.ts).
+ * Throws when it could not be stored.
+ */
+export async function setPublicBoards(on: boolean): Promise<void> {
+  const stored = on ? await grantBoardConsent() : await revokeBoardConsent()
+  if (!stored) throw new Error('Could not save that. Try again.')
+  keepBoardsAnswer(on)
   await refreshAccount()
 }
 
