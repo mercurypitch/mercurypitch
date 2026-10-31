@@ -7,6 +7,7 @@ import type { StudioRun } from './run'
 /** A run that has played frame 1000 since 2 s, fully open at 2.09 s, in a two-second song. */
 function heldRun(overrides: Partial<StudioRun> = {}): StudioRun {
   return {
+    ctx: { sampleRate: 48000 } as AudioContext,
     startFrame: 1000,
     audibleEpoch: 2,
     openAt: 2.09,
@@ -57,6 +58,12 @@ describe('Studio handoff timing', () => {
       fromFrame: 0,
       audibleEpoch: 2.5,
     })
+  })
+
+  it('starts the song from the top on the next whole frame of the clock, as a Play would', () => {
+    const timing = handoffTiming(heldRun(), 2.5 + 0.4 / 48000, 20000)
+    expect(timing?.fromFrame).toBe(0)
+    expect(timing!.audibleEpoch * 48000).toBeCloseTo(120001, 6)
   })
 })
 

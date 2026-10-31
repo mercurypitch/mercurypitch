@@ -22,6 +22,7 @@
 // seek in place is (seek-crossfade.ts): a linear pair sags 3 dB halfway.
 import type { StudioRun, StudioRunTiming } from './run'
 import { runTimelineFrame, STUDIO_RUN_RATE } from './run'
+import { wholeFrameAtOrAfter } from './whole-frame'
 
 export const HANDOFF_SECONDS = 0.03
 /** A handover this close is left to happen: taking it back could catch its crossfade begun. */
@@ -46,8 +47,8 @@ export interface StudioHandoff {
  * held run plays no sooner than `earliest`, and no sooner than its own
  * envelope is fully open, so the two runs agree on every frame they share.
  * A song that now ends before that frame starts again from the top, as Play
- * would. Null when the held run has played its last pass by then: the song
- * ends there.
+ * would, on a whole frame of the clock (whole-frame.ts). Null when the held
+ * run has played its last pass by then: the song ends there.
  */
 export function handoffTiming(
   held: StudioRun,
@@ -59,7 +60,11 @@ export function handoffTiming(
   const frame = Math.ceil(runTimelineFrame(held, start) - 1e-6)
   if (frame >= held.untilFrame) return null
   const fromFrame = frame % held.endFrame
-  if (fromFrame >= endFrame) return { fromFrame: 0, audibleEpoch: start }
+  if (fromFrame >= endFrame)
+    return {
+      fromFrame: 0,
+      audibleEpoch: wholeFrameAtOrAfter(start, held.ctx.sampleRate),
+    }
   return {
     fromFrame,
     audibleEpoch:

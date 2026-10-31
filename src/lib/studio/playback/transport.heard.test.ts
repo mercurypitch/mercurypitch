@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import { smoothHeardTime } from './heard-clock'
 import { heardTime } from './run'
-import { FIRST_HEARD, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { FIRST_HEARD, freshGraphs, LEAD, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -185,9 +185,10 @@ describe('Studio transport heard position', () => {
     await vi.advanceTimersByTimeAsync(33)
     await f.transport.seek(48000, project, [asset])
     // The seek lands past the device callback on the render clock: 10 ms of
-    // baseLatency and 5 ms to schedule, not the 60 ms the speakers trail by.
+    // baseLatency and 5 ms to schedule, on a whole frame, not the 60 ms the
+    // speakers trail by.
     const [, at] = f.graph.seek.mock.calls[0]
-    expect(at).toBeCloseTo(1.015, 9)
+    expect(at).toBeCloseTo(1 + LEAD, 9)
     expect(f.transport.getState().playheadFrame).toBe(48000)
     await vi.advanceTimersByTimeAsync(33)
     expect(f.transport.getState().playheadFrame).toBe(48000)
@@ -197,7 +198,7 @@ describe('Studio transport heard position', () => {
     expect(
       framesOff(
         f.transport.getState().playheadFrame,
-        48000 + (1.2 - 0.06 - (1.015 + 0.02)) * 48000,
+        48000 + (1.2 - 0.06 - (1 + LEAD + 0.02)) * 48000,
       ),
     ).toBeLessThanOrEqual(1)
     await finish(f)

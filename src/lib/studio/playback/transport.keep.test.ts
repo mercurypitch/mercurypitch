@@ -8,7 +8,7 @@ import { KEEP_HIDDEN_MS, KEEP_IDLE_MS } from './kept-run'
 import { PlaybackContext } from './playback.test-fixtures'
 import { setPlaybackChoice, TIER_PROFILES } from './playback-quality'
 import { RUN_OPEN_SECONDS } from './run'
-import { envelopeOf, FIRST_HEARD, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
+import { envelopeOf, FIRST_HEARD, freshGraphs, LEAD, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -89,21 +89,22 @@ describe('Studio transport kept run', () => {
     expect(f.cache.acquire).toHaveBeenCalledOnce()
     expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
     // New sources a device callback (10 ms) and 5 ms of scheduling ahead,
-    // heard 20 ms of chain and master latency later through the run's attack.
+    // on a whole frame, heard 20 ms of chain and master latency later
+    // through the run's attack.
     expect(f.graph.resume).toHaveBeenCalledExactlyOnceWith(
       paused,
-      expect.closeTo(3.015, 9),
+      expect.closeTo(3 + LEAD, 9),
       false,
     )
     expect(openingEnds(envelopeOf(f.graph).gain).at(-1)).toBeCloseTo(
-      3.035 + RUN_OPEN_SECONDS,
+      3 + LEAD + 0.02 + RUN_OPEN_SECONDS,
       9,
     )
     expect(f.graph.scheduleUntil).toHaveBeenLastCalledWith(5)
     expect(createLaneMeter).toHaveBeenLastCalledWith(
       f.ctx.liveContext,
       expect.any(Map),
-      expect.closeTo(3.035, 9),
+      expect.closeTo(3 + LEAD + 0.02, 9),
     )
     expect(f.transport.getState()).toMatchObject({
       playing: true,

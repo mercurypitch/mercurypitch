@@ -5,7 +5,7 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import { RUN_SETTLE_SECONDS } from './run'
-import { crossfadeRamps, envelopeOf, FIRST_HEARD, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, FIRST_HEARD, freshGraphs, LEAD, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's first run: its sources start at GRAPH_EPOCH, and frame 0
 // is heard at FIRST_HEARD, after 20 ms of lane and master latency.
@@ -76,10 +76,10 @@ describe('Studio transport re-plan', () => {
     expect(graphs[0].replan).toHaveBeenCalledOnce()
     const [plan, earliest] = graphs[0].replan.mock.calls[0]
     // The whole song's plan, as the graph was built from: a device callback
-    // (10 ms) and 5 ms of scheduling ahead of the clock.
+    // (10 ms) and 5 ms of scheduling ahead of the clock, on a whole frame.
     expect(plan.startFrame).toBe(0)
     expect(plan.endFrame).toBe(48100)
-    expect(earliest).toBeCloseTo(1.015, 9)
+    expect(earliest).toBeCloseTo(1 + LEAD, 9)
     expect(graphs[0].scheduleUntil).toHaveBeenLastCalledWith(3)
     expect(crossfadeRamps(envelopeOf(graphs[0]).gain)).toEqual([])
     expect(f.transport.getState()).toMatchObject({

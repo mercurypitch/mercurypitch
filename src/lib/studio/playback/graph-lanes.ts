@@ -26,6 +26,7 @@ import type { StudioLaneTimeline, StudioPlanned, StudioScheduled, } from './lane
 import { laneCycle, laneTimeline, plannedSegments } from './lane-timeline'
 import type { StudioFadeShape, StudioLaneInput, StudioSourceSet, } from './seek-crossfade'
 import { closeStudioSourceSet, emptyStudioSourceSet, openStudioSourceSet, retireStudioSourceSet, stopStudioSource, } from './seek-crossfade'
+import { onWholeFrame, wholeFrameAtOrAfter } from './whole-frame'
 
 /** A chain a lane is crossing away from, kept until its output has faded out. */
 export interface StudioRetiringChain {
@@ -293,10 +294,17 @@ const LATE_SOURCE_FRAMES = 256
  * refuses: the Play fails with nothing heard. So a source due behind the
  * clock, or too near it to finish scheduling first, starts a little past
  * it instead, whole, its edge envelope moved with it. Started in the past,
- * it would have played that late anyway.
+ * it would have played that late anyway. Either way on a frame, never
+ * between two (whole-frame.ts): a late one on the next whole frame past
+ * that margin, never back toward the clock, and one on time on its own,
+ * which float noise in its time is all that can hold it off.
  */
 function sourceStart(ctx: BaseAudioContext, due: number): number {
-  return Math.max(due, ctx.currentTime + LATE_SOURCE_FRAMES / ctx.sampleRate)
+  const rate = ctx.sampleRate
+  const soonest = ctx.currentTime + LATE_SOURCE_FRAMES / rate
+  return due >= soonest
+    ? onWholeFrame(due, rate)
+    : wholeFrameAtOrAfter(soonest, rate)
 }
 
 /** Start one scheduled source on the lane's newest set. */

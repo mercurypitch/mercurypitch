@@ -60,6 +60,14 @@ describe('Studio seek', () => {
     expect(seekEarliest(quiet as AudioContext)).toBeCloseTo(2.015, 9)
   })
 
+  it('starts on the next whole frame of the clock, so what it starts lands on samples: 661.5 frames of lead at 44.1 kHz start 662 frames out', () => {
+    const cd = { currentTime: 2, baseLatency: 0.01, sampleRate: 44100 }
+    expect(seekEarliest(cd as AudioContext) * 44100).toBeCloseTo(
+      2 * 44100 + 662,
+      6,
+    )
+  })
+
   it('moves every run to the frame from one moment heard, so their handover stays on the same frames, and restarts their meters there', () => {
     const ctx = { currentTime: 1, sampleRate: 48000 }
     const quick = fakeRun(ctx, { latency: 0.02 })
@@ -68,7 +76,10 @@ describe('Studio seek', () => {
     expect(seekRuns(asRuns(quick, slow), 48000)).toBe(true)
 
     // The slower chain sets the moment: 15 ms of lead plus its 50 ms.
-    expect(slow.graph.seek).toHaveBeenCalledExactlyOnceWith(48000, 1.015)
+    expect(slow.graph.seek).toHaveBeenCalledExactlyOnceWith(
+      48000,
+      expect.closeTo(1.015, 12),
+    )
     expect(quick.graph.seek).toHaveBeenCalledExactlyOnceWith(
       48000,
       expect.closeTo(1.045, 9),
@@ -193,5 +204,13 @@ describe('Studio seek', () => {
     })
     // A song that now ends before the frame starts from the top.
     expect(seekTiming(held, 96000, 120000, 1.3).fromFrame).toBe(0)
+  })
+
+  it('starts a run built for a seek on the next whole frame of the clock', () => {
+    const ctx = { currentTime: 1, sampleRate: 48000 }
+    const held = fakeRun(ctx, { latency: 0.02 }) as unknown as StudioRun
+    // Asked for 0.4 of a frame past 1.3 s: its first whole frame is the next.
+    const timing = seekTiming(held, 144000, 120000, 1.3 + 0.4 / 48000)
+    expect(timing.audibleEpoch * 48000).toBeCloseTo(62401, 6)
   })
 })

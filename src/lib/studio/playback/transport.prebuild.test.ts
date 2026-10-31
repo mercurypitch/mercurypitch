@@ -5,7 +5,7 @@ import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import { KEEP_IDLE_MS } from './kept-run'
 import { RUN_SETTLE_SECONDS } from './run'
-import { envelopeOf, freshGraphs, transportFixture, } from './transport.test-fixtures'
+import { envelopeOf, freshGraphs, LEAD, transportFixture, } from './transport.test-fixtures'
 
 afterEach(() => {
   setStudioWorkingBytes(null)
@@ -79,10 +79,11 @@ describe('Studio transport prebuilt run', () => {
     expect(f.buildGraph).toHaveBeenCalledOnce()
     expect(f.cache.acquire).toHaveBeenCalledTimes(2)
     expect(f.measureLatencies).toHaveBeenCalledTimes(measured)
-    // As a kept run starts: a device callback and 5 ms of scheduling out.
+    // As a kept run starts: a device callback and 5 ms of scheduling out,
+    // on a whole frame.
     expect(f.graph.resume).toHaveBeenCalledExactlyOnceWith(
       0,
-      expect.closeTo(3.015, 9),
+      expect.closeTo(3 + LEAD, 9),
       false,
     )
     expect(heard(f, envelope)).toBe(true)

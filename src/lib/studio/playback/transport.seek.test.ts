@@ -5,12 +5,10 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import { RUN_LOOKAHEAD_SECONDS, STUDIO_RUN_RATE } from './run'
-import { crossfadeRamps, envelopeOf, freshGraphs, openingEnds, transportFixture, } from './transport.test-fixtures'
+import { crossfadeRamps, envelopeOf, freshGraphs, LEAD, openingEnds, transportFixture, } from './transport.test-fixtures'
 
 // The fixture's chains: 10 ms of lane and 10 ms of master latency.
 const LATENCY = 0.02
-// Its context reports no device callback: a seek allows 10 ms, and 5 ms to schedule.
-const LEAD = 0.015
 
 /** The song with its clip moved: an edit only a new graph can play. */
 function movedClip(
@@ -104,7 +102,10 @@ describe('Studio transport seek', () => {
 
     await f.transport.seek(4800, f.project, [f.asset])
 
-    expect(f.graph.seek).toHaveBeenCalledExactlyOnceWith(4800, 0.5 + LEAD)
+    expect(f.graph.seek).toHaveBeenCalledExactlyOnceWith(
+      4800,
+      expect.closeTo(0.5 + LEAD, 12),
+    )
     expect(f.graph.scheduleUntil).toHaveBeenLastCalledWith(
       0.5 + RUN_LOOKAHEAD_SECONDS,
     )
@@ -211,7 +212,10 @@ describe('Studio transport seek', () => {
     await vi.waitFor(() => expect(f.cache.acquire).toHaveBeenCalledTimes(2))
 
     const seeking = f.transport.seek(48000, edited, [f.asset])
-    expect(graphs[0].seek).toHaveBeenCalledExactlyOnceWith(48000, 1 + LEAD)
+    expect(graphs[0].seek).toHaveBeenCalledExactlyOnceWith(
+      48000,
+      expect.closeTo(1 + LEAD, 12),
+    )
     expect(faded(envelopeOf(graphs[0]))).toBe(false)
     expect(f.transport.getState()).toMatchObject({
       playing: true,
