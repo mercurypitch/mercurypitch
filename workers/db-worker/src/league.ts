@@ -473,6 +473,7 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
         .first<{ id: string }>()
 
   let standings: LeagueMe['standings'] = []
+  let cohortSize = 0
   let myPoints = 0
   let myRank: number | null = null
   if (cohort) {
@@ -489,6 +490,10 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
     // cut from it names the person. Such a row is keyed by its membership id
     // instead: a random UUID nothing else exposes, new each week. The client
     // only compares this field with its own id, to mark the "you" row.
+    //
+    // A block (blocks.ts) hides a name, so only a row that shows one is
+    // hidden. A pseudonym row stays: dropping it would tie the account just
+    // blocked to the pseudonym, its points and its place.
     const { results } = await env.DB.prepare(
       `SELECT m.points AS points,
               CASE
@@ -500,7 +505,16 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
                 WHEN m.userId = ?2 OR COALESCE(p.leaderboardOptIn, 0) = 1
                   THEN COALESCE(p.displayName, 'Singer-' || substr(m.userId, 1, 6))
                 ELSE 'Singer-' || substr(m.id, 1, 6)
-              END AS displayName
+              END AS displayName,
+              CASE
+                WHEN m.userId <> ?2 AND COALESCE(p.leaderboardOptIn, 0) = 1
+                  THEN EXISTS (
+                    SELECT 1 FROM userBlocks b
+                    WHERE (b.blockerId = ?2 AND b.blockedId = m.userId)
+                       OR (b.blockerId = m.userId AND b.blockedId = ?2)
+                  )
+                ELSE 0
+              END AS hidden
        FROM leagueMembership m
        JOIN users u ON u.id = m.userId AND u.suspendedAt IS NULL
        LEFT JOIN userProfiles p ON p.id = m.userId
@@ -508,17 +522,26 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
        ORDER BY m.points DESC, m.userId ASC`,
     )
       .bind(cohort.id, userId)
-      .all<{ userId: string; points: number; displayName: string }>()
+      .all<{
+        userId: string
+        points: number
+        displayName: string
+        hidden: number
+      }>()
     const rows = results ?? []
-    standings = rows.map((r, i) => ({
+    const placed = rows.map((r, i) => ({
       userId: r.userId,
       displayName: r.displayName,
       points: r.points,
       rank: i + 1,
     }))
-    const mine = standings.find((s) => s.userId === userId)
+    const mine = placed.find((s) => s.userId === userId)
     myPoints = mine?.points ?? 0
     myRank = mine?.rank ?? null
+    cohortSize = placed.length
+    // A singer blocked either way is left out of the list, places kept, as
+    // the boards do (blocks.ts). The cut reads the whole cohort, untouched.
+    standings = placed.filter((_, i) => rows[i].hidden !== 1)
   }
 
   return {
@@ -538,7 +561,7 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
       : undefined,
     points: myPoints,
     rank: myRank,
-    cohortSize: standings.length,
+    cohortSize,
     standings: standings.slice(0, 50),
   }
 }

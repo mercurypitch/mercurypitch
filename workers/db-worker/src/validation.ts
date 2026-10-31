@@ -4,6 +4,7 @@
 // worker — and its Cloudflare ambient types — into their compilation.
 
 import { validatePromoWrite } from './promo-rules'
+import { publicTextError } from './public-text'
 
 type Row = Record<string, unknown>
 
@@ -13,6 +14,9 @@ type Row = Record<string, unknown>
  * numbers. Returns an error message, or null when the body is acceptable.
  */
 export function validateWrite(entity: string, body: Row): string | null {
+  // Names and titles other singers read, through the name filter.
+  const textError = publicTextError(entity, body)
+  if (textError !== null) return textError
   // Admin-only, but the dates decide when a code hands out credits: one that
   // does not parse would otherwise never expire.
   if (entity === 'promoCodes') return validatePromoWrite(body)

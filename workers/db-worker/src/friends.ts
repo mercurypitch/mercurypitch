@@ -28,6 +28,8 @@
 // account that getting in did not.
 
 import type { AuthUser, Env } from './auth'
+import { blockBetween } from './blocks'
+import { isRegistered } from './registered'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -36,6 +38,7 @@ const MAX_REQUESTS = 100
 
 const ACCOUNT_REQUIRED = 'Create an account to add friends'
 const TARGET_ACCOUNT_REQUIRED = 'That singer hasn’t created an account yet'
+const UNBLOCK_FIRST = 'You blocked this singer. Unblock them first.'
 
 // Crockford base32 minus the ambiguous glyphs (I, L, O, U) — no confusing 0/O
 // or 1/I when someone reads a code aloud, and no accidental English words.
@@ -81,16 +84,6 @@ async function readTargetId(
   return { userId }
 }
 
-/** True when this account is a real one, not a lazily provisioned device id. */
-async function isRegistered(userId: string, env: Env): Promise<boolean> {
-  const row = await env.DB.prepare(
-    'SELECT authProvider FROM users WHERE id = ?',
-  )
-    .bind(userId)
-    .first<{ authProvider: string }>()
-  return row != null && row.authProvider !== 'anonymous'
-}
-
 /**
  * The 403 that gates every friend route except removing: a refusal when the
  * caller is still anonymous, null when they may proceed.
@@ -107,6 +100,29 @@ async function accountRequired(
 ): Promise<Response | null> {
   if (await isRegistered(auth.userId, env)) return null
   return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
+}
+
+/**
+ * The refusal when a block stands between two singers (blocks.ts), or null.
+ * The blocker is told why, since they chose it; the singer they blocked is
+ * answered as if nobody were there, the same words the route uses for that,
+ * so a refusal never tells someone who blocked them.
+ */
+async function refusedByBlock(
+  auth: AuthUser,
+  otherId: string,
+  env: Env,
+  respond: Respond,
+  nobody: string,
+): Promise<Response | null> {
+  const block = await blockBetween(env.DB, auth.userId, otherId)
+  if (block === 'blocked-them') {
+    return respond({ error: UNBLOCK_FIRST }, { status: 409 })
+  }
+  if (block === 'blocked-by-them') {
+    return respond({ error: nobody }, { status: 404 })
+  }
+  return null
 }
 
 /**
@@ -224,6 +240,14 @@ export async function handleFriendRedeem(
   if (target.id === auth.userId) {
     return respond({ error: 'That’s your own code' }, { status: 400 })
   }
+  const blocked = await refusedByBlock(
+    auth,
+    target.id,
+    env,
+    respond,
+    'No one found for that code',
+  )
+  if (blocked) return blocked
 
   const now = new Date().toISOString()
   await env.DB.batch(linkStatements(env, auth.userId, target.id, now))
@@ -279,6 +303,14 @@ export async function handleFriendRequest(
   if (exists.authProvider === 'anonymous') {
     return respond({ error: TARGET_ACCOUNT_REQUIRED }, { status: 403 })
   }
+  const blocked = await refusedByBlock(
+    auth,
+    target,
+    env,
+    respond,
+    'No such singer',
+  )
+  if (blocked) return blocked
 
   const now = new Date().toISOString()
 
@@ -349,6 +381,14 @@ export async function handleFriendAccept(
   if (!(await isRegistered(requester, env))) {
     return respond({ error: TARGET_ACCOUNT_REQUIRED }, { status: 403 })
   }
+  const blocked = await refusedByBlock(
+    auth,
+    requester,
+    env,
+    respond,
+    'No request from that singer',
+  )
+  if (blocked) return blocked
 
   await env.DB.batch(
     linkStatements(env, auth.userId, requester, new Date().toISOString()),
