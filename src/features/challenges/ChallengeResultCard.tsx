@@ -18,6 +18,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
 import { closeChallengeStage, openChallengeStage, openSingingZen, } from '@/stores/ui-store'
 import { challengeResultArt } from './challenge-result-art'
+import { challengeResultCopy } from './challenge-result-copy'
 import type { ChallengeResult } from './challenge-result-store'
 import { clearChallengeResult, discardChallengeVoiceCapture, finalizingResult, lastChallengeResult, } from './challenge-result-store'
 import { challengeToZenExercise } from './challenge-stage-model'
@@ -26,28 +27,8 @@ import { beginWeeklyAttempt } from './weekly-attempt'
 import { getActiveWeekly } from './weekly-service'
 import { keepWeeklyLegendVoiceTake } from './weekly-voice-take'
 
-/** Headline + line per tier, pure for tests. */
-export function challengeResultCopy(result: ChallengeResult): {
-  headline: string
-  line: string
-} {
-  if (result.tier === 'beat-founder') {
-    return {
-      headline: 'You beat the Founder',
-      line: `${result.score}% on "${result.title}" — the top of the mountain just changed hands.`,
-    }
-  }
-  if (result.tier === 'completed') {
-    return {
-      headline: 'Legend complete',
-      line: `${result.score}% on "${result.title}" — target was ${result.targetScore}%. That run is on the board.`,
-    }
-  }
-  return {
-    headline: 'Not this time',
-    line: `You reached ${result.score}% — the Legend asks for ${result.targetScore}%. Every run trains the climb.`,
-  }
-}
+// The words moved to their own module; kept importable from here.
+export { challengeResultCopy } from './challenge-result-copy'
 
 export const ChallengeResultCard: Component = () => {
   const [voiceKeepState, setVoiceKeepState] = createSignal<

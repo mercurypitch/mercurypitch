@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { needsSignIn } from '@/db/services/auth-service'
 import { saveSessionRecord } from '@/db/services/session-service'
-import { clearChallengeResult, lastChallengeResult, } from '@/features/challenges/challenge-result-store'
+import { clearChallengeResult, clearRoomChallengeResult, finalizingResult, lastChallengeResult, roomChallengeResult, roomFinalizing, } from '@/features/challenges/challenge-result-store'
 import { practicePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, clearWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, parseTargetNotes, } from '@/features/challenges/weekly-service'
@@ -35,6 +35,7 @@ vi.mock('@/stores/notifications-store', () => ({
 afterEach(() => {
   clearWeeklyAttempt()
   clearChallengeResult()
+  clearRoomChallengeResult()
 })
 
 describe('weeklyTier', () => {
@@ -99,6 +100,59 @@ describe('recordWeeklyAttempt', () => {
     await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
 
     expect(activeTab()).toBe(TAB_HOME)
+  })
+
+  it("hands a native room's result to the room, never to the app's card", async () => {
+    // The native Legend room draws its own result inside the room; the
+    // app's card, which reads lastChallengeResult and finalizingResult,
+    // must not draw over it.
+    beginWeeklyAttempt({
+      challengeId: 'w-room',
+      title: 'Vincero',
+      exercise: 'sight-singing',
+      targetScore: 70,
+      presenter: 'native-room',
+    })
+    const seen: boolean[] = []
+    vi.mocked(saveSessionRecord).mockImplementationOnce(async () => {
+      seen.push(roomFinalizing(), finalizingResult())
+      return {} as never
+    })
+
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 80 }),
+    ).toBe(true)
+    // Saving said so to the room alone.
+    expect(seen).toEqual([true, false])
+    expect(roomChallengeResult()).toMatchObject({
+      challengeId: 'w-room',
+      score: 80,
+      tier: 'completed',
+      presenter: 'native-room',
+    })
+    expect(lastChallengeResult()).toBeNull()
+    expect(roomFinalizing()).toBe(false)
+  })
+
+  it("leaves a native room's failed save to the room, with no toast", async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w-room-fail',
+      title: 'Vincero',
+      exercise: 'sight-singing',
+      targetScore: 70,
+      presenter: 'native-room',
+    })
+    vi.mocked(saveSessionRecord).mockResolvedValueOnce(null)
+    vi.mocked(showNotification).mockClear()
+    vi.mocked(showActionNotification).mockClear()
+
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 80 }),
+    ).toBe(true)
+    expect(showNotification).not.toHaveBeenCalled()
+    expect(showActionNotification).not.toHaveBeenCalled()
+    expect(roomFinalizing()).toBe(false)
+    expect(roomChallengeResult()).toBeNull()
   })
 
   it('consumes exactly one matching run, then disarms', async () => {

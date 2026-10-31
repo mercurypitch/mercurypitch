@@ -72,6 +72,9 @@ export async function grantBoardConsent(): Promise<boolean> {
     // leaderboard-service so both paths mint the identical name.
     const profile = await profiles.findById(userId)
     if (getUserId() !== userId) return false
+    // Given already: kept as it is, with the date it was given on. Asked
+    // twice, a second write would have moved that date.
+    if (profile?.leaderboardOptIn === true) return true
     if (profile != null) {
       await profiles.update(userId, patch)
     } else {
@@ -93,6 +96,34 @@ export async function grantBoardConsent(): Promise<boolean> {
     }
     // A saved consent belongs to its initiator, not an account selected while
     // the write was pending. The caller must ask that account independently.
+    return getUserId() === userId
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Take the consent back: the singer's name leaves every public board at
+ * once, live boards and past podiums alike (read-time redaction). A singer
+ * with no profile row has never consented, so there is nothing to write.
+ * Returns false when it could not be stored, as `grantBoardConsent` does;
+ * the caller shows the switch as it was.
+ *
+ * The date goes with the flag: consent with no date is not evidence, and
+ * a withdrawal leaves none behind.
+ */
+export async function revokeBoardConsent(): Promise<boolean> {
+  try {
+    const userId = getUserId()
+    const db = await getDb()
+    const profiles = db.getRepository<UserProfile>('userProfiles')
+    const profile = await profiles.findById(userId)
+    if (getUserId() !== userId) return false
+    if (profile == null) return true
+    await profiles.update(userId, {
+      leaderboardOptIn: false,
+      leaderboardOptInAt: null,
+    })
     return getUserId() === userId
   } catch {
     return false
