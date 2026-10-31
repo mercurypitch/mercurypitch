@@ -14,14 +14,19 @@
 //     and the truth "The answer", in words as well as colour. A keycap
 //     means nothing on a phone: no pad shows one.
 //   - The tap pad ticks under the thumb.
-//   - The answer-mode toggle moves out of the console into "?".
+//   - A sung answer's pad is the room kit's mic, in place of the keys:
+//     still while the question plays, lit with a ring the voice moves,
+//     an outline once the window closes.
+//   - The answer-mode toggle moves out of the console into "?", which
+//     takes it from the stage's props.
 //   - Hairline's loupe stands upright (RoomLoupe.tsx).
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { children, createComponent, onMount, Show } from 'solid-js'
+import { MicButton } from '@/components/room-kit/RoomControls'
 import { IconCheck, IconChevron, IconClose } from '@/features/ear-lab/ear-icons'
-import type { EndPlateProps, ModeToggleProps, PadsProps, PlayPadProps, StagePadProps, TapPadProps, } from '@/features/ear-lab/EarStage'
+import type { EndPlateProps, MicPadProps, PadsProps, PlayPadProps, StagePadProps, TapPadProps, } from '@/features/ear-lab/EarStage'
 import type { StageSkin } from '@/features/ear-lab/EarStage'
 import { EndPlate, TapPad } from '@/features/ear-lab/EarStage'
 import { StageSkinContext } from '@/features/ear-lab/EarStage'
@@ -266,6 +271,50 @@ function RoomTapPad(props: TapPadProps): JSX.Element {
   )
 }
 
+/** The word under the mic: where the answer by voice is. */
+function micWord(mic: MicPadProps['mic']): string {
+  switch (mic) {
+    case 'sing':
+      return 'Your turn'
+    case 'done':
+      return 'Closed'
+    case 'wait':
+      return 'Listen first'
+    case 'ready':
+      return 'Ready'
+  }
+}
+
+/** A sung answer: the room kit's mic in place of the keys (the mock-ups'
+ *  "Answering by voice"). A press closes the answer where the drill can
+ *  close it now (Echo's Done); otherwise the mic only shows the voice. */
+function RoomMicPad(props: MicPadProps): JSX.Element {
+  return (
+    <div class={styles.micHost} data-merc="mic" data-mic={props.mic}>
+      <MicButton
+        state={props.mic}
+        level={() => props.level()}
+        pulse={false}
+        disabled={
+          props.disabled === true ||
+          props.onClick === undefined ||
+          props.mic !== 'sing'
+        }
+        label={
+          props.sub === undefined || props.sub === ''
+            ? props.label
+            : `${props.label}, ${props.sub}`
+        }
+        onClick={() => props.onClick?.()}
+        testId="merc-mic"
+      />
+      <span class={styles.micWord} aria-hidden="true">
+        {micWord(props.mic)}
+      </span>
+    </div>
+  )
+}
+
 /** A plate a drill draws for itself, when it gave the room no numbers
  *  to lay out: the web's, as it is. */
 function RoomEndPlate(props: EndPlateProps): JSX.Element {
@@ -276,10 +325,9 @@ function RoomEndPlate(props: EndPlateProps): JSX.Element {
   )
 }
 
-/** Tap or sing: chosen under "?", before the run. */
-function RoomModeToggle(props: ModeToggleProps<string>): JSX.Element {
-  const room = useRoom()
-  onMount(() => room.offerAnswerMode(props))
+/** Tap or sing: chosen under "?", which takes it from the stage's
+ *  answerMode, so the console shows none. */
+function RoomModeToggle(): JSX.Element {
   return null
 }
 
@@ -291,4 +339,5 @@ export const ROOM_SKIN: StageSkin = {
   EndPlate: RoomEndPlate,
   ModeToggle: RoomModeToggle,
   VernierLoupe: RoomLoupe,
+  MicPad: RoomMicPad,
 }

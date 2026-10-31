@@ -222,6 +222,21 @@ And the review's minor items (31 Oct):
 - The practice plate's main button stands over one row: Calibrate, Run
   again and Done.
 
+Answering by voice (31 Oct), brought forward from "Left for later":
+
+- Home, Echo, Span and the Wild Echo, answered by singing, take the room
+  kit's mic in place of the keys. It is still while the question plays
+  ("Listen first"), lit with rings that move with the voice in the answer
+  window ("Your turn"), and an outline once the window closes ("Closed").
+  A press on the lit mic closes the answer, as Done does.
+- The choice of Tap or Sing or play reaches "?" from the stage's props. It
+  used to ride on the idle console, which a station row's run never draws:
+  the run starts as the room opens, before the room's chunk has loaded. So
+  on the phone the choice was never offered.
+- Echo, Span and the Wild Echo remember the choice, as Home always has.
+  Made under "?" mid-run, it takes effect from the next run, so a choice
+  that did not outlast the room would never be used.
+
 ## How each PR is checked
 
 - The repo's checks: `pnpm check`, the native app's `check`, `pnpm arch`,
@@ -236,9 +251,11 @@ And the review's minor items (31 Oct):
 ## Left for later
 
 - **The bench** (`MercBench`, `bench.module.css`) and the station sheet are
-  brass too. The same tokens apply; it is a piece of work of its own.
-- **Answering by voice:** Home, Echo and Span answered by singing take the
-  room kit's mic disc in place of the keys (the mock-up's shared parts).
+  brass too. The same tokens apply; it is a piece of work of its own. Its
+  mock-ups wait on the owner's approval:
+  [Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw),
+  five phones, one of them a proposal to choose Tap or Sing or play on the
+  station's sheet, before the run.
 
 ## Decided after the review (owner, 31 Oct)
 

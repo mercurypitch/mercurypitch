@@ -24,6 +24,7 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { levelFromRms } from '@/components/room-kit/voice-level'
 import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { DegreeSet } from '@/lib/ear/item-bank'
@@ -34,10 +35,12 @@ import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ear-lab-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
+import { answerToggle } from './answer-mode'
 import { useArmingCue } from './arming-cue'
 import { IconMic, IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { ConsoleLink, ConsoleNote, ConsoleStack, ConsoleWarning, EndPlate, MicPad, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { sungMicState } from './PhraseConsole'
 import { useLastCall } from './reveal-pacing'
 import { runSlips } from './slips'
 import type { PlateSlip, RoomBeat, RoomPlate, StageRoom } from './stage-room'
@@ -84,11 +87,6 @@ interface HomeDrillProps {
   copy?: HomeDrillCopy
 }
 
-const MODES: ReadonlyArray<{ id: HomeAnswerMode; label: string }> = [
-  { id: 'tap', label: 'Tap' },
-  { id: 'mic', label: 'Sing or play' },
-]
-
 const BEAT: Record<string, RoomBeat> = {
   idle: 'idle',
   cadence: 'listen',
@@ -114,6 +112,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const copy = props.copy ?? HOME_COPY
   const labelOf = (degree: number): string =>
     degreeLabel(set.degrees.find((d) => d.degree === degree))
+  const answerBy = answerToggle(
+    'How to answer',
+    homeAnswerMode,
+    setHomeAnswerMode,
+  )
   const [micError, setMicError] = createSignal('')
   const [micPending, setMicPending] = createSignal(false)
 
@@ -214,6 +217,14 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   const phase = () => controller.phase()
   const running = () => phase() !== 'idle' && phase() !== 'done'
+  /** The lead pad's word while a run is on: the answer's own word while
+   *  one is due, then the key, the note, and Next at the verdict. */
+  const leadWord = (answering: string): string => {
+    if (phase() === 'answer') return answering
+    if (phase() === 'cadence') return 'The key'
+    if (phase() === 'reveal') return 'Next'
+    return 'The note'
+  }
   const target = () => controller.currentDegree()
   const correct = () => controller.answeredDegree() === target()?.degree
 
@@ -490,6 +501,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   return (
     <EarStage
       drillId={copy.drillId}
+      answerMode={answerBy}
       name={copy.name}
       measures={copy.measures}
       description={copy.description}
@@ -563,12 +575,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 onClick={() => void handleStart()}
               />
               <ConsoleStack>
-                <ModeToggle
-                  label="How to answer"
-                  value={homeAnswerMode()}
-                  options={MODES}
-                  onChange={setHomeAnswerMode}
-                />
+                <ModeToggle {...answerBy} />
                 <Show when={homeAnswerMode() === 'mic'}>
                   <ConsoleNote>
                     Mic mode answers by ear alone (no buttons to luck into) and
@@ -601,25 +608,26 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           <Show
             when={parked()}
             fallback={
-              <PlayPad
-                state={phase() === 'answer' ? 'armed' : 'sounding'}
-                label={
-                  phase() === 'answer'
-                    ? controller.mode() === 'mic'
-                      ? 'Listening'
-                      : 'Your call'
-                    : phase() === 'cadence'
-                      ? 'The key'
-                      : phase() === 'reveal'
-                        ? 'Next'
-                        : 'The note'
+              <Show
+                when={controller.mode() === 'mic'}
+                fallback={
+                  <PlayPad
+                    state={phase() === 'answer' ? 'armed' : 'sounding'}
+                    label={leadWord('Your call')}
+                  />
                 }
-                icon={
-                  controller.mode() === 'mic' && phase() === 'answer' ? (
-                    <IconMic size={20} />
-                  ) : undefined
-                }
-              />
+              >
+                {/* Answered by voice: the web's lamp, the room's mic. */}
+                <MicPad
+                  mic={sungMicState(phase())}
+                  level={() => levelFromRms(f0?.latestLevel() ?? 0)}
+                  state={phase() === 'answer' ? 'armed' : 'sounding'}
+                  label={leadWord('Listening')}
+                  icon={
+                    phase() === 'answer' ? <IconMic size={20} /> : undefined
+                  }
+                />
+              </Show>
             }
           >
             <PlayPad
@@ -629,20 +637,27 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
               onClick={() => controller.next()}
             />
           </Show>
-          <Pads columns={copy.columns} compact label={copy.padLabel}>
-            <For each={set.degrees}>
-              {(degree, i) => (
-                <StagePad
-                  keycap={copy.keycaps?.[i()] ?? String(degree.degree)}
-                  label={degreeLabel(degree)}
-                  sub={degree.solfege}
-                  state={padState(degree.degree)}
-                  disabled={phase() !== 'answer' || controller.mode() === 'mic'}
-                  onClick={() => controller.answer(degree.degree)}
-                />
-              )}
-            </For>
-          </Pads>
+          {/* Answered by voice, the room's mic stands in for the keys (the
+              mock-ups), and its orb shows the answer; the web keeps them,
+              stilled, to show it. */}
+          <Show when={!(EAR_LAB_WITH_MERC && controller.mode() === 'mic')}>
+            <Pads columns={copy.columns} compact label={copy.padLabel}>
+              <For each={set.degrees}>
+                {(degree, i) => (
+                  <StagePad
+                    keycap={copy.keycaps?.[i()] ?? String(degree.degree)}
+                    label={degreeLabel(degree)}
+                    sub={degree.solfege}
+                    state={padState(degree.degree)}
+                    disabled={
+                      phase() !== 'answer' || controller.mode() === 'mic'
+                    }
+                    onClick={() => controller.answer(degree.degree)}
+                  />
+                )}
+              </For>
+            </Pads>
+          </Show>
         </Show>
       )}
       plate={() => (

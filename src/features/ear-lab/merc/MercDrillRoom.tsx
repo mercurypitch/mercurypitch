@@ -37,7 +37,7 @@ import { MercPresence } from '@/components/room-kit/MercPresence'
 import { EngineContext } from '@/contexts/EngineContext'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import { IconClose } from '@/features/ear-lab/ear-icons'
-import type { EarStageProps, ModeToggleProps, } from '@/features/ear-lab/EarStage'
+import type { EarStageProps } from '@/features/ear-lab/EarStage'
 import { StageSkinContext, useStageKeys } from '@/features/ear-lab/EarStage'
 import { InstrumentSkinContext } from '@/features/ear-lab/instrument-skin'
 import { setRevealRule } from '@/features/ear-lab/reveal-pacing'
@@ -301,8 +301,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
   const [helpOpen, setHelpOpen] = createSignal<false | 'help' | 'rulers'>(false)
   const [exitOpen, setExitOpen] = createSignal(false)
   const [calibrating, setCalibrating] = createSignal<(() => void) | null>(null)
-  const [answerMode, setAnswerMode] =
-    createSignal<ModeToggleProps<string> | null>(null)
 
   /** Back to wherever the run was opened from, the new number lit. */
   const leave = (kept: boolean): void => {
@@ -468,7 +466,6 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     running,
     ritual,
     askCalibration,
-    offerAnswerMode: (toggle) => setAnswerMode(() => toggle),
     tapped: () => haptics.tapLight(),
   }
 
@@ -749,7 +746,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                   drillId={props.drillId}
                   measures={props.measures}
                   description={props.description}
-                  answerMode={answerMode()}
+                  answerMode={props.answerMode ?? null}
                   running={running()}
                   rulersFirst={open() === 'rulers'}
                   onClose={() => setHelpOpen(false)}

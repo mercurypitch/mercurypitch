@@ -235,6 +235,25 @@ describe("Home's slip", () => {
   })
 })
 
+describe('Home answered by voice', () => {
+  it("swaps the keys for the room's mic, as tapping keeps them", async () => {
+    setHomeAnswerMode('mic')
+    mountHome()
+    room().again?.()
+    await until('answer')
+    const sung = render(() => stage().console())
+    expect(sung.queryByTestId('ear-stage-pads')).toBeNull()
+    sung.unmount()
+
+    stage().onStop?.()
+    setHomeAnswerMode('tap')
+    room().again?.()
+    await until('answer')
+    const tapped = render(() => stage().console())
+    expect(tapped.getByTestId('ear-stage-pads')).toBeTruthy()
+  })
+})
+
 describe('the sound taken away while a tapped answer is due', () => {
   it('shuts the answer while held, and Resume sounds the same question as a replay', async () => {
     mountHome()

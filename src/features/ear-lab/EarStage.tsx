@@ -24,6 +24,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createComponent, createContext, createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
+import type { MicState } from '@/components/room-kit/mic-state'
 import { EngineContext } from '@/contexts/EngineContext'
 import { activateAudioPlayback, unlockAudio } from '@/lib/audio-unlock'
 import { clickTap, isTapKey, keyTap, pointerTap, TAP_FLASH_MS, } from '@/lib/ear/tap-rule'
@@ -113,6 +114,10 @@ export interface EarStageProps {
   /** What the native room needs beyond the stage's own props. Built
    *  only behind EAR_LAB_WITH_MERC; the web's stage ignores it. */
   room?: StageRoom
+  /** A drill's tap-or-sing choice (answer-mode.ts). The native room
+   *  offers it under "?"; the web's stage ignores it, as the drill puts
+   *  the same toggle on its idle console. */
+  answerMode?: ModeToggleProps<string>
   /** A chip the native room shows under its header while no run is on:
    *  the Field Book's key. The web's bar has the progress line. */
   chip?: () => { label: string; value: string } | null
@@ -301,6 +306,8 @@ export interface StageSkin {
   EndPlate: Component<EndPlateProps>
   ModeToggle: Component<ModeToggleProps<string>>
   VernierLoupe?: Component<VernierLoupeProps>
+  /** A sung answer's pad. Without one, the lead pad draws it. */
+  MicPad?: Component<MicPadProps>
 }
 
 /** Provided by the room only; the web's stage never sees one. */
@@ -527,6 +534,27 @@ export interface PlayPadProps {
 export function PlayPad(props: PlayPadProps): JSX.Element {
   const skin = useContext(StageSkinContext)
   return createComponent(skin?.PlayPad ?? BenchPlayPad, props)
+}
+
+/** A sung answer's pad: the lead pad, and where the answer by voice is
+ *  and how loud. */
+export interface MicPadProps extends PlayPadProps {
+  /** Before the window (ready), open but not the singer's turn (wait),
+   *  the singer's turn (sing), or closed (done): mic-state.ts. */
+  mic: MicState
+  /** The voice's level, 0 to 1, read once a frame while singing. */
+  level: () => number
+}
+
+/** A sung answer's pad. The web draws its lead pad as it always has, the
+ *  mic on it; the room draws the room kit's mic in place of the keys
+ *  (the mock-ups' "Answering by voice"). */
+export function MicPad(props: MicPadProps): JSX.Element {
+  const skin = useContext(StageSkinContext)
+  const room = skin?.MicPad
+  return room === undefined
+    ? createComponent(BenchPlayPad, props)
+    : createComponent(room, props)
 }
 
 function BenchPlayPad(props: PlayPadProps): JSX.Element {

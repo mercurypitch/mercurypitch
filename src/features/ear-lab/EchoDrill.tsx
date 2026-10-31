@@ -21,6 +21,7 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { levelFromRms } from '@/components/room-kit/voice-level'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { ECHO_BANK } from '@/lib/ear/banks'
@@ -31,23 +32,19 @@ import { judgePhrase, phraseMidis, solfegeOf } from '@/lib/ear/phrase'
 import { scorePhraseFree, sungDegrees } from '@/lib/ear/sung-notes'
 import { ECHO_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
+import { earAnswerMode, setEarAnswerMode } from '@/stores/ear-lab-store'
+import type { AnswerMode } from './answer-mode'
+import { answerToggle } from './answer-mode'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
-import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
+import { ConsoleNote, ConsoleStack, ConsoleWarning, MicPad, ModeToggle, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { soundRung } from './ladder-voice'
-import { PhraseConsole, SungStrip } from './PhraseConsole'
+import { PhraseConsole, sungMicState, SungStrip } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 import { useSingCapture } from './use-sing-capture'
 import { useSungAnswer } from './use-sung-answer'
-
-type AnswerMode = 'tap' | 'mic'
-
-const MODES: { id: AnswerMode; label: string }[] = [
-  { id: 'tap', label: 'Tap' },
-  { id: 'mic', label: 'Sing or play' },
-]
 
 /** The phrase's own length; the sung window's ceiling is twice it
  *  plus three seconds (use-sung-answer). */
@@ -66,7 +63,11 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   const [sounding, setSounding] = createSignal(0)
   /** The cadence's chord sounding, 1-based; 0 for none. */
   const [cadence, setCadence] = createSignal(0)
-  const [answerMode, setAnswerMode] = createSignal<AnswerMode>('tap')
+  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  const answerMode = (): AnswerMode => earAnswerMode('echo')
+  const setAnswerMode = (mode: AnswerMode): void =>
+    setEarAnswerMode('echo', mode)
+  const answerBy = answerToggle('Answer by', answerMode, setAnswerMode)
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-echo-drill')
   /** Bumped by every silencing. A sound notes it as it starts and stops
@@ -304,14 +305,10 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
       }}
       onStart={() => void handleStart()}
       runMode={() => (sungRun() ? 'sung answers' : 'rating run')}
+      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
-          <ModeToggle
-            label="Answer by"
-            value={answerMode()}
-            options={MODES}
-            onChange={setAnswerMode}
-          />
+          <ModeToggle {...answerBy} />
           <Show when={answerMode() === 'mic'}>
             <ConsoleNote>
               Sing or play the phrase back at your own pace once it has sounded:
@@ -346,7 +343,9 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
               level={sung.level()}
               listening={phase() === 'answer'}
             />
-            <PlayPad
+            <MicPad
+              mic={sungMicState(phase())}
+              level={() => levelFromRms(sung.level())}
               label={listeningPad().label}
               sub={listeningPad().sub}
               keycap="Space"

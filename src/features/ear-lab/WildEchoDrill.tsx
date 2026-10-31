@@ -14,6 +14,7 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { levelFromRms } from '@/components/room-kit/voice-level'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { guessRate } from '@/lib/ear/drills'
@@ -21,25 +22,21 @@ import type { PhraseVerdict } from '@/lib/ear/phrase'
 import { judgePhrase } from '@/lib/ear/phrase'
 import { scorePhraseFree, sungDegrees } from '@/lib/ear/sung-notes'
 import { keyLabel, solfegeOfDegree, solfegeOfPhrase, WILD_DRILLS, wildBankItem, } from '@/lib/ear/wild'
+import { earAnswerMode, setEarAnswerMode } from '@/stores/ear-lab-store'
+import type { AnswerMode } from './answer-mode'
+import { answerToggle } from './answer-mode'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
-import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
+import { ConsoleNote, ConsoleStack, ConsoleWarning, MicPad, ModeToggle, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import { soundRung } from './ladder-voice'
-import { PhraseConsole, SungStrip } from './PhraseConsole'
+import { PhraseConsole, sungMicState, SungStrip } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 import { useSingCapture } from './use-sing-capture'
 import { useSungAnswer } from './use-sung-answer'
 import { useWildPlayback } from './wild-playback'
 import type { WildDrillProps } from './WildHomeDrill'
-
-type AnswerMode = 'tap' | 'mic'
-
-const MODES: { id: AnswerMode; label: string }[] = [
-  { id: 'tap', label: 'Tap' },
-  { id: 'mic', label: 'Sing or play' },
-]
 
 export const WILD_ECHO_SING_ID = 'wild-echo-sing'
 
@@ -55,7 +52,11 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
     { buffer: stems.instrumental, gain: 0.3 },
   ]
   const playback = useWildPlayback()
-  const [answerMode, setAnswerMode] = createSignal<AnswerMode>('tap')
+  // Remembered, as Home's is: the room offers it under "?" mid-run.
+  const answerMode = (): AnswerMode => earAnswerMode('wild-echo')
+  const setAnswerMode = (mode: AnswerMode): void =>
+    setEarAnswerMode('wild-echo', mode)
+  const answerBy = answerToggle('Answer by', answerMode, setAnswerMode)
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-wild-echo-drill')
   /** The plant's root, the octave below middle C (wild-playback). */
@@ -249,14 +250,10 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
       }}
       onStart={() => void handleStart()}
       runMode={() => (sungRun() ? 'sung answers' : 'rating run')}
+      answerMode={answerBy}
       idleAside={
         <ConsoleStack>
-          <ModeToggle
-            label="Answer by"
-            value={answerMode()}
-            options={MODES}
-            onChange={setAnswerMode}
-          />
+          <ModeToggle {...answerBy} />
           <Show when={answerMode() === 'mic'}>
             <ConsoleNote>
               Sing or play the phrase back at your own pace once it has sounded:
@@ -293,7 +290,9 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
               level={sung.level()}
               listening={phase() === 'answer'}
             />
-            <PlayPad
+            <MicPad
+              mic={sungMicState(phase())}
+              level={() => levelFromRms(sung.level())}
               label={listeningPad().label}
               sub={listeningPad().sub}
               keycap="Space"

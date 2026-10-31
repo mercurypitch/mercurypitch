@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { armSprintSegment, calibrationHistory, completeCalibrationRun, completeSprint, disarmSprintSegment, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, takeSprintRunLength, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
+import { armSprintSegment, calibrationHistory, completeCalibrationRun, completeSprint, disarmSprintSegment, earAnswerMode, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAnswerMode, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, takeSprintRunLength, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -320,6 +320,20 @@ describe('the instrument card', () => {
     setEarInfoOpen('hairline', true)
     resetEarLabStore()
     expect(earInfoOpen('hairline')).toBe(false)
+  })
+})
+
+describe('the answer mode', () => {
+  it('is Tap until a drill is sung, and remembers per drill', () => {
+    expect(earAnswerMode('echo')).toBe('tap')
+    setEarAnswerMode('echo', 'mic')
+    expect(earAnswerMode('echo')).toBe('mic')
+    expect(earAnswerMode('span')).toBe('tap')
+    expect(
+      JSON.parse(localStorage.getItem('mercurypitch_ear_answer_modes') ?? '{}'),
+    ).toEqual({ echo: 'mic' })
+    resetEarLabStore()
+    expect(earAnswerMode('echo')).toBe('tap')
   })
 })
 
