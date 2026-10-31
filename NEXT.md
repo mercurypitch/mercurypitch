@@ -2449,3 +2449,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   https://github.com/mercurypitch/mercurypitch/blob/feat/lesson-04-films/lesson-04/film-04.mp4
   FILM-05: as soon as it renders with clean seams, push it to the same branch the same way (it is ~120 MiB), so it
   is off the machine before the critic reads it; README row for it; then SendUserFile on SHIP.
+- 16:03 watcher bas6ndkpu expired (no failures; Q3 done m12-blue-in, m09-orange-in, m09-orange; m08-orange 1890/2008; m12-orange 3750/9357, m12-blue 3270/9326). Re-armed as by7dc2jbd (to ~18:02). / 552 MB free, shm 2.1 GB.
