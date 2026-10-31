@@ -1637,7 +1637,7 @@ const AppShell: Component<AppProps> = (props) => {
     isPlaying,
     isPaused,
     editorIsPlaying,
-    activeTab,
+    singingOnScreen: () => activeTab() === TAB_SINGING,
   })
 
   const {

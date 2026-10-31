@@ -94,7 +94,7 @@ describe('the frame loop, while Merc sings', () => {
         isPlaying: playing,
         isPaused: () => false,
         editorIsPlaying: () => false,
-        activeTab: () => 'singing',
+        singingOnScreen: () => true,
       })
     })
     const frame = (): void => {
