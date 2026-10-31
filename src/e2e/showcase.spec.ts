@@ -48,7 +48,11 @@ import { answeredPlanSeed } from './helpers/plan-seed'
 
 test.use({
   launchOptions: {
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    args: [
+      '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader',
+      '--mute-audio',
+    ],
   },
 })
 
