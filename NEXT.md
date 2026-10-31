@@ -2219,3 +2219,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   get_session rate_limit is "allowed". Save its text verbatim to review/film-03/REPORT.md; LEDGER row 32;
   DECISIONS triage; SHIP -> DELIVERY (#207) from l4entr/DELIVERY.draft.md, ONE MORE PASS -> polish round 3.
   FILM2's item 2 (end card held 4.1 s, 5 s asked) and the m12 stagger ride with the re-voice (owner).
+- 00:16 check-in: film-03 at frame ~21010/29024 (piece 15/20, 65%) after 1 h 27 m, no errors; memory 9.0 GB
+  used of 16 (s12-s13 next, where renderers peak); / 912 MB free. Watcher b478or7o3 still armed (its 2 h
+  tool limit ends ~00:49: re-arm wait-l4.sh film-03 <log size> 1200). If the container restarts: pieces are on
+  disk under $S/l4film03proj/renders/.hf-segments, so warm Chrome, then RESUME=1 WORKERS=2 render-l4.sh.
