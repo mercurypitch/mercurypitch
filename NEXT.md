@@ -2291,3 +2291,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   captions/chapters/script-md/board-clock, clock-lint s12-s16, end-card stills (s16 4.5-6.2, hosts alive
   to 484.7) + floor on new passes, remove DECISIONS 135's "still to check" lines as they pass, full check,
   freeze l4film04proj, render film-04.
+- 04:2x captions.py/chapters.py/script-md.py re-run (only the end changed: last caption to 8:04.446, SCRIPT.md 8:04;
+  chapters unchanged; before copies in l4entr/polish3/lead/before-text/); clock-lint silent on s09/s12/s13/s16.
+  Watcher: background Bash bmd0zvild (2 h, ends ~06:20) waits for both "end m12-* exit" lines in passes.status
+  (re-arm it, or a 30 min Monitor, if it expires first; passes due ~06:40-07:00). Extract cache note: HF's own GC
+  (2 GiB cap, 1 h min age, LRU) evicts the stale m12 frame dirs (/dev/shm/hyperframes-extract-cache-0, 4.4 GB)
+  after the first extraction of film-04, and its key includes mtime+size, so no stale-frame risk; nothing to delete.

@@ -1,6 +1,6 @@
 # Script (voiced): Find Your Pitch, Lesson 4, "The major scale and home"
 
-Generated from `script.json` and `cues.json` by `tools/script-md.py`. Running time 8:03.
+Generated from `script.json` and `cues.json` by `tools/script-md.py`. Running time 8:04.
 Times are film time (m:ss.s). Scene headings follow `assets/scenes.js`. The approved script is SCRIPT-DRAFT.md until the film documents move to docs/plans/find-your-pitch/lessons/04-major-scale/; this file is its voiced clock. Words are spelled for the voice ("doh, ray, mee");
 captions and the picture write them as on screen ("do, re, mi").
 
