@@ -28,6 +28,7 @@ import { handleNewsletterRoute } from './newsletter'
 import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
+import { handleBlocks, shareVisible, visibleShareSql, withoutHidden, } from './blocks'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { sweepFreeSongEmails } from './free-song-email'
@@ -41,9 +42,11 @@ import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeague
 import { cleanMirrorMetrics, lessonAnswerInBounds } from './mirror-metrics'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
+import { handleModerationAdmin, handleReport } from './reports'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
 import { handlePremiumBackgroundRequest } from './premium-backgrounds'
 import { handleScoreVisibility } from './score-visibility'
+import { AUTHORED_TABLES, authorFor, withProfileAuthors } from './share-authors'
 import { resolveSupporterFeatureAccess } from './supporter-feature-access'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
@@ -309,6 +312,7 @@ async function isAdmin(request: Request, env: Env): Promise<boolean> {
  * response. Mutates q.filters for 'user' tables.
  */
 function scopeRead(
+  entity: string,
   def: TableDef,
   q: ListQuery,
   auth: AuthUser | null,
@@ -322,12 +326,19 @@ function scopeRead(
       return {}
     }
     case 'shared': {
+      // Somebody else's share shows while it is public, its owner is not
+      // suspended, and no block stands between the two of them (blocks.ts).
+      // Your own always shows to you.
+      const visible = visibleShareSql(entity, auth?.userId ?? null)
       if (auth)
         return {
-          clause: '("isPublic" = 1 OR "userId" = ?)',
-          binds: [auth.userId],
+          clause: `("userId" = ? OR ("isPublic" = 1 AND ${visible.clause}))`,
+          binds: [auth.userId, ...visible.binds],
         }
-      return { clause: '"isPublic" = 1', binds: [] }
+      return {
+        clause: `("isPublic" = 1 AND ${visible.clause})`,
+        binds: visible.binds,
+      }
     }
     case 'owner': {
       // A profile is public BY ID (handleGetById masks it to public columns),
@@ -398,6 +409,7 @@ function hiddenReadColumn(
   if (admin || def.access === 'user') return null
   for (const col of columns) {
     if (def.privateCols?.includes(col) === true) return col
+    if (def.shownNotStoredCols?.includes(col) === true) return col
     if (def.publicCols !== undefined && !def.publicCols.includes(col)) {
       return col
     }
@@ -520,7 +532,7 @@ async function handleList(
   const q = parseListQuery(url, listLimitDefault(def))
   if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
 
-  const scope = scopeRead(def, q, auth, admin)
+  const scope = scopeRead(entity, def, q, auth, admin)
   if (scope instanceof Response) return scope
 
   const columnError = await validateReadColumns(entity, def, q, env, admin)
@@ -566,6 +578,7 @@ async function handleList(
   const { results } = await env.DB.prepare(sql)
     .bind(...binds)
     .all<Row>()
+  if (AUTHORED_TABLES.has(entity)) await withProfileAuthors(env.DB, results)
   return respond(
     results.map((r) =>
       maskPublicRow(def, fromSql(def, r), auth?.userId ?? null, admin),
@@ -604,6 +617,13 @@ async function handleGetById(
   ) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
+  if (
+    def.access === 'shared' &&
+    !(await shareVisible(env.DB, String(row.userId), auth?.userId ?? null))
+  ) {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
+  if (AUTHORED_TABLES.has(entity)) await withProfileAuthors(env.DB, [row])
   return respond(
     maskPublicRow(def, fromSql(def, row), auth?.userId ?? null, admin),
   )
@@ -745,6 +765,10 @@ async function handleCreate(
   if (entity === 'userProfiles') clampStreakHighWater(body, null)
   if (auth && def.access !== 'admin' && def.access !== 'owner') {
     body.userId = auth.userId
+  }
+  // The poster's own name, never one the client chose (share-authors.ts).
+  if (auth && AUTHORED_TABLES.has(entity)) {
+    body.author = await authorFor(env.DB, auth.userId)
   }
 
   // userProfiles: the row id IS the user id
@@ -1245,11 +1269,16 @@ async function handleLeaderboard(
     }))
     .sort((a, b) => rankValue(b) - rankValue(a))
 
-  const page = ranked
-    .slice(offset, offset + limit)
-    .map((row, i) => ({ ...row, rank: offset + i + 1 }))
+  // Placed over everyone, and then the singers hidden from the viewer are
+  // dropped (blocks.ts): a block hides a name and never moves a place.
+  const shown = await withoutHidden(
+    env.DB,
+    auth,
+    ranked.map((row, i) => ({ ...row, rank: i + 1 })),
+  )
+  const page = shown.slice(offset, offset + limit)
 
-  return respond({ total: ranked.length, entries: page })
+  return respond({ total: shown.length, entries: page })
 }
 
 // ── Funnel events (Voice Mirror + app) ───────────────────────────────
@@ -1738,21 +1767,41 @@ async function handleWeeklyBoard(
 
   // Merge the founder's seed score in as a labelled entry.
   const ranked = rankableSingers(perUser)
-  type Entry = { displayName: string; best: number; isFounder: boolean }
+  type Entry = {
+    userId: string | null
+    displayName: string
+    best: number
+    isFounder: boolean
+  }
   const entries: Entry[] = ranked.map((u) => ({
+    userId: u.userId,
     displayName: u.displayName,
     best: Math.round(u.best),
     isFounder: false,
   }))
   if (row.founderScore !== null) {
     entries.push({
+      userId: null,
       displayName: 'The Founder',
       best: Math.round(row.founderScore),
       isFounder: true,
     })
   }
   entries.sort((a, b) => b.best - a.best)
-  const top = entries.slice(0, 10).map((e, i) => ({ rank: i + 1, ...e }))
+  const auth = await getAuth(request, env)
+  // Placed over everyone, then whoever is hidden from the viewer dropped
+  // (blocks.ts), as the leaderboard does. No singer's id leaves the worker.
+  const shown = await withoutHidden(
+    env.DB,
+    auth,
+    entries.map((e, i) => ({ rank: i + 1, ...e })),
+  )
+  const top = shown.slice(0, 10).map((e) => ({
+    rank: e.rank,
+    displayName: e.displayName,
+    best: e.best,
+    isFounder: e.isFounder,
+  }))
 
   // Caller's standing (ranked among real singers only).
   //
@@ -1761,7 +1810,6 @@ async function handleWeeklyBoard(
   // consented still gets their score and `ranked: false` — they can see how
   // they did, and the client can offer them the board rather than pretending
   // they hold a place on it.
-  const auth = await getAuth(request, env)
   let you: {
     best: number
     /** 0 when `ranked` is false — an unranked singer holds no place. */
@@ -2790,6 +2838,16 @@ async function handleRequest(
     )
   }
 
+  // Reports, takedowns and the name audit (reports.ts).
+  const moderationResponse = await handleModerationAdmin(
+    request,
+    url,
+    env,
+    respondNoStore,
+    () => resolveAdminWithIdentity(request, env, hasAdminKey(request, env)),
+  )
+  if (moderationResponse !== null) return moderationResponse
+
   // Product-update consent and the unsubscribe link from an email. Ahead of
   // handleAuth for the same reason as the routes below it: newsletter.ts
   // imports auth.ts, never the reverse.
@@ -3128,6 +3186,42 @@ async function handleRequest(
       return handleFriendAccept(auth, request, env, respond)
     }
     return handleFriendRemove(auth, request, env, respond)
+  }
+
+  // Reporting and blocking (reports.ts, blocks.ts). Each write has a bucket
+  // of its own, so a singer slowed down on one is not slowed on the other.
+  if (url.pathname === '/api/reports') {
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'content-report',
+    )
+    if (!rl.allowed) return rateLimited(rl)
+    const waitUntil = ctx?.waitUntil
+    return handleReport(
+      request,
+      auth,
+      env,
+      respondNoStore,
+      typeof waitUntil === 'function'
+        ? (work) => waitUntil.call(ctx, work)
+        : undefined,
+    )
+  }
+
+  if (
+    url.pathname === '/api/blocks' ||
+    url.pathname.startsWith('/api/blocks/')
+  ) {
+    if (request.method !== 'GET') {
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'user-block',
+      )
+      if (!rl.allowed) return rateLimited(rl)
+    }
+    return handleBlocks(request, url, auth, env, respondNoStore)
   }
 
   if (url.pathname === '/api/demo-songs') {

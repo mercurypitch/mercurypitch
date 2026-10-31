@@ -379,15 +379,27 @@ export async function sendBillingAlert(
   subject: string,
   lines: string[],
 ): Promise<boolean> {
+  return sendOwnerAlert(cfg, to, 'billing', subject, lines)
+}
+
+/** sendBillingAlert for any of the operator's topics: billing, and a
+ *  singer's report (reports.ts). The topic leads the subject. */
+export async function sendOwnerAlert(
+  cfg: ResendConfig,
+  to: string,
+  topic: 'billing' | 'report',
+  subject: string,
+  lines: string[],
+): Promise<boolean> {
   const text = lines.join('\n')
   const ok = await resendSend(cfg, to, {
-    subject: `[MercuryPitch billing] ${subject}`,
+    subject: `[MercuryPitch ${topic}] ${subject}`,
     text,
     html: `<pre style="font: 13px/1.5 monospace">${text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')}</pre>`,
   })
-  if (ok) console.log(`[email] billing alert sent to ${maskEmail(to)}`)
+  if (ok) console.log(`[email] ${topic} alert sent to ${maskEmail(to)}`)
   return ok
 }
 

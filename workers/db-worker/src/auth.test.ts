@@ -448,6 +448,15 @@ class AuthStatement {
       return { success: true, meta: { changes: 1 } }
     }
 
+    // The deletion keeps a singer's open reports, unsigned. This database
+    // holds no reports, so it changes nothing.
+    if (
+      this.sql ===
+      "UPDATE contentReports SET reporterId = 'erased:' || id WHERE reporterId = ? AND status = 'open'"
+    ) {
+      return { success: true, meta: { changes: 0 } }
+    }
+
     if (this.sql.startsWith('UPDATE premiumPerkAudit SET actorId = CASE')) {
       const email = String(this.values[0]).toLowerCase()
       for (const audit of this.db.premiumAudit) {
@@ -1644,6 +1653,8 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
       'confirmReminderSends',
       'checkoutConsents',
       'withdrawals',
+      'contentReports',
+      'userBlocks',
     ]
     expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
       [],

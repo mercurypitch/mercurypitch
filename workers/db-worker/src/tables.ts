@@ -79,6 +79,13 @@ export interface TableDef {
    */
   privateCols?: string[]
   /**
+   * Columns a read returns as something other than what is stored: a share's
+   * `author` is shown as the poster's current name (share-authors.ts). A
+   * filter or a sort on one would answer from the stored value instead, and
+   * confirm a name nobody is shown any more, so no one but an admin may.
+   */
+  shownNotStoredCols?: string[]
+  /**
    * The columns that, with `userId`, name one row: a UNIQUE index in the
    * schema says so, and a create that meets an existing row UPDATES it.
    *
@@ -235,15 +242,21 @@ export const TABLES: Record<string, TableDef> = {
   // leaderboardEntries is intentionally NOT exposed: the leaderboard is now
   // server-derived from sessionRecords (see handleLeaderboard), so the table
   // is no longer client-readable or client-writable.
+  // `author` is the poster's display name, written and read from the
+  // profile by the worker (share-authors.ts), never taken from a client.
   sharedMelodies: {
     access: 'shared',
     boolCols: ['isPublic'],
     jsonCols: ['tags'],
+    serverCols: ['author'],
+    shownNotStoredCols: ['author'],
     requiresAccount: true,
   },
   sharedSessions: {
     access: 'shared',
     boolCols: ['isPublic'],
+    serverCols: ['author'],
+    shownNotStoredCols: ['author'],
     requiresAccount: true,
   },
   featureFlags: { access: 'admin', boolCols: ['value'] },

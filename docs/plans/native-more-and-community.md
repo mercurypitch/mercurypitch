@@ -463,7 +463,7 @@ opens from the Progress league card. So 4a's filter, report and block cover
 the boards as well as Community, and they are worth landing before the next
 store release whatever happens to slice 4.
 
-### 4a, the worker (its own PR, first)
+### 4a, the worker (its own PR, first; built)
 
 1. **Migration `0072_reports_and_blocks.sql`,** purely additive:
    `contentReports` (`reporterId`, `targetUserId`, `targetKind` in `user`,
@@ -505,6 +505,42 @@ store release whatever happens to slice 4.
 With unit tests beside each module and node integration tests on the real
 migrations (`node-tests/`, the follow-requests suite's helpers), across an
 account switch.
+
+**As built** (the requirements are
+[`docs/specs/reports-and-blocks.ears.md`](../specs/reports-and-blocks.ears.md)),
+with what moved from the list above:
+
+- **A block reads both ways.** 4b's sheet says "You will not see each
+  other's names or posts", so the worker hides each singer from the other,
+  not only the blocked one from the blocker (`blocks.ts`).
+- **A block hides names and never moves a place.** The boards rank in code
+  after their query, so each ranks everyone first and drops the hidden rows
+  after: the places either side of a gap stay true, and the league cut and the
+  weekly podium read the whole field. The leaderboard and the weekly board do
+  it with `withoutHidden`, the league standings with a `hidden` column, which
+  leaves a pseudonym row alone (hiding it would unmask it). The gap is the
+  trade-off: a blocked singer may guess who blocked them from it.
+- **`author` is read from the profile as well as written from it.** A share
+  is created under the poster's profile name and shown under their current
+  one (`share-authors.ts`), so a rename reaches every share and a name stored
+  before the filter is never what anyone sees. The stored column stays
+  filled: it is `NOT NULL`.
+- **The filter has two tiers** (`name-filter-words.ts`): the worst slurs are
+  refused everywhere, a melody's lyrics included; everything else only in
+  names and titles, because songs carry crude words and some listed words are
+  innocent in other languages. Each word is matched on its own, never across
+  two ("Push It"), and words that names contain ("Yamashita", "Siriporn")
+  only stand alone. A few words stay off the list because a name or title
+  carries them innocently ("Moby Dick", "Van Dyke", "Kike" for Enrique).
+- **The one-off report is the owner's audit route,**
+  `GET /api/admin/name-audit?kind=profiles|melodies|sessions`, a page at a
+  time: it lists the rows that fail, and changes none.
+- **The owner's mail** goes to `BILLING_ALERT_EMAIL` under
+  `[MercuryPitch report]`, for the first open report on a target only.
+  Answering one report answers every open report on the same target, and a
+  report still open when its reporter deletes their account stays, unsigned.
+- **Known limit:** the closed weeks' podiums (the weekly archive) are read
+  without an account, so a block does not reach them.
 
 ### 4b, the phone
 
@@ -581,7 +617,9 @@ Each is applied as written unless the owner says otherwise.
   accepted before posting, and App Review asks for "no tolerance". The Terms
   live on the landing site, outside this repository; whether they say so is
   unchecked.
-- **The word list** for the name filter: which list, in which languages.
+- **The word list** for the name filter: 4a ships a starting list in
+  English (`workers/db-worker/src/name-filter-words.ts`). Which words to add,
+  and which other languages, is the owner's call.
 
 ## Order
 

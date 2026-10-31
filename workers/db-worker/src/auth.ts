@@ -38,6 +38,7 @@ import { claimLaunchGift, signUpFrom } from './launch-offer'
 import type { LoginCodeClaim } from './login-codes'
 import { adoptSignUpCodes, claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, NO_ACCOUNT_YET, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
+import { DISPLAY_NAME_MAX, nameProblem, providerName } from './name-filter'
 import { setNewsletterConsent } from './newsletter-consent'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
@@ -919,6 +920,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Minting is one UPDATE the first time and a pure read after, but it IS a
   // write behind a GET — cap it so a scripted loop can't spam profile writes.
   'friend-code': { max: 10, windowMs: 300_000 },
+  // A report mails the owner, so it is bounded per hour, not per minute; a
+  // singer reporting a board's worth of names needs a handful, not a stream.
+  'content-report': { max: 10, windowMs: 3_600_000 },
+  // Blocking and unblocking, together: enough to tidy a board, not to churn
+  // the friend graph (a block deletes follows).
+  'user-block': { max: 30, windowMs: 3_600_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
   // Every checkout or portal open is an outbound Stripe API call that creates
@@ -1323,13 +1330,15 @@ async function replaceDefaultHandle(
   userId: string,
   name: string | null | undefined,
 ): Promise<void> {
-  if (!name) return
+  // A provider's name the filter refuses leaves the default handle in place.
+  const fit = providerName(name)
+  if (fit === null) return
   await db
     .prepare(
       'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)',
     )
     .bind(
-      name,
+      fit,
       nowIso(),
       userId,
       defaultDisplayName(userId),
@@ -1910,6 +1919,15 @@ async function handleRegister(
   const pwdCheck = isStrongPassword(body.password)
   if (!pwdCheck.ok) {
     return respond({ error: pwdCheck.reason }, { status: 400 })
+  }
+  // The name the singer typed on our own form, so it is refused here rather
+  // than replaced: they can choose another (name-filter.ts).
+  const typedName = body.displayName?.trim()
+  if (typedName && nameProblem(typedName, { max: DISPLAY_NAME_MAX }) !== null) {
+    return respond(
+      { error: 'Choose another display name', code: 'display_name_refused' },
+      { status: 400 },
+    )
   }
   if (await findUserByEmail(env.DB, email)) {
     return respond({ error: 'Email already registered' }, { status: 409 })
@@ -2687,7 +2705,7 @@ export async function resolveFederatedUser(
   await ensureProfile(
     env.DB,
     id,
-    identity.name || defaultDisplayName(id),
+    providerName(identity.name) ?? defaultDisplayName(id),
     identity.picture ?? undefined,
   )
   await claimLaunchGift(env, id, { signUpFrom: from })
@@ -4220,6 +4238,15 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // a credential, and an account that asked to be forgotten must not keep one.
   { table: 'totpCredentials', column: 'userId' },
   { table: 'recoveryCodes', column: 'userId' },
+  // A singer's answered reports (an open one is kept unsigned, in
+  // handleDeleteMe), and every report about them (0072_reports_and_blocks):
+  // a note can quote the reported singer's name, and once their posts are
+  // gone there is nothing left to moderate.
+  { table: 'contentReports', column: 'reporterId' },
+  { table: 'contentReports', column: 'targetUserId' },
+  // Blocks go from both sides: a row names the blocker and the blocked.
+  { table: 'userBlocks', column: 'blockerId' },
+  { table: 'userBlocks', column: 'blockedId' },
 ]
 
 /**
@@ -4312,6 +4339,15 @@ async function handleDeleteMe(
   // still owes its buyer (unlessOwed): one written since the check above
   // keeps all of the account, never half of it.
   const statements = [
+    // A report still open when its reporter leaves stays in the owner's
+    // queue, unsigned: it is about somebody else, and still owed an answer.
+    // Before the registry's DELETE below, which takes the rest of theirs.
+    env.DB.prepare(
+      unlessOwed(
+        `UPDATE contentReports SET reporterId = 'erased:' || id WHERE reporterId = ? AND status = 'open'`,
+        '?1',
+      ),
+    ).bind(userId),
     ...USER_OWNED_TABLES.map(({ table, column }) =>
       env.DB.prepare(
         unlessOwed(`DELETE FROM "${table}" WHERE "${column}" = ?`, '?1'),
