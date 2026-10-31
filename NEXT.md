@@ -2255,3 +2255,27 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 03:34:19 film-03 render-l4.sh DONE. Lead's measure (review/measure-film-03/): holds 11.6 s inside (0.7 s per 30 s),
   longest 0.5 s, no final hold; -16.0 LUFS, LRA 5.2 LU, true peak -1.5 dBTP; audio.csv byte-identical to film-02's
   (mix unchanged). FILM3 critic running (background). Next: its report -> REPORT.md, LEDGER 32, DECISIONS 134.
+- 03:4x FILM3 returned ONE MORE PASS (short: floor box under the hosts, the 5:42.7 double drop, end card +1 s).
+  Saved verbatim to review/film-03/REPORT.md, LEDGER row 32, DECISIONS 134 (triage). POLISH ROUND 3 = the
+  director's round, no builders (four small fixes, lead-built; backups in l4entr/polish3/lead/):
+  1 floor: kit hosts.js mercGate `floorEdge` (outer side of the floor patch runs on to the frame edge, fade
+    toward the middle 103.5 px); s12 both gates floorEdge:true; s13 gate floorEdge:true + pose() keeps the
+    patch's outer side on the frame edge. VERIFIED on HOSTS=1 stills: column-mean step (rows 850-900) at the
+    old edges x 130 / 1820 now 1.0-1.2 / 0.4-0.6 (the dither) against film-03's 5.8-6.4 / 8.0; the largest
+    steps left in the corners (1.3-2.1) sit on host reflections; s13 32.4 s big steps are the stair blocks.
+  2 5:42.7 falls: merc-shots.py TAVI_FIRST 0.52 (her head + hidden drop 0.52 s sooner, so she falls 0.4 s
+    before Merc); m12-orange-in span 342.10-346.10, m12-orange 342.68-484.83, m12-blue 343.20-484.83.
+  3 end card: script.json 'end' sting dur 6.0 (was 5.0) -> cues.py --no-tts, mix.py, gen-root.py: film
+    484.729 (was 483.729), s16 6.200 s; mix identical before 476 s, the extra second is room tone.
+  4 pill (s09): the roll's clip is the pill's inner box (IN 5 px), pixel-checked.
+  RENDERING (passes.sh, two queues, started 03:53): m12-orange-in done 03:56:57; m12-orange (8529 frames) and
+  m12-blue (8498) at ~1.3 s/frame each -> both done ~06:55-07:10. Monitor b5ot74xhr (30 min): RE-ARM ON EVERY
+  EXPIRY. Old passes + whole.js + intro.js in l4entr/polish3/lead/old-passes/. If the container restarts, the
+  passes start over: bash l4entr/polish3/lead/passes.sh m12-orange & and bash ... passes.sh m12-blue &
+  (detached, setsid nohup), with a Monitor armed.
+  AFTER THE PASSES: merc-whole.py, merc-tags.py, captions.py, chapters.py, script-md.py, board-clock.py,
+  clock-lint; HOSTS=1 stills of the s12 falls (scene 0.8-2.1), the end card (s16 4.5-6.2) and the floor again;
+  s16 header comment (holds 4.8 s); docs (STORYBOARD, HANDOFFS, BUILD-GUIDE, tools/CHANGES.md, DECISIONS 135);
+  full check (0 errors); freeze $S/l4film04proj; render film-04 (WORKERS=2, Monitor re-armed, film to
+  /dev/shm/l4film + backup renders/film-04.mp4 if / has room); FILM4-ready.txt; fresh FILM4 critic (xhigh,
+  rate limit "allowed"); LEDGER 33, DECISIONS 136. Round 3 of the six allowed.

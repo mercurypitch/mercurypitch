@@ -216,7 +216,7 @@
             { tag: SID + '-m12-orange', pass: 'm12-orange', x0: 1700, s0: 360 },
           ]
           MERC.forEach((m) => {
-            m.gate = L.mercGate(room.top, { sid: SID, pass: m.pass, tag: m.tag, x: m.x0, size: m.s0, feet: 0.81 })
+            m.gate = L.mercGate(room.top, { sid: SID, pass: m.pass, tag: m.tag, x: m.x0, size: m.s0, feet: 0.81, floorEdge: true })
             m.box = document.getElementById(m.tag + '-box')
           })
           // Merc scales to 300 in place over the guide's move and moves to his corner in the breath; Tavi scales to 300
@@ -238,8 +238,13 @@
             b.left = f1(x - size / 2) + 'px'; b.top = f1(840 - 0.81 * size) + 'px'; b.width = f1(size) + 'px'; b.height = f1(size) + 'px'
             const r = m.box.querySelector('.refl-box')
             if (r) { r.style.width = f1(size) + 'px'; r.style.height = f1(size) + 'px'; r.style.top = f1(size * 1.62 - size) + 'px' }
+            // the floor patch follows him on its inner side (x + 120 for Merc, x - 110 for Tavi) and keeps its outer
+            // side on the frame's edge (floorEdge, film round 3), so it never shows a hard edge
             const patch = m.box.parentElement.firstElementChild
-            if (patch && patch !== m.box) patch.style.left = f1(x - 110) + 'px'
+            if (patch && patch !== m.box) {
+              const left = x <= 960 ? 0 : x - 110
+              patch.style.left = f1(left) + 'px'; patch.style.width = f1(x <= 960 ? x + 120 : 1920 - left) + 'px'
+            }
           }
 
           /* ---------------------------------------------------------------- frame-fixed type (hud) */

@@ -1704,3 +1704,43 @@ replaced it. The builder's record: critics never read it.
        - HANDOFFS: § S15, § S15 to S16, § S16.
        - STORYBOARD: rows 15 and 16 (Carried: "Mercs, the bead").
        - BUILD-GUIDE: the s15 Out line and the s16 Merc line.
+
+134. **Film round 3 (critic FILM3, ONE MORE PASS): the third polish round, the director's.**
+     - The render: film-03, from the 22:48 frozen copy, with the second polish round in (decisions
+       131 to 133). Its first pass left dark first frames on pieces 6, 12, 13 and 19, the same capture
+       race as before. The repair re-rendered 5 and 6 on one browser. A container restart at about
+       02:15 stopped it there; the resumed run (one browser, no recycling) rendered 11 to 13, 18 and
+       19, and the seams came out clean at 03:19. The critic judged that film (483.733 s).
+     - FILM3 marks FILM2's items 2, 4, 6, 7, 8 and 10 FIXED, with round 2's tease-to-card and
+       small-subject items; 1, 5 and 9 PARTLY; and 3 STILL PRESENT. Nothing broke. Its verdict names
+       the short pass: the floor box, the double fall at 5:42.7 and 1 s more on the end card.
+     - Taken now, all the director's (no builder):
+       - **Item 1 (a hard-edged rectangle in the floor under each host, 5:44 to 6:42).** It is
+         `L.mercGate`'s floor patch (`assets/lib/hosts.js`): 230 px from x − 110, a 10 % top line
+         and gradient, masked to fade toward the frame's middle only. Every other scene stands its
+         hosts in the corners (x 110 and 1800), where the patch's outer edge is the frame's own. S12
+         and S13 stand them at 240 and 1700, so the outer edges fall at 130 and 1820. A `floorEdge`
+         option carries the patch's outer side to the frame's edge, with its fade toward the middle
+         unchanged; S12 and S13 use it, and every other scene's patch stays as it is.
+       - **Item 2, at 5:42.7 only (the two falls 3 frames apart).** Tavi falls 0.4 s before Merc
+         (b39 − 1.5; Merc b39 − 1.1), so both have landed before he speaks, and she opens the
+         chapter as she opens chapters 1 to 3. m12-orange's own hidden fall moves with her head, so
+         the hand-over keeps its idle phase (decision 90's `align`). m12-orange-in and m12-orange
+         re-render.
+       - **Item 3 (the card complete for 4.1 s; 5 s asked).** The end sting runs 6 s instead of 5
+         (`script.json`), so the film ends at 484.729 and the card holds complete for about 5.1 s.
+         Its chime is the sting's own length (`tools/mix.py`). Decisions 122 and 130 held this for
+         the re-voice, but it needs only the clock, the mix, the root and the m12 passes, which item
+         2 re-renders anyway; m12-blue re-renders for its extra second.
+       - **Item 5 (the pill's roll unclipped for 6 frames at 4:16.03).** The roll is clipped to the
+         pill's inner box.
+     - Not now:
+       - **Item 2's other falls (1:01.6, 2:27.6, 4:09.2).** Decision 130's rule stands: each is
+         Tavi's first entrance of chapters 1, 2 and 3, and a fall opens a chapter. If the next round
+         names them again, the options are a hop in or a staggered fall; the kit has no sink.
+       - **Item 4 (the recall).** As decisions 122 and 130.
+       - **Item 6 (cosmetic).** The 0.3 s of hosts and bead before the card is the bead's flight
+         (decision 133). The title's blur stays, as before.
+       - **The camera's tells (item 9, PARTLY).** Noted for the next film, as decisions 122 and 130.
+     - For a human, in DELIVERY.md: the floor under the hosts on an OLED phone and after YouTube's
+       encoding, as the critic asks; the rest as decision 130.

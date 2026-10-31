@@ -150,8 +150,9 @@
           // so the two never overlap, nothing stands past the box (component critic D-01 item 4) and the pill is
           // never empty (D-04 item 3, DECISIONS 107): the box first widens to the new words (0 to 0.45), then the
           // words roll one line (1.25 of the size) up, the old out through the pill's top and the new in from its
-          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The guess is
-          // L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
+          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The roll's clip
+          // is the pill's inner box, 5 px inside the rim, so no word rides over the border (film round 3, item 5).
+          // The guess is L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
           // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
           const makePill = (parent, { size, items, guess = false }) => {
             const inset = 0.6 * size, h = 1.6 * size, roll = 1.25 * size
@@ -160,7 +161,8 @@
             const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
             const reveal = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: '#fff', 'stroke-width': 12, pathLength: 1, 'stroke-dasharray': '1 1' }, mask)
             const clip = L.svg('clipPath', { id: id + '-clip' }, g)
-            const clipR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2 }, clip)
+            const IN = 5                                     // the roll's clip: the rim (2.5) and as much again inside it
+            const clipR = L.svg('rect', { x: IN, y: -h / 2 + IN, height: h - 2 * IN, rx: h / 2 - IN }, clip)
             const fillR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'rgba(22,27,34,0.92)' }, g)
             // the words, under the rims, so the rim draws over the edge that clips them
             const words = L.svg('g', { 'clip-path': `url(#${id}-clip)` }, g)
@@ -176,7 +178,8 @@
                 if (a <= 0.004) return
                 const grow = L.ease('power2.inOut')(clamp(mix / 0.45))
                 const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], grow) + 2 * inset
-                for (const r of [fillR, dash, solidR, reveal, clipR]) r.setAttribute('width', f1(w))
+                for (const r of [fillR, dash, solidR, reveal]) r.setAttribute('width', f1(w))
+                clipR.setAttribute('width', f1(w - 2 * IN))
                 reveal.setAttribute('stroke-dashoffset', (1 - clamp(rv)).toFixed(4))
                 fillR.setAttribute('opacity', clamp(rv * 1.6).toFixed(3))
                 dash.setAttribute('opacity', (1 - solid).toFixed(3))

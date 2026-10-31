@@ -61,15 +61,15 @@
   {
    "drawn": 390,
    "frames": 44,
-   "from": 20557,
+   "from": 20526,
    "pad": 352,
    "shot": "m12-orange-in",
    "tall": true,
-   "until": 20597
+   "until": 20566
   },
   {
-   "frames": 209,
-   "from": 20597,
+   "frames": 240,
+   "from": 20566,
    "shot": "m12-orange-in",
    "tall": false,
    "until": 20760

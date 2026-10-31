@@ -113,6 +113,9 @@ SWITCH = 40         # the pass frame where a pass takes over from its tall intro
 # starts LEAP before her first word, so she lands 0.80 s before it: 0.25 s sooner than a drop's
 # splat (critic B-05 item 1), and settled 0.58 s before she speaks.
 LEAP, LEAP_LEN = 1.38, 0.8
+# S12's two falls (film round 3): Tavi's head and m12-orange's hidden drop start this much sooner than they
+# did, so she falls 0.4 s before Merc (she fell 0.12 s after him, which read as one fall).
+TAVI_FIRST = 0.52
 
 
 def run(midis, step, last):
@@ -216,11 +219,12 @@ PASSES = [
          enter=('drop', cue('b39', 'start', -0.39)), sings={'sing-a': 'ride', 'count-in': 'sing'}, quiet={'your-turn'},
          glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none',
          drop=DROP_OLD),
-    dict(id='m12-orange', who='orange', span=(cue('b39', 'start', -0.39), round(END + 0.1, 3)), size=520, bias=FACE['orange'],
-         enter=('drop', cue('b39', 'start', -0.39)), sings={'sing-b': 'ride'}, quiet={'your-turn'},
+    dict(id='m12-orange', who='orange', span=(cue('b39', 'start', -0.39 - TAVI_FIRST), round(END + 0.1, 3)), size=520, bias=FACE['orange'],
+         enter=('drop', cue('b39', 'start', -0.39 - TAVI_FIRST)), sings={'sing-b': 'ride'}, quiet={'your-turn'},
          glideMouth='open', during=[('celebrate', cue('end', 'start', 0.87), cue('end', 'start', 1.72))], sparkles='none',
          drop=DROP_OLD),
-    # their heads: both drop during the act 4 card, Tavi 0.12 s after Merc. Merc talks b39 and rides
+    # their heads: both drop during the act 4 card, Tavi first, 0.4 s before Merc (TAVI_FIRST moves her
+    # head and her own hidden drop together; film round 3, so the two falls read as two). Merc talks b39 and rides
     # sing-a before m12-blue takes over, in the first idle with no arcs (a splice under the arcs or the
     # lip flutter would jump their phases); Tavi idles through b39, so m12-orange takes over in it.
     # The idle's sway, blinks and glances run on the time since it began, so Tavi's head holds the
@@ -228,8 +232,8 @@ PASSES = [
     dict(id='m12-blue-in', who='blue', span=(cue('b39', 'start', -LAND), cue('sing-a', 'end', 0.75)), size=520, bias=FACE['blue'],
          enter=('drop', cue('b39', 'start', -LAND)), sings={'sing-a': 'ride'}, glideMouth='open', sparkles='none',
          splice=('m12-blue', cue('sing-a', 'end', 0.65))),
-    dict(id='m12-orange-in', who='orange', span=(cue('b39', 'start', -LAND + 0.12), cue('b39', 'start', 2.5)), size=520, bias=FACE['orange'],
-         enter=('drop', cue('b39', 'start', -LAND + 0.12)), glideMouth='open', sparkles='none',
+    dict(id='m12-orange-in', who='orange', span=(cue('b39', 'start', -LAND + 0.12 - TAVI_FIRST), cue('b39', 'start', 2.5)), size=520, bias=FACE['orange'],
+         enter=('drop', cue('b39', 'start', -LAND + 0.12 - TAVI_FIRST)), glideMouth='open', sparkles='none',
          splice=('m12-orange', cue('b39', 'start', 2.4)), align='m12-orange'),
 ]
 

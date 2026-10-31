@@ -14,7 +14,8 @@
 //       in from 12 px below, over 0.25 s, staggered 0.05 s (k = 0 for the first). Returns two layers,
 //       [{ text, a, dy }, { text, a, dy }].
 //   L.mercGate(layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null,
-//                       hopDx = 360, mirror = false, floor = true, fade = 18, leap = false, leapDx = 300 })
+//                       hopDx = 360, mirror = false, floor = true, floorEdge = false, fade = 18, leap = false,
+//                       leapDx = 300 })
 //       A Merc pass placed in screen space (pass `layer` = room.top) for PRODUCTION-PIPELINE trap 23.
 //       A drop comes in through the top of its square, so the box and its reflection stay at 0 until
 //       the pass's first whole frame (L.MERC_WHOLE, written by tools/merc-whole.py) plus one, because
@@ -31,7 +32,9 @@
 //       so the box is carried `hopDx` px through the hop's time in the air (from hop + 0.15 over
 //       0.42 s, power1.in): +360 out to the right, -360 out to the left. `mirror` flips a pass rendered
 //       facing left (DECISIONS 74). `floor` lays a local floor patch under the corner for an F0 scene
-//       with no room floor. `tag` is the static video's id (its reflection is tag + '-refl').
+//       with no room floor; `floorEdge` runs its outer side on to the frame's edge, for a host standing
+//       in from his corner (S12 and S13, DECISIONS 134). `tag` is the static video's id (its reflection
+//       is tag + '-refl').
 //       A pass with an intro (L.MERC_INTRO) enters differently (DECISIONS 81): its drop is seen whole.
 //       Each intro segment is its own box: a tall render of the drop, whose middle square lands on
 //       the pass's own pixels and whose column above shows the fall, and for a pass under a head the
@@ -165,14 +168,20 @@
     }
   }
 
-  L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, fade = 18, leap = false, leapDx = 300 } = {}) => {
+  L.mercGate = (layer, { sid, pass, tag, x, feetY = 840, size = 300, feet = 0.8, hop = null, hopDx = 360, mirror = false, floor = true, floorEdge = false, fade = 18, leap = false, leapDx = 300 } = {}) => {
     const P = L.prog
     const S0 = L.scene(sid).start
     const wrap = L.el('div', { class: 'clip', style: 'pointer-events:none' }, layer)
     // the floor patch fades toward the frame's middle, so it reads as the floor under his corner only
     const toMid = x > 960 ? '90deg' : '270deg'
+    // `floorEdge` (film round 3): a host standing in from his corner (S12 and S13 put them at 240 and 1700)
+    // left the patch's outer edge inside the frame, a hard step of 4 to 11 levels. It runs on to the frame's
+    // edge instead, its fade toward the middle the same 103.5 px (45 % of 230); off, the patch is as it was.
+    const pl = floorEdge && x <= 960 ? 0 : x - 110
+    const pw = floorEdge ? (x > 960 ? 2030 - x : x + 120) : 230
+    const fadeTo = floorEdge ? '103.5px' : '45%'
     const patch = floor
-      ? L.el('div', { style: `position:absolute;left:${x - 110}px;width:230px;top:${feetY}px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(${toMid}, transparent, #000 45%);mask-image:linear-gradient(${toMid}, transparent, #000 45%)` }, wrap)
+      ? L.el('div', { style: `position:absolute;left:${pl}px;width:${pw}px;top:${feetY}px;height:240px;opacity:0;background:linear-gradient(180deg, rgba(120,150,190,0.10), rgba(13,17,23,0) 40%);border-top:1px solid rgba(195,204,214,0.10);-webkit-mask-image:linear-gradient(${toMid}, transparent, #000 ${fadeTo});mask-image:linear-gradient(${toMid}, transparent, #000 ${fadeTo})` }, wrap)
       : null
     const vid = document.getElementById(tag)
     if (!vid) { console.error(`[L.mercGate ${sid}] no Merc tag #${tag}`); return () => null }

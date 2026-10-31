@@ -202,8 +202,9 @@
           const dust = L.filmDust(room.near)
 
           /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm12-blue', tag: SID + '-m12-blue', x: 240, size: 360, feet: 0.81 })
-          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm12-orange', tag: SID + '-m12-orange', x: 1700, size: 360, feet: 0.81 })
+          // floorEdge: they stand in from their corners, so their floor patches run on to the frame's edges
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm12-blue', tag: SID + '-m12-blue', x: 240, size: 360, feet: 0.81, floorEdge: true })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm12-orange', tag: SID + '-m12-orange', x: 1700, size: 360, feet: 0.81, floorEdge: true })
 
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const card = L.chapterCard(room.hud, { num: 4, title: 'Sing it', baseline: 480, tIn: A.cardIn, tOut: A.cardOut })
