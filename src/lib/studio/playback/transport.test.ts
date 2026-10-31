@@ -338,6 +338,13 @@ describe('Studio borrowed transport', () => {
 
   it('warms the cache and chain timing before Play, without unlocking audio', async () => {
     const f = transportFixture()
+    // A clock that exists but does not run until the press: nothing is
+    // built ahead on it (transport.prebuild.test.ts), only read and measured.
+    f.ctx.state = 'suspended'
+    f.unlock.mockImplementation(() => {
+      f.ctx.state = 'running'
+      return Promise.resolve(true)
+    })
     await f.transport.warm(f.project, [f.asset])
     expect(f.unlock).not.toHaveBeenCalled()
     expect(f.cache.acquire).toHaveBeenCalledOnce()

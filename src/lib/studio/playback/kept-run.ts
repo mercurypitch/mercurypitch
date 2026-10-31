@@ -38,6 +38,11 @@
 // covers pausing to change a passage and playing it again; past that, the
 // memory back is worth the tenth of a second the next Play spends building.
 // A hidden page cannot take a Play press, and a phone may discard it.
+//
+// A run built ahead of the press (prebuilt-run.ts) is kept the same way. It
+// never played, so it is silent from the start; its envelope feeds the
+// speakers only until its fresh compressors have settled, and a Play before
+// then starts it once they have.
 import { closeEnvelope } from '@/lib/preview-player'
 import { registerStudioMemoryReclaimer } from '../memory-budget'
 import type { createStudioLaneMeter } from '../metering/live-meter'
@@ -60,6 +65,8 @@ const TAIL_MARGIN_MS = 1000
 export const KEEP_IDLE_MS = 5 * 60_000
 /** How long it waits while the page is hidden. */
 export const KEEP_HIDDEN_MS = 30_000
+/** Past a prebuilt run's settle on the audio clock, before it stops being rendered. */
+const SETTLED_MARGIN_MS = 40
 
 export interface StudioKeptRunOptions {
   /** Fade a run out now and free it once silent: the transport's own stop. */
@@ -76,6 +83,8 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
   // Its envelope has let go of the speakers, so nothing renders it.
   let unrendered = false
   let hidden = false
+  // When a prebuilt run's compressors have settled: Play starts it no sooner.
+  let readyAt = -Infinity
   let silenceTimer: ReturnType<typeof setTimeout> | undefined
   let idleTimer: ReturnType<typeof setTimeout> | undefined
   const unregister = registerStudioMemoryReclaimer(() => {
@@ -91,6 +100,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     clearTimeout(silenceTimer)
     if (run && unrendered) run.envelope.connect(run.ctx.destination)
     unrendered = false
+    readyAt = -Infinity
     clearTimeout(idleTimer)
     return run
   }
@@ -107,6 +117,33 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
   function waitForPlay(): void {
     clearTimeout(idleTimer)
     idleTimer = setTimeout(letGo, hidden ? KEEP_HIDDEN_MS : KEEP_IDLE_MS)
+  }
+
+  /** Let a prebuilt run go of the speakers once the audio clock has passed its settle. */
+  function unrenderOnceSettled(run: StudioRun): void {
+    const wait = Math.max(0, readyAt - run.ctx.currentTime) * 1000
+    silenceTimer = setTimeout(() => {
+      if (run.ctx.currentTime < readyAt) unrenderOnceSettled(run)
+      else {
+        run.envelope.disconnect(run.ctx.destination)
+        unrendered = true
+      }
+    }, wait + SETTLED_MARGIN_MS)
+  }
+
+  /** An edit while paused: the kept graph moves with it, or goes when it cannot follow. */
+  function follow(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    settings: StudioLiveSettings,
+  ): void {
+    if (!kept) return
+    if (!follows(kept, project, assets, settings.drafts)) {
+      letGo()
+      return
+    }
+    followInPlace(kept, project, settings)
+    waitForPlay()
   }
 
   /** Whether the kept graph can play `project`: as it is, or with its lanes moved to other clips. */
@@ -174,8 +211,9 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       }
       // Detached first: the meters below reserve memory, and the reclaimer
       // must not free the run they are for.
+      const settled = readyAt
       const run = detach()!
-      const epoch = seekEarliest(ctx)
+      const epoch = Math.max(seekEarliest(ctx), settled)
       if (!run.graph.resume(from, epoch, settings.repeat)) {
         releaseRun(run)
         return null
@@ -197,18 +235,31 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       run.graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
       return run
     },
-    /** An edit while paused: the kept graph moves with it, or goes when it cannot follow. */
-    follow(
+    follow,
+    /**
+     * Whether a run built ahead is wanted for `project`: a kept run follows
+     * it first, or goes, and none is wanted while one is kept or the page
+     * is hidden.
+     */
+    wants(
       project: StudioProject,
       assets: readonly StudioAsset[],
       settings: StudioLiveSettings,
-    ): void {
-      if (!kept) return
-      if (!follows(kept, project, assets, settings.drafts)) {
-        letGo()
-        return
-      }
-      followInPlace(kept, project, settings)
+    ): boolean {
+      follow(project, assets, settings)
+      return kept === null && !hidden
+    },
+    /**
+     * Keep a run built ahead of the press (prebuilt-run.ts): parked and
+     * never heard, so silent from the start. Nothing renders it once its
+     * compressors have settled at `settledAt`.
+     */
+    adopt(run: StudioRun, settledAt: number): void {
+      letGo()
+      kept = run
+      silent = true
+      readyAt = settledAt
+      unrenderOnceSettled(run)
       waitForPlay()
     },
     letGo,

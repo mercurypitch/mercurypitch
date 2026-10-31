@@ -15,7 +15,7 @@ import { createStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
-import type { buildStudioGraph, StudioGraph, StudioGraphQuality } from './graph'
+import type { buildStudioGraph, StudioGraph, StudioGraphOptions, StudioGraphQuality, } from './graph'
 import type { StudioPlaybackTier } from './playback-quality'
 import { livePlaybackTier, notePlayout, TIER_PROFILES, } from './playback-quality'
 
@@ -273,12 +273,11 @@ function startAfterBuild(
  * until it returns.
  */
 export function buildStudioRun(parts: StudioRunParts): StudioRun {
-  const { ctx, plan, latency } = parts
-  const tier = livePlaybackTier(parts.project)
+  const { ctx, plan } = parts
   const timing = parts.fromSilence
     ? {
         fromFrame: parts.timing.fromFrame,
-        audibleEpoch: soonestStart(ctx) + latency,
+        audibleEpoch: soonestStart(ctx) + parts.latency,
       }
     : parts.timing
   let graph: StudioGraph | undefined
@@ -290,16 +289,8 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
       ctx,
       plan,
       parts.buffers.buffers,
-      timing.audibleEpoch - latency,
-      {
-        metering: true,
-        fromFrame: timing.fromFrame,
-        repeat: parts.repeat,
-        silentLanes: parts.silentLanes,
-        master: { spec: parts.master },
-        profile: TIER_PROFILES[tier],
-        quality: liveQuality(tier),
-      },
+      timing.audibleEpoch - parts.latency,
+      liveGraphOptions(parts, timing.fromFrame),
     )
     envelope = ctx.createGain()
     envelope.gain.value = 0
@@ -309,7 +300,8 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     // the first frame, a handover's as much as a Play's.
     graph.settle(ctx.currentTime)
     const audibleEpoch = parts.fromSilence
-      ? startAfterBuild(ctx, graph, timing.audibleEpoch - latency) + latency
+      ? startAfterBuild(ctx, graph, timing.audibleEpoch - parts.latency) +
+        parts.latency
       : timing.audibleEpoch
     graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
     meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
@@ -317,30 +309,13 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     // Last, once nothing can fail: a handoff commits the held run to fading.
     const openAt = parts.open(envelope, audibleEpoch)
     return {
-      ctx,
-      graph,
-      project: parts.project,
-      sounding: new Set(
-        plan.lanes
-          .filter((lane) => lane.segments.length > 0)
-          .map((lane) => lane.track.id),
-      ),
-      envelope,
-      measured: parts.measured,
+      ...runOf(parts, graph, envelope),
       meter,
       laneMeter,
-      buffers: parts.buffers,
-      releaseMemory: parts.releaseMemory,
       startFrame: timing.fromFrame,
-      endFrame: plan.endFrame,
-      firstFrame: plan.startFrame,
       audibleEpoch,
-      latency,
       openAt,
       silentUntil: parts.fromSilence ? audibleEpoch : -Infinity,
-      untilFrame: parts.repeat ? Infinity : plan.endFrame,
-      tailFrames: plan.tailFrames,
-      canLoop: plan.startFrame === 0,
     }
   } catch (error) {
     meter?.dispose()
@@ -348,5 +323,105 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     graph?.dispose()
     envelope?.disconnect()
     throw error
+  }
+}
+
+/** What a parked run is built from (prebuilt-run.ts): a run's parts, with no place on the clock yet. */
+export type StudioParkedRunParts = Omit<
+  StudioRunParts,
+  'timing' | 'createLaneMeter' | 'fromSilence' | 'open'
+>
+
+/**
+ * Build a run's graph and envelope and park them, unheard: no source is
+ * scheduled and the envelope stays closed, but it feeds the speakers, so
+ * the graph's fresh compressors settle on the silence it renders, as a
+ * run from silence does before its first frame (soonestStart). Returns the
+ * run and when they have settled. Play starts it as it starts a kept run.
+ */
+export function buildParkedStudioRun(parts: StudioParkedRunParts): {
+  run: StudioRun
+  settledAt: number
+} {
+  const { ctx, plan } = parts
+  let graph: StudioGraph | undefined
+  let envelope: GainNode | undefined
+  try {
+    const now = ctx.currentTime
+    graph = parts.buildGraph(
+      ctx,
+      plan,
+      parts.buffers.buffers,
+      now,
+      liveGraphOptions(parts, plan.startFrame),
+    )
+    envelope = ctx.createGain()
+    envelope.gain.value = 0
+    graph.output.connect(envelope)
+    envelope.connect(ctx.destination)
+    graph.settle(now)
+    graph.park()
+    return {
+      run: {
+        ...runOf(parts, graph, envelope),
+        meter: null,
+        laneMeter: null,
+        startFrame: plan.startFrame,
+        audibleEpoch: now,
+        openAt: now,
+        silentUntil: Infinity,
+      },
+      settledAt: now + RUN_SETTLE_SECONDS,
+    }
+  } catch (error) {
+    graph?.dispose()
+    envelope?.disconnect()
+    throw error
+  }
+}
+
+/** A live run's graph options: metered, at the song's playback tier (playback-quality.ts). */
+function liveGraphOptions(
+  parts: StudioParkedRunParts,
+  fromFrame: number,
+): StudioGraphOptions {
+  const tier = livePlaybackTier(parts.project)
+  return {
+    metering: true,
+    fromFrame,
+    repeat: parts.repeat,
+    silentLanes: parts.silentLanes,
+    master: { spec: parts.master },
+    profile: TIER_PROFILES[tier],
+    quality: liveQuality(tier),
+  }
+}
+
+/** What a run holds whatever its place on the clock. */
+function runOf(
+  parts: StudioParkedRunParts,
+  graph: StudioGraph,
+  envelope: GainNode,
+) {
+  const { plan } = parts
+  return {
+    ctx: parts.ctx,
+    graph,
+    project: parts.project,
+    sounding: new Set(
+      plan.lanes
+        .filter((lane) => lane.segments.length > 0)
+        .map((lane) => lane.track.id),
+    ),
+    envelope,
+    measured: parts.measured,
+    buffers: parts.buffers,
+    releaseMemory: parts.releaseMemory,
+    endFrame: plan.endFrame,
+    firstFrame: plan.startFrame,
+    latency: parts.latency,
+    untilFrame: parts.repeat ? Infinity : plan.endFrame,
+    tailFrames: plan.tailFrames,
+    canLoop: plan.startFrame === 0,
   }
 }

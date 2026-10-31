@@ -5,7 +5,9 @@ import { prepareStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
-import { studioGraphLanes } from './graph'
+import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
+import { studioGraphLanes, studioGraphWorkingBytes } from './graph'
+import type { StudioRunLayout } from './live-edit'
 
 export type StudioLatencyReader = typeof measureTrackLatencies
 
@@ -104,6 +106,68 @@ export async function prepareStudioMaster(
   if (!Number.isSafeInteger(frames) || frames < 0)
     throw new Error('Studio master timing could not be measured.')
   return frames / ctx.sampleRate
+}
+
+/** What a run is built from: its plan, and the audio and graph memory it holds. */
+export interface StudioAdmission {
+  readonly plan: StudioArrangementPlan
+  readonly silentLanes: boolean
+  readonly buffers: StudioBufferLease
+  readonly releaseMemory: () => void
+}
+
+/** Where a run's audio and memory come from. */
+export interface StudioAdmitSources {
+  readonly cache: StudioBufferCache
+  readonly measure: StudioLatencyReader
+  readCanonicalAsset(id: string): Promise<Blob>
+  /** Hold the graph's working memory, or throw StudioMemoryError. */
+  reserve(bytes: number, signal: AbortSignal): Promise<() => void>
+}
+
+/** The song a run plays, the clock it plays on and the master after its lanes. */
+export interface StudioRunRequest {
+  readonly project: StudioProject
+  readonly assets: readonly StudioAsset[]
+  readonly ctx: BaseAudioContext
+  readonly master: ChainSpec
+}
+
+/**
+ * The plan, graph memory and audio for a run built as `layout` says. When a
+ * step fails, what it took goes back; once it returns, the caller frees both.
+ */
+export async function admitStudioRun(
+  { project, assets, ctx, master }: StudioRunRequest,
+  { silentLanes, start }: StudioRunLayout,
+  signal: AbortSignal,
+  sources: StudioAdmitSources,
+): Promise<StudioAdmission> {
+  const plan = await prepareStudioPlan(
+    project,
+    assets,
+    ctx.sampleRate,
+    start,
+    signal,
+    sources.measure,
+    silentLanes,
+  )
+  const releaseMemory = await sources.reserve(
+    studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
+    signal,
+  )
+  try {
+    const buffers = await sources.cache.acquire(
+      planAssets(plan, assets, silentLanes),
+      ctx,
+      sources.readCanonicalAsset,
+      signal,
+    )
+    return { plan, silentLanes, buffers, releaseMemory }
+  } catch (error) {
+    releaseMemory()
+    throw error
+  }
 }
 
 export function planLatencySeconds(plan: StudioArrangementPlan): number {
