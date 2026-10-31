@@ -448,7 +448,13 @@ export function useLine(options: LineOptions): LineController {
       else start()
     },
     again: start,
-    leave: shut,
+    // Back to ready as well as quiet, so a start still opening the mic no
+    // longer stands: its answer neither opens the mic nor plays Merc's call
+    // under whatever came next (openRoomMic).
+    leave: () => {
+      if (lineListening(untrack(state).phase)) stopListening()
+      else shut()
+    },
   }
 }
 

@@ -405,6 +405,27 @@ describe('the sung line', () => {
     expect(line()).toBe('Sing this line with me.')
   })
 
+  it('drops a mic still opening when the onboarding leaves: no call plays', async () => {
+    const s = stand()
+    let open = (): void => undefined
+    s.answer = async () =>
+      new Promise<void>((resolve) => {
+        open = resolve
+      })
+    show(s)
+    q('onboarding-mic')?.click()
+    await settle()
+    expect(controller?.state().phase).toBe('starting')
+
+    controller?.leave()
+    open()
+    await opened()
+
+    expect(controller?.state().phase).toBe('ready')
+    expect(sung).toHaveLength(0)
+    expect(s.calls.startWindow).toBe(0)
+  })
+
   it('goes back to ready when the page hides in the turn', async () => {
     const s = stand()
     show(s)

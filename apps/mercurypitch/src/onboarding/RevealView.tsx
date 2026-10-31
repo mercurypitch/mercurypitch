@@ -21,7 +21,7 @@ import type { RangeResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { PersonIcon } from '../shell/icons'
 import styles from './NativeOnboarding.module.css'
-import { ONBOARDING_COPY, rangeWords } from './onboarding-copy'
+import { ONBOARDING_COPY, rangeSpan } from './onboarding-copy'
 import type { RevealController } from './useReveal'
 import { PRINT_SIZE, voiceprintArt } from './voiceprint-art'
 
@@ -91,7 +91,7 @@ export function RevealView(props: RevealViewProps): JSX.Element {
           </svg>
           <p class={styles.cardLabel}>{ONBOARDING_COPY.yourRange}</p>
           <p class={styles.cardRange} data-testid="onboarding-card-range">
-            {rangeWords(props.range.lowNote, props.range.highNote)}
+            {rangeSpan(props.range.lowNote, props.range.highNote)}
           </p>
           <Show when={props.range.voiceHint}>
             {(type) => (

@@ -259,13 +259,28 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
             <p class={styles.caption} aria-hidden="true">
               {micLabel()}
             </p>
-            <p
-              class={styles.fine}
-              classList={{ [styles.away]: !before() }}
-              data-testid="onboarding-priming"
-            >
-              {ONBOARDING_COPY.listens}
-            </p>
+            {/* One slot under the caption, a button high whatever it holds,
+                so the mic stays put: what the mic is for before the first
+                take; once two takes have missed, Continue without the mic,
+                as a refused mic has, so a mic that opens and cannot hear
+                the singer is never a dead end. Shown only while the mic is
+                down: a tap on the mic takes it away. */}
+            <div class={styles.slot}>
+              <Show
+                when={phase() === 'missed' && props.onWithoutMic !== undefined}
+                fallback={
+                  <p
+                    class={styles.fine}
+                    classList={{ [styles.away]: !before() }}
+                    data-testid="onboarding-priming"
+                  >
+                    {ONBOARDING_COPY.listens}
+                  </p>
+                }
+              >
+                <WithoutMic onWithoutMic={props.onWithoutMic} />
+              </Show>
+            </div>
           </Match>
         </Switch>
         <p class={styles.promise}>

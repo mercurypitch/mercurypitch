@@ -96,7 +96,7 @@ import { KeepView } from './KeepView'
 import { lineSaysText, LineView } from './LineView'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY } from './onboarding-copy'
-import { leaveOnboarding, markNotNow, onboardingEntry, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
+import { countFinished, leaveOnboarding, markFinished, markNotNow, onboardingEntry, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
 import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
 import { offerSkipNow, onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
@@ -386,6 +386,7 @@ export function NativeOnboarding(): JSX.Element {
   const continueLine = (): void => {
     if (untrack(continuing) || untrack(leaving) || exiting) return
     setContinuing(true)
+    markFinished()
     const asks = offerAsks ?? prepareOnboardingOffer()
     // Not now while the asks are out takes over: its offer, not this one.
     const stands = (): boolean => !untrack(leaving) && !exiting
@@ -396,6 +397,7 @@ export function NativeOnboarding(): JSX.Element {
         leaveOnboarding('finished')
         return
       }
+      countFinished()
       showOffer()
     })
   }
@@ -519,6 +521,9 @@ export function NativeOnboarding(): JSX.Element {
   /** Merc's line on the beat on screen, for its bubble and the live region.
    *  None under Keep or the Cloud offer: the sheet says it. */
   const said = (): string | null => {
+    // Not now's asks are out: the beats behind it went back to their start,
+    // and their asks must not be read out again over the way out.
+    if (deciding()) return null
     switch (beat()) {
       case 'keep':
       case 'offer':
@@ -596,6 +601,30 @@ export function NativeOnboarding(): JSX.Element {
       count('native_onboarding_first_note_view')
     }
   })
+
+  // The button a beat was left by goes with its beat, and focus would fall to
+  // the page behind the dialog. Back into the dialog, whose name says the
+  // beat now showing. Not under Keep or the Cloud offer: a sheet takes focus
+  // itself.
+  createEffect(
+    on(
+      beat,
+      (now) => {
+        if (now === 'keep' || now === 'offer') return
+        queueMicrotask(() => {
+          const active = document.activeElement
+          if (
+            root === undefined ||
+            (active !== null && root.contains(active))
+          ) {
+            return
+          }
+          root.focus({ preventScroll: true })
+        })
+      },
+      { defer: true },
+    ),
+  )
 
   return (
     <div

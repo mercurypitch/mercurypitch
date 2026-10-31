@@ -21,7 +21,7 @@
 
 import { hapticTap, openAppSettings, } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, ErrorBoundary, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { TAB_HOME } from '@/features/tabs/constants'
@@ -32,7 +32,7 @@ import { onUnlockShown, setNotificationPresenter, showActionNotification, showNo
 import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
-import { installNativeOnboarding, onboardingMounted, } from '../onboarding/onboarding-layer'
+import { abandonOnboarding, installNativeOnboarding, onboardingMounted, } from '../onboarding/onboarding-layer'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
@@ -549,7 +549,17 @@ export const NativeShell: Component = () => {
               and under the sheets after it, which open over it. */}
           {NATIVE_ONBOARDING ? (
             <Show when={onboardingMounted()}>
-              <NativeOnboarding />
+              {/* A layer that will not load or draw lets the app go, rather
+                  than holding the rail and the Sing room behind nothing. */}
+              <ErrorBoundary
+                fallback={(error: unknown) => {
+                  console.error('The onboarding failed:', error)
+                  queueMicrotask(abandonOnboarding)
+                  return null
+                }}
+              >
+                <NativeOnboarding />
+              </ErrorBoundary>
             </Show>
           ) : null}
 

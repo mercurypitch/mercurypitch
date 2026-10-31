@@ -46,6 +46,7 @@ let controller: FirstNoteController | null = null
 interface Ways {
   onRange: () => void
   onSkip: () => void
+  onWithoutMic?: () => void
 }
 
 function show(
@@ -66,6 +67,7 @@ function show(
         line={noteSays(note)}
         onRange={() => ways.onRange()}
         onSkip={() => ways.onSkip()}
+        onWithoutMic={ways.onWithoutMic}
         skipped={false}
         merc={
           <MercView
@@ -178,7 +180,12 @@ describe('the first note', () => {
 
   it('listens again by itself once, then asks for a tap', async () => {
     const s = stand()
-    show(s)
+    const withoutMic = vi.fn()
+    show(s, {
+      onRange: () => undefined,
+      onSkip: () => undefined,
+      onWithoutMic: withoutMic,
+    })
     await listen()
     s.frames = noteTake(0)
     flushFrame()
@@ -192,9 +199,17 @@ describe('the first note', () => {
     expect(line()).toBe(ONBOARDING_COPY.missed)
     expect(micState()).toBe('ready')
     expect(s.calls.release).toBeGreaterThan(0)
-    // The tap tries again.
+    // A mic that opens and cannot hear the singer is no dead end: on
+    // without it, as a refused mic goes, and only while the mic is down.
+    expect(q('onboarding-without-mic')?.textContent).toBe(
+      ONBOARDING_COPY.withoutMic,
+    )
+    q('onboarding-without-mic')?.click()
+    expect(withoutMic).toHaveBeenCalledTimes(1)
+    // The tap tries again, and the way on without the mic stands aside.
     q('onboarding-mic')?.click()
     expect(s.calls.acquire).toBe(2)
+    expect(q('onboarding-without-mic')).toBeNull()
   })
 
   it('says why a refused mic did not open, takes the grant back, and tries again', async () => {
@@ -251,5 +266,27 @@ describe('the first note', () => {
     const released = s.calls.release
     controller?.leave()
     expect(s.calls.release).toBe(released + 1)
+    expect(controller?.state().phase).toBe('hello')
+  })
+
+  it('drops a mic still opening when the onboarding leaves', async () => {
+    const s = stand()
+    let open = (): void => undefined
+    s.answer = async () =>
+      new Promise<void>((resolve) => {
+        open = resolve
+      })
+    show(s)
+    q('onboarding-mic')?.click()
+    await settle()
+    expect(controller?.state().phase).toBe('starting')
+
+    controller?.leave()
+    expect(controller?.state().phase).toBe('hello')
+    open()
+    await settle()
+
+    expect(controller?.state().phase).toBe('hello')
+    expect(s.calls.startWindow).toBe(0)
   })
 })

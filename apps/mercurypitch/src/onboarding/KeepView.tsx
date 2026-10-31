@@ -7,7 +7,9 @@
 // time in it. Behind the sheet the stage stays: Merc on his lit spot, at
 // the top of the stage, so he stands over the sheet where there is room
 // and only his feet go behind it where there is not (the probe measures
-// it), with nothing to say (the sheet says it) and nothing in reach. The
+// it), with nothing to say (the sheet says it) and nothing in reach. On a
+// phone too short for both he steps out while the sheet is up (the module's
+// short-phone rule), rather than standing wholly behind it. The
 // layer goes on once Keep and whatever it handed over to have closed
 // (NativeOnboarding.tsx). Beat 9, the Cloud offer, is the shell's own sheet
 // as well, and stands over this same stage, empty: Merc goes with the

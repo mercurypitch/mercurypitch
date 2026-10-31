@@ -78,7 +78,7 @@ describe("the onboarding's reveal of a Bass/Baritone tie", () => {
   it('reads Bass-baritone under E2 to G4 and finds its twin', async () => {
     show(rangeFromEnds(40, 67))
 
-    expect(q('onboarding-card-range')?.textContent).toBe('E2 to G4')
+    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(q('onboarding-card-type')?.textContent).toBe('Bass-baritone')
 
     q('onboarding-find-twin')?.click()

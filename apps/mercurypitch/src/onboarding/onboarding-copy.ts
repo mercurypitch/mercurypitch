@@ -38,8 +38,8 @@ export const ONBOARDING_COPY = {
   /** Under the mic, and its name: what a tap does. */
   sing: 'Sing a note',
   /** Today's priming copy (the Sing room's), ending in the house promise. */
-  listens:
-    'Mercury Pitch listens while you sing and draws your pitch on screen.',
+  // Merc is the one who listens, as he is the one who asked.
+  listens: 'Merc listens while you sing and draws your pitch on screen.',
   private: 'Only you can hear you.',
   /** The mic's name while it opens. */
   opening: 'Opening the microphone',
@@ -184,9 +184,17 @@ export function heardLine(note: string): string {
   return `That's ${noteArticle(note)} ${note}.`
 }
 
-/** "E2 to G4": a range, as the reveal's card and Merc say it. */
+/** "E2 to G4": a range, as Merc says it. */
 export function rangeWords(low: string, high: string): string {
   return `${low} to ${high}`
+}
+
+/**
+ * "E2–G4": a range, as a card writes it: the reveal's, then Keep's that it
+ * flies into, and Progress's (keepRange in keep-voiceprint.ts).
+ */
+export function rangeSpan(low: string, high: string): string {
+  return `${low}\u2013${high}`
 }
 
 /** "E2 to G4. That's your range today." Ranges move, hence "today". */

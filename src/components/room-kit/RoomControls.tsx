@@ -173,7 +173,7 @@ export function MicBlocked(props: MicBlockedProps): JSX.Element {
     <>
       <p class={styles.blocked} role="alert">
         {props.block === 'denied'
-          ? 'Merc needs the microphone to hear your note. Allow it in Settings, then try again.'
+          ? 'Merc needs the microphone to hear you. Allow it in Settings, then try again.'
           : 'The microphone did not open. Check that no other app is using it, then try again.'}
       </p>
       <div class={styles.actions}>

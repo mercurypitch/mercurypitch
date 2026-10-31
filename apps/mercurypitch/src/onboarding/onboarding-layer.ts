@@ -85,6 +85,8 @@ let letInNow: (() => void) | null = null
 let layerNotNow: (() => void) | null = null
 /** Not now has been said on this layer: it leaves as Not now. */
 let notNowSaid = false
+/** The finish counted for this layer (countFinished). */
+let finishCounted = false
 
 function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
@@ -100,6 +102,7 @@ function show(next: OnboardingEntry): void {
   }
   setEntry(next)
   notNowSaid = false
+  finishCounted = false
   releaseArrival ??= holdRoomArrival()
   setMounted(true)
   setOnboardingShown(true)
@@ -169,6 +172,28 @@ export function markNotNow(): void {
   trackNativeOnboarding('native_onboarding_not_now')
 }
 
+/**
+ * The line's Continue: the onboarding done for good at once, as Not now is,
+ * so an app closed on the Cloud offer that may follow, or while its asks are
+ * out, never opens the onboarding again.
+ */
+export function markFinished(): void {
+  if (!untrack(onboardingShown) || untrack(entry) !== 'onboarding') return
+  markOnboardingDone()
+}
+
+/**
+ * A finished onboarding counted, once a layer: as the Cloud offer opens over
+ * the line (an app closed on the offer never comes back to count it), else
+ * as the layer leaves. Not now is counted on its own (markNotNow).
+ */
+export function countFinished(): void {
+  if (!untrack(onboardingShown) || untrack(entry) !== 'onboarding') return
+  if (finishCounted) return
+  finishCounted = true
+  trackNativeOnboarding('native_onboarding_done')
+}
+
 /** After the reveal's Continue the card flies in; any other way, it is there. */
 function keepAgain(exit: OnboardingExit): void {
   if (exit === 'finished') openKeepFromReveal()
@@ -231,7 +256,7 @@ export function leaveOnboarding(asked: OnboardingExit): boolean {
   if (toAlley) markNotNow()
   else if (onboarding) {
     markOnboardingDone()
-    trackNativeOnboarding('native_onboarding_done')
+    countFinished()
   }
   // Pushed while the layer is still up: it fades off the path.
   if (landing) landOnWarmUp()
@@ -262,6 +287,19 @@ export function leaveOnboarding(asked: OnboardingExit): boolean {
   afterRange = null
   then?.(exit)
   return true
+}
+
+/**
+ * The layer would not load or draw: never leave the singer behind an empty
+ * dialog, with the rail hidden and the Sing room held under it. Done for good,
+ * since a layer that failed once would fail again on every Sing door, and out
+ * to the alley, as Not now goes, without counting a Not now nobody said.
+ */
+export function abandonOnboarding(): void {
+  if (!untrack(onboardingShown)) return
+  if (untrack(entry) === 'onboarding') markOnboardingDone()
+  notNowSaid = true
+  leaveOnboarding('not-now')
 }
 
 /** How the onboarding last left, for its tests and its walk. */
