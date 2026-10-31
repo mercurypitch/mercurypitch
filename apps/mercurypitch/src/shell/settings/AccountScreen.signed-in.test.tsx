@@ -15,6 +15,7 @@ import { fetchTwofaStatus } from '@/db/services/auth-mfa-service'
 import { fetchSessions } from '@/db/services/auth-sessions-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { setAuthToken } from '@/db/services/user-service'
+import { grantBoardConsent, revokeBoardConsent, } from '@/features/challenges/board-consent'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { pushed, resetRunShell } from '../run-shell-store'
@@ -34,6 +35,10 @@ vi.mock('@/db/services/auth-sessions-service', () => ({
 }))
 vi.mock('@/db/services/newsletter-service', () => ({
   setNewsletterOptIn: vi.fn(),
+}))
+vi.mock('@/features/challenges/board-consent', () => ({
+  grantBoardConsent: vi.fn(async () => true),
+  revokeBoardConsent: vi.fn(async () => true),
 }))
 
 const readMeMock = vi.mocked(readMe)
@@ -55,7 +60,12 @@ function token(provider: string): string {
   return `header.${body}.signature`
 }
 
-function account(email: string, provider: 'apple' | 'google', news = false) {
+function account(
+  email: string,
+  provider: 'apple' | 'google',
+  news = false,
+  boards = false,
+) {
   return {
     status: 'ok' as const,
     me: {
@@ -71,7 +81,7 @@ function account(email: string, provider: 'apple' | 'google', news = false) {
         testAccountExpiresAt: null,
         newsletterOptIn: news,
       },
-      profile: { displayName: 'Alex' },
+      profile: { displayName: 'Alex', leaderboardOptIn: boards },
     },
   }
 }
@@ -117,6 +127,8 @@ async function open(
 }
 
 beforeEach(() => {
+  vi.mocked(grantBoardConsent).mockClear()
+  vi.mocked(revokeBoardConsent).mockClear()
   localStorage.clear()
   setAuthToken(null)
   resetAccountState()
@@ -248,6 +260,52 @@ describe("the account's own settings", () => {
     ).toBe('false')
     expect(q('[data-testid="account-error"]')?.textContent).toBe(
       'Could not save that',
+    )
+  })
+
+  it('shows the name on public boards as the account holds it', async () => {
+    setAuthToken(token('google'))
+    readMeMock.mockResolvedValue(
+      account('singer@example.test', 'google', false, true),
+    )
+    view = renderShell(() => <AccountScreen />)
+    await settle()
+    expect(
+      q('[data-testid="account-boards"]')?.getAttribute('aria-checked'),
+    ).toBe('true')
+  })
+
+  it('takes the name off every board, through the one consent', async () => {
+    setAuthToken(token('google'))
+    readMeMock.mockResolvedValue(
+      account('singer@example.test', 'google', false, true),
+    )
+    view = renderShell(() => <AccountScreen />)
+    await settle()
+    readMeMock.mockResolvedValue(account('singer@example.test', 'google'))
+
+    q('[data-testid="account-boards"]')?.click()
+    await settle()
+
+    expect(revokeBoardConsent).toHaveBeenCalledTimes(1)
+    expect(
+      q('[data-testid="account-boards"]')?.getAttribute('aria-checked'),
+    ).toBe('false')
+  })
+
+  it('snaps the boards switch back when the consent cannot be stored', async () => {
+    vi.mocked(grantBoardConsent).mockResolvedValueOnce(false)
+    await open('google', 'singer@example.test')
+
+    q('[data-testid="account-boards"]')?.click()
+    await settle()
+
+    expect(grantBoardConsent).toHaveBeenCalledTimes(1)
+    expect(
+      q('[data-testid="account-boards"]')?.getAttribute('aria-checked'),
+    ).toBe('false')
+    expect(q('[data-testid="account-error"]')?.textContent).toBe(
+      'Could not save that. Try again.',
     )
   })
 

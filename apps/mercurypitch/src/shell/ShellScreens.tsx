@@ -66,6 +66,8 @@ export interface ShellScreensProps {
    * is, so a store build carries no chunk for it.
    */
   leagues?: Component
+  /** The Legend room, on a build with it (NATIVE_LEAGUES). */
+  legend?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -90,6 +92,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   'first-note': 'First note',
   developer: 'Developer',
   leagues: 'Leagues',
+  legend: 'Legend',
 }
 
 /** The device's own screen is named for what it is: "This iPad" on an iPad. */
@@ -161,6 +164,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'leagues': {
         const Leagues = props.leagues
         return Leagues === undefined ? null : <Leagues />
+      }
+      case 'legend': {
+        const Legend = props.legend
+        return Legend === undefined ? null : <Legend />
       }
     }
   }

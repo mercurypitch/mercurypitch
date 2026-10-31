@@ -6,6 +6,13 @@ import { Capacitor } from '@capacitor/core'
 import { resetPageAudioSessionForTests } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import { onCleanup } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// The Legend room is pushed only on a build with it (NATIVE_LEAGUES).
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  NATIVE_LEAGUES: true,
+}))
+
 import { RoomAsk, RoomBarEnd } from '@/components/room-kit/RoomBar'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
@@ -133,6 +140,21 @@ describe('the Echo room', () => {
     expect(screens()[0]?.querySelector('.mp-pushed__title')?.textContent).toBe(
       'Echo',
     )
+  })
+})
+
+describe('the Legend room', () => {
+  it('draws the room passed in, titled Legend, full-bleed', () => {
+    view?.unmount()
+    view = renderShell(() => (
+      <ShellScreens legend={() => <div data-testid="legend-stub" />} />
+    ))
+
+    pushScreen('legend')
+    const room = screens()[0]
+    expect(room?.querySelector('[data-testid="legend-stub"]')).not.toBeNull()
+    expect(room?.classList.contains('mp-pushed--bleed')).toBe(true)
+    expect(room?.querySelector('.mp-pushed__title')?.textContent).toBe('Legend')
   })
 })
 

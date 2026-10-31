@@ -27,9 +27,9 @@ import { authVersion } from '@/db/services/user-service'
 import { thisDevice } from '@/lib/device-noun'
 import { showNotification } from '@/stores/notifications-store'
 import { isApplePrivateRelayAddress } from '../../../../../workers/db-worker/src/apple-relay'
-import { AccountIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, WarnIcon, } from '../icons'
+import { AccountIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, TrophyIcon, WarnIcon, } from '../icons'
 import { pushScreen } from '../run-shell-store'
-import { setProductNews, signOutHere } from './account-actions'
+import { setProductNews, setPublicBoards, signOutHere } from './account-actions'
 import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, RELAY_NOTE, SIGN_OUT_QUESTION, takesStayHere, TWO_STEP, } from './account-copy'
 import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { AccountFillNote } from './AccountFillNote'
@@ -144,6 +144,8 @@ function AccountSettings(): JSX.Element {
   // The answer asked for, while the account is being told. Null otherwise,
   // when the switch shows what the account holds.
   const [newsAsked, setNewsAsked] = createSignal<boolean | null>(null)
+  // The same for public boards.
+  const [boardsAsked, setBoardsAsked] = createSignal<boolean | null>(null)
   const [error, setError] = createSignal('')
   let live = true
   onCleanup(() => {
@@ -194,6 +196,28 @@ function AccountSettings(): JSX.Element {
     }
   }
 
+  const boardsOn = (): boolean =>
+    boardsAsked() ?? accountCard()?.boards === true
+
+  async function changeBoards(next: boolean): Promise<void> {
+    if (boardsAsked() !== null) return
+    setError('')
+    setBoardsAsked(next)
+    try {
+      await setPublicBoards(next)
+      showNotification(
+        next
+          ? 'Your name shows on public boards'
+          : 'Your name is off every public board, past podiums too',
+        'info',
+      )
+    } catch (err) {
+      if (live) setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      if (live) setBoardsAsked(null)
+    }
+  }
+
   return (
     <>
       <SettingsGroup>
@@ -237,6 +261,24 @@ function AccountSettings(): JSX.Element {
               disabled={newsAsked() !== null}
               testId="account-news"
               onChange={(next) => void changeNews(next)}
+            />
+          }
+        />
+        {/* One consent for every board: Leagues, Legends and the
+            leaderboard (board-consent.ts). Off, the name leaves them all,
+            past podiums included. */}
+        <SettingsRow
+          id="public-boards"
+          icon={<TrophyIcon />}
+          label="Show my name on public boards"
+          sub="Leagues, Legends and the leaderboard"
+          accessory={
+            <SettingsSwitch
+              checked={boardsOn()}
+              label="Show my name on public boards"
+              disabled={boardsAsked() !== null}
+              testId="account-boards"
+              onChange={(next) => void changeBoards(next)}
             />
           }
         />

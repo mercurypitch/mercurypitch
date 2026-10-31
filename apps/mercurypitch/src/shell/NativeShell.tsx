@@ -39,13 +39,14 @@ import { installHistoryDepth } from './history-depth'
 import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { installLeagueRefresh } from './leagues/league-store'
+import { installLegendRefresh } from './legend/legend-store'
 import { MoreSheet } from './MoreSheet'
 import { NoticePill } from './NoticePill'
 import { installPortraitLock } from './portrait-lock'
 import { installPremiumExercises } from './premium-exercise-wiring'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, quietRunForRoom, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { resumeAfterDeletion } from './settings/account-deletion'
 import { installAccountOffer, openKeep } from './settings/account-offer'
@@ -165,6 +166,19 @@ const LeaguesScreen: Component = NATIVE_LEAGUES
   : () => null
 
 /**
+ * The Legend room (slice 3 of docs/plans/native-more-and-community.md), on
+ * the same switch as Leagues and the same ternary, so the store build keeps
+ * no chunk.
+ */
+const LegendScreen: Component = NATIVE_LEAGUES
+  ? lazy(async () =>
+      import('./legend/LegendScreen').then((module) => ({
+        default: module.LegendScreen,
+      })),
+    )
+  : () => null
+
+/**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
  * loads when it first opens, on a new install's first Sing door, so a phone
@@ -236,7 +250,10 @@ export const NativeShell: Component = () => {
 
     // The league the More sheet's Leagues row names, kept current from the
     // foreground (league-store.ts). A store build folds it away.
-    if (NATIVE_LEAGUES) onCleanup(installLeagueRefresh())
+    if (NATIVE_LEAGUES) {
+      onCleanup(installLeagueRefresh())
+      onCleanup(installLegendRefresh())
+    }
 
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
@@ -490,6 +507,7 @@ export const NativeShell: Component = () => {
             homeNote={PREMIUM_EXERCISES ? HomeNoteScreen : undefined}
             firstNote={PREMIUM_EXERCISES ? FirstNoteScreen : undefined}
             leagues={NATIVE_LEAGUES ? LeaguesScreen : undefined}
+            legend={NATIVE_LEAGUES ? LegendScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom
@@ -510,6 +528,12 @@ export const NativeShell: Component = () => {
             }}
             onPushLeagues={() => {
               pushScreen('leagues')
+            }}
+            onPushLegend={() => {
+              // The room opens the mic: a run on this screen lets go of it
+              // first, and comes back paused (quietRunForRoom).
+              quietRunForRoom()
+              pushScreen('legend')
             }}
           />
 

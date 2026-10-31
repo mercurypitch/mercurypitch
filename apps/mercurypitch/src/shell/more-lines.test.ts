@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LeagueMe } from '@/db/services/league-service'
-import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, pianoLine, settingsLine, } from './more-lines'
+import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
 
 describe('the Karaoke line', () => {
   it('counts the songs ready on a fresh install', () => {
@@ -165,6 +165,51 @@ describe('the Leagues line', () => {
       },
     ]) {
       expect(leaguesLine(facts)).toBe('A rung higher every week')
+    }
+  })
+})
+
+describe('the Legend line', () => {
+  const NOW = Date.parse('2026-10-31T12:00:00Z')
+  const closing = (hours: number) => ({
+    endsAt: new Date(NOW + hours * 3_600_000).toISOString(),
+  })
+
+  it('says something true before the phone has read anything', () => {
+    expect(legendLine({ challenge: undefined, best: null, nowMs: NOW })).toBe(
+      'The line everyone sings',
+    )
+  })
+
+  it('says when nothing is running', () => {
+    expect(legendLine({ challenge: null, best: null, nowMs: NOW })).toBe(
+      'The next Legend opens soon',
+    )
+  })
+
+  it('says when the running Legend closes, in words', () => {
+    expect(legendLine({ challenge: closing(74), best: null, nowMs: NOW })).toBe(
+      'Ends in 3 days',
+    )
+    expect(legendLine({ challenge: closing(5), best: null, nowMs: NOW })).toBe(
+      'Ends in 5 hours',
+    )
+    expect(legendLine({ challenge: closing(-2), best: null, nowMs: NOW })).toBe(
+      'Closing',
+    )
+  })
+
+  it("says the singer's best once they have sung it", () => {
+    expect(legendLine({ challenge: closing(74), best: 82, nowMs: NOW })).toBe(
+      'Sung, best 82%',
+    )
+  })
+
+  it('never names a period: a Legend runs one to eight weeks', () => {
+    for (const challenge of [undefined, null, closing(74), closing(-2)]) {
+      expect(legendLine({ challenge, best: null, nowMs: NOW })).not.toMatch(
+        /\b(weekly|monthly|fortnightly|this week|this month)\b/iu,
+      )
     }
   })
 })

@@ -10,6 +10,7 @@
 import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
 import type { LeagueNeighbours, LeagueZone } from '@/lib/league-board'
 import { ordinal } from '@/lib/league-board'
+import { durationInWords } from '../duration-words'
 
 /** "1 point", "120 points". */
 export function pointsWord(points: number): string {
@@ -66,23 +67,9 @@ export function rulesLines(rung: LeagueRung, near: LeagueNeighbours): string[] {
   return [up, down]
 }
 
-/**
- * "3 days", "a day", "5 hours", "an hour", "less than an hour": rounded to
- * the nearest unit, so the time left is never read as half what it is
- * (47 hours is "2 days", not "a day").
- */
-export function cutInWords(ms: number): string {
-  const hours = Math.round(ms / 3_600_000)
-  if (hours >= 36) return `${Math.round(hours / 24)} days`
-  if (hours >= 24) return 'a day'
-  if (hours >= 2) return `${hours} hours`
-  if (hours === 1) return 'an hour'
-  return 'less than an hour'
-}
-
 /** When the week's cut comes: Monday at midnight UTC. */
 export function nextCutLine(ms: number): string {
-  return `The next cut is in ${cutInWords(ms)}`
+  return `The next cut is in ${durationInWords(ms)}`
 }
 
 /** The line across the standings where a zone ends. */

@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
 import { readMe } from '@/db/services/auth-me-service'
 import { getAuthToken, setAuthToken } from '@/db/services/user-service'
-import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, forgetAccountCard, refreshAccount, resetAccountState, } from './account-state'
+import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, forgetAccountCard, keepBoardsAnswer, refreshAccount, resetAccountState, } from './account-state'
 
 vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
@@ -94,6 +94,7 @@ describe('the account state', () => {
       email: 'singer@example.test',
       provider: 'apple',
       newsletter: false,
+      boards: false,
     })
     expect(accountDisplayName()).toBe('Alex')
     expect(accountProviderLine()).toBe('Signed in with Apple')
@@ -208,6 +209,38 @@ describe('the account state', () => {
       email: 'singer@example.test',
       provider: 'google',
       newsletter: false,
+      boards: false,
     })
+  })
+
+  it('keeps a stored public-boards answer on the card at once', async () => {
+    setAuthToken(token('user-1', 'apple'))
+    readMeMock.mockResolvedValue(
+      me('user-1', 'Alex', 'singer@example.test', 'apple'),
+    )
+    await refreshAccount()
+
+    // Stored: the card says so before any read of the account answers.
+    keepBoardsAnswer(true)
+
+    expect(accountCard()?.boards).toBe(true)
+    const kept = JSON.parse(localStorage.getItem('mp:account-card') ?? '{}')
+    expect(kept.boards).toBe(true)
+  })
+
+  it('carries the consent to be named on public boards', async () => {
+    setAuthToken(token('user-1', 'apple'))
+    const answer = me('user-1', 'Alex', 'singer@example.test', 'apple')
+    readMeMock.mockResolvedValue({
+      ...answer,
+      me: {
+        ...answer.me,
+        profile: { displayName: 'Alex', leaderboardOptIn: true },
+      },
+    })
+
+    await refreshAccount()
+
+    expect(accountCard()?.boards).toBe(true)
   })
 })

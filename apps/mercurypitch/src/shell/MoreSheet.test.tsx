@@ -27,6 +27,7 @@ function openSheet(): void {
       onPushAccount={vi.fn()}
       onPushDeveloper={vi.fn()}
       onPushLeagues={vi.fn()}
+      onPushLegend={vi.fn()}
     />
   ))
 }
@@ -86,6 +87,7 @@ describe('the More sheet', () => {
         onPushAccount={onPushAccount}
         onPushDeveloper={vi.fn()}
         onPushLeagues={vi.fn()}
+        onPushLegend={vi.fn()}
       />
     ))
 
@@ -106,6 +108,7 @@ describe('the More sheet', () => {
         onPushAccount={vi.fn()}
         onPushDeveloper={vi.fn()}
         onPushLeagues={vi.fn()}
+        onPushLegend={vi.fn()}
       />
     ))
 
@@ -128,6 +131,7 @@ describe('the More sheet', () => {
         onPushAccount={vi.fn()}
         onPushDeveloper={onPushDeveloper}
         onPushLeagues={vi.fn()}
+        onPushLegend={vi.fn()}
       />
     ))
 

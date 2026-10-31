@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
-import { boardLine, cutInWords, nextCutLine, placeLine, pointsWord, rulesLines, rungLine, rungName, zoneLine, } from './league-lines'
+import { boardLine, nextCutLine, placeLine, pointsWord, rulesLines, rungLine, rungName, zoneLine, } from './league-lines'
 
 function rung(rank: number, over: Partial<LeagueRung> = {}): LeagueRung {
   return {
@@ -82,24 +82,11 @@ describe("the rung's rules", () => {
 describe('the next cut', () => {
   it('is days or hours in words, never "3d 4h"', () => {
     const hour = 3_600_000
-    expect(cutInWords(3 * 24 * hour + 4 * hour)).toBe('3 days')
-    expect(cutInWords(30 * hour)).toBe('a day')
-    expect(cutInWords(5 * hour + 10 * 60_000)).toBe('5 hours')
-    expect(cutInWords(hour + 1)).toBe('an hour')
-    expect(cutInWords(20 * 60_000)).toBe('less than an hour')
     expect(nextCutLine(2 * 24 * hour)).toBe('The next cut is in 2 days')
-  })
-
-  it('rounds to the nearest unit, never to half the time left', () => {
-    const hour = 3_600_000
-    const minute = 60_000
-    expect(cutInWords(47 * hour + 59 * minute)).toBe('2 days')
-    expect(cutInWords(36 * hour)).toBe('2 days')
-    expect(cutInWords(35 * hour)).toBe('a day')
-    expect(cutInWords(23 * hour + 40 * minute)).toBe('a day')
-    expect(cutInWords(hour + 59 * minute)).toBe('2 hours')
-    expect(cutInWords(59 * minute)).toBe('an hour')
-    expect(cutInWords(6 * 24 * hour + 23 * hour)).toBe('7 days')
+    expect(nextCutLine(47 * hour + 59 * 60_000)).toBe(
+      'The next cut is in 2 days',
+    )
+    expect(nextCutLine(5 * hour)).toBe('The next cut is in 5 hours')
   })
 })
 

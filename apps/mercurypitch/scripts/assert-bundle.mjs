@@ -498,6 +498,13 @@ const KARAOKE_STAGE_2 = [
   ['Climb a rung every week', "the Leagues screen's way in, signed out"],
   ['mp:league-card', "the league the More sheet's row names"],
   ['A rung higher every week', "the More sheet's Leagues row"],
+  // The Legend room (slice 3), on the same switch: its screen is a lazy
+  // chunk behind it, the store its More row reads is free of side effects,
+  // and the row's line is worked out inside the same folded group.
+  ['shell-legend', 'the Legend room'],
+  ['Practice without ranking', "the Legend room's ask before a ranked take"],
+  ['mp:legend-card', "the Legend the More sheet's row names"],
+  ['The line everyone sings', "the More sheet's Legend row"],
 ]
 
 /**

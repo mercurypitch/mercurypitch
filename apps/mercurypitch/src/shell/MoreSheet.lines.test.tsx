@@ -61,6 +61,7 @@ function openSheet(): void {
       onPushAccount={vi.fn()}
       onPushDeveloper={vi.fn()}
       onPushLeagues={vi.fn()}
+      onPushLegend={vi.fn()}
     />
   ))
 }

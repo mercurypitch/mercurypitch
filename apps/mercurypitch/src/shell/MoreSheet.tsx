@@ -14,10 +14,11 @@
 // sheet mounts its rows only while open (Sheet wraps them in a Show), so the
 // reads cost nothing while it is closed and follow their stores while open.
 //
-// TOGETHER, ON ITS SWITCHES. Leagues, This week's challenge and Community
-// form a group between Rooms and You, each row behind a build switch in
+// TOGETHER, ON ITS SWITCHES. Leagues, Legend and Community form a group
+// between Rooms and You, each row behind a build switch in
 // src/lib/native-build.ts (docs/plans/native-more-and-community.md). Leagues
-// rides NATIVE_LEAGUES; with no switch on, the group is not drawn at all.
+// and Legend ride NATIVE_LEAGUES; with no switch on, the group is not drawn
+// at all.
 //
 // A test build also gets Developer, because a TestFlight build has no
 // devtools and a panel only a keyboard can reach is a panel the tester does
@@ -45,9 +46,10 @@ import { API_BASE_URL, COMMIT_SHA } from '@/lib/defaults'
 import { KARAOKE_IMPORT, NATIVE_LEAGUES } from '@/lib/native-build'
 import { gameState, selectedSongName } from '@/stores/falling-notes-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
-import { AccountIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, TrophyIcon, } from './icons'
+import { AccountIcon, CalendarIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, TrophyIcon, } from './icons'
 import { leagueCard, leagueReadThisWeek } from './leagues/league-store'
-import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, pianoLine, settingsLine, } from './more-lines'
+import { legendCard, legendStanding } from './legend/legend-store'
+import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
 import { accountCard, accountProviderLine, accountSignedIn, } from './settings/account-state'
 import { knownInput } from './settings/level-check'
 import { goToTab } from './shell-navigation'
@@ -61,6 +63,8 @@ export interface MoreSheetProps {
   onPushDeveloper: () => void
   /** Leagues, on a build with them (NATIVE_LEAGUES). */
   onPushLeagues: () => void
+  /** The Legend room (NATIVE_LEAGUES). */
+  onPushLegend: () => void
 }
 
 const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
@@ -214,6 +218,17 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
                 thisWeek: leagueReadThisWeek(),
               })}
               onPress={() => leaveTo(props.onPushLeagues)}
+            />
+            <MoreRow
+              id="legend"
+              icon={<CalendarIcon />}
+              name="Legend"
+              line={legendLine({
+                challenge: legendCard(),
+                best: legendStanding()?.best ?? null,
+                nowMs: Date.now(),
+              })}
+              onPress={() => leaveTo(props.onPushLegend)}
             />
           </MoreGroup>
         ) : null}

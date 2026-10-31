@@ -15,6 +15,7 @@
 
 import type { LeagueMe } from '@/db/services/league-service'
 import { ordinal } from '@/lib/league-board'
+import { durationInWords } from './duration-words'
 import { MORE_ACCOUNT_SIGNED_OUT } from './settings/account-copy'
 
 /** "1 song", "3 songs". */
@@ -118,6 +119,36 @@ export function leaguesLine(facts: LeagueFacts): string {
     return `${rung}, no points yet this week`
   }
   return `${rung}, ${ordinal(me.rank)} of ${me.cohortSize}`
+}
+
+export interface LegendRowFacts {
+  /**
+   * The running Legend as the phone kept it (legend-store.ts): undefined
+   * before any read, null when nothing is running.
+   */
+  challenge: { endsAt: string } | null | undefined
+  /** The account's own best on it, or null with no take yet. */
+  best: number | null
+  /** Now, on this phone's clock. */
+  nowMs: number
+}
+
+/**
+ * Legend: the singer's best once they have sung it, else when it closes, in
+ * words. Never a period ("this week", "weekly"): a Legend runs one to eight
+ * weeks (challenge-period-neutral.test.ts), and the countdown is the honest
+ * answer whatever the period is.
+ */
+export function legendLine(facts: LegendRowFacts): string {
+  const challenge = facts.challenge
+  if (challenge === undefined) return 'The line everyone sings'
+  if (challenge === null) return 'The next Legend opens soon'
+  if (facts.best !== null) return `Sung, best ${facts.best}%`
+  const left = Date.parse(challenge.endsAt) - facts.nowMs
+  if (!Number.isFinite(left)) return 'The line everyone sings'
+  // Takes still count for two days past the close.
+  if (left <= 0) return 'Closing'
+  return `Ends in ${durationInWords(left)}`
 }
 
 /** Settings: a microphone the phone refused is the one thing to say. */
