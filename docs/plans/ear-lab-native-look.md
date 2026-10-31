@@ -209,6 +209,19 @@ A design review against the mock-ups (30 Oct) found these, now fixed:
   - The tap pad's word and its line stand together.
   - Contour says "That was the same."
 
+And the review's minor items (31 Oct):
+
+- Merc asks the question whenever an answer is due, the first one too, and
+  his ears ripple beside him while a question plays.
+- The run chip hugs its words until the staircase has a line to draw, and
+  a level that stays says so: "Gap holds at 50.0¢".
+- The Field Book's Echo and Bassline tiles have icons of their own (a
+  phrase, roots in steps), and the rule under its heading stays once read.
+- The Chart's stems are sturdier; Color's bell rises from the line at the
+  lane's ends, and "EQ" stands under the line, clear of it.
+- The practice plate's main button stands over one row: Calibrate, Run
+  again and Done.
+
 ## How each PR is checked
 
 - The repo's checks: `pnpm check`, the native app's `check`, `pnpm arch`,

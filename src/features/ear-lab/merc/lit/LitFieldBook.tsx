@@ -191,6 +191,17 @@ export function LitFieldBook(props: FieldBookPageProps): JSX.Element {
       <text x={LEFT} y={TOP + 28} class={styles.caption} data-part="heading">
         {heading()}
       </text>
+      {/* The rule under the heading, read or reading: the reading's bar
+          runs along it while the song is read. */}
+      <line
+        x1={LEFT}
+        x2={RIGHT}
+        y1={TOP + 40}
+        y2={TOP + 40}
+        stroke="rgb(255 255 255 / 10%)"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
       <Show when={props.pct !== null}>
         <text
           x={RIGHT}
@@ -201,15 +212,6 @@ export function LitFieldBook(props: FieldBookPageProps): JSX.Element {
         >
           {pct()}%
         </text>
-        <line
-          x1={LEFT}
-          x2={RIGHT}
-          y1={TOP + 40}
-          y2={TOP + 40}
-          stroke="rgb(255 255 255 / 10%)"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
         <Glow
           d={lineD(
             LEFT,

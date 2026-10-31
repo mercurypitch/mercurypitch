@@ -688,6 +688,16 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
                       size={72}
                       testId="merc-room-merc"
                     />
+                    {/* Merc listening: two arcs of the sound beside him. */}
+                    <svg
+                      class={styles.ears}
+                      viewBox="0 0 22 26"
+                      aria-hidden="true"
+                      data-on={pose() === 'listen' ? '' : undefined}
+                    >
+                      <path d="M4 8a7 7 0 0 1 0 10" />
+                      <path d="M10 4a12 12 0 0 1 0 18" />
+                    </svg>
                   </div>
                   <div
                     class={styles.bubble}

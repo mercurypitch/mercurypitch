@@ -332,6 +332,12 @@
   cursor: pointer;
 }
 
+/* The sealed run, offered beside Done: lit at its edge. */
+.calibrate {
+  border-color: var(--room-lit-edge);
+  color: var(--room-lit-pale);
+}
+
 /* A short phone (360 x 640, 375 x 667): a smaller number and a shorter
    staircase, so more of the plate shows above the console before it
    scrolls. */

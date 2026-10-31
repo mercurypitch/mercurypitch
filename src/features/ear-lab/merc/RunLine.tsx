@@ -7,7 +7,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Match, Switch } from 'solid-js'
+import { For, Match, Show, Switch } from 'solid-js'
 import type { RoomRunLine, TracePoint } from '@/features/ear-lab/stage-room'
 import styles from './room.module.css'
 
@@ -64,27 +64,36 @@ export function RunLine(props: { line: RoomRunLine }): JSX.Element {
               <div class={styles.pill}>
                 <span class={styles.level}>{line().level}</span>
                 <span class={styles.left}>about {line().left} left</span>
-                <svg
-                  class={styles.trace}
-                  width={TRACE_W}
-                  height={TRACE_H}
-                  viewBox={`0 0 ${TRACE_W} ${TRACE_H}`}
-                  role="img"
-                  aria-label={traceWords(line().trace)}
-                >
-                  <polyline
-                    points={trace().line}
-                    fill="none"
-                    stroke="#efeaff"
-                    stroke-width="1.4"
-                    stroke-linejoin="round"
-                  />
-                  <For each={trace().turns}>
-                    {(turn) => (
-                      <circle cx={turn.x} cy={turn.y} r="2.2" fill="#c3b4ff" />
-                    )}
-                  </For>
-                </svg>
+                {/* The trace once it is a line: until then the chip hugs
+                    its words, as the mock-ups draw it, with no empty end. */}
+                <Show when={line().trace.length >= 2}>
+                  <svg
+                    class={styles.trace}
+                    width={TRACE_W}
+                    height={TRACE_H}
+                    viewBox={`0 0 ${TRACE_W} ${TRACE_H}`}
+                    role="img"
+                    aria-label={traceWords(line().trace)}
+                  >
+                    <polyline
+                      points={trace().line}
+                      fill="none"
+                      stroke="#efeaff"
+                      stroke-width="1.4"
+                      stroke-linejoin="round"
+                    />
+                    <For each={trace().turns}>
+                      {(turn) => (
+                        <circle
+                          cx={turn.x}
+                          cy={turn.y}
+                          r="2.2"
+                          fill="#c3b4ff"
+                        />
+                      )}
+                    </For>
+                  </svg>
+                </Show>
               </div>
             )
           }}

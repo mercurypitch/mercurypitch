@@ -62,9 +62,12 @@ export function LitDesk(props: MixingDeskProps): JSX.Element {
     const at = props.reveal === null ? 0 : stripX(props.reveal.index)
     const points: Point[] = []
     for (let x = 18; x <= 372; x += 6) {
+      // Eased down to the line at the lane's ends: a band at the edge
+      // rises from the line, not from halfway up its flank.
+      const ends = clamp(Math.min(x - 18, 372 - x) / 24, 0, 1)
       points.push([
         x,
-        CURVE_Y - BELL * lift * Math.exp(-Math.pow((x - at) / 32, 2)),
+        CURVE_Y - BELL * lift * ends * Math.exp(-Math.pow((x - at) / 32, 2)),
       ])
     }
     return polyD(points)
@@ -95,7 +98,8 @@ export function LitDesk(props: MixingDeskProps): JSX.Element {
       data-instrument="desk-strips"
     >
       <LitDefs ids={ids} height={STAGE_H} />
-      <text x="18" y={CURVE_Y - 14} class={styles.small}>
+      {/* Under the line, where no bell can cross it. */}
+      <text x="18" y={CURVE_Y + 15} class={styles.small}>
         EQ
       </text>
       <line

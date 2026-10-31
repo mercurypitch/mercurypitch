@@ -618,16 +618,20 @@ export function PlateNext(props: {
         >
           {props.label}
         </button>
-        <Show when={props.calibrate}>
-          <button
-            type="button"
-            class={roomStyles.secondary}
-            onClick={() => props.onCalibrate()}
-          >
-            Calibrate <small>· sealed · about 50 questions</small>
-          </button>
-        </Show>
+        {/* Under the main one, a row, as the mock-ups lay it out: the
+            sealed run (its sheet says the rest before it starts), Run
+            again where the main one is not it, and Done. */}
         <div class={styles.pair}>
+          <Show when={props.calibrate}>
+            <button
+              type="button"
+              class={`${styles.plain} ${styles.calibrate}`}
+              aria-label="Calibrate: a sealed run, about 50 questions"
+              onClick={() => props.onCalibrate()}
+            >
+              Calibrate
+            </button>
+          </Show>
           <Show when={props.again}>
             <button
               type="button"

@@ -142,12 +142,12 @@ describe('the verdict, felt', () => {
 })
 
 describe('bubbleShows', () => {
-  it('shows the task in full on the first question', () => {
+  it('shows the task in full while the first question sounds', () => {
     expect(bubbleShows({ beat: 'listen', answered: 0 })).toBe('prompt')
-    expect(bubbleShows({ beat: 'answer', answered: 0 })).toBe('prompt')
   })
 
-  it('asks the question again whenever an answer is due, and says nothing over the sound', () => {
+  it('asks the question whenever an answer is due, the first too, and says nothing over the sound', () => {
+    expect(bubbleShows({ beat: 'answer', answered: 0 })).toBe('ask')
     expect(bubbleShows({ beat: 'answer', answered: 1 })).toBe('ask')
     expect(bubbleShows({ beat: 'answer', answered: 40 })).toBe('ask')
     expect(bubbleShows({ beat: 'listen', answered: 4 })).toBe('none')
