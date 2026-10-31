@@ -2252,3 +2252,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   verbatim). On its return: save its text verbatim to review/film-03/REPORT.md (unless it wrote it), LEDGER row 32,
   DECISIONS triage (134), NEXT.md, push-notes. SHIP -> DELIVERY (#207); ONE MORE PASS -> polish round 3.
   Keep-alive: the critic run counts as activity, but keep a Monitor armed on the status until "done" anyway.
+- 03:34:19 film-03 render-l4.sh DONE. Lead's measure (review/measure-film-03/): holds 11.6 s inside (0.7 s per 30 s),
+  longest 0.5 s, no final hold; -16.0 LUFS, LRA 5.2 LU, true peak -1.5 dBTP; audio.csv byte-identical to film-02's
+  (mix unchanged). FILM3 critic running (background). Next: its report -> REPORT.md, LEDGER 32, DECISIONS 134.
