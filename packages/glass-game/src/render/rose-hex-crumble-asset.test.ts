@@ -21,14 +21,14 @@ const deliveries = [
   {
     id: CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleDesktop,
     tier: 'Desktop',
-    bytes: 6_471_632,
-    sha256: '9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61',
+    bytes: 5_597_072,
+    sha256: '10f7e17289dbbb7a17808c6a976512e8b764590500f0de9a966b50d170908c74',
   },
   {
     id: CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleMobile,
     tier: 'Mobile',
-    bytes: 2_073_500,
-    sha256: '6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd',
+    bytes: 1_775_788,
+    sha256: '448952af288e5c3676201b9fe85695da22cc481087685216a0f4662f4bb6ad3e',
   },
 ] as const
 

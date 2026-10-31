@@ -94,12 +94,22 @@
     },
     {
       "id": "cloudway-lab-frost-gold-arch-desktop-v1",
-      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb",
+      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v2.glb",
       "node": "Cloudway_FrostGoldArchBreakwallA_V1",
-      "bytes": 9391800,
-      "sha256": "f40a74c9c200f7b86e19cf8c2139e6084e11ff9775919dc96265b7b4e1f71ec3",
+      "bytes": 8256060,
+      "sha256": "549e6872af6f0ed6808554a3b9695383f245ea23bae695b0115bbf194134d9f4",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb",
+          "bytes": 9391800,
+          "sha256": "f40a74c9c200f7b86e19cf8c2139e6084e11ff9775919dc96265b7b4e1f71ec3"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_materials_ior",
         "KHR_materials_transmission",
@@ -112,12 +122,22 @@
     },
     {
       "id": "cloudway-lab-frost-gold-arch-mobile-v1",
-      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb",
+      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v2.glb",
       "node": "Cloudway_FrostGoldArchBreakwallA_V1",
-      "bytes": 3035104,
-      "sha256": "6a2562578f04363ed5225b1792b69561e626a4ca9666bf27724d16223372cdfa",
+      "bytes": 2679240,
+      "sha256": "47b8afbafea1b620d0de272ca6dab4a5935ef8bb4300d807104edf42724aa275",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb",
+          "bytes": 3035104,
+          "sha256": "6a2562578f04363ed5225b1792b69561e626a4ca9666bf27724d16223372cdfa"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_materials_ior",
         "KHR_materials_transmission",
@@ -130,12 +150,22 @@
     },
     {
       "id": "cloudway-lab-rose-hex-crumble-desktop-v3",
-      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
+      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v4.glb",
       "node": "Cloudway_RoseCrystalHexCrumble_V3",
-      "bytes": 6471632,
-      "sha256": "9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61",
+      "bytes": 5597072,
+      "sha256": "10f7e17289dbbb7a17808c6a976512e8b764590500f0de9a966b50d170908c74",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
+          "bytes": 6471632,
+          "sha256": "9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_materials_ior",
         "KHR_materials_transmission",
@@ -145,12 +175,22 @@
     },
     {
       "id": "cloudway-lab-rose-hex-crumble-mobile-v3",
-      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
+      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v4.glb",
       "node": "Cloudway_RoseCrystalHexCrumble_V3",
-      "bytes": 2073500,
-      "sha256": "6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd",
+      "bytes": 1775788,
+      "sha256": "448952af288e5c3676201b9fe85695da22cc481087685216a0f4662f4bb6ad3e",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
+          "bytes": 2073500,
+          "sha256": "6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_materials_ior",
         "KHR_materials_transmission",
@@ -172,24 +212,44 @@
     },
     {
       "id": "cloudway-lab-pearl-quarter-turn-a-desktop-v1",
-      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb",
+      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v2.glb",
       "node": "Cloudway_PearlTealQuarterTurnA_V1",
-      "bytes": 6794736,
-      "sha256": "bd264c04a34e02ca6d510bb2ad3e876cd9f773f31463f39ce4e857b3b287c413",
+      "bytes": 5844452,
+      "sha256": "9855fbbc5f15c7af63195baa6d033cab1103effc61ca663ac359d8e242aa6e71",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb",
+          "bytes": 6794736,
+          "sha256": "bd264c04a34e02ca6d510bb2ad3e876cd9f773f31463f39ce4e857b3b287c413"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_mesh_quantization"
       ]
     },
     {
       "id": "cloudway-lab-pearl-quarter-turn-a-mobile-v1",
-      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb",
+      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v2.glb",
       "node": "Cloudway_PearlTealQuarterTurnA_V1",
-      "bytes": 2097048,
-      "sha256": "dde3db664c97416e32cfcfb82e07f4dd2ffb989917847c1efc6e5e2d3219d137",
+      "bytes": 1783780,
+      "sha256": "cde4d3223cca4e419fcb797081b096c54a2f81c41ff9017e615eb296b2bd3536",
+      "losslessReencode": {
+        "date": "2026-10-31",
+        "from": {
+          "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb",
+          "bytes": 2097048,
+          "sha256": "dde3db664c97416e32cfcfb82e07f4dd2ffb989917847c1efc6e5e2d3219d137"
+        },
+        "method": "PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders. Every other byte range, including the existing Meshopt streams, is copied unchanged."
+      },
       "requiredExtensions": [
         "EXT_meshopt_compression",
+        "EXT_texture_webp",
         "KHR_materials_clearcoat",
         "KHR_mesh_quantization"
       ]

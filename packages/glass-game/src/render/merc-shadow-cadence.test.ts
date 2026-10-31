@@ -3,6 +3,7 @@
 import { readFile } from 'node:fs/promises'
 import type { BufferGeometry, Object3D } from 'three'
 import { Matrix4, SkinnedMesh } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { WebGLObjects } from 'three/src/renderers/webgl/WebGLObjects.js'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -24,10 +25,12 @@ async function actualMerc() {
       import.meta.url,
     ),
   )
-  return new GLTFLoader().parseAsync(
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-    '',
-  )
+  return new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .parseAsync(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      '',
+    )
 }
 
 /** Exercise Three's real object/skeleton cache without requiring GPU rasterization. */

@@ -33,7 +33,7 @@ const REACTION_CUES = [
 
 export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-loading': 'journey/merc-idle.webp',
-  merc: 'glass3d/merc-v2.glb',
+  merc: 'glass3d/merc-v2-meshopt.glb',
   'floor-marble': 'adventure/floor-marble.webp',
   'legend-johnny-cash': 'adventure/legend-johnny-cash.webp',
   'museum-kit': 'adventure/platform-kit-qa-v2.glb',
@@ -64,7 +64,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'opaline-v6': 'adventure-v6/opaline-echo-amphora-qa-v2.glb',
   'amber-v6': 'adventure-v6/amber-cadence-urn-qa-v2.glb',
   'celadon-lark-decanter-fracture-v4':
-    'adventure-v6/celadon-lark-decanter-fracture-v4.glb',
+    'adventure-v6/celadon-lark-decanter-fracture-v4-meshopt.glb',
   'painting-listening-garden-v7': 'adventure-v7/listening-garden.webp',
   'painting-wave-keeper-v7': 'adventure-v7/wave-keeper.webp',
   'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',
@@ -74,10 +74,12 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'floating-museum-garden-edge-mobile-v11':
     'journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
   'floating-museum-architecture-kit-v6':
-    'journey-map-v8/floating-museum-architecture-kit-v8.glb',
-  'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
+    'journey-map-v8/floating-museum-architecture-kit-v8-meshopt.glb',
+  'floating-museum-map-kit-v1':
+    'journey-map-v1/floating-museum-map-kit-v1-meshopt.glb',
   // Authored IDs stay stable while runtime paths invalidate older cached art.
-  'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.gltf',
+  'cloudway-platform-kit-v1':
+    'cloudway-v7/cloudway-platform-kit-v7-meshopt.gltf',
   'cloudway-ribbon-preview': 'cloudway-v3/cloudway-ribbon-preview.webp',
   'cloudway-lab-pearl-marble-long-v1':
     'cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
@@ -86,9 +88,9 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'cloudway-lab-rose-crackle-v1':
     'cloudway-laboratory-v1/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb',
   'cloudway-lab-rose-hex-crumble-desktop-v3':
-    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb',
+    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v4.glb',
   'cloudway-lab-rose-hex-crumble-mobile-v3':
-    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb',
+    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v4.glb',
   'cloudway-lab-amethyst-crackle-v1':
     'cloudway-laboratory-v1/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb',
   'cloudway-lab-frost-lily-step-v1':
@@ -98,15 +100,15 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'cloudway-lab-frosted-scroll-wall-v1':
     'cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb',
   'cloudway-lab-frost-gold-arch-desktop-v1':
-    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb',
+    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v2.glb',
   'cloudway-lab-frost-gold-arch-mobile-v1':
-    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb',
+    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v2.glb',
   'pearl-ribbon-lantern-v1':
     'cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb',
   'cloudway-lab-pearl-quarter-turn-a-desktop-v1':
-    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb',
+    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v2.glb',
   'cloudway-lab-pearl-quarter-turn-a-mobile-v1':
-    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb',
+    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v2.glb',
   'living-crystal-platform-v2':
     'crystal-interiors-v2/living-crystal-platform-v2.glb',
   'runner-crystal-bulwark-v1': 'runner-obstacles-v1/glacial-bulwark.glb',
@@ -211,13 +213,13 @@ const MANIFEST_FILES = [
   'singing-current-walls-v1/manifest.json',
 ] as const
 
-// Standard glTF external buffers preserve the accepted source bytes while
-// keeping every delivered file below the web host's per-file size limit.
+// Standard glTF external buffers keep every delivered file below the web
+// host's per-file size limit. They hold lossless meshopt streams that decode
+// to the accepted V7 source bytes.
 const DEPENDENCY_FILES = [
-  'cloudway-v7/cloudway-platform-kit-v7-part-01.bin',
-  'cloudway-v7/cloudway-platform-kit-v7-part-02.bin',
-  'cloudway-v7/cloudway-platform-kit-v7-part-03.bin',
-  'cloudway-v7/cloudway-platform-kit-v7-part-04.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-meshopt-part-01.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-meshopt-part-02.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-meshopt-part-03.bin',
 ] as const
 
 /** Explicit-listen examples are loaded on demand by the practice UI. */

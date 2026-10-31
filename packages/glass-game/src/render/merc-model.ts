@@ -4,7 +4,7 @@
 
 import type { AnimationClip, Group, Material, Mesh } from 'three'
 import { Box3, LoadingManager, MeshPhysicalMaterial } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { createGameGltfLoader } from './asset-scene-loader'
 import { disposeObject } from './dispose'
 
 export interface MercModelAsset {
@@ -51,7 +51,8 @@ export async function loadMercModel(
   const failedDependencies: string[] = []
   const manager = new LoadingManager()
   manager.onError = (failedUrl) => failedDependencies.push(failedUrl)
-  const gltf = await new GLTFLoader(manager).loadAsync(url)
+  // The delivered Merc stores its geometry as lossless Meshopt streams.
+  const gltf = await createGameGltfLoader(manager).loadAsync(url)
   if (failedDependencies.length > 0 || isAborted()) {
     disposeObject(gltf.scene)
     if (isAborted()) throw abortError()

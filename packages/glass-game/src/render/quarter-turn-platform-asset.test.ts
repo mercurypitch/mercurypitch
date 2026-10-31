@@ -22,14 +22,14 @@ const deliveries = [
   {
     id: PEARL_QUARTER_TURN_BUNDLE_IDS.desktop,
     tier: 'desktop',
-    bytes: 6_794_736,
-    sha256: 'bd264c04a34e02ca6d510bb2ad3e876cd9f773f31463f39ce4e857b3b287c413',
+    bytes: 5_844_452,
+    sha256: '9855fbbc5f15c7af63195baa6d033cab1103effc61ca663ac359d8e242aa6e71',
   },
   {
     id: PEARL_QUARTER_TURN_BUNDLE_IDS.mobile,
     tier: 'mobile',
-    bytes: 2_097_048,
-    sha256: 'dde3db664c97416e32cfcfb82e07f4dd2ffb989917847c1efc6e5e2d3219d137',
+    bytes: 1_783_780,
+    sha256: 'cde4d3223cca4e419fcb797081b096c54a2f81c41ff9017e615eb296b2bd3536',
   },
 ] as const
 

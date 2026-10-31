@@ -264,7 +264,7 @@ test('map asset failure and WebGL context loss recover with one live canvas', as
 }) => {
   let mapRequests = 0
   await page.route(
-    '**/journey-map-v1/floating-museum-map-kit-v1.glb',
+    '**/journey-map-v1/floating-museum-map-kit-v1-meshopt.glb',
     (route) => {
       mapRequests++
       if (mapRequests === 1) void route.abort('failed')

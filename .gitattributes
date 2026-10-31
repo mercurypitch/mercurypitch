@@ -15,13 +15,13 @@ apps/beside-cue/public/games/journey-map-v1/*.glb filter=lfs diff=lfs merge=lfs 
 apps/beside-cue/public/games/journey-map-v8/*.glb filter=lfs diff=lfs merge=lfs -text
 
 # Accepted generated museum/platform delivery bundles.
-apps/beside-cue/public/games/adventure-v6/celadon-lark-decanter-fracture-v4.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/adventure-v6/celadon-lark-decanter-fracture-v4-meshopt.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v11/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/cloudway-v7/*.bin filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/cloudway-laboratory-v1/**/*.glb filter=lfs diff=lfs merge=lfs -text
 
 # Reviewed character and optional original songbook delivery.
-apps/beside-cue/public/games/glass3d/merc-v2.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/glass3d/merc-v2-meshopt.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/adventure-voice-v7/*.mp3 filter=lfs diff=lfs merge=lfs -text
 
 # Reviewed Living Glass runtime exhibit; dense masters stay in the creative archive.

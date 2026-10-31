@@ -438,6 +438,21 @@
     "requiredNamedNodesPresent": true,
     "extensionsUsed": []
   },
+  "delivery": {
+    "file": "floating-museum-map-kit-v1-meshopt.glb",
+    "bytes": 4961228,
+    "sha256": "636f3f4a8670fd2c355018c1aa156ff2d5906d5543d9acc57915d7fd9ebf0523",
+    "extensionsRequired": ["EXT_meshopt_compression", "EXT_texture_webp"],
+    "losslessReencode": {
+      "date": "2026-10-31",
+      "from": {
+        "file": "exports/floating-museum-map-kit-v1.glb",
+        "bytes": 6831200,
+        "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709"
+      },
+      "method": "Lossless EXT_meshopt_compression with no quantization or filters. Vertex, skin and animation views use ATTRIBUTES mode and index views use INDICES mode, so every accessor decodes to the same bytes in the same order. The glTF JSON outside bufferViews and buffers is unchanged. PNG textures are stored as lossless WebP (EXT_texture_webp); every pixel matches, checked with two decoders."
+    }
+  },
   "validation": {
     "packedSource": true,
     "requiredNamedNodes": true,

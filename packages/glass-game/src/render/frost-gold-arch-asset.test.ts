@@ -18,14 +18,14 @@ const deliveries = [
   {
     id: FROST_GOLD_ARCH_BUNDLE_IDS.desktop,
     tier: 'desktop',
-    bytes: 9_391_800,
-    sha256: 'f40a74c9c200f7b86e19cf8c2139e6084e11ff9775919dc96265b7b4e1f71ec3',
+    bytes: 8_256_060,
+    sha256: '549e6872af6f0ed6808554a3b9695383f245ea23bae695b0115bbf194134d9f4',
   },
   {
     id: FROST_GOLD_ARCH_BUNDLE_IDS.mobile,
     tier: 'mobile',
-    bytes: 3_035_104,
-    sha256: '6a2562578f04363ed5225b1792b69561e626a4ca9666bf27724d16223372cdfa',
+    bytes: 2_679_240,
+    sha256: '47b8afbafea1b620d0de272ca6dab4a5935ef8bb4300d807104edf42724aa275',
   },
 ] as const
 

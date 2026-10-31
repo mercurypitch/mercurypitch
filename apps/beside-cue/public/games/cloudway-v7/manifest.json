@@ -14,37 +14,64 @@
   },
   "bundle": {
     "id": "cloudway-platform-kit-v1",
-    "file": "cloudway-platform-kit-v7.gltf",
-    "bytes": 60583,
-    "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1",
+    "file": "cloudway-platform-kit-v7-meshopt.gltf",
+    "bytes": 76306,
+    "sha256": "af2688533c7e5b70b741054dd40e70a7f9bf055322265c1c502bcbdd904f5403",
     "dependencies": [
       {
-        "file": "cloudway-platform-kit-v7-part-01.bin",
-        "bytes": 24483552,
-        "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+        "file": "cloudway-platform-kit-v7-meshopt-part-01.bin",
+        "bytes": 21251392,
+        "sha256": "86a06e960594cdf80124e83808b49818c7f4c63da8ec1e20d36dee5e56f88030"
       },
       {
-        "file": "cloudway-platform-kit-v7-part-02.bin",
-        "bytes": 11976384,
-        "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+        "file": "cloudway-platform-kit-v7-meshopt-part-02.bin",
+        "bytes": 23932821,
+        "sha256": "83e66a81457a23f8ee5bbc481a57bdf393aace8e36764e7709692354cea86564"
       },
       {
-        "file": "cloudway-platform-kit-v7-part-03.bin",
-        "bytes": 23520812,
-        "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
-      },
-      {
-        "file": "cloudway-platform-kit-v7-part-04.bin",
-        "bytes": 17393098,
-        "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+        "file": "cloudway-platform-kit-v7-meshopt-part-03.bin",
+        "bytes": 10798802,
+        "sha256": "a899d6541071f633fa99dad2690162419392b07c6a92e85fc81aae287d0fce07"
       }
     ],
-    "totalBytes": 77434429,
-    "maximumFileBytes": 24483552,
+    "totalBytes": 56059321,
+    "maximumFileBytes": 23932821,
     "acceptedMaster": {
       "file": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
       "bytes": 77414948,
       "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+    },
+    "losslessReencode": {
+      "date": "2026-10-31",
+      "from": {
+        "file": "cloudway-platform-kit-v7.gltf",
+        "bytes": 60583,
+        "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1",
+        "dependencies": [
+          {
+            "file": "cloudway-platform-kit-v7-part-01.bin",
+            "bytes": 24483552,
+            "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+          },
+          {
+            "file": "cloudway-platform-kit-v7-part-02.bin",
+            "bytes": 11976384,
+            "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+          },
+          {
+            "file": "cloudway-platform-kit-v7-part-03.bin",
+            "bytes": 23520812,
+            "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+          },
+          {
+            "file": "cloudway-platform-kit-v7-part-04.bin",
+            "bytes": 17393098,
+            "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+          }
+        ],
+        "totalBytes": 77434429
+      },
+      "method": "Lossless EXT_meshopt_compression with no quantization or filters. Vertex, skin and animation views use ATTRIBUTES mode and index views use INDICES mode, so every accessor decodes to the same bytes in the same order. The glTF JSON outside bufferViews and buffers is unchanged. Textures were already WebP and are unchanged."
     }
   },
   "roots": [
@@ -87,11 +114,15 @@
     "quantizedAccessorRecordSha256": "62e1c2222eca4afc3047e994e3423ffc19cc2cee7c3db12995451d1cf7e0da65"
   },
   "runtimeContract": {
-    "loader": "plain Three.js GLTFLoader",
-    "requiredExtensions": ["EXT_texture_webp", "KHR_mesh_quantization"],
-    "decoderRequired": false,
+    "loader": "Three.js GLTFLoader with the Meshopt decoder (createGameGltfLoader)",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "decoderRequired": true,
     "topologyReduction": false,
-    "delivery": "glTF JSON with four external binary buffers",
+    "delivery": "glTF JSON with three external binary buffers",
     "externalBufferLimitBytes": 25165824
   }
 }

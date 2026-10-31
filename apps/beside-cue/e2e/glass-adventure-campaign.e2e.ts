@@ -60,9 +60,9 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
   expect(models.map((url) => new URL(url).pathname).sort()).toEqual(
     [
       MERC_MODEL_PATH,
-      '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
+      '/games/journey-map-v1/floating-museum-map-kit-v1-meshopt.glb',
       '/games/journey-map-v11/floating-museum-garden-edge-mobile-v11.glb',
-      '/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
+      '/games/journey-map-v8/floating-museum-architecture-kit-v8-meshopt.glb',
     ].sort(),
   )
   expect(models.some((url) => /\/games\/adventure-v\d+\//u.test(url))).toBe(
