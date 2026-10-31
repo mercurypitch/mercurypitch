@@ -1,0 +1,58 @@
+{
+  "glass_shell": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.02,
+      "attenuationColor": [
+        0.82,
+        0.94,
+        0.9
+      ],
+      "attenuationDistance": 0.3
+    },
+    "KHR_materials_iridescence": {
+      "iridescenceFactor": 1.0,
+      "iridescenceIor": 1.55,
+      "iridescenceThicknessMinimum": 100,
+      "iridescenceThicknessMaximum": 430
+    }
+  },
+  "glass_cut": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.03,
+      "attenuationColor": [
+        0.86,
+        0.95,
+        0.92
+      ],
+      "attenuationDistance": 0.35
+    }
+  },
+  "jade_stone": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.04,
+      "attenuationColor": [
+        0.2,
+        0.55,
+        0.35
+      ],
+      "attenuationDistance": 0.05
+    }
+  },
+  "glass_waves": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.02,
+      "attenuationColor": [
+        0.82,
+        0.94,
+        0.9
+      ],
+      "attenuationDistance": 0.3
+    },
+    "KHR_materials_iridescence": {
+      "iridescenceFactor": 1.0,
+      "iridescenceIor": 1.55,
+      "iridescenceThicknessMinimum": 100,
+      "iridescenceThicknessMaximum": 430
+    }
+  }
+}
