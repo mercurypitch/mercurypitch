@@ -2419,3 +2419,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   NEXT: passes done -> merc-whole.py, merc-tags.py --check, clock-lint -> HOSTS=1 stills (S12 falls, floor, end
   card) -> full check (0 errors) -> freeze -> film-05 -> FILM5 critic (xhigh, rate_limit "allowed") -> LEDGER 34,
   DECISIONS 139 -> DELIVERY.md (voices row) -> web encodes (tools/web-video.sh) -> send the owner.
+- 14:3x SEASON 2 CITATIONS RE-ANCHORED AND PUSHED: feat/season-2-plan a8ec22b2f (e8c1072d7 + one commit; lease on
+  e8c1072d7; no PR). How: throwaway base commit 1e064c25a (= b803c7d43 + the 34 docs; built with a temp index, no
+  branch) so `plan-cites reanchor --base 1e064c25a --write` could move 20 backticked citations; /dev/shm/s2fix/bare.py
+  moved 3 unbackticked refs (plan-cites does not read refs without backticks) after a content check line by line
+  (bug found and fixed on the way: -a,0 insertion offset); 9 hand fixes (L15 card words not a quote; L17 :23-24; L21
+  "in the console"; L22 full paths + literal Voice Mirror quote; L25 walkthrough; ARC-D "Twinkle"). plan-cites
+  check on the Season 2 docs: 256 citations, 0 findings. Whole plan on main: 184 findings, all in Season 1 docs
+  (pre-existing drift on main, not this branch's; a possible follow-up for the owner).
