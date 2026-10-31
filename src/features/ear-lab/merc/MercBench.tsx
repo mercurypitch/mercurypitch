@@ -217,356 +217,364 @@ export function MercBench(props: MercBenchProps): JSX.Element {
 
   return (
     <div class={styles.bench} data-testid="merc-bench" id="ear-lab-panel">
-      <div class={styles.hero}>
-        <img
-          class={styles.painting}
-          src="/ear-lab/regulator-room-portrait.webp"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-        />
-        <div class={styles.heroNight} aria-hidden="true" />
-        <div class={styles.heroShade} aria-hidden="true" />
-        <div class={styles.topBar}>
-          <h1 class={styles.tabTitle}>Ear Lab</h1>
-          <button
-            type="button"
-            class={styles.round}
-            aria-label="About the bench, and why there is no percent"
-            data-testid="merc-bench-help"
-            onClick={() => setHelp(true)}
-          >
-            <IconQuestion size={20} />
-          </button>
-        </div>
-        <div class={styles.mercGlow} aria-hidden="true" />
-        <div class={styles.deskShadow} aria-hidden="true" />
-        <div class={styles.mercOnDesk}>
-          <MercPresence
-            state={() => 'point'}
-            stillSrc={mercStill('point')}
-            alt="Merc on the desk, pointing down at Today"
-            size={104}
-            testId="merc-bench-merc"
+      <div class={styles.column}>
+        <div class={styles.hero}>
+          <img
+            class={styles.painting}
+            src="/ear-lab/regulator-room-portrait.webp"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
           />
-        </div>
-        <div class={styles.heroBubble} data-testid="merc-bench-line">
-          <p>{merc()}</p>
-        </div>
-      </div>
-
-      <div class={styles.sections}>
-        <div>
-          <div class={styles.indexHead}>
-            <p class={styles.kicker}>Mercury Index</p>
-            <span class={styles.badge} data-testid="merc-index-badge">
-              {sealed() === null ? 'Not sealed' : 'Sealed'}
-            </span>
-          </div>
-          <h2 class={styles.headline} data-testid="ear-bench-title">
-            <Show when={sealed()} fallback={line().lead}>
-              {(seal) => (
-                <>
-                  <span class={styles.srOnly}>{line().lead}</span>
-                  <span class={styles.number} aria-hidden="true">
-                    {seal().index}
-                  </span>
-                  <Show when={indexMove()}>
-                    {(move) => (
-                      <span
-                        class={styles.indexMove}
-                        classList={{ [styles.indexUp]: move().up }}
-                        aria-hidden="true"
-                      >
-                        {move().text}
-                      </span>
-                    )}
-                  </Show>
-                </>
-              )}
-            </Show>
-          </h2>
-          <p class={styles.lede}>{line().rest}</p>
-          <div class={styles.glassRow}>
-            <Glass
-              sealed={sealed()?.index ?? null}
-              sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
-              estimate={estimate()}
-            />
+          <div class={styles.heroNight} aria-hidden="true" />
+          <div class={styles.heroShade} aria-hidden="true" />
+          <div class={styles.topBar}>
+            <h1 class={styles.tabTitle}>Ear Lab</h1>
             <button
               type="button"
-              class={styles.calibrate}
-              data-testid="merc-calibrate"
-              onClick={calibrate}
+              class={styles.round}
+              aria-label="About the bench, and why there is no percent"
+              data-testid="merc-bench-help"
+              onClick={() => setHelp(true)}
             >
-              Calibrate
+              <IconQuestion size={20} />
             </button>
           </div>
-          <p class={styles.caption}>
-            {glassCaption({
-              sealed: sealed()?.index ?? null,
-              sealedOn: sealed() ? dateLabel(sealed()?.at ?? 0) : null,
-              estimate: estimate(),
-            })}
-          </p>
+          <div class={styles.mercGlow} aria-hidden="true" />
+          <div class={styles.deskShadow} aria-hidden="true" />
+          <div class={styles.mercOnDesk}>
+            <MercPresence
+              state={() => 'point'}
+              stillSrc={mercStill('point')}
+              alt="Merc on the desk, pointing down at Today"
+              size={104}
+              testId="merc-bench-merc"
+            />
+          </div>
+          <div class={styles.heroBubble} data-testid="merc-bench-line">
+            <p>{merc()}</p>
+          </div>
         </div>
 
-        <section
-          class={styles.card}
-          classList={{
-            [styles.lit]: lit() !== null && returning?.origin.kind === 'today',
-          }}
-          aria-labelledby="merc-today"
-          ref={todayCard}
-          data-testid="merc-today"
-        >
-          <div class={styles.cardHead}>
-            <h2 id="merc-today" class={styles.h2}>
-              Today
-            </h2>
-            <span class={styles.count}>
-              {plan().length - remaining().length} of {plan().length}
-              {remaining().length === plan().length
-                ? ' · about 3 min'
-                : ' done'}
-            </span>
-            <span class={styles.days}>{benchDays(Math.max(1, day()))}</span>
-          </div>
-          <ul class={styles.todayList}>
-            <For each={plan()}>
-              {(segment) => {
-                const finished = () => done().has(segment.drillId)
-                const instrument = INSTRUMENTS.find(
-                  (entry) => entry.drillId === segment.drillId,
-                )
-                const reading = () =>
-                  instrument === undefined
-                    ? null
-                    : instrumentReading(instrument)
-                return (
-                  <li
-                    class={styles.todayRow}
-                    classList={{
-                      [styles.todayDone]: finished(),
-                      [styles.lit]: finished() && lit() === segment.drillId,
-                    }}
-                    data-testid="merc-today-row"
-                    data-drill={segment.drillId}
-                  >
-                    <Show
-                      when={finished()}
-                      fallback={
+        <div class={styles.sections}>
+          <div>
+            <div class={styles.indexHead}>
+              <p class={styles.kicker}>Mercury Index</p>
+              <span class={styles.badge} data-testid="merc-index-badge">
+                {sealed() === null ? 'Not sealed' : 'Sealed'}
+              </span>
+            </div>
+            <h2 class={styles.headline} data-testid="ear-bench-title">
+              <Show when={sealed()} fallback={line().lead}>
+                {(seal) => (
+                  <>
+                    <span class={styles.srOnly}>{line().lead}</span>
+                    <span class={styles.number} aria-hidden="true">
+                      {seal().index}
+                    </span>
+                    <Show when={indexMove()}>
+                      {(move) => (
                         <span
-                          class={styles.todayDot}
-                          classList={{
-                            [styles.todayDotNext]:
-                              nextSegment()?.drillId === segment.drillId,
-                          }}
+                          class={styles.indexMove}
+                          classList={{ [styles.indexUp]: move().up }}
                           aria-hidden="true"
-                        />
-                      }
-                    >
-                      <span class={styles.todayCheck}>
-                        <IconCheck size={12} />
-                        <span class={styles.srOnly}>Done:</span>
-                      </span>
+                        >
+                          {move().text}
+                        </span>
+                      )}
                     </Show>
-                    <span class={styles.todayName}>
-                      {drillName(segment.drillId)}
-                    </span>
-                    <span>
-                      <Show
-                        when={finished() && reading()}
-                        fallback={`${TASK[segment.drillId] ?? ''} · ${segmentLength(segment)}`}
-                      >
-                        {(now) =>
-                          `${now().value}${now().unit === '' ? '' : ` ${now().unit}`}${
-                            now().settling ? ' · settling' : ''
-                          }`
-                        }
-                      </Show>
-                    </span>
-                  </li>
-                )
-              }}
-            </For>
-          </ul>
-          <Show
-            when={start()}
-            fallback={
-              <button
-                type="button"
-                class={styles.quiet}
-                data-testid="merc-today-close"
-                onClick={() => setDayDone(true)}
-              >
-                All three done. See the day
-              </button>
-            }
-          >
-            {(next) => (
-              <button
-                type="button"
-                class={styles.primary}
-                data-testid="merc-today-start"
-                onClick={() => startToday(next().segment)}
-              >
-                <IconPlay size={18} />
-                {next().label}
-                <small>· {next().sub}</small>
-              </button>
-            )}
-          </Show>
-        </section>
-
-        {props.rooms}
-
-        <section aria-labelledby="merc-stations">
-          <div class={styles.sectionHead}>
-            <h2 id="merc-stations" class={styles.h2}>
-              Stations
+                  </>
+                )}
+              </Show>
             </h2>
-            <span class={styles.count}>{INSTRUMENTS.length} instruments</span>
+            <p class={styles.lede}>{line().rest}</p>
+            <div class={styles.glassRow}>
+              <Glass
+                sealed={sealed()?.index ?? null}
+                sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
+                estimate={estimate()}
+              />
+              <button
+                type="button"
+                class={styles.calibrate}
+                data-testid="merc-calibrate"
+                onClick={calibrate}
+              >
+                Calibrate
+              </button>
+            </div>
+            <p class={styles.caption}>
+              {glassCaption({
+                sealed: sealed()?.index ?? null,
+                sealedOn: sealed() ? dateLabel(sealed()?.at ?? 0) : null,
+                estimate: estimate(),
+              })}
+            </p>
           </div>
-          <div class={styles.stations}>
-            <For each={STATION_ORDER}>
-              {(faculty) => {
-                const lead = stationInstruments(faculty)[0]
-                const Icon =
-                  faculty === 'wild' || lead === undefined
-                    ? IconEar
-                    : INSTRUMENT_ICON[lead.view]
-                const reading = () => stationReading(faculty)
-                return (
-                  <button
-                    type="button"
-                    class={styles.station}
-                    classList={{ [styles.lit]: litFaculty() === faculty }}
-                    aria-label={stationLabel(faculty)}
-                    data-testid="merc-station"
-                    data-faculty={faculty}
-                    onClick={() => setSheet(faculty)}
-                  >
-                    <span class={styles.stationTop} aria-hidden="true">
-                      <span class={styles.stationIcon}>
-                        <Dynamic component={Icon} size={22} />
-                      </span>
-                      <span class={styles.stationNames}>
-                        <span class={styles.stationTitle}>
-                          {stationTitle(faculty)}
-                        </span>
-                        <span class={styles.stationCast}>
-                          {stationCast(faculty)}
-                        </span>
-                      </span>
-                    </span>
-                    <Show
-                      when={faculty !== 'wild' || reading() !== null}
-                      fallback={
-                        <>
-                          <span class={styles.stationEmpty} aria-hidden="true">
-                            {wildSongs()}
-                          </span>
-                          <span
-                            class={styles.stationDirection}
-                            aria-hidden="true"
-                          >
-                            rated per song
-                          </span>
-                        </>
-                      }
+
+          <section
+            class={styles.card}
+            classList={{
+              [styles.lit]:
+                lit() !== null && returning?.origin.kind === 'today',
+            }}
+            aria-labelledby="merc-today"
+            ref={todayCard}
+            data-testid="merc-today"
+          >
+            <div class={styles.cardHead}>
+              <h2 id="merc-today" class={styles.h2}>
+                Today
+              </h2>
+              <span class={styles.count}>
+                {plan().length - remaining().length} of {plan().length}
+                {remaining().length === plan().length
+                  ? ' · about 3 min'
+                  : ' done'}
+              </span>
+              <span class={styles.days}>{benchDays(Math.max(1, day()))}</span>
+            </div>
+            <ul class={styles.todayList}>
+              <For each={plan()}>
+                {(segment) => {
+                  const finished = () => done().has(segment.drillId)
+                  const instrument = INSTRUMENTS.find(
+                    (entry) => entry.drillId === segment.drillId,
+                  )
+                  const reading = () =>
+                    instrument === undefined
+                      ? null
+                      : instrumentReading(instrument)
+                  return (
+                    <li
+                      class={styles.todayRow}
+                      classList={{
+                        [styles.todayDone]: finished(),
+                        [styles.lit]: finished() && lit() === segment.drillId,
+                      }}
+                      data-testid="merc-today-row"
+                      data-drill={segment.drillId}
                     >
                       <Show
-                        when={reading()}
+                        when={finished()}
+                        fallback={
+                          <span
+                            class={styles.todayDot}
+                            classList={{
+                              [styles.todayDotNext]:
+                                nextSegment()?.drillId === segment.drillId,
+                            }}
+                            aria-hidden="true"
+                          />
+                        }
+                      >
+                        <span class={styles.todayCheck}>
+                          <IconCheck size={12} />
+                          <span class={styles.srOnly}>Done:</span>
+                        </span>
+                      </Show>
+                      <span class={styles.todayName}>
+                        {drillName(segment.drillId)}
+                      </span>
+                      <span>
+                        <Show
+                          when={finished() && reading()}
+                          fallback={`${TASK[segment.drillId] ?? ''} · ${segmentLength(segment)}`}
+                        >
+                          {(now) =>
+                            `${now().value}${now().unit === '' ? '' : ` ${now().unit}`}${
+                              now().settling ? ' · settling' : ''
+                            }`
+                          }
+                        </Show>
+                      </span>
+                    </li>
+                  )
+                }}
+              </For>
+            </ul>
+            <Show
+              when={start()}
+              fallback={
+                <button
+                  type="button"
+                  class={styles.quiet}
+                  data-testid="merc-today-close"
+                  onClick={() => setDayDone(true)}
+                >
+                  All three done. See the day
+                </button>
+              }
+            >
+              {(next) => (
+                <button
+                  type="button"
+                  class={styles.primary}
+                  data-testid="merc-today-start"
+                  onClick={() => startToday(next().segment)}
+                >
+                  <IconPlay size={18} />
+                  {next().label}
+                  <small>· {next().sub}</small>
+                </button>
+              )}
+            </Show>
+          </section>
+
+          {props.rooms}
+
+          <section aria-labelledby="merc-stations">
+            <div class={styles.sectionHead}>
+              <h2 id="merc-stations" class={styles.h2}>
+                Stations
+              </h2>
+              <span class={styles.count}>{INSTRUMENTS.length} instruments</span>
+            </div>
+            <div class={styles.stations}>
+              <For each={STATION_ORDER}>
+                {(faculty) => {
+                  const lead = stationInstruments(faculty)[0]
+                  const Icon =
+                    faculty === 'wild' || lead === undefined
+                      ? IconEar
+                      : INSTRUMENT_ICON[lead.view]
+                  const reading = () => stationReading(faculty)
+                  return (
+                    <button
+                      type="button"
+                      class={styles.station}
+                      classList={{ [styles.lit]: litFaculty() === faculty }}
+                      aria-label={stationLabel(faculty)}
+                      data-testid="merc-station"
+                      data-faculty={faculty}
+                      onClick={() => setSheet(faculty)}
+                    >
+                      <span class={styles.stationTop} aria-hidden="true">
+                        <span class={styles.stationIcon}>
+                          <Dynamic component={Icon} size={22} />
+                        </span>
+                        <span class={styles.stationNames}>
+                          <span class={styles.stationTitle}>
+                            {stationTitle(faculty)}
+                          </span>
+                          <span class={styles.stationCast}>
+                            {stationCast(faculty)}
+                          </span>
+                        </span>
+                      </span>
+                      <Show
+                        when={faculty !== 'wild' || reading() !== null}
                         fallback={
                           <>
                             <span
                               class={styles.stationEmpty}
                               aria-hidden="true"
                             >
-                              Unmeasured
+                              {wildSongs()}
                             </span>
                             <span
                               class={styles.stationDirection}
                               aria-hidden="true"
                             >
-                              {faculty === 'resolution' || faculty === 'time'
-                                ? 'lower is finer'
-                                : 'higher is stronger'}
+                              rated per song
                             </span>
                           </>
                         }
                       >
-                        {(now) => (
-                          <>
-                            <span
-                              class={styles.stationReading}
-                              aria-hidden="true"
-                            >
+                        <Show
+                          when={reading()}
+                          fallback={
+                            <>
                               <span
-                                class={styles.stationValue}
-                                classList={{
-                                  [styles.stationValuePractice]: !now().sealed,
-                                }}
+                                class={styles.stationEmpty}
+                                aria-hidden="true"
                               >
-                                {now().value}
-                                {now().unit === '' ? '' : ` ${now().unit}`}
+                                Unmeasured
                               </span>
-                              <span class={styles.stationStatus}>
-                                {now().status}
+                              <span
+                                class={styles.stationDirection}
+                                aria-hidden="true"
+                              >
+                                {faculty === 'resolution' || faculty === 'time'
+                                  ? 'lower is finer'
+                                  : 'higher is stronger'}
                               </span>
-                            </span>
-                            <span
-                              class={styles.stationDirection}
-                              aria-hidden="true"
-                            >
-                              {now().direction}
-                            </span>
-                          </>
-                        )}
+                            </>
+                          }
+                        >
+                          {(now) => (
+                            <>
+                              <span
+                                class={styles.stationReading}
+                                aria-hidden="true"
+                              >
+                                <span
+                                  class={styles.stationValue}
+                                  classList={{
+                                    [styles.stationValuePractice]:
+                                      !now().sealed,
+                                  }}
+                                >
+                                  {now().value}
+                                  {now().unit === '' ? '' : ` ${now().unit}`}
+                                </span>
+                                <span class={styles.stationStatus}>
+                                  {now().status}
+                                </span>
+                              </span>
+                              <span
+                                class={styles.stationDirection}
+                                aria-hidden="true"
+                              >
+                                {now().direction}
+                              </span>
+                            </>
+                          )}
+                        </Show>
                       </Show>
-                    </Show>
-                  </button>
-                )
-              }}
-            </For>
-          </div>
-        </section>
+                    </button>
+                  )
+                }}
+              </For>
+            </div>
+          </section>
 
-        <section class={styles.card} aria-labelledby="merc-path">
-          <div class={styles.cardHead}>
-            <h2 id="merc-path" class={styles.h2}>
-              The Ear Path
-            </h2>
-            <span class={styles.count}>
-              {pathCount(milestones()).lit} of {pathCount(milestones()).of} lit
-            </span>
-          </div>
-          <PathOrbs milestones={milestones()} litToday={null} />
-          <p class={styles.pathLine}>
-            <Show
-              when={nextOnPath(milestones())}
-              fallback="Every orb on the path is lit."
+          <section class={styles.card} aria-labelledby="merc-path">
+            <div class={styles.cardHead}>
+              <h2 id="merc-path" class={styles.h2}>
+                The Ear Path
+              </h2>
+              <span class={styles.count}>
+                {pathCount(milestones()).lit} of {pathCount(milestones()).of}{' '}
+                lit
+              </span>
+            </div>
+            <PathOrbs milestones={milestones()} litToday={null} />
+            <p class={styles.pathLine}>
+              <Show
+                when={nextOnPath(milestones())}
+                fallback="Every orb on the path is lit."
+              >
+                {(next) => `Next milestone: ${next().label}. ${next().note}`}
+              </Show>
+            </p>
+          </section>
+
+          <section class={styles.card}>
+            <button
+              type="button"
+              class={styles.link}
+              data-testid="merc-report"
+              onClick={() => props.onNavigate('report')}
             >
-              {(next) => `Next milestone: ${next().label}. ${next().note}`}
-            </Show>
-          </p>
-        </section>
-
-        <section class={styles.card}>
-          <button
-            type="button"
-            class={styles.link}
-            data-testid="merc-report"
-            onClick={() => props.onNavigate('report')}
-          >
-            <span>
-              <b>Ear Report</b>
-              <small>{REPORT_LINE}</small>
-            </span>
-            <IconChevron size={18} class={styles.onward} />
-          </button>
-        </section>
+              <span>
+                <b>Ear Report</b>
+                <small>{REPORT_LINE}</small>
+              </span>
+              <IconChevron size={18} class={styles.onward} />
+            </button>
+          </section>
+        </div>
       </div>
 
       {/* What the bench lays over the rail goes to <body>: the tab is a

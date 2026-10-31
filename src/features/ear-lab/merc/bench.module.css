@@ -73,7 +73,6 @@
   min-height: 100%;
   /* Clip, not hidden, as in the room: nothing scrolls the tab sideways. */
   overflow-x: clip;
-  container: merc-bench / inline-size;
   background-color: #070b1d;
   background-image:
     radial-gradient(
@@ -117,12 +116,21 @@
   white-space: nowrap;
 }
 
+/* The bench is a column of a phone's width or a little more, in the
+   middle of a tablet's screen: its hero and its glass are drawn to that
+   width (the cqw below), and a card stretched across 1280 px reads like
+   no card at all. */
+.column {
+  max-width: 560px;
+  margin-inline: auto;
+  container: merc-bench / inline-size;
+}
+
 /* ── The hero: the Regulator Room at night, Merc on the desk ────── */
 
 .hero {
   position: relative;
   height: 82cqw;
-  max-height: 440px;
   overflow: clip;
   isolation: isolate;
 }
@@ -363,8 +371,10 @@
   gap: 14px;
 }
 
+/* The glass at its own size, as the plate draws it: grown to fill a
+   wide row, the tube went a thumb thick. */
 .glass {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
   height: auto;
@@ -407,6 +417,7 @@
 
 .calibrate {
   flex: none;
+  margin-left: auto;
   min-height: 44px;
   padding: 0 16px;
   border-radius: 22px;
@@ -788,6 +799,9 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-sheet, 600);
+  /* A phone's width or a little more, in the middle of a tablet. */
+  max-width: 600px;
+  margin-inline: auto;
   max-height: calc(100% - 64px);
   overflow: auto;
   overscroll-behavior: contain;
@@ -1072,7 +1086,9 @@
   inset: 0;
   z-index: var(--z-sheet, 600);
   overflow: auto;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px
+  /* The day's words in a phone's width, in the middle of a tablet. */
+  padding: calc(12px + env(safe-area-inset-top, 0px))
+    max(16px, calc((100% - 560px) / 2))
     calc(24px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   background-color: var(--room-ink);
@@ -1295,6 +1311,29 @@
   to {
     transform: none;
     opacity: 1;
+  }
+}
+
+/* Wider than the column, the painting fades into the night at its
+   sides, rather than stopping at a hard edge. */
+@media (min-width: 600px) {
+  .painting,
+  .heroNight,
+  .heroShade {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 14%,
+      #000 86%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 14%,
+      #000 86%,
+      transparent 100%
+    );
   }
 }
 

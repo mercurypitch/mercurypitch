@@ -16,7 +16,9 @@
 import type { TrailGeometry } from '@/components/room-kit/voice-trail'
 import { TRAIL_REACH_CENTS } from '@/components/room-kit/voice-trail'
 
-/** Merc's canvas, square, as a share of the room's width. */
+/** Merc's canvas, square, as a share of the room's shorter side: its
+ *  width on a phone held upright, its height on a tablet on its side,
+ *  where a share of the width stood him taller than the room. */
 export const MERC_SIZE_W = 0.34
 /** Where his feet stand: a share of the width, a share of the height. */
 const MERC_FEET_AT = { x: 0.78, y: 0.8 }
@@ -54,7 +56,7 @@ export function layoutStage(
   mercFeet: number,
 ): StageLayout {
   const lineY = height * lineShare
-  const size = width * MERC_SIZE_W
+  const size = Math.min(width, height) * MERC_SIZE_W
   const feetX = width * MERC_FEET_AT.x
   const feetY = height * MERC_FEET_AT.y
   return {
