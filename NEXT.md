@@ -2308,3 +2308,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   lab/s16-end/polish3/celebrate-film03-new-and-tail-*.jpg. Full check running (log
   l4entr/polish3/lead/check-r3.log). NEXT: check 0 errors -> freeze $S/l4film04proj -> render film-04
   (WORKERS=2 setsid nohup bash $S/render-l4.sh film-04 60 high $S/l4film04proj; watcher armed) -> FILM4 critic.
+- 06:48 FULL CHECK PASSED (0 errors, 65 warnings = baseline; runtime/motion 0/0; layout 2 info; contrast 61/61;
+  log l4entr/polish3/lead/check-r3.log). Frozen $S/l4film04proj (16 compositions, 148 kit files, 484.729 s).
+  FILM-04 RENDERING since 06:48:15 (WORKERS=2, render-l4.sh, status renders/film-04.status; film to
+  /dev/shm/l4film). Watcher: background Bash bdznvig41 (2 h, to ~08:49; RE-ARM on expiry: wait for " done$" in
+  the status, or "exit [1-9]|FAIL|stall"). Extract cache note: the key includes the frozen copy's path, so every
+  film re-extracts all 68 videos (4.4 GB) and HF's GC then drops the previous film's set (>1 h old): it peaked
+  at 8.8 GB for ~1 min (06:49), then back to 4.4 GB; cgroup use 9.2 GB at 06:49:35. ETA: main pass ~09:00,
+  then seam check (+ repair ~1 h if any piece is bad), music-only, contact sheet, measure. If the container
+  restarts: warm Chrome, then RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 setsid nohup bash
+  $S/render-l4.sh film-04 60 high $S/l4film04proj (pieces under $S/l4film04proj/renders/.hf-segments).
+  AFTER: contact sheet look + measure numbers; get_session rate_limit "allowed" -> fresh motion-critic (xhigh)
+  with critics/FILM4-ready.txt verbatim; save to review/film-04/REPORT.md; LEDGER 33; DECISIONS 136.
