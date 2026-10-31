@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ArchivedWeeklyChallenge, WeeklyBoard, } from '@/features/challenges/weekly-service'
 import type { MelodyItem } from '@/types'
-import { closesLine, countsLine, endedLine, rangeLine, rangeSide, standingLine, takeLine, } from './legend-lines'
+import { askLine, closesLine, closesShortLine, countsLine, endedLine, LEGEND_GRACE_MS, litLine, mercLine, missLine, notesLine, rangeLine, rangeSide, standingLine, } from './legend-lines'
 
 const HOUR = 3_600_000
 const NOW = Date.parse('2026-10-31T12:00:00Z')
@@ -102,12 +102,63 @@ describe('the board', () => {
   })
 })
 
+describe('the close, in a few words', () => {
+  it('says the time left, then Closing through the grace, then nothing', () => {
+    const at = (ms: number): string => new Date(NOW + ms).toISOString()
+    expect(closesShortLine(at(3 * 24 * HOUR), NOW)).toBe('Ends in 3 days')
+    expect(closesShortLine(at(-HOUR), NOW)).toBe('Closing')
+    expect(closesShortLine(at(-LEGEND_GRACE_MS + HOUR), NOW)).toBe('Closing')
+    expect(closesShortLine(at(-LEGEND_GRACE_MS), NOW)).toBeNull()
+    expect(closesShortLine('not a date', NOW)).toBeNull()
+  })
+})
+
 describe('the take', () => {
-  it('says the score against what the Legend asks', () => {
-    expect(takeLine(82, 70)).toBe(
-      '82%: the Legend asks for 70%, and you reached it',
+  it('says what the Legend asks under a score the number already shows', () => {
+    expect(askLine(82, 70)).toBe('The Legend asks for 70%, and you reached it.')
+    expect(askLine(55, 70)).toBe('The Legend asks for 70%.')
+    // Practice passes no score: what it asks, and nothing on reaching it.
+    expect(askLine(null, 70)).toBe('The Legend asks for 70%.')
+  })
+
+  it('names the line by its notes, from the lowest to the highest', () => {
+    const line = [60, 62, 64, 67, 65, 64, 62, 60].map((midi) => ({ midi }))
+    expect(notesLine(line)).toBe('8 notes · C4 to G4')
+    expect(notesLine([{ midi: 60 }])).toBe('1 note · C4')
+    expect(notesLine([])).toBeNull()
+  })
+
+  it('counts the notes lit', () => {
+    expect(litLine(7, 8)).toBe('7 of 8 lit')
+  })
+
+  it('says which notes were missed, and which way', () => {
+    expect(missLine([])).toBeNull()
+    expect(missLine([{ label: 'E4', side: 'flat' }])).toBe(
+      'E4 missed, sung flat',
     )
-    expect(takeLine(55, 70)).toBe('55%: the Legend asks for 70%')
+    expect(
+      missLine([
+        { label: 'E4', side: 'flat' },
+        { label: 'F4', side: 'sharp' },
+      ]),
+    ).toBe('E4 flat, F4 sharp')
+    expect(
+      missLine([
+        { label: 'E4', side: 'flat' },
+        { label: 'F4', side: 'unsung' },
+        { label: 'D4', side: 'unsteady' },
+        { label: 'C4', side: 'sharp' },
+      ]),
+    ).toBe('4 missed: E4 flat, F4 not sung and 2 more')
+  })
+
+  it('gives Merc a word for each way a posted take went', () => {
+    expect(mercLine('beat-founder')).toBe("The Founder's mark is yours now.")
+    expect(mercLine('completed')).toBe('That one is on the board.')
+    expect(mercLine('attempted')).toBe(
+      'On the board. Every take trains the climb.',
+    )
   })
 
   it('never names a period', () => {
@@ -115,7 +166,10 @@ describe('the take', () => {
       closesLine(new Date(NOW + 3 * 24 * HOUR).toISOString(), NOW),
       countsLine(board()),
       standingLine(board({ you: YOU })),
-      takeLine(82, 70),
+      askLine(82, 70),
+      mercLine('attempted'),
+      mercLine('completed'),
+      mercLine('beat-founder'),
     ].join(' ')
     expect(lines).not.toMatch(
       /\b(weekly|monthly|fortnightly|this week|this month)\b/iu,

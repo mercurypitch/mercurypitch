@@ -199,6 +199,12 @@ describe('the Legend line', () => {
     )
   })
 
+  it('says nothing of a close long past: a Legend kept past its grace', () => {
+    expect(
+      legendLine({ challenge: closing(-72), best: null, nowMs: NOW }),
+    ).toBe('The line everyone sings')
+  })
+
   it("says the singer's best once they have sung it", () => {
     expect(legendLine({ challenge: closing(74), best: 82, nowMs: NOW })).toBe(
       'Sung, best 82%',
