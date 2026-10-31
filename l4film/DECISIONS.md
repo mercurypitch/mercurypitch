@@ -1941,3 +1941,56 @@ replaced it. The builder's record: critics never read it.
        `/dev/shm/l4-old-passes`.
      - Next: merc-whole and merc-tags, clock-lint, HOSTS=1 stills of the S12 falls, the floor and the
        end card, the full check, then freeze and render film-05 and send it to a fresh FILM5 critic.
+
+139. **Film round 5 (critic FILM5, ONE MORE PASS) on the final voices: a holds round, and the practise card.**
+     - **The render** (`render-l4.sh`, the 19:09 frozen copy, 33,073 frames):
+       - Two workers from 19:10. At 20:58 both were in S12 and S13, and the memory cap killed them
+         (pieces 0 to 15 kept); resumed on one browser at 21:00.
+       - That browser was never recycled. It grew from 0.8 GB to 5.3 GB, and the cap killed it at 22:18
+         at frame 32,192 (pieces 0 to 20 kept). Resumed on a fresh browser for pieces 21 and 22; done
+         at 22:31.
+       - The seam check flagged seam 6 (2:30.0, frames 9002 to 9004). It is the stair diagram pulling
+         back and speeding up through the seam: the change from frame to frame runs 2.58, 2.94 and
+         3.27 across frame 9000, and no frame is a stray. The re-render of pieces 5 and 6 was stopped
+         at 22:52, before it could replace the film. `seamcheck.py` now flags a frame only if it
+         differs from both ends of its window by more than the ends differ from each other. It still
+         flags a stray first frame or a black frame, at a calm seam and at seam 6. With it every seam
+         is clean.
+       - 551.217 s (the cue sheet's 551.205). The master and the music-only version are copied to
+         `renders/` and checked byte for byte, and the master is on `feat/lesson-04-films` as 9cfab93
+         (Git LFS). GitHub holds the object, but the organisation's LFS budget is spent, so nobody can
+         download it from there until the budget is raised or resets.
+     - **FILM5 against FILM4:** the S12 floor strip and the pill's roll FIXED; the falls, the recall,
+       and the title's blur with the push-ins STILL PRESENT; the end card still fixed; the earlier fixes
+       unchanged. The report: `review/film-05/REPORT.md`.
+     - **Its items, and what happens to each:**
+       - **The holds** (its first item): 25.7 s inside the film, 1.4 per 30 s (round 4: 11.9 s, 0.7).
+         - Three are longer than 0.5 s: 1:56.1 (0.9 s, S5's "T T S" count), 2:58.3 (0.9 s, S7's
+           "Predict.") and 3:46.2 (0.7 s, S7's "D major"). Two are 0.5 s: 2:01.0 (S5) and 5:05.2 (S9).
+         - By scene: S5 5.3 s, S7 4.6, S9 4.3, S6 2.2, S10 2.1, S13 1.6, S8 1.4, S4 1.2, S3 0.9 and
+           S11 0.9. The hosts' scenes (S11, S12, S14) hold least: their idles carry them.
+         - The cause is the re-time. Each line now lasts as long as its voiced take, and each scene's
+           moves are cued to its lines' starts, so the board waits through the longer lines.
+         - Taken: a holds round, with builders on s05 to s08 and on s09 to s11. They apply the study's
+           rule 8: a diagram that sits through a line drifts or settles slightly (a slow creep of the
+           camera, or a settling label). Nothing moves under a host's floor, and the scenes' first
+           and last frames and every handoff stay as they are.
+         - Target: the film at most 1 s per 30 s, with no hold over 0.5 s; each lab clip with no hold
+           over 0.3 s.
+       - **The length, 9:11.2,** is past the brief's 9:00. The owner wrote on 17 October: "The film
+         can be up to 10 min it's fine no need to cut stuff". It stays, and decision 5's cut list is
+         not used.
+       - **The falls from the top** (1:09.1, 2:51.0, 4:46.0 and 6:35.0) stay, as decisions 130 and
+         137 have it: the owner watched them in film-04 and asked for none.
+       - **The practise card, 8:46.0 to 8:47.2.** "Singing Voice Range" swells about 1.12 times from
+         its left edge (the build's choice, `s14-recap.html`), so the centred line shifts about 30 px
+         right, and the gear pops in from small. Taken in the holds round: the phrase swells about its
+         own centre and the line stays put, and the gear eases in.
+       - **The recall's swap and hold, the title's blur and the push-ins** stay (decision 137).
+     - **For a human,** added to DELIVERY.md's list:
+       - the voices: whose they are, and whether they are approved;
+       - the whooshes and the near-silent end, on phone speakers;
+       - the captions, which are uploaded and are not in the render;
+       - the loop seam, which jumps. That matters only if a page ever loops the film.
+     - FILM5 is the first ONE MORE PASS since FILM4's SHIP. Next: the holds round and the card, the
+       full check, film-06 and a fresh FILM6 critic.

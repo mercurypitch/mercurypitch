@@ -2525,3 +2525,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   send web encodes with SendUserFile. push-film05.sh's first run stopped at its LFS guard: "git lfs ls-files |
   grep -q" under pipefail (git-lfs dies of SIGPIPE after grep quits); the guard now reads the staged pointer
   (git cat-file -p :path) and checks its oid. Next: FILM5 (rate limit allowed 22:5x).
+- 23:3x FILM5 = ONE MORE PASS (report saved review/film-05/REPORT.md; LEDGER 34, DECISIONS 139; backups in
+  l4entr/polish5/). Items: 1 HOLDS 25.7 s (1.4/30 s; film-04 11.9), >0.5 s at 1:56.1 (S5 b11 count), 2:58.3 (S7 b17
+  "Predict."), 3:46.2 (S7 b22); by scene S5 5.3, S7 4.6, S9 4.3, S6 2.2, S10 2.1 (list with lines:
+  review/film-05/holds-by-scene.md). 2 length 9:11.2: STAYS (owner 17 Oct: "The film can be up to 10 min it's fine
+  no need to cut stuff"). 3 falls: stay (decisions 130, 137). 4 practise card (s14-recap.html: "Singing Voice
+  Range" swells from its left edge, gear pops): taken. 5 cosmetic: stay (137).
+  HOLDS ROUND RUNNING since ~23:40: builder BC (s05-s08, BRIEF-BC.md) and builder D (s09-s11 + s14 card,
+  BRIEF-D.md), both in l4entr/polish5/; rule 8 settles and slow camera creeps; lab clips to /dev/shm/l4lab-<G>/.
+  / has ~229 MB free (lab/ holds 605 MB of earlier rounds' files: leave them). NEXT when both report: review
+  their clips/stills, full check (0 errors), clock-lint, merc-tags --check, freeze, film-06 (memory: 2 workers
+  OOM'd in S12-S13; plan 2 workers to ~frame 22,500 then resume on 1 worker with recycling 3), FILM6 critic.
