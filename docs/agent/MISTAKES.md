@@ -500,6 +500,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** To idle a subgraph, close its input, let it run until its tails have rung out on silence, then disconnect it from what pulls it, and keep its sources pulled through a muted gain into the destination. Reconnect before opening the input again.
 **See:** `src/lib/studio/playback/lane-idle.ts`.
 
+### Cross chunked buffers over; never butt two AudioBufferSourceNodes edge to edge
+
+**Symptom:** A frozen Studio lane played from 4 s chunks clicked at each join: a -40 dBFS one-frame error at exactly 8.000 s when the run's epoch sat 37 frames off the render's, nothing when they lined up.
+**Cause:** Start times in seconds carry float noise. A start a hair past a frame begins the source on the next frame and drops its first sample, and each chunk rounds on its own, so a join can lose or double a frame.
+**Rule:** Give each chunk a few frames of its neighbours and cross adjacent chunks over with complementary linear fades timed from the same frames: the two gains sum to one on every frame however a start rounds. Measured after: the same frozen lane at the two epochs differs by -217 dB.
+**See:** `src/lib/studio/playback/lane-freeze.ts` (`frozenSegments`).
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -2098,6 +2105,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Cause:** `boundingBox()` returned the offscreen slider at y896.67; raw `page.mouse` input does not scroll a locator into view.
 **Rule:** scroll the actual control into view, read fresh bounds, verify the intended hit target, and retain the real gesture and result assertions at the CI viewport. A non-null bounding box does not prove pointer reachability.
 **See:** `src/e2e/studio-finishing.spec.ts`, PR Gate run `40402793827`.
+
+### Emulate a slower device for audio on the audio thread; CDP throttling never reaches it
+
+**Symptom:** A 12-lane Studio song played clean under `Emulation.setCPUThrottlingRate` at 2x and 4x (62, 74 and 67 % of the audio thread), so throttled runs said nothing about slower devices.
+**Cause:** Chromium renders realtime audio on a thread of its own (a SCHED_RR thread in the renderer, "Realtime AudioW..."), and the DevTools throttle slows only the main thread.
+**Rule:** Burn 1 - 1/k of every render quantum on the audio thread with an AudioWorklet to emulate a k-times slower device, throttle the main thread k times with CDP as well, and give Auto a benchmark k times the desktop's. Calibrated: k = 2 measured 49.8 % burned, k = 4 76.0 %.
+**See:** `src/lib/studio/playback/playback-benchmark.ts` (what Auto reads), `src/lib/studio/playback/song-load.ts`.
 
 ## Process
 

@@ -4,6 +4,8 @@ import type { StudioMasterGain } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject, StudioTrack } from '../model/types'
+import { freezesOutdated, frozenSoundChanged } from './lane-freeze'
+import type { StudioFreezeLookup } from './lane-freezer'
 import { keepsChains, replanLanes } from './lane-replan'
 import type { StudioKnownLatency } from './lane-swap'
 import { swapLanes } from './lane-swap'
@@ -28,6 +30,21 @@ export interface StudioLiveSettings {
   readonly masterGain: StudioMasterGain | null
   /** What a new chain's latency was measured as: a lane swaps to one only once it is known. */
   readonly chainLatency: StudioKnownLatency
+  /** Lanes rendered ahead, as the controls still moving sound (draftedFreezes). */
+  readonly freezes?: StudioFreezeLookup
+}
+
+/** The freezer as the song sounds now: renders for the drafts' sound, not only the saved one. */
+export function draftedFreezes(
+  lookup: StudioFreezeLookup | undefined,
+  drafts: StudioDrafts,
+): StudioFreezeLookup | undefined {
+  if (!lookup) return undefined
+  return {
+    hold: (project, assets) => lookup.hold(withDrafts(project, drafts), assets),
+    differs: (project, assets, frozen) =>
+      lookup.differs(withDrafts(project, drafts), assets, frozen),
+  }
 }
 
 /** The project as it sounds now: saved values under the controls still moving. */
@@ -145,16 +162,26 @@ export function previewLaneDraft(
   }
 }
 
-/** The same for a sound macro: each run's chains follow a moving dial. */
+/**
+ * The same for a sound macro: each run's chains follow a moving dial. False
+ * when a run plays a lane from a render the dial changes: only a new run,
+ * with that lane live, can follow it.
+ */
 export function previewMacroDraft(
   runs: readonly StudioRun[],
   drafts: StudioDrafts,
   name: MacroKey,
   value: number | null,
-): void {
+): boolean {
   if (value === null) drafts.macros.delete(name)
   else drafts.macros.set(name, value)
-  for (const run of runs) applySound(run, withDrafts(run.project, drafts))
+  let followed = true
+  for (const run of runs) {
+    const live = withDrafts(run.project, drafts)
+    if (frozenSoundChanged(run.frozen, live)) followed = false
+    applySound(run, live)
+  }
+  return followed
 }
 
 /** A control moved while the song was getting ready: start as it sounds. */
@@ -202,6 +229,9 @@ export function followEdit(
   assets: readonly StudioAsset[],
   settings: StudioLiveSettings,
 ): boolean {
+  // A lane played from a render follows no edit to its clips or its sound.
+  if (freezesOutdated(run.frozen, withDrafts(project, settings.drafts), assets))
+    return false
   if (playInPlace(run, project, settings)) return true
   if (!followRepeat(run, settings.repeat)) return false
   const followed = keepsChains(run, project)

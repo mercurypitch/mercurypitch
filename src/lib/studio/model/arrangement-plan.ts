@@ -30,6 +30,8 @@ export interface StudioPlannedLane {
   /** Null means measurement is still required, never an assumed zero latency. */
   readonly chainLatencySeconds: number | null
   readonly compensationSeconds: number | null
+  /** Its chain was rendered ahead: it plays that render through an empty chain (lane-freeze.ts). */
+  readonly frozen?: boolean
 }
 
 export interface StudioArrangementPlan {

@@ -16,8 +16,10 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import type { buildStudioGraph, StudioGraph, StudioGraphOptions, StudioGraphQuality, } from './graph'
+import type { StudioFrozenLane } from './lane-freeze'
 import type { StudioPlaybackTier } from './playback-quality'
 import { livePlaybackTier, notePlayout, TIER_PROFILES, } from './playback-quality'
+import type { StudioSongShape } from './song-load'
 
 export { openRunEnvelope, RUN_OPEN_SECONDS } from './open-envelope'
 
@@ -107,6 +109,8 @@ export interface StudioRun {
   laneMeter: ReturnType<typeof createStudioLaneMeter>
   buffers: StudioBufferLease
   releaseMemory: () => void
+  /** The lanes it plays from a render (lane-freeze.ts), as it was built. */
+  readonly frozen: ReadonlyMap<string, StudioFrozenLane>
   startFrame: number
   endFrame: number
   /** Its plan's first frame: a seek can move it no earlier. */
@@ -226,6 +230,8 @@ export interface StudioRunParts {
   readonly plan: StudioArrangementPlan
   readonly buffers: StudioBufferLease
   readonly releaseMemory: () => void
+  /** The lanes it plays from a render; none when absent. */
+  readonly frozen?: ReadonlyMap<string, StudioFrozenLane>
   readonly silentLanes: boolean
   readonly master: ChainSpec
   readonly measured: StudioMasterGain
@@ -385,7 +391,7 @@ function liveGraphOptions(
   parts: StudioParkedRunParts,
   fromFrame: number,
 ): StudioGraphOptions {
-  const tier = livePlaybackTier(parts.project)
+  const tier = livePlaybackTier(frozenSong(parts.project, parts.frozen))
   return {
     metering: true,
     fromFrame,
@@ -395,6 +401,18 @@ function liveGraphOptions(
     profile: TIER_PROFILES[tier],
     quality: liveQuality(tier),
   }
+}
+
+const NO_FROZEN: ReadonlyMap<string, StudioFrozenLane> = new Map()
+
+/** A song as Auto weighs it with `frozen` playing renders: only their own nodes cost. */
+export function frozenSong(
+  project: StudioProject,
+  frozen: ReadonlyMap<string, StudioFrozenLane> | undefined,
+): StudioSongShape {
+  return frozen !== undefined && frozen.size > 0
+    ? { ...project, frozen: new Set(frozen.keys()) }
+    : project
 }
 
 /** What a run holds whatever its place on the clock. */
@@ -417,6 +435,7 @@ function runOf(
     measured: parts.measured,
     buffers: parts.buffers,
     releaseMemory: parts.releaseMemory,
+    frozen: parts.frozen ?? NO_FROZEN,
     endFrame: plan.endFrame,
     firstFrame: plan.startFrame,
     latency: parts.latency,

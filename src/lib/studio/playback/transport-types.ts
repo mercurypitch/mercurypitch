@@ -4,6 +4,7 @@ import type { createStudioLaneMeter } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import type { StudioBufferCache } from './buffer-cache'
 import type { buildStudioGraph } from './graph'
+import type { StudioFreezeLookup } from './lane-freezer'
 import type { StudioLatencyReader } from './prepare-plan'
 import type { StudioLaneLevel } from './run'
 
@@ -28,4 +29,6 @@ export interface StudioTransportOptions {
   measureLatencies?: StudioLatencyReader
   buildGraph?: typeof buildStudioGraph
   createLaneMeter?: typeof createStudioLaneMeter
+  /** Lanes rendered ahead (lane-freezer.ts), which runs built from now on play. */
+  freezes?: StudioFreezeLookup
 }

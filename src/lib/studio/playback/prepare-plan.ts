@@ -5,9 +5,16 @@ import { prepareStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
+import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioBufferCache, StudioBufferLease } from './buffer-cache'
 import { studioGraphLanes, studioGraphWorkingBytes } from './graph'
+import type { StudioFrozenLane } from './lane-freeze'
+import { freezeStudioPlan, StudioFrozenBuffers } from './lane-freeze'
+import type { StudioFreezeHold, StudioFreezeLookup } from './lane-freezer'
 import type { StudioRunLayout } from './live-edit'
+
+/** A run with no lane frozen. */
+export const NO_FREEZES: ReadonlyMap<string, StudioFrozenLane> = new Map()
 
 export type StudioLatencyReader = typeof measureTrackLatencies
 
@@ -49,7 +56,8 @@ export function createLatencyCache(
 /**
  * The plan with each lane's chain latency measured at this rate. With
  * `silentLanes`, the muted lanes with clips are measured and aligned too,
- * so a graph built with them can bring one in while it plays.
+ * so a graph built with them can bring one in while it plays. A lane in
+ * `frozen` plays its render through no chain (lane-freeze.ts): no latency.
  */
 export async function prepareStudioPlan(
   project: StudioProject,
@@ -59,6 +67,7 @@ export async function prepareStudioPlan(
   signal: AbortSignal,
   measure: StudioLatencyReader = measureTrackLatencies,
   silentLanes = false,
+  frozen: ReadonlyMap<string, StudioFrozenLane> = NO_FREEZES,
 ): Promise<StudioArrangementPlan> {
   const base = compileStudioArrangement(project, assets, { startFrame })
   const lanes = base.lanes.filter(
@@ -69,6 +78,10 @@ export async function prepareStudioPlan(
   const measured = new Map<string, number>()
   for (const lane of lanes) {
     signal.throwIfAborted()
+    if (frozen.has(lane.track.id)) {
+      frames.push(0)
+      continue
+    }
     const key = lane.spec.effects.map((effect) => effect.kind).join(',')
     let latency = measured.get(key)
     if (latency === undefined) {
@@ -78,7 +91,7 @@ export async function prepareStudioPlan(
     }
     frames.push(latency)
   }
-  return compileStudioArrangement(project, assets, {
+  const plan = compileStudioArrangement(project, assets, {
     startFrame,
     latencies: {
       sampleRate,
@@ -87,6 +100,7 @@ export async function prepareStudioPlan(
       ),
     },
   })
+  return freezeStudioPlan(plan, frozen)
 }
 
 /**
@@ -114,6 +128,8 @@ export interface StudioAdmission {
   readonly silentLanes: boolean
   readonly buffers: StudioBufferLease
   readonly releaseMemory: () => void
+  /** The lanes it plays from a render, held with its buffers. */
+  readonly frozen: ReadonlyMap<string, StudioFrozenLane>
 }
 
 /** Where a run's audio and memory come from. */
@@ -123,6 +139,8 @@ export interface StudioAdmitSources {
   readCanonicalAsset(id: string): Promise<Blob>
   /** Hold the graph's working memory, or throw StudioMemoryError. */
   reserve(bytes: number, signal: AbortSignal): Promise<() => void>
+  /** Lanes rendered ahead (lane-freezer.ts), when the Studio renders any. */
+  readonly freezes?: StudioFreezeLookup
 }
 
 /** The song a run plays, the clock it plays on and the master after its lanes. */
@@ -143,30 +161,58 @@ export async function admitStudioRun(
   signal: AbortSignal,
   sources: StudioAdmitSources,
 ): Promise<StudioAdmission> {
-  const plan = await prepareStudioPlan(
-    project,
-    assets,
-    ctx.sampleRate,
-    start,
-    signal,
-    sources.measure,
-    silentLanes,
-  )
-  const releaseMemory = await sources.reserve(
-    studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
-    signal,
-  )
+  // Held before the graph's memory is reserved: a reclaimer then frees only renders no run plays.
+  const held =
+    ctx.sampleRate === STUDIO_SAMPLE_RATE
+      ? (sources.freezes?.hold(project, assets) ?? null)
+      : null
+  const frozen = held?.lanes ?? NO_FREEZES
   try {
-    const buffers = await sources.cache.acquire(
-      planAssets(plan, assets, silentLanes),
-      ctx,
-      sources.readCanonicalAsset,
+    const plan = await prepareStudioPlan(
+      project,
+      assets,
+      ctx.sampleRate,
+      start,
+      signal,
+      sources.measure,
+      silentLanes,
+      frozen,
+    )
+    const releaseMemory = await sources.reserve(
+      studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
       signal,
     )
-    return { plan, silentLanes, buffers, releaseMemory }
+    try {
+      const lease = await sources.cache.acquire(
+        planAssets(plan, assets, silentLanes),
+        ctx,
+        sources.readCanonicalAsset,
+        signal,
+      )
+      const buffers = held ? frozenLease(ctx, lease, held) : lease
+      return { plan, silentLanes, buffers, releaseMemory, frozen }
+    } catch (error) {
+      releaseMemory()
+      throw error
+    }
   } catch (error) {
-    releaseMemory()
+    held?.release()
     throw error
+  }
+}
+
+/** The clips' buffers and the renders' chunks, let go together. */
+function frozenLease(
+  ctx: BaseAudioContext,
+  lease: StudioBufferLease,
+  held: StudioFreezeHold,
+): StudioBufferLease {
+  return {
+    buffers: new StudioFrozenBuffers(ctx, lease.buffers, held.lanes.values()),
+    release() {
+      lease.release()
+      held.release()
+    },
   }
 }
 

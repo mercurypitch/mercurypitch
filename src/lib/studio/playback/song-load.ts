@@ -33,7 +33,11 @@ export interface StudioSongShape {
   readonly tracks: readonly StudioTrack[]
   readonly clips: readonly Pick<StudioClip, 'trackId'>[]
   readonly mix: Pick<StudioProject['mix'], 'macros'>
+  /** Lanes that play a render of their chain (lane-freeze.ts): only their own nodes cost. */
+  readonly frozen?: ReadonlySet<string>
 }
+
+const FROZEN_CHAIN: ChainSpec = { version: 1, effects: [] }
 
 /** The chains a song's heard lanes play: its audible tracks that have clips. */
 export function studioSongChains(song: StudioSongShape): ChainSpec[] {
@@ -44,7 +48,11 @@ export function studioSongChains(song: StudioSongShape): ChainSpec[] {
       (track) =>
         withClips.has(track.id) && !track.mute && (!solo || track.solo),
     )
-    .map((track) => studioLaneSpec(track, song.mix.macros))
+    .map((track) =>
+      song.frozen?.has(track.id) === true
+        ? FROZEN_CHAIN
+        : studioLaneSpec(track, song.mix.macros),
+    )
 }
 
 /** A cost at Best, Balanced and Light, in voice chains. */

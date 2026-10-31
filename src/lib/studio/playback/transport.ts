@@ -22,7 +22,7 @@ import type { StudioHandoff } from './handoff'
 import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, heardRun, liveRunsOf, scheduleHandoff, } from './handoff'
 import { smoothHeardTime } from './heard-clock'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
-import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
+import { applyDrafts, applyMix, applySound, draftedFreezes, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
 import { measureNewChains } from './lane-swap'
 import { firstThatFits, studioRunLayouts } from './live-edit'
@@ -87,9 +87,11 @@ export function createStudioTransport(options: StudioTransportOptions) {
     repeat,
     masterGain: master.fresh(),
     chainLatency: measureLatencies.known,
+    freezes: sources.freezes,
   })
-  // The newest project setSnapshot was given.
+  // The newest project setSnapshot was given, and its audio.
   let latest: StudioProject | null = null
+  let latestAssets: readonly StudioAsset[] = []
   // The run Pause kept, for Play to start again without a build.
   const kept = createStudioKeptRun({
     retire,
@@ -102,6 +104,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     measure: measureLatencies,
     readCanonicalAsset: options.readCanonicalAsset,
     reserve: (bytes, signal) => reserveGraph(bytes, signal),
+    freezes: draftedFreezes(options.freezes, drafts),
   }
   let state: StudioTransportState = {
     playing: false,
@@ -601,6 +604,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
           measureLatencies,
           readCanonicalAsset: options.readCanonicalAsset,
           masterGain: master.startingGain(project, null),
+          freezes: sources.freezes,
           busy,
         })
         await prebuild(project, assets, abort.signal)
@@ -636,6 +640,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     assets: readonly StudioAsset[],
   ): Promise<void> {
     latest = project
+    latestAssets = assets
     observeSnapshot(project)
     if (!wantsPlayback) kept.follow(project, assets, liveSettings())
     if (!wantsPlayback || disposed) return
@@ -696,9 +701,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
     previewLane(trackId: string, draft: StudioLaneDraft | null): void {
       previewLaneDraft(liveRuns(), drafts, trackId, draft)
     },
-    /** The same for a sound macro: the running chains follow a moving dial. */
+    /** The same for a sound macro; a dial that changes a rendered lane brings it in live. */
     previewMacro(name: MacroKey, value: number | null): void {
-      previewMacroDraft(liveRuns(), drafts, name, value)
+      if (!previewMacroDraft(liveRuns(), drafts, name, value) && latest)
+        void setSnapshot(latest, latestAssets)
     },
     /** The newest run keeps its graph for Play, less long with the page hidden. */
     pause: () => pause(false, true),

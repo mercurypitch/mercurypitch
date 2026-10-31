@@ -48,12 +48,13 @@ import { registerStudioMemoryReclaimer } from '../memory-budget'
 import type { createStudioLaneMeter } from '../metering/live-meter'
 import { createStudioLiveMeter } from '../metering/live-meter'
 import type { StudioAsset, StudioProject } from '../model/types'
-import type { StudioDrafts, StudioLiveSettings } from './in-place'
-import { fitsInPlace, followInPlace } from './in-place'
+import type { StudioLiveSettings } from './in-place'
+import { fitsInPlace, followInPlace, withDrafts } from './in-place'
+import { freezesOutdated } from './lane-freeze'
 import { replanLanes } from './lane-replan'
 import { livePlaybackProfile } from './playback-quality'
 import type { StudioRun } from './run'
-import { openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS } from './run'
+import { frozenSong, openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS, } from './run'
 import { seekEarliest } from './seek'
 
 /** Pause's fade, as a stopped run's: 180 ms down, silent by 240 ms. */
@@ -138,7 +139,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     settings: StudioLiveSettings,
   ): void {
     if (!kept) return
-    if (!follows(kept, project, assets, settings.drafts)) {
+    if (!follows(kept, project, assets, settings)) {
       letGo()
       return
     }
@@ -151,12 +152,23 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     run: StudioRun,
     project: StudioProject,
     assets: readonly StudioAsset[],
-    drafts: StudioDrafts,
+    settings: StudioLiveSettings,
   ): boolean {
-    // A graph built at another playback quality is built again (playback-quality.ts).
-    if (run.graph.profile() !== livePlaybackProfile(project)) return false
+    // Built again for renders that finished or went stale since (lane-freezer.ts)...
+    const outdated = settings.freezes
+      ? settings.freezes.differs(project, assets, run.frozen)
+      : freezesOutdated(
+          run.frozen,
+          withDrafts(project, settings.drafts),
+          assets,
+        )
+    if (outdated) return false
+    // ...and at another playback quality (playback-quality.ts).
+    const song = frozenSong(project, run.frozen)
+    if (run.graph.profile() !== livePlaybackProfile(song)) return false
     return (
-      fitsInPlace(run, project, drafts) || replanLanes(run, project, assets)
+      fitsInPlace(run, project, settings.drafts) ||
+      replanLanes(run, project, assets)
     )
   }
 
@@ -204,7 +216,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
         !kept ||
         !silent ||
         kept.ctx !== ctx ||
-        !follows(kept, project, assets, settings.drafts)
+        !follows(kept, project, assets, settings)
       ) {
         letGo()
         return null
