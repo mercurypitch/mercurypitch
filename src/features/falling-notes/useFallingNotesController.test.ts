@@ -13,7 +13,7 @@ import { resetFirstValueForTests } from '@/lib/first-value'
 import { GUIDE_FUNNEL_STORAGE_KEY } from '@/lib/guide-funnel'
 import type { MidiSongTrack } from '@/lib/midi-song'
 import type { FallingNote } from '@/stores/falling-notes-store'
-import { setHitResults } from '@/stores/falling-notes-store'
+import { setGameState, setHitResults } from '@/stores/falling-notes-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { setBpm, setCountIn } from '@/stores/transport-store'
 import { useFallingNotesController } from './useFallingNotesController'
@@ -220,5 +220,98 @@ describe('useFallingNotesController first value', () => {
     expect(controller.gameState()).toBe('finished')
     expect(controller.hitResults().map((h) => h.timing)).toEqual(['miss'])
     expect(sentFunnelEvents()).toEqual(['first_value_piano'])
+  })
+})
+
+describe('useFallingNotesController frame loop', () => {
+  const NOTE: FallingNote = {
+    id: 0,
+    midi: 60,
+    name: 'C4',
+    startBeat: 8,
+    duration: 1,
+    targetFreq: 261.63,
+  }
+
+  let queued: FrameRequestCallback[] = []
+  let controller!: ReturnType<typeof useFallingNotesController>
+  let dispose: () => void = () => undefined
+
+  const runFrame = (): void => {
+    const due = queued
+    queued = []
+    for (const callback of due) callback(performance.now())
+  }
+
+  beforeEach(() => {
+    queued = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      queued.push(cb)
+      return queued.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {
+      queued = []
+    })
+    setGameState('idle')
+    setCountIn(0)
+    setBpm(60)
+    const audioEngine = {
+      ...mockAudioEngine(),
+      startMic: async () => true,
+      isMicActive: () => true,
+    } as unknown as AudioEngine
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useFallingNotesController(audioEngine)
+      controller.loadSong([NOTE], 'One note', 60)
+    })
+  })
+
+  afterEach(() => {
+    dispose()
+    setGameState('idle')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('asks for no frame while no run plays and the mic is off', () => {
+    expect(queued).toHaveLength(0)
+  })
+
+  it('runs while a run plays, stops one frame after a pause, and starts again on resume', async () => {
+    await controller.startGame()
+    expect(controller.gameState()).toBe('playing')
+    expect(queued).toHaveLength(1)
+    runFrame()
+    expect(queued).toHaveLength(1)
+
+    controller.pauseGame()
+    runFrame()
+    expect(queued).toHaveLength(0)
+
+    controller.resumeGame()
+    expect(queued).toHaveLength(1)
+    runFrame()
+    expect(queued).toHaveLength(1)
+  })
+
+  it('runs while the mic listens, and stops one frame after it goes off', async () => {
+    await controller.startMic()
+    expect(controller.isMicActive()).toBe(true)
+    expect(queued).toHaveLength(1)
+    runFrame()
+    expect(queued).toHaveLength(1)
+
+    controller.stopMic()
+    runFrame()
+    expect(queued).toHaveLength(0)
+  })
+
+  it('stops with the run when the game resets', async () => {
+    await controller.startGame()
+    controller.resetGame()
+    runFrame()
+    expect(queued).toHaveLength(0)
+    expect(controller.playheadBeat()).toBe(0)
   })
 })

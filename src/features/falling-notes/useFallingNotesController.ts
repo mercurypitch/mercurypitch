@@ -13,6 +13,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
 import { trackFirstValue } from '@/lib/first-value'
+import { createFrameLoop } from '@/lib/frame-loop'
 import { rmsOfTimeData } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -191,7 +192,6 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   }> = []
   let playedBackingIndices = new Set<number>()
 
-  let animFrameId: number | null = null
   let gameStartTime = 0
   let judgedNotes = new Set<number>()
   let playedNotes = new Set<number>()
@@ -204,7 +204,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   let pendingStartBeat: number | null = null
 
   // A-B loop (beats; 0 = unset), pushed from App via setLoop(). The wrap is
-  // handled INSIDE the RAF loop (see startLoop) rather than by an external
+  // handled INSIDE the frame loop (below) rather than by an external
   // seek, so it stays atomic with the note scheduler — an outside seek fired
   // mid-frame would leave checkHits() replaying the whole [A, B] span at once.
   let loopA = 0
@@ -262,9 +262,18 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   })
 
   // ── RAF Game Loop ────────────────────────────────────────────
+  //
+  // Runs only while a frame can change something (frame-loop.ts): a run
+  // playing or counting in, the mic listening, or a pitch in mic mode for
+  // the next frame to clear. Idle, and with any other tab up, it asks for
+  // no frames.
 
-  const startLoop = () => {
-    const loop = () => {
+  createFrameLoop({
+    active: () =>
+      gameState() === 'playing' ||
+      gameState() === 'countdown' ||
+      (inputMode() === 'mic' && (micOn() || currentPitch() !== null)),
+    frame: () => {
       // Detect pitch from mic (only in mic mode)
       if (inputMode() === 'mic') {
         // On-screen pointers are normalized alongside MIDI. Do not overwrite
@@ -331,23 +340,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           checkHits(newBeat)
         }
       }
+    },
+  })
 
-      animFrameId = requestAnimationFrame(loop)
-    }
-    animFrameId = requestAnimationFrame(loop)
-  }
-
-  const stopLoop = () => {
-    if (animFrameId !== null) {
-      cancelAnimationFrame(animFrameId)
-      animFrameId = null
-    }
-  }
-
-  // Start the loop immediately
-  startLoop()
   onCleanup(() => {
-    stopLoop()
     touchInput.dispose()
     midiInput.dispose()
     unsubscribePianoInput()
@@ -656,7 +652,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           // First beat of count-in is the downbeat (higher pitch)
           audioEngine.playMetronomeClick(currentBeat === countInBeats)
           setCountInBeatTracker(currentBeat)
-          // Playhead is handled smoothly by startLoop
+          // Playhead is handled smoothly by the frame loop
         }
         if (currentBeat <= 0) {
           setIsCountingIn(false)
@@ -728,7 +724,6 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   }
 
   const resetGame = () => {
-    stopLoop()
     audioEngine.stopAllNotes()
     pendingStartBeat = null
     judgedNotes = new Set<number>()
@@ -740,7 +735,6 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setHitResults([])
     setNotesMissed(0)
     setPlayheadBeat(0)
-    startLoop()
   }
 
   const loadSong = (

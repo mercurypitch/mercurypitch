@@ -1,12 +1,16 @@
-import { createRoot } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeController } from '@/features/practice/usePracticeController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { onCoachEvent } from '@/lib/coach-events'
+import type { MicState } from '@/lib/mic-manager'
+import { micManager } from '@/lib/mic-manager'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine, PracticeEngineCallbacks, } from '@/lib/practice-engine'
+import { setMicActive } from '@/stores'
 import type { PitchResult } from '@/types'
 
 const DETECTED_PITCH: PitchResult = {
@@ -44,11 +48,17 @@ describe('usePracticeController frame subscriptions', () => {
   })
 
   afterEach(() => {
+    setMicActive(false)
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  function mountController(): MountedController {
+  interface Surroundings {
+    singingOnScreen?: Accessor<boolean>
+    isPlaying?: Accessor<boolean>
+  }
+
+  function mountController(around: Surroundings = {}): MountedController {
     const practiceEngine = {
       addCallbacks: vi.fn().mockReturnValue(() => {}),
       update: vi.fn().mockReturnValue(DETECTED_PITCH),
@@ -76,10 +86,10 @@ describe('usePracticeController frame subscriptions', () => {
         playbackRuntime,
         practiceEngine,
         recording,
-        isPlaying: () => false,
+        isPlaying: around.isPlaying ?? (() => false),
         isPaused: () => false,
         editorIsPlaying: () => false,
-        activeTab: () => 'singing',
+        singingOnScreen: around.singingOnScreen ?? (() => true),
       })
     })
 
@@ -193,5 +203,100 @@ describe('usePracticeController frame subscriptions', () => {
     expect(heard).toHaveBeenCalledTimes(1)
     off()
     dispose()
+  })
+
+  it('asks for no frame with another tab on screen and nothing reading the stream', () => {
+    const { dispose, practiceEngine } = mountController({
+      singingOnScreen: () => false,
+    })
+    expect(queuedFrames).toHaveLength(0)
+    expect(practiceEngine.update).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('runs for a stage that reads the stream, and stops one frame after it leaves', () => {
+    const { controller, dispose, practiceEngine } = mountController({
+      singingOnScreen: () => false,
+    })
+    const stage = vi.fn()
+    const leave = controller.subscribeFrames(stage)
+    expect(queuedFrames).toHaveLength(1)
+    runNextFrame()
+    expect(stage).toHaveBeenCalledOnce()
+    expect(queuedFrames).toHaveLength(1)
+
+    leave()
+    runNextFrame()
+    expect(practiceEngine.update).toHaveBeenCalledTimes(2)
+    expect(stage).toHaveBeenCalledOnce()
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
+  })
+
+  it('starts again when the Singing tab comes back', () => {
+    const [onScreen, setOnScreen] = createSignal(false)
+    const { dispose } = mountController({ singingOnScreen: onScreen })
+    expect(queuedFrames).toHaveLength(0)
+    setOnScreen(true)
+    expect(queuedFrames).toHaveLength(1)
+    runNextFrame()
+    expect(queuedFrames).toHaveLength(1)
+    setOnScreen(false)
+    runNextFrame()
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
+  })
+
+  it('runs on any tab while the transport rolls', () => {
+    const [playing, setPlaying] = createSignal(false)
+    const { dispose } = mountController({
+      singingOnScreen: () => false,
+      isPlaying: playing,
+    })
+    expect(queuedFrames).toHaveLength(0)
+    setPlaying(true)
+    expect(queuedFrames).toHaveLength(1)
+    setPlaying(false)
+    runNextFrame()
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
+  })
+
+  it('runs on any tab while the mic is on, so the engine can settle its mic state', () => {
+    const { dispose, practiceEngine } = mountController({
+      singingOnScreen: () => false,
+    })
+    setMicActive(true)
+    expect(queuedFrames).toHaveLength(1)
+    runNextFrame()
+    expect(practiceEngine.isMicActive).toHaveBeenCalledOnce()
+    setMicActive(false)
+    runNextFrame()
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
+  })
+
+  it('runs on any tab while another feature holds the shared mic open', () => {
+    let tell: ((state: MicState) => void) | undefined
+    const left = vi.fn()
+    vi.spyOn(micManager, 'subscribe').mockImplementation((listener) => {
+      tell = listener
+      listener({ active: false, error: null, consumers: [], blockedBy: null })
+      return left
+    })
+    const { dispose } = mountController({ singingOnScreen: () => false })
+    expect(queuedFrames).toHaveLength(0)
+    tell?.({
+      active: true,
+      error: null,
+      consumers: ['ear-lab'],
+      blockedBy: null,
+    })
+    expect(queuedFrames).toHaveLength(1)
+    tell?.({ active: false, error: null, consumers: [], blockedBy: null })
+    runNextFrame()
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
+    expect(left).toHaveBeenCalledOnce()
   })
 })

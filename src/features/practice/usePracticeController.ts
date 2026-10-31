@@ -11,12 +11,19 @@
 // his scripted pitch at the transport's beat in place of the mic's, and
 // leaves the mic, its detector and every frame listener alone: a mic already
 // on stays on, its line paused, and nothing downstream hears his frames.
+//
+// The controller lives for the whole session, but its frame loop runs only
+// while something reads it (frame-loop.ts): the Singing tab on screen, a
+// stage subscribed to the frame stream, an open mic, a run or count-in, or
+// Merc singing. With the Studio or any other tab up and none of those, it
+// asks for no frames.
 
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, onCleanup, onMount } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { emitCoachEvent } from '@/lib/coach-events'
+import { createFrameLoop } from '@/lib/frame-loop'
 import { sungBeat } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -73,7 +80,8 @@ interface Deps {
   isPlaying: Accessor<boolean>
   isPaused: Accessor<boolean>
   editorIsPlaying: Accessor<boolean>
-  activeTab: Accessor<string>
+  /** True while the Singing tab is on screen; its canvas draws every frame. */
+  singingOnScreen: Accessor<boolean>
 }
 
 export function usePracticeController(deps: Deps): PracticeController {
@@ -101,13 +109,22 @@ export function usePracticeController(deps: Deps): PracticeController {
   const [countInBeat, setCountInBeat] = createSignal(0)
   const [isCountingIn, setIsCountingIn] = createSignal(false)
   const frameListeners = new Set<PracticeFrameListener>()
+  const [listenerCount, setListenerCount] = createSignal(0)
 
   const subscribeFrames = (listener: PracticeFrameListener): (() => void) => {
     frameListeners.add(listener)
+    setListenerCount(frameListeners.size)
     return () => {
       frameListeners.delete(listener)
+      setListenerCount(frameListeners.size)
     }
   }
+
+  // Whether any feature holds the shared mic open. The frame loop settles
+  // the engine's mic state against the audio engine's every frame
+  // (PracticeEngine.isMicActive), so it runs while a mic is open anywhere.
+  const [micDeviceOpen, setMicDeviceOpen] = createSignal(false)
+  onCleanup(micManager.subscribe((state) => setMicDeviceOpen(state.active)))
 
   /**
    * Where the trace goes: the beat a frame arriving now was sung on. The scorer
@@ -202,14 +219,22 @@ export function usePracticeController(deps: Deps): PracticeController {
     })
   }
 
-  // Animation loop
-  let animId = 0
-  onMount(() => {
-    const loop = () => {
+  // Animation loop. The Singing tab's canvas repaints from every frame's
+  // pitch, even a silent one, so the loop runs while the tab is on screen.
+  createFrameLoop({
+    active: () =>
+      deps.singingOnScreen() ||
+      listenerCount() > 0 ||
+      micActive() ||
+      micDeviceOpen() ||
+      deps.isPlaying() ||
+      editorIsPlaying() ||
+      isCountingIn() ||
+      singDemo() !== null,
+    frame: () => {
       const demo = singDemo()
       if (demo !== null) {
         drawDemoFrame(demo)
-        animId = requestAnimationFrame(loop)
         return
       }
       const pitch = practiceEngine.update()
@@ -280,14 +305,10 @@ export function usePracticeController(deps: Deps): PracticeController {
       if (micIsActive) {
         setWaveformData(practiceEngine.getWaveformData())
       }
-
-      animId = requestAnimationFrame(loop)
-    }
-    animId = requestAnimationFrame(loop)
+    },
   })
 
   onCleanup(() => {
-    cancelAnimationFrame(animId)
     frameListeners.clear()
   })
 
