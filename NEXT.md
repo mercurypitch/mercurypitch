@@ -2458,3 +2458,25 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   o2 retake); the top, files, measured and how-made sections wait for film-05 + FILM5.
   DISK PLAN (/ 527 MB): freeze to $S/l4film05proj (pieces ~120 MB on /, removed once whole) -> master copy needs
   ~321 free, music-only the same -> ~255 MB left after measure + critic sheets. Web encodes go to /dev/shm.
+- 18:57 ALL 21 PASSES DONE (exit 0; Q1 18:50, Q2 18:57). merc-whole.py: whole.js changed in one row (m09-orange
+  28 -> 29), --check current; merc-tags --check 68 tags 0 stale; clock-lint silent. HOSTS=1 stills
+  (/dev/shm/l4f5stills): S12 falls (Tavi lands ~1.4-1.5, Merc ~1.9; Tavi first), end card complete from 1.3 with
+  both hosts to 6.18, S13 on; floor-steps 1.0-1.2 left / 0.4-0.5 right as DECISIONS 135 (2.2 @128 only on
+  Merc's landing frames 1.9-2.0: his landing dots, no box edge on the brightened crop). Handovers on the 60 fps
+  film grid (scene t = n/60 - 393.910): Tavi 4.7567 (n 23920), Merc 18.2233/18.24: no step (mean|diff| <= 0.19).
+  An off-grid still (4.7667) once showed no Tavi: the stills tool's late video frame; re-run on the grid and off
+  it, she is there; the long pass's frames 190-210 all hold her (decoded with alpha). The render injects
+  extracted frames, not the browser decoder.
+  19:1x full check running (background b4y0it6bb, log l4entr/revoice/check-f5.log); then freeze
+  $S/l4film05proj, render film-05.
+- 19:09 FULL CHECK PASSED: 0 errors, 65 warnings (baseline), runtime 0, layout 2 info (as before), motion 0,
+  contrast 40/40 (log l4entr/revoice/check-f5.log). Frozen $S/l4film05proj (16 compositions, 355 kit files: the
+  kit count includes assets/voice-kokoro/ now; 551.205 s). FILM-05 RENDERING since 19:10:25 (WORKERS=2,
+  render-l4.sh, status renders/film-05.status, film to /dev/shm/l4film, pieces under $S/l4film05proj/renders/).
+  MEMORY: cap 14.34 GB (cgroup .../claude-code-bash); /dev/shm holds 2.1 GB of today's tools that film-04 did not
+  have, so headroom is ~1 GB in s12-s13. Watcher br5om22se (to ~21:10) logs memory each minute to
+  l4entr/revoice/mem-f5.log and stops on done, a failure, or an OOM kill. If an OOM kill stalls it:
+  RESUME=1 WORKERS=1 HF_SEGMENT_BROWSER_RECYCLE=0 setsid nohup bash $S/render-l4.sh film-05 60 high
+  $S/l4film05proj (only unfinished pieces re-run). AFTER: confirm "film-05.mp4 copied into renders/ and checked"
+  in the status; push film-05.mp4 to feat/lesson-04-films (LFS, /dev/shm/films; commit as Komediruzecki with -c
+  user.name/-c user.email: the global git name is "Claude"); README row; then FILM5 critic.
