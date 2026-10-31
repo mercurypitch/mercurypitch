@@ -1,4 +1,4 @@
-// Studio performance — a medium song (12 lanes, almost five minutes, 44 clips, every role's chain) imported, opened, played, sought, dragged, scrolled and zoomed, with what each step cost the page. Runs only when asked.
+// Studio performance — a medium song (12 lanes, almost five minutes, 44 clips, every role's chain) imported, opened, played, sought, dragged, scrolled, zoomed and edited while paused, with what each step cost the page. Runs only when asked.
 //
 // STUDIO_PERF=1 runs it; it is a measurement, not a gate, so CI skips it.
 // STUDIO_PERF_EXPORT=1 adds a WAV export of the whole song (minutes long).
@@ -370,6 +370,33 @@ test.describe('Studio performance', () => {
     await press(page, toggle)
     await expect(toggle).toHaveAccessibleName('Play song')
 
+    // A take added while paused brings a lane the kept graph never built.
+    // Once the edit settles, its graph is built ahead (prebuilt-run.ts).
+    const added = test.info().outputPath('Take 13.wav')
+    writeFileSync(added, perfTakeWav(20, 660, 13))
+    await studio
+      .getByLabel('Upload audio', { exact: true })
+      .setInputFiles(added)
+    await expect(
+      studio.getByRole('button', { name: 'Take 13 details', exact: true }),
+    ).toBeVisible({ timeout: 60_000 })
+    await expect(
+      studio.getByText('Saved in this browser', { exact: true }),
+    ).toBeVisible({ timeout: 60_000 })
+    await untilAudioClock(page, (await audioClock(page)) + 3)
+    let editedStart: Awaited<ReturnType<typeof firstSoundOf>> | undefined
+    readings.playAfterEdit = await measurePhase(
+      page,
+      cdp,
+      'playAfterEdit',
+      async () => {
+        editedStart = await firstSoundOf(page, () => press(page, toggle))
+      },
+    )
+    readings.editedFirstSound = editedStart
+    await press(page, toggle)
+    await expect(toggle).toHaveAccessibleName('Play song')
+
     if (process.env.STUDIO_PERF_EXPORT) {
       await studio.getByRole('button', { name: 'Export', exact: true }).click()
       readings.export = await measurePhase(page, cdp, 'export', async () => {
@@ -389,5 +416,6 @@ test.describe('Studio performance', () => {
     console.log(`[studio-perf] ${JSON.stringify(readings)}`)
     expect(coldStart?.firstSoundMs).not.toBeNull()
     expect(keptStart?.firstSoundMs).not.toBeNull()
+    expect(editedStart?.firstSoundMs).not.toBeNull()
   })
 })

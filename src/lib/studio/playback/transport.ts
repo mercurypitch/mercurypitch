@@ -7,7 +7,6 @@
 // replaces a run not heard yet, so a burst of edits builds one run at a time.
 // Only when memory cannot hold both does the song fade out and restart there.
 import { closeEnvelope } from '@/lib/preview-player'
-import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import type { StudioMasterGainToken } from '../export/sound-graph'
@@ -18,7 +17,7 @@ import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
 import { createStudioBufferCache } from './buffer-cache'
-import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
+import { buildStudioGraph } from './graph'
 import type { StudioHandoff } from './handoff'
 import { cancelHandoff, HANDOFF_CANCEL_MARGIN_SECONDS, handoffTiming, heardRun, liveRunsOf, scheduleHandoff, } from './handoff'
 import { smoothHeardTime } from './heard-clock'
@@ -26,10 +25,11 @@ import type { StudioDrafts, StudioLaneDraft } from './in-place'
 import { applyDrafts, applyMix, applySound, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
 import { measureNewChains } from './lane-swap'
-import type { StudioRunLayout } from './live-edit'
 import { firstThatFits, studioRunLayouts } from './live-edit'
 import { createStudioMasterLevel } from './master-level'
-import { createLatencyCache, planAssets, planLatencySeconds, playableStudioFrom, prepareStudioMaster, prepareStudioPlan, studioFirstFrame, } from './prepare-plan'
+import { prebuildStudioRun } from './prebuilt-run'
+import type { StudioAdmission, StudioAdmitSources } from './prepare-plan'
+import { admitStudioRun, createLatencyCache, planLatencySeconds, playableStudioFrom, prepareStudioMaster, studioFirstFrame, } from './prepare-plan'
 import type { StudioRun, StudioRunParts, StudioRunTiming } from './run'
 import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, runWarmupSeconds, } from './run'
 import { seekInPlace, seekShownFrame, seekTiming } from './seek'
@@ -95,6 +95,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
     clearCache: () => cache.clear(),
     createLaneMeter,
   })
+  // Where every run's audio and graph memory come from: a Play's, an edit's or one built ahead.
+  const sources: StudioAdmitSources = {
+    cache,
+    measure: measureLatencies,
+    readCanonicalAsset: options.readCanonicalAsset,
+    reserve: (bytes, signal) => reserveGraph(bytes, signal),
+  }
   let state: StudioTransportState = {
     playing: false,
     pending: false,
@@ -307,13 +314,17 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const token = ++generation
     const attempt = begin()
     const handingOver = held !== null
-    let admitted: Awaited<ReturnType<typeof admit>> | undefined
+    let admitted: StudioAdmission | undefined
     let built: number | null = null
     try {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
       const from = playableStudioFrom(project, assets, startFrame, repeat)
+      // A background warm-up does the same work, and a graph it builds
+      // ahead is kept: wait for it, not around it.
+      await warming
+      attempt.signal.throwIfAborted()
       const resumed = handingOver
         ? null
         : kept.take(ctx, project, assets, from, liveSettings())
@@ -326,17 +337,15 @@ export function createStudioTransport(options: StudioTransportOptions) {
       // starts at the level heard: the held run's, or the song's last.
       const measured = master.startingGain(project, held?.measured ?? null)
       const sound = resolveStudioSoundGraph(project, measured)
-      // A background warm-up does the same reads; wait for it, not around it.
-      await warming
-      attempt.signal.throwIfAborted()
       const masterLatency = await prepareStudioMaster(
         ctx,
         sound.full,
         attempt.signal,
         measureLatencies,
       )
+      const request = { project, assets, ctx, master: sound.full }
       admitted = await firstThatFits(studioRunLayouts(from, repeat), (layout) =>
-        admit(project, assets, ctx, sound.full, layout, attempt.signal),
+        admitStudioRun(request, layout, attempt.signal, sources),
       )
       attempt.signal.throwIfAborted()
       if (token !== generation || disposed)
@@ -561,42 +570,6 @@ export function createStudioTransport(options: StudioTransportOptions) {
     }
   }
 
-  /** The plan, graph memory and audio for a run built as `layout` says. */
-  async function admit(
-    project: StudioProject,
-    assets: readonly StudioAsset[],
-    ctx: AudioContext,
-    master: ChainSpec,
-    { silentLanes, start: planStart }: StudioRunLayout,
-    signal: AbortSignal,
-  ) {
-    const plan = await prepareStudioPlan(
-      project,
-      assets,
-      ctx.sampleRate,
-      planStart,
-      signal,
-      measureLatencies,
-      silentLanes,
-    )
-    const releaseMemory = await reserveGraph(
-      studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
-      signal,
-    )
-    try {
-      const buffers = await cache.acquire(
-        planAssets(plan, assets, silentLanes),
-        ctx,
-        options.readCanonicalAsset,
-        signal,
-      )
-      return { plan, silentLanes, buffers, releaseMemory }
-    } catch (error) {
-      releaseMemory()
-      throw error
-    }
-  }
-
   async function waitForRelease(): Promise<void> {
     await preparationDone
     if (retired.size)
@@ -628,6 +601,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
           masterGain: master.startingGain(project, null),
           busy,
         })
+        await prebuild(project, assets, abort.signal)
       } catch {
         // Play repeats this work and reports its own failure.
       } finally {
@@ -636,6 +610,23 @@ export function createStudioTransport(options: StudioTransportOptions) {
     })
     warming = run
     return run
+  }
+
+  /** Once the clock exists, build the song's graph ahead of Play and keep it parked (prebuilt-run.ts). */
+  async function prebuild(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+    signal: AbortSignal,
+  ): Promise<void> {
+    const ctx = options.lease.ensure()
+    const idle = () => !disposed && !signal.aborted && !active && !held
+    if (ctx?.state !== 'running' || !idle()) return
+    if (!kept.wants(project, assets, liveSettings())) return
+    const measured = master.startingGain(project, null)
+    const ahead = { repeat, measured, buildGraph, sources }
+    const built = await prebuildStudioRun(project, assets, ctx, signal, ahead)
+    if (idle()) kept.adopt(built.run, built.settledAt)
+    else releaseRun(built.run)
   }
 
   async function setSnapshot(

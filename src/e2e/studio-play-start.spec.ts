@@ -1,4 +1,4 @@
-// Studio Play after Pause — the graph Pause keeps sounds again sooner than a rebuilt one, and a clip edit while paused moves it instead of rebuilding it.
+// Studio Play after Pause — every Play after the first starts a graph that was ready before the press: the one Pause kept, moved with a clip edit, or built ahead after an edit it could not follow.
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
@@ -73,7 +73,7 @@ test.describe('Studio Play after Pause', () => {
     }
   })
 
-  test('Play after Pause starts the kept graph well before a graph rebuilt after an edit while paused @smoke', async ({
+  test('Play after Pause, and after an edit while paused, starts a graph that was ready before the press @smoke', async ({
     page,
   }) => {
     test.setTimeout(180_000)
@@ -163,22 +163,35 @@ test.describe('Studio Play after Pause', () => {
     await untilAudioClock(page, (await audioClock(page)) + 0.5)
     await pressToggle()
 
-    // A take added while paused brings a lane the kept graph never built,
-    // so Play builds afresh. Its tone is far from the pad's and quiet.
+    // A take added while paused brings a lane the kept graph never built.
+    // Once the edit settles the graph is built ahead and parked
+    // (prebuilt-run.ts), so Play starts it as it starts a kept one. Its
+    // tone is far from the pad's and quiet.
     await importWav(page, 'Air', steadyWav(40, [2000], 0.02))
-    const rebuilt = await measurePlay(
+    const added = await measurePlay(
       'play after a take was added while paused',
+      2,
     )
 
-    // Measured in headless Chromium on Linux: the kept graph reached half
-    // level 46 to 68 ms after the press, a rebuilt one 101 to 134 ms, both
-    // in steps of one device callback (10.7 ms). A rebuilt graph starts
-    // 60 ms after its build, so its new compressors settle first (run.ts),
-    // where a kept one starts a callback out (seekEarliest): 44 ms apart
-    // plus the build, a callback less when the steps fall against it.
-    for (const kept of [warm, quiet, moved]) {
-      expect(kept.halfLevelMs!).toBeLessThan(rebuilt.halfLevelMs! - 25)
-      expect(kept.firstSoundMs!).toBeLessThan(rebuilt.firstSoundMs! - 25)
+    // Every one of these Plays starts a graph that was ready before the
+    // press. Only the first Play of a visit builds in the press now (the
+    // clock comes into being inside it), and it has no press on that clock
+    // to measure from, so the readings are held to the soonest of them.
+    // Measured in headless Chromium on Linux with the Studio's 'playback'
+    // buffers (a device callback of 1,024 frames, 21.3 ms): a ready graph
+    // reached half level 57 to 79 ms after the press, one built in the
+    // press 91 to 113 ms. A built graph starts 60 ms after its build, so its
+    // new compressors settle first (run.ts), where a ready one starts a
+    // callback and 5 ms out (seekEarliest): 34 ms apart plus the build.
+    // Each press is stamped on a clock that moves a callback at a time, so
+    // a ready graph can read a callback later than the soonest, and one
+    // built in the press reads at least 34 ms later at the same step.
+    const readings = [warm, quiet, moved, added]
+    const soonest = (key: 'firstSoundMs' | 'halfLevelMs') =>
+      Math.min(...readings.map((reading) => reading[key]!))
+    for (const reading of readings) {
+      expect(reading.halfLevelMs!).toBeLessThan(soonest('halfLevelMs') + 25)
+      expect(reading.firstSoundMs!).toBeLessThan(soonest('firstSoundMs') + 25)
     }
   })
 })
