@@ -1,7 +1,9 @@
 // Studio page — local song entry, save recovery and an integrated arrangement workspace.
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { installStudioAudioWorker } from '@/lib/studio/audio/studio-audio-client'
+import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { createStudioClock, StudioClockContext } from './audio/studio-clock'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
 import styles from './StudioPage.module.css'
@@ -13,6 +15,11 @@ export function StudioPage() {
   // Takes are read, checked and turned into waveform peaks off the page's
   // thread while the Studio is open; leaving it ends the worker.
   onCleanup(installStudioAudioWorker())
+  // One clock for the visit: each song opened plays on it, and the next
+  // song's graph is built before its first Play (studio-clock.ts). The
+  // native app lends its own.
+  const clock = untrack(nativeDeviceApi) ? null : createStudioClock()
+  onCleanup(() => clock?.close())
   const studio = useStudioController()
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [savedAs, setSavedAs] = createSignal<string | null>(null)
@@ -195,16 +202,18 @@ export function StudioPage() {
         >
           <Show when={studio.project()?.id} keyed>
             {(_id) => (
-              <StudioWorkspace
-                studio={studio}
-                startPanel={startPanel()}
-                onLibrary={() => {
-                  setLibrary(true)
-                  void studio.refreshProjects()
-                }}
-                onBackup={() => void downloadBackup()}
-                onDelete={() => setConfirmation('delete')}
-              />
+              <StudioClockContext.Provider value={clock}>
+                <StudioWorkspace
+                  studio={studio}
+                  startPanel={startPanel()}
+                  onLibrary={() => {
+                    setLibrary(true)
+                    void studio.refreshProjects()
+                  }}
+                  onBackup={() => void downloadBackup()}
+                  onDelete={() => setConfirmation('delete')}
+                />
+              </StudioClockContext.Provider>
             )}
           </Show>
         </Show>

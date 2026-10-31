@@ -14,6 +14,7 @@ import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { createStudioReadoutFrame } from './readout-frame'
+import { useStudioClock } from './studio-clock'
 import { createStudioWebLease } from './web-audio-lease'
 
 export interface UseStudioTransportOptions {
@@ -58,12 +59,17 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   const nativeLease = native?.acquireAudio('studio', {
     prepareToSuspend: () => prepareToSuspend(),
   })
-  // On the web the Studio plays on a clock of its own (web-audio-lease.ts);
-  // a host that lends one, the native app's or a caller's, keeps its own.
+  // On the web the Studio plays on a clock of its own (web-audio-lease.ts),
+  // the page's while it lends one (studio-clock.ts); a host that lends one,
+  // the native app's or a caller's, keeps its own.
+  const pageClock =
+    (options.audioLease ?? nativeLease) ? null : useStudioClock()?.hold()
   const webLease =
-    (options.audioLease ?? nativeLease) ? null : createStudioWebLease()
+    (options.audioLease ?? nativeLease ?? pageClock)
+      ? null
+      : createStudioWebLease()
   const lease: AudioContextLease =
-    options.audioLease ?? nativeLease ?? webLease!
+    options.audioLease ?? nativeLease ?? pageClock?.lease ?? webLease!
   const [state, setState] = createSignal<StudioTransportState>({
     playing: false,
     pending: false,
@@ -280,16 +286,21 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     observedRevision = project?.revision ?? -1
   })
 
-  // Warm the playback cache once edits settle, so Play starts without reading.
+  // Warm the playback cache as the song opens, and again once edits settle,
+  // so Play starts without reading. Once the clock exists the warm-up also
+  // builds the graph ahead (prebuilt-run.ts).
   let warmTimer: ReturnType<typeof setTimeout> | undefined
+  let warmedOnce = false
   createEffect(() => {
     const project = options.project()
     const assets = options.assets()
     clearTimeout(warmTimer)
     if (!project || project.clips.length === 0 || isPlaying()) return
+    const settle = warmedOnce ? 400 : 0
+    warmedOnce = true
     warmTimer = setTimeout(() => {
       if (!disposed) void runtime.warm(project, assets)
-    }, 400)
+    }, settle)
   })
   onCleanup(() => clearTimeout(warmTimer))
 
@@ -312,6 +323,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     void releaseAudio().finally(() => {
       runtime.dispose()
       nativeLease?.release()
+      pageClock?.release()
       void webLease?.close()
     })
   }
