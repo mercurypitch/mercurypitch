@@ -2320,3 +2320,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   $S/render-l4.sh film-04 60 high $S/l4film04proj (pieces under $S/l4film04proj/renders/.hf-segments).
   AFTER: contact sheet look + measure numbers; get_session rate_limit "allowed" -> fresh motion-critic (xhigh)
   with critics/FILM4-ready.txt verbatim; save to review/film-04/REPORT.md; LEDGER 33; DECISIONS 136.
+- 08:14 31 Oct OWNER ASK, verbatim: "Ping me with the film when it will be ready for my review". Replied: sent
+  when a critic passes it (SHIP, or only sub-frame/cosmetic items left), with a push notification and a short
+  watch/listen list; another polish pass first if the critic asks for more. HOW: copy the film from
+  /dev/shm/l4film to P/renders/film-NN.mp4 (inside the working dir; ~110 MB; / has ~630 MB free), fill
+  DELIVERY.md from l4entr/DELIVERY.draft.md, then SendUserFile (status proactive, display render) with the
+  film + a 3-5 line caption (what to watch/listen for, DELIVERY.md's human list) and PushNotification. This
+  ping IS due at SHIP even on a scheduled check-in. Render at 08:12: 65% (frame ~21200/29084, segments 14-15
+  of 20); main pass ETA ~08:45. Memory fine (16 GB box: rss 4.4 GB, shm 6.4 GB, 5.2 GB available).
+  Watcher note: PID 12855 is the stale launcher shell that matches "render-l4[.]sh film-04"; the real render
+  script is PID 12857 (kill -0 12857 for liveness when re-arming).
