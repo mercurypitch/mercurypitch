@@ -2,7 +2,7 @@
 <html lang="en">
   <head><meta charset="UTF-8" /></head>
   <body>
-    <div id="s06-groups" data-composition-id="s06-groups" data-start="0" data-duration="35.216" data-width="1920" data-height="1080">
+    <div id="s06-groups" data-composition-id="s06-groups" data-start="0" data-duration="41.636" data-width="1920" data-height="1080">
       <div class="scene" id="s06-groups-scene"></div>
       <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s06-groups -->
       <video id="s06-groups-m06a-orange" data-merc="m06a-orange" class="clip" muted playsinline src="assets/merc/m06a-orange-merc.webm" data-start="0.000" data-duration="3.911" data-media-start="1.392"></video>
@@ -43,7 +43,7 @@
             const r = L.rng(7)
             const motes = []
             for (let i = 0; i < 26; i++) {
-              const m = { x: r() * 1920, y: r() * 1080, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              const m = { x: r() * 1920, y: r() * 1080, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 } // clock-lint: ok (2 pi, a phase)
               m.el = L.svg('circle', { r: m.s, fill: 'rgba(195,204,214,0.5)', opacity: 0 }, svg)
               motes.push(m)
             }

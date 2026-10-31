@@ -5,76 +5,76 @@ window.MERC_INTRO = {
   {
    "drawn": 225,
    "frames": 44,
-   "from": 3687,
+   "from": 4141,
    "pad": 208,
    "shot": "m04-orange",
    "tall": true,
-   "until": 3727
+   "until": 4181
   }
  ],
  "m07-orange": [
   {
    "drawn": 225,
    "frames": 44,
-   "from": 8841,
+   "from": 10253,
    "pad": 208,
    "shot": "m07-orange",
    "tall": true,
-   "until": 8881
+   "until": 10293
   }
  ],
  "m09-orange": [
   {
    "drawn": 225,
    "frames": 44,
-   "from": 14938,
+   "from": 17152,
    "pad": 208,
    "shot": "m09-orange-in",
    "tall": true,
-   "until": 14978
+   "until": 17192
   },
   {
-   "frames": 338,
-   "from": 14978,
+   "frames": 510,
+   "from": 17192,
    "shot": "m09-orange-in",
    "tall": false,
-   "until": 15270
+   "until": 17656
   }
  ],
  "m12-blue": [
   {
    "drawn": 390,
    "frames": 44,
-   "from": 20550,
+   "from": 23710,
    "pad": 352,
    "shot": "m12-blue-in",
    "tall": true,
-   "until": 20590
+   "until": 23750
   },
   {
-   "frames": 903,
-   "from": 20590,
+   "frames": 1024,
+   "from": 23750,
    "shot": "m12-blue-in",
    "tall": false,
-   "until": 21447
+   "until": 24728
   }
  ],
  "m12-orange": [
   {
    "drawn": 390,
    "frames": 44,
-   "from": 20526,
+   "from": 23686,
    "pad": 352,
    "shot": "m12-orange-in",
    "tall": true,
-   "until": 20566
+   "until": 23726
   },
   {
    "frames": 240,
-   "from": 20566,
+   "from": 23726,
    "shot": "m12-orange-in",
    "tall": false,
-   "until": 20760
+   "until": 23920
   }
  ]
 };

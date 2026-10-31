@@ -1881,7 +1881,63 @@ replaced it. The builder's record: critics never read it.
        against 273.9 s; the most, b11 +3.6 s, b30 +3.3 s, b15 +2.8 s, b28 +2.6 s). Most of it is the
        slower delivery. Pauses of 0.45 s or more inside lines total 13.5 s, nearly all at sentence
        ends, and stay as spoken. Before Tavi's lines, the film runs about 8:47.
-     - **Tavi's 14 lines** (941 characters, about 950 credits) wait for the ElevenLabs connector to
+     - **Tavi's 14 lines** (941 characters, about 950 credits) waited for the ElevenLabs connector to
        reach the workspace that holds Orange Merc: on 31 October it found no voice of that name.
-       The owner is asked to switch it.
-     - The full check after both fixes: {fill}.
+       The owner then asked for the voice to be designed again in this workspace instead of a
+       switch: decision 138.
+     - The full check after both fixes: 0 errors and 65 warnings, the baseline. Merc's 55 takes are
+       imported (`voice-elevenlabs/import.py`, word times by forced alignment; the Kokoro files are
+       kept in `assets/voice-kokoro/`). The re-time waits for Tavi's lines.
+138. **Tavi's voice designed again in this workspace (31 October); all 69 lines on the final voices; the film re-timed to 9:11.**
+     - The owner wrote: "Could you recreate Tavi voice on this account? You have the prompt so it
+       should be easier and no switching, and I have plenty of credits to waste in this account".
+     - **The voice.** A design's previews cannot be read back from another workspace (the 17 October
+       round returned none), so the 17 October description and preview text were run again
+       unchanged: three rounds with fixed seeds 20261031 to 20261033, nine previews.
+       - Each preview was measured against Tavi's 20 original takes (Lessons 1 and 2). The measures
+         were two speaker-embedding models (WeSpeaker ResNet34 and NeMo TitaNet-small, through
+         sherpa-onnx) and YIN pitch.
+       - Reference points: the originals score 0.875 (WeSpeaker) and 0.832 (TitaNet) against each
+         other. Merc's D2 takes score 0.609 and 0.122 against them, and Kokoro's af_heart 0.520 and
+         0.278.
+       - Kept: round 2, preview 2, saved as "Tavi - Orange Merc (recreated)"
+         (`nIlUZMilnuQseg9riG4H`). It scores 0.875 and 0.748, with a median pitch of 333 Hz against
+         the originals' 326 Hz.
+       - Not kept: round 3, preview 1. It scored higher on WeSpeaker (0.889) but sat 2.7 semitones
+         high (381 Hz).
+       - Measures and table: `voice-elevenlabs/README.md`.
+     - **Tavi's 14 lines on it**, one take each (eleven_v3, the text exactly as `script.json`), and
+       one deliberate retake of o2: 15 requests, 1,068 credits (`voice-elevenlabs/ledger.jsonl`).
+       - o2's first take: Whisper small.en hears "home" as "Hall". The retake, pinned as
+         `SDh24tDmjUdH52aAzXPS` in `takes/selected.json`, comes out as "Ho". It is the closer of the
+         two, and is for a human ear.
+       - Whisper punctuates three of Tavi's questions as statements: o7 ("Surely that's the same
+         scale?"), o8 ("It's the pattern?") and o11. Punctuation is a weak sign of intonation. Whether
+         they sound like questions is for a human ear.
+       - Transcripts: `voice-elevenlabs/takes/asr-small.L4-orange.json`.
+     - **The listening test.** The owner was sent `voice-elevenlabs/compare/`: the original voice on
+       four Lesson 2 lines, the kept preview on the same sentences, and four Lesson 4 lines on the new
+       voice. The new voice will not match Lessons 1 and 2 exactly. If the owner hears the
+       difference, Lessons 1 and 2's 20 Tavi lines can be re-voiced on it (about 870 credits).
+     - **All 69 lines are ElevenLabs takes** (`import.py`, word times by forced alignment; Kokoro's
+       files in `assets/voice-kokoro/`, the record in `assets/voice/_elevenlabs.json`).
+     - **The re-time** (`tools/cues.py --no-tts`): the film runs 551.21 s (9:11), up from 484.73 s
+       and inside the owner's 10-minute cap.
+       - Speech: 902 words in 397.2 s, 136 a minute while speaking.
+       - Act starts: act1 78.51, act2 169.79, act3 262.82, act4 394.06, recap 464.23, next 535.43 s.
+       - Regenerated: `index.html` and `assets/scenes.js` (gen-root.py), the mix (551.21 s, -16.0
+         LUFS target), 123 captions (peak 20.0 characters a second), the chapters and `SCRIPT.md`.
+       - Backups of the old cues, root, scenes, chapters and script are in the scratchpad's
+         `l4entr/revoice/`.
+       - board-clock: the hook's question (o2) now ends at 0:38.02, against the BRIEF's "done by
+         about 0:34". The 4 s are the voiced delivery. Left as spoken; the FILM5 critic and the
+         owner judge it.
+     - clock-lint flagged `ph: r() * 6.28` in `compositions/s06-groups.html` (line 46): it is 2 pi,
+       a phase, not a time. Marked `// clock-lint: ok (2 pi, a phase)`.
+     - **Merc passes.** merc-shots.py wrote 16 shots, `merc/intros.json` and `assets/merc/intro.js`
+       on the new clock, with five intros: m04-orange, m07-orange, m09-orange, m12-blue and
+       m12-orange. All 21 passes are re-rendering from 14:07:51 in three queues
+       (`l4entr/revoice/passes.sh`, status in `passes.status`). The old passes are kept in
+       `/dev/shm/l4-old-passes`.
+     - Next: merc-whole and merc-tags, clock-lint, HOSTS=1 stills of the S12 falls, the floor and the
+       end card, the full check, then freeze and render film-05 and send it to a fresh FILM5 critic.

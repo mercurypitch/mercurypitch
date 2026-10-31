@@ -2386,3 +2386,36 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   "Lesson 4 line oN (Tavi, voice Orange Merc): ...") -> ledger_sync -> fetch.py -> b52-gap.py again -> ASR ->
   import.py --align-model /dev/shm/w2v -> cues.py --no-tts -> board-clock -> passes -> mix -> captions ->
   chapters -> script-md -> check -> freeze -> film-05 -> FILM5 critic -> DELIVERY -> web encodes.
+- 13:5x import of Merc's 55 (import.py --ids b1..b55 --align-model /dev/shm/w2v): first run failed in
+  ctc_align (wants <dir>/model_quantized.onnx, the download put it in <dir>/onnx/) BEFORE writing anything;
+  linked /dev/shm/w2v/model_quantized.onnx -> onnx/model_quantized.onnx, and $S/w2v -> /dev/shm/w2v (import.py's
+  default). After a container restart /dev/shm is empty: re-download Xenova/wav2vec2-base-960h vocab.json +
+  onnx/model_quantized.onnx into /dev/shm/w2v and link the model to the top level. Re-run is brt30bx8e
+  (log l4entr/polish4/import-blue.log). The re-time (cues.py --no-tts) WAITS for Tavi's 14.
+- 14:0x 31 Oct OWNER, verbatim: "Can you summarize session 2 decisions needed? And voices ? Is this in remote ? If
+  not any work should be on it's branch pushed to remote for the new season lessons / Could you recreate Tavi voice
+  on this account? You have the prompt so it should be easier and no switching, and I have plenty of credits to
+  waste in this account"
+  DONE: Season 2's 13 decisions and the voices summarised in chat. SEASON 2 PUSHED: feat/season-2-plan e8c1072d7 on
+  origin/main 5904f112e (34 files, +7174; NO PR), worktree /dev/shm/s2plan (RAM: gone on a restart; the branch is
+  on origin). Follow-up announced: re-anchor the 15 plan-cites findings (lesson notes + ARC-D-REPORT) as a second
+  commit there.
+  TAVI RECREATED (DECISIONS 138, voice-elevenlabs/README.md): 3 design rounds (seeds 20261031-33, 9 previews),
+  kept r2 preview 2 = "Tavi - Orange Merc (recreated)" nIlUZMilnuQseg9riG4H (WeSpeaker 0.875 = originals' own,
+  TitaNet 0.748, 333 vs 326 Hz). Tavi's 14 + o2 retake: 15 requests, 1,068 credits; o2 pinned SDh24tDmjUdH52aAzXPS.
+  ASR small.en (takes/asr-small.L4-orange.json): o2 "home" -> "Ho" (first take "Hall"); o7, o8, o11 punctuated
+  as statements. A/B listening test SENT ~14:15 (voice-elevenlabs/compare/tavi-A-then-B.mp3 + tavi-3-...): WAITING
+  on the owner's ear (if L1/L2 differ audibly: re-voice their 20 Tavi lines, ~870 credits).
+  ALL 69 IMPORTED; RE-TIMED: 551.21 s (9:11); mix, 123 captions, chapters, SCRIPT.md regenerated; hook o2 ends
+  0:38.02 (BRIEF ~0:34): left for FILM5 + owner. clock-lint marker in s06-groups.html:46 (2 pi).
+  MERC PASSES: 21 jobs in 3 queues since 14:07:51 ($S/l4entr/revoice/passes.sh; status passes.status; logs
+  pass-*.log); watcher bas6ndkpu (to ~16:02; RE-ARM on expiry: 3 "QUEUE DONE" or any "exit [1-9]").
+  DISK: / had 112 MB free at 14:19 (the session allowance is nearly spent). pip cache purged (157 MB) -> 266 MB.
+  RENDER PLAN: freeze into /dev/shm/l4film05proj (the pieces then sit in RAM), not $S; copy only the master to
+  P/renders. RAM before the render: /dev/shm holds ~1.9 GB of today's tools (whisper-models 605M, asr-venv 513M,
+  s2plan 458M, w2v 91M, spk 64M); film-04's render peaked at 8.8 GB of shm. The superseded drafts in P/renders
+  (film-01.mp4, film-01-music-only.mp4, film-03.mp4: 325 MB) stay unless the owner OKs removing them (never clean
+  up the machine).
+  NEXT: passes done -> merc-whole.py, merc-tags.py --check, clock-lint -> HOSTS=1 stills (S12 falls, floor, end
+  card) -> full check (0 errors) -> freeze -> film-05 -> FILM5 critic (xhigh, rate_limit "allowed") -> LEDGER 34,
+  DECISIONS 139 -> DELIVERY.md (voices row) -> web encodes (tools/web-video.sh) -> send the owner.
