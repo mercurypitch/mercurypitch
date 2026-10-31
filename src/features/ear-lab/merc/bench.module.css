@@ -1,33 +1,70 @@
 /* ============================================================
-   The Ear Lab tab, with Merc: the room's painting with Merc on the
-   desk, the glass, Today, the Ear rooms, six stations, the Ear Path
-   and the Ear Report. 24px between sections; every line of text on
-   the painting sits on a backing of 60% or more.
+   The Ear Lab tab, with Merc, in the drill room's light (the bench
+   mock-ups, approved 31 Oct): the Regulator Room at night with Merc on
+   the desk, the Index as the sealed plate draws it, Today, the Ear
+   rooms, six stations each in its own two lights, the Ear Path's orbs
+   and the Ear Report. The room's navy, glass and Inter; the kit's
+   violet for the one filled button; nothing under 13px.
    ============================================================ */
 
-/* The bench's ink, on the tab and on what it lays over the rail: the
-   station sheet, the day's close and the "?" are portalled to <body>,
-   since the tab is a stacking context the rail sits above. */
+/* The room's tokens (room.module.css), on the tab and on what it lays
+   over the rail: the station sheet, the day's close and the "?" are
+   portalled to <body>, since the tab is a stacking context the rail
+   sits above. */
 .bench,
 .layer {
-  --merc-room: #0a0b0d;
-  --merc-brass: #c9a45e;
-  --merc-brass-bright: #e7c67d;
-  --merc-brass-pale: #f0d697;
-  --merc-parchment: #efe6d6;
-  --merc-ink: #1d1812;
-  --merc-muted: #b9b1a4;
-  --merc-dim: #8d97a3;
-  --merc-card: rgb(20 23 28 / 92%);
-  --merc-line: rgb(239 230 214 / 14%);
-  --merc-serif:
-    'Crimson Pro Variable', 'Crimson Pro', 'Iowan Old Style', Georgia, serif;
-  --merc-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --room-ink: #050816;
+  --room-text: #f4f1ff;
+  --room-text-2: #b6bdd1;
+  --room-text-3: #a9b2c8;
+  --room-glass: rgb(22 28 50 / 66%);
+  --room-glass-line: rgb(255 255 255 / 15%);
+  --room-line: rgb(255 255 255 / 8%);
+  --room-lit: #9a87f0;
+  --room-lit-pale: #c9bcff;
+  --room-lit-edge: rgb(166 148 255 / 72%);
+  --room-lit-fill: #7c4dff;
+  --room-right: #2ee6c9;
+  --room-right-pale: #8ff5e3;
+  --room-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --room-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  color: var(--merc-parchment);
-  font: 400 16px/1.5 var(--merc-sans);
+  color: var(--room-text);
+  font: 400 16px/1.5 var(--room-sans);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Each station's two lights, the ones its drill room is lit by
+   (room.module.css), as channels for its tile and its sheet. */
+[data-faculty='resolution'] {
+  --station-a: 154 135 240;
+  --station-b: 93 140 255;
+}
+
+[data-faculty='function'] {
+  --station-a: 184 166 255;
+  --station-b: 222 140 240;
+}
+
+[data-faculty='shape'] {
+  --station-a: 111 155 255;
+  --station-b: 127 220 245;
+}
+
+[data-faculty='colour'] {
+  --station-a: 222 140 240;
+  --station-b: 154 135 240;
+}
+
+[data-faculty='time'] {
+  --station-a: 127 220 245;
+  --station-b: 93 140 255;
+}
+
+[data-faculty='wild'] {
+  --station-a: 127 220 245;
+  --station-b: 154 135 240;
 }
 
 .bench {
@@ -37,7 +74,25 @@
   /* Clip, not hidden, as in the room: nothing scrolls the tab sideways. */
   overflow-x: clip;
   container: merc-bench / inline-size;
-  background: var(--merc-room);
+  background-color: #070b1d;
+  background-image:
+    radial-gradient(
+      90% 360px at 50% 380px,
+      rgb(154 135 240 / 16%),
+      transparent 70%
+    ),
+    radial-gradient(
+      70% 320px at 85% 820px,
+      rgb(93 140 255 / 10%),
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      #050816 0,
+      #0a1030 380px,
+      #070b1d 900px,
+      #05081a 100%
+    );
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -47,8 +102,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:is(.bench, .layer) :where(button:focus-visible) {
-  outline: 2px solid var(--merc-brass-bright);
+:is(.bench, .layer) :where(button:focus-visible, a:focus-visible) {
+  outline: 2px solid var(--room-lit-pale);
   outline-offset: 2px;
 }
 
@@ -62,13 +117,14 @@
   white-space: nowrap;
 }
 
-/* ── The hero: the painting, Merc on the desk ─────────────────── */
+/* ── The hero: the Regulator Room at night, Merc on the desk ────── */
 
 .hero {
   position: relative;
   height: 82cqw;
   max-height: 440px;
   overflow: clip;
+  isolation: isolate;
 }
 
 .painting {
@@ -78,7 +134,18 @@
   width: 100%;
   aspect-ratio: 9 / 16;
   object-fit: cover;
+  filter: grayscale(1) contrast(1.15) brightness(0.68);
   user-select: none;
+  pointer-events: none;
+}
+
+/* The room at night, as the Wild keeps its glasshouse: the painting
+   takes the room's indigo, and the lamp's light the kit's pale violet. */
+.heroNight {
+  position: absolute;
+  inset: 0;
+  background: #3e3c86;
+  mix-blend-mode: color;
   pointer-events: none;
 }
 
@@ -89,21 +156,21 @@
   background:
     radial-gradient(
       16cqw 5cqw at 32.8cqw 43.6cqw,
-      rgb(10 11 13 / 55%),
+      rgb(5 8 22 / 50%),
       transparent 100%
     ),
     linear-gradient(
       180deg,
-      rgb(10 11 13 / 88%) 0,
-      rgb(10 11 13 / 0%) 33cqw,
-      rgb(10 11 13 / 0%) 64cqw,
-      var(--merc-room) 100%
+      rgb(5 8 22 / 88%) 0,
+      rgb(5 8 22 / 0%) 33cqw,
+      rgb(5 8 22 / 0%) 60cqw,
+      rgb(9 15 40 / 98%) 100%
     );
 }
 
 .topBar {
   position: absolute;
-  left: 16px;
+  left: 20px;
   right: 16px;
   top: calc(8px + env(safe-area-inset-top, 0px));
   z-index: 2;
@@ -114,11 +181,9 @@
 
 .tabTitle {
   margin: 0;
-  padding: 4px 10px;
-  border-radius: 10px;
-  background: rgb(10 11 13 / 62%);
-  font: 600 20px/1 var(--merc-serif);
-  color: var(--merc-parchment);
+  font: 600 22px/1.2 var(--room-sans);
+  letter-spacing: -0.01em;
+  color: var(--room-text);
 }
 
 .round {
@@ -129,10 +194,29 @@
   place-items: center;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgb(239 230 214 / 16%);
-  background: rgb(20 23 28 / 80%);
-  color: var(--merc-brass);
+  border: 1px solid var(--room-glass-line);
+  background: var(--room-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #ebe8f8;
   cursor: pointer;
+}
+
+/* Merc in his own light, as in the room, on the desk at night. */
+.mercGlow {
+  position: absolute;
+  left: 25.6cqw;
+  top: 47.7cqw;
+  width: 35.9cqw;
+  height: 31.8cqw;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(110 140 255 / 42%),
+    rgb(154 135 240 / 12%) 60%,
+    transparent
+  );
+  pointer-events: none;
 }
 
 .mercOnDesk {
@@ -142,7 +226,7 @@
   width: 26.7cqw;
   height: 26.7cqw;
   transform: scaleX(-1) rotate(8deg);
-  filter: saturate(0.85) drop-shadow(3px -2px 6px rgb(255 196 120 / 28%));
+  filter: drop-shadow(0 0 10px rgb(201 188 255 / 38%));
 }
 
 .mercOnDesk > :global(*) {
@@ -160,34 +244,45 @@
   background: radial-gradient(closest-side, rgb(0 0 0 / 62%), transparent);
 }
 
+/* Merc's line, in the room's glass bubble. */
 .heroBubble {
   position: absolute;
   left: 59cqw;
-  top: 46.7cqw;
-  width: 37cqw;
+  top: 45.6cqw;
+  width: 37.4cqw;
   box-sizing: border-box;
-  padding: 9px 12px;
-  border-radius: 14px;
-  background: var(--merc-parchment);
-  color: var(--merc-ink);
-  box-shadow: 0 8px 22px rgb(0 0 0 / 45%);
+  padding: 10px 14px 11px;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(12 20 48 / 82%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 35%);
+  color: #f6f3ff;
+}
+
+.heroBubble::before,
+.sheetBubble::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  border-left: 1px solid rgb(255 255 255 / 14%);
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+  border-bottom-left-radius: 2px;
+  background: rgb(12 20 48 / 96%);
+  transform: rotate(45deg);
 }
 
 .heroBubble::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 24px;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: var(--merc-parchment);
-  transform: rotate(45deg);
+  top: 22px;
 }
 
 .heroBubble p {
   margin: 0;
-  font: 600 18px/1.2 var(--merc-serif);
+  font: 500 15px/1.4 var(--room-sans);
 }
 
 /* ── Sections ──────────────────────────────────────────────────── */
@@ -195,38 +290,77 @@
 .sections {
   position: relative;
   display: grid;
-  gap: 24px;
+  gap: 22px;
   padding: 0 16px;
+}
+
+/* The Index, as the sealed plate draws it: the kicker and its badge,
+   the number in the kit's 700 weight, the glass under it. */
+.indexHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .kicker {
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font: 500 13px/16px var(--merc-sans);
-  letter-spacing: 0.2em;
+  font: 600 13px/1 var(--room-sans);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--merc-brass);
+  color: var(--room-text-3);
 }
 
-.kicker::before {
-  content: '';
-  width: 22px;
-  height: 1px;
-  background: var(--merc-brass);
+.badge {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  background: rgb(10 18 44 / 60%);
+  font: 500 13px/1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .headline {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font: 700 28px/1.15 var(--room-sans);
+  letter-spacing: -0.01em;
+  color: var(--room-text);
+}
+
+.number {
+  font-size: 56px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.indexMove {
+  margin-top: 6px;
+  font: 600 15px/1 var(--room-sans);
+  color: var(--room-text-3);
+}
+
+.indexUp {
+  color: var(--room-right-pale);
+}
+
+.lede {
   margin: 6px 0 0;
-  font: 400 28px/1.12 var(--merc-serif);
-  color: var(--merc-parchment);
+  font: 500 15px/1.35 var(--room-sans);
+  color: var(--room-text-2);
 }
 
 .glassRow {
+  margin-top: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .glass {
@@ -236,24 +370,27 @@
   height: auto;
 }
 
-/* The glass is drawn on the bench and on the drill room's sealed plate,
-   which has none of the bench's ink: there its words take the room's
-   grey and Inter, or they fell back to black on the stage. */
+/* The glass is drawn on the bench and on the drill room's sealed plate:
+   both carry the room's grey and Inter. */
 .glassScale {
-  font: 400 13px
-    var(--merc-sans, 'Inter Variable', 'Inter', ui-sans-serif, sans-serif);
-  fill: var(--merc-muted, #a9b2c8);
+  font: 500 13px var(--room-sans);
+  fill: var(--room-text-3);
 }
 
 .glassEmpty {
-  font: 600 13px
-    var(--merc-sans, 'Inter Variable', 'Inter', ui-sans-serif, sans-serif);
+  font: 600 13px var(--room-sans);
   letter-spacing: 0.08em;
-  fill: var(--merc-dim, #a9b2c8);
+  fill: var(--room-text-3);
+}
+
+/* "Unmarked": a tag on the tube, so the word does not sit on its line. */
+.glassTag {
+  fill: #0b1230;
+  stroke: rgb(197 206 216 / 35%);
 }
 
 .mercury {
-  transition: width 1400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 1400ms var(--room-ease);
 }
 
 .engrave {
@@ -270,146 +407,157 @@
 
 .calibrate {
   flex: none;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border-radius: 12px;
-  border: 1px solid rgb(231 198 125 / 60%);
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 22px;
+  border: 1.5px solid var(--room-lit-edge);
   background: none;
-  color: var(--merc-brass-bright);
-  font: 600 14px/1 var(--merc-sans);
+  color: var(--room-lit-pale);
+  font: 600 15px/1 var(--room-sans);
   cursor: pointer;
 }
 
 .caption {
-  margin: 4px 0 0;
-  font: 400 13px/1.3 var(--merc-sans);
-  color: var(--merc-muted);
+  margin: 8px 0 0;
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
 }
+
+/* ── Glass cards: Today, the Ear Path, the Report ─────────────── */
 
 .card {
   box-sizing: border-box;
-  padding: 12px 14px 14px;
-  border-radius: 18px;
-  border: 1px solid var(--merc-line);
-  background: var(--merc-card);
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--room-glass-line);
+  background: var(--room-glass);
 }
 
 .cardHead {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 8px;
 }
 
 .h2 {
   margin: 0;
-  font: 600 20px/1.1 var(--merc-serif);
-  color: var(--merc-parchment);
+  font: 600 17px/1.2 var(--room-sans);
+  color: var(--room-text);
 }
 
 .count {
-  font: 400 13px/1.2 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .days {
   margin-left: auto;
-  font: italic 400 14px/1.2 var(--merc-serif);
-  color: var(--merc-brass);
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-lit-pale);
 }
 
 .todayList {
   list-style: none;
-  margin: 6px 0 0;
+  margin: 12px 0 0;
   padding: 0;
   display: grid;
+  gap: 10px;
 }
 
 .todayRow {
-  min-height: 40px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  font: 500 14px/1.25 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 500 13px/1.45 var(--room-sans);
+  color: var(--room-text-3);
 }
 
-.todayRow > span:last-child {
-  color: var(--merc-muted);
-  font-weight: 400;
-}
-
-.todayDone {
-  color: var(--merc-muted);
+.todayName {
+  flex: none;
+  font: 600 15px/1.3 var(--room-sans);
+  color: var(--room-text);
 }
 
 .todayDone .todayName {
+  color: var(--room-text-2);
   text-decoration: line-through;
-  text-decoration-color: rgb(185 177 164 / 50%);
+  text-decoration-color: rgb(169 178 200 / 50%);
 }
 
+/* The day's rings, as the plate's: the next one lit violet, the done
+   ones teal and ticked. */
 .todayDot {
   flex: none;
-  width: 8px;
-  height: 8px;
+  margin-top: 4px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  border: 1.6px solid rgb(239 230 214 / 40%);
+  border: 1.5px solid rgb(255 255 255 / 40%);
   box-sizing: border-box;
 }
 
 .todayDotNext {
-  border-color: var(--merc-brass-bright);
+  border: 2px solid var(--room-lit);
+  box-shadow: 0 0 8px rgb(154 135 240 / 60%);
 }
 
 .todayCheck {
   flex: none;
-  color: var(--merc-brass);
+  margin-top: 1px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--room-right);
+  color: #05201b;
 }
 
+/* The one filled button in the kit's violet. */
 .primary {
   width: 100%;
   min-height: 52px;
-  margin-top: 8px;
+  margin-top: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 4px 8px;
-  padding: 8px 16px;
+  padding: 8px 18px;
   box-sizing: border-box;
-  border: 1px solid var(--merc-brass-pale);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #e9cc8a 0%, var(--merc-brass) 100%);
-  color: #1b1408;
-  font: 600 17px/1.15 var(--merc-sans);
+  border: 0;
+  border-radius: 26px;
+  background: var(--room-lit-fill);
+  box-shadow: 0 6px 20px rgb(124 77 255 / 42%);
+  color: #fff;
+  font: 600 16px/1.15 var(--room-sans);
   cursor: pointer;
 }
 
 .primary small {
-  font: 500 14px/1.1 var(--merc-sans);
-  color: #4a3a1a;
+  font: 500 14px/1.1 var(--room-sans);
+  color: rgb(255 255 255 / 80%);
 }
 
+/* And the glass outline for the rest. */
 .quiet {
   width: 100%;
   min-height: 48px;
-  margin-top: 8px;
-  border-radius: 14px;
-  border: 1px solid rgb(239 230 214 / 20%);
-  background: rgb(239 230 214 / 4%);
-  color: var(--merc-parchment);
-  font: 600 15px/1.1 var(--merc-sans);
+  margin-top: 14px;
+  border-radius: 24px;
+  border: 1.5px solid rgb(255 255 255 / 30%);
+  background: none;
+  color: var(--room-text);
+  font: 600 15px/1.15 var(--room-sans);
   cursor: pointer;
 }
 
-/* ── Stations ─────────────────────────────────────────────────── */
+/* ── Stations: each tile in its own two lights ────────────────── */
 
 .sectionHead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -425,15 +573,28 @@
 }
 
 .station {
-  min-height: 112px;
+  min-height: 104px;
   box-sizing: border-box;
-  padding: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   text-align: left;
-  border-radius: 16px;
-  border: 1px solid var(--merc-line);
-  background: rgb(20 23 28 / 90%);
+  border-radius: 20px;
+  border: 1px solid var(--room-glass-line);
+  background-color: var(--room-glass);
+  background-image:
+    radial-gradient(
+      110% 90% at 0% 0%,
+      rgb(var(--station-a) / 28%),
+      transparent 62%
+    ),
+    radial-gradient(
+      100% 80% at 100% 100%,
+      rgb(var(--station-b) / 18%),
+      transparent 70%
+    );
+  color: var(--room-text);
   cursor: pointer;
 }
 
@@ -449,30 +610,30 @@
   height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: rgb(197 206 216 / 10%);
-  color: #c5ced8;
-}
-
-.stationIconWild {
-  background: rgb(143 212 154 / 10%);
-  color: #8fd49a;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background-image: linear-gradient(
+    135deg,
+    rgb(var(--station-a) / 50%),
+    rgb(var(--station-b) / 32%)
+  );
+  color: #fff;
 }
 
 .stationNames {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .stationTitle {
-  font: 600 15px/1.1 var(--merc-sans);
+  font: 600 15px/1.2 var(--room-sans);
 }
 
 .stationCast {
-  font: 400 13px/1.15 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -480,7 +641,6 @@
 
 .stationReading {
   margin-top: auto;
-  padding-top: 8px;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -488,30 +648,30 @@
 }
 
 .stationValue {
-  font: 600 19px/1 var(--merc-serif);
-  color: var(--merc-brass-bright);
+  font: 700 20px/1 var(--room-sans);
+  color: var(--room-text);
 }
 
+/* A practice estimate, not a sealed number: a step quieter. */
 .stationValuePractice {
-  color: rgb(231 198 125 / 82%);
+  color: var(--room-text-2);
 }
 
 .stationStatus {
-  font: 500 13px/1 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .stationEmpty {
   margin-top: auto;
-  padding-top: 8px;
-  font: 500 14px/1 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 14px/1 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .stationDirection {
-  margin-top: 4px;
-  font: 400 13px/1.1 var(--merc-sans);
-  color: var(--merc-dim);
+  margin-top: -6px;
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 /* A number the run just moved, lit once as the tab comes back. */
@@ -519,33 +679,58 @@
   animation: lit 2400ms ease-out both;
 }
 
-/* A station row is a full-width line: its ring is rounded like a card. */
-.row.lit {
-  border-radius: 14px;
-}
-
 @keyframes lit {
   0%,
   40% {
-    box-shadow: 0 0 0 2px rgb(231 198 125 / 70%);
+    box-shadow: 0 0 0 2px rgb(46 230 201 / 70%);
   }
 
   100% {
-    box-shadow: 0 0 0 2px rgb(231 198 125 / 0%);
+    box-shadow: 0 0 0 2px rgb(46 230 201 / 0%);
   }
 }
 
 /* ── The Ear Path and the Report ──────────────────────────────── */
 
 .pathLine {
-  margin: 8px 0 0;
-  font: 400 14px/1.35 var(--merc-sans);
-  color: #d8cfbf;
+  margin: 12px 0 0;
+  font: 500 13px/1.4 var(--room-sans);
+  color: var(--room-text-2);
 }
 
+/* The path as a row of orbs: lit ones teal, the next ringed violet,
+   the one lit today haloed. */
 .orbs {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+.orbTrack {
+  stroke: rgb(255 255 255 / 14%);
+}
+
+.orb {
+  fill: #0e1430;
+  stroke: rgb(255 255 255 / 35%);
+}
+
+.orbLit {
+  fill: var(--room-right);
+  stroke: var(--room-right-pale);
+}
+
+.orbNext {
+  stroke: var(--room-lit);
+  stroke-width: 2px;
+}
+
+.orbHalo {
+  fill: rgb(46 230 201 / 18%);
+}
+
+.orbToday {
+  fill: rgb(46 230 201 / 22%);
+  stroke: var(--room-right-pale);
 }
 
 .link {
@@ -563,32 +748,37 @@
 .link > span {
   flex: 1 1 auto;
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .link b {
-  font: 600 18px/1.1 var(--merc-serif);
-  color: var(--merc-parchment);
+  font: 600 15px/1.2 var(--room-sans);
+  color: var(--room-text);
 }
 
 .link small {
-  font: 400 13px/1.35 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .link svg {
   flex: none;
-  color: var(--merc-brass);
+  color: var(--room-text-3);
 }
 
-/* ── The station sheet ────────────────────────────────────────── */
+/* The chevron drawn for "more" points down; to the report it points on. */
+.onward {
+  transform: rotate(-90deg);
+}
+
+/* ── The station sheet: the room's sheet ──────────────────────── */
 
 .scrim {
   position: fixed;
   inset: 0;
   /* Over the rail, as the app's other sheets are (mobile-kit.css). */
   z-index: calc(var(--z-sheet, 600) - 1);
-  background: rgb(4 5 7 / 66%);
+  background: rgb(3 5 14 / 62%);
   animation: fade 160ms ease both;
 }
 
@@ -603,11 +793,11 @@
   overscroll-behavior: contain;
   padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  border-radius: 24px 24px 0 0;
-  border-top: 1px solid rgb(239 230 214 / 16%);
-  background: linear-gradient(180deg, #17191e 0%, #111317 40%);
+  border-radius: 26px 26px 0 0;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  background: linear-gradient(180deg, #0f1430 0%, #0a0f24 40%);
   box-shadow: 0 -20px 40px rgb(0 0 0 / 50%);
-  animation: rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rise 240ms var(--room-ease) both;
 }
 
 .grabber {
@@ -615,7 +805,7 @@
   height: 5px;
   margin: 8px auto 0;
   border-radius: 3px;
-  background: rgb(239 230 214 / 28%);
+  background: rgb(255 255 255 / 28%);
 }
 
 .sheetHead {
@@ -625,19 +815,22 @@
   gap: 12px;
 }
 
+/* The station's icon in its two lights. */
 .sheetIcon {
   flex: none;
   width: 48px;
   height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: radial-gradient(
-    circle at 40% 30%,
-    rgb(201 164 94 / 28%),
-    rgb(201 164 94 / 6%)
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background-image: linear-gradient(
+    135deg,
+    rgb(var(--station-a) / 55%),
+    rgb(var(--station-b) / 35%)
   );
-  color: var(--merc-brass-bright);
+  box-shadow: 0 0 18px rgb(var(--station-a) / 35%);
+  color: #fff;
 }
 
 .sheetTitles {
@@ -647,13 +840,13 @@
 
 .sheetTitle {
   margin: 0;
-  font: 600 26px/1 var(--merc-serif);
+  font: 600 22px/1.2 var(--room-sans);
 }
 
 .sheetMeasures {
-  margin: 4px 0 0;
-  font: 400 13px/1.3 var(--merc-sans);
-  color: var(--merc-muted);
+  margin: 3px 0 0;
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .sheetClose {
@@ -664,9 +857,9 @@
   place-items: center;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgb(239 230 214 / 16%);
-  background: rgb(239 230 214 / 6%);
-  color: #d8cfbf;
+  border: 1px solid var(--room-glass-line);
+  background: var(--room-glass);
+  color: #ebe8f8;
   cursor: pointer;
 }
 
@@ -684,70 +877,83 @@
   height: 56px;
 }
 
+/* Merc in his own light, on a contact shadow, as in the room. */
+.sheetMercBox::before {
+  content: '';
+  position: absolute;
+  inset: 4px 2px 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(110 140 255 / 42%),
+    rgb(154 135 240 / 12%) 60%,
+    transparent
+  );
+}
+
 .sheetBubble {
   position: relative;
   flex: 1 1 auto;
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: var(--merc-parchment);
-  color: var(--merc-ink);
+  min-width: 0;
+  margin-bottom: 12px;
+  padding: 10px 14px 11px;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(12 20 48 / 82%);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 35%);
+  color: #f6f3ff;
 }
 
 .sheetBubble::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  bottom: 12px;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: var(--merc-parchment);
-  transform: rotate(45deg);
+  bottom: 14px;
 }
 
 .sheetBubble p {
   margin: 0;
-  font: 600 17px/1.25 var(--merc-serif);
+  font: 500 15px/1.4 var(--room-sans);
 }
 
 .rows {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
-  border-top: 1px solid rgb(239 230 214 / 8%);
-}
-
-.rows > li {
-  border-bottom: 1px solid rgb(239 230 214 / 8%);
-}
-
-.rows > li:last-child {
-  border-bottom: 0;
+  display: grid;
+  gap: 8px;
 }
 
 .row {
   width: 100%;
-  min-height: 62px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
-  border: 0;
-  background: none;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(22 28 50 / 45%);
+  color: var(--room-text);
   text-align: left;
   cursor: pointer;
 }
 
+/* A row to be sung: the violet the mic answers in. */
+.row[data-sung] {
+  border-color: rgb(166 148 255 / 30%);
+  background: rgb(124 77 255 / 8%);
+}
+
 .rowIcon {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
-  background: rgb(239 230 214 / 7%);
-  color: #c5ced8;
+  border-radius: 50%;
+  border: 1px solid var(--room-glass-line);
+  background: var(--room-glass);
+  color: #e9e6f8;
 }
 
 .rowText {
@@ -759,12 +965,12 @@
 }
 
 .rowName {
-  font: 600 16px/1.1 var(--merc-sans);
+  font: 600 16px/1.2 var(--room-sans);
 }
 
 .rowTask {
-  font: 400 13px/1.25 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.25 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .rowReading {
@@ -775,40 +981,48 @@
 }
 
 .rowValue {
-  font: 600 18px/1 var(--merc-serif);
-  color: var(--merc-brass-bright);
+  font: 600 16px/1.2 var(--room-sans);
+  color: var(--room-text);
   white-space: nowrap;
 }
 
 .rowNote {
-  font: 500 13px/1 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
   white-space: nowrap;
 }
 
 .rowGo {
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   border-radius: 50%;
-  border: 1px solid rgb(231 198 125 / 50%);
-  color: var(--merc-brass-bright);
+  border: 1.5px solid var(--room-lit-edge);
+  color: var(--room-lit-pale);
+}
+
+.row[data-sung] .rowGo {
+  border-color: transparent;
+  background: var(--room-lit-fill);
+  box-shadow: 0 0 12px rgb(124 77 255 / 55%);
+  color: #fff;
 }
 
 /* Tap or sing, for the drills here that can be sung, asked before the run
    rather than under "?" mid-run: the owner's call, 31 Oct. */
 .voice {
-  margin-top: 14px;
+  margin-top: 4px;
 }
 
 .voiceKicker {
   margin: 0;
-  font: 500 13px/16px var(--merc-sans);
-  letter-spacing: 0.2em;
+  font: 600 13px/1 var(--room-sans);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--merc-brass);
+  color: var(--room-text-3);
 }
 
 .voiceRow {
@@ -824,31 +1038,31 @@
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  border-radius: 14px;
-  border: 1px solid var(--merc-line);
-  background: rgb(255 255 255 / 3%);
-  color: var(--merc-parchment);
-  font: 600 15px/1.2 var(--merc-sans);
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  background: rgb(22 28 50 / 50%);
+  color: var(--room-text);
+  font: 600 15px/1.2 var(--room-sans);
   text-align: left;
   cursor: pointer;
 }
 
 .voiceOption[aria-checked='true'] {
-  border-color: rgb(231 198 125 / 70%);
-  background: rgb(231 198 125 / 12%);
-  color: var(--merc-brass-pale);
+  border: 1.5px solid var(--room-lit-edge);
+  background: rgb(124 77 255 / 20%);
 }
 
 .voiceNote {
   margin: 8px 2px 0;
-  font: 400 13px/1.4 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.4 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .empty {
   margin: 14px 0 0;
-  font: 400 15px/1.45 var(--merc-sans);
-  color: #d8cfbf;
+  font: 500 15px/1.45 var(--room-sans);
+  color: var(--room-text-2);
 }
 
 /* ── The day's close ──────────────────────────────────────────── */
@@ -858,16 +1072,18 @@
   inset: 0;
   z-index: var(--z-sheet, 600);
   overflow: auto;
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px
     calc(24px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  background:
+  background-color: var(--room-ink);
+  background-image:
+    radial-gradient(70% 30% at 50% 12%, rgb(46 230 201 / 14%), transparent 70%),
     radial-gradient(
-      55% 30% at 50% 22%,
-      rgb(231 198 125 / 16%),
+      90% 46% at 50% 36%,
+      rgb(154 135 240 / 22%),
       transparent 70%
     ),
-    var(--merc-room);
+    linear-gradient(180deg, #050816 0%, #0a1030 44%, #070b1d 72%, #05081a 100%);
   animation: fade 220ms ease both;
 }
 
@@ -875,7 +1091,7 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .dayMerc {
@@ -885,70 +1101,106 @@
   height: 96px;
 }
 
+.dayMerc::before {
+  content: '';
+  position: absolute;
+  inset: 4px 0 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(46 230 201 / 32%),
+    rgb(154 135 240 / 14%) 60%,
+    transparent
+  );
+}
+
+.dayHead .sheetBubble {
+  margin-bottom: 20px;
+}
+
 .dayTitle {
-  margin: 16px 0 0;
-  font: 400 30px/1.1 var(--merc-serif);
+  margin: 14px 0 0;
+  font: 700 30px/1.15 var(--room-sans);
+  letter-spacing: -0.01em;
 }
 
 .dayCount {
   margin: 6px 0 0;
-  font: italic 400 16px/1.2 var(--merc-serif);
-  color: var(--merc-brass);
+  font: 500 13px/1.35 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .moves {
   margin-top: 16px;
-  padding: 6px 14px;
+  padding: 4px 16px;
 }
 
 .move {
-  min-height: 58px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid rgb(239 230 214 / 8%);
+  gap: 10px;
+  border-bottom: 1px solid var(--room-line);
 }
 
 .move:last-child {
   border-bottom: 0;
 }
 
+.moveCheck {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--room-right);
+  color: #05201b;
+}
+
 .moveText {
   flex: 1 1 auto;
+  min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .moveText b {
-  font: 600 15px/1.1 var(--merc-sans);
+  font: 600 15px/1.2 var(--room-sans);
 }
 
 .moveText small {
-  font: 400 13px/1.2 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.2 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .moveBefore {
-  font: 500 14px/1 var(--merc-sans);
-  color: var(--merc-dim);
+  font: 500 15px/1 var(--room-sans);
+  color: var(--room-text-3);
+}
+
+.moveBefore::after {
+  content: '\2192';
+  margin-left: 8px;
 }
 
 .moveAfter {
-  font: 600 20px/1 var(--merc-serif);
-  color: var(--merc-brass-bright);
+  font: 700 15px/1 var(--room-sans);
+  color: var(--room-right-pale);
 }
 
-.dayActions {
-  margin-top: 20px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.reportLine {
+  margin: 8px 8px 0;
+  text-align: center;
+  font: 500 13px/1.4 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 /* "Remind me tomorrow at 8:30": the whole row is the switch. */
 .reminder {
-  margin-top: 16px;
-  padding: 2px 14px;
+  margin-top: 14px;
+  padding: 2px 16px;
 }
 
 .reminderSwitch {
@@ -968,8 +1220,8 @@
 .reminderLabel {
   flex: 1 1 auto;
   min-width: 0;
-  font: 600 16px/1.25 var(--merc-sans);
-  color: var(--merc-parchment);
+  font: 600 15px/1.3 var(--room-sans);
+  color: var(--room-text);
 }
 
 .switchTrack {
@@ -978,9 +1230,11 @@
   width: 51px;
   height: 31px;
   border-radius: 999px;
-  background: rgb(239 230 214 / 12%);
-  box-shadow: inset 0 0 0 1px rgb(239 230 214 / 28%);
-  transition: background-color 220ms ease;
+  background: rgb(255 255 255 / 12%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 28%);
+  transition:
+    background-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .switchKnob {
@@ -990,14 +1244,14 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: var(--merc-parchment);
+  background: #fff;
   box-shadow: 0 2px 4px rgb(0 0 0 / 35%);
   transition: transform 220ms ease;
 }
 
 .reminderSwitch[aria-checked='true'] .switchTrack {
-  background: var(--merc-brass);
-  box-shadow: none;
+  background: var(--room-lit-fill);
+  box-shadow: 0 0 12px rgb(124 77 255 / 45%);
 }
 
 .reminderSwitch[aria-checked='true'] .switchKnob {
@@ -1006,19 +1260,19 @@
 
 .reminderNote {
   margin: 0 0 12px;
-  font: 400 14px/1.35 var(--merc-sans);
-  color: var(--merc-muted);
+  font: 500 13px/1.4 var(--room-sans);
+  color: var(--room-text-3);
 }
 
 .reminderSettings {
   min-height: 44px;
   margin: 0 0 12px;
   padding: 0 16px;
-  border-radius: 12px;
-  border: 1px solid rgb(239 230 214 / 20%);
-  background: rgb(239 230 214 / 4%);
-  color: var(--merc-parchment);
-  font: 600 15px/1 var(--merc-sans);
+  border-radius: 22px;
+  border: 1.5px solid rgb(255 255 255 / 30%);
+  background: none;
+  color: var(--room-text);
+  font: 600 15px/1 var(--room-sans);
   cursor: pointer;
 }
 

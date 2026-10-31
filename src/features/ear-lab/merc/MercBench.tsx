@@ -1,15 +1,17 @@
 // ============================================================
 // MercBench — the Ear Lab tab with Merc (EAR_LAB_WITH_MERC).
 //
-// One room, one action. The painting with Merc on the desk, his line
-// tied to the one filled button; the headline in the bench's own words
-// (or, before anything is measured, that today's three make the first);
-// the glass, sealed fill and dated notch, practice only ever a faint
+// One room, one action, in the drill room's light (the bench mock-ups,
+// approved 31 Oct). The Regulator Room at night with Merc on the desk,
+// his line tied to the one filled button; the Mercury Index as the
+// sealed plate draws it, or the bench's own words before a seal (and,
+// before anything is measured, that today's three make the first); the
+// glass, sealed fill and dated notch, practice only ever a faint
 // labelled line, Calibrate beside it as the outlined second choice;
 // Today, with its one filled button; the Ear rooms on a build that has
-// them; the six stations in fixed slots, each with its number, where
-// the number comes from and which way is better; the Ear Path's next
-// milestone; and the Ear Report, in a line.
+// them; the six stations in fixed slots, each in its own two lights,
+// with its number, where the number comes from and which way is better;
+// the Ear Path's orbs and next milestone; and the Ear Report, in a line.
 //
 // A run started here comes back here: Done returns to Today or to the
 // station's sheet, the number it moved lit once.
@@ -20,7 +22,7 @@ import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Sh
 import { Dynamic, Portal } from 'solid-js/web'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
-import { IconCheck, IconChevron, IconEar } from '@/features/ear-lab/ear-icons'
+import { IconCheck, IconChevron, IconEar, IconPlay, } from '@/features/ear-lab/ear-icons'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { headline } from '@/features/ear-lab/EarLabDashboard'
 import { attemptedIds, currentEarPath } from '@/features/ear-lab/EarPath'
@@ -31,13 +33,14 @@ import { requestRoomStart } from '@/features/ear-lab/stage-room'
 import type { FacultyId } from '@/lib/ear/drills'
 import { nextOnPath, pathCount } from '@/lib/ear/path'
 import type { SprintSegment } from '@/lib/ear/sprint'
-import { armSprintSegment, completeSprint, earToday, isSprintComplete, latestCalibration, sprintHistory, sprintProgress, todaysSprint, } from '@/stores/ear-lab-store'
+import { armSprintSegment, calibrationHistory, completeSprint, earToday, isSprintComplete, latestCalibration, sprintHistory, sprintProgress, todaysSprint, } from '@/stores/ear-lab-store'
 import { registerRoomBack } from '@/stores/native-shell-store'
 import { useWakeAudio } from './audio-wake'
 import styles from './bench.module.css'
 import { Glass, practiceEstimate } from './Glass'
 import { IconQuestion } from './merc-icons'
 import { benchDays, benchLine, FIRST_RUN_HEADLINE, glassCaption, REPORT_LINE, startLabel, TASK, } from './merc-lines'
+import { PathOrbs } from './PathOrbs'
 import { renewReminders } from './reminder'
 import roomStyles from './room.module.css'
 import { litAtOpen, setRoomOrigin, takeReturn } from './session'
@@ -127,6 +130,17 @@ export function MercBench(props: MercBenchProps): JSX.Element {
   )
   const sealed = () => latestCalibration()
   const estimate = () => practiceEstimate()
+  /** The Index's move from the seal before: up is a finer ear. */
+  const indexMove = (): { text: string; up: boolean } | null => {
+    const [latest, before] = calibrationHistory()
+    if (latest === undefined || before === undefined) return null
+    const move = latest.index - before.index
+    if (move === 0) return null
+    return {
+      text: `${move > 0 ? '+' : '\u2212'}${Math.abs(move)}`,
+      up: move > 0,
+    }
+  }
   /** Today's place in the days at the bench: finished days, and today
    *  until it is finished too. */
   const day = () => sprintHistory().length + (isSprintComplete() ? 0 : 1)
@@ -211,6 +225,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
           aria-hidden="true"
           draggable={false}
         />
+        <div class={styles.heroNight} aria-hidden="true" />
         <div class={styles.heroShade} aria-hidden="true" />
         <div class={styles.topBar}>
           <h1 class={styles.tabTitle}>Ear Lab</h1>
@@ -224,6 +239,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
             <IconQuestion size={20} />
           </button>
         </div>
+        <div class={styles.mercGlow} aria-hidden="true" />
         <div class={styles.deskShadow} aria-hidden="true" />
         <div class={styles.mercOnDesk}>
           <MercPresence
@@ -241,13 +257,37 @@ export function MercBench(props: MercBenchProps): JSX.Element {
 
       <div class={styles.sections}>
         <div>
-          <p class={styles.kicker}>At the bench</p>
+          <div class={styles.indexHead}>
+            <p class={styles.kicker}>Mercury Index</p>
+            <span class={styles.badge} data-testid="merc-index-badge">
+              {sealed() === null ? 'Not sealed' : 'Sealed'}
+            </span>
+          </div>
           <h2 class={styles.headline} data-testid="ear-bench-title">
-            {line().lead}
-            <br />
-            {line().rest}
+            <Show when={sealed()} fallback={line().lead}>
+              {(seal) => (
+                <>
+                  <span class={styles.srOnly}>{line().lead}</span>
+                  <span class={styles.number} aria-hidden="true">
+                    {seal().index}
+                  </span>
+                  <Show when={indexMove()}>
+                    {(move) => (
+                      <span
+                        class={styles.indexMove}
+                        classList={{ [styles.indexUp]: move().up }}
+                        aria-hidden="true"
+                      >
+                        {move().text}
+                      </span>
+                    )}
+                  </Show>
+                </>
+              )}
+            </Show>
           </h2>
-          <div class={styles.glassRow} style={{ 'margin-top': '12px' }}>
+          <p class={styles.lede}>{line().rest}</p>
+          <div class={styles.glassRow}>
             <Glass
               sealed={sealed()?.index ?? null}
               sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
@@ -371,6 +411,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
                 data-testid="merc-today-start"
                 onClick={() => startToday(next().segment)}
               >
+                <IconPlay size={18} />
                 {next().label}
                 <small>· {next().sub}</small>
               </button>
@@ -407,13 +448,8 @@ export function MercBench(props: MercBenchProps): JSX.Element {
                     onClick={() => setSheet(faculty)}
                   >
                     <span class={styles.stationTop} aria-hidden="true">
-                      <span
-                        class={styles.stationIcon}
-                        classList={{
-                          [styles.stationIconWild]: faculty === 'wild',
-                        }}
-                      >
-                        <Dynamic component={Icon} size={24} />
+                      <span class={styles.stationIcon}>
+                        <Dynamic component={Icon} size={22} />
                       </span>
                       <span class={styles.stationNames}>
                         <span class={styles.stationTitle}>
@@ -506,6 +542,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
               {pathCount(milestones()).lit} of {pathCount(milestones()).of} lit
             </span>
           </div>
+          <PathOrbs milestones={milestones()} litToday={null} />
           <p class={styles.pathLine}>
             <Show
               when={nextOnPath(milestones())}
@@ -527,7 +564,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
               <b>Ear Report</b>
               <small>{REPORT_LINE}</small>
             </span>
-            <IconChevron size={18} />
+            <IconChevron size={18} class={styles.onward} />
           </button>
         </section>
       </div>

@@ -247,14 +247,36 @@ Answering by voice (31 Oct), brought forward from "Left for later":
   its listen, answer and reveal beats, beside the mock-up's frames.
 - The web bench's screenshots before and after are the same.
 
-## Left for later
+## The bench, in the same light (31 Oct)
 
-- **The bench** (`MercBench`, `bench.module.css`) and the station sheet are
-  brass too. The same tokens apply; it is a piece of work of its own. Its
-  mock-ups wait on the owner's approval:
-  [Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw),
-  five phones. The fourth, Tap or Sing or play on the station's sheet, is
-  approved and built (below).
+The Ear Lab tab, the station sheet and the day's close, drawn from the
+owner-approved mock-ups,
+[Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw):
+
+- **The Regulator Room at night**, as the Wild keeps its glasshouse: the
+  painting greyed and laid under the room's indigo in CSS (no new art), the
+  lamp's light the kit's pale violet, Merc in his own light, his line in the
+  room's glass bubble.
+- **The Mercury Index as the sealed plate draws it**: the kicker and its
+  Sealed badge, the number in 700 with its move from the seal before (teal
+  when it rose), the bench's words under it, the same glass and a lit-edge
+  Calibrate. Before a seal, the bench's own headline stands in the number's
+  place.
+- **Glass cards**: Today with the plate's rings (the next violet, the done
+  teal and ticked) and the violet Start; the Ear rooms tiles, each in its
+  room's light; the Ear Path's orbs; the Ear Report.
+- **Each station in its own two lights**, the ones its drill room is lit by,
+  on its tile and on its sheet's icon (`room-look.test.ts` checks they
+  match).
+- **The station sheet is the room's sheet**: grabber, round close, glass rows
+  with lit start discs, the Answer by switch in violet, a row to be sung on a
+  violet mic.
+- **The day's close**: Merc celebrating in his light, the moves ticked
+  teal, the orb lit today haloed, the reminder switch, and the Ear Report as
+  the one filled button. Done stays under it, quiet, for the thumb on a tall
+  phone; the mock-up closes on the X alone.
+- The bench's two stylesheets join the room's in the look test: no brass,
+  parchment or serif.
 
 ## Decided after the review (owner, 31 Oct)
 

@@ -1,5 +1,7 @@
-/* The Ear rooms on the native Ear Lab tab: two cards a row, one line
-   each, the Premium tag by the heading. */
+/* The Ear rooms on the native Ear Lab tab, in the drill room's light
+   (the bench mock-ups, approved 31 Oct): two glass tiles a row, each
+   lit by its own room, the Premium tag by the heading in the kit's
+   violet. Inter for every word, nothing under 13px. */
 
 .row {
   display: grid;
@@ -15,28 +17,27 @@
 .title {
   margin: 0;
   font:
-    600 20px/1.1 'Crimson Pro Variable',
-    'Crimson Pro',
-    'Iowan Old Style',
-    Georgia,
-    serif;
-  color: #efe6d6;
+    600 17px/1.2 'Inter Variable',
+    'Inter',
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  color: #f4f1ff;
 }
 
 .tag {
-  min-height: 22px;
+  min-height: 24px;
   display: inline-flex;
   align-items: center;
-  padding: 0 8px;
-  border-radius: 6px;
-  border: 1px solid rgb(201 164 94 / 60%);
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid rgb(166 148 255 / 72%);
   font:
-    600 11px/1 'Inter Variable',
+    600 13px/1 'Inter Variable',
     'Inter',
     sans-serif;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #e7c67d;
+  color: #c9bcff;
 }
 
 .cards {
@@ -48,61 +49,89 @@
   gap: 10px;
 }
 
+/* Each room's own light: the harbour's sea for Home note, the stage's
+   for First note, violet for any room still to come. */
 .card {
+  --room-a: 154 135 240;
+  --room-b: 93 140 255;
+
   width: 100%;
-  min-height: 76px;
+  height: 100%;
+  min-height: 112px;
   box-sizing: border-box;
-  padding: 10px 12px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  padding: 12px 14px;
+  /* The name beside its light, the line under both. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  align-items: center;
+  gap: 8px 10px;
   text-align: left;
-  border-radius: 16px;
-  border: 1px solid rgb(239 230 214 / 14%);
-  background: rgb(20 23 28 / 90%);
-  color: #efe6d6;
+  border-radius: 20px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  background-color: rgb(22 28 50 / 66%);
+  background-image: radial-gradient(
+    110% 90% at 0% 0%,
+    rgb(var(--room-a) / 16%),
+    transparent 62%
+  );
+  color: #f4f1ff;
   font-family: inherit;
   cursor: pointer;
 }
 
+.card[data-exercise='home-note-lighthouse'] {
+  --room-a: 127 220 245;
+  --room-b: 93 140 255;
+}
+
+.card[data-exercise='first-note-stage'] {
+  --room-a: 222 140 240;
+  --room-b: 154 135 240;
+}
+
 .card:focus-visible {
-  outline: 2px solid #e7c67d;
+  outline: 2px solid #c9bcff;
   outline-offset: 2px;
 }
 
 .art {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: rgb(239 230 214 / 7%);
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background-image: linear-gradient(
+    135deg,
+    rgb(var(--room-a) / 40%),
+    rgb(var(--room-b) / 28%)
+  );
+  color: #fff;
 }
 
 .art :global(svg) {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  display: contents;
 }
 
 .name {
   font:
-    600 15px/1.1 'Inter Variable',
+    600 15px/1.2 'Inter Variable',
     'Inter',
     sans-serif;
 }
 
 .line {
+  grid-column: 1 / -1;
   font:
-    400 13px/1.3 'Inter Variable',
+    500 13px/1.35 'Inter Variable',
     'Inter',
     sans-serif;
-  color: #b9b1a4;
+  color: #a9b2c8;
 }
