@@ -20,6 +20,17 @@
   opacity: 0;
 }
 
+/* His words go first, quickly, and the door's card waits for them: the
+   card fading in over "Hi, I'm Merc." read as one garbled line. */
+.mp-alley-guide[data-aside='on'] .mp-alley-guide__line {
+  opacity: 0;
+  transition-duration: 120ms;
+}
+
+.mp-alley:has(.mp-alley-guide[data-aside='on']) .mp-alley__panel.is-shown {
+  transition-delay: 140ms, 140ms, 0s;
+}
+
 .mp-alley-guide__merc {
   position: absolute;
 }

@@ -10,10 +10,12 @@
 //
 // RoomsAlley decides every state behind the flags. The Sing door's <video>
 // is handed up through `clipRef`: the tap gives it its source and plays it,
-// and the open carries it into the clone.
+// and the open carries it into the clone. Its art fades in once the loop
+// is playing, not as the door wakes: shown before it had a frame, it was
+// see-through, then cut hard to the darker room a second or two later.
 
 import type { JSX } from 'solid-js'
-import { createMemo, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import type { CoverFit, DoorLayout } from './alley-geometry'
 import { artBox, doorBox, matrix3d, quadIn, rectToQuad, spillAt, } from './alley-geometry'
 import type { DoorSpec, Quad } from './alley-plate'
@@ -34,6 +36,11 @@ export interface AlleyDoorProps {
    * spill of a picked door, without its lift. None on a build without it.
    */
   lit?: () => boolean
+  /**
+   * Dimmed through Merc's welcome, a door not open yet: shaded over its
+   * own pixels, so the open ones stand out. None on a build without it.
+   */
+  dim?: () => boolean
   /** The Sing door's clip, for the tap that plays it. */
   clipRef: (element: HTMLVideoElement) => void
 }
@@ -42,6 +49,8 @@ const quadCss = (quad: Quad): string =>
   `polygon(${quad.map((p) => `${p[0]}px ${p[1]}px`).join(', ')})`
 
 export function AlleyDoor(props: AlleyDoorProps): JSX.Element {
+  /** The loop has a frame up and plays: its art may fade in. */
+  const [playing, setPlaying] = createSignal(false)
   const door = (): DoorLayout => props.layout()
   const artW = (): number => artBox(door()).w
   const artH = (): number => artBox(door()).h
@@ -66,6 +75,7 @@ export function AlleyDoor(props: AlleyDoorProps): JSX.Element {
         'is-settling': props.settling(),
         'is-drifting': props.spec.drift,
         'is-lit': props.lit?.() ?? false,
+        'is-dim': props.dim?.() ?? false,
       }}
       style={{
         left: `${box().x}px`,
@@ -98,6 +108,7 @@ export function AlleyDoor(props: AlleyDoorProps): JSX.Element {
       <Show when={props.spec.clip !== null}>
         <div
           class="mp-alley__art"
+          classList={{ 'is-playing': playing() }}
           style={{
             width: `${artW()}px`,
             height: `${artH()}px`,
@@ -118,9 +129,19 @@ export function AlleyDoor(props: AlleyDoorProps): JSX.Element {
             disablepictureinpicture
             tabIndex={-1}
             data-testid="alley-clip"
+            onPlaying={() => setPlaying(true)}
+            // Its source taken away: no frame until it plays again.
+            onEmptied={() => setPlaying(false)}
           />
         </div>
       </Show>
+      <svg
+        class="mp-alley__shade"
+        viewBox={`0 0 ${box().w} ${box().h}`}
+        aria-hidden="true"
+      >
+        <polygon points={points()} />
+      </svg>
       <svg class="mp-alley__rim" viewBox={`0 0 ${box().w} ${box().h}`}>
         <polygon class="mp-alley__rim-halo" points={points()} />
         <polygon class="mp-alley__rim-line" points={points()} />

@@ -18,6 +18,8 @@
 .mp-alley {
   --alley-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --alley-sel: 280ms;
+  /* The Sing door's loop fading in over the bay once it plays. */
+  --alley-clip-in: 700ms;
   --alley-persp: 900px;
   --alley-lift: 96px;
   --alley-lift-locked: 48px;
@@ -54,6 +56,7 @@
 .mp-shell[data-reduced='on'] .mp-alley {
   --alley-ease: linear;
   --alley-sel: 120ms;
+  --alley-clip-in: 120ms;
   --alley-lift: 0px;
   --alley-lift-locked: 0px;
   --alley-yaw: 0deg;
@@ -64,6 +67,7 @@
   .mp-alley {
     --alley-ease: linear;
     --alley-sel: 120ms;
+    --alley-clip-in: 120ms;
     --alley-lift: 0px;
     --alley-lift-locked: 0px;
     --alley-yaw: 0deg;
@@ -182,6 +186,8 @@
     var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
   letter-spacing: -0.015em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* Two even lines, never "Make a / sound." with a word left alone. */
+  text-wrap: balance;
 }
 
 .mp-alley__subline {
@@ -300,8 +306,11 @@
   transition: opacity var(--alley-sel) var(--alley-ease);
 }
 
-.mp-alley__door.is-alive .mp-alley__art {
+/* In once the loop plays (AlleyDoor `is-playing`), over the plate's own
+   pixels of the bay: a cross-fade, not a cut to the darker room. */
+.mp-alley__door.is-alive .mp-alley__art.is-playing {
   opacity: 1;
+  transition-duration: var(--alley-clip-in);
 }
 
 .mp-alley__clip {
@@ -309,6 +318,28 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* A door not open yet, shaded through Merc's welcome (AlleyDoor `dim`):
+   its own pixels under a dark film, so the doors that open stand out. */
+.mp-alley__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--alley-sel) var(--alley-ease);
+}
+
+.mp-alley__shade polygon {
+  fill: #05070c;
+  fill-opacity: 0.5;
+}
+
+.mp-alley__door.is-dim .mp-alley__shade {
+  opacity: 1;
 }
 
 /* The rim and the spill. */

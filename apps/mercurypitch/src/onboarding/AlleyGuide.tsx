@@ -6,9 +6,14 @@
 // sound."), is beat 1: Merc drops in on the road in front of the middle
 // door, lands with his feet on its floor line, says hello and points at the
 // doors, and the open doors light in turn, the Ear Lab, then Karaoke, then
-// Sing. Then he waits in his idle breath while the singer picks. A door
-// picked, he steps aside (fades out, then stops drawing) and comes back
-// when it is put back.
+// Sing. Then he says where to start, "Start here: the Sing room.", and the
+// Sing door stays lit while the onboarding is due: the hello alone left a
+// new singer with six doors and nothing to choose by. The doors not open
+// yet are dimmed meanwhile (RoomsAlley), so the three that open stand out.
+// Then he waits in his idle breath while the singer picks. A door picked,
+// he steps aside (fades out, then stops drawing), his line first, so the
+// door's card never comes in over his words, and he comes back when it is
+// put back, the Sing door lit again.
 // An install whose onboarding is done (onboarding-flag.ts) sees the alley
 // as it always was: RoomsAlley mounts this only under the headline, and it
 // shows nothing unless the onboarding is due.
@@ -23,7 +28,8 @@
 // lights come and go in 150 ms fades.
 //
 // Merc is decorative and his line under him is hidden from a screen
-// reader: the hello is read once, politely, from a live region of its own.
+// reader: each of his two lines is read once, politely, from a live region
+// of its own.
 // His hello is remembered for the session (alley-greeting.ts), so the
 // first note does not say it again.
 //
@@ -89,6 +95,9 @@ export const DOORS_IN_TURN: readonly DoorKey[] = DOORS.filter((door) =>
   isEnterable(door.key),
 ).map((door) => door.key)
 
+/** The door he sends a new singer to, lit once the doors have had their turn. */
+export const START_DOOR: DoorKey = 'sing'
+
 export interface AlleyGuideProps {
   /** The alley as it measures: where he can stand. */
   input: () => GuideInput
@@ -110,7 +119,11 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   const times = still ? GUIDE_STILL_TIMES : GUIDE_TIMES
   const place = createMemo(() => guidePlace(props.input()))
   const [state, setState] = createSignal<MercState>(still ? 'idle' : 'drop')
-  const [hello, setHello] = createSignal(false)
+  /** His line: none yet, his hello, then where to start. */
+  const [said, setSaid] = createSignal<'hello' | 'start' | null>(null)
+  const hello = (): boolean => said() !== null
+  const lineText = (): string =>
+    said() === 'start' ? ONBOARDING_COPY.startHere : ONBOARDING_COPY.hello
 
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const later = (ms: number, run: () => void): void => {
@@ -131,21 +144,31 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
 
   let lighting = false
   let drawn = false
-  /** The doors in turn, once: from his own beat, or without him. */
+  /** The doors have had their turn: the door to start at stays lit. */
+  let settled = false
+  /**
+   * The doors in turn, once, from his own beat or without him; then the
+   * door to start at, lit for as long as he is there, and his word on it
+   * once he has said hello.
+   */
   const lightDoors = (from: number): void => {
     if (lighting) return
     lighting = true
     DOORS_IN_TURN.forEach((door, index) => {
       later(from + index * times.every, () => light(door))
     })
-    later(from + DOORS_IN_TURN.length * times.every, () => light(null))
+    later(from + DOORS_IN_TURN.length * times.every, () => {
+      settled = true
+      light(START_DOOR)
+      if (untrack(said) !== null) setSaid('start')
+    })
   }
   /** He is drawn: his hello once he has landed, then he points. */
   const meet = (): void => {
     if (drawn) return
     drawn = true
     later(times.hello, () => {
-      setHello(true)
+      setSaid(settled ? 'start' : 'hello')
       markAlleyGreeted()
     })
     later(times.point, () => setState('point'))
@@ -174,17 +197,23 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   })
 
   // A door picked: what is still to come is called off, and the lit door
-  // goes out. He is back, in his idle, when the door goes back.
+  // goes out. He is back, in his idle, when the door goes back, and the
+  // door to start at is lit again, with his word on it.
   createEffect(
     on(
       () => props.aside(),
       (aside) => {
-        if (!aside) return
+        if (!aside) {
+          if (settled) light(START_DOOR)
+          return
+        }
         quiet()
         lighting = true
         drawn = true
+        settled = true
         light(null)
         setState('idle')
+        if (untrack(said) !== null) setSaid('start')
       },
       { defer: true },
     ),
@@ -259,6 +288,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                 <p
                   class="mp-alley-guide__line"
                   data-shown={hello() ? 'on' : 'off'}
+                  data-said={said() ?? 'none'}
                   data-testid="alley-guide-line"
                   style={{
                     // Its middle under his feet: the stylesheet centres it.
@@ -267,7 +297,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                     'max-width': `${line().width}px`,
                   }}
                 >
-                  {ONBOARDING_COPY.hello}
+                  {lineText()}
                 </p>
               )}
             </Show>
@@ -277,7 +307,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
             aria-live="polite"
             data-testid="alley-guide-said"
           >
-            {hello() ? ONBOARDING_COPY.hello : ''}
+            {hello() ? lineText() : ''}
           </span>
         </>
       )}

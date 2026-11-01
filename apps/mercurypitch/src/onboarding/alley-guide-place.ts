@@ -35,8 +35,11 @@ export const GUIDE_MIN = 64
 export const FIGURE_OF_DOOR = 0.4
 /** Between his head and the headline over him, px. */
 const CLEAR = 8
-/** His line's widest box: "Hi, I'm Merc." in one line, px. */
-export const LINE_MAX = 150
+/**
+ * His line's widest box, px: "Start here: the Sing room." in one line, his
+ * longest (alley-guide.css's 16 px, its padding and border).
+ */
+export const LINE_MAX = 236
 /**
  * His line's height in one line, px: alley-guide.css's 16 px at 1.3, 8 px
  * of padding each side and its 1 px border, rounded up.
