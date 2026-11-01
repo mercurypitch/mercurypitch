@@ -10,9 +10,12 @@ A theory lesson (T13) with an unscored sing-along, so it carries the singing lin
 the coach's list, as Lesson 15 does. It needs Lesson 6 (intervals). Decided on 1 November 2026: both
 clefs, each learner reading their own (SEASON-2 § 7 item 2); American names lead, the British named
 once where the lesson introduces them (§ 7 item 4). The plan budgets about 1,200 words of learner
-copy: a short page is fine (SEASON-2 § 1.3 lets Lessons 22 and 23 be tiny). Lessons 15, 17, 19 and
-21 are on the branch or in review; Lesson 15's package is your closest model for the staff, the
-voice choice and the singing lines, and Lesson 21's, once on the branch, for key spelling.
+copy: a short page is fine (SEASON-2 § 1.3 lets Lessons 22 and 23 be tiny). Lessons 15, 17 and 19
+are on the branch (`fe1ca2216`); Lesson 15's package is your closest model for the staff, the voice
+choice and the singing lines. Lesson 21's package is in its fix pass in the same worktree and not yet
+committed, so its lines will move: read it for what it says about key spelling, but cite it in words
+("Lesson 21, Step 2") rather than by path and line, and list each such citation in your hand-back so
+the lead can bind it once Lesson 21 lands.
 
 The plan was verified at `b803c7d43`; check every app claim again at `c60f0fdcb`.
 

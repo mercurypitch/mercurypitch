@@ -13,7 +13,9 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `1391bbf21`, on main `c60f0fdcb`.
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `fe1ca2216`, on main `c60f0fdcb`. The worktree is in RAM: a container
+  restart empties it (it happened twice on 1 November). Copy your files to the scratchpad after every
+  save; if `/dev/shm/s2plan` is missing when you resume, say so and stop, and the lead re-makes it.
   Write only your three files in your lesson folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`).
   Leave RESEARCH.md and ARTICLE-PLAN.md as they are: they are the planning record. Where your
   package departs from the plan, say so in LESSON.md's preamble or in FACTS.
@@ -38,8 +40,9 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
    the arc" and your lesson) and `season-2/LEAD-REVIEW.md`.
 3. The model packages, for structure, depth and voice: `lessons/12-chords-four-chord-song/` and
    `lessons/14-phrasing-whole-song/` (all three files each; the most reviewed in the series), and
-   Season 2's own first two, `lessons/15-staff/` and `lessons/17-note-lengths/` (reviewed and fixed:
-   the closest models for the staff toy, both clefs, rhythm on the staff and the tap take), and
+   Season 2's own, `lessons/15-staff/`, `lessons/17-note-lengths/` and `lessons/19-threes-offbeats/`
+   (reviewed and fixed: the closest models for the staff toy, both clefs, the singing lines, rhythm on
+   the staff, the tap take, and a page where nothing is sung), and
    `lessons/02-twelve-notes/LESSON.md` for a theory lesson's shape. Mirror their section order,
    front matter and level of detail. Their FACTS preambles narrate a commit history; yours needs
    only one line: app claims cite the code at `c60f0fdcb`, plan files at the branch head.
@@ -89,7 +92,7 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
   lead with the British named once where a lesson introduces them, and syllables as Lesson 4 spells
   them. Never write a model name, a scratchpad path or an agent id into a lesson file.
 
-## What Lessons 15 and 17's reviews caught (check these before you hand back)
+## What the reviews of Lessons 15, 17, 19 and 21 caught (check these before you hand back)
 
 - **Step headings leak too.** The masthead's lesson menu lists every step's heading from the first
   paint, and heads its card "Lesson NN · <Step 1's heading>"; on a phone it is the page's only menu.
@@ -110,6 +113,24 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 - **Every app claim at `c60f0fdcb` is read in the code**, not taken from a drill's name or the plan:
   Lesson 17's plan had the click wrong (the Ear Lab's woodblock), and Lesson 15's had a tour and a
   page background it did not know about.
+- **No "Now play the other one."** The kit shows it after any heard play that does not reveal,
+  including a free play after the choice, so it misleads. Keep the locked-in hint until the reveal
+  (Lessons 19 and 21 both dropped it).
+- **A predict must not ask what an earlier lesson already answered.** Read the reveals, steps and
+  quick checks of the lessons yours builds on: Lesson 21's first predict asked for D major's sharps,
+  which Lesson 4's reveal gives, and had to move to A major's third sharp.
+- **Teases must be true.** Lesson 19's planned tease said every bar so far had walked in twos and
+  fours, but Lesson 8 plays bars of three. Check a tease's claim against every earlier lesson.
+- **What is drawn must match the copy, the sound and the screen-reader line**: Lesson 21's walk was
+  drawn stopping short of where the copy and the sound said it went.
+- **Toys stay inside what the season decided and what the page teaches**: Lesson 21's circle let the
+  house move past three sharps and three flats (SEASON-2 § 7 item 13), and offered a white-keys view
+  under a key signature, which would need a natural sign the page never teaches.
+- **One word, one meaning.** Where a word means two things in your lesson (Lesson 21's "key": a
+  piano key or a musical key), use the plain one each time ("piano key", "note").
+- **When an earlier lesson's rule stops being true, say so where it breaks**: Lesson 17 taught that
+  the bottom number names the beat, which is false in 6/8, so Lesson 19's Step 1 restates the old
+  rule and says what changes.
 
 ## Hand back
 
