@@ -8,7 +8,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { initPortableConsoleVisibility, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, } from '@/lib/portable-console'
+import { initPortableConsoleVisibility, portableConsoleRoutine, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, } from '@/lib/portable-console'
 import { PortableConsole } from './PortableConsole'
 
 beforeEach(() => {
@@ -121,6 +121,77 @@ describe('PortableConsole', () => {
     const pasted = writeText.mock.calls[0][0]
     expect(pasted).toContain('MercuryPitch portable console')
     expect(pasted).toContain('worth keeping')
+  })
+
+  it('shows the lines of one kind, each kind with its count', () => {
+    recordPortableConsole('log', ['boot'])
+    recordPortableConsole('info', ['[first-note] read "Song": 6 entries'])
+    recordPortableConsole('warn', ['quiet'])
+    recordPortableConsole('error', ['the store would not answer'])
+    recordPortableConsole('unhandled', ['a promise nobody caught'])
+    render(() => <PortableConsole />)
+    open()
+
+    expect(screen.getByTestId('portable-console-kind-all').textContent).toBe(
+      'All 5',
+    )
+    expect(screen.getByTestId('portable-console-kind-error').textContent).toBe(
+      'Errors 2',
+    )
+    expect(
+      screen.getByTestId('portable-console-kind-warning').textContent,
+    ).toBe('Warnings 1')
+    expect(screen.getByTestId('portable-console-kind-log').textContent).toBe(
+      'Logs 2',
+    )
+
+    fireEvent.click(screen.getByTestId('portable-console-kind-error'))
+
+    const panel = screen.getByTestId('portable-console')
+    expect(panel.textContent).toContain('the store would not answer')
+    expect(panel.textContent).toContain('a promise nobody caught')
+    expect(panel.textContent).not.toContain('boot')
+    expect(panel.textContent).not.toContain('quiet')
+    expect(
+      screen
+        .getByTestId('portable-console-kind-error')
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
+  it('copies the lines shown, and says what they were shown by', async () => {
+    const writeText = vi.fn(async (_text: string) => undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    recordPortableConsole('log', ['boot'])
+    recordPortableConsole('warn', ['quiet'])
+    recordPortableConsole('warn', ['recognition ended'])
+    render(() => <PortableConsole />)
+    open()
+
+    fireEvent.click(screen.getByTestId('portable-console-kind-warning'))
+    fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+    await Promise.resolve()
+
+    const pasted = writeText.mock.calls[0][0]
+    expect(pasted).toContain('lines: 2 (warnings, of 3)')
+    expect(pasted).toContain('recognition ended')
+    expect(pasted).not.toContain('boot')
+  })
+
+  it('switches the routine logs from its own button', () => {
+    render(() => <PortableConsole />)
+    open()
+    const routine = screen.getByTestId('portable-console-routine')
+    expect(routine.getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.click(routine)
+
+    expect(portableConsoleRoutine()).toBe(true)
+    expect(routine.getAttribute('aria-pressed')).toBe('true')
+    expect(routine.textContent).toBe('Routine logs: kept')
   })
 
   it('selects the log when the clipboard is refused', async () => {

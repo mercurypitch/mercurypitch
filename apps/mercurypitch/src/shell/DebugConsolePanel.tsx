@@ -12,18 +12,28 @@
 // Off is never a trap: this screen is the way back, and every test build has
 // it (DeveloperScreen.tsx).
 //
+// Routine logs (`console.log`, `console.debug`, the commentary of the parts
+// that work) are left out unless switched on here, so what the console
+// holds is what needs a look: the app's own reports, warnings and errors.
+//
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
-import { onPortableConsole, portableConsoleOnScreen, setPortableConsoleOnScreen, } from '@/lib/portable-console'
+import { onPortableConsole, portableConsoleOnScreen, portableConsoleRoutine, setPortableConsoleOnScreen, setPortableConsoleRoutine, } from '@/lib/portable-console'
 import { SettingsGroup, SettingsRow } from './settings/SettingsList'
 import { SettingsSwitch } from './settings/SettingsSwitch'
 
 export const DebugConsolePanel: Component = () => {
   const [on, setOn] = createSignal(portableConsoleOnScreen())
-  onCleanup(onPortableConsole(() => setOn(portableConsoleOnScreen())))
+  const [routine, setRoutine] = createSignal(portableConsoleRoutine())
+  onCleanup(
+    onPortableConsole(() => {
+      setOn(portableConsoleOnScreen())
+      setRoutine(portableConsoleRoutine())
+    }),
+  )
 
   return (
     <SettingsGroup>
@@ -37,6 +47,19 @@ export const DebugConsolePanel: Component = () => {
             label="Show the debug console"
             testId="dev-debug-console-on-screen"
             onChange={setPortableConsoleOnScreen}
+          />
+        }
+      />
+      <SettingsRow
+        id="debug-console-routine"
+        label="Keep routine logs"
+        sub="Off, the console keeps what the app reports, its warnings and its errors, and leaves out the running commentary of what works, in the browser's console too. Turn it on to see every line."
+        accessory={
+          <SettingsSwitch
+            checked={routine()}
+            label="Keep routine logs"
+            testId="dev-debug-console-routine"
+            onChange={setPortableConsoleRoutine}
           />
         }
       />

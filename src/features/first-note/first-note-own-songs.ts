@@ -37,7 +37,9 @@
 // Each finished read is told to the console, which a test build shows on
 // the phone with a Copy button: how many lines it looked at, how far the
 // lyrics were moved, the song's tuning, how much of the song the voice is
-// on, why lines were left, then what became of every line (`readLog`). The
+// on, why lines were left, then what became of every line (`readLog`). A
+// song that sits out with nothing read says why too (`outLog`): no vocal,
+// or one too long for this phone to hold, with its size. The
 // Developer screen can let go of every read, so the songs are read and
 // told again (`readOwnSongsAgain`), and the Songs sheet of one song's
 // (`readOwnSongAgain`): a song an older read left out, say, read now rather
@@ -435,6 +437,18 @@ export function readSummary(title: string, read: OwnSongRead): string {
   return `[first-note] read "${title}": ${read.entries.length} entries${lines}${shift}${tuning}${left === '' ? '' : `; left: ${left}`}${voicedPart(read)}`
 }
 
+/** Why a song sits out with nothing read, for the console. */
+export function outLog(title: string, read: OwnSongRead): string {
+  if (read.out === 'no-voice') {
+    return `[first-note] did not read "${title}": it has no vocal stem on this phone`
+  }
+  const size =
+    read.vocalBytes === undefined
+      ? ''
+      : ` (${(read.vocalBytes / 1_000_000).toFixed(1)} MB)`
+  return `[first-note] did not read "${title}": its vocal${size} is too long for this phone to hold`
+}
+
 /** Lines of the song to a console line: a console line holds 2,000 characters. */
 const TOLD_PER_LOG_LINE = 12
 
@@ -482,6 +496,7 @@ async function readNext(): Promise<void> {
       keep(sessionId, stems, read)
       setLiveFor(sessionId, null)
     } else {
+      console.info(outLog(next.title, read))
       setLiveFor(sessionId, { failed: read.out, stems })
     }
   } catch (error) {

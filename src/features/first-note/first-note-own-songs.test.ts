@@ -202,9 +202,15 @@ describe("the singer's own songs", () => {
   })
 
   it('leave out a song too long to hold, or with no voice, and say why', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     readOwnSongs()
     await settle()
-    pending[0].resolve({ entries: [], dropped: [], out: 'too-long' })
+    pending[0].resolve({
+      entries: [],
+      dropped: [],
+      out: 'too-long',
+      vocalBytes: 182_400_000,
+    })
     await settle()
     pending[1].resolve({ entries: [], dropped: [], out: 'no-voice' })
     await settle()
@@ -213,6 +219,13 @@ describe("the singer's own songs", () => {
       { kind: 'failed', why: 'too-long' },
       { kind: 'failed', why: 'no-voice' },
     ])
+    // The console says which and why, so a pasted log answers "why nothing?".
+    const titles = ownSongs().map((song) => song.title)
+    expect(info.mock.calls.map((call) => call[0])).toEqual([
+      `[first-note] did not read "${titles[0]}": its vocal (182.4 MB) is too long for this phone to hold`,
+      `[first-note] did not read "${titles[1]}": it has no vocal stem on this phone`,
+    ])
+    info.mockRestore()
     // Neither is kept as read: each is looked at again at the next launch.
     expect(localStorage.getItem(FIRST_NOTE_OWN_ENTRIES_KEY)).toBeNull()
   })

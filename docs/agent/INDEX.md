@@ -206,6 +206,7 @@ These are the rules that break things when ignored.
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 500 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 500 | Hash Router — Client-side hash-based routing |
+| [portable-console.ts](../../src/lib/portable-console.ts) | 500 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 500 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
@@ -213,7 +214,6 @@ These are the rules that break things when ignored.
 | [mic-latency-route.ts](../../src/lib/mic-latency-route.ts) | 450 | mic-latency-route — the round trip on a route with a delay of its own Measures the round trip on a TV over AirPlay or HDMI, or on a Bluet... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
-| [portable-console.ts](../../src/lib/portable-console.ts) | 450 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [transcription-alignment-utils.ts](../../src/lib/transcription-alignment-utils.ts) | 450 | Shared transcription + alignment utilities. |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |

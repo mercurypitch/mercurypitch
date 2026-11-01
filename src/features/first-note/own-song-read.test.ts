@@ -291,6 +291,8 @@ describe("a song of the singer's own", () => {
       entries: [],
       dropped: [],
       out: 'too-long',
+      // Its size, for the log that says why (first-note-own-songs.ts outLog).
+      vocalBytes: expect.any(Number),
     })
     expect(edges.analyze).not.toHaveBeenCalled()
     expect(edges.band).not.toHaveBeenCalled()
@@ -365,6 +367,8 @@ describe('on a phone that cannot stream', () => {
       entries: [],
       dropped: [],
       out: 'too-long',
+      // Its size, for the log that says why (first-note-own-songs.ts outLog).
+      vocalBytes: expect.any(Number),
     })
     expect(decoded).toEqual([])
   })
