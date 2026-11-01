@@ -9,10 +9,11 @@
 //
 //   its notes   the Karaoke room's own pitch read, kept on the phone once
 //               the room has read the song. A song it has not read yet is
-//               read here the way the room reads it (the read in
-//               stem-mixer/vocal-notes-read.ts) and the notes are kept for
-//               the room, so its notes over the lyrics are there next time.
-//               The rules check each entry's note against them
+//               read here the way the room reads it, by the read the room
+//               uses at rest too (stem-mixer/vocal-notes-read.ts), and the
+//               notes are kept for the room, so its notes over the lyrics
+//               are there next time and Find by singing knows it. The
+//               rules check each entry's note against them
 //   its vocal   walked a chunk at a time where the phone streams, as the
 //               mixer walks it, and decoded whole where it cannot (that
 //               read's `readVocal`); the rules read the voice's level and

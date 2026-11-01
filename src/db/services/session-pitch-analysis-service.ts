@@ -116,6 +116,25 @@ export async function loadPitchAnalysisFromDbStrict(
   return { mergedNotes, segmentedNotes, pitchHistory, editLayer, keyRegions }
 }
 
+/**
+ * Whether a session has a stored pitch analysis, read without parsing it:
+ * the Karaoke room asks this of each song it might read at rest, and most
+ * have their notes. Propagates storage failures.
+ */
+export async function hasPitchAnalysisInDbStrict(
+  sessionId: string,
+): Promise<boolean> {
+  const db = await getDb()
+  const repo = db.getRepository<OfflinePitchAnalysisRecord>(
+    'offlinePitchAnalysis',
+  )
+  const results = await repo.findAll({
+    where: { fileHash: `session:${sessionId}` } as Record<string, unknown>,
+    limit: 1,
+  })
+  return results.length > 0
+}
+
 /** Load pitch analysis results for a session from IndexedDB. */
 export async function loadPitchAnalysisFromDb(
   sessionId: string,

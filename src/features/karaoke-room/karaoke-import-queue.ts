@@ -25,7 +25,7 @@
 //
 //   A READY SONG leaves the queue for the library with a New mark, its kept
 //   copy is deleted, and a toast in whatever room is on the screen offers
-//   to open it.
+//   to open it. Its notes are read at the room's next rest.
 
 import { batch, createEffect, createRoot, createSignal, on, untrack, } from 'solid-js'
 import { deleteStemBlobs, getOriginalFileBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
@@ -39,9 +39,11 @@ import type { UvrSession } from '@/stores/uvr-store'
 import { completeUvrSession, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setErrorUvrSession, setInterruptedUvrSession, setUvrSessionResuming, startUvrSession, whenSessionStoreReady, } from '@/stores/uvr-store'
 import type { ImportRefusal } from './karaoke-import-checks'
 import { noRoomForCopy, songTitleOf } from './karaoke-import-checks'
+import { wantNotesRead } from './karaoke-notes-wanted'
 import { requestKaraokeSong } from './karaoke-room-store'
 import type { KaraokeSongs } from './karaoke-songs'
 import { karaokeSongs, refreshKaraokeSongs } from './karaoke-songs'
+import { readIds, writeIds } from './karaoke-stored-ids'
 
 /** The songs picked and not yet ready, oldest first. */
 export const KARAOKE_IMPORTS_KEY = 'karaoke-room-imports'
@@ -99,25 +101,8 @@ export interface ImportRow {
 }
 
 // ── Persistence ─────────────────────────────────────────────
-
-function readIds(key: string): string[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(key) ?? '[]') as unknown
-    return Array.isArray(parsed)
-      ? parsed.filter((id): id is string => typeof id === 'string')
-      : []
-  } catch {
-    return []
-  }
-}
-
-function writeIds(key: string, ids: readonly string[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(ids))
-  } catch {
-    // The rows still stand for this run; a launch finds fewer of them.
-  }
-}
+// The rows are id lists (karaoke-stored-ids.ts): one that cannot be written
+// still stands for this run, and a launch finds fewer of them.
 
 function readSending(): string | null {
   try {
@@ -544,6 +529,9 @@ function announceReady(session: UvrSession): void {
   // The stems are what plays. The copy kept for a resend is not needed.
   void deleteStemBlobs(id, 'original')
   void refreshKaraokeSongs()
+  // Its notes are read at the room's next rest, so Find by singing knows it
+  // without the singer turning them on first (karaoke-notes-reader.ts).
+  wantNotesRead(id)
   const title = songTitleOf({ name: session.originalFile?.name ?? '' })
   showActionNotification(`${title} is ready to sing.`, 'success', {
     label: 'Open',

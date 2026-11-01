@@ -14,13 +14,16 @@
 // place before the click. When the singing stops for a while, the mic is let
 // go and what was found stays to be tapped, with Listen again beside it: the
 // singer who stops to read the list is not cut off.
+//
+// The room reads songs' notes at rest, never while this holds the mic
+// (useKaraokeNotesReading.ts), so the listening says when it does.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createMemo, For, Index, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, For, Index, onCleanup, Show } from 'solid-js'
 import { createMercurySingEngine } from '@/features/mercury-sing/mercury-sing-engine'
 import styles from './karaoke-room.module.css'
 import type { MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, } from './karaoke-room-find'
-import { FIND_STATUS } from './karaoke-room-find'
+import { FIND_STATUS, holdsMic } from './karaoke-room-find'
 import { NoteGlyph } from './karaoke-room-glyphs'
 
 /** The trail's span, MIDI: E2 to C6, every voice's. */
@@ -131,6 +134,8 @@ export interface ListeningProps {
   host: MercurySingHost
   /** Listen again: a fresh listening, the last one's mic long let go. */
   again: () => void
+  /** Told whether the listening holds the mic, each time that changes. */
+  onMic?: (held: boolean) => void
 }
 
 /** One listening: the engine's lifetime and what it shows. */
@@ -148,6 +153,10 @@ export function KaraokeFindListening(props: ListeningProps): JSX.Element {
     (listening() || quiet()) && engine.candidates().length > 0
   const paths = createMemo(() => trailPaths(engine.trail()))
   const roster = createMemo(() => readyFirst(engine.library()))
+  const micHeld = createMemo(() => holdsMic(engine.status()))
+  createEffect(() => {
+    props.onMic?.(micHeld())
+  })
 
   return (
     <>

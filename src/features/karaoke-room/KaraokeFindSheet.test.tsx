@@ -237,6 +237,25 @@ describe('the find sheet', () => {
     expect(engine.disposed).toBe(1)
   })
 
+  it('tells the room whether it holds the mic, so the room reads no notes meanwhile', async () => {
+    const held: boolean[] = []
+    render(() => (
+      <KaraokeFindSheet
+        isOpen
+        close={() => undefined}
+        host={HOST}
+        onMic={(on) => held.push(on)}
+      />
+    ))
+    await screen.findByTestId('karaoke-find-status')
+    expect(held).toEqual([true])
+
+    setStatus('listening')
+    setStatus('quiet')
+
+    expect(held).toEqual([true, false])
+  })
+
   it('closes on its Close', async () => {
     const { close } = await openSheet()
 

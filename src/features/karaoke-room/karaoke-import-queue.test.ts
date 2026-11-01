@@ -177,6 +177,7 @@ import { activeTab, setActiveTab } from '@/stores/ui-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { ImportRow } from './karaoke-import-queue'
 import { duplicateOf, enqueueImports, IMPORT_QUEUE_CAP, importRowLine, importRows, importsInFlight, KARAOKE_IMPORT_SENDING_KEY, KARAOKE_IMPORTS_KEY, karaokeNewSongs, markKaraokeSongPlayed, removeImport, removeImportedSong, resetImportQueueForTests, retryImport, sendingTitle, setImportGateHandler, showImportGate, startKaraokeImportQueue, } from './karaoke-import-queue'
+import { KARAOKE_NOTES_WANTED_KEY, notesWanted, reloadNotesWantedForTests, } from './karaoke-notes-wanted'
 import { karaokeSongRequest, resetKaraokeRoomForTests, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 
@@ -229,6 +230,7 @@ beforeEach(() => {
   fake.setSessions?.([])
   songsApi.refreshes = 0
   localStorage.clear()
+  reloadNotesWantedForTests()
   resetImportQueueForTests()
   resetKaraokeRoomForTests()
   resetKaraokeSongsForTests({
@@ -389,6 +391,27 @@ describe('songs picked', () => {
     markKaraokeSongPlayed(run.sessionId)
 
     expect(karaokeNewSongs()).toEqual([])
+  })
+
+  it('has its notes read at the next rest, sung by then or not', async () => {
+    await started()
+    await enqueueImports([song('Long Road North.m4a')])
+    await settle()
+    const run = fake.runs[0] as FakeRun
+    accept(run)
+    expect(notesWanted()).toEqual([])
+
+    patch(run.sessionId, { status: 'completed' })
+    await settle()
+
+    expect(notesWanted()).toEqual([run.sessionId])
+    // Sung, it is New no more; its notes are still to be read, after a
+    // launch too (karaoke-notes-reader.ts).
+    markKaraokeSongPlayed(run.sessionId)
+    expect(notesWanted()).toEqual([run.sessionId])
+    expect(
+      JSON.parse(localStorage.getItem(KARAOKE_NOTES_WANTED_KEY) ?? '[]'),
+    ).toEqual([run.sessionId])
   })
 
   it('refuses a song past the queue cap, and one already here', async () => {

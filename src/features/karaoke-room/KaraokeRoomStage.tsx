@@ -72,6 +72,10 @@
 //   songs on their way ("Separating 2") and opens the library, where they
 //   are; a song sung loses its New mark; and the options say how many songs
 //   are left, a tap from Settings, Karaoke.
+//
+//   AT REST the room reads its songs' notes, so Find by singing knows them
+//   (useKaraokeNotesReading.ts): a song just separated, and once the sheet
+//   has been opened, every song.
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -102,6 +106,7 @@ import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
 import { isMissing, sayMissingSong } from './missing-song'
+import { useKaraokeNotesReading } from './useKaraokeNotesReading'
 import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
 import { useKaraokeTvStage } from './useKaraokeTvStage'
 
@@ -567,6 +572,14 @@ export const KaraokeRoomStage: Component = () => {
   onCleanup(() => {
     document.removeEventListener('visibilitychange', onVisibility)
   })
+  // The songs' notes, read while the room rests (see AT REST).
+  useKaraokeNotesReading({
+    seeded,
+    mixer,
+    pageHidden,
+    inWindow,
+    findListening: find.listening,
+  })
 
   // The clock keeps running behind another app for as long as the run does,
   // through the gap between two songs, where the next one starts by itself.
@@ -745,6 +758,7 @@ export const KaraokeRoomStage: Component = () => {
         isOpen={find.isOpen()}
         close={() => find.close()}
         host={find.host}
+        onMic={find.heldMic}
       />
       <KaraokeRoomOptions
         isOpen={optionsOpen()}
