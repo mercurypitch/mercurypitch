@@ -709,6 +709,8 @@ export const RoomsAlley: Component = () => {
                 alley().phase === 'settling' && alley().door === spec.key
               }
               lit={() => alleyLit() === spec.key}
+              // Through Merc's welcome, the doors not open yet step back.
+              dim={() => alleyLit() !== null && spec.tab === null}
               clipRef={(element) => {
                 singVideo = element
               }}

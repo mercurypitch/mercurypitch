@@ -14,7 +14,7 @@ import type { DoorKey } from '../alley/alley-plate'
 import { alleyScene } from '../alley/alley-plate'
 import { alleyGreeted, resetAlleyGreetingForTests } from './alley-greeting'
 import type { GuideInput } from './alley-guide-place'
-import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, UNDRAWN_MS, } from './AlleyGuide'
+import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, START_DOOR, UNDRAWN_MS, } from './AlleyGuide'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { ONBOARDING_KEY, resetOnboardingFlagForTests } from './onboarding-flag'
 
@@ -149,8 +149,19 @@ describe("Merc's welcome in the alley", () => {
         GUIDE_TIMES.point +
         DOORS_IN_TURN.length * GUIDE_TIMES.every,
     )
-    expect(lights).toEqual(['ear', 'karaoke', 'sing', null])
+    // Then where to start: the Sing door stays lit, and he says so.
+    expect(lights).toEqual(['ear', 'karaoke', 'sing', START_DOOR])
+    expect(START_DOOR).toBe('sing')
     expect(mercState(root)).toBe('idle')
+    expect(q(root, 'alley-guide-line')?.textContent).toBe(
+      ONBOARDING_COPY.startHere,
+    )
+    expect(q(root, 'alley-guide-said')?.textContent).toBe(
+      ONBOARDING_COPY.startHere,
+    )
+    // Lit for as long as he is there.
+    vi.advanceTimersByTime(60_000)
+    expect(lights.at(-1)).toBe(START_DOOR)
   })
 
   it('shows nothing on an install whose onboarding is done, and counts nothing', async () => {
@@ -194,8 +205,13 @@ describe("Merc's welcome in the alley", () => {
     expect(q(root, 'alley-guide')?.getAttribute('data-aside')).toBe('on')
     expect(lights).toEqual(['ear', null])
     expect(mercState(root)).toBe('idle')
+    // Back from the door: where to start, lit again, in his words.
     setAside(false)
     expect(q(root, 'alley-guide')?.getAttribute('data-aside')).toBe('off')
+    expect(lights).toEqual(['ear', null, START_DOOR])
+    expect(q(root, 'alley-guide-line')?.textContent).toBe(
+      ONBOARDING_COPY.startHere,
+    )
   })
 
   it('stops drawing once he has faded out for a picked door, and draws again when it goes back', async () => {
@@ -257,7 +273,7 @@ describe("Merc's welcome in the alley", () => {
       UNDRAWN_MS + DOORS_IN_TURN.length * GUIDE_TIMES.every,
     )
 
-    expect(lights).toEqual(['ear', 'karaoke', 'sing', null])
+    expect(lights).toEqual(['ear', 'karaoke', 'sing', START_DOOR])
     expect(q(root, 'alley-guide-line')?.getAttribute('data-shown')).toBe('off')
     expect(alleyGreeted()).toBe(false)
   })

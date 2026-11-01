@@ -77,8 +77,14 @@ const GOOGLE = /googletagmanager|google-analytics|googleadservices|doubleclick/u
 /** Beat 1, Merc's welcome in the alley (AlleyGuide.tsx). */
 const GUIDE = '[data-testid="alley-guide"]'
 const HELLO = "Hi, I'm Merc."
-/** The open doors he points at, lit in turn, then none (AlleyGuide.tsx). */
-const LIT_IN_TURN = ['ear', 'karaoke', 'sing', '']
+/** His second line, once the doors have lit: where a new singer starts. */
+const START_HERE = 'Start here: the Sing room.'
+/**
+ * The open doors he points at, lit in turn, the last of them the Sing door,
+ * which stays lit for as long as he is there (AlleyGuide.tsx START_DOOR):
+ * the alley's `data-lit` changes three times, and then no more.
+ */
+const LIT_IN_TURN = ['ear', 'karaoke', 'sing']
 /** Beat 10, the Warm-up's path (WarmUpPath.tsx). */
 const PATH = '[data-testid="warm-up-path"]'
 const WITHOUT_MIC = '[data-testid="onboarding-without-mic"]'
@@ -731,8 +737,9 @@ async function expectWelcome(page, args, frame, kit) {
       .map((door) => door.key)
     if (over.length > 0) problems.push(`his line covers ${over.join(', ')}`)
   }
-  const drawn = seen.said === HELLO
-  if (drawn && seen.shown !== 'on') problems.push('his hello is not shown')
+  // By now his hello has given way to where to start.
+  const drawn = seen.said === START_HERE || seen.said === HELLO
+  if (drawn && seen.shown !== 'on') problems.push('his line is not shown')
   if (JSON.stringify(seen.lit) !== JSON.stringify(LIT_IN_TURN)) {
     problems.push(`the doors lit ${JSON.stringify(seen.lit)}`)
   }
@@ -772,7 +779,7 @@ async function expectWelcome(page, args, frame, kit) {
       return `${door.key} ${overlaps(body, box) ? 'behind him' : 'clear'}`
     })
     .join(', ')
-  return `Merc ${Math.round(side)} px, his feet ${r1(off)} px from the floor line ${r1(below)} px under the Karaoke sill, his figure ${r1(figure * 100)}% of the door (${covers})${seen.line === null ? ', no room for his line' : ', his line under him, clear of every door'}; ${drawn ? `"${HELLO}" said once he was drawn` : 'never drawn (no WebGL here), no hello'}; the doors lit ${seen.lit.filter(Boolean).join(', ')}, then none; Merc ${seen.state}; a tap on him picked the Karaoke door behind him, and Back put it back`
+  return `Merc ${Math.round(side)} px, his feet ${r1(off)} px from the floor line ${r1(below)} px under the Karaoke sill, his figure ${r1(figure * 100)}% of the door (${covers})${seen.line === null ? ', no room for his line' : ', his line under him, clear of every door'}; ${drawn ? `"${HELLO}", then "${START_HERE}", said once he was drawn` : 'never drawn (no WebGL here), no hello'}; the doors lit ${seen.lit.filter(Boolean).join(', ')}, the Sing door kept lit; Merc ${seen.state}; a tap on him picked the Karaoke door behind him, and Back put it back`
 }
 
 /** How the last beat gave way to this one: 'view', 'fade' or 'cut'. */

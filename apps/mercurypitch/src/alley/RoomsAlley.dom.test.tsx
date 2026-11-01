@@ -830,6 +830,24 @@ describe('the Sing door clip', () => {
     expect(clip.getAttribute('src')).toBeNull()
   })
 
+  it('fades its loop in once it plays, not as the door wakes', async () => {
+    // Shown before it had a frame, the art was see-through, then cut hard
+    // to the darker room a second or two later.
+    const { el } = await mountAlley()
+    el('alley-door-sing').click()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    const art = clip.closest('.mp-alley__art')
+    expect(el('rooms-alley').dataset.phase).toBe('alive')
+    expect(art?.classList.contains('is-playing')).toBe(false)
+
+    clip.dispatchEvent(new Event('playing'))
+    expect(art?.classList.contains('is-playing')).toBe(true)
+
+    // Its source taken away (another door): no frame until it plays again.
+    clip.dispatchEvent(new Event('emptied'))
+    expect(art?.classList.contains('is-playing')).toBe(false)
+  })
+
   it('lets go of its source when an open is called off', async () => {
     const { el, nav } = await mountAlley()
     el('alley-door-sing').click()

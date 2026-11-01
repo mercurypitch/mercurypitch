@@ -43,6 +43,9 @@ export const ONBOARDING_COPY = {
   // ── The first note (S7b beats 2 and 3) ──
   /** Merc's first line, as he lands. */
   hello: "Hi, I'm Merc.",
+  /** His second in the alley, once the open doors have lit in turn: where
+   *  a new singer starts, the Sing door kept lit beside it. */
+  startHere: 'Start here: the Sing room.',
   /** His ask, a beat later, and while he waits for a voice. */
   ask: 'Sing me one note, any note.',
   /** The silent demonstration line's label (REQ-NFL-021). */
