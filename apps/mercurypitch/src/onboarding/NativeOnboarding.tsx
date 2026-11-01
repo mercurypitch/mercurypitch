@@ -58,7 +58,10 @@
 // and a second Not now leaves at once. Not due, it leaves at once. Either
 // way it lands on the alley, once the offer and whatever it handed over to
 // have closed (onboarding-landing.ts). Keep's own Not now still goes on to
-// the line, and the end's offer to the Warm-up's path.
+// the line, and the end's offer to the Warm-up's path. Once the line's
+// Continue has been tapped the onboarding is finished, and Not now (or
+// Back) from the beats Keep's "Find your range first" brings after it
+// finishes it too: counted done, the end's offer, the Warm-up's path.
 //
 // Opened on its own from Keep's "Find your range first" over anything
 // else, the layer starts on the range and goes back to Keep.
@@ -442,6 +445,7 @@ export function NativeOnboarding(): JSX.Element {
     const stands = (): boolean => !untrack(leaving) && !exiting
     void openOnboardingOffer(asks, stands).then((opened) => {
       setContinuing(false)
+      setDeciding(false)
       if (!stands()) return
       if (!opened) {
         leaveOnboarding('finished')
@@ -469,11 +473,16 @@ export function NativeOnboarding(): JSX.Element {
    * Not now, on the layer or by Back: the onboarding over for good, its mic
    * shut in the tap. Then the Cloud offer when it is due, once its asks
    * have answered, else the alley at once. A second Not now while the asks
-   * are out leaves at once. The range on its own goes back to Keep.
+   * are out leaves at once. The range on its own goes back to Keep. Once
+   * the line has been sung, it finishes the onboarding (finishOnNotNow).
    */
   const notNow = (): void => {
     if (entry !== 'onboarding' || exiting) {
       leaveOnboarding('not-now')
+      return
+    }
+    if (lineDone) {
+      finishOnNotNow()
       return
     }
     exiting = true
@@ -501,6 +510,29 @@ export function NativeOnboarding(): JSX.Element {
     })
   }
   onCleanup(registerLayerNotNow(notNow))
+
+  /**
+   * Not now, or Back, once the line's Continue has finished the onboarding
+   * (markFinished): it finishes it, wherever Keep's "Find your range first"
+   * has taken the layer since. Counted done, the end's offer when it is
+   * due, then the Warm-up's path: a sung line never ends as a Not now, nor
+   * in the alley. Continue's own asks, when they are out already, decide
+   * for both; a second tap while they are out goes on at once.
+   */
+  const finishOnNotNow = (): void => {
+    if (untrack(deciding)) {
+      leaveOnboarding('finished')
+      return
+    }
+    clearTimeout(skipTimer)
+    skipTimer = undefined
+    note.leave()
+    range.leave()
+    line.leave()
+    reveal.leave()
+    setDeciding(true)
+    if (!untrack(continuing)) finishLine()
+  }
 
   // Counted: each beat as it shows, and as it is done (S7b §7).
   createEffect(
