@@ -165,26 +165,41 @@ export interface MicBlockedProps {
   /** Try again: a new start, from the same tap. */
   onRetry: () => void
   retryTestId: string
+  /**
+   * Who says why: the notice itself (the default), or 'merc', whose own
+   * line over it says it (the native onboarding), when the notice is only
+   * its ways back.
+   */
+  saidBy?: 'notice' | 'merc'
 }
 
-/** The mic would not open: why, and the way back. */
+/**
+ * The mic would not open: why, and the way back. A refusal is not asked
+ * about twice (iOS shows its prompt once, and Android after two refusals
+ * no more), so a Try again alone changes nothing: where the app can open
+ * its own Settings, Open Settings is the big button and Try again the
+ * plain one beside it.
+ */
 export function MicBlocked(props: MicBlockedProps): JSX.Element {
+  const settings = () =>
+    props.block === 'denied' ? nativeShellApi()?.openAppSettings : undefined
   return (
     <>
-      <p class={styles.blocked} role="alert">
-        {props.block === 'denied'
-          ? 'Merc needs the microphone to hear you. Allow it in Settings, then try again.'
-          : 'The microphone did not open. Check that no other app is using it, then try again.'}
-      </p>
+      <Show when={props.saidBy !== 'merc'}>
+        <p class={styles.blocked} role="alert">
+          {props.block === 'denied'
+            ? 'Merc needs the microphone to hear you. Allow it in Settings, then try again.'
+            : 'The microphone did not open. Check that no other app is using it, then try again.'}
+        </p>
+      </Show>
       <div class={styles.actions}>
-        <Show
-          when={props.block === 'denied' && nativeShellApi()?.openAppSettings}
-        >
+        <Show when={settings()}>
           {(open) => (
             <button
               type="button"
-              class={styles.again}
+              class={styles.done}
               onClick={() => void open()()}
+              data-testid="mic-open-settings"
             >
               Open Settings
             </button>
@@ -192,7 +207,7 @@ export function MicBlocked(props: MicBlockedProps): JSX.Element {
         </Show>
         <button
           type="button"
-          class={styles.done}
+          class={settings() === undefined ? styles.done : styles.again}
           onClick={() => props.onRetry()}
           data-testid={props.retryTestId}
         >

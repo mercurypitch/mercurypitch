@@ -101,11 +101,17 @@ describe('lineSays', () => {
     expect(lineSays(lineReducer(call, { type: 'turn' }))).toBe('turn')
   })
 
-  it('leaves a refused mic to its notice', () => {
+  it('says why the mic did not open, and that it still has not after a retry', () => {
     const blocked = run(
       { type: 'start' },
       { type: 'mic-failed', run: 1, block: 'unavailable' },
     )
-    expect(lineSays(blocked)).toBeNull()
+    expect(lineSays(blocked)).toBe('blocked')
+    const again = lineReducer(lineReducer(blocked, { type: 'start' }), {
+      type: 'mic-failed',
+      run: 2,
+      block: 'unavailable',
+    })
+    expect(lineSays(again)).toBe('still-blocked')
   })
 })

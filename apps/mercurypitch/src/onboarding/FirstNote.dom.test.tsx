@@ -233,8 +233,9 @@ describe('the first note', () => {
       phase: 'blocked',
       block: 'denied',
     })
-    const notice = view?.container.querySelector('[role="alert"]')
-    expect(notice?.textContent).toContain('Merc needs the microphone')
+    // Merc says why himself; the notice under him is only its ways back.
+    expect(line()).toBe(ONBOARDING_COPY.micOff)
+    expect(view?.container.querySelector('[role="alert"]')).toBeNull()
     expect(localStorage.getItem(GRANT)).toBe('false')
     // The example line is back, labelled (REQ-NFL-042).
     expect(q('onboarding-example')).not.toBeNull()

@@ -14,7 +14,8 @@
 //             mic is shut; Once more sings it again, Continue goes on
 //   missed    no voice at all in the singer's turn: the mic is shut, and a
 //             tap tries again
-//   blocked   the mic would not open: why, and the way back
+//   blocked   the mic would not open: Merc says why, and the way back;
+//             still off after a retry, he says so (`blocks`)
 //
 // A stop (the mic tapped while it listens, the page or the app going, the
 // mic dying) goes back to ready, and the next tap starts with Merc's call.
@@ -39,6 +40,8 @@ export interface LineState {
   readonly block: CaptureFailure | null
   /** The score, once the singer's turn is over. */
   readonly score: LineScore | null
+  /** Opens refused or failed in a row since the mic last opened. */
+  readonly blocks: number
 }
 
 export type LineEvent =
@@ -62,6 +65,7 @@ export const LINE_START: LineState = {
   run: 0,
   block: null,
   score: null,
+  blocks: 0,
 }
 
 /** The mic is open, or opening: a call or a turn is under way. */
@@ -73,13 +77,24 @@ export function lineReducer(state: LineState, event: LineEvent): LineState {
   switch (event.type) {
     case 'start':
       if (lineListening(state.phase)) return state
-      return { phase: 'starting', run: state.run + 1, block: null, score: null }
+      return {
+        phase: 'starting',
+        run: state.run + 1,
+        block: null,
+        score: null,
+        blocks: state.blocks,
+      }
     case 'mic-ready':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'call' }
+      return { ...state, phase: 'call', blocks: 0 }
     case 'mic-failed':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'blocked', block: event.block }
+      return {
+        ...state,
+        phase: 'blocked',
+        block: event.block,
+        blocks: state.blocks + 1,
+      }
     case 'turn':
       if (state.phase !== 'call') return state
       return { ...state, phase: 'turn' }
@@ -96,9 +111,16 @@ export function lineReducer(state: LineState, event: LineEvent): LineState {
 }
 
 /** Which of Merc's lines the line shows (onboarding-copy.ts). */
-export type LineSays = 'ask' | 'turn' | 'verdict' | 'unheard'
+export type LineSays =
+  | 'ask'
+  | 'turn'
+  | 'verdict'
+  | 'unheard'
+  /** The mic would not open, and still not after a retry. */
+  | 'blocked'
+  | 'still-blocked'
 
-/** Merc's line for where the line stands. Blocked has none: the mic's notice speaks. */
+/** Merc's line for where the line stands; for a mic that would not open, why. */
 export function lineSays(state: LineState): LineSays | null {
   switch (state.phase) {
     case 'ready':
@@ -112,6 +134,6 @@ export function lineSays(state: LineState): LineSays | null {
     case 'missed':
       return 'unheard'
     case 'blocked':
-      return null
+      return state.blocks > 1 ? 'still-blocked' : 'blocked'
   }
 }

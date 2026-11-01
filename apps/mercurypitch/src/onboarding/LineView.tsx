@@ -31,7 +31,7 @@ import { LockIcon } from '../shell/icons'
 import { lineFacts } from './line-score'
 import line from './LineView.module.css'
 import styles from './NativeOnboarding.module.css'
-import { lineScoreText, lineVerdict, lineWarmingUp, ONBOARDING_COPY, } from './onboarding-copy'
+import { lineScoreText, lineVerdict, lineWarmingUp, micBlockedLine, ONBOARDING_COPY, } from './onboarding-copy'
 import { LINE, LINE_SEC, LINE_SPAN, LINE_WORDS } from './sung-line'
 import type { LineController, TracePoint } from './useLine'
 import { WithoutMic } from './WithoutMic'
@@ -73,6 +73,12 @@ export function lineSaysText(controller: LineController): string | null {
       const score = controller.state().score
       return score === null ? null : lineVerdict(lineFacts(score))
     }
+    case 'blocked':
+    case 'still-blocked':
+      return micBlockedLine(
+        controller.state().block,
+        controller.says() === 'still-blocked',
+      )
   }
 }
 
@@ -316,6 +322,7 @@ export function LineView(props: LineViewProps): JSX.Element {
               block={props.controller.state().block}
               onRetry={() => props.controller.again()}
               retryTestId="onboarding-retry"
+              saidBy="merc"
             />
             <WithoutMic onWithoutMic={props.onWithoutMic} />
           </Match>

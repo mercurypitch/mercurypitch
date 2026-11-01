@@ -486,7 +486,8 @@ describe('the sung line', () => {
       block: 'denied',
     })
     expect(localStorage.getItem(GRANT)).toBe('false')
-    expect(line()).toBeNull()
+    // Merc says why himself, over the mic's ways back.
+    expect(line()).toBe(ONBOARDING_COPY.micOff)
     s.answer = async () => Promise.resolve()
     q('onboarding-retry')?.click()
     expect(s.calls.acquire).toBe(2)
