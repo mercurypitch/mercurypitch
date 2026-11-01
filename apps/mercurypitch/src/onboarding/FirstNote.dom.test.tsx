@@ -172,6 +172,16 @@ describe('the first note', () => {
       ONBOARDING_COPY.findRange,
     )
     expect(q('onboarding-skip')?.textContent).toBe(ONBOARDING_COPY.skip)
+    // What the name means, and what Find my range is, before either is asked.
+    expect(q('onboarding-note-meaning')?.textContent).toBe(
+      'A3 is the name of the note you sang. Higher notes get higher numbers.',
+    )
+    expect(q('onboarding-range-how')?.textContent).toBe(
+      ONBOARDING_COPY.findRangeHow,
+    )
+    expect(q('onboarding-find-range')?.getAttribute('aria-describedby')).toBe(
+      q('onboarding-range-how')?.id,
+    )
     q('onboarding-find-range')?.click()
     q('onboarding-skip')?.click()
     expect(ways.onRange).toHaveBeenCalledTimes(1)

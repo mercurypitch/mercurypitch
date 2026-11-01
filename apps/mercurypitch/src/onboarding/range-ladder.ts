@@ -14,7 +14,7 @@
 // lit stays where they saw it light.
 
 import { REACH_CENTS } from '@/lib/merc/constants'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { midiToNoteNameOctave, noteOnScreen } from '@/lib/note-utils'
 
 /** Semitones a rung stands for: a whole tone. */
 export const RUNG_SEMITONES = 2
@@ -145,7 +145,7 @@ export function rungColour(height: number): string {
   return `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`
 }
 
-/** A pin's label: the note's name, "E2". */
+/** A pin's label: the note's name, "E2", "G♯4". */
 export function pinName(midi: number): string {
-  return midiToNoteNameOctave(midi)
+  return noteOnScreen(midiToNoteNameOctave(midi))
 }

@@ -5,10 +5,11 @@
 // Top to bottom: Merc's line in a bubble, Merc on a lit spot, the lane the
 // voice draws on, and the foot: the mic with what a tap does and the house
 // promise, the mic's notice when it would not open, or, once the note is
-// named, its two ways on: Find my range and Skip for now (S7b §6.1). On a
-// phone that already keeps a range (saved-range.ts), they are See my voice,
-// which reveals it, and Find my range again. The controller
-// (useFirstNote.ts) decides; this draws.
+// named, what its name means ("A3 is the name of the note you sang") and
+// its two ways on: Find my range, with what follows and how long under it,
+// and Skip for now (S7b §6.1). On a phone that already keeps a range
+// (saved-range.ts), they are See my voice, which reveals it, and Find my
+// range again. The controller (useFirstNote.ts) decides; this draws.
 //
 // Merc's line is read out by the layer's one live region (noteSays); the
 // bubble itself is hidden from a screen reader so it is not read twice.
@@ -18,12 +19,13 @@ import type { JSX } from 'solid-js'
 import { createSignal, Match, onCleanup, onMount, Show, Switch } from 'solid-js'
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
+import { noteOnScreen } from '@/lib/note-utils'
 import { LockIcon } from '../shell/icons'
 import type { NoteLine } from './first-note-machine'
 import styles from './NativeOnboarding.module.css'
 import type { LaneBox } from './note-lane'
 import { laneFor } from './note-lane'
-import { heardLine, ONBOARDING_COPY } from './onboarding-copy'
+import { heardLine, noteMeaning, ONBOARDING_COPY } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
 import { WithoutMic } from './WithoutMic'
 
@@ -172,7 +174,7 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
           <Show when={phase() === 'heard' ? note() : null}>
             {(name) => (
               <p class={styles.note} data-testid="onboarding-note">
-                {name()}
+                {noteOnScreen(name())}
               </p>
             )}
           </Show>
@@ -189,6 +191,17 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
               classList={{ [styles.away]: props.skipped }}
               inert={props.skipped}
             >
+              {/* The note's name, for somebody who has never read one. */}
+              <Show when={note()}>
+                {(name) => (
+                  <p
+                    class={`${styles.fine} ${styles.meaning}`}
+                    data-testid="onboarding-note-meaning"
+                  >
+                    {noteMeaning(name())}
+                  </p>
+                )}
+              </Show>
               <Show
                 when={props.onSeeSaved}
                 fallback={
@@ -197,10 +210,19 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
                       type="button"
                       class={styles.primary}
                       onClick={() => props.onRange()}
+                      aria-describedby="onboarding-range-how"
                       data-testid="onboarding-find-range"
                     >
                       {ONBOARDING_COPY.findRange}
                     </button>
+                    {/* What follows, and how long, before it is asked. */}
+                    <p
+                      id="onboarding-range-how"
+                      class={styles.fine}
+                      data-testid="onboarding-range-how"
+                    >
+                      {ONBOARDING_COPY.findRangeHow}
+                    </p>
                     <button
                       type="button"
                       class={styles.secondary}

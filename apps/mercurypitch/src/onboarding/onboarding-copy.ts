@@ -8,18 +8,24 @@
 // sentence at a time, and never say "wrong", "failed" or "bad". The
 // microphone's promise is the house one, "Only you can hear you."
 //
-// The deck's lines are kept as written: the first note, the range's two
-// slides and its result, the reveal's card and Merc's line on it, the sung
-// line's ask, its chip and Merc's four lines by band. The rest are this
-// build's own, in the same voice: the slides' nudges and the two ways a
-// range can come up short, See my voice (concept 03's button), Find my
-// range again for a range this phone already keeps, what Share says when
-// there is no share sheet, the sung line's turn, its no-voice line, and
-// the words Merc's band lines take where the data says something other
-// than the deck's example (lineVerdict). Keep, beat 7, says its own words
-// (account-copy.ts); the Cloud offer, beat 9, its own (CloudOffer.tsx).
+// The deck's lines are kept as written: the first note, the range's result,
+// Merc's line on the reveal, the sung line's chip and Merc's band lines but
+// the lowest. The rest are this build's own, in the same voice: the slides'
+// nudges and the two ways a range can come up short, See my voice (concept
+// 03's button), Find my range again for a range this phone already keeps,
+// what Share says when there is no share sheet, the sung line's turn, its
+// no-voice line, and the words Merc's band lines take where the data says
+// something other than the deck's example (lineVerdict). Keep, beat 7, says
+// its own words (account-copy.ts); the Cloud offer, beat 9, its own
+// (CloudOffer.tsx).
+//
+// NOTHING IS ASKED BEFORE IT IS EXPLAINED (the owner's walk, November 2026):
+// a named note says what the name means, Find my range says what follows
+// and how long it takes, and the slides say how to slide and when to stop
+// before the first try, not only after one that missed. Note names are
+// written with the sharp sign, "G♯4", never the hash (noteOnScreen).
 
-import { noteArticle } from '@/lib/note-utils'
+import { noteArticle, noteOnScreen } from '@/lib/note-utils'
 import type { LineFacts } from './line-score'
 
 export const ONBOARDING_COPY = {
@@ -55,6 +61,9 @@ export const ONBOARDING_COPY = {
   missed: "I didn't catch that. Tap the mic and hold one 'ahh'.",
   /** The named note's two ways on (S7b §6.1, beat 3). */
   findRange: 'Find my range',
+  /** Under Find my range: what follows, and how long. Two slides of at
+   *  most eight seconds of voice each (range-take.ts). */
+  findRangeHow: 'Down low, then up high. About 20 seconds.',
   skip: 'Skip for now',
   /** With a range already kept on this phone, under See my voice. */
   findRangeAgain: 'Find my range again',
@@ -67,17 +76,18 @@ export const ONBOARDING_COPY = {
   // ── The range (S7b beat 4) ──
   /** The layer's accessible name on the range. */
   rangeTitle: 'Your range',
-  /** The first slide, and the ask before a tap starts it. */
-  slideDown: 'Slide down, as low as feels easy.',
+  /** The first slide, and the ask before a tap starts it: how to slide,
+   *  and when to stop, before the first try. */
+  slideDown: "Sing 'ooo' and glide down until it gets hard.",
   /** The second slide. */
-  slideUp: 'Now up, as high as feels easy.',
+  slideUp: "Now glide up on 'ooo' until it gets hard.",
   /** Nine seconds and no voice, on each slide. */
-  slideDownNudge: 'Any note to start, then slide down.',
-  slideUpNudge: 'Start low, then slide up.',
+  slideDownNudge: "Any note on 'ooo', then glide down.",
+  slideUpNudge: "Start low on 'ooo', then glide up.",
   /** No range in what was heard: the mic is shut, a tap tries again. */
-  unheard: "I couldn't follow that slide. Tap the mic and slide on an 'ooo'.",
+  unheard: "I couldn't follow that one. Tap the mic and glide on 'ooo'.",
   /** A range under MIN_RANGE_SEMITONES: one note, more or less. */
-  narrow: 'That stayed close to one note. Tap the mic and slide further.',
+  narrow: 'That stayed close to one note. Tap the mic and glide further.',
   /** From the range to the reveal. */
   seeVoice: 'See my voice',
 
@@ -181,20 +191,21 @@ export function lineVerdict(facts: LineFacts): string {
 
 /** "That's an A3." The note named back, with its article. */
 export function heardLine(note: string): string {
-  return `That's ${noteArticle(note)} ${note}.`
+  return `That's ${noteArticle(note)} ${noteOnScreen(note)}.`
+}
+
+/**
+ * Under a named note, what the name means to somebody who has never read
+ * one: "A3 is the name of the note you sang. Higher notes get higher
+ * numbers."
+ */
+export function noteMeaning(note: string): string {
+  return `${noteOnScreen(note)} is the name of the note you sang. Higher notes get higher numbers.`
 }
 
 /** "E2 to G4": a range, as Merc says it. */
 export function rangeWords(low: string, high: string): string {
-  return `${low} to ${high}`
-}
-
-/**
- * "E2–G4": a range, as a card writes it: the reveal's, then Keep's that it
- * flies into, and Progress's (keepRange in keep-voiceprint.ts).
- */
-export function rangeSpan(low: string, high: string): string {
-  return `${low}\u2013${high}`
+  return `${noteOnScreen(low)} to ${noteOnScreen(high)}`
 }
 
 /** "E2 to G4. That's your range today." Ranges move, hence "today". */
@@ -240,9 +251,12 @@ export function rangeSubline(range: {
   return `${words} \u00b7 ${spanWords(range.highMidi - range.lowMidi)}`
 }
 
-/** "You share a range with David Bowie.": the twin's card, its last line. */
+/**
+ * "You share a range with David Bowie.": the twin's card, its last line,
+ * the name kept on one line ("Kurt / Cobain" read as two people).
+ */
 export function twinLine(twin: string): string {
-  return `You share a range with ${twin}.`
+  return `You share a range with ${twin.replace(/ /gu, '\u00a0')}.`
 }
 
 /** The share sheet's line: the twin when there is one, else the range. */
