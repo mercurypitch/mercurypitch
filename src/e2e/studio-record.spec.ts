@@ -189,7 +189,9 @@ async function recordArmed(
 async function appliedRoundTripMs(page: Page): Promise<number> {
   const studio = studioRegion(page)
   await studio.getByRole('button', { name: 'Sound', exact: true }).click()
-  const help = studio.getByText(/^Studio starts each new take \d+ ms earlier/)
+  const help = studio.getByText(
+    /^Studio already moves each take \d+ ms earlier/,
+  )
   await expect(help).toBeVisible()
   const ms = Number(
     /(\d+) ms earlier/.exec((await help.textContent()) ?? '')![1],

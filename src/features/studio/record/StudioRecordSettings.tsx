@@ -22,13 +22,13 @@ export function StudioRecordSettings(props: {
   const lineUp = () => {
     const trip = props.recorder.roundTrip()
     if (trip === null)
-      return 'Studio starts each new take earlier by the delay between the song and your voice. Raise this if takes still land late, lower it if they land early.'
+      return 'Studio moves each take earlier by the delay between the song and your voice. Line-up adds to that: raise it if takes still land late, lower it if they land early.'
     const ms = Math.round(trip.baseSeconds * 1000)
     const source =
       trip.source === 'measured'
         ? 'measured by the latency check'
         : 'estimated for this device'
-    return `Studio starts each new take ${ms} ms earlier, the delay between the song and your voice (${source}). Raise this if takes still land late, lower it if they land early.`
+    return `Studio already moves each take ${ms} ms earlier for the delay between the song and your voice (${source}). Line-up adds to that: raise it if takes still land late, lower it if they land early.`
   }
   return (
     <fieldset class={sound.section} data-studio-record-settings="">

@@ -29,9 +29,16 @@
     height: 44px;
   }
 }
+/* Hover tints a button that is not yet red, and darkens one that is: a
+   pointer left on the button after the press must not wash out the red. */
 @media (hover: hover) {
-  .record:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--record) 14%, transparent);
+  .record[data-phase='idle']:hover:not(:disabled),
+  .record[data-phase='armed']:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--record) 18%, transparent);
+  }
+  .record[data-phase='counting']:hover:not(:disabled),
+  .record[data-phase='recording']:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--record) 86%, #000000);
   }
 }
 .record:disabled {
@@ -93,20 +100,24 @@
 .status {
   display: flex;
   flex: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px 14px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--studio-line);
-  background: color-mix(in srgb, var(--red, #e5484d) 9%, var(--studio-bar));
+  background: var(--studio-bar);
+  box-shadow: inset 3px 0 0 var(--red, #e5484d);
   color: var(--studio-text);
 }
 .status p {
   margin: 0;
 }
+.status > button {
+  flex: none;
+}
 .statusText {
   display: flex;
-  flex: 1 1 220px;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
@@ -138,6 +149,17 @@
   height: 14px;
 }
 
+/* A phone keeps the row to the state and its action. */
+@media (max-width: 599px) {
+  .status {
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .statusHint {
+    display: none;
+  }
+}
+
 /* The take as it records, in its lane: a clip-shaped box that grows. */
 .liveTake {
   position: absolute;
@@ -152,10 +174,13 @@
 .liveWave {
   position: absolute;
   top: 0;
-  bottom: 0;
+  display: block;
+  /* A canvas is a replaced element: top and bottom do not stretch it. */
+  height: 100%;
   color: color-mix(in srgb, var(--red, #e5484d) 75%, var(--studio-text));
 }
-/* The armed lane's level, pinned to the lane's visible left edge. */
+/* The armed lane's level, pinned to the lane's visible left edge; at the
+   top while the take records, clear of the waveform's middle. */
 .laneMeter {
   position: absolute;
   bottom: 6px;
@@ -168,6 +193,10 @@
   background: color-mix(in srgb, var(--studio-bar) 88%, transparent);
   color: var(--red, #e5484d);
   pointer-events: none;
+}
+.laneMeter[data-recording] {
+  top: 6px;
+  bottom: auto;
 }
 .laneMeter svg {
   width: 12px;
@@ -201,6 +230,9 @@
   font: inherit;
   font-size: 16px;
   font-variant-numeric: tabular-nums;
+}
+.toggle input {
+  accent-color: var(--studio-accent);
 }
 .toggle {
   display: flex;
