@@ -542,8 +542,9 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 0 16px;
+  padding: 4px 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Centred while there is room; from the top, not clipped, when there is
@@ -556,21 +557,53 @@
   margin-bottom: auto;
 }
 
-.revealTitle {
-  margin: 0;
-  font: 800 28px/1.15 var(--font-display, var(--font-body, sans-serif));
-  letter-spacing: -0.01em;
-  text-align: center;
+/* A scroller's edge fades where there is more past it (scroll-edge.ts):
+   the body of a beat too tall for a short phone says it scrolls. */
+.edgeFade[data-more-below] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
 }
 
+.edgeFade[data-more-above] {
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(to top, #000 calc(100% - 32px), transparent);
+}
+
+.edgeFade[data-more-above][data-more-below] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 32px,
+    #000 calc(100% - 32px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 32px,
+    #000 calc(100% - 32px),
+    transparent
+  );
+}
+
+/* The voice's own card: the print, the type, the range in words. */
 .card {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   row-gap: 4px;
   box-sizing: border-box;
   width: min(100%, 400px);
-  padding: 16px 16px 14px;
+  padding: 16px 16px 18px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
   background: linear-gradient(
@@ -582,6 +615,7 @@
      wrapped into it (MISTAKES.md). */
   background-origin: border-box;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  text-align: center;
   animation: card-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -606,15 +640,17 @@
   margin-bottom: 6px;
 }
 
-/* Each ridge draws in, the inner ones first. */
+/* Each ridge draws in, the inner ones first, and the last is in by about
+   0.9 s, the twin's beat (useReveal.ts TWIN_MS): 100 ms, then 20 ms a
+   ridge (at most 18), each 560 ms long. */
 .ridge {
   fill: none;
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: ridge-draw 700ms ease-out forwards;
-  animation-delay: calc(120ms + var(--i, 0) * 45ms);
+  animation: ridge-draw 560ms ease-out forwards;
+  animation-delay: calc(100ms + var(--i, 0) * 20ms);
 }
 
 @keyframes ridge-draw {
@@ -623,41 +659,65 @@
   }
 }
 
-.cardLabel {
-  margin: 0;
-  color: var(--text-secondary);
-  font: 600 14px/1.2 var(--font-body, sans-serif);
-}
-
-.cardRange {
+/* "You're a baritone": the voice type is the headline. */
+.cardTitle {
   margin: 0;
   background: linear-gradient(135deg, #2dd4bf 0%, #58a6ff 50%, #bc8cff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  font: 800 34px/1.1 var(--font-display, var(--font-body, sans-serif));
+  font: 800 30px/1.15 var(--font-display, var(--font-body, sans-serif));
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
-.cardType {
-  margin: 2px 0 0;
-  padding: 3px 12px;
-  border: 1px solid rgba(230, 237, 243, 0.24);
-  border-radius: 999px;
-  color: var(--text-primary);
-  font: 600 14px/1.3 var(--font-body, sans-serif);
+/* "F2 to G♯4 · about two octaves". */
+.cardRange {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 600 16px/1.35 var(--font-body, sans-serif);
+  text-wrap: balance;
 }
 
-.twinRow {
+/* The twin, a card of its own, in on its beat. Its place is kept from the
+   first frame, so nothing under it moves when it comes in. */
+.twinCard {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   box-sizing: border-box;
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  width: min(100%, 400px);
+  padding: 12px 16px 12px 12px;
+  border: 1px solid rgba(188, 140, 255, 0.28);
+  border-radius: 24px;
+  background: linear-gradient(
+    180deg,
+    rgba(188, 140, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-origin: border-box;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.twinCard[data-shown='off'] {
+  visibility: hidden;
+}
+
+.twinCard[data-shown='on'] {
+  animation: twin-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1.08) both;
+}
+
+@keyframes twin-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .twinFace {
@@ -665,12 +725,12 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 104px;
+  height: 104px;
   overflow: hidden;
   border-radius: 50%;
   background: rgba(188, 140, 255, 0.16);
-  color: var(--text-secondary);
+  box-shadow: 0 0 0 2px rgba(188, 140, 255, 0.45);
 }
 
 .twinPortrait {
@@ -694,15 +754,20 @@
 }
 
 .twinName {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
   color: var(--text-primary);
-  font: 700 19px/1.2 var(--font-body, sans-serif);
+  font: 700 22px/1.2 var(--font-display, var(--font-body, sans-serif));
+  overflow-wrap: anywhere;
+}
+
+.twinLine {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font: 500 15px/1.35 var(--font-body, sans-serif);
 }
 
 /* Merc in his guide slot, his line beside him. */
 .guide {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -754,21 +819,75 @@
     font-size: 52px;
   }
 
-  .revealTitle {
+  /* The reveal's cards, smaller, so Merc and his line stay in view over
+     Continue: the print from its 112 px floor to 72. */
+  .print {
+    width: 72px;
+    margin-bottom: 2px;
+  }
+
+  .card {
+    padding: 12px 14px 14px;
+  }
+
+  .cardTitle {
     font-size: 24px;
   }
 
-  .print {
-    width: 104px;
+  .cardRange {
+    font-size: 15px;
   }
 
-  .cardRange {
-    font-size: 30px;
+  .twinCard {
+    gap: 12px;
+    padding: 10px 14px 10px 10px;
+  }
+
+  .twinFace {
+    width: 80px;
+    height: 80px;
+  }
+
+  .twinName {
+    font-size: 20px;
+  }
+
+  .twinLine {
+    font-size: 14px;
   }
 
   .guideMerc {
     width: 60px;
     height: 60px;
+  }
+}
+
+/* A small phone (320 x 568): the reveal tighter again. */
+@media (max-height: 600px) {
+  .revealBody {
+    gap: 8px;
+  }
+
+  .print {
+    width: 60px;
+  }
+
+  .cardTitle {
+    font-size: 22px;
+  }
+
+  .twinFace {
+    width: 64px;
+    height: 64px;
+  }
+
+  .guideMerc {
+    width: 52px;
+    height: 52px;
+  }
+
+  .guideLine {
+    font-size: 15px;
   }
 }
 
@@ -826,38 +945,37 @@
     justify-content: center;
   }
 
-  .revealTitle {
-    font-size: 22px;
-  }
-
   .card {
     grid-template-columns: auto minmax(0, 1fr);
     justify-items: start;
     align-items: center;
     column-gap: 16px;
     padding: 12px 14px 10px;
+    text-align: start;
   }
 
   .print {
-    grid-row: 1 / span 3;
-    width: 92px;
+    grid-row: 1 / span 2;
+    width: 76px;
     margin-bottom: 0;
   }
 
-  .cardLabel,
-  .cardRange,
-  .cardType {
+  .cardTitle,
+  .cardRange {
     grid-column: 2;
   }
 
-  .cardRange {
-    font-size: 28px;
+  .cardTitle {
+    font-size: 24px;
   }
 
-  .twinRow {
-    grid-column: 1 / -1;
-    margin-top: 6px;
-    padding: 4px 10px;
+  .twinCard {
+    padding: 6px 12px 6px 6px;
+  }
+
+  .twinFace {
+    width: 64px;
+    height: 64px;
   }
 
   .guideMerc {
@@ -885,7 +1003,7 @@
 
   .card,
   .guide,
-  .twinName {
+  .twinCard[data-shown='on'] {
     animation: none;
   }
 

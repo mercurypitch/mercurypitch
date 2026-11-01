@@ -1084,15 +1084,24 @@ async function reveal(page, kit, range, see = SEE_VOICE) {
   await expectBeat(page, kit, 'reveal', 'See my voice')
   await settleAnimations(page, LAYER)
   const card = (await page.locator(CARD_RANGE).textContent())?.trim() ?? ''
-  // Written as Keep's card and Progress write a range: "E2\u2013G4".
-  if (card !== `${range.low}\u2013${range.high}`) {
+  // The range in words, as Merc says it, and how wide: "E2 to G4 \u00b7
+  // about two octaves".
+  if (!card.startsWith(`${range.low} to ${range.high} \u00b7 `)) {
     throw new Error(`reveal: the card says "${card}"`)
   }
-  await expectLayout(page, 'reveal')
-  // The twin is on the card from the start, face and name: no button.
+  // The twin comes in as its own card as the print finishes: no button.
   if ((await page.locator(TWIN).count()) === 0) {
+    await expectLayout(page, 'reveal')
     return `"${card}", no twin for it`
   }
+  await page
+    .locator('[data-testid="onboarding-twin-card"][data-shown="on"]')
+    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    .catch(() => {
+      throw new Error('reveal: the twin never came in')
+    })
+  await settleAnimations(page, LAYER)
+  await expectLayout(page, 'reveal')
   const twin = (await page.locator(TWIN).textContent())?.trim() ?? ''
   return `"${card}", twin ${twin}`
 }

@@ -108,7 +108,7 @@ import { lineTonic } from './sung-line'
 import { ONBOARDING_AUDIO_OWNER, useFirstNote } from './useFirstNote'
 import { useLine } from './useLine'
 import { useRange } from './useRange'
-import { useReveal } from './useReveal'
+import { preloadTwin, useReveal } from './useReveal'
 
 /** Merc's word on a skipped range has its moment, then Keep comes, ms. */
 export const SKIP_BEAT_MS = 1600
@@ -177,16 +177,20 @@ export function NativeOnboarding(): JSX.Element {
    * On to `next` (beat-swap.ts): by a cross-fade when a sheet comes up with
    * it, so the sheet answers from its first frame; else by a View
    * Transition, where the WebView has one. The last beat asked for wins: a
-   * transition's late draw of a beat since left draws nothing.
+   * transition's late draw of a beat since left draws nothing. Merc moves
+   * from his place to the next beat's, but never over the reveal's cards:
+   * into the reveal or out of it he fades with the beat.
    */
   const go = (next: OnboardingBeat): void => {
     if (headed === next) return
+    const from = headed
     headed = next
     swaps.swap(
       () => {
         if (headed === next) setBeat(next)
       },
       next === 'keep' || next === 'offer' ? 'fade' : 'view',
+      next !== 'reveal' && from !== 'reveal',
     )
   }
 
@@ -469,6 +473,17 @@ export function NativeOnboarding(): JSX.Element {
     if (range.state().phase === 'done')
       count('native_onboarding_range_complete')
   })
+  // The twin's portrait, fetched as the range locks (or for the range this
+  // phone keeps), so its card draws it the moment it comes in.
+  createEffect(() => {
+    const { phase, range: locked } = range.state()
+    if (phase === 'done' && locked !== null) {
+      untrack(() => {
+        preloadTwin(locked)
+      })
+    }
+  })
+  if (saved !== null) preloadTwin(saved)
   // The first scored take: the line done, and its band. Once more sings it
   // again, uncounted.
   createEffect(() => {
