@@ -10,6 +10,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
@@ -66,6 +67,7 @@ vi.mock('./useEchoCapture', async () => {
       },
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(ctx),
+      runningAudio: () => ctx,
     }),
   }
 })
@@ -129,6 +131,29 @@ const kept = vi.hoisted(() => ({
   bests: [] as { level: string; run: unknown }[],
   root: 60 as number | null,
   improved: true,
+  /** A first visit: the demo opens the room. */
+  demoAutoPlays: false,
+}))
+
+// ── Merc's spoken lines, as calls the test can read ───────────
+
+const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
+  createMercSpeech: () => ({
+    say: (id: string) => {
+      spoken.said.push(id)
+    },
+    hush: () => {
+      spoken.hushed += 1
+    },
+    speaking: () => false,
+    dispose: () => {
+      spoken.hushed += 1
+    },
+  }),
 }))
 vi.mock('@/stores/exercise-history-store', () => ({
   recordExerciseResult: (entry: unknown) => kept.history.push(entry),
@@ -147,7 +172,7 @@ vi.mock('@/stores/echo-store', () => ({
   // (demo/EchoDemo.test.tsx plays the demo).
   echoDemoSeen: () => true,
   markEchoDemoSeen: () => undefined,
-  echoDemoAutoPlays: () => false,
+  echoDemoAutoPlays: () => kept.demoAutoPlays,
 }))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({
@@ -296,6 +321,9 @@ beforeEach(() => {
   kept.bests = []
   kept.root = 60
   kept.improved = true
+  kept.demoAutoPlays = false
+  spoken.said = []
+  spoken.hushed = 0
   felt.taps = 0
   felt.successes = 0
   done = 0
@@ -336,6 +364,30 @@ describe('the intro', () => {
     expect(texts('introAny')).toContain(
       screen.getByTestId('echo-bubble').textContent,
     )
+  })
+
+  it('has Merc say his opening line aloud as the room opens', () => {
+    render(() => <EchoRoom onDone={() => undefined} />)
+
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-first', 'intro-listen']).toContain(spoken.said[0])
+  })
+
+  it('says his "any easy note" line aloud when there is no root yet', () => {
+    kept.root = null
+    render(() => <EchoRoom onDone={() => undefined} />)
+
+    expect(['any-easy', 'any-start']).toContain(spoken.said[0])
+  })
+
+  it('leaves the opening to the demo on a first visit', () => {
+    kept.demoAutoPlays = true
+    render(() => <EchoRoom onDone={() => undefined} />)
+
+    expect(texts('intro')).toContain(
+      screen.getByTestId('echo-bubble').textContent,
+    )
+    expect(spoken.said).toEqual([])
   })
 })
 
@@ -645,6 +697,30 @@ describe('a run that stops', () => {
     expect(stars()).toEqual([])
   })
 
+  it('hushes Merc as the run starts, and he says his opening line again after a stop', async () => {
+    await startRun()
+    // Said as the room opened, hushed by the tap before the mic opened.
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(0)
+    toTurn()
+    fireEvent.click(screen.getByTestId('echo-mic'))
+
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(2)
+  })
+
+  it('says nothing aloud when the singer leaves the app mid-run', async () => {
+    await startRun()
+    toTurn()
+    const before = spoken.hushed
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(before)
+  })
+
   it('drops the run when the singer leaves the app', async () => {
     await startRun()
     toTurn()
@@ -787,6 +863,12 @@ describe('in the Warm-up', () => {
     expect(screen.queryByTestId('echo-level')).toBeNull()
     fireEvent.click(screen.getByTestId('echo-skip-stop'))
     expect(handed.skip).toBe(1)
+  })
+
+  it("says the Warm-up's line aloud as the stop opens", () => {
+    render(() => <EchoRoom onDone={() => undefined} routine={warmUp().stop} />)
+
+    expect(spoken.said).toEqual(['routine-first'])
   })
 
   it('starts on the note an earlier stop started from, when it keeps none', () => {

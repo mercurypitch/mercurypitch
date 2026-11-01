@@ -268,7 +268,7 @@ describe('the Warm-up', () => {
   })
 })
 
-describe('the tap that opens an Ear room', () => {
+describe('the tap that opens a room Merc speaks in', () => {
   /** The leases taken on the app's one AudioContext. */
   const leases: { owner: string; unlocks: number; released: boolean }[] = []
   let unregister: () => void = () => undefined
@@ -297,7 +297,12 @@ describe('the tap that opens an Ear room', () => {
     vi.useRealTimers()
   })
 
-  it.each(['home-note-lighthouse', 'first-note-stage', 'leap-cliffs'] as const)(
+  it.each([
+    'echo-stars',
+    'home-note-lighthouse',
+    'first-note-stage',
+    'leap-cliffs',
+  ] as const)(
     "starts the clock for Merc's opening line in %s, and lets it go once the room holds its own",
     (id) => {
       vi.useFakeTimers()

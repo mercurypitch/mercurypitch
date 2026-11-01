@@ -35,7 +35,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
-import { createMercSpeech } from '@/components/room-kit/merc-speech'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
@@ -70,7 +70,6 @@ import type { FirstNoteSummary } from './first-note-run'
 import { keepFirstNoteRun, resultMoment, summarizeRun } from './first-note-run'
 import type { FirstNoteRound, FirstNoteSong } from './first-note-songs'
 import { entryPitch, planRun, songsOfRun } from './first-note-songs'
-import type { FirstLineFields, FirstMoment } from './merc-lines'
 import { createFirstLines } from './merc-lines'
 import { FIRST_SPOKEN } from './merc-spoken'
 import type { SongPlayer, SongPlayerFactory, SongSound } from './song-player'
@@ -170,10 +169,9 @@ export function useFirstNoteController(
   const makePlayer = options.player ?? createSongPlayer
   const random = options.random ?? Math.random
   const lines = createFirstLines(random)
-  // His opening lines aloud, through the room's clock (room-kit
-  // merc-speech.ts).
+  // His lines at rest, aloud through the room's clock (merc-speech.ts).
   const speech = createMercSpeech(FIRST_SPOKEN, {
-    audio: () => capture.audio(),
+    clock: () => capture.runningAudio(),
   })
 
   const [state, setState] = createSignal<FirstNoteState>(
@@ -193,18 +191,7 @@ export function useFirstNoteController(
     setState((current) => firstNoteReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (
-    moment: FirstMoment,
-    fields?: FirstLineFields,
-    aloud = false,
-  ): void => {
-    const said = lines.line(moment, fields)
-    setLine(said.text)
-    // He says aloud only what the bubble shows, and only when asked
-    // to: any other line hushes him.
-    if (aloud) speech.say(said.id)
-    else speech.hush()
-  }
+  const say = speakingLines(lines, speech, setLine)
   /** His opening line, aloud unless the singer has just left the app. */
   const sayIntro = (aloud = true): void => {
     say(
@@ -568,12 +555,8 @@ export function useFirstNoteController(
       setSummary(shown)
       setResultLevel(levelName)
       setChip(null)
-      say(resultMoment(shown, kept), {
-        onNote: shown.onNote,
-        found: shown.found,
-        rounds: shown.rounds,
-        level: levelName,
-      })
+      // The run is over and the mic closed: Merc says the result aloud.
+      say(resultMoment(shown, kept), undefined, true)
     })
     if (kept.kept && shown.onNote * 2 >= shown.rounds) {
       haptics.success()

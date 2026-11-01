@@ -2,9 +2,10 @@
 // Merc's speech: a line he has said aloud, hushed, and never late
 // ============================================================
 
-import { describe, expect, it, vi } from 'vitest'
-import type { MercSpeechDeps } from './merc-speech'
-import { createMercSpeech, HUSH_SECONDS, SPEECH_GAIN, SPEECH_LEAD_SECONDS, } from './merc-speech'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MercSpeech, MercSpeechDeps } from './merc-speech'
+import { CLOCK_WAIT_MS, createMercSpeech, HUSH_SECONDS, speakingLines, SPEECH_GAIN, SPEECH_LEAD_SECONDS, } from './merc-speech'
+import { createRoomLines } from './room-lines'
 
 interface FakeSource {
   buffer: unknown
@@ -98,17 +99,17 @@ function speechWith(overrides: Partial<MercSpeechDeps> = {}) {
       bytes: new TextEncoder().encode(url).buffer as ArrayBuffer,
     }),
   )
-  const audio = vi.fn(() => Promise.resolve(fake.ctx))
+  const clock = vi.fn((): AudioContext | null => fake.ctx)
   // A decoder apart from the room's clock, as on a phone.
   const decoder = vi.fn(() => fakeContext().ctx as BaseAudioContext)
   const speech = createMercSpeech(LINES, {
-    audio,
+    clock,
     read,
     decoder,
     report,
     ...overrides,
   })
-  return { ...fake, speech, report, read, audio, decoder }
+  return { ...fake, speech, report, read, clock, decoder }
 }
 
 describe("Merc's speech", () => {
@@ -184,46 +185,69 @@ describe("Merc's speech", () => {
     expect(sources[0].buffer).toMatchObject({ from: LINES['intro-b'] })
   })
 
-  it('says nothing where the clock will not start', async () => {
-    const { speech, sources, report } = speechWith({
-      audio: () => Promise.resolve(null),
+  describe('on a clock that is not running', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({
+        toFake: ['setTimeout', 'clearTimeout', 'performance'],
+      })
     })
-    speech.say('intro-a')
-    await settle()
-    expect(sources).toEqual([])
-    expect(report).toHaveBeenCalledWith('no-clock', { id: 'intro-a' })
-  })
 
-  it('says nothing on a clock that has not started', async () => {
-    const parked = fakeContext()
-    Object.assign(parked.ctx, { state: 'suspended' })
-    const { speech, report } = speechWith({
-      audio: () => Promise.resolve(parked.ctx),
+    afterEach(() => {
+      vi.useRealTimers()
     })
-    speech.say('intro-a')
-    await settle()
-    expect(parked.sources).toEqual([])
-    expect(report).toHaveBeenCalledWith('no-clock', { id: 'intro-a' })
-  })
 
-  it('decodes on a context of its own while the clock starts', async () => {
-    let start: (ctx: AudioContext) => void = () => undefined
-    const { speech, sources, read, decoder, ctx } = speechWith({
-      audio: () =>
-        new Promise<AudioContext>((resolve) => {
-          start = resolve
-        }),
+    it('says nothing where there is no clock in time', async () => {
+      const { speech, sources, report } = speechWith({ clock: () => null })
+      speech.say('intro-a')
+      await vi.advanceTimersByTimeAsync(CLOCK_WAIT_MS + 100)
+      expect(sources).toEqual([])
+      expect(report).toHaveBeenCalledWith('no-clock', { id: 'intro-a' })
     })
-    speech.say('intro-a')
-    await settle()
-    // Read and decoded already, and nothing on the room's clock.
-    expect(read).toHaveBeenCalledTimes(1)
-    expect(decoder).toHaveBeenCalledTimes(1)
-    expect(sources).toEqual([])
-    start(ctx)
-    await settle()
-    expect(sources).toHaveLength(1)
-    expect(sources[0].buffer).toMatchObject({ from: LINES['intro-a'] })
+
+    it('never starts a parked clock: he says nothing on it', async () => {
+      const parked = fakeContext()
+      Object.assign(parked.ctx, { state: 'suspended' })
+      const { speech, report } = speechWith({ clock: () => parked.ctx })
+      speech.say('intro-a')
+      await vi.advanceTimersByTimeAsync(CLOCK_WAIT_MS + 100)
+      expect(parked.sources).toEqual([])
+      expect(parked.ctx.state).toBe('suspended')
+      expect(report).toHaveBeenCalledWith('no-clock', { id: 'intro-a' })
+    })
+
+    it('waits for the clock the tap starts, decoding meanwhile on a context of its own', async () => {
+      const fake = fakeContext()
+      Object.assign(fake.ctx, { state: 'suspended' })
+      const { speech, read, decoder } = speechWith({ clock: () => fake.ctx })
+      speech.say('intro-a')
+      await vi.advanceTimersByTimeAsync(300)
+      // Read and decoded already, and nothing on the room's clock.
+      expect(read).toHaveBeenCalledTimes(1)
+      expect(decoder).toHaveBeenCalledTimes(1)
+      expect(fake.sources).toEqual([])
+      // The tap that opened the room starts it.
+      Object.assign(fake.ctx, { state: 'running' })
+      await vi.advanceTimersByTimeAsync(100)
+      expect(fake.sources).toHaveLength(1)
+      expect(fake.sources[0].buffer).toMatchObject({
+        from: LINES['intro-a'],
+      })
+    })
+
+    it('stops waiting once he is hushed', async () => {
+      const fake = fakeContext()
+      Object.assign(fake.ctx, { state: 'suspended' })
+      const clock = vi.fn(() => fake.ctx)
+      const { speech } = speechWith({ clock })
+      speech.say('intro-a')
+      await vi.advanceTimersByTimeAsync(200)
+      speech.hush()
+      const looked = clock.mock.calls.length
+      Object.assign(fake.ctx, { state: 'running' })
+      await vi.advanceTimersByTimeAsync(CLOCK_WAIT_MS)
+      expect(clock.mock.calls.length).toBeLessThanOrEqual(looked + 1)
+      expect(fake.sources).toEqual([])
+    })
   })
 
   it('says nothing where there is no context to decode with', async () => {
@@ -239,14 +263,14 @@ describe("Merc's speech", () => {
   })
 
   it('asks for no clock in a build without his voice', async () => {
-    const audio = vi.fn(() => Promise.resolve(null))
+    const clock = vi.fn(() => null)
     const speech = createMercSpeech(
       { 'intro-a': '' },
-      { audio, read: vi.fn(), report: vi.fn() },
+      { clock, read: vi.fn(), report: vi.fn() },
     )
     speech.say('intro-a')
     await settle()
-    expect(audio).not.toHaveBeenCalled()
+    expect(clock).not.toHaveBeenCalled()
   })
 
   it('reads a recording once, and again after a read that failed', async () => {
@@ -284,14 +308,43 @@ describe("Merc's speech", () => {
   })
 
   it('says nothing more once the room has gone', async () => {
-    const { speech, sources, audio } = speechWith()
+    const { speech, sources, clock } = speechWith()
     speech.say('intro-a')
     await settle()
     speech.dispose()
     expect(sources[0].stops).toEqual([2 + HUSH_SECONDS])
+    const looked = clock.mock.calls.length
     speech.say('intro-b')
     await settle()
     expect(sources).toHaveLength(1)
-    expect(audio).toHaveBeenCalledTimes(1)
+    expect(clock).toHaveBeenCalledTimes(looked)
+  })
+})
+
+describe("a room's say", () => {
+  it('shows each line, and says aloud only a line it is asked to', () => {
+    type Moment = 'intro' | 'run'
+    const lines = createRoomLines<Moment, { note?: string }>(
+      {
+        intro: [{ id: 'intro-a', text: 'Sing it back.' }],
+        run: [{ id: 'run-a', text: 'On {note}.' }],
+      },
+      () => 0,
+    )
+    const heard: string[] = []
+    const speech: MercSpeech = {
+      say: (id) => heard.push(`say ${id}`),
+      hush: () => heard.push('hush'),
+      speaking: () => false,
+      dispose: () => undefined,
+    }
+    const shown: string[] = []
+    const say = speakingLines(lines, speech, (text) => shown.push(text))
+
+    say('intro', undefined, true)
+    say('run', { note: 'A3' })
+    expect(shown).toEqual(['Sing it back.', 'On A3.'])
+    // The run's line is shown only, and hushes the line before it.
+    expect(heard).toEqual(['say intro-a', 'hush'])
   })
 })

@@ -36,6 +36,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves, HOP_MS } from '@/components/room-kit/merc-moves'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
@@ -56,7 +57,7 @@ import type { EchoLevelId, SequenceEvent, SequenceState, } from '@/lib/sequence/
 import { createSequenceState, ECHO_LEVELS, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { PhraseTake } from '@/lib/sequence/sequence-metrics'
 import { sequenceMetrics } from '@/lib/sequence/sequence-metrics'
-import { rememberedEchoRoot } from '@/stores/echo-store'
+import { echoDemoAutoPlays, rememberedEchoRoot } from '@/stores/echo-store'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { CallNote, EarlyWatch } from './early-singing'
@@ -72,9 +73,9 @@ import type { LiveStage } from './echo-scene'
 import { echoScene, keepSame } from './echo-scene'
 import type { Call } from './merc-call'
 import { scheduleCall } from './merc-call'
-import type { EchoMoment, LineFields } from './merc-lines'
 import { createEchoLines } from './merc-lines'
 import { MERC_CALL, preloadMercVoice } from './merc-sampler'
+import { ECHO_SPOKEN } from './merc-spoken'
 import type { EchoDemoMark, ScriptedEchoTake } from './scripted-take'
 import { createScriptedRoom, SCRIPTED_CALL } from './scripted-take'
 import { phrasePlaces } from './sky-layout'
@@ -107,6 +108,10 @@ export function useEchoController(
   const startRoot = (): number | null =>
     rememberedEchoRoot() ?? options.root ?? null
   const lines = createEchoLines()
+  // His lines at rest, aloud through the room's clock (merc-speech.ts).
+  const speech = createMercSpeech(ECHO_SPOKEN, {
+    clock: () => capture.runningAudio(),
+  })
   const voicePreset = untrack(vocalRangePreset)
 
   const [state, setState] = createSignal<EchoState>(
@@ -131,9 +136,7 @@ export function useEchoController(
     setState((current) => echoReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (moment: EchoMoment, fields?: LineFields): void => {
-    setLine(lines.next(moment, fields))
-  }
+  const say = speakingLines(lines, speech, setLine)
   /** The root the next run starts on, if the room has one before it hears the singer. */
   const knownWindow = (settledMidi: number | null = startRoot()) =>
     echoWindow({
@@ -141,10 +144,15 @@ export function useEchoController(
       settledMidi,
       voicePreset,
     })
-  const sayIntro = (): void => {
-    if (knownWindow().source === 'preset') say('introAny')
-    else say(options.routine === true ? 'routine' : 'intro')
+  /** His opening line, aloud unless the singer has just left or the demo has it. */
+  const sayIntro = (aloud = true): void => {
+    if (knownWindow().source === 'preset') say('introAny', undefined, aloud)
+    else say(options.routine === true ? 'routine' : 'intro', undefined, aloud)
   }
+  // A first visit opens on the demo, outside the Warm-up: Merc leaves the
+  // opening to it rather than be cut off by it.
+  const demoOpens = (): boolean =>
+    options.routine !== true && echoDemoAutoPlays()
 
   // ── Timers that belong to the screen ───────────────────────
   // The screen's life (room-kit room-life.ts): its timers from here, its
@@ -622,6 +630,8 @@ export function useEchoController(
     const from = phase()
     if (demoOn()) return
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    // He stops talking before the mic opens.
+    speech.hush()
     level.take()
     runLevel = untrack(level.preset)
     dispatch({ type: 'start' })
@@ -642,6 +652,14 @@ export function useEchoController(
     sayIntro()
   }
 
+  // A mic that died stops the run as the mic's tap does, Merc silent: a
+  // call or another app may have the sound.
+  const micDied = (): void => {
+    if (!isRunPhase(phase()) || demoOn()) return
+    dropRun('stop')
+    sayIntro(false)
+  }
+
   const replay = (): void => {
     if (phase() !== 'response' || untrack(replays) <= 0 || demoOn()) return
     setReplays((left) => left - 1)
@@ -656,6 +674,8 @@ export function useEchoController(
    * done or not): no result, no best.
    */
   function leave(): void {
+    // Nothing he says is heard behind their back either.
+    speech.hush()
     // The demo stops itself on the way out (useExerciseDemo).
     if (!isRunPhase(phase()) || demoOn()) return
     dropRun('leave')
@@ -666,7 +686,7 @@ export function useEchoController(
   onMount(() => {
     // Merc's voice loads as the singer comes in, before the first call.
     if (options.voice === undefined) void preloadMercVoice()
-    sayIntro()
+    sayIntro(!demoOpens())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
@@ -686,7 +706,7 @@ export function useEchoController(
     mic: {
       exercise: EXERCISE_ECHO_STARS,
       on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
-      died: stop,
+      died: micDied,
     },
   })
 
@@ -723,8 +743,13 @@ export function useEchoController(
       },
       current: () => scripted,
       run: () => untrack(state).run,
-      line: setLine,
-      sayIntro,
+      // The demo's words take over from Merc's, and its end shows his
+      // opening line without saying it: the demo has just said it all.
+      line: (text) => {
+        speech.hush()
+        setLine(text)
+      },
+      sayIntro: () => sayIntro(false),
       demo: (to) => dispatch({ type: 'demo', phase: to }),
       summary: setSummary,
       scene: setScene,
@@ -739,6 +764,7 @@ export function useEchoController(
   onCleanup(() => {
     stopLoop()
     call?.sound.stop()
+    speech.dispose()
     life.dispose()
   })
 

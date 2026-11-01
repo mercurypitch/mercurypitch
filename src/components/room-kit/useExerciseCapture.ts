@@ -98,6 +98,14 @@ export interface ExerciseCapture {
    * when it will not start. On iOS, call it inside a tap.
    */
   audio: () => Promise<AudioContext | null>
+  /**
+   * The clock if something already has it running (the tap that opened the
+   * room, a run), with the room's stage open on it; null if it is parked or
+   * not made. It never starts the clock: a parked clock waits for the
+   * singer's tap. For sound the room makes unasked (Merc's spoken lines,
+   * merc-speech.ts).
+   */
+  runningAudio: () => AudioContext | null
 }
 
 function isMicError(value: unknown): value is MicError {
@@ -311,5 +319,18 @@ export function useExerciseCapture(
       tones.delete(tone)
     },
     audio: () => (disposed ? Promise.resolve(null) : unlock()),
+    runningAudio: () => {
+      if (disposed) return null
+      const ctx = lease !== undefined ? lease.ensure() : ownContext
+      if (ctx === null || ctx.state !== 'running') return null
+      // The room's first sound on this clock opens its stage, as unlock
+      // does; a running clock has nothing parked to cut.
+      if (staged !== ctx) {
+        cutStage()
+        stage = openRoomStage(ctx)
+        staged = ctx
+      }
+      return ctx
+    },
   }
 }

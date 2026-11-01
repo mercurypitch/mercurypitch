@@ -6,8 +6,11 @@
 // same one twice running, and fills its fields: `{leap}` is the leap's
 // name ("Up a fifth"), `{size}` its size alone ("fifth"), `{song}` the
 // song that opens on it ("Twinkle, Twinkle"), `{from}` and `{note}` Merc's
-// note and the target ("G3", "D4"), `{way}` up or down, `{found}` and
-// `{rounds}` counts and `{level}` a level's name.
+// note and the target ("G3", "D4") and `{way}` up or down.
+//
+// A result's counts are on its card, so the result lines leave them out:
+// each says what the run asks of the singer next, in words Merc can say
+// aloud from a recording (room-kit merc-speech.ts).
 //
 // The owner's rule for every room's lines holds (11 Oct 2026): plain words,
 // one register, each line says what the voice did and what to do about it.
@@ -43,9 +46,6 @@ export interface LeapLineFields {
   readonly from?: string
   readonly note?: string
   readonly way?: string
-  readonly found?: number
-  readonly rounds?: number
-  readonly level?: string
 }
 
 export const LEAP_LINES: LineTable<LeapMoment> = {
@@ -114,13 +114,13 @@ export const LEAP_LINES: LineTable<LeapMoment> = {
   resultMost: [
     {
       id: 'most-landed',
-      text: '{found} of {rounds}. Tap a leap below to hear it again.',
+      text: 'A good run. Tap a leap below to hear it again.',
     },
   ],
   resultSome: [
     {
       id: 'some-landed',
-      text: "{found} of {rounds}. Hear each leap's song in your head before you leap.",
+      text: "Hear each leap's song in your head before you leap.",
     },
   ],
   resultNone: [
@@ -129,9 +129,7 @@ export const LEAP_LINES: LineTable<LeapMoment> = {
       text: 'Leaps take a few runs. At Learning, I sing both notes first and you match me.',
     },
   ],
-  newBest: [
-    { id: 'best-new', text: 'A new best: {found} of {rounds} at {level}.' },
-  ],
+  newBest: [{ id: 'best-new', text: 'A new best at this level.' }],
   silentRun: [
     {
       id: 'silent-run',

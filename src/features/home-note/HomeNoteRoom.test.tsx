@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import { MERC_FEET } from '@/components/room-kit/MercView'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import { midiToF0 } from '@/lib/glass/test-frames'
@@ -59,6 +60,7 @@ vi.mock('@/components/room-kit/useExerciseCapture', async () => {
       },
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(clock),
+      runningAudio: () => clock,
     }),
   }
 })
@@ -205,7 +207,10 @@ function toTurn(): void {
 // ── Merc's spoken lines, as calls the test can read ───────────
 
 const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
-vi.mock('@/components/room-kit/merc-speech', () => ({
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
   createMercSpeech: () => ({
     say: (id: string) => {
       spoken.said.push(id)
@@ -356,6 +361,8 @@ describe('Home note', () => {
     })
     expect(fake.released).toBeGreaterThan(0)
     expect(screen.getByTestId('home-note-again')).toBeTruthy()
+    // Merc says the result aloud as the run ends, the mic closed.
+    expect(spoken.said.at(-1)).toBe('all-home')
   })
 
   it('stops a run on the mic, keeping nothing', async () => {
@@ -479,9 +486,13 @@ describe('Home note', () => {
       /^Key 2, home [A-G]( sharp )?\d, missed\. Hear it again$/,
     )
 
+    // Merc says the result aloud; the key's own sound hushes him.
+    expect(spoken.said.at(-1)).toBe('most-home')
+    const hushes = spoken.hushed
     // The missed key, from its lamp: its intro, then Merc singing home.
     fireEvent.click(keys[1])
     await settle()
+    expect(spoken.hushed).toBeGreaterThan(hushes)
     expect(band.replays).toEqual([
       { home: band.intros[1].home, level: 'I IV V' },
     ])

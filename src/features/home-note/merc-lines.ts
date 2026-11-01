@@ -4,7 +4,11 @@
 //
 // The room kit's room-lines.ts picks the next line for a moment, never the
 // same one twice running, and fills its fields: `{note}` is home's name
-// ("D4"), `{found}` and `{rounds}` are counts, `{level}` a level's name.
+// ("D4").
+//
+// A result's counts are on its card, so the result lines leave them out:
+// each says what the run asks of the singer next, in words Merc can say
+// aloud from a recording (room-kit merc-speech.ts).
 //
 // The owner's rule for every room's lines holds (11 Oct 2026): plain words,
 // one register, each line says what the voice did and what to do about it.
@@ -30,9 +34,6 @@ export type HomeMoment =
 
 export interface HomeLineFields {
   readonly note?: string
-  readonly found?: number
-  readonly rounds?: number
-  readonly level?: string
 }
 
 export const HOME_LINES: LineTable<HomeMoment> = {
@@ -86,13 +87,13 @@ export const HOME_LINES: LineTable<HomeMoment> = {
   resultMost: [
     {
       id: 'most-home',
-      text: '{found} of {rounds}. Hum along with the chords next time: home is the note they lean on.',
+      text: 'A good run. Next time, hum along with the chords: home is the note they lean on.',
     },
   ],
   resultSome: [
     {
       id: 'some-home',
-      text: '{found} of {rounds}. Home gets easier the more keys you hear it in.',
+      text: 'Home gets easier the more keys you hear it in.',
     },
   ],
   resultNone: [
@@ -101,9 +102,7 @@ export const HOME_LINES: LineTable<HomeMoment> = {
       text: 'Home takes a few runs. At Learning, I sing it first and you match me.',
     },
   ],
-  newBest: [
-    { id: 'best-new', text: 'A new best: {found} of {rounds} at {level}.' },
-  ],
+  newBest: [{ id: 'best-new', text: 'A new best at this level.' }],
   silentRun: [
     {
       id: 'silent-run',

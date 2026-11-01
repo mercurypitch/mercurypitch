@@ -4,8 +4,11 @@
 //
 // The room kit's room-lines.ts picks the next line for a moment, never the
 // same one twice running, and fills its fields: `{note}` is the entry's
-// note ("E3"), `{onNote}`, `{found}` and `{rounds}` are counts, `{level}`
-// a level's name.
+// note ("E3").
+//
+// A result's counts are on its card, so the result lines leave them out:
+// each says what the run asks of the singer next, in words Merc can say
+// aloud from a recording (room-kit merc-speech.ts).
 //
 // The owner's rule for every room's lines holds (11 Oct 2026): plain words,
 // one register, each line says what the voice did and what to do about it.
@@ -32,10 +35,6 @@ export type FirstMoment =
 
 export interface FirstLineFields {
   readonly note?: string
-  readonly onNote?: number
-  readonly found?: number
-  readonly rounds?: number
-  readonly level?: string
 }
 
 export const FIRST_LINES: LineTable<FirstMoment> = {
@@ -101,13 +100,13 @@ export const FIRST_LINES: LineTable<FirstMoment> = {
   resultMost: [
     {
       id: 'most-bar',
-      text: "{onNote} of {rounds} on the note. The band's last bar often holds the singer's note.",
+      text: "A good run. The band's last bar often holds the singer's note.",
     },
   ],
   resultSome: [
     {
       id: 'some-hum',
-      text: '{onNote} of {rounds} on the note. Hum along with the band, then come in where it stops.',
+      text: 'Hum along with the band, then come in where it stops.',
     },
   ],
   resultNone: [
@@ -116,12 +115,7 @@ export const FIRST_LINES: LineTable<FirstMoment> = {
       text: 'Coming in on a note takes practice. At Learning, the line shows from the start.',
     },
   ],
-  newBest: [
-    {
-      id: 'best-new',
-      text: 'A new best: {onNote} of {rounds} on the note at {level}.',
-    },
-  ],
+  newBest: [{ id: 'best-new', text: 'A new best at this level.' }],
   silentRun: [
     {
       id: 'silent-run',

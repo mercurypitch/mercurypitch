@@ -176,8 +176,8 @@ const PREMIUM_IMAGES =
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in
- * src/features/echo/voice/, and his spoken opening lines in the three Ear
- * rooms' voice/ folders), folded with their pictures and for the same
+ * src/features/echo/voice/, and his spoken lines beside it and in the three
+ * Ear rooms' voice/ folders), folded with their pictures and for the same
  * reason: Vite emits an audio file the moment Rollup loads the module that
  * imports it. `assert-bundle.mjs` STAGE 2 checks the bundle;
  * src/premium-images-build.test.ts checks this switch on every PR.
