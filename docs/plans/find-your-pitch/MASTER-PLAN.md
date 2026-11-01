@@ -63,7 +63,7 @@ owner, its status names the § 12 item; § 12 is the single register of what is 
 | D3  | **Tavi = the same body with a warm palette** (gold, orange `#ff7448`, rose)                                                                                                                                                     | No Tavi existed anywhere in the repo; this pairs with the stats site's cold-blue/warm-orange themes and keeps one rig                                                                                                                                                               | Decided; in the app: § 12 item 10   |
 | D4  | **Season 1 is sound-first: 14 lessons and a trailer; the staff waits for Season 2**                                                                                                                                             | The app's native representation is a live pitch line, the sound-first choice; all major music methods put sound before symbol                                                                                                                                                       | Decided                             |
 | D5  | **Theory and voice alternate** after two theory openers; each closing question is the next cold open                                                                                                                            | Interleaving; a running open loop across episodes                                                                                                                                                                                                                                   | Decided                             |
-| D6  | **Episodes 6 to 9 minutes** (cap 10; tiny topics 4 to 5)                                                                                                                                                                        | 3Blue1Brown's curriculum series and MOOC engagement data; Lesson 1 runs 4:57 (297.0 s on the current cue sheet)                                                                                                                                                                     | Decided                             |
+| D6  | **Episodes 6 to 9 minutes** (cap 20 since 1 November 2026, was 10; tiny topics 4 to 5)                                                                                                                                          | 3Blue1Brown's curriculum series and MOOC engagement data; Lesson 1 runs 4:57 (297.0 s on the current cue sheet)                                                                                                                                                                     | Decided                             |
 | D7  | **Built in code**: HyperFrames (HTML, GSAP, one seekable timeline)                                                                                                                                                              | Deterministic, versionable, every number exact, reusable scene kit, the repo's existing motion pipeline                                                                                                                                                                             | Decided                             |
 | D8  | **Merc is pre-rendered per performance** into one straight-alpha VP9 WebM, from the narration cue sheet                                                                                                                         | His raymarcher costs a quarter of a second to over a second a frame on CPU, by size (measured table in PRODUCTION-PIPELINE); one pass per performance is cached and re-timed automatically                                                                                          | Decided                             |
 | D9  | **Every musical example synthesised at exact pitch; no licensed music**; a quiet synthesised pad that plays only in act transitions and under the dressed pauses (predict, hum, quiz), silent under narration and every example | Precision, no Content ID risk (it matches melodies), the coherence principle                                                                                                                                                                                                        | Decided                             |
@@ -334,7 +334,9 @@ retrieval lags badly.
 
 The staff and rhythm reading, sight-singing with movable do, interval quality, minor properly, keys
 and the circle of fifths, harmony singing, vibrato, agility, cadences and form, seventh chords, why
-twelve notes (see CURRICULUM § 5).
+twelve notes (see CURRICULUM § 5). Its plan is [SEASON-2.md](SEASON-2.md), decided on
+1 November 2026: Lessons 15 to 28 at `/learn/15` to `/learn/28`, the trailer and Lessons 15 and 16
+released together, then a fixed weekly day.
 
 ### Per-episode timeline (from Lesson 3 on, with the kits in place)
 
@@ -490,11 +492,14 @@ the item is marked decided here and the Phase 1 Decisions track closes when ever
    premium, `docs/plans/premium.md:57`; safety never paid, `docs/specs/guided-voice-check.ears.md`
    REQ-GVC-025). Still open: whether premium stays the Merc practice rooms, which already sit
    uneasily with `premium.md:12-17` (everything that runs on the device is free forever).
-4. **Decided (22 October 2026): 1080p for Season 1; 4K is looked at again for Season 2.**
+4. **Decided (22 October 2026): 1080p for Season 1; 4K is looked at again for Season 2.** Season 2
+   is 1080p60, with a 4K test on Lesson 15's film (SEASON-2 § 6.4 and § 7 item 11, 1 November 2026).
 5. **Decided (16 October 2026): British English in general,** with American wording where the
    owner prefers it, case by case. Narration and lesson copy stay as drafted ("semitone" and "tone"
    lead, "half step" and "whole step" are the alternates), so nothing re-voices. The app's screens
-   (0.9.18) stay American; the lesson pages are their own documents.
+   (0.9.18) stay American; the lesson pages are their own documents. Season 2's note values lead with
+   the American names, quarter, eighth, half and whole, the British named once in each lesson that
+   introduces them (SEASON-2 § 7 item 4, 1 November 2026).
 6. **Decided (22 October 2026): the Learn chapters** (`#/learn/<chapterId>`), the natural home for
    the lessons inside the app once their errors are fixed, with voice lessons also linked from their
    matching Ascent weeks (§ 4.4). That answers whether the in-app lessons live in Learn chapters,

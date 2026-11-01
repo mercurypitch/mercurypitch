@@ -334,8 +334,8 @@ other page first needs what theirs have: the Watch section, its masthead link an
 ### 4.5 Season 2
 
 - **Mix.** Lesson 11 names no mixed voice (its FACTS 15), so S12 dropped "mix" with Lesson 11's PR,
-  both in CURRICULUM § 3.2 and in the season's topic name in `kit/season.ts`. It is a candidate for
-  Season 2.
+  both in CURRICULUM § 3.2 and in the season's topic name in `kit/season.ts`. It goes to Season 3
+  (SEASON-2 § 7 item 7, 1 November 2026).
 - **Sight-singing** inherits the do-based minor (MASTER-PLAN § 12 item 12).
 - The season ends on the trailer's question, answered, and teases nothing (CURIOSITY-MOMENTS § 5
   item 4).
