@@ -9,7 +9,8 @@ export const STUDIO_SAMPLE_RATE = 48000
 export const STUDIO_ENGINE_VERSION = 'studio-fx-v1'
 export const STUDIO_PREPARATION_VERSION = 'bs1770-48k-v1'
 export type Frame = number
-export type SourceKind = VoiceTakeSource | 'file'
+/** Where a take came from: a practice take, a picked file, or recorded in the Studio. */
+export type SourceKind = VoiceTakeSource | 'file' | 'recording'
 
 export interface StudioProject {
   readonly id: string

@@ -11,6 +11,9 @@ export const STUDIO_STORES = {
   assets: 'studioAssets',
   blobs: 'studioAssetBlobs',
   leases: 'studioEditorLeases',
+  /** A take journaled while it records, until it is stored (studio-take-journal.ts). */
+  takes: 'studioTakeJournals',
+  takeChunks: 'studioTakeChunks',
 } as const
 
 export type StudioStorageErrorCode =

@@ -142,7 +142,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     untrack(() => !disposed() && generation === epoch)
   const report = (error: unknown) => setProblem(message(error))
 
-  const { addFile, addFiles, addTake, addTakes, cancelImport } =
+  const { addFile, addFiles, addRecording, addTake, addTakes, cancelImport } =
     createStudioImporter({
       project,
       assets,
@@ -673,6 +673,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     refreshSources,
     addFile,
     addFiles,
+    addRecording,
     addTake,
     addTakes,
     readCanonicalAsset,

@@ -8,6 +8,7 @@ const labels: Record<SourceKind, string> = {
   'piano-night': 'Piano',
   'drum-night': 'Drums',
   file: 'Audio file',
+  recording: 'Recorded in Studio',
   glass: 'Glass',
   exercise: 'Exercise',
   legend: 'Weekly Legend',
@@ -20,6 +21,7 @@ const tints: Partial<Record<SourceKind, string>> = {
   'piano-night': '#2f8c86',
   'drum-night': '#6e8b3d',
   file: '#8c7b6b',
+  recording: '#b8483e',
 }
 
 export function studioSourcePresentation(asset?: StudioAsset): {

@@ -585,6 +585,12 @@ export function createStudioService(
           await db.deleteByIdStrict(STUDIO_STORES.projects, id)
           await db.deleteByIdStrict(STUDIO_STORES.summaries, id)
           await db.deleteByIdStrict(STUDIO_STORES.leases, id)
+          await db.deleteByIndexStrict(
+            STUDIO_STORES.takeChunks,
+            'projectId',
+            id,
+          )
+          await db.deleteByIndexStrict(STUDIO_STORES.takes, 'projectId', id)
         })
       }),
   }

@@ -654,6 +654,105 @@ describe('Studio controller', () => {
     })
   })
 
+  /** A recorded take prepares as a file does, with audio of its own. */
+  const recordedFixture = async (_blob: Blob, info: StudioAssetInfo) => {
+    const data = preparedFixture(info)
+    const sha = (seed: string) =>
+      [...seed.padEnd(64, '0')]
+        .map((c) => (c.charCodeAt(0) % 16).toString(16))
+        .join('')
+    return {
+      ...data,
+      asset: {
+        ...data.asset,
+        sha256: sha(`${info.id}a`),
+        canonicalPcmSha256: sha(`${info.id}b`),
+        normalizedFrameCount: 4800,
+        canonicalPcmByteLength: 32 + 4800 * 4,
+      },
+      canonicalPcm: new Blob([new Uint8Array(32 + 4800 * 4)]),
+    }
+  }
+
+  it('keeps a recorded take on the armed lane with its trim, the way a file is kept', async () => {
+    const { controller, service } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+    await controller.addFile(
+      new File(['abc'], 'Beat.wav', { type: 'audio/wav' }),
+    )
+    const lane = controller.project()!.tracks[0].id
+
+    const kept = await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 1',
+      startFrame: 9600,
+      sourceInFrame: 1000,
+      trackId: lane,
+    })
+
+    expect(kept).toBe(true)
+    expect(controller.project()?.tracks).toHaveLength(1)
+    const clip = controller.project()!.clips.at(-1)!
+    expect(clip).toMatchObject({
+      trackId: lane,
+      startFrame: 9600,
+      sourceInFrame: 1000,
+      sourceOutFrame: 4800,
+    })
+    const asset = controller.assets().find((item) => item.id === clip.assetId)
+    expect(asset).toMatchObject({
+      originalName: 'Take 1.wav',
+      provenance: { kind: 'recording' },
+    })
+    expect(service.saveProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      [expect.objectContaining({ asset })],
+    )
+    expect(controller.undoLabel()).toBe('Undo add clip')
+  })
+
+  it('gives a take with no room on its lane a lead-vocal lane named for it, and says so', async () => {
+    const { controller } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+    await controller.addFile(
+      new File(['abc'], 'Beat.wav', { type: 'audio/wav' }),
+    )
+    const lane = controller.project()!.tracks[0]
+
+    await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 2',
+      startFrame: 0,
+      sourceInFrame: 0,
+      trackId: lane.id,
+    })
+
+    const added = controller.project()!.tracks.at(-1)!
+    expect(added).toMatchObject({ name: 'Take 2', role: 'voice' })
+    expect(controller.laneNotice()).toEqual({
+      text: `No room on ${lane.name} at 0:00. Added on a new lane.`,
+    })
+  })
+
+  it('refuses a take its trim leaves nothing of, keeping the song as it was', async () => {
+    const { controller } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+    const before = controller.project()
+
+    const kept = await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 1',
+      startFrame: 0,
+      sourceInFrame: 4800,
+      trackId: null,
+    })
+
+    expect(kept).toBe(false)
+    expect(controller.project()).toBe(before)
+    expect(controller.problem()).toBe('That take was too short to keep.')
+  })
+
   it('opens locked projects read-only and takeover reloads the latest durable snapshot', async () => {
     const { controller, service } = mount()
     vi.mocked(service.acquireLease).mockRejectedValueOnce(

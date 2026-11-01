@@ -129,6 +129,13 @@ class DexieDatabase extends DexieDB {
       studioAssetBlobs: 'id, projectId, assetId, &[assetId+kind]',
       studioEditorLeases: 'id, ownerId, expiresAt',
     })
+    // v14: a Studio take journaled in one-second rows while it records and
+    // removed once the take is stored, so a closed tab leaves it to be kept
+    // on the next visit. Device-only; never cloud entities.
+    this.version(14).stores({
+      studioTakeJournals: 'id, projectId',
+      studioTakeChunks: 'id, takeId, projectId',
+    })
     // Two tabs on one origin disagree about the schema after every deploy that
     // raises it. Dexie's own defaults yield and then let this tab reopen at the
     // old version, which deadlocks the upgrading tab rather than delaying it.
