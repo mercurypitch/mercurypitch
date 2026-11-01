@@ -125,10 +125,13 @@ vi.mock('@/lib/hold/load-hold-target', () => ({
   loadHoldTarget: () => target.pick,
 }))
 
-// The note held last time, kept per test rather than in the persisted store.
+// The note held last time, kept per test rather than in the persisted store,
+// and read as the singer's choice: which note wins is long-note-opening's
+// suite, not this one.
 const memory = vi.hoisted(() => ({ note: null as number | null }))
 vi.mock('./remembered-note', () => ({
   rememberedLongNote: () => memory.note,
+  chosenLongNote: () => memory.note,
   rememberLongNote: (midi: number) => {
     memory.note = midi
   },

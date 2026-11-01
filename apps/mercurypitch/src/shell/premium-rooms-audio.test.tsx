@@ -395,7 +395,7 @@ beforeEach(async () => {
   lipStore.rememberLipNote(52)
   ngStore.rememberNgNote(52)
   echoStore.rememberEchoRoot(52)
-  rememberLongNote(57)
+  rememberLongNote(57, true)
   history.kept = 0
   lipStore.markLipDemoSeen()
   ngStore.markNgDemoSeen()

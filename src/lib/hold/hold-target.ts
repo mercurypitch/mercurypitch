@@ -2,9 +2,10 @@
 // Hold target — which note the Long note asks for
 // ============================================================
 //
-// First choice is the singer's latest voiceprint: its low end plus 35 % of
-// the measured span, a note low enough to hold for a long time, rounded to
-// the nearest natural (white-key) note so it has a plain name. Without a
+// First choice is the singer's latest voiceprint: 35 % of the way up its
+// practice range (practiceRange, below), a note low enough to hold for a
+// long time, rounded to the nearest natural (white-key) note so it has a
+// plain name. Without a
 // usable voiceprint, the voice-type preset's anchor; native users have no
 // voice-type picker, so that is tenor. `source` tells the room which one it
 // got, so it can offer the "sing any easy note" pre-roll instead.
@@ -76,8 +77,8 @@ function voiceprintRange(record: VoiceprintRecord): VoiceprintRange | null {
 /**
  * The range of the newest voiceprint that measured one; older takes and
  * takes whose range failed to measure are ignored. Null when none did.
- * The one rule pickHoldTarget and Echo's phrase window (phrase-fit.ts)
- * read the singer's range by, so they never read different takes.
+ * The one rule the exercises read the singer's range by (through
+ * latestPracticeRange), so they never read different takes.
  */
 export function latestVoiceprintRange(
   voiceprints: readonly VoiceprintRecord[],
@@ -94,8 +95,44 @@ export function latestVoiceprintRange(
 }
 
 /**
+ * The most of a measured range the exercises are placed in: two octaves.
+ * A range's ends are its least sure notes. Sliding as low as feels easy
+ * often ends in a growl or a creak, which no exercise can use: counted up
+ * from such an end, a near-tenor's Lip roll began on an A2 he could not
+ * hold (owner, November 2026). Sliding up often flips into falsetto, or the
+ * tracker slips an octave, though a lip roll or a siren may well climb
+ * into falsetto. So past two octaves the excess comes off both ends, two
+ * parts from the bottom to one from the top (PRACTICE_TRIM_FROM_LOW): a
+ * falsetto top lifts the exercises by two thirds of itself, not all of it.
+ * A range of two octaves or less is used whole.
+ */
+export const PRACTICE_SPAN_SEMITONES = 24
+
+/** The share of a range's excess over two octaves taken off its bottom. */
+export const PRACTICE_TRIM_FROM_LOW = 2 / 3
+
+/** A measured range as the exercises use it (PRACTICE_SPAN_SEMITONES). */
+export function practiceRange(range: VoiceprintRange): VoiceprintRange {
+  const excess = range.high - range.low - PRACTICE_SPAN_SEMITONES
+  if (!(excess > 0)) return range
+  const low = range.low + excess * PRACTICE_TRIM_FROM_LOW
+  return { low, high: low + PRACTICE_SPAN_SEMITONES }
+}
+
+/**
+ * The newest voiceprint's range as the exercises use it: Long note, Echo,
+ * Lip roll and Ng slides all read it here, so they agree on it.
+ */
+export function latestPracticeRange(
+  voiceprints: readonly VoiceprintRecord[],
+): VoiceprintRange | null {
+  const range = latestVoiceprintRange(voiceprints)
+  return range === null ? null : practiceRange(range)
+}
+
+/**
  * The newest voiceprint with a measured range decides
- * (latestVoiceprintRange). The result is always a natural note inside both
+ * (latestPracticeRange). The result is always a natural note inside both
  * the voiceprint's range (when it holds one) and
  * HOLD_TARGET_MIN_MIDI..HOLD_TARGET_MAX_MIDI.
  */
@@ -103,7 +140,7 @@ export function pickHoldTarget(
   voiceprints: readonly VoiceprintRecord[],
   preset: HoldVoicePreset,
 ): HoldTarget {
-  const latest = latestVoiceprintRange(voiceprints)
+  const latest = latestPracticeRange(voiceprints)
 
   if (latest === null) {
     return { midi: getComfortableMidiRange(preset).default, source: 'preset' }

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
-import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nearestNaturalMidi, nudgeTarget, pickHoldTarget, } from './hold-target'
+import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, latestPracticeRange, nearestNaturalMidi, nudgeTarget, pickHoldTarget, PRACTICE_SPAN_SEMITONES, practiceRange, } from './hold-target'
 
 function voiceprint(
   takenAt: string,
@@ -27,7 +27,44 @@ function voiceprint(
   }
 }
 
+describe('practiceRange', () => {
+  it('keeps two octaves, the excess off both ends, two parts from the bottom', () => {
+    expect(PRACTICE_SPAN_SEMITONES).toBe(24)
+    // F2 to D5, a slide that dipped into a growl and flipped into falsetto:
+    // nine over, six off the bottom and three off the top, B2 to B4.
+    expect(practiceRange({ low: 41, high: 74 })).toEqual({ low: 47, high: 71 })
+    // Two octaves or less is used whole.
+    expect(practiceRange({ low: 48, high: 72 })).toEqual({ low: 48, high: 72 })
+    expect(practiceRange({ low: 52, high: 64 })).toEqual({ low: 52, high: 64 })
+  })
+
+  it('moves with a falsetto top by two thirds of it, not all of it', () => {
+    // A bass, E2 to E4, and the same bass flipping up to E5.
+    const chest = practiceRange({ low: 40, high: 64 })
+    const flipped = practiceRange({ low: 40, high: 76 })
+    expect(flipped.low - chest.low).toBe(8)
+  })
+
+  it('reads the newest voiceprint, as the exercises do', () => {
+    const prints = [
+      voiceprint('2026-10-01T10:00:00Z', 48, 72),
+      voiceprint('2026-10-20T10:00:00Z', 41, 74),
+    ]
+    expect(latestPracticeRange(prints)).toEqual({ low: 47, high: 71 })
+    expect(latestPracticeRange([])).toBeNull()
+  })
+})
+
 describe('pickHoldTarget', () => {
+  it('sits in the practice range of a wider one: F2 to D5 holds G3, not F3', () => {
+    // 47 + 0.35 * 24 = 55.4, nearest natural G3 (55); from F2 it was 52.6, F3.
+    const prints = [voiceprint('2026-10-01T10:00:00Z', 41, 74)]
+    expect(pickHoldTarget(prints, 'tenor')).toEqual({
+      midi: 55,
+      source: 'voiceprint',
+    })
+  })
+
   it('sits 35 % up the voiceprint span, on the nearest natural note', () => {
     // Arrange: C3..C5 -> 48 + 0.35 * 24 = 56.4, between G#3 and A3; the
     // nearest natural is A3 (57, 0.6 away) not G3 (55, 1.4 away).

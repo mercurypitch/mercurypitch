@@ -245,6 +245,12 @@ export interface GlideRoomSetup<R extends GlideRoomTypes> {
     /** A pitch's world y on `arch`'s scale. */
     readonly pitchY: (midi: number, arch: GlideArch) => number
     /**
+     * How fast his feet follow the voice's distance from the path, s (a
+     * time constant, rideFeet): the core's own (RIDE_TAU_SEC) when the
+     * room names none.
+     */
+    readonly rideTauSec?: number
+    /**
      * Where Merc's feet go this frame, world y: on the voice while it
      * sounds, else on the path, else on `arch`'s root.
      */

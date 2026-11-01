@@ -86,7 +86,7 @@ describe('rideLean', () => {
 
   it('grows with the slope and stops at his full lean', () => {
     // Act
-    const steps = [1, 2, 3, 4, 5].map(rideLean)
+    const steps = [1, 2, 3, 4, 5].map((slope) => rideLean(slope))
 
     // Assert
     for (let i = 1; i < steps.length; i++) {
@@ -435,6 +435,49 @@ describe.each(['hum', 'ride'] as const)(
     })
   },
 )
+
+describe("Sim, ride on a lip roll's buzz", () => {
+  // A trill's pitch flutters with the lips: a semitone either way, five
+  // times a second, on a held note.
+  const flutter = (t: number): MercVoice => hum(57 + Math.sin(TAU * 5 * t))
+  // Lip roll's narrowest wave at Learning: half an octave up in 2.4 s.
+  const smoothstep = (x: number): number => x * x * (3 - 2 * x)
+  const narrowRise = (t: number): MercVoice =>
+    hum(50 + 6 * smoothstep(Math.min(1, t / 2.4)))
+  const buzzing = (voice: (t: number) => MercVoice): Sim => {
+    const sim = simIn('ride', voice)
+    sim.glideMouth = 'buzz'
+    return sim
+  }
+
+  it('stands through the flutter of a held note, where a hum would rock him', () => {
+    // Arrange
+    const buzz = buzzing(flutter)
+    const humming = simIn('ride', flutter)
+    step(buzz, 1)
+    step(humming, 1)
+
+    // Act
+    const buzzLean = maxAbs(leans(buzz, 2))
+    const humLean = maxAbs(leans(humming, 2))
+
+    // Assert
+    expect(buzzLean).toBeLessThan(0.1 * RIDE.lean)
+    expect(humLean).toBeGreaterThan(3 * buzzLean)
+  })
+
+  it('still leans into the narrowest wave, half an octave in 2.4 s', () => {
+    // Arrange
+    const sim = buzzing(narrowRise)
+
+    // Act
+    const rise = leans(sim, 2.4)
+
+    // Assert: forward, by a good part of his full lean.
+    expect(Math.max(...rise)).toBeGreaterThan(0.3 * RIDE.lean)
+    expect(Math.min(...rise)).toBeGreaterThan(-0.01)
+  })
+})
 
 describe('Sim, into and out of hum and ride', () => {
   it('rides while humming: the same face and rings, plus the lean', () => {

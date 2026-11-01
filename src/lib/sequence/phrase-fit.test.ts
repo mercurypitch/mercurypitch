@@ -58,6 +58,23 @@ describe('echoWindow', () => {
     expect(window.firstRoot).toBe(pickHoldTarget(TWO_OCTAVES, 'tenor').midi)
   })
 
+  it('places a range wider than two octaves in its practice range, root and window alike', () => {
+    // Arrange: F2 to D5, read as B2 (47) to B4 (71) (practiceRange).
+    const prints = [voiceprint('2026-10-01T10:00:00Z', 41, 74)]
+
+    // Act
+    const window = echoWindow({ voiceprints: prints })
+
+    // Assert: 47 + 4.8 and 47 + 19.2; the first root is Long note's G3.
+    expect(exact(window)).toEqual({
+      low: 51.8,
+      high: 66.2,
+      firstRoot: 55,
+      source: 'voiceprint',
+    })
+    expect(window.firstRoot).toBe(pickHoldTarget(prints, 'tenor').midi)
+  })
+
   it('reads the newest voiceprint, as the hold target does', () => {
     // Arrange: newest A2..A4.
     const prints = [

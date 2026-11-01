@@ -12,8 +12,9 @@
 // inside a word (Goodbye to Spring), nothing to score a first try against.
 //
 // IN THE SINGER'S KEY. The range the reveal showed (measured, or kept on
-// this phone) places the line a little under the middle of it, where a
-// first try sits easy; a range too narrow for the line centres it. With no
+// this phone), as the exercises use it (practiceRange: two octaves at
+// most), places the line a little under the middle of it, where a first
+// try sits easy; a range too narrow for the line centres it. With no
 // range (Skip for now) it is sung from C4, the middle of the keyboard. The
 // score is the Karaoke engine's, which is octave-agnostic, so any voice can
 // answer in its own octave; the key decides where Merc sings it.
@@ -21,6 +22,7 @@
 // Merc sings it first (useLine.ts): his recorded "ooh" (merc-sampler.ts)
 // reaches D#2 to G5, so the line is kept inside that.
 
+import { practiceRange } from '@/lib/hold/hold-target'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 
 /** The words, as the screen shows them. */
@@ -97,14 +99,17 @@ export interface LineRange {
  */
 export function lineTonic(range: LineRange | null): number {
   if (range === null) return MIDDLE_TONIC
-  const middle = (range.lowMidi + range.highMidi) / 2
+  // Read as the exercises read it: at most two octaves, so a slide that
+  // dipped into a growl does not pull the line under the voice.
+  const { low, high } = practiceRange({
+    low: range.lowMidi,
+    high: range.highMidi,
+  })
+  const middle = (low + high) / 2
   const centred = Math.round(middle - LINE_SPAN / 2)
   const tonic =
-    range.highMidi - range.lowMidi >= LINE_SPAN
-      ? Math.min(
-          range.highMidi - LINE_SPAN,
-          Math.max(range.lowMidi, centred - UNDER_MIDDLE),
-        )
+    high - low >= LINE_SPAN
+      ? Math.min(high - LINE_SPAN, Math.max(low, centred - UNDER_MIDDLE))
       : centred
   return Math.min(HIGHEST_TONIC, Math.max(LOWEST_TONIC, tonic))
 }

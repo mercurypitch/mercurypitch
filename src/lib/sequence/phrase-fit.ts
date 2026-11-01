@@ -3,9 +3,10 @@
 // ============================================================
 //
 // The first phrase starts where Long note's note sits (pickHoldTarget,
-// hold-target.ts): the newest voiceprint's low end plus 35 % of its span,
-// on a natural note. Every phrase then stays in the middle of the span,
-// from 20 % to 80 % of the way up it, and each phrase's root moves a step
+// hold-target.ts): 35 % of the way up the newest voiceprint's practice
+// range (two octaves at most, practiceRange), on a natural note. Every
+// phrase then stays in the middle of that range, from 20 % to 80 % of the
+// way up it, and each phrase's root moves a step
 // (two semitones) up or down from the last one's, never out of that
 // window. Merc sings in the singer's octave: a bass hears him low.
 //
@@ -24,7 +25,7 @@
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { HoldVoicePreset } from '@/lib/hold/hold-target'
-import { HOLD_DEFAULT_PRESET, HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, HOLD_TARGET_SPAN_FRACTION, latestVoiceprintRange, pickHoldTarget, } from '@/lib/hold/hold-target'
+import { HOLD_DEFAULT_PRESET, HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, HOLD_TARGET_SPAN_FRACTION, latestPracticeRange, pickHoldTarget, } from '@/lib/hold/hold-target'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import type { EchoPhrase, PhraseMode } from './phrase-bank'
 import { ECHO_MOTIFS, echoPhrase, phraseModes, seededRandom, } from './phrase-bank'
@@ -73,7 +74,7 @@ export function echoWindow(input: {
   voicePreset?: HoldVoicePreset
 }): EchoWindow {
   const preset = input.voicePreset ?? HOLD_DEFAULT_PRESET
-  const range = latestVoiceprintRange(input.voiceprints)
+  const range = latestPracticeRange(input.voiceprints)
   if (range !== null) {
     const firstRoot = pickHoldTarget(input.voiceprints, preset).midi
     return {

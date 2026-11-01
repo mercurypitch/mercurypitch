@@ -21,12 +21,13 @@ import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W, zoomAt, } from './bay-layout'
 import type { BayScroll } from './bay-scroll'
 
-// His feet's easing and his own sound at the intro: every glide room's.
+// His feet's easing and his own sound at the intro: every glide room's, his
+// feet eased at a lip roll's own pace (BUZZ_RIDE_TAU_SEC: a trill flutters).
 export {
+  BUZZ_RIDE_TAU_SEC,
   INTRO_HUM_LEVEL,
   introHum,
-  RIDE_TAU_SEC,
-  rideStep,
+  rideFeet,
 } from '@/components/room-kit/glide/glide-ride'
 
 /** What the run is doing, as Merc's choreography sees it. */

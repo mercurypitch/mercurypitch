@@ -116,6 +116,19 @@ describe('fitNgSlides', () => {
   })
 })
 
+describe('a range wider than two octaves', () => {
+  it('places Lip roll and Ng slides in its practice range: F2 to D5 starts both on D3', () => {
+    // Act: F2 (41) to D5 (74), a slide that dipped into a growl. Placed from
+    // F2, both began on A2; the practice range is B2 (47) to B4 (71).
+    const lip = fitLipRoll({ voiceprints: range(41, 74) })
+    const ng = fitNgSlides({ voiceprints: range(41, 74) })
+
+    // Assert: 47 + 2.4 = 49.4 and 47 + 3.6 = 50.6, both nearest D3 (50).
+    expect(lip.roots).toEqual([50, 52, 54])
+    expect(ng.roots).toEqual([50, 51, 52, 53, 54])
+  })
+})
+
 describe('fitLipRoll', () => {
   it('rolls an octave from 10 % up the span, waves 2 and 3 two and four higher', () => {
     // Act: G2 to G4; 43 + 2.4 = 45.4, nearest natural A2 (45)

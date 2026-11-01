@@ -21,7 +21,7 @@ import { rememberedLipNote } from '@/stores/lip-roll-store'
 import { preloadLipResult } from './bay-art'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { pitchY } from './bay-layout'
-import { RIDE_STATES, rideTarget, rideXOn } from './bay-ride'
+import { BUZZ_RIDE_TAU_SEC, RIDE_STATES, rideTarget, rideXOn } from './bay-ride'
 import { createBayScroll, holdCamera, INTRO_CAMERA } from './bay-scroll'
 import type { LipController, LipTypes } from './lip-controller-contract'
 import { introLine, keepLipRun, planLipRun, resultLine, summarize, waveHeard, waveLine, } from './lip-run'
@@ -77,6 +77,9 @@ export function useLipController(
       },
       pitchY: (midi, wave) =>
         pitchY(midi, wave.rootMidi, wave.topMidi - wave.rootMidi),
+      // A lip trill's pitch flutters with the lips: he rides the wave it
+      // draws rather than bobbing on each flutter (glide-ride.ts).
+      rideTauSec: BUZZ_RIDE_TAU_SEC,
       feetTarget: (voiceMidi, targetMidi, wave) =>
         rideTarget(
           voiceMidi,
