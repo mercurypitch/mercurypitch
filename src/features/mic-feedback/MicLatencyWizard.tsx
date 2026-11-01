@@ -33,11 +33,12 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
-import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_HZ, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
+import { audioOutputPathSeconds, detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_HZ, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import type { RouteLatencyResult } from '@/lib/mic-latency-route'
 import { measureRouteLatency, ROUTE_TAIL_SEC, routeClickSchedule, } from '@/lib/mic-latency-route'
 import { micManager } from '@/lib/mic-manager'
 import { buildClickSchedule } from '@/lib/tap-calibration'
+import { setMicLatencyPathMs } from '@/stores/mic-latency-path-store'
 import type { LatencyRoute } from '@/stores/mic-latency-store'
 import { clearMicLatency, currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -132,6 +133,8 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
   let chunks: Float32Array[] = []
   let captureStartSec: number | null = null
+  /** The output path of the clock the last run measured on, in ms. */
+  let runPathMs: number | null = null
   let schedule: number[] = []
 
   const teardown = (): void => {
@@ -191,6 +194,8 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
   const finish = (): void => {
     const audio = ctx
+    // Read while the clock still runs: the Studio adds what it buffers beyond this.
+    runPathMs = audio === null ? null : audioOutputPathSeconds(audio) * 1000
     const startedAt = captureStartSec
     const sampleRate = audio?.sampleRate ?? 0
     const recorded = chunks
@@ -297,6 +302,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
       return
     }
     setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
+    setMicLatencyPathMs(runPathMs)
     const name = routeName()
     showNotification(
       name === null

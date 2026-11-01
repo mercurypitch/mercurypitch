@@ -249,3 +249,20 @@ export function summariseLatency(
     failure: null,
   }
 }
+
+/** The latencies a clock reports; an engine may leave either out. */
+export interface AudioOutputLatencies {
+  readonly baseLatency?: number
+  readonly outputLatency?: number
+}
+
+/**
+ * What a clock buffers before its sound reaches the speakers, in seconds:
+ * its baseLatency plus the device's outputLatency, each ignored when it is
+ * missing or not a sensible number.
+ */
+export function audioOutputPathSeconds(context: AudioOutputLatencies): number {
+  const reported = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
+  return reported(context.baseLatency) + reported(context.outputLatency)
+}
