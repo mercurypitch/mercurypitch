@@ -2635,3 +2635,15 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Next lever if needed: renders/film-04-music-only.mp4 (101 MiB) to /dev/shm. Watcher b4f7x4fb7 wakes under 50 MB
   free (to ~10:28). render-l4.sh FIXED (backup render-l4.sh.before-master-first): the music-only stays in /dev/shm
   while the master is not on disk; tested both ways in /dev/shm.
+- 08:45 FILM6: SHIP (fresh motion-critic, xhigh, 08:14 to ~08:42, 437 tool calls; its transcript ended ~90 MB).
+  Holds and practise card FIXED; length, falls from the top, cosmetic items STILL PRESENT; picture = film-05 outside
+  1:19-6:28 and 8:45-8:47, sound identical. Its one condition (the length) was settled by the owner on 17 Oct.
+  Optional: the range line's glow and the gear's 1.17x pulse (8:46.7-8:47.6), the falls, recall/blur/zooms. SAVED:
+  review/film-06/REPORT.md, LEDGER 35, DECISIONS 140 (backups l4entr/*.before-35/-140), DELIVERY.md rewritten for
+  film-06 (master renders/film-06.mp4; music-only in /dev/shm with its ffmpeg line; human list: voices + b36/b52/o2/
+  o7/o8/o11 by ear, viewer's turn 7:33.8-7:42.4, phone speakers, captions vs the care block, OLED floor, the
+  near-silent end from 9:09.0, loop seam). push-notes now also backs up review/film-02..06/REPORT.md, DELIVERY.md
+  and l4entr/f6-docs-draft.md (backup bin/push-notes.before-film-reports). NEXT: send renders/film-06.mp4 and
+  DELIVERY.md to the owner with the branch link (LFS downloads blocked by the org budget). Then Lesson 4's film is
+  done; still waiting on the owner: the Tavi ear check, Season 2's 13 decisions, the Cloudflare upload choice,
+  the Sing covers. In /dev/shm (regenerable): film-05/06 music-onlys, /dev/shm/l4-moved/ (transcode cache, sheets).

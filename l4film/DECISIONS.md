@@ -1994,3 +1994,58 @@ replaced it. The builder's record: critics never read it.
        - the loop seam, which jumps. That matters only if a page ever loops the film.
      - FILM5 is the first ONE MORE PASS since FILM4's SHIP. Next: the holds round and the card, the
        full check, film-06 and a fresh FILM6 critic.
+
+140. **Film round 6 (critic FILM6, SHIP) after the holds round: the film on the final voices ships.**
+     - **The holds round** (decision 139; 31 October 23:40 to 1 November 01:3x):
+       - Builder BC on s05 to s08: slow sideways camera creeps only (at most 30 px, sine.inOut, at most
+         7.7 px/s on the near layer), labels that settle where Tavi is in frame and in S8 (whose camera
+         holds F0), and S8's tally fade 0.2 to 0.45 s from the same start. Lab clips: S5 5.1 to 0.3 s of
+         holds, S6 1.9 to 0.4, S7 4.6 to 0.5, S8 1.0 (and 0.2 at its end) to 0.4; none over 0.1 s.
+       - Builder D on s09 to s11 and the practise card: S9 4.6 to 0.1 s, S10 2.4 to 0.3, S11 0.9 to 0.1.
+         "Singing Voice Range" is marked by a chrome glow, with no change of size (a swell about its
+         centre would reach the "›"), and the gear fades in from 0.88 to 1 over 0.3 s.
+       - Every scene's first and last frames are identical to before; the full check 0 errors and 65
+         warnings (the baseline); clock-lint silent; merc-tags 68 tags, none stale.
+     - **The render** (`render-l4.sh`, frozen 04:20 as `l4film06proj`, 33,073 frames):
+       - A container restart at 04:16 wiped `/dev/shm`: the film-05 copies there, the extract cache and
+         the films work repo. Nothing needed was lost (film-05 on disk and on GitHub).
+       - Two workers 04:22 to 06:52 with no memory kill (peak rss and shmem about 11.3 GB of the
+         13.4 GiB cap). The memory fallback in `render-switch.sh` held the cgroup path from before the
+         restart and could never have fired; `mem-guard.sh` replaced it at 06:19 and stood down when
+         the capture ended.
+       - The seam check flagged seams 6, 11 and 20: the first frames of those pieces were blank or half
+         painted (frames 9000, 16500 and 16501, 30000 to 30002), likely a recycled browser capturing
+         before the page painted. Pieces 5, 6, 10, 11, 19 and 20 were re-rendered on one browser with
+         no recycling, 06:53 to 08:06, and every seam was clean.
+       - 551.217 s (the cue sheet's 551.205). The master is 142 MB (film-05: 117 MB; the creeps
+         compress less). `render-l4.sh` refused the master's copy to `renders/` (185 MB free, 186
+         needed) and then copied the music-only into that room; the music-only's disk copy was
+         replaced by the master at 08:11, checked byte for byte, and the script now keeps the
+         music-only off the disk while the master is not on it. The master is on
+         `feat/lesson-04-films` as bfd8196 (Git LFS, verified with the batch API).
+       - The critic's transcript grows on `/` as it reads frames (FILM5's reached 55 MB), so three
+         regenerable things went to `/dev/shm` to leave it room, none deleted: film-05's music-only
+         (its sound is byte-identical to film-06's, so it rebuilds from `film-05.mp4`), the check's
+         `.transcode-cache` and `review/measure-film-06/`'s frame sheets.
+     - **FILM6 against FILM5:** the holds and the practise card FIXED; the length, the falls from the
+       top and the cosmetic items STILL PRESENT; the earlier fixes unchanged. The picture is film-05's
+       outside 1:19 to 6:28 and 8:45 to 8:47 (diffed at 10 fps), and the sound is identical (the
+       difference under -121 dBFS). Holds 8.2 s in 63 runs, the longest 0.4 s. The 22 new single-frame
+       events are whole-pixel steps in the new drifts, each changing at most 0.17 % of the pixels. The
+       report: `review/film-06/REPORT.md`.
+     - **Its items, and what happens to each:**
+       - **The length, 9:11.2** (its one condition): the owner settled it on 17 October ("The film can
+         be up to 10 min it's fine no need to cut stuff"; decision 139). No cuts.
+       - **The falls from the top** (1:09.1, 2:51.0, 4:46.0 and 6:35.0) stay, as decisions 130, 137
+         and 139 have it.
+       - **The practise card's glow and the gear's pulse** (8:46.7 to 8:47.6) are cosmetic and stay. A
+         change of weight or colour for the phrase waits for the owner's word.
+       - **The recall's swap, the title's blur and the like zooms** stay (decision 137), and so does
+         the critic's observation that most beats from 1:18 to 6:33 share one wide framing.
+     - **For a human,** DELIVERY.md's list: the voices (whose they are and whether these takes are
+       approved; b36's "doh" at 5:56.4, b52's spliced "G. Doh" at 8:35.0, o2's "home" at 0:27.9, and
+       whether o7, o8 and o11 sound like questions); the whooshes over room tone and the near-silent
+       end, on phone speakers; the captions, which are not in the render and must stay clear of the
+       care block; the loop seam (21.65), which matters only if a page ever loops the film.
+     - FILM6 passes the round after FILM5's ONE MORE PASS. DELIVERY.md is rewritten for film-06, and
+       the film goes to the owner.
