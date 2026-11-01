@@ -413,11 +413,13 @@ export async function readOwnSong(
   const voices: (LineVoice | null)[] = []
   for (let i = 0; i < lines.length; i++) {
     voices.push(await paced(lineSteps(reading, i), signal))
-    report(80 + (5 * (i + 1)) / lines.length)
+    report(80 + (3 * (i + 1)) / lines.length)
   }
   // A song sung line after line: its lyric lines after a short breath too.
-  for (const i of shortBreathLines(reading, voices)) {
+  const again = shortBreathLines(reading, voices)
+  for (const [k, i] of again.entries()) {
     voices[i] = await paced(lineSteps(reading, i, SHORT_BREATH_SEC), signal)
+    report(83 + (2 * (k + 1)) / again.length)
   }
   const {
     entries: found,

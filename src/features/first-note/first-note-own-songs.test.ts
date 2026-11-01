@@ -370,6 +370,21 @@ describe("the singer's own songs", () => {
     expect(states()).toEqual({ a: 'ready', b: 'waiting' })
   })
 
+  it('read again a read by newer rules than these, one that plays too', () => {
+    // A phone back on an older build cannot tell what those rules changed.
+    localStorage.setItem(
+      FIRST_NOTE_OWN_ENTRIES_KEY,
+      JSON.stringify({
+        a: {
+          stems: '100/200|90/-',
+          entries: [entry(10), entry(20)],
+          rules: ENTRY_RULES_VERSION + 1,
+        },
+      }),
+    )
+    expect(states()).toEqual({ a: 'waiting', b: 'waiting' })
+  })
+
   it('keep why a song sits out, counted, for its row', async () => {
     readOwnSongs()
     await settle()
