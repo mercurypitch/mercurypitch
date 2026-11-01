@@ -2608,3 +2608,18 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   3 tries and repair by hand. DISK: the new master is 142 MB (film-05 117 MB: the holds round's creeps compress
   less); after the pieces go, / should have ~199 MiB against the copy's need of ~187 (size + 1 + KEEP_MB 50):
   tight. If refused ("kept only in"), copy by hand with a smaller margin after push-film06.sh.
+- 08:14 FILM-06 SEAMS CLEAN (08:07) after re-rendering pieces 5 6 10 11 19 20 on 1 worker, no recycling (one try);
+  film 551.217 s (composition 551.205), sha256 5481187b50a1..., 141,989,186 bytes. COPY: render-l4.sh refused the
+  master (185 MB free, needs 186) and then copied the music-only into the same room (its need was 182), leaving
+  23 MB. FLAW in render-l4.sh: the music-only must be skipped when the master was refused; fix it once pid 501
+  has exited (never edit a bash script while bash runs it). FIX 08:11: cmp'd the music-only's disk copy against
+  /dev/shm, removed the disk copy, copied the master in (cp .part, cmp, mv; sha256 matches). PUSHED 08:12:
+  push-film06.sh: feat/lesson-04-films bfd8196 (Komediruzecki), README row after film-05's, LFS batch API
+  VERIFIED. ROOM FOR THE CRITIC: the FILM5 critic's transcript was 55 MB on / (FILM1-4: 24-32 MB), and / had
+  22 MB; moved renders/film-05-music-only.mp4 to /dev/shm/l4film (cmp'd; its AAC is byte-identical to film-06's
+  music-only, md5 65b199e5..., so it rebuilds from film-05.mp4): / 130 MB free. FILM6 critic launched 08:14
+  (motion-critic, xhigh, FILM6-ready.txt verbatim, rate_limit allowed). render-l4.sh (501) is still in its
+  measure step. NEXT: on the critic's return save review/film-06/REPORT.md, LEDGER 35, DECISIONS 140 (record the
+  seam repair, mem-guard, the copy flaw and both moves); SHIP -> DELIVERY.md from l4entr/delivery-f5-draft.md,
+  send renders/film-06.mp4 + the branch link; ONE MORE PASS -> fix, re-render with mem-guard.sh (not
+  render-switch.sh) and RECYCLE=0.
