@@ -256,7 +256,8 @@ describe('what Keep says', () => {
           0,
     ).toBe(true)
     expect(card?.textContent).toContain('E2–G4')
-    expect(card?.textContent).toContain('Nina Simone')
+    // The twin's name held together on its line.
+    expect(card?.textContent).toContain('Nina\u00a0Simone')
     expect(rows()).toEqual([KEEP.everywhere])
   })
 

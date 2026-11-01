@@ -10,7 +10,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import { settle } from './onboarding-capture.test-fixtures'
-import { ONBOARDING_COPY, twinLine } from './onboarding-copy'
+import { ONBOARDING_COPY } from './onboarding-copy'
 import type { ShareWays } from './reveal-share'
 import { revealPayload } from './reveal-share'
 import { RevealView } from './RevealView'
@@ -151,9 +151,10 @@ describe('the reveal', () => {
     expect(twinCard()).toBe('on')
     expect(controller?.mercState()).toBe('celebrate')
     expect(hand.taps).toBe(1)
+    // Under the name, what a twin is, not the name a second time.
     expect(
       q('onboarding-twin-card')?.textContent?.includes(
-        twinLine(singerForRange(E2_G4) ?? ''),
+        ONBOARDING_COPY.twinMeaning,
       ),
     ).toBe(true)
     // No button to find it, and no blank figure standing in for it.
