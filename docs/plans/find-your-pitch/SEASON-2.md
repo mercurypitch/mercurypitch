@@ -4,10 +4,10 @@ Season 2, "Read it, harmonise it", planned at Season 1's depth: the promise and 
 lesson table and cards, the topic graph, the practise links, production, the owner's decisions,
 and the risks and production order. Companion to [CURRICULUM.md](CURRICULUM.md), which holds
 Season 1 and the topic graph this extends, and to [MASTER-PLAN.md](MASTER-PLAN.md), whose formats
-(§ 4), visual and sound language (§ 5) and decision register (§ 12) hold unless § 7 below proposes
+(§ 4), visual and sound language (§ 5) and decision register (§ 12) hold unless § 7 below decides
 otherwise. Every lesson follows the [teaching playbook](TEACHING-PLAYBOOK.md).
 
-Status: proposed, 29 October 2026. Nothing here is decided until the owner answers § 7. Claims
+Status: decided, 1 November 2026: the owner took every recommendation in § 7 (proposed 29 October). Claims
 about the app were read on main at `b803c7d43` (0.9.25) and cite file and line there. Sources
 marked "abstract" or "summary" were read only that far, and a claim this plan could not check is
 marked **not verified**: a writer checks it before it reaches a script.
@@ -65,10 +65,10 @@ A Season 2 trailer, 2 to 3 minutes, carries no lesson number (§ 7 item 9).
 
 ### 1.3 Lengths
 
-**Films:** Season 1's targets hold: 6 to 9 minutes, tiny topics 4 to 5, a cap of 10 (CURRICULUM
-§ 2). Lessons 15 (two clefs and the grand staff), 21 (keys, the circle and why twelve) and 28 (four
-cadences, form and a two-part song) will press on the cap, and their cards say what moves to Go
-deeper if a script runs long. Lessons 22 and 23 may be tiny.
+**Films:** Season 1's targets hold: 6 to 9 minutes, tiny topics 4 to 5, and a cap of 20, which the
+owner raised from 10 on 1 November 2026 (CURRICULUM § 2). Lessons 15 (two clefs and the grand staff), 21
+(keys, the circle and why twelve) and 28 (four cadences, form and a two-part song) run longest, and
+their cards say what moves to Go deeper if a script runs long. Lessons 22 and 23 may be tiny.
 
 **Pages:** MASTER-PLAN § 4.2's budget holds, 8 to 12 minutes of active time and 500 to 900 words
 (MASTER-PLAN.md:137), with Season 1's later practice: chips show real run times and the word cap is
@@ -108,7 +108,7 @@ lab before its lesson's chip is set.
    2's sight-singing inherits it. Letter names belong to the keyboard and the staff, movable do to
    singing ([pedagogy-research § 3.7](research/pedagogy-research.md)).
 8. **British English**, semitone and tone leading (MASTER-PLAN § 12 item 5), with the note-value
-   names as a proposed exception (§ 7 item 4).
+   names as the exception § 7 item 4 decided.
 
 ### 1.5 What changes now that the staff arrives
 
@@ -138,23 +138,23 @@ Topic IDs are the benchmark's ([research/curriculum-benchmark.md](research/curri
 splits into S11a and S11b and S20 into S20a and S20b (§ 4.1). Lessons are numbered on from Season
 1 (§ 7 item 1).
 
-| #   | Track            | Title                                  | Topics                  | Hook question (the cold open)                                                                                     |
-| --- | ---------------- | -------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 0   | Trailer          | Read it, harmonise it                  | all                     | What if you could read a song you've never heard, then sing a harmony to it? (2 to 3 minutes; no lesson number)   |
-| 15  | Theory           | The staff: where notes sit             | T30                     | A piano has 88 keys. How can five lines write down every one of them?                                             |
-| 16  | Voice            | Sing what you see                      | S11a (new)              | Can you sing a tune you've never heard, just by reading it?                                                       |
-| 17  | Theory           | How long is a note?                    | T07                     | Why is a quarter note not a quarter of a second?                                                                  |
-| 18  | Voice            | Read and sing a whole line             | S11b (new), T32 (light) | How do singers read a tune they've never heard without stopping on every note?                                   |
-| 19  | Theory           | Threes, offbeats and syncopation       | T08                     | Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?                 |
-| 20  | Voice            | Runs and the pentatonic scale          | S18, T16                | How do singers sing a fast run without the notes smudging together?                                               |
-| 21  | Theory           | Keys and the circle of fifths          | T17, T18, T29           | G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?                |
-| 22  | Voice            | Vibrato                                | S19                     | If a singer's held note swings up and down six times a second, why do we still hear one note?                     |
-| 23  | Theory           | Perfect, major, minor and the tritone  | T13                     | Which interval splits the octave exactly in half, and why does it want to move?                                   |
-| 24  | Voice            | Harmony against a drone                | S20a (new)              | Hold a note against a drone: how can you hear when the two are in tune?                                           |
-| 25  | Theory           | Minor, properly                        | T15b                    | Why does a minor key often raise one note just before it comes home?                                              |
-| 26  | Voice            | A second voice                         | S20b (new), T23 (light) | Can you make a harmony by singing the tune a third higher?                                                        |
-| 27  | Theory           | Seventh chords and inversions          | T24, T25                | Add one note to the V chord and it pulls towards home. Which note, and why?                                       |
-| 28  | Voice and theory | Cadences, form and a song in two parts | T22, T31                | How can a song sound as if it's ending, then keep going?                                                          |
+| #   | Track            | Title                                  | Topics                  | Hook question (the cold open)                                                                                   |
+| --- | ---------------- | -------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 0   | Trailer          | Read it, harmonise it                  | all                     | What if you could read a song you've never heard, then sing a harmony to it? (2 to 3 minutes; no lesson number) |
+| 15  | Theory           | The staff: where notes sit             | T30                     | A piano has 88 keys. How can five lines write down every one of them?                                           |
+| 16  | Voice            | Sing what you see                      | S11a (new)              | Can you sing a tune you've never heard, just by reading it?                                                     |
+| 17  | Theory           | How long is a note?                    | T07                     | Why is a quarter note not a quarter of a second?                                                                |
+| 18  | Voice            | Read and sing a whole line             | S11b (new), T32 (light) | How do singers read a tune they've never heard without stopping on every note?                                  |
+| 19  | Theory           | Threes, offbeats and syncopation       | T08                     | Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?                |
+| 20  | Voice            | Runs and the pentatonic scale          | S18, T16                | How do singers sing a fast run without the notes smudging together?                                             |
+| 21  | Theory           | Keys and the circle of fifths          | T17, T18, T29           | G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?              |
+| 22  | Voice            | Vibrato                                | S19                     | If a singer's held note swings up and down six times a second, why do we still hear one note?                   |
+| 23  | Theory           | Perfect, major, minor and the tritone  | T13                     | Which interval splits the octave exactly in half, and why does it want to move?                                 |
+| 24  | Voice            | Harmony against a drone                | S20a (new)              | Hold a note against a drone: how can you hear when the two are in tune?                                         |
+| 25  | Theory           | Minor, properly                        | T15b                    | Why does a minor key often raise one note just before it comes home?                                            |
+| 26  | Voice            | A second voice                         | S20b (new), T23 (light) | Can you make a harmony by singing the tune a third higher?                                                      |
+| 27  | Theory           | Seventh chords and inversions          | T24, T25                | Add one note to the V chord and it pulls towards home. Which note, and why?                                     |
+| 28  | Voice and theory | Cadences, form and a song in two parts | T22, T31                | How can a song sound as if it's ending, then keep going?                                                        |
 
 **The chain.** Each lesson closes on the next lesson's hook, set up by the tease in its card's
 "Closes on" line. Lesson 15's hook needs nothing from Lesson 14, and Lesson 28 closes on its own
@@ -710,29 +710,29 @@ The benchmark's IDs and prerequisites, with this plan's changes marked. A Season
 Season 1 topics; no Season 1 topic needs a Season 2 one, so the Season 1 graph in CURRICULUM § 3
 stands as it is.
 
-| ID   | Topic                                                                       | Prerequisites  | Lesson | Change from CURRICULUM § 3                                                                                              |
-| ---- | --------------------------------------------------------------------------- | -------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| T30  | Staff notation: staff, clefs, ledger lines, grand staff                     | T03            | 15     | T07 dropped: Lesson 15 draws pitch only, noteheads without stems, before rhythm (Lesson 17)                             |
-| T07  | Note values, rests, dots, ties, subdivision                                 | T06            | 17     | none                                                                                                                    |
-| T32  | Dynamics and articulation terms                                             | none           | 18     | none (light)                                                                                                            |
-| T08  | Simple and compound metre; triplets; syncopation                            | T07            | 19     | none                                                                                                                    |
-| T16  | Pentatonic and blues scales                                                 | T09, T15a      | 20     | T15a added for minor pentatonic, as the benchmark notes ("T15 for minor pentatonic")                                    |
-| T17  | Keys, key signatures, transposition                                         | T09, T30       | 21     | T30 added: a key signature is written on the staff                                                                      |
-| T18  | Circle of fifths                                                            | T17, T12       | 21     | T13 replaced by T12: the circle needs the fifth's size (Lesson 6), not interval quality, which follows in Lesson 23      |
-| T29  | Tuning systems: why twelve, equal temperament                               | T04, T18       | 21     | T28 replaced by T18: the lesson gives the fifth as 3:2 directly, as Lesson 1 gives the octave as 2:1; Lesson 13 helps     |
-| T13  | Interval quality: major, minor, perfect; tritone; inversion                 | T12            | 23     | none                                                                                                                    |
-| T15b | Harmonic and melodic minor; relative keys                                   | T15a, T13, T17 | 25     | T17 added: relative keys share a key signature                                                                          |
-| T23  | Chord tones and non-chord tones                                             | T20, T11       | 26     | none (light)                                                                                                            |
-| T24  | Seventh chords                                                              | T19, T13       | 27     | T13 added: the dominant seventh's pull is its tritone                                                                   |
-| T25  | Inversions and voicing                                                      | T19            | 27     | none                                                                                                                    |
-| T22  | Phrases and cadences                                                        | T20, T06       | 28     | none (its light part is Season 1's, Lesson 14)                                                                          |
-| T31  | Song form                                                                   | T22            | 28     | none                                                                                                                    |
-| S11a | Sight-singing pitch: steps and the tonic triad from the staff, after do     | S10, T10, T30  | 16     | **New**, the first half of S11 (S11 needed S10 and T10; reading from the staff adds T30)                                |
-| S11b | Sight-singing in time: short melodies with rhythm                           | S11a, T07      | 18     | **New**, the second half of S11                                                                                         |
-| S18  | Agility: staccato, runs, pentatonic patterns                                | S09, S04, T16  | 20     | none                                                                                                                    |
-| S19  | Vibrato                                                                     | S06, S17       | 22     | none                                                                                                                    |
-| S20a | Hold a part against a drone; beats                                          | S06, T13, T14  | 24     | **New**, the first half of S20; T19 replaced by T14: against a drone the third and fifth are intervals, not yet a chord |
-| S20b | Sing a second part with a melody                                            | S20a, T11, T19 | 26     | **New**, the second half of S20                                                                                         |
+| ID   | Topic                                                                   | Prerequisites  | Lesson | Change from CURRICULUM § 3                                                                                              |
+| ---- | ----------------------------------------------------------------------- | -------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03            | 15     | T07 dropped: Lesson 15 draws pitch only, noteheads without stems, before rhythm (Lesson 17)                             |
+| T07  | Note values, rests, dots, ties, subdivision                             | T06            | 17     | none                                                                                                                    |
+| T32  | Dynamics and articulation terms                                         | none           | 18     | none (light)                                                                                                            |
+| T08  | Simple and compound metre; triplets; syncopation                        | T07            | 19     | none                                                                                                                    |
+| T16  | Pentatonic and blues scales                                             | T09, T15a      | 20     | T15a added for minor pentatonic, as the benchmark notes ("T15 for minor pentatonic")                                    |
+| T17  | Keys, key signatures, transposition                                     | T09, T30       | 21     | T30 added: a key signature is written on the staff                                                                      |
+| T18  | Circle of fifths                                                        | T17, T12       | 21     | T13 replaced by T12: the circle needs the fifth's size (Lesson 6), not interval quality, which follows in Lesson 23     |
+| T29  | Tuning systems: why twelve, equal temperament                           | T04, T18       | 21     | T28 replaced by T18: the lesson gives the fifth as 3:2 directly, as Lesson 1 gives the octave as 2:1; Lesson 13 helps   |
+| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12            | 23     | none                                                                                                                    |
+| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13, T17 | 25     | T17 added: relative keys share a key signature                                                                          |
+| T23  | Chord tones and non-chord tones                                         | T20, T11       | 26     | none (light)                                                                                                            |
+| T24  | Seventh chords                                                          | T19, T13       | 27     | T13 added: the dominant seventh's pull is its tritone                                                                   |
+| T25  | Inversions and voicing                                                  | T19            | 27     | none                                                                                                                    |
+| T22  | Phrases and cadences                                                    | T20, T06       | 28     | none (its light part is Season 1's, Lesson 14)                                                                          |
+| T31  | Song form                                                               | T22            | 28     | none                                                                                                                    |
+| S11a | Sight-singing pitch: steps and the tonic triad from the staff, after do | S10, T10, T30  | 16     | **New**, the first half of S11 (S11 needed S10 and T10; reading from the staff adds T30)                                |
+| S11b | Sight-singing in time: short melodies with rhythm                       | S11a, T07      | 18     | **New**, the second half of S11                                                                                         |
+| S18  | Agility: staccato, runs, pentatonic patterns                            | S09, S04, T16  | 20     | none                                                                                                                    |
+| S19  | Vibrato                                                                 | S06, S17       | 22     | none                                                                                                                    |
+| S20a | Hold a part against a drone; beats                                      | S06, T13, T14  | 24     | **New**, the first half of S20; T19 replaced by T14: against a drone the third and fifth are intervals, not yet a chord |
+| S20b | Sing a second part with a melody                                        | S20a, T11, T19 | 26     | **New**, the second half of S20                                                                                         |
 
 Moved out of Season 2: S15, consonants and diction. CURRICULUM § 3.2 marks it Season 2, but § 5
 already lists diction in Season 3; this plan keeps it in Season 3 (§ 7 item 12). Mixed voice gets no
@@ -777,22 +777,22 @@ In CURRICULUM § 3.3's form: each lesson needs the lessons that teach its topics
 edge already implied through another is left out, and a Season 2 lesson may need Season 1 lessons.
 Every edge below was checked against the others for implication.
 
-| Lesson                                    | Needs     | Because                                                                                                                               |
-| ----------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 15 The staff                              | 2         | T30 needs T03 (2)                                                                                                                     |
-| 16 Sing what you see                      | 9, 15     | S11a needs S10 (9), T10 (4, via 9) and T30 (15)                                                                                       |
-| 17 How long is a note?                    | 8         | T07 needs T06 (8). Lesson 15 helps: the last step moves the rhythm onto the five lines                                                |
-| 18 Read and sing a whole line             | 16, 17    | S11b needs S11a (16) and T07 (17); T32 needs nothing                                                                                  |
-| 19 Threes, offbeats and syncopation       | 17        | T08 needs T07                                                                                                                         |
-| 20 Runs and the pentatonic scale          | 5, 9, 10  | S18 needs S04 (5) and S09 (9); T16 needs T09 (4, via 9) and T15a (10). Lesson 19 helps: many notes to a beat                          |
-| 21 Keys and the circle of fifths          | 6, 15     | T17 needs T09 (4, via 6) and T30 (15); T18 needs T12 (6); T29 needs T04 (2, via 6). Lesson 13 helps: the fifth as a harmonic          |
-| 22 Vibrato                                | 14        | S19 needs S17 (14) and S06 (5, via 14)                                                                                                |
-| 23 Perfect, major, minor and the tritone  | 6         | T13 needs T12                                                                                                                         |
-| 24 Harmony against a drone                | 5, 10, 23 | S20a needs S06 (5), T14 (10) and T13 (23)                                                                                             |
-| 25 Minor, properly                        | 10, 21, 23 | T15b needs T15a (10), T17 (21) and T13 (23)                                                                                          |
-| 26 A second voice                         | 12, 24    | S20b needs S20a (24), T19 (12) and T11 (6, via 24); T23 needs T20 (12)                                                                |
-| 27 Seventh chords and inversions          | 12, 23    | T24 needs T19 (12) and T13 (23); T25 needs T19. Lesson 15 helps: inversions are read on the staff                                     |
-| 28 Cadences, form and a song in two parts | 18, 26    | T22 needs T20 (12, via 26) and T06 (8, via 18); T31 needs T22; the two-part song needs S11b (18) and S20b (26). Lessons 14 and 27 help |
+| Lesson                                    | Needs      | Because                                                                                                                                |
+| ----------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 15 The staff                              | 2          | T30 needs T03 (2)                                                                                                                      |
+| 16 Sing what you see                      | 9, 15      | S11a needs S10 (9), T10 (4, via 9) and T30 (15)                                                                                        |
+| 17 How long is a note?                    | 8          | T07 needs T06 (8). Lesson 15 helps: the last step moves the rhythm onto the five lines                                                 |
+| 18 Read and sing a whole line             | 16, 17     | S11b needs S11a (16) and T07 (17); T32 needs nothing                                                                                   |
+| 19 Threes, offbeats and syncopation       | 17         | T08 needs T07                                                                                                                          |
+| 20 Runs and the pentatonic scale          | 5, 9, 10   | S18 needs S04 (5) and S09 (9); T16 needs T09 (4, via 9) and T15a (10). Lesson 19 helps: many notes to a beat                           |
+| 21 Keys and the circle of fifths          | 6, 15      | T17 needs T09 (4, via 6) and T30 (15); T18 needs T12 (6); T29 needs T04 (2, via 6). Lesson 13 helps: the fifth as a harmonic           |
+| 22 Vibrato                                | 14         | S19 needs S17 (14) and S06 (5, via 14)                                                                                                 |
+| 23 Perfect, major, minor and the tritone  | 6          | T13 needs T12                                                                                                                          |
+| 24 Harmony against a drone                | 5, 10, 23  | S20a needs S06 (5), T14 (10) and T13 (23)                                                                                              |
+| 25 Minor, properly                        | 10, 21, 23 | T15b needs T15a (10), T17 (21) and T13 (23)                                                                                            |
+| 26 A second voice                         | 12, 24     | S20b needs S20a (24), T19 (12) and T11 (6, via 24); T23 needs T20 (12)                                                                 |
+| 27 Seventh chords and inversions          | 12, 23     | T24 needs T19 (12) and T13 (23); T25 needs T19. Lesson 15 helps: inversions are read on the staff                                      |
+| 28 Cadences, form and a song in two parts | 18, 26     | T22 needs T20 (12, via 26) and T06 (8, via 18); T31 needs T22; the two-part song needs S11b (18) and S20b (26). Lessons 14 and 27 help |
 
 The recall rule carries over (CURRICULUM § 3.3): a recall check asking about a prerequisite shows to
 everyone; one asking about a lesson that only helps shows once that lesson is marked done. Most
@@ -806,22 +806,22 @@ Season 2 recalls can ask Season 1 lessons, which also tells a newcomer what the 
 What each lesson can open on main today, and what it waits for. "Data" is a registry line or a bank
 entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's eight.
 
-| Lesson | Opens today                                                          | Waits for                                                                                      |
-| ------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox          | Note-reading drill (item 9, code)                                                              |
-| 16     | Sight-Singing, with its limits said                                  | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
-| 17     | Ear Lab: The Chart, Pulse                                            | `ear-drill` and its subset (item 12, code then data)                                           |
-| 18     | Sight-Singing (pitch only), The Chart                                | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                     |
-| 19     | Ear Lab: Subdivide, Pulse                                            | `ear-drill` subset, 3/4 against 6/8 (item 12)                                                  |
-| 20     | Scale Runner, Pentatonic; Staccato Precision                         | Scale-type launch field and minor pentatonic (item 13, code), then a beginner slug (data)      |
-| 21     | Singing tab key picker and sheet view; Ear Lab: Home                 | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)   |
-| 22     | Voice Mirror's hold                                                  | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                       |
-| 23     | Ear Lab: Leap                                                        | `perfect-intervals` slug (item 16, data); `ear-drill` subset (item 12)                          |
-| 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Drone slug for fifth, third and octave (item 15, data); a pure-tuning option (item 15, code)   |
-| 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor           | Harmonic and melodic minor in Scale Runner (item 13, code)                                     |
-| 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds  | Harmony-line drill (item 17, code)                                                             |
-| 27     | Chord Stacker; Ear Lab: Stack                                        | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                   |
-| 28     | Karaoke Night; Jam's Harmony Stack; Ear Lab: Cadence                 | Cadence-type drill (item 19, data and code); harmony-line drill (item 17)                       |
+| Lesson | Opens today                                                           | Waits for                                                                                                           |
+| ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Note-reading drill (item 9, code)                                                                                   |
+| 16     | Sight-Singing, with its limits said                                   | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
+| 17     | Ear Lab: The Chart, Pulse                                             | `ear-drill` and its subset (item 12, code then data)                                                                |
+| 18     | Sight-Singing (pitch only), The Chart                                 | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                                         |
+| 19     | Ear Lab: Subdivide, Pulse                                             | `ear-drill` subset, 3/4 against 6/8 (item 12)                                                                       |
+| 20     | Scale Runner, Pentatonic; Staccato Precision                          | Scale-type launch field and minor pentatonic (item 13, code), then a beginner slug (data)                           |
+| 21     | Singing tab key picker and sheet view; Ear Lab: Home                  | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)                       |
+| 22     | Voice Mirror's hold                                                   | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                                           |
+| 23     | Ear Lab: Leap                                                         | `perfect-intervals` slug (item 16, data); `ear-drill` subset (item 12)                                              |
+| 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Drone slug for fifth, third and octave (item 15, data); a pure-tuning option (item 15, code)                        |
+| 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor            | Harmonic and melodic minor in Scale Runner (item 13, code)                                                          |
+| 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
+| 27     | Chord Stacker; Ear Lab: Stack                                         | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                                       |
+| 28     | Karaoke Night; Jam's Harmony Stack; Ear Lab: Cadence                  | Cadence-type drill (item 19, data and code); harmony-line drill (item 17)                                           |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -1013,27 +1013,27 @@ lines, which a 1080p encode may soften, and no Season 1 film had to show them.
   Move to 4K only if the difference shows and a GPU render host is in place; a 4K master would still
   composite the 1080p Merc passes until they are re-rendered.
 
-## 7. Decisions the owner needs to make
+## 7. The owner's decisions
 
-In MASTER-PLAN § 12's style: each item proposed, with a recommendation and its reason. When the
-owner answers, the item is marked decided here and, where it changes them, in MASTER-PLAN § 12 and
-CURRICULUM.
+In MASTER-PLAN § 12's style: each item was proposed with a recommendation and its reason. The owner
+took every recommendation on 1 November 2026 ("as for season 2 yes recommended sounds great"), so each
+item is decided as recommended, here and, where it changes them, in MASTER-PLAN § 12 and CURRICULUM.
 
-1. **Proposed: number on, Lessons 15 to 28 at `/learn/15` to `/learn/28`.** Recommended: global
+1. **Decided (1 November 2026): number on, Lessons 15 to 28 at `/learn/15` to `/learn/28`.** As recommended: global
    numbers, with "Season 2 · Lesson 15" in the masthead. Reason: everything already keys on one
    number: the done list (`src/lib/lesson-done.ts:17-24`), the `?lesson=NN` marker, the lesson-answer
    events, the page route, which takes any two digits (`src/lesson-gate.ts:128`), and the kit's
    lessons, indexed by number (`season.ts:109`). Cross-season prerequisites (Lesson 16 needs Lesson 9)
    are then plain edges. Numbering each season from 1 would need a season key in every one of those,
    and two lessons called "Lesson 1". The cost of numbering on is small and listed (§ 5 item 21).
-2. **Proposed: treble and bass clef, each learner reading in their own.** Recommended: both, from
+2. **Decided (1 November 2026): treble and bass clef, each learner reading in their own.** As recommended: both, from
    Lesson 15; the grand staff once; the octave treble clef tenors read named once in Go deeper.
    Reason: a treble-only season would leave lower voices reading below the staff: the app's baritone
    range, G2 to G4 (`src/stores/settings-store.ts:132-136`), starts six ledger lines below the treble
    staff. The app already writes a low melody in the bass clef (`src/lib/sheet-music-renderer.ts:175-183`),
    and Merc's demonstrations sit low. The cost: Sight-Singing needs a bass clef (§ 5 item 10c). The
    octave treble convention itself is to check in a theory text before it is said.
-3. **Proposed: count with numbers.** Recommended: "1 and 2 and" for eighths, "1 e and a" for
+3. **Decided (1 November 2026): count with numbers.** As recommended: "1 and 2 and" for eighths, "1 e and a" for
    sixteenths, "1 trip-let" for triplets, "1 and a, 2 and a" for 6/8, with Takadimi (Hoffman, Pelto &
    White 1996, Journal of Music Theory Pedagogy 10, 7-30) named once in Go deeper. Reason: it carries
    on Lesson 8's counting, needs no new syllables, and tells duple from triple division; the evidence
@@ -1041,22 +1041,22 @@ CURRICULUM.
    duple against triple helped recognition, pedagogy-research.md:534-538, Weak to Moderate), so the
    choice rests on continuity. The counts themselves are to check against a standard text before a
    script uses them; a 2024 dissertation comparing systems was found and not read.
-4. **Proposed: American note-value names lead.** Recommended: quarter, eighth, half and whole lead,
+4. **Decided (1 November 2026): American note-value names lead.** As recommended: quarter, eighth, half and whole lead,
    with crotchet, quaver, minim and semibreve named once per lesson that introduces them. Reason: the
    American names say the fraction, which is Lesson 17's point and its hook; the app's labels use
    them ("3 quarters", `src/lib/ear/banks.ts:218`); MASTER-PLAN § 12 item 5 allows American wording
    case by case, as "half step" already is.
-5. **Proposed: how much Season 1 is assumed.** Recommended: no recap film. Each lesson's
+5. **Decided (1 November 2026): how much Season 1 is assumed.** As recommended: no recap film. Each lesson's
    prerequisite chips name the Season 1 lessons it needs (§ 4.3), the recall asks Season 1 questions,
    cold opens stand alone, and Lesson 15 needs only Lesson 2. The hub's Season 2 section says, in
    one line, which three Season 1 lessons a newcomer should watch first (1, 2 and 4). Reason:
    YouTube viewers arrive at any lesson, and the explorer already handles it.
-6. **Proposed: release cadence.** Recommended: the Season 2 trailer and Lessons 15 and 16 together,
+6. **Decided (1 November 2026): release cadence.** As recommended: the Season 2 trailer and Lessons 15 and 16 together,
    then a fixed weekly day, as Season 1 does (MASTER-PLAN.md:133); a voice lesson only after the coach
    signs off; pages may go out before their films, as Season 1's have. Reason: the opening pair shows
    both tracks, and the weekly day keeps the chain of hooks intact. Because Lesson 16 waits on
    Sight-Singing work, the release date follows Lesson 16, not Lesson 15 (§ 8.2).
-7. **Proposed: mixed voice gets no Season 2 lesson.** Recommended: Season 3, beside style and vocal
+7. **Decided (1 November 2026): mixed voice gets no Season 2 lesson.** As recommended: Season 3, beside style and vocal
    qualities (S21), with its own topic ID only if it gets its own lesson. Reason: Season 2 is about
    reading and harmony, and mix belongs with belt, twang and the other qualities; the science is not
    settled, with Henrich (2006) placing "belting" and voix mixte in the first mechanism or between
@@ -1064,46 +1064,46 @@ CURRICULUM.
    Herbst & Elemans (2025) discussing "mixing" or "blending" (Phil Trans R Soc B 380, 20240006, § 3);
    the app does not detect registers (CURRICULUM, Lesson 11's card); and Lesson 11 dropped "mix" for
    that reason (HANDOFF § 4.5). It would also need the coach more than any other lesson.
-8. **Proposed: Season 2 ends as Season 1 does.** Recommended: Lesson 28 closes on its own answer and
+8. **Decided (1 November 2026): Season 2 ends as Season 1 does.** As recommended: Lesson 28 closes on its own answer and
    teases nothing, unless Season 3 is committed by the time its script is written (CURIOSITY-MOMENTS
    § 5 item 4). Reason: a tease for an uncommitted season is a loop never paid.
-9. **Proposed: a Season 2 trailer, with no lesson number.** Recommended: a 2 to 3 minute trailer on
+9. **Decided (1 November 2026): a Season 2 trailer, with no lesson number.** As recommended: a 2 to 3 minute trailer on
    the hub, outside the numbered lessons, since lesson 0 is Season 1's trailer and the kit indexes
    lessons by number (`season.ts:109`). Reason: Lesson 14 teases nothing, so a Season 1 viewer learns
    of Season 2 from the trailer and the hub.
-10. **Proposed: the hosts' sung parts in the harmony lessons.** Recommended: synthesised examples
+10. **Decided (1 November 2026): the hosts' sung parts in the harmony lessons.** As recommended: synthesised examples
     throughout; the learner as the second voice in every checkpoint; Merc lower, Tavi upper (a tenth,
     labelled) in the films' character moments; the final sung cast decided before Arc D's scripts
     (§ 6.3). Reason: it keeps Arc C off the decision's path and every example at exact pitch.
-11. **Proposed: 1080p60, with a 4K test.** As § 6.4. Reason: 4K's cost is known and large, and its
+11. **Decided (1 November 2026): 1080p60, with a 4K test.** As § 6.4. Reason: 4K's cost is known and large, and its
     benefit for thin staff lines is a guess until tested.
-12. **Proposed: diction (S15) is Season 3.** Recommended: correct CURRICULUM § 3.2's "Season 2" to 3,
+12. **Decided (1 November 2026): diction (S15) is Season 3.** As recommended: correct CURRICULUM § 3.2's "Season 2" to 3,
     matching § 5. Reason: Season 2 has no room for it, and diction sits with style.
-13. **Proposed: reading stops at three sharps and three flats.** Recommended as in § 1.1. Reason: a
+13. **Decided (1 November 2026): reading stops at three sharps and three flats.** As recommended in § 1.1. Reason: a
     beginner meets each signature several times; the circle still shows all twelve.
 
 ## 8. Risks and a production order
 
 ### 8.1 Risks
 
-| #   | Risk                                                                                                                                                                 | What this plan does                                                                                                                                                      |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | The staff takes over and the season turns symbol-first                                                                                                               | Every staff idea after its sound, in the same lesson; every staff example plays; the pitch-line toggle (§ 1.4 item 1). Script critics check it                            |
-| 2   | Sight-Singing contradicts the lessons: no do, sharps only, no key signature, letter names, treble only, written octave, no rhythm (§ 5 item 10)                       | Its cards say what it does; it is not linked for flat keys or as a timed drill until items 10 and 11 ship; Lessons 16 and 18 come after them in the order below           |
-| 3   | Page audio bleeds into the microphone in harmony checkpoints (`src/lib/mic-manager.ts:47-56`)                                                                         | Headphones or turns (§ 6.2 item 7); tested in the labs before checkpoints are written                                                                                    |
-| 4   | Vibrato: health claims, pressure to produce one, and the app's three voices on it (Vibrato, Long Note, Voice Mirror)                                                  | Lesson 22 asks for none and scores none; item 14 before the drill is linked; the coach signs off every line                                                              |
-| 5   | Pure and equal-tempered tuning: a just third scores about 79 in Drone Intonation                                                                                      | A generous band on the page; the card says what the drill scores against; a pure option (item 15)                                                                       |
-| 6   | The second singing voice: rights and cast unsettled                                                                                                                   | Synthesised examples, the learner as second voice, the cast decided before Arc D (§ 6.3, § 7 item 10)                                                                    |
-| 7   | The coach is the critical path again: seven voice lessons (16, 18, 20, 22, 24, 26, 28)                                                                                | Theory lessons are written ahead; voice lessons go to the coach in batches (§ 8.2)                                                                                       |
-| 8   | The kit is Season 1's, and every page carries the season's data, so first paint grows (HANDOFF § 5)                                                                   | A season structure and a per-season data module in the first Season 2 PR (§ 6.2 item 1)                                                                                  |
-| 9   | Do-based minor and relative keys confuse: A minor shares C major's signature, but do moves to A                                                                       | Lesson 25 says it in words and shows the house moving; the app's sheet view uses the relative major's signature for minor, which matches (`sheet-music-renderer.ts:159-170`) |
-| 10  | Long lessons: 15, 21 and 28 press on the 10 minute cap                                                                                                                | Each card names what moves to Go deeper                                                                                                                                  |
-| 11  | Repertoire rights: a 6/8 song, a two-part song                                                                                                                         | Traditional tunes only in new arrangements, after a rights check; Lesson 28's song written for the lesson                                                                 |
-| 12  | Citations drift as the app changes                                                                                                                                     | `pnpm plan:cites:check` on every package (HANDOFF § 4.6)                                                                                                                 |
-| 13  | A title, tease, promise, share card or thumbnail gives the predict's answer away (HANDOFF § 5)                                                                       | The drafts here were written to that test (§ 2); every review checks each of those lines against the predict                                                            |
-| 14  | The explorer at 28 lessons and two trailers is crowded on a phone                                                                                                      | A tab per season (§ 6.2 item 1); app-check at phone width                                                                                                                 |
-| 15  | Several Season 2 sources were read only to the abstract (Mishra 2014, Henry 2004, Mitchell & Kenny 2010, Bretos & Sundberg 2003, D'Amario et al. 2018) or not at all (Shonle & Horan 1980, Nix 2014, Savage et al. 2015) | Each lesson's FACTS reads them in full before a number from them reaches a script, as Season 1's did                                                                     |
-| 16  | The app's own copy contradicts a lesson, as "Sad and introspective" for natural minor (`src/lib/scale-data.ts:88`) would Lesson 10's and 25's point                  | Checked where it is shown, and fixed in the app content track before Lesson 25 links the scale                                                                           |
+| #   | Risk                                                                                                                                                                                                                     | What this plan does                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The staff takes over and the season turns symbol-first                                                                                                                                                                   | Every staff idea after its sound, in the same lesson; every staff example plays; the pitch-line toggle (§ 1.4 item 1). Script critics check it                               |
+| 2   | Sight-Singing contradicts the lessons: no do, sharps only, no key signature, letter names, treble only, written octave, no rhythm (§ 5 item 10)                                                                          | Its cards say what it does; it is not linked for flat keys or as a timed drill until items 10 and 11 ship; Lessons 16 and 18 come after them in the order below              |
+| 3   | Page audio bleeds into the microphone in harmony checkpoints (`src/lib/mic-manager.ts:47-56`)                                                                                                                            | Headphones or turns (§ 6.2 item 7); tested in the labs before checkpoints are written                                                                                        |
+| 4   | Vibrato: health claims, pressure to produce one, and the app's three voices on it (Vibrato, Long Note, Voice Mirror)                                                                                                     | Lesson 22 asks for none and scores none; item 14 before the drill is linked; the coach signs off every line                                                                  |
+| 5   | Pure and equal-tempered tuning: a just third scores about 79 in Drone Intonation                                                                                                                                         | A generous band on the page; the card says what the drill scores against; a pure option (item 15)                                                                            |
+| 6   | The second singing voice: rights and cast unsettled                                                                                                                                                                      | Synthesised examples, the learner as second voice, the cast decided before Arc D (§ 6.3, § 7 item 10)                                                                        |
+| 7   | The coach is the critical path again: seven voice lessons (16, 18, 20, 22, 24, 26, 28)                                                                                                                                   | Theory lessons are written ahead; voice lessons go to the coach in batches (§ 8.2)                                                                                           |
+| 8   | The kit is Season 1's, and every page carries the season's data, so first paint grows (HANDOFF § 5)                                                                                                                      | A season structure and a per-season data module in the first Season 2 PR (§ 6.2 item 1)                                                                                      |
+| 9   | Do-based minor and relative keys confuse: A minor shares C major's signature, but do moves to A                                                                                                                          | Lesson 25 says it in words and shows the house moving; the app's sheet view uses the relative major's signature for minor, which matches (`sheet-music-renderer.ts:159-170`) |
+| 10  | Long lessons: 15, 21 and 28 run longest (the cap is 20 minutes since 1 November 2026)                                                                                                                                    | Each card names what moves to Go deeper                                                                                                                                      |
+| 11  | Repertoire rights: a 6/8 song, a two-part song                                                                                                                                                                           | Traditional tunes only in new arrangements, after a rights check; Lesson 28's song written for the lesson                                                                    |
+| 12  | Citations drift as the app changes                                                                                                                                                                                       | `pnpm plan:cites:check` on every package (HANDOFF § 4.6)                                                                                                                     |
+| 13  | A title, tease, promise, share card or thumbnail gives the predict's answer away (HANDOFF § 5)                                                                                                                           | The drafts here were written to that test (§ 2); every review checks each of those lines against the predict                                                                 |
+| 14  | The explorer at 28 lessons and two trailers is crowded on a phone                                                                                                                                                        | A tab per season (§ 6.2 item 1); app-check at phone width                                                                                                                    |
+| 15  | Several Season 2 sources were read only to the abstract (Mishra 2014, Henry 2004, Mitchell & Kenny 2010, Bretos & Sundberg 2003, D'Amario et al. 2018) or not at all (Shonle & Horan 1980, Nix 2014, Savage et al. 2015) | Each lesson's FACTS reads them in full before a number from them reaches a script, as Season 1's did                                                                         |
+| 16  | The app's own copy contradicts a lesson, as "Sad and introspective" for natural minor (`src/lib/scale-data.ts:88`) would Lesson 10's and 25's point                                                                      | Checked where it is shown, and fixed in the app content track before Lesson 25 links the scale                                                                               |
 
 ### 8.2 Production order
 

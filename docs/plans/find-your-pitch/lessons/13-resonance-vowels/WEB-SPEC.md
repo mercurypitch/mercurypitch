@@ -724,7 +724,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   - The Sing room's premium rooms, which `PREMIUM_EXERCISES` gates
     (`src/lib/native-build.ts:58-68`).
 - **Needed, proposed: "Long Note on vowels"** (CURRICULUM § 2.1's Practise line; § 4, "vowels"
-  among the gaps with no drill, `CURRICULUM.md:522-524`): needs 12. When it ships, LESSON.md's
+  among the gaps with no drill, `CURRICULUM.md:527-529`): needs 12. When it ships, LESSON.md's
   editorial note gives the change: the card names it, and its address replaces Voice Mirror's.
 
 ## Explorer and season data
