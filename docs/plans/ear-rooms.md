@@ -1,9 +1,9 @@
 # Ear rooms — Merc-led ear training in the native app
 
-**Status:** in progress. Two rooms are built and on TestFlight: **Home note** (Room 1) and **First
-note** (Room 2). The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
+**Status:** in progress. Three rooms are built: **Home note** (Room 1) and **First note** (Room 2),
+on TestFlight, and **Leap** (Room 3, 1 Nov 2026), drawn in vector until its painting comes. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
-way on to the Karaoke room, and gives Home note its painted harbour. Neither room has a demo yet. Rooms 3 and 4 are proposals. The owner's design
+way on to the Karaoke room, and gives Home note its painted harbour. No room has a demo yet. Room 4 is a proposal. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -302,23 +302,50 @@ room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the na
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1
   flip, which brings the free taste with it: three runs per room, then the paywall.
 
-## Rooms 3 and 4 (proposals)
+## Room 3: Leap
 
-Both turn an Ear Lab drill into a voice room for the same subscriber.
+**The skill.** Hearing how far the next note is from this one: a leap, which every melody asks of a
+singer, from a fourth that opens a wedding march to an octave. It is the Ear Lab's Leap drill, sung
+instead of tapped, and the practice partner for lesson 9, "Landing a leap".
 
-1. **Leap** (from the bench's Leap). Merc sings one note and names a leap with a public-domain song
-   that opens on it (Here Comes the Bride for a fourth, Twinkle, Twinkle for a fifth, My Bonnie for
-   a sixth); the singer sings Merc's note, then the second. Each note is a ledge on a cliff, the
-   target faint at its height. It is the practice partner for lesson 9, "Landing a leap", whose
-   Practise card would open it. Its mock-ups are redrawn in the rooms' current light, for the
-   owner's approval (1 Nov 2026): [Leap Native Room](https://claude.ai/artifact/DmZT3GvguZFkPEFqbTSLCV).
-   The kit's chip with the leap as a warm lamp under it, Merc's line in the room's glass bubble, a
-   lantern on the high ledge whose beam becomes the line once the leap lands, Merc singing both
-   notes after a miss, and at the result each leap with its song and a lamp per try, a tap playing
-   it again as Home note's keys do. The levels on it are a proposal.
-2. **Harmony** (new). Merc sings a short line; the singer sings a third above it. Duets are what
-   karaoke apps sell, and the trail makes the target visible. Merc sings while the singer does, so
-   it needs headphones and a judge that follows two voices: prototype it on phones first.
+**The task.** Merc stands on a ledge at his note's height and names the leap ("Up a fifth: the leap
+that opens Twinkle, Twinkle"). He sings his note; at Learning, the target too. The singer sings his
+note, then leaps to the far ledge: the voice draws its trail from his line (teal) to the target's
+(gold), and lands when it holds in the band of light there for the level's land time. The lantern on
+the far ledge warms while the voice holds and lights when it lands; its beam becomes the line. After
+a miss, Merc sings both notes, his line drawn as he sings. A run is six leaps, each in the singer's
+own range; a voice that goes straight to the target without his note has still found it by ear, and
+lands. Never folded to an octave: a fourth down is a fifth up an octave away.
+
+**Levels**, approved with the mock-ups (owner, 1 Nov 2026,
+[Leap Native Room](https://claude.ai/artifact/DmZT3GvguZFkPEFqbTSLCV)):
+
+| Level        | Leaps                             | Merc gives                        | Band      |
+| ------------ | --------------------------------- | --------------------------------- | --------- |
+| Learning     | Fourths and fifths up             | Both notes, and the song          | ±50 cents |
+| Singer       | Fourths, fifths and sixths up     | His note, and the song            | ±35 cents |
+| Professional | Thirds to the octave, up and down | His note, and the interval's name | ±25 cents |
+
+The songs, all public domain: Here Comes the Bride (a fourth), Twinkle, Twinkle, Little Star (a
+fifth), My Bonnie Lies over the Ocean (a sixth). "Hear Merc again" is offered at any time at
+Learning, once a leap at Singer, and never at Professional.
+
+**The result.** Leaps landed out of six, and the mean time from Merc's note to the target ("Landed in
+0.6 s on average"). Under them, each leap the run asked for, with its song and a lamp a try; a tap on
+a row plays that leap again. The best is kept per level (`mp_leap_bests`, this device only for now);
+a run with no voice keeps nothing.
+
+**Built from.** The room kit, the sequence engine as a two-note phrase in free time (Echo's), and
+Merc's sampled voice, which the native screen hands in. `src/features/leap/`.
+
+**Next.** The painting (two cliffs at night, the lantern on the far ledge), as the harbour's was. Lesson
+9's Practise card opening the room, once the lessons reach the native app. A demo.
+
+## Room 4 (proposal)
+
+**Harmony** (new). Merc sings a short line; the singer sings a third above it. Duets are what karaoke
+apps sell, and the trail makes the target visible. Merc sings while the singer does, so it needs
+headphones and a judge that follows two voices: prototype it on phones first.
 
 ## How they earn
 

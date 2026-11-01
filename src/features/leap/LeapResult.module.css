@@ -1,0 +1,209 @@
+/* Leap's lamp under the chip and its result's rows, in the lighthouse's
+   warm light Home note's lamps have (the Leap mock-ups, approved 1 Nov). */
+
+/* The leap being sung: an outline while it is called and sung, lit once
+   it lands, a dashed ring once it is missed. */
+.lamp {
+  margin: 10px 0 0;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid rgb(240 199 94 / 55%);
+  background: rgb(10 18 44 / 55%);
+  color: #f0c75e;
+  font: 700 13px/1 var(--font-body, sans-serif);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.lamp[data-lamp='landed'] {
+  border-color: #f0c75e;
+  background: #f0c75e;
+  box-shadow: 0 0 18px rgb(240 199 94 / 70%);
+  color: #1a1405;
+}
+
+.lamp[data-lamp='missed'] {
+  border: 1.5px dashed rgb(240 199 94 / 60%);
+}
+
+/* The result: the numbers, the level, then the leaps' card. */
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.levelNote {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+}
+
+/* Wider than the head's own column, centred on it, as Home note's keys.
+   Six leaps at Professional, each its own row, scroll inside it on a
+   short phone rather than run under Merc. */
+.card {
+  width: min(342px, calc(100vw - 32px));
+  max-height: 46dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-top: 14px;
+  box-sizing: border-box;
+  padding: 10px 8px 8px;
+  border-radius: 20px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  background: rgb(12 16 40 / 74%);
+  text-align: left;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 8px 8px;
+}
+
+.cardTitle {
+  margin: 0;
+  font: 600 13px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aab3c5;
+}
+
+.cardHint {
+  font: 500 13px/16px var(--font-body, sans-serif);
+  color: #aab3c5;
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid rgb(230 237 243 / 8%);
+  background: rgb(230 237 243 / 4%);
+  color: #f2f4f8;
+  text-align: left;
+  font-family: var(--font-body, sans-serif);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+/* A leap with no song (down, or Professional's) is one line. */
+.row[data-song='none'] {
+  min-height: 44px;
+}
+
+/* The leap heard again now. */
+.row[data-playing='true'] {
+  border-color: rgb(240 199 94 / 70%);
+  background: rgb(240 199 94 / 6%);
+  box-shadow: 0 0 16px rgb(240 199 94 / 30%);
+}
+
+.row:focus-visible {
+  outline: 2px solid #f0c75e;
+  outline-offset: 2px;
+}
+
+.rowText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rowName {
+  font: 600 15px/1.2 var(--font-body, sans-serif);
+}
+
+.rowSong {
+  font: 500 13px/1.2 var(--font-body, sans-serif);
+  color: #b3bcc8;
+}
+
+.tries {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+
+.try {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #f0c75e;
+  box-shadow: 0 0 10px rgb(240 199 94 / 75%);
+}
+
+.try[data-landed='false'] {
+  border: 1.5px dashed #8d97a3;
+  background: none;
+  box-shadow: none;
+}
+
+.count {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  font: 600 13px/1 var(--font-body, sans-serif);
+  color: #d5dbe3;
+}
+
+.count[data-all='true'] {
+  color: #f0c75e;
+}
+
+/* A short phone (360 x 640, 375 x 667): the card closer in. */
+@media (max-height: 700px) {
+  .lamp {
+    margin-top: 6px;
+  }
+
+  .card {
+    margin-top: 8px;
+    padding-top: 6px;
+  }
+
+  .row {
+    min-height: 48px;
+  }
+
+  .row[data-song='none'] {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp,
+  .row {
+    transition: none;
+  }
+}

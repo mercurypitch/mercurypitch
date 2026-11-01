@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -86,6 +86,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       "After a song's intro, the hardest note is the first one: there is nobody singing it yet. The band leads in and its last four beats count you down. When it stops, sing the note the singer would sing, in any octave.",
       'Your first steady note is your entry, heard by ear alone. Then the line shows where the note is, and your voice draws a line of its own: hold it in the band of light and the song carries on with its singer back in, with you. Miss it, and Merc sings it before the singer comes in. A run is six entries from three songs.',
       'Your Accuracy Tier sets when the line shows and how close you need to be. At Learning, it shows from the start. At Singer, once you have come in. At Professional, only when you land. The big number is how many entries you came in on the note; under it, how many you found.',
+    ],
+  },
+  [EXERCISE_LEAP_CLIFFS]: {
+    summary:
+      'Merc names a leap and sings its first note. Sing it, then leap to the second.',
+    body: [
+      'Every melody leaps: from one note to the next, a little or a lot. Merc stands on a ledge at his note and names the leap, with the song that opens on it. Sing his note, then leap to the far ledge.',
+      'Your voice draws a line from his note to the next. Hold it in the band of light at the far ledge and the lantern lights. Miss it, and Merc sings both notes so you hear how far it was. A run is six leaps, each in your own range.',
+      'Your Accuracy Tier sets the leaps and how close you need to be. At Learning, fourths and fifths up, and Merc sings both notes first. At Singer, sixths too, and you find the second note yourself. At Professional, thirds to the octave, up and down, named by the interval alone. The big number is how many leaps you landed; under it, how quickly.',
     ],
   },
   [EXERCISE_VIBRATO]: {

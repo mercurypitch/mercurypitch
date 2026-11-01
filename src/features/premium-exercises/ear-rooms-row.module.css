@@ -50,7 +50,8 @@
 }
 
 /* Each room's own light: the harbour's sea for Home note, the stage's
-   for First note, violet for any room still to come. */
+   for First note, the lantern's for Leap, violet for any room still to
+   come. */
 .card {
   --room-a: 154 135 240;
   --room-b: 93 140 255;
@@ -87,6 +88,13 @@
 
 .card[data-exercise='first-note-stage'] {
   --room-a: 222 140 240;
+  --room-b: 154 135 240;
+}
+
+/* Leap's lantern on its cliff: the lamp's warm gold over the night's
+   violet. */
+.card[data-exercise='leap-cliffs'] {
+  --room-a: 240 199 94;
   --room-b: 154 135 240;
 }
 

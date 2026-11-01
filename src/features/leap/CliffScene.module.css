@@ -1,0 +1,267 @@
+/* Leap's world: the cliffs at night (CliffScene.tsx). Every colour of the
+   drawing is a stand-in's flat colour until the painting comes; the lines,
+   the band, the trail and the lantern are the exercise and keep their look
+   over either. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #050816;
+  isolation: isolate;
+}
+
+.backdrop,
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.star {
+  fill: #e8ecff;
+  opacity: 0.75;
+}
+
+.moon {
+  fill: #f1ecff;
+}
+
+.ridgeFar {
+  fill: #1f2250;
+}
+
+.ridgeRim {
+  fill: none;
+  stroke: rgb(106 108 174 / 32%);
+  stroke-width: 1.2;
+}
+
+.ridgeNear {
+  fill: #141734;
+}
+
+.crack {
+  fill: none;
+  stroke: #090a1e;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+/* A cliff's top, its ledge: lit warm on the far cliff once the leap lands. */
+.ledge {
+  fill: none;
+  stroke: #4c5190;
+  stroke-width: 2;
+  transition: stroke 260ms ease;
+}
+
+.lit .farLedge {
+  stroke: #f0c75e;
+}
+
+.post {
+  fill: #2a2d58;
+}
+
+/* The lantern's glass: dark at rest, warm while the voice holds the
+   target, lit once the leap lands. */
+.lanternGlass {
+  fill: #33355f;
+  stroke: #585b92;
+  stroke-width: 1.2;
+  transition:
+    fill 220ms ease,
+    stroke 220ms ease;
+}
+
+.warm .lanternGlass {
+  fill: #c9a85e;
+  stroke: #e8cd88;
+}
+
+.lit .lanternGlass,
+.answering .lanternGlass {
+  fill: #fff0bd;
+  stroke: #ffe7a3;
+}
+
+/* Each cliff moves to its note's height with every new leap. */
+.mover {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The lantern's light. */
+.glow {
+  opacity: 0.12;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.warm .glow {
+  opacity: 0.55;
+}
+
+.lit .glow,
+.answering .glow {
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+/* The target's band: the level's tolerance around its line. Faint until
+   the singer's turn, warm while the voice is in it. */
+.band {
+  fill: #f0c75e;
+  opacity: 0.05;
+  transition: opacity 220ms ease;
+}
+
+.turn .band {
+  opacity: 0.12;
+}
+
+.warm .band,
+.lit .band {
+  opacity: 0.24;
+}
+
+/* The target's line: a faint dash while Merc calls, solid in the turn, the
+   lantern's beam once the leap lands. */
+.target {
+  stroke-width: 2;
+  stroke-dasharray: 6 8;
+  opacity: 0.5;
+  transition: opacity 220ms ease;
+}
+
+.turn .target,
+.answering .target {
+  stroke-dasharray: none;
+  opacity: 0.8;
+}
+
+.lit .target {
+  stroke-dasharray: none;
+  stroke-width: 3;
+  opacity: 1;
+}
+
+/* Merc's line: his note, teal, brighter while the voice sits on it. */
+.from {
+  stroke: #5ee9da;
+  stroke-width: 2;
+  opacity: 0.55;
+  transition: opacity 220ms ease;
+}
+
+.onFrom .from {
+  opacity: 1;
+}
+
+.fromName,
+.toName {
+  font: 600 13px/1 var(--font-body, sans-serif);
+}
+
+.fromName {
+  fill: #8ff0e4;
+}
+
+.toName {
+  fill: #f0c75e;
+}
+
+/* The voice's trail: teal on Merc's note, violet between, gold at the
+   target (the gradient runs from ledge to ledge). */
+.trail {
+  fill: none;
+  stroke: url(#leap-trail);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgb(167 139 250 / 60%));
+}
+
+.head {
+  fill: #f1ecff;
+  filter: drop-shadow(0 0 6px rgb(167 139 250 / 90%));
+}
+
+.warm .head {
+  fill: #fff8e1;
+}
+
+/* The hold: a ring round the head that fills to the land time while the
+   voice stays in the target's band. */
+.ring {
+  fill: none;
+  stroke: #f0c75e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+  opacity: 0;
+}
+
+.warm .ring {
+  opacity: 1;
+}
+
+/* Merc's answer after a miss: his line drawn as he sings both notes. */
+.answer {
+  fill: none;
+  stroke: #ffe7a3;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  opacity: 0;
+}
+
+.answering .answer {
+  opacity: 0.9;
+  animation: leap-answer 2s ease-out 0.1s forwards;
+}
+
+@keyframes leap-answer {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.still .mover,
+.still .glow,
+.still .band,
+.still .target,
+.still .from,
+.still .lanternGlass,
+.still .ledge {
+  transition: none;
+}
+
+.still.answering .answer {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mover,
+  .glow,
+  .band,
+  .target,
+  .from,
+  .lanternGlass,
+  .ledge {
+    transition: none;
+  }
+
+  .answering .answer {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

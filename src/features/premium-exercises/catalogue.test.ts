@@ -39,7 +39,7 @@ describe('the exercise catalogue', () => {
     ).toEqual([
       ['Pitch', ['Long note', 'Echo']],
       ['Warm-ups', ['Warm-up', 'Lip roll', 'Ng slides']],
-      ['Ear', ['Home note', 'First note']],
+      ['Ear', ['Home note', 'First note', 'Leap']],
     ])
   })
 

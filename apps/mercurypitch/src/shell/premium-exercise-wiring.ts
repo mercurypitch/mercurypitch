@@ -15,7 +15,7 @@
 // same way, by id (WarmUpScreen.tsx). Home note has no plates (its harbour
 // is drawn); its tap starts Merc's voice set loading, which it sings with.
 // First note's tap does the same: its theatre and its songs ship with the
-// app and load as the room opens.
+// app and load as the room opens. So does Leap's: its cliffs are drawn.
 //
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
@@ -25,7 +25,7 @@
 // draws no way in (assert-bundle.mjs STAGE 2 holds the output to it).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import type { PushedScreen } from './pushed-screen-ids'
@@ -43,6 +43,7 @@ const SCREENS: Readonly<Record<PremiumExerciseId, PushedScreen>> = {
   [EXERCISE_WARM_UP_PATH]: 'warm-up',
   [EXERCISE_HOME_NOTE_LIGHTHOUSE]: 'home-note',
   [EXERCISE_FIRST_NOTE_STAGE]: 'first-note',
+  [EXERCISE_LEAP_CLIFFS]: 'leap',
 }
 
 /**
@@ -83,6 +84,7 @@ export function preloadExercise(id: PremiumExerciseId): void {
       return
     case EXERCISE_HOME_NOTE_LIGHTHOUSE:
     case EXERCISE_FIRST_NOTE_STAGE:
+    case EXERCISE_LEAP_CLIFFS:
       void import('@/features/echo/merc-sampler').then((voice) => {
         void voice.preloadMercVoice()
       })

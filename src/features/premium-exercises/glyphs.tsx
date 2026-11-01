@@ -145,6 +145,23 @@ export const SpotlightGlyph: Component = () => (
   </svg>
 )
 
+/** Two ledges at two heights, and the leap's arc from the low one up. */
+export const LeapGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 18.5h6M15 9.5h6" />
+    <path d="M7 16.5C9 9 12.5 7 16.5 7.6" />
+    <path d="M14.4 5.4 16.6 7.6 14.4 9.8" />
+  </svg>
+)
+
 /** The running Legend: a calendar, as More's Together row draws it. */
 export const LegendGlyph: Component = () => (
   <svg

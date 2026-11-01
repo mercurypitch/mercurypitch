@@ -14,7 +14,8 @@
 // Each entry names its group, and the picker draws the groups under
 // headings in the Karaoke library's style: Pitch (Long note, Echo), then
 // Warm-ups (the Warm-up heading its group, then Lip roll and Ng slides),
-// then Ear (Home note and First note, the Ear rooms: docs/plans/ear-rooms.md).
+// then Ear (Home note, First note and Leap, the Ear rooms:
+// docs/plans/ear-rooms.md).
 // Catalogue order is the order the picker lists them, so a group's entries
 // sit together here, in its heading's order (catalogue.test.ts holds that).
 // There is no card for an exercise that is not built: a card that does
@@ -23,12 +24,13 @@
 import type { Component } from 'solid-js'
 import { longNoteEntry } from '@/features/long-note/long-note-entry'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import type { WeekDot } from '@/lib/warm-up-days'
 import { echoEntry } from './echo-entry'
 import { firstEntry } from './first-entry'
-import { BridgeGlyph, EchoGlyph, LanternGlyph, LighthouseGlyph, SpotlightGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
+import { BridgeGlyph, EchoGlyph, LanternGlyph, LeapGlyph, LighthouseGlyph, SpotlightGlyph, WarmUpGlyph, WaveGlyph, } from './glyphs'
 import { homeEntry } from './home-entry'
+import { leapEntry } from './leap-entry'
 import { lipEntry } from './lip-entry'
 import { ngEntry } from './ng-entry'
 import { warmEntry } from './warm-entry'
@@ -139,6 +141,15 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     Glyph: SpotlightGlyph,
     bestOnNote: false,
     ...firstEntry(),
+  },
+  {
+    id: EXERCISE_LEAP_CLIFFS,
+    name: 'Leap',
+    group: 'ear',
+    line: 'Merc sings a note and names a leap. Sing his note, then leap.',
+    Glyph: LeapGlyph,
+    bestOnNote: false,
+    ...leapEntry(),
   },
 ]
 

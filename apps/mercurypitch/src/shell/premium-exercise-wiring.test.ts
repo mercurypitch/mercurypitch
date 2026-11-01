@@ -187,6 +187,22 @@ describe('the shell in a build with the premium exercises', () => {
     ])
   })
 
+  it("pushes Leap for its id, and starts Merc's voice loading on the same tap", async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('leap-cliffs')
+
+    expect(pushed()).toBe('leap')
+    await vi.waitFor(() => {
+      expect(art.voice).toBe(1)
+    })
+    // Its cliffs are drawn: no room's plates load for it.
+    expect([art.preloads, art.ng, art.lip, art.long, art.warm]).toEqual([
+      0, 0, 0, 0, 0,
+    ])
+  })
+
   it("starts no other room's art", async () => {
     build.premium = true
     const api = installPremiumExercises()
