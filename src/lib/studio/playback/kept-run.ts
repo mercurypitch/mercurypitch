@@ -203,8 +203,9 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
     },
     /**
      * Start the kept run again from `from`, heard as soon as the clock
-     * allows, when its graph can play `project` on `ctx`. Null, with the run
-     * let go, when it cannot: Play builds a new one.
+     * allows and no sooner than `notBefore` (a count-in), when its graph can
+     * play `project` on `ctx`. Null, with the run let go, when it cannot:
+     * Play builds a new one.
      */
     take(
       ctx: AudioContext,
@@ -212,6 +213,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       assets: readonly StudioAsset[],
       from: number,
       settings: StudioLiveSettings,
+      notBefore = 0,
     ): StudioRun | null {
       if (
         !kept ||
@@ -228,7 +230,7 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
       const run = detach()!
       // On a whole frame, so its sources start on their samples (whole-frame.ts).
       const epoch = wholeFrameAtOrAfter(
-        Math.max(seekEarliest(ctx), settled),
+        Math.max(seekEarliest(ctx), settled, notBefore - run.latency),
         ctx.sampleRate,
       )
       if (!run.graph.resume(from, epoch, settings.repeat)) {

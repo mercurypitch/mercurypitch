@@ -21,6 +21,12 @@ export interface StudioTransportState {
   lanes: readonly StudioLaneLevel[]
 }
 
+/** Where a run sits on the clock: song frame `frame` leaves the graph at clock time `time`, and each later frame 1/48000 s after. */
+export interface StudioTransportAnchor {
+  readonly frame: number
+  readonly time: number
+}
+
 export interface StudioTransportOptions {
   lease: AudioContextLease
   readCanonicalAsset(id: string): Promise<Blob>

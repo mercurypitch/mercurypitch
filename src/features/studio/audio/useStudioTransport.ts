@@ -31,6 +31,12 @@ export interface UseStudioTransportOptions {
    * meanwhile either (lane-freezer.ts); rendering goes on once it is done.
    */
   audioBusy?: Accessor<boolean>
+  /**
+   * True while a take is armed, counting in or recording
+   * (src/features/studio/record). No lane renders ahead and no warm-up
+   * runs meanwhile, so nothing competes with the audio thread for the take.
+   */
+  recording?: Accessor<boolean>
 }
 
 export interface StudioPreviewOptions {
@@ -181,15 +187,16 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     return primedPreview
   }
 
-  async function play(): Promise<boolean> {
+  /** `notBefore`: the clock time the playhead's frame is heard no sooner than, for a count-in. */
+  async function play(notBefore = 0): Promise<boolean> {
     const project = options.project()
     const assets = options.assets()
     if (!project || disposed) return false
     options.beforePlay?.()
     stopPreview()
     setPreviewError(null)
-    freezer.resume()
-    return runtime.play(project, assets)
+    if (options.recording?.() !== true) freezer.resume()
+    return runtime.play(project, assets, undefined, notBefore)
   }
 
   function previewContext(blob: Blob, prepared = false): AudioContext {
@@ -324,7 +331,10 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     const assets = options.assets()
     clearTimeout(warmTimer)
     const released =
-      options.audioBusy?.() === true || previewing() || previewPending()
+      options.audioBusy?.() === true ||
+      options.recording?.() === true ||
+      previewing() ||
+      previewPending()
     if (!project || project.clips.length === 0 || isPlaying() || released)
       return
     const settle = warmedOnce ? 400 : 0
@@ -342,7 +352,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     const assets = options.assets()
     if (!project) return
     freezer.update(project, assets)
-    if (options.audioBusy?.() !== true) freezer.resume()
+    if (options.recording?.() === true) freezer.pause()
+    else if (options.audioBusy?.() !== true) freezer.resume()
   })
   onCleanup(() => clearTimeout(rewarmTimer))
 
@@ -434,6 +445,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     previewPending,
     previewPositionSeconds: () => preview?.player.currentTime ?? 0,
     play,
+    /** The heard run's place on the clock, or null while the song is silent. */
+    anchor: () => runtime.anchor(),
+    /** The clock the song plays on, once a press has made it. */
+    clock: () => lease.ensure(),
+    /** Make or resume the clock; call it inside the press. */
+    unlock: () => lease.unlock(),
     pause: () => runtime.pause(),
     stop() {
       stopPreview()
