@@ -475,6 +475,31 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the
   console publishes it, after the coach's sign-off and once `/learn/08`, the page its chip and its
   recall link to, is live.
+- Lesson 19: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/19-threes-offbeats/`](lessons/19-threes-offbeats/) (research, article plan, facts, copy
+  and page spec). Nothing on it is sung, so it waits on no vocal coach. No page is built yet: it
+  waits on Season 2's kit (seasons, the staff toy and rhythm on the staff past four-beat bars, with
+  6/8, 3/4, triplets and ties, SEASON-2 § 6.2 items 1 to 3; the tap take and the Ear Lab's woodblock
+  as Lesson 17's page moves them into the kit; a tour body for a page where nothing is sung, its
+  WEB-SPEC, What the kit and the app still need, item 13) and on the lesson plumbing for Lessons 15
+  to 28 (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, once `/learn/17`, the
+  page its chip and its recall link to, is live.
+- Lesson 21: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/21-keys-circle/`](lessons/21-keys-circle/) (research, article plan, facts, copy and page
+  spec). Its unscored sing-along waits on the vocal coach's look (§ 12 item 8). No page is built yet:
+  it waits on Season 2's kit (seasons, the staff toy with both clefs and key signatures, the
+  circle-of-fifths toy and Lesson 4's staircase moved into the kit, SEASON-2 § 6.2 items 1, 2 and 4)
+  and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the
+  console publishes it, after the coach's look and once `/learn/06` and `/learn/15`, the pages its
+  chips and its recall link to, are live.
+- Lesson 23: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/23-perfect-tritone/`](lessons/23-perfect-tritone/) (research, article plan, facts, copy
+  and page spec). Its unscored sing-along waits on the vocal coach's look (§ 12 item 8). No page is
+  built yet: it waits on Season 2's kit (seasons, and the staff toy with both clefs and the
+  pitch-line switch, SEASON-2 § 6.2 items 1 and 2, with a new interval state, Lesson 6's interval
+  pair and Lesson 12's sing flow moved into the kit) and on the lesson plumbing for Lessons 15 to 28
+  (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, after the coach's look and
+  once `/learn/06`, the page its chip and its recall link to, is live.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready

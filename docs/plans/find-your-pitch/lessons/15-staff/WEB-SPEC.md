@@ -529,7 +529,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
 
 - `n: 15`, `lane: 'theory'`, `title: 'The staff: where notes sit'`, `short: 'The staff'`, `topics:
 ['T30']`, with T30's name, "Staff notation: staff, clefs, ledger lines, grand staff", as SEASON-2
-  § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:719`); the hook word for word (FACTS 1).
+  § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:735`); the hook word for word (FACTS 1).
   `minutes: 15` and `page: '/learn/15'` once the page is built, under the drafts' comment in Lesson
   6's form (`src/features/lessons/kit/season.ts:270`): `// A draft until the vocal coach's look at
 Sing it (drafts.ts).` The entry decides nothing about being live: the draft list and the console do.

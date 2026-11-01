@@ -517,7 +517,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 6's 
 
 - `n: 23`, `lane: 'theory'`, `title: 'Perfect, major, minor and the tritone'`, `short: 'Interval
 quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, perfect; tritone;
-  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:727`); the hook word
+  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:743`); the hook word
   for word (FACTS 1). `minutes: 14` and `page: '/learn/23'` once the page is built, under the drafts'
   comment in Lesson 6's form (`src/features/lessons/kit/season.ts:270`), naming Lesson 6's page and
   the vocal coach's look. The entry decides nothing about being live: the draft list and the console
