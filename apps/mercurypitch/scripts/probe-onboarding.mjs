@@ -12,9 +12,9 @@
 // the layer, the voiceprint on it, and the anonymous identity is asked for
 // as it opens and not before (S7b E11); Keep's Not now brings the sung line
 // (beat 8): Merc's call, then the probe's voice on the singer's turn, and a
-// score the lane agrees with; its Continue opens the Cloud offer (beat 9)
-// over the layer, paywall B with no "stays free" line and Merc small by its
-// art, and the offer's Not now lands on the Warm-up's path (beat 10): it
+// score the lane agrees with; its Continue lands on the Warm-up's path
+// (beat 10), with no Cloud offer (beat 9), which opens only with the
+// store's price in hand and a browser has no store to give one: it
 // draws in, Merc hops beside its first stop, and the Sing room waits under
 // it until Back brings it up, live. Before all that, the alley's beat 1:
 // Merc on the cobbles, clear of every door, his hello, and the open doors
@@ -26,8 +26,8 @@
 // held out of the offer: Continue lands straight on the path), Keep's
 // "Find your range first" from Settings (the range on its own, Keep again,
 // the first note then ending on the range kept, and Not now on the line:
-// the Cloud offer, counted as Not now's, whose own Not now lands on the
-// alley), Not now on the first note (the same offer, then the alley), Back
+// the alley, with no offer to open), Not now on the first note (the alley
+// as well), Back
 // on an install held out of the offer (the alley at once), a refused
 // microphone, whose Continue without the mic lands on the path with no
 // offer, and Not now after a refusal (the alley, no offer, nothing asked;
@@ -1426,104 +1426,26 @@ async function singLine(page, kit, how) {
 }
 
 /**
- * Beat 9: the Cloud offer over the layer, as the import's gate opens it:
- * paywall B, its one Subscribe wide and centred, no "stays free" line, the
- * layer's own Not now aside under it, and the install marked as offered.
+ * Beat 9 opens only with the store's price in hand (onboarding-offer.ts),
+ * and a browser has no store to price the plan: no offer comes up, nothing
+ * is marked offered, and the layer goes on as one with nothing to offer.
+ * The offer itself, over the layer with Merc by its art, is the suites'
+ * (NativeOnboarding.offer.dom.test.tsx, with a stand-in store).
  */
-async function expectOffer(page, kit, how) {
-  await page
-    .locator(OFFER)
-    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
-    .catch(() => {
-      throw new Error(`${how}: no Cloud offer came up`)
-    })
-  await settleAnimations(page, OFFER)
+async function expectNoOffer(page, kit, how) {
+  await page.waitForTimeout(600)
   const seen = await page.evaluate(
-    ([offer, layer, notNow, shownKey]) => {
-      const sheet = document.querySelector(offer)
-      const buttons = [...(sheet?.querySelectorAll('button') ?? [])]
-      const subscribe = buttons.find(
-        (button) => button.textContent?.trim() === 'Subscribe',
-      )
-      const box = (element) => {
-        const r = element?.getBoundingClientRect()
-        return r === undefined
-          ? null
-          : {
-              left: Math.round(r.left),
-              right: Math.round(r.right),
-              width: Math.round(r.width),
-            }
-      }
-      let aside = false
-      for (let at = document.querySelector(notNow); at; at = at.parentElement) {
-        if (at.inert) aside = true
-      }
-      return {
-        beat: document.querySelector(layer)?.getAttribute('data-beat'),
-        paywall:
-          sheet !== null &&
-          sheet.querySelector('[data-testid="cloud-offer"]') !== null,
-        title: sheet?.querySelector('h2')?.textContent ?? null,
-        free: /stays free/iu.test(sheet?.textContent ?? ''),
-        notNow: buttons.some((b) => b.textContent?.trim() === 'Not now'),
-        subscribe: box(subscribe),
-        panel: box(sheet?.querySelector('[data-testid="cloud-offer"]')),
-        aside,
-        shown: localStorage.getItem(shownKey),
-        // Merc, small by the art (S7b beat 9): the layer's own, handed over.
-        guest: (() => {
-          const guest = sheet?.querySelector(
-            '[data-testid="cloud-offer-guest"]',
-          )
-          const merc = guest?.querySelector('[data-testid="onboarding-merc"]')
-          if (!guest || !merc) return null
-          let hidden = false
-          for (let at = guest; at; at = at.parentElement) {
-            if (at.getAttribute('aria-hidden') === 'true') hidden = true
-          }
-          const r = guest.getBoundingClientRect()
-          return {
-            hidden,
-            width: Math.round(r.width),
-            inside:
-              r.left >= 0 &&
-              r.top >= 0 &&
-              r.right <= window.innerWidth &&
-              r.bottom <= window.innerHeight,
-          }
-        })(),
-      }
-    },
-    [OFFER, LAYER, NOT_NOW, OFFER_SHOWN],
+    ([offer, shownKey]) => ({
+      offer: document.querySelector(offer) !== null,
+      shown: localStorage.getItem(shownKey),
+    }),
+    [OFFER, OFFER_SHOWN],
   )
-  const problems = []
-  if (seen.beat !== 'offer') problems.push(`the layer is on ${seen.beat}`)
-  if (!seen.paywall) problems.push('not paywall B')
-  if (seen.title !== 'Sing your own songs')
-    problems.push(`titled "${seen.title}"`)
-  if (seen.free) problems.push('it says what stays free')
-  if (!seen.notNow) problems.push('no Not now')
-  if (!seen.aside) problems.push("the layer's Not now is in reach")
-  if (seen.shown !== 'shown')
-    problems.push(`the install is marked ${seen.shown}`)
-  if (seen.guest === null) problems.push('Merc is not by the art')
-  else if (!seen.guest.hidden || !seen.guest.inside) {
-    problems.push(`Merc by the art ${JSON.stringify(seen.guest)}`)
+  if (seen.offer) throw new Error(`${how}: a Cloud offer came up with no price`)
+  if (seen.shown !== null) {
+    throw new Error(`${how}: the install is marked ${seen.shown}`)
   }
-  const sub = seen.subscribe
-  const panel = seen.panel
-  if (sub === null || panel === null) {
-    problems.push('no Subscribe')
-  } else {
-    const off = Math.abs(sub.left - panel.left - (panel.right - sub.right))
-    if (off > 2) problems.push(`Subscribe sits ${off} px off centre`)
-    if (sub.width < 0.7 * panel.width) {
-      problems.push(`Subscribe is ${sub.width} px of ${panel.width}`)
-    }
-  }
-  if (problems.length > 0) throw new Error(`${how}: ${problems.join('; ')}`)
-  return `paywall B over the layer, its Not now aside, Merc ${seen.guest.width} px by the art; Subscribe ${sub.width} of ${panel.width} px, centred; nothing about what stays free; the install marked offered`
+  return 'no Cloud offer (no store here to price the plan), nothing marked'
 }
 
 /**
@@ -1595,21 +1517,16 @@ async function walkRange(browser, args, frame, kit) {
     const sung = await singLine(page, kit, 'the line')
     await kit.shoot(page, shotsFor(args, frame), 'onboarding-line-result')
 
-    // ── Continue: the Cloud offer, beat 9, over the layer ─────
+    // ── Continue: no price here, so no beat 9; beat 10, the path ──
     await page.locator(CONTINUE).tap()
-    const offer = await expectOffer(page, kit, 'Continue on the line')
-    await expectSwap(page, kit, 'fade', 'Continue to the offer')
-    await kit.shoot(page, shotsFor(args, frame), 'onboarding-offer')
-
-    // ── The offer's Not now: beat 10, the Warm-up's path ──────
-    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
     const landing = await expectLanding(
       page,
       args,
       frame,
       kit,
-      "the offer's Not now",
+      'Continue on the line',
     )
+    const offer = await expectNoOffer(page, kit, 'Continue on the line')
     await expectRoomLive(page, kit, 'Back from the path')
     await expectGone(page, kit, 'Back from the path', 'transport')
     const counts = expectCounts(
@@ -1630,7 +1547,6 @@ async function walkRange(browser, args, frame, kit) {
         'native_onboarding_keep_not_now',
         'native_onboarding_line_view',
         'native_onboarding_line_complete',
-        'cloud_view_onboarding',
         'native_onboarding_done',
         'native_onboarding_path_view',
       ],
@@ -1659,7 +1575,7 @@ async function walkRange(browser, args, frame, kit) {
     )
     if (band === undefined) throw new Error('the counts: no band for the line')
     return [
-      `beat 1: ${welcome}; the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range by a View Transition: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal by a View Transition: ${card}, no identity asked for yet; Continue: Keep by a cross-fade, ${keep}; the anonymous identity asked for as it opened; Keep's Not now: the sung line by a View Transition, from MIDI ${sung.tonic}, "${sung.score}" (Merc: "${sung.said}"), the lane agreeing, the mic shut; Continue: ${offer}, by a cross-fade; its Not now: ${landing}, the room live under the transport, flag done; ${counts}, the line's band ${band.replace('native_onboarding_line_sung_', '')}; parked and back, not again`,
+      `beat 1: ${welcome}; the Sing door: up over the held room, rail aside; hello and the example; ${note} named ("${said}", tap ${tries}); Find my range by a View Transition: ${range.low} to ${range.high} from two slides, kept as a voiceprint; the reveal by a View Transition: ${card}, no identity asked for yet; Continue: Keep by a cross-fade, ${keep}; the anonymous identity asked for as it opened; Keep's Not now: the sung line by a View Transition, from MIDI ${sung.tonic}, "${sung.score}" (Merc: "${sung.said}"), the lane agreeing, the mic shut; Continue: ${offer}; ${landing}, the room live under the transport, flag done; ${counts}, the line's band ${band.replace('native_onboarding_line_sung_', '')}; parked and back, not again`,
     ]
   } finally {
     await context.close()
@@ -1885,13 +1801,12 @@ async function walkKeepRange(browser, args, frame, kit) {
     // ── The line, and Not now on it: the offer, then the alley ─
     await expectLine(page, kit, "Keep's Not now")
     await page.locator(NOT_NOW).tap()
-    const offer = await expectOffer(page, kit, 'Not now on the line')
-    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
-    const alley = await expectAlley(page, kit, "the offer's Not now")
+    const alley = await expectAlley(page, kit, 'Not now on the line')
+    const offer = await expectNoOffer(page, kit, 'Not now on the line')
     const counts = exitCounts(events)
     if (
       counts.notNow !== 1 ||
-      counts.exit !== 1 ||
+      counts.exit !== 0 ||
       counts.end !== 0 ||
       counts.done !== 0
     ) {
@@ -1899,7 +1814,7 @@ async function walkKeepRange(browser, args, frame, kit) {
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: the sung line; its Not now: ${offer}, counted as Not now's; the offer's Not now: ${alley}`,
+      `Keep from Settings, the anonymous identity asked for as it opened; "Find your range first": the range on its own (no Skip for now), ${range.low} to ${range.high}; the reveal: ${card}; Continue: Keep again, ${keep}; the onboarding still due. Then the rail's Sing: ${note} named, the first note ending on See my voice and Find my range again, no Skip for now; See my voice: ${kept}, as kept; Continue: Keep, ${again}; Keep's Not now: the sung line; its Not now: ${alley}, ${offer}`,
     ]
   } finally {
     await context.close()
@@ -1923,24 +1838,20 @@ async function walkNotNow(browser, args, frame, kit) {
     await expectUp(page, kit, "the rail's Sing")
     await expectLayout(page, 'Not now')
     await page.locator(NOT_NOW).tap()
-    const offer = await expectOffer(page, kit, 'Not now')
-    await kit.shoot(page, shotsFor(args, frame), 'onboarding-exit-offer')
-    await page.locator(`${OFFER} button`, { hasText: /^Not now$/u }).tap()
-    const alley = await expectAlley(page, kit, "the offer's Not now")
+    const alley = await expectAlley(page, kit, 'Not now')
+    const offer = await expectNoOffer(page, kit, 'Not now')
     await kit.shoot(page, shotsFor(args, frame), 'onboarding-exit-alley')
     const counts = exitCounts(events)
     if (
       counts.notNow !== 1 ||
-      counts.exit !== 1 ||
+      counts.exit !== 0 ||
       counts.end !== 0 ||
       counts.done !== 0
     ) {
       throw new Error(`Not now: counted ${JSON.stringify(counts)}`)
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
-    return [
-      `the rail's Sing, then Not now: ${offer}, counted as Not now's; its Not now: ${alley}`,
-    ]
+    return [`the rail's Sing, then Not now: ${alley}, ${offer}`]
   } finally {
     await context.close()
   }

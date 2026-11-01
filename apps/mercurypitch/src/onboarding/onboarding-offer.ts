@@ -20,6 +20,13 @@
 //   - never after a refused mic, or one that would not open, and not
 //     granted since (S7b E5): the layer checks that itself, at its Not now
 //     (NativeOnboarding.tsx), and a refused mic never reaches the line;
+//   - never without a price to show: a store here, with the month's plan to
+//     sell, priced (cloud-offer-store.ts askCloudPlan), within three
+//     seconds. Without one the sheet could only say "Subscriptions are not
+//     available yet." over a Subscribe that cannot be tapped, a paywall in
+//     the way of the end with nothing behind it. Asked first, and nothing
+//     else is asked, nor any identity made, for an offer that cannot open;
+//     the sheet then opens on the price it was given;
 //   - never with the subscription held: askBeforeOffering asks the server
 //     and the store, which knows of a purchase first, after making the
 //     singer's identity (E11), within three seconds. Begun as the line's
@@ -34,7 +41,7 @@
 // storage is blocked, the session remembers.
 
 import type { CloudOfferSource, UnaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
-import { askBeforeOffering, openCloudOffer, unaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
+import { askBeforeOffering, askCloudPlan, BEFORE_OFFER_MS, cloudPriceAskable, openCloudOffer, unaskedRefusal, } from '@/features/karaoke-room/cloud-offer-store'
 import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 
@@ -56,6 +63,11 @@ export type OfferSkip =
   | 'holdout'
   /** Offered once on this install already. */
   | 'shown'
+  /**
+   * Nothing to buy at a price: no store here, none with the plan to sell
+   * yet, or one that could not say in time.
+   */
+  | 'unavailable'
   /** The server or the store says the subscription is held. */
   | 'entitled'
   | UnaskedRefusal
@@ -113,25 +125,49 @@ export function onboardingOfferShown(): boolean {
 
 /**
  * Why beat 9 would open no offer, on what is known without asking: the
- * build, the group, the mark, and the offer's own caps. The mic may still
- * be closing as the score shows; the offer opens only once it has.
+ * build, the group, the mark, a store to ask for a price, and the offer's
+ * own caps. The mic may still be closing as the score shows; the offer
+ * opens only once it has.
  */
 export function offerSkipNow(): OfferSkip | null {
   if (!KARAOKE_IMPORT) return 'no-cloud'
   if (onboardingOfferGroup() === 'holdout') return 'holdout'
   if (onboardingOfferShown()) return 'shown'
+  if (!cloudPriceAskable()) return 'unavailable'
   const refused = unaskedRefusal()
   return refused === 'singing' ? null : refused
 }
 
 /**
- * The asks before beat 9 (askBeforeOffering), begun as the line's score
- * shows: why it opens no offer, or null. Asks nothing when a rule already
- * says no, so the holdout makes no identity here.
+ * Whether the store gives the plan a price within `ms`: a plan to sell,
+ * priced. None to sell, a store that cannot say, or one too slow to: no.
  */
-export function prepareOnboardingOffer(): Promise<OfferSkip | null> {
+async function pricedWithin(ms: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), ms)
+  })
+  const asked = askCloudPlan().then(
+    (plan) => plan !== null,
+    () => false,
+  )
+  try {
+    return await Promise.race([asked, late])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * The asks before beat 9, begun as the line's score shows: the price first,
+ * then askBeforeOffering; why it opens no offer, or null. Asks nothing when
+ * a rule already says no, and nothing past a store with no price, so the
+ * holdout, and an install with nothing to buy, make no identity here.
+ */
+export async function prepareOnboardingOffer(): Promise<OfferSkip | null> {
   const now = offerSkipNow()
-  if (now !== null) return Promise.resolve(now)
+  if (now !== null) return now
+  if (!(await pricedWithin(BEFORE_OFFER_MS))) return 'unavailable'
   return askBeforeOffering().then(
     (facts) => (facts.storeHolds || facts.songs.subscribed ? 'entitled' : null),
     // Unasked: the offer goes on what is known, as the sheet does.

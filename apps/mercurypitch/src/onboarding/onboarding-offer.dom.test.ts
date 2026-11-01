@@ -35,17 +35,33 @@ vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
   }
 })
 
-import { closeCloudOffer, cloudOffer, openCloudOffer, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
+import { BEFORE_OFFER_MS, closeCloudOffer, cloudOffer, cloudPlan, openCloudOffer, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
 import { setMicActive } from '@/stores/mic-store'
+import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
-import { HOLDOUT_SHARE, OFFER_GROUP_KEY, OFFER_SHOWN_KEY, onboardingOfferGroup, onboardingOfferShown, openOnboardingOffer, prepareOnboardingOffer, replayOnboardingOffer, resetOnboardingOfferForTests, } from './onboarding-offer'
+import { HOLDOUT_SHARE, OFFER_GROUP_KEY, OFFER_SHOWN_KEY, offerSkipNow, onboardingOfferGroup, onboardingOfferShown, openOnboardingOffer, prepareOnboardingOffer, replayOnboardingOffer, resetOnboardingOfferForTests, } from './onboarding-offer'
 
 const free: KaraokeSongs = {
   left: 0,
   subscribed: false,
   renewsAt: null,
   perPeriod: 20,
+}
+
+/** The month's plan as the store prices it. */
+const PLAN = { priceText: '€4.99', title: 'Mercury Pitch Cloud' }
+
+/** A store with the plan to sell, priced; any call may be swapped. */
+function store(
+  overrides: Partial<KaraokeSubscriptionApi> = {},
+): KaraokeSubscriptionApi {
+  return {
+    subscribe: async () => Promise.resolve('cancelled' as const),
+    restore: async () => Promise.resolve('nothing' as const),
+    offer: async () => Promise.resolve(PLAN),
+    ...overrides,
+  }
 }
 
 /** Beat 9 as the onboarding runs it: the asks, then the offer. */
@@ -59,6 +75,15 @@ vi.mock('@/features/onboarding/funnel', () => ({
 }))
 
 let unregister: (() => void) | null = null
+
+/** The shell's API, with `api` as its store. */
+function withStore(api: KaraokeSubscriptionApi = store()): void {
+  unregister?.()
+  unregister = registerShellApi({
+    pushSettings: vi.fn(),
+    karaokeSubscription: api,
+  })
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -115,6 +140,7 @@ describe('the holdout', () => {
 describe('beat 9 for the offer group', () => {
   beforeEach(() => {
     onboardingOfferGroup(() => 0.5)
+    withStore()
   })
 
   it('opens the Cloud offer, as the onboarding, once per install', async () => {
@@ -137,16 +163,14 @@ describe('beat 9 for the offer group', () => {
   })
 
   it('opens none when the store holds it, before the server has heard', async () => {
-    unregister = registerShellApi({
-      pushSettings: vi.fn(),
-      karaokeSubscription: {
-        subscribe: async () => Promise.resolve('cancelled' as const),
-        restore: async () => Promise.resolve('nothing' as const),
-        storeSubscribed: async () => Promise.resolve(true),
-      },
-    })
+    withStore(store({ storeSubscribed: async () => Promise.resolve(true) }))
     await expect(prepareOnboardingOffer()).resolves.toBe('entitled')
     expect(await beatNine()).toBe(false)
+  })
+
+  it('hands the sheet the price it saw, so the offer opens on it', async () => {
+    expect(await beatNine()).toBe(true)
+    expect(cloudPlan()).toEqual(PLAN)
   })
 
   it('opens none in the week after a Not now, from any offer', async () => {
@@ -170,9 +194,55 @@ describe('beat 9 for the offer group', () => {
   })
 })
 
+describe('nothing to buy at a price', () => {
+  beforeEach(() => {
+    onboardingOfferGroup(() => 0.5)
+  })
+
+  it('opens none with no store here, says so at once, and makes no identity', async () => {
+    await expect(prepareOnboardingOffer()).resolves.toBe('unavailable')
+    expect(offerSkipNow()).toBe('unavailable')
+    expect(await beatNine()).toBe(false)
+    expect(cloudOffer()).toBeNull()
+    expect(onboardingOfferShown()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('opens none when the store has no plan to sell yet', async () => {
+    withStore(store({ offer: async () => Promise.resolve(null) }))
+    expect(offerSkipNow()).toBeNull()
+    await expect(prepareOnboardingOffer()).resolves.toBe('unavailable')
+    expect(await beatNine()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('opens none when the store cannot say what it costs', async () => {
+    withStore(
+      store({ offer: async () => Promise.reject(new Error('offline')) }),
+    )
+    await expect(prepareOnboardingOffer()).resolves.toBe('unavailable')
+    expect(await beatNine()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('opens none when the store is still silent after the wait', async () => {
+    vi.useFakeTimers()
+    try {
+      withStore(store({ offer: async () => new Promise(() => undefined) }))
+      const prepared = prepareOnboardingOffer()
+      await vi.advanceTimersByTimeAsync(BEFORE_OFFER_MS)
+      await expect(prepared).resolves.toBe('unavailable')
+      expect(identity.made).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('a layer left while the asks answer', () => {
   it('opens no offer over what is under it, and marks nothing', async () => {
     onboardingOfferGroup(() => 0.5)
+    withStore()
     expect(
       await openOnboardingOffer(prepareOnboardingOffer(), () => false),
     ).toBe(false)

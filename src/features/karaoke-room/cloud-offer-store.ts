@@ -25,6 +25,10 @@
 // before the server does, and a subscriber is never offered it again. It
 // answers within three seconds; past that the offer opens on what is known.
 //
+// THE PRICE is the store's (S7b §4.3). `askCloudPlan` asks for it and keeps
+// the answer (`cloudPlan`), so the onboarding, which opens no offer without
+// one (onboarding-offer.ts), hands the sheet the price it saw.
+//
 // AFTER A SIGN-IN (TestFlight build 919). `settleCloudAfterSignIn` runs at
 // the end of every way in (sign-in-landing.ts): a purchase this phone made
 // signed out goes to the account through the store (karaoke-subscription.ts
@@ -35,7 +39,7 @@ import { createSignal } from 'solid-js'
 import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { trackEvent } from '@/lib/analytics'
 import { micActive, singingCaptureActive } from '@/stores/mic-store'
-import type { KaraokeCarryOutcome } from '@/stores/native-shell-store'
+import type { KaraokeCarryOutcome, KaraokeOffer, } from '@/stores/native-shell-store'
 import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
 import { showNotification } from '@/stores/notifications-store'
 import { CLOUD_VIEW_EVENT } from './cloud-measure'
@@ -101,6 +105,37 @@ export function setCloudOfferGuest(node: Node | null): void {
 /** Whether the offer's sheet is up. Reactive. */
 export function cloudOfferOpen(): boolean {
   return current() !== null
+}
+
+const [plan, setPlan] = createSignal<KaraokeOffer | null>(null)
+
+/**
+ * The month's plan at the store's own price, as the store last gave it, or
+ * null before it has given one. The sheet opens on it, so an offer opened
+ * once its price was in hand (the onboarding's, onboarding-offer.ts) shows
+ * that price from its first frame instead of asking again. Reactive.
+ */
+export const cloudPlan = plan
+
+/** Whether there is a store here to ask for a price at all. */
+export function cloudPriceAskable(): boolean {
+  return nativeShellApi()?.karaokeSubscription?.offer !== undefined
+}
+
+/**
+ * Ask the store for the plan and its price: the plan, or null when it has
+ * none to sell yet or there is no store. Rejects when the store cannot say.
+ * Its answer is kept (cloudPlan), a plan or none.
+ */
+export async function askCloudPlan(): Promise<KaraokeOffer | null> {
+  const ask = nativeShellApi()?.karaokeSubscription?.offer
+  if (ask === undefined) {
+    setPlan(null)
+    return null
+  }
+  const found = await ask()
+  setPlan(found)
+  return found
 }
 
 /** Offers nobody asked for, this session. */
@@ -293,5 +328,6 @@ export function forgetUnaskedOffers(): void {
 export function resetCloudOfferForTests(): void {
   setCurrent(null)
   setGuest(null)
+  setPlan(null)
   forgetUnaskedOffers()
 }

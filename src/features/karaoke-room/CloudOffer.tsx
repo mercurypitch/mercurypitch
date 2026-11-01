@@ -19,7 +19,11 @@
 // sell, pending, failed, restored) are today's sentences, unchanged, on a
 // line reserved under the plan row. The block they sit in is held at the
 // foot of the sheet, so whatever is said there, Subscribe never moves.
-// Subscribe can be tapped only with the price in view (App Store 3.1.2).
+// Subscribe can be tapped only with the price in view (App Store 3.1.2),
+// and the renewal terms are there only with it: "Renews every month" over
+// no price at all promised a renewal of nothing anybody could buy. A price
+// the store gave before the sheet opened (cloudPlan, the onboarding's) is
+// in the slot from the first frame.
 //
 // WHO IS ASKED WHAT (§4.3). Without an account, a text button under
 // Subscribe offers the free song an account brings; it hands over to the
@@ -51,7 +55,7 @@
 // as well (cloud-offer.module.css).
 
 import type { Accessor, JSX } from 'solid-js'
-import { createEffect, createResource, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createResource, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { Spinner } from '@/components/shared/Spinner'
 import { readMe } from '@/db/services/auth-me-service'
@@ -65,7 +69,7 @@ import { nativeShellApi } from '@/stores/native-shell-store'
 import heroArt from './assets/paywall-two-lights.webp'
 import { PURCHASE_EVENT } from './cloud-measure'
 import styles from './cloud-offer.module.css'
-import { closeCloudOffer, cloudOffer, cloudOfferGuest, showCloudSubscribed, } from './cloud-offer-store'
+import { askCloudPlan, closeCloudOffer, cloudOffer, cloudOfferGuest, cloudPlan, cloudPriceAskable, showCloudSubscribed, } from './cloud-offer-store'
 import { awaitSubscription, CLOUD_NAME, CONFIRM_FOR_FREE_SONG_LINE, confirmEmailForFreeSong, freeSongUsed, freeSongWithheld, KARAOKE_PLAN, karaokeSongs, nextFreeSongLine, refreshKaraokeSongs, restoreNote, songsOnTheWay, } from './karaoke-songs'
 
 /** The sheet's name, and its title: what the singer gets (E3). */
@@ -307,15 +311,14 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
   // The latest ask for the price is the one that stands.
   let asks = 0
   const askPrice = (): void => {
-    const ask = nativeShellApi()?.karaokeSubscription?.offer
-    if (ask === undefined) {
+    if (!cloudPriceAskable()) {
       setPrice({ kind: 'unavailable' })
       return
     }
     asks += 1
     const mine = asks
     setPrice({ kind: 'asking' })
-    void ask().then(
+    void askCloudPlan().then(
       (found) => {
         if (mine !== asks) return
         setPrice(
@@ -334,7 +337,10 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
     on(offering, (now) => {
       if (!now) return
       setNote(null)
-      if (price().kind !== 'priced') askPrice()
+      // The store gave a price before the sheet opened: that one, at once.
+      const known = untrack(cloudPlan)
+      if (known !== null) setPrice({ kind: 'priced', offer: known })
+      else if (untrack(price).kind !== 'priced') askPrice()
     }),
   )
 
@@ -578,7 +584,12 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
               </Show>
             </div>
             <div class={styles.fine}>
-              <p class={styles.terms}>{CLOUD_TERMS}</p>
+              {/* Terms for a renewal only with the price it renews at. */}
+              <Show when={priced()}>
+                <p class={styles.terms} data-testid="cloud-terms">
+                  {CLOUD_TERMS}
+                </p>
+              </Show>
               <p class={styles.footer}>
                 <button
                   type="button"

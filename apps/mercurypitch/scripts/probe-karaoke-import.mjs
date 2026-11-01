@@ -1306,11 +1306,11 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
         '2 Our servers take the voice out Keep it as a quiet guide, or switch it off',
         '3 Sing it on this phone Saved here. Plays offline.',
       ],
+      // No renewal terms: there is no price for them to renew at.
       lines: [
         'Mercury Pitch Cloud',
         '20 songs a month Unused songs carry over, up to 50',
         'Subscriptions are not available yet.',
-        'Renews every month until you cancel. Cancel any time in Settings.',
       ],
       buttons: [
         'Not now',
