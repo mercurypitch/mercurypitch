@@ -39,6 +39,12 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   the owner to hear on the next TestFlight. Built: each Ear room's opening lines, nine in all,
   said aloud as the room opens and after a run is stopped (room kit `merc-speech.ts`, each room's
   `merc-spoken.ts`). He says nothing aloud during a run, where the bubble's lines stay silent.
+- Asked for, the same day: the rest of the Ear rooms' lines at rest, and the other rooms' opening
+  lines. Built: each Ear room's result lines aloud as a run ends, and Echo's opening lines. The
+  result lines no longer carry the run's counts, which the result card shows, so a recording can
+  say them ("A good run. Tap a leap below to hear it again."). Long note, Lip roll and Ng slides
+  name the singer's note in their opening line ("Hold {note} for as long as it feels easy"), which
+  a recording cannot say, so they stay silent: see the open questions.
 
 ## Why
 
@@ -377,6 +383,9 @@ that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 ## Open questions for the owner
 
 - First note on the web too, where splitting is free on the device, or native only.
+- Merc's opening lines in Long note, Lip roll and Ng slides name the singer's note. To have him say
+  them, either the note moves to the scene and the line drops it, or each note gets a recording of
+  its own. Until then they stay silent.
 - Merc's voice is the development sample set (Echo's, `merc-voice-set.ts`) for his singing, and
   ElevenLabs takes for his opening lines (each room's `voice/` folder). The real recordings
   replace both without a change to the rooms. Which other lines he should say aloud, if any, once
