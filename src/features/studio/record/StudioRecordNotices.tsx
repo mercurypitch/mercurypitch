@@ -18,6 +18,15 @@ const COUNT_IN: Readonly<Record<0 | 1 | 2, string>> = {
   2: 'Two bars of count-in.',
 }
 
+/**
+ * A take's length to the second, m:ss. The running timer changes once a
+ * second, not with every chunk, so the row does not reflow ten times a
+ * second while a take records.
+ */
+function wholeSeconds(seconds: number): string {
+  return formatStudioMoment(seconds * STUDIO_SAMPLE_RATE)
+}
+
 /** Seconds recorded past the playhead, from the live take. */
 function elapsedSeconds(recorder: StudioRecorderHandle): number {
   const live = recorder.live()
@@ -60,8 +69,8 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
           >
             <p>
               Studio saved{' '}
-              {formatStudioMoment(
-                take().frames * (STUDIO_SAMPLE_RATE / take().sampleRate),
+              {wholeSeconds(
+                Math.max(1, Math.round(take().frames / take().sampleRate)),
               )}{' '}
               of {take().title}, which isn't in the song yet.
             </p>
@@ -137,9 +146,7 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
                 <span>
                   Recording on {lane()},{' '}
                   <span class={styles.elapsed}>
-                    {formatStudioMoment(
-                      elapsedSeconds(recorder()) * STUDIO_SAMPLE_RATE,
-                    )}
+                    {wholeSeconds(Math.floor(elapsedSeconds(recorder())))}
                   </span>
                 </span>
               </p>
