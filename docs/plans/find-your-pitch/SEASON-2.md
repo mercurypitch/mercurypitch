@@ -210,8 +210,10 @@ lesson has a package yet: each card is status "proposed".
   maker's or a reference source); middle C as C4 (Lesson 1's octave numbers; Wolfe, UNSW, as
   lessons/02-twelve-notes/FACTS.md:23 cites him); the app's clef rule (above).
 - Go deeper if long: the octave treble clef tenors read (§ 7 item 2).
-- Closes on: Lesson 16's hook. "Now you can see where any note sits. But can you sing a tune you've
-  never heard, just by reading it?"
+- Closes on: Lesson 16's hook. "Five notes on the staff. Tavi has never heard them. Can you sing a
+  tune you've never heard, just by reading it?" The planned tease, "Now you can see where any note
+  sits.", summed this lesson up rather than setting up the next, and is the alternative (Lesson 15
+  FACTS 5; settled at Lesson 15's review on 1 November 2026).
 
 **Lesson 16. Sing what you see** (voice; S11a, new)
 
@@ -253,8 +255,10 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: Takeuchi & Hulse (1993) and Demorest & May (1995), as above; whether choirs'
   practice of taking a note is worth a source (practitioner); the app's behaviour (above); do-based
   minor does not arise here (major only).
-- Closes on: Lesson 17's hook. "Same five notes, sung twice as fast: on the page, only the
-  noteheads' shapes change. Why is a quarter note not a quarter of a second?"
+- Closes on: Lesson 17's hook. "Same written bar, played twice. Only the tempo changes. Why is a
+  quarter note not a quarter of a second?" The planned tease, "Same five notes, sung twice as fast:
+  on the page, only the noteheads' shapes change.", ran over a card's 70 characters; cut to fit, it
+  is the alternative (Lesson 17 FACTS 5b; settled at Lesson 17's review on 1 November 2026).
 
 **Lesson 17. How long is a note?** (theory; T07)
 
