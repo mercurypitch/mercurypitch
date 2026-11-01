@@ -296,6 +296,17 @@ export function spanWords(semitones: number): string {
   return half ? `about ${count} and a half octaves` : `about ${count} octaves`
 }
 
+/**
+ * Under a range just measured, what its two pins mean: "Your lowest note to
+ * your highest: about two octaves."
+ */
+export function rangeMeaning(range: {
+  readonly lowMidi: number
+  readonly highMidi: number
+}): string {
+  return `Your lowest note to your highest: ${spanWords(range.highMidi - range.lowMidi)}.`
+}
+
 /** "F2 to G4 · about two octaves": the reveal's range, in words. */
 export function rangeSubline(range: {
   readonly lowNote: string

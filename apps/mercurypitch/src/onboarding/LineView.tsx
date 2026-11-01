@@ -6,9 +6,9 @@
 // (S7b §3.3), since the line wants the room; the lane, its ten notes
 // as bars at their pitches and times, a cursor running over them, and the
 // singer's voice drawn across them in the turn; the words, lighting as the
-// cursor reaches them; and, once it is scored, the chip: "8 of 10 notes on
-// pitch". The foot holds the mic, its notice when it would not open, or
-// Continue and Once more once the line is scored: Continue the big button,
+// cursor reaches them. The foot holds the mic, its ways back when it would
+// not open, or, once the line is scored, the chip, "8 of 10 notes on
+// pitch", over Continue and Once more: Continue the big button,
 // but under four in ten, where Merc says to try it once more, Once more
 // (lineWarmingUp). Under the mic through Merc's call: "Merc's turn", one
 // thing to read rather than "Wait for your turn. Tap to stop". The
@@ -279,23 +279,20 @@ export function LineView(props: LineViewProps): JSX.Element {
             )}
           </For>
         </p>
-
-        {/* Held in the flow, so nothing moves when the score arrives. */}
-        <p
-          class={line.score}
-          classList={{ [styles.away]: score() === null }}
-          data-shown={score() === null ? 'off' : 'on'}
-          data-testid="onboarding-sung-score"
-        >
-          {score() === null
-            ? lineScoreText(0, LINE.length)
-            : lineScoreText(score()?.hit ?? 0, score()?.total ?? LINE.length)}
-        </p>
       </div>
 
       <div class={styles.foot}>
         <Switch>
           <Match when={phase() === 'done'}>
+            {/* The score over the ways on, where the foot held only empty
+                room above them. */}
+            <p
+              class={line.score}
+              data-shown={score() === null ? 'off' : 'on'}
+              data-testid="onboarding-sung-score"
+            >
+              {lineScoreText(score()?.hit ?? 0, score()?.total ?? LINE.length)}
+            </p>
             {/* The way on Merc points to first, as the big button: Once
                 more under four in ten, else Continue. */}
             <div

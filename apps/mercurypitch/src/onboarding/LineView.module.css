@@ -136,6 +136,24 @@
   transition: none;
 }
 
+/* A short phone: Merc and the lane smaller, so the line, its words and
+   Merc's bubble fit between Not now and the foot. */
+@media (max-height: 700px) {
+  .merc {
+    width: clamp(60px, 11vh, 84px);
+    width: clamp(60px, 11dvh, 84px);
+  }
+
+  .lane {
+    height: clamp(72px, 12vh, 110px);
+    height: clamp(72px, 12dvh, 110px);
+  }
+
+  .words {
+    font-size: 22px;
+  }
+}
+
 /* On its side and short: the stage beside the foot (the layer's own rule),
    so the lane and Merc come down to fit. */
 @media (max-height: 520px) and (orientation: landscape) {
