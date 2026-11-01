@@ -267,8 +267,11 @@ export function NativeOnboarding(): JSX.Element {
   /**
    * Beat 8, the sung line: after Keep, after the reveal on a phone with an
    * account, or straight after Merc's word on a skipped range. Once it has
-   * been sung, what comes after it instead (Keep came back from Find your
-   * range first). A layer on its way out brings none.
+   * been sung (Keep came after it, or back from Find your range first),
+   * the line as it was left, its Continue shown working while what comes
+   * after it is decided: under Keep the stage is empty and its Not now
+   * stands aside, and that blank, out-of-reach screen stayed up for as long
+   * as beat 9's asks were out. A layer on its way out brings none.
    */
   const toLine = (): void => {
     if (untrack(leaving)) return
@@ -276,11 +279,11 @@ export function NativeOnboarding(): JSX.Element {
       leaveOnboarding('not-now')
       return
     }
+    go('line')
     if (lineDone) {
       finishLine()
       return
     }
-    go('line')
     line.arrive()
   }
 

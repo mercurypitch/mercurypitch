@@ -800,6 +800,39 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
   })
 })
 
+describe("after the line's Continue: the onboarding finished, whatever comes after it", () => {
+  /** Skip, sing, Continue: Keep after the line is up. */
+  async function sungThenKeep(s: Stand): Promise<void> {
+    await skipRange(s)
+    await singLine(s)
+    await continueLine()
+    expect(beat()).toBe('keep')
+  }
+
+  it('goes back to the line as Keep closes, its Continue working while beat 9 is decided', async () => {
+    const s = mount()
+    let answer = (): void => undefined
+    identity.hold = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    await sungThenKeep(s)
+
+    k('keep-not-now')?.click()
+    await settleAll()
+
+    // The line as it was left, not the empty stage under Keep, its Not now
+    // out of reach and nothing read, for as long as the asks were out.
+    expect(beat()).toBe('line')
+    expect(q('onboarding-continue')?.getAttribute('aria-busy')).toBe('true')
+    expect(outOfReach(q('onboarding-not-now'))).toBe(false)
+    expect(said()).not.toBe('')
+    answer()
+    await settleAll()
+    expect(beat()).toBe('offer')
+    expect(cloudOffer()?.source).toBe('onboarding')
+  })
+})
+
 describe('Keep after the line, once a range was skipped (beat 7)', () => {
   /** A skipped range, the line sung, and its Continue: Keep. */
   async function keepAfterLine(s: Stand): Promise<void> {
