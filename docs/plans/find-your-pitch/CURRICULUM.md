@@ -45,9 +45,10 @@ Arc A, **Hear it** (Lessons 1 to 7): pitch, the twelve notes, the first sung not
 breath, intervals, range. Arc B, **Shape it** (Lessons 8 to 14): rhythm, leaps, major and minor,
 registers, chords, vowels, a whole song.
 
-Target length 6 to 9 minutes; tiny topics 4 to 5; cap at 10 (3Blue1Brown's curriculum series
-runs 4:27 to 17:16, median 11:34; MOOC engagement medians sit at about 6 minutes). Lesson 1 runs
-5:14 (314.2 s on its cue sheet, with the owner's ElevenLabs voices).
+Target length 6 to 9 minutes; tiny topics 4 to 5; cap at 20, raised from 10 by the owner on
+1 November 2026 (3Blue1Brown's curriculum series runs 4:27 to 17:16, median 11:34; MOOC engagement
+medians sit at about 6 minutes). Lesson 1 runs 5:14 (314.2 s on its cue sheet, with the owner's
+ElevenLabs voices).
 
 The hook is the cold open, not necessarily the YouTube title. A YouTube title has at most 100
 characters (aim for about 60) and may shorten the hook as long as it stays accurate; the full hook
@@ -338,68 +339,72 @@ only ever needs Season 1 topics, which is why T15 is split into T15a and T15b.
 
 ### 3.1 Theory
 
-| ID   | Topic                                                                   | Prerequisites | Season       |
-| ---- | ----------------------------------------------------------------------- | ------------- | ------------ |
-| T01  | Sound and pitch: vibration, frequency, hertz; high is not loud          | none          | 1            |
-| T02  | Octave and octave equivalence; seven letter names; octave numbers       | T01           | 1            |
-| T03  | Twelve notes: semitones, tones, sharps and flats, keyboard, enharmonics | T02           | 1            |
-| T04  | Cents and "in tune"                                                     | T03           | 1            |
-| T05  | Pulse, beat and tempo                                                   | none          | 1            |
-| T06  | Metre and bars; downbeat; backbeat                                      | T05           | 1            |
-| T07  | Note values, rests, dots, ties, subdivision                             | T06           | 2            |
-| T08  | Simple and compound metre; triplets; syncopation                        | T07           | 2            |
-| T09  | Major scale; tonic as home                                              | T03           | 1            |
-| T10  | Scale degrees and movable do                                            | T09           | 1            |
-| T11  | Melody: contour, steps and leaps, transposition                         | T10           | 1            |
-| T12  | Intervals by size and by sound                                          | T09           | 1            |
-| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12           | 2            |
-| T14  | Major and minor third; major and minor triads by ear                    | T12           | 1            |
-| T15a | Natural minor scale                                                     | T09, T14      | 1            |
-| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13     | 2            |
-| T16  | Pentatonic and blues scales                                             | T09           | 2            |
-| T17  | Keys, key signatures, transposition                                     | T09           | 2            |
-| T18  | Circle of fifths                                                        | T17, T13      | 2            |
-| T19  | Triads: major, minor, diminished, augmented                             | T14           | 1            |
-| T20  | Diatonic chords, Roman numerals, function                               | T19, T10      | 1            |
-| T21  | Common progressions                                                     | T20           | 1            |
-| T22  | Phrases and cadences                                                    | T20, T06      | 1 (light), 2 |
-| T23  | Chord tones and non-chord tones                                         | T20, T11      | 2            |
-| T24  | Seventh chords                                                          | T19           | 2            |
-| T25  | Inversions and voicing                                                  | T19           | 2            |
-| T26  | Modes                                                                   | T15b, T10     | 3            |
-| T27  | Secondary dominants, borrowed chords, modulation                        | T21, T26      | 3            |
-| T28  | Timbre, harmonics, overtones; spectrum                                  | T01           | 1            |
-| T29  | Tuning systems: why twelve, equal temperament                           | T04, T28      | 2            |
-| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03, T07      | 2            |
-| T31  | Song form                                                               | T22           | 2            |
-| T32  | Dynamics and articulation terms                                         | none          | 2            |
+| ID   | Topic                                                                   | Prerequisites  | Season       |
+| ---- | ----------------------------------------------------------------------- | -------------- | ------------ |
+| T01  | Sound and pitch: vibration, frequency, hertz; high is not loud          | none           | 1            |
+| T02  | Octave and octave equivalence; seven letter names; octave numbers       | T01            | 1            |
+| T03  | Twelve notes: semitones, tones, sharps and flats, keyboard, enharmonics | T02            | 1            |
+| T04  | Cents and "in tune"                                                     | T03            | 1            |
+| T05  | Pulse, beat and tempo                                                   | none           | 1            |
+| T06  | Metre and bars; downbeat; backbeat                                      | T05            | 1            |
+| T07  | Note values, rests, dots, ties, subdivision                             | T06            | 2            |
+| T08  | Simple and compound metre; triplets; syncopation                        | T07            | 2            |
+| T09  | Major scale; tonic as home                                              | T03            | 1            |
+| T10  | Scale degrees and movable do                                            | T09            | 1            |
+| T11  | Melody: contour, steps and leaps, transposition                         | T10            | 1            |
+| T12  | Intervals by size and by sound                                          | T09            | 1            |
+| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12            | 2            |
+| T14  | Major and minor third; major and minor triads by ear                    | T12            | 1            |
+| T15a | Natural minor scale                                                     | T09, T14       | 1            |
+| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13, T17 | 2            |
+| T16  | Pentatonic and blues scales                                             | T09, T15a      | 2            |
+| T17  | Keys, key signatures, transposition                                     | T09, T30       | 2            |
+| T18  | Circle of fifths                                                        | T17, T12       | 2            |
+| T19  | Triads: major, minor, diminished, augmented                             | T14            | 1            |
+| T20  | Diatonic chords, Roman numerals, function                               | T19, T10       | 1            |
+| T21  | Common progressions                                                     | T20            | 1            |
+| T22  | Phrases and cadences                                                    | T20, T06       | 1 (light), 2 |
+| T23  | Chord tones and non-chord tones                                         | T20, T11       | 2            |
+| T24  | Seventh chords                                                          | T19, T13       | 2            |
+| T25  | Inversions and voicing                                                  | T19            | 2            |
+| T26  | Modes                                                                   | T15b, T10      | 3            |
+| T27  | Secondary dominants, borrowed chords, modulation                        | T21, T26       | 3            |
+| T28  | Timbre, harmonics, overtones; spectrum                                  | T01            | 1            |
+| T29  | Tuning systems: why twelve, equal temperament                           | T04, T18       | 2            |
+| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03            | 2            |
+| T31  | Song form                                                               | T22            | 2            |
+| T32  | Dynamics and articulation terms                                         | none           | 2            |
 
 ### 3.2 Voice
 
-| ID  | Topic                                                      | Prerequisites | Season            |
-| --- | ---------------------------------------------------------- | ------------- | ----------------- |
-| S01 | How the voice makes pitch; vocal health basics             | T01           | 1                 |
-| S02 | Posture, alignment, tension release                        | S01           | 1                 |
-| S03 | Breath: low, quiet inhale; managed exhale                  | S02           | 1                 |
-| S04 | Onset and offset                                           | S03           | 1                 |
-| S05 | Pitch matching; octave counts                              | S01, T02      | 1                 |
-| S06 | Steady tone                                                | S04, S05, T04 | 1                 |
-| S07 | Glides, sirens, lip trills, "ng"                           | S05           | 1                 |
-| S08 | Range and comfortable zone; voice types as labels          | S05, S07      | 1                 |
-| S09 | Singing steps: five-note scales, then the octave           | S05, T09      | 1                 |
-| S10 | Singing leaps: thirds, fifth, fourth, octave; arpeggios    | S09, T12      | 1                 |
-| S11 | Echo and sight-sing short melodies                         | S10, T10      | 2                 |
-| S12 | Registers: chest, head, falsetto; the break                | S07, S08      | 1                 |
-| S13 | Resonance and brightness                                   | S12, T28      | 1                 |
-| S14 | Vowels                                                     | S13           | 1                 |
-| S15 | Consonants and diction                                     | S14           | 2                 |
-| S16 | Legato and phrasing; breath planning                       | S03, S09, T06 | 1                 |
-| S17 | Dynamics without pushing: messa di voce                    | S03, S06      | 1                 |
-| S18 | Agility: staccato, runs, pentatonic patterns               | S09, S04, T16 | 2                 |
-| S19 | Vibrato                                                    | S06, S17      | 2                 |
-| S20 | Harmony singing                                            | S06, T13, T19 | 2                 |
-| S21 | Style and qualities (speech, twang, belt, falsetto)        | S12, S13, S17 | 3                 |
-| S22 | Practice habits, warm-up and cool-down, recording yourself | S01           | 1 (woven through) |
+| ID   | Topic                                                                   | Prerequisites  | Season            |
+| ---- | ----------------------------------------------------------------------- | -------------- | ----------------- |
+| S01  | How the voice makes pitch; vocal health basics                          | T01            | 1                 |
+| S02  | Posture, alignment, tension release                                     | S01            | 1                 |
+| S03  | Breath: low, quiet inhale; managed exhale                               | S02            | 1                 |
+| S04  | Onset and offset                                                        | S03            | 1                 |
+| S05  | Pitch matching; octave counts                                           | S01, T02       | 1                 |
+| S06  | Steady tone                                                             | S04, S05, T04  | 1                 |
+| S07  | Glides, sirens, lip trills, "ng"                                        | S05            | 1                 |
+| S08  | Range and comfortable zone; voice types as labels                       | S05, S07       | 1                 |
+| S09  | Singing steps: five-note scales, then the octave                        | S05, T09       | 1                 |
+| S10  | Singing leaps: thirds, fifth, fourth, octave; arpeggios                 | S09, T12       | 1                 |
+| S11  | Echo and sight-sing short melodies                                      | S10, T10       | 2                 |
+| S11a | Sight-singing pitch: steps and the tonic triad from the staff, after do | S10, T10, T30  | 2                 |
+| S11b | Sight-singing in time: short melodies with rhythm                       | S11a, T07      | 2                 |
+| S12  | Registers: chest, head, falsetto; the break                             | S07, S08       | 1                 |
+| S13  | Resonance and brightness                                                | S12, T28       | 1                 |
+| S14  | Vowels                                                                  | S13            | 1                 |
+| S15  | Consonants and diction                                                  | S14            | 3                 |
+| S16  | Legato and phrasing; breath planning                                    | S03, S09, T06  | 1                 |
+| S17  | Dynamics without pushing: messa di voce                                 | S03, S06       | 1                 |
+| S18  | Agility: staccato, runs, pentatonic patterns                            | S09, S04, T16  | 2                 |
+| S19  | Vibrato                                                                 | S06, S17       | 2                 |
+| S20  | Harmony singing                                                         | S06, T13, T19  | 2                 |
+| S20a | Hold a part against a drone; beats                                      | S06, T13, T14  | 2                 |
+| S20b | Sing a second part with a melody                                        | S20a, T11, T19 | 2                 |
+| S21  | Style and qualities (speech, twang, belt, falsetto)                     | S12, S13, S17  | 3                 |
+| S22  | Practice habits, warm-up and cool-down, recording yourself              | S01            | 1 (woven through) |
 
 S22 is woven through from Lesson 3: the optional warm-up opener (principle 6), then recording
 yourself in Lesson 14.
@@ -529,8 +534,8 @@ minor scale by ear.
 **Season 2, "Read it, harmonise it"** (14 lessons, numbered on from Season 1 as 15 to 28, and a
 trailer), is planned at Season 1's depth in [SEASON-2.md](SEASON-2.md): the promise, the lesson
 table and cards, the topic graph and lesson prerequisites, the practise links and what they wait
-for, production, the owner's decisions, and the risks and production order. It is proposed, not
-decided, until the owner answers its § 7.
+for, production, the owner's decisions, and the risks and production order. The owner took every
+recommendation in its § 7 on 1 November 2026, so the plan is decided.
 
 Arc C, **Read it** (Lessons 15 to 21): the staff and clefs (T30), sight-singing from the staff
 (S11a), note values (T07), reading and singing a line in time (S11b, T32 light), compound metre and
@@ -543,11 +548,11 @@ question is still the next cold open, and every staff idea still arrives after t
 down.
 
 The plan adds four topic IDs, S11a and S11b (S11 split) and S20a and S20b (S20 split), and changes
-some Season 2 prerequisites (SEASON-2 § 4.1); § 3's tables take them once the owner agrees. It also
-proposes moving S15, which § 3.2 marks Season 2, to Season 3, where this section already lists
-diction.
+some Season 2 prerequisites (SEASON-2 § 4.1); § 3's tables carry them since 1 November 2026, when
+S15, diction, also moved from Season 2 to Season 3, where this section lists it (SEASON-2 § 7
+item 12).
 
 **Season 3, "Make it yours"**: modes (T26), borrowed chords and modulation (T27), style and vocal
 qualities (S21), diction (S15), arranging a cover, writing a melody over a progression.
 
-Mixed voice, which Lesson 11 left out, is proposed for Season 3 beside S21 (SEASON-2 § 7 item 7).
+Mixed voice, which Lesson 11 left out, goes to Season 3 beside S21 (SEASON-2 § 7 item 7, 1 November 2026).

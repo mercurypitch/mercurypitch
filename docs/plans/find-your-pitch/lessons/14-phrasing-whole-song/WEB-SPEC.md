@@ -707,7 +707,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   CURRICULUM card's practise line named all three; it now says why only Karaoke Night is linked.
 - **App content, small** (MASTER-PLAN § 7's App content track), proposed: Dynamic Swell's card copy,
   its tags and its score checked against the claims rules, as CURRICULUM § 4 item 8 does for the
-  Ascent's weeks (`CURRICULUM.md:512-516`), so that a later lesson can link it: a swell scored by
+  Ascent's weeks (`CURRICULUM.md:517-521`), so that a later lesson can link it: a swell scored by
   its width in decibels rewards a louder swell, which this lesson's "grow only to about speaking
   volume" would not, so its score would change or its result would say what it measures; and the two
   routines' descriptions, which promised gains in the breath and in range (59), the same way. Until
