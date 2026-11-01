@@ -74,30 +74,22 @@
           A.held = RUN[6] + 0.6                               // an echo ring on ti halfway through its 1.2 s hold (FACTS 68)
 
           /* ---------------------------------------------------------------- settles (holds round, 1 November) */
-          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
-          // (film round 5, DECISIONS 139; study rule 8). Both hosts stand in this scene, so nothing they stand on or
-          // look at moves: through each held span the thing just named breathes in brightness or a label settles,
-          // coming to rest as the next thing begins. In CU-C a stair is large enough for a slow light to register.
-          // Every breathe is sine.inOut; each light keeps its own start and rise (the kit's), the breathe only takes
-          // over where it is the brighter.
-          //   ti glows up to 35 % from "Tee", handing over to its light on "seventh" as that light passes 35 %;
-          //   after that light's peak a 60 % afterglow fades until "semitone", through "and it sits";
-          //   do's light on "doh:" keeps a 70 % afterglow that fades until the pull is under way, through "the last
-          //   step is a short one";
-          //   "1 semitone" glides its last 8 px in from the right, at rest as ti lights on "below";
-          //   after the pull the returning names ride in 8 px behind and glide to centre, re and mi as "from C" comes,
-          //   do through "from C, and stop";
-          //   while the run waits on ti for "one more note", its seven lit stairs dim by a third, lowest under the
-          //   top stair's pulse on "Take", and come back up by the landing ("land-c")
-          const RAMP = 0.3
+          // The re-voiced lines outlast their moves (film round 5, DECISIONS 139; study rule 8). Both hosts stand here, so
+          // nothing they stand on or look at moves: the thing just named breathes in brightness (sine.inOut; each light
+          // keeps the kit's start and rise) or a label glides, at rest as the next thing begins. ti glows to 45 % from its
+          // name's pulse as the push lands, screen-blended under its light on "seventh", then a 60 % afterglow until
+          // "semitone"; do's light on "doh:" falls over 3.9 s, not 0.8 (the kit's linear fall, an eased 0.4 s landing),
+          // until the pull is under way; "1 semitone" glides 8 px in; after the pull the returning names ride in 8 px
+          // behind (re and mi as "from C" comes, do through "and stop"); while the run waits for "one more note" its
+          // seven stairs dim by half, lowest on "step", back up as the top stair fills
+          const RAMP = 0.3, TI_PRE = 0.45, TI_POST = 0.6, TI_PEAK = A.seventh + 0.4, RUN_DIP = 0.5
           const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
           const glide = (t, t0, t1) => trap(clamp((t - t0) / (t1 - t0)), Math.min(RAMP, (t1 - t0) / 3) / (t1 - t0))
-          const ease = (t, t0, t1) => P(t, t0, t1 - t0, 'sine.inOut')
-          const TI_PRE = 0.35, TI_POST = 0.6, DO_POST = 0.7, RUN_DIP = 0.35
-          const tiGlow = (t) => t < A.seventh + 0.4 * TI_PRE ? TI_PRE * ease(t, A.tee, A.seventh + 0.4 * TI_PRE) : t < A.seventh + 0.4 ? 0 : TI_POST * (1 - ease(t, A.seventh, A.semitone))
-          const doGlow = (t) => t < A.dohW + 0.4 ? 0 : DO_POST * (1 - ease(t, A.dohW, A.pull + 0.6))
-          const DIP_LOW = A.take + 0.15
-          const runDip = (t) => RUN_DIP * (ease(t, A.note + 0.15, DIP_LOW) - ease(t, DIP_LOW, A.landC))
+          const ease = (t, t0, t1) => P(t, t0, t1 - t0, 'sine.inOut'), screen = (a, b) => a + b * (1 - a)
+          const tiGlow = (t, lit) => t < TI_PEAK ? screen(lit, TI_PRE * ease(t, NAMEP7[0], TI_PEAK)) : Math.max(lit, TI_POST * (1 - ease(t, A.seventh, A.semitone)))
+          const DO_PEAK = A.dohW + 0.4, DO_END = A.pull + 0.5, DO_LAND = 0.4 / (DO_END - DO_PEAK), DO_V = 1 / (1 - DO_LAND / 2)
+          const doLit = (t) => { if (t < DO_PEAK) return light(t, A.dohW, 0.4, 0.8); const u = clamp((t - DO_PEAK) / (DO_END - DO_PEAK)); return u > 1 - DO_LAND ? (DO_V * (1 - u) * (1 - u)) / (2 * DO_LAND) : 1 - DO_V * u }
+          const runDip = (t) => RUN_DIP * (ease(t, A.note, A.takeStep) - ease(t, A.takeStep, A.land8))
           const nameDx = (n, t) => t < A.push + 0.8 ? 0 : -8 * (1 - (n === 1 ? glide(t, A.fromC - 0.09, A.stop + 0.15) : glide(t, A.pull + 1.26, A.fromC + 0.31)))
 
           /* ---------------------------------------------------------------- camera */
@@ -229,12 +221,12 @@
                 if (n === 8) {
                   // emptied to an outline (as in the cold open), filled blue as the bead lands on it
                   const filled = t < A.land8 ? 1 - P(t, A.empty, 0.5) : P(t, A.land8, 0.2, 'power2.out')
-                  if (t < A.empty) return { lit: Math.max(light(t, A.dohW, 0.4, 0.8), doGlow(t)), color: 'chrome', names }
+                  if (t < A.empty) return { lit: doLit(t), color: 'chrome', names }
                   return { fill: 'outline', filled, lit: t < A.land8 ? 0 : filled * blueA(t), color: 'blue', names, scale: L.pulse(t, TOPP, 'tile') }
                 }
                 if (t >= RUN[n - 1]) return { lit: P(t, RUN[n - 1], 0.15, 'power2.out') * blueA(t) * (1 - runDip(t)), color: 'blue', names }
                 return {
-                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.below, 0.4, 0.8), light(t, A.stop), tiGlow(t)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
+                  lit: n === 7 ? tiGlow(t, Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.below, 0.4, 0.8), light(t, A.stop))) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
                   scale: n === 7 ? L.pulse(t, A.sits, 'tile') : 1,
                 }
               },
@@ -280,7 +272,7 @@
                 { t: A.lit8, x: hc[0], y: hc[1], r: 30 * cs },
               ])
             }
-            // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px, out before the pull
+            // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px (and gliding 8 px in), out before the pull
             semiT.setAttribute('opacity', (P(t, A.semitone, 0.2) * (1 - P(t, A.out1, 0.2))).toFixed(3))
             semiT.setAttribute('transform', `translate(${f1(8 * (1 - glide(t, A.semitone, A.below + 0.1)))} ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
             {

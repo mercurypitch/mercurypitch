@@ -202,3 +202,45 @@ s14-recap.holds-before.html. Before clips and measures: /dev/shm/l4lab-D/<sid>-b
   (30.20 to 36.10, and b30 43.75 to 46.75); "movable do" lands over 20 px through its definition (36.10 to 39.40)
   and takes its b30 turn (46.75 to 49.30, 0.2 s ends); the names lag 12 px on each slide and glide back.
 - 1 Nov: render r1 started (clip30.sh s09-names r1).
+- s09 r1 (00:55): 0.1 s inside (the first sample only), final hold 0.2 s (52.4, 52.5; before: 4.6 s inside, longest
+  0.4). Then the names' glide back after the slide to C runs until the last frame (0.3 s in, 0.1 s out), so the
+  end's 0.3 s hold in the film (52.33) moves too: the simulator reads no hold through 52.53 at any phase.
+- s10 edits (clock-lint silent): ti glows to 45 % from its name's pulse as the push lands (sine.inOut, screen-blended
+  under its light on "seventh"), a 60 % afterglow after that light until "semitone"; do's light on "doh:" falls over
+  3.9 s (the kit's linear fall, an eased 0.4 s landing) until the pull + 0.5; "1 semitone" glides 8 px in; the
+  returning names ride in 8 px behind after the pull; the run dims by half from "note" to "step" and comes back as
+  the top stair fills (sine.inOut). r1 (01:14): 0.3 s inside (0.1, 2.8, 18.9), longest 0.1, no final hold (before:
+  2.4 s, longest 0.3). 18.9 is the "wait" sound between the ink-2 arrow's draw and the echo, both hosts in frame.
+- s11 edits (clock-lint silent): the kicker and the first credit glide in over 1.4 s; the drift turns on "just" (was
+  on the house's landing); Tavi's labels land gliding in from the left (8 px, 10 px; the hairline's start rides
+  along); "leading note" lags the slide to D by up to 11 px and glides back over "From D"; the top stair's light on
+  "D." falls over 0.91 s, out 0.04 s before the last frame. Simulator: only 0.5 left of the before clip's holds.
+- s14 (item 2): "Singing Voice Range" glows on "range" (a chrome halo under it, 0.8 at most, the pulse's own curve)
+  instead of swelling from its left edge; the gear fades in with a scale from 0.88 (0.3 s, power2.out) from the
+  same time as its old pop (the line's start + 0.15 s). Other icons unchanged.
+- First and last frames: the measure's frame-last.png differs from the before clip's by codec noise (inter-frame
+  coding), so the handoff proof uses lab.mjs stills (PNG) at the before stills' times: s09 0 and 52.54, s10 0 and
+  27.93, s11 0 and 50.71 (lab/s09-names/tools/imgdiff.py).
+- s09: the card's breathe brought to 2 % (was 2.5; the kit's own 3 % breathe from tIn + 0.85 is unchanged), the
+  simulator still clean over the card. Final s09 clip r3 (01:43): 0.1 s inside (the first sample), no final hold.
+- s11: one new 0.1 s hold in r1 at 40.0 (the before clip had max 19 there, r1 13: codec noise on a still sample,
+  after ti's short light on "it's"); ti's light on "it's" now falls until the arrow draws on "leading" (0.92 s, was
+  0.4). Final s11 clip r2 (01:35): 0.1 s inside (0.5), no final hold. Final s10 clip r1: 0.3 s (0.1, 2.8, 18.9).
+- Proofs (01:37 to 01:45): first and last stills (lab.mjs) identical to the before stills, max diff 0, all three
+  scenes (kept: lab/<sid>/holds/first-*.png, last-*.png). Text sweep against a before baseline swept from a shadow
+  root (/dev/shm/l4lab-D/sweeproot, the backups as compositions): unchanged for all four scenes (s09 EDGE '6', '7',
+  'do', 'mi' in the truck; s10 EDGE 'do' at 11.25 as do's name rides in over the pull, now 10 px further left; s11,
+  s14 clean). clock-lint silent; merc-tags --check: s09 6, s10 4, s11 8, s14 4 tags, 0 stale. The bokeh stays at
+  rest (0.3333) through s09's creep (20.5 to 23.0; peak cam.slide 7.6 px/s). Final clips copied to
+  lab/<sid>/clip.mp4 (replacing the 30 Oct clips), measures to lab/<sid>/holds/measure-{before,after}.md and
+  motion-{before,after}.csv.
+- 01:44 check: 0 errors, 66 warnings: the 66th was s10's composition_file_too_large (309 lines; the linter warns
+  over 300, s10 had 275). The s10 settles block condensed (comment, doLit on one line): 294 lines, the same frames
+  (simulator 97 of 98 samples equal, the 98th 0.1 apart in max); text sweep and merc-tags as before. s10 clip r2
+  and a second check started 01:48.
+- 01:52 s10 r2: 0.3 s inside (0.1, 2.8, 18.9), longest 0.1, no final hold (byte-identical to r1). 01:58 check: 0
+  errors, 65 warnings (the baseline; my scenes' own: s09 8, s10 4, s11 6, s14 2, as before the round), runtime 0,
+  layout 0 (2 infos in s01), motion 0, contrast 40/40 (lab/s09-names/holds/check-holds-round.log). clock-lint
+  silent on all four. Final: s09 0.1 s (was 4.6), s10 0.3 s (was 2.4), s11 0.1 s (was 0.9); every hold 0.1 s.
+  /dev/shm/l4lab-D deleted (before clips, sims, sweeps); the evidence kept is in lab/<sid>/holds/ and
+  lab/<sid>/clip.mp4. Round done; report sent to the director.

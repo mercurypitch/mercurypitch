@@ -2555,3 +2555,25 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   0-28 s mid layer on whole pixels while dimmed (creeps at 13.30 and 19.88 step 1 px; the old push does too); new
   single-frame events s07 15 -> 19. The root check left 24 MB in lesson-04/.transcode-cache (/ 200 MB free).
   Waiting for builder D (s09-s11 + s14 card).
+- 01:3x BUILDER D DONE: s09 4.6 -> 0.1 s, s10 2.4 -> 0.3, s11 0.9 -> 0.1 (lab clips), first/last frames identical; s14
+  card: "Singing Voice Range" marked by a chrome glow (no size change; a centred swell would reach the "›"), gear
+  fades in 0.88 -> 1 over 0.3 s; flags for FILM6: s10 run dims 50 % 22.60-26.15, ti glow 45 % before "seventh",
+  several existing ends slowed (starts unchanged). Notes in lab/s09-names/ and lab/s14-recap/ BUILD-NOTES.md.
+  FULL CHECK on the integrated project: 0 errors, 65 warnings (baseline); clock-lint silent on all; merc-tags 68
+  tags 0 stale (log l4entr/polish5/check-f6.log).
+- 04:16 CONTAINER RESTART (uptime 3 min at 04:20; check-ins at 02:15 and 04:16 queued): /dev/shm WIPED (film-05
+  copies, extract cache, /dev/shm/films LFS work repo, l4lab-BC clips, and the tools there: whisper-models,
+  asr-venv, s2plan, w2v, spk, l4-old-passes). Nothing needed is lost: renders/film-05*.mp4 on disk (cmp-checked),
+  film-05 on GitHub (9cfab93, LFS object present), lab evidence on disk, the scratchpad on disk.
+  NOW: freeze l4film06proj, film-06 via render-switch.sh with SWITCH=99 (2 workers; falls back to 1 worker,
+  recycling 3, only if rss+shmem > 12,600 MiB; polls every 10 s) and KEEP_MB=50 (/ 191 MB free: the master fits
+  on disk, the music-only stays in /dev/shm).
+- 04:22 FILM-06 RENDERING: frozen l4film06proj (16 compositions, 355 kit files) at 04:20; KEEP_MB=50 MEM_STOP=12600
+  render-switch.sh film-06 l4film06proj 99 (driver pid 497, render-l4.sh pid 501); status renders/film-06.status,
+  driver log l4entr/film-06-switch.log; watcher bs3yf5lva (to ~06:20) logs l4entr/revoice/mem-f6.log and stops on
+  done/failure/oom. READY: l4entr/push-film06.sh (bash -n ok; re-clones the films branch into /dev/shm/films
+  without bytes, adds the README row after film-05's, commits as Komediruzecki, pushes, verifies by the LFS batch
+  API); critics/FILM6-ready.txt (previous report review/film-05/REPORT.md; previous film renders/film-05.mp4).
+  On "done": confirm "seams: CLEAN" and "film-06.mp4 copied into renders/ and checked", run push-film06.sh (tee
+  l4entr/push-film06.log), then FILM6 (xhigh, rate_limit allowed). On an OOM: RESUME=1 WORKERS=1
+  HF_SEGMENT_BROWSER_RECYCLE=3 KEEP_MB=50 setsid nohup bash render-l4.sh film-06 60 high l4film06proj.

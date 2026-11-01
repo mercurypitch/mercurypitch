@@ -107,7 +107,7 @@
           // fa and so, the stairs the joining tone links, pulse with its riser on "joined" and "tone."
           const PULSE_N = { 4: PUL4, 5: PUL4, 7: [A.tone50, A.tee51, A.hear], 8: [A.semi50, A.lit8p, A.home51] }
           const NAME_N = { 1: STARTSL, 4: PUL4L, 5: PUL4L, 7: LAG(PULSE_N[7]), 8: LAG(PULSE_N[8]) }
-          A.rangeW = word('b53', 'range')                       // "Singing Voice Range" swells 1.2 from its left edge
+          A.rangeW = word('b53', 'range')                       // "Singing Voice Range" glows (up 0.15 s, back over 0.8 s)
           // the card pause: each tab icon glows in turn with its line's underline sweep, More's last; nothing after
           const ICONP = [0, 1, 2, 3].map((k) => at('card', 'start', 0.11 + 0.8 * k))   // x, Settings, Exercises, More: 465.8 to 468.2
           // the card and the ladder leave over 0.52 s from the card pause's end (469.69 to 470.21; film round 1: the 0.3 s
@@ -378,6 +378,21 @@
           // the gear's glow is tighter (its teeth fill its 24-unit box, where the other icons' strokes sit well inside it)
           const igT = L.svg('filter', { id: SID + '-iglow-tight', x: '-60%', y: '-60%', width: '220%', height: '220%' }, hdefs)
           L.svg('feGaussianBlur', { stdDeviation: 1.1 }, igT)
+          // "Singing Voice Range" is marked on "range" by brightness, not size (film round 5, item 4, 1 November: its
+          // 1.2 swell from its left edge pushed the centred line's right end about 30 px out, and a swell about its
+          // centre would reach the "›" before it): its blurred shape in chrome under it, as s11's labels glow, on the
+          // pulse's own curve (up 0.15 s, power2.out; back over 0.8 s, sine.inOut). The filter is on only while it glows
+          const rangeGlow = (() => {
+            const id = SID + '-rglow'
+            const fl = L.svg('filter', { id, x: '-10%', y: '-60%', width: '120%', height: '220%' }, hdefs)
+            L.svg('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 6, result: 'b' }, fl)
+            const flood = L.svg('feFlood', { 'flood-color': C.chrome, 'flood-opacity': 0, result: 'c' }, fl)
+            L.svg('feComposite', { in: 'c', in2: 'b', operator: 'in', result: 'g' }, fl)
+            const merge = L.svg('feMerge', {}, fl)
+            L.svg('feMergeNode', { in: 'g' }, merge)
+            L.svg('feMergeNode', { in: 'SourceGraphic' }, merge)
+            return { flood, url: `url(#${id})` }
+          })()
           // the card pause traces each tab's path in turn under its line, from the icon to the line's end (0.55 s),
           // as the icon glows: the icon alone is too small to read as a beat
           const traces = [0, 1, 2, 3].map(() => L.svg('rect', { x: 0, y: 0, width: 0, height: 2, rx: 1, fill: C.chrome, opacity: 0 }, hud))
@@ -614,7 +629,11 @@
             })
             icons.forEach((R, k) => {
               const times = [ICONP[k]].concat(k === 1 ? [A.settings] : [])
-              const pop = lerp(0.4, 1, P(t, R.ln.tIn + 0.15, 0.5, 'back.out(2)'))
+              // the gear eases in as its line's words do, a fade with a slight scale up (0.3 s, power2.out; film round 5,
+              // item 4: it popped in from 0.4 on back.out); the other icons keep their pop
+              const gearIn = k === 1 ? P(t, R.ln.tIn + 0.15, 0.3, 'power2.out') : 1
+              const pop = k === 1 ? lerp(0.88, 1, gearIn) : lerp(0.4, 1, P(t, R.ln.tIn + 0.15, 0.5, 'back.out(2)'))
+              if (k === 1) R.g.setAttribute('opacity', gearIn.toFixed(3))
               const s = (R.size / 24) * pop * L.pulse(t, times, 0.15, { long: true })   // 1.15: 8 px or more from its words
               // the gear turns one tooth (45 degrees) on "Settings"
               const rot = k === 1 ? 45 * P(t, A.settings, 0.8, 'power1.inOut') : 0
@@ -627,10 +646,11 @@
               T.setAttribute('transform', `translate(0 ${f1(R.ln.lift)})`)
             })
             {
-              const { R, Ln } = runsBy.range
-              // from its left edge, so it grows away from the "›" before it (to x 1581 at most at 1.2)
-              const s = L.pulse(t, A.rangeW, 'label', { long: true }), cx = R.x ?? 960, cy = Ln.y - 14
-              R.el.setAttribute('transform', `translate(${f1(cx)} ${f1(cy)}) scale(${s.toFixed(4)}) translate(${f1(-cx)} ${f1(-cy)})`)
+              const { R } = runsBy.range
+              const g = 0.8 * L.lit(t, A.rangeW, { long: true })
+              rangeGlow.flood.setAttribute('flood-opacity', g.toFixed(3))
+              if (g > 0.002) R.el.setAttribute('filter', rangeGlow.url)
+              else R.el.removeAttribute('filter')
             }
           })
           window.__timelines = window.__timelines || {}

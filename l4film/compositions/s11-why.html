@@ -94,6 +94,26 @@
           // falls 0.55 s), so the strip's end is clear of her column when she lands (DECISIONS 83)
           const PULL_DUR = 0.8
 
+          /* ---------------------------------------------------------------- settles (holds round, 1 November) */
+          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
+          // (film round 5, DECISIONS 139; study rule 8). Through each held span the thing just named settles, coming
+          // to rest as the next thing begins (the hosts are in frame from o11, so only labels and lights move there):
+          //   the kicker and the first credit glide their 18 px in over 1.4 s (power2.out; the kit's is 0.45 s), into
+          //   the push;
+          //   each of Tavi's two labels lands with a glide in from the left, "learned, it seems" 8 px over 1.2 s and
+          //   "one short step" 10 px until just after "it?" (the hairline's start rides with it), so they stand
+          //   aligned again at rest;
+          //   "leading note" rides the slide to D up to 11 px behind, and glides back over "From D";
+          //   ti's light on "it's" falls until the arrow draws on "leading" (0.92 s; was 0.4), and the top stair's light
+          //   on "D." over 0.91 s instead of 0.8, out 0.04 s before the last frame (both the kit's linear fall)
+          const KICK_IN = 1.4
+          const RAMP2 = 0.3
+          const trap2 = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          const glide = (t, t0, t1) => trap2(clamp((t - t0) / (t1 - t0)), Math.min(RAMP2, (t1 - t0) / 3) / (t1 - t0))
+          const LAB_IN = [{ px: -8, t0: A.learnedO, t1: A.learnedO + 1.2 }, { px: -10, t0: A.oneShort, t1: A.itQ + 0.4 }]
+          const labDx = (i, t) => LAB_IN[i].px * (1 - glide(t, LAB_IN[i].t0, LAB_IN[i].t1))
+          const LEAD_LAG = 12
+
           /* ---------------------------------------------------------------- camera */
           // 11a's push lands on F-exp (the staircase, the probe and the axis; the stair names stay over the caption
           // band, since the chips fly up from them). On "top", as the names fly up, the camera follows them in to
@@ -103,14 +123,15 @@
           // Between the push and the pull the camera drifts sideways, 5 px a second, so the MS stays alive between
           // its beats (DECISIONS 92): a slow truck, so the bokeh and staves part from the diagram by a few px. It
           // turns only inside a beat that moves something else (the probe's arrival, the names' flight, each credit
-          // landing, the shelves spreading, the house landing), each turn eased over 0.35 s, and it is back on
+          // landing, the shelves spreading, the cascade on "just"; holds round: it turned on the house's landing,
+          // which left the board still just after it), each turn eased over 0.35 s, and it is back on
           // F-chart, at rest, as the pull starts. It is horizontal only: a vertical drift moves every text
           // baseline by a whole pixel at once, which reads as a judder
           const F_EXP = { s: 1.3, ox: -252, oy: -75 }, F_CHART = L.FRAMES['F-chart']
           // (the drift sets off 0.3 s before the push lands, so the landing never stands still)
           const RAMP = 0.35
           const DRIFT = [[A.push + 0.9, 0], [A.oneMore + 0.66, 15], [A.top + 0.55, -5.5], [A.later + 0.08, 2], [A.without + 0.1, -13],
-            [A.so + 0.4, 4], [A.learned - 0.05, -6], [A.pull, 0]]
+            [A.so + 0.4, 4], [A.just, -6], [A.pull, 0]]
           const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
           const drift = (t) => {
             for (let i = 0; i + 1 < DRIFT.length; i++) {
@@ -289,8 +310,8 @@
           addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard - 0.3, 0.3, 0.4); addL(1, A.heardC - 0.3, 0.3, 0.4)
           for (let n = 1; n <= 8; n++) addL(n, A.cMajor + 0.1 * (n - 1), 0.3, 0.4)
           addL(8, A.onDoh); addL(7, A.teeO); addL(7, A.labelsOut); addL(8, A.tonic)
-          addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD)
-          addL(8, A.itQ, 0.3, 0.4); addL(7, A.its, 0.3, 0.4); addL(8, A.homeIs, 0.3, 0.4)
+          addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD, 0.4, D - 0.04 - A.toD - 0.4)
+          addL(8, A.itQ, 0.3, 0.4); addL(7, A.its, 0.3, A.leadingTo - A.its - 0.3); addL(8, A.homeIs, 0.3, 0.4)
           const litC = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
           const GROW = [A.oneShort, A.under]
           const gap = (t) => 80 - 16 * (P(t, A.only, 0.8) - P(t, A.so, 0.8))
@@ -446,7 +467,8 @@
             // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")
             {
               const out = 1 - P(t, A.allOut, 0.2)
-              const dx = 120 * w, ride = -26 * s0, dy = ride + 14 * (1 - P(t, A.leading, 0.45, 'power2.out'))
+              const lag = -LEAD_LAG * (uS - P(t, A.slide + 0.64, 1.8, 'sine.inOut'))
+              const dx = 120 * w + lag, ride = -26 * s0, dy = ride + 14 * (1 - P(t, A.leading, 0.45, 'power2.out'))
               const sc = L.pulse(t, A.noteW, 'label')
               const cy = LEAD.y - 22
               leadT.setAttribute('opacity', (P(t, A.leading, 0.2) * out).toFixed(3))
@@ -472,9 +494,11 @@
             // the kicker and the credits leave as the pull starts (gone by 320.43), clear of Merc's column before his
             // fall from above the frame (321.03 to 321.58, DECISIONS 86; component critic D-01 item 17)
             kicker.draw(t, A.kickIn, A.pull)
+            kicker.g.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.kickIn, KICK_IN, 'power2.out')))} 0)`)
             for (const [el, t0] of [[credit1, A.kickIn], [credit2, A.later], [credit3, A.without]]) {
               el.setAttribute('opacity', (P(t, t0, 0.2, 'power2.out') * (1 - P(t, A.pull, 0.2, 'power2.in'))).toFixed(3))
-              el.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, t0, 0.45, 'power3.out')))} 0)`)
+              const u = el === credit1 ? P(t, t0, KICK_IN, 'power2.out') : P(t, t0, 0.45, 'power3.out')
+              el.setAttribute('transform', `translate(${f1(-18 * (1 - u))} 0)`)
             }
             answer.forEach((lab, i) => {
               const t0 = i === 0 ? A.learnedO : A.oneShort
@@ -482,15 +506,17 @@
               lab.g.setAttribute('opacity', (P(t, t0, 0.2) * (1 - P(t, A.labelsOut, 0.2))).toFixed(3))
               const sc = L.pulse(t, A.seems + 0.1 * i, 0.08)
               const y = 320 + 80 * i - 17
-              lab.g.setAttribute('transform', `translate(1250 ${f1(y + 12 * (1 - u))}) scale(${sc.toFixed(4)}) translate(-1250 ${-y})`)
+              const lx = labDx(i, t)
+              lab.g.setAttribute('transform', `translate(${f1(1250 + lx)} ${f1(y + 12 * (1 - u))}) scale(${sc.toFixed(4)}) translate(-1250 ${-y})`)
               const glow = 0.7 * L.env(t, A.seems + 0.1 * i, 0.3, 0.5, 0.6)
               lab.flood.setAttribute('flood-opacity', glow.toFixed(3))
               if (glow > 0.002) lab.el.setAttribute('filter', lab.url)
               else lab.el.removeAttribute('filter')
             })
             {
-              const u = P(t, A.oneShort + 0.1, 0.5, 'power2.inOut')
-              hair.setAttribute('x2', f1(lerp(1240, 1078, u))); hair.setAttribute('y2', f1(lerp(383, 352, u)))
+              const u = P(t, A.oneShort + 0.1, 0.5, 'power2.inOut'), hx = 1240 + labDx(1, t)
+              hair.setAttribute('x1', f1(hx))
+              hair.setAttribute('x2', f1(lerp(hx, 1078, u))); hair.setAttribute('y2', f1(lerp(383, 352, u)))
               hair.setAttribute('opacity', ((t >= A.oneShort + 0.1 ? 1 : 0) * (1 - P(t, A.labelsOut, 0.2))).toFixed(3))
             }
             {

@@ -183,7 +183,7 @@
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const hud = L.stageOf(room.hud)
           const card = L.chapterCard(room.hud, { num: 3, title: 'Name the stairs', baseline: 480, tIn: A.cardIn, tOut: A.cardOut })
-          // the card settles as it holds: a slow 2.5 % zoom about its own centre (x 960, baseline - 110), from its
+          // the card settles as it holds: a slow 2 % zoom about its own centre (x 960, baseline - 110), from its
           // entrance through its exit, so neither the end of its entrance nor its turn from breathing to leaving stands
           const cardWrap = L.svg('g', {}, card.g.parentNode)
           cardWrap.appendChild(card.g)
@@ -361,7 +361,7 @@
 
             // frame-fixed type
             card.draw(t)
-            const cz = 1 + 0.025 * P(t, A.cardIn, A.cardOut + 0.38 - A.cardIn, 'sine.inOut')
+            const cz = 1 + 0.02 * P(t, A.cardIn, A.cardOut + 0.38 - A.cardIn, 'sine.inOut')
             cardWrap.setAttribute('transform', `translate(960 370) scale(${cz.toFixed(4)}) translate(-960 -370)`)
             kicker.draw(t, A.b26, A.kickOut)
             kicker.g.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.b26, KICK_IN, 'power2.out')))} 0)`)

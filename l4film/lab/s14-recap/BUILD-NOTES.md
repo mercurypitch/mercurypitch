@@ -300,3 +300,18 @@ events in the card pause (icon pulses that register, then the address once more)
 - 22:25-22:31 check re-run (root-check-p2.log): 0 errors; group F's warnings as p1 (duplicate_media x3, s14
   file length); contrast 59/59. clock-lint silent on all three; merc-tags 12 tags, 0 stale. /dev/shm/l4lab-F
   deleted (the p1 clips with it); the per-frame bead log is lab/s16-end/polish2/clipflight.txt. Round done.
+
+## Holds round, item 2 only (1 November; polish5/BRIEF-D.md, builder D): the practise card
+
+Film round 5, item 4, at s14 61.93 to 63.13 (8:46.0 to 8:47.2). Backup: lab/s14-recap/s14-recap.holds-before.html.
+- "Singing Voice Range" no longer swells 1.2 from its left edge on "range" (A.rangeW, 62.57), which pushed the
+  centred line's right end about 30 px out. A swell about its own centre would reach the "›" before it (one
+  space away), so it is marked by brightness: its blurred shape in chrome under it (feGaussianBlur 6 on its alpha,
+  flood opacity 0.8 at most), on the pulse's own curve (L.lit, long: up 0.15 s power2.out, back over 0.8 s
+  sine.inOut), the filter on only while it glows (as s11's labels). The phrase and the line do not move.
+- The gear (the y 670 line's icon) fades in with a scale from 0.88 to 1 over 0.3 s (power2.out) from the same time
+  as its old pop (the line's start + 0.15 s, 61.88), instead of popping from 0.4 on back.out(2) over 0.5 s. The
+  other three icons keep their pop (the item names only the gear).
+- Stills at 61.8, 62.0, 62.2, 62.6, 63.0 and 63.4, before and after: lab/s14-recap/holds/stills-sheet.png; the line
+  at 2x, before over after: lab/s14-recap/holds/line-2x.png (lab/s14-recap/linecrop.py). clock-lint silent; the
+  text sweep clean (as before); merc-tags 4 tags, 0 stale.
