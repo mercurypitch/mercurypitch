@@ -49,7 +49,7 @@ import type { DoorKey } from '../alley/alley-plate'
 import { DOORS, isEnterable } from '../alley/alley-plate'
 import { markAlleyGreeted } from './alley-greeting'
 import type { GuideInput } from './alley-guide-place'
-import { guidePlace } from './alley-guide-place'
+import { guidePlace, LINE_H } from './alley-guide-place'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { onboardingDue } from './onboarding-flag'
 
@@ -109,6 +109,18 @@ export interface AlleyGuideProps {
   opened: () => boolean
   /** The door lit for him, one at a time, or none. */
   light: (door: DoorKey | null) => void
+}
+
+/**
+ * His line as drawn, the words after a colon held together: on a short
+ * phone, where it takes two lines (alley-guide-place.ts), it breaks after
+ * "Start here:", not in "the / Sing room". What is read out is the plain
+ * line.
+ */
+export function heldAfterColon(line: string): string {
+  const at = line.indexOf(': ')
+  if (at < 0) return line
+  return line.slice(0, at + 2) + line.slice(at + 2).replace(/ /gu, '\u00a0')
 }
 
 export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
@@ -289,6 +301,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                   class="mp-alley-guide__line"
                   data-shown={hello() ? 'on' : 'off'}
                   data-said={said() ?? 'none'}
+                  data-lines={line().height > LINE_H ? 'two' : 'one'}
                   data-testid="alley-guide-line"
                   style={{
                     // Its middle under his feet: the stylesheet centres it.
@@ -297,7 +310,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
                     'max-width': `${line().width}px`,
                   }}
                 >
-                  {lineText()}
+                  {heldAfterColon(lineText())}
                 </p>
               )}
             </Show>

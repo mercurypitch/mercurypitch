@@ -14,7 +14,7 @@ import type { DoorKey } from '../alley/alley-plate'
 import { alleyScene } from '../alley/alley-plate'
 import { alleyGreeted, resetAlleyGreetingForTests } from './alley-greeting'
 import type { GuideInput } from './alley-guide-place'
-import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, START_DOOR, UNDRAWN_MS, } from './AlleyGuide'
+import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, heldAfterColon, START_DOOR, UNDRAWN_MS, } from './AlleyGuide'
 import { ONBOARDING_COPY } from './onboarding-copy'
 import { ONBOARDING_KEY, resetOnboardingFlagForTests } from './onboarding-flag'
 
@@ -153,8 +153,9 @@ describe("Merc's welcome in the alley", () => {
     expect(lights).toEqual(['ear', 'karaoke', 'sing', START_DOOR])
     expect(START_DOOR).toBe('sing')
     expect(mercState(root)).toBe('idle')
+    // Drawn with "the Sing room." held together, read out plain.
     expect(q(root, 'alley-guide-line')?.textContent).toBe(
-      ONBOARDING_COPY.startHere,
+      'Start here: the\u00a0Sing\u00a0room.',
     )
     expect(q(root, 'alley-guide-said')?.textContent).toBe(
       ONBOARDING_COPY.startHere,
@@ -210,7 +211,7 @@ describe("Merc's welcome in the alley", () => {
     expect(q(root, 'alley-guide')?.getAttribute('data-aside')).toBe('off')
     expect(lights).toEqual(['ear', null, START_DOOR])
     expect(q(root, 'alley-guide-line')?.textContent).toBe(
-      ONBOARDING_COPY.startHere,
+      heldAfterColon(ONBOARDING_COPY.startHere),
     )
   })
 
@@ -276,5 +277,14 @@ describe("Merc's welcome in the alley", () => {
     expect(lights).toEqual(['ear', 'karaoke', 'sing', START_DOOR])
     expect(q(root, 'alley-guide-line')?.getAttribute('data-shown')).toBe('off')
     expect(alleyGreeted()).toBe(false)
+  })
+})
+
+describe('his line as drawn', () => {
+  it('holds the words after a colon together, and leaves a line without one', () => {
+    expect(heldAfterColon('Start here: the Sing room.')).toBe(
+      'Start here: the\u00a0Sing\u00a0room.',
+    )
+    expect(heldAfterColon("Hi, I'm Merc.")).toBe("Hi, I'm Merc.")
   })
 })

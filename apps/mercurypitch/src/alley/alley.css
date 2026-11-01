@@ -195,6 +195,8 @@
   font: 400 17px/24px var(--font-body, 'Inter', sans-serif);
   color: var(--alley-ink-2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* Even lines too: "three / more on the way" split the phrase. */
+  text-wrap: balance;
 }
 
 .mp-alley__title {

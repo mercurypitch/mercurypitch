@@ -14,7 +14,7 @@ import type { AlleyFrame } from '../alley/alley-geometry'
 import { alleyFit, layoutDoors } from '../alley/alley-geometry'
 import { alleyScene } from '../alley/alley-plate'
 import type { GuideInput, GuidePlace } from './alley-guide-place'
-import { FIGURE_OF_DOOR, GUIDE_MIN, guidePlace, LINE_H, LINE_MAX, } from './alley-guide-place'
+import { FIGURE_OF_DOOR, GUIDE_MIN, guidePlace, LINE_H, LINE_H2, LINE_MAX, LINE_NARROW, } from './alley-guide-place'
 
 interface Screen {
   readonly w: number
@@ -29,6 +29,15 @@ interface Screen {
 
 const SCREENS: Readonly<Record<string, Screen>> = {
   'a phone upright': { w: 390, h: 844, top: 170, floor: 746 },
+  // As the alley measures them on a short phone and a small one.
+  'a short phone upright': { w: 360, h: 640, top: 208, floor: 552 },
+  'a small phone upright': { w: 320, h: 568, top: 204, floor: 496 },
+  'a small phone with a gesture bar': {
+    w: 320,
+    h: 568,
+    top: 204,
+    floor: 480,
+  },
   'an iPad upright': { w: 820, h: 1180, top: 200, floor: 1096 },
   'an iPad on its side': { w: 1180, h: 820, top: 24, floor: 730, column: 268 },
   'a phone on its side': { w: 844, h: 390, top: 0, floor: 326, column: 268 },
@@ -142,11 +151,12 @@ describe('Merc in the alley (owner, 20 Oct 2026)', () => {
         expect(Math.abs(line.x - input.feet[0])).toBeLessThanOrEqual(1)
         expect(line.y).toBeGreaterThan(input.feet[1])
         expect(line.width).toBeLessThanOrEqual(LINE_MAX)
+        expect([LINE_H, LINE_H2]).toContain(line.height)
         const box = {
           x0: line.x - line.width / 2,
           x1: line.x + line.width / 2,
           y0: line.y,
-          y1: line.y + LINE_H,
+          y1: line.y + line.height,
         }
         for (const door of input.doors) {
           expect(overlaps(box, door), door.key).toBe(false)
@@ -199,6 +209,26 @@ describe('Merc in the alley (owner, 20 Oct 2026)', () => {
     const line = placed({ ...input, doors: [...input.doors, low] }).line
 
     expect(line?.y ?? 0).toBeGreaterThan(low.y1)
+  })
+
+  it('says his line in one line where it fits', () => {
+    const line = placed(inputFor(SCREENS['a phone upright'])).line
+
+    expect(line?.width).toBe(LINE_MAX)
+    expect(line?.height).toBe(LINE_H)
+  })
+
+  it('says it in two lines on a short phone, where one would meet the door on the right', () => {
+    for (const screen of [
+      'a short phone upright',
+      'a small phone upright',
+      'a small phone with a gesture bar',
+    ]) {
+      const line = placed(inputFor(SCREENS[screen])).line
+
+      expect(line?.width, screen).toBe(LINE_NARROW)
+      expect(line?.height, screen).toBe(LINE_H2)
+    }
   })
 
   it('has no line where the dock leaves it no room under him', () => {
