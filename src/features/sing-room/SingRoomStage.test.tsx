@@ -20,7 +20,7 @@ import type { PracticeFrameListener } from '@/features/practice/usePracticeContr
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
 import type { NativeShellApi } from '@/stores/native-shell-store'
-import { holdRoomArrival, nativeRunControls, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import { holdRoomArrival, holdRoomWords, nativeRunControls, registerShellApi, resetRoomArrivalHolds, resetRoomWordsHolds, } from '@/stores/native-shell-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
@@ -235,6 +235,7 @@ afterEach(() => {
   dispatchSingRoom({ type: 'leave' })
   // A case that throws between a hold and its release leaves no hold behind.
   resetRoomArrivalHolds()
+  resetRoomWordsHolds()
 })
 
 describe('the room when the melody runs out', () => {
@@ -514,6 +515,21 @@ describe('arriving through an alley door', () => {
     expect(capsule.getAttribute('aria-disabled')).toBeNull()
     fireEvent.click(capsule)
     expect(singRoomContext().state).not.toBe('resting')
+  })
+
+  it('keeps its words out of sight while the shell holds them, its picture showing', () => {
+    // The native onboarding opening over the room: its resting words
+    // flashed under the onboarding's first frames.
+    const release = holdRoomWords()
+    mountRoom()
+    const room = screen.getByTestId('sing-room')
+    const held = room.querySelector('[data-words="held"]')
+    // The column with every word in it, and not the picture under it.
+    expect(held?.contains(screen.getByTestId('sing-stage'))).toBe(true)
+    expect(held?.contains(screen.getByTestId('sing-cover'))).toBe(false)
+
+    release()
+    expect(room.querySelector('[data-words]')).toBeNull()
   })
 
   it('arrives at once when nothing holds it', async () => {

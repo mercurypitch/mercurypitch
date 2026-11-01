@@ -116,6 +116,12 @@
     max(16px, var(--safe-left, 0px));
 }
 
+/* The shell holds the room's words (roomWordsHeld): only its picture shows,
+   and nothing in the column takes a tap. */
+.wordsHeld {
+  visibility: hidden;
+}
+
 /* Row 1: key · mic · song (R3).
    NOTHING HERE SHRINKS EXCEPT THE SONG NAME, and when even its floor will not
    fit, the song chip takes a line of its own. The first cut let the key and

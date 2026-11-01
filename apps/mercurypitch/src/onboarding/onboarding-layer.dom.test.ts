@@ -10,7 +10,7 @@ import { createEffect, createRoot, on } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
 import { resetPathLandingForTests, takePathLanding, } from '@/features/warm-up/path-landing'
-import { resetRoomArrivalHolds, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { resetRoomArrivalHolds, resetRoomWordsHolds, roomArrivalHeld, roomWordsHeld, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { markWelcomeSeen, resetWelcome } from '../alley/alley-welcome'
 import type * as Wiring from '../shell/premium-exercise-wiring'
@@ -18,7 +18,7 @@ import { moreOpen, onboardingShown, openMore, popScreen, pushed, pushScreen, rai
 import { keepArrival, offerOpen, rangeFinder, resetAccountOffer, } from '../shell/settings/account-offer'
 import { performBack, shellBackHost } from '../shell/shell-navigation'
 import { onboardingDue, resetOnboarding, resetOnboardingFlagForTests, } from './onboarding-flag'
-import { installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, openRangeFinder, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
+import { expectNoOnboarding, expectOnboarding, installNativeOnboarding, LEAVE_MS, leaveOnboarding, onboardingEntry, onboardingExit, onboardingMounted, openRangeFinder, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
 
 /** The Rooms home's address: the alley. */
 const ALLEY = '#/home'
@@ -43,11 +43,16 @@ let dispose: (() => void) | null = null
 /** Roots a test made, let go of after it. */
 const cleanups: (() => void)[] = []
 
+/** How often the shell was asked to load the layer's code. */
+let preloads = 0
+
 /** The shell's half, as NativeShell runs it. */
 function install(): void {
   createRoot((done) => {
     dispose = done
-    installNativeOnboarding()
+    installNativeOnboarding(() => {
+      preloads += 1
+    })
   })
 }
 
@@ -58,6 +63,8 @@ beforeEach(() => {
   resetWelcome()
   resetRunShell()
   resetRoomArrivalHolds()
+  resetRoomWordsHolds()
+  preloads = 0
   resetAccountOffer()
   setActiveTab(TAB_HOME)
   window.location.hash = ''
@@ -113,6 +120,60 @@ describe('the onboarding layer', () => {
     setActiveTab(TAB_HOME)
     setActiveTab(TAB_SINGING)
     expect(onboardingShown()).toBe(false)
+  })
+
+  it("holds the room's words from the Sing door, loads the layer, and lets both go as one", () => {
+    install()
+    // The door picked: the code on its way, the room's words kept off.
+    expectOnboarding()
+    expect(preloads).toBe(1)
+    expect(roomWordsHeld()).toBe(true)
+    expect(roomArrivalHeld()).toBe(false)
+
+    // The door opens into the room: the layer takes the hold over.
+    setActiveTab(TAB_SINGING)
+    expect(roomWordsHeld()).toBe(true)
+    expect(roomArrivalHeld()).toBe(true)
+    // A door gone back now changes nothing: the layer holds them.
+    expectNoOnboarding()
+    expect(roomWordsHeld()).toBe(true)
+
+    // Not now: the words come back with the room's arrival, on the alley.
+    leaveOnboarding('not-now')
+    expect(roomWordsHeld()).toBe(true)
+    setActiveTab(TAB_HOME)
+    expect(roomWordsHeld()).toBe(false)
+    expect(roomArrivalHeld()).toBe(false)
+  })
+
+  it("holds the words from the rail's Sing too, and lets them go under the path", () => {
+    install()
+    setActiveTab(TAB_SINGING)
+    expect(roomWordsHeld()).toBe(true)
+
+    leaveOnboarding('finished')
+    // Under the path the room waits, words and all; Back lets it in.
+    expect(pushed()).toBe('warm-up')
+    expect(roomWordsHeld()).toBe(true)
+    popScreen()
+    expect(roomWordsHeld()).toBe(false)
+  })
+
+  it('lets the words go when the Sing door goes back into the alley', () => {
+    install()
+    expectOnboarding()
+    expectOnboarding()
+    expect(roomWordsHeld()).toBe(true)
+    expectNoOnboarding()
+    expect(roomWordsHeld()).toBe(false)
+  })
+
+  it('holds nothing and loads nothing once the onboarding is done', () => {
+    markWelcomeSeen()
+    install()
+    expectOnboarding()
+    expect(preloads).toBe(0)
+    expect(roomWordsHeld()).toBe(false)
   })
 
   it('stays away from an install that has opened a door already', () => {

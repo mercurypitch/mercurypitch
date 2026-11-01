@@ -28,7 +28,9 @@
     var(--bg-primary);
   color: var(--text-primary);
   outline: none;
-  animation: onboarding-in var(--mp-in, 280ms) ease-out both;
+  /* Opaque from its first frame: only what is on it fades in (.top,
+     .beats). Faded in whole, it let the Sing room under it show through,
+     its resting words and all, for most of the fade. */
   transition: opacity var(--mp-in, 280ms) ease;
 }
 
@@ -55,6 +57,7 @@
   display: flex;
   justify-content: flex-end;
   padding: 4px 8px 0;
+  animation: onboarding-in var(--mp-in, 280ms) ease-out both;
 }
 
 .notNow {
@@ -76,9 +79,15 @@
 }
 
 /* The beats' own wrapper, there to be put out of reach (inert) while Not
-   now's asks are out: no box, so each beat lays out in the layer. */
+   now's asks are out. The rest of the layer's height, laid out as the
+   layer lays out a beat; a box, so the beats fade in once as the layer
+   comes up (a display: contents wrapper draws nothing to fade). */
 .beats {
-  display: contents;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation: onboarding-in var(--mp-in, 280ms) ease-out both;
 }
 
 /* Up to three seconds while the Cloud offer's asks are out, after Not now or
@@ -857,9 +866,10 @@
   }
 }
 
-/* Reduced motion: no pop, and the shell's crossfade in and out. */
+/* Reduced motion: no pop, and the shell's crossfade out. */
 @media (prefers-reduced-motion: reduce) {
-  .layer {
+  .top,
+  .beats {
     animation: none;
   }
 

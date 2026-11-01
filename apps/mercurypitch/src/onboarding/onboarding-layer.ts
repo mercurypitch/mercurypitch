@@ -8,8 +8,13 @@
 // Sing door, or the rail's Sing. While it is up:
 //
 //   - the Sing room under it waits (holdRoomArrival): no mic, no header, no
-//     words, until the onboarding goes. Then it arrives as it would have,
-//     live if the singer granted the mic here;
+//     words (holdRoomWords), until the onboarding goes. Then it arrives as
+//     it would have, live if the singer granted the mic here. Its words are
+//     held from the alley's Sing door already (`expectOnboarding`), which
+//     also loads the layer's code: the door's clone covers the screen as
+//     the room mounts, and the room's resting screen showed in full for the
+//     frames before a lazy layer had loaded and faded in over it. The layer
+//     is opaque from its first frame, and only its content fades in;
 //   - the rail steps aside (run-shell-store.ts `onboardingShown`), and a
 //     phone stays upright (portrait-lock.ts);
 //   - Back is Not now (shell-navigation.ts `registerOnboardingBack`): the
@@ -44,7 +49,7 @@ import { createEffect, createRoot, createSignal, on, onCleanup, untrack, } from 
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { trackNativeOnboarding } from '@/features/onboarding/funnel'
 import { TAB_SINGING } from '@/features/tabs/constants'
-import { holdRoomArrival } from '@/stores/native-shell-store'
+import { holdRoomArrival, holdRoomWords } from '@/stores/native-shell-store'
 import { welcomeSeen } from '../alley/alley-welcome'
 import { currentTab, onboardingShown, pushed, setOnboardingShown, } from '../shell/run-shell-store'
 import { openKeep, openKeepFromReveal, registerRangeFinder, } from '../shell/settings/account-offer'
@@ -71,8 +76,12 @@ export const onboardingMounted = mounted
 /** What the layer is up for; read by the layer as it mounts. */
 export const onboardingEntry = entry
 
-/** The Sing room's arrival, held while the onboarding is up. */
+/** The Sing room's arrival and its words, held while the onboarding is up. */
 let releaseArrival: (() => void) | null = null
+/** The room's words, held from a Sing door picked while the onboarding is due. */
+let releaseWords: (() => void) | null = null
+/** Loads the layer's code before it is needed (the shell's lazy chunk). */
+let preloadLayer: (() => void) | null = null
 let unmount: ReturnType<typeof setTimeout> | null = null
 let lastExit: OnboardingExit | null = null
 /** What runs once the range on its own has left: Keep, again. */
@@ -92,6 +101,39 @@ function leaveMs(): number {
   return prefersReducedMotion() ? LEAVE_REDUCED_MS : LEAVE_MS
 }
 
+/**
+ * The room under the layer held: its arrival, and its words, taking over
+ * the hold a Sing door already has on them. Let go as one.
+ */
+function holdRoom(): () => void {
+  const arrival = holdRoomArrival()
+  const words = releaseWords ?? holdRoomWords()
+  releaseWords = null
+  return () => {
+    arrival()
+    words()
+  }
+}
+
+/**
+ * A Sing door picked in the alley while the onboarding is due, so it opens
+ * over the room that door leads to: the layer's code loads now, ready by
+ * the time the door has opened, and the room's words are held from now, so
+ * nothing of its resting screen shows as the door opens into it.
+ */
+export function expectOnboarding(): void {
+  if (!untrack(onboardingDue) || untrack(onboardingShown)) return
+  preloadLayer?.()
+  releaseWords ??= holdRoomWords()
+}
+
+/** That door went back, or another was picked: the room's words go free. */
+export function expectNoOnboarding(): void {
+  const release = releaseWords
+  releaseWords = null
+  release?.()
+}
+
 /** Up, for `next`. The entry is set before the lazy layer mounts and reads it. */
 function show(next: OnboardingEntry): void {
   if (unmount !== null) {
@@ -103,7 +145,7 @@ function show(next: OnboardingEntry): void {
   setEntry(next)
   notNowSaid = false
   finishCounted = false
-  releaseArrival ??= holdRoomArrival()
+  releaseArrival ??= holdRoom()
   setMounted(true)
   setOnboardingShown(true)
 }
@@ -310,9 +352,11 @@ export function onboardingExit(): OnboardingExit | null {
 /**
  * The shell's half, for as long as the shell lives: the flag settled, the
  * layer opened when the Sing tab comes up while it is due (or the app
- * starts on it), Back, and the range Keep links to.
+ * starts on it), Back, and the range Keep links to. `preload` loads the
+ * layer's code (the shell's lazy component), for a Sing door to start.
  */
-export function installNativeOnboarding(): void {
+export function installNativeOnboarding(preload?: () => void): void {
+  preloadLayer = preload ?? null
   // A new install, counted once: the flag settles only on the first mount.
   if (settleOnboarding(welcomeSeen()) === 'due') {
     trackNativeOnboarding('native_onboarding_install')
@@ -332,6 +376,8 @@ export function installNativeOnboarding(): void {
     unmount = null
     releaseArrival?.()
     releaseArrival = null
+    expectNoOnboarding()
+    preloadLayer = null
     letInNow?.()
     afterRange = null
     layerRange = null
