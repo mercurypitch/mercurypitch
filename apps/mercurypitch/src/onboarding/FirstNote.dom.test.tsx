@@ -14,9 +14,10 @@ import type * as MicSentinel from '@/lib/mic-sentinel'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import { FirstNoteView, noteSays } from './FirstNoteView'
+import styles from './NativeOnboarding.module.css'
 import type { Stand } from './onboarding-capture.test-fixtures'
 import { flushFrame, noteTake, settle, stand, stubFrames, } from './onboarding-capture.test-fixtures'
-import { ONBOARDING_COPY } from './onboarding-copy'
+import { ONBOARDING_COPY, voicePromise } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
 import { GREET_MS, useFirstNote } from './useFirstNote'
 
@@ -139,6 +140,23 @@ describe('the first note', () => {
     // No mic, no clock, no prompt before the tap (REQ-NFL-020).
     expect(s.calls.acquire).toBe(0)
     expect(localStorage.getItem(GRANT)).toBeNull()
+  })
+
+  it("says the mic's promise once, by the first ask, and not under a refusal", async () => {
+    const s = stand()
+    s.answer = async () => Promise.reject(new CaptureError('denied'))
+    show(s)
+    const promise = (): HTMLElement | null => q('onboarding-promise')
+
+    expect(promise()?.textContent?.trim()).toBe(voicePromise())
+    expect(promise()?.classList.contains(styles.away)).toBe(false)
+
+    q('onboarding-mic')?.click()
+    await settle()
+
+    // Refused: the mic's ways back, and no promise under them.
+    expect(controller?.state().phase).toBe('blocked')
+    expect(promise()).toBeNull()
   })
 
   it('opens the mic inside the tap, and remembers the grant', async () => {

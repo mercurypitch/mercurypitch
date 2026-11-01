@@ -6,7 +6,10 @@
 // wording is one file (the owner's rule for Merc's lines, 9 Oct 2026). From
 // the S7b copy deck (§6.1): Merc's lines are plain and specific, one
 // sentence at a time, and never say "wrong", "failed" or "bad". The
-// microphone's promise is the house one, "Only you can hear you."
+// microphone's promise is said once, by the first ask for it, and plainly:
+// "Your voice stays on this phone." (voicePromise). The house line, "Only
+// you can hear you.", under every beat read as a riddle, and it stood under
+// a mic that had been refused.
 //
 // The deck's lines are kept as written: the first note, the range's result,
 // Merc's line on the reveal, the sung line's chip and Merc's band lines but
@@ -27,6 +30,7 @@
 // written with the sharp sign, "G♯4", never the hash (noteOnScreen).
 
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { noteArticle, noteOnScreen } from '@/lib/note-utils'
 import type { LineFacts } from './line-score'
 
@@ -48,7 +52,6 @@ export const ONBOARDING_COPY = {
   /** Today's priming copy (the Sing room's), ending in the house promise. */
   // Merc is the one who listens, as he is the one who asked.
   listens: 'Merc listens while you sing and draws your pitch on screen.',
-  private: 'Only you can hear you.',
   /** The mic's name while it opens. */
   opening: 'Opening the microphone',
   /** The mic's name while it listens. */
@@ -211,6 +214,14 @@ export function lineVerdict(facts: LineFacts): string {
  */
 export function lineWarmingUp(hit: number, total: number): boolean {
   return total > 0 && hit / total < 0.4
+}
+
+/**
+ * The microphone's promise, by the first ask for it: "Your voice stays on
+ * this phone." (or this iPad, the device in hand).
+ */
+export function voicePromise(): string {
+  return `Your voice stays on ${thisDeviceLower()}.`
 }
 
 /**

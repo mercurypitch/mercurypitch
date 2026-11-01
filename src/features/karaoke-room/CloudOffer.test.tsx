@@ -204,7 +204,10 @@ describe('the offer', () => {
       '3 Sing it on this phone Saved here. Plays offline.',
     ])
     expect(offer.textContent).toContain('20 songs a month')
-    expect(offer.textContent).toContain('Unused songs carry over, up to 50')
+    // The cap held to its "up to", so it is never alone on a line.
+    expect(offer.textContent).toContain(
+      'Unused songs carry over, up to\u00a050',
+    )
     // The renewal, once the store has said what it renews at.
     await waitFor(() =>
       expect(offer.textContent).toContain(

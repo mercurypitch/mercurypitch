@@ -524,7 +524,8 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
                     {`${karaokeSongs().perPeriod} songs a month`}
                   </span>{' '}
                   <span class={styles.planDetail}>
-                    {`Unused songs carry over, up to ${karaokeSongs().cap ?? KARAOKE_PLAN.carryOverCap}`}
+                    {/* The cap held to its "up to": never alone on a line. */}
+                    {`Unused songs carry over, up to\u00a0${karaokeSongs().cap ?? KARAOKE_PLAN.carryOverCap}`}
                   </span>
                 </p>
                 <div class={styles.priceSlot} data-testid="cloud-price">

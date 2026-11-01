@@ -3,8 +3,10 @@
 // ============================================================
 //
 // Top to bottom: Merc's line in a bubble, Merc on a lit spot, the lane the
-// voice draws on, and the foot: the mic with what a tap does and the house
-// promise, the mic's notice when it would not open, or, once the note is
+// voice draws on, and the foot: the mic with what a tap does and, by this
+// first ask for the mic and nowhere else, its promise ("Your voice stays
+// on this phone."), the mic's ways back when it would not open, or, once
+// the note is
 // named, what its name means ("A3 is the name of the note you sang") and
 // its two ways on: Find my range, with what follows and how long under it,
 // and Skip for now (S7b §6.1). On a phone that already keeps a range
@@ -26,7 +28,7 @@ import type { NoteLine } from './first-note-machine'
 import styles from './NativeOnboarding.module.css'
 import type { LaneBox } from './note-lane'
 import { laneFor } from './note-lane'
-import { heardLine, micBlockedLine, noteMeaning, ONBOARDING_COPY, } from './onboarding-copy'
+import { heardLine, micBlockedLine, noteMeaning, ONBOARDING_COPY, voicePromise, } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
 import { WithoutMic } from './WithoutMic'
 
@@ -175,8 +177,15 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
               />
             )}
           </Show>
+          {/* By the example line it labels: its right edge just short of
+              the head the line is drawn up to, over the line, not at the
+              lane's far left. */}
           <Show when={props.controller.demo()}>
-            <span class={styles.example} data-testid="onboarding-example">
+            <span
+              class={styles.example}
+              style={{ left: `${box()?.headX ?? 0}px` }}
+              data-testid="onboarding-example"
+            >
               {ONBOARDING_COPY.example}
             </span>
           </Show>
@@ -313,11 +322,17 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
                 <WithoutMic onWithoutMic={props.onWithoutMic} />
               </Show>
             </div>
+            {/* The mic's promise, once, by the first ask for it; kept in
+                the flow while the mic listens, so the mic stays put. */}
+            <p
+              class={styles.promise}
+              classList={{ [styles.away]: phase() !== 'hello' }}
+              data-testid="onboarding-promise"
+            >
+              <LockIcon size={14} /> {voicePromise()}
+            </p>
           </Match>
         </Switch>
-        <p class={styles.promise}>
-          <LockIcon size={14} /> {ONBOARDING_COPY.private}
-        </p>
       </div>
     </div>
   )

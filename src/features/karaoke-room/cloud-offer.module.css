@@ -147,7 +147,8 @@
 .kicker {
   margin: 0;
   color: var(--cloud-signal);
-  font: 700 12px/16px var(--font-body, sans-serif);
+  /* 13 px, the smallest the native app sets anything. */
+  font: 700 13px/17px var(--font-body, sans-serif);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -269,6 +270,8 @@
 .planDetail {
   color: var(--cloud-muted);
   font: 400 13px/18px var(--font-body, sans-serif);
+  /* Two even lines where it wraps, never "50" alone on the second. */
+  text-wrap: balance;
 }
 
 /* The price's own slot: the price, the wait for it, or Retry. It keeps its
@@ -294,7 +297,7 @@
 
 .per {
   color: var(--cloud-muted);
-  font: 400 12px/14px var(--font-body, sans-serif);
+  font: 400 13px/16px var(--font-body, sans-serif);
 }
 
 .asking {
@@ -404,8 +407,9 @@
 .terms {
   margin: 4px 0 0;
   color: var(--cloud-muted);
-  font: 400 12px/16px var(--font-body, sans-serif);
+  font: 400 13px/17px var(--font-body, sans-serif);
   text-align: center;
+  text-wrap: balance;
 }
 
 .footer {

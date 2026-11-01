@@ -18,7 +18,6 @@ import type { JSX } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
-import { LockIcon } from '../shell/icons'
 import styles from './NativeOnboarding.module.css'
 import { micBlockedLine, ONBOARDING_COPY, rangeLine } from './onboarding-copy'
 import type { LadderView } from './range-ladder'
@@ -274,9 +273,6 @@ export function RangeView(props: RangeViewProps): JSX.Element {
             </Match>
           </Switch>
         </div>
-        <p class={styles.promise}>
-          <LockIcon size={14} /> {ONBOARDING_COPY.private}
-        </p>
       </div>
     </div>
   )
