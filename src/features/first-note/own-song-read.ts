@@ -9,13 +9,13 @@
 //
 //   its notes   the Karaoke room's own pitch read, kept on the phone once
 //               the room has read the song. A song it has not read yet is
-//               read here the way the room reads it (analyzeVocalSamples,
-//               at the mixer's settings) and the notes are kept for the
-//               room, so its notes over the lyrics are there next time.
+//               read here the way the room reads it (the read in
+//               stem-mixer/vocal-notes-read.ts) and the notes are kept for
+//               the room, so its notes over the lyrics are there next time.
 //               The rules check each entry's note against them
 //   its vocal   walked a chunk at a time where the phone streams, as the
-//               mixer walks it (streamed-vocal-samples.ts), and decoded
-//               whole where it cannot; the rules read the voice's level and
+//               mixer walks it, and decoded whole where it cannot (that
+//               read's `readVocal`); the rules read the voice's level and
 //               its pitch (YIN) at each line
 //   its lines   where the voice comes in after a breath, and the synced
 //               lyrics' lines moved onto this recording first, with their
@@ -46,12 +46,10 @@ import { loadLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
 import { getStemBlob } from '@/db/services/uvr-service'
 import { openStemStream } from '@/features/stem-mixer/stem-stream-source'
-import { canGatherStreamedVocal, gatherStreamedVocal, streamedAnalysisStep, wholeDecodeFits, windowForStep, } from '@/features/stem-mixer/streamed-vocal-samples'
-import { audioDurationSecs } from '@/lib/audio-duration'
-import { DECODE_RATE, decodeAudioBytes } from '@/lib/decode-audio-to-mono'
+import { decodeWhole, keepNear, notesOf, readVocal, } from '@/features/stem-mixer/vocal-notes-read'
 import type { MergedNote } from '@/lib/midi-generator'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
-import { analyzeVocalSamples, pitchHistoryFromNotes, VOCAL_ANALYSIS_DEFAULTS, } from '@/lib/pitch-pipeline'
+import { analyzeVocalSamples, pitchHistoryFromNotes, } from '@/lib/pitch-pipeline'
 import type { OnsetGrid } from './band-beats'
 import { BAND_RATE, beatsBefore, onsetSteps, tempoOf } from './band-beats'
 import type { EntryReading, FoundEntry, LineVoice, RuleSteps, Samples, } from './entry-rules'
@@ -108,14 +106,6 @@ export interface BandStretch extends Samples {
   readonly start: number
 }
 
-/** The vocal, mono: what `gatherStreamedVocal` gives, or a whole decode's. */
-export interface VocalStem {
-  readonly samples: Float32Array
-  readonly sampleRate: number
-  /** The stream's samples each kept one stands for (1 for a decode). */
-  readonly step: number
-}
-
 /** The read's impure edges. */
 export interface OwnSongReadSeams {
   /** A stem from the phone's store; null when the song has none. */
@@ -133,10 +123,7 @@ export interface OwnSongReadSeams {
    * The vocal, mono, walked or decoded; `onProgress` from 0 to 1. Null when
    * it is too long for this phone to hold.
    */
-  vocal: (
-    blob: Blob,
-    run: { onProgress: (fraction: number) => void; signal?: AbortSignal },
-  ) => Promise<VocalStem | null>
+  vocal: typeof readVocal
   /** The band at each span, mono; null when it is too long to read here. */
   band: (
     blob: Blob,
@@ -164,65 +151,6 @@ function abortError(): Error {
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) throw abortError()
-}
-
-/**
- * `samples` at `rate` kept at about `target`: each kept sample the mean of
- * a whole number of them. The rules read the voice at VOCAL_RATE and the
- * band at BAND_RATE; a phone's stems are at 44.1 or 48 kHz.
- */
-export function keepNear(
-  samples: Float32Array,
-  rate: number,
-  target: number,
-): Samples {
-  const step = Math.max(1, Math.round(rate / target))
-  if (step === 1) return { samples, rate }
-  const kept = new Float32Array(Math.floor(samples.length / step))
-  for (let i = 0; i < kept.length; i++) {
-    let sum = 0
-    for (let j = 0; j < step; j++) sum += samples[i * step + j]
-    kept[i] = sum / step
-  }
-  return { samples: kept, rate: rate / step }
-}
-
-/**
- * A stem decoded whole, where it fits as the walk's ceiling allows
- * (`wholeDecodeFits`): null where it does not.
- */
-async function decodeWhole(
-  blob: Blob,
-  signal: AbortSignal | undefined,
-): Promise<AudioBuffer | null> {
-  // A decode cannot be stopped once it starts, so a read let go while the
-  // length is probed or the bytes load starts none.
-  const seconds = await audioDurationSecs(blob, signal)
-  throwIfAborted(signal)
-  if (!wholeDecodeFits(seconds, blob.size, DECODE_RATE)) return null
-  const bytes = await blob.arrayBuffer()
-  throwIfAborted(signal)
-  return await decodeAudioBytes(bytes)
-}
-
-/**
- * The vocal decoded whole, kept as the walk keeps it: channel 0, at the
- * walk's step for its length (`streamedAnalysisStep`). Null when too long.
- */
-async function decodeVocal(
-  blob: Blob,
-  signal: AbortSignal | undefined,
-): Promise<VocalStem | null> {
-  const whole = await decodeWhole(blob, signal)
-  if (whole === null) return null
-  const step = streamedAnalysisStep(whole.duration, whole.sampleRate)
-  if (step === null) return null
-  const kept = keepNear(
-    whole.getChannelData(0),
-    whole.sampleRate,
-    whole.sampleRate / step,
-  )
-  return { samples: kept.samples, sampleRate: kept.rate, step }
 }
 
 /** Channel 0 from `span.from` to `span.to`, from the stem's own stream. */
@@ -285,16 +213,7 @@ const realSeams: OwnSongReadSeams = {
     const lyrics = await loadLyricsFromDb(sessionId)
     return lyrics !== null && lyrics.format === 'lrc' ? lyrics.text : null
   },
-  vocal: async (blob, run) => {
-    const stream = await openStemStream(blob)
-    if (stream === null) return await decodeVocal(blob, run.signal)
-    try {
-      if (!canGatherStreamedVocal(stream)) return null
-      return await gatherStreamedVocal(stream, run)
-    } finally {
-      stream.dispose()
-    }
-  },
+  vocal: readVocal,
   band: async (blob, spans, signal) => {
     const stream = await openStemStream(blob)
     if (stream === null) {
@@ -482,34 +401,29 @@ async function readVoice(
   throwIfAborted(signal)
   if (vocal === null) return null
   const notes =
-    stored ?? (await notesOf(sessionId, vocal, walkShare, report, signal))
+    stored ??
+    (
+      await notesOf(sessionId, vocal, forTheRoom(), {
+        signal,
+        onProgress: (percent) => report(walkShare + (percent * 45) / 100),
+      })
+    ).analysis.segmentedNotes
   return { voice: keepNear(vocal.samples, vocal.sampleRate, VOCAL_RATE), notes }
 }
 
-/** The room's read of the vocal, as the room reads it, kept for the room. */
-async function notesOf(
-  sessionId: string,
-  vocal: VocalStem,
-  from: number,
-  report: (percent: number) => void,
-  signal: AbortSignal | undefined,
-): Promise<readonly MergedNote[]> {
-  const analysis = await seams.analyze(
-    vocal.samples,
-    vocal.sampleRate,
-    // The same span of time at the rate the samples were kept at.
-    {
-      bufferSize: windowForStep(VOCAL_ANALYSIS_DEFAULTS.bufferSize, vocal.step),
-    },
-    { signal, onProgress: (percent) => report(from + (percent * 45) / 100) },
-  )
-  throwIfAborted(signal)
-  // An empty read is not kept: it would read back as a song the room has
-  // read, and stop the room offering to (jam-pitch-provision-store.ts).
-  if (analysis.segmentedNotes.length > 0) {
-    await seams.keepNotes(sessionId, analysis).catch(() => undefined)
+/**
+ * The room's read of the vocal, as the room reads it, kept for the room
+ * (vocal-notes-read.ts notesOf, which keeps nothing from a read that heard
+ * no notes): the edges as they are now, swapped or not.
+ */
+function forTheRoom(): Pick<OwnSongReadSeams, 'analyze'> & {
+  keep: (sessionId: string, analysis: VocalAnalysis) => Promise<void>
+} {
+  return {
+    analyze: seams.analyze,
+    keep: (sessionId, analysis) =>
+      seams.keepNotes(sessionId, analysis).catch(() => undefined),
   }
-  return analysis.segmentedNotes
 }
 
 /** Each entry's beats, from the band's lead-ins; none without a band. */
