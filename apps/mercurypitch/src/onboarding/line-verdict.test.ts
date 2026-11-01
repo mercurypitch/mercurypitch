@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LineFacts } from './line-score'
-import { lineScoreText, lineVerdict } from './onboarding-copy'
+import { lineScoreText, lineVerdict, lineWarmingUp } from './onboarding-copy'
 
 const facts = (over: Partial<LineFacts>): LineFacts => ({
   hit: 10,
@@ -30,8 +30,9 @@ describe('lineVerdict', () => {
     expect(lineVerdict(facts({ hit: 5, trend: 'flat', highFlat: true }))).toBe(
       'Good start. The high notes want a little more lift.',
     )
+    // The lowest band ends on a statement: the big button says Once more.
     expect(lineVerdict(facts({ hit: 2, trend: 'mixed' }))).toBe(
-      'Your voice is still warming up. Once more?',
+      'Your voice is still warming up. Try it once more.',
     )
   })
 
@@ -96,5 +97,15 @@ describe('lineVerdict', () => {
       ),
     )
     for (const line of lines) expect(line).not.toMatch(/[—–!]/u)
+  })
+})
+
+describe('lineWarmingUp', () => {
+  it('is the band under four in ten, where Once more leads', () => {
+    expect(lineWarmingUp(3, 10)).toBe(true)
+    expect(lineWarmingUp(0, 10)).toBe(true)
+    expect(lineWarmingUp(4, 10)).toBe(false)
+    expect(lineWarmingUp(10, 10)).toBe(false)
+    expect(lineWarmingUp(0, 0)).toBe(false)
   })
 })

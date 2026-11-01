@@ -109,6 +109,10 @@ const q = (id: string): HTMLElement | null =>
 const line = (): string | null => q('onboarding-line')?.textContent ?? null
 const micState = (): string | null =>
   q('onboarding-mic')?.getAttribute('data-state') ?? null
+/** The words under the mic: drawn, and hidden from a screen reader. */
+const caption = (): string | null =>
+  view?.container.querySelector('p[aria-hidden="true"]:not([data-testid])')
+    ?.textContent ?? null
 const bars = (attribute: string): (string | null)[] =>
   [...(view?.container.querySelectorAll('[data-note]') ?? [])].map((bar) =>
     bar.getAttribute(attribute),
@@ -186,7 +190,7 @@ describe('the sung line', () => {
     const s = stand()
     show(s)
 
-    expect(line()).toBe('Sing this line with me.')
+    expect(line()).toBe(ONBOARDING_COPY.lineAsk)
     expect(q('onboarding-sung-words')?.textContent?.trim()).toBe(
       'Open the window, let the morning in',
     )
@@ -209,6 +213,11 @@ describe('the sung line', () => {
     expect(controller?.state().phase).toBe('call')
     expect(sung).toEqual([[60, 62, 64, 67, 65, 64, 62, 64, 62, 60]])
     expect(micState()).toBe('wait')
+    // Whose turn it is, in a word, under the mic; a tap still stops.
+    expect(caption()).toBe(ONBOARDING_COPY.mercsTurn)
+    expect(q('onboarding-mic')?.getAttribute('aria-label')).toBe(
+      ONBOARDING_COPY.mercsTurnStop,
+    )
     expect(localStorage.getItem(GRANT)).toBe('true')
     // Two seconds in: his first four notes lit, in his colour.
     to(s, LEAD + 1.6)
@@ -224,7 +233,7 @@ describe('the sung line', () => {
       null,
       null,
     ])
-    expect(line()).toBe('Sing this line with me.')
+    expect(line()).toBe(ONBOARDING_COPY.lineAsk)
   })
 
   it('hands the turn over once his call has ended', async () => {
@@ -270,6 +279,28 @@ describe('the sung line', () => {
     expect(q('onboarding-mic')).toBeNull()
     expect(q('onboarding-continue')?.textContent).toBe(ONBOARDING_COPY.continue)
     expect(q('onboarding-sung-again')?.textContent).toBe(ONBOARDING_COPY.again)
+    // Continue leads: the big button, first.
+    const ways = q('onboarding-continue')?.parentElement
+    expect(ways?.getAttribute('data-lead')).toBe('continue')
+    expect(ways?.firstElementChild).toBe(q('onboarding-continue'))
+  })
+
+  it('leads with Once more under four in ten, and ends on a statement', async () => {
+    const s = stand()
+    show(s)
+    await tap()
+
+    // A voice on every note, each three semitones off: none hit.
+    to(s, CALL_END + RESPONSE_GATE_SECONDS)
+    const off = Object.fromEntries(TURN.map((note) => [note.index, 300]))
+    to(s, TURN_END, take(TURN_END, TURN, off))
+
+    expect(controller?.state().phase).toBe('done')
+    expect(controller?.state().score?.hit ?? 0).toBeLessThan(4)
+    expect(line()).toBe('Your voice is still warming up. Try it once more.')
+    const ways = q('onboarding-sung-again')?.parentElement
+    expect(ways?.getAttribute('data-lead')).toBe('again')
+    expect(ways?.firstElementChild).toBe(q('onboarding-sung-again'))
   })
 
   it('draws the voice on the lane only: its count-in and tail kept inside', async () => {
@@ -402,7 +433,7 @@ describe('the sung line', () => {
     expect(controller?.state().phase).toBe('ready')
     expect(stopped).toBe(1)
     expect(s.calls.release).toBeGreaterThan(0)
-    expect(line()).toBe('Sing this line with me.')
+    expect(line()).toBe(ONBOARDING_COPY.lineAsk)
   })
 
   it('drops a mic still opening when the onboarding leaves: no call plays', async () => {

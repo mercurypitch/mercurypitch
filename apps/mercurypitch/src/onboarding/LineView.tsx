@@ -8,8 +8,11 @@
 // singer's voice drawn across them in the turn; the words, lighting as the
 // cursor reaches them; and, once it is scored, the chip: "8 of 10 notes on
 // pitch". The foot holds the mic, its notice when it would not open, or
-// Continue and Once more once the line is scored. The controller
-// (useLine.ts) decides; this draws.
+// Continue and Once more once the line is scored: Continue the big button,
+// but under four in ten, where Merc says to try it once more, Once more
+// (lineWarmingUp). Under the mic through Merc's call: "Merc's turn", one
+// thing to read rather than "Wait for your turn. Tap to stop". The
+// controller (useLine.ts) decides; this draws.
 //
 // On Merc's call the bars light in his colour as he sings them; in the
 // singer's turn they light as the cursor passes, and the score marks each
@@ -23,13 +26,12 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
-import { micLabel as kitMicLabel } from '@/components/room-kit/mic-state'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
 import { LockIcon } from '../shell/icons'
 import { lineFacts } from './line-score'
 import line from './LineView.module.css'
 import styles from './NativeOnboarding.module.css'
-import { lineScoreText, lineVerdict, ONBOARDING_COPY } from './onboarding-copy'
+import { lineScoreText, lineVerdict, lineWarmingUp, ONBOARDING_COPY, } from './onboarding-copy'
 import { LINE, LINE_SEC, LINE_SPAN, LINE_WORDS } from './sung-line'
 import type { LineController, TracePoint } from './useLine'
 import { WithoutMic } from './WithoutMic'
@@ -138,18 +140,55 @@ export function LineView(props: LineViewProps): JSX.Element {
     return Math.min(1, Math.max(0, x)) * 100
   }
 
-  const micLabel = (): string => {
+  /** Under the mic: what is happening, in a word or two. */
+  const caption = (): string => {
     switch (phase()) {
       case 'starting':
         return ONBOARDING_COPY.opening
       case 'call':
-        return kitMicLabel('wait', ONBOARDING_COPY.singLine)
+        return ONBOARDING_COPY.mercsTurn
       case 'turn':
         return ONBOARDING_COPY.listening
       default:
         return ONBOARDING_COPY.singLine
     }
   }
+  /** The mic's name, for a screen reader: the caption, and what a tap does. */
+  const micLabel = (): string =>
+    phase() === 'call' ? ONBOARDING_COPY.mercsTurnStop : caption()
+
+  /** Under four in ten: Once more is the big button (lineWarmingUp). */
+  const warmingUp = (): boolean => {
+    const now = score()
+    return now !== null && lineWarmingUp(now.hit, now.total)
+  }
+
+  /** Continue: the big button (`lead`), or the plain one under Once more. */
+  const continueButton = (lead: boolean): JSX.Element => (
+    <button
+      type="button"
+      class={lead ? styles.primary : styles.secondary}
+      disabled={props.continuing}
+      aria-busy={props.continuing ? 'true' : undefined}
+      onClick={() => props.onContinue()}
+      data-testid="onboarding-continue"
+    >
+      {ONBOARDING_COPY.continue}
+    </button>
+  )
+
+  /** Once more: the big button (`lead`), or the plain one under Continue. */
+  const againButton = (lead: boolean): JSX.Element => (
+    <button
+      type="button"
+      class={lead ? styles.primary : styles.secondary}
+      disabled={props.continuing}
+      onClick={() => props.controller.again()}
+      data-testid="onboarding-sung-again"
+    >
+      {ONBOARDING_COPY.again}
+    </button>
+  )
 
   return (
     <div
@@ -252,26 +291,24 @@ export function LineView(props: LineViewProps): JSX.Element {
       <div class={styles.foot}>
         <Switch>
           <Match when={phase() === 'done'}>
-            <div class={styles.ways}>
-              <button
-                type="button"
-                class={styles.primary}
-                disabled={props.continuing}
-                aria-busy={props.continuing ? 'true' : undefined}
-                onClick={() => props.onContinue()}
-                data-testid="onboarding-continue"
+            {/* The way on Merc points to first, as the big button: Once
+                more under four in ten, else Continue. */}
+            <div
+              class={styles.ways}
+              data-lead={warmingUp() ? 'again' : 'continue'}
+            >
+              <Show
+                when={warmingUp()}
+                fallback={
+                  <>
+                    {continueButton(true)}
+                    {againButton(false)}
+                  </>
+                }
               >
-                {ONBOARDING_COPY.continue}
-              </button>
-              <button
-                type="button"
-                class={styles.secondary}
-                disabled={props.continuing}
-                onClick={() => props.controller.again()}
-                data-testid="onboarding-sung-again"
-              >
-                {ONBOARDING_COPY.again}
-              </button>
+                {againButton(true)}
+                {continueButton(false)}
+              </Show>
             </div>
           </Match>
           <Match when={phase() === 'blocked'}>
@@ -296,7 +333,7 @@ export function LineView(props: LineViewProps): JSX.Element {
               />
             </div>
             <p class={styles.caption} aria-hidden="true">
-              {micLabel()}
+              {caption()}
             </p>
             <div class={styles.slot}>
               <p
