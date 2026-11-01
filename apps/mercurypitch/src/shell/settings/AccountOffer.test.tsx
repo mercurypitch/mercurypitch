@@ -22,8 +22,9 @@ import type * as Notifications from '@/stores/notifications-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
+import { setOnboardingShown } from '../run-shell-store'
 import { KEEP, keepFact } from './account-copy'
-import { declineOffer, forgetAccountOffer, offerOpen, openKeep, openKeepFromReveal, registerRangeFinder, } from './account-offer'
+import { closeOffer, declineOffer, forgetAccountOffer, offerOpen, openKeep, openKeepFromReveal, registerRangeFinder, } from './account-offer'
 import type * as AccountState from './account-state'
 import { AccountOfferSheet } from './AccountOffer'
 import { resetAppGift } from './keep-gift'
@@ -96,8 +97,8 @@ const SESSION = {
 
 const GIFT = { songs: 5, endsAt: '2099-01-01T23:59:59.000Z' }
 
-/** The free song's row as it reads: its line, then the sentence under it. */
-const FREE_SONG_ROW = `${KEEP.freeSong}${KEEP.freeSongEmail}`
+/** The free song's row as it reads: one line; its caveat is in the small print. */
+const FREE_SONG_ROW = KEEP.freeSong
 
 /** E2 to G4, with a twin: the take creating an account would adopt. */
 function print(fields: Record<string, unknown> = {}): unknown {
@@ -234,19 +235,29 @@ describe('what Keep says', () => {
     expect(sheet?.textContent).toContain(keepFact())
   })
 
-  it('with a measured range: the voiceprint card, Keep your voiceprint, and its row first', async () => {
+  it('with a measured range: Keep your voiceprint, then its card, and no row saying it again', async () => {
     stand.prints = [print()]
 
     await open()
 
     const sheet = q('account-offer')
-    const card = q('keep-voiceprint')?.textContent ?? ''
+    const title = sheet?.querySelector('h2')
+    const card = q('keep-voiceprint')
 
     expect(sheet?.dataset.variant).toBe('voiceprint')
-    expect(sheet?.querySelector('h2')?.textContent).toBe(KEEP.titleVoiceprint)
-    expect(card).toContain('E2–G4')
-    expect(card).toContain('Nina Simone')
-    expect(rows()).toEqual([KEEP.voiceprintSaved, KEEP.everywhere])
+    expect(title?.textContent).toBe(KEEP.titleVoiceprint)
+    // The title first, then what it is about.
+    expect(
+      title !== null &&
+        title !== undefined &&
+        card !== null &&
+        (title.compareDocumentPosition(card) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+          0,
+    ).toBe(true)
+    expect(card?.textContent).toContain('E2–G4')
+    expect(card?.textContent).toContain('Nina Simone')
+    expect(rows()).toEqual([KEEP.everywhere])
   })
 
   it('offers no voiceprint another account made, or one with no range', async () => {
@@ -283,20 +294,22 @@ describe('what Keep says', () => {
     ])
   })
 
-  it('says under the free song, in one sentence, that it needs a confirmed email', async () => {
+  it('says in the small print, in one sentence, that the free song needs a confirmed email', async () => {
     stand.importing = true
 
     await open()
 
-    const row = q('keep-free-song')
-    const lines = [
-      ...(row?.querySelectorAll('.mp-keep__row-text > span') ?? []),
-    ]
-    expect(lines.map((line) => line.textContent)).toEqual([
-      KEEP.freeSong,
-      KEEP.freeSongEmail,
-    ])
-    expect(lines[1]?.className).toBe('mp-keep__row-sub')
+    expect(q('keep-free-song')?.textContent?.trim()).toBe(KEEP.freeSong)
+    expect(q('keep-fine')?.textContent?.startsWith(KEEP.freeSongEmail)).toBe(
+      true,
+    )
+  })
+
+  it('says nothing of the email where no free song is offered', async () => {
+    await open()
+
+    expect(q('keep-free-song')).toBeNull()
+    expect(q('keep-fine')?.textContent).not.toContain(KEEP.freeSongEmail)
   })
 
   it('has no free song row in a build that splits no songs: there is nothing to spend it on', async () => {
@@ -396,6 +409,38 @@ describe('what Keep says', () => {
     } finally {
       restore()
     }
+  })
+
+  it('keeps its ways in under what scrolls, so a short phone never hides Use email', async () => {
+    stand.importing = true
+    stand.prints = [print()]
+
+    await open()
+
+    const body = q('keep-body')
+    // The title, the card, the rows and the fact scroll; the ways stay put.
+    expect(body?.querySelector('h2')).not.toBeNull()
+    expect(body?.contains(q('keep-voiceprint'))).toBe(true)
+    expect(body?.contains(q('keep-email'))).toBe(false)
+    expect(body?.contains(q('keep-fine'))).toBe(false)
+  })
+
+  it("takes the onboarding stage's dark palette over the onboarding, and the theme's elsewhere", async () => {
+    setOnboardingShown(true)
+    try {
+      await open()
+      const panel = q('account-offer')?.closest('[role="dialog"]')
+      expect(panel?.classList.contains('mp-dark-stage')).toBe(true)
+    } finally {
+      setOnboardingShown(false)
+    }
+    view?.unmount()
+    view = null
+    closeOffer()
+
+    await open()
+    const panel = q('account-offer')?.closest('[role="dialog"]')
+    expect(panel?.classList.contains('mp-dark-stage')).toBe(false)
   })
 
   it('says what continuing accepts, with the Terms and the Privacy policy', async () => {

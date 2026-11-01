@@ -1230,49 +1230,22 @@ async function expectKeep(
   } else if (seen.find !== 'Find your range first. Takes under a minute.') {
     wrong.push(`the range row reads "${seen.find}"`)
   }
-  if (
-    seen.song !==
-    '1 free karaoke song every monthYours once your email is confirmed.'
-  ) {
+  if (seen.song !== '1 free karaoke song every month') {
     wrong.push(`the free song reads "${seen.song}"`)
   }
   if (!seen.onTop) wrong.push('something covers Keep')
   if (over) {
     if (seen.beat !== 'keep') wrong.push(`the layer is on ${seen.beat}`)
-    // He steps out only where the phone is too short for him and the sheet
-    // both (the module's 780 px rule), and stands over it everywhere else.
-    const tall = (page.viewportSize()?.height ?? 0) > 780
-    if (seen.merc === null && tall) {
-      wrong.push(
-        'Merc stepped out on a phone tall enough for him and the sheet',
-      )
-    }
+    // He steps out while Keep is up, on every phone: over the sheet he
+    // showed through its backdrop as a large blurred smudge.
+    if (seen.merc !== null) wrong.push('Merc stands under Keep')
     if (seen.layerNotNow?.hidden !== true || seen.layerNotNow?.inert !== true) {
       wrong.push(`the layer's Not now is ${JSON.stringify(seen.layerNotNow)}`)
     }
     if (seen.room !== 'resting') wrong.push(`the room is ${seen.room}`)
-    const flag = await flagNow(page)
-    if (flag !== 'due') wrong.push(`the flag is ${flag}`)
-    // Merc stands over the sheet: at most his feet go behind it.
-    if (
-      seen.merc !== null &&
-      seen.sheetTop !== null &&
-      (seen.merc.top + seen.merc.bottom) / 2 > seen.sheetTop
-    ) {
-      wrong.push(
-        `Merc is under the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`,
-      )
-    }
   }
   if (wrong.length > 0) throw new Error(`${how}: Keep ${wrong.join('; ')}`)
-  const merc =
-    !over || seen.sheetTop === null
-      ? ''
-      : seen.merc === null
-        ? ', Merc stepped out (a phone too short for him and the sheet)'
-        : seen.merc.bottom <= seen.sheetTop
-          ? `, Merc whole over the sheet (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
-          : `, Merc over the sheet, his feet behind it (${seen.merc.top}-${seen.merc.bottom}, the sheet at ${seen.sheetTop})`
+  const merc = over ? ', Merc stepped out while it is up' : ''
   const card =
     seen.range === null
       ? 'no card'
@@ -1616,7 +1589,7 @@ async function walkSkip(browser, args, frame, kit) {
       .waitForFunction(
         ([selector, text]) =>
           document.querySelector(selector)?.textContent === text,
-        [LINE, "It's here when you want it."],
+        [LINE, "No problem. Let's sing a line instead."],
         { timeout: kit.stepTimeoutMs },
       )
       .catch(async () => {
@@ -1626,12 +1599,17 @@ async function walkSkip(browser, args, frame, kit) {
     await expectLayout(page, 'skipped')
     expectNoMint(mints, 'Skip for now')
 
-    // ── Keep, Save your progress, over the layer ──────────────
-    const keep = await expectKeep(page, kit, 'Skip for now', {
+    // ── The line first: an account asked for after one note is early ──
+    await expectLine(page, kit, 'Skip for now')
+    const sung = await singLine(page, kit, 'the line after a skip')
+    await page.locator(CONTINUE).tap()
+
+    // ── Keep after the line, Save your progress, over the layer ──
+    const keep = await expectKeep(page, kit, 'Continue on the line', {
       variant: 'progress',
       arrival: 'plain',
     })
-    await expectMint(page, kit, mints, 'Keep after a skip')
+    await expectMint(page, kit, mints, 'Keep after the line')
     await kit.shoot(page, shotsFor(args, frame), 'onboarding-keep-skipped')
 
     // ── Find your range first: this layer's range, mic in that tap ──
@@ -1660,18 +1638,15 @@ async function walkSkip(browser, args, frame, kit) {
       arrival: 'reveal',
       range,
     })
-    await page.locator(KEEP_NOT_NOW).tap()
 
-    // ── The line, on an install held out of the offer ─────────
-    await expectLine(page, kit, "Keep's Not now")
-    const sung = await singLine(page, kit, 'the line, held out')
-    await page.locator(CONTINUE).tap()
+    // ── Keep's Not now: the end, on an install held out of the offer ──
+    await page.locator(KEEP_NOT_NOW).tap()
     const landing = await expectLanding(
       page,
       { ...args, shots: null },
       frame,
       kit,
-      'Continue, held out',
+      "Keep's Not now, held out",
     )
     await expectRoomLive(page, kit, 'Back from the path, held out')
     await expectGone(page, kit, 'Back from the path, held out', 'transport')
@@ -1683,15 +1658,15 @@ async function walkSkip(browser, args, frame, kit) {
       [OFFER, OFFER_SHOWN],
     )
     if (held.offer || held.shown !== null) {
-      throw new Error(`Continue, held out: ${JSON.stringify(held)}`)
+      throw new Error(`Keep's Not now, held out: ${JSON.stringify(held)}`)
     }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     const crossed =
       range.crossed === null
         ? ''
-        : ` (on his way down from Keep, mid-move: ${range.crossed}; clear once he arrived)`
+        : ` (on his way, mid-move: ${range.crossed}; clear once he arrived)`
     return [
-      `${note} named, then Skip for now: "It's here when you want it.", no identity asked for yet; Keep: ${keep}; the anonymous identity asked for as it opened; Find your range first: the layer's own range (entry onboarding), its mic opened in that tap, ${range.low} to ${range.high}${crossed}; the reveal: ${card}; Continue: Keep again, ${again}; Keep's Not now: the sung line, "${sung.score}"; Continue on an install held out: no offer, nothing marked, ${landing}, flag done, the room live under the transport`,
+      `${note} named, then Skip for now: "No problem. Let's sing a line instead.", no identity asked for yet; the sung line, "${sung.score}"; its Continue: Keep, ${keep}; the anonymous identity asked for as it opened; Find your range first: the layer's own range (entry onboarding), its mic opened in that tap, ${range.low} to ${range.high}${crossed}; the reveal: ${card}; Continue: Keep again, ${again}; Keep's Not now on an install held out: no offer, nothing marked, ${landing}, flag done, the room live under the transport`,
     ]
   } finally {
     await context.close()

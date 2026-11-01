@@ -1003,8 +1003,74 @@
   padding: 0;
 }
 
+/* Not now, then what scrolls on a phone too short for it all, then the
+   ways in and the small print, which stay put under it (AccountOffer.tsx).
+   The panel itself no longer scrolls (below): this does. */
 .mp-keep {
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 14px;
+}
+
+.mp-keep__body {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Room for a focus ring inside the scroller's clip. */
+  margin: 0 -4px;
+  padding: 0 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* There is more past an edge (scroll-edge.ts): that edge fades. */
+.mp-keep__body[data-more-below] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 28px),
+    transparent
+  );
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+.mp-keep__body[data-more-above] {
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 calc(100% - 28px),
+    transparent
+  );
+  mask-image: linear-gradient(to top, #000 calc(100% - 28px), transparent);
+}
+
+.mp-keep__body[data-more-above][data-more-below] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 28px,
+    #000 calc(100% - 28px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 28px,
+    #000 calc(100% - 28px),
+    transparent
+  );
+}
+
+.mp-keep__foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* A row's line wraps into two even ones: never "web" alone. */
+.mp-keep__rows li > span {
+  text-wrap: balance;
 }
 
 /* Not now: top right, a labelled text button at full contrast with a 44 px
@@ -1130,9 +1196,23 @@
 
 /* Keep sizes to its content, up to the screen under the status bar. At the
    sheet's own cap (68dvh) the voiceprint variant hid Use email below the
-   fold on a 390 x 844 iPhone. A phone shorter than Keep still scrolls it. */
+   fold on a 390 x 844 iPhone. A phone shorter than Keep scrolls its body,
+   not the panel, so the ways in stay in view (.mp-keep__body). */
 [role='dialog'].mp-offer-sheet {
   --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Over the onboarding's dark stage the panel carries .mp-dark-stage too:
+   its tokens set here, on the panel, at open, as the More sheet's are
+   (MISTAKES.md: theme a portalled sheet with tokens, never a theme
+   selector). The accent is the stage's violet, the reveal's, so the print
+   and the range's way back read as the onboarding's own. */
+[role='dialog'].mp-offer-sheet--stage {
+  --accent: #bc8cff;
+  --accent-hover: #d2b3ff;
 }
 
 /* On its side the sheet sits in the middle, 560 wide, with the room showing

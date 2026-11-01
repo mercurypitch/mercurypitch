@@ -72,8 +72,12 @@ export const ONBOARDING_COPY = {
   skip: 'Skip for now',
   /** With a range already kept on this phone, under See my voice. */
   findRangeAgain: 'Find my range again',
-  /** Merc, as a skipped range lets the singer go on. */
-  skipped: "It's here when you want it.",
+  /** Merc, as a skipped range lets the singer go on: what comes instead,
+   *  rather than "It's here when you want it." with no word of where. */
+  skipped: "No problem. Let's sing a line instead.",
+  /** The same, on the range Keep's "Find your range first" ran: Keep, with
+   *  that row on it, is what comes back. */
+  skippedToKeep: "It's here when you want it.",
   /** Under a refused mic's Try again: the one way on (REQ-NFL-043), in the
    *  web's words (BeatFirstLight.tsx). */
   withoutMic: 'Continue without the mic',

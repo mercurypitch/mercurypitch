@@ -5,21 +5,30 @@
 // Top to bottom:
 //   - "Not now" at the top right, a labelled text button, there from the
 //     first frame;
-//   - the singer's voiceprint card, small, when this phone holds one an
-//     account made here would adopt (keep-voiceprint.ts). Straight after a
-//     reveal (the onboarding's beat 7, or the range Keep ran) it flies in;
 //   - "Keep your voiceprint" over a measured range, else "Save your
-//     progress";
-//   - one icon and one line a row, each only where it is true: the
-//     voiceprint saved (with one); "Find your range first" (without one,
-//     while a range finder is registered); progress everywhere; the free
-//     song, with the one sentence that says it needs a confirmed email, and
-//     the launch gift (a build that splits songs, for a singer without the
-//     subscription; the gift only while the server says it runs,
-//     keep-gift.ts);
+//     progress": the title first, then what it is about;
+//   - the singer's voiceprint card, small, when this phone holds one an
+//     account made here would adopt (keep-voiceprint.ts), its print the
+//     reveal's (PrintIcon). Straight after a reveal (the onboarding's beat
+//     7, or the range Keep ran) it flies in;
+//   - one icon and one line a row, each only where it is true and none
+//     saying the title again: "Find your range first" (without a
+//     voiceprint, while a range finder is registered); progress
+//     everywhere; the free song and the launch gift (a build that splits
+//     songs, for a singer without the subscription; the gift only while
+//     the server says it runs, keep-gift.ts);
 //   - the one fact line, the whole of the loss framing;
 //   - Apple first on iOS in Apple's own style, Google first on Android,
-//     then Use email, which hands over to the sign-in sheet's email pane.
+//     then Use email, which hands over to the sign-in sheet's email pane;
+//   - the small print: the free song's confirmed email (a caveat, not one
+//     of the benefits), and the Terms and the Privacy policy.
+//
+// On a phone too short for it all, everything over the ways in scrolls,
+// its edge fading where there is more (scroll-edge.ts), and the ways in
+// and the small print stay put under it: at 320 by 568 Use email was below
+// the screen's edge. Over the onboarding, a dark stage in every theme,
+// Keep takes the stage's palette (mp-dark-stage), as the Cloud offer has
+// its own night, rather than turning white between two dark screens.
 //
 // No "Are you sure?" on Not now (S7b §3.5): it closes, and so do Back, the
 // backdrop and a swipe. The ceremonies are the sign-in sheet's own
@@ -28,7 +37,7 @@
 // account-offer.ts; every word is account-copy.ts.
 
 import type { JSX } from 'solid-js'
-import { createMemo, onCleanup, Show } from 'solid-js'
+import { createMemo, onCleanup, onMount, Show } from 'solid-js'
 import './settings.css'
 import { AppleMark } from '@/components/account/AppleMark'
 import { GoogleMark } from '@/components/account/GoogleMark'
@@ -41,7 +50,9 @@ import { karaokeSongs } from '@/features/karaoke-room/karaoke-songs'
 import { offerDay } from '@/lib/launch-gift-copy'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import { ChevronIcon, GiftIcon, KaraokeIcon, MailIcon, MicIcon, ProgressIcon, WaveIcon, } from '../icons'
+import { ChevronIcon, GiftIcon, MailIcon, MicIcon, NoteGlyphIcon, PrintIcon, ProgressIcon, } from '../icons'
+import { onboardingShown } from '../run-shell-store'
+import { watchScrollEdges } from '../scroll-edge'
 import { KEEP, keepFact, keepGiftLine } from './account-copy'
 import { closeOffer, declineOffer, keepArrival, keepChose, offerOpen, rangeFinder, } from './account-offer'
 import { liveAppGift } from './keep-gift'
@@ -81,7 +92,7 @@ export function VoiceprintCard(props: {
 }): JSX.Element {
   return (
     <div class="mp-keep__print" data-testid="keep-voiceprint">
-      <WaveIcon size={22} />
+      <PrintIcon size={24} />
       <div class="mp-keep__print-text">
         <span class="mp-keep__print-label">{KEEP.voiceprintLabel}</span>
         <strong class="mp-keep__print-range">{keepRange(props.print)}</strong>
@@ -103,12 +114,6 @@ function Rows(props: { print: KeepableVoiceprint | null }): JSX.Element {
     props.print === null ? rangeFinder() : null
   return (
     <ul class="mp-set-promises mp-set-promises--bare mp-keep__rows">
-      <Show when={props.print !== null}>
-        <li>
-          <WaveIcon size={22} />
-          <span>{KEEP.voiceprintSaved}</span>
-        </li>
-      </Show>
       <Show when={finder()}>
         {(run) => (
           <li>
@@ -135,11 +140,8 @@ function Rows(props: { print: KeepableVoiceprint | null }): JSX.Element {
       </li>
       <Show when={songsOffered()}>
         <li data-testid="keep-free-song">
-          <KaraokeIcon size={22} />
-          <span class="mp-keep__row-text">
-            <span>{KEEP.freeSong}</span>
-            <span class="mp-keep__row-sub">{KEEP.freeSongEmail}</span>
-          </span>
+          <NoteGlyphIcon size={22} />
+          <span>{KEEP.freeSong}</span>
         </li>
       </Show>
       <Show when={giftLine()}>
@@ -233,19 +235,37 @@ function Ways(): JSX.Element {
   )
 }
 
+/** What scrolls on a short phone: marked at its edges while it is up. */
+function KeepBody(props: { children: JSX.Element }): JSX.Element {
+  let body: HTMLDivElement | undefined
+  onMount(() => {
+    if (body !== undefined) onCleanup(watchScrollEdges(body))
+  })
+  return (
+    <div ref={body} class="mp-keep__body" data-testid="keep-body">
+      {props.children}
+    </div>
+  )
+}
+
 /** Keep, over whatever opened it: the Sing room, Settings, the Cloud offer. */
 export function AccountOfferSheet(): JSX.Element {
   // Read as it opens, so the card is the take on this phone right now.
   const print = createMemo(() => (offerOpen() ? keepableVoiceprint() : null))
   const title = (): string =>
     print() === null ? KEEP.titleProgress : KEEP.titleVoiceprint
+  // Over the onboarding's dark stage, the stage's palette in every theme.
+  const panelClass = (): string =>
+    onboardingShown()
+      ? 'mp-offer-sheet mp-offer-sheet--stage mp-dark-stage'
+      : 'mp-offer-sheet'
 
   return (
     <Sheet
       isOpen={offerOpen()}
       close={declineOffer}
       ariaLabel={title()}
-      class="mp-offer-sheet"
+      class={panelClass()}
     >
       <div
         class="mp-offer mp-offer--sheet mp-keep"
@@ -263,24 +283,29 @@ export function AccountOfferSheet(): JSX.Element {
             {KEEP.notNow}
           </button>
         </div>
-        <Show when={print()}>
-          {(current) => <VoiceprintCard print={current()} />}
-        </Show>
-        <h2 class="mp-offer__title">{title()}</h2>
-        <Rows print={print()} />
-        <p class="mp-keep__fact">{keepFact()}</p>
-        <Ways />
-        <p class="mp-signin__fine">
-          By continuing you accept the{' '}
-          <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-            Terms
-          </a>{' '}
-          and the{' '}
-          <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
-            Privacy policy
-          </a>
-          .
-        </p>
+        <KeepBody>
+          <h2 class="mp-offer__title">{title()}</h2>
+          <Show when={print()}>
+            {(current) => <VoiceprintCard print={current()} />}
+          </Show>
+          <Rows print={print()} />
+          <p class="mp-keep__fact">{keepFact()}</p>
+        </KeepBody>
+        <div class="mp-keep__foot">
+          <Ways />
+          <p class="mp-signin__fine" data-testid="keep-fine">
+            <Show when={songsOffered()}>{`${KEEP.freeSongEmail} `}</Show>
+            By continuing you accept the{' '}
+            <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
+              Terms
+            </a>{' '}
+            and the{' '}
+            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+              Privacy policy
+            </a>
+            .
+          </p>
+        </div>
       </div>
     </Sheet>
   )

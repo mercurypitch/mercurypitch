@@ -131,8 +131,8 @@
   padding: 0 16px;
 }
 
-/* Under Keep (beat 7, KeepView.tsx): Merc at the top of the stage, over
-   the sheet where there is room, his feet behind it where there is not. */
+/* Under Keep (beat 7, KeepView.tsx) and the Cloud offer: the stage,
+   empty, behind the sheet. */
 .keepStage {
   justify-content: flex-start;
   padding-top: 8px;
@@ -898,17 +898,6 @@
 
   .guideLine {
     font-size: 15px;
-  }
-}
-
-/* A phone too short for Merc and Keep's sheet both: below about 780 px the
-   sheet (some 570 to 590 px of it) would cover more of him than his feet,
-   and on a 360 by 640 screen all of him. He steps out while Keep is up, and
-   is back on the next beat; where there is room he stands over the sheet
-   (KeepView.tsx). The probe holds both sides of the line. */
-@media (max-height: 780px) {
-  .keepStage .merc {
-    display: none;
   }
 }
 
