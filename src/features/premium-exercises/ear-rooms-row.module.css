@@ -143,3 +143,14 @@
     sans-serif;
   color: #a9b2c8;
 }
+
+/* The room's best at the singer's level, in the room's own light, once
+   it has one (owner, 1 Nov 2026). */
+.best {
+  grid-column: 1 / -1;
+  font:
+    600 13px/1.2 'Inter Variable',
+    'Inter',
+    sans-serif;
+  color: rgb(var(--room-a));
+}

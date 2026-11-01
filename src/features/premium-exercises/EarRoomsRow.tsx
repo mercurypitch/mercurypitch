@@ -5,8 +5,11 @@
 // The same rooms as the "With Merc" row (EarMercRow.tsx), drawn for the
 // native tab (features/ear-lab/merc): a heading that names them and says
 // they are Premium, and a card each with its glyph, its name and its one
-// line. No best and no level on the card: the tab's numbers are the
-// bench's, and a room keeps its own.
+// line. Under the line, the room's best at the singer's level once it has
+// one ("Best 5 of 6"), in the room's own light: the owner's ask of 1 Nov
+// 2026. It is the best the picker's card shows, read from the entry each
+// room keeps beside the catalogue (home-entry.ts, first-entry.ts,
+// leap-entry.ts), so the tab and the room cannot disagree.
 
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
@@ -57,6 +60,13 @@ export function EarRoomsRow(props: EarRoomsRowProps): JSX.Element {
                   <span class={styles.text}>
                     <span class={styles.name}>{exercise.name}</span>
                     <span class={styles.line}>{exercise.line}</span>
+                    <Show when={exercise.progress()}>
+                      {(best) => (
+                        <span class={styles.best} data-testid="ear-rooms-best">
+                          {best()}
+                        </span>
+                      )}
+                    </Show>
                   </span>
                 </button>
               </li>
