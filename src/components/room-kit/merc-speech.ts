@@ -3,27 +3,35 @@
 // ============================================================
 //
 // Merc's lines show in his bubble (room-lines.ts). A line he has a
-// recording of is said aloud as well: so far the three Ear rooms' opening
-// lines, ElevenLabs takes in his voice (the owner's ask, 1 Nov 2026: hear
-// him on TestFlight), placeholders until real recordings come, as his sung
-// set is (echo/merc-voice-set.ts). A room hands in its recordings by line
-// id, and says a line by its id as its bubble shows it.
+// recording of is said aloud as well: so far the three Ear rooms' lines at
+// rest (their opening and result lines) and Echo's opening lines,
+// ElevenLabs takes in his voice (the owner's ask, 1 Nov 2026: hear him on
+// TestFlight), placeholders until real recordings come, as his sung set is
+// (echo/merc-voice-set.ts). A line with a field in it (a note, a count) has
+// no recording and stays silent. A room hands in its recordings by line
+// id, and says a line by its id as its bubble shows it (speakingLines).
 //
 // The rules:
 //   - He speaks only at rest: a room's opening line, as the room opens and
-//     after a run is stopped. Never over the band, his own singing or the
-//     singer's turn: a room's start hushes him before the mic opens.
+//     after a run is stopped, and its result, as a run ends. Never over the
+//     band, his own singing or the singer's turn: a room's start hushes him
+//     before the mic opens, and a sound the singer asks for at the result
+//     (a key or a leap again) hushes him too.
 //   - What he says is what the bubble shows. A new line takes over from the
 //     one he is saying, and a line he has no recording of hushes him.
 //   - A hush fades him out at once (HUSH_SECONDS). A line still loading
 //     when he is hushed is never said.
 //   - He speaks through the room's clock and stage, like everything else
-//     the room plays (useExerciseCapture's `audio()`, room-output.ts). On a
-//     phone that is the app's one AudioContext, which iOS starts only from
-//     a tap. A room opens a frame or more after the tap that opened it, so
-//     the shell starts the clock on that tap (premium-exercise-wiring.ts,
-//     startRoomClock). Where the clock will not start he says nothing, and
-//     the bubble still shows the line.
+//     the room plays (room-output.ts), but he never starts the clock: a
+//     parked clock waits for the singer's tap, and a resume from anywhere
+//     else would take the sound back from a call or another app
+//     (packages/audio-io shared-audio-context.ts). He speaks on a clock
+//     something else has running (useExerciseCapture's `runningAudio()`),
+//     waiting a moment for it (CLOCK_WAIT_MS): a room opens a frame or more
+//     after the tap that opened it, and the shell starts the clock on that
+//     tap (premium-exercise-wiring.ts, startRoomClock). A run leaves it
+//     running for the result. Where it is not running in time he says
+//     nothing, and the bubble still shows the line.
 //   - A recording is read and decoded the first time he says it, and kept
 //     while the room is open. It decodes on a context of its own, as his
 //     sung set does (echo/merc-sampler.ts), while the clock starts: on the
@@ -36,6 +44,7 @@
 import { fetchAssetRead } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { AudioReport } from '@/lib/audio-diagnostics'
 import { audioReporter } from '@/lib/audio-diagnostics'
+import type { LineFieldsOf, RoomLines } from './room-lines'
 import { roomOutput } from './room-output'
 
 /**
@@ -50,6 +59,12 @@ export const SPEECH_LEAD_SECONDS = 0.35
 /** A hush takes him to silence over this long, s. */
 export const HUSH_SECONDS = 0.08
 
+/** How long a line waits for the room's clock to be running, ms. */
+export const CLOCK_WAIT_MS = 1500
+
+/** How often a waiting line looks at the clock, ms. */
+const CLOCK_LOOK_MS = 50
+
 /** The rate the recordings are decoded at, Hz: the phones' own. */
 const DECODE_RATE = 48_000
 
@@ -58,10 +73,10 @@ export type SpokenLines = Readonly<Record<string, string>>
 
 export interface MercSpeechDeps {
   /**
-   * The room's clock, running (useExerciseCapture's `audio()`); null where
-   * it will not start.
+   * The room's clock if something has it running, never started here
+   * (useExerciseCapture's `runningAudio()`); null while it is not.
    */
-  readonly audio: () => Promise<AudioContext | null>
+  readonly clock: () => AudioContext | null
   /** A packaged file's bytes. */
   readonly read?: (url: string) => Promise<{ readonly bytes: ArrayBuffer }>
   /** A context to decode with, apart from the room's clock; null for none. */
@@ -199,12 +214,21 @@ export function createMercSpeech(
     const since = (): number => Math.round(performance.now() - asked)
     // The recording decodes while the clock starts.
     const recording = decode(id, url)
-    void deps.audio().then(async (ctx) => {
+    /** The clock once it runs; null if he is hushed or it does not run in time. */
+    const running = new Promise<AudioContext | null>((resolve) => {
+      const look = (): void => {
+        if (mine !== turn) return resolve(null)
+        const ctx = deps.clock()
+        if (ctx !== null && ctx.state === 'running') return resolve(ctx)
+        if (since() >= CLOCK_WAIT_MS) return resolve(null)
+        setTimeout(look, CLOCK_LOOK_MS)
+      }
+      look()
+    })
+    void running.then(async (ctx) => {
       if (mine !== turn) return
       const clockMs = since()
-      // A clock that did not start would hold the line and play it the
-      // next time it runs: on the singer's next tap, over the mic.
-      if (ctx === null || ctx.state !== 'running') {
+      if (ctx === null) {
         report('no-clock', { id })
         return
       }
@@ -224,5 +248,23 @@ export function createMercSpeech(
       hush()
       decoded.clear()
     },
+  }
+}
+
+/**
+ * A room's `say`: the next line for a moment to its bubble (`show`), and
+ * aloud when the room asks and Merc has it. Any other line hushes him, so
+ * what he says is always what the bubble shows.
+ */
+export function speakingLines<M extends string, F extends LineFieldsOf<F>>(
+  lines: RoomLines<M, F>,
+  speech: MercSpeech,
+  show: (text: string) => void,
+): (moment: M, fields?: F, aloud?: boolean) => void {
+  return (moment, fields, aloud = false) => {
+    const said = lines.line(moment, fields)
+    show(said.text)
+    if (aloud) speech.say(said.id)
+    else speech.hush()
   }
 }

@@ -273,8 +273,8 @@ const KARAOKE_STAGE_2 = [
     /\/echo-merc-ooh-\d+-[A-Za-z0-9]+-[\w-]{8}\.mp3$/u,
     "Merc's voice for Echo's calls",
   ],
-  // And his spoken opening lines in the Ear rooms (Home note, First note
-  // and Leap), each named merc-says- for its line, in voice/ folders that
+  // And his spoken lines in the Ear rooms (Home note, First note and Leap)
+  // and Echo, each named merc-says- for its line, in voice/ folders that
   // fold with Echo's.
   [
     /\/merc-says-[a-z-]+-[\w-]{8}\.mp3$/u,

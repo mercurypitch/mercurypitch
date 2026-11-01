@@ -59,6 +59,7 @@ vi.mock('../useEchoCapture', async () => {
       takeFrames: () => [],
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(fake.audio === 'running' ? ctx : null),
+      runningAudio: () => (fake.audio === 'running' ? ctx : null),
     }),
   }
 })

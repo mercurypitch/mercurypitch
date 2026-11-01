@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { midiToF0 } from '@/lib/glass/test-frames'
@@ -104,6 +105,7 @@ vi.mock('@/components/room-kit/useExerciseCapture', async () => {
       },
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(clock),
+      runningAudio: () => clock,
     }),
   }
 })
@@ -287,7 +289,10 @@ async function toNextEntry(): Promise<void> {
 // ── Merc's spoken lines, as calls the test can read ───────────
 
 const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
-vi.mock('@/components/room-kit/merc-speech', () => ({
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
   createMercSpeech: () => ({
     say: (id: string) => {
       spoken.said.push(id)
@@ -463,6 +468,8 @@ describe('First note', () => {
     })
     expect(fake.released).toBeGreaterThan(0)
     expect(songs.disposed).toBeGreaterThan(0)
+    // Merc says the result aloud as the run ends, the mic closed.
+    expect(spoken.said.at(-1)).toBe('all-on')
   })
 
   it('stops a run on the mic, keeping nothing', async () => {

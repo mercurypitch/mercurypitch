@@ -43,6 +43,7 @@ export function stand(): Stand {
       takeFrames: () => [...s.frames],
       playTone: async () => Promise.resolve(),
       audio: async () => Promise.resolve(null),
+      runningAudio: () => null,
     },
   }
   return s
