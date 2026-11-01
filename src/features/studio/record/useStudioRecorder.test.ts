@@ -197,6 +197,40 @@ describe('useStudioRecorder', () => {
     dispose()
   })
 
+  it('answers R and Escape from anywhere on the page once armed, but not an idle R', () => {
+    const { dispose } = mount()
+    const recorder = mocks.recorder!
+    const fromPage = (name: string) => {
+      const event = new KeyboardEvent('keydown', {
+        key: name,
+        cancelable: true,
+      })
+      window.dispatchEvent(event)
+      return event
+    }
+
+    fromPage('r')
+    expect(recorder.arm).not.toHaveBeenCalled()
+
+    mocks.onChange!(view({ phase: 'armed' }))
+    expect(fromPage('r').defaultPrevented).toBe(true)
+    expect(recorder.record).toHaveBeenCalledOnce()
+
+    // A key the workspace already handled is not handled again.
+    mocks.onChange!(view({ phase: 'recording' }))
+    const handled = new KeyboardEvent('keydown', { key: 'r', cancelable: true })
+    handled.preventDefault()
+    window.dispatchEvent(handled)
+    expect(recorder.stop).not.toHaveBeenCalled()
+    fromPage('Escape')
+    expect(recorder.stop).toHaveBeenCalledOnce()
+
+    // The listener goes with the Studio.
+    dispose()
+    fromPage('Escape')
+    expect(recorder.stop).toHaveBeenCalledOnce()
+  })
+
   it('does not arm while the song is read-only or its audio is busy', () => {
     for (const blocked of [{ canEdit: false }, { audioBusy: true }]) {
       const { hook, dispose } = mount(blocked)
