@@ -2577,3 +2577,17 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   On "done": confirm "seams: CLEAN" and "film-06.mp4 copied into renders/ and checked", run push-film06.sh (tee
   l4entr/push-film06.log), then FILM6 (xhigh, rate_limit allowed). On an OOM: RESUME=1 WORKERS=1
   HF_SEGMENT_BROWSER_RECYCLE=3 KEEP_MB=50 setsid nohup bash render-l4.sh film-06 60 high l4film06proj.
+- 06:16 CHECK-IN: film-06 at 17 of 23 pieces (2 workers; pieces 16-17 are where film-05 OOM'd; peak rss+shmem
+  11,508 MiB at 06:15, cap 13,677, oom 0). FOUND: render-switch.sh's memory fallback could never fire. It holds
+  the cgroup path from before the 04:16 restart (01a19218-...); the cgroup is now process_api/01a19552-.../
+  claude-code-bash and the old path is gone, so its rss+shmem read was empty. FIX 06:19: stopped render-switch.sh
+  (pid 497, a pure monitor; render-l4.sh pid 501 runs in its own session, untouched) and started
+  l4entr/mem-guard.sh film-06 l4film06proj 501 (KEEP_MB=50 MEM_STOP=12400; finds the cgroup afresh; polls every
+  3 s; on a trip: TERM to pgid 501, waits for the render and its browsers, status line, then RESUME=1 WORKERS=1
+  HF_SEGMENT_BROWSER_RECYCLE=3 KEEP_MB=50 render-l4.sh). Log l4entr/film-06-switch.log. Watcher bxflxr32a (2 h,
+  to ~08:19) logs mem-f6.log and wakes on: film-06.mp4 copied into renders/, any FAIL/exit>0/BAD/stopped line,
+  done, an OOM kill, or no render running. DISK: / 90 MB free with 17 pieces on disk (~5.5 MB each); at the end
+  ~55 MB, then render-l4.sh removes the pieces (~132 MB) before copying the master (needs ~169 MB with KEEP_MB=50):
+  should fit; the music-only stays in /dev/shm. If the master copy is refused ("kept only in"), push-film06.sh
+  still secures it on GitHub; lesson-04/.transcode-cache (70 MB, regenerable check cache) is the one place to
+  free room, only if needed. NEXT unchanged: on the copy line run push-film06.sh; on done, FILM6.

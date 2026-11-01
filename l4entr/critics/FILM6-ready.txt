@@ -1,0 +1,17 @@
+Round type: full film, round 6 (verification). Mark every item of the previous report FIXED, PARTLY or STILL PRESENT, hunt the whole film for anything new that broke, rank the problems you find with film timestamps, and end with SHIP or ONE MORE PASS.
+
+Project folder: /home/user/mercurypitch/output/motion/lesson-04
+Artifact: /dev/shm/l4film/film-06.mp4 (1920 x 1080, 60 fps, with the full mix)
+Music-only render: /dev/shm/l4film/film-06-music-only.mp4 (the same picture with the music bed alone)
+Previous report: /home/user/mercurypitch/output/motion/lesson-04/review/film-05/REPORT.md
+Spec: /home/user/mercurypitch/output/motion/lesson-04/STORYBOARD.md and /home/user/mercurypitch/output/motion/lesson-04/HANDOFFS.md
+Brief: /home/user/mercurypitch/output/motion/lesson-04/BRIEF.md
+Facts: /home/user/mercurypitch/output/motion/lesson-04/FACTS.md
+Script as voiced: /home/user/mercurypitch/output/motion/lesson-04/SCRIPT.md
+Reference study folder: /home/user/mercurypitch/output/motion/lesson-04/study
+SKILL_DIR: /home/user/mercurypitch/.claude/skills/motion-designer
+Write your report to: /home/user/mercurypitch/output/motion/lesson-04/review/film-06/REPORT.md
+
+If you cannot write files, return the full report as your final message.
+
+Operational note: the films sit in /dev/shm/l4film because free disk on / is under 300 MB; read them there and do not move, copy or delete them, and write nothing large to /. The previous round's film is /home/user/mercurypitch/output/motion/lesson-04/renders/film-05.mp4, and its frame sheets are in /home/user/mercurypitch/output/motion/lesson-04/review/film-05/. Memory is capped at about 13 GB for everything you run (files in /dev/shm count against it), so keep extracted frames and dumps in /dev/shm under about 3 GB at any time and delete only your own files when you are done; never delete files you did not create.
