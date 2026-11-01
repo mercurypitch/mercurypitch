@@ -763,7 +763,9 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     expect(pushed()).toBeNull()
   })
 
-  it("opens its own offer, not the end's, when Not now comes while Continue waits on the asks", async () => {
+  it("finishes with the end's offer when Not now comes while Continue waits on the asks", async () => {
+    // The line's Continue has finished the onboarding: its Not now no
+    // longer ends it as a Not now, nor in the alley.
     setAuthToken(token('google'))
     const s = mount()
     await skipRange(s)
@@ -775,15 +777,20 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     await continueLine()
 
     q('onboarding-not-now')?.click()
+    await settle()
+    const busy = q('onboarding-not-now')?.getAttribute('aria-busy')
     answer()
     await settleAll()
 
-    expect(cloudOffer()?.source).toBe('onboarding-exit')
-    expect(funnel.app).toEqual(['cloud_view_onboarding_exit'])
+    expect(busy).toBe('true')
+    expect(cloudOffer()?.source).toBe('onboarding')
+    expect(funnel.app).toEqual(['cloud_view_onboarding'])
     closeCloudOffer('not-now')
     await settle()
-    expect(window.location.hash).toBe(ALLEY)
-    expect(pushed()).toBeNull()
+    expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
+    expect(funnel.sent).toContain('native_onboarding_done')
+    expect(funnel.sent).not.toContain('native_onboarding_not_now')
   })
 
   it("leaves Keep's own Not now going on to the line, after a reveal", async () => {
@@ -830,6 +837,82 @@ describe("after the line's Continue: the onboarding finished, whatever comes aft
     await settleAll()
     expect(beat()).toBe('offer')
     expect(cloudOffer()?.source).toBe('onboarding')
+  })
+
+  it("finishes on Not now from the range Keep's Find your range first runs: counted done, the end's offer, the Warm-up's path", async () => {
+    const s = mount()
+    await sungThenKeep(s)
+    k('keep-find-range')?.click()
+    await settle()
+    expect(beat()).toBe('range')
+    const released = s.calls.release
+
+    q('onboarding-not-now')?.click()
+    const shut = s.calls.release
+    await settleAll()
+
+    expect(shut).toBeGreaterThan(released)
+    expect(cloudOffer()?.source).toBe('onboarding')
+    closeCloudOffer('not-now')
+    await settle()
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
+    expect(funnel.sent).toContain('native_onboarding_done')
+    expect(funnel.sent).not.toContain('native_onboarding_not_now')
+  })
+
+  it.each(['range', 'reveal'] as const)(
+    'takes Back on the %s it brings as finishing too',
+    async (where) => {
+      const s = mount()
+      await sungThenKeep(s)
+      k('keep-find-range')?.click()
+      await settle()
+      if (where === 'reveal') {
+        s.frames = slideWindow(52, 40)
+        flushFrame()
+        s.frames = slideWindow(45, 67)
+        flushFrame()
+        q('onboarding-see-voice')?.click()
+        await settle()
+      }
+      expect(beat()).toBe(where)
+
+      performBack({
+        canGoBack: false,
+        back: () => undefined,
+        minimize: () => undefined,
+      })
+      await settleAll()
+
+      expect(cloudOffer()?.source).toBe('onboarding')
+      closeCloudOffer('not-now')
+      await settle()
+      expect(onboardingExit()).toBe('finished')
+      expect(pushed()).toBe('warm-up')
+      expect(funnel.sent).not.toContain('native_onboarding_not_now')
+    },
+  )
+
+  it('goes on at once, finished, on a second Not now while the asks are out', async () => {
+    const s = mount()
+    identity.hold = new Promise<void>(() => undefined)
+    await sungThenKeep(s)
+    k('keep-find-range')?.click()
+    await settle()
+
+    q('onboarding-not-now')?.click()
+    await settle()
+    const stillUp = onboardingShown()
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(stillUp).toBe(true)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(cloudOfferOpen()).toBe(false)
+    expect(pushed()).toBe('warm-up')
   })
 })
 
