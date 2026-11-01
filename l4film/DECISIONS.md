@@ -2049,3 +2049,14 @@ replaced it. The builder's record: critics never read it.
        care block; the loop seam (21.65), which matters only if a page ever loops the film.
      - FILM6 passes the round after FILM5's ONE MORE PASS. DELIVERY.md is rewritten for film-06, and
        the film goes to the owner.
+
+141. **The owner's review of film-06, and a longer cap (1 November).**
+     - The owner, verbatim: "Yes up to 20 min is fine as well, I will check the films now, so we have a
+       improved film variant watched the film a bit seems quite nice, ready for a first draft in the
+       cloud flare". A lesson film may now run up to 20 minutes (17 October allowed 10), so film-06's
+       9:11.2 stands with room to spare, and Season 2's length worries (SEASON-2 § 1.3, risk 10, which
+       assumed a 10 minute cap) ease; the plan records it with the owner's other Season 2 answers.
+     - Next: the web copies (`tools/web-video.sh`: 1080p30 and 720p30, moov first) for a first draft
+       on R2, uploaded by whoever has Cloudflare access; then `/learn/04` gets its film section (a
+       `film.ts` as Lessons 1 and 2 have, the captions and chapters), which stays a draft until the
+       owner approves.

@@ -64,13 +64,13 @@ phrase with a glow (DECISIONS 139). The sixth marked both fixed and passed the f
 | File | What it is |
 | --- | --- |
 | `renders/film-06.mp4` | 1920x1080, 60 fps, H.264, AAC 48 kHz; the master, with the final voices. sha256 `5481187b50a14193f2d771f0269de1630456678f0579474b5168f8798fceb344` |
-| `/dev/shm/l4film/film-06-music-only.mp4` | The same picture with the music-only mix: the bed on D, the room tone and the stings. It is in memory, because the disk is full; it is made again from the master in seconds: `ffmpeg -i renders/film-06.mp4 -i assets/audio/music-only.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -movflags +faststart film-06-music-only.mp4` |
+| `film-06-music-only.mp4` (not on disk) | The same picture with the music-only mix: the bed on D, the room tone and the stings. The disk is full, so it was kept in memory, and the container restart of 1 November (12:07) cleared it; it is made again from the master in seconds, into any folder with room: `ffmpeg -i renders/film-06.mp4 -i assets/audio/music-only.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -movflags +faststart film-06-music-only.mp4` |
 | `renders/contact-sheet-film-06.jpg` | One frame every 10 s of the master, 0:00 to 8:50, in a 6 x 9 grid |
-| `renders/film-05.mp4` | FILM5's master (ONE MORE PASS), the final voices before the holds round; kept to compare. Its music-only is in `/dev/shm/l4film/` (its sound is byte-identical to film-06's) |
+| `renders/film-05.mp4` | FILM5's master (ONE MORE PASS), the final voices before the holds round; kept to compare. Its music-only was in memory and went with the restart of 1 November; the same command with `film-05.mp4` makes it again (its sound is byte-identical to film-06's) |
 | `renders/film-04.mp4`, `film-04-music-only.mp4` | The picture lock on the scratch voices (FILM4, SHIP), which the owner reviewed; kept to compare |
 | `captions/lesson-04.en.srt`, `.vtt` | Captions with speaker labels (MERC, TAVI) and sound descriptions, on the final voices' clock: 123 captions, at most 20.0 characters a second; upload, never burn in |
 | `captions/chapters.json` | Twelve YouTube chapters from the scene table (`tools/chapters.py`), from "One short of home" at 0:00 to "Next time" at 8:55 |
-| `review/measure-film-06/` | The measured quality bar for the master. Its frame sheets are in `/dev/shm/l4-moved/` for now, and `measure.py render` makes them again |
+| `review/measure-film-06/` | The measured quality bar for the master. Its frame sheets were moved to memory to free the disk and went with the restart of 1 November; `measure.py render` makes them again |
 | `review/film-06/` | The passing critic's report (FILM6), its crops and dense sheets |
 | `feat/lesson-04-films` (GitHub) | A branch that holds only the films, in Git LFS, never merged: film-04, film-05 and film-06 (bfd8196) with their sha256, to download. GitHub holds every object, but downloads fail while the organisation's LFS budget is spent |
 | `LEDGER.md`, `DECISIONS.md` | Every critic round and every build decision with its reason |
