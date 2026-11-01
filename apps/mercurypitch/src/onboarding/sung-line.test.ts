@@ -48,12 +48,20 @@ describe('lineTonic', () => {
   })
 
   it('sits inside a wide range, a little under its middle', () => {
-    // E2 to G4, a baritone's: the middle is between F3 and F#3.
+    // E2 to G4, a baritone's, read as the exercises read it (practiceRange):
+    // three over two octaves, two off the bottom and one off the top, F#2
+    // to F#4. Its middle is F#3.
     const tonic = lineTonic({ lowMidi: 40, highMidi: 67 })
-    expect(tonic).toBe(49)
-    expect(tonic).toBeGreaterThanOrEqual(40)
-    expect(tonic + LINE_SPAN).toBeLessThanOrEqual(67)
-    expect(tonic + LINE_SPAN / 2).toBeLessThan((40 + 67) / 2)
+    expect(tonic).toBe(50)
+    expect(tonic).toBeGreaterThanOrEqual(42)
+    expect(tonic + LINE_SPAN).toBeLessThanOrEqual(66)
+    expect(tonic + LINE_SPAN / 2).toBeLessThan((42 + 66) / 2)
+  })
+
+  it('is not pulled under the voice by a slide that dipped into a growl', () => {
+    // F2 to D5, a near-tenor's whose slide down went past the voice: read
+    // as B2 to B4, the line starts on G3, not the F3 the growl gave.
+    expect(lineTonic({ lowMidi: 41, highMidi: 74 })).toBe(55)
   })
 
   it('stays inside a range only just wide enough', () => {

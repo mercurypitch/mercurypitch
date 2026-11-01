@@ -63,6 +63,7 @@ vi.mock('@/lib/hold/load-hold-target', () => ({
 }))
 vi.mock('./remembered-note', () => ({
   rememberedLongNote: () => null,
+  chosenLongNote: () => null,
   rememberLongNote: () => undefined,
 }))
 

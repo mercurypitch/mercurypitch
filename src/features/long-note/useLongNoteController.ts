@@ -51,10 +51,10 @@ import { fillLevel } from './lantern-geometry'
 import type { LongNoteController, LongNoteRunSummary, } from './long-note-controller-types'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
+import { heldNoteChosen, longNoteOpening } from './long-note-opening'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
-import { rememberedLongNote } from './remembered-note'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
@@ -82,13 +82,7 @@ export function useLongNoteController(
   const capture = useLongNoteCapture()
   // The voice type's usual note: where the arrows start from no note.
   const picked = loadHoldTarget(untrack(vocalRangePreset))
-  // The note held last time, else the voiceprint's, else (in the Warm-up)
-  // the one an earlier stop started from.
-  const opening =
-    rememberedLongNote() ??
-    (picked.source === 'voiceprint' ? picked.midi : null) ??
-    options.root ??
-    null
+  const opening = longNoteOpening(picked, options.root ?? null)
   const lines = createMercLineSelector()
 
   const [state, setState] = createSignal<LongNoteState>(
@@ -316,7 +310,7 @@ export function useLongNoteController(
     let improved = false
     if (take === null) {
       capture.release()
-      improved = keepRun(target, result)
+      improved = keepRun(target, result, heldNoteChosen(target, picked))
     }
     const full = engine.goalReached
     const brim = engine.brimReached

@@ -16,6 +16,10 @@
 // four semitones higher when the highest crest stays under 95 % of the
 // span; otherwise all three start on the root.
 //
+// A voiceprint's range is read as the exercises read it: at most two
+// octaves under its top (practiceRange in hold-target.ts), so a slide that
+// dipped into a growl does not drag the first root under the voice.
+//
 // No voiceprint: a comfortable note (the one the singer settled on in the
 // "sing any easy note" pre-roll, else the voice type's own note, tenor as
 // in Long note), and the root four semitones under it. With no span to
@@ -27,7 +31,7 @@
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { HoldVoicePreset, VoiceprintRange } from '@/lib/hold/hold-target'
-import { HOLD_DEFAULT_PRESET, HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, latestVoiceprintRange, nearestNaturalMidi, } from '@/lib/hold/hold-target'
+import { HOLD_DEFAULT_PRESET, HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, latestPracticeRange, nearestNaturalMidi, } from '@/lib/hold/hold-target'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { LIP_ROLL_SEMITONES, LIP_ROLL_WAVES, NG_SLIDE_COUNT, NG_SLIDE_SEMITONES, } from './glide-path'
 
@@ -110,7 +114,7 @@ export function ngRootsForRange(range: VoiceprintRange): number[] {
 
 /** Ng slides fitted to the singer: five roots, each slide up a fifth. */
 export function fitNgSlides(input: GlideTargetInput): GlideTargets {
-  const range = latestVoiceprintRange(input.voiceprints)
+  const range = latestPracticeRange(input.voiceprints)
   if (range !== null) {
     return {
       roots: ngRootsForRange(range),
@@ -149,7 +153,7 @@ export function lipRollForRange(range: VoiceprintRange): {
 
 /** Lip roll fitted to the singer: three roots and the crest's height. */
 export function fitLipRoll(input: GlideTargetInput): GlideTargets {
-  const range = latestVoiceprintRange(input.voiceprints)
+  const range = latestPracticeRange(input.voiceprints)
   if (range !== null) return { ...lipRollForRange(range), source: 'voiceprint' }
   const comfortable = comfortableNote(input)
   const root = comfortable.midi - ROOT_UNDER_COMFORTABLE

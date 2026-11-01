@@ -65,7 +65,7 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { GlideMoment } from './glide-ride'
-import { introHum, rideStep } from './glide-ride'
+import { introHum, rideFeet } from './glide-ride'
 import type { GlideCoreMoment, GlideLineFields, GlidePlan, GlideRoom, GlideRoomSetup, GlideRoomTypes, GlideRun, GlideView, } from './glide-room-contract'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC } from './glide-room-contract'
 import type { GlideRoomEvent, GlideRoomState } from './glide-room-machine'
@@ -86,6 +86,11 @@ interface Live<R extends GlideRoomTypes> extends GlideRun<R> {
   /** Breaths whose root has played, by the arch they lead into. */
   readonly played: Set<number>
   feetY: number
+  /**
+   * The voice's eased distance from the path, world y (rideFeet); null
+   * before the run's first frame, which takes it from where he stood.
+   */
+  feetOffset: number | null
   lastFrameAt: number
   resultAsked: boolean
   /** The last arch whose start hushed Merc (-1 before the first). */
@@ -329,15 +334,18 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     const dt = Math.min(0.1, (frameAt - run.lastFrameAt) / 1000)
     run.lastFrameAt = frameAt
     hearMerc(run, t)
-    run.feetY = rideStep(
-      run.feetY,
-      scene.feetTarget(
-        run.take.state.voiceMidi,
-        t < 0 ? null : targetAt(run.plan.path, t),
-        run.plan.path.arches[run.take.archAt(t)],
-      ),
+    const target = t < 0 ? null : targetAt(run.plan.path, t)
+    const arch = run.plan.path.arches[run.take.archAt(t)]
+    const pathY = scene.feetTarget(null, target, arch)
+    const feet = rideFeet(
+      run.feetOffset ?? run.feetY - pathY,
+      scene.feetTarget(run.take.state.voiceMidi, target, arch),
+      pathY,
       dt,
+      scene.rideTauSec,
     )
+    run.feetOffset = feet.offset
+    run.feetY = feet.y
     if (view !== null) {
       view.frame(
         scene.frame(run, t, {
@@ -427,6 +435,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       settled,
       played: new Set<number>(),
       feetY: scene.feetStartY,
+      feetOffset: null,
       lastFrameAt: performance.now(),
       resultAsked: false,
       hushed: -1,

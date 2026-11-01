@@ -24,7 +24,7 @@ import { bendAt, placeEyes, restToWorldExact } from './rest-space'
 import type { Arcs, Fx } from './sim-choreo'
 import { choreo, DROP_Y0 } from './sim-choreo'
 import type { GlideMouth, GlideSmooth } from './sim-glide'
-import { freshGlide, stepGlide } from './sim-glide'
+import { freshGlide, RIDE, stepGlide } from './sim-glide'
 import type { Q3, Q4 } from './sim-math'
 import { clamp, smooth } from './sim-math'
 import type { Springs, Targets } from './sim-springs'
@@ -395,7 +395,13 @@ export class Sim {
   step(dt: number): void {
     const raw = this.voiceAt ? this.voiceAt(this.t - this.voiceT0) : this.voice
     smoothVoice(this.vs, raw, dt)
-    stepGlide(this.vs, raw.voiced, raw.midi, dt)
+    stepGlide(
+      this.vs,
+      raw.voiced,
+      raw.midi,
+      dt,
+      this.glideMouth === 'buzz' ? RIDE.buzzSlopeTau : RIDE.slopeTau,
+    )
     this.trackLock(raw, dt)
 
     const tau = this.t - this.stateT0

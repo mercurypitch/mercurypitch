@@ -29,8 +29,15 @@ export function isFalseStart(engine: HoldState, result: HoldResult): boolean {
   return voicedSeconds < FALSE_START_SECONDS
 }
 
-/** A singer's run is kept: history, best and the note. True on a best. */
-export function keepRun(target: number, result: HoldResult): boolean {
+/**
+ * A singer's run is kept: history, best and the note, with whether the
+ * singer chose it (remembered-note.ts). True on a best.
+ */
+export function keepRun(
+  target: number,
+  result: HoldResult,
+  chosen: boolean,
+): boolean {
   if (!result.locked) return false
   recordExerciseResult({
     type: EXERCISE_LONG_NOTE_LANTERN,
@@ -43,7 +50,7 @@ export function keepRun(target: number, result: HoldResult): boolean {
     steadiness: result.score,
     at: Date.now(),
   })
-  rememberLongNote(target)
+  rememberLongNote(target, chosen)
   return improved
 }
 

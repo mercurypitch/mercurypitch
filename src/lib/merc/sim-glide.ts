@@ -10,7 +10,11 @@
 //
 // The slope is the derivative of the eased pitch, eased again over 0.2 s:
 // a slide up a fifth reads as 4 to 6 semitones a second, while vibrato and
-// a tracker's frame-to-frame noise stay under the dead band. A voice that
+// a tracker's frame-to-frame noise stay under the dead band. A lip roll's
+// slope is eased over half a second (RIDE.buzzSlopeTau): its pitch flutters
+// with the lips, several semitones a second even on a held note, and the
+// longer ease keeps that flutter under the dead band while the wave's own
+// rise, two seconds long, still comes through. A voice that
 // comes back after a silence starts where it is, and so does one that
 // jumps (a register flip, or the tracker slipping an octave for a frame):
 // neither is a slide, so neither leans him.
@@ -42,6 +46,15 @@ export interface GlideSmooth {
 export const RIDE = {
   /** Up to this slope (semitones/s) he stands upright: vibrato, drift. */
   dead: 0.8,
+  /** How long the slope is eased over, s. */
+  slopeTau: 0.2,
+  /**
+   * The same on a lip roll (GlideMouth `buzz`), s: the trill's pitch
+   * flutters with the lips, and at 0.2 s he rocked on it. Eased over half a
+   * second, a flutter of a semitone either way, 3 to 8 times a second,
+   * hardly leans him, while a wave of half an octave in 2.4 s still does.
+   */
+  buzzSlopeTau: 0.5,
   /** From this slope on he leans all the way. */
   full: 6,
   /** His full lean on the lean spring; `listen` leans 0.24. */
@@ -67,6 +80,7 @@ export function stepGlide(
   voiced: boolean,
   midi: number,
   dt: number,
+  slopeTau: number = RIDE.slopeTau,
 ): void {
   const was = g.heard
   const before = g.pitch
@@ -75,7 +89,7 @@ export function stepGlide(
   if (follows) g.pitch += (midi - g.pitch) * (1 - Math.exp(-dt / 0.06))
   else if (g.heard) g.pitch = midi
   const rate = follows ? (g.pitch - before) / dt : 0
-  g.slope += (rate - g.slope) * (1 - Math.exp(-dt / 0.2))
+  g.slope += (rate - g.slope) * (1 - Math.exp(-dt / slopeTau))
   g.env += ((voiced ? 1 : 0) - g.env) * (1 - Math.exp(-dt / 0.12))
 }
 

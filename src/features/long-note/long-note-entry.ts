@@ -8,9 +8,12 @@
 // Each comes from the room's own stores and rules, so the way in and the
 // room cannot disagree. The seconds use the result card's own formatter.
 
+import { loadHoldTarget } from '@/lib/hold/load-hold-target'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { vocalRangePreset } from '@/stores/settings-store'
 import { longNoteDemoAutoPlays } from './demo/demo-auto-play'
 import { longNoteBest } from './long-note-best'
+import { longNoteOpening } from './long-note-opening'
 import { rememberedLongNote } from './remembered-note'
 
 /**
@@ -30,15 +33,24 @@ export interface LongNoteEntry {
   demoAutoPlays: () => boolean
 }
 
+/**
+ * The note the room opens on, once a note has been held: before the first
+ * result the way in names none.
+ */
+function openingNote(): number | null {
+  if (rememberedLongNote() === null) return null
+  return longNoteOpening(loadHoldTarget(vocalRangePreset()))
+}
+
 /** Reactive reads: each call reads the stores as they are now. */
 export function longNoteEntry(): LongNoteEntry {
   return {
     note: () => {
-      const midi = rememberedLongNote()
+      const midi = openingNote()
       return midi === null ? null : midiToNoteNameOctave(midi)
     },
     progress: () => {
-      const midi = rememberedLongNote()
+      const midi = openingNote()
       const best = midi === null ? null : longNoteBest(midi)
       return best === null
         ? null

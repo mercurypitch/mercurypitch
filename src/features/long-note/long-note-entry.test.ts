@@ -20,6 +20,7 @@ interface Seed {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.doUnmock('@/lib/hold/load-hold-target')
   vi.resetModules()
 })
 
@@ -73,6 +74,15 @@ describe('the note Long note opens on', () => {
 
     expect(longNoteEntry().note()).toBeNull()
   })
+
+  it("is the room's own: the voiceprint's pick over a note only accepted", async () => {
+    vi.doMock('@/lib/hold/load-hold-target', () => ({
+      loadHoldTarget: () => ({ midi: 59, source: 'voiceprint' }),
+    }))
+    const { longNoteEntry } = await load({ note: 53 })
+
+    expect(longNoteEntry().note()).toBe('B3')
+  })
 })
 
 describe('the best Long note shows for that note', () => {
@@ -107,7 +117,7 @@ describe('the best Long note shows for that note', () => {
     const { rememberLongNote } = await import('./remembered-note')
 
     recordLongNoteBest(60, best(13.21))
-    rememberLongNote(60)
+    rememberLongNote(60, true)
 
     expect(entry.note()).toBe('C4')
     expect(entry.progress()).toBe('Best 13.2 s')

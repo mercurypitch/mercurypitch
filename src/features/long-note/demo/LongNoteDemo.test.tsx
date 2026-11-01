@@ -136,6 +136,7 @@ vi.mock('@/lib/haptics', () => ({
 }))
 vi.mock('../remembered-note', () => ({
   rememberedLongNote: () => kept.note,
+  chosenLongNote: () => kept.note,
   rememberLongNote: (midi: number) => {
     kept.note = midi
   },

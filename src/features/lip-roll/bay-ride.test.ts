@@ -8,7 +8,7 @@ import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { STATES } from '@/lib/merc/constants'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { ABOVE_CREST_W, MERC_INTRO_X, pitchY, UNDER_ROOT_W } from './bay-layout'
-import { INTRO_HUM_LEVEL, introHum, RIDE_STATES, RIDE_TAU_SEC, rideStep, rideTarget, rideX, rideXOn, } from './bay-ride'
+import { BUZZ_RIDE_TAU_SEC, INTRO_HUM_LEVEL, introHum, RIDE_STATES, rideFeet, rideTarget, rideX, rideXOn, } from './bay-ride'
 import { createBayScroll, holdCamera } from './bay-scroll'
 
 describe('where he rides', () => {
@@ -39,10 +39,15 @@ describe('where he rides', () => {
 })
 
 describe('his steps', () => {
-  it('eases toward the target, most of the way within a few time constants', () => {
-    expect(rideStep(1, 0, RIDE_TAU_SEC)).toBeCloseTo(Math.exp(-1), 9)
-    expect(rideStep(1, 0, 5 * RIDE_TAU_SEC)).toBeLessThan(0.01)
-    expect(rideStep(1, 0, 0)).toBe(1)
+  it('stands on the wave the voice follows, and eases its distance from it at a lip roll’s pace', () => {
+    // On the path: wherever it goes, so are his feet.
+    expect(rideFeet(0, 0.3, 0.3, 1 / 60, BUZZ_RIDE_TAU_SEC)).toEqual({
+      offset: 0,
+      y: 0.3,
+    })
+    // Off it: a time constant takes him most of the way.
+    const off = rideFeet(0, 0.4, 0.3, BUZZ_RIDE_TAU_SEC, BUZZ_RIDE_TAU_SEC)
+    expect(off.y - 0.3).toBeCloseTo(0.1 * (1 - Math.exp(-1)), 9)
   })
 })
 

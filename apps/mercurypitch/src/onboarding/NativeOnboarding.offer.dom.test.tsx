@@ -388,10 +388,11 @@ describe('beat 8, the sung line', () => {
     await measureRange(s)
     expect(beat()).toBe('line')
 
-    // A little under the middle of E2 to G4: C sharp 3.
-    await singLine(s, 49)
+    // A little under the middle of E2 to G4 as the exercises read it
+    // (practiceRange: F#2 to F#4): D3.
+    await singLine(s, 50)
 
-    expect(voice.sung[0][0]).toBe(49)
+    expect(voice.sung[0][0]).toBe(50)
     expect(q('onboarding-sung-score')?.textContent).toBe(lineScoreText(10, 10))
   })
 
