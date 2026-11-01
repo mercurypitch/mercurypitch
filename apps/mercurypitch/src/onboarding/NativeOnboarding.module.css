@@ -811,6 +811,14 @@
   text-align: start;
 }
 
+/* As the sung line's bubble (LineView.module.css): filled from the start,
+   no word alone on the last line, where `pretty` is known. */
+@supports (text-wrap: pretty) {
+  .guideLine {
+    text-wrap: pretty;
+  }
+}
+
 .revealFoot {
   flex: 0 0 auto;
   display: flex;

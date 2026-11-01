@@ -31,6 +31,16 @@
   text-align: start;
 }
 
+/* Lines filled from the start, as a message is, with no word left alone
+   on the last: balanced, "Listen first, then / sing it back." stopped
+   halfway across a bubble as wide as the row. Where `pretty` is not known
+   the bubble keeps the balance. */
+@supports (text-wrap: pretty) {
+  .bubble {
+    text-wrap: pretty;
+  }
+}
+
 /* The lane: the ten notes as bars at their pitches and times. */
 .lane {
   position: relative;
