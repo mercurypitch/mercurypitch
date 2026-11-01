@@ -14,10 +14,10 @@ plan is [ARTICLE-PLAN.md](ARTICLE-PLAN.md) on the season's decided answers (SEAS
 higher (item 2), and the page names no note value, so item 4 does not arise.
 
 Sound comes before every symbol (SEASON-2 § 1.4 item 1). Every interval plays before it is
-written: each play lights its notes on the pitch line, a lane a semitone, then lands them on the
-learner's staff. The cold open draws no staff at all. The page's one object is the staff and the
-pitch line side by side: the staff counts an interval's letters, the pitch line its semitones, and
-in Step 4 the pitch line curls into Lesson 2's ring (FACTS 39).
+written: each play lights its notes on the pitch line, a lane for each note, a semitone apart,
+then lands them on the learner's staff. The cold open draws no staff at all. The page's one object
+is the staff and the pitch line side by side: the staff counts an interval's letters, the pitch
+line its semitones, and in Step 4 the pitch line curls into Lesson 2's ring (FACTS 39).
 
 It is a theory lesson with an unscored sing-along, so it carries the singing lines and lists them
 for the vocal coach at the end, as Lesson 15 does. Where it shares a line with Season 1 (the comfort
@@ -42,9 +42,15 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   the choice. Merc's line no longer sends the learner to count on a ring that is not drawn (FACTS 1a,
   40, 42).
 - **The predict asks for two equal leaps**, not for the note that splits the octave "in half": in
-  hertz, G sits almost exactly halfway, so "half" needed its measure. Its choices read G and F♯;
-  Tavi's bubble names G as the fifth (FACTS 42, 43). Each answering play ends with C and its middle
-  note together, so the cold open plants the hook's second half too (FACTS 26, 44).
+  hertz, G sits almost exactly halfway, so "half" needed its measure. It asks which note between the
+  two Cs does it, since both splits are played. Its choices read G and F♯; Tavi's bubble names G as
+  the fifth (FACTS 42, 43). Each answering play ends with C and its middle note together, so the
+  cold open plants the hook's second half too (FACTS 26, 44). It stays a deliberate reasoning check,
+  as the season's card designed it: Lesson 6 gave the octave's 12 semitones and the fifth's 7, and
+  the pull of G as the middle is the point (FACTS 1a).
+- **The recall asks Lesson 6's questions 3 and 4**, where the plan asked 2 and 3: question 2 offers
+  "7 semitones: a perfect fifth", the fact the predict's reasoning rests on, one scroll under the
+  choices (FACTS 1a, 7).
 - **The object is Lesson 2's semitone ruler, drawn as Season 2's pitch line, beside the staff**, not
   "Lesson 6's interval ruler", which no lesson has. In Step 4 it curls into Lesson 2's ring
   (FACTS 39).
@@ -52,9 +58,11 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   below the predict, where a phone shows it before the choice, and answers it. Inversion takes its
   place, its figure a third turned over rather than the fifth, and the tritone is named in Step 2
   (FACTS 1a, 69).
-- **The steps' toy waits for the choice**: its Sharp, Flat, Fold and Curl into a ring unlock with
-  the cold open's choice, so before it the toy reaches no black key and folds nothing (FACTS 1a,
-  71).
+- **The steps' toy holds back the answer until the choice**: Sharp, Flat, Fold, Curl into a ring,
+  Step 2's two plays, Step 3's two and Step 4's one wait for it, and its pitch line draws no
+  black-key lane until then, as the hero draws none. Step 1's two plays stay open, its E♭ drawing
+  only its own lane, since a minor third answers nothing, and so do Step up, Step down and a tap on
+  a place, which reach only white keys (FACTS 1a, 71).
 - **Step 4's heading names no interval** ("Why does the halfway interval want to move?"): the lesson
   menu lists every heading from the first paint, and "the tritone" there would tell a learner that
   the answer is not the fifth. Tavi opens Step 4 with a sincere guess, where the plan closed it with
@@ -66,17 +74,20 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **Go deeper**: "Why perfect?" becomes "Halfway in hertz", since no source read says the perfect
   intervals are named for their ratios; "Another way to find a quality" is dropped, since Step 4
   already says F and B are the only white keys a tritone apart; "The devil in music" quotes no
-  translation of Fux, as the lead decided (FACTS 32 to 38).
+  translation of Fux, as the lead decided, and says nothing of a church ban, which the season's card
+  holds back until its sources are read (FACTS 32 to 38).
 - **The practice card links Leap alone.** The plan's sung second card, Lesson 9's `leap-ladder`, was
   optional; Leap asks for no voice, so the rest card is Lesson 8's (FACTS 56, 63).
-- **Quick check 1's feedback links Step 2**, not the cold open, which is not a step; **question 3's
-  third answer links Step 1**, where the thirds are, and its words stay, since Lesson 24 plans to ask
-  it as its recall; **question 4 asks "Which interval is this?"**, with a perfect fourth as its third
-  answer where the plan's octave was too easy, and plays one sound on every visit (FACTS 73, 75 to
-  78).
-- **The teases**: this lesson's, on Lesson 22's card, keeps Lesson 22's planned line, which passes
-  the checks; Lesson 24's, on this page's card, is new, the plan's line the alternative (FACTS 5,
-  5b).
+- **Quick check 1's feedback links Step 2**, not the cold open, which is not a step, and its words
+  stay, since Lesson 27 plans to ask it as its recall; **question 3's answer "A third" links Step
+  1**, where the thirds are, and its words stay, since Lesson 24 plans to ask it as its recall;
+  **question 4 asks "Which interval is this?"**, with a perfect fourth as its third answer where the
+  plan's octave was too easy, and plays one sound on every visit (FACTS 73, 75 to 78).
+- **The teases**, settled at the lead's review on 1 November 2026: this lesson's, on Lesson 22's
+  card, is "One note, swinging. Now two notes together: one pair wants to move.", since the learner
+  holds no two notes, with Lesson 22's planned line as the alternative; Lesson 24's, on this page's
+  card, is new, with a mended form of the plan's line as the alternative and the plan's own line
+  withdrawn (FACTS 5, 5b).
 - **The sound gate says less than the plan's** "the one distance that never sits still", whose
   "never" no source supports (FACTS 1a, 25).
 
@@ -123,8 +134,8 @@ works before a choice.)
 Tavi: "It must be G, surely? The fifth sits right in the middle of the scale."
 Merc: "Let's split it both ways and listen."
 
-**Predict before you listen.** Merc will play one note between the two Cs. Which one splits the
-octave into two equal leaps?
+**Predict before you listen.** Which note between the two Cs splits the octave into two equal
+leaps?
 [ G ] [ F♯ ]
 
 Until a choice: "Choose an answer to unlock the two splits."
@@ -140,28 +151,31 @@ changes nothing. The reveal opens on "You said: G" or "You said: F♯", and the 
 any of them again.")
 
 Reveal: F♯. C up to F♯ is six semitones, and F♯ up to C six more: two equal leaps, half of twelve
-each. G splits the octave seven and five. And played with C, G sounds settled, while F♯ sounds
-restless, as if it wants to move. Why? That's this lesson's story. (G is the fifth of the scale's
-eight notes, near their middle, which made it a fair guess.)
+each. G splits the octave seven and five. And played with C, G counts as settled, while F♯ counts
+as restless, as if it wants to move. Why? That's this lesson's story. (G is so, the scale's fifth
+note, near the middle of do up to do, which made it a fair guess.)
 
 ## Recall from Lesson 6
 
-(Straight after the hero, as on Lesson 2's page: Lesson 6's questions 2 and 3, asked afresh, for
+(Straight after the hero, as on Lesson 2's page: Lesson 6's questions 3 and 4, asked afresh, for
 everyone, since Lesson 6 is the lesson this one builds on. The page asks Lesson 6's own question
-objects, so the words below are its. Neither names the note that splits the octave: FACTS 1a, 7.)
+objects, so the words below are its. Neither names six semitones, F♯, a tritone or the middle of
+the octave: FACTS 1a, 7.)
 
-1. How far is the leap in "twin-kle, twin-kle"?
-   - 7 semitones: a perfect fifth **[correct]** · Feedback: "Five letters, C to G, make a fifth;
-     seven semitones make it perfect."
-   - 5 semitones: a perfect fourth · Feedback: "Five semitones is the fourth that opens 'Auld Lang
-     Syne'. C up to G is seven. Try Lesson 6, Step 5 again."
-   - It depends on the starting note · Feedback: "From any start it's seven: that's why the tune
-     survives a move."
-2. Listen. [Play] From the first note to the second: a step or a leap?
+1. Listen. [Play] From the first note to the second: a step or a leap?
    - A leap **[correct]** · Feedback: "Five semitones up, a perfect fourth, like 'Should auld'."
    - A step · Feedback: "A step is a semitone or a tone. This one is five semitones. Try Lesson 6,
      Step 2 again."
    - The same note twice · Feedback: "The second note is higher: five semitones up."
+2. A version keeps five of the line's seven notes and every up and down. But it swaps the sizes of
+   its two rises, the leap and the step up. Is it still "Twinkle"?
+   - No: two intervals changed **[correct]** · Feedback: "The ups and downs aren't the whole tune;
+     the sizes count too."
+   - Yes: most of the notes are the same · Feedback: "Most notes match, but a tune lives in its
+     intervals, and two of them changed. Try Lesson 6, Step 4 again."
+   - Yes: every up and down is the same · Feedback: "Same ups and downs, new sizes: in one study,
+     people recognised familiar tunes changed that way less often than ones that kept the sizes
+     too."
 
 ## Four words you'll meet
 
@@ -188,8 +202,9 @@ semitones. Seconds, sixths and sevenths come in major and minor too.
 **Notice:** Flat changes the semitones, never the letters.
 
 _Toy: your staff and the pitch line, C at the foot, with the top note to move by Step up, Step down
-or a tap on a place, Sharp and Flat, and the readout: letters, semitones, the interval's name. Sharp
-and Flat, like Fold and the curl later, wait for the cold open's choice._
+or a tap on a place, Sharp and Flat, and the readout: letters, semitones, the interval's name. Until
+the cold open's choice the line draws no black-key lane but E♭'s as it sounds, and Sharp and Flat
+wait._
 
 ## Step 2 of 4: Is every interval major or minor?
 
@@ -212,7 +227,7 @@ fifth. That's the tritone, "three tones": C to D to E to F♯.
 **Notice:** one piano key, two places on the staff.
 
 _Toy: your staff and the pitch line, as in Step 1, with Play C up to F, then F♯ and Play C up to G,
-then G♭._
+then G♭, both waiting for the cold open's choice._
 
 > **Go deeper**
 >
@@ -236,29 +251,29 @@ upside down.
 
 _Toy: your staff and the pitch line with Fold: the bottom note lifts an octave, and the pitch line
 shows the interval and its upside down filling the octave, with the sums, as in "5 + 4 = 9" and
-"7 + 5 = 12"._
+"7 + 5 = 12". Fold and the step's two plays wait for the cold open's choice._
 
 ## Step 4 of 4: Why does the halfway interval want to move?
 
 Tavi: "An exact half: shouldn't that be the calmest interval of all?"
 
-Exact, yes, but not calm. The tritone counts as a dissonance: less stable, as if it needs to
-resolve. Only one pair of white keys is a tritone apart: F and B, fa and ti in C major. Ti leans up
+Exact, yes, but not settled: the tritone counts as a dissonance, less stable, as if it needs to
+resolve. Among the white keys, only F and B are a tritone apart: fa and ti in C major. Ti leans up
 to do, as in Lesson 4. [Play B and F, then C and E] Move each a semitone, B up to C and F down to E,
-and it closes into a major third: do and mi. Lesson 27 says why fa moves down.
+and it closes into a major third: do and mi. Lesson 27 comes back to this pair.
 
 **Try:** play B and F, then curl the pitch line into a ring.
 **Notice:** on the ring, B and F sit straight across.
 
 _Toy: your staff and the pitch line, with Play B and F, then C and E, and Curl into a ring, which
-bends the line into Lesson 2's ring of twelve._
+bends the line into Lesson 2's ring of twelve, its B lane joining the ring's B bead. The play and the
+curl wait for the cold open's choice._
 
 > **Go deeper**
 >
 > - **The devil in music.** The tritone's old nickname is diabolus in musica, Latin for "the devil in
 >   music". Johann Joseph Fux's counterpoint textbook of 1725 quotes the phrase in a proverb and
->   bars the tritone leap. Stories that the Church punished singers for it are probably just that:
->   stories.
+>   bars the tritone leap in counterpoint.
 
 ## Sing it
 
@@ -370,9 +385,9 @@ stays, and only the sung line is put off (FACTS 56).]_
 when the two are in tune?" One line above it, the tease: "A drone, and a second note just above it,
 almost in tune."
 
-_[Editorial: the tease is proposed for the lead's review, with the plan's line, "Fifths sit still;
-the tritone leans. Can your own voice hear it?", as its alternative, which the admin console can
-switch to (FACTS 5).]_
+_[Editorial: the tease was settled at the lead's review on 1 November 2026, with a mended form of
+the plan's line, "Fifths count as settled, tritones lean. Next, a note against a drone.", as its
+alternative, which the admin console can switch to; the plan's own line is withdrawn (FACTS 5).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Its slot holds a still of Lesson 24's opening as Lesson 24's plan draws it: a drone band on

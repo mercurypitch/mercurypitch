@@ -16,14 +16,14 @@ lives in an earlier lesson's module moves into the kit first, as Lesson 6's inte
 it is Lesson 15's, unchanged unless this spec says otherwise.
 
 One object carries the lesson: the learner's staff and the pitch line, side by side (FACTS 39). The
-pitch line is Lesson 2's semitone ruler stood upright, a lane a semitone from C to the C an octave
-up, the staff's pitch-line switch turned on. In the hero it stands alone with only its two ends
-named; in Step 1 an interval lights on both, its letters counted on the staff and its semitones on
-the line; in Step 2 one top note takes a sharp and the next a flat and lands on the same lane; in
-Step 3 Fold lays an interval and its upside down along the line, filling the octave; in Step 4 the
-line curls into Lesson 2's ring, where B and F sit straight across. That path is the card's
-signature, an interval lying against its upside down and the tritone as the ring's diameter
-(FACTS 4).
+pitch line is Lesson 2's semitone ruler stood upright, a lane for each note from C to the C an
+octave up, a semitone apart, the staff's pitch-line switch turned on. In the hero it stands alone
+with only its two ends named; in Step 1 an interval lights on both, its letters counted on the staff
+and its semitones on the line; in Step 2 one top note takes a sharp and the next a flat and lands on
+the same lane; in Step 3 Fold lays an interval and its upside down along the line, filling the
+octave; in Step 4 the line curls into Lesson 2's ring, where B and F sit straight across. That path
+is the card's signature, an interval lying against its upside down and the tritone as the ring's
+diameter (FACTS 4).
 
 Its public home is `mercurypitch.com/learn/23` (FACTS 9): a hand-written document `learn/23.html`
 with its module in `src/features/lessons/lesson-23/`, wired as Lesson 10's page is: a written lesson
@@ -46,9 +46,10 @@ for a sounding note. On this page:
   note needs. A note lights in its singer's colour while it sounds, blue `#58a6ff` on the bass staff
   and orange `#ff7448` on the treble, by the voice the learner chose, as on Lesson 17's page; its
   lane on the pitch line lights in the same colour.
-- **The pitch line** keeps Season 1's look: a lane a semitone, the white-key lanes chrome and the
-  black-key lanes fainter. Only a lit note is named, and its name stays while it is part of the
-  interval shown (FACTS 1a).
+- **The pitch line** keeps Season 1's look: a lane for each note, a semitone apart, the white-key
+  lanes chrome and the black-key lanes fainter; before the cold open's choice the steps' line draws
+  its white-key lanes only (Toys 1). Only a lit note is named, and its name stays while it is part
+  of the interval shown (FACTS 1a).
 - **The readout**, in JetBrains Mono under the drawing, gives letters, semitones and the
   interval's name in ink, a count that is never carried by colour alone.
 - **Gold** `#ffd84d` marks only the fit: on Fold, in Step 3 and in free play, the bracket for the
@@ -60,8 +61,9 @@ for a sounding note. On this page:
   singer violet and no mint.
 
 What moves: Merc and Tavi's idle loops; while something the learner started plays, the lit notes
-and lanes; in the cold open's answering plays, the lanes drawing in (0.4 s) and the counts; a note
-landing on its place; Fold (0.6 s); Curl into a ring (0.8 s). Under `prefers-reduced-motion`, or
+and lanes; in the cold open's answering plays, the lanes drawing in (0.4 s) and the counts; at the
+choice, the steps' black-key lanes drawing in (0.4 s); a note landing on its place; Fold (0.6 s);
+Curl into a ring (0.8 s). Under `prefers-reduced-motion`, or
 with the masthead's Pause animations on, Merc and Tavi stop, the lanes and notes appear in place,
 and Fold and the curl cross-fade with no travel; what the learner starts still sounds, and the
 notes still light as they sound (WCAG 2.2.2).
@@ -83,24 +85,33 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
    (`<h1 class="hook" id="hook">`), the meta as three chips, the promise and the sound gate from
    LESSON.md. The chips are "14 minutes" (FACTS 3), "After Lesson 6: Intervals: the distance between
    notes", a link to `/learn/06` that stays a plain chip wherever Lesson 6 is not live
-   (`src/features/lessons/kit/page-state.ts:14-20`; FACTS 2), and "Sound on". Its stage holds
-   Tavi's and Merc's bubbles over Merc and Tavi on the floor line, the upright pitch line between
-   them (Toys 2), and under it the cold open's three plays: Play C up to C, which works from the
-   start, and Play C, G, C and Play C, F♯, C, locked until a choice. The predict card sits under the
-   stage (Toys 3). On a phone the hero's parts run kicker, title, meta, the stage, the gate, the
-   predict, then the promise (`src/features/lessons/kit/lesson-stage.css:394-437`), so the title and
-   the first Play come before anything asks for an answer. The head: the title, at most 60
-   characters, "Interval quality: perfect, major and minor | MercuryPitch" (57; Decisions for the
-   owner, 1); the description, "Which interval splits the octave exactly in half, and why does it
-   want to move? A fourteen-minute lesson with sound toys: perfect, major and minor intervals."
+   (`src/features/lessons/kit/page-state.ts:14-20`; FACTS 2), and "Sound on". Its stage holds Tavi's
+   and Merc's bubbles over Merc and Tavi on the floor line, the upright pitch line between them
+   (Toys 2), and under it the cold open's three plays: Play C up to C, which works from the start,
+   and Play C, G, C and Play C, F♯, C, locked until a choice. The predict card sits under the stage
+   (Toys 3). On a phone the hero's parts run kicker, title, meta, the stage, the gate, the predict,
+   then the promise (`src/features/lessons/kit/lesson-stage.css:394-437`), so the title and the
+   first Play come before anything asks for an answer. The head: the title, at most 60 characters,
+   "Interval quality: perfect, major and minor | MercuryPitch" (57), proposed, as Lessons 15 to 21
+   propose theirs; the description, "Which interval splits the octave exactly in half, and why does
+   it want to move? A fourteen-minute lesson with sound toys: perfect, major and minor intervals."
    (157), which the head test holds to 80 to 160 characters and to the chip's run time in words;
    og:title and twitter:title "Perfect, major, minor and the tritone · Find Your Pitch, Lesson 23"
    (66), in Lesson 4's form; og:description and twitter:description the hook alone (79); the share
    card `learn/lesson-23-og.jpg`, 1200 by 630, its alt "The title card: Find Your Pitch, Lesson 23,
    Perfect, major, minor and the tritone, above an upright pitch line with C at its foot and C an
-   octave up at its top and nothing between, between Merc and Tavi." (203), with no note between
-   the two Cs (FACTS 1a); the Article's `timeRequired` `PT14M`, position 23.
-3. **Recall from Lesson 6**, straight after the hero: Lesson 6's questions 2 and 3, shown to
+   octave up at its top and nothing between, between Merc and Tavi." (203), with no note between the
+   two Cs (FACTS 1a); the two structured-data blocks from Lesson 1's, the Article's `headline` the
+   lesson's name, its `alternativeHeadline` the hook, `timeRequired` `PT14M`, position 23, and
+   `teaches` "Naming an interval by its number and quality", "Perfect, major and minor intervals",
+   "Augmented and diminished intervals, and the tritone" and "Turning an interval upside down"; and,
+   on release, the llms.txt line in Season 1's form: "[Lesson 23: Perfect, major, minor and the
+   tritone](https://mercurypitch.com/learn/23): Which interval splits the octave in half, and why it
+   wants to move. Naming an interval by its number and quality, the perfect intervals, augmented and
+   diminished intervals and the tritone, and turning an interval upside down." (SEARCH § 3.2 and §
+   3.4). The structured data and the llms.txt line, which no learner meets before the choice, name
+   the tritone as a topic and name no note, size or halfway note (FACTS 1a).
+3. **Recall from Lesson 6**, straight after the hero: Lesson 6's questions 3 and 4, shown to
    everyone (Toys 7; FACTS 7).
 4. **Four words you'll meet**: Number, Quality, Perfect and Inversion, each with its figure and play
    (Toys 4).
@@ -118,22 +129,22 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,020 words on `node scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 359 (FACTS 3). The page runs about 14 minutes: 8.49 minutes of reading at
-238 words a minute and about 5.1 of sound, toys and tasks, 13.59 in all, past MASTER-PLAN § 4.2's
+The learner copy is 2,048 words on `node scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 331 (FACTS 3). The page runs about 14 minutes: 8.61 minutes of reading at
+238 words a minute and about 5.1 of sound, toys and tasks, 13.71 in all, past MASTER-PLAN § 4.2's
 "8 to 12 minutes of active time, 500 to 900 words", as Lessons 3, 5, 6, 7, 10, 12 and 15 are. The
 chip is an estimate until the staff toy's interval state is timed in its lab, as SEASON-2 § 1.3
 asks, and this section says so until then. Each step's own text, with its Try, its Notice and any
-Tavi line, runs 112 to 120 words (Steps 1 to 4: 112, 119, 116 and 120), inside 50 to 120 a step.
+Tavi line, runs 112 to 119 words (Steps 1 to 4: 112, 119, 116 and 119), inside 50 to 120 a step.
 Five parts carry more, by the same counter, for these reasons:
 
 - **Step 2, 288 words with its mix-up card and its drawer.** The card sits in the step whose toy
   refutes it; the drawer, two items, is closed by default.
-- **Step 4, 183 words with its drawer**, one item, closed by default.
+- **Step 4, 171 words with its drawer**, one item, closed by default.
 - **Sing it, 361 words.** It holds the series' singing lines, Lesson 3's word for word, which are
   not cut, Lesson 15's line under the voice choice, two lines of its own (the top note that feels
   high, and Easy and Workable's) and the listening part (FACTS 53, 57, 58).
-- **The quick check, 235 words**, and **the recall, 143**: three answers a question with a line of
+- **The quick check, 235 words**, and **the recall, 183**: three answers a question with a line of
   feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lesson 6's, word for word.
 - **The Wrap, 236 words**: the practice card says what Leap does and what to listen for, and keeps
   its rest version, Lesson 8's (FACTS 56, 60).
@@ -141,11 +152,11 @@ Five parts carry more, by the same counter, for these reasons:
 The hints and status lines are stage directions in LESSON.md and are not counted, as in the text
 packages of Lessons 9 to 15, 17 and 19: the predict's hints and its two "You said" lines, the names
 of the plays a choice unlocks, the stored voice's line, Sing it's hints, and the toys' labels,
-readouts and hints. A built page writes them in the open and counts them, about 150 words more (Lesson 8
-FACTS 4), so the built page is about 2,170 words, under the 2,230 the series aims for and under the
-cap, with the chip still at 14 minutes. No cut is needed. The article plan budgeted about 1,200
-words; its own section estimates add to 1,575 before the recall, the drawers and the practice card
-(FACTS 3).
+readouts and hints. A built page writes them in the open and counts them, about 150 words more
+(Lesson 8 FACTS 4), so the built page is about 2,200 words, under the 2,230 the series aims for and
+under the cap, with the chip still at 14 minutes. No cut is needed. The article plan budgeted about
+1,200 words; its own section estimates add to 1,575 before the recall, the drawers and the practice
+card (FACTS 3).
 
 The activities are timed from this spec's lengths (FACTS 3, 66 to 73). Free play is not counted.
 
@@ -154,8 +165,8 @@ The activities are timed from this spec's lengths (FACTS 3, 66 to 73). Free play
 | Toy                       | Reuses                                                                                                                                                                                                  | New in Lesson 23                                                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The staff toy          | The kit's staff toy, both clefs, its pitch-line switch, sound and step deck (SEASON-2 § 6.2 item 2; Lesson 15 WEB-SPEC, Toys 1); Lesson 6's interval pair, moved to the kit; the kit's spiral, top view | The interval state: a bottom note on C and a top note to move, Sharp and Flat, the readout, Fold, the B lane and Curl into a ring |
-| 2. The hero's pitch line  | Season 1's pitch line, a lane a semitone; the staff toy's lanes                                                                                                                                         | The pitch line upright with only its two ends named; the lanes and counts drawn by the answering plays                            |
-| 3. Predict widget         | The kit's predict (`kit/predict.ts`), with a free play, `revealAfter: 'all'` and `unlocks`; the tour's hold (`kit/tour-gate.ts`)                                                                        | The steps' Sharp, Flat, Fold and Curl wait for the choice                                                                         |
+| 2. The hero's pitch line  | Season 1's pitch line, a lane for each note; the staff toy's lanes                                                                                                                                      | The pitch line upright with only its two ends named; the lanes and counts drawn by the answering plays                            |
+| 3. Predict widget         | The kit's predict (`kit/predict.ts`), with a free play, `revealAfter: 'all'` and `onChoice`; the tour's hold (`kit/tour-gate.ts`)                                                                       | The steps' toy holds back its answering controls, plays and black-key lanes until the choice                                      |
 | 4. Four words             | The kit's words strip (`kit/words-strip.ts`), with the page's sound owner; the staff toy's engraving                                                                                                    | Four small staff figures                                                                                                          |
 | 5. Sing it                | Lesson 15's Sing it, on Lesson 12's sing flow moved into the kit (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`, `kit/move-do.ts`'s count-in); Lesson 8's rest line                              | The do, so, do line in D on the learner's staff; two lines of its own; the listening pair and its button                          |
 | 6. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                             | Three items in two drawers                                                                                                        |
@@ -175,9 +186,13 @@ drawing, so the keyboard and the stage-fit test reach every action.
   (FACTS 8). C3 sits in the bass staff's second space and C4 one ledger line above it; in the treble
   C4 hangs on one ledger line below and C5 sits in the third space.
 - **The pitch line, on.** The staff toy's pitch-line switch is on in every state of this page, since
-  the semitones are what the page counts: twelve lanes from the learner's C to the C an octave up,
-  beside the staff (FACTS 15, 39). The learner can turn it off; the readout counts the semitones
-  either way.
+  the semitones are what the page counts: a lane is one note's row, so the line from the learner's C
+  to the C an octave up has thirteen, eight white-key lanes and five black-key lanes, beside the
+  staff (FACTS 15, 39, 79). The learner can turn it off; the readout counts the semitones either
+  way. Before the cold open's choice the line draws its white-key lanes only, at their heights, as
+  the hero draws no lane, so no faint lane marks the octave's middle; the one black key that can
+  sound before then, Step 1's E♭, draws its own lane as it sounds and no other. At the choice the
+  black-key lanes draw in, 0.4 s (FACTS 1a, 71).
 - **Two notes.** The bottom note is C and does not move. The top note moves a letter at a time by
   Step up and Step down, 44 px buttons, by a tap on a staff place, or by the Up and Down arrows on
   the focused staff, through the eight letters from the unison to the octave; a move to a new letter
@@ -189,6 +204,8 @@ drawing, so the keyboard and the stage-fit test reach every action.
   D, E, G, A and B, giving D♭, E♭, G♭, A♭ and B♭; neither on either C, and no E♯, B♯, F♭, C♭ or
   double sign. A second press of the same toggle takes the sign off, and the other toggle swaps it
   where the letter takes both. So every black key is reached, and F♯ and G♭ both (FACTS 10, 16, 18).
+  The toy owns their enabled state: it applies this rule on every move, before the choice and after,
+  so Sharp stays disabled on E or B and Flat on F whatever the predict does (Toys 3).
 - **The readout**, under the drawing and in a polite live region: the letters, the semitones and
   the name, as in "3 letters · 4 semitones · a major third", "4 letters · 6 semitones · an augmented
   fourth, a tritone" and "5 letters · 6 semitones · a diminished fifth, a tritone"; a unison and an
@@ -201,43 +218,58 @@ drawing, so the keyboard and the stage-fit test reach every action.
   "7 + 5 = 12", the octave's bracket turning gold as the spans meet (Look). It plays the two pairs,
   3.6 s. A move, Sharp or Flat brings back the single interval from C (FACTS 21 to 24).
 - **The B lane and Curl into a ring** (Step 4 and free play). The state draws one lane below the
-  foot, B, faint and unnamed until it lights, so Step 4's B and F light on the line. Curl into a ring,
-  a toggle that then reads Straighten the line, bends the twelve lanes from C round until the two Cs
-  meet at the top, B's lane joining on C's left: Lesson 2's ring of twelve, drawn as the kit's spiral
-  draws it seen from the top (`setView('top')`, `src/features/lessons/kit/spiral.ts:28-30`), as
-  Lesson 2's page shows it (`src/features/lessons/lesson-02/spiral-copy.ts:234`), held to one octave
-  (`range`, `src/features/lessons/kit/spiral.ts:131`). Every bead is named on the ring, since Curl
-  into a ring waits for the choice (Toys 3). Step 4's play lights B and F straight across,
-  then steps each one bead to C and E (FACTS 20, 29). Whether the toy mounts the spiral or draws a
+  foot, B, a white-key lane unnamed until it lights, so Step 4's B and F light on the line, fourteen
+  lanes in all. Curl into a ring, a toggle that then reads Straighten the line, bends the line round
+  until its two Cs meet in one bead at the top, so its thirteen lanes make the ring's twelve beads,
+  and the B lane below the foot merges into the ring's B bead, beside C: Lesson 2's ring of twelve,
+  drawn as the kit's spiral draws it seen from the top (`setView('top')`,
+  `src/features/lessons/kit/spiral.ts:28-30`), as Lesson 2's page shows it
+  (`src/features/lessons/lesson-02/spiral-copy.ts:234`), held to one octave (`range`,
+  `src/features/lessons/kit/spiral.ts:131`). Every bead is named on the ring, since Curl into a ring
+  waits for the choice (Toys 3). Step 4's play lights B and F straight across, then steps each one
+  bead to C and E (FACTS 20, 29). Whether the toy mounts the spiral or draws a
   flat ring in its colours is the lab's call; the curl itself is new.
-- **Before the choice.** Sharp, Flat, Fold and Curl into a ring are the predict's `unlocks` (Toys 3):
-  disabled until the cold open's choice, so before it the toy reaches only white keys, where the
-  readout says no more than the recall does (FACTS 1a). Step up, Step down and the step plays work
-  from the start.
+- **Before the choice.** Until the cold open's choice the toy holds back whatever would sound,
+  draw or read out the answer, disabled and announced as unavailable: Sharp and Flat; Fold; Curl
+  into a ring; Step 2's two plays, which would sound F♯ and G♭ and read out six semitones, a
+  tritone; Step 3's two plays, drawn as Fold draws them, the fifth folding into 7 and 5; and Step 4's
+  play, whose readout gives B up to F six semitones, a tritone. The pitch line draws no black-key
+  lane until then, as above. What stays open: Step 1's two plays, since a minor third answers
+  nothing, its E♭ drawing only its own lane; and Step up, Step down and a tap on a place, which reach
+  only white keys, where the readout gives a learner who steps to G its seven semitones, Lesson 6's
+  fact, worked for and never printed under the choices (FACTS 1a). The toy hears the choice through
+  the predict's `onChoice` (Toys 3), then enables these under its own rules and draws the black-key
+  lanes in.
 
 The states, with LESSON.md's plays (FACTS 66, 70, 71):
 
 1. **Naming (Step 1).** Plays: "Play C up to E" and "Play C up to E♭", a pair each. Before any
-   sound the top note waits on E, unwritten; after a play it stays where the play left it. The Try moves it up to A and presses Flat: A♭ keeps A's place on
-   the staff, the line drops a lane, and the readout goes from 9 semitones, a major sixth, to 8, a
-   minor sixth, while its 6 letters stay (LESSON.md's Notice).
-2. **Perfect and the tritone (Step 2).** Plays: "Play C up to F, then F♯" and "Play C up to G, then
-   G♭", two pairs each. F♯ lands in F's place with its sharp and G♭ in G's with its flat, a place
-   apart on the staff, and both on the same lane of the line (LESSON.md's Notice). The mix-up card
-   sits in the text beside it.
-3. **Fold (Step 3).** Plays: "Play C up to G, then G up to C" and "Play C up to E, then E up to C",
-   each drawn as the fold draws it. The Try folds a fifth, a third, then C up to F♯: F♯ up to C is six
-   semitones again, and the readout says "4 + 5 = 9" and "6 + 6 = 12" (LESSON.md's Notice).
-4. **The ring (Step 4).** The B lane is drawn. Play: "Play B and F, then C and E", B and F together,
-   then C and E together, each pair lit on the staff, the line and, when curled, the ring. The
-   readout reads "B up to F: 5 letters · 6 semitones · a diminished fifth, a tritone", then "C up to
-   E: 3 letters · 4 semitones · a major third".
-5. **Free play (Wrap).** Every control above on one card, with the Clef switch and the pitch-line
-   switch, unlocked whether or not a choice was made, and no reveal or quiz attached.
+   sound the top note waits on E, unwritten; after a play it stays where the play left it. The Try,
+   after the choice, moves it up to A and presses Flat: A♭ keeps A's place on the staff, the line
+   drops a lane, and the readout goes from 9 semitones, a major sixth, to 8, a minor sixth, while its
+   6 letters stay (LESSON.md's Notice).
+2. **Perfect and the tritone (Step 2).** Plays, which wait for the choice: "Play C up to F, then F♯"
+   and "Play C up to G, then G♭", two pairs each. F♯ lands in F's place with its sharp and G♭ in G's
+   with its flat, a place apart on the staff, and both on the same lane of the line (LESSON.md's
+   Notice). The mix-up card sits in the text beside it.
+3. **Fold (Step 3).** Plays, which wait for the choice: "Play C up to G, then G up to C" and "Play C
+   up to E, then E up to C", each drawn as the fold draws it. The Try folds a fifth, a third, then C
+   up to F♯: F♯ up to C is six semitones again, and the readout says "4 + 5 = 9" and "6 + 6 = 12"
+   (LESSON.md's Notice).
+4. **The ring (Step 4).** The B lane is drawn. Play, which waits for the choice: "Play B and F, then
+   C and E", B and F together, then C and E together, each pair lit on the staff, the line and, when
+   curled, the ring. The readout reads "B up to F: 5 letters · 6 semitones · a diminished fifth, a
+   tritone", then "C up to E: 3 letters · 4 semitones · a major third".
+5. **Free play (Wrap).** A second instance of the toy, which the Wrap mounts, as Lesson 8's wrap
+   mounts its own beat machine (`src/features/lessons/lesson-08/wrap.ts:26`): every control above
+   on one card, with the Clef switch and the pitch-line switch, all thirteen lanes drawn and every
+   control under its own rules from the start, whether or not a choice was made, and no reveal or
+   quiz attached.
 
 On a phone each step's figure is `.viz.tall`, 310 px tall up to 420 px wide (FACTS 79): the staff
-takes about 60 % of the width and the pitch line the rest, twelve lanes of about 21 px, drawn, not
-tapped; the top note moves by the buttons and the staff's places. On a desktop the figure is 380 px
+takes about 60 % of the width and the pitch line the rest, thirteen lanes of 20 px, or fourteen of
+about 18.6 px with Step 4's B lane, drawn, not tapped; the top note moves by the buttons and the
+staff's places. On a desktop the figure is 380 px
 tall. At the kit's four short landscape sizes the stuck stage keeps each step's controls on screen,
 as the stage-fit test checks (`src/e2e/learn-stage-fit.spec.ts:33-54`).
 
@@ -254,7 +286,7 @@ comes later on the page (FACTS 8).
   reveals.
 - **Play C, G, C** and **Play C, F♯, C** (locked until a choice; the predict's answering plays): C4,
   the middle note and C5, one at a time, then C4 and the middle note together, 3.3 s. As the middle
-  note sounds it lands at its height and is named, the twelve lanes draw in, and the two leaps are
+  note sounds it lands at its height and is named, the thirteen lanes draw in, and the two leaps are
   counted beside the line, "7" and "5" for G, "6" and "6" for F♯ (FACTS 44, 67). Each play redraws
   the line with its own middle note; after the reveal the line keeps its lanes and the last split.
   The polite line says each split in words: "G: seven semitones up, five more to the top C" and "F
@@ -269,8 +301,12 @@ two `.choice` buttons, G and F♯; the plays `octave` (with `data-free`), `g` an
 LESSON.md, `chosen` "Locked in. Play both splits.", `silent` "Sound is off: nothing played. Turn
 sound on, then play it again." and `again` "Play any of them again.", with no `next` hint (FACTS
 44); the markup's lock hint, "Choose an answer to unlock the two splits."; `guess` giving "You said:
-G" or "You said: F♯"; `unlocks`, the steps' toy's Sharp, Flat, Fold and Curl into a ring buttons
-(Toys 1); and on the reveal Tavi's celebration (Merc and Tavi). What a play does to the hint is the
+G" or "You said: F♯"; `onChoice`, which tells the steps' toy that a choice is in, so it enables what
+it held back (Toys 1); and on the reveal Tavi's celebration (Merc and Tavi). The predict's `unlocks`
+is not used: it enables every listed button as the choice locks
+(`src/features/lessons/kit/predict.ts:124-126`), Sharp on E or B among them, where the toy applies
+its rule per letter; Lesson 8's Step 5 passes the choice to its stage the same way
+(`src/features/lessons/lesson-08/steps.ts:17-19`). What a play does to the hint is the
 kit's: a free play heard before a choice puts the lock hint back; a play sound off kept silent shows
 `silent`; a play cut short, by another sound or by leaving the hero, counts as not heard and
 changes nothing. The reveal waits for both splits heard to their end with sound on, in either
@@ -315,18 +351,19 @@ the guide drawn on the staff and no Move do. In order:
 3. **Your turn**: the learner's staff with do, so, then so, do as plain noteheads, D3, A3, A3, D4 in
    the bass clef or D4, A4, A4, D5 in the treble, the house on do
    (`src/features/lessons/kit/home-glyph.ts:1-13`), and the pitch-line switch (FACTS 52, 55). On the
-   bass staff D4 sits just above middle C's ledger line; on the treble D4 hangs below the bottom line.
-   The stop line on its own line, then two buttons. Play Merc's notes plays Merc's line (lower) or
-   Tavi's (higher) as two contours a breath apart, each one voice: do held 1.15 s and a 0.05 s glide
-   to so, held 1.8 s; 1.0 s of quiet; then so held 1.15 s, a 0.05 s glide to do, held 1.8 s; 7.0 s in
-   all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:290`; `playContour`,
-   `src/features/lessons/kit/sound.ts:575`), each note lighting as it sounds. Start the guide waits
-   until Merc's notes have been heard with sound on, with Lesson 12's two hints (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it
-   counts in on do, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
-   `src/features/lessons/kit/move-do.ts:65-74`), and a chrome sweep line runs along the four notes in
-   time, 7.0 s, with no voice and nothing on the notes themselves. No Move do and no readout (FACTS
-   53). The line under the buttons is LESSON.md's guide line (FACTS 58a). Your turn's own text adds
-   the line for a top note that feels high (FACTS 53).
+   bass staff D4 sits just above middle C's ledger line; on the treble D4 hangs below the bottom
+   line. The stop line on its own line, then two buttons. Play Merc's notes plays Merc's line
+   (lower) or Tavi's (higher) as two contours a breath apart, each one voice: do held 1.15 s and a
+   0.05 s glide to so, held 1.8 s; 1.0 s of quiet; then so held 1.15 s, a 0.05 s glide to do, held
+   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:290`;
+   `playContour`, `src/features/lessons/kit/sound.ts:575`), each note lighting as it sounds. Start
+   the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
+   (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it counts in on do, 0.8 s
+   at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and a
+   chrome sweep line runs along the four notes in time, 7.0 s, with no voice and nothing on the
+   notes themselves. No Move do and no readout (FACTS 53). The line under the buttons is LESSON.md's
+   guide line (FACTS 58a). Your turn's own text adds the line for a top note that feels high (FACTS
+   53).
 4. **How did that feel?** after each sweep run to its end, through the kit's `mountFeelings`
    (`src/features/lessons/kit/comfort.ts:175`): Easy and Workable give LESSON.md's new line;
    Effortful and Uncomfortable give Lesson 3's lines (with the doctor lines after Uncomfortable), put
@@ -352,29 +389,29 @@ the page never asks for the microphone (FACTS 58a).
 ### 6. Go deeper drawers
 
 Lesson 2's `details` drawer, closed by default, under the step's text: Step 2's, "Halfway in hertz"
-and "Perfect is a name, not a promise" (FACTS 32 to 35); Step 4's, "The devil in music" (FACTS 36
-to 38). Text only: no sound and no figure. Each item's bold lead-in is its summary line's words.
-The hertz figures print with "Hz", and "3:2" and "4:3" are read as "3 to 2" and "4 to 3" by a
-visually hidden word, as the kit's sign names are.
+and "Perfect is a name, not a promise" (FACTS 32 to 35); Step 4's, "The devil in music" (FACTS 36,
+37), which ends on Fux's rule and says nothing of a church ban (FACTS 38). Text only: no sound and
+no figure. Each item's bold lead-in is its summary line's words. The hertz figures print with "Hz",
+and "3:2" and "4:3" are read as "3 to 2" and "4 to 3" by a visually hidden word, as the kit's sign
+names are.
 
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
 `src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
 
-- **Recall**: Lesson 6's questions 2 and 3 (FACTS 7), imported from Lesson 6's page and filtered by
-  id, `l06-q2` and `l06-q3`, as Lesson 10's page takes them
+- **Recall**: Lesson 6's questions 3 and 4 (FACTS 7), imported from Lesson 6's page and filtered by
+  id, `l06-q3` and `l06-q4`, as Lesson 10's page filters its two
   (`src/features/lessons/lesson-10/quiz-questions.ts:32-34`), so one question reports under one id
   on every page. Shown to everyone, since Lesson 6 is the prerequisite, and wired as Lesson 10's
   `initRecall` is (`src/features/lessons/lesson-10/recall.ts:21-29`): prefix `recall-`, keys
   `fyp-l23-recall-seed` and `fyp-l23-recall-v1`, no `lesson`, so it marks nothing done. Its step
-  links read "Try Lesson 6, Step 5 again" and "Try Lesson 6, Step 2 again" and open
-  `/learn/06#step-5` and `/learn/06#step-2` in a new tab, through `away: { href: recallStepHref }`
-  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). The second
+  links read "Try Lesson 6, Step 2 again" and "Try Lesson 6, Step 4 again" and open
+  `/learn/06#step-2` and `/learn/06#step-4` in a new tab, through `away: { href: recallStepHref }`
+  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). The first
   question, `l06-q3`, keeps Lesson 6's own slot and Play, handled by Lesson 6's `bindQuizPlays` on
-  this quiz's host
-  (`src/features/lessons/lesson-06/quiz-play.ts:18`), which plays Lesson 6's pair and already
-  claims the page's one sound (FACTS 68).
+  this quiz's host (`src/features/lessons/lesson-06/quiz-play.ts:18`), which plays Lesson 6's pair
+  and already claims the page's one sound (FACTS 68); the second, `l06-q4`, has no play.
 - **Quick check**: LESSON.md's four questions, ids `l23-q1` to `l23-q4`, keys `fyp-l23-seed` and
   `fyp-l23-quiz-v1`, and `lesson: 23`, so answering all four marks Lesson 23 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
@@ -384,8 +421,9 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   this page. Question 4's slot holds its play, "Play", which plays B3 and F4 together for 1.5 s, for
   everyone, the same on every visit (FACTS 73, 78), handled by one listener on the quiz's host in
   Lesson 10's form, the page's one sound (`src/features/lessons/lesson-10/quiz-play.ts:1-13`); it
-  never shares a name with Step 4's play. Question 3's wording stays as it is: Lesson 24 plans to
-  ask it, word for word, as its recall (FACTS 77).
+  never shares a name with Step 4's play. Question 1's and question 3's wording stay as they are:
+  Lesson 27 plans to ask question 1, and Lesson 24 question 3, word for word, as their recalls
+  (FACTS 75, 77).
 
 ### 8. Tease still
 
@@ -479,7 +517,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 6's 
 
 - `n: 23`, `lane: 'theory'`, `title: 'Perfect, major, minor and the tritone'`, `short: 'Interval
 quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, perfect; tritone;
-  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:727`); the hook word
+  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:743`); the hook word
   for word (FACTS 1). `minutes: 14` and `page: '/learn/23'` once the page is built, under the drafts'
   comment in Lesson 6's form (`src/features/lessons/kit/season.ts:270`), naming Lesson 6's page and
   the vocal coach's look. The entry decides nothing about being live: the draft list and the console
@@ -492,13 +530,16 @@ quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, 
 - `EDGES` gains [6, 23], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 23's
   prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
 - The tease on Lesson 22's card is this lesson's, set on Lesson 23 in the lesson copy (`LESSON_COPY`,
-  `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "One note, swinging. Now hold two together:
-  one pair wants to move.", Lesson 22's planned line, with no variant (FACTS 5b). The tease on this
-  page's card is Lesson 24's, set on Lesson 24: proposed, `tease` "A drone, and a second note just
-  above it, almost in tune.", with the plan's line as a variant, `teaseAlts` `[{ id: 'plan', text:
-'Fifths sit still; the tritone leans. Can your own voice hear it?' }]`, and that variant's note in
-  the team's notes, which a variant needs (`TEASE_NOTES`, `src/features/lessons/kit/team-notes.ts:71`;
-  FACTS 5). Both are the lead's to settle at review, and Lesson 24's writer may move the second.
+  `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "One note, swinging. Now two notes
+  together: one pair wants to move.", with Lesson 22's planned line as a variant, `teaseAlts` `[{
+id: 'hold', text: 'One note, swinging. Now hold two together: one pair wants to move.' }]` (FACTS
+  5b). The tease on this page's card is Lesson 24's, set on Lesson 24: `tease` "A drone, and a second
+  note just above it, almost in tune.", with a mended form of this lesson's planned line as a
+  variant, `teaseAlts` `[{ id: 'fifths', text: 'Fifths count as settled, tritones lean. Next, a note
+against a drone.' }]`; the planned line itself is withdrawn (FACTS 5). Each variant's note goes in
+  the team's notes, which a variant needs (`TEASE_NOTES`,
+  `src/features/lessons/kit/team-notes.ts:71`). Both pairs were settled at the lead's review on 1
+  November 2026, as the owner asked; if Lesson 24's writer changes its opening, its tease follows.
 - The signature line for the admin console, from the card (FACTS 4): "An interval and its upside
   down fill the octave on the pitch line; curled into Lesson 2's ring, the tritone is its diameter."
   Every season entry has one, in the team's notes (`SIGNATURES`,
@@ -519,7 +560,7 @@ are listed so this page's needs are in one place.
    `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form, as Lesson 10's names its prerequisite's page
    (`src/features/lessons/kit/drafts.ts:39`): `23: "Lesson 6's page at /learn/06, and the vocal
-   coach's look at Sing it"`. Releasing it is deleting that line, then listing the page in the
+coach's look at Sing it"`. Releasing it is deleting that line, then listing the page in the
    sitemap and llms.txt (SEARCH.md § 12 item 3).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1): Season 2's data in its own module, Lesson 23's
    entry and the edge [6, 23], the masthead's season from the data (today a constant,
@@ -542,10 +583,10 @@ are listed so this page's needs are in one place.
    no `.mv-staff` in the section heads, no `engraveClefs`, and no background staff on a Season 2
    page.
 9. **The lesson copy and the team's notes**: Lesson 23's tease set on Lesson 23 and Lesson 24's on
-   Lesson 24 (`src/features/lessons/kit/lesson-copy.ts:12`), each within `TEASE_MAX`
-   (`src/features/lessons/kit/lesson-copy.ts:76`; FACTS 5, 5b), the variant's note in `TEASE_NOTES`,
-   and Lesson 23's signature (Explorer and season data). The admin console switches between them;
-   nothing on this page changes.
+   Lesson 24 (`src/features/lessons/kit/lesson-copy.ts:12`), each with its variant and each within
+   `TEASE_MAX` (`src/features/lessons/kit/lesson-copy.ts:76`; FACTS 5, 5b), both variants' notes in
+   `TEASE_NOTES`, and Lesson 23's signature (Explorer and season data). The admin console switches
+   between them; nothing on this page changes.
 10. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work, not the
     page's, and this page waits for it: the lesson marker's range (`src/lib/lesson-marker.ts:19`), so
     `?lesson=23` steps First Light aside (FACTS 62); the lesson-answer bounds
@@ -553,21 +594,25 @@ are listed so this page's needs are in one place.
     (FACTS 64); the admin console's one row per Season 1 lesson
     (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
     (`src/lib/current-lesson.ts:34-37`).
-11. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
-    `learn/lesson-23-og.jpg` and its alt, and the structured data with `timeRequired` `PT14M`.
+11. **The head, the structured data and llms.txt** (Sections, 2; SEARCH § 3.1, § 3.2 and § 12):
+    the title, the descriptions, the share card `learn/lesson-23-og.jpg` and its alt, the two
+    structured-data blocks with `alternativeHeadline`, `teaches` and `timeRequired` `PT14M`, and on
+    release the llms.txt line, each checked against the predict (FACTS 1a).
 12. **The practise links that wait** (Practice links), the app's work: the `ear-drill` launch kind
     (SEASON-2 § 5.2 item 12) and `perfect-intervals` (item 16). When either ships, LESSON.md's card
     changes as its editorial note says.
 
 ## Decisions for the owner
 
-1. **The page's title.** SEARCH.md § 4 has no Season 2 drafts. Recommended: "Interval quality:
-   perfect, major and minor | MercuryPitch" (57), in the query-led form the owner chose on 22
-   October 2026, term first as Lesson 6's title is, with the words people type: "interval quality",
-   "perfect", "major and minor". The alternative, "Perfect, major and minor intervals explained |
-   MercuryPitch" (59), leads with the three qualities. Neither names the tritone or a number of
-   semitones, so neither sits in a browser tab beside the predict saying more than the hook (FACTS
-   1a).
+1. **The two teases** (FACTS 5, 5b): settled at the lead's review on 1 November 2026, as the owner
+   asked, each with an alternative the console can switch to later.
+
+The head title is proposed in Sections, 2, as Lessons 15 to 21 propose theirs: "Interval quality:
+perfect, major and minor | MercuryPitch" (57), term first as Lesson 6's title is, with "Perfect,
+major and minor intervals explained | MercuryPitch" (59) beside it if the lead prefers; neither names
+the tritone or a number of semitones (FACTS 1a). The sing-along's key, its line for a top note that
+feels high and its listening part are the vocal coach's to confirm before publishing (LESSON.md, For
+the vocal coach), not the owner's.
 
 ## Edge cases
 
@@ -583,11 +628,16 @@ are listed so this page's needs are in one place.
   lock hint; once it is heard with sound on, still before a choice, the lock hint comes back.
 - **A split cut short** (another sound, a step link, leaving the hero): not heard, no reveal, the
   hint as it was; the line keeps what it last drew.
-- **The steps' toy before a choice**: Sharp, Flat, Fold and Curl into a ring are disabled, the top
-  note moves through the white keys only, and the readout names white-key intervals alone (Toys 1).
-  A return visit starts with a new predict, so the toy locks again until its choice.
+- **The steps' toy before a choice**: Sharp, Flat, Fold, Curl into a ring, Step 2's two plays,
+  Step 3's two and Step 4's one are disabled; the pitch line draws its white-key lanes only; Step
+  1's two plays work, its E♭ drawing only its own lane; the top note moves through the white keys
+  only, and the readout names white-key intervals alone (Toys 1). A return visit starts with a new
+  predict, so the toy holds them back again until its choice.
+- **The choice made**: the toy draws its black-key lanes in and enables what it held back, Sharp and
+  Flat only where the letter shown takes them (Toys 1, 3).
 - **Sharp or Flat on a letter that takes no such sign** (Sharp on C, E or B; Flat on C or F): the
-  button is disabled, with its accessible name kept, so a screen reader hears it as unavailable.
+  button is disabled, before the choice and after it, with its accessible name kept, so a screen
+  reader hears it as unavailable.
 - **The Clef switch mid-play** stops the play; the interval keeps its letters and plays in the new
   octave on the next move.
 - **Fold, then a move**: the single interval from C comes back, and the gold bracket goes.
@@ -595,7 +645,8 @@ are listed so this page's needs are in one place.
 - **Reduced motion**: the lanes, notes, fold and ring appear in place; the reveal still waits for the
   sound.
 - **A first visit that never chooses**: the welcome tour waits for the choice, and the next lesson
-  page opened at the top offers it again (Toys 3); the Wrap's free play is unlocked anyway.
+  page opened at the top offers it again (Toys 3); the steps' toy keeps its answering controls,
+  plays and black-key lanes back, and the Wrap's free play, its own instance, offers everything.
 - **No voice chosen**: the steps' staff is the bass clef from C3 with its Clef switch; nothing in
   Sing it plays until a voice is chosen, and its staff waits with no notes. A stored voice opens on
   its own staff, in the steps and in Sing it.
@@ -622,8 +673,9 @@ kit parts it adds:
 2. **Inversion**: for every interval in test 1, the upside down's numbers add to 9 and its
    semitones to 12; major and minor swap, perfect stays, augmented and diminished swap; F♯ up to C
    is 5 letters and 6 semitones (FACTS 21 to 24).
-3. **Signs**: Sharp offered on D, F, G and A only; Flat on D, E, G, A and B only; none on either C
-   (Toys 1).
+3. **Signs**: Sharp offered on D, F, G and A only; Flat on D, E, G, A and B only; none on either C;
+   the rule holds after the choice, so Sharp stays disabled with the top note on E or B and Flat on
+   F (Toys 1).
 4. **The sing-along**: D3, A3, D4 and D4, A4, D5 against `VOCAL_RANGES`: every note at least 2
    semitones inside every preset of its voice; do on C♯ or E♭ and the line an octave lower fail
    that check, so no Move do and no octave are offered (FACTS 52, 53).
@@ -633,14 +685,17 @@ kit parts it adds:
    (FACTS 66 to 73).
 6. **The predict**: the free play plays before a choice and never reveals; the reveal waits for both
    splits heard with sound on, in either order; a split cut short reveals nothing and leaves the
-   hint; the hints and the guess lines are LESSON.md's; the steps' Sharp, Flat, Fold and Curl are
-   disabled until the choice and enabled after it (FACTS 1a, 44).
-7. **The recall**: the questions are Lesson 6's own objects, `l06-q2` and `l06-q3`, imported, not
-   copied; their links open `/learn/06#step-5` and `/learn/06#step-2`; `l06-q3`'s slot plays
-   Lesson 6's pair (FACTS 7, 68).
+   hint; the hints and the guess lines are LESSON.md's; the steps' Sharp, Flat, Fold and Curl and
+   the plays of Steps 2, 3 and 4 are disabled until the choice and enabled after it, through
+   `onChoice` (FACTS 1a, 44).
+7. **The recall**: the questions are Lesson 6's own objects, `l06-q3` and `l06-q4`, imported, not
+   copied; their links open `/learn/06#step-2` and `/learn/06#step-4`; `l06-q3`'s slot plays
+   Lesson 6's pair; no text in either names six semitones, F♯, a tritone or the middle of the octave
+   (FACTS 1a, 7, 68).
 8. **The quick check**: ids `l23-q1` to `l23-q4`, three answers each, one right, LESSON.md's words;
-   question 3's question and answers equal the plan's, which Lesson 24's recall asks; no feedback
-   line starts with "Right", "Yes" or "Correct" (FACTS 75 to 78).
+   question 1's and question 3's questions and answers equal the plan's, which Lesson 27's and
+   Lesson 24's recalls ask; no feedback line starts with "Right", "Yes" or "Correct" (FACTS 75 to
+   78).
 9. **Sing it's flow**, in Lesson 12's tests' form: the voice before anything plays; the guide after
    Merc's notes heard; no Move do; Effortful and Uncomfortable put the guide away; Effortful,
    Uncomfortable and Just listen today show the practice card's rest line, and the card keeps Leap
@@ -665,9 +720,12 @@ Page tests, against a local or dev build, never production:
 17. **The tour's hold**: on a first visit at the top, the welcome tour does not open before the
     predict's choice and opens after it; "Tour this page" opens it at once (Toys 3).
 18. **Nothing answers the predict before the choice**: at first paint, with no choice made, the hero
-    draws no lane and no note between the two Cs; the lesson menu's headings and the four words'
-    text and figures name no F♯, no "six semitones" and no "tritone"; the steps' toy shows no black
-    key (FACTS 1a).
+    draws no lane and no note between the two Cs; the lesson menu's headings, the recall and the
+    four words' text and figures name no F♯, no "six semitones" and no "tritone", and the recall no
+    "7 semitones"; the steps' pitch line draws no black-key lane; Step 2's two plays, Step 3's two
+    and Step 4's one are disabled, with Sharp, Flat, Fold and Curl into a ring; Step 1's "Play C up
+    to E♭" plays and draws E♭'s lane and no other; after the choice all five plays work and the
+    lanes are drawn (FACTS 1a).
 
 ## Contract
 
@@ -681,14 +739,14 @@ tapped), visible focus, a single dark theme with every colour a token and an exp
 background, sound only after a tap, localStorage only for per-viewer conveniences inside try/catch,
 and the whole page usable with no sound, no WebGL and no storage (the predict and the guide then say
 why they wait). Every ♯ and ♭ the page prints in text (the predict's F♯, the steps' E♭, F♯ and G♭,
-every sign on the staff and in the readout, Sing it's C♯ and F♯) has a spoken name, the sign `aria-hidden` and a
-visually hidden word after it (`signsHtml`, `src/features/lessons/kit/notes.ts:221`); the figures'
-accessible names and every live region use words only, and every note is spoken with its letter and
-octave. "Piano key" means a key of the keyboard everywhere on the page, and a key such as D major is
-"in D", never "the key" (FACTS 18). The page stores the quiz seeds and records
-(`fyp-l23-recall-seed`, `fyp-l23-recall-v1`, `fyp-l23-seed`, `fyp-l23-quiz-v1`), `fyp-done`
-(`src/features/lessons/kit/progress.ts:12-15`), `fyp-voice`
-(`src/features/lessons/kit/voice-choice.ts:20`), the masthead's Pause animations choice,
+every sign on the staff and in the readout, Sing it's C♯ and F♯) has a spoken name, the sign
+`aria-hidden` and a visually hidden word after it (`signsHtml`,
+`src/features/lessons/kit/notes.ts:221`); the figures' accessible names and every live region use
+words only, and every note is spoken with its letter and octave. "Piano key" means a key of the
+keyboard everywhere on the page, and a key such as D major is "in D", never "the key" (FACTS 18).
+The page stores the quiz seeds and records (`fyp-l23-recall-seed`, `fyp-l23-recall-v1`,
+`fyp-l23-seed`, `fyp-l23-quiz-v1`), `fyp-done` (`src/features/lessons/kit/progress.ts:12-15`),
+`fyp-voice` (`src/features/lessons/kit/voice-choice.ts:20`), the masthead's Pause animations choice,
 `fyp-motion` (`src/features/lessons/kit/motion-switch.ts:12`), the steps the viewer reached,
 `fyp-pos` (`src/features/lessons/kit/position.ts:20`), and its record of the welcome tour,
 `fyp-tour` (`src/features/lessons/kit/tour-gate.ts:29`); nothing from the toys or Sing it but the
@@ -697,15 +755,18 @@ in memory.
 
 The departures from ARTICLE-PLAN.md, each argued in FACTS and listed in LESSON.md's preamble: one
 predict, the plan's two step predicts kept as Try and Notice lines (FACTS 46); the cold open's stage
-drawing only the octave's two ends (40); the predict asking for two equal leaps, with the choices G
-and F♯ (43), its answering plays ending on two notes together (44); Lesson 2's ruler as the pitch
-line beside the staff, curling into Lesson 2's ring, in place of "Lesson 6's interval ruler" (39);
-Inversion in place of Tritone in the four words, its figure a third (1a, 69); Step 4's heading and
-both Tavi lines (48); the sing-along in D with no Move do and no octave below, and the listening
-pair ti below fa, closing inwards (52, 53, 57); no "lean hardest" (31); the Go deeper drawers (32 to
-38); Leap alone on the practice card (63); quick check 1's and 3's links and question 4's answers
-and its one sound (73, 75 to 78); the sound gate's plainer line (1a, 25); the steps' toy locked to
-white keys until the choice (1a); and the teases, one kept and one new (5, 5b).
+drawing only the octave's two ends (40); the predict asking which note between the two Cs makes two
+equal leaps, with the choices G and F♯, kept as a reasoning check on Lesson 6's facts (1a, 43), its
+answering plays ending on two notes together (44); the recall asking Lesson 6's questions 3 and 4,
+not 2 and 3 (7); Lesson 2's ruler as the pitch line beside the staff, curling into Lesson 2's ring,
+in place of "Lesson 6's interval ruler" (39); Inversion in place of Tritone in the four words, its
+figure a third (1a, 69); Step 4's heading and both Tavi lines (48); the sing-along in D with no Move
+do and no octave below, and the listening pair ti below fa, closing inwards (52, 53, 57); no "lean
+hardest" (31); the Go deeper drawers, with no word on a church ban (32 to 38); Leap alone on the
+practice card (63); quick check 1's and 3's links and question 4's answers and its one sound (73, 75
+to 78); the sound gate's plainer line (1a, 25); the steps' toy holding back its answering controls,
+plays and black-key lanes until the choice (1a); and the teases, settled at the lead's review,
+Lesson 22's planned line reworded and Lesson 24's new (5, 5b).
 
 Page QA before publishing adds, for this page, every check against a local or dev build, never
 production:
