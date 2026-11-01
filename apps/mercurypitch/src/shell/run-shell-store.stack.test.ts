@@ -9,8 +9,9 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { tabCoveredByShell } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { clearScreens, popScreen, pushed, pushedStack, pushScreen, pushSettingsScreen, pushSettingsSection, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
+import { clearScreens, closeMore, openMore, popScreen, pushed, pushedStack, pushScreen, pushSettingsScreen, pushSettingsSection, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
 
 beforeEach(() => {
   setActiveTab(TAB_SINGING)
@@ -94,6 +95,23 @@ describe('the pushed-screen stack', () => {
       header: true,
       covered: false,
     })
+  })
+
+  it('tells the tab under it that it is covered, so a room at rest waits', () => {
+    // The Karaoke room reads its songs' notes only while nothing is over it
+    // (useKaraokeNotesReading.ts), and it asks the shared store, not this one.
+    pushScreen('settings')
+    pushScreen('appearance')
+    const pushedOver = tabCoveredByShell()
+    clearScreens()
+    const cleared = tabCoveredByShell()
+    openMore()
+    const moreOver = tabCoveredByShell()
+
+    closeMore()
+
+    expect([pushedOver, cleared, moreOver]).toEqual([true, false, true])
+    expect(tabCoveredByShell()).toBe(false)
   })
 
   it('opens a screen of Settings with Settings under it', () => {

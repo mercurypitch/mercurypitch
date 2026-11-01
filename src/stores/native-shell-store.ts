@@ -695,6 +695,22 @@ export function setRoomInPictureInPicture(on: boolean): void {
   setPictureInPicture(on)
 }
 
+// ── The tab under the shell's own chrome ─────────────────────
+//
+// A pushed screen, the More sheet, the chip's column and the Keep alert
+// cover the tab without unmounting it (the shell's `shellCovered`). A room
+// working at rest (the Karaoke room reading its songs' notes) waits while
+// the singer is busy over it. The web shell never sets it.
+
+const [shellCovers, setShellCovers] = createSignal(false)
+
+/** True while the native shell has drawn something over the tab. */
+export const tabCoveredByShell = shellCovers
+
+export function setTabCoveredByShell(covered: boolean): void {
+  setShellCovers(covered)
+}
+
 // ── A held note keeps the rail out of reach ──────────────────
 //
 // An exercise pushed over a tab (Long note) has no run for the shell to

@@ -59,7 +59,7 @@ import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_PIANO } from '@/features/tabs/constants'
 import { NATIVE_LEAGUES } from '@/lib/native-build'
-import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, setTabCoveredByShell, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
@@ -719,6 +719,12 @@ function settle(next: LiveRun): void {
 }
 
 createRoot(() => {
+  // The tab under the chrome is told it is covered: a room working at rest
+  // waits while the singer is busy over it (native-shell-store.ts).
+  createEffect(() => {
+    setTabCoveredByShell(shellCovered())
+  })
+
   createEffect(
     on([roomWithItsOwnRun, liveRun], ([room, live]) => {
       // A room with a run of its own is on screen, and the run held is
