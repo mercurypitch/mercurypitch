@@ -19,7 +19,7 @@ import type { JSX } from 'solid-js'
 import { createSignal, lazy, Show, Suspense } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import styles from './karaoke-room.module.css'
-import type { MercurySingHost } from './karaoke-room-find'
+import type { FingerprintMiss, MercurySingHost } from './karaoke-room-find'
 import { FIND_STATUS } from './karaoke-room-find'
 import { CloseGlyph, SingFindGlyph } from './karaoke-room-glyphs'
 
@@ -39,6 +39,8 @@ export interface KaraokeFindSheetProps {
    * notes while it does (useKaraokeNotesReading.ts).
    */
   onMic?: (held: boolean) => void
+  /** What the latest listening found of a song it could not fingerprint. */
+  missOf?: (sessionId: string) => FingerprintMiss | null
 }
 
 export function KaraokeFindSheet(props: KaraokeFindSheetProps): JSX.Element {
@@ -78,6 +80,7 @@ export function KaraokeFindSheet(props: KaraokeFindSheetProps): JSX.Element {
                 host={props.host}
                 again={() => setRound(listening + 1)}
                 onMic={(held) => props.onMic?.(held)}
+                missOf={(sessionId) => props.missOf?.(sessionId) ?? null}
               />
             </Suspense>
           )}

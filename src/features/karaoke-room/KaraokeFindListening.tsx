@@ -18,15 +18,16 @@
 // The room reads songs' notes at rest, never while this holds the mic
 // (useKaraokeNotesReading.ts), so the listening says when it does. Under a
 // song it cannot find yet, a row says why: getting ready, how far a read
-// has got, waiting for the singing to stop, or what keeps it out
-// (karaoke-room-find.ts notReadyWords).
+// has got, what the room waits for before it reads, or what keeps it out
+// (karaoke-room-find.ts notReadyWords), from what the room's reader knows
+// and what this listening's fingerprinting found (`missOf`).
 
 import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createMemo, For, Index, onCleanup, Show } from 'solid-js'
 import { createMercurySingEngine } from '@/features/mercury-sing/mercury-sing-engine'
-import { karaokeNotesState } from './karaoke-notes-reader'
+import { karaokeNotesHold, karaokeNotesState } from './karaoke-notes-reader'
 import styles from './karaoke-room.module.css'
-import type { MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, } from './karaoke-room-find'
+import type { FingerprintMiss, MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, } from './karaoke-room-find'
 import { FIND_STATUS, holdsMic, notReadyWords } from './karaoke-room-find'
 import { NoteGlyph } from './karaoke-room-glyphs'
 
@@ -140,6 +141,8 @@ export interface ListeningProps {
   again: () => void
   /** Told whether the listening holds the mic, each time that changes. */
   onMic?: (held: boolean) => void
+  /** What the latest listening found of a song it could not fingerprint. */
+  missOf?: (sessionId: string) => FingerprintMiss | null
 }
 
 /** One listening: the engine's lifetime and what it shows. */
@@ -166,7 +169,8 @@ export function KaraokeFindListening(props: ListeningProps): JSX.Element {
     const { done, total } = engine.fingerprinting()
     return notReadyWords(karaokeNotesState(sessionId), {
       fingerprinting: done < total,
-      holdsMic: micHeld(),
+      miss: props.missOf?.(sessionId) ?? null,
+      hold: karaokeNotesHold(),
     })
   }
 

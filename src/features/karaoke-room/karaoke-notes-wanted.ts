@@ -13,8 +13,15 @@
 //   - every song of the room, the examples among them, once Find by
 //     singing has been opened here at least once.
 //
+// So is what a read came to when reading it again would come to the same:
+// a vocal too long for this phone, none on it, one that would not open as
+// a stream, or one with no singing in it. Each is kept by the song and the
+// vocal it was read from (a vocal replaced in the studio is read again),
+// so no launch walks a song again only to hear nothing again. A read that
+// threw is not kept here: the next launch tries it again.
+//
 // Its own small module: the import queue adds to it from the app's start,
-// and needs nothing of the reader. The `mp_` prefix keeps both keys out of
+// and needs nothing of the reader. The `mp_` prefix keeps the keys out of
 // the settings sync: they are this phone's songs.
 
 import { createSignal, untrack } from 'solid-js'
@@ -24,6 +31,30 @@ import { readIds, writeIds } from './karaoke-stored-ids'
 export const KARAOKE_NOTES_WANTED_KEY = 'mp_karaoke_notes_wanted'
 /** Find by singing has been opened on this phone. */
 export const KARAOKE_FIND_OPENED_KEY = 'mp_karaoke_find_opened'
+/** What reads came to that reading again would not change, by song. */
+export const KARAOKE_NOTES_OUTCOMES_KEY = 'mp_karaoke_notes_outcomes'
+
+/** What a read came to that reading the same vocal again would not change. */
+export type FixedNotesOutcome =
+  | 'too-long'
+  | 'no-vocal'
+  | 'no-stream'
+  | 'no-notes'
+
+const FIXED: readonly string[] = [
+  'too-long',
+  'no-vocal',
+  'no-stream',
+  'no-notes',
+]
+
+/** A song's fixed outcome, and the vocal it was read from (`vocalKey`). */
+interface KeptOutcome {
+  readonly vocal: string
+  readonly outcome: FixedNotesOutcome
+}
+
+type KeptOutcomes = Readonly<Record<string, KeptOutcome>>
 
 function readFindOpened(): boolean {
   try {
@@ -33,10 +64,40 @@ function readFindOpened(): boolean {
   }
 }
 
+function isKeptOutcome(value: unknown): value is KeptOutcome {
+  if (typeof value !== 'object' || value === null) return false
+  const kept = value as Record<string, unknown>
+  return typeof kept.vocal === 'string' && FIXED.includes(String(kept.outcome))
+}
+
+/** The outcomes kept on the phone; one that does not read as one is let go. */
+function readOutcomes(): KeptOutcomes {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(KARAOKE_NOTES_OUTCOMES_KEY) ?? '{}',
+    ) as unknown
+    if (typeof parsed !== 'object' || parsed === null) return {}
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([, kept]) => isKeptOutcome(kept)),
+    ) as KeptOutcomes
+  } catch {
+    return {}
+  }
+}
+
+function writeOutcomes(next: KeptOutcomes): void {
+  try {
+    localStorage.setItem(KARAOKE_NOTES_OUTCOMES_KEY, JSON.stringify(next))
+  } catch {
+    // They still stand for this run; the next launch may read one again.
+  }
+}
+
 const [wanted, setWanted] = createSignal<readonly string[]>(
   readIds(KARAOKE_NOTES_WANTED_KEY),
 )
 const [findOpened, setFindOpened] = createSignal(readFindOpened())
+const [outcomes, setOutcomes] = createSignal<KeptOutcomes>(readOutcomes())
 
 /** The songs newly separated whose notes are to be read, oldest first. */
 export function notesWanted(): readonly string[] {
@@ -77,8 +138,48 @@ export function markFindOpened(): void {
   }
 }
 
-/** Tests only: both read again from storage, as a launch reads them. */
+/**
+ * What reading the song's vocal came to, where reading it again would come
+ * to the same; null when nothing is kept for this vocal. Reactive.
+ */
+export function notesOutcome(
+  sessionId: string,
+  vocal: string,
+): FixedNotesOutcome | null {
+  const kept = outcomes()[sessionId]
+  return kept !== undefined && kept.vocal === vocal ? kept.outcome : null
+}
+
+/** Keep what reading this vocal came to, so no launch reads it again. */
+export function keepNotesOutcome(
+  sessionId: string,
+  vocal: string,
+  outcome: FixedNotesOutcome,
+): void {
+  const next = { ...untrack(outcomes), [sessionId]: { vocal, outcome } }
+  setOutcomes(next)
+  writeOutcomes(next)
+}
+
+/**
+ * Let go of everything kept for the songs `gone` says have left the phone,
+ * so what is kept stays as long as the songs are.
+ */
+export function letGoOfNotesFor(gone: (sessionId: string) => boolean): void {
+  for (const sessionId of untrack(wanted)) {
+    if (gone(sessionId)) forgetNotesWanted(sessionId)
+  }
+  const kept = untrack(outcomes)
+  const staying = Object.entries(kept).filter(([id]) => !gone(id))
+  if (staying.length === Object.keys(kept).length) return
+  const next = Object.fromEntries(staying)
+  setOutcomes(next)
+  writeOutcomes(next)
+}
+
+/** Tests only: all of it read again from storage, as a launch reads it. */
 export function reloadNotesWantedForTests(): void {
   setWanted(readIds(KARAOKE_NOTES_WANTED_KEY))
   setFindOpened(readFindOpened())
+  setOutcomes(readOutcomes())
 }

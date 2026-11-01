@@ -760,6 +760,7 @@ export const KaraokeRoomStage: Component = () => {
         close={() => find.close()}
         host={find.host}
         onMic={find.heldMic}
+        missOf={find.missOf}
       />
       <KaraokeRoomOptions
         isOpen={optionsOpen()}
