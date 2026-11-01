@@ -263,9 +263,26 @@
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
+          // Holds round (film round 5 item 1, DECISIONS 139; study rule 8): voiced, the lines outlast the moves cued
+          // to their starts, so slow creeps of the camera carry the spans the board used to sit through. Each is a
+          // truck of at most 30 px at a fixed scale (ox only: a slow vertical part steps every baseline by a whole
+          // pixel, DECISIONS 98 and 104), on sine.inOut, and runs from one beat to the next, so it starts, turns or
+          // stops only where something else moves; cam.slide stays under 10 px a second (the near bokeh never lifts).
+          // creep(t0, t1, dx, base, px): from wherever the moves before leave the camera at t0 to base + dx at t1
+          const CUA = L.FRAMES['CU-A'], CUB = L.FRAMES['CU-B']
+          const creep = (t0, t1, dx, base = L.FRAMES.F0, px = 0) => cam.to(t0, t1 - t0, { s: base.s, ox: base.ox + dx, oy: base.oy, px }, 'sine.inOut')
+          creep(A.act1, A.major, -24)                                  // b8: 24 px, from the cue the cut sits on to "a major scale"
           cam.to(A.now, PUSH, 'CU-A', 'power2.inOut')
+          creep(A.now + PUSH - 0.4, A.pan + 0.5, -24, CUA)              // CU-A: 24 px on, the pan's way, from the push into the pan
           cam.pan(A.pan, PAN, { x: -480 }, 'sine.inOut')
+          creep(A.pan + PAN - 0.5, A.pull + 0.3, -44, CUB, -480)        // CU-B: 20 px more, from the pan into the pull (px stays)
           cam.to(A.pull, PULL, 'F0', 'power2.inOut')
+          // F0, the run and b11 to b12: 20, 30, 25 and 15 px, turning on b11's second "tone," and last "semitone." and
+          // inside "two short ones", landing on F0 on b12's "C", at rest before Tavi's leap reaches the frame
+          creep(A.pull + PULL, B11[1], -20)
+          creep(B11[1], B11[6], 10)
+          creep(B11[6], A.short + 0.6, -15)
+          creep(A.short + 0.6, A.c2, 0)
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)

@@ -82,6 +82,7 @@
           // the staircase's own profile flashes as it meets it (up 0.15 s, back 0.5 s linear, so no frame of it holds).
           // At 66 px its treads clear the riser labels (whose ink stands 8 to 37 px above each tread) by 25 px
           const LIFT0 = 66, LIFT1 = 92
+          const TOUT = 0.45                                             // the tally's exit (holds round: was 0.2 s)
           const GDROP = A.changes + 0.45, GD = 0.45
           const FIT = GDROP + GD - 0.15
 
@@ -296,6 +297,9 @@
               ghost.setAttribute('transform', `translate(0 ${f1(-lift)})`)
               const la = P(t, A.never, 0.4, 'sine.inOut') * (1 - P(t, GDROP, 0.35, 'sine.inOut'))
               sameT.setAttribute('opacity', la.toFixed(3))
+              // holds round: it drifts 12 px right, away from the ghost, from "never" until it has faded with the drop,
+              // so the board keeps moving through the lift's turn (horizontal: no whole-pixel steps)
+              sameT.setAttribute('transform', `translate(${f1(12 * P(t, A.never, GDROP + 0.35 - A.never, 'sine.inOut'))} 0)`)
               sameT.setAttribute('display', la <= 0.004 ? 'none' : 'inline')
               const e = t < FIT ? 0 : t < FIT + 0.15 ? L.ease('power1.out')((t - FIT) / 0.15) : 1 - P(t, FIT + 0.15, 0.5, 'none')
               rim.setAttribute('opacity', (0.85 * e).toFixed(3))
@@ -324,18 +328,23 @@
             // at b25's end
             dmT.setAttribute('opacity', (1 - P(t, A.dmOut, 0.2)).toFixed(3))
             dmT.setAttribute('transform', `translate(0 ${f1(-12 * P(t, A.dmOut, 0.2, 'power2.in'))})`)
-            header.draw(t, A.tallyIn - 0.05, A.tallyOut)
+            // holds round: once the last ripple has settled the tally drifts 24 px left (sine.inOut) and leaves with
+            // that drift over 0.45 s, gone before the last frame (horizontal: no whole-pixel steps)
+            const tDrift = -24 * P(t, A.tallyOut - 0.3, TOUT + 0.3, 'sine.inOut')
+            header.draw(t, A.tallyIn - 0.05, A.tallyOut, { outDur: TOUT })
             {
               const sc = L.pulse(t, A.needs, 0.15, { long: true })
-              header.g.setAttribute('transform', `${header.g.getAttribute('transform') || ''} translate(140 160) scale(${sc.toFixed(4)}) translate(-140 -160)`)
+              header.g.setAttribute('transform', `${header.g.getAttribute('transform') || ''} translate(${f1(140 + tDrift)} 160) scale(${sc.toFixed(4)}) translate(-140 -160)`)
             }
-            const out = 1 - P(t, A.tallyOut, 0.2)
+            const out = 1 - P(t, A.tallyOut, TOUT)
             for (const E of ENTRIES) {
               const a = P(t, E.land, 0.15) * out
               const sc = (1 + 0.3 * (1 - P(t, E.land, 0.4, 'power2.out'))) * (E.pulse ? L.pulse(t, E.pulse, 'label', { long: true }) : 1)
               const cx = E.cx ?? 200
+              // holds round: "C 0" lands with the header and settles 8 px rightward into place as "D 2" comes
+              const dx = tDrift - (E.text === 'C 0' ? 8 * (1 - P(t, E.land, A.get + 0.1 - E.land, 'sine.inOut')) : 0)
               E.el.setAttribute('opacity', a.toFixed(3))
-              E.el.setAttribute('transform', `translate(${f1(cx)} 228) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -228)`)
+              E.el.setAttribute('transform', `translate(${f1(cx + dx)} 228) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -228)`)
             }
           })
           window.__timelines = window.__timelines || {}

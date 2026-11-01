@@ -101,14 +101,36 @@
 
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
-          cam.to(A.pz, 4.3, 'F-white', 'sine.inOut')                   // 7c: the slow push, from inside the predict
-          cam.to(A.now, 1.0, 'F0', 'power2.inOut')                     // 7e
-          cam.to(A.push, 1.0, 'CU-D', 'power2.inOut')                  // 7g
+          // Holds round (film round 5 item 1, DECISIONS 139; study rule 8): voiced, the lines outlast the moves cued
+          // to their starts, so slow creeps of the camera carry the spans the board used to sit through. Each is a
+          // truck of at most 30 px at a fixed scale (ox only: a slow vertical part steps every baseline by a whole
+          // pixel, DECISIONS 98 and 104), on sine.inOut, and runs from one beat to the next, so it starts, turns or
+          // stops only where something else moves; cam.slide stays under 10 px a second (the near bokeh never lifts).
+          // None while Tavi is in frame, and none after the last pull: from there the camera holds F0 (signature 2).
+          // creep(t0, t1, dx, base): from wherever the moves before leave the camera at t0 to base + dx at t1
+          const creep = (t0, t1, dx, base = L.FRAMES.F0) => cam.to(t0, t1 - t0, { s: base.s, ox: base.ox + dx, oy: base.oy }, 'sine.inOut')
           // the crane down onto the two black keys. F-keys-D's oy is -440 since the polish round (C-03 item 2), not the
           // kit's -528 (L.FRAMES is read-only here): stairs 7 and 8 and the top "S" stay in frame (the "S" at baseline
           // 69, the real stair 7's tread at y 82), the black-key names at baseline 875, above the caption band
           const F_KEYS_D = { s: 1.6, ox: -380.8, oy: -440 }
+          // b17: "Predict." settles first (below); then 15 px from "the white keys" to the pills and 15 more into the slow
+          // push, the push's way (the dashed stairs move away from the pills and the ring timer)
+          creep(A.white, A.is, 15)
+          creep(A.is, A.pz + 1.0, 30)
+          cam.to(A.pz, 4.3, 'F-white', 'sine.inOut')                   // 7c: the slow push, from inside the predict
+          creep(A.pz + 3.8, WD(1), 20, L.FRAMES['F-white'])            // b18: 20 px on from its tail (the bead's drop
+          cam.to(A.now, 1.0, 'F0', 'power2.inOut')                     // 7e    stays clear of "No: it changes")
+          // F0 (7e, 7f): 20 px right as the staircase slides to D (never left there: major-d's first hop passes 9 px
+          // from "No: it changes"), 25 back on major-d's third note, 25 out on "climb", 20 back on b20's fourth step and
+          // into the push
+          creep(A.now + 1.0, MD(2), 20)
+          creep(MD(2), A.climb, -5)
+          creep(A.climb, STEPS[3], 20)
+          creep(STEPS[3], A.push + 0.5, 0)
+          cam.to(A.push, 1.0, 'CU-D', 'power2.inOut')                  // 7g
+          creep(A.push + 0.7, A.crane + 0.3, 15, L.FRAMES['CU-D'])     // CU-D: 15 px, the crane's way, into the crane
           cam.to(A.crane, 1.0, F_KEYS_D, 'power2.inOut')
+          creep(A.crane + 0.7, A.pull + 0.3, -20, F_KEYS_D)            // F-keys-D: 20 px back (stair 8 keeps inside the frame)
           cam.to(A.pull, 1.0, 'F0', 'power2.inOut')                    // 7h
 
           /* ---------------------------------------------------------------- the world (mid layer) */
@@ -412,7 +434,10 @@
               const qs = L.pulse(t, A.same, 'label') * (1 - 0.35 * P(t, A.changes, 0.35, 'power2.in'))
               const qdy = 12 * (1 - P(t, DRAW(8) + 0.35, 0.5, 'power2.out'))
               qG.setAttribute('opacity', qa.toFixed(3))
-              qG.setAttribute('transform', `translate(${f1(qC[0])} ${f1(qC[1] + qdy)}) scale(${qs.toFixed(4)}) translate(${f1(-qC[0])} ${f1(-qC[1])})`)
+              // holds round: Tavi's "?" settles 12 px leftward, from beyond the stairs, as she asks, at rest as it pulses
+              // on "same scale?" (a label's settle, as she is in frame: horizontal, so its baseline never steps)
+              const qdx = 12 * (1 - P(t, DRAW(8) + 0.35, A.same - (DRAW(8) + 0.35), 'sine.inOut'))
+              qG.setAttribute('transform', `translate(${f1(qC[0] + qdx)} ${f1(qC[1] + qdy)}) scale(${qs.toFixed(4)}) translate(${f1(-qC[0])} ${f1(-qC[1])})`)
             }
             // 7g's two arrows, rising on "a semitone low", gone with the dashed staircase
             // both leave before the crane: stair 7's would be cut at the frame's top edge (item 9), and stair 3's alone
@@ -448,7 +473,10 @@
             // "Predict." fades in where it sits (C-03 item 4, decision 104: its 24 px rise settled its last 8 px in
             // whole-pixel steps); it still eases left with the lane and drifts 30 px left as it leaves
             predT.setAttribute('opacity', (P(t, A.predict, 0.3) * (1 - leave)).toFixed(3))
-            predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t))} 0)`)
+            // holds round: it settles 24 px leftward from "Predict" to "the white keys", where the dashed stairs start
+            // to fill (horizontal: no whole-pixel steps)
+            const predDx = 24 * (1 - P(t, A.predict, A.white - A.predict, 'sine.inOut'))
+            predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t) + predDx)} 0)`)
             // the pills land on "Is it still doh ray mee?" and stay up through the listen (item 5), the lane easing left
             // in F-white; on "changes" "No" gains its check and scales, "Yes" drops away; both leave on "climb"
             pills.forEach((p, i) => {
@@ -502,6 +530,9 @@
             // settle in whole-pixel steps); its "D" scales 1.2 on "named"
             {
               dmG.setAttribute('opacity', P(t, A.landed, 0.3).toFixed(3))
+              // holds round: it settles 20 px leftward from the pull's landing to just past "named" (horizontal: no
+              // whole-pixel steps), at rest on its place (x 140) as its "D" pulses, long before the cut
+              dmG.setAttribute('transform', `translate(${f1(20 * (1 - P(t, A.landed, A.named + 0.15 - A.landed, 'sine.inOut')))} 0)`)
               const sc = L.pulse(t, A.named, 'label', { long: true })
               dmD.setAttribute('transform', `translate(${f1(dmCx)} 256) scale(${sc.toFixed(4)}) translate(${f1(-dmCx)} -256)`)
             }

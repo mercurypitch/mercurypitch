@@ -285,3 +285,28 @@ Before: the 13:52 clip's frames went into polish2/before-after-sheet.jpg and its
   and dense-019.67s-60fps.jpg. Before and after: polish2/before-after-sheet.jpg (top the 13:52 clip, bottom new).
 - Share of the frame: the staircase with its brackets (x 242 to 1194, y 268 to 736) is 21.5 % of the frame at F0 and
   42.1 % in F_GRP (the stairs alone 17.6 % and 34.5 %).
+
+## Holds round (1 November), builder BC: film round 5 item 1 (DECISIONS 139), s05 to s08
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish5/BRIEF-BC.md (one item: the
+board sits still through the voiced lines). Builder BC owns s05 to s08 this round; s07 and s08 notes go in
+lab/s07-predict/BUILD-NOTES.md, the shared tools and s05/s06 notes here. Clock: ElevenLabs, 551.21 s.
+Spans now: s05 78.362 to 128.004 (D 49.642), s06 to 169.640 (D 41.636), s07 to 229.508 (D 59.868), s08 to 262.670
+(D 33.162).
+
+Tools (lab/s05-steps/holds/): render.sh <sid> <tag> (draft 30 fps, 1 worker, TMPDIR and output in /dev/shm/l4lab-BC,
+then measure.py into /dev/shm/l4lab-BC/measure-<sid>-<tag>); probe.mjs (seeks the scene without the Mercs, prints
+the rig's state and cam.slide, and with --shots runs measure.py's motion filter on screenshots); variant.py (a copy
+of a scene with lines inserted, for probe.mjs --file).
+
+- Before (23:41 to 00:00): stills at each scene's first and last frames in /dev/shm/l4lab-BC/before/ (lab.mjs
+  snapshot: s05 0 and 49.633, s06 0 and 41.633, s07 0 and 59.867, s08 0 and 33.133). Lab clips of the scenes as
+  they stand, measured: s05 5.1 s of holds, longest 0.8 (film-05: 5.3); s06 1.9 s, longest 0.4 (film-05: 2.2).
+  The lab clip reproduces film-05's holds to a sample or two, so it is the proxy for the film.
+- Targets (brief): no hold over 0.3 s; totals at most a third of film-05's: s05 1.77 s, s06 0.73, s07 1.53,
+  s08 0.47.
+- Learned before building: a creep with a vertical part moves every baseline by a whole pixel at once (DECISIONS
+  98: builder D's S11 drift, 7 jumps in 2 s), and a slow text drift settles in whole-pixel steps (decision 104), so
+  the creeps here are horizontal (ox only: s and oy stay). Probe (no encoding): a 20 px horizontal creep over 6.3 s
+  breaks a hold where a 2 % push over the same span does not. A creep's eased ends are slow, so each leg runs from
+  one beat to the next, its fast middle across the still stretch, and turns only where something else moves.

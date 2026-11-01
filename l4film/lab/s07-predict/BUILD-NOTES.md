@@ -256,3 +256,10 @@ Results (15:30):
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | s07-predict | polish round | polish/ | 15:04, 60 fps: 1.1 s per 30 s, longest 0.3 | passes both limits | clean | clean | current |
 | s08-anywhere | polish round | polish/ | 15:13, 60 fps: 0.8 s per 30 s, longest 0.1 | passes both limits | clean | clean | current |
+
+## Holds round (1 November), builder BC: film round 5 item 1 (DECISIONS 139), s07 and s08
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish5/BRIEF-BC.md. Builder BC
+owns s05 to s08 this round; the tools, the method and the s05/s06 notes are in lab/s05-steps/BUILD-NOTES.md
+("Holds round"), these are s07's and s08's. Spans now: s07 169.640 to 229.508 (D 59.868), s08 to 262.670 (D 33.162).
+Targets: no hold over 0.3 s; s07 at most 1.53 s of holds (film-05 4.6), s08 at most 0.47 s (film-05 1.4).

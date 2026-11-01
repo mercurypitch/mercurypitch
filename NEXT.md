@@ -2536,3 +2536,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   / has ~229 MB free (lab/ holds 605 MB of earlier rounds' files: leave them). NEXT when both report: review
   their clips/stills, full check (0 errors), clock-lint, merc-tags --check, freeze, film-06 (memory: 2 workers
   OOM'd in S12-S13; plan 2 workers to ~frame 22,500 then resume on 1 worker with recycling 3), FILM6 critic.
+- 23:4x READY for film-06: l4entr/render-switch.sh <name> <frozen proj> [14] (bash -n ok): render-l4.sh on 2 workers
+  until segments.json lists 14 pieces (or rss+shmem > 12,600 MiB), then stops that process group and resumes on
+  1 worker with HF_SEGMENT_BROWSER_RECYCLE=3; render-l4.sh then does seams/repairs/after-steps. Run it with
+  setsid nohup in the background; log l4entr/<name>-switch.log. Before it: delete /dev/shm/l4film/film-05*.mp4
+  (my copies; renders/ has them byte-checked) to free 230 MB of the cap. The extract cache's 34 entries are all
+  live (HyperFrames GC at 19:11; all touched 22:47): leave it.

@@ -276,8 +276,22 @@
           // at rest 0.2 s or more before "semitones", so a faster re-voice cannot push the pull into the count
           const PULL = { at: A.pull, dur: Math.min(0.8, A.semis - 0.2 - A.pull) }
           const cam = L.frameRig(room, { from: 'F0' })
-            .to(PUSH.at, PUSH.dur, F_GRP, 'power2.inOut')
-            .to(PULL.at, PULL.dur, 'F0', 'power2.inOut')
+          // Holds round (film round 5 item 1, DECISIONS 139; study rule 8): voiced, the lines outlast the moves cued
+          // to their starts, so slow creeps of the camera carry the spans the board used to sit through. Each is a
+          // truck of at most 30 px at a fixed scale (ox only: a slow vertical part steps every baseline by a whole
+          // pixel, DECISIONS 98 and 104), on sine.inOut, and runs from one beat to the next, so it starts, turns or
+          // stops only where something else moves; cam.slide stays under 10 px a second (the near bokeh never lifts).
+          // No creep while Tavi is in frame (o5 to her hop, o6 to hers).
+          // creep(t0, t1, dx, base): from wherever the moves before leave the camera at t0 to base + dx at t1
+          const creep = (t0, t1, dx, base = L.FRAMES.F0) => cam.to(t0, t1 - t0, { s: base.s, ox: base.ox + dx, oy: base.oy }, 'sine.inOut')
+          creep(HIGH(0), PUSH.at + 0.3, 12)                            // group-high: 12 px, the push's way, into the push
+          cam.to(PUSH.at, PUSH.dur, F_GRP, 'power2.inOut')
+          creep(A.climb - 0.3, A.semi1, 20, F_GRP)                      // the copy's flight and "tone, tone": 20 px on
+          creep(A.semi1, PULL.at + 0.3, -10, F_GRP)                     // "semitone." to the pull: 30 px back, the pull's way
+          cam.to(PULL.at, PULL.dur, 'F0', 'power2.inOut')
+          creep(PULL.at + PULL.dur - 0.3, NUMS[2], -20)                 // the count: 20 px on from the pull's tail to "one."
+          // and back to F0 by the time m06b's pass opens, 1.38 s before o6 (DECISIONS 123), before her leap is in frame
+          creep(NUMS[2], at('o6', 'start', -1.38), 0)
 
           /* ---------------------------------------------------------------- the world (mid layer) */
           const mid = L.stage(room.mid)
@@ -602,7 +616,10 @@
             {
               const u = P(t, OCTLAB, 0.45, 'power3.out')
               octT.setAttribute('opacity', (P(t, OCTLAB, 0.2) * (1 - P(t, A.octOut, 0.2))).toFixed(3))
-              octT.setAttribute('transform', `translate(${f1(-24 * (1 - u))} 0)`)
+              // holds round: once landed it drifts 8 px on, the way it came in, until it has faded, so the frame keeps
+              // moving after Tavi's hop and between the two exits (horizontal: no whole-pixel steps)
+              const drift = 8 * P(t, OCTLAB + 0.45, A.octOut + 0.2 - (OCTLAB + 0.45), 'sine.inOut')
+              octT.setAttribute('transform', `translate(${f1(-24 * (1 - u) + drift)} 0)`)
             }
           })
           window.__timelines = window.__timelines || {}
