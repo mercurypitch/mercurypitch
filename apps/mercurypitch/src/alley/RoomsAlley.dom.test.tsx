@@ -880,6 +880,36 @@ describe('the Sing door clip', () => {
   })
 })
 
+describe('the Sing door on a new install', () => {
+  // The onboarding opens over the Sing room it leads to: from the pick, the
+  // room's words are held, so none show as the door opens into it.
+  it("holds the room's words from the pick, and lets them go as the door goes back", async () => {
+    const { el, store } = await mountAlley()
+    const flag = await import('../onboarding/onboarding-flag')
+    flag.settleOnboarding(false)
+
+    el('alley-door-sing').click()
+    expect(store.roomWordsHeld()).toBe(true)
+    // Another door: let go.
+    el('alley-door-ear').click()
+    expect(store.roomWordsHeld()).toBe(false)
+
+    el('alley-door-sing').click()
+    expect(store.roomWordsHeld()).toBe(true)
+    el('alley-plate').click()
+    expect(store.roomWordsHeld()).toBe(false)
+  })
+
+  it('holds nothing once the onboarding is done', async () => {
+    const { el, store } = await mountAlley()
+    const flag = await import('../onboarding/onboarding-flag')
+    flag.settleOnboarding(true)
+
+    el('alley-door-sing').click()
+    expect(store.roomWordsHeld()).toBe(false)
+  })
+})
+
 describe('a door picked, then covered by the shell', () => {
   // The alley stays mounted under the More sheet and a pushed screen: only a
   // tab change unmounts it. The door's ambient and clip played on under

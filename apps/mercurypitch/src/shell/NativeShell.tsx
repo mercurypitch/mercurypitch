@@ -191,16 +191,18 @@ const LegendScreen: Component = NATIVE_LEAGUES
 /**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
- * loads when it first opens, on a new install's first Sing door, so a phone
+ * loads as a new install's first Sing door is picked (onboarding-layer.ts
+ * expectOnboarding), so it is there for the door's last frame, and a phone
  * that has finished it never fetches the chunk.
  */
-const NativeOnboarding: Component = NATIVE_ONBOARDING
+const LazyOnboarding = NATIVE_ONBOARDING
   ? lazy(async () =>
       import('../onboarding/NativeOnboarding').then((module) => ({
         default: module.NativeOnboarding,
       })),
     )
-  : () => null
+  : null
+const NativeOnboarding: Component = LazyOnboarding ?? (() => null)
 
 export const NativeShell: Component = () => {
   const [minimised, setMinimised] = createSignal(false)
@@ -413,8 +415,15 @@ export const NativeShell: Component = () => {
   // A phone holds a premium room upright (portrait-lock.ts, decision D2).
   installPortraitLock()
   // The onboarding opens over the first Sing room of a new install
-  // (onboarding-layer.ts). A plain conditional, so a store build folds it.
-  if (NATIVE_ONBOARDING) installNativeOnboarding()
+  // (onboarding-layer.ts), its code loaded as that Sing door is picked. A
+  // plain conditional, so a store build folds it.
+  if (NATIVE_ONBOARDING) {
+    installNativeOnboarding(() => {
+      // A chunk that will not load fails again as the layer mounts, where
+      // the boundary below lets the app go.
+      LazyOnboarding?.preload().catch(() => undefined)
+    })
+  }
 
   onCleanup(() => {
     setShellOwnsTransport(false)

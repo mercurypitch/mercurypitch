@@ -30,8 +30,10 @@ import type { Component } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
+import { TAB_SINGING } from '@/features/tabs/constants'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { expectNoOnboarding, expectOnboarding, } from '../onboarding/onboarding-layer'
 import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import { ambient, madeAmbient } from './alley-ambient'
@@ -247,6 +249,11 @@ export const RoomsAlley: Component = () => {
     const spec = doorSpec(key)
     // The room's own picture starts decoding now, not on Enter.
     pickRoom(spec)
+    // A new install's onboarding opens over the Sing room: its code loads
+    // now, and the room's words are held, so none of them show as the door
+    // opens into it (onboarding-layer.ts). Any other door lets them go.
+    if (spec.tab === TAB_SINGING) expectOnboarding()
+    else expectNoOnboarding()
     if (before.door !== null && before.door !== key) {
       // Another door was out: its clip stops, its ambient hands over below
       // (or fades out, for a locked door that has none).
@@ -309,6 +316,7 @@ export const RoomsAlley: Component = () => {
         if (phase !== 'rest') return
         releaseClip()
         dropRoom()
+        expectNoOnboarding()
       },
     ),
   )
@@ -354,6 +362,8 @@ export const RoomsAlley: Component = () => {
     const spec = doorSpec(key)
     if (spec.tab === null) return
     const tab = spec.tab
+    // Entered without a pick first (the keyboard's way in): the same as a pick.
+    if (tab === TAB_SINGING) expectOnboarding()
     const ambientSilent = ambient().stop(reduced() ? REDUCED_MS : FADE_OUT_MS)
     const clip =
       spec.clip !== null && singVideo !== undefined && !singVideo.paused
@@ -618,6 +628,9 @@ export const RoomsAlley: Component = () => {
     // a src keeps its buffer and its hardware decoder until it is collected.
     releaseClip()
     dropRoom()
+    // The room's words go free: a door that opened into the Sing room has
+    // the onboarding hold them again as that tab comes up, in this update.
+    expectNoOnboarding()
   })
 
   return (

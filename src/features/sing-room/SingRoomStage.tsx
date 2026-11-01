@@ -48,7 +48,7 @@ import { createVoiceWindowFollower, voiceWindowFor } from '@/lib/voice-window'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { LegendCardWords } from '@/stores/native-shell-store'
-import { nativeShellApi, registerRunControls, roomArrivalHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, roomArrivalHeld, roomWordsHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
@@ -888,7 +888,14 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       <div class={styles.scrimTop} />
       <div class={styles.scrimBottom} />
 
-      <div class={styles.ui}>
+      {/* Out of sight while the shell holds the room's words: the native
+          onboarding is opening over it, and its words flashed under the
+          onboarding's first frames (native-shell-store.ts roomWordsHeld). */}
+      <div
+        class={styles.ui}
+        classList={{ [styles.wordsHeld]: roomWordsHeld() }}
+        data-words={roomWordsHeld() ? 'held' : undefined}
+      >
         <SingRoomHud
           note={() => noteChipSignal(props.currentPitch())}
           keyLabel={() => keyChipLabel(keyName(), scaleType())}
