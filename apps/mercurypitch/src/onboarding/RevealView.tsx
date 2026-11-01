@@ -10,8 +10,8 @@
 // how wide in plain words. A range no type overlaps is "Your voice".
 // Then, as the print finishes (useReveal.ts TWIN_MS), the twin enters as
 // a card of its own: the legend's portrait, "Your voice twin", the name,
-// and "You share a range with David Bowie.", with Merc's cheer and a light
-// haptic on that beat. Its place is kept from the start, so nothing moves
+// and what a twin is ("A legend with a range like yours.", not the name a
+// second time), with Merc's cheer and a light haptic on that beat. Its place is kept from the start, so nothing moves
 // when it enters. Under it, Merc in his guide slot with his line, then
 // Continue, full width, and Share as a plain button under it (concept 04).
 // No glass game: that is V1.1 (S7b E7).
@@ -30,7 +30,7 @@ import type { RangeResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { watchScrollEdges } from '../shell/scroll-edge'
 import styles from './NativeOnboarding.module.css'
-import { ONBOARDING_COPY, rangeSubline, twinLine, voiceHeadline, } from './onboarding-copy'
+import { ONBOARDING_COPY, rangeSubline, voiceHeadline } from './onboarding-copy'
 import type { RevealController } from './useReveal'
 import { TWIN_TIER } from './useReveal'
 import { PRINT_SIZE, voiceprintArt } from './voiceprint-art'
@@ -128,7 +128,9 @@ export function RevealView(props: RevealViewProps): JSX.Element {
                 <strong class={styles.twinName} data-testid="onboarding-twin">
                   {found()}
                 </strong>
-                <span class={styles.twinLine}>{twinLine(found())}</span>
+                <span class={styles.twinLine}>
+                  {ONBOARDING_COPY.twinMeaning}
+                </span>
               </span>
             </div>
           )}

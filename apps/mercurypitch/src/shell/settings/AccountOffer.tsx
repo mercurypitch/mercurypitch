@@ -98,8 +98,9 @@ export function VoiceprintCard(props: {
         <strong class="mp-keep__print-range">{keepRange(props.print)}</strong>
         <Show when={props.print.twin}>
           {(twin) => (
+            // The name held together: "Kurt / Cobain" read as two people.
             <span class="mp-keep__print-twin">
-              You share a range with {twin()}.
+              You share a range with {twin().replace(/ /gu, '\u00a0')}.
             </span>
           )}
         </Show>

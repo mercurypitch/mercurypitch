@@ -1129,6 +1129,7 @@
 .mp-keep__print-twin {
   font: 400 14px/19px var(--font-body, sans-serif);
   color: var(--text-secondary);
+  text-wrap: balance;
 }
 
 /* Straight after a reveal the card flies in, small, from above (S7b §3.5),

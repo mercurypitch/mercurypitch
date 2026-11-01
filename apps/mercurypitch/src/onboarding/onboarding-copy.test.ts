@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { heardLine, noteMeaning, rangeLine, rangeMeaning, rangeSubline, spanWords, twinLine, voiceHeadline, } from './onboarding-copy'
+import { heardLine, noteMeaning, rangeLine, rangeMeaning, rangeSubline, spanWords, voiceHeadline, } from './onboarding-copy'
 
 describe('note names on screen', () => {
   it('writes a sharp with the sharp sign, never the hash', () => {
@@ -55,11 +55,5 @@ describe('the reveal in words', () => {
         highMidi: 68,
       }),
     ).toBe('F♯2 to G♯4 · about two octaves')
-  })
-
-  it("keeps the twin's name together on its line", () => {
-    expect(twinLine('David Bowie')).toBe(
-      'You share a range with David\u00a0Bowie.',
-    )
   })
 })

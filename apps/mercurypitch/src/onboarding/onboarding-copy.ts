@@ -116,6 +116,9 @@ export const ONBOARDING_COPY = {
    *  no voice type overlaps. */
   revealTitle: 'Your voice',
   twinLabel: 'Your voice twin',
+  /** Under the twin's name, what a voice twin is, not the name again; "a
+   *  range" held together, so two lines never end on "a". */
+  twinMeaning: 'A legend with a\u00a0range like yours.',
   voiceprint: "That's your voiceprint. It changes as you practice.",
   continue: 'Continue',
   share: 'Share',
@@ -316,14 +319,6 @@ export function rangeSubline(range: {
 }): string {
   const words = rangeWords(range.lowNote, range.highNote)
   return `${words} \u00b7 ${spanWords(range.highMidi - range.lowMidi)}`
-}
-
-/**
- * "You share a range with David Bowie.": the twin's card, its last line,
- * the name kept on one line ("Kurt / Cobain" read as two people).
- */
-export function twinLine(twin: string): string {
-  return `You share a range with ${twin.replace(/ /gu, '\u00a0')}.`
 }
 
 /** The share sheet's line: the twin when there is one, else the range. */
