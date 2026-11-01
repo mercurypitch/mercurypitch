@@ -18,6 +18,13 @@
 // second, or a clock jump too long to fill, ends the take with what came
 // before it kept. The level is metered whether or not a take is running, so
 // an armed lane shows the singer's level before Record.
+//
+// The clock is counted, quantum by quantum, and currentFrame only corrects
+// it forward. Chromium now and then hands process() the previous quantum's
+// currentFrame and the right one after it (measured 2026-11-01 in headless
+// Chromium: 385792 twice, about one take in two within five seconds); the
+// samples are the next quantum's all the same, so a reading a few quanta
+// behind the count is the next quantum, not the clock running backwards.
 
 /** Frames in one pooled buffer: about 85 ms at 48 kHz. */
 export const STUDIO_CAPTURE_CHUNK_FRAMES = 4096
@@ -31,6 +38,8 @@ export const STUDIO_RENDER_QUANTUM = 128
 export const STUDIO_SILENT_INPUT_FRAMES = 24000
 /** The longest clock jump filled with silence, in frames: one second. */
 export const STUDIO_MAX_CLOCK_GAP_FRAMES = 48000
+/** How far behind the count a clock reading may lag and still be the next quantum. */
+export const STUDIO_CLOCK_LAG_FRAMES = 4 * STUDIO_RENDER_QUANTUM
 
 /** Why a take stopped. */
 export type StudioCaptureStop =
@@ -91,7 +100,8 @@ export function createStudioPcmCapture(send: Send) {
   let limit = 0
   let capturing = false
   let finished = false
-  let nextFrame = 0
+  /** The clock frame the next quantum starts on, counted; null before the first. */
+  let nextFrame: number | null = null
   let silentFrames = 0
   let levelPeak = 0
   let levelFrames = 0
@@ -203,16 +213,16 @@ export function createStudioPcmCapture(send: Send) {
   }
 
   /** Keep sample i on clock frame start + i across a skipped stretch of the clock. */
-  function bridge(audioFrame: number): boolean {
-    const gap = audioFrame - nextFrame
+  function bridge(audioFrame: number, expected: number): boolean {
+    const gap = audioFrame - expected
     if (gap === 0) return true
     if (gap < 0 || gap > STUDIO_MAX_CLOCK_GAP_FRAMES) {
       stop('interrupted')
       return false
     }
-    const until = stopAt === null ? gap : Math.min(gap, stopAt - nextFrame)
+    const until = stopAt === null ? gap : Math.min(gap, stopAt - expected)
     if (!write(null, 0, Math.max(0, until))) return false
-    if (stopAt !== null && nextFrame + until >= stopAt) {
+    if (stopAt !== null && expected + until >= stopAt) {
       stop(stopReason)
       return false
     }
@@ -225,7 +235,7 @@ export function createStudioPcmCapture(send: Send) {
     audioFrame: number,
   ): void {
     if (capturing) {
-      if (!bridge(audioFrame)) return
+      if (!bridge(audioFrame, nextFrame ?? audioFrame)) return
       take(input, length, audioFrame, 0)
     } else {
       if (startAt === null || audioFrame + length <= startAt) return
@@ -235,7 +245,15 @@ export function createStudioPcmCapture(send: Send) {
       send({ type: 'started', frame: first })
       take(input, length, audioFrame, first - audioFrame)
     }
-    nextFrame = audioFrame + length
+  }
+
+  /** This quantum's clock frame: the count, unless the clock says it is later. */
+  function frameOf(audioFrame: number): number {
+    if (nextFrame === null) return audioFrame
+    const behind = nextFrame - audioFrame
+    return behind > 0 && behind <= STUDIO_CLOCK_LAG_FRAMES
+      ? nextFrame
+      : audioFrame
   }
 
   return {
@@ -261,18 +279,19 @@ export function createStudioPcmCapture(send: Send) {
       stopAt = command.atFrame
       stopReason = command.reason
     },
-    process(input: Float32Array | undefined, audioFrame: number): void {
+    process(input: Float32Array | undefined, clockFrame: number): void {
       const present = input !== undefined && input.length > 0
       const samples = present ? input : null
       const length = present ? input.length : STUDIO_RENDER_QUANTUM
+      const audioFrame = frameOf(clockFrame)
       meter(samples, length, audioFrame)
-      if (finished) return
-      silentFrames = present ? 0 : silentFrames + length
-      if (capturing && silentFrames >= STUDIO_SILENT_INPUT_FRAMES) {
-        stop('input-lost')
-        return
+      if (!finished) {
+        silentFrames = present ? 0 : silentFrames + length
+        if (capturing && silentFrames >= STUDIO_SILENT_INPUT_FRAMES)
+          stop('input-lost')
+        else capture(samples, length, audioFrame)
       }
-      capture(samples, length, audioFrame)
+      nextFrame = audioFrame + length
     },
   }
 }

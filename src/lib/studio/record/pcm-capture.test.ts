@@ -203,6 +203,38 @@ describe('createStudioPcmCapture', () => {
     ])
   })
 
+  it('keeps a quantum handed the clock frame of the one before as the next quantum', () => {
+    // Chromium measured 2026-11-01: now and then process() reads the
+    // previous quantum's currentFrame (385792 twice), then the right one.
+    const h = harness(64, 4096)
+    h.capture.command({ type: 'start', atFrame: 0, maxFrames: 480000 })
+    h.run(2)
+    h.capture.process(
+      Float32Array.from({ length: QUANTUM }, (_, i) => 256 + i),
+      QUANTUM,
+    )
+    h.jump(QUANTUM)
+    h.run(2)
+    h.capture.command({ type: 'stop', atFrame: null, reason: 'stopped' })
+
+    expect(h.ofType('stopped')).toEqual([
+      { type: 'stopped', frames: 5 * QUANTUM, reason: 'stopped' },
+    ])
+    expect(h.samples()).toEqual(range(0, 5 * QUANTUM))
+  })
+
+  it('ends the take when the clock runs backwards past a few quanta', () => {
+    const h = harness(64, 4096)
+    h.capture.command({ type: 'start', atFrame: 0, maxFrames: 480000 })
+    h.run(8)
+    h.jump(-8 * QUANTUM)
+    h.run(1)
+
+    expect(h.ofType('stopped')).toEqual([
+      { type: 'stopped', frames: 8 * QUANTUM, reason: 'interrupted' },
+    ])
+  })
+
   it('stops inside a skipped stretch when the stop frame falls in it', () => {
     const h = harness()
     h.capture.command({ type: 'start', atFrame: 0, maxFrames: 48000 })
