@@ -242,13 +242,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   /**
    * Native: a song chosen to sing goes back to the Karaoke room, which hosts
-   * the one zen stage, rather than onto a second one here (plan S8 §11).
-   * True when the room was handed it.
+   * the one zen stage, rather than onto a second one here (plan S8 §11),
+   * from `seekSec` for a song found by singing. True when the room was
+   * handed it.
    */
-  const handToRoom = (sessionId: string): boolean => {
+  const handToRoom = (sessionId: string, seekSec?: number): boolean => {
     const studio = props.studio
     if (studio === undefined) return false
-    studio.onSing(sessionId)
+    if (seekSec === undefined) studio.onSing(sessionId)
+    else studio.onSing(sessionId, seekSec)
     return true
   }
   /** The phone's options sheet, holding what the header cannot fit. */
@@ -3028,6 +3030,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     topMatch.sessionId !== undefined &&
                     topMatch.confidence >= threshold
                   ) {
+                    // Native: the room plays it, from where the singing
+                    // began; the studio's own mixer is never opened there.
+                    if (
+                      IS_NATIVE_BUILD &&
+                      handToRoom(topMatch.sessionId, topMatch.matchOffsetSec)
+                    ) {
+                      return
+                    }
                     // Set auto-play with match offset for stem mixer
                     setMixerInitialSeekSec(topMatch.matchOffsetSec)
                     setMixerAutoPlay(true)
@@ -3045,6 +3055,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     candidate.source === 'stem' &&
                     candidate.sessionId !== undefined
                   ) {
+                    if (
+                      IS_NATIVE_BUILD &&
+                      handToRoom(candidate.sessionId, candidate.matchOffsetSec)
+                    ) {
+                      return
+                    }
                     setMixerInitialSeekSec(candidate.matchOffsetSec)
                     setMixerAutoPlay(true)
                     void handleOpenMixerFromHistory(candidate.sessionId, {
@@ -3072,6 +3088,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   props.onSelectMelody?.(melodyId)
                 }}
                 onOpenStemMixer={(sessionId, matchOffsetSec) => {
+                  if (
+                    IS_NATIVE_BUILD &&
+                    handToRoom(sessionId, matchOffsetSec)
+                  ) {
+                    return
+                  }
                   setMixerInitialSeekSec(matchOffsetSec)
                   setMixerAutoPlay(matchOffsetSec !== undefined)
                   void handleOpenMixerFromHistory(sessionId, { vocal: true })

@@ -13,8 +13,16 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import type * as NativeBuild from '@/lib/native-build'
+import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import type { UvrSession } from '@/stores/app-store'
 import type { UvrStudioControls, UvrStudioHosting } from '../uvr-studio-hosting'
+
+/** What the Sing view's listening hands the panel when it has a match. */
+interface SingMatch {
+  candidates: MatchCandidate[]
+  contour: LivePitchContour
+  hummingNormalized: boolean
+}
 
 vi.mock('@/lib/native-build', async (importOriginal) => ({
   ...(await importOriginal<typeof NativeBuild>()),
@@ -89,6 +97,22 @@ vi.mock('../index', async (importOriginal) => {
   }
 })
 
+/**
+ * The Sing view's listening, stood in for (the real one opens the mic): it
+ * keeps the panel's match callback, so a test can hand it a song found.
+ */
+const sing = vi.hoisted(() => ({
+  onMatch: null as null | ((result: SingMatch) => void),
+}))
+vi.mock('@/components/ShazamListen', () => ({
+  ShazamListen: (props: { onMatch: (result: SingMatch) => void }) => {
+    // The stand-in records at mount on purpose: a mount is the listening.
+    // eslint-disable-next-line solid/reactivity
+    sing.onMatch = props.onMatch
+    return <div data-testid="shazam-listen" />
+  },
+}))
+
 beforeAll(() => {
   class MockWorker {
     onmessage: ((e: MessageEvent) => void) | null = null
@@ -129,6 +153,7 @@ beforeEach(() => {
   runner.onSong = null
   playlists.stop.mockClear()
   mixers.mounted = []
+  sing.onMatch = null
   store.sessions.clear()
   store.groups = [{ id: 'g1', name: 'Duets', sessionIds: ['song-a'] }]
   store.sessions.set('song-a', song('song-a', 'g1'))
@@ -339,6 +364,65 @@ describe('the studio library', () => {
 
     expect(onSing).toHaveBeenCalledWith('song-b')
     expect(playlists.stop).toHaveBeenCalled()
+    expect(mixers.mounted).toEqual([])
+  })
+})
+
+describe("the studio's Sing view", () => {
+  /** A sure match for `sessionId`, placed `matchOffsetSec` into the song. */
+  const found = (
+    sessionId: string,
+    matchOffsetSec: number | undefined,
+  ): MatchCandidate => ({
+    melodyId: `stem:${sessionId}`,
+    name: sessionId,
+    confidence: 92,
+    source: 'stem',
+    sessionId,
+    matchOffsetSec,
+    breakdown: {
+      pitchScore: 0.9,
+      intervalScore: 0.9,
+      chromaScore: 0.9,
+      rhythmScore: 0.9,
+      lengthBonus: 1,
+    },
+  })
+
+  const NO_CONTOUR: LivePitchContour = {
+    frames: [],
+    onsets: [],
+    durationSec: 0,
+    noteSequence: [],
+    ioiSequence: [],
+    noteDurations: [],
+  }
+
+  /** The Sing view, listening, and the match it hands the panel. */
+  const singAndFind = async (candidate: MatchCandidate) => {
+    const studio = openStudio()
+    studio.controls().showView('shazam-listen')
+    await waitFor(() => expect(sing.onMatch).not.toBeNull())
+    sing.onMatch?.({
+      candidates: [candidate],
+      contour: NO_CONTOUR,
+      hummingNormalized: false,
+    })
+    return studio
+  }
+
+  it('hands a song found by singing to the room, from where the singing began', async () => {
+    const { onSing } = await singAndFind(found('song-b', 42.5))
+
+    expect(onSing.mock.calls).toEqual([['song-b', 42.5]])
+    expect(mixers.mounted).toEqual([])
+  })
+
+  it('hands one found with no place to the room as any other song, from the top', async () => {
+    const { onSing } = await singAndFind(found('song-b', undefined))
+
+    expect(onSing).toHaveBeenCalledTimes(1)
+    expect(onSing.mock.calls[0]).toStrictEqual(['song-b'])
     expect(mixers.mounted).toEqual([])
   })
 })

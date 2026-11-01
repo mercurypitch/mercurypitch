@@ -150,6 +150,13 @@ export interface MatcherOptions {
   weights?: Partial<MatchWeights>
   /** Only include fingerprints from this source (omit = all sources) */
   sourceFilter?: 'melody' | 'stem'
+  /**
+   * When given, only the stem fingerprints of these sessions are matched:
+   * the songs the caller can open. A fingerprint can outlive its song (one
+   * removed while the app runs), and left out here, before the results are
+   * cut, it cannot take the place of a song that is still there.
+   */
+  sessionIds?: ReadonlySet<string>
 }
 
 export interface MatchWeights {

@@ -260,6 +260,14 @@ describe('a song chosen to sing', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('plays a song found by singing from where the singing began', () => {
+    const { studio } = mount()
+
+    studio.onSing('mine', 42.5)
+
+    expect(karaokeSongRequest()).toEqual({ sessionId: 'mine', seekSec: 42.5 })
+  })
+
   it('stays here when the room cannot play it, and the studio says why', () => {
     const { onDone, studio } = mount()
 

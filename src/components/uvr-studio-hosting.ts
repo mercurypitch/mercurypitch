@@ -27,8 +27,11 @@ export interface UvrStudioControls {
 }
 
 export interface UvrStudioHosting {
-  /** A song chosen to sing: the Karaoke room takes it. */
-  readonly onSing: (sessionId: string) => void
+  /**
+   * A song chosen to sing: the Karaoke room takes it, from `seekSec` when a
+   * song found by singing says where the singer began.
+   */
+  readonly onSing: (sessionId: string, seekSec?: number) => void
   /** Receive the panel's controls, once, when it is set up. */
   readonly attach: (controls: UvrStudioControls) => void
 }

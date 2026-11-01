@@ -8,6 +8,8 @@
 // its licence asks for, and its length. The song on the stage is marked, and
 // a tap on another cues it.
 //
+// Find by singing heads it, where the room offers it (KaraokeFindSheet.tsx).
+//
 // One vertical list, your songs first and then the examples. No group tabs,
 // no playlists (the studio keeps those), and nothing that scrolls sideways:
 // a long title wraps.
@@ -29,7 +31,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { theDevice } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import styles from './karaoke-room.module.css'
-import { NoteGlyph } from './karaoke-room-glyphs'
+import { CloseGlyph, NoteGlyph, SingFindGlyph } from './karaoke-room-glyphs'
 import type { RoomSong } from './karaoke-room-library'
 import type { ImportedSongMenuProps } from './KaraokeLibraryImports'
 import { ImportedSongMenu, LibraryImportHead, libraryQueueLength, LibraryQueueRows, SongNewMark, } from './KaraokeLibraryImports'
@@ -41,19 +43,6 @@ export function formatSongDuration(seconds: number | null): string | null {
   const minutes = Math.floor(whole / 60)
   return `${minutes}:${String(whole % 60).padStart(2, '0')}`
 }
-
-const CloseGlyph: Component = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.8"
-    stroke-linecap="round"
-    aria-hidden="true"
-  >
-    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
-  </svg>
-)
 
 /** Three bars: the song on the stage. */
 const OnStageGlyph: Component = () => (
@@ -90,6 +79,8 @@ interface KaraokeLibrarySheetProps {
   /** The song on the stage, marked in the list. */
   currentId: () => string | null
   onPick: (song: RoomSong) => void
+  /** Find by singing (KaraokeFindSheet); no row without it. */
+  onFind?: () => void
 }
 
 export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
@@ -161,6 +152,27 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
             <CloseGlyph />
           </button>
         </div>
+
+        <Show when={props.onFind}>
+          {(find) => (
+            <button
+              type="button"
+              class={`${styles.songRow} ${styles.findRow}`}
+              onClick={() => find()()}
+              data-testid="karaoke-find-open"
+            >
+              <span class={styles.songArt} aria-hidden="true">
+                <SingFindGlyph />
+              </span>
+              <span class={styles.songText}>
+                <span class={styles.songTitle}>Find by singing</span>
+                <span class={styles.songSub}>
+                  Sing a bit of a song, and it plays from there
+                </span>
+              </span>
+            </button>
+          )}
+        </Show>
 
         <ImportHead />
 

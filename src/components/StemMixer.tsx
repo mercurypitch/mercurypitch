@@ -2596,6 +2596,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       console.log('[StemMixer] Scheduling auto-play...')
       // Small delay to let the seek settle before starting playback
       setTimeout(() => {
+        // Read again as the timer fires: the host can take autoplay back in
+        // between (the Karaoke room's Find by singing opening over a song
+        // that has just loaded), and a song it no longer wants started must
+        // not start under it. A voice launch was never the prop's to stop.
+        if (!voiceLaunch && props.autoPlay !== true) return
         console.log('[StemMixer] Executing auto-play handlePlay()')
         audio.handlePlay()
       }, 150)

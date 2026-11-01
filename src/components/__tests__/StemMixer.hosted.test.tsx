@@ -16,6 +16,8 @@
 // says desktop — the configuration that was wrong — and hosts it.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import type { Accessor } from 'solid-js'
+import { createEffect, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KaraokeStageHosting } from '@/components/KaraokeMobileStage'
 import type { HostedMixerControls, StemMixerHosting, } from '@/components/stem-mixer-hosting'
@@ -698,5 +700,79 @@ describe('a seek the room asks for', () => {
       )
       expect(centred).toContain(DARK_LINE)
     })
+  })
+})
+
+// ── A start the room takes back ──────────────────────────────────────────
+//
+// Asked to (autoPlay), the mixer starts a song by itself a moment after it
+// has loaded. The room can take that back within the moment: its Find by
+// singing opening over a song that has just loaded. A start the room no
+// longer wants must not happen under the sheet.
+describe('a start the room takes back', () => {
+  beforeEach(() => {
+    // The silent clip a press of play starts, which jsdom cannot play.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+  })
+
+  /**
+   * A hosted mixer asked to start by itself. Taken back, the ask is
+   * withdrawn as the song loads, just after the mixer has set its start up.
+   */
+  function mountStarting(
+    takenBack: boolean,
+  ): Accessor<HostedMixerControls | null> {
+    const [autoPlay, setAutoPlay] = createSignal(true)
+    const [attached, setAttached] = createSignal<HostedMixerControls | null>(
+      null,
+    )
+    const { host } = hosting({ attach: setAttached })
+    render(() => {
+      createEffect(() => {
+        const controls = attached()
+        if (!takenBack || controls === null || controls.loading()) return
+        // A microtask later, so the mixer's own effect has run by then.
+        queueMicrotask(() => setAutoPlay(false))
+      })
+      return (
+        <StemMixer
+          stems={{
+            vocal: '/karaoke/examples/goodbye-to-spring/vocal.m4a',
+            instrumental:
+              '/karaoke/examples/goodbye-to-spring/instrumental.m4a',
+          }}
+          sessionId="karaoke-night-demo"
+          songTitle="Goodbye to Spring"
+          preset="performance"
+          showStageSettings={false}
+          practiceMode="full"
+          requestedStems={{ vocal: true, instrumental: true }}
+          autoPlay={autoPlay()}
+          hosted={host}
+        />
+      )
+    })
+    return attached
+  }
+
+  it('starts a song by itself once it has loaded', async () => {
+    const controls = mountStarting(false)
+
+    await waitFor(() => {
+      expect(controls()?.playing()).toBe(true)
+    })
+  })
+
+  it('does not start one the room took back once it had loaded', async () => {
+    const controls = mountStarting(true)
+    await waitFor(() => {
+      expect(controls()?.loading()).toBe(false)
+    })
+
+    // Well past the moment the start was due.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 400)
+    })
+    expect(controls()!.playing()).toBe(false)
   })
 })
