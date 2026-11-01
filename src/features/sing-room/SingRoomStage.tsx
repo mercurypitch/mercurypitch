@@ -48,7 +48,8 @@ import { createVoiceWindowFollower, voiceWindowFor } from '@/lib/voice-window'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { LegendCardWords } from '@/stores/native-shell-store'
-import { nativeShellApi, registerRunControls, roomArrivalHeld, roomWordsHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, roomArrivalHeld, songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
+import { roomWordsHeld } from '@/stores/room-words-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
@@ -890,7 +891,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
       {/* Out of sight while the shell holds the room's words: the native
           onboarding is opening over it, and its words flashed under the
-          onboarding's first frames (native-shell-store.ts roomWordsHeld). */}
+          onboarding's first frames (room-words-store.ts). */}
       <div
         class={styles.ui}
         classList={{ [styles.wordsHeld]: roomWordsHeld() }}

@@ -77,6 +77,7 @@ async function mountAlley() {
   const alley = await import('./RoomsAlley')
   const welcome = await import('./alley-welcome')
   const store = await import('@/stores/native-shell-store')
+  const words = await import('@/stores/room-words-store')
   const nav = await import('../shell/shell-navigation')
   const shell = await import('../shell/run-shell-store')
   const audio = await import('./alley-audio')
@@ -94,7 +95,7 @@ async function mountAlley() {
     return made.value as AlleyAudio.AlleyAmbient
   }
   const ambientStop = () => vi.mocked(ambientMade().stop)
-  return { el, welcome, store, nav, shell, ambientStop, ambientMade }
+  return { el, welcome, store, words, nav, shell, ambientStop, ambientMade }
 }
 
 beforeEach(() => {
@@ -914,42 +915,42 @@ describe('the Sing door on a new install', () => {
   })
 
   it("holds the room's words from the pick, and lets them go as the door goes back", async () => {
-    const { el, store } = await mountAlley()
+    const { el, words } = await mountAlley()
     const flag = await import('../onboarding/onboarding-flag')
     flag.settleOnboarding(false)
 
     el('alley-door-sing').click()
-    expect(store.roomWordsHeld()).toBe(true)
+    expect(words.roomWordsHeld()).toBe(true)
     // Another door: let go.
     el('alley-door-ear').click()
-    expect(store.roomWordsHeld()).toBe(false)
+    expect(words.roomWordsHeld()).toBe(false)
 
     el('alley-door-sing').click()
-    expect(store.roomWordsHeld()).toBe(true)
+    expect(words.roomWordsHeld()).toBe(true)
     el('alley-plate').click()
-    expect(store.roomWordsHeld()).toBe(false)
+    expect(words.roomWordsHeld()).toBe(false)
   })
 
   it('holds nothing once the onboarding is done', async () => {
-    const { el, store } = await mountAlley()
+    const { el, words } = await mountAlley()
     const flag = await import('../onboarding/onboarding-flag')
     flag.settleOnboarding(true)
 
     el('alley-door-sing').click()
-    expect(store.roomWordsHeld()).toBe(false)
+    expect(words.roomWordsHeld()).toBe(false)
   })
 
   it('lets the words go when the alley goes, a door still picked', async () => {
-    const { el, store } = await mountAlley()
+    const { el, words } = await mountAlley()
     const flag = await import('../onboarding/onboarding-flag')
     flag.settleOnboarding(false)
     el('alley-door-sing').click()
-    expect(store.roomWordsHeld()).toBe(true)
+    expect(words.roomWordsHeld()).toBe(true)
 
     view?.unmount()
     view = null
 
-    expect(store.roomWordsHeld()).toBe(false)
+    expect(words.roomWordsHeld()).toBe(false)
   })
 })
 
@@ -957,13 +958,13 @@ describe('the Sing door on a build without the onboarding', () => {
   // The store build: the switch folds the door's calls into the layer away,
   // so a new install's Sing door holds nothing (onboarding-fold.test.ts).
   it("holds none of the room's words", async () => {
-    const { el, store } = await mountAlley()
+    const { el, words } = await mountAlley()
     const flag = await import('../onboarding/onboarding-flag')
     flag.settleOnboarding(false)
 
     el('alley-door-sing').click()
 
-    expect(store.roomWordsHeld()).toBe(false)
+    expect(words.roomWordsHeld()).toBe(false)
   })
 })
 

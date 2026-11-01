@@ -108,6 +108,8 @@ import { countFinished, leaveOnboarding, markFinished, markNotNow, onboardingEnt
 import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
 import { askOfferPrice, offerSkipNow, onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
+import type { LayerWords, OnboardingBeat } from './onboarding-words'
+import { layerSays, layerTitle } from './onboarding-words'
 import { rangeSays, RangeView } from './RangeView'
 import { RevealView } from './RevealView'
 import { savedRange } from './saved-range'
@@ -120,13 +122,7 @@ import { preloadTwin, useReveal } from './useReveal'
 /** Merc's word on a skipped range has its moment, then Keep comes, ms. */
 export const SKIP_BEAT_MS = 1600
 
-export type OnboardingBeat =
-  | 'first-note'
-  | 'range'
-  | 'reveal'
-  | 'keep'
-  | 'line'
-  | 'offer'
+export type { OnboardingBeat } from './onboarding-words'
 
 /**
  * A sheet the layer waits under: Keep, the Cloud offer, or what either
@@ -615,55 +611,21 @@ export function NativeOnboarding(): JSX.Element {
     }
   }
 
-  /** Merc's line on the beat on screen, for its bubble and the live region.
-   *  None under Keep or the Cloud offer: the sheet says it. */
-  const said = (): string | null => {
-    // Not now's asks are out: the beats behind it went back to their start,
-    // and their asks must not be read out again over the way out.
-    if (deciding()) return null
-    switch (beat()) {
-      case 'keep':
-      case 'offer':
-        return null
-      case 'line':
-        return lineSaysText(line)
-      default:
-        break
-    }
-    if (skipped()) {
-      return keepShown ? ONBOARDING_COPY.skippedToKeep : ONBOARDING_COPY.skipped
-    }
-    switch (beat()) {
-      case 'range':
-        return rangeSays(range)
-      case 'reveal':
-        return ONBOARDING_COPY.voiceprint
-      default:
-        return noteSays(note)
-    }
-  }
-
-  /** The layer's name: under Not now's offer, the beat it was said on. */
-  const title = (): string => {
-    const now = beat()
-    const named = now === 'offer' ? (leftFrom() ?? 'line') : now
-    switch (named) {
-      case 'range':
-        return ONBOARDING_COPY.rangeTitle
-      case 'reveal':
-        return ONBOARDING_COPY.revealTitle
-      case 'keep':
-        if (lineDone) return ONBOARDING_COPY.lineTitle
-        return revealed() === null
-          ? ONBOARDING_COPY.title
-          : ONBOARDING_COPY.revealTitle
-      case 'line':
-      case 'offer':
-        return ONBOARDING_COPY.lineTitle
-      default:
-        return ONBOARDING_COPY.title
-    }
-  }
+  /** What the layer says now: its name, and Merc's line (onboarding-words.ts). */
+  const words = (): LayerWords => ({
+    beat: beat(),
+    deciding: deciding(),
+    skipped: skipped(),
+    keepShown,
+    lineDone,
+    revealed: revealed() !== null,
+    leftFrom: leftFrom(),
+    lineSays: () => lineSaysText(line),
+    rangeSays: () => rangeSays(range),
+    noteSays: () => noteSays(note),
+  })
+  const said = (): string | null => layerSays(words())
+  const title = (): string => layerTitle(words())
 
   /** Keep or the Cloud offer is up over the layer: its Not now stands aside. */
   const underSheet = (): boolean => beat() === 'keep' || beat() === 'offer'

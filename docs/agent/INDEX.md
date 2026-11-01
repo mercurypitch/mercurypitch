@@ -274,6 +274,7 @@ These are the rules that break things when ignored.
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
 | [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
+| [room-words-store.ts](../../src/stores/room-words-store.ts) | 50 | A room's words, kept off a screen something else is about to take The native onboarding opens over the Sing room on a new install's first... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
 | [tv-stage-store.ts](../../src/stores/tv-stage-store.ts) | 50 | TV stage store — how far ahead a connected TV draws the stage A TV that draws the Karaoke room's stage (src/lib/tv-stage/) shows the song... |
