@@ -85,7 +85,44 @@
           const PULL_DUR = 0.8
           A.solfege = A.pull + PULL_DUR                       // once the pull has landed: "solfège", "(sol)"
           A.solOut = A.doubt - 0.38                           // they leave before the guess lands
-          const SLIDE = 0.8
+          const SLIDE = 0.8, TRUCK = 3.0
+
+          /* ---------------------------------------------------------------- settles (holds round, 1 November) */
+          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
+          // (film round 5, DECISIONS 139; study rule 8). Through each held span the thing just named settles: a
+          // label drifts a few px, eased in and out, coming to rest as the next thing begins. `sway` sums legs
+          // [t0, t1, dx], each a ramped glide (0.3 s eased ramps at each end, a steady middle) so the whole span
+          // keeps moving; a leg turns only inside a beat that moves something else. Horizontal only for type: a
+          // vertical drift moves a text baseline a whole pixel at a time. While Tavi is in frame nothing she stands
+          // on or looks at moves; only labels, the house landing back and the names riding the slides settle.
+          const RAMP = 0.3
+          const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          // a leg is [from, to, px] and, for a quicker turn, its own ramp
+          const sway = (t, legs) => legs.reduce((x, [t0, t1, dx, rp = RAMP]) => x + dx * trap(clamp((t - t0) / (t1 - t0)), Math.min(rp, (t1 - t0) / 3) / (t1 - t0)), 0)
+          // "solfège" drifts 8 px left as Tavi starts ("In the opening"), at rest once stair 1 has lit on "doh"
+          const SOL_LEGS = [[A.dohO - 0.85, A.dohO + 0.3, -8]]
+          // the guess, while it is asked and answered (its ink-2 needs the larger glide): left 18 px from "always" into
+          // the rise of its pulse on "called", back 8 px to its solid turn on "fixed", 10 px more into its move up on
+          // "it is", so it rises from x 1360 as before
+          const PILL_LEGS = [[A.always + 0.35, A.called + 0.08, -18], [A.called + 0.08, A.fixed + 0.22, 8], [A.fixed + 0.22, A.itIs + 0.25, 10],
+            // once up, out 5 px through "it is." and back as "We'll use" lights the do stairs, at rest on "movable"
+            [A.isC + 0.2, A.use + 0.07, -5], [A.use + 0.07, A.movable, 5],
+            // b30: out 8 px from just after "doh" is named to "ray", back from "ray is" to "mee" (the pill and
+            // "movable do" take turns)
+            [A.isD - 0.63, A.rayE + 0.03, -8], [A.rayE + 0.25, A.meeF, 8]]
+          // "movable do" lands gliding in from 20 px right, through "names" and "the names belong to the" (its own
+          // definition), at rest as the stairs light on "stairs"; in b30 out 9 px from "mee", turning in the rise of
+          // "sharp" (0.2 s ends), and back into "Home moves"
+          const MOV_LEGS = [[A.movable, A.stairs + 0.3, -20],
+            [A.meeF, A.sharp + 0.06, -9, 0.2], [A.sharp + 0.06, A.homeMoves + 0.28, 9, 0.2]]
+          // the names ride each slide a little behind their stairs and glide back to centre after it (up to 11 px):
+          // "the names move with it" (signature 3)
+          // after the slide back to C they glide back through the pause until the last frame, where they are at rest
+          // (0.3 s in, 0.1 s out: the film's 0.3 s hold at the cut, film round 5)
+          const NAME_LAG = 12
+          const trap2 = (u, r0, r1) => { const v = 1 / (1 - r0 / 2 - r1 / 2); return u <= 0 ? 0 : u >= 1 ? 1 : u < r0 ? (v * u * u) / (2 * r0) : u > 1 - r1 ? 1 - (v * (1 - u) * (1 - u)) / (2 * r1) : v * (u - r0 / 2) }
+          const backC = (t) => { const T0 = A.slideC + 0.48, T = D - T0; return trap2((t - T0) / T, 0.3 / T, 0.1 / T) }
+          const nameLag = (t) => -NAME_LAG * (P(t, A.slideD, SLIDE) - P(t, A.slideD + 0.48, 1.6, 'sine.inOut')) + NAME_LAG * (P(t, A.slideC, SLIDE) - backC(t))
 
           /* ---------------------------------------------------------------- camera */
           // HANDOFFS § Camera moves, the push in S9: one curve with no stop. Its first leg, s on sine.in from
@@ -98,7 +135,11 @@
             return { s, ox: -420 * (s - 1), oy: -736 * (s - 1) }
           })
           cam.hermite(A.these, 1.4, 'F-names-1')
-          cam.to(A.truck, 3.0, 'F-names-2', 'power1.inOut')     // a truck: s holds at 2.4, the layers part
+          cam.to(A.truck, TRUCK, 'F-names-2', 'power1.inOut')   // a truck: s holds at 2.4, the layers part
+          // a creep on along the names from the truck's end into the pull (no host in frame yet): 20 px further,
+          // sine.inOut, so the near bokeh slides at most 7.6 px a second and never lifts; the pull starts from it
+          const F2 = L.FRAMES['F-names-2']
+          cam.to(A.truck + TRUCK, A.pull - A.truck - TRUCK, { s: F2.s, ox: F2.ox - 20, oy: F2.oy }, 'sine.inOut')
           cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
 
           /* ---------------------------------------------------------------- the world (mid layer) */
@@ -142,7 +183,12 @@
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
           const hud = L.stageOf(room.hud)
           const card = L.chapterCard(room.hud, { num: 3, title: 'Name the stairs', baseline: 480, tIn: A.cardIn, tOut: A.cardOut })
+          // the card settles as it holds: a slow 2.5 % zoom about its own centre (x 960, baseline - 110), from its
+          // entrance through its exit, so neither the end of its entrance nor its turn from breathing to leaving stands
+          const cardWrap = L.svg('g', {}, card.g.parentNode)
+          cardWrap.appendChild(card.g)
           const kicker = L.kicker(room.hud, '3 · Name the stairs')
+          const KICK_IN = 1.4                                 // the kicker glides its 18 px in over 1.4 s (the kit: 0.45 s)
           const degreesT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'scale degrees' }, hud)
           const solfegeT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'solfège' }, hud)
           // A pill in the hud, left edge at x, its text inset 0.6 of its size, its box 1.6 of its size tall and
@@ -253,15 +299,17 @@
             // the slide to D and back: w and s0 on one curve (power2.inOut)
             const uS = P(t, A.slideD, SLIDE) - P(t, A.slideC, SLIDE)
             const w = uS, s0 = 2 * uS
+            const lagX = nameLag(t)
             // the houses: from "its home", lit, riding every slide; glowing on "Home moves"
             const hU = P(t, A.home, 0.35, 'power2.out')
             // 9e: the bottom house rides up with stair 1's rising outline and fades with it, then lands back on stair 1
-            // as the outline goes, so the outline never rises round it (component critic D-01 item 10)
+            // as the outline goes, so the outline never rises round it (component critic D-01 item 10); it settles the
+            // last 12 px onto stair 1 until "solfège" leaves (sine.inOut, holds round)
             const g0 = A.moved - 0.05
             const house = (k) => ({
               a: P(t, A.home + 0.08 * k, 0.15) * (k === 0 ? (t < g0 + 0.7 ? 1 - P(t, g0 + 0.4, 0.3, 'power1.in') : P(t, g0 + 0.7, 0.25)) : 1),
               lit: 1,
-              dy: -26 * (1 - P(t, A.home + 0.08 * k, 0.35, 'power2.out')) - (k === 0 && t < g0 + 0.7 ? 52 * P(t, g0, 0.5, 'power2.inOut') : 0) + (k === 0 && t >= g0 + 0.7 ? -10 * (1 - P(t, g0 + 0.7, 0.3, 'power2.out')) : 0),
+              dy: -26 * (1 - P(t, A.home + 0.08 * k, 0.35, 'power2.out')) - (k === 0 && t < g0 + 0.7 ? 52 * P(t, g0, 0.5, 'power2.inOut') : 0) + (k === 0 && t >= g0 + 0.7 ? -12 * (1 - P(t, g0 + 0.7, A.solOut - g0 - 0.7, 'sine.inOut')) : 0),
               scale: Math.max(1 + 0.06 * (L.pulse(t, A.home + 0.08 * k + 0.3, 1) - 1), L.pulse(t, HOUSEP[k], 0.14)),
               glow: L.env(t, A.homeMoves, 0.3, 0.5, 0.7),
             })
@@ -271,7 +319,7 @@
               stair: (n) => ({
                 lit: lit(n, t),
                 scale: Math.max(L.pulse(t, A.nameW + 0.05 * (n - 1), 'tile'), n === 3 ? L.pulse(t, A.sharp, 'tile') : 1),
-                names: nameList(n, t),
+                names: nameList(n, t).map((it) => ({ ...it, dx: lagX })),
               }),
               riser: (n) => ({
                 state: SEMI(n) ? 'semi' : 'tone',
@@ -313,11 +361,14 @@
 
             // frame-fixed type
             card.draw(t)
+            const cz = 1 + 0.025 * P(t, A.cardIn, A.cardOut + 0.38 - A.cardIn, 'sine.inOut')
+            cardWrap.setAttribute('transform', `translate(960 370) scale(${cz.toFixed(4)}) translate(-960 -370)`)
             kicker.draw(t, A.b26, A.kickOut)
+            kicker.g.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.b26, KICK_IN, 'power2.out')))} 0)`)
             degreesT.setAttribute('opacity', (P(t, A.degrees, 0.2) * (1 - P(t, A.leave, 0.2))).toFixed(3))
             degreesT.setAttribute('transform', `translate(0 ${f1(14 * (1 - P(t, A.degrees, 0.45, 'power2.out')))})`)
             solfegeT.setAttribute('opacity', (P(t, A.solfege, 0.2) * (1 - P(t, A.solOut, 0.2))).toFixed(3))
-            solfegeT.setAttribute('transform', `translate(0 ${f1(14 * (1 - P(t, A.solfege, 0.45, 'power2.out')))})`)
+            solfegeT.setAttribute('transform', `translate(${f1(sway(t, SOL_LEGS))} ${f1(14 * (1 - P(t, A.solfege, 0.45, 'power2.out')))})`)
             // the guess: traced on (0.5 s), pulsing on "always"; solid on "fixed" with its new words (0.35 s); up to
             // baseline 170 and down to 40 px on "it is" (0.5 s); gone with "movable do" at b31's end
             {
@@ -328,12 +379,12 @@
                 reveal: P(t, A.doubt, 0.5, 'power1.inOut'),
                 solid: P(t, A.fixed, 0.35),
                 mix: clamp((t - A.fixed) / 0.6),
-                scale: lerp(1, 40 / 48, up), x: 1360, baseline: lerp(260, 170, up),
+                scale: lerp(1, 40 / 48, up), x: 1360 + sway(t, PILL_LEGS), baseline: lerp(260, 170, up),
                 pulse: L.pulse(t, [A.always, A.oneSys, A.system, A.called], 'key'),
               })
               const mu = P(t, A.movable, 0.4, 'power2.out')
               movableT.setAttribute('opacity', (P(t, A.movable, 0.2) * out).toFixed(3))
-              movableT.setAttribute('transform', `translate(0 ${f1(14 * (1 - mu))})`)
+              movableT.setAttribute('transform', `translate(${f1(20 + sway(t, MOV_LEGS))} ${f1(14 * (1 - mu))})`)
             }
           })
           window.__timelines = window.__timelines || {}

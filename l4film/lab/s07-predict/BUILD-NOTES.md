@@ -263,3 +263,22 @@ Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e15
 owns s05 to s08 this round; the tools, the method and the s05/s06 notes are in lab/s05-steps/BUILD-NOTES.md
 ("Holds round"), these are s07's and s08's. Spans now: s07 169.640 to 229.508 (D 59.868), s08 to 262.670 (D 33.162).
 Targets: no hold over 0.3 s; s07 at most 1.53 s of holds (film-05 4.6), s08 at most 0.47 s (film-05 1.4).
+- Built (00:05 to 00:10), s07: creeps (ox only, sine.inOut) at F0 in b17, in F-white, in 7e/7f at F0, in CU-D and in
+  F-keys-D, none while Tavi is in frame and none after the last pull (the camera holds F0 from there: signature 2);
+  settles: Tavi's "?" 12 px (4.95 to 6.94, she is in frame), "Predict." 24 px from "Predict", "D major" 20 px from the
+  pull's landing to "named" + 0.15. Largest creep slide 6.5 px/s.
+- s08 (no camera: signature 2): "same shape" drifts 12 px right from "never" through its fade (20.67 to 21.86); "C 0"
+  settles 8 px into place as "D 2" lands (9.65 to 10.19); the tally drifts 24 px left from b25's end - 0.3 and leaves
+  over 0.45 s (was 0.2), gone by 33.07 (the last frame is 33.13).
+- Round 1 (00:18 to 00:25): s07 0.6 s of holds (0.00, 3.80, 7.80, 9.80, 58.20, 58.50; was 4.6, longest 0.9); s08 0.5 s
+  (3.30, 3.80, 6.10, 6.90, 26.20; was 1.0 inside + 0.2 at the end, longest 0.3). s08 is 0.03 s over its 0.47 target.
+- While the staircase is dimmed (s07 to 28.04) the mid layer moves in whole pixels (see s05 notes): the b17 creep from
+  "the white keys" to the pills fixed nothing, so it is gone; "Predict." now settles until FILL(1); one creep from the
+  pills into the slow push (20 px) and the F-white one stay, stepping like the slow push itself.
+- s08 round 2 change: "C 0", named again on "except C", drifts 8 px and back (sin^2, so eased both ways) until
+  "needs" + 0.3, for the gap at 26.2.
+- Round 2 (00:31 to 00:39, /dev/shm/l4lab-BC/<sid>.mp4): s07 0.5 s of holds (0.00, 3.80, 7.80, 58.20, 58.50, 0.1
+  each), under its 1.53 target; s08 0.4 s (3.30, 3.80, 6.10, 6.90, 0.1 each, Tavi in frame), under 0.47, and no final
+  hold. First and last frames of both against the before stills: max difference 0 (ends-s07-predict.jpg,
+  ends-s08-anywhere.jpg in holds/). Text sweep (step 0.25): s07 240 samples and s08 133, nothing flagged.
+  s08-settles.jpg: the "C 0" bump (25.30, 25.96, 26.62) and the tally's exit (32.40, 32.80, 33.05).

@@ -341,8 +341,10 @@
               const a = P(t, E.land, 0.15) * out
               const sc = (1 + 0.3 * (1 - P(t, E.land, 0.4, 'power2.out'))) * (E.pulse ? L.pulse(t, E.pulse, 'label', { long: true }) : 1)
               const cx = E.cx ?? 200
-              // holds round: "C 0" lands with the header and settles 8 px rightward into place as "D 2" comes
-              const dx = tDrift - (E.text === 'C 0' ? 8 * (1 - P(t, E.land, A.get + 0.1 - E.land, 'sine.inOut')) : 0)
+              // holds round: "C 0" lands with the header and settles 8 px rightward into place as "D 2" comes, and named
+              // again ("except C") it drifts 8 px back and settles home again as the header pulses on "needs"
+              const back = E.text === 'C 0' ? 8 * Math.sin(Math.PI * P(t, A.exceptC, A.needs + 0.3 - A.exceptC, 'none')) ** 2 : 0
+              const dx = tDrift - back - (E.text === 'C 0' ? 8 * (1 - P(t, E.land, A.get + 0.1 - E.land, 'sine.inOut')) : 0)
               E.el.setAttribute('opacity', a.toFixed(3))
               E.el.setAttribute('transform', `translate(${f1(cx + dx)} 228) scale(${sc.toFixed(4)}) translate(${f1(-cx)} -228)`)
             }

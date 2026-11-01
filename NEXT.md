@@ -2546,3 +2546,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   cache GC ran at 23:59 (.hf-last-gc), from a lab render: the extract cache went 34 entries 4.9 GB -> 23 entries
   2.0 GB (its policy, not a deletion by anyone; tools in /dev/shm intact). shmem now 4.9 GB. film-06's render will
   re-extract the evicted entries (slower start, the cache grows back toward ~4.9 GB). / 224 MB free.
+- 01:0x BUILDER BC DONE (report in this session; lab/s05-steps/BUILD-NOTES.md and lab/s07-predict/BUILD-NOTES.md
+  "Holds round (1 November)"). Lab clips (30 fps draft) measured, lead-verified: s05 5.1 -> 0.3 s, s06 1.9 -> 0.4,
+  s07 4.6 -> 0.5, s08 1.0 + 0.2 final -> 0.4, none over 0.1 s. Sideways ox creeps only (<= 30 px, sine.inOut, <= 7.7
+  px/s near layer), label settles where Tavi is in frame and in s08 (camera holds F0 there); s08 tally fade 0.2 ->
+  0.45 s (same start). First/last frames max diff 0 (lab/s07-predict/holds/ends-*.jpg, lab/s05-steps/holds/);
+  check 0 errors 65 warnings; clock-lint silent (lead re-ran); merc-tags 0 stale. Flags for FILM6 to judge: s07
+  0-28 s mid layer on whole pixels while dimmed (creeps at 13.30 and 19.88 step 1 px; the old push does too); new
+  single-frame events s07 15 -> 19. The root check left 24 MB in lesson-04/.transcode-cache (/ 200 MB free).
+  Waiting for builder D (s09-s11 + s14 card).

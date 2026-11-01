@@ -113,10 +113,11 @@
           // kit's -528 (L.FRAMES is read-only here): stairs 7 and 8 and the top "S" stay in frame (the "S" at baseline
           // 69, the real stair 7's tread at y 82), the black-key names at baseline 875, above the caption band
           const F_KEYS_D = { s: 1.6, ox: -380.8, oy: -440 }
-          // b17: "Predict." settles first (below); then 15 px from "the white keys" to the pills and 15 more into the slow
-          // push, the push's way (the dashed stairs move away from the pills and the ring timer)
-          creep(A.white, A.is, 15)
-          creep(A.is, A.pz + 1.0, 30)
+          // b17: "Predict." settles first (below), then 20 px from the pills into the slow push, the push's way (the dashed
+          // stairs move away from the pills and the ring timer). While the staircase is dimmed (to 27.64 + 0.4) the
+          // renderer sets this layer on whole pixels, so this creep and the next step a pixel at a time, as the slow push
+          // always has; elsewhere every creep moves by fractions of a pixel
+          creep(A.is, A.pz + 1.0, 20)
           cam.to(A.pz, 4.3, 'F-white', 'sine.inOut')                   // 7c: the slow push, from inside the predict
           creep(A.pz + 3.8, WD(1), 20, L.FRAMES['F-white'])            // b18: 20 px on from its tail (the bead's drop
           cam.to(A.now, 1.0, 'F0', 'power2.inOut')                     // 7e    stays clear of "No: it changes")
@@ -473,9 +474,9 @@
             // "Predict." fades in where it sits (C-03 item 4, decision 104: its 24 px rise settled its last 8 px in
             // whole-pixel steps); it still eases left with the lane and drifts 30 px left as it leaves
             predT.setAttribute('opacity', (P(t, A.predict, 0.3) * (1 - leave)).toFixed(3))
-            // holds round: it settles 24 px leftward from "Predict" to "the white keys", where the dashed stairs start
-            // to fill (horizontal: no whole-pixel steps)
-            const predDx = 24 * (1 - P(t, A.predict, A.white - A.predict, 'sine.inOut'))
+            // holds round: it settles 24 px leftward from "Predict" until the second dashed stair fills (horizontal: no
+            // whole-pixel steps)
+            const predDx = 24 * (1 - P(t, A.predict, FILL(1) - A.predict, 'sine.inOut'))
             predT.setAttribute('transform', `translate(${f1(-30 * lu + laneDx(t) + predDx)} 0)`)
             // the pills land on "Is it still doh ray mee?" and stay up through the listen (item 5), the lane easing left
             // in F-white; on "changes" "No" gains its check and scales, "Yes" drops away; both leave on "climb"

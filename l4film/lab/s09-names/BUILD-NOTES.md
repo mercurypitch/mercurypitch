@@ -182,3 +182,23 @@ Proof stills and probes in lab/<sid>/polish/.
   are round 4's (18 nested_media_start_basis, 3 duplicate_media, s09 and s11 file size). Text sweep: s09's EDGE '6'
   only. clock-lint silent; merc-tags --check clean on all three. Old clip-r3.mp4 files deleted; /dev/shm/l4lab-D
   removed. Round done; report sent to the director.
+
+## Holds round (1 November; polish5/BRIEF-D.md, builder D)
+
+Item 1: through the re-voiced lines, settles of the thing just named (or a slow creep in the rig) instead of a
+frozen board, in s09, s10 and s11; item 2: s14's practise card ("Singing Voice Range" swell, the gear's entrance).
+Handoffs and the clock stay put. Backups: lab/s09-names/holds/<sid>.before.html, lab/s14-recap/
+s14-recap.holds-before.html. Before clips and measures: /dev/shm/l4lab-D/<sid>-before.mp4, measure-<sid>-before/
+(s09 4.6 s inside, longest 0.4; s10 2.4 s, longest 0.3; s11 0.9 s, longest 0.3). Targets: s09 <= 1.43 s, s10 <=
+0.70 s, s11 <= 0.30 s, no hold over 0.3 s.
+- Tools (lab/s09-names/tools/): clip30.sh <sid> [tag] (draft 30 fps lab clip, one worker, to /dev/shm/l4lab-D, then
+  measure.py); simhold.mjs + simhold.py (the scene page without the Mercs, screenshots every 0.1 s, or every 1/30 s
+  for every sample phase, scored as measure.py scores a hold; it reads stiller than a clip while a host is in frame,
+  so a settle has to register there on its own).
+- s09 edits so far (clock-lint silent): the settles block after A.solOut (trap ramps as s11's drift; legs as
+  [from, to, px, ramp]): the card breathes 2.5 % (cardIn to cardOut + 0.38, sine.inOut); the kicker glides in 18 px
+  over 1.4 s (power2.out); a 20 px creep after the truck to the pull (sine.inOut, cam.slide under 10 px/s);
+  "solfege" 8 px; the bottom house's landing settles its last 12 px until "solfege" leaves; the guess pill's legs
+  (30.20 to 36.10, and b30 43.75 to 46.75); "movable do" lands over 20 px through its definition (36.10 to 39.40)
+  and takes its b30 turn (46.75 to 49.30, 0.2 s ends); the names lag 12 px on each slide and glide back.
+- 1 Nov: render r1 started (clip30.sh s09-names r1).

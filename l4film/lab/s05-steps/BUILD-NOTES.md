@@ -310,3 +310,40 @@ of a scene with lines inserted, for probe.mjs --file).
   the creeps here are horizontal (ox only: s and oy stay). Probe (no encoding): a 20 px horizontal creep over 6.3 s
   breaks a hold where a 2 % push over the same span does not. A creep's eased ends are slow, so each leg runs from
   one beat to the next, its fast middle across the still stretch, and turns only where something else moves.
+- Built (00:05 to 00:10), s05: seven creeps (ox only, sine.inOut) through `creep(t0, t1, dx, base, px)` beside the
+  three scripted moves: 0.148 to 4.858 (act1 to "a major scale") 0 to -24 px at F0; 12.118 to 18.618 (the push's
+  last 0.4 s into the pan's first 0.5 s) CU-A to CU-A - 24; 19.318 to 25.598 (the pan's last 0.5 s into the pull's
+  first 0.3 s) to CU-B - 44, px kept at -480; 26.698 to 35.878 0 to -20; 35.878 to 41.498 to +10; 41.498 to 45.428
+  to -15; 45.428 to 48.218 ("C") to 0, at rest before Tavi's leap is in frame (about 48.45). Probe (no Mercs): 9
+  hold samples, 6 of them under Tavi's landing at the end; largest creep slide 5.99 px/s.
+- s06: five creeps: 11.156 to 14.126 (group-high into the push) 0 to +12; 14.396 to 18.436 (from the push's tail to
+  "semitone.") F_GRP to F_GRP + 20; 18.436 to 22.086 (into the pull) to F_GRP - 10; 22.286 to 25.996 (the pull's
+  tail to "one.") 0 to -20; 25.996 to 28.966 (o6 - 1.38, where m06b's pass opens) back to 0. Largest creep slide
+  7.73 px/s. And "= 1 octave" drifts 8 px on (sine.inOut) from its landing (40.537) to its fade's end (41.586).
+- Round 1 clips (00:12 to 00:25, /dev/shm/l4lab-BC/<sid>-r1.mp4): s05 0.3 s of holds (12.50, 28.00, 41.40, 0.1
+  each; was 5.1, longest 0.8); s06 0.4 s (2.30, 31.40, 32.90, 36.10, all with Tavi in frame; was 1.9, longest 0.4).
+  s05's and s06's creeps move by fractions of a pixel in the renders (the strip's left edge read off the frames:
+  30 to 40 distinct fractions in 1.5 s). New single-frame "jumps" of 0.03 to 0.15 % of pixels in the creeps are the
+  draft encoder's skipped blocks catching up, not the source.
+- Found in s07's first clip: while the staircase is dimmed (its group at 25 %, s07 0.15 to 28.04) the renderer and
+  the probe set the mid layer on whole pixels, so a creep there steps a pixel at a time (the strip's edge: 240.51,
+  241.51, 242.51 ...); the scripted slow push in the before clip does the same. With the staircase at full every
+  creep is smooth. Not a kit change: noted, and the creeps there kept few and short (lab/s07-predict notes).
+- After stills (lab.mjs snapshot), s05 and s06 at 0 and the last frame against the before stills: max difference 0
+  (no pixel changed). Text sweep: s05 EDGE 'C' (18.50) and 'T' (19.25), one sample each, both inside the pan; s06
+  clean. merc-tags --check: 2 + 4 tags, 0 stale. clock-lint silent on all four.
+- Result (00:55), all four scenes, holds in the lab clips (film-05 / lab before / after; target): s05 5.3 / 5.1 / 0.3 s
+  (1.77), longest 0.8 to 0.1; s06 2.2 / 1.9 / 0.4 (0.73), longest 0.4 to 0.1; s07 4.6 / 4.6 / 0.5 (1.53), longest 0.9
+  to 0.1; s08 1.4 / 1.0 + 0.2 at the end / 0.4 (0.47), longest 0.3 to 0.1, no final hold. Every hold the brief lists
+  is gone. What is left is single 0.1 s samples: s05 12.50 (the push's landing), 28.00 and 41.40 (a creep's slow
+  start and a turn); s06 2.30, 31.40, 32.90, 36.10 and s08 3.30 to 6.90 (Tavi in frame: nothing she stands on
+  moves); s07 0.00, 3.80, 7.80 (Tavi in frame), 58.20 and 58.50 (after the last pull: signature 2).
+- First and last frames of all four against the before stills: max difference 0. `hyperframes check` (root): 0
+  errors, 65 warnings (the baseline; my four files only carry the kinds they had: nested media start, duplicate
+  media, file over 300 lines), 40/40 text checks pass. Text sweep: s05 as above, s06, s07 and s08 clean. clock-lint
+  silent; merc-tags --check 14 tags, 0 stale.
+- Evidence: lab/s05-steps/holds/ (ends-s05-steps.jpg and ends-s06-groups.jpg: before, after and difference x8 at
+  the first and last frames; measure summaries before and after; root-check.log; sweep reports) and
+  lab/s07-predict/holds/ (the same for s07 and s08, and s08-settles.jpg). Clips in /dev/shm/l4lab-BC/:
+  <sid>-before.mp4 and <sid>.mp4 (after); before stills at full size in /dev/shm/l4lab-BC/before/. Scratch variants
+  deleted.

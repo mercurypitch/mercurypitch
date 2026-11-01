@@ -73,6 +73,33 @@
           const RUN = [0, 1, 2, 3, 4, 5, 6].map((k) => at('stop-c-home', 'start', 0.45 * k))   // onsets (FACTS 68)
           A.held = RUN[6] + 0.6                               // an echo ring on ti halfway through its 1.2 s hold (FACTS 68)
 
+          /* ---------------------------------------------------------------- settles (holds round, 1 November) */
+          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
+          // (film round 5, DECISIONS 139; study rule 8). Both hosts stand in this scene, so nothing they stand on or
+          // look at moves: through each held span the thing just named breathes in brightness or a label settles,
+          // coming to rest as the next thing begins. In CU-C a stair is large enough for a slow light to register.
+          // Every breathe is sine.inOut; each light keeps its own start and rise (the kit's), the breathe only takes
+          // over where it is the brighter.
+          //   ti glows up to 35 % from "Tee", handing over to its light on "seventh" as that light passes 35 %;
+          //   after that light's peak a 60 % afterglow fades until "semitone", through "and it sits";
+          //   do's light on "doh:" keeps a 70 % afterglow that fades until the pull is under way, through "the last
+          //   step is a short one";
+          //   "1 semitone" glides its last 8 px in from the right, at rest as ti lights on "below";
+          //   after the pull the returning names ride in 8 px behind and glide to centre, re and mi as "from C" comes,
+          //   do through "from C, and stop";
+          //   while the run waits on ti for "one more note", its seven lit stairs dim by a third, lowest under the
+          //   top stair's pulse on "Take", and come back up by the landing ("land-c")
+          const RAMP = 0.3
+          const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          const glide = (t, t0, t1) => trap(clamp((t - t0) / (t1 - t0)), Math.min(RAMP, (t1 - t0) / 3) / (t1 - t0))
+          const ease = (t, t0, t1) => P(t, t0, t1 - t0, 'sine.inOut')
+          const TI_PRE = 0.35, TI_POST = 0.6, DO_POST = 0.7, RUN_DIP = 0.35
+          const tiGlow = (t) => t < A.seventh + 0.4 * TI_PRE ? TI_PRE * ease(t, A.tee, A.seventh + 0.4 * TI_PRE) : t < A.seventh + 0.4 ? 0 : TI_POST * (1 - ease(t, A.seventh, A.semitone))
+          const doGlow = (t) => t < A.dohW + 0.4 ? 0 : DO_POST * (1 - ease(t, A.dohW, A.pull + 0.6))
+          const DIP_LOW = A.take + 0.15
+          const runDip = (t) => RUN_DIP * (ease(t, A.note + 0.15, DIP_LOW) - ease(t, DIP_LOW, A.landC))
+          const nameDx = (n, t) => t < A.push + 0.8 ? 0 : -8 * (1 - (n === 1 ? glide(t, A.fromC - 0.09, A.stop + 0.15) : glide(t, A.pull + 1.26, A.fromC + 0.31)))
+
           /* ---------------------------------------------------------------- camera */
           const cam = L.frameRig(room, { from: 'F0' })
           const PULL_DUR = 1.7
@@ -198,16 +225,16 @@
               stair: (n) => {
                 // stairs 1 to 3: their names leave over the push and come back over the pull (NAME_BACK, above)
                 const edge = n <= 3 ? clamp(1 - P(t, A.push + 0.3, 0.4) + P(t, NAME_BACK[n - 1], NAME_IN)) : 1
-                const names = [{ text: SOL[n - 1], a: edge, scale: n === 7 ? L.pulse(t, NAMEP7, 'label') : n === 8 ? L.pulse(t, NAMEP8, 'label') : 1 }]
+                const names = [{ text: SOL[n - 1], a: edge, scale: n === 7 ? L.pulse(t, NAMEP7, 'label') : n === 8 ? L.pulse(t, NAMEP8, 'label') : 1, dx: n <= 3 ? nameDx(n, t) : 0 }]
                 if (n === 8) {
                   // emptied to an outline (as in the cold open), filled blue as the bead lands on it
                   const filled = t < A.land8 ? 1 - P(t, A.empty, 0.5) : P(t, A.land8, 0.2, 'power2.out')
-                  if (t < A.empty) return { lit: light(t, A.dohW, 0.4, 0.8), color: 'chrome', names }
+                  if (t < A.empty) return { lit: Math.max(light(t, A.dohW, 0.4, 0.8), doGlow(t)), color: 'chrome', names }
                   return { fill: 'outline', filled, lit: t < A.land8 ? 0 : filled * blueA(t), color: 'blue', names, scale: L.pulse(t, TOPP, 'tile') }
                 }
-                if (t >= RUN[n - 1]) return { lit: P(t, RUN[n - 1], 0.15, 'power2.out') * blueA(t), color: 'blue', names }
+                if (t >= RUN[n - 1]) return { lit: P(t, RUN[n - 1], 0.15, 'power2.out') * blueA(t) * (1 - runDip(t)), color: 'blue', names }
                 return {
-                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.below, 0.4, 0.8), light(t, A.stop)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
+                  lit: n === 7 ? Math.max(light(t, A.seventh, 0.4, 0.8), light(t, A.below, 0.4, 0.8), light(t, A.stop), tiGlow(t)) : n === 1 ? light(t, A.fromC) : 0, color: 'chrome', names,
                   scale: n === 7 ? L.pulse(t, A.sits, 'tile') : 1,
                 }
               },
@@ -255,7 +282,7 @@
             }
             // "1 semitone" (frame-fixed, in CU-C), in on "semitone" rising 12 px, out before the pull
             semiT.setAttribute('opacity', (P(t, A.semitone, 0.2) * (1 - P(t, A.out1, 0.2))).toFixed(3))
-            semiT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
+            semiT.setAttribute('transform', `translate(${f1(8 * (1 - glide(t, A.semitone, A.below + 0.1)))} ${f1(12 * (1 - P(t, A.semitone, 0.45, 'power2.out')))})`)
             {
               // in on "question." rising 12 px (on screen in CU-C); out from 0.1 s before "semitone", gone 0.1 s after
               const out = 1 - P(t, A.semitone - 0.1, 0.2, 'sine.inOut')
