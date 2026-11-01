@@ -66,6 +66,22 @@ describe('createRoomLines', () => {
     expect(lines.next('hello', { note: 'G3' })).toBe('C, G3 and {missing}.')
   })
 
+  it("hands a line's id with its words, for a room that says it aloud", () => {
+    const lines = createRoomLines<Moment, Fields>(TABLE, () => 0.5)
+
+    expect(lines.line('hello', { count: 2 })).toEqual({
+      id: 'b',
+      text: 'B: 2 of 2.',
+    })
+    // The same pick as next(), which shares its memory: the line just
+    // said is left out.
+    expect(lines.line('hello', { note: 'G3' })).toEqual({
+      id: 'c',
+      text: 'C, G3 and {missing}.',
+    })
+    expect(lines.next('hello', { count: 3 })).toBe('B: 3 of 3.')
+  })
+
   it('never says the same line twice running for a moment', () => {
     const lines = createRoomLines<Moment, Fields>(TABLE, () => 0)
     const said = Array.from({ length: 8 }, () => lines.next('again'))

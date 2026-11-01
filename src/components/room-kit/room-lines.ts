@@ -16,7 +16,9 @@
 //                         out keeps its `{name}`
 //   createRoomLines       the pick (never the line just said for that
 //                         moment, a broken random source taking the first)
-//                         and the fill, in one `next(moment, fields)`
+//                         and the fill, in one `next(moment, fields)`, or
+//                         with the line's id in `line(moment, fields)`, for
+//                         a room that says it aloud (merc-speech.ts)
 //
 // What stays in a room, because it is that room's alone:
 //   its table (the words) and its moments
@@ -37,7 +39,7 @@
 
 /** One of Merc's lines. */
 export interface MercLine {
-  /** Stable id, for a recorded voice line later. */
+  /** Stable id: a recording of the line is named by it (merc-speech.ts). */
   readonly id: string
   readonly text: string
 }
@@ -65,6 +67,11 @@ export interface RoomLine<M extends string, F extends LineFieldsOf<F>> {
 export interface RoomLines<M extends string, F extends LineFieldsOf<F>> {
   /** The next line for a moment, its fields filled in. */
   next(moment: M, fields?: F): string
+  /**
+   * The same, with the line's id: a room that says the line aloud names
+   * the recording by it (merc-speech.ts).
+   */
+  line(moment: M, fields?: F): MercLine
 }
 
 /** Every `{name}` the fields give becomes its value; the rest stay as they are. */
@@ -98,7 +105,12 @@ export function createRoomLines<M extends string, F extends LineFieldsOf<F>>(
     last.set(moment, line.id)
     return line
   }
+  const line = (moment: M, fields?: F): MercLine => {
+    const picked = pick(moment)
+    return { id: picked.id, text: fillLine(picked.text, fields ?? {}) }
+  }
   return {
-    next: (moment, fields) => fillLine(pick(moment).text, fields ?? {}),
+    next: (moment, fields) => line(moment, fields).text,
+    line,
   }
 }

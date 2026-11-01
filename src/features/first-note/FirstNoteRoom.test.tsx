@@ -284,8 +284,28 @@ async function toNextEntry(): Promise<void> {
   await settle()
 }
 
+// ── Merc's spoken lines, as calls the test can read ───────────
+
+const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+vi.mock('@/components/room-kit/merc-speech', () => ({
+  createMercSpeech: () => ({
+    say: (id: string) => {
+      spoken.said.push(id)
+    },
+    hush: () => {
+      spoken.hushed += 1
+    },
+    speaking: () => false,
+    dispose: () => {
+      spoken.hushed += 1
+    },
+  }),
+}))
+
 describe('First note', () => {
   beforeEach(() => {
+    spoken.said = []
+    spoken.hushed = 0
     vi.useFakeTimers({
       toFake: ['setTimeout', 'clearTimeout', 'performance'],
     })
@@ -453,6 +473,39 @@ describe('First note', () => {
     expect(phase()).toBe('intro')
     expect(recorded.calls).toEqual([])
     expect(songs.disposed).toBeGreaterThan(0)
+  })
+
+  it('has Merc say his opening line aloud, quiet through a run and again after a stop', async () => {
+    render(() => <FirstNoteRoom onDone={() => undefined} />)
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-stop', 'intro-entry']).toContain(spoken.said[0])
+    const before = spoken.hushed
+    await startRun()
+    // Hushed on the tap, before the mic opens.
+    expect(spoken.hushed).toBeGreaterThan(before)
+    await toTurn()
+    expect(spoken.said).toHaveLength(1)
+    fireEvent.click(screen.getByTestId('first-note-mic'))
+    expect(spoken.said).toHaveLength(2)
+    expect(spoken.said[1]).not.toBe(spoken.said[0])
+  })
+
+  it("says Learning's opening line aloud at Learning", () => {
+    setExerciseLevel('learning')
+    render(() => <FirstNoteRoom onDone={() => undefined} />)
+    expect(spoken.said).toEqual(['line-slide'])
+  })
+
+  it('says nothing aloud when the singer leaves the app mid-run', async () => {
+    render(() => <FirstNoteRoom onDone={() => undefined} />)
+    await startRun()
+    await toTurn()
+    const before = spoken.hushed
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(before)
   })
 
   it('stops the run, and says so, when a song will not play', async () => {

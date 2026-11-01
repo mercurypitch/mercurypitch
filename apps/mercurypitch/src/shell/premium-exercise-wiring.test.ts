@@ -10,8 +10,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import type * as NativeBuild from '@/lib/native-build'
+import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { registerNativeDevice } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { installPremiumExercises } from './premium-exercise-wiring'
+import { DOOR_HOLD_MS, installPremiumExercises, } from './premium-exercise-wiring'
 import { pushed, pushedStack, resetRunShell } from './run-shell-store'
 
 const build = vi.hoisted(() => ({ premium: false }))
@@ -263,5 +265,60 @@ describe('the Warm-up', () => {
     await vi.dynamicImportSettled()
     expect(art.warm).toBe(1)
     expect([art.lip, art.ng, art.long, art.preloads]).toEqual([0, 0, 0, 0])
+  })
+})
+
+describe('the tap that opens an Ear room', () => {
+  /** The leases taken on the app's one AudioContext. */
+  const leases: { owner: string; unlocks: number; released: boolean }[] = []
+  let unregister: () => void = () => undefined
+
+  beforeEach(() => {
+    leases.length = 0
+    unregister = registerNativeDevice({
+      acquireAudio: (owner: string) => {
+        const lease = { owner, unlocks: 0, released: false }
+        leases.push(lease)
+        return {
+          unlock: () => {
+            lease.unlocks += 1
+            return Promise.resolve(true)
+          },
+          release: () => {
+            lease.released = true
+          },
+        }
+      },
+    } as unknown as NativeDeviceApi)
+  })
+
+  afterEach(() => {
+    unregister()
+    vi.useRealTimers()
+  })
+
+  it.each(['home-note-lighthouse', 'first-note-stage', 'leap-cliffs'] as const)(
+    "starts the clock for Merc's opening line in %s, and lets it go once the room holds its own",
+    (id) => {
+      vi.useFakeTimers()
+      build.premium = true
+      installPremiumExercises().openExercise?.(id)
+
+      // Inside the tap: iOS starts the clock from nowhere else.
+      expect(leases).toEqual([
+        { owner: 'room-door', unlocks: 1, released: false },
+      ])
+      vi.advanceTimersByTime(DOOR_HOLD_MS - 1)
+      expect(leases[0].released).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(leases[0].released).toBe(true)
+    },
+  )
+
+  it('starts no clock for a room Merc says nothing in as it opens', () => {
+    build.premium = true
+    installPremiumExercises().openExercise?.('long-note-lantern')
+
+    expect(leases).toEqual([])
   })
 })

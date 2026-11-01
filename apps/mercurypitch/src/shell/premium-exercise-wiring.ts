@@ -17,6 +17,11 @@
 // First note's tap does the same: its theatre and its songs ship with the
 // app and load as the room opens. So does Leap's: its cliffs are drawn.
 //
+// In those three Ear rooms Merc says his opening line aloud as the room
+// opens (room-kit merc-speech.ts), through the app's one AudioContext,
+// which iOS starts only inside a tap. The room opens a frame or more after
+// the tap that opened it, so the tap starts the clock (startRoomClock).
+//
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
 // the conditional below folds to `{}` and `install` is dead code in that
@@ -28,6 +33,7 @@ import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
+import { nativeDeviceApi } from '@/stores/native-shell-store'
 import type { PushedScreen } from './pushed-screen-ids'
 import { pushScreen } from './run-shell-store'
 
@@ -91,8 +97,36 @@ export function preloadExercise(id: PremiumExerciseId): void {
   }
 }
 
+/** The rooms whose Merc says his opening line aloud as they open. */
+const SPEAKS_AS_IT_OPENS: ReadonlySet<PremiumExerciseId> = new Set([
+  EXERCISE_HOME_NOTE_LIGHTHOUSE,
+  EXERCISE_FIRST_NOTE_STAGE,
+  EXERCISE_LEAP_CLIFFS,
+])
+
+/**
+ * How long the opening tap holds the clock, ms. The room takes a lease of
+ * its own as it mounts (useExerciseCapture), well inside it.
+ */
+export const DOOR_HOLD_MS = 5000
+
+/**
+ * Start the app's clock on the tap that opens a room Merc speaks in, so
+ * his opening line finds it running. The tap holds it under a lease of its
+ * own until the room has taken one, then lets go: a room that never opened
+ * leaves it to park. Outside the native app there is no shared clock, and
+ * a browser's room starts its own.
+ */
+function startRoomClock(): void {
+  const lease = nativeDeviceApi()?.acquireAudio('room-door')
+  if (lease === undefined) return
+  void lease.unlock()
+  setTimeout(() => lease.release(), DOOR_HOLD_MS)
+}
+
 /** Open an exercise: its art starts loading and the shell pushes its screen. */
 export function openPremiumExercise(id: PremiumExerciseId): void {
+  if (SPEAKS_AS_IT_OPENS.has(id)) startRoomClock()
   preloadExercise(id)
   pushScreen(SCREENS[id])
 }

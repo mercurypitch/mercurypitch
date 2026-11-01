@@ -12,7 +12,8 @@
 // request instead, for every picture in every premium room's folder, at
 // any depth (Echo's, Ng slides', Lip roll's and Home note's are in an art/
 // folder of their own), and every voice file (Merc's sung "ooh" set for Echo's
-// calls, in its voice/ folder; vite.config.ts, PREMIUM_VOICES). The Cloud
+// calls, in its voice/ folder, and his spoken opening lines in the Ear
+// rooms' voice/ folders; vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
 // same way, and so do the Ear Lab with Merc's pictures and serif
 // (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch),
@@ -29,8 +30,8 @@ import { describe, expect, it } from 'vitest'
 const FEATURES = fileURLToPath(
   new URL('../../../src/features/', import.meta.url),
 )
-/** The premium rooms that paint pictures today, by folder, the Warm-up's
- *  path, and the Ear Lab with Merc (Merc's stills). */
+/** The premium rooms that paint pictures or speak today, by folder, the
+ *  Warm-up's path, and the Ear Lab with Merc (Merc's stills). */
 const ROOMS = [
   'long-note',
   'echo',
@@ -38,6 +39,8 @@ const ROOMS = [
   'lip-roll',
   'warm-up',
   'home-note',
+  'first-note',
+  'leap',
   'ear-lab/merc',
 ] as const
 
@@ -115,6 +118,17 @@ describe("the premium rooms' pictures in a native build", () => {
       (file) => file.room === 'echo' && file.name.endsWith('.mp3'),
     )
     expect(voices.length).toBe(10)
+  })
+
+  it("has Merc's spoken lines for each Ear room to fold", () => {
+    for (const room of ['home-note', 'first-note', 'leap'] as const) {
+      const lines = PICTURES.filter(
+        (file) =>
+          file.room === room &&
+          /(?:^|\/)merc-says-[a-z-]+\.mp3$/u.test(file.name),
+      )
+      expect(lines.length, room).toBe(3)
+    }
   })
 
   it('resolves every one of them to nothing in the store build', async () => {

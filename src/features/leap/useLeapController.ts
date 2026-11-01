@@ -32,6 +32,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createMercSpeech } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
@@ -67,6 +68,7 @@ import type { LeapSummary } from './leap-run'
 import { callMoment, keepLeapRun, landedMoment, missedMoment, resultMoment, summarizeRun, } from './leap-run'
 import type { LeapLineFields, LeapMoment } from './merc-lines'
 import { createLeapLines } from './merc-lines'
+import { LEAP_SPOKEN } from './merc-spoken'
 
 /** The chip while the singer sings. */
 export const YOUR_TURN = 'Your turn'
@@ -161,6 +163,11 @@ export function useLeapController(
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
   const random = options.random ?? Math.random
   const lines = createLeapLines(random)
+  // His opening lines aloud, through the room's clock (room-kit
+  // merc-speech.ts).
+  const speech = createMercSpeech(LEAP_SPOKEN, {
+    audio: () => capture.audio(),
+  })
 
   const [state, setState] = createSignal<LeapState>(INITIAL_LEAP_STATE)
   const [line, setLine] = createSignal('')
@@ -179,11 +186,25 @@ export function useLeapController(
     setState((current) => leapReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (moment: LeapMoment, fields?: LeapLineFields): void => {
-    setLine(lines.next(moment, fields))
+  const say = (
+    moment: LeapMoment,
+    fields?: LeapLineFields,
+    aloud = false,
+  ): void => {
+    const said = lines.line(moment, fields)
+    setLine(said.text)
+    // He says aloud only what the bubble shows, and only when asked
+    // to: any other line hushes him.
+    if (aloud) speech.say(said.id)
+    else speech.hush()
   }
-  const sayIntro = (): void => {
-    say(untrack(level.preset).mercSingsBoth ? 'introMatch' : 'intro')
+  /** His opening line, aloud unless the singer has just left the app. */
+  const sayIntro = (aloud = true): void => {
+    say(
+      untrack(level.preset).mercSingsBoth ? 'introMatch' : 'intro',
+      undefined,
+      aloud,
+    )
   }
 
   // ── Timers that belong to the screen (room-kit room-life.ts) ───
@@ -604,6 +625,8 @@ export function useLeapController(
   const start = (): void => {
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    // He stops talking before the mic opens.
+    speech.hush()
     // A leap still sounding from the result stops with the tap.
     endReplay()
     stopSound()
@@ -680,9 +703,11 @@ export function useLeapController(
    * run is dropped, as the mic's tap drops it: no result, no best.
    */
   function leave(): void {
+    // Nothing he says is heard behind their back either.
+    speech.hush()
     if (!isRunPhase(phase())) return
     dropRun()
-    sayIntro()
+    sayIntro(false)
   }
 
   // ── The screen's life ──────────────────────────────────────
@@ -701,13 +726,16 @@ export function useLeapController(
     mic: {
       exercise: EXERCISE_LEAP_CLIFFS,
       on: () => isRunPhase(phase()) && phase() !== 'starting',
-      died: stop,
+      // A mic that died drops the run as leaving does, Merc silent: a call
+      // or another app may have the sound, and his line would take it back.
+      died: leave,
     },
   })
 
   onCleanup(() => {
     stopLoop()
     stopSound()
+    speech.dispose()
     life.dispose()
   })
 

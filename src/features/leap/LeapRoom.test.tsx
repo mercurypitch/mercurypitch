@@ -168,8 +168,28 @@ function toTurn(): void {
   expect(phase()).toBe('sing')
 }
 
+// ── Merc's spoken lines, as calls the test can read ───────────
+
+const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+vi.mock('@/components/room-kit/merc-speech', () => ({
+  createMercSpeech: () => ({
+    say: (id: string) => {
+      spoken.said.push(id)
+    },
+    hush: () => {
+      spoken.hushed += 1
+    },
+    speaking: () => false,
+    dispose: () => {
+      spoken.hushed += 1
+    },
+  }),
+}))
+
 describe('Leap', () => {
   beforeEach(() => {
+    spoken.said = []
+    spoken.hushed = 0
     vi.useFakeTimers({
       toFake: ['setTimeout', 'clearTimeout', 'performance'],
     })
@@ -349,6 +369,40 @@ describe('Leap', () => {
     fireEvent.click(screen.getByTestId('leap-mic'))
     expect(phase()).toBe('intro')
     expect(recorded.calls).toEqual([])
+  })
+
+  it('has Merc say his opening line aloud, quiet through a run and again after a stop', async () => {
+    setExerciseLevel('singer')
+    render(() => <LeapRoom onDone={() => undefined} />)
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-ledges', 'intro-lantern']).toContain(spoken.said[0])
+    const before = spoken.hushed
+    await startRun()
+    // Hushed on the tap, before the mic opens.
+    expect(spoken.hushed).toBeGreaterThan(before)
+    toTurn()
+    expect(spoken.said).toHaveLength(1)
+    fireEvent.click(screen.getByTestId('leap-mic'))
+    expect(spoken.said).toHaveLength(2)
+    expect(spoken.said[1]).not.toBe(spoken.said[0])
+  })
+
+  it("says Learning's opening line aloud at Learning", () => {
+    setExerciseLevel('learning')
+    render(() => <LeapRoom onDone={() => undefined} />)
+    expect(spoken.said).toEqual(['match-both'])
+  })
+
+  it('says nothing aloud when the singer leaves the app mid-run', async () => {
+    render(() => <LeapRoom onDone={() => undefined} />)
+    await startRun()
+    toTurn()
+    const before = spoken.hushed
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(before)
   })
 
   it('shows the blocked notice when the mic is refused', async () => {
