@@ -1,5 +1,5 @@
 // ============================================================
-// The reveal, on screen: the card, the twin found, Share and Continue
+// The reveal, on screen: the card, the twin on its beat, Share and Continue
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -15,7 +15,19 @@ import type { ShareWays } from './reveal-share'
 import { revealPayload } from './reveal-share'
 import { RevealView } from './RevealView'
 import type { RevealController } from './useReveal'
-import { PROUD_MS, useReveal } from './useReveal'
+import { preloadTwin, PROUD_MS, TWIN_MS, useReveal } from './useReveal'
+
+/** The light taps in the hand, counted. */
+const hand = vi.hoisted(() => ({ taps: 0 }))
+vi.mock('@/lib/haptics', () => ({
+  haptics: {
+    tapLight: () => {
+      hand.taps += 1
+    },
+    success: () => undefined,
+    warning: () => undefined,
+  },
+}))
 
 vi.mock('@/lib/merc/stage', () => ({
   mountMercStage: () => ({
@@ -56,9 +68,10 @@ function show(
   range: RangeResult,
   ways: ShareWays,
   onContinue: () => void = () => undefined,
+  still = false,
 ): void {
   const Harness = (): JSX.Element => {
-    const reveal = useReveal({ still: () => false, ways })
+    const reveal = useReveal({ still: () => still, ways })
     controller = reveal
     reveal.arrive()
     return (
@@ -95,7 +108,12 @@ function ways(sheet: boolean, copy: boolean) {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  hand.taps = 0
 })
+
+/** The twin's card, and whether it has come in. */
+const twinCard = (): string | null =>
+  q('onboarding-twin-card')?.getAttribute('data-shown') ?? null
 
 afterEach(() => {
   view?.unmount()
@@ -105,18 +123,50 @@ afterEach(() => {
 })
 
 describe('the reveal', () => {
-  it('shows the voice, the range, its type and the twin, face and name, at once', () => {
+  it('heads the card with the voice type, the range in words under it', () => {
     show(E2_G4, ways(true, true))
 
     expect(view?.container.querySelector('h2')?.textContent).toBe(
-      ONBOARDING_COPY.revealTitle,
+      "You're a baritone",
     )
-    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
-    expect(q('onboarding-card-type')?.textContent).toBe('Baritone')
+    expect(q('onboarding-card-type')?.textContent).toBe("You're a baritone")
+    expect(q('onboarding-card-range')?.textContent).toBe(
+      'E2 to G4 \u00b7 about two octaves',
+    )
+    expect(q('onboarding-line')?.textContent).toBe(ONBOARDING_COPY.voiceprint)
+  })
+
+  it('brings the twin in as its own card as the print finishes, with Merc and a tap in the hand', () => {
+    show(E2_G4, ways(true, true))
+    // Its place is kept, its name already text, but it has not come in.
+    expect(twinCard()).toBe('off')
+    expect(q('onboarding-twin')?.textContent).toBe(singerForRange(E2_G4))
+    expect(controller?.mercState()).toBe('listen')
+    expect(hand.taps).toBe(0)
+
+    vi.advanceTimersByTime(TWIN_MS - 1)
+    expect(twinCard()).toBe('off')
+    vi.advanceTimersByTime(1)
+
+    expect(twinCard()).toBe('on')
+    expect(controller?.mercState()).toBe('celebrate')
+    expect(hand.taps).toBe(1)
+    expect(
+      q('onboarding-twin-card')?.textContent?.includes(
+        `You share a range with ${singerForRange(E2_G4) ?? ''}.`,
+      ),
+    ).toBe(true)
     // No button to find it, and no blank figure standing in for it.
     expect(q('onboarding-find-twin')).toBeNull()
-    expect(q('onboarding-twin')?.textContent).toBe(singerForRange(E2_G4))
-    expect(q('onboarding-line')?.textContent).toBe(ONBOARDING_COPY.voiceprint)
+  })
+
+  it('shows it all at once under reduced motion', () => {
+    show(E2_G4, ways(true, true), () => undefined, true)
+
+    expect(twinCard()).toBe('on')
+    // His cheer without the jumping: the lock's smile (merc-moves.ts).
+    expect(controller?.mercState()).toBe('lock')
+    expect(hand.taps).toBe(1)
   })
 
   it('watches the card arrive, then is proud of it', () => {
@@ -128,19 +178,26 @@ describe('the reveal', () => {
     expect(controller?.mercState()).toBe('celebrate')
   })
 
-  it('has no type and no twin row for a range no voice type overlaps', () => {
+  it('has no type and no twin card for a range no voice type overlaps', () => {
     show(UNDER_ALL, ways(true, true))
 
-    expect(q('onboarding-card-range')?.textContent).toBe('G#0\u2013D#1')
-    expect(q('onboarding-card-type')).toBeNull()
+    expect(q('onboarding-card-type')?.textContent).toBe(
+      ONBOARDING_COPY.revealTitle,
+    )
+    expect(q('onboarding-card-range')?.textContent).toBe(
+      'G#0 to D#1 \u00b7 under an octave',
+    )
+    expect(q('onboarding-twin-card')).toBeNull()
     expect(q('onboarding-twin')).toBeNull()
   })
 
-  it('shares the twin the card shows, through the share sheet', async () => {
+  it('shares the twin the card shows, bringing it in first, through the share sheet', async () => {
     const w = ways(true, true)
     show(E2_G4, w)
 
     q('onboarding-share')?.click()
+    // What the sheet names is on screen before it opens.
+    expect(twinCard()).toBe('on')
     await vi.waitFor(() => expect(w.sheet).toHaveBeenCalledTimes(1))
 
     expect(q('onboarding-twin')?.textContent).toBe(singerForRange(E2_G4))
@@ -199,5 +256,30 @@ describe('the reveal', () => {
     q('onboarding-continue')?.click()
 
     expect(onContinue).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("the twin's portrait", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is fetched ahead, at the size its face draws it, and not for a range with no twin', () => {
+    const fetched: string[] = []
+    vi.stubGlobal(
+      'Image',
+      class {
+        decoding = ''
+        set src(url: string) {
+          fetched.push(url)
+        }
+      },
+    )
+
+    preloadTwin(E2_G4)
+    preloadTwin(UNDER_ALL)
+
+    expect(fetched).toHaveLength(1)
+    expect(fetched[0]).toMatch(/^\/legends\/mid\/.+\.webp$/u)
   })
 })

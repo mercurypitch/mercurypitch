@@ -12,6 +12,12 @@
 // (beat-swap.css), so the old picture of him is not drawn: one Merc on
 // screen, not two.
 //
+// Not across a card. Into the reveal, and out of it, Merc would fly over the
+// voiceprint card on his way (from the ladder's side to the guide slot under
+// the cards) and sit in the twin's empty place for frames, a double
+// exposure. There the swap is the cross-fade, and he fades with the beat
+// at his new place instead of moving (`flies` false).
+//
 // Reduced motion: no move, and the swap is one 150 ms cross-fade.
 //
 // A RUNNING VIEW TRANSITION TAKES EVERY TAP. Measured on Chromium 148 (19
@@ -66,8 +72,12 @@ export interface BeatSwapDeps {
 }
 
 export interface BeatSwap {
-  /** The next beat, made by `change`, shown as `how` says. */
-  swap: (change: () => void, how: SwapHow) => void
+  /**
+   * The next beat, made by `change`, shown as `how` says. Merc moves from
+   * his old place to his new one unless `flies` is false: then the swap is
+   * the cross-fade, and he fades in with the beat where it puts him.
+   */
+  swap: (change: () => void, how: SwapHow, flies?: boolean) => void
   /** The layer has gone: an old beat's picture still fading goes with it. */
   dispose: () => void
 }
@@ -195,7 +205,7 @@ export function createBeatSwap(deps: BeatSwapDeps): BeatSwap {
     move(from)
   }
 
-  const swap = (change: () => void, how: SwapHow): void => {
+  const swap = (change: () => void, how: SwapHow, flies = true): void => {
     const old = deps.beat()
     if (old === undefined || typeof old.animate !== 'function') {
       change()
@@ -204,6 +214,14 @@ export function createBeatSwap(deps: BeatSwapDeps): BeatSwap {
     }
     if (deps.reduced()) {
       fade(change, SWAP_REDUCED_MS, null)
+      deps.done?.('fade')
+      return
+    }
+    if (!flies) {
+      // Gone from the old beat's picture, he fades in with the new beat.
+      moving?.cancel()
+      moving = null
+      fade(change, SWAP_MS, null)
       deps.done?.('fade')
       return
     }

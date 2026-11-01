@@ -82,8 +82,9 @@ export const ONBOARDING_COPY = {
   seeVoice: 'See my voice',
 
   // ── The reveal (S7b beat 5) ──
+  /** The layer's name on the reveal, and the card's headline for a range
+   *  no voice type overlaps. */
   revealTitle: 'Your voice',
-  yourRange: 'Your range',
   twinLabel: 'Your voice twin',
   voiceprint: "That's your voiceprint. It changes as you practice.",
   continue: 'Continue',
@@ -199,6 +200,49 @@ export function rangeSpan(low: string, high: string): string {
 /** "E2 to G4. That's your range today." Ranges move, hence "today". */
 export function rangeLine(low: string, high: string): string {
   return `${rangeWords(low, high)}. That's your range today.`
+}
+
+/**
+ * The reveal's headline: the voice type the range overlaps most, as plain
+ * words ("You're a baritone", "You're an alto"), or "Your voice" when it
+ * overlaps none.
+ */
+export function voiceHeadline(type: string | null): string {
+  if (type === null) return ONBOARDING_COPY.revealTitle
+  const article = /^[aeiou]/iu.test(type) ? 'an' : 'a'
+  return `You're ${article} ${type.toLowerCase()}`
+}
+
+/**
+ * How wide a range is, in octaves a non-singer can picture: "about two
+ * octaves", rounded to the nearest half, a tie going down so a range is
+ * never said wider than it is; under twelve semitones, "under an octave".
+ */
+export function spanWords(semitones: number): string {
+  if (semitones < 12) return 'under an octave'
+  const halves = Math.ceil(semitones / 6 - 0.5)
+  const whole = Math.floor(halves / 2)
+  const half = halves % 2 === 1
+  if (whole === 1)
+    return half ? 'about an octave and a half' : 'about an octave'
+  const count = COUNTS[whole] ?? String(whole)
+  return half ? `about ${count} and a half octaves` : `about ${count} octaves`
+}
+
+/** "F2 to G4 · about two octaves": the reveal's range, in words. */
+export function rangeSubline(range: {
+  readonly lowNote: string
+  readonly highNote: string
+  readonly lowMidi: number
+  readonly highMidi: number
+}): string {
+  const words = rangeWords(range.lowNote, range.highNote)
+  return `${words} \u00b7 ${spanWords(range.highMidi - range.lowMidi)}`
+}
+
+/** "You share a range with David Bowie.": the twin's card, its last line. */
+export function twinLine(twin: string): string {
+  return `You share a range with ${twin}.`
 }
 
 /** The share sheet's line: the twin when there is one, else the range. */

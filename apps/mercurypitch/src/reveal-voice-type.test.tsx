@@ -77,17 +77,21 @@ describe("the onboarding's reveal of a Bass/Baritone tie", () => {
   it('reads Bass-baritone under E2 to G4 and shows its twin', () => {
     show(rangeFromEnds(40, 67))
 
-    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
-    expect(q('onboarding-card-type')?.textContent).toBe('Bass-baritone')
+    expect(q('onboarding-card-range')?.textContent).toBe(
+      'E2 to G4 \u00b7 about two octaves',
+    )
+    expect(q('onboarding-card-type')?.textContent).toBe(
+      "You're a bass-baritone",
+    )
     expect(q('onboarding-twin')?.textContent).toBe('Paul Robeson')
   })
 
   it('keeps Bass for E2 to E4 and Baritone for G2 to G4', () => {
     show(rangeFromEnds(40, 64))
-    expect(q('onboarding-card-type')?.textContent).toBe('Bass')
+    expect(q('onboarding-card-type')?.textContent).toBe("You're a bass")
     view?.unmount()
 
     show(rangeFromEnds(43, 67))
-    expect(q('onboarding-card-type')?.textContent).toBe('Baritone')
+    expect(q('onboarding-card-type')?.textContent).toBe("You're a baritone")
   })
 })

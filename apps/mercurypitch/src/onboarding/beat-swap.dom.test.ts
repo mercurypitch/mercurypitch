@@ -313,6 +313,39 @@ describe('a beat giving way to the next', () => {
     expect(played.some((p) => p.target === page.merc)).toBe(false)
   })
 
+  it('never flies Merc over the reveal: a cross-fade, and he comes with the beat', () => {
+    standInAnimate()
+    standInViewTransition()
+    const page = layerWith('range')
+    const done: SwapDone[] = []
+    const swap = createBeatSwap({
+      layer: () => page.layer,
+      beat: page.beat,
+      merc: () => page.merc,
+      reduced: () => false,
+      done: (how) => done.push(how),
+    })
+
+    swap.swap(
+      () => page.show('reveal', new DOMRect(16, 600, 76, 76)),
+      'view',
+      false,
+    )
+
+    // No View Transition to name him in, and no move across the card.
+    expect(transitions).toHaveLength(0)
+    expect(done).toEqual(['fade'])
+    expect(page.beat()?.dataset.testid).toBe('onboarding-reveal')
+    expect(played.some((p) => p.target === page.merc)).toBe(false)
+    // The new beat, Merc in it, fades in; the old one's picture, without
+    // him, fades out.
+    const fadeIn = played.find((p) => p.target === page.beat())
+    expect(fadeIn?.keyframes.map((k) => k.opacity)).toEqual([0, 1])
+    expect(page.beat()?.contains(page.merc)).toBe(true)
+    const ghost = page.layer.querySelector(`[${GHOST_ATTR}]`)
+    expect(ghost?.querySelector(`.${MERC_CLASS}`)).toBeNull()
+  })
+
   it('takes a picture still fading with it when the layer goes', () => {
     standInAnimate()
     const page = layerWith('first-note')

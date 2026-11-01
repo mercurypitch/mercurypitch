@@ -408,7 +408,9 @@ describe('NativeOnboarding', () => {
     expect(layer()?.getAttribute('aria-label')).toBe(
       ONBOARDING_COPY.revealTitle,
     )
-    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
+    expect(q('onboarding-card-range')?.textContent).toBe(
+      'E2 to G4 \u00b7 about two octaves',
+    )
     expect(said()).toBe(ONBOARDING_COPY.voiceprint)
     q('onboarding-continue')?.click()
     expect(beat()).toBe('keep')
@@ -776,7 +778,9 @@ describe('a range this phone already keeps', () => {
     q('onboarding-see-saved')?.click()
 
     expect(beat()).toBe('reveal')
-    expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
+    expect(q('onboarding-card-range')?.textContent).toBe(
+      'E2 to G4 \u00b7 about two octaves',
+    )
     expect(q('onboarding-twin')?.textContent).toBe('Paul Robeson')
     expect(s.calls.acquire).toBe(1)
     q('onboarding-continue')?.click()
