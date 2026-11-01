@@ -80,21 +80,23 @@ import { StemMixer } from '@/components/StemMixer'
 import { whenBundledExamplesSeeded } from '@/features/karaoke-night/seed-examples'
 import { roomName } from '@/features/rooms/room-names'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
-import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { NO_LYRIC_GLANCE } from '@/lib/lyric-glance'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import type { NativeMediaAction, NativeNowPlaying, PinnedRoomToggle, } from '@/stores/native-shell-store'
+import type { NativeMediaAction, NativeNowPlaying, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { arrivalCue, arrivalSong } from './karaoke-arrival'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
 import { createKaraokeNotesOption } from './karaoke-notes-option'
+import { pinnedRoomToggle } from './karaoke-pinned-toggle'
 import styles from './karaoke-room.module.css'
+import { createRoomFind } from './karaoke-room-find'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
+import { KaraokeFindSheet } from './KaraokeFindSheet'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
@@ -345,6 +347,18 @@ export const KaraokeRoomStage: Component = () => {
     void cueSong(song, { autoPlay: isPlaying() })
   }
 
+  // Find by singing (karaoke-room-find.ts), from the Songs sheet.
+  const find = createRoomFind({
+    songs: library,
+    clearStage: () => {
+      setLibraryOpen(false)
+      mixer()?.pause()
+    },
+    play: (song, seekSec) => {
+      void cueSong(song, { autoPlay: true, seekSec })
+    },
+  })
+
   // Manage songs (plan S8 §5): the studio, pushed over the room. The song
   // stops first; the studio is a list to work on, not a stage.
   const openStudio = (): void => {
@@ -354,6 +368,7 @@ export const KaraokeRoomStage: Component = () => {
 
   // Back closes what the room has open over its stage before it leaves.
   const closeRoomOverlay = (): boolean => {
+    if (find.close()) return true
     if (pickerOpen()) {
       setPickerOpen(false)
       return true
@@ -383,42 +398,6 @@ export const KaraokeRoomStage: Component = () => {
     return Math.round(
       (controls.musicLevel() / MUSIC_LEVEL.spec.defaultValue) * 100,
     )
-  }
-
-  // The one option beside the gear, as it is now. The notes are there for
-  // every song their row is there for, with a ring while they are read.
-  const pinnedToggle = (): PinnedRoomToggle | null => {
-    switch (karaokePinned()) {
-      case 'lyrics-size':
-        return {
-          icon: 'lyrics-size',
-          label: `Text size: ${KARAOKE_LYRICS_SIZE_LABELS[karaokeLyricsSize()]}`,
-          onToggle: () => {
-            setKaraokeLyricsSize(cycleLyricsSize(karaokeLyricsSize()))
-          },
-        }
-      case 'notes':
-        return notes.offered()
-          ? {
-              icon: 'notes',
-              label: 'Show notes over the lyrics',
-              pressed: notes.on(),
-              progress: notes.finding() ? notes.progress() : undefined,
-              onToggle: notes.toggle,
-            }
-          : null
-      case 'play-next':
-        return {
-          icon: 'play-next',
-          label: 'Play the next song automatically',
-          pressed: karaokePlayNext(),
-          onToggle: () => {
-            setKaraokePlayNext(!karaokePlayNext())
-          },
-        }
-      default:
-        return null
-    }
   }
 
   const pause = (): void => {
@@ -467,7 +446,7 @@ export const KaraokeRoomStage: Component = () => {
           setPickerOpen(true)
         },
         closeRoomOverlay,
-        pinnedToggle,
+        pinnedToggle: () => pinnedRoomToggle(notes),
       }),
     )
   })
@@ -543,6 +522,7 @@ export const KaraokeRoomStage: Component = () => {
       setPickerOpen(false)
       setOptionsOpen(false)
       setLibraryOpen(false)
+      find.close() // its listening holds a mic of its own
     },
     onExit: restoreMicSoon,
   })
@@ -577,6 +557,7 @@ export const KaraokeRoomStage: Component = () => {
       return
     }
     clearTimeout(restoreTimer)
+    find.close() // its listening holds a mic of its own
     const controls = mixer()
     if (controls === null) return
     if (!backgroundPlay() && controls.playing()) controls.pause()
@@ -737,7 +718,7 @@ export const KaraokeRoomStage: Component = () => {
               requestedStems={{ vocal: true, instrumental: true }}
               preset="performance"
               showStageSettings={false}
-              autoPlay={entry.autoPlay}
+              autoPlay={entry.autoPlay && !find.isOpen()}
               initialSeekSec={entry.seekSec}
               hosted={hostingFor(entry)}
             />
@@ -758,6 +739,12 @@ export const KaraokeRoomStage: Component = () => {
         songs={library}
         currentId={() => cue()?.song.sessionId ?? null}
         onPick={pick}
+        onFind={find.open}
+      />
+      <KaraokeFindSheet
+        isOpen={find.isOpen()}
+        close={() => find.close()}
+        host={find.host}
       />
       <KaraokeRoomOptions
         isOpen={optionsOpen()}

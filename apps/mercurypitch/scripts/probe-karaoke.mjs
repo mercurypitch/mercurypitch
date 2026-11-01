@@ -13,6 +13,8 @@
 //     (audit K7), and a pick cues that song. Import heads it in a build that
 //     imports songs and is nowhere in the store's; probe-karaoke-import.mjs
 //     walks an import through;
+//   - Find by singing, at the library's head, takes over from it and lists
+//     the songs it listens for, and its Close closes it;
 //   - the gear opens the options, and the one option pinned beside the gear
 //     is the singer's to choose, to use and to change (D4 A, owner 27 Sep);
 //   - "Manage songs" pushes the studio, the old Karaoke tab. Back returns to
@@ -399,6 +401,55 @@ export async function walkKaraoke(browser, args, frame, kit) {
     const picked = await cued(next.title, 'a pick from the library')
     steps.push(
       `karaoke library: ${library.rows.length} songs under ${library.groups.join(', ')}, titles not files, "${first.title}" marked, Import ${library.imports ? 'offered' : 'absent'}; a pick cues "${picked.title}" (${picked.button})`,
+    )
+
+    // ── Find by singing (KaraokeFindSheet.tsx) ─────────────────
+    // It heads the library, takes over from it, lists the room's songs it
+    // listens for (or, once the walk's test tone has been heard, the closest
+    // ones), and goes as its Close is tapped (its listening, and the mic,
+    // with it: the sheet's own suite holds that).
+    at = 'find by singing'
+    await page.locator('[data-testid="karaoke-songline"]').tap()
+    await visible('[data-testid="karaoke-library"]')
+    await page.locator('[data-testid="karaoke-find-open"]').tap()
+    await hidden('[data-testid="karaoke-library"]')
+    await visible('[data-testid="karaoke-find-status"]')
+    const listed = () =>
+      document.querySelectorAll(
+        '[data-testid="karaoke-find-song"], [data-testid="karaoke-find-match"]',
+      ).length > 0
+    await page
+      .waitForFunction(listed, null, { timeout: stepTimeoutMs })
+      .catch(() => {
+        throw new Error('find by singing lists no songs')
+      })
+    await settle()
+    const find = await page.evaluate(() => {
+      const sheet = document.querySelector('[data-testid="karaoke-find"]')
+      return {
+        status:
+          sheet?.querySelector('[data-testid="karaoke-find-status"]')
+            ?.textContent ?? '',
+        songs: sheet?.querySelectorAll('[data-testid="karaoke-find-song"]')
+          .length,
+        matches: sheet?.querySelectorAll('[data-testid="karaoke-find-match"]')
+          .length,
+      }
+    })
+    if ((find.songs ?? 0) < library.rows.length && (find.matches ?? 0) === 0) {
+      throw new Error(`find by singing: ${JSON.stringify(find)}`)
+    }
+    await shoot(page, ctx, 'karaoke-find')
+    read.push(
+      await sideways(
+        'find by singing',
+        '[role="dialog"][aria-label="Find by singing"]',
+      ),
+    )
+    await page.locator('[data-testid="karaoke-find-close"]').tap()
+    await hidden('[data-testid="karaoke-find"]')
+    steps.push(
+      `karaoke find by singing: "${find.status}", ${find.songs} songs listened for, ${find.matches} close; Close closes it`,
     )
 
     // ── The options, and the one pinned beside the gear (D4 A) ─

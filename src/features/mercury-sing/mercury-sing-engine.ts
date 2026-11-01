@@ -5,35 +5,36 @@
 // The headless controller behind the stage: owns its own AudioEngine +
 // LivePitchBuffer (exactly like ShazamListen), runs the melody matcher over
 // the live contour on a timer, feeds fused scores to the auto-open policy,
-// and on an open decision launches Karaoke Night through the shared launch
-// contract — seeked to where the singer already is. The stage component is
-// a thin skin over the signals exposed here; nothing in this file renders.
+// and on an open decision hands the song to its host to open (Karaoke Night
+// on the web, the room's stage on the phone) — seeked to where the singer
+// already is. The stage component is a thin skin over the signals exposed
+// here; nothing in this file renders.
 //
 // Also the librarian: on start it loads persisted stem fingerprints and
-// quietly fingerprints any completed separation that has none yet, so the
-// first Mercury Sing session teaches the library while the user sings.
+// quietly fingerprints any song that has none yet, so the first Mercury Sing
+// session teaches the library while the user sings. Which songs, how one is
+// fingerprinted and how one opens are its host's (mercury-sing-host.ts): the
+// web's separated songs and Karaoke Night, or the native Karaoke room's.
 
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { getStemBlobUrl, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { saveStemFingerprintData } from '@/db/services/uvr-service'
 import { acquireWakeWordHold, speechActiveWithin, } from '@/features/voice-control/voice-command-registry'
 import { AudioEngine } from '@/lib/audio-engine'
 import { stripAudioExtension } from '@/lib/audio-file-name'
 import { audioRegistry } from '@/lib/audio-registry'
-import { karaokeNightSessionUrl } from '@/lib/karaoke-night-link'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
 import { addStemFingerprint, hasStemFingerprint, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { matchPitchContour } from '@/lib/shazam/melody-matcher'
 import { detectOnsets, segmentNotes } from '@/lib/shazam/onset-detector'
-import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { showNotification } from '@/stores/notifications-store'
-import type { UvrSession } from '@/stores/uvr-store'
-import { getAllUvrSessionsReactive, initSessionStore } from '@/stores/uvr-store'
 import type { AutoOpenSnapshot } from './auto-open-policy'
 import { createAutoOpenPolicy } from './auto-open-policy'
-import { launchStartSec } from './launch-math'
-import { closeMercurySing } from './mercury-sing-store'
+import { launchStartSec, sungSince } from './launch-math'
+import type { MercurySingHost, MercurySingSong } from './mercury-sing-host'
+
+export type { MercurySingHost, MercurySingSong }
 
 /** How often the live contour is re-matched against the library. */
 const MATCH_INTERVAL_MS = 1500
@@ -68,6 +69,8 @@ const TRAIL_FRAME_STRIDE = 3
 export type MercurySingStatus =
   | 'starting'
   | 'listening'
+  /** The mic let go after the singing stopped; what was found still opens. */
+  | 'quiet'
   | 'mic-denied'
   | 'no-library'
   | 'launching'
@@ -107,6 +110,11 @@ export interface MercurySingEngine {
   frozen: Accessor<boolean>
   /** Launch candidate at `index` (0-based). False when nothing is there. */
   pick: (index: number) => boolean
+  /**
+   * Launch the candidate for this song, wherever it ranks now: a row the
+   * singer tapped is the song they meant, even if the order just changed.
+   */
+  pickSession: (sessionId: string) => boolean
   /** Open a roster song from the top — "I know which one it is". */
   openFromLibrary: (sessionId: string) => boolean
   /** Cancel and release everything. Safe to call twice. */
@@ -116,15 +124,15 @@ export interface MercurySingEngine {
 const toMidi = (frequency: number): number =>
   12 * Math.log2(frequency / 440) + 69
 
-/** Library file names read better without their extension. */
-const songName = (session: UvrSession): string => {
-  const raw = session.originalFile?.name ?? ''
-  const trimmed = stripAudioExtension(raw).trim()
-  return trimmed === '' ? 'Your song' : trimmed
-}
-
 /** One engine per stage opening — created on mount, disposed on cleanup. */
-export function createMercurySingEngine(): MercurySingEngine {
+export function createMercurySingEngine(
+  host: MercurySingHost,
+  /**
+   * The singing has stopped for a while: the mic is let go (status
+   * `quiet`), and the stage closes itself or keeps what it found.
+   */
+  giveUp: () => void,
+): MercurySingEngine {
   const [status, setStatus] = createSignal<MercurySingStatus>('starting')
   const [candidates, setCandidates] = createSignal<MercurySingCandidateView[]>(
     [],
@@ -152,15 +160,20 @@ export function createMercurySingEngine(): MercurySingEngine {
   let matchTimer: ReturnType<typeof setInterval> | null = null
   let disposed = false
   let launching = false
-  /** Duration of the last matched contour — the singer's "now" anchor. */
-  let lastContourDurationSec = 0
+  /**
+   * How long the singer had sung at the last match, from the first note to
+   * the last voiced frame: where they had got to past the match's start. A
+   * pause after it does not move them on.
+   */
+  let lastSungSec = 0
+  /** The host's songs: only these are offered, whatever else is indexed. */
+  let songIds = new Set<string>()
 
   const trailRing: number[] = []
   let frameCounter = 0
 
-  const dispose = () => {
-    if (disposed) return
-    disposed = true
+  /** Let the mic go and stop matching; what was found stays, and opens. */
+  const stopListening = () => {
     if (matchTimer !== null) {
       clearInterval(matchTimer)
       matchTimer = null
@@ -174,6 +187,12 @@ export function createMercurySingEngine(): MercurySingEngine {
       audioEngine.destroy()
       audioEngine = null
     }
+  }
+
+  const dispose = () => {
+    if (disposed) return
+    disposed = true
+    stopListening()
     releaseWakeHold()
   }
 
@@ -189,25 +208,15 @@ export function createMercurySingEngine(): MercurySingEngine {
     if (disposed || launching) return false
     launching = true
     setStatus('launching')
-    const minutes = Math.floor(startAtSec / 60)
-    const seconds = Math.floor(startAtSec % 60)
     console.log(
       '[mercury-sing] launching',
       sessionId,
       'at',
       startAtSec.toFixed(1),
     )
-    showNotification(
-      startAtSec > 0
-        ? `Mercury Sing: "${name}" — joining you at ${String(minutes)}:${String(seconds).padStart(2, '0')}`
-        : `Mercury Sing: "${name}" — from the top`,
-      'success',
-    )
-    // Release the mic BEFORE navigating: Karaoke Night wants it for scoring.
+    // Release the mic BEFORE the song opens: the room wants it for scoring.
     dispose()
-    window.location.assign(
-      karaokeNightSessionUrl(sessionId, { startAtSec, autoplay: true }),
-    )
+    host.launch({ sessionId, name }, startAtSec)
     return true
   }
 
@@ -215,7 +224,7 @@ export function createMercurySingEngine(): MercurySingEngine {
     launchSession(
       candidate.sessionId,
       candidate.name,
-      launchStartSec(candidate.matchOffsetSec, lastContourDurationSec),
+      launchStartSec(candidate.matchOffsetSec, lastSungSec),
     )
 
   const runMatch = () => {
@@ -244,11 +253,15 @@ export function createMercurySingEngine(): MercurySingEngine {
         ioiSequence: segmented.ioiSequence,
         noteDurations: segmented.noteDurations,
       }
-      lastContourDurationSec = contour.durationSec
+      lastSungSec = sungSince(frames, onsets[0].time)
 
       const matched = matchPitchContour(contour, {
         maxResults: WHEEL_SLOTS,
         sourceFilter: 'stem',
+        // Only the host's songs can be opened. A fingerprint can outlive its
+        // song this run (a song removed since); matched at all, it would
+        // take one of the slots from a song that is still there.
+        sessionIds: songIds,
       })
       const view = matched
         .filter(
@@ -314,43 +327,23 @@ export function createMercurySingEngine(): MercurySingEngine {
     setElapsedSec(buffer?.getElapsed() ?? time)
   }
 
-  /** Fingerprint completed separations that have none yet, one at a time. */
-  const fingerprintPending = async (pending: UvrSession[]) => {
+  /** Fingerprint the songs that have none yet, one at a time. */
+  const fingerprintPending = async (pending: readonly MercurySingSong[]) => {
     if (pending.length === 0) return
     setFingerprinting({ done: 0, total: pending.length })
-    for (const session of pending) {
+    for (const song of pending) {
       if (disposed) return
-      // Both of these MUST be released whichever way the iteration exits:
-      // the blob URL pins the whole stem WAV in memory until revoked, and
-      // browsers cap live AudioContexts — leak a few failed decodes and
-      // `new AudioContext()` starts throwing for the entire app.
-      let vocalUrl: string | null = null
-      let audioCtx: AudioContext | null = null
       try {
-        vocalUrl = await getStemBlobUrl(session.sessionId, 'vocal')
-        if (vocalUrl === null) continue
-        const response = await fetch(vocalUrl)
-        const arrayBuffer = await response.arrayBuffer()
-        audioCtx = new AudioContext()
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
-        if (disposed) return
-        const fp = await extractStemFingerprint(audioBuffer, {
-          sessionId: session.sessionId,
-          originalFileName: session.originalFile?.name ?? 'Your song',
-        })
-        if ('reason' in fp) {
-          console.warn(
-            '[mercury-sing] fingerprint skipped:',
-            session.sessionId,
-            fp.reason,
-          )
-          continue
-        }
-        await saveStemFingerprintData(session.sessionId, fp)
+        // A stage closed mid-way skips what has not started (the host
+        // checks), and keeps a fingerprint that finished all the same.
+        const fp = await host.fingerprint(song, () => disposed)
+        if (fp === null) continue
+        await saveStemFingerprintData(song.sessionId, fp)
         addStemFingerprint(fp)
+        if (disposed) return
         setLibrary((prev) =>
           prev.map((entry) =>
-            entry.sessionId === session.sessionId
+            entry.sessionId === song.sessionId
               ? { ...entry, ready: true }
               : entry,
           ),
@@ -359,8 +352,6 @@ export function createMercurySingEngine(): MercurySingEngine {
       } catch (err) {
         console.warn('[mercury-sing] fingerprinting failed:', err)
       } finally {
-        if (vocalUrl !== null) URL.revokeObjectURL(vocalUrl)
-        if (audioCtx !== null) void audioCtx.close().catch(() => undefined)
         setFingerprinting((p) => ({ done: p.done + 1, total: p.total }))
       }
     }
@@ -368,29 +359,30 @@ export function createMercurySingEngine(): MercurySingEngine {
 
   const start = async () => {
     try {
-      await Promise.all([loadStemFingerprints(), initSessionStore()])
+      const [, songs] = await Promise.all([
+        loadStemFingerprints(),
+        host.songs(),
+      ])
       if (disposed) return
-      const separated = getAllUvrSessionsReactive().filter(
-        (s) => s.status === 'completed',
-      )
-      // The roster the stage shows: every separated song, each flagged with
-      // whether its fingerprint is already usable.
+      songIds = new Set(songs.map((song) => song.sessionId))
+      // The roster the stage shows: every song listened for, each flagged
+      // with whether its fingerprint is already usable.
       setLibrary(
-        separated.map((s) => ({
+        songs.map((s) => ({
           sessionId: s.sessionId,
-          name: songName(s),
+          name: s.name,
           ready: hasStemFingerprint(s.sessionId),
         })),
       )
       setLibraryCount(
-        separated.filter((s) => hasStemFingerprint(s.sessionId)).length,
+        songs.filter((s) => hasStemFingerprint(s.sessionId)).length,
       )
-      if (separated.length === 0) {
+      if (songs.length === 0) {
         setStatus('no-library')
         return
       }
       void fingerprintPending(
-        separated.filter((s) => !hasStemFingerprint(s.sessionId)),
+        songs.filter((s) => !hasStemFingerprint(s.sessionId)),
       )
 
       audioEngine = new AudioEngine()
@@ -402,11 +394,20 @@ export function createMercurySingEngine(): MercurySingEngine {
         },
         onAutoStop: () => {
           if (disposed) return
-          showNotification(
-            'Mercury Sing stopped — I did not hear singing.',
-            'info',
-          )
-          closeMercurySing()
+          stopListening()
+          // Nothing more is heard, so nothing opens by itself now: no row may
+          // go on saying it is about to.
+          setArmed(policy.interrupt())
+          // With the mic let go, nothing sung can reach the voice commands,
+          // so they need not wait behind the wake word any more. The release
+          // from dispose then does nothing; Listen again takes a hold of its
+          // own.
+          releaseWakeHold()
+          setStatus('quiet')
+          if (host.heardNothing !== undefined) {
+            showNotification(host.heardNothing, 'info')
+          }
+          giveUp()
         },
       })
       const ok = await buffer.start()
@@ -436,6 +437,11 @@ export function createMercurySingEngine(): MercurySingEngine {
     frozen,
     pick: (index) => {
       const candidate = candidates()[index]
+      if (candidate === undefined) return false
+      return launch(candidate)
+    },
+    pickSession: (sessionId) => {
+      const candidate = candidates().find((c) => c.sessionId === sessionId)
       if (candidate === undefined) return false
       return launch(candidate)
     },

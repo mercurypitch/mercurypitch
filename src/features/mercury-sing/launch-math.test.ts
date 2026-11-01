@@ -7,7 +7,7 @@
 // green — and land the singer in the wrong minute of the song.
 
 import { describe, expect, it } from 'vitest'
-import { launchStartSec, PRE_ROLL_SEC } from './launch-math'
+import { launchStartSec, PRE_ROLL_SEC, sungSince } from './launch-math'
 
 describe('launchStartSec', () => {
   it('is match start + sung time − pre-roll', () => {
@@ -34,5 +34,45 @@ describe('launchStartSec', () => {
     // Sub-second precision passes through untouched — rounding is the URL
     // contract's job (karaokeNightSessionUrl rounds to 0.1s), not ours.
     expect(launchStartSec(30.55, 4.25)).toBeCloseTo(32.8)
+  })
+})
+
+describe('sungSince', () => {
+  /** Frames every 10 ms, voiced where `voiced` says. */
+  const frames = (seconds: number, voiced: (t: number) => boolean) =>
+    Array.from({ length: Math.round(seconds * 100) }, (_, i) => {
+      const t = i / 100
+      const on = voiced(t)
+      return {
+        time: t,
+        pitch: {
+          frequency: on ? 220 : 0,
+          clarity: on ? 0.9 : 0,
+          noteName: '',
+          octave: 0,
+          cents: 0,
+        },
+      }
+    })
+
+  it('counts from the first note to the last voiced frame', () => {
+    // Silent for 1.5 s, sings to 7 s.
+    const take = frames(8, (t) => t >= 1.5 && t < 7)
+    expect(sungSince(take, 1.5)).toBeCloseTo(5.49, 2)
+  })
+
+  it('does not count a pause before the tap', () => {
+    // Sings 0 to 6 s, then 4 s of silence: the singer stopped at 6.
+    const take = frames(10, (t) => t < 6)
+    expect(sungSince(take, 0)).toBeCloseTo(5.99, 2)
+  })
+
+  it('is nothing when nothing was sung', () => {
+    expect(
+      sungSince(
+        frames(3, () => false),
+        0,
+      ),
+    ).toBe(0)
   })
 })

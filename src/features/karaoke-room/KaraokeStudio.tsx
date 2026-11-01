@@ -94,12 +94,13 @@ export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
     )
   }
 
-  const sing = (sessionId: string): void => {
+  const sing = (sessionId: string, seekSec?: number): void => {
     if (!roomLibrary().some((song) => song.sessionId === sessionId)) {
       showNotification(STUDIO_CANNOT_SING, 'info')
       return
     }
-    requestKaraokeSong(sessionId)
+    // A song found by singing plays from where the singing began.
+    requestKaraokeSong(sessionId, seekSec === undefined ? {} : { seekSec })
     props.onDone()
   }
 

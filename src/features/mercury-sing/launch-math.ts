@@ -7,6 +7,8 @@
 // and this one line of arithmetic is the difference between joining the
 // singer and launching into the wrong minute.
 
+import type { TimestampedPitch } from '@/lib/shazam/types'
+
 /**
  * The backing starts this far BEHIND the singer's estimated position:
  * slightly early is forgiving (you re-enter on the phrase you just sang),
@@ -26,3 +28,21 @@ export const launchStartSec = (
   matchOffsetSec: number | null,
   sungDurationSec: number,
 ): number => Math.max(0, (matchOffsetSec ?? 0) + sungDurationSec - PRE_ROLL_SEC)
+
+/**
+ * How long the singer has sung, for the launch: from the take's first note
+ * to its last voiced frame. A pause before the tap does not carry them on
+ * past where they stopped, and the silence before they began is not sung.
+ */
+export function sungSince(
+  frames: readonly TimestampedPitch[],
+  firstNoteAt: number,
+): number {
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const { frequency, clarity } = frames[i].pitch
+    if (frequency > 0 && clarity > 0) {
+      return Math.max(0, frames[i].time - firstNoteAt)
+    }
+  }
+  return 0
+}

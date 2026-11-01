@@ -25,7 +25,7 @@ export interface StemFingerprintOptions {
  * Estimate tempo from merged notes using IOI mode.
  * Returns 120 BPM if fewer than 2 notes.
  */
-function estimateBpm(mergedNotes: Array<{ startSec: number }>): number {
+function estimateBpm(mergedNotes: ReadonlyArray<{ startSec: number }>): number {
   if (mergedNotes.length < 2) return 120
   const iois: number[] = []
   for (let i = 1; i < mergedNotes.length; i++) {
@@ -108,6 +108,25 @@ export async function extractStemFingerprint(
   const minDurationSec = options?.minDurationSec ?? 0.08
   const merged = mergeConsecutiveNotes(detections, maxGapSec, minDurationSec)
 
+  return fingerprintFromNotes(merged, metadata)
+}
+
+/** A sung note as the analyses keep them: MIDI, start and end in seconds. */
+export interface FingerprintNote {
+  readonly midi: number
+  readonly startSec: number
+  readonly endSec: number
+}
+
+/**
+ * A MelodyFingerprint from notes already found: a stem's, or the notes a
+ * song's pitch analysis saved (a native room song has them, the examples
+ * ship them), so a song can be matched without decoding its vocal again.
+ */
+export function fingerprintFromNotes(
+  merged: readonly FingerprintNote[],
+  metadata: { sessionId: string; originalFileName: string; bpm?: number },
+): MelodyFingerprint | FingerprintError {
   if (merged.length < MIN_NOTE_COUNT) {
     return {
       melodyId: `stem:${metadata.sessionId}`,

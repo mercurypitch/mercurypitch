@@ -24,6 +24,11 @@ interface FakeMixer {
   title: string
   stems: { vocal?: string; instrumental?: string }
   autoPlay: boolean | undefined
+  /**
+   * The autoPlay the room passes now, as the real mixer reads it once the
+   * song has loaded, which can be well after it was mounted.
+   */
+  autoPlayNow: () => boolean | undefined
   initialSeekSec: number | undefined
   hosted: StemMixerHosting
   alive: boolean
@@ -145,6 +150,7 @@ vi.mock('@/components/StemMixer', async () => {
       }))
       const mixer: FakeMixer = {
         ...given,
+        autoPlayNow: () => props.autoPlay,
         alive: true,
         setPlaying,
         setInterrupted,
@@ -306,7 +312,32 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
   }),
 }))
 
+/**
+ * Find by singing's listening, stood in for: the real one opens the mic.
+ * It keeps the host the room handed it, so a test can find a song with it.
+ */
+const finding = vi.hoisted(() => ({
+  host: null as MercurySingHost | null,
+  listening: 0,
+}))
+vi.mock('./KaraokeFindListening', async () => {
+  const { onCleanup } = await import('solid-js')
+  return {
+    KaraokeFindListening: (props: { host: MercurySingHost }) => {
+      // The stand-in records at mount on purpose: a mount is a listening.
+      // eslint-disable-next-line solid/reactivity
+      finding.host = props.host
+      finding.listening += 1
+      onCleanup(() => {
+        finding.listening -= 1
+      })
+      return <p data-testid="fake-find-listening" />
+    },
+  }
+})
+
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import type { MercurySingHost } from './karaoke-room-find'
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeLibrary, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS, UNKNOWN_ARTIST, } from './KaraokeRoomStage'
@@ -490,6 +521,8 @@ beforeEach(() => {
   library.rows = [GOODBYE, JOSEPHINE, DARK]
   seeding.done = Promise.resolve()
   missing.said = []
+  finding.host = null
+  finding.listening = 0
   localStorage.clear()
   resetKaraokeRoomForTests()
   resetRoomArrivalHolds()
@@ -1550,6 +1583,97 @@ describe('the library', () => {
     expect(controls().closeRoomOverlay?.()).toBe(true)
     expect(screen.queryByTestId('karaoke-library')).toBeNull()
     expect(controls().closeRoomOverlay?.()).toBe(false)
+  })
+})
+
+describe('Find by singing', () => {
+  /** From the Songs sheet, as the singer opens it. */
+  const openFind = async (): Promise<void> => {
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Find by singing/u }),
+    )
+    await screen.findByTestId('fake-find-listening')
+  }
+
+  const host = (): MercurySingHost => {
+    if (finding.host === null) throw new Error('the sheet has no listening')
+    return finding.host
+  }
+
+  it('stops the song on the stage and takes over from the Songs sheet', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    await openFind()
+
+    expect(current().pause).toHaveBeenCalledTimes(1)
+    expect(controls().isPlaying()).toBe(false)
+    expect(screen.queryByTestId('karaoke-library')).toBeNull()
+  })
+
+  it('holds back the start of a song still loading while it is open', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Nothing in the Dark/u }),
+    )
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(DARK.sessionId)
+    })
+    // Picked while one played: it starts once it has loaded.
+    expect(current().autoPlayNow()).toBe(true)
+
+    await openFind()
+    expect(current().autoPlayNow()).toBe(false)
+
+    expect(controls().closeRoomOverlay?.()).toBe(true)
+    expect(current().autoPlayNow()).toBe(true)
+  })
+
+  it('puts a song found on the stage, playing from where the singer has got to, and goes', async () => {
+    await mountRoom()
+    await openFind()
+
+    host().launch({ sessionId: DARK.sessionId, name: DARK.title }, 63.5)
+
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(DARK.sessionId)
+    })
+    expect(current().initialSeekSec).toBe(63.5)
+    expect(current().autoPlay).toBe(true)
+    expect(screen.queryByTestId('karaoke-find')).toBeNull()
+    expect(finding.listening).toBe(0)
+  })
+
+  it('is what Back closes first, its listening with it', async () => {
+    await mountRoom()
+    await openFind()
+    expect(finding.listening).toBe(1)
+
+    expect(controls().closeRoomOverlay?.()).toBe(true)
+
+    expect(screen.queryByTestId('karaoke-find')).toBeNull()
+    expect(finding.listening).toBe(0)
+    expect(controls().closeRoomOverlay?.()).toBe(false)
+  })
+
+  it('closes as the app is sent away, and as the small window opens', async () => {
+    await mountRoom()
+    await openFind()
+
+    sendAppAway(true)
+    expect(finding.listening).toBe(0)
+
+    sendAppAway(false)
+    await openFind()
+    device.windowed(true)
+    expect(finding.listening).toBe(0)
   })
 })
 

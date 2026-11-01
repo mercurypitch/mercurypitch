@@ -10,7 +10,7 @@
 import type { DtwCost } from './dtw'
 import { circularDistance12, distanceToScore, dtwMatch, dtwMatchSubsequence, } from './dtw'
 import { getFingerprintArray } from './melody-fingerprints'
-import type { LivePitchContour, MatchBreakdown, MatchCandidate, MatcherOptions, } from './types'
+import type { LivePitchContour, MatchBreakdown, MatchCandidate, MatcherOptions, MelodyFingerprint, } from './types'
 import { DEFAULT_MATCH_WEIGHTS } from './types'
 
 const DEFAULT_MATCHER_OPTIONS: MatcherOptions = {
@@ -53,7 +53,8 @@ export function matchPitchContour(
     ioiSeq = collapseIOIs(contour.ioiSequence, kept)
   }
 
-  const candidates: MatchCandidate[] = []
+  /** Every match as scored, with what will place its take, until the cut. */
+  const scored: Scored[] = []
   const debug = isDebug()
 
   if (debug) {
@@ -78,12 +79,8 @@ export function matchPitchContour(
   }
 
   for (const fp of fingerprints) {
-    // ── Source filter ─────────────────────────────────────
-    if (opts.sourceFilter) {
-      const isStem = fp.melodyId.startsWith('stem:')
-      if (opts.sourceFilter === 'stem' && !isStem) continue
-      if (opts.sourceFilter === 'melody' && isStem) continue
-    }
+    // ── Source and session filter ─────────────────────────
+    if (leftOut(fp, opts)) continue
 
     // ── Early termination filter ─────────────────────────
     //
@@ -131,15 +128,16 @@ export function matchPitchContour(
     // Needs >=2 notes on both sides — one note has no interval.
     const haveIntervals = fp.intervalSequence.length > 0 && noteSeq.length > 1
     let intervalScore = 0
+    /** Where the intervals place the take (interval k runs from note k). */
+    let intervalMatchStartIdx = -1
     if (haveIntervals) {
       const contourIntervals: number[] = []
       for (let i = 1; i < noteSeq.length; i++) {
         contourIntervals.push(noteSeq[i] - noteSeq[i - 1])
       }
-      intervalScore = bestMatchWithOffset(
-        contourIntervals,
-        fp.intervalSequence,
-      ).score
+      const im = bestMatchWithOffset(contourIntervals, fp.intervalSequence)
+      intervalScore = im.score
+      if (im.usedSubsequence) intervalMatchStartIdx = im.startIndex
     }
 
     // 3. Chroma match (octave-invariant, for humming)
@@ -229,69 +227,39 @@ export function matchPitchContour(
       )
     }
 
-    // Compute match time offset from subsequence DTW start index
-    let matchOffsetSec: number | undefined
-    if (pitchMatchStartIdx >= 0 && fp.ioiSequence.length > 0) {
-      // Sum IOIs up to the start index to get the time offset
-      let offsetSec = fp.firstNoteStartSec ?? 0
-      for (
-        let i = 0;
-        i < Math.min(pitchMatchStartIdx, fp.ioiSequence.length);
-        i++
-      ) {
-        offsetSec += fp.ioiSequence[i]
-      }
-      matchOffsetSec = offsetSec
-
-      if (debug) {
-        console.log(
-          `  [OFFSET] ${fp.name}: matchStartIdx=${pitchMatchStartIdx}, firstNoteStart=${fp.firstNoteStartSec ?? 0}, offsetSec=${offsetSec.toFixed(2)}s`,
-        )
-        if (pitchMatchPath.length > 0) {
-          const NOTE_NAMES = [
-            'C',
-            'C#',
-            'D',
-            'D#',
-            'E',
-            'F',
-            'F#',
-            'G',
-            'G#',
-            'A',
-            'A#',
-            'B',
-          ]
-          const toName = (m: number) =>
-            `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
-          const queryNotes = pitchMatchPath.map(([q]) =>
-            toName(Math.round(noteSeq[q])),
-          )
-          const refNotes = pitchMatchPath.map(([, r]) =>
-            toName(Math.round(fp.pitchSequence[r])),
-          )
-          console.log(`  [NOTES] Query: ${queryNotes.join(' ')}`)
-          console.log(`  [NOTES] Match: ${refNotes.join(' ')}`)
-        }
-      }
-    }
-
-    candidates.push({
-      melodyId: fp.melodyId,
-      name: fp.name,
-      confidence,
-      breakdown,
-      source: isStem ? 'stem' : 'melody',
-      sessionId: isStem ? fp.melodyId.slice(5) : undefined,
-      hummingNormalized,
-      matchOffsetSec,
+    scored.push({
+      candidate: {
+        melodyId: fp.melodyId,
+        name: fp.name,
+        confidence,
+        breakdown,
+        source: isStem ? 'stem' : 'melody',
+        sessionId: isStem ? fp.melodyId.slice(5) : undefined,
+        hummingNormalized,
+      },
+      fp,
+      asSung: {
+        score: pitchScore,
+        startIndex: pitchMatchStartIdx,
+        path: pitchMatchPath,
+      },
+      intervalScore,
+      intervalStartIdx: intervalMatchStartIdx,
     })
   }
 
-  // Sort by confidence descending
-  candidates.sort((a, b) => b.confidence - a.confidence)
+  // Sort by confidence descending. Only the matches returned are placed in
+  // their songs: where a take sits plays no part in its score, and placing
+  // it costs two more alignments, which a whole library would otherwise pay
+  // for every song on every listening tick.
+  scored.sort((a, b) => b.candidate.confidence - a.candidate.confidence)
 
-  const result = candidates.slice(0, opts.maxResults ?? 5)
+  const result: MatchCandidate[] = scored
+    .slice(0, opts.maxResults ?? 5)
+    .map((entry) => ({
+      ...entry.candidate,
+      matchOffsetSec: placeTake(noteSeq, entry, debug),
+    }))
 
   if (debug) {
     if (result.length > 0) {
@@ -321,6 +289,129 @@ export function matchPitchContourWithMeta(
 }
 
 // ── Internal helpers ─────────────────────────────────────────
+
+/** Where a take sits in a reference by its absolute pitches. */
+interface PitchAlignment {
+  score: number
+  startIndex: number
+  path: [number, number][]
+}
+
+/** A match as scored, with what places its take if it is returned. */
+interface Scored {
+  readonly candidate: Omit<MatchCandidate, 'matchOffsetSec'>
+  readonly fp: MelodyFingerprint
+  /** The take's absolute-pitch alignment, as sung. */
+  readonly asSung: PitchAlignment
+  readonly intervalScore: number
+  /** Where the intervals place the take (interval k runs from note k), or -1. */
+  readonly intervalStartIdx: number
+}
+
+/** Whether the options leave this fingerprint out before it is matched. */
+function leftOut(fp: MelodyFingerprint, opts: MatcherOptions): boolean {
+  const isStem = fp.melodyId.startsWith('stem:')
+  if (opts.sourceFilter === 'stem' && !isStem) return true
+  if (opts.sourceFilter === 'melody' && isStem) return true
+  if (opts.sessionIds === undefined) return false
+  return !isStem || !opts.sessionIds.has(fp.melodyId.slice(5))
+}
+
+/**
+ * Where the take begins in its song, in seconds; undefined when nothing
+ * places it.
+ *
+ * Read off the absolute pitches: the one alignment that tells the song's
+ * repeated parts apart by where they sit (twelve pitch classes match in
+ * many places, and placed an in-octave singer worse). A singer an octave
+ * away from the record lines up with nothing there, though (a first chorus
+ * hummed an octave up was placed at the last), so the take is aligned an
+ * octave up and down as well, and the best fit says where it is; a singer
+ * in another key fits no octave, and the intervals place them when they fit
+ * better. None of this touches the score.
+ */
+function placeTake(
+  noteSeq: number[],
+  entry: Scored,
+  debug: boolean,
+): number | undefined {
+  const { fp } = entry
+  const placed = octaveFreeAlignment(noteSeq, fp.pitchSequence, entry.asSung)
+  const startIdx =
+    entry.intervalStartIdx >= 0 && entry.intervalScore > placed.score
+      ? entry.intervalStartIdx
+      : placed.startIndex
+  if (startIdx < 0 || fp.ioiSequence.length === 0) return undefined
+  // Sum IOIs up to the start index to get the time offset
+  let offsetSec = fp.firstNoteStartSec ?? 0
+  for (let i = 0; i < Math.min(startIdx, fp.ioiSequence.length); i++) {
+    offsetSec += fp.ioiSequence[i]
+  }
+  if (debug) logPlacement(fp, noteSeq, placed.path, startIdx, offsetSec)
+  return offsetSec
+}
+
+const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+]
+
+/** The debug log's account of where a take was placed, note by note. */
+function logPlacement(
+  fp: MelodyFingerprint,
+  noteSeq: number[],
+  path: [number, number][],
+  startIdx: number,
+  offsetSec: number,
+): void {
+  console.log(
+    `  [OFFSET] ${fp.name}: matchStartIdx=${startIdx}, firstNoteStart=${fp.firstNoteStartSec ?? 0}, offsetSec=${offsetSec.toFixed(2)}s`,
+  )
+  if (path.length === 0) return
+  const toName = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
+  const queryNotes = path.map(([q]) => toName(Math.round(noteSeq[q])))
+  const refNotes = path.map(([, r]) => toName(Math.round(fp.pitchSequence[r])))
+  console.log(`  [NOTES] Query: ${queryNotes.join(' ')}`)
+  console.log(`  [NOTES] Match: ${refNotes.join(' ')}`)
+}
+
+/**
+ * The take's pitch alignment, the take also moved an octave up and an
+ * octave down; the best-scoring of the three. `asSung` is the alignment the
+ * matcher already made of the take as sung.
+ */
+function octaveFreeAlignment(
+  query: number[],
+  reference: number[],
+  asSung: PitchAlignment,
+): PitchAlignment {
+  let best = asSung
+  if (query.length === 0 || reference.length === 0) return best
+  for (const shift of [-12, 12]) {
+    const moved = bestMatchWithOffset(
+      query.map((midi) => midi + shift),
+      reference,
+    )
+    if (moved.score > best.score) {
+      best = {
+        score: moved.score,
+        startIndex: moved.startIndex,
+        path: moved.path,
+      }
+    }
+  }
+  return best
+}
 
 /**
  * Try both classic DTW and subsequence DTW, return the better score

@@ -11,11 +11,12 @@
 import { onCleanup, onMount } from 'solid-js'
 import { lastHeardSpeech } from '@/features/voice-control/voice-command-registry'
 import { createMercurySingEngine, WHEEL_SLOTS } from './mercury-sing-engine'
+import { webMercurySingHost } from './mercury-sing-host'
 import { closeMercurySing, setMercurySingPickHandler, } from './mercury-sing-store'
 import { MercurySingPanel } from './MercurySingPanel'
 
 export function MercurySingStage() {
-  const engine = createMercurySingEngine()
+  const engine = createMercurySingEngine(webMercurySingHost(), closeMercurySing)
   setMercurySingPickHandler(engine.pick)
   onCleanup(() => {
     setMercurySingPickHandler(null)
