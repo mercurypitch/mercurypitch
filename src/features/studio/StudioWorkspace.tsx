@@ -23,7 +23,9 @@ import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
 import { StudioTrackDetails } from './panels/StudioTrackDetails'
-import { StudioPlaybackNotice } from './sound/StudioPlaybackNotice'
+import { StudioRecordButton } from './record/StudioRecordButton'
+import { StudioRecordSettings } from './record/StudioRecordSettings'
+import { useStudioRecorder } from './record/useStudioRecorder'
 import { StudioSoundPanel } from './sound/StudioSoundPanel'
 import { useStudioComparison } from './sound/useStudioComparison'
 import { useStudioSound } from './sound/useStudioSound'
@@ -31,6 +33,7 @@ import { MixingDesk, RotateCw } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
+import { StudioWorkspaceNotices } from './StudioWorkspaceNotices'
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { studioContentEnd } from './timeline/timeline-geometry'
 import type { StudioController } from './useStudioController'
@@ -98,7 +101,22 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
     audioBusy: () => finishing(),
+    recording: () => recorder.busy(),
   })
+  const recorder = useStudioRecorder({
+    project: () => props.studio.project(),
+    assets: () => props.studio.assets(),
+    canEdit: () => baseWritable(),
+    addRecording: (take) => props.studio.addRecording(take),
+    transport,
+    selectedTrackId,
+    audioBusy: () => finishing(),
+  })
+  /** A seek stops a take first: a take runs straight through the song. */
+  const seek = (frame: number) => {
+    recorder.stop()
+    void transport.seek(frame)
+  }
   // A fader, pan knob or dial is heard while it moves, before it saves.
   const liveMix = createStudioLiveMix({
     previewLane: (trackId, draft) => transport.previewLane(trackId, draft),
@@ -261,6 +279,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   }
 
   function togglePlayback(): void {
+    if (recorder.running()) return recorder.stop()
     if (finishing()) return
     comparison.stop()
     if (transport.playing()) transport.pause()
@@ -305,7 +324,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       toggle: togglePlayback,
       ownsSpace: () => !isInsideOverlay(document.activeElement),
       enabled: () =>
-        !transport.pending() && !finishing() && project().clips.length > 0,
+        recorder.running() ||
+        (!transport.pending() && !finishing() && project().clips.length > 0),
     })
     onCleanup(remove)
     // Auto's device benchmark (playback-quality.ts), once, never while playing.
@@ -352,7 +372,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     if (
       event.defaultPrevented ||
       isTypingTarget(event.target) ||
-      isInsideOverlay(event.target)
+      isInsideOverlay(event.target) ||
+      recorder.keyDown(event)
     )
       return
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
@@ -366,7 +387,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       !(event.target instanceof HTMLInputElement)
     ) {
       event.preventDefault()
-      void transport.seek(0)
+      seek(0)
     }
   }
 
@@ -390,8 +411,15 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         repeating={transport.repeating()}
         onRepeat={() => void transport.setRepeat(!transport.repeating())}
         onToggle={togglePlayback}
-        onStart={() => void transport.seek(0)}
-        onSeek={(frame) => void transport.seek(frame)}
+        onStart={() => seek(0)}
+        onSeek={seek}
+        record={
+          <StudioRecordButton
+            phase={recorder.phase()}
+            canArm={recorder.canArm()}
+            onPress={recorder.press}
+          />
+        }
       />
     )
   }
@@ -568,60 +596,23 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           </div>
         </div>
       </div>
-      <Show
-        when={
+      <StudioWorkspaceNotices
+        preparing={
           finishing() &&
           panel() !== (exporter.busy() ? 'export' : 'sound') &&
           // The desk shows its own Auto-balance progress.
           !(deskOpen() && sound.busy())
         }
-      >
-        <div class={styles.notice} role="status">
-          <p>Preparing song audio…</p>
-          <button
-            type="button"
-            class={styles.button}
-            onClick={() => openPanel(exporter.busy() ? 'export' : 'sound')}
-          >
-            Show progress
-          </button>
-        </div>
-      </Show>
-      <StudioPlaybackNotice onShow={() => openPanel('sound')} />
-      <Show when={transport.error() ?? (deskOpen() ? sound.error() : null)}>
-        {(error) => (
-          <p class={styles.inlineError} role="alert">
-            {error()}
-          </p>
-        )}
-      </Show>
-      <Show when={!props.studio.writable()}>
-        <div class={styles.notice}>
-          <p>
-            This project is open in another tab, or editing has expired here.
-          </p>
-          <button
-            type="button"
-            class={styles.button}
-            disabled={props.studio.busy()}
-            onClick={() => void props.studio.takeOver()}
-          >
-            Edit in this tab
-          </button>
-        </div>
-      </Show>
-      <Show when={props.studio.importing()}>
-        <div class={styles.notice} role="status">
-          <p>Preparing audio…</p>
-          <button
-            type="button"
-            class={styles.button}
-            onClick={() => props.studio.cancelImport()}
-          >
-            Cancel import
-          </button>
-        </div>
-      </Show>
+        onShowProgress={() => openPanel(exporter.busy() ? 'export' : 'sound')}
+        onShowSound={() => openPanel('sound')}
+        error={transport.error() ?? (deskOpen() ? sound.error() : null)}
+        writable={props.studio.writable()}
+        busy={props.studio.busy()}
+        onTakeOver={() => void props.studio.takeOver()}
+        importing={props.studio.importing()}
+        onCancelImport={() => props.studio.cancelImport()}
+        recorder={recorder}
+      />
       <div class={styles.editor}>
         <div class={styles.arrangement}>
           <StudioTimeline
@@ -648,7 +639,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               panel() === 'sources' ? undefined : () => openPanel('sources')
             }
             onSelectClip={setSelectedClipId}
-            onSeek={(frame) => void transport.seek(frame)}
+            onSeek={seek}
             onCommand={props.studio.dispatch}
             onClipDetails={(id) => {
               setSelectedClipId(id)
@@ -660,6 +651,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             }}
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
+            record={recorder.timeline()}
           />
           <Show when={deskOpen()}>
             <StudioMixDesk
@@ -711,6 +703,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                   </>
                 }
                 onCommand={props.studio.dispatch}
+                recording={<StudioRecordSettings recorder={recorder} />}
               />
             </Show>
             <Show when={panel() === 'export'}>

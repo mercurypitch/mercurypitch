@@ -1,0 +1,210 @@
+/* Studio recording — the record button's states, the input meter, the take growing in its lane, and the recording notices. */
+.record {
+  --record: var(--red, #e5484d);
+  appearance: none;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: color-mix(in srgb, var(--record) 85%, var(--studio-text-2));
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    border-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+.record svg {
+  width: 16px;
+  height: 16px;
+}
+@media (hover: hover) {
+  .record:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--record) 14%, transparent);
+  }
+}
+.record:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Armed: a ring around the dot, the microphone open and the lane listening. */
+.record[data-phase='armed'],
+.record[data-phase='arming'] {
+  border-color: var(--record);
+  background: color-mix(in srgb, var(--record) 12%, transparent);
+  color: var(--record);
+}
+/* Counting in and recording: the whole button red. */
+.record[data-phase='counting'],
+.record[data-phase='recording'],
+.record[data-phase='finishing'] {
+  border-color: var(--record);
+  background: var(--record);
+  color: #ffffff;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .record[data-phase='arming'] svg,
+  .record[data-phase='recording'] svg {
+    animation: recordPulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes recordPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* The input level: green, amber near the top, red at the top. */
+.meter {
+  --level: 0;
+  position: relative;
+  display: block;
+  flex: none;
+  width: 72px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--studio-rail);
+}
+.meterFill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--studio-meter-ok) 0 70%,
+    var(--studio-meter-hot) 70% 92%,
+    var(--studio-meter-over) 92%
+  );
+  transform: scaleX(var(--level));
+  transform-origin: left center;
+}
+
+.status {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--studio-line);
+  background: color-mix(in srgb, var(--red, #e5484d) 9%, var(--studio-bar));
+  color: var(--studio-text);
+}
+.status p {
+  margin: 0;
+}
+.statusText {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.statusHint {
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+.count {
+  min-width: 1.4ch;
+  color: var(--red, #e5484d);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
+}
+.elapsed {
+  font-variant-numeric: tabular-nums;
+}
+.statusMic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--studio-text-2);
+}
+.statusMic svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The take as it records, in its lane: a clip-shaped box that grows. */
+.liveTake {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  min-width: 2px;
+  border: 1px solid color-mix(in srgb, var(--red, #e5484d) 60%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--red, #e5484d) 12%, transparent);
+  pointer-events: none;
+}
+.liveWave {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  color: color-mix(in srgb, var(--red, #e5484d) 75%, var(--studio-text));
+}
+/* The armed lane's level, pinned to the lane's visible left edge. */
+.laneMeter {
+  position: absolute;
+  bottom: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--studio-bar) 88%, transparent);
+  color: var(--red, #e5484d);
+  pointer-events: none;
+}
+.laneMeter svg {
+  width: 12px;
+  height: 12px;
+}
+.ghostName {
+  overflow: hidden;
+  color: var(--studio-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ghostHeader {
+  padding: 0 12px;
+}
+
+/* Recording settings, in the Sound panel. */
+.offset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.offset input {
+  width: 76px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 7px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--studio-accent);
+}

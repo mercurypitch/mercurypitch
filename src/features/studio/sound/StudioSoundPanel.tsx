@@ -16,6 +16,8 @@ import type { StudioComparisonController } from './useStudioComparison'
 import type { StudioSoundController } from './useStudioSound'
 
 export interface StudioSoundPanelProps {
+  /** The recording settings, kept on this device like the playback tier. */
+  recording?: JSX.Element
   project: StudioProject
   writable: boolean
   balance: StudioSoundController
@@ -177,6 +179,7 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
           )}
         </Show>
       </section>
+      {props.recording}
       <StudioPlaybackQuality song={props.project} />
     </div>
   )

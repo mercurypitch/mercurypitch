@@ -4,6 +4,8 @@ import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { StudioLaneTake } from '../record/StudioLaneTake'
+import { StudioRecordLane } from '../record/StudioRecordLane'
 import { FitWidth, InfoCircle, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
 import { createStudioPlayheadMotion } from './playhead-motion'
@@ -605,11 +607,31 @@ export function StudioTimeline(props: StudioTimelineProps) {
                         )
                       }}
                     </For>
+                    <Show when={props.record?.trackId === id && props.record}>
+                      {(record) => (
+                        <StudioLaneTake
+                          {...record()}
+                          scale={scale()}
+                          scroll={scroll()}
+                          contentWidth={contentWidth()}
+                        />
+                      )}
+                    </Show>
                   </div>
                 </div>
               )
             }}
           </For>
+          <Show when={props.record?.trackId === null && props.record}>
+            {(record) => (
+              <StudioRecordLane
+                {...record()}
+                scale={scale()}
+                scroll={scroll()}
+                contentWidth={contentWidth()}
+              />
+            )}
+          </Show>
           <Show when={!props.phone && props.project.tracks.length > 0}>
             <div
               class={styles.newLane}
@@ -688,7 +710,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
           </Show>
         </div>
         <Show
-          when={props.project.tracks.length === 0 && props.drawerOpen !== true}
+          when={
+            props.project.tracks.length === 0 &&
+            props.drawerOpen !== true &&
+            !props.record
+          }
         >
           <div class={styles.empty}>
             <svg

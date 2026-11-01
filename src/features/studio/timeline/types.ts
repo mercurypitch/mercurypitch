@@ -1,8 +1,19 @@
 // Studio timeline contracts — view state and edit callbacks stay outside persistence.
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
 import type { StudioPlayheadClock } from './playhead-motion'
 import type { StudioWaveformPeaksStore } from './waveform-resource'
+
+/** A lane being recorded into: its level, and the take growing in it. */
+export interface StudioTimelineRecording {
+  /** The armed lane, or null for a take that gets a lane of its own. */
+  readonly trackId: string | null
+  readonly live: StudioLiveTake | null
+  readonly level: number
+  /** Armed, counting in or recording: the lane shows its level. */
+  readonly listening: boolean
+}
 
 /** A sentence for the timeline's status pill; a new object shows it again. */
 export interface StudioTimelineNotice {
@@ -50,4 +61,6 @@ export interface StudioTimelineProps {
   readCanonicalAsset(assetId: string): Promise<Blob>
   /** Where each take's waveform peaks are kept between visits. */
   assetPeaks?: StudioWaveformPeaksStore
+  /** A take being recorded, from arming until it is kept. */
+  record?: StudioTimelineRecording | null
 }

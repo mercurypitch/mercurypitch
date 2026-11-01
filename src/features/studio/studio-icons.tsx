@@ -198,3 +198,34 @@ export const MixingDesk: Component<{ size?: number }> = (p) => (
     <path d="M14.5 12h3" />
   </svg>
 )
+
+// Record — the conventional dot: armed, counting in and recording are told apart by its button.
+export const RecordDot: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="7" fill="currentColor" />
+  </svg>
+)
+
+// Microphone — the armed lane's input.
+export const MicSmall: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0" />
+    <path d="M12 18v3" />
+  </svg>
+)

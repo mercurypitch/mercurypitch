@@ -25,7 +25,7 @@ export async function prepareStudioRecorderWorklet(
   context: AudioContext,
 ): Promise<void> {
   if (typeof context.audioWorklet?.addModule !== 'function')
-    throw new Error('This browser cannot record in Studio.')
+    throw new Error("This browser can't record in Studio.")
   let module = registered.get(context)
   if (module === undefined) {
     module = context.audioWorklet.addModule(workletUrl).catch((error) => {
