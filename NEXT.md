@@ -2623,3 +2623,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   seam repair, mem-guard, the copy flaw and both moves); SHIP -> DELIVERY.md from l4entr/delivery-f5-draft.md,
   send renders/film-06.mp4 + the branch link; ONE MORE PASS -> fix, re-render with mem-guard.sh (not
   render-switch.sh) and RECYCLE=0.
+- 08:16 CHECK-IN: in flight and healthy: the FILM6 critic (its measure in /dev/shm/critic06), render-l4.sh's own
+  measure step (pid 501), watcher b2gk805ny (to ~11:15; wakes on done/FAIL/exit>0 in film-06.status or / under
+  40 MB free; / 112 MB now). The check-in's stored prompt still named film-05 and FILM5; rewritten for film-06,
+  FILM6 and film-07 (same trigger, same schedule). Drafts for LEDGER 35 / DECISIONS 140: l4entr/f6-docs-draft.md.
