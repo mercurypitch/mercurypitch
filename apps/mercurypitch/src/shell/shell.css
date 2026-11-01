@@ -263,8 +263,11 @@
   border-radius: 999px;
   background: transparent;
   color: var(--text-secondary);
-  font: 500 10px/1 var(--font-body, sans-serif);
-  letter-spacing: 0.01em;
+  /* 13 px, the smallest the native app sets anything: "Progress" is 53 px
+     of the 54 px an item has at 320 wide, and the icon, the gap and the
+     line fit the 52 px with room. */
+  font: 500 13px/1 var(--font-body, sans-serif);
+  letter-spacing: 0;
   cursor: pointer;
 }
 

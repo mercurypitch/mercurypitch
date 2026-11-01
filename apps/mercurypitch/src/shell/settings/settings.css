@@ -476,11 +476,18 @@
 .mp-signin__fine {
   margin: 0;
   text-align: center;
-  font: 400 12px/17px var(--font-body, sans-serif);
+  /* 13 px, the smallest the native app sets anything. */
+  font: 400 13px/18px var(--font-body, sans-serif);
   color: var(--text-muted);
 }
 
+/* A link in the small print is a word in a sentence, and its target a full
+   44 px all the same: padding reaches past the line, and the negative margin
+   gives it back, so the sentence is set as before ("Terms" was 35 by 15). */
 .mp-signin__fine a {
+  display: inline-block;
+  margin: -13px -6px;
+  padding: 13px 6px;
   color: var(--text-secondary);
 }
 
@@ -1044,7 +1051,7 @@
 }
 
 .mp-keep__print-label {
-  font: 500 12px/16px var(--font-body, sans-serif);
+  font: 500 13px/17px var(--font-body, sans-serif);
   color: var(--text-muted);
 }
 

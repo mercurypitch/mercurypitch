@@ -27,7 +27,6 @@
 import type { JSX } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
-import { LockIcon } from '../shell/icons'
 import { lineFacts } from './line-score'
 import line from './LineView.module.css'
 import styles from './NativeOnboarding.module.css'
@@ -352,9 +351,6 @@ export function LineView(props: LineViewProps): JSX.Element {
             </div>
           </Match>
         </Switch>
-        <p class={styles.promise}>
-          <LockIcon size={14} /> {ONBOARDING_COPY.private}
-        </p>
       </div>
     </div>
   )
