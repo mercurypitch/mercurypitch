@@ -772,6 +772,8 @@ export interface UvrSessionLyrics extends DbEntity {
   versionsJson?: string
   /** Active version's kind (LyricsVersionKind). */
   activeVersionKind?: string
+  /** The singer said no to timing these lyrics from the song's notes. */
+  autoTimeDeclined?: boolean
 }
 
 export interface OfflinePitchAnalysisRecord extends DbEntity {

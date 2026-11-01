@@ -205,6 +205,9 @@ export interface LrcGenController {
 
   getGenLines: () => string[]
   getGenWords: (line: string) => string[]
+  /** A tap-along on these lyrics was left part-way: one to resume, which
+   *  nothing should time over meanwhile. */
+  hasTapProgress: () => boolean
   isTemplateMappedInGen: (blockId: string) => boolean
   expandAllBlockInstances: () => void
   saveLrcGenProgress: () => void
@@ -1689,6 +1692,12 @@ export function useLrcGenController(
     // shared with the lyrics controller
     getGenLines,
     getGenWords,
+    hasTapProgress: () => {
+      const saved = readSavedGenProgress(getGenLines())
+      return (
+        saved !== null && (saved.touchedLines.size > 0 || saved.lineIdx > 0)
+      )
+    },
     isTemplateMappedInGen,
     expandAllBlockInstances,
     saveLrcGenProgress,

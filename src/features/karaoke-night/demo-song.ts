@@ -284,7 +284,11 @@ async function keptBesideTheOriginal(
 ): Promise<Partial<LyricsData>> {
   const size =
     current?.fontSize === undefined ? {} : { fontSize: current.fontSize }
-  const theirs = (current?.versions ?? []).filter((v) => v.kind !== 'imported')
+  // Auto-timed is the app's timing of the old text, not the visitor's: the
+  // corrected text is timed afresh.
+  const theirs = (current?.versions ?? []).filter(
+    (v) => v.kind !== 'imported' && v.kind !== 'auto-time',
+  )
   if (theirs.length === 0) return size
   const { sortVersions, synthesizeVersions } =
     await import('@/lib/lyrics-versions')
@@ -294,6 +298,19 @@ async function keptBesideTheOriginal(
     versions: sortVersions([...original.versions, ...theirs]),
     activeVersionKind: 'imported',
   }
+}
+
+/**
+ * The text a stored copy holds as far as seeding is concerned. Auto-timed
+ * lyrics are the app's timing of the seeded text, not the visitor's edit of
+ * it, so the Original under them is what is compared with the stamp.
+ */
+function seededText(record: LyricsData | null): string | null {
+  if (record === null) return null
+  if (record.activeVersionKind !== 'auto-time') return record.text
+  return (
+    record.versions?.find((v) => v.kind === 'imported')?.text ?? record.text
+  )
 }
 
 /** Seeds under way, by session id — see `seedDemoLyrics`. */
@@ -340,7 +357,7 @@ async function seedOnce(
     const existing = await loadLyricsFromDb(sessionId)
     const revision = m.lyricsRevision ?? 0
     if (
-      !shouldSeedLyrics(existing?.text ?? null, readStamp(stampKey), revision)
+      !shouldSeedLyrics(seededText(existing), readStamp(stampKey), revision)
     ) {
       // Nothing to seed, but a copy from before examples were named after
       // their artist still downloads as the bare title. Renaming it touches
@@ -359,7 +376,7 @@ async function seedOnce(
     // not wait for ever — it goes online for the words instead. Whatever it
     // stored in the meantime is the visitor's, so look again before writing.
     const current = await loadLyricsFromDb(sessionId)
-    if (!shouldSeedLyrics(current?.text ?? null, readStamp(stampKey), revision))
+    if (!shouldSeedLyrics(seededText(current), readStamp(stampKey), revision))
       return
     await saveLyricsToDb(sessionId, {
       text: lyrics.text,

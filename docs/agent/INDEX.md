@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 31.1k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
-| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 17.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
+| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 18.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 13.5k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
@@ -196,6 +196,7 @@ These are the rules that break things when ignored.
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 700 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [lyrics-automap.ts](../../src/lib/lyrics-automap.ts) | 600 | Lyrics automap — pasted lyric lines timed against the sung notes Untimed lyrics (a paste, a .txt, an LRCLIB record with plain lyrics only... |
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
 | [consent.ts](../../src/lib/consent.ts) | 550 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
@@ -421,8 +422,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/piano-night/PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 2.1k |
+| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 2.1k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 2.0k |
-| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 2.0k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.9k |
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |

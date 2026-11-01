@@ -17,6 +17,7 @@ import { parseLrcTimingMetadata } from './lrc-timing-metadata'
 
 export type LyricsVersionKind =
   | 'imported'
+  | 'auto-time'
   | 'edited'
   | 'auto-sync'
   | 'lrc-gen'
@@ -36,6 +37,9 @@ export interface LyricsVersion {
 
 export const VERSION_LABELS: Record<LyricsVersionKind, string> = {
   imported: 'Original',
+  // Untimed lyrics, their lines timed against the song's notes
+  // (lyrics-automap.ts).
+  'auto-time': 'Auto-timed',
   edited: 'Edited',
   'auto-sync': 'Auto-sync',
   'lrc-gen': 'Mapped',
@@ -45,6 +49,7 @@ export const VERSION_LABELS: Record<LyricsVersionKind, string> = {
 /** Display order in the switcher (original first, then the derived ones). */
 const KIND_ORDER: LyricsVersionKind[] = [
   'imported',
+  'auto-time',
   'edited',
   'auto-sync',
   'lrc-gen',

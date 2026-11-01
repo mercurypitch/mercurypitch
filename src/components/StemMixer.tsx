@@ -1386,6 +1386,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Lazy closure: pitchAnalysis is initialized after this controller,
     // and the accessor is only invoked from memos once setup completes.
     melodyNotes: () => pitchAnalysis.editableNotes(),
+    // Untimed lyrics are timed against the notes as the analysis found them,
+    // not the cleaned-up ones: those join a phrase into a few long notes,
+    // and the breaths between lines go with them.
+    vocalNotes: () => pitchAnalysis.offlineMergedNotes(),
     seekToWithWindow,
     // The standalone karaoke stage reads from across the room: big centered
     // lyrics by default, with page-local alignment prefs.

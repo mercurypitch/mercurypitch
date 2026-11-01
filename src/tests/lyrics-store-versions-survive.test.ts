@@ -138,6 +138,37 @@ describe('an authored correction reaching an example', () => {
     expect(await loadLyricsFromDb(SESSION)).toMatchObject(withBoth('edited'))
   })
 
+  it('lands on untimed lyrics the app timed itself, and times the correction afresh', async () => {
+    // Auto-timed is the app's timing of what was seeded, not the visitor's
+    // edit: a correction still lands, and the old timing goes with the old
+    // words (the mixer times the new ones when it opens them).
+    const UNTIMED = 'Lantern under\nPaper boats'
+    await saveLyricsToDb(SESSION, {
+      text: SEEDED,
+      format: 'lrc',
+      filename: demoLyricsFilename(EXAMPLE, 'lrc'),
+      activeVersionKind: 'auto-time',
+      versions: [
+        { kind: 'imported', text: UNTIMED, createdAt: 1 },
+        { kind: 'auto-time', text: SEEDED, createdAt: 2 },
+      ],
+    })
+    localStorage.setItem(
+      STAMP_KEY,
+      JSON.stringify({ revision: 1, text: UNTIMED }),
+    )
+
+    await seedDemoLyrics({
+      ...EXAMPLE,
+      lyricsText: CORRECTED,
+      lyricsRevision: 2,
+    })
+
+    const stored = await loadLyricsFromDb(SESSION)
+    expect(stored?.text).toBe(CORRECTED)
+    expect(stored?.versions).toBeUndefined()
+  })
+
   it('writes a plain record when there is nothing else to keep', async () => {
     // The mixer derives the versions of a bare record when it opens it,
     // end marks included. Nothing to carry means nothing to pre-empt.
