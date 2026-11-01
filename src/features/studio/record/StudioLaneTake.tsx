@@ -8,6 +8,7 @@
 import { createEffect, Show } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
+import { studioTakeFileName } from '@/lib/studio/record/take-audio'
 import { MicSmall } from '../studio-icons'
 import { frameToPixel } from '../timeline/timeline-geometry'
 import { StudioInputMeter } from './StudioInputMeter'
@@ -45,9 +46,8 @@ function drawLive(
   width: number,
 ): void {
   const ratio = globalThis.devicePixelRatio || 1
-  // The box's height, not the canvas's own, which follows its pixel size.
-  const boxHeight = canvas.parentElement?.clientHeight ?? 0
-  const height = boxHeight > 0 ? boxHeight : 40
+  // The laid-out height: the flex column sizes the canvas, not its pixels.
+  const height = canvas.clientHeight > 0 ? canvas.clientHeight : 40
   // Resizing reallocates the canvas, so it happens only when the size moves.
   const pixelWidth = Math.max(1, Math.round(width * ratio))
   const pixelHeight = Math.max(1, Math.round(height * ratio))
@@ -61,6 +61,7 @@ function drawLive(
   const toBucket =
     live.sampleRate / STUDIO_SAMPLE_RATE / live.peaks.bucketFrames
   const middle = height / 2
+  const reach = middle - 2
   for (let x = 0; x < width; x++) {
     const frame = firstFrame + x * framesPerPixel - live.heardFirst
     const from = Math.max(0, Math.floor(frame * toBucket))
@@ -69,10 +70,19 @@ function drawLive(
       Math.ceil((frame + framesPerPixel) * toBucket),
     )
     let peak = 0
-    for (let bucket = from; bucket < to; bucket++)
+    let loud = 0
+    for (let bucket = from; bucket < to; bucket++) {
       peak = Math.max(peak, live.peaks.peaks[bucket])
-    const half = Math.max(0.5, Math.min(1, peak) * (middle - 2))
-    context.fillRect(x, middle - half, 1, half * 2)
+      loud = Math.max(loud, live.peaks.rms[bucket])
+    }
+    // As the saved clip draws it (StudioWaveform.tsx): the peaks pale, the
+    // loudness solid, so the take keeps its shape when it lands.
+    const high = Math.max(0.5, Math.min(1, peak) * reach)
+    const body = Math.max(0.5, Math.min(1, peak, loud) * reach)
+    context.globalAlpha = 0.42
+    context.fillRect(x, middle - high, 1, high * 2)
+    context.globalAlpha = 1
+    context.fillRect(x, middle - body, 1, body * 2)
   }
 }
 
@@ -113,14 +123,18 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
             style={{ left: `${shown().left}px`, width: `${shown().width}px` }}
           >
             <Show when={shown().shownTo > shown().shownFrom}>
-              <canvas
-                ref={canvas}
-                class={styles.liveWave}
+              <div
+                class={styles.liveShown}
                 style={{
                   left: `${shown().shownFrom - shown().left}px`,
                   width: `${Math.floor(shown().shownTo - shown().shownFrom)}px`,
                 }}
-              />
+              >
+                <span class={styles.liveTitle}>
+                  {studioTakeFileName(shown().live.title)}
+                </span>
+                <canvas ref={canvas} class={styles.liveWave} />
+              </div>
             </Show>
           </div>
         )}

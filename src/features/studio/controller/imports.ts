@@ -6,6 +6,7 @@ import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
+import { studioTakeFileName } from '@/lib/studio/record/take-audio'
 import { prepareStudioSource } from '../integration/prepare-source'
 import type { StudioSourceEntry } from '../integration/source-catalog'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
@@ -379,7 +380,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
               {
                 id: take.assetId ?? id,
                 projectId,
-                originalName: `${take.title}.wav`,
+                originalName: studioTakeFileName(take.title),
                 provenance: { kind: 'recording', importedAt },
               },
               { signal },

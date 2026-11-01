@@ -252,6 +252,7 @@ describe('the count-in', () => {
     expect(h.transport.play).not.toHaveBeenCalled()
     // Song frame at 1.1 s is 48000 + 0.2 s; the round trip comes off.
     expect(h.view().live).toMatchObject({
+      title: 'Take 1',
       heardFirst: 48000 + 0.2 * RATE - 0.05 * RATE,
       fromFrame: null,
     })

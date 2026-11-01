@@ -22,6 +22,8 @@ export type StudioRecordPhase =
 
 /** A take as it records, for the waveform that grows in its lane. */
 export interface StudioLiveTake {
+  /** The take's title ("Take 3"), shown as its clip will show it. */
+  readonly title: string
   /** The song frame the take's first sample lands on. */
   readonly heardFirst: number
   /** Where the clip will start: the playhead, for a take started from silence. */
