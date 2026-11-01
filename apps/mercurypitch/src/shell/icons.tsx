@@ -390,6 +390,20 @@ export const TrophyIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/**
+ * A voiceprint: the rings of a fingerprint, the reveal's print (S7b beat 5)
+ * drawn in the kit's line, so the card the reveal showed and the card Keep
+ * keeps are the same thing.
+ */
+export const PrintIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M6.3 6.6A8.9 8.9 0 0 1 12 4.5c2.2 0 4.2.8 5.8 2.1" />
+    <path d="M5 15.5V13a7 7 0 0 1 14 0v1" />
+    <path d="M8.5 19.5c-.6-1.4-1-3-1-4.5V13a4.5 4.5 0 0 1 9 0v1.5c0 1.6-.3 3.1-.8 4.5" />
+    <path d="M12 12.5V15c0 1.6-.4 3.2-1 4.5" />
+  </svg>
+)
+
 /** A take: the waveform. */
 export const WaveIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>

@@ -10,17 +10,19 @@
 // Its beats, in S7b's order, as each lands:
 //
 //   first-note  beats 2 and 3 (useFirstNote.ts): one note, named. Then Find
-//               my range, or Skip for now: Merc says the range is there for
-//               later, and Keep comes a beat after. On a phone that already
-//               keeps a range (saved-range.ts): See my voice, its reveal,
-//               or Find my range again
+//               my range, or Skip for now: Merc says the line comes instead,
+//               and it comes a beat after, Keep after it. On a phone that
+//               already keeps a range (saved-range.ts): See my voice, its
+//               reveal, or Find my range again
 //   range       beat 4 (useRange.ts): a slide down, a slide up, the range
 //   reveal      beat 5 (useReveal.ts): the voiceprint card, the twin, Share
 //   keep        beat 7 (KeepView.tsx): Keep, the account offer, the shell's
 //               own sheet over this layer (account-offer.ts). After the
-//               reveal it shows the voiceprint, its card flown in; after a
-//               skipped range it is Save your progress, whose "Find your
-//               range first" runs beat 4 here and comes back to Keep
+//               reveal it shows the voiceprint, its card flown in. After a
+//               skipped range it comes after the line instead, Save your
+//               progress, whose "Find your range first" runs beat 4 here
+//               and comes back to Keep: an account asked for after one
+//               note sung was asked for too early
 //   line        beat 8 (useLine.ts, LineView.tsx): one line, sung by Merc
 //               and then by the singer, in the key of the range the reveal
 //               showed (from C4 after a skipped range), scored by the
@@ -33,13 +35,15 @@
 //               layer's Not now brings it too, from any beat
 //
 // Keep comes only to a phone with no account yet (signed in, or signed out
-// of one, the layer goes straight on to the line), and only after a range
-// measured or skipped: a refused mic never gets that far, so it gets no
-// offer of either kind (S7b E5). Not now on the layer stands aside while
-// Keep or the Cloud offer is up: the sheet's own is the way out. Once Keep
-// has closed, and the sign-in sheet or the voiceprint ask it handed over to
-// has closed too, the layer goes on to the line. The line's Continue opens
-// the Cloud offer when beat 9's rules allow it, and the onboarding lands on
+// of one, the layer goes straight on), and only after a range measured, or
+// after the line once a range was skipped: a refused mic never gets that
+// far, so it gets no offer of either kind (S7b E5). Not now on the layer
+// stands aside while Keep or the Cloud offer is up: the sheet's own is the
+// way out. Once Keep has closed, and the sign-in sheet or the voiceprint
+// ask it handed over to has closed too, the layer goes on: to the line, or
+// past it once it has been sung. The line's Continue opens the Keep a
+// skipped range left for later, else the Cloud offer when beat 9's rules
+// allow it, and the onboarding lands on
 // the Warm-up's path (beat 10, onboarding-landing.ts) once the offer and
 // whatever it handed over to have closed; else it lands there straight
 // away. A refused mic, or one that would not open, goes on in one tap
@@ -255,14 +259,25 @@ export function NativeOnboarding(): JSX.Element {
     range.start()
   }
 
+  /** The line's Continue was tapped: what follows the line comes next. */
+  let lineDone = false
+  /** Keep has come up in this layer: the line's Continue brings no second. */
+  let keepShown = false
+
   /**
-   * Beat 8, the sung line: after Keep, or straight after the reveal or a
-   * skip on a phone with an account. A layer on its way out brings none.
+   * Beat 8, the sung line: after Keep, after the reveal on a phone with an
+   * account, or straight after Merc's word on a skipped range. Once it has
+   * been sung, what comes after it instead (Keep came back from Find your
+   * range first). A layer on its way out brings none.
    */
   const toLine = (): void => {
     if (untrack(leaving)) return
     if (exiting) {
       leaveOnboarding('not-now')
+      return
+    }
+    if (lineDone) {
+      finishLine()
       return
     }
     go('line')
@@ -275,13 +290,12 @@ export function NativeOnboarding(): JSX.Element {
    * with an account goes straight on to the line.
    */
   const toKeep = (after: 'reveal' | 'skip'): void => {
-    // A layer on its way out brings no Keep: Merc's word on a skip still
-    // ends while it fades.
     if (untrack(leaving)) return
     if (!noAccountYet()) {
       toLine()
       return
     }
+    keepShown = true
     go('keep')
     if (after === 'reveal') openKeepFromReveal()
     else openKeep()
@@ -292,14 +306,22 @@ export function NativeOnboarding(): JSX.Element {
     )
   }
 
-  /** Skip for now: Merc's word, then Keep. */
+  /**
+   * Skip for now: Merc's word, then the line; Keep comes after it (the
+   * line's Continue), with the range there to find from it. The range's
+   * own Skip for now, when Keep's Find your range first ran it, goes back
+   * to Keep.
+   */
   const skip = (): void => {
     if (untrack(skipped)) return
     setSkipped(true)
     count('native_onboarding_range_skipped')
+    // A layer on its way out brings no line: Merc's word still ends while
+    // it fades.
     skipTimer = setTimeout(() => {
       skipTimer = undefined
-      toKeep('skip')
+      if (keepShown) toKeep('skip')
+      else toLine()
     }, SKIP_BEAT_MS)
   }
   /** The range's own Skip for now: in the onboarding only. From Keep, Not
@@ -350,9 +372,9 @@ export function NativeOnboarding(): JSX.Element {
    */
   let offered = false
 
-  // Keep has closed, and so has what it handed over to: on to the line.
-  // The Cloud offer has closed, and so has what it handed over to: on to
-  // the landing. Checked once the tap that closed the sheet is over,
+  // Keep has closed, and so has what it handed over to: on to the line, or
+  // past it once it has been sung (toLine). The Cloud offer has closed, and
+  // so has what it handed over to: on to the landing. Checked once the tap that closed the sheet is over,
   // because a sheet's ways close it and open what comes next in the one tap
   // (Use email, a sign-in and its voiceprint ask, Find your range first,
   // the offer's free account).
@@ -388,11 +410,26 @@ export function NativeOnboarding(): JSX.Element {
   /** Continue on the line was tapped, and beat 9 is being decided. */
   const [continuing, setContinuing] = createSignal(false)
 
-  /** Continue on the line: beat 9 when its rules allow it, else the landing. */
+  /**
+   * Continue on the line: the onboarding done for good, at once. Then Keep,
+   * where a skipped range left it for after the line, on a phone with no
+   * account; else what follows the line (finishLine).
+   */
   const continueLine = (): void => {
     if (untrack(continuing) || untrack(leaving) || exiting) return
-    setContinuing(true)
+    lineDone = true
     markFinished()
+    if (!keepShown && noAccountYet()) {
+      toKeep('skip')
+      return
+    }
+    finishLine()
+  }
+
+  /** After the line: beat 9 when its rules allow it, else the landing. */
+  const finishLine = (): void => {
+    if (untrack(continuing) || untrack(leaving) || exiting) return
+    setContinuing(true)
     const asks = offerAsks ?? prepareOnboardingOffer()
     // Not now while the asks are out takes over: its offer, not this one.
     const stands = (): boolean => !untrack(leaving) && !exiting
@@ -550,7 +587,9 @@ export function NativeOnboarding(): JSX.Element {
       default:
         break
     }
-    if (skipped()) return ONBOARDING_COPY.skipped
+    if (skipped()) {
+      return keepShown ? ONBOARDING_COPY.skippedToKeep : ONBOARDING_COPY.skipped
+    }
     switch (beat()) {
       case 'range':
         return rangeSays(range)
@@ -571,6 +610,7 @@ export function NativeOnboarding(): JSX.Element {
       case 'reveal':
         return ONBOARDING_COPY.revealTitle
       case 'keep':
+        if (lineDone) return ONBOARDING_COPY.lineTitle
         return revealed() === null
           ? ONBOARDING_COPY.title
           : ONBOARDING_COPY.revealTitle
@@ -727,7 +767,7 @@ export function NativeOnboarding(): JSX.Element {
             )}
           </Match>
           <Match when={beat() === 'keep'}>
-            <KeepView merc={merc} />
+            <KeepView />
           </Match>
           <Match when={beat() === 'line'}>
             <LineView

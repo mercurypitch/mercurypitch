@@ -62,18 +62,16 @@ export const KEEP = {
   titleProgress: 'Save your progress',
   /** Over the voiceprint card. */
   voiceprintLabel: 'Your voiceprint',
-  /** Only with a voiceprint: creating the account adopts it. */
-  voiceprintSaved: 'Your range and voiceprint, saved',
   everywhere: 'Your progress on every phone and the web',
-  /** Only in a build that splits songs (D5 and 15.1), with its one
-   *  sentence under it. */
+  /** Only in a build that splits songs (D5 and 15.1). */
   freeSong: '1 free karaoke song every month',
-  /** Under the free song: the server gives the month's song only to an
-   *  account with its email confirmed (getsFreeSong, db-worker
-   *  songs-allowance.ts; owner, 16 Oct). Apple, Google and an emailed code
-   *  all confirm it as the account is made, so for an account made here
-   *  the song is there at once. */
-  freeSongEmail: 'Yours once your email is confirmed.',
+  /** In the small print, with the free song: the server gives the month's
+   *  song only to an account with its email confirmed (getsFreeSong,
+   *  db-worker songs-allowance.ts; owner, 16 Oct). Apple, Google and an
+   *  emailed code all confirm it as the account is made, so for an account
+   *  made here the song is there at once: a caveat, not a benefit, so it is
+   *  not one of the rows. */
+  freeSongEmail: 'The free song is yours once your email is confirmed.',
   /** With no range measured, while a range finder is there to run. The
    *  range is two slides of at most eight seconds each from the voice's
    *  start (range-take.ts), so a minute is the honest ceiling. */

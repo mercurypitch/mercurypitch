@@ -58,9 +58,11 @@ describe('account copy', () => {
     )
   })
 
-  it("says Keep's free song, and in one sentence under it that it needs a confirmed email: the server gives the month's song to no other account", () => {
+  it("says Keep's free song, and in one sentence of the small print that it needs a confirmed email: the server gives the month's song to no other account", () => {
     expect(KEEP.freeSong).toBe('1 free karaoke song every month')
-    expect(KEEP.freeSongEmail).toBe('Yours once your email is confirmed.')
+    expect(KEEP.freeSongEmail).toBe(
+      'The free song is yours once your email is confirmed.',
+    )
   })
 
   it('says the range takes under a minute: two slides of at most eight seconds each', () => {

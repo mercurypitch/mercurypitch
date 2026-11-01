@@ -30,9 +30,10 @@ import type * as Wiring from '../shell/premium-exercise-wiring'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import { onboardingShown, pushed, resetRunShell, setOnboardingShown, } from '../shell/run-shell-store'
-import { forgetAccountOffer, offerOpen, openKeep, } from '../shell/settings/account-offer'
+import { KEEP } from '../shell/settings/account-copy'
+import { forgetAccountOffer, keepArrival, offerOpen, openKeep, } from '../shell/settings/account-offer'
 import { AccountOfferSheet } from '../shell/settings/AccountOffer'
-import { resetSignIn } from '../shell/settings/sign-in-state'
+import { resetSignIn, signInOpen } from '../shell/settings/sign-in-state'
 import { resetVoiceprintAsk } from '../shell/settings/voiceprint-ask'
 import { performBack } from '../shell/shell-navigation'
 import { NativeOnboarding, SKIP_BEAT_MS } from './NativeOnboarding'
@@ -178,6 +179,35 @@ let view: RenderedShell | null = null
 let shell: (() => void) | null = null
 let unregisterStore: (() => void) | null = null
 
+/** jsdom's own: none, so a swap cuts unless a case stands one in. */
+const ANIMATE = Element.prototype.animate
+
+/**
+ * A WebView with View Transitions: element.animate, and a transition whose
+ * update waits for the frame the case draws with the returned call.
+ */
+function standInViewTransitions(): () => void {
+  const updates: (() => void)[] = []
+  const never = new Promise<void>(() => undefined)
+  Element.prototype.animate = function animate(): Animation {
+    return { finished: never, cancel: () => undefined } as unknown as Animation
+  }
+  Object.defineProperty(document, 'startViewTransition', {
+    configurable: true,
+    value: (update: () => void) => {
+      updates.push(update)
+      return {
+        ready: Promise.resolve(),
+        updateCallbackDone: Promise.resolve(),
+        finished: never,
+      }
+    },
+  })
+  return () => {
+    for (const update of updates.splice(0)) update()
+  }
+}
+
 /** A store here, with the month's plan to sell at its own price. */
 function store(
   overrides: Partial<KaraokeSubscriptionApi> = {},
@@ -250,6 +280,8 @@ beforeEach(() => {
 
 afterEach(() => {
   withStore(null)
+  Element.prototype.animate = ANIMATE
+  Reflect.deleteProperty(document, 'startViewTransition')
   view?.unmount()
   view = null
   resetRunShell()
@@ -313,7 +345,7 @@ async function nameNote(s: Stand): Promise<void> {
   expect(q('onboarding-find-range')).not.toBeNull()
 }
 
-/** One note, then Skip for now, and Merc's word: Keep, or the line. */
+/** One note, then Skip for now, and Merc's word: the line. */
 async function skipRange(s: Stand): Promise<void> {
   await nameNote(s)
   q('onboarding-skip')?.click()
@@ -396,13 +428,12 @@ async function continueLine(): Promise<void> {
 }
 
 describe('beat 8, the sung line', () => {
-  it("comes after Keep's Not now, and is sung from C4 after a skipped range", async () => {
+  it("comes straight after Merc's word on a skipped range, sung from C4", async () => {
     const s = mount()
     await skipRange(s)
-    expect(offerOpen()).toBe(true)
-
-    k('keep-not-now')?.click()
-    await settle()
+    // Keep waits until after the line: an account asked for after one
+    // note sung is asked for too early.
+    expect(offerOpen()).toBe(false)
 
     expect(beat()).toBe('line')
     expect(layer()?.getAttribute('aria-label')).toBe(ONBOARDING_COPY.lineTitle)
@@ -755,9 +786,10 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     expect(pushed()).toBeNull()
   })
 
-  it("leaves Keep's own Not now going on to the line", async () => {
+  it("leaves Keep's own Not now going on to the line, after a reveal", async () => {
     const s = mount()
-    await skipRange(s)
+    await measureRange(s)
+    expect(beat()).toBe('keep')
 
     k('keep-not-now')?.click()
     await settle()
@@ -768,15 +800,137 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
   })
 })
 
+describe('Keep after the line, once a range was skipped (beat 7)', () => {
+  /** A skipped range, the line sung, and its Continue: Keep. */
+  async function keepAfterLine(s: Stand): Promise<void> {
+    await skipRange(s)
+    await singLine(s)
+    await continueLine()
+  }
+
+  it("comes on the line's Continue: Save your progress, with Find your range first and no card", async () => {
+    const s = mount()
+    await keepAfterLine(s)
+
+    expect(beat()).toBe('keep')
+    expect(offerOpen()).toBe(true)
+    expect(k('account-offer')?.dataset.variant).toBe('progress')
+    expect(k('keep-voiceprint')).toBeNull()
+    expect(k('keep-find-range')?.textContent).toBe(KEEP.findRange)
+    // Done for good at the line's Continue, Keep or no Keep.
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
+    expect(layer()?.getAttribute('aria-label')).toBe(ONBOARDING_COPY.lineTitle)
+    expect(said()).toBe('')
+    expect(cloudOfferOpen()).toBe(false)
+  })
+
+  it('runs the range here from its Find your range first, the mic opened in that tap, then Keep again, then the offer', async () => {
+    const s = mount()
+    await keepAfterLine(s)
+    const acquired = s.calls.acquire
+
+    k('keep-find-range')?.click()
+
+    expect(beat()).toBe('range')
+    expect(s.calls.acquire).toBe(acquired + 1)
+    expect(said()).toBe(ONBOARDING_COPY.slideDown)
+    await settle()
+    s.frames = slideWindow(52, 40)
+    flushFrame()
+    s.frames = slideWindow(45, 67)
+    flushFrame()
+    q('onboarding-see-voice')?.click()
+    q('onboarding-continue')?.click()
+    await settle()
+    expect(beat()).toBe('keep')
+    expect(k('account-offer')?.dataset.variant).toBe('voiceprint')
+    expect(keepArrival()).toBe('reveal')
+
+    k('keep-not-now')?.click()
+    await settleAll()
+
+    // Not a second line: the line was sung; on to beat 9.
+    expect(beat()).toBe('offer')
+    expect(voice.sung).toHaveLength(1)
+  })
+
+  it('runs the range from its Find your range first where a View Transition draws it a frame later, and nothing else', async () => {
+    const s = mount()
+    await keepAfterLine(s)
+    const acquired = s.calls.acquire
+    const draw = standInViewTransitions()
+
+    k('keep-find-range')?.click()
+    // Keep's close is checked once its tap is over, before the frame that
+    // draws the range: it must see the range coming, not the end.
+    await settleAll()
+    draw()
+    await settle()
+
+    expect(beat()).toBe('range')
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(true)
+    expect(s.calls.acquire).toBe(acquired + 1)
+    expect(said()).toBe(ONBOARDING_COPY.slideDown)
+  })
+
+  it("brings Keep back from the range's own Skip for now, when Keep ran it", async () => {
+    const s = mount()
+    await keepAfterLine(s)
+    k('keep-find-range')?.click()
+    await settle()
+    // Stopped mid-slide: the mic is down, and Skip for now is back.
+    q('onboarding-mic')?.click()
+
+    q('onboarding-skip')?.click()
+    // Keep, with its Find your range first, is what comes back.
+    expect(said()).toBe(ONBOARDING_COPY.skippedToKeep)
+    vi.advanceTimersByTime(SKIP_BEAT_MS)
+    await settle()
+
+    expect(beat()).toBe('keep')
+    expect(offerOpen()).toBe(true)
+    expect(k('account-offer')?.dataset.variant).toBe('progress')
+    expect(voice.sung).toHaveLength(1)
+  })
+
+  it('stays on Keep while it hands over to the sign-in sheet, and goes on to the end when that closes', async () => {
+    const s = mount()
+    await keepAfterLine(s)
+
+    k('keep-email')?.click()
+    await settle()
+    const handedOver = signInOpen()
+    const stayed = beat()
+    resetSignIn()
+    await settleAll()
+
+    expect(handedOver).toBe(true)
+    expect(stayed).toBe('keep')
+    expect(beat()).toBe('offer')
+    expect(voice.sung).toHaveLength(1)
+  })
+
+  it('is not asked for on a phone with an account: the line goes on to the end', async () => {
+    setAuthToken(token('google'))
+    const s = mount()
+    await keepAfterLine(s)
+
+    expect(offerOpen()).toBe(false)
+    expect(beat()).toBe('offer')
+  })
+})
+
 describe('beat 9, the Cloud offer', () => {
-  it('opens on Continue, a skipped range and all, over the layer', async () => {
+  it('opens on Continue, a skipped range and all, over the layer, once Keep after the line has closed', async () => {
     const s = mount()
     await skipRange(s)
-    k('keep-not-now')?.click()
-    await settle()
     await singLine(s)
 
     await continueLine()
+    expect(beat()).toBe('keep')
+    k('keep-not-now')?.click()
+    await settleAll()
 
     expect(beat()).toBe('offer')
     expect(cloudOffer()?.source).toBe('onboarding')
@@ -845,10 +999,10 @@ describe('beat 9, the Cloud offer', () => {
   it("stays up while its free account hands over to Keep, then lands on the Warm-up's path", async () => {
     const s = mount()
     await skipRange(s)
-    k('keep-not-now')?.click()
-    await settle()
     await singLine(s)
     await continueLine()
+    k('keep-not-now')?.click()
+    await settleAll()
 
     // The offer's "Sign up and confirm your email": it closes, and Keep
     // opens in the same tap (ShellCloudOffer.tsx).
@@ -870,10 +1024,10 @@ describe('beat 9, the Cloud offer', () => {
   it("runs the range from that Keep's Find your range first, then lands on the Warm-up's path, not on a second line", async () => {
     const s = mount()
     await skipRange(s)
-    k('keep-not-now')?.click()
-    await settle()
     await singLine(s)
     await continueLine()
+    k('keep-not-now')?.click()
+    await settleAll()
     closeCloudOffer('done')
     openKeep()
     await settle()
@@ -1008,14 +1162,18 @@ describe('beat 9, the Cloud offer', () => {
 })
 
 describe('beats 8 and 9, counted (S7b §7)', () => {
-  it('counts the line as it shows, once scored, and its band, then the offer it opens and the end', async () => {
+  it('counts the line as it shows, once scored, and its band, then Keep, the offer it opens and the end', async () => {
     const s = mount()
     await skipRange(s)
-    k('keep-not-now')?.click()
-    await settle()
     await singLine(s)
     await continueLine()
+    expect(beat()).toBe('keep')
+    k('keep-not-now')?.click()
+    await settleAll()
     expect(beat()).toBe('offer')
+    // Keep after the line is Save your progress, counted on its beat 7.
+    expect(funnel.sent).toContain('native_onboarding_keep_view_progress')
+    expect(funnel.sent).toContain('native_onboarding_keep_not_now')
 
     closeCloudOffer('not-now')
     await settle()
@@ -1037,8 +1195,6 @@ describe('beats 8 and 9, counted (S7b §7)', () => {
   it('counts a line half sung in its band', async () => {
     const s = mount()
     await skipRange(s)
-    k('keep-not-now')?.click()
-    await settle()
     q('onboarding-mic')?.click()
     await settle()
     await settle()
