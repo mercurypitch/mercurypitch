@@ -31,6 +31,7 @@ import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMo
 import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { NATIVE_ONBOARDING } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { expectNoOnboarding, expectOnboarding, } from '../onboarding/onboarding-layer'
@@ -252,8 +253,14 @@ export const RoomsAlley: Component = () => {
     // A new install's onboarding opens over the Sing room: its code loads
     // now, and the room's words are held, so none of them show as the door
     // opens into it (onboarding-layer.ts). Any other door lets them go.
-    if (spec.tab === TAB_SINGING) expectOnboarding()
-    else expectNoOnboarding()
+    // Each call behind the switch, as the shell's are: a store build folds
+    // the branch, and only then drops the layer's module, its flag and its
+    // storage key with it (MISTAKES.md, a folded branch still runs the
+    // modules its imports name; onboarding-fold.test.ts).
+    if (NATIVE_ONBOARDING) {
+      if (spec.tab === TAB_SINGING) expectOnboarding()
+      else expectNoOnboarding()
+    }
     if (before.door !== null && before.door !== key) {
       // Another door was out: its clip stops, its ambient hands over below
       // (or fades out, for a locked door that has none).
@@ -316,7 +323,7 @@ export const RoomsAlley: Component = () => {
         if (phase !== 'rest') return
         releaseClip()
         dropRoom()
-        expectNoOnboarding()
+        if (NATIVE_ONBOARDING) expectNoOnboarding()
       },
     ),
   )
@@ -363,7 +370,7 @@ export const RoomsAlley: Component = () => {
     if (spec.tab === null) return
     const tab = spec.tab
     // Entered without a pick first (the keyboard's way in): the same as a pick.
-    if (tab === TAB_SINGING) expectOnboarding()
+    if (NATIVE_ONBOARDING && tab === TAB_SINGING) expectOnboarding()
     const ambientSilent = ambient().stop(reduced() ? REDUCED_MS : FADE_OUT_MS)
     const clip =
       spec.clip !== null && singVideo !== undefined && !singVideo.paused
@@ -630,7 +637,7 @@ export const RoomsAlley: Component = () => {
     dropRoom()
     // The room's words go free: a door that opened into the Sing room has
     // the onboarding hold them again as that tab comes up, in this update.
-    expectNoOnboarding()
+    if (NATIVE_ONBOARDING) expectNoOnboarding()
   })
 
   return (

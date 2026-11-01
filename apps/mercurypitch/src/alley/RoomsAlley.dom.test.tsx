@@ -900,7 +900,19 @@ describe('the Sing door clip', () => {
 
 describe('the Sing door on a new install', () => {
   // The onboarding opens over the Sing room it leads to: from the pick, the
-  // room's words are held, so none show as the door opens into it.
+  // room's words are held, so none show as the door opens into it. On a
+  // build that carries it: the tests' own folds the switch off.
+  beforeEach(() => {
+    vi.doMock('@/lib/native-build', async (importOriginal) => ({
+      ...(await importOriginal<Record<string, unknown>>()),
+      NATIVE_ONBOARDING: true,
+    }))
+  })
+
+  afterEach(() => {
+    vi.doUnmock('@/lib/native-build')
+  })
+
   it("holds the room's words from the pick, and lets them go as the door goes back", async () => {
     const { el, store } = await mountAlley()
     const flag = await import('../onboarding/onboarding-flag')
@@ -924,6 +936,33 @@ describe('the Sing door on a new install', () => {
     flag.settleOnboarding(true)
 
     el('alley-door-sing').click()
+    expect(store.roomWordsHeld()).toBe(false)
+  })
+
+  it('lets the words go when the alley goes, a door still picked', async () => {
+    const { el, store } = await mountAlley()
+    const flag = await import('../onboarding/onboarding-flag')
+    flag.settleOnboarding(false)
+    el('alley-door-sing').click()
+    expect(store.roomWordsHeld()).toBe(true)
+
+    view?.unmount()
+    view = null
+
+    expect(store.roomWordsHeld()).toBe(false)
+  })
+})
+
+describe('the Sing door on a build without the onboarding', () => {
+  // The store build: the switch folds the door's calls into the layer away,
+  // so a new install's Sing door holds nothing (onboarding-fold.test.ts).
+  it("holds none of the room's words", async () => {
+    const { el, store } = await mountAlley()
+    const flag = await import('../onboarding/onboarding-flag')
+    flag.settleOnboarding(false)
+
+    el('alley-door-sing').click()
+
     expect(store.roomWordsHeld()).toBe(false)
   })
 })
