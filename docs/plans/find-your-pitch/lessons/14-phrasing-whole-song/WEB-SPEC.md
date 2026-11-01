@@ -108,7 +108,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    (Toys 2). On a phone (390 x 844) the title and the opening's first control, Play take 1, and the
    two choices belong on the first screen, and on a tablet in landscape (1024 x 640) the stage and
    the choices too (CURIOSITY-MOMENTS § 3.1, "Above the fold",
-   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:340-342`). Of the plan's levers, the recall's
+   `docs/plans/find-your-pitch/CURIOSITY-MOMENTS.md:433-435`). Of the plan's levers, the recall's
    place is already used, since it follows the predict; the others are Merc and Tavi's size
    (`--merc`, `kit/lesson-stage.css:212`) and the hook's length, 58 characters (1), since the owner
    dropped its alternative, `compelling`, on 22 October 2026. The seven chips take five rows on a
