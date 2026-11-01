@@ -29,12 +29,15 @@
     height: 44px;
   }
 }
-/* Hover tints a button that is not yet red, and darkens one that is: a
-   pointer left on the button after the press must not wash out the red. */
+/* Hover on an idle button is the transport's own; red tints only an armed
+   lane, and a red button darkens: a pointer left on the button after the
+   press must not wash out the red. */
 @media (hover: hover) {
-  .record[data-phase='idle']:hover:not(:disabled),
+  .record[data-phase='idle']:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
   .record[data-phase='armed']:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--record) 18%, transparent);
+    background: color-mix(in srgb, var(--record) 20%, transparent);
   }
   .record[data-phase='counting']:hover:not(:disabled),
   .record[data-phase='recording']:hover:not(:disabled) {
@@ -48,6 +51,7 @@
 /* Armed: a ring around the dot, the microphone open and the lane listening. */
 .record[data-phase='armed'],
 .record[data-phase='arming'] {
+  border-width: 2px;
   border-color: var(--record);
   background: color-mix(in srgb, var(--record) 12%, transparent);
   color: var(--record);
@@ -108,6 +112,9 @@
   background: var(--studio-bar);
   box-shadow: inset 3px 0 0 var(--red, #e5484d);
   color: var(--studio-text);
+  /* One height from armed through the take: the lanes below hold still as
+     the count-in turns into the take. */
+  min-height: 54px;
 }
 .status p {
   margin: 0;
@@ -127,7 +134,8 @@
   font-size: 12px;
 }
 .count {
-  min-width: 1.4ch;
+  flex: none;
+  width: 20px;
   color: var(--red, #e5484d);
   font-size: 22px;
   font-weight: 700;
@@ -140,7 +148,10 @@
 }
 .statusMic {
   display: inline-flex;
+  flex: none;
   align-items: center;
+  justify-content: center;
+  width: 20px;
   gap: 6px;
   color: var(--studio-text-2);
 }
@@ -153,6 +164,7 @@
 @media (max-width: 599px) {
   .status {
     gap: 10px;
+    min-height: 48px;
     padding: 6px 12px;
   }
   .statusHint {
@@ -179,8 +191,8 @@
   height: 100%;
   color: color-mix(in srgb, var(--red, #e5484d) 75%, var(--studio-text));
 }
-/* The armed lane's level, pinned to the lane's visible left edge; at the
-   top while the take records, clear of the waveform's middle. */
+/* The armed lane's level, pinned to the bottom of the lane's visible left
+   edge in every state: clear of a clip's name, and of the take's middle. */
 .laneMeter {
   position: absolute;
   bottom: 6px;
@@ -193,10 +205,6 @@
   background: color-mix(in srgb, var(--studio-bar) 88%, transparent);
   color: var(--red, #e5484d);
   pointer-events: none;
-}
-.laneMeter[data-recording] {
-  top: 6px;
-  bottom: auto;
 }
 .laneMeter svg {
   width: 12px;
