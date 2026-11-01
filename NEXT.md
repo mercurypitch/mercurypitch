@@ -2635,7 +2635,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Next lever if needed: renders/film-04-music-only.mp4 (101 MiB) to /dev/shm. Watcher b4f7x4fb7 wakes under 50 MB
   free (to ~10:28). render-l4.sh FIXED (backup render-l4.sh.before-master-first): the music-only stays in /dev/shm
   while the master is not on disk; tested both ways in /dev/shm.
-- 08:45 FILM6: SHIP (fresh motion-critic, xhigh, 08:14 to ~08:42, 437 tool calls; its transcript ended ~90 MB).
+- 08:45 FILM6: SHIP (fresh motion-critic, xhigh, 08:14 to ~08:42, 437 tool calls; its transcript ended at 97 MB on /).
   Holds and practise card FIXED; length, falls from the top, cosmetic items STILL PRESENT; picture = film-05 outside
   1:19-6:28 and 8:45-8:47, sound identical. Its one condition (the length) was settled by the owner on 17 Oct.
   Optional: the range line's glow and the gear's 1.17x pulse (8:46.7-8:47.6), the falls, recall/blur/zooms. SAVED:
@@ -2647,3 +2647,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   DELIVERY.md to the owner with the branch link (LFS downloads blocked by the org budget). Then Lesson 4's film is
   done; still waiting on the owner: the Tavi ear check, Season 2's 13 decisions, the Cloudflare upload choice,
   the Sing covers. In /dev/shm (regenerable): film-05/06 music-onlys, /dev/shm/l4-moved/ (transcode cache, sheets).
+- 08:47 SENT the owner renders/film-06.mp4 and DELIVERY.md (SendUserFile, proactive) with the branch link. Lesson 4's film is done unless the owner asks for changes.
