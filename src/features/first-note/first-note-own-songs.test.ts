@@ -53,7 +53,8 @@ const {
   waitingOwnSongs,
 } = await import('./first-note-own-songs')
 const { FIRST_NOTE_SONGS } = await import('./first-note-songs')
-const { ENTRY_RULES_VERSION } = await import('./entry-rules-version')
+const { ENTRY_RULES_VERSION, PLAYING_READS_STAND_FROM } =
+  await import('./entry-rules-version')
 
 const own = (sessionId: string, title: string): RoomSong => ({
   sessionId,
@@ -181,7 +182,7 @@ describe("the singer's own songs", () => {
     })
     await settle()
 
-    expect(ownSongs()[0].state).toEqual({ kind: 'few', entries: 1 })
+    expect(ownSongs()[0].state).toMatchObject({ kind: 'few', entries: 1 })
     expect(readyOwnSongs()).toEqual([])
   })
 
@@ -347,6 +348,58 @@ describe("the singer's own songs", () => {
     expect(states()).toEqual({ a: 'waiting', b: 'ready' })
   })
 
+  it('stand by a read that plays, from rules the ones since read the same', () => {
+    // By rules 3: a song that plays stands; one that sat out is read again,
+    // as the rules since look again at a song with too few.
+    localStorage.setItem(
+      FIRST_NOTE_OWN_ENTRIES_KEY,
+      JSON.stringify({
+        a: {
+          stems: '100/200|90/-',
+          entries: [entry(10), entry(20)],
+          rules: PLAYING_READS_STAND_FROM,
+        },
+        b: {
+          stems: '200/180|80/-',
+          entries: [entry(10)],
+          rules: PLAYING_READS_STAND_FROM,
+        },
+      }),
+    )
+    expect(PLAYING_READS_STAND_FROM).toBeLessThan(ENTRY_RULES_VERSION)
+    expect(states()).toEqual({ a: 'ready', b: 'waiting' })
+  })
+
+  it('keep why a song sits out, counted, for its row', async () => {
+    readOwnSongs()
+    await settle()
+    pending[0].resolve({
+      entries: [entry(10)],
+      dropped: [
+        '31.20 no steady note (a pitch in 30% of its voice)',
+        '40.10 the note settles 0.60 s in',
+      ],
+      lines: 40,
+      breathless: 25,
+    })
+    await settle()
+    const why = { lines: 40, breathless: 25, left: { unsteady: 1, late: 1 } }
+    expect(ownSongs()[0].state).toEqual({ kind: 'few', entries: 1, why })
+    const kept = JSON.parse(
+      localStorage.getItem(FIRST_NOTE_OWN_ENTRIES_KEY) ?? '{}',
+    ) as Record<string, { leftOut?: unknown }>
+    expect(kept.a.leftOut).toEqual(why)
+
+    // A song that plays keeps no why.
+    pending[1].resolve({ entries: [entry(10), entry(20)], dropped: [] })
+    await settle()
+    const both = JSON.parse(
+      localStorage.getItem(FIRST_NOTE_OWN_ENTRIES_KEY) ?? '{}',
+    ) as Record<string, { leftOut?: unknown }>
+    expect(both.b).not.toHaveProperty('leftOut')
+    expect(both.a.leftOut).toEqual(why)
+  })
+
   it("tell the console what each read found, for a test build's console", async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     readOwnSongs()
@@ -360,12 +413,13 @@ describe("the singer's own songs", () => {
         '61.00 42 cents off A3',
       ],
       lines: 24,
+      shortBreaths: 6,
       shift: -0.8,
       tuning: 35,
     })
     await settle()
     expect(info).toHaveBeenCalledWith(
-      `[first-note] read "Scarborough Fair": 1 entries from 24 lines, lyrics moved -0.8 s, tuned +35 cents; left: 2 no steady note, 1 the room's notes name another, 1 out of tune`,
+      `[first-note] read "Scarborough Fair": 1 entries from 24 lines (6 after a short breath), lyrics moved -0.8 s, tuned +35 cents; left: 2 no steady note, 1 the room's notes name another, 1 out of tune`,
     )
     info.mockRestore()
   })

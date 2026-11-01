@@ -55,7 +55,7 @@ import { analyzeVocalSamples, pitchHistoryFromNotes, VOCAL_ANALYSIS_DEFAULTS, } 
 import type { OnsetGrid } from './band-beats'
 import { BAND_RATE, beatsBefore, onsetSteps, tempoOf } from './band-beats'
 import type { EntryReading, FoundEntry, LineVoice, RuleSteps, Samples, } from './entry-rules'
-import { judgeSong, lineSteps, loudness, lyricLines, songLines, VOCAL_RATE, voicedShare, } from './entry-rules'
+import { judgeSong, lineSteps, loudness, lyricLines, SHORT_BREATH_SEC, shortBreathLines, songLines, VOCAL_RATE, voicedShare, } from './entry-rules'
 import type { FirstNoteEntry } from './first-note-songs'
 
 /** Why a song sits out before its lines are read. */
@@ -70,6 +70,8 @@ export interface OwnSongRead {
   readonly told?: readonly string[]
   /** How many lines had no breath before them (entry-rules.ts). */
   readonly breathless?: number
+  /** How many lines were read after a short breath (entry-rules.ts). */
+  readonly shortBreaths?: number
   /** How many lines were looked at. */
   readonly lines?: number
   /** How much of the song the voice is on, 0 to 1, and how long it is, s. */
@@ -413,11 +415,16 @@ export async function readOwnSong(
     voices.push(await paced(lineSteps(reading, i), signal))
     report(80 + (5 * (i + 1)) / lines.length)
   }
+  // A song sung line after line: its lyric lines after a short breath too.
+  for (const i of shortBreathLines(reading, voices)) {
+    voices[i] = await paced(lineSteps(reading, i, SHORT_BREATH_SEC), signal)
+  }
   const {
     entries: found,
     dropped,
     told,
     breathless,
+    shortBreaths,
     tuning,
   } = judgeSong(reading, voices)
   report(85)
@@ -426,6 +433,7 @@ export async function readOwnSong(
     dropped,
     told,
     breathless,
+    shortBreaths,
     lines: lines.length,
     voiced: voicedShare(level),
     lyricLines: synced.length,

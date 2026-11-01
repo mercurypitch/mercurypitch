@@ -12,7 +12,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { SongLine, StoredNote } from './entry-rules'
-import { breathLines, findEntries, judgeLine, lineSteps, loudness, lyricLines, lyricsShift, middleNote, runSteps, songLines, songTuning, VOCAL_RATE, yinMidi, } from './entry-rules'
+import { breathLines, ENTRY_GAP_SEC, FEW_ENTRIES, findEntries, judgeLine, lineSteps, loudness, lyricLines, lyricsShift, middleNote, runSteps, SHORT_BREATH_SEC, shortBreathLines, songLines, songTuning, VOCAL_RATE, yinMidi, } from './entry-rules'
+import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 
 /** A seeded random source, the same every run. */
 function seeded(seed = 11): () => number {
@@ -282,6 +283,112 @@ describe('the entries', () => {
     })
     expect(entries).toEqual([])
     expect(dropped[0]).toMatch(/the note settles/u)
+  })
+
+  it('says how much of a line with no steady note heard a pitch', () => {
+    // A rasp: noise where the voice is, loud enough to read, no pitch in it.
+    const rate = VOCAL_RATE
+    const random = seeded(3)
+    const samples = new Float32Array(12 * rate)
+    for (let i = 2 * rate; i < 4 * rate; i++) {
+      samples[i] = 0.5 * (random() * 2 - 1)
+    }
+    const { entries, dropped, told } = findEntries({
+      vocal: { samples, rate },
+      level: loudness(samples, rate),
+      notes: [stored(57, 2, 4)],
+      lines: [line(2)],
+    })
+    expect(entries).toEqual([])
+    expect(dropped[0]).toMatch(
+      /^2\.00 no steady note \(a pitch in \d+% of its voice\)$/u,
+    )
+    expect(told).toEqual(dropped)
+  })
+})
+
+describe('a song sung line after line', () => {
+  const song = (
+    notes: readonly { from: number; to: number; midi: number }[],
+  ) => {
+    const samples = voice(VOCAL_RATE, 12, notes)
+    return {
+      vocal: { samples, rate: VOCAL_RATE },
+      level: loudness(samples, VOCAL_RATE),
+      notes: notes.map((note) => stored(note.midi, note.from, note.to)),
+    }
+  }
+
+  it('also reads the lyric lines after a short breath, when its long ones give too few', () => {
+    const sung = song([
+      { from: 2, to: 4, midi: 57 },
+      { from: 4.8, to: 6.5, midi: 60 },
+      { from: 7.3, to: 9, midi: 57 },
+      { from: 9.4, to: 11.5, midi: 59 },
+    ])
+    const found = findEntries({
+      ...sung,
+      lines: [
+        line(2, 'One'),
+        line(4.8, 'Two'),
+        line(7.3, 'Three'),
+        line(9.4, 'Four'),
+      ],
+    })
+    // Two lines after 0.8 s; the one after 0.4 s is still no way in.
+    expect(found.entries.map((entry) => entry.words)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ])
+    expect(found.entries.map((entry) => entry.midi)).toEqual([57, 60, 57])
+    // The band stops in the breath, before the voice.
+    expect(found.entries[1].at).toBeGreaterThan(4.6)
+    expect(found.entries[1].at).toBeLessThanOrEqual(4.8)
+    expect(found.shortBreaths).toBe(2)
+    expect(found.breathless).toBe(1)
+    expect(found.told[1]).toMatch(/^4\.80 entry C4, after a 0\.8 s breath$/u)
+    expect(found.told[3]).toMatch(/^9\.40 no breath before it \(0\.4 s\)$/u)
+  })
+
+  it('reads a song as it always was when its long breaths give enough', () => {
+    const sung = song([
+      { from: 2, to: 4, midi: 57 },
+      { from: 6.5, to: 8, midi: 60 },
+      { from: 8.8, to: 10.5, midi: 57 },
+    ])
+    const found = findEntries({
+      ...sung,
+      lines: [line(2, 'One'), line(6.5, 'Two'), line(8.8, 'Three')],
+    })
+    expect(found.entries.map((entry) => entry.words)).toEqual(['One', 'Two'])
+    expect(found.shortBreaths).toBe(0)
+    expect(found.told[2]).toMatch(/^8\.80 no breath before it \(0\.8 s\)$/u)
+  })
+
+  it('reads no line without words after a short breath: a gap in the voice may be inside a line', () => {
+    const sung = song([
+      { from: 2, to: 4, midi: 57 },
+      { from: 4.8, to: 6.5, midi: 60 },
+    ])
+    const reading = { ...sung, lines: [line(2, 'One'), line(4.8)] }
+    expect(findEntries(reading).entries.map((entry) => entry.midi)).toEqual([
+      57,
+    ])
+    const voices = [
+      runSteps(lineSteps(reading, 0)),
+      runSteps(lineSteps(reading, 1)),
+    ]
+    expect(voices[1]).toBeNull()
+    expect(shortBreathLines(reading, voices)).toEqual([])
+    // With words, the same line is read again.
+    const worded = { ...reading, lines: [line(2, 'One'), line(4.8, 'Two')] }
+    expect(shortBreathLines(worded, voices)).toEqual([1])
+  })
+
+  it('looks again below the fewest entries a song of your own needs', () => {
+    expect(FEW_ENTRIES).toBe(OWN_SONG_MIN_ENTRIES)
+    expect(SHORT_BREATH_SEC).toBeLessThan(ENTRY_GAP_SEC)
   })
 })
 

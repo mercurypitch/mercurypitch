@@ -13,7 +13,13 @@
 //     (own-song-read.ts), and keeps what it finds.
 //
 // AN ENTRY is a line of the song that follows a breath: at least
-// ENTRY_GAP_SEC with no voice on the vocal stem before it. A song's lines
+// ENTRY_GAP_SEC with no voice on the vocal stem before it. A song sung line
+// after line, that gives fewer than FEW_ENTRIES that way, is looked at
+// again: its lyric lines after a shorter breath, SHORT_BREATH_SEC, are read
+// too (`shortBreathLines`). The band plays without the voice, so the singer
+// hears the band alone before such a line all the same; the breath says a
+// line starts there, and a synced lyric line starting there says so too. A
+// song that gives enough entries is never looked at again. A song's lines
 // are where its voice comes in after such a breath, and its synced lyrics'
 // lines (`songLines`). The lyrics are moved onto this recording first
 // (`lyricsShift`): a file synced to another release, or to a mix with a
@@ -71,6 +77,15 @@ export type { RuleSteps, Samples, VoiceLevel } from './voice-pitch.ts'
 
 /** No voice for this long before a line makes it an entry, s. */
 export const ENTRY_GAP_SEC = 1.6
+/**
+ * A song with fewer entries than this from its long breaths has its lyric
+ * lines after a shorter breath read too: the fewest a song of the singer's
+ * own needs to play (first-note-rules.ts, OWN_SONG_MIN_ENTRIES), so a song
+ * that plays is read as it always was.
+ */
+export const FEW_ENTRIES = 2
+/** The shortest breath before a lyric line that second look reads, s. */
+export const SHORT_BREATH_SEC = 0.6
 /** An entry's note sits within this of the song's middle note, semitones. */
 export const RANGE_SEMITONES = 9
 /** The voice is "on" above this share of its own loud level (p90 RMS). */
@@ -519,21 +534,28 @@ export interface LineVoice {
   readonly steady: SteadyNote | null
   /** Where the voiced run holding the stretch began, s. */
   readonly voiceIn: number
+  /**
+   * The share of the look's voice that heard a pitch, 0 to 1; null where it
+   * read no voice (voice-pitch.ts, SteadySearch).
+   */
+  readonly heard?: number | null
 }
 
 /**
- * Line `i`'s voice, or null for a line with no breath before it: the
- * reading, the most of a song's read. In steps, a step after each pitch
- * reading, so a reader on a phone can let the screen draw inside a line.
+ * Line `i`'s voice, or null for a line with less than `minBreath` before
+ * it: the reading, the most of a song's read. In steps, a step after each
+ * pitch reading, so a reader on a phone can let the screen draw inside a
+ * line.
  */
 export function* lineSteps(
   reading: EntryReading,
   i: number,
+  minBreath = ENTRY_GAP_SEC,
 ): RuleSteps<LineVoice | null> {
   const { vocal, level, lines } = reading
   const start = lines[i].start
-  if (breathBefore(reading, i) < ENTRY_GAP_SEC) return null
-  const steady = yield* firstSteady(
+  if (breathBefore(reading, i) < minBreath) return null
+  const { steady, heard } = yield* firstSteady(
     vocal,
     level,
     start - LOOK_BEFORE_SEC,
@@ -543,7 +565,29 @@ export function* lineSteps(
     line: i,
     steady,
     voiceIn: steady === null ? start : runStart(level, steady.t),
+    heard,
   }
+}
+
+/**
+ * The lines to read again after a shorter breath (SHORT_BREATH_SEC), from
+ * each line's voice so far (`lineSteps`, null for a line not read): none
+ * for a song whose voices give FEW_ENTRIES or more; else each lyric line
+ * not read with at least that breath before it. Only a lyric line: its
+ * words say a line starts there, where a short gap in the voice alone may
+ * be a breath inside one.
+ */
+export function shortBreathLines(
+  reading: EntryReading,
+  voices: readonly (LineVoice | null)[],
+): number[] {
+  if (judgeSong(reading, voices).entries.length >= FEW_ENTRIES) return []
+  const again: number[] = []
+  for (const [i, voice] of voices.entries()) {
+    if (voice !== null || reading.lines[i].words === '') continue
+    if (breathBefore(reading, i) >= SHORT_BREATH_SEC) again.push(i)
+  }
+  return again
 }
 
 /**
@@ -573,6 +617,13 @@ export function songTuning(voices: readonly (LineVoice | null)[]): number {
   return Math.abs(best.cents) < TUNING_MIN_CENTS ? 0 : best.cents
 }
 
+/** How much of a look's voice heard a pitch, for the log: " (a pitch in 35% of its voice)". */
+function heardOf(heard: number | null | undefined): string {
+  if (heard === undefined) return ''
+  if (heard === null) return ' (no voice near it)'
+  return ` (a pitch in ${Math.round(heard * 100)}% of its voice)`
+}
+
 /**
  * Line `voice.line` as an entry, or why it is not one ("the note settles
  * 0.64 s in"), in the song's `tuning` (`songTuning`). `middle` is the
@@ -587,7 +638,9 @@ export function judgeLine(
   const { notes, lines } = reading
   const line = lines[voice.line]
   const { steady, voiceIn } = voice
-  if (steady === null) return `${line.start.toFixed(2)} no steady note`
+  if (steady === null) {
+    return `${line.start.toFixed(2)} no steady note${heardOf(voice.heard)}`
+  }
   const midi = noteOf(
     steady,
     voiceIn,
@@ -625,6 +678,8 @@ export interface SongEntries {
   readonly told: string[]
   /** How many lines had no breath before them: never a way in. */
   readonly breathless: number
+  /** How many lines were read after a short breath (`shortBreathLines`). */
+  readonly shortBreaths: number
   /** The song's tuning the lines were judged in, cents (`songTuning`). */
   readonly tuning: number
 }
@@ -669,25 +724,30 @@ export function judgeSong(
   const entries: FoundEntry[] = []
   const dropped: string[] = []
   const told: string[] = []
+  let shortBreaths = 0
   for (const [i, voice] of voices.entries()) {
+    const breath = breathBefore(reading, i)
     if (voice === null) {
       const start = reading.lines[i].start.toFixed(2)
-      const breath = breathBefore(reading, i).toFixed(1)
-      told.push(`${start} no breath before it (${breath} s)`)
+      told.push(`${start} no breath before it (${breath.toFixed(1)} s)`)
       continue
     }
+    // A line read on the second look says so, in the log.
+    const short = breath < ENTRY_GAP_SEC
+    if (short) shortBreaths += 1
+    const after = short ? `, after a ${breath.toFixed(1)} s breath` : ''
     const found = judgeLine(reading, voice, middle, tuning)
     if (typeof found === 'string') {
       dropped.push(found)
-      told.push(found)
+      told.push(`${found}${after}`)
       continue
     }
     const start = reading.lines[voice.line].start.toFixed(2)
     const note = noteName(found.midi)
     told.push(
       addEntry(entries, found)
-        ? `${start} entry ${note}, the one an earlier line found`
-        : `${start} entry ${note}`,
+        ? `${start} entry ${note}, the one an earlier line found${after}`
+        : `${start} entry ${note}${after}`,
     )
   }
   entries.sort((a, b) => a.at - b.at)
@@ -701,18 +761,23 @@ export function judgeSong(
     dropped,
     told,
     breathless: voices.filter((voice) => voice === null).length,
+    shortBreaths,
     tuning,
   }
 }
 
 /**
- * A song's entries: every line's voice read first (`lineSteps`), then the
- * song judged (`judgeSong`). In steps.
+ * A song's entries: every line's voice read first (`lineSteps`), and for a
+ * song that gives too few, its lyric lines after a short breath too
+ * (`shortBreathLines`); then the song judged (`judgeSong`). In steps.
  */
 export function* songSteps(reading: EntryReading): RuleSteps<SongEntries> {
   const voices: (LineVoice | null)[] = []
   for (let i = 0; i < reading.lines.length; i++) {
     voices.push(yield* lineSteps(reading, i))
+  }
+  for (const i of shortBreathLines(reading, voices)) {
+    voices[i] = yield* lineSteps(reading, i, SHORT_BREATH_SEC)
   }
   return judgeSong(reading, voices)
 }

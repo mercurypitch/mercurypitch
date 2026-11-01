@@ -56,9 +56,9 @@ const LRC = LINES.map(
   (line) => `[00:${line.from.toFixed(2).padStart(5, '0')}] ${line.words}`,
 ).join('\n')
 
-function vocal(): Float32Array {
+function vocal(lines: readonly (typeof LINES)[number][] = LINES): Float32Array {
   const samples = new Float32Array(12 * RATE)
-  for (const line of LINES) {
+  for (const line of lines) {
     const f = hz(line.midi)
     for (let i = Math.round(line.from * RATE); i < line.to * RATE; i++) {
       samples[i] = 0.5 * Math.sin((2 * Math.PI * f * i) / RATE)
@@ -242,6 +242,47 @@ describe("a song of the singer's own", () => {
     )
     expect(read.lines).toBe(3)
     expect(read.tuning).toBe(0)
+  })
+
+  it('reads a song sung line after line at its shorter breaths too', async () => {
+    // A breath of 0.8 s before Two and Three, 0.4 s before Four.
+    const sung = [
+      { from: 2, to: 4, midi: 57, words: 'One' },
+      { from: 4.8, to: 6.5, midi: 60, words: 'Two' },
+      { from: 7.3, to: 9, midi: 57, words: 'Three' },
+      { from: 9.4, to: 11.5, midi: 59, words: 'Four' },
+    ]
+    const notes: MergedNote[] = sung.map((line) => ({
+      midi: line.midi,
+      noteName: '',
+      startSec: line.from,
+      endSec: line.to,
+    }))
+    seams({
+      storedNotes: vi.fn(async () => notes),
+      syncedLyrics: vi.fn(async () =>
+        sung
+          .map(
+            (line) =>
+              `[00:${line.from.toFixed(2).padStart(5, '0')}] ${line.words}`,
+          )
+          .join('\n'),
+      ),
+      vocal: vi.fn(async (_blob, run) => {
+        run.onProgress(1)
+        return { samples: vocal(sung), sampleRate: RATE, step: 1 }
+      }),
+    })
+    const read = await readOwnSong('mine')
+
+    expect(read.entries.map((entry) => entry.words)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ])
+    expect(read.shortBreaths).toBe(2)
+    expect(read.breathless).toBe(1)
+    expect(read.told?.[1]).toMatch(/entry C4, after a 0\.8 s breath$/u)
   })
 
   it('finds its lines where the voice comes in after a breath when its lyrics are not synced', async () => {

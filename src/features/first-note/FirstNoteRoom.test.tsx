@@ -352,6 +352,23 @@ describe('First note', () => {
     vi.restoreAllMocks()
   })
 
+  it('says how it works from "?" at rest, and keeps it out of a run', async () => {
+    render(() => <FirstNoteRoom onDone={() => undefined} />)
+    const ask = screen.getByTestId('first-note-help')
+    expect(ask.getAttribute('aria-label')).toBe('How First note works')
+    fireEvent.click(ask)
+    const help = screen.getByTestId('first-note-help-sheet')
+    expect(help.textContent).toContain(
+      "Come in on the singer's first note, from the band alone.",
+    )
+    fireEvent.click(within(help).getByRole('button', { name: 'Close' }))
+    await settle()
+
+    await startRun()
+    expect(phase()).toBe('band')
+    expect(screen.queryByTestId('first-note-help')).toBeNull()
+  })
+
   it('opens at rest, on the dark stage, with Merc saying the task', () => {
     render(() => <FirstNoteRoom onDone={() => undefined} />)
     expect(phase()).toBe('intro')
@@ -754,6 +771,73 @@ describe('First note', () => {
       expect(row.textContent).toContain(
         'Left out: only 1 clear entry, it needs 2',
       )
+    })
+
+    it('says why a song with too few clear entries sits out, from its i', async () => {
+      library.songs = [ownSong('mine', 'Shadow of the Gods')]
+      setOwnSongReaderForTests(async () => ({
+        entries: [ownEntry(20, 55)],
+        dropped: [
+          '16.02 no steady note (a pitch in 40% of its voice)',
+          '30.52 the note settles 0.66 s in',
+          '150.62 no steady note (a pitch in 12% of its voice)',
+        ],
+        lines: 58,
+        breathless: 30,
+      }))
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const row = within(sheet()).getByTestId('first-note-own-song')
+      const button = within(row).getByRole('button', {
+        name: 'Why Shadow of the Gods sits out',
+      })
+      expect(button.getAttribute('aria-expanded')).toBe('false')
+      expect(within(row).queryByTestId('first-note-why')).toBeNull()
+
+      fireEvent.click(button)
+      expect(button.getAttribute('aria-expanded')).toBe('true')
+      const why = within(row).getByTestId('first-note-why')
+      expect(button.getAttribute('aria-controls')).toBe(why.id)
+      expect(why.textContent).toContain(
+        'Of its 58 lines, only 1 is a clear place to come in. A song needs at least 2.',
+      )
+      const reasons = within(why)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent)
+      expect(reasons).toEqual([
+        '30 come straight after the line before, with no pause where the band plays alone.',
+        '2 start with no clear note: the voice slides, rasps or wavers into it.',
+        '1 settles on its note too late after the voice comes in.',
+      ])
+
+      fireEvent.click(button)
+      expect(within(row).queryByTestId('first-note-why')).toBeNull()
+    })
+
+    it('has no i on a song that plays, or one that is not read yet', async () => {
+      library.songs = [
+        ownSong('mine', 'Amazing Grace'),
+        ownSong('b', 'Danny Boy'),
+      ]
+      setOwnSongReaderForTests(async (sessionId) =>
+        sessionId === 'mine'
+          ? { entries: [ownEntry(20, 55), ownEntry(40, 57)], dropped: [] }
+          : new Promise(() => undefined),
+      )
+      render(() => <FirstNoteRoom onDone={() => undefined} />)
+      choose('yours')
+      await settle()
+
+      fireEvent.click(screen.getByTestId('first-note-songs'))
+      const rows = within(sheet()).getAllByTestId('first-note-own-song')
+      expect(rows.map((row) => row.dataset.state).sort()).toEqual([
+        'reading',
+        'ready',
+      ])
+      expect(within(sheet()).queryByTestId('first-note-why-button')).toBeNull()
     })
 
     it('reads a song again from its row, one an earlier read left out', async () => {

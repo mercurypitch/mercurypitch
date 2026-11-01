@@ -35,8 +35,10 @@
 // over the mic in the singer's turn, and "Sing on in Karaoke" there after
 // a landing.
 //
-// No "How it works" demo yet: Merc's intro line says the task, and
-// Learning shows the line from the start.
+// No "How it works" demo yet: Merc's intro line says the task, Learning
+// shows the line from the start, and "?" in the bar, at rest and at the
+// result, opens the room's help (FirstNoteHelp.tsx): what a round is, and
+// what a song needs for First note to stop it, in plain words.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -59,6 +61,7 @@ import type { FirstNoteSummary, SongResult } from './first-note-run'
 import { foundLine, ON_NOTE_DETAIL, resultsBySong } from './first-note-run'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 import { singOnFrom } from './first-note-songs'
+import { FirstNoteHelp } from './FirstNoteHelp'
 import { FirstNoteLevel } from './FirstNoteLevel'
 import styles from './FirstNoteRoom.module.css'
 import { FirstNoteSongsButton, FirstNoteSongsSheet } from './FirstNoteSongs'
@@ -130,6 +133,7 @@ function micName(phase: FirstNotePhase): string {
 
 export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
   const [songsOpen, setSongsOpen] = createSignal(false)
+  const [helpOpen, setHelpOpen] = createSignal(false)
   /* eslint-disable solid/reactivity -- read once, as documented */
   const room =
     props.controller ??
@@ -145,6 +149,9 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
     demo: null,
   })
   const phase = (): FirstNotePhase => room.state().phase
+  /** At rest or at the result: the level, and "?", show. */
+  const atRest = (): boolean =>
+    phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
 
   // The singer's own songs are read at rest, one at a time, while they are
   // chosen; a run lets go of the read, so it never competes with the mic.
@@ -344,10 +351,13 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
 
       <ShellBarEnd
         shell={shell}
-        showLevel={
-          phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
-        }
+        showLevel={atRest()}
         level={<FirstNoteLevel />}
+        help={
+          atRest()
+            ? { label: 'How First note works', open: () => setHelpOpen(true) }
+            : undefined
+        }
       />
 
       <ShellDock
@@ -410,6 +420,8 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         close={() => setSongsOpen(false)}
         onOwnSongs={props.onOwnSongs}
       />
+
+      <FirstNoteHelp isOpen={helpOpen()} close={() => setHelpOpen(false)} />
     </RoomShell>
   )
 }

@@ -8,11 +8,14 @@
 // singer's own songs with what the phone knows of each (the Ear rooms
 // canvas, C1): the entries it found, how far a read has got, or that a
 // song sits out, and why, in plain words (too few clear entries, too long
-// for the phone to read, no voice in it). A song read already can be read
-// again from its row: one an older read left out, say (owner, 29 Oct). A
-// singer with no song of their own split yet is told how one comes to be
-// here, with the way to it when the shell offers one (A2: the Karaoke
-// room's songs, where Import is).
+// for the phone to read, no voice in it). A song with too few clear entries
+// has an "i" that opens why under its row, counted: how many of its lines
+// had no pause before them, how many started with no clear note, and so on
+// (first-note-left-out.ts; the owner's ask, 1 Nov 2026). A song read
+// already can be read again from its row: one an older read left out, say
+// (owner, 29 Oct). A singer with no song of their own split yet is told how
+// one comes to be here, with the way to it when the shell offers one (A2:
+// the Karaoke room's songs, where Import is).
 //
 // Last, "Show the words": the optional hint the owner asked for (28 Oct
 // 2026), which puts the words of the line the singer comes in on over the
@@ -21,13 +24,15 @@
 // finds them where the songs are chosen.
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { CheckSmall, ChevronDown, Music, RotateCcw, StageCurtains, X, } from '@/components/icons'
+import { CheckSmall, ChevronDown, Info, Music, RotateCcw, StageCurtains, X, } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { thisDeviceLower } from '@/lib/device-noun'
 import type { FirstNoteSource } from './first-note-choices'
 import { FIRST_NOTE_SOURCES, firstNoteShowsWords, firstNoteSource, setFirstNoteShowsWords, setFirstNoteSource, } from './first-note-choices'
+import type { LeftOut } from './first-note-left-out'
+import { leftOutWords } from './first-note-left-out'
 import type { OwnSong, OwnSongFailure, OwnSongState, } from './first-note-own-songs'
 import { ownSong, ownSongIds, ownSongs, readOwnSongAgain, } from './first-note-own-songs'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
@@ -302,6 +307,15 @@ function SongRow(props: { sessionId: string }): JSX.Element {
     const now = state()
     return now.kind === 'reading' ? now.progress : null
   }
+  /** Why it sits out, counted, for a song with too few clear entries. */
+  const why = (): { why: LeftOut; entries: number } | null => {
+    const now = state()
+    return now.kind === 'few' && now.why !== undefined
+      ? { why: now.why, entries: now.entries }
+      : null
+  }
+  const [whyOpen, setWhyOpen] = createSignal(false)
+  const whyId = (): string => `first-note-why-${props.sessionId}`
   return (
     <li
       class={styles.song}
@@ -334,6 +348,23 @@ function SongRow(props: { sessionId: string }): JSX.Element {
           </Show>
         </span>
       </span>
+      <Show when={why() !== null}>
+        <button
+          type="button"
+          class={styles.again}
+          aria-expanded={whyOpen()}
+          aria-controls={whyId()}
+          aria-label={`Why ${title()} sits out`}
+          onClick={() => setWhyOpen(!whyOpen())}
+          data-testid="first-note-why-button"
+        >
+          {/* The glyph is drawn for a round button: the ring keeps it from
+              reading as a letter. */}
+          <span class={styles.infoMark} aria-hidden="true">
+            <Info size={12} />
+          </span>
+        </button>
+      </Show>
       <Show when={settled()}>
         <button
           type="button"
@@ -345,7 +376,32 @@ function SongRow(props: { sessionId: string }): JSX.Element {
           <RotateCcw size={18} />
         </button>
       </Show>
+      <Show when={whyOpen() ? why() : null}>
+        {(open) => (
+          <LeftOutWhy id={whyId()} why={open().why} entries={open().entries} />
+        )}
+      </Show>
     </li>
+  )
+}
+
+/** Why a song sits out, under its row: what was found, what kept the rest out. */
+function LeftOutWhy(props: {
+  id: string
+  why: LeftOut
+  entries: number
+}): JSX.Element {
+  const words = () => leftOutWords(props.why, props.entries)
+  return (
+    <div id={props.id} class={styles.why} data-testid="first-note-why">
+      <p class={styles.whyHead}>{words().head}</p>
+      <Show when={words().reasons.length > 0}>
+        <ul class={styles.whyList}>
+          <For each={words().reasons}>{(reason) => <li>{reason}</li>}</For>
+        </ul>
+      </Show>
+      <p class={styles.whyTip}>{words().tip}</p>
+    </div>
   )
 }
 
