@@ -189,6 +189,9 @@ export function NativeOnboarding(): JSX.Element {
     if (headed === next) return
     const from = headed
     headed = next
+    // Left before the twin came in: its beat is called off, so no cheer and
+    // no tap in the hand land on Keep or the beat after it.
+    if (from === 'reveal') reveal.leave()
     swaps.swap(
       () => {
         if (headed === next) setBeat(next)
@@ -247,6 +250,7 @@ export function NativeOnboarding(): JSX.Element {
         note.leave()
         range.leave()
         line.leave()
+        reveal.leave()
       },
       { defer: true },
     ),
@@ -479,6 +483,7 @@ export function NativeOnboarding(): JSX.Element {
     note.leave()
     range.leave()
     line.leave()
+    reveal.leave()
     markNotNow()
     if (refused || offerSkipNow() !== null) {
       leaveOnboarding('not-now')

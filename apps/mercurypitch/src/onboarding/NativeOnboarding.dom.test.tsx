@@ -36,9 +36,26 @@ import { ONBOARDING_KEY, resetOnboardingFlagForTests, settleOnboarding, } from '
 import { abandonOnboarding, installNativeOnboarding, LEAVE_MS, onboardingExit, onboardingMounted, openOnboarding, openRangeFinder, } from './onboarding-layer'
 import { slideWindow } from './range-frames.test-fixtures'
 import { GREET_MS } from './useFirstNote'
+import { TWIN_MS } from './useReveal'
 
 /** The Rooms home, the alley, as the hash router names it. */
 const ALLEY = '#/home'
+
+/** The light taps in the hand, counted (the twin's beat is one). */
+const hand = vi.hoisted(() => ({ taps: 0 }))
+vi.mock('@/lib/haptics', () => ({
+  haptics: {
+    tapLight: () => {
+      hand.taps += 1
+    },
+    tapMedium: () => undefined,
+    tapHeavy: () => undefined,
+    success: () => undefined,
+    warning: () => undefined,
+    error: () => undefined,
+    selection: () => undefined,
+  },
+}))
 
 vi.mock('@/lib/merc/stage', () => ({
   mountMercStage: () => ({
@@ -134,6 +151,7 @@ beforeEach(() => {
   resetOnboardingFlagForTests()
   settleOnboarding(false)
   funnel.sent = []
+  hand.taps = 0
 })
 
 /** jsdom's own: none, so a swap cuts unless a case stands one in. */
@@ -370,6 +388,16 @@ describe('NativeOnboarding', () => {
     expect(said()).toBe(ONBOARDING_COPY.lineAsk)
     expect(onboardingShown()).toBe(true)
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('due')
+  })
+
+  it("calls off the twin's beat when Continue comes before it: no cheer and no tap under Keep", async () => {
+    const s = mount('onboarding')
+    await continueFromReveal(s)
+    expect(beat()).toBe('keep')
+
+    vi.advanceTimersByTime(TWIN_MS + 100)
+
+    expect(hand.taps).toBe(0)
   })
 
   it('reveals the voice a range measures, and Continue brings Keep', async () => {

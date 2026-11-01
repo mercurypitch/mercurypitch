@@ -161,6 +161,20 @@ describe('the reveal', () => {
     expect(q('onboarding-find-twin')).toBeNull()
   })
 
+  it('calls the twin off when the reveal is left before it comes in', () => {
+    show(E2_G4, ways(true, true))
+    vi.advanceTimersByTime(TWIN_MS - 100)
+
+    // Continue, or Not now: the layer goes on to Keep or the way out.
+    controller?.leave()
+    vi.advanceTimersByTime(TWIN_MS)
+
+    // No cheer and no tap in the hand under whatever came next.
+    expect(twinCard()).toBe('off')
+    expect(controller?.mercState()).not.toBe('celebrate')
+    expect(hand.taps).toBe(0)
+  })
+
   it('shows it all at once under reduced motion', () => {
     show(E2_G4, ways(true, true), () => undefined, true)
 
