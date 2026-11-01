@@ -79,9 +79,9 @@ These are the rules that break things when ignored.
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 31.1k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 18.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 14.7k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 13.5k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.6k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -148,7 +148,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-audio-client.ts](../../src/lib/studio/audio/studio-audio-client.ts) | 13.6k | Studio audio client — one module worker reads and checks canonical PCM, builds waveform peaks and checks a restore's audio while the Stud... |
+| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 15.6k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept One press arms: the... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
@@ -270,6 +270,7 @@ These are the rules that break things when ignored.
 | [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
 | [lip-roll-store.ts](../../src/stores/lip-roll-store.ts) | 50 | Lip roll's records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Lip roll's keys:... |
 | [live-mic-store.ts](../../src/stores/live-mic-store.ts) | 50 | Live mic store — what the singing room's microphone heard, for others The stem mixer's microphone keeps its own pitch readings and works... |
+| [mic-latency-path-store.ts](../../src/stores/mic-latency-path-store.ts) | 50 | Mic latency path store — the output path of the clock each round trip was measured on, kept beside the measurement The latency wizard mea... |
 | [ng-slides-store.ts](../../src/stores/ng-slides-store.ts) | 50 | Ng slides' records: the best at each level, the singer's easy note The glide rooms' records (glide-room-store.ts) under Ng slides' keys:... |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
