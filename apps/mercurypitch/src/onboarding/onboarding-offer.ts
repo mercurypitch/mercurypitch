@@ -21,17 +21,22 @@
 //     granted since (S7b E5): the layer checks that itself, at its Not now
 //     (NativeOnboarding.tsx), and a refused mic never reaches the line;
 //   - never without a price to show: a store here, with the month's plan to
-//     sell, priced (cloud-offer-store.ts askCloudPlan), within three
-//     seconds. Without one the sheet could only say "Subscriptions are not
-//     available yet." over a Subscribe that cannot be tapped, a paywall in
-//     the way of the end with nothing behind it. Asked first, and nothing
-//     else is asked, nor any identity made, for an offer that cannot open;
-//     the sheet then opens on the price it was given;
+//     sell, priced (cloud-offer-store.ts askCloudPlan). Without one the
+//     sheet could only say "Subscriptions are not available yet." over a
+//     Subscribe that cannot be tapped, a paywall in the way of the end with
+//     nothing behind it. The price makes no identity, so it is asked as the
+//     onboarding opens (askOfferPrice) and is known long before the end;
+//     nothing else is asked, nor any identity made, for an offer that
+//     cannot open; the sheet then opens on the price it was given;
 //   - never with the subscription held: askBeforeOffering asks the server
 //     and the store, which knows of a purchase first, after making the
-//     singer's identity (E11), within three seconds. Begun as the line's
-//     score shows, so it has its answer by the time Continue is tapped;
-//     at Not now, begun in the tap, the layer up and waiting on them.
+//     singer's identity (E11). Begun as the line's score shows, so it has
+//     its answer by the time Continue is tapped; at Not now, begun in the
+//     tap, the layer up and waiting on them.
+//
+// The price and these asks share one wait of three seconds
+// (BEFORE_OFFER_MS): asked one after the other with a wait each, a slow
+// store kept the layer waiting six.
 //
 // A skipped range gets it all the same: its line is sung from a middle
 // key, and the offer follows the line.
@@ -139,40 +144,50 @@ export function offerSkipNow(): OfferSkip | null {
 }
 
 /**
- * Whether the store gives the plan a price within `ms`: a plan to sell,
- * priced. None to sell, a store that cannot say, or one too slow to: no.
+ * Whether the store has the plan to sell, priced: asked of it now, as the
+ * onboarding opens, since asking makes no identity. Null when a rule says
+ * no already, so the holdout asks nothing. A store that cannot say: no.
  */
-async function pricedWithin(ms: number): Promise<boolean> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const late = new Promise<boolean>((resolve) => {
-    timer = setTimeout(() => resolve(false), ms)
-  })
-  const asked = askCloudPlan().then(
+export function askOfferPrice(): Promise<boolean> | null {
+  if (offerSkipNow() !== null) return null
+  return askCloudPlan().then(
     (plan) => plan !== null,
     () => false,
   )
-  try {
-    return await Promise.race([asked, late])
-  } finally {
-    clearTimeout(timer)
-  }
 }
 
 /**
- * The asks before beat 9, begun as the line's score shows: the price first,
- * then askBeforeOffering; why it opens no offer, or null. Asks nothing when
- * a rule already says no, and nothing past a store with no price, so the
- * holdout, and an install with nothing to buy, make no identity here.
+ * The asks before beat 9, begun as the line's score shows: the price
+ * (`price`, asked as the layer opened, else now), then askBeforeOffering,
+ * all within one BEFORE_OFFER_MS; why it opens no offer, or null. Asks
+ * nothing when a rule already says no, and nothing past a store with no
+ * price, so the holdout, and an install with nothing to buy, make no
+ * identity here.
  */
-export async function prepareOnboardingOffer(): Promise<OfferSkip | null> {
+export async function prepareOnboardingOffer(
+  price: Promise<boolean> | null = null,
+): Promise<OfferSkip | null> {
   const now = offerSkipNow()
   if (now !== null) return now
-  if (!(await pricedWithin(BEFORE_OFFER_MS))) return 'unavailable'
-  return askBeforeOffering().then(
-    (facts) => (facts.storeHolds || facts.songs.subscribed ? 'entitled' : null),
-    // Unasked: the offer goes on what is known, as the sheet does.
-    () => null,
-  )
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, BEFORE_OFFER_MS)
+  })
+  try {
+    const priced = await Promise.race([
+      price ?? askOfferPrice() ?? Promise.resolve(false),
+      deadline.then(() => false),
+    ])
+    if (!priced) return 'unavailable'
+    return await askBeforeOffering(deadline).then(
+      (facts) =>
+        facts.storeHolds || facts.songs.subscribed ? 'entitled' : null,
+      // Unasked: the offer goes on what is known, as the sheet does.
+      () => null,
+    )
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /** Where the onboarding opens the offer: its end, or its Not now. */
