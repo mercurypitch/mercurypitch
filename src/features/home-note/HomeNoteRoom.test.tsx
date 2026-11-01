@@ -65,14 +65,23 @@ vi.mock('@/components/room-kit/useExerciseCapture', async () => {
 
 // ── The band, as calls the test can read ───────────────────────
 
-/** The intro's length on the fake clock, s. */
-const INTRO_SECONDS = 2
+/**
+ * The intro's length on the fake clock, s: Singer's three chords, scheduled
+ * 0.1 s ahead and closing on the house release (0.1 + 3 x 0.72 + 0.18),
+ * rounded up.
+ */
+const INTRO_SECONDS = 2.5
 
 const band = vi.hoisted(() => ({
   intros: [] as { home: number; level: string }[],
   resolves: [] as { home: number; withMerc: boolean }[],
+  /** Keys played again from their lamps at the result. */
+  replays: [] as { home: number; level: string }[],
   stopped: 0,
 }))
+
+/** A key played again, on the fake clock: Merc sings at 2.3 s, done at 3.5 s. */
+const KEY_AGAIN = { mercAt: 2.3, endAt: 3.5 }
 
 vi.mock('@/components/room-kit/round-voice', () => ({
   SYNTH_VOICE: {
@@ -94,6 +103,16 @@ vi.mock('./home-note-band', () => ({
   playResolve: (ctx: AudioContext, round: HomeRound, answer: unknown) => {
     band.resolves.push({ home: round.home, withMerc: answer !== null })
     return { endAt: ctx.currentTime + 1.5, stop: () => undefined }
+  },
+  playKeyAgain: (ctx: AudioContext, round: HomeRound, level: HomeNoteLevel) => {
+    band.replays.push({ home: round.home, level: level.intro.join(' ') })
+    return {
+      mercAt: ctx.currentTime + KEY_AGAIN.mercAt,
+      endAt: ctx.currentTime + KEY_AGAIN.endAt,
+      stop: () => {
+        band.stopped += 1
+      },
+    }
   },
 }))
 
@@ -195,6 +214,7 @@ describe('Home note', () => {
     fake.released = 0
     band.intros = []
     band.resolves = []
+    band.replays = []
     band.stopped = 0
     recorded.calls = []
     localStorage.removeItem('mp_home_note_bests')
@@ -282,7 +302,7 @@ describe('Home note', () => {
     render(() => <HomeNoteRoom onDone={() => undefined} />)
     await startRun()
     toTurn()
-    // Singer's deadline: 8 s from the turn's start (2.2 s on the window).
+    // Singer's deadline: 8 s from the turn's start (2.7 s on the window).
     run(7800)
     expect(phase()).toBe('sing')
     run(200)
@@ -345,6 +365,92 @@ describe('Home note', () => {
     expect(band.intros).toHaveLength(2)
     toTurn()
     expect(screen.queryByTestId('home-note-hear-again')).toBeNull()
+  })
+
+  it('lights a lamp under the chip as each chord plays, and puts them away for the turn', async () => {
+    render(() => <HomeNoteRoom onDone={() => undefined} />)
+    await startRun()
+    const lamps = (): string[] =>
+      Array.from(
+        screen.getByTestId('home-note-chords').querySelectorAll('[data-lamp]'),
+        (lamp) => `${lamp.textContent ?? ''}:${lamp.getAttribute('data-lamp')}`,
+      )
+    // Singer's intro, before its first chord reaches the speaker.
+    expect(lamps()).toEqual(['I:toCome', 'IV:toCome', 'V:toCome'])
+    // The sound is scheduled 0.1 s ahead; each chord is 0.72 s.
+    run(150)
+    expect(lamps()).toEqual(['I:playing', 'IV:toCome', 'V:toCome'])
+    run(720)
+    expect(lamps()).toEqual(['I:played', 'IV:playing', 'V:toCome'])
+    expect(
+      screen.getByTestId('home-note-chords').getAttribute('aria-label'),
+    ).toBe(
+      "The band's chords: the one played, the four playing, the five to come",
+    )
+    // Past the last chord: all passed, while the band's tail dies away.
+    run(1440)
+    expect(lamps()).toEqual(['I:played', 'IV:played', 'V:played'])
+    toTurn()
+    expect(screen.queryByTestId('home-note-chords')).toBeNull()
+  })
+
+  it('shows each key as a lamp at the result, and plays one again from it', async () => {
+    render(() => <HomeNoteRoom onDone={() => undefined} />)
+    await startRun()
+    for (let round = 0; round < HOME_NOTE_ROUNDS; round++) {
+      toTurn()
+      if (round === 1) {
+        // The second key: a silent turn, missed at its deadline.
+        run(8000)
+        expect(phase()).toBe('missed')
+      } else {
+        singing(home())
+        run(600)
+        expect(phase()).toBe('landed')
+      }
+      silent()
+      run(BETWEEN_ROUNDS_MS)
+    }
+    expect(phase()).toBe('result')
+    const keys = screen.getAllByTestId('home-note-key')
+    expect(keys).toHaveLength(HOME_NOTE_ROUNDS)
+    expect(keys.map((key) => key.dataset.found)).toEqual([
+      'true',
+      'false',
+      'true',
+      'true',
+      'true',
+      'true',
+    ])
+    expect(keys[1].getAttribute('aria-label')).toMatch(
+      /^Key 2, home [A-G]( sharp )?\d, missed\. Hear it again$/,
+    )
+
+    // The missed key, from its lamp: its intro, then Merc singing home.
+    fireEvent.click(keys[1])
+    await settle()
+    expect(band.replays).toEqual([
+      { home: band.intros[1].home, level: 'I IV V' },
+    ])
+    expect(screen.getAllByTestId('home-note-key')[1].dataset.playing).toBe(
+      'true',
+    )
+    // Another lamp cuts the first short.
+    const stopped = band.stopped
+    fireEvent.click(screen.getAllByTestId('home-note-key')[3])
+    await settle()
+    expect(band.stopped).toBe(stopped + 1)
+    expect(band.replays).toHaveLength(2)
+    expect(
+      screen.getAllByTestId('home-note-key').map((key) => key.dataset.playing),
+    ).toEqual(['false', 'false', 'false', 'true', 'false', 'false'])
+    // Once it has played, its lamp rests.
+    run(KEY_AGAIN.endAt * 1000 + 50)
+    expect(screen.getAllByTestId('home-note-key')[3].dataset.playing).toBe(
+      'false',
+    )
+    // Nothing more is kept for it: the run was kept once, at its result.
+    expect(recorded.calls).toHaveLength(1)
   })
 
   it('has Merc sing home after the chords at Learning', async () => {

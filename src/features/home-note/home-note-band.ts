@@ -6,8 +6,10 @@
 // (home-note-round.ts voices them), held for CHORD_SECONDS and joined to
 // the next. It plays the intro, then stops so the microphone hears only
 // the singer, and plays home's chord again under a landed note, or under
-// Merc's answer after a miss. Everything goes through the room's output
-// (room-kit room-output.ts), so leaving the room takes it off the speakers.
+// Merc's answer after a miss. At the result, a key's lamp plays that key
+// again: its intro, then home's chord with Merc singing home. Everything
+// goes through the room's output (room-kit room-output.ts), so leaving the
+// room takes it off the speakers.
 //
 // Every chord opens and closes on the house envelope
 // (.claude/memory/audio-pop-free-playback.md): an exponential opening from
@@ -137,6 +139,27 @@ function together(sounds: readonly BandSound[], endAt: number): BandSound {
   }
 }
 
+/** The intro's chords from `start`, one CHORD_SECONDS each. */
+function playChords(
+  ctx: AudioContext,
+  round: HomeRound,
+  level: HomeNoteLevel,
+  start: number,
+): BandSound[] {
+  return level.intro.map((chord, i) =>
+    playChord(
+      ctx,
+      voiceChord(round.home, chord),
+      start + i * CHORD_SECONDS,
+      CHORD_SECONDS,
+    ),
+  )
+}
+
+function lastEnd(sounds: readonly BandSound[]): number {
+  return sounds.reduce((latest, sound) => Math.max(latest, sound.endAt), 0)
+}
+
 /**
  * The round's intro, from a moment from now: the band's chords and, where
  * the level asks, Merc singing home after them. `endAt` is when the last of
@@ -149,15 +172,8 @@ export function playIntro(
   voice: RoundVoice,
 ): BandSound {
   const start = ctx.currentTime + SOUND_LEAD_SECONDS
-  const sounds: BandSound[] = level.intro.map((chord, i) =>
-    playChord(
-      ctx,
-      voiceChord(round.home, chord),
-      start + i * CHORD_SECONDS,
-      CHORD_SECONDS,
-    ),
-  )
-  let endAt = sounds.reduce((latest, sound) => Math.max(latest, sound.endAt), 0)
+  const sounds = playChords(ctx, round, level, start)
+  let endAt = lastEnd(sounds)
   if (level.mercSingsHome) {
     const at = start + level.intro.length * CHORD_SECONDS + MERC_GAP_SECONDS
     const merc = voice.sing(
@@ -171,16 +187,20 @@ export function playIntro(
   return together(sounds, endAt)
 }
 
+/** Merc comes in this long after home's chord, s. */
+const ANSWER_DELAY = 0.12
+
 /**
  * Home's chord under the singer's landed note, or, after a miss, under
- * Merc singing home: the answer, heard in its key.
+ * Merc singing home: the answer, heard in its key. From a moment from now,
+ * or from `start` on the audio clock.
  */
 export function playResolve(
   ctx: AudioContext,
   round: HomeRound,
   answer: RoundVoice | null,
+  start: number = ctx.currentTime + SOUND_LEAD_SECONDS,
 ): BandSound {
-  const start = ctx.currentTime + SOUND_LEAD_SECONDS
   const chord = playChord(
     ctx,
     voiceChord(round.home, 'I'),
@@ -191,10 +211,38 @@ export function playResolve(
   const merc = answer.sing(
     ctx,
     [{ midi: round.home, at: 0, seconds: MERC_HOME_SECONDS }],
-    start + 0.12,
+    start + ANSWER_DELAY,
   )
   return together(
     [chord, { endAt: merc.endAt + RELEASE, stop: () => merc.stop() }],
     Math.max(chord.endAt, merc.endAt + RELEASE),
   )
+}
+
+/** A key heard again: its sound, and when Merc sings home in it. */
+export interface KeySound extends BandSound {
+  /** When Merc starts singing home, audio clock seconds. */
+  readonly mercAt: number
+}
+
+/**
+ * A key of the run heard again from its lamp at the result: the intro's
+ * chords as the run played them, then home's chord with Merc singing home
+ * over it, at every level.
+ */
+export function playKeyAgain(
+  ctx: AudioContext,
+  round: HomeRound,
+  level: HomeNoteLevel,
+  voice: RoundVoice,
+): KeySound {
+  const start = ctx.currentTime + SOUND_LEAD_SECONDS
+  const chords = playChords(ctx, round, level, start)
+  const homeAt = start + level.intro.length * CHORD_SECONDS + MERC_GAP_SECONDS
+  const home = playResolve(ctx, round, voice, homeAt)
+  const sounds = [...chords, home]
+  return {
+    ...together(sounds, lastEnd(sounds)),
+    mercAt: homeAt + ANSWER_DELAY,
+  }
 }

@@ -55,7 +55,7 @@ import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { BandSound } from './home-note-band'
-import { playIntro, playResolve } from './home-note-band'
+import { playIntro, playKeyAgain, playResolve } from './home-note-band'
 import type { HomeNoteEvent, HomeNoteState, RoundOutcome, } from './home-note-machine'
 import { homeNoteReducer, INITIAL_HOME_NOTE_STATE, isRunPhase, liveRound, } from './home-note-machine'
 import type { HomeRound } from './home-note-round'
@@ -71,6 +71,11 @@ import { createHomeLines } from './merc-lines'
 export const YOUR_TURN = 'Your turn'
 /** Merc's voice while he sings home (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
+
+/** Merc's face while he sings `midi`, held and on it. */
+function singing(midi: number): MercVoice {
+  return { voiced: true, cents: 0, level: SUNG_LEVEL, steady: 1, midi }
+}
 
 /** Draws the voice's trail: its readings and now, frames' clock; null clears it. */
 export type TrailSink = (
@@ -105,8 +110,17 @@ export interface HomeNoteController extends ShellRun {
   readonly rules: Accessor<HomeNoteLevel>
   /** The voice is in home's band now. */
   readonly inBand: Accessor<boolean>
-  /** The band's chord count in this intro: the lighthouse pulses on each. */
+  /**
+   * The band's chord count in this intro: the lighthouse pulses on each,
+   * and the chip's lamps light.
+   */
   readonly beat: Accessor<number>
+  /** The intro's last chord has ended: every lamp has passed. */
+  readonly chordsOver: Accessor<boolean>
+  /** The key of the result heard again now, by its index; null for none. */
+  readonly replaying: Accessor<number | null>
+  /** At the result: key `index` again, its intro and Merc singing home. */
+  readonly replayKey: (index: number) => void
   readonly mercState: ReturnType<typeof createMercMoves>['state']
   readonly mercVoice: () => MercVoice
   /** "Hear it again" can be tapped now. */
@@ -131,6 +145,8 @@ export function useHomeNoteController(
   const [resultLevel, setResultLevel] = createSignal('')
   const [inBand, setInBand] = createSignal(false)
   const [beat, setBeat] = createSignal(0)
+  const [chordsOver, setChordsOver] = createSignal(false)
+  const [replaying, setReplaying] = createSignal<number | null>(null)
   const level = createLevelPreset(HOME_NOTE_LEVELS, () =>
     isRunPhase(state().phase),
   )
@@ -175,6 +191,8 @@ export function useHomeNoteController(
   let heardAgain = false
   /** Counts intros, so a replayed intro's pending pulses never fire. */
   let introCount = 0
+  /** Counts keys heard again, so an old one's pending moments never fire. */
+  let replayCount = 0
   let sink: TrailSink = () => undefined
 
   const frameNow = (): number => (performance.now() - windowStartedAt) / 1000
@@ -240,16 +258,21 @@ export function useHomeNoteController(
       mercTo = Number.NEGATIVE_INFINITY
     }
     engine = createSequenceState(onFrames(sound.endAt) + RESPONSE_GATE_SECONDS)
-    // The lighthouse pulses as each chord reaches the speaker.
+    // The lighthouse pulses and the chip's lamps light as each chord
+    // reaches the speaker; the last lamp goes out with the last chord.
     setBeat(0)
+    setChordsOver(false)
     introCount += 1
     const intro = introCount
-    rules.intro.forEach((_, i) => {
-      const at = onFrames(start + i * CHORD_SECONDS) * 1000
-      life.later(Math.max(0, at), () => {
-        if (intro === introCount && phase() === 'band') setBeat(i + 1)
+    const atSpeaker = (t: number, then: () => void): void => {
+      life.later(Math.max(0, onFrames(t) * 1000), () => {
+        if (intro === introCount && phase() === 'band') then()
       })
+    }
+    rules.intro.forEach((_, i) => {
+      atSpeaker(start + i * CHORD_SECONDS, () => setBeat(i + 1))
     })
+    atSpeaker(bandEnd, () => setChordsOver(true))
     merc.set('listen')
     setChip(`Key ${round.index + 1} of ${untrack(state).rounds.length}`)
     startLoop()
@@ -375,13 +398,7 @@ export function useHomeNoteController(
       setChip(`Home was ${note}`)
       say(outcome.voiced ? 'missed' : 'missedSilent', { note })
       // He sings home over the band's chord: his face follows his note.
-      voice = {
-        voiced: true,
-        cents: 0,
-        level: SUNG_LEVEL,
-        steady: 1,
-        midi: outcome.round.home,
-      }
+      voice = singing(outcome.round.home)
       merc.set('sing')
       life.later(MERC_HOME_SECONDS * 1000 + 150, () => {
         if (phase() !== 'missed') return
@@ -442,10 +459,63 @@ export function useHomeNoteController(
     merc.set('idle')
   }
 
+  /** A key heard again at the result goes quiet, its moments with it. */
+  const endReplay = (): void => {
+    replayCount += 1
+    setReplaying(null)
+  }
+
+  /**
+   * Key `round` again, on a running clock: its intro as the run played it,
+   * then Merc singing home over home's chord, his face with his note.
+   */
+  function playKey(ctx: AudioContext, round: HomeRound, index: number): void {
+    const mine = replayCount
+    stopSound()
+    audio = ctx
+    const played = playKeyAgain(ctx, round, rules, voiceOfMerc)
+    sound = played
+    setReplaying(index)
+    const latency = outputLatency(ctx)
+    const at = (t: number, then: () => void): void => {
+      life.later(Math.max(0, (t - ctx.currentTime + latency) * 1000), () => {
+        if (mine === replayCount && phase() === 'result') then()
+      })
+    }
+    at(played.mercAt, () => {
+      voice = singing(round.home)
+      merc.stopCheering()
+      merc.set('sing')
+    })
+    at(played.mercAt + MERC_HOME_SECONDS + 0.15, () => {
+      voice = SILENT_VOICE
+      merc.set('idle')
+    })
+    at(played.endAt, () => setReplaying(null))
+  }
+
+  /** At the result, a key's lamp: that key again. Another tap cuts it. */
+  const replayKey = (index: number): void => {
+    if (phase() !== 'result') return
+    const outcome = untrack(state).outcomes[index]
+    if (outcome === undefined) return
+    endReplay()
+    const mine = replayCount
+    // Asked inside the tap: iOS starts the clock only from a gesture.
+    void capture.audio().then((ctx) => {
+      if (ctx === null || mine !== replayCount || phase() !== 'result') return
+      playKey(ctx, outcome.round, index)
+    })
+  }
+
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    // A key still sounding from the result stops with the tap.
+    endReplay()
+    stopSound()
+    voice = SILENT_VOICE
     level.take()
     runLevel = untrack(exerciseLevel)
     rules = untrack(level.preset)
@@ -550,15 +620,7 @@ export function useHomeNoteController(
     const round = live()
     if (round !== null && phase() === 'band') {
       const t = frameNow()
-      if (t >= mercFrom && t < mercTo) {
-        return {
-          voiced: true,
-          cents: 0,
-          level: SUNG_LEVEL,
-          steady: 1,
-          midi: round.home,
-        }
-      }
+      if (t >= mercFrom && t < mercTo) return singing(round.home)
       return { ...SILENT_VOICE, midi: round.home }
     }
     return voice
@@ -574,6 +636,9 @@ export function useHomeNoteController(
     rules: level.preset,
     inBand,
     beat,
+    chordsOver,
+    replaying,
+    replayKey,
     mercState: merc.state,
     mercVoice,
     micLevel: () => loudness,
