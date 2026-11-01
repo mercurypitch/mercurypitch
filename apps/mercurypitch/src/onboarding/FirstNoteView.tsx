@@ -199,7 +199,7 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
         </div>
       </div>
 
-      <div class={styles.foot}>
+      <div class={`${styles.foot} ${styles.footFirst}`}>
         <Switch>
           <Match when={phase() === 'heard'}>
             {/* Kept in the flow once skipped, so the stage stays put while

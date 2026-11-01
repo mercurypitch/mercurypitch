@@ -119,6 +119,10 @@
   border: 0;
 }
 
+/* Centred while it fits; from its top when it does not, so a stage taller
+   than a short phone gives it runs on under the foot's empty top rather
+   than climbing under Not now (a bubble sat under it at 320 by 568). A
+   WebView without `safe` keeps the centre. */
 .stage {
   position: relative;
   flex: 1 1 auto;
@@ -127,6 +131,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   gap: 8px;
   padding: 0 16px;
 }
@@ -314,18 +319,26 @@
   }
 }
 
-/* Held at the height of its tallest beat, the mic's (its well, two lines and
-   the promise), so the stage stays put when Find my range or the mic's
-   notice takes the mic's place: the shorter beats sit at the bottom. */
+/* Held at the height of the mic's foot (its well, the caption and the
+   slot under it), so the stage stays put when the ways on or the mic's ways
+   back take the mic's place: what is shorter sits at the bottom, under
+   what it means ("A3 is the name of the note you sang", the range's span,
+   the line's score) where it left only empty room before. The first note's
+   foot holds the mic's promise as well (`footFirst`). */
 .foot {
+  --foot-min: 220px;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  min-height: 244px;
+  min-height: var(--foot-min);
   padding: 8px 16px 16px;
+}
+
+.footFirst {
+  --foot-min: 245px;
 }
 
 /* Room for the mic's ring at full travel: 100 px at rest and 1.3 times that
@@ -815,8 +828,15 @@
   text-align: center;
 }
 
-/* A short phone (360 x 640, 375 x 667): tighter rows. */
+/* A short phone (360 x 640, 375 x 667): tighter rows, a smaller Merc and
+   lane, and a mic well that keeps only the room its ring needs. */
 @media (max-height: 700px) {
+  /* Air between Not now and Merc's line when the stage is full: with the
+     mic refused, his two-line line sat against Not now at 320 by 568. */
+  .stage {
+    padding-top: 8px;
+  }
+
   .bubbleRow {
     min-height: 52px;
   }
@@ -825,8 +845,29 @@
     padding: 7px 14px;
   }
 
+  .merc {
+    width: min(46vw, 24vh, 240px);
+    width: min(46vw, 24dvh, 240px);
+  }
+
+  .lane {
+    height: 76px;
+  }
+
   .note {
     font-size: 52px;
+  }
+
+  .micWell {
+    padding: 12px 0;
+  }
+
+  .foot {
+    --foot-min: 212px;
+  }
+
+  .footFirst {
+    --foot-min: 237px;
   }
 
   /* The reveal's cards, smaller, so Merc and his line stay in view over
@@ -872,14 +913,43 @@
   }
 }
 
-/* A small phone (320 x 568): the reveal tighter again. */
+/* A small phone (320 x 568): tighter again. */
 @media (max-height: 600px) {
+  .bubbleRow {
+    min-height: 44px;
+  }
+
+  .bubble {
+    font-size: 16px;
+  }
+
+  .merc {
+    width: min(46vw, 17vh, 240px);
+    width: min(46vw, 17dvh, 240px);
+  }
+
+  .lane {
+    height: 72px;
+  }
+
+  .foot {
+    padding: 6px 16px 10px;
+  }
+
   .revealBody {
     gap: 8px;
   }
 
+  /* The card closer round its print and the foot's padding less, so Merc's
+     line stays whole over Continue when the range under the type takes two
+     lines ("F2 to A4 · about two and a half octaves" at 320 wide). */
+  .card {
+    padding: 12px 14px 14px;
+  }
+
   .print {
     width: 60px;
+    margin-bottom: 2px;
   }
 
   .cardTitle {
@@ -899,6 +969,10 @@
   .guideLine {
     font-size: 15px;
   }
+
+  .revealFoot {
+    padding: 6px 16px 8px;
+  }
 }
 
 /* On its side and short (a phone the lock has not caught, a browser): the
@@ -912,10 +986,11 @@
     flex: 1 1 60%;
   }
 
-  .foot {
+  .foot,
+  .footFirst {
+    --foot-min: 0px;
     flex: 1 1 40%;
     justify-content: center;
-    min-height: 0;
   }
 
   .merc {

@@ -5,8 +5,9 @@
 // Top to bottom: Merc's line in a bubble; the climb, which is Merc riding
 // beside a ladder of rungs at the voice's height, the rungs the voice dwelt
 // on lit, and the two pins (the lowest note, then the highest) that lock
-// when the range is measured; and the foot: the mic, the mic's notice when
-// it would not open, or See my voice once the range is measured. The
+// when the range is measured; and the foot: the mic, the mic's ways back
+// when it would not open, or, once the range is measured, how wide it is
+// in words a non-singer can picture, and See my voice. The
 // controller (useRange.ts) decides; this draws.
 //
 // Merc's line is read out by the layer's one live region (rangeSays); the
@@ -19,7 +20,7 @@ import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import styles from './NativeOnboarding.module.css'
-import { micBlockedLine, ONBOARDING_COPY, rangeLine } from './onboarding-copy'
+import { micBlockedLine, ONBOARDING_COPY, rangeLine, rangeMeaning, } from './onboarding-copy'
 import type { LadderView } from './range-ladder'
 import { heightOf, pinName, rungColour, rungLit, rungsOf } from './range-ladder'
 import type { RangeLine } from './range-machine'
@@ -209,6 +210,18 @@ export function RangeView(props: RangeViewProps): JSX.Element {
         >
           <Switch>
             <Match when={phase() === 'done'}>
+              {/* What the two pins mean, over the way on, where the foot
+                  held only empty room above See my voice. */}
+              <Show when={props.controller.state().range}>
+                {(measured) => (
+                  <p
+                    class={`${styles.fine} ${styles.meaning}`}
+                    data-testid="onboarding-range-meaning"
+                  >
+                    {rangeMeaning(measured())}
+                  </p>
+                )}
+              </Show>
               <button
                 type="button"
                 class={styles.primary}

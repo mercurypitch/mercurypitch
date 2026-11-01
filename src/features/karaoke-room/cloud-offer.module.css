@@ -774,11 +774,13 @@
   }
 }
 
-/* A short phone (an SE): less art, closer steps, the deal still in view. */
+/* A short phone (an SE): less art, closer steps, the deal still in view
+   and its footer clear of the gesture bar (at 360 by 640 Restore purchase,
+   Terms and Privacy ran into it). */
 @media (max-height: 740px) and (min-height: 501px) {
   .hero {
-    height: clamp(104px, 17vh, 170px);
-    height: clamp(104px, 17dvh, 170px);
+    height: clamp(88px, 14vh, 150px);
+    height: clamp(88px, 14dvh, 150px);
   }
 
   .title {
@@ -787,11 +789,21 @@
   }
 
   .path {
-    margin: 14px 0 12px;
+    margin: 12px 0 10px;
   }
 
   .step {
-    padding-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .plan {
+    min-height: 64px;
+    padding: 10px 14px;
+  }
+
+  .subscribe {
+    min-height: 52px;
+    margin-top: 10px;
   }
 }
 

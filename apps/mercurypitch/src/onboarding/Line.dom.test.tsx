@@ -377,7 +377,8 @@ describe('the sung line', () => {
     expect(controller?.state().phase).toBe('missed')
     expect(line()).toBe(ONBOARDING_COPY.lineUnheard)
     expect(micState()).toBe('ready')
-    expect(q('onboarding-sung-score')?.getAttribute('data-shown')).toBe('off')
+    // No score shown: it comes with the ways on, once scored.
+    expect(q('onboarding-sung-score')).toBeNull()
     expect(s.calls.release).toBeGreaterThan(0)
   })
 
@@ -418,7 +419,8 @@ describe('the sung line', () => {
 
     expect(controller?.state().phase).toBe('call')
     expect(sung).toHaveLength(2)
-    expect(q('onboarding-sung-score')?.getAttribute('data-shown')).toBe('off')
+    // No score shown: it comes with the ways on, once scored.
+    expect(q('onboarding-sung-score')).toBeNull()
     expect(bars('data-hit').every((hit) => hit === null)).toBe(true)
   })
 

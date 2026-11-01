@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { heardLine, noteMeaning, rangeLine, rangeSubline, spanWords, twinLine, voiceHeadline, } from './onboarding-copy'
+import { heardLine, noteMeaning, rangeLine, rangeMeaning, rangeSubline, spanWords, twinLine, voiceHeadline, } from './onboarding-copy'
 
 describe('note names on screen', () => {
   it('writes a sharp with the sharp sign, never the hash', () => {
@@ -38,6 +38,12 @@ describe('the reveal in words', () => {
     expect(spanWords(27)).toBe('about two octaves')
     expect(spanWords(30)).toBe('about two and a half octaves')
     expect(spanWords(36)).toBe('about three octaves')
+  })
+
+  it('says what a range just measured means, under its pins', () => {
+    expect(rangeMeaning({ lowMidi: 40, highMidi: 67 })).toBe(
+      'Your lowest note to your highest: about two octaves.',
+    )
   })
 
   it('puts the range and its span on one line', () => {

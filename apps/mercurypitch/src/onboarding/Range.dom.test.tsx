@@ -211,6 +211,10 @@ describe('the range', () => {
     expect(lit()).toEqual(rungs().filter((midi) => midi >= 39 && midi <= 67))
     expect(q('onboarding-mic')).toBeNull()
     expect(s.calls.release).toBeGreaterThan(0)
+    // What the two pins mean, over the way on.
+    expect(q('onboarding-range-meaning')?.textContent).toBe(
+      'Your lowest note to your highest: about two octaves.',
+    )
     q('onboarding-see-voice')?.click()
     expect(onSee).toHaveBeenCalledTimes(1)
   })
