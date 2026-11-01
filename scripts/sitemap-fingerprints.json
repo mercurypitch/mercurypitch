@@ -68,15 +68,23 @@
     "fingerprint": "864528e9d6d15295"
   },
   "https://mercurypitch.com/learn/": {
-    "lastmod": "2026-10-28",
-    "fingerprint": "0471447558584260"
+    "lastmod": "2026-11-01",
+    "fingerprint": "d7e3a1f7d00e1cf8"
   },
   "https://mercurypitch.com/learn/01": {
-    "lastmod": "2026-10-26",
-    "fingerprint": "5244cc393a6c2ad9"
+    "lastmod": "2026-11-01",
+    "fingerprint": "1f7d86a529a53229"
   },
   "https://mercurypitch.com/learn/02": {
-    "lastmod": "2026-10-26",
-    "fingerprint": "6c4b487b01fb7d25"
+    "lastmod": "2026-11-01",
+    "fingerprint": "28d57b609e6b5a41"
+  },
+  "https://mercurypitch.com/learn/01/watch": {
+    "lastmod": "2026-11-01",
+    "fingerprint": "735295ef4ca684c5"
+  },
+  "https://mercurypitch.com/learn/02/watch": {
+    "lastmod": "2026-11-01",
+    "fingerprint": "852accfb32843d1d"
   }
 }
