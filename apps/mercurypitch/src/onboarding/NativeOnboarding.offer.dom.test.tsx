@@ -978,6 +978,41 @@ describe("after the line's Continue: the onboarding finished, whatever comes aft
   })
 })
 
+describe('Merc between the beats (beat-swap.ts)', () => {
+  it('moves by a View Transition from beat to beat, but fades into the reveal and out of it', async () => {
+    // A phone with an account: the reveal's Continue goes straight on to
+    // the line, by a View Transition were Merc to fly.
+    setAuthToken(token('google'))
+    const draw = standInViewTransitions()
+    const s = mount()
+    const swap = (): string | null => layer()?.getAttribute('data-swap') ?? null
+    await nameNote(s)
+
+    q('onboarding-find-range')?.click()
+    draw()
+    await settle()
+    const toRange = swap()
+    s.frames = slideWindow(52, 40)
+    flushFrame()
+    s.frames = slideWindow(45, 67)
+    flushFrame()
+    q('onboarding-see-voice')?.click()
+    draw()
+    await settle()
+    const toReveal = swap()
+    const revealed = beat()
+    q('onboarding-continue')?.click()
+    draw()
+    await settle()
+
+    expect(toRange).toBe('view')
+    expect(revealed).toBe('reveal')
+    expect(toReveal).toBe('fade')
+    expect(beat()).toBe('line')
+    expect(swap()).toBe('fade')
+  })
+})
+
 describe('Keep after the line, once a range was skipped (beat 7)', () => {
   /** A skipped range, the line sung, and its Continue: Keep. */
   async function keepAfterLine(s: Stand): Promise<void> {

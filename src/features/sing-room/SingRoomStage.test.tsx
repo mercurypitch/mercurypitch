@@ -23,6 +23,7 @@ import type { NativeShellApi } from '@/stores/native-shell-store'
 import { holdRoomArrival, holdRoomWords, nativeRunControls, registerShellApi, resetRoomArrivalHolds, resetRoomWordsHolds, } from '@/stores/native-shell-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import type { MelodyItem, NoteName } from '@/types'
+import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
 import { dispatchSingRoom, resetSingRoom, singRoomContext, } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
@@ -523,13 +524,15 @@ describe('arriving through an alley door', () => {
     const release = holdRoomWords()
     mountRoom()
     const room = screen.getByTestId('sing-room')
-    const held = room.querySelector('[data-words="held"]')
-    // The column with every word in it, and not the picture under it.
+    // The class that hides them (visibility: hidden), on the column with
+    // every word in it, and not on the picture under it.
+    const held = room.querySelector(`.${styles.wordsHeld}`)
     expect(held?.contains(screen.getByTestId('sing-stage'))).toBe(true)
     expect(held?.contains(screen.getByTestId('sing-cover'))).toBe(false)
+    expect(room.querySelectorAll(`.${styles.wordsHeld}`)).toHaveLength(1)
 
     release()
-    expect(room.querySelector('[data-words]')).toBeNull()
+    expect(room.querySelector(`.${styles.wordsHeld}`)).toBeNull()
   })
 
   it('arrives at once when nothing holds it', async () => {

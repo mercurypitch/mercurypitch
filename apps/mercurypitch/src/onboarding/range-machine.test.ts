@@ -171,4 +171,25 @@ describe('rangeLine', () => {
     })
     expect(rangeLine(again, null)).toBe('still-blocked')
   })
+
+  it('starts the count of refusals over once the mic opens', () => {
+    const opened: RangeEvent[] = [
+      { type: 'start' },
+      { type: 'mic-failed', run: 1, block: 'denied' },
+      { type: 'start' },
+      { type: 'mic-ready', run: 2 },
+    ]
+    expect(run(...opened).blocks).toBe(0)
+    // Refused again later, after slides that went unheard: Merc says why
+    // as he did the first time, not that it is still off.
+    const refused = run(
+      ...opened,
+      { type: 'slid' },
+      { type: 'measured', outcome: { kind: 'unheard' } },
+      { type: 'start' },
+      { type: 'mic-failed', run: 3, block: 'denied' },
+    )
+    expect(refused.phase).toBe('blocked')
+    expect(rangeLine(refused, null)).toBe('blocked')
+  })
 })

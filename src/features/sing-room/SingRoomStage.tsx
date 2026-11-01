@@ -894,7 +894,6 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       <div
         class={styles.ui}
         classList={{ [styles.wordsHeld]: roomWordsHeld() }}
-        data-words={roomWordsHeld() ? 'held' : undefined}
       >
         <SingRoomHud
           note={() => noteChipSignal(props.currentPitch())}
