@@ -66,6 +66,7 @@ FILES=(
   l4entr/polish/BRIEF-A.md l4entr/polish/BRIEF-B.md l4entr/polish/BRIEF-C.md l4entr/polish/BRIEF-D.md l4entr/polish/BRIEF-E.md l4entr/polish/BRIEF-F.md l4entr/leap/DECISION-123.md l4entr/DELIVERY.draft.md
   l4film/review/component-A-04/REPORT.md l4film/review/component-B-05/REPORT.md l4film/review/component-C-03/REPORT.md l4film/review/component-D-04/REPORT.md l4film/review/component-E-03/REPORT.md l4film/review/component-F-04/REPORT.md l4film/review/film-01/REPORT.md
   l4film/review/film-02/REPORT.md l4film/review/film-03/REPORT.md l4film/review/film-04/REPORT.md l4film/review/film-05/REPORT.md l4film/review/film-06/REPORT.md l4film/DELIVERY.md l4entr/f6-docs-draft.md
+  s2pkg/BRIEF-15.md s2pkg/BRIEF-17.md s2pkg/BRIEF-19.md s2pkg/BRIEF-21.md s2pkg/BRIEF-23.md s2pkg/BRIEF-reviewer.md s2pkg/BRIEF-writer-common.md s2pkg/15-REVIEW.md s2pkg/17-REVIEW.md s2pkg/19-REVIEW.md s2pkg/21-REVIEW.md s2pkg/15-HANDBACK.md s2pkg/17-HANDBACK.md s2pkg/19-HANDBACK.md s2pkg/21-HANDBACK.md s2pkg/21-FIXPASS-MSG.md s2pkg/21/FACTS.md s2pkg/21/LESSON.md s2pkg/21/WEB-SPEC.md s2pkg/shared-19-21/L19-entries.md s2pkg/shared-19-21/L21-entries.md
 )
 
 # The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
