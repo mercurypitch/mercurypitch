@@ -29,8 +29,9 @@
 // the alley, with no offer to open), Not now on the first note (the alley
 // as well), Back
 // on an install held out of the offer (the alley at once), a refused
-// microphone, whose Continue without the mic lands on the path with no
-// offer, and Not now after a refusal (the alley, no offer, nothing asked;
+// microphone, Merc saying why, whose Continue without the mic lands on the
+// alley with no offer, and Not now after a refusal (the alley, no offer,
+// nothing asked;
 // S7b E5). Every visible part is measured
 // on each frame: inside the screen, apart from one another, and every
 // control at least 44 px. With --shots, the screens parts 3 to 5 added or
@@ -1966,9 +1967,10 @@ async function walkRefused(browser, args, frame, kit) {
       .catch(() => {
         throw new Error('refused: no Try again')
       })
-    const notice = await page.locator('[role="alert"]').first().textContent()
-    if (!notice?.includes('Merc needs the microphone')) {
-      throw new Error(`refused: the notice reads "${notice}"`)
+    // Merc says why himself: the notice under him is only its ways back.
+    const said = await page.locator(LINE).textContent()
+    if (said !== "I can't hear you. The microphone is off in Settings.") {
+      throw new Error(`refused: Merc says "${said}"`)
     }
     await expectLayout(page, 'refused')
     const grant = await page.evaluate(() =>
@@ -1976,15 +1978,10 @@ async function walkRefused(browser, args, frame, kit) {
     )
     if (grant === 'true') throw new Error('refused: a grant was remembered')
     await kit.shoot(page, shotsFor(args, frame), 'onboarding-without-mic')
-    // One tap on (REQ-NFL-043): the landing, with no offer of either kind.
+    // One tap on (REQ-NFL-043): the alley, not the path whose one button
+    // needs the mic, with no offer of either kind.
     await page.locator(WITHOUT_MIC).tap()
-    const landing = await expectLanding(
-      page,
-      { ...args, shots: null },
-      frame,
-      kit,
-      'Continue without the mic',
-    )
+    const alley = await expectAlley(page, kit, 'Continue without the mic')
     const offered = await page.evaluate(
       ([offer, keep]) =>
         document.querySelector(offer) !== null ||
@@ -1992,16 +1989,9 @@ async function walkRefused(browser, args, frame, kit) {
       [OFFER, KEEP],
     )
     if (offered) throw new Error('Continue without the mic: an offer came up')
-    await expectGone(page, kit, 'Back from the path, refused')
-    const room = await page.evaluate(() => window.mpSingRoom?.())
-    if (room?.state !== 'resting') {
-      throw new Error(
-        `Back from the path, refused: the room is ${JSON.stringify(room)}`,
-      )
-    }
     if (errors.length > 0) throw new Error(`page error: ${errors.join(' | ')}`)
     return [
-      `a refused mic: the notice, Try again and Continue without the mic; that: ${landing}, no offer, flag done, the room resting`,
+      `a refused mic: Merc says why, Open Settings and Try again, and Continue without the mic; that: ${alley}, no offer, flag done`,
     ]
   } finally {
     await context.close()

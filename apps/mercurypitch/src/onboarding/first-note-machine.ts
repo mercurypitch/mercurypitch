@@ -12,7 +12,9 @@
 //             by itself, up to MAX_AUTO_TAKES (REQ-NFL-035)
 //   heard     the note is named
 //   missed    no settled note twice: the mic is shut, a tap tries again
-//   blocked   the mic would not open: why, and the way back
+//   blocked   the mic would not open: Merc says why, and the way back. A
+//             retry that changes nothing (`blocks` past one) has him say it
+//             is still off, and where to turn it on
 //
 // A stop (the mic tapped while it listens, the page or the app going, the
 // mic dying under it) goes back to hello, the beat it was on: a singer can
@@ -40,6 +42,8 @@ export interface NoteState {
   readonly note: SettledNote | null
   /** Takes since the last tap that ended with no settled note. */
   readonly misses: number
+  /** Opens refused or failed in a row since the mic last opened. */
+  readonly blocks: number
 }
 
 export type NoteEvent =
@@ -63,6 +67,7 @@ export const FIRST_NOTE_START: NoteState = {
   block: null,
   note: null,
   misses: 0,
+  blocks: 0,
 }
 
 export function firstNoteReducer(
@@ -87,10 +92,15 @@ export function firstNoteReducer(
       }
     case 'mic-ready':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'listen' }
+      return { ...state, phase: 'listen', blocks: 0 }
     case 'mic-failed':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'blocked', block: event.block }
+      return {
+        ...state,
+        phase: 'blocked',
+        block: event.block,
+        blocks: state.blocks + 1,
+      }
     case 'heard':
       if (state.phase !== 'listen') return state
       return { ...state, phase: 'heard', note: event.note }
@@ -116,11 +126,15 @@ export type NoteLine =
   | 'wandered'
   | 'missed'
   | 'heard'
+  /** The mic would not open: why, in his words (micBlockedLine). */
+  | 'blocked'
+  /** And a retry changed nothing. */
+  | 'still-blocked'
 
 /**
  * Merc's line for where the beat stands. `greeted`: his hello has had its
- * moment, and the ask takes its place. Blocked has none: the mic's notice
- * says why (room-kit MicBlocked).
+ * moment, and the ask takes its place. Blocked: Merc says why himself,
+ * over the mic's notice and its ways back (room-kit MicBlocked).
  */
 export function firstNoteLine(
   state: NoteState,
@@ -141,6 +155,6 @@ export function firstNoteLine(
     case 'missed':
       return 'missed'
     case 'blocked':
-      return null
+      return state.blocks > 1 ? 'still-blocked' : 'blocked'
   }
 }

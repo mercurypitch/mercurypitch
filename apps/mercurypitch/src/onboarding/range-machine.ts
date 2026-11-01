@@ -13,7 +13,8 @@
 //   done      the range is measured: the two pins lock
 //   missed    no range in the two slides (`unheard`), or one note held
 //             (`narrow`): the mic is shut, a tap slides again
-//   blocked   the mic would not open: why, and the way back
+//   blocked   the mic would not open: Merc says why, and the way back;
+//             still off after a retry, he says so (`blocks`)
 //
 // A stop (the mic tapped while it listens, the page or the app going, the
 // mic dying, a minute of quiet) goes back to ready, and the slides start
@@ -44,6 +45,8 @@ export interface RangeState {
   readonly range: RangeResult | null
   /** Why the last two slides gave no range, in `missed`. */
   readonly miss: RangeMiss | null
+  /** Opens refused or failed in a row since the mic last opened. */
+  readonly blocks: number
 }
 
 export type RangeEvent =
@@ -66,6 +69,7 @@ export const RANGE_START: RangeState = {
   block: null,
   range: null,
   miss: null,
+  blocks: 0,
 }
 
 const listening = (phase: RangePhase): boolean =>
@@ -87,13 +91,19 @@ export function rangeReducer(state: RangeState, event: RangeEvent): RangeState {
         block: null,
         range: null,
         miss: null,
+        blocks: state.blocks,
       }
     case 'mic-ready':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'down' }
+      return { ...state, phase: 'down', blocks: 0 }
     case 'mic-failed':
       if (state.phase !== 'starting' || event.run !== state.run) return state
-      return { ...state, phase: 'blocked', block: event.block }
+      return {
+        ...state,
+        phase: 'blocked',
+        block: event.block,
+        blocks: state.blocks + 1,
+      }
     case 'slid':
       if (state.phase !== 'down') return state
       return { ...state, phase: 'up' }
@@ -116,10 +126,13 @@ export type RangeLine =
   | 'slide-up-nudge'
   | 'range'
   | RangeMiss
+  /** The mic would not open, and still not after a retry. */
+  | 'blocked'
+  | 'still-blocked'
 
 /**
- * Merc's line for where the range stands. Blocked has none: the mic's
- * notice says why (room-kit MicBlocked).
+ * Merc's line for where the range stands. Blocked: he says why himself,
+ * over the mic's notice and its ways back (room-kit MicBlocked).
  */
 export function rangeLine(
   state: RangeState,
@@ -139,6 +152,6 @@ export function rangeLine(
     case 'missed':
       return state.miss
     case 'blocked':
-      return null
+      return state.blocks > 1 ? 'still-blocked' : 'blocked'
   }
 }

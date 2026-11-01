@@ -697,7 +697,20 @@ describe('a refused mic (REQ-NFL-043, S7b E5)', () => {
     await settle()
   }
 
-  it("goes on in one tap: Continue without the mic lands on the Warm-up's path, with no offer", async () => {
+  it("says why in Merc's words, and that it is still off after a Try again", async () => {
+    const s = mount('onboarding')
+    await refuse(s, 'denied')
+    expect(said()).toBe(ONBOARDING_COPY.micOff)
+    // His words, not the notice's grey ones as well.
+    expect(view?.container.querySelector('[role="alert"]')).toBeNull()
+
+    q('onboarding-retry')?.click()
+    await settle()
+
+    expect(said()).toBe(ONBOARDING_COPY.micStillOff)
+  })
+
+  it('goes on in one tap: Continue without the mic lands on the alley, done, with no offer', async () => {
     const s = mount('onboarding')
     await refuse(s, 'denied')
     expect(q('onboarding-retry')).not.toBeNull()
@@ -710,26 +723,29 @@ describe('a refused mic (REQ-NFL-043, S7b E5)', () => {
 
     expect(offerOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
-    expect(onboardingExit()).toBe('finished')
+    expect(onboardingExit()).toBe('without-mic')
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('done')
-    expect(pushed()).toBe('warm-up')
+    // Not the path, whose only button would ask for the mic again.
+    expect(pushed()).toBeNull()
+    expect(window.location.hash).toBe(ALLEY)
     expect(counted()).toEqual([
       'native_onboarding_first_note_view',
       'native_onboarding_mic_denied',
       'native_onboarding_without_mic',
       'native_onboarding_done',
-      'native_onboarding_path_view',
     ])
   })
 
   it('goes on the same way from a mic that would not open', async () => {
     const s = mount('onboarding')
     await refuse(s, 'unavailable')
+    expect(said()).toBe(ONBOARDING_COPY.micFailed)
 
     q('onboarding-without-mic')?.click()
     await settle()
 
-    expect(pushed()).toBe('warm-up')
+    expect(pushed()).toBeNull()
+    expect(window.location.hash).toBe(ALLEY)
   })
 
   it('has no way on without the mic for the range on its own: its Not now goes back to Keep', async () => {

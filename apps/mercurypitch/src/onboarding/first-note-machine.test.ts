@@ -125,7 +125,7 @@ describe('firstNoteLine', () => {
     ).toBe('wandered')
   })
 
-  it('names the note, says a miss, and leaves a refusal to the notice', () => {
+  it('names the note, says a miss, and says why the mic did not open', () => {
     expect(
       firstNoteLine(
         firstNoteReducer(listening, { type: 'heard', note: A3 }),
@@ -145,12 +145,24 @@ describe('firstNoteLine', () => {
         true,
       ),
     ).toBe('missed')
-    expect(
-      firstNoteLine(
-        run({ type: 'start' }, { type: 'mic-failed', run: 1, block: 'denied' }),
-        null,
-        true,
-      ),
-    ).toBeNull()
+    // A refusal is Merc's to explain; one that a retry left as it was,
+    // still his, and he says it is still off.
+    const refused = run(
+      { type: 'start' },
+      { type: 'mic-failed', run: 1, block: 'denied' },
+    )
+    expect(firstNoteLine(refused, null, true)).toBe('blocked')
+    const again = firstNoteReducer(
+      firstNoteReducer(refused, { type: 'start' }),
+      { type: 'mic-failed', run: 2, block: 'denied' },
+    )
+    expect(again.blocks).toBe(2)
+    expect(firstNoteLine(again, null, true)).toBe('still-blocked')
+    // The mic opening at last: the count starts over.
+    const opened = firstNoteReducer(
+      firstNoteReducer(again, { type: 'start' }),
+      { type: 'mic-ready', run: 3 },
+    )
+    expect(opened.blocks).toBe(0)
   })
 })

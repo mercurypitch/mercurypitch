@@ -43,8 +43,8 @@
 // the Warm-up's path (beat 10, onboarding-landing.ts) once the offer and
 // whatever it handed over to have closed; else it lands there straight
 // away. A refused mic, or one that would not open, goes on in one tap
-// (Continue without the mic, REQ-NFL-043) to the same landing, with no
-// offer.
+// (Continue without the mic, REQ-NFL-043) to the alley, Not now's landing,
+// with no offer: the path's one button needs the mic.
 //
 // Not now, at any beat (and Back, which is the same Not now), ends the
 // onboarding for good, its mic shut in the tap (owner, 20 Oct 2026). The
@@ -318,15 +318,16 @@ export function NativeOnboarding(): JSX.Element {
 
   /**
    * Continue without the mic, after a refusal or a mic that would not open:
-   * the onboarding's one way on (REQ-NFL-043), straight to its landing,
-   * with no offer of either kind (S7b E5). The range on its own has none:
-   * its Not now goes back to Keep.
+   * the onboarding's one way on (REQ-NFL-043), with no offer of either kind
+   * (S7b E5), to the alley rather than the Warm-up's path, whose one button
+   * would ask for the mic again (onboarding-layer.ts `without-mic`). The
+   * range on its own has none: its Not now goes back to Keep.
    */
   const withoutMic =
     entry === 'onboarding'
       ? (): void => {
           count('native_onboarding_without_mic')
-          leaveOnboarding('finished')
+          leaveOnboarding('without-mic')
         }
       : undefined
 

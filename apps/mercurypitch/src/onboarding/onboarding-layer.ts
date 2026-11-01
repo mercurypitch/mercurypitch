@@ -27,7 +27,10 @@
 // offer it may open (owner, 20 Oct 2026), and once said it is how the
 // layer leaves. The shell is back as it starts to fade (LEAVE_MS); the
 // layer unmounts when the fade is over. Its own end lands on the Warm-up's
-// path, and Not now on the alley (onboarding-landing.ts). Under the path
+// path, and Not now on the alley (onboarding-landing.ts). So does Continue
+// without the mic (`without-mic`), counted as an end: the path's one button
+// is Start warm-up, which needs the mic the singer just went on without,
+// and the alley asks for nothing. Under the path
 // the Sing room waits on: arriving there it would open its mic on a
 // remembered grant, under a screen that wants the mic to itself. Back from
 // the path lets it in. On the way to the alley it waits until the tab has
@@ -62,7 +65,11 @@ export const LEAVE_MS = 280
 /** The same under reduced motion: the shell's crossfade. */
 export const LEAVE_REDUCED_MS = 120
 
-export type OnboardingExit = 'not-now' | 'finished'
+/**
+ * How the layer left: Not now, its own end, or its end without the mic
+ * after a refusal, which lands where Not now does.
+ */
+export type OnboardingExit = 'not-now' | 'finished' | 'without-mic'
 
 /** What the layer opened for: the onboarding, or the range on its own. */
 export type OnboardingEntry = 'onboarding' | 'range'
@@ -283,10 +290,10 @@ function letInOnce(free: () => boolean, release: () => void): void {
 /**
  * The layer leaves: the onboarding done for good (the range on its own
  * leaves the flag be), the onboarding's landing (the Warm-up's path on its
- * own end, the alley on Not now), the Sing room let in once nothing covers
- * it or it has gone, the rail back, and the layer gone once it has faded.
- * Not now, once said, is how it leaves, whatever `asked` says. True when
- * it was up.
+ * own end, the alley on Not now and without the mic), the Sing room let in
+ * once nothing covers it or it has gone, the rail back, and the layer gone
+ * once it has faded. Not now, once said, is how it leaves, whatever
+ * `asked` says. True when it was up.
  */
 export function leaveOnboarding(asked: OnboardingExit): boolean {
   if (!untrack(onboardingShown)) return false
@@ -294,8 +301,8 @@ export function leaveOnboarding(asked: OnboardingExit): boolean {
   lastExit = exit
   const onboarding = untrack(entry) === 'onboarding'
   const landing = onboarding && exit === 'finished'
-  const toAlley = onboarding && exit === 'not-now'
-  if (toAlley) markNotNow()
+  const toAlley = onboarding && exit !== 'finished'
+  if (onboarding && exit === 'not-now') markNotNow()
   else if (onboarding) {
     markOnboardingDone()
     countFinished()

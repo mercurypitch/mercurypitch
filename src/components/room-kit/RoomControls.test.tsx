@@ -9,9 +9,10 @@
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerShellApi } from '@/stores/native-shell-store'
 import type { MicState } from './mic-state'
 import { RING_REST_OPACITY } from './mic-state'
-import { MicButton } from './RoomControls'
+import { MicBlocked, MicButton } from './RoomControls'
 import styles from './RoomControls.module.css'
 import { newestLevel } from './voice-level'
 
@@ -249,5 +250,51 @@ describe('a room held still', () => {
     }
 
     expect(marked).toEqual([true, true, true, true])
+  })
+})
+
+describe('a mic that would not open', () => {
+  it('says why, and offers Try again, where the app cannot open its Settings', () => {
+    render(() => (
+      <MicBlocked
+        block="denied"
+        onRetry={() => undefined}
+        retryTestId="retry"
+      />
+    ))
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Merc needs the microphone',
+    )
+    expect(screen.queryByTestId('mic-open-settings')).toBeNull()
+    expect(screen.getByTestId('retry').className).toBe(styles.done)
+  })
+
+  it('puts Open Settings first, as the big button, where a retry alone cannot help', () => {
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      openAppSettings: async () => Promise.resolve(true),
+    })
+    try {
+      render(() => (
+        <MicBlocked
+          block="denied"
+          onRetry={() => undefined}
+          retryTestId="retry"
+          saidBy="merc"
+        />
+      ))
+
+      const settings = screen.getByTestId('mic-open-settings')
+      expect(settings.className).toBe(styles.done)
+      expect(screen.getByTestId('retry').className).toBe(styles.again)
+      expect(
+        settings.compareDocumentPosition(screen.getByTestId('retry')),
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      // Merc says why: no second notice under him.
+      expect(screen.queryByRole('alert')).toBeNull()
+    } finally {
+      unregister()
+    }
   })
 })

@@ -139,7 +139,7 @@ describe('rangeLine', () => {
     expect(rangeLine(up, { kind: 'sliding', onset: 1 })).toBe('slide-up')
   })
 
-  it('names the range once measured, the miss after one, and nothing when blocked', () => {
+  it('names the range once measured, the miss after one, and why the mic did not open', () => {
     const done = run(
       ...listening,
       { type: 'slid' },
@@ -163,6 +163,12 @@ describe('rangeLine', () => {
 
     expect(rangeLine(done, null)).toBe('range')
     expect(rangeLine(unheard, null)).toBe('unheard')
-    expect(rangeLine(blocked, null)).toBeNull()
+    expect(rangeLine(blocked, null)).toBe('blocked')
+    const again = rangeReducer(rangeReducer(blocked, { type: 'start' }), {
+      type: 'mic-failed',
+      run: 2,
+      block: 'denied',
+    })
+    expect(rangeLine(again, null)).toBe('still-blocked')
   })
 })

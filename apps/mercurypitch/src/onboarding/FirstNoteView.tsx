@@ -19,13 +19,14 @@ import type { JSX } from 'solid-js'
 import { createSignal, Match, onCleanup, onMount, Show, Switch } from 'solid-js'
 import { GlideRibbon } from '@/components/room-kit/GlideRibbon'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
+import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import { noteOnScreen } from '@/lib/note-utils'
 import { LockIcon } from '../shell/icons'
 import type { NoteLine } from './first-note-machine'
 import styles from './NativeOnboarding.module.css'
 import type { LaneBox } from './note-lane'
 import { laneFor } from './note-lane'
-import { heardLine, noteMeaning, ONBOARDING_COPY } from './onboarding-copy'
+import { heardLine, micBlockedLine, noteMeaning, ONBOARDING_COPY, } from './onboarding-copy'
 import type { FirstNoteController } from './useFirstNote'
 import { WithoutMic } from './WithoutMic'
 
@@ -53,7 +54,11 @@ export interface FirstNoteViewProps {
 }
 
 /** Merc's line, in words. */
-function lineText(line: NoteLine | null, note: string | null): string | null {
+function lineText(
+  line: NoteLine | null,
+  note: string | null,
+  block: CaptureFailure | null,
+): string | null {
   switch (line) {
     case null:
       return null
@@ -71,12 +76,16 @@ function lineText(line: NoteLine | null, note: string | null): string | null {
       return ONBOARDING_COPY.missed
     case 'heard':
       return note === null ? null : heardLine(note)
+    case 'blocked':
+    case 'still-blocked':
+      return micBlockedLine(block, line === 'still-blocked')
   }
 }
 
 /** What Merc says on the first note, for the bubble and the live region. */
 export function noteSays(controller: FirstNoteController): string | null {
-  return lineText(controller.line(), controller.state().note?.note ?? null)
+  const now = controller.state()
+  return lineText(controller.line(), now.note?.note ?? null, now.block)
 }
 
 export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
@@ -262,6 +271,7 @@ export function FirstNoteView(props: FirstNoteViewProps): JSX.Element {
               block={props.controller.state().block}
               onRetry={() => props.controller.retry()}
               retryTestId="onboarding-retry"
+              saidBy="merc"
             />
             <WithoutMic onWithoutMic={props.onWithoutMic} />
           </Match>

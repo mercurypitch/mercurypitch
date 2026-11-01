@@ -17,9 +17,10 @@
 import type { JSX } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { MicBlocked, MicButton } from '@/components/room-kit/RoomControls'
+import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import { LockIcon } from '../shell/icons'
 import styles from './NativeOnboarding.module.css'
-import { ONBOARDING_COPY, rangeLine } from './onboarding-copy'
+import { micBlockedLine, ONBOARDING_COPY, rangeLine } from './onboarding-copy'
 import type { LadderView } from './range-ladder'
 import { heightOf, pinName, rungColour, rungLit, rungsOf } from './range-ladder'
 import type { RangeLine } from './range-machine'
@@ -51,6 +52,7 @@ function lineText(
   line: RangeLine | null,
   low: string | null,
   high: string | null,
+  block: CaptureFailure | null,
 ): string | null {
   switch (line) {
     case null:
@@ -69,16 +71,20 @@ function lineText(
       return ONBOARDING_COPY.unheard
     case 'narrow':
       return ONBOARDING_COPY.narrow
+    case 'blocked':
+    case 'still-blocked':
+      return micBlockedLine(block, line === 'still-blocked')
   }
 }
 
 /** What Merc says on the range, for the bubble and the live region. */
 export function rangeSays(controller: RangeController): string | null {
-  const { range } = controller.state()
+  const { range, block } = controller.state()
   return lineText(
     controller.line(),
     range?.lowNote ?? null,
     range?.highNote ?? null,
+    block,
   )
 }
 
@@ -218,6 +224,7 @@ export function RangeView(props: RangeViewProps): JSX.Element {
                 block={props.controller.state().block}
                 onRetry={() => props.controller.retry()}
                 retryTestId="onboarding-retry"
+                saidBy="merc"
               />
               <WithoutMic onWithoutMic={props.onWithoutMic} />
             </Match>

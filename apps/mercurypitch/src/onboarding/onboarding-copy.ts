@@ -26,6 +26,7 @@
 // before the first try, not only after one that missed. Note names are
 // written with the sharp sign, "G♯4", never the hash (noteOnScreen).
 
+import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import { noteArticle, noteOnScreen } from '@/lib/note-utils'
 import type { LineFacts } from './line-score'
 
@@ -73,6 +74,14 @@ export const ONBOARDING_COPY = {
   /** Under a refused mic's Try again: the one way on (REQ-NFL-043), in the
    *  web's words (BeatFirstLight.tsx). */
   withoutMic: 'Continue without the mic',
+  /** Merc, when the phone has the mic turned off for the app. */
+  micOff: "I can't hear you. The microphone is off in Settings.",
+  /** And after a Try again that changed nothing: iOS never asks twice. */
+  micStillOff: 'Still off. Turn on Microphone in Settings.',
+  /** Merc, when the mic would not open for another reason. */
+  micFailed: "The microphone didn't open. Another app may be using it.",
+  /** And after a Try again that changed nothing. */
+  micStillFailed: 'Still not open. Close the other app, then try again.',
 
   // ── The range (S7b beat 4) ──
   /** The layer's accessible name on the range. */
@@ -202,6 +211,20 @@ export function lineVerdict(facts: LineFacts): string {
  */
 export function lineWarmingUp(hit: number, total: number): boolean {
   return total > 0 && hit / total < 0.4
+}
+
+/**
+ * Merc's word on a mic that would not open: why, in his own words, and,
+ * once a retry has changed nothing, that it still has not.
+ */
+export function micBlockedLine(
+  block: CaptureFailure | null,
+  still: boolean,
+): string {
+  if (block === 'unavailable') {
+    return still ? ONBOARDING_COPY.micStillFailed : ONBOARDING_COPY.micFailed
+  }
+  return still ? ONBOARDING_COPY.micStillOff : ONBOARDING_COPY.micOff
 }
 
 /** "That's an A3." The note named back, with its article. */
