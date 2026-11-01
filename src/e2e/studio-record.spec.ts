@@ -1,4 +1,4 @@
-// Studio recording — a take sung into the fake microphone lands at the playhead on the selected lane, or on a new lane when a clip is in the way, as long as it ran and trimmed at its start by the count-in and the round trip Studio applied; the microphone is given back, undo takes the take out, and the next Play starts it as soon as it starts an imported take.
+// Studio recording — a take sung into the fake microphone lands at the playhead on the selected lane, or on a new lane when a clip is in the way, as long as it ran and trimmed at its start by the count-in and the round trip Studio applied; the microphone is given back, undo takes the take out, a take keeps its length while the page holds the audio graph, and the next Play starts it as soon as it starts an imported take.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import type { StudioAsset, StudioClip } from '../lib/studio/model/types'
 import { openArrangement, readStudioProject, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
@@ -144,25 +144,34 @@ async function arm(page: Page): Promise<void> {
 }
 
 /**
- * Start the armed take with R, record `seconds` of the audio clock after
- * the count-in, `during` that time if given, and stop with R. Resolves
- * once the take is kept, with the seconds from the end of the count-in to
- * the stop press on the audio clock.
+ * Start the armed take with R, `countIn` while it counts in if given,
+ * record `seconds` of the audio clock after the count-in, `during` that
+ * time if given, and stop with R. Resolves once the take is kept, with the
+ * seconds from the end of the count-in to the stop press on the audio clock.
  */
 async function recordArmed(
   page: Page,
   title: string,
   seconds: number,
   during?: () => Promise<void>,
+  countIn?: () => Promise<void>,
 ): Promise<number> {
   const studio = studioRegion(page)
   const button = recordButton(page)
   await clearClicks(page)
   await page.keyboard.press('r')
   await expect(button).toHaveAccessibleName('Cancel the count-in')
-  await expect(button).toHaveAccessibleName('Stop recording', {
-    timeout: 10_000,
-  })
+  if (countIn) await countIn()
+  await expect(button)
+    .toHaveAccessibleName('Stop recording', { timeout: 10_000 })
+    .catch(async (error: unknown) => {
+      // A take that ended in its count-in says why in the Studio.
+      const said = await studio
+        .locator('[data-studio-record-message]')
+        .textContent({ timeout: 1000 })
+        .catch(() => null)
+      throw new Error(`${String(error)}\nThe Studio said: ${said}`)
+    })
   // An overdub: the song plays under the take, and the take grows in its lane.
   await expect(
     studio.getByRole('button', { name: 'Pause song', exact: true }),
@@ -183,6 +192,51 @@ async function recordArmed(
   return (
     stop.contextTime - start.contextTime - START_LEAD_SECONDS - COUNT_IN_SECONDS
   )
+}
+
+/** Keep the context the recorder's worklet runs on, to hold its graph. */
+async function keepRecordContext(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const Native = window.AudioWorkletNode
+    window.AudioWorkletNode = class extends Native {
+      constructor(
+        context: BaseAudioContext,
+        name: string,
+        options?: AudioWorkletNodeOptions,
+      ) {
+        super(context, name, options)
+        if (name === 'studio-recorder')
+          (
+            window as unknown as { __studioRecordContext?: BaseAudioContext }
+          ).__studioRecordContext = context
+      }
+    }
+  })
+}
+
+/**
+ * Hold the recorder's audio graph from the page, as a busy main thread
+ * starting a song's nodes does: one disconnect of a gain fanned out to
+ * 40000 others keeps the graph locked for about 18 ms here, and Chromium
+ * leaves the worklet's currentFrame stale until its audio thread wins the
+ * lock back. Resolves with how long each hold took, in ms.
+ */
+async function holdAudioGraph(page: Page, rounds: number): Promise<number[]> {
+  return page.evaluate(async (count) => {
+    const context = (
+      window as unknown as { __studioRecordContext: BaseAudioContext }
+    ).__studioRecordContext
+    const held: number[] = []
+    for (let round = 0; round < count; round++) {
+      const hub = context.createGain()
+      for (let i = 0; i < 40000; i++) hub.connect(context.createGain())
+      const start = performance.now()
+      hub.disconnect()
+      held.push(Math.round(performance.now() - start))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+    return held
+  }, rounds)
 }
 
 /** The round trip the Sound panel says Studio applied to the last take, offset aside. */
@@ -311,6 +365,46 @@ test.describe('Studio recording', () => {
     await expect(takeClip(page, 'Take 2')).toHaveCount(0)
     await page.keyboard.press('Control+Shift+z')
     await expect(takeClip(page, 'Take 2')).toHaveCount(1)
+  })
+
+  test('a take keeps recording, as long as it ran, while the page holds the audio graph in its count-in and mid-take', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await keepRecordContext(page)
+    await captureStudioOutput(page)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await arm(page)
+
+    let countIn: number[] = []
+    let during: number[] = []
+    const ran = await recordArmed(
+      page,
+      'Take 1',
+      2,
+      async () => {
+        during = await holdAudioGraph(page, 2)
+      },
+      async () => {
+        countIn = await holdAudioGraph(page, 3)
+      },
+    )
+
+    const take = await clipOf(page, 'Take 1')
+    const seconds = (take.sourceOutFrame - take.sourceInFrame) / RATE
+    console.log(
+      `[studio-record-graph] ${JSON.stringify({
+        heldMs: { countIn, during },
+        clipSeconds: seconds,
+        ranSeconds: ran,
+        lengthErrorMs: (seconds - ran) * 1000,
+      })}`,
+    )
+    // Sample i stayed on clock frame start + i through every hold.
+    expect(Math.abs(seconds - ran)).toBeLessThan(0.03)
+    await expect(studio.locator('[data-studio-record-message]')).toHaveCount(0)
   })
 
   test('Play after a recorded take starts as soon as a Play with nothing new to build, and the Studio asks for no animation frames while armed or recording', async ({

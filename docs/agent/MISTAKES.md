@@ -2471,10 +2471,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 
 ### Count an AudioWorklet's clock; do not trust every currentFrame
 
-**Symptom:** about one Studio take in two stopped within five seconds with "Audio stopped for a moment", with the context running and no stop sent from the page.
-**Cause:** headless Chromium now and then hands `process()` the previous quantum's `currentFrame` (385792 twice, then the right frame), and the recorder read that as the clock running backwards. The level readings either side stayed on their 1536-frame grid, so no audio was skipped (1 Nov 2026).
-**Rule:** in a worklet that places samples on clock frames, count frames quantum by quantum and let `currentFrame` only move the count forward; treat a reading a few quanta behind the count as the next quantum. Probe a worklet's timing by logging the gap it computed, not by inferring it from the main thread.
-**See:** `src/lib/studio/record/pcm-capture.ts`
+**Symptom:** Studio takes stopped with "Audio stopped for a moment" while the context ran and the page sent no stop: at first about one take in two within five seconds, later only under load, in the count-in, while the song's nodes started.
+**Cause:** Chromium refreshes a worklet's `currentFrame` only when the audio thread wins a try-lock on the graph (`BaseAudioContext::UpdateWorkletGlobalScopeOnRenderingThread` takes a `GraphAutoTryLocker`). While the page holds the graph (connecting or starting nodes, a busy main thread), `process()` keeps reading an old frame: now and then the previous quantum's (385792 twice), and five quanta behind while a test held the graph for 18 ms. A capture that allowed four quanta of lag read the fifth as the clock running backwards (1 Nov 2026). The guitar amp probes met the same repeats during graph edits (see "Validate live capture timing before diagnosing an amp click").
+**Rule:** in a worklet that places samples on clock frames, count frames quantum by quantum: every `process()` call is the next quantum. A reading behind the count is stale however far behind; only a reading ahead of it is a skipped stretch. Test it by holding the graph from the page (one `disconnect()` of a gain fanned out to 40000 others holds it about 18 ms), and probe a worklet's timing by logging the gap it computed, not by inferring it from the main thread.
+**See:** `src/lib/studio/record/pcm-capture.ts`, `src/e2e/studio-record.spec.ts`
 
 ### A mic held by any feature wakes the practice frame loop
 

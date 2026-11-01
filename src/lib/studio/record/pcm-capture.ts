@@ -20,11 +20,15 @@
 // an armed lane shows the singer's level before Record.
 //
 // The clock is counted, quantum by quantum, and currentFrame only corrects
-// it forward. Chromium now and then hands process() the previous quantum's
-// currentFrame and the right one after it (measured 2026-11-01 in headless
-// Chromium: 385792 twice, about one take in two within five seconds); the
-// samples are the next quantum's all the same, so a reading a few quanta
-// behind the count is the next quantum, not the clock running backwards.
+// it forward. Chromium refreshes a worklet's currentFrame only when the
+// audio thread wins a try-lock on the graph
+// (BaseAudioContext::UpdateWorkletGlobalScopeOnRenderingThread), so while
+// the page holds the graph (starting a song's nodes, a busy main thread)
+// process() keeps reading an old frame. Measured 2026-11-01 in headless
+// Chromium: the previous quantum's frame now and then, and five quanta
+// behind while the page held the graph for 18 ms. Every process() call is
+// the next quantum all the same, so a reading behind the count is stale,
+// however far behind; only a reading ahead of it is a skipped stretch.
 
 /** Frames in one pooled buffer: about 85 ms at 48 kHz. */
 export const STUDIO_CAPTURE_CHUNK_FRAMES = 4096
@@ -38,8 +42,6 @@ export const STUDIO_RENDER_QUANTUM = 128
 export const STUDIO_SILENT_INPUT_FRAMES = 24000
 /** The longest clock jump filled with silence, in frames: one second. */
 export const STUDIO_MAX_CLOCK_GAP_FRAMES = 48000
-/** How far behind the count a clock reading may lag and still be the next quantum. */
-export const STUDIO_CLOCK_LAG_FRAMES = 4 * STUDIO_RENDER_QUANTUM
 
 /** Why a take stopped. */
 export type StudioCaptureStop =
@@ -216,7 +218,7 @@ export function createStudioPcmCapture(send: Send) {
   function bridge(audioFrame: number, expected: number): boolean {
     const gap = audioFrame - expected
     if (gap === 0) return true
-    if (gap < 0 || gap > STUDIO_MAX_CLOCK_GAP_FRAMES) {
+    if (gap > STUDIO_MAX_CLOCK_GAP_FRAMES) {
       stop('interrupted')
       return false
     }
@@ -247,13 +249,9 @@ export function createStudioPcmCapture(send: Send) {
     }
   }
 
-  /** This quantum's clock frame: the count, unless the clock says it is later. */
-  function frameOf(audioFrame: number): number {
-    if (nextFrame === null) return audioFrame
-    const behind = nextFrame - audioFrame
-    return behind > 0 && behind <= STUDIO_CLOCK_LAG_FRAMES
-      ? nextFrame
-      : audioFrame
+  /** This quantum's clock frame: the count, unless the clock has moved past it. */
+  function frameOf(clockFrame: number): number {
+    return nextFrame === null ? clockFrame : Math.max(clockFrame, nextFrame)
   }
 
   return {
