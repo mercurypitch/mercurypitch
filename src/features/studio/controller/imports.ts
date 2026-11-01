@@ -14,6 +14,8 @@ import { createRetainedStudioAudio } from './retained-audio'
 interface ImportItem {
   title: string
   role: StudioSourceEntry['suggestedRole']
+  /** Frames left out at the clip's start: a recorded take's count-in and round trip. */
+  sourceInFrame?: number
   prepare(
     id: string,
     projectId: string,
@@ -89,6 +91,22 @@ function retainNewAudio(
   return data.asset
 }
 
+/** A take recorded in the Studio, kept the way a picked file is. */
+export interface StudioRecordingImport {
+  /** The take as a WAV at the rate it was captured. */
+  readonly wav: Blob
+  /** Its name, and the name of a lane made for it. */
+  readonly title: string
+  /** Where its first kept sample lands. */
+  readonly startFrame: number
+  /** Frames before that sample: the count-in and the round trip. */
+  readonly sourceInFrame: number
+  /** The armed lane, or null for a new one. */
+  readonly trackId: string | null
+}
+
+const TAKE_TOO_SHORT = 'That take was too short to keep.'
+
 /** Whether a clip of this length starts here on the lane without overlapping one. */
 function laneHasRoom(
   project: StudioProject,
@@ -124,7 +142,7 @@ function importCommands(
       project,
       targetTrackId,
       startFrame,
-      items[0].asset.normalizedFrameCount,
+      items[0].asset.normalizedFrameCount - (items[0].item.sourceInFrame ?? 0),
     )
       ? targetTrackId
       : null
@@ -135,7 +153,7 @@ function importCommands(
       trackId,
       assetId: asset.id,
       startFrame,
-      sourceInFrame: 0,
+      sourceInFrame: item.sourceInFrame ?? 0,
       sourceOutFrame: asset.normalizedFrameCount,
       gainDb: 0,
       fades: { curve: 'linear-amplitude' as const },
@@ -344,9 +362,45 @@ export function createStudioImporter(options: ImportControllerOptions) {
     )
   }
 
+  /** A take recorded here: prepared as a picked WAV is, trimmed by its count-in and round trip. */
+  function addRecording(take: StudioRecordingImport): Promise<boolean> {
+    const importedAt = options.now().toISOString()
+    return importItems(
+      [
+        {
+          title: take.title,
+          role: 'voice',
+          sourceInFrame: take.sourceInFrame,
+          prepare: async (id, projectId, signal) => {
+            const data = await (options.prepareFile ?? prepareStudioAsset)(
+              take.wav,
+              {
+                id,
+                projectId,
+                originalName: `${take.title}.wav`,
+                provenance: { kind: 'recording', importedAt },
+              },
+              { signal },
+            )
+            if (
+              !Number.isSafeInteger(take.sourceInFrame) ||
+              take.sourceInFrame < 0 ||
+              take.sourceInFrame >= data.asset.normalizedFrameCount
+            )
+              throw new Error(TAKE_TOO_SHORT)
+            return data
+          },
+        },
+      ],
+      take.startFrame,
+      take.trackId,
+    )
+  }
+
   return {
     addFile,
     addFiles,
+    addRecording,
     addTakes,
     addTake: (
       entry: StudioSourceEntry,

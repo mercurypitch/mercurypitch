@@ -14,6 +14,7 @@ const SOURCES = [
   'freeform',
   'guided',
   'file',
+  'recording',
 ] as const
 
 export function validateStudioAsset(raw: unknown): StudioAsset {
