@@ -16,14 +16,18 @@
 // singer who stops to read the list is not cut off.
 //
 // The room reads songs' notes at rest, never while this holds the mic
-// (useKaraokeNotesReading.ts), so the listening says when it does.
+// (useKaraokeNotesReading.ts), so the listening says when it does. Under a
+// song it cannot find yet, a row says why: getting ready, how far a read
+// has got, waiting for the singing to stop, or what keeps it out
+// (karaoke-room-find.ts notReadyWords).
 
 import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createMemo, For, Index, onCleanup, Show } from 'solid-js'
 import { createMercurySingEngine } from '@/features/mercury-sing/mercury-sing-engine'
+import { karaokeNotesState } from './karaoke-notes-reader'
 import styles from './karaoke-room.module.css'
 import type { MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, } from './karaoke-room-find'
-import { FIND_STATUS, holdsMic } from './karaoke-room-find'
+import { FIND_STATUS, holdsMic, notReadyWords } from './karaoke-room-find'
 import { NoteGlyph } from './karaoke-room-glyphs'
 
 /** The trail's span, MIDI: E2 to C6, every voice's. */
@@ -157,6 +161,14 @@ export function KaraokeFindListening(props: ListeningProps): JSX.Element {
   createEffect(() => {
     props.onMic?.(micHeld())
   })
+  /** What is under a song it cannot find yet: why, in the room's words. */
+  const notReady = (sessionId: string): string => {
+    const { done, total } = engine.fingerprinting()
+    return notReadyWords(karaokeNotesState(sessionId), {
+      fingerprinting: done < total,
+      holdsMic: micHeld(),
+    })
+  }
 
   return (
     <>
@@ -214,7 +226,7 @@ export function KaraokeFindListening(props: ListeningProps): JSX.Element {
                           <span class={styles.songTitle}>{song.name}</span>
                           <Show when={!song.ready}>
                             <span class={styles.songSub}>
-                              Turn its notes on once to find it by singing
+                              {notReady(song.sessionId)}
                             </span>
                           </Show>
                         </span>
