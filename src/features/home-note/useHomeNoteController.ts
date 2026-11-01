@@ -31,6 +31,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createMercSpeech } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
@@ -66,6 +67,7 @@ import type { HomeNoteSummary } from './home-note-run'
 import { isQuick, keepHomeNoteRun, resultMoment, summarizeRun, } from './home-note-run'
 import type { HomeLineFields, HomeMoment } from './merc-lines'
 import { createHomeLines } from './merc-lines'
+import { HOME_SPOKEN } from './merc-spoken'
 
 /** The chip while the singer sings. */
 export const YOUR_TURN = 'Your turn'
@@ -137,6 +139,11 @@ export function useHomeNoteController(
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
   const random = options.random ?? Math.random
   const lines = createHomeLines(random)
+  // His opening lines aloud, through the room's clock (room-kit
+  // merc-speech.ts).
+  const speech = createMercSpeech(HOME_SPOKEN, {
+    audio: () => capture.audio(),
+  })
 
   const [state, setState] = createSignal<HomeNoteState>(INITIAL_HOME_NOTE_STATE)
   const [line, setLine] = createSignal('')
@@ -155,11 +162,25 @@ export function useHomeNoteController(
     setState((current) => homeNoteReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (moment: HomeMoment, fields?: HomeLineFields): void => {
-    setLine(lines.next(moment, fields))
+  const say = (
+    moment: HomeMoment,
+    fields?: HomeLineFields,
+    aloud = false,
+  ): void => {
+    const said = lines.line(moment, fields)
+    setLine(said.text)
+    // He says aloud only what the bubble shows, and only when asked
+    // to: any other line hushes him.
+    if (aloud) speech.say(said.id)
+    else speech.hush()
   }
-  const sayIntro = (): void => {
-    say(untrack(level.preset).mercSingsHome ? 'introMatch' : 'intro')
+  /** His opening line, aloud unless the singer has just left the app. */
+  const sayIntro = (aloud = true): void => {
+    say(
+      untrack(level.preset).mercSingsHome ? 'introMatch' : 'intro',
+      undefined,
+      aloud,
+    )
   }
 
   // ── Timers that belong to the screen (room-kit room-life.ts) ───
@@ -512,6 +533,8 @@ export function useHomeNoteController(
   const start = (): void => {
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    // He stops talking before the mic opens.
+    speech.hush()
     // A key still sounding from the result stops with the tap.
     endReplay()
     stopSound()
@@ -584,9 +607,11 @@ export function useHomeNoteController(
    * run is dropped, as the mic's tap drops it: no result, no best.
    */
   function leave(): void {
+    // Nothing he says is heard behind their back either.
+    speech.hush()
     if (!isRunPhase(phase())) return
     dropRun()
-    sayIntro()
+    sayIntro(false)
   }
 
   // ── The screen's life ──────────────────────────────────────
@@ -605,13 +630,16 @@ export function useHomeNoteController(
     mic: {
       exercise: EXERCISE_HOME_NOTE_LIGHTHOUSE,
       on: () => isRunPhase(phase()) && phase() !== 'starting',
-      died: stop,
+      // A mic that died drops the run as leaving does, Merc silent: a call
+      // or another app may have the sound, and his line would take it back.
+      died: leave,
     },
   })
 
   onCleanup(() => {
     stopLoop()
     stopSound()
+    speech.dispose()
     life.dispose()
   })
 

@@ -273,6 +273,13 @@ const KARAOKE_STAGE_2 = [
     /\/echo-merc-ooh-\d+-[A-Za-z0-9]+-[\w-]{8}\.mp3$/u,
     "Merc's voice for Echo's calls",
   ],
+  // And his spoken opening lines in the Ear rooms (Home note, First note
+  // and Leap), each named merc-says- for its line, in voice/ folders that
+  // fold with Echo's.
+  [
+    /\/merc-says-[a-z-]+-[\w-]{8}\.mp3$/u,
+    "Merc's spoken lines for the Ear rooms",
+  ],
   // The Sing room's way in to them: its exercise row, the picker, the
   // options' row and the record of the last one opened. The row and the
   // picker are lazy islands and the options' section a ternary, all on
