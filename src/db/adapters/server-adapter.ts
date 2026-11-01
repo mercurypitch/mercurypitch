@@ -71,12 +71,15 @@ const warnedCauses = new Set<string>()
  *
  * Same message as the plain Error it replaces, so anything logging it reads
  * the same; the status is here so a caller can tell a missing row from a
- * broken backend without parsing that message.
+ * broken backend without parsing that message, and the response body so it
+ * can read what the worker said (public-text-refusal.ts).
  */
 export class CloudRequestError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** The response body, verbatim; empty when there was none. */
+    readonly body = '',
   ) {
     super(message)
     this.name = 'CloudRequestError'
@@ -205,6 +208,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
           throw new CloudRequestError(
             res.status,
             `ServerAdapter: ${res.status} ${res.statusText} on ${url}${body ? ` — ${body}` : ''}`,
+            body,
           )
         }
 

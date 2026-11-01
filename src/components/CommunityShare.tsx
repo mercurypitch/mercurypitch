@@ -11,6 +11,7 @@ import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { accountHeld } from '@/db/services/auth-service'
 import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
+import { refusedPublicTextField } from '@/db/services/public-text-refusal'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { canPostToCommunity, loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, unpublishShared, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
@@ -238,6 +239,31 @@ export interface SharedProfile {
   stats: UserStats
   sharedMelodies: SharedMelody[]
   sharedSessions: SharedSession[]
+}
+
+/**
+ * Put a share on the board, saying why when it does not go up.
+ *
+ * The save answers null for a failure worth retrying and throws only the
+ * worker's word refusal, which a retry cannot fix, so that one says what to
+ * change instead. Nothing is said once `isCurrent` turns false: the account
+ * it was for has gone.
+ */
+async function publishOrExplain<T>(
+  save: () => Promise<T | null>,
+  isCurrent: () => boolean,
+  failed: string,
+  refused: (field: string | null) => string,
+): Promise<T | null> {
+  try {
+    const saved = await save()
+    if (saved === null && isCurrent()) showNotification(failed, 'error')
+    return saved
+  } catch (err) {
+    if (isCurrent())
+      showNotification(refused(refusedPublicTextField(err)), 'error')
+    return null
+  }
 }
 
 // ============================================================
@@ -520,20 +546,22 @@ export const CommunityShare: Component = () => {
     setPublishing(true)
     try {
       if (publishToBoard) {
-        const saved = await saveSharedMelodyToDb({
-          name: shareable.name,
-          items: shareable.items,
-          author: shareable.author,
-          tags: shareable.tags,
-        })
-        if (!isCurrent()) return
-        if (!saved) {
-          showNotification(
-            'Could not publish this melody. Try sharing it again.',
-            'error',
-          )
-          return
-        }
+        const saved = await publishOrExplain(
+          () =>
+            saveSharedMelodyToDb({
+              name: shareable.name,
+              items: shareable.items,
+              author: shareable.author,
+              tags: shareable.tags,
+            }),
+          isCurrent,
+          'Could not publish this melody. Try sharing it again.',
+          (field) =>
+            field === 'itemsJson'
+              ? "This melody's lyrics use a word we don't allow. Change them, then share it again."
+              : "This melody's title uses a word we don't allow. Rename it, then share it again.",
+        )
+        if (!isCurrent() || !saved) return
         shareable.id = saved.id
         shareable.userId = saved.userId
       }
@@ -771,21 +799,23 @@ export const CommunityShare: Component = () => {
     setPublishing(true)
     try {
       if (publishToBoard) {
-        const saved = await saveSharedSessionToDb({
-          name: shareable.name,
-          items: shareable.items,
-          author: shareable.author,
-          results: shareable.results,
-          sourceSessionId,
-        })
-        if (!isCurrent()) return
-        if (!saved) {
-          showNotification(
-            'Could not publish this run. Try sharing it again.',
-            'error',
-          )
-          return
-        }
+        const saved = await publishOrExplain(
+          () =>
+            saveSharedSessionToDb({
+              name: shareable.name,
+              items: shareable.items,
+              author: shareable.author,
+              results: shareable.results,
+              sourceSessionId,
+            }),
+          isCurrent,
+          'Could not publish this run. Try sharing it again.',
+          // A run's title is the melody's name when the run was saved, and
+          // the run keeps it, so there is nothing for the singer to rename.
+          () =>
+            "This run's title uses a word we don't allow, so it can't go on the board.",
+        )
+        if (!isCurrent() || !saved) return
         shareable.id = saved.id
         shareable.userId = saved.userId
       }

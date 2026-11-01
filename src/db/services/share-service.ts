@@ -7,6 +7,7 @@ import { getDb } from '@/db'
 import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
+import { refusedPublicTextField } from '@/db/services/public-text-refusal'
 import { authVersion, findOwnProfile, getUserId, } from '@/db/services/user-service'
 import { midiToNote } from '@/lib/scale-data'
 import { parseSharedRunResult } from '@/lib/shared-run-result'
@@ -270,6 +271,11 @@ export function canPostToCommunity(): boolean {
   return hasUpgradedAccount()
 }
 
+/**
+ * Publish a melody to the board. Null when it could not be published,
+ * except for a name or lyric the word filter refused: that worker error is
+ * thrown, for the caller to read with `refusedPublicTextField`.
+ */
 export async function saveSharedMelody(data: {
   name: string
   items: unknown[]
@@ -302,11 +308,14 @@ export async function saveSharedMelody(data: {
       tags: created.tags ?? [],
       date: new Date(created.createdAt).getTime(),
     }
-  } catch {
+  } catch (err) {
+    // The one failure a retry cannot fix: the caller says what to change.
+    if (refusedPublicTextField(err) !== null) throw err
     return null
   }
 }
 
+/** Publish a run to the board, refusing as `saveSharedMelody` does. */
 export async function saveSharedSession(data: {
   name: string
   items: unknown[]
@@ -342,7 +351,8 @@ export async function saveSharedSession(data: {
       isPublic: true,
     })
     return sharedSessionView(created)
-  } catch {
+  } catch (err) {
+    if (refusedPublicTextField(err) !== null) throw err
     return null
   }
 }
