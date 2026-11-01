@@ -323,8 +323,11 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
   number; the dynamics and articulation marks (ABRSM Grade 1 terms, as the benchmark cites them for
   T32); Lesson 14's breath mark; the app's behaviour (above).
-- Closes on: Lesson 19's hook. "Every bar so far has walked in twos and fours. Six eighth notes can
-  walk two ways: why does one feel like two beats and the other like three?"
+- Closes on: Lesson 19's hook. "Same six notes, same speed. Only the accents move. Six notes in a
+  bar, grouped two ways: why does one feel like two beats and the other like three?" The planned
+  tease, "Every bar so far has walked in twos and fours.", is false, since Lesson 8 plays bars of
+  three; the alternative claims only what this season writes, "Every bar written this season has had
+  four beats." (Lesson 19 FACTS 5b; settled at Lesson 19's review on 1 November 2026).
 
 **Lesson 19. Threes, offbeats and syncopation** (theory; T08)
 
@@ -351,8 +354,10 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: compound metre, triplets and syncopation (OMT's simple and compound metre
   chapters, musictheory.net; chapter numbers to check); the AP reports (as cited); the app (above);
   the 6/8 song's metre and rights, if one is used.
-- Closes on: Lesson 20's hook. "Squeeze three notes into a beat, then four, then more. How do
-  singers sing a fast run without the notes smudging together?"
+- Closes on: Lesson 20's hook. "Merc sings a run of nine notes, five every second. How do singers
+  sing a fast run without the notes smudging together?" The planned tease, "Squeeze three notes into
+  a beat, then four, then more.", sets up subdivision rather than Lesson 20's opening, and is the
+  alternative (Lesson 19 FACTS 5; settled at Lesson 19's review on 1 November 2026).
 
 **Lesson 20. Runs and the pentatonic scale** (voice; S18, T16)
 
@@ -393,9 +398,12 @@ lesson has a package yet: each card is status "proposed".
 - Go deeper: the blue note between fa and so in the blues scale (`src/lib/scale-data.ts:125-129`),
   with no syllable taught, since the app's Gravity drill names that semitone "Fi"
   (`src/lib/ear/item-bank.ts:68`).
-- Closes on: Lesson 21's hook. "Every run today started on C. Lesson 4 slid the scale to G, which
-  needs one sharp, and to D, which needs two. Why does each key a fifth up keep its sharps and add
-  one?"
+- Closes on: Lesson 21's hook. "D major: seven notes, two black keys, F♯ and C♯. Now step up a
+  fifth. G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and
+  add one?" The planned tease, "Lesson 4 slid the scale to G, which needs one sharp, and to D, which
+  needs two.", ran past a card's 70 characters and recalled Lesson 4 rather than setting up Lesson
+  21's opening; cut to fit, it is the alternative (Lesson 21 FACTS 5b; settled at Lesson 21's review
+  on 1 November 2026).
 
 **Lesson 21. Keys and the circle of fifths** (theory; T17, T18, T29)
 
@@ -434,9 +442,12 @@ lesson has a package yet: each card is status "proposed".
   temperament's 700 (arithmetic; Wolfe's circle notes, UNSW, and Rubinstein, Waterloo, as
   pedagogy-research.md:675 cites them); the app (above).
 - Go deeper if long: why twelve and the comma, leaving the lesson on keys and the circle.
-- Closes on: Lesson 22's hook. "The circle closes because each fifth is nudged two cents. A
-  singer's held note can move far more than that: if a singer's held note swings up
-  and down six times a second, why do we still hear one note?"
+- Closes on: Lesson 22's hook. "Merc holds one note, and its line swings past both edges of the
+  band. If a singer's held note swings up and down six times a second, why do we still hear one
+  note?" The planned tease, "The circle closes because each fifth is nudged two cents. A singer's
+  held note can move far more than that.", ran past a card's 70 characters and set up the hook more
+  than Lesson 22's opening; cut to fit, it is the alternative (Lesson 21 FACTS 5; settled at Lesson
+  21's review on 1 November 2026).
 
 **Lesson 22. Vibrato** (voice; S19)
 
@@ -489,9 +500,11 @@ lesson has a package yet: each card is status "proposed".
   10 cents (:739); Voice Mirror's band is 3.5 to 8.5 Hz; the Vibrato drill's styles span 3 to 7 Hz
   (vibrato-styles.ts:31-65). The lesson quotes Voice Mirror's, the one it links. The coach signs off
   every vibrato line.
-- Closes on: Lesson 23's hook. "One note, swinging. Now hold two notes together: some pairs sit
-  still and one pair wants to move. Which interval splits the octave exactly in half, and why does
-  it want to move?"
+- Closes on: Lesson 23's hook. "One note, swinging. Now two notes together: one pair wants to
+  move. Which interval splits the octave exactly in half, and why does it want to move?" Lesson
+  22's planned tease, "One note, swinging. Now hold two together: one pair wants to move.", reads as
+  if the learner held two notes, and is the alternative (Lesson 23 FACTS 5b; settled at Lesson 23's
+  review on 1 November 2026).
 
 **Lesson 23. Perfect, major, minor and the tritone** (theory; T13)
 
@@ -527,9 +540,12 @@ lesson has a package yet: each card is status "proposed".
 - Go deeper: the tritone's history. Its name "diabolus in musica" and the popular story of a church
   ban: Wikipedia's Tritone article cites Randel (2003), Werckmeister (1702) and Smith (1979);
   **not verified** in those sources, so nothing about a ban is said until they are read.
-- Closes on: Lesson 24's hook. "Fifths and fourths sit still; the tritone leans. You can hear the
-  difference with your own voice. Hold a note against a drone: how can you hear when the two are in
-  tune?"
+- Closes on: Lesson 24's hook. "A drone, and a second note just above it, almost in tune. Hold a
+  note against a drone: how can you hear when the two are in tune?" The planned tease, "Fifths sit
+  still; the tritone leans. Can your own voice hear it?", is withdrawn: right above a lesson where
+  the piano's fifth beats against a drone, "sit still" reads as "does not beat", and a voice does
+  not hear. A mended form, "Fifths count as settled, tritones lean. Next, a note against a drone.",
+  is the alternative (Lesson 23 FACTS 5; settled at Lesson 23's review on 1 November 2026).
 
 **Lesson 24. Harmony against a drone** (voice; S20a, new)
 
@@ -818,7 +834,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 18     | Sight-Singing (pitch only), The Chart                                 | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                                         |
 | 19     | Ear Lab: Subdivide, Pulse                                             | `ear-drill` subset, 3/4 against 6/8 (item 12)                                                                       |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Scale-type launch field and minor pentatonic (item 13, code), then a beginner slug (data)                           |
-| 21     | Singing tab key picker and sheet view; Ear Lab: Home                  | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)                       |
+| 21     | Compose, in Sheet Music, with its key picker; Ear Lab: Home           | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)                       |
 | 22     | Voice Mirror's hold                                                   | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                                           |
 | 23     | Ear Lab: Leap                                                         | `perfect-intervals` slug (item 16, data); `ear-drill` subset (item 12)                                              |
 | 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Drone slug for fifth, third and octave (item 15, data); a pure-tuning option (item 15, code)                        |

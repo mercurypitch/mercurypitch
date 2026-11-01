@@ -395,7 +395,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 8's,
 - `n: 21`, `lane: 'theory'`, `title: 'Keys and the circle of fifths'`, `short: 'Circle of fifths'`,
   `topics: ['T17', 'T18', 'T29']`, with their names as SEASON-2 § 4.1 gives them, "Keys, key
   signatures, transposition", "Circle of fifths" and "Tuning systems: why twelve, equal temperament"
-  (`docs/plans/find-your-pitch/SEASON-2.md:724-726`); the hook word for word (FACTS 1). `minutes: 15`
+  (`docs/plans/find-your-pitch/SEASON-2.md:740-742`); the hook word for word (FACTS 1). `minutes: 15`
   and `page: '/learn/21'` once the page is built, under the drafts' comment in Lesson 15's form: `//
 A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides nothing about
   being live: the draft list and the console do. The short name is the lead's: "Keys" alone could

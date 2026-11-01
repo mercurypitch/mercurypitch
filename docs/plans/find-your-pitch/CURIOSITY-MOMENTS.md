@@ -318,6 +318,99 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   and 1.9), where rests go (Williams 2025), where dots and ties go (Wikipedia, after Read 1969), Takadimi (Hoffman,
   Pelto and White 1996), the British names and the lesson's scope (ABRSM 2023, RCM 2019); the app at `c60f0fdcb`.
 
+### Lesson 19 · Threes, offbeats and syncopation · theory; written; no page yet · hook kept
+
+- **Opening:** six of Lesson 8's pads in a row between Merc and Tavi, numbered, all one size, nothing
+  grouped; the first play sounds six even hi-hat notes, a third of a second apart, for two bars. Tavi
+  "Group six notes in twos and you'll feel two beats, surely?" Merc "Let's group them both ways and
+  listen." Predict: "Merc groups the six two ways: in threes, 3 + 3, and in twos, 2 + 2 + 2. Which
+  way will feel like two beats?" [In threes] [In twos]. The two groupings unlock after a choice, and
+  the page's tour waits for it, since Step 1 states the answer. In threes a kick takes pad 1 and a
+  snare pad 4, as the Ear Lab's Subdivide plays its 6/8; in twos the snare takes pads 3 and 5; the
+  hosts hop on both.
+- **Visual:** the six pads and their arcs (Lesson 8's pads exist; six to a bar is new) and rhythm on
+  the staff past four-beat bars: 6/8 and 3/4 beamed by beat, a beamed triplet with its 3, a tie over
+  beat 3 (new, SEASON-2 § 6.2 item 3), on the staff toy (new, item 2). **Payoff:** Step 1's 6/8 · 3/4
+  switch, where the six notes keep their places and only the beams and the accents move; the
+  checkpoint, the beat tapped on the pad through a 6/8 tune and a 3/4 tune, with the click the first
+  time through and on your own the second.
+- **Tease:** a still of Lesson 20's stage, the pitch line with nine beads on a string, each in its
+  band, nothing lit, which does not play: "Merc sings a run of nine notes, five every second." It
+  names no way to practise and no tempo, so it does not answer Lesson 20's predict. The season plan's
+  line, "Squeeze three notes into a beat, then four, then more.", is the alternative `plan`. Lesson
+  19's own tease, on Lesson 18's card, is "Same six notes, same speed. Only the accents move.", with
+  "Every bar written this season has had four beats." as the alternative `written` (Lesson 19 FACTS 5
+  and 5b; settled at the lead's review on 1 November 2026, as the owner asked).
+- **Facts:** sourced in Lesson 19's FACTS: simple and compound metre, counting, beaming, triplets and
+  syncopation (Open Music Theory 2e, 1.2 and 1.9 to 1.11), the triplet count (Sharkey), where a tie
+  goes in 4/4 (Williams 2023), Takadimi (Hoffman, Pelto and White 1996), the exam grades (ABRSM
+  2023), "Row, row, row your boat" in 6/8 (the _Franklin Square Song Collection_, 1881, p. 69); the
+  app at `c60f0fdcb`, with the checkpoint's figures from a simulation on the app's own modules.
+
+### Lesson 21 · Keys and the circle of fifths · theory; written; no page yet · hook kept
+
+- **Opening:** Lesson 2's ring of twelve beads over Lesson 1's keyboard, D major lit on both and its
+  two black keys, F♯ and C♯, glowing; Play D major works before a choice. Merc "A is a fifth above
+  D. A major keeps D's F♯ and C♯, and it needs one sharp more." Tavi "F♯, then C♯. Isn't the new
+  sharp D♯, the letter after C?" Predict: "Which note does A major add as its third sharp?" [D♯]
+  [G♯]. Play A with D♯ and Play A with G♯ unlock with the choice; the reveal waits until both are
+  heard, and the page's tour waits for the choice, since Step 1's stage shows the rule and Step 2
+  names G♯. The plan asked for D major's second sharp, which Lesson 4's page already gives ("from D,
+  ti is C♯"), so the lead moved the predict one key on at review (Lesson 21 FACTS 1a, 35, 36).
+- **Visual:** the ring (exists) threaded by fifths into the circle-of-fifths toy, with the house,
+  Step round · Step back within three sharps and three flats, and Pure · Equal (new, SEASON-2 § 6.2
+  item 4); the staff toy with key signatures at each clef's places (new, § 6.2 item 2 extended);
+  Lesson 4's staircase with White keys only (exists, moves into the kit). **Payoff:** Step 2, where
+  the house steps from C to A and the signature gains a sharp at each step; Step 5, where twelve
+  pure fifths run past C by 23.46 cents and equal temperament closes the ring; the checkpoint, so,
+  la, ti, do in C, then in G, sung along a guide on the learner's own staff, unscored.
+- **Tease:** a still of Lesson 5's band with a pitch line waving across both its edges and no centre
+  line, which does not play: "Merc holds one note, and its line swings past both edges of the band."
+  The plan's line, cut to fit a card, is the alternative `nudged`: "Each fifth is nudged two cents. A
+  held note can move far more." Lesson 21's own tease, on Lesson 20's card, is "D major: seven notes,
+  two black keys, F♯ and C♯. Now step up a fifth.", with Lesson 20's planned line, cut to fit, as the
+  alternative `lesson-4`: "Lesson 4 slid the scale to G, with one sharp, and to D, with two."
+  (Lesson 21 FACTS 5 and 5b; settled at the lead's review on 1 November 2026, as the owner asked).
+- **Facts:** sourced in Lesson 21's FACTS: the pattern, one letter per degree, the orders of sharps
+  and flats, finding do and the circle (Open Music Theory 2e, 1.12; Ewell and Schmidt-Jones, 1.7 and
+  1.8; Lesson 4's Hutchinson and Mount), the reading scope (ABRSM 2023), where a signature's signs
+  sit in each clef (VexFlow 5.0.0, the app's notation library), the comma and equal temperament
+  (arithmetic; Wolfe 2011; Rubinstein's cents figure only); the app at `c60f0fdcb`. The circle's
+  history is left out until Jensen 1992 is read.
+
+### Lesson 23 · Perfect, major, minor and the tritone · theory; written; no page yet · hook kept
+
+- **Opening:** the pitch line upright between Merc and Tavi, C4 at its foot and C5 at its top, "an
+  octave: 12 semitones", nothing drawn between; Play C up to C works before the choice. Tavi "It must
+  be G, surely? The fifth sits right in the middle of the scale." Merc "Let's split it both ways and
+  listen." Predict: "Which note between the two Cs splits the octave into two equal leaps?" [G] [F♯].
+  The answering plays, C, G, C and C, F♯, C, each end with C and the middle note together; the lanes
+  draw in and the leaps are counted, 7 and 5, 6 and 6; the reveal waits for both. It is a deliberate
+  reasoning check, as the season's card designed it ("the fifth is 7 semitones of 12; the half is
+  6"), on Lesson 6's facts; the recall asks Lesson 6's questions 3 and 4, so "7 semitones: a perfect
+  fifth" is not printed under the choices. The plan's stage, Lesson 2's ring and a named ruler,
+  showed F♯ across from C and in the middle before the choice, and its "exactly in half" could be
+  answered G in hertz (Lesson 23 FACTS 1a, 40, 43).
+- **Visual:** the staff toy's interval state, the staff and the pitch line side by side, with Sharp,
+  Flat, Fold and a curl into Lesson 2's ring (new, on SEASON-2 § 6.2 item 2's staff toy), holding
+  back until the choice whatever would sound, draw or read out the answer; Lesson 2's ring (exists:
+  the kit's spiral seen from the top). **Payoff:** Step 3's fold, where an interval and its upside
+  down fill the octave and the tritone folds onto six semitones again; Step 4's ring, B and F
+  straight across, closing into C and E; the sing-along, do up to so and back in D, unscored, then
+  ti and fa heard together, closing into do and mi.
+- **Tease:** a still of Lesson 24's stage, a drone band on A3 and a line just above it, silent: "A
+  drone, and a second note just above it, almost in tune."; the alternative `fifths` is a mended
+  form of the plan's line, "Fifths count as settled, tritones lean. Next, a note against a drone.",
+  and the plan's own line is withdrawn. Lesson 23's own tease, on Lesson 22's card, is "One note,
+  swinging. Now two notes together: one pair wants to move.", with Lesson 22's planned line as the
+  alternative `hold` (Lesson 23 FACTS 5, 5b; settled at the lead's review on 1 November 2026, as the
+  owner asked).
+- **Facts:** sourced in Lesson 23's FACTS: interval number and quality, augmented and diminished,
+  inversion, consonance and dissonance, the white-key tritone (Open Music Theory 2e, 1.15 and 2.01;
+  1e 2.12), the ratios (Wolfe, UNSW), the tritone's name and nickname (Wikipedia, Tritone, at a named
+  revision; Fux 1725 as RESEARCH reads the Latin); the app at `c60f0fdcb`. Nothing is said about a
+  church ban until the card's sources are read.
+
 ## 3. How it lands in each medium
 
 ### 3.1 The page
