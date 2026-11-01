@@ -22,7 +22,9 @@
 // Songs are read one at a time, and only while the room asks: it asks at
 // rest, with songs of the singer's own chosen, and lets go when a run
 // starts, so a read never competes with the microphone. A read stopped
-// part-way starts again from the beginning next time.
+// part-way starts again from the beginning next time. Nor does a read run
+// beside the Karaoke room's own read of a song's notes: each takes one lock
+// first (song-read-lock.ts), and the one that finds it taken waits.
 //
 // The list is built once and kept up to date (`ownSongs`): a song keeps its
 // object until what the phone knows of it changes, so a read's progress
@@ -52,6 +54,7 @@ import type { Accessor, Signal } from 'solid-js'
 import { createMemo, createRoot, createSignal, untrack } from 'solid-js'
 import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { hydrateSong, roomLibrary, } from '@/features/karaoke-room/karaoke-room-library'
+import { takeSongReadLock } from '@/lib/song-read-lock'
 import { createPersistedSignal } from '@/lib/storage'
 import { getUvrSession, isSessionStoreReady } from '@/stores/uvr-store'
 import { ENTRY_RULES_VERSION, PLAYING_READS_STAND_FROM, } from './entry-rules-version'
@@ -509,13 +512,22 @@ export function readLog(title: string, read: OwnSongRead): string[] {
   return log
 }
 
+/** Asked again once the Karaoke room's read lets the lock go. */
+const readWhenFree = (): void => {
+  void readNext()
+}
+
 async function readNext(): Promise<void> {
   if (!wanted || inFlight !== null) return
   const next = untrack(ownSongs).find((song) => song.state.kind === 'waiting')
   if (next === undefined) return
+  const release = takeSongReadLock('first-note', readWhenFree)
+  if (release === null) return
   const { sessionId } = next
   const stems = stemsKey(sessionId)
   const controller = new AbortController()
+  // A read stopped lets the lock go at once, not once it has unwound.
+  controller.signal.addEventListener('abort', release)
   inFlight = { sessionId, controller }
   setLiveFor(sessionId, { reading: 0 })
   try {
@@ -549,6 +561,7 @@ async function readNext(): Promise<void> {
     console.warn('[first-note] could not read a song:', error)
     setLiveFor(sessionId, { failed: 'unreadable', stems })
   } finally {
+    release()
     if (inFlight?.controller === controller) inFlight = null
     void readNext()
   }

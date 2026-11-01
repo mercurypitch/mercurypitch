@@ -34,6 +34,11 @@ export interface KaraokeFindSheetProps {
   isOpen: boolean
   close: () => void
   host: MercurySingHost
+  /**
+   * Told whether the listening holds the mic: the room reads no songs'
+   * notes while it does (useKaraokeNotesReading.ts).
+   */
+  onMic?: (held: boolean) => void
 }
 
 export function KaraokeFindSheet(props: KaraokeFindSheetProps): JSX.Element {
@@ -72,6 +77,7 @@ export function KaraokeFindSheet(props: KaraokeFindSheetProps): JSX.Element {
               <Listening
                 host={props.host}
                 again={() => setRound(listening + 1)}
+                onMic={(held) => props.onMic?.(held)}
               />
             </Suspense>
           )}

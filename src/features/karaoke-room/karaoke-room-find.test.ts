@@ -6,11 +6,14 @@
 // stage cleared before the sheet opens, a song found played where the
 // singer has got to once the sheet has gone, a song gone from the room
 // since played not at all and said, and Back told whether there was a
-// sheet to close. The sheet over a stand-in engine is
+// sheet to close. Opening the sheet is remembered on the phone, so the
+// room reads every song's notes from then on, and the room knows when the
+// sheet holds the mic. The sheet over a stand-in engine is
 // KaraokeFindSheet.test.tsx's; the room around it, KaraokeRoomStage's.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { notifications, resetNotifications } from '@/stores/notifications-store'
+import { findOpenedOnce, KARAOKE_FIND_OPENED_KEY, reloadNotesWantedForTests, } from './karaoke-notes-wanted'
 import { createRoomFind } from './karaoke-room-find'
 import type { RoomSong } from './karaoke-room-library'
 
@@ -29,6 +32,8 @@ const BRAVO = song('b', 'Bravo')
 
 beforeEach(() => {
   resetNotifications()
+  localStorage.removeItem(KARAOKE_FIND_OPENED_KEY)
+  reloadNotesWantedForTests()
 })
 
 describe('Find by singing in the room', () => {
@@ -96,5 +101,47 @@ describe('Find by singing in the room', () => {
     expect(find.close()).toBe(true)
     expect(find.isOpen()).toBe(false)
     expect(find.close()).toBe(false)
+  })
+})
+
+describe('the room knowing of the sheet', () => {
+  it('remembers on the phone that the sheet was opened, so every song is read from then on', () => {
+    const find = createRoomFind({
+      songs: () => [ALPHA],
+      clearStage: () => undefined,
+      play: () => undefined,
+    })
+    expect(findOpenedOnce()).toBe(false)
+
+    find.open()
+
+    expect(findOpenedOnce()).toBe(true)
+    // A launch reads it again from the phone.
+    reloadNotesWantedForTests()
+    expect(findOpenedOnce()).toBe(true)
+  })
+
+  it('holds the mic from its open until the listening lets it go, and again on the next', () => {
+    const find = createRoomFind({
+      songs: () => [ALPHA],
+      clearStage: () => undefined,
+      play: () => undefined,
+    })
+    expect(find.listening()).toBe(false)
+
+    find.open()
+    // Before the listening has loaded, it is about to open the mic.
+    expect(find.listening()).toBe(true)
+    find.heldMic(false)
+    expect(find.listening()).toBe(false)
+    // Listen again.
+    find.heldMic(true)
+    expect(find.listening()).toBe(true)
+    find.heldMic(false)
+    find.close()
+    find.open()
+    expect(find.listening()).toBe(true)
+    find.close()
+    expect(find.listening()).toBe(false)
   })
 })

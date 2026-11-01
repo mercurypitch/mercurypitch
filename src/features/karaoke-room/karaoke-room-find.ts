@@ -11,13 +11,18 @@
 // analysis (an example ships its own, bundled-notes.ts), never by decoding
 // its vocal: the phone cannot afford a whole stem in memory (audit K1). A
 // song with no notes yet is listed and opens from the top when tapped, and
-// is matched once it has some.
+// is matched once it has some. The room reads them itself while it rests
+// (karaoke-notes-reader.ts): for a song just separated, and once the sheet
+// has been opened, for every song. So the sheet's open is remembered, and
+// the room reads nothing while the sheet holds the mic; a song read while
+// the sheet is quiet is found once it listens again.
 
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import type { MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, MercurySingStatus, } from '@/features/mercury-sing/mercury-sing-engine'
 import { showNotification } from '@/stores/notifications-store'
+import { markFindOpened } from './karaoke-notes-wanted'
 import type { RoomSong } from './karaoke-room-library'
 
 // The room meets Mercury Sing here, by its types, and in the listening
@@ -27,6 +32,7 @@ export type {
   MercurySingCandidateView,
   MercurySingHost,
   MercurySingLibraryEntry,
+  MercurySingStatus,
 }
 
 /** What the sheet says under its title, by the engine's state. */
@@ -37,6 +43,16 @@ export const FIND_STATUS: Record<MercurySingStatus, string> = {
   'mic-denied': 'Merc needs the microphone to hear you.',
   'no-library': 'There are no songs to listen for yet.',
   launching: 'Joining you.',
+}
+
+/**
+ * Whether the listening holds the mic, or is about to: from its start until
+ * the singing stops, the mic is refused, or there is nothing to listen for.
+ */
+export function holdsMic(status: MercurySingStatus): boolean {
+  return (
+    status === 'starting' || status === 'listening' || status === 'launching'
+  )
 }
 
 export interface RoomFindInput {
@@ -86,6 +102,10 @@ export interface RoomFind {
   /** Closes the sheet; true when it was open, for Back. */
   readonly close: () => boolean
   readonly host: MercurySingHost
+  /** The sheet is open and its listening holds the mic, or is about to. */
+  readonly listening: Accessor<boolean>
+  /** The listening saying whether it holds the mic (`holdsMic`). */
+  readonly heldMic: (held: boolean) => void
 }
 
 /**
@@ -97,6 +117,8 @@ export interface RoomFind {
  */
 export function createRoomFind(deps: RoomFindDeps): RoomFind {
   const [isOpen, setOpen] = createSignal(false)
+  // Held from the open: the listening is loaded and opens the mic after it.
+  const [micHeld, setMicHeld] = createSignal(true)
   const close = (): boolean => {
     if (!isOpen()) return false
     setOpen(false)
@@ -118,7 +140,18 @@ export function createRoomFind(deps: RoomFindDeps): RoomFind {
   })
   const open = (): void => {
     deps.clearStage()
+    // From now on the room reads every song's notes at rest, the examples
+    // among them, so each can be found by singing (karaoke-notes-wanted.ts).
+    markFindOpened()
+    setMicHeld(true)
     setOpen(true)
   }
-  return { isOpen, open, close, host }
+  return {
+    isOpen,
+    open,
+    close,
+    host,
+    listening: () => isOpen() && micHeld(),
+    heldMic: setMicHeld,
+  }
 }
