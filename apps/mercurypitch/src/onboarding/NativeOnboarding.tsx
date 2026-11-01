@@ -27,7 +27,8 @@
 //               Karaoke engine
 //   offer       beat 9: the Cloud offer, the shell's own sheet over this
 //               layer (CloudOffer.tsx), once an install, held out of one
-//               install in ten, never to a subscriber (onboarding-offer.ts).
+//               install in ten, never to a subscriber, and only with the
+//               store's price in hand (onboarding-offer.ts).
 //               Merc goes with it, small by its art (cloudOfferGuest). The
 //               layer's Not now brings it too, from any beat
 //

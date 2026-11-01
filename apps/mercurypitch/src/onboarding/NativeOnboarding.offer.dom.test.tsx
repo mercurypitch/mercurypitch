@@ -24,7 +24,8 @@ import type * as Analytics from '@/lib/analytics'
 import type * as MicSentinel from '@/lib/mic-sentinel'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { RESPONSE_GATE_SECONDS } from '@/lib/sequence/sequence-engine'
-import { resetRoomArrivalHolds } from '@/stores/native-shell-store'
+import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
+import { registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import type * as Wiring from '../shell/premium-exercise-wiring'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
@@ -175,6 +176,32 @@ const TURN_AT = LEAD + LINE_SEC + RESPONSE_GATE_SECONDS
 
 let view: RenderedShell | null = null
 let shell: (() => void) | null = null
+let unregisterStore: (() => void) | null = null
+
+/** A store here, with the month's plan to sell at its own price. */
+function store(
+  overrides: Partial<KaraokeSubscriptionApi> = {},
+): KaraokeSubscriptionApi {
+  return {
+    subscribe: async () => Promise.resolve('cancelled' as const),
+    restore: async () => Promise.resolve('nothing' as const),
+    offer: async () =>
+      Promise.resolve({
+        priceText: '\u20ac4.99',
+        title: 'Mercury Pitch Cloud',
+      }),
+    ...overrides,
+  }
+}
+
+/** The shell's API, with `api` as its store (or none at all). */
+function withStore(api: KaraokeSubscriptionApi | null): void {
+  unregisterStore?.()
+  unregisterStore =
+    api === null
+      ? null
+      : registerShellApi({ pushSettings: vi.fn(), karaokeSubscription: api })
+}
 
 /** The onboarding up, on a stand-in capture with a clock, Keep beside it. */
 function mount(): Stand {
@@ -217,9 +244,12 @@ beforeEach(() => {
   server.next = null
   funnel.sent = []
   funnel.app = []
+  // A store with the plan priced, as beat 9 needs; a case may take it away.
+  withStore(store())
 })
 
 afterEach(() => {
+  withStore(null)
   view?.unmount()
   view = null
   resetRunShell()
@@ -322,9 +352,9 @@ function take(until: number, notes: readonly TimedNote[]): PitchFrame[] {
   return frames
 }
 
-/** Promises a few hops deep answered: the asks before the offer. */
+/** Promises a few hops deep answered: the price, then the asks before the offer. */
 async function settleAll(): Promise<void> {
-  for (let i = 0; i < 6; i++) await settle()
+  for (let i = 0; i < 10; i++) await settle()
 }
 
 /**
@@ -535,6 +565,35 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     expect(window.location.hash).toBe(ALLEY)
     await settleAll()
     expect(cloudOfferOpen()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('goes straight to the alley where nothing can be bought, asking nothing', async () => {
+    withStore(null)
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+
+    expect(onboardingShown()).toBe(false)
+    expect(window.location.hash).toBe(ALLEY)
+    await settleAll()
+    expect(cloudOfferOpen()).toBe(false)
+    expect(identity.made).toBe(0)
+  })
+
+  it('goes to the alley without it when the store has no price for the plan', async () => {
+    withStore(store({ offer: async () => Promise.resolve(null) }))
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('not-now')
+    expect(window.location.hash).toBe(ALLEY)
     expect(identity.made).toBe(0)
   })
 
@@ -887,6 +946,37 @@ describe('beat 9, the Cloud offer', () => {
 
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
+  })
+
+  it("is not opened where nothing can be bought: on to the Warm-up's path, nothing asked", async () => {
+    withStore(null)
+    setAuthToken(token('google'))
+    const s = mount()
+    await skipRange(s)
+    await singLine(s)
+
+    await continueLine()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(identity.made).toBe(0)
+    expect(onboardingShown()).toBe(false)
+    expect(onboardingExit()).toBe('finished')
+    expect(pushed()).toBe('warm-up')
+  })
+
+  it("is not opened when the store has no price for the plan: on to the Warm-up's path", async () => {
+    withStore(store({ offer: async () => Promise.resolve(null) }))
+    setAuthToken(token('google'))
+    const s = mount()
+    await skipRange(s)
+    await singLine(s)
+
+    await continueLine()
+
+    expect(cloudOfferOpen()).toBe(false)
+    expect(identity.made).toBe(0)
     expect(onboardingExit()).toBe('finished')
     expect(pushed()).toBe('warm-up')
   })

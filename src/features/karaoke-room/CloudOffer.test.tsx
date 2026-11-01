@@ -96,7 +96,7 @@ function accountSays(user: {
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
+import { askCloudPlan, closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
 import { CloudOffer, OFFLINE_LINE, SLOW_PURCHASE_MS } from './CloudOffer'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 
@@ -205,8 +205,11 @@ describe('the offer', () => {
     ])
     expect(offer.textContent).toContain('20 songs a month')
     expect(offer.textContent).toContain('Unused songs carry over, up to 50')
-    expect(offer.textContent).toContain(
-      'Renews every month until you cancel. Cancel any time in Settings.',
+    // The renewal, once the store has said what it renews at.
+    await waitFor(() =>
+      expect(offer.textContent).toContain(
+        'Renews every month until you cancel. Cancel any time in Settings.',
+      ),
     )
     expect(
       within(offer).getByRole('link', { name: 'Terms' }).getAttribute('href'),
@@ -299,6 +302,7 @@ describe('the price', () => {
       expect(statusLine(offer)).toBe('Subscriptions are not available yet.'),
     )
     expect(offer.textContent).not.toContain('€')
+    expect(within(offer).queryByTestId('cloud-terms')).toBeNull()
     expect(subscribeButton(offer).disabled).toBe(true)
 
     fireEvent.click(
@@ -307,6 +311,45 @@ describe('the price', () => {
     await waitFor(() =>
       expect(statusLine(offer)).toBe('Purchases are not available yet.'),
     )
+  })
+
+  it('says nothing of a renewal until there is a price it renews at', async () => {
+    let price = (_offer: typeof OFFER | null): void => undefined
+    withStore(
+      store({
+        offer: async () =>
+          new Promise((resolve) => {
+            price = resolve
+          }),
+      }),
+    )
+    const offer = await open()
+
+    // Asked, then told there is nothing to sell: no terms either time.
+    expect(within(offer).queryByTestId('cloud-terms')).toBeNull()
+    price(null)
+    await waitFor(() =>
+      expect(statusLine(offer)).toBe('Subscriptions are not available yet.'),
+    )
+    expect(offer.textContent).not.toContain('Renews')
+  })
+
+  it('opens on the price the store gave before it, and asks no more', async () => {
+    const offer$ = vi.fn(offered)
+    withStore(store({ offer: offer$ }))
+    await askCloudPlan()
+
+    render(() => <CloudOffer />)
+    openCloudOffer('onboarding')
+    const offer = screen.getByRole('dialog', { name: 'Sing your own songs' })
+
+    // From the first frame: the price, Subscribe and the renewal terms.
+    expect(within(offer).getByTestId('cloud-price').textContent).toBe(
+      '€4.99 a month',
+    )
+    expect(subscribeButton(offer).disabled).toBe(false)
+    expect(within(offer).getByTestId('cloud-terms')).toBeTruthy()
+    expect(offer$).toHaveBeenCalledTimes(1)
   })
 
   it('puts Retry in the price slot when the store cannot say, and asks again', async () => {
