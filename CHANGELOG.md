@@ -5,6 +5,30 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.27] - 2026-11-01
+
+A word filter checks the names other singers see, and the singing and piano
+screens stop redrawing when there is nothing new to draw.
+
+### Changed
+
+- **Names other singers see are checked.** A display name or a shared title
+  with a slur or a crude word is refused, and sign-up asks you to choose
+  another.
+- **Shares show your current name.** On Community, a rename reaches the
+  melodies and sessions you shared before.
+- **Less work when nothing moves.** The singing and piano screens stop
+  redrawing when nothing on them can change, such as on another tab.
+
+### Fixed
+
+- **Subdivide no longer gives its answer away.** The Ear Lab's drill drew a
+  pallet for each step of the bar before you answered. Now it shows seven
+  until the reveal.
+- **Smaller things.** Progress's league card no longer puts a place with no
+  points in the promotion zone. In the Ear Lab, Echo, Span and Echo in the
+  Wild remember whether you tap or sing, as Home does.
+
 ## [0.9.26] - 2026-10-31
 
 Every tour opens on the page it shows you, and Settings can test your

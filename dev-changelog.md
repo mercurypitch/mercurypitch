@@ -9,6 +9,525 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.27] - 2026-11-01
+
+30 commits since `v0.9.26` (c6951964a) before these notes, from 22 PRs:
+#1256 (2 commits), #1267 (2), #1272 (2), #1275 (2), #1276 (2), #1282 (2),
+#1283 (2), #1284 (2), #1273 (1), #1274 (1), #1277 (1), #1278 (1), #1279 (1),
+#1280 (1), #1281 (1), #1285 (1), #1286 (1), #1287 (1), #1288 (1), #1289 (1),
+#1290 (1) and #1291 (1). All were rebased onto `main`, none came in with a
+merge commit, and every commit came through a PR.
+
+On the web:
+
+- **Names other singers read go through a word filter, and the DB worker
+  learns reports and blocks** (#1288).
+  - Slice 4a of `docs/plans/native-more-and-community.md`, worker-only.
+    Before Community ships in the store build, App Store guideline 1.2 and
+    Play's user-generated content policy ask an app whose singers post for a
+    filter on what is posted, a report with a timely answer and a block. The
+    shipped app already shows other singers' names (the leaderboard, the
+    Legend's board, leagues, friend requests), so it covers the boards too.
+    The requirements are `docs/specs/reports-and-blocks.ears.md`.
+  - The filter (`name-filter.ts`, `name-filter-words.ts`, `public-text.ts`,
+    pure so the app can import it) reads a text as the words a reader sees
+    (case, width, accents, look-alike alphabets, digits for letters,
+    stretched letters, separators) and matches each word on its own against
+    a starting English list, in time linear in the text. Two tiers: slurs
+    are refused everywhere, lyrics included, and crude words only in names
+    and titles. Words that names contain count only standing alone, so
+    Yamashita, Siriporn and Anaïs pass.
+  - `validateWrite` runs it on `userProfiles.displayName` (40 characters)
+    and `bio` (300), on `sharedMelodies.melodyName` and
+    `sharedSessions.sessionName` (200), on a share's tags (at most 20, of 40
+    characters each), and on a melody's lyrics for slurs only; `avatarUrl`
+    is checked for its shape (https, 500). A PATCH that leaves a column out
+    is not checked, so a name stored before the filter does not block a
+    singer's other profile writes. The admin name audit lists such rows and
+    rewrites none.
+  - Sign-up: a typed name the filter refuses answers 400 "Choose another
+    display name" (`display_name_refused`). A Google or Apple name it
+    refuses leaves the default `Singer-` handle in place, and a provider's
+    name is clipped to 40 characters.
+  - What the web shows for a refusal: sign-up shows the worker's "Choose
+    another display name". Settings' rename shows the request's raw error,
+    `ServerAdapter: 400 Bad Request on <url>` followed by the body
+    `{"error":"displayName uses a word that is not allowed"}`, and
+    Community's share says "Could not publish this melody. Try sharing it
+    again." The app has no words of its own for a refused name or title yet.
+  - A share's `author` is a server column now: written from the poster's
+    profile on create and replaced with the current profile name on every
+    read (`share-authors.ts`), so nobody posts under another name and a
+    rename reaches old shares. It can no longer be filtered or sorted on;
+    the web did neither.
+  - Blocks (`blocks.ts`): `GET`, `POST` and `DELETE /api/blocks`, registered
+    accounts only, at most 500 a singer. A block hides two singers from each
+    other on the shared melodies and results (lists, counts, reads by id),
+    the leaderboard, the Legend's board and the league standings, refuses a
+    friend request or code either way, and ends a friendship in the same
+    batch. A board ranks everyone first and drops the hidden rows after, so
+    no place moves; a league row under a pseudonym stays, since hiding it
+    would unmask it. A refusal reads as the route's "nobody there".
+  - Reports (`reports.ts`, `report-rules.ts`): `POST /api/reports` about a
+    singer, a profile, or a public shared melody or result, with a reason
+    (offensive, abuse, sexual, spam, impersonation, other) and an optional
+    note of up to 500 characters. The earliest open report on a target
+    mails the owner (`BILLING_ALERT_EMAIL`, subject `[MercuryPitch report]`)
+    after the singer is answered, so two at once mail once. Admin routes,
+    curl-first like suspension: `GET /api/admin/reports`,
+    `POST /api/admin/reports/<id>` (which answers every open report on the
+    target), `DELETE /api/admin/shares/<melody|session>/<id>` and the
+    one-off `GET /api/admin/name-audit`.
+  - A suspended singer's shares are hidden from everyone else. New rate
+    buckets: `content-report` (10 an hour) and `user-block` (30 an hour).
+    Account deletion erases a singer's answered reports, the reports about
+    them and their blocks from both sides, and keeps their open reports in
+    the queue, unsigned.
+  - Nothing calls the report and block routes yet, on the web or on the
+    phone: the phone's Report and Block are slice 4b.
+  - Open for the owner: the word list and its languages
+    (`name-filter-words.ts`); what the Terms on the landing site say about
+    objectionable content; and the closed weeks' podiums, read without an
+    account, which a block does not reach.
+  - Tests: `name-filter.test.ts`, `public-text.test.ts` and
+    `reports-and-blocks-integration.test.ts` (25 cases through the real
+    routes, on every migration in order); taking the block filter out turns
+    four of them red. A high-effort review's twelve findings were fixed,
+    among them a lyric check that backtracked on one long word (34 s of CPU
+    on a 100 KB lyric) and now reads linearly, and ordinary names it
+    refused (Yamashita, Anaïs, "Push It", Van Dyke).
+- **The singing and piano frame loops run only while a frame can change
+  something** (#1277).
+  - The singing loop (`usePracticeController`) and the piano loop
+    (`useFallingNotesController`) live for the whole session, and each asked
+    for an animation frame forever, whatever tab was on screen.
+    `createFrameLoop` (`src/lib/frame-loop.ts`) runs a loop while a reactive
+    `active()` holds, draws one more frame after it turns false so the last
+    state lands, cancels with its owner and never runs two loops at once.
+  - The singing loop runs while the Singing tab is on screen
+    (`singingOnScreen` from `App.tsx`, replacing an `activeTab` dependency
+    the controller never read), a stage reads the frame stream (Sing Room,
+    Zen, Exercises, Challenges), the mic is on or any feature holds the
+    shared mic, the transport or the editor plays, a count-in runs, or Merc
+    sings his demo. The piano loop runs while a run plays or counts in, or
+    in mic mode while the mic listens or a pitch is showing.
+  - Measured as requestAnimationFrame callbacks in 15 s, idle, in headless
+    Chromium on `build:e2e` of each side: on the Studio tab 1,800 and 1,802
+    became 0 and 0 (both loops at 60 a second before); on the Singing tab
+    2,703 and 2,700 became 1,780 and 1,800, since the piano loop no longer
+    runs there.
+  - Decisions: the Singing tab keeps its loop while on screen, even idle,
+    because `PitchCanvas.tsx` draws the trill ring's pulse from every frame;
+    and the loop runs while any feature holds the mic (voice control, for
+    one), which keeps the mic icon honest.
+  - Tests: `frame-loop.test.ts` (6), `use-practice-controller.test.ts` (+6)
+    and `useFallingNotesController.test.ts` (+4); the 10 new cases fail on
+    main's controllers. The 16 Playwright files that drive these loops
+    passed 90 in two runs; an earlier run's two `sing-show-more` phone
+    failures came from the melody library's debounced write, which this
+    does not touch.
+- **Subdivide's lattice no longer counts the bar** (#1274). The web's
+  `MetreLattice` drew one pallet a step before anything sounded, and its
+  label counted them ("Lattice of 7 pallets at rest"), so the eye had the
+  metre before the ear. It now stands at seven pallets whatever the metre
+  until the reveal, its lamp running on round them across both bars, and
+  its label no longer counts. The reveal lays the bar out as before. The
+  owner chose the fix from the design review of 31 Oct, for the web and the
+  native room alike (the room's half is below). `SubdivideDrill.test.tsx`
+  holds seven pallets while a 4/4 bar plays.
+- **The Ear Lab's smaller web changes** (#1273, #1278).
+  - Echo, Span and Echo in the Wild remember Tap or Sing or play per drill
+    (`answer_modes` in the Ear Lab store, read by `earAnswerMode`), as Home
+    always has. Each started at Tap on every visit before.
+  - A threshold drill's next-level line reads "Gap holds at 50.0¢" when the
+    level stays, not "Gap 50.0¢ → 50.0¢" (`ThresholdDrillView.tsx`, shared
+    with the room).
+  - The Field Book's Echo in the Wild and Bassline in the Wild tiles have
+    icons of their own (`IconPhrase`, `IconBassSteps`).
+- **Progress's league zone is the worker's cut** (#1272, 5f9176a19).
+  `leagueZoneOf` in `src/lib/league-board.ts` mirrors the worker's
+  `league-cut.ts`: only members with points move up, the bottom of the whole
+  cohort drops, and nobody does both. The card called a top place with no
+  points "Promotion zone", a move the cut would not make; it now reads
+  Holding zone there. The web Leaderboard keeps its own copy of the cut,
+  left for later.
+- **Production's console keeps to warnings and errors** (#1256).
+  - About 170 `console.log`, `info` and `debug` calls printed to anyone who
+    opened DevTools on mercurypitch.com: stem mixer loads, jam ICE states,
+    funnel events, worker boots. `src/lib/quiet-console.ts` turns those
+    three into no-ops on a production page; `warn` and `error` print
+    everywhere. Every page entry imports it before any app module:
+    `src/index.tsx` and the `main.tsx` of Drum Night, Glassworks, Glass,
+    Guitar Night, Karaoke Night (the vocal remover too), the Mirror (with
+    its vocal-range pages) and Piano Night.
+  - The full console stays on diagnostic builds (`IS_DIAGNOSTIC_BUILD`:
+    local dev, PR previews, dev.mercurypitch.com), on the e2e build
+    (`VITE_E2E_LAB_ACCESS=1`, whose specs listen for `[kn-funnel]` lines),
+    and in any browser where Settings' developer console switch is on. The
+    crash card's log is unchanged: `global-error-handler.ts` wraps the
+    methods after this module runs. The native app has its own entry and is
+    not affected. The 20 `console.warn` calls on Karaoke Night and the stem
+    mixer were reviewed and stay: each reports a real failure.
+  - On a production bundle under `vite preview`, 6 s a page in headless
+    Chromium: `/` and `/karaoke.html` printed nothing, and `/karaoke.html`
+    with the switch on printed 3 info lines.
+  - Drum Night's first-paint ceiling goes from 520,000 to 521,000 bytes
+    (`scripts/assert-drum-night-bundle.mjs`): the module is a 471-byte
+    chunk, and with its import the room's first paint measured 520,682
+    bytes, from about 519,950.
+- **A sheet keeps a 640 px column on a wide screen** (#1285). The shared
+  mobile `Sheet` (`src/components/mobile/Sheet.module.css`) centres its
+  panel at 640 px wide on a screen 720 px or wider, made for the native
+  app's tablets (below). On the web, sheets open on screens 768 px wide and
+  under and on a phone held sideways (the Karaoke phone stage, for one), so
+  a window 720 to 768 px wide or a phone on its side sees it.
+
+Nothing else changes on the web that a visitor sees. The native work brings
+seams the web carries and does not draw: `readActiveWeekly` beside
+`getActiveWeekly`, `revokeBoardConsent` beside `grantBoardConsent` (only the
+phone's Account screen calls it, and granting consent already given no
+longer moves its date), a result's `presenter` (`native-room` sends the
+result to the room's own signals, which the web's card never reads) and
+`challengeResultCopy` in its own module, still exported from the card
+(#1282); `readLeagueMe` beside the web's unchanged `fetchLeagueMe`, and
+`NATIVE_LEAGUES` (#1272); the exercise picker's Legend card and the Sing
+room's hand-off, which need the shell's `legend` and draw nothing without
+it (#1284); the stage's `MicPad` seam and the station sheet's answer choice,
+where the web keeps its lead pad and its idle console's toggle (#1278,
+#1279); and the room kit's mic-blocked line, now "to hear you", which only
+the premium rooms and the native onboarding draw (#1289).
+
+Studio, switched off on mercurypitch.com (on for the dev deploy, PR
+previews, `build:e2e` and the unit tests, and on production only when an
+admin sets its switch):
+
+- **#1276: the song's graph is built before Play once the clock exists.**
+  - The warm-up that already reads and decodes the takes also builds the
+    graph when a running clock exists and nothing is kept for the song
+    (`prebuilt-run.ts`): no sources (`park()`), its envelope at gain 0 on
+    the speakers for the 60 ms settle, then off the destination, so nothing
+    renders it while it waits. It lives in the kept-run slot (`kept-run.ts`
+    `adopt`) under the same rules: 5 minutes idle, 30 s hidden, memory
+    reclaim, song change. The clock is never made or resumed outside a
+    press (WebKit), Play waits for a build already under way instead of
+    building a second graph, and the warm-up starts as a song opens (it
+    waited 400 ms).
+  - One clock per Studio visit (`studio-clock.ts`): each song used to make
+    its own clock in its first Play and close it with the song. The page
+    lends one clock to each song in turn and closes it once the Studio
+    closes and the last song has faded out. The native app keeps its own
+    lease.
+  - Measured in headless Chromium with a 1,024-frame device callback (21.3
+    ms): on a 12-lane song, Play after a take added while paused went from
+    277.8 and 280.0 ms to 167.8 and 162.8; the same song reopened from the
+    list, from 295.5 to 158.8 ms; the first Play of a visit, from 303.1 to
+    280.4 ms, since it still builds in the press. On a small song, Play
+    after an added take went from 91.25 to 112.75 ms to 57.25 to 79.0.
+    Renderer CPU while paused stayed within noise (a mean of 4.9% of a core
+    against 4.7%).
+  - `studio-play-start.spec.ts` holds every reading to the soonest one plus
+    25 ms: it fails on main 3 runs in 3 and passes here 3 in 3.
+    `admitStudioRun` moves to `prepare-plan.ts`, and `transport.ts` is 785
+    lines.
+  - Not done: the first Play of a visit still builds in the press, because
+    making the clock on the press that opens a song would open an iOS audio
+    session for a silent page.
+- **#1286: the graph is built ahead again once Export, Compare or
+  auto-balance finish.** The warm effect reads an `audioBusy` option
+  (Export, Compare or auto-balance under way, from `StudioWorkspace.tsx`)
+  and the take preview's signals, and warms 400 ms after they clear.
+  `releaseAudio()` counts itself in `releasing`, which `warm()` treats as
+  busy, so a warm-up cannot read buffers back mid-release. Both tests were
+  red without the change.
+- **#1287: a heavy song's idle lanes are rendered ahead, and the renders
+  play.**
+  - A 24-lane song underran at every playback tier: the whole song plays on
+    Chromium's one realtime audio thread. Lanes nobody is touching are now
+    rendered through their chains offline at Best, and a frozen lane costs
+    its fader and a buffer source: 6.3 µs a render quantum against 177.4 µs
+    live on the small fixture. It is automatic, decided from the song's cost
+    model and the device benchmark, and only when the song does not fit.
+    Merging each chain into one AudioWorklet would have saved at most the
+    14% of the large song's render time that GainNodes (10%) and splitters,
+    mergers and the like (4%) take.
+  - `lane-freeze-plan.ts` picks the lanes: while the heard lanes' estimated
+    load at the wanted tier (Best under Auto) is over Auto's 55% ceiling,
+    the lane that lowers it most per byte goes next, among lanes left alone
+    for 3 s and within 75% of the Studio memory budget.
+    `lane-freeze-render.ts` renders a lane run by run on an
+    `OfflineAudioContext`; `lane-freeze.ts` keeps 16-bit chunks of 4 s, each
+    scaled to its own peak and crossed over 128 frames (butted chunks
+    clicked once every 4 s, a new MISTAKES entry); `lane-freezer.ts` renders
+    two lanes at a time and starts nothing while Export, Compare or
+    auto-balance run.
+  - Renders are pre-fader, so volume, pan, Mute and Solo stay live. An edit
+    to a frozen lane plays it live until it renders again, 3 s after the
+    edit, and renders apply from the next Play. The Sound panel says
+    "Rendering lanes ahead so this song keeps up: 3 of 12 done." and then
+    "12 lanes play from renders made at Best."
+  - Measured headed, with slower devices emulated on the audio thread: the
+    24-lane song went from 98.6 to 99.7% of the audio thread and 7.7 to
+    10.5 s of underruns per 15 s to 63.2% and none, with 14 of 24 lanes
+    rendered (the memory cap) in 105.6 s; a 12-lane song at 2x slower from
+    99.1% and 8.0 s to 71.2% and none; at 4x from 97.9% and 8.6 s to 82.1%
+    and none; a 4-lane song at 4x from 99.5% and 7.5 s to 83.6% and none.
+    The 24-lane song at 2x still underruns (94.2%, 3.9 s). A frozen lane
+    takes 11 MB a minute; with 14 large lanes rendered the renderer held
+    1,173 MiB while playing, against 576 to 700 MiB before.
+  - Null tests through `buildStudioGraph`, offline at Best: a frozen lane
+    against live, -98.7 dBFS at worst; a 4-lane mix at the engine's own
+    floor.
+  - Open for the owner: the memory renders may take (75% of the budget, 768
+    of 1,024 MiB on a desktop and 384 of 512 on a phone), renders made at
+    Best whatever the live tier, renders from the next Play only, freezing
+    as automatic only, and the two Sound panel sentences.
+- **#1290: every Play starts on a whole frame.** A Play took its place from
+  the clock plus the device callback plus 5 ms, which need not land on a
+  frame: at 44.1 kHz the 5 ms alone are 220.5 frames, and a 44.1 kHz
+  device's 4,096-frame callback is 4,458.23 frames of the 48 kHz Studio
+  context. Chromium and WebKit then interpolate every sample, a treble cut
+  that changed from Play to Play (-5.105 dB at 15 kHz at half a frame).
+  `whole-frame.ts` (`frameTime`, `wholeFrameAtOrAfter`, `onWholeFrame`)
+  puts every fresh place on the next whole frame, rounded up: Play from
+  silence, `seekEarliest`, a kept or prebuilt graph, a seek's own run and a
+  handover that starts the song again. `sourceStart` lands a start that
+  float noise holds off a frame onto it, and freeze renders use
+  `frameTime`.
+  - Two Plays half a frame apart: one dry lane went from -6.1 dBFS at worst
+    to bit-identical, and four lanes from -12.2 dBFS to -73.2 and -73.5,
+    the floor of the same Play rendered twice. No Play sounds a frame or
+    more later than asked.
+  - Engine facts: Chromium 148 and WebKitGTK 2.54 play a start up to 3e-4
+    frames past a frame as an exact copy and one 1e-3 frames past or more
+    interpolated; Firefox 150 rounds every start to the nearest frame.
+  - Left alone: a frozen lane against the same lane live differs by -17.3
+    dBFS in the 20 ms before the song's last clip ends, and Studio FX
+    exports (`mixdown.ts`, `render.ts`) still place sources by plain
+    division.
+
+In the native app only. TestFlight `mp-v0.8.48` (5904f112e) carried #1267,
+#1272, #1273, #1274, #1277, #1278, #1279 and #1281; #1282, #1284, #1285 and
+#1289 came after it. `NATIVE_LEAGUES` and `EAR_LAB_WITH_MERC` are on in the
+test builds and off on the web and in the store build, which
+`assert-bundle.mjs` holds to carrying none of their STAGE 2 markers. The
+More sheet's list, the Account screen's board switch and the onboarding
+fixes are in every native build.
+
+- **The More sheet as a grouped list** (#1267, slice 1 of
+  `docs/plans/native-more-and-community.md`, which it adds).
+  - Six square tiles in a four-column grid (11 px labels, a third of the
+    sheet empty) become an inset grouped list: Rooms (Karaoke, Piano,
+    Guitar), then You (Account, Developer on test builds, Settings). A row
+    is 56 px, with a 30 px chip tinted by its group, the name at 17 px and
+    one 13 px line of what is true now, read synchronously from stores and
+    never the network (`more-lines.ts`): "3 songs ready", "Paused: Clair de
+    Lune", "Signed in as Maya", "The microphone is off". One quiet dot on
+    Karaoke marks a song separated and not yet sung (test builds).
+  - The sheet sizes to the list. Light glass takes 92%, since at 72% the
+    group titles fell to 4.35:1. The grounds are tokens on `.mp-shell`, not
+    theme rules on the portalled panel: in review, a theme flip with the
+    sheet open drew white text on a white card (a new MISTAKES entry, held
+    by `more-sheet-css.test.ts`). `assert-no-portable-console.mjs` now
+    fingerprints the store binary's Developer row.
+- **Leagues on the phone, read-only** (#1272, slice 2).
+  - `NATIVE_LEAGUES` (`src/lib/native-build.ts`) is `KARAOKE_IMPORT`. More
+    gains a Together group with Leagues ("Sparkwing, 4th of 23", "Sign in
+    to climb"), read from the league the phone kept.
+  - The Leagues screen (`shell/leagues/LeaguesScreen.tsx`): your rung and
+    place, where you are headed and the rung's rules, the next cut in words
+    ("The next cut is in 2 days"), the top 50 with a line where each zone
+    ends, the ladder with the rungs above veiled, an invite when signed
+    out, and Try again for a read with no answer. A session the server
+    refuses (a 401, or a suspension's 403) is asked to sign in again.
+  - `league-store.ts` keeps the account's own league and place, read by the
+    screen and on the app's return to the front at most every 15 minutes,
+    never by the sheet; other members' names stay in memory only. One cut
+    for every surface (`league-board.ts`), which also fixes the web's
+    Progress card (above). The kit's primary button label goes from 4.4:1
+    to 5.2:1 on the light theme (`--mp-button-ink`).
+  - Left for later: the web Leaderboard's own copy of the cut, the week's
+    arithmetic written twice, and the More row keeping last week's place if
+    the sheet stays open across midnight UTC.
+- **The Legend as a native room** (#1282, #1284, slices 3 and 3b).
+  - #1282: More's Together group gains Legend ("Ends in 3 days", "Sung,
+    best 82%", "Closing"), never "This week's challenge", since a Legend
+    runs one to eight weeks (`challenge-period-neutral.test.ts`). The room
+    (`shell/legend/`) is a full-bleed premium room: the door (the close and
+    title, Hear the line, Hear the original, Sing it and Practice, the top
+    three, the singer's standing in words, the past Legends) and the take
+    (`legend-take.ts`): the premium rooms' mic, a fresh zen session per
+    take, scored by `summarizeChallengeRun` and posted by
+    `recordChallengeStageResult` exactly as the web's stage does, so a
+    phone's 84% and a browser's mean the same on one board. One armed
+    attempt counts once, and the room shows its own result.
+  - Consent: a first ranked take asks in a kit sheet ("Show my name on
+    public boards", "Practice without ranking", "Not now"), and the Account
+    screen gains the same switch in every native build, the store build
+    included, so consent can be taken back (`revokeBoardConsent`).
+  - #1284: the owner-approved look (the "Legend Native Room" canvas, nine
+    phones). The take draws the line as glass notes passing a now line and
+    the voice as a lit ribbon (`LegendLane.tsx` over `legend-lane.ts`); a
+    passed note turns teal with a check or red with a cross by the web
+    stage's own `challengeTargetHighlights`, so the lane and the score never
+    disagree. The door gets a poster of the line (`LegendPoster.tsx`) whose
+    beads light as Hear the line plays. The result follows the Ear Lab's
+    plate: the score, the take whole (`LegendTrace.tsx`), "7 of 8 lit" and
+    "E4 missed, sung flat" (`missesOf`). The Sing room's exercise picker
+    shows the running Legend above its exercises, worded by the shell
+    (`legend-card-wiring.ts`). Merc's three stills ride in the room, folded
+    out of a store build by `PREMIUM_IMAGES`. Scoring is unchanged.
+  - Found on the way, on the web and not changed: the web stage leaves an
+    armed attempt after a failed save, so the next sight-singing drill
+    posts to the Legend board; "Practice in Zen" from the web's result card
+    transposes the line; and the web stage's practice copy names a period
+    ("This week has ended"), which the period-neutral test misses.
+- **The Ear Lab with Merc** (#1273, #1274, #1278, #1279, #1281, #1285).
+  - #1273, the design review's minor items: Merc asks the drill's question
+    whenever an answer is due, the first one too; two arcs ripple beside
+    him while a question plays; the run chip hugs its words; The Chart's
+    stems are sturdier; Color's bell rises from the line at the lane's ends,
+    with "EQ" under the line; the practice plate's main button stands over
+    one row (Calibrate, Run again, Done).
+  - #1274: the room's Subdivide lanes (`LitLanes`) show each hit at a now
+    line as it sounds, passing left and fading within about a second, and
+    stay empty before the sound and while the answer is due; reduced motion
+    keeps the newest hit alone. The owner also decided that the meaning line
+    under a threshold plate's number stays out, and that the reveal's step
+    down on a phone with no room to spare is decided on the devices.
+  - #1278: Home, Echo, Span and the Wild Echo, answered by singing, draw
+    the kit's mic ("Listen first", "Your turn", "Closed") in place of the
+    keys, through a new `MicPad` seam; a press on the lit mic closes Echo's
+    and Span's answer. It fixed a phone bug: the Tap or Sing choice never
+    reached the room's "?" sheet, because a station row starts its run
+    before the room's lazy chunk loads, so the idle console that offered it
+    was never drawn and nobody on the phone could choose to sing.
+  - #1279, the owner's call on the bench mock-ups: the station's sheet asks
+    "Answer by: Tap, Sing or play" before the run and names the drills that
+    take the voice (Function: Home and Gravity, which share Home's choice;
+    Shape: Echo and Span; the Wild: Echo in the Wild), remembered per drill
+    (`merc/answer-choice.ts`). Rows to be sung start on a mic in their own
+    words ("Sing the phrase back"), and "?" no longer offers the choice.
+  - #1281: the bench in the room's light, from the owner-approved mock-ups:
+    the Regulator Room at night (the painting greyed under indigo in CSS,
+    no new art), the Mercury Index as the sealed plate draws it, glass cards
+    for Today, the Ear rooms, the Ear Path (`PathOrbs`, shared with the
+    day's close) and the Ear Report, each station in its drill room's two
+    lights, the station sheet as the room's sheet, and the day's close.
+    `room-look.test.ts` holds the bench's stylesheets to no brass,
+    parchment or serif.
+  - #1285, from the owner's Galaxy Tab S9+ held sideways (about 1280 by
+    800): the bench is a 560 px column with the painting fading at its
+    sides; the drill room's lower half and its sheets keep a 600 px column;
+    First note's welcome sizes Merc by the room's shorter side; and the
+    shared `Sheet` keeps a 640 px column (above).
+- **The native onboarding's fixes** (#1289).
+  - Leaving a beat sets it back to its start as well as shutting the mic,
+    so a mic still opening no longer comes back to life under what follows
+    (`useFirstNote.ts`, `useRange.ts`, `useLine.ts`): Merc's recorded call
+    had played in full under the Cloud offer, and the screen stayed awake
+    until the mic watchdog stopped it.
+  - The line's Continue marks the onboarding done at once (`markFinished`),
+    and the finish is counted as the Cloud offer opens (`countFinished`), so
+    closing the app on the offer no longer replays the onboarding.
+  - A mic that opens and cannot hear the singer offers Continue without the
+    mic after two missed takes, as a refused mic does; it had only Not now,
+    which ends the onboarding for good.
+  - Focus goes back into the dialog when a beat gives way; nothing is read
+    out while Not now's asks are out; a layer that fails to load or draw
+    lets the app go (`abandonOnboarding`) instead of holding the Sing room
+    behind nothing; below 780 px Merc steps out while Keep's sheet is up;
+    the Example label is 13 px, the reveal writes a range as "E2–G4" as Keep
+    and Progress do, and the mic notice says "to hear you". The probe walks
+    360 by 640 as well.
+  - Open for the owner: Android's Back ends the whole onboarding, as Not
+    now does, with no confirmation; Continue without the mic lands on the
+    Warm-up's path, whose exercises all need the mic, and counts as a
+    finish; and "It's here when you want it.", said on Skip, is true only
+    for a singer signed out.
+
+Glassworks, served but unlisted on mercurypitch.com
+(`VITE_GLASSWORKS_LISTED=0` in `.env.production`), and Beside Cue:
+
+- **#1275: eleven live models losslessly compressed, and five unused files
+  retired.**
+  - Five files in `apps/beside-cue/public/games` that nothing loaded (40.0
+    MB of LFS, each with a byte-identical copy under `art/`) are gone, with
+    `NATIVE_RETIRED_GAME_ASSETS` and the `.gitattributes` rules that matched
+    no file.
+  - Eleven models are re-encoded: Meshopt geometry with no quantization
+    (INDICES mode for index views, which keeps the exact index sequence)
+    and PNG textures as lossless WebP. The encoder edits the original JSON
+    rather than re-exporting, which would have rounded Merc's `head` bone
+    scale from 0.99999994 to 1. 146.39 MB becomes 111.18 MB (-24.1%,
+    35,208,340 bytes): a player visiting every world downloads 34.2 MB less
+    on a desktop and 32.2 MB less on a phone, and the native package about
+    32.2 MB less.
+  - Every accessor decodes to the same bytes, read by glTF-Transform and by
+    three.js `GLTFLoader` with `MeshoptDecoder`; the Khronos validator
+    reports no errors. Merc loads through `createGameGltfLoader`, the lazy
+    Meshopt loader the other game models already use. New paths (`-meshopt`,
+    and the lab tiers' delivery numbers bumped) invalidate caches.
+  - Decode on a Ryzen 9 5900X: Cloudway 44 ms, the architecture kit 10 ms,
+    each other model under 2 ms; not measured on a phone. LFS storage grows
+    by 111.1 MB to about 8.38 GiB of the 10 GiB allowance. Lossy options and
+    a vertex reorder (about 12 MB more, almost all Cloudway) wait on an art
+    review.
+
+Builds and tests only:
+
+- **#1280:** 1,080 LFS files (6,182.5 MB) under `art/glass-adventure` leave
+  HEAD and 376 (3,037.8 MB) stay: every art file a runtime manifest cites,
+  the art copies of the files #1275 retired or re-encoded, each family's
+  newest sources, and 77 files kept where the call was unclear.
+  `art/glass-adventure/ARCHIVE.csv` lists all 1,456 with oid, size, last
+  commit, decision and reason, and `ARCHIVE.md` has the keep rule and the
+  restore steps. The `.gitattributes` rules that matched only removed files
+  go. Billed LFS storage does not drop, since history still holds every
+  object.
+- **#1283:** four manual art scripts named public files that #1275 removed
+  or replaced. The V6 kit build and audit read the V3 kit from its art copy
+  (the same bytes); the V7 audit checks the shipped Meshopt runtime and
+  proves it lossless against `runtime/master`;
+  `package_external_delivery.mjs` writes to the gitignored
+  `runtime/external-delivery/` and refuses any destination under
+  `apps/beside-cue/public`; and `package_botanical.mjs` refuses `--publish`
+  and stops before writing if its archived input is missing.
+- **#1291:** Playwright's `chromium` project launches with `--mute-audio`,
+  as do `fakeMicArgs` (22 specs) and the three specs with launch flags of
+  their own, so a local run of the Studio, drum or Karaoke specs no longer
+  plays through the speakers. Web Audio still renders, so level checks hold.
+  CI runners have no audio device either way.
+
+### Release steps
+
+1. **Migrations:** `0072_reports_and_blocks.sql` (#1288), additive: the
+   tables `contentReports` (one open report per reporter and target, by a
+   partial unique index) and `userBlocks`, with five indexes. `deploy-db.yml`
+   applies it on the `v*` tag, before the DB worker deploys; it is not to be
+   applied by hand first.
+2. **Secrets, variables and bindings:** none new. No `wrangler*` or `.env*`
+   file changed since `v0.9.26`. A report's mail goes through the existing
+   Resend setup to the existing `BILLING_ALERT_EMAIL`.
+3. **Worker code:** the DB worker changes (#1288). Traced with esbuild from
+   each `wrangler` `main`, the site worker's graph (24 files) and the Jam
+   worker's (8) hold no changed file. The DB worker's (110) holds 16: 15
+   from #1288 and `src/lib/native-build.ts`, whose one change is the
+   `NATIVE_LEAGUES` constant, which it never reads.
+4. **Local database:** no Dexie change.
+5. **Links into about.mercurypitch.com** (prod-upd step 0c): none new.
+6. **Social cards:** `pnpm run og:versions` stamped the 13 cards it reads
+   with no change.
+7. **What's New** is untouched: 0.9.27 is a patch.
+8. **Version files:** `package.json` goes from 0.9.26 to 0.9.27.
+9. **Tag gate:** the tag goes on a `main` commit whose own PR Gate push run
+   passed, after Release Tours passes on it.
+10. **Native:** `apps/mercurypitch` gains the More sheet's list, the Leagues
+    screen and the Legend room (#1267, #1272, #1282, #1284), the bench and
+    drill room work (#1273, #1274, #1278, #1279, #1281, #1285) and the
+    onboarding fixes (#1289). `assert-bundle.mjs` gains four STAGE 2
+    markers for Leagues and five for the Legend. The native app ships on
+    its own `mp-v*` TestFlight tag.
+
 ## [0.9.26] - 2026-10-31
 
 165 commits since `v0.9.25` (b803c7d43) before these notes (#1270), from 20
