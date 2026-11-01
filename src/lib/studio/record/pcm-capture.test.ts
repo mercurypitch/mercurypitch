@@ -223,16 +223,29 @@ describe('createStudioPcmCapture', () => {
     expect(h.samples()).toEqual(range(0, 5 * QUANTUM))
   })
 
-  it('ends the take when the clock runs backwards past a few quanta', () => {
+  it('keeps counting through a clock reading held behind for as long as the page holds the graph', () => {
+    // Chromium refreshes a worklet's currentFrame only when the audio thread
+    // wins a try-lock on the graph (UpdateWorkletGlobalScopeOnRenderingThread).
+    // Measured 2026-11-01: a page holding the graph for 18 ms left the
+    // reading five quanta behind, and the take ended in its count-in.
     const h = harness(64, 4096)
     h.capture.command({ type: 'start', atFrame: 0, maxFrames: 480000 })
-    h.run(8)
-    h.jump(-8 * QUANTUM)
-    h.run(1)
+    h.run(2)
+    // Twenty quanta, every one read as the frame of the third.
+    for (let q = 0; q < 20; q++)
+      h.capture.process(
+        Float32Array.from({ length: QUANTUM }, (_, i) => (2 + q) * QUANTUM + i),
+        2 * QUANTUM,
+      )
+    // The reading catches up with the count.
+    h.jump(20 * QUANTUM)
+    h.run(2)
+    h.capture.command({ type: 'stop', atFrame: null, reason: 'stopped' })
 
     expect(h.ofType('stopped')).toEqual([
-      { type: 'stopped', frames: 8 * QUANTUM, reason: 'interrupted' },
+      { type: 'stopped', frames: 24 * QUANTUM, reason: 'stopped' },
     ])
+    expect(h.samples()).toEqual(range(0, 24 * QUANTUM))
   })
 
   it('stops inside a skipped stretch when the stop frame falls in it', () => {
