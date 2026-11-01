@@ -247,6 +247,11 @@ export interface StudioRunParts {
   readonly createLaneMeter: typeof createStudioLaneMeter
   /** It opens from silence, not over a run it takes over from. */
   readonly fromSilence: boolean
+  /**
+   * From silence, its first frame is heard no sooner than this clock time:
+   * a recording's count-in (src/lib/studio/record). Zero for as soon as it can.
+   */
+  readonly notBefore?: number
   /** Open the new envelope at `time` and return when it is fully open. Called last. */
   open(envelope: GainNode, time: number): number
 }
@@ -257,9 +262,9 @@ export interface StudioRunParts {
  * on a whole frame (whole-frame.ts). Returns the graph's epoch, when its
  * first frame enters a lane.
  */
-function soonestStart(ctx: AudioContext): number {
+function soonestStart(ctx: AudioContext, floor = 0): number {
   return wholeFrameAtOrAfter(
-    Math.max(ctx.currentTime + RUN_SETTLE_SECONDS, seekEarliest(ctx)),
+    Math.max(ctx.currentTime + RUN_SETTLE_SECONDS, seekEarliest(ctx), floor),
     ctx.sampleRate,
   )
 }
@@ -274,8 +279,9 @@ function startAfterBuild(
   ctx: AudioContext,
   graph: StudioGraph,
   epoch: number,
+  floor: number,
 ): number {
-  const soonest = soonestStart(ctx)
+  const soonest = soonestStart(ctx, floor)
   if (soonest <= epoch) return epoch
   graph.retime(soonest)
   return soonest
@@ -291,8 +297,10 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
   const { timing } = parts
   // The graph's epoch: a run from silence takes the soonest whole frame,
   // and one taking over the place its timing gives (handoff.ts, seek.ts).
+  // A count-in holds the first frame back: the graph starts its latency sooner.
+  const floor = (parts.notBefore ?? 0) - parts.latency
   const epoch = parts.fromSilence
-    ? soonestStart(ctx)
+    ? soonestStart(ctx, floor)
     : timing.audibleEpoch - parts.latency
   let graph: StudioGraph | undefined
   let envelope: GainNode | undefined
@@ -314,7 +322,7 @@ export function buildStudioRun(parts: StudioRunParts): StudioRun {
     // the first frame, a handover's as much as a Play's.
     graph.settle(ctx.currentTime)
     const audibleEpoch = parts.fromSilence
-      ? startAfterBuild(ctx, graph, epoch) + parts.latency
+      ? startAfterBuild(ctx, graph, epoch, floor) + parts.latency
       : timing.audibleEpoch
     graph.scheduleUntil(ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
     meter = createStudioLiveMeter(ctx, envelope, audibleEpoch)
