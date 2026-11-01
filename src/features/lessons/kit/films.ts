@@ -45,7 +45,7 @@ export interface FilmSources {
 export type FilmRegistry = Readonly<Partial<Record<number, FilmSources | null>>>
 
 export const FILMS: FilmRegistry = {
-  // "What is a note?", 5:35, master rc-09
+  // "What is a note?", 5:36, master rc-09
   1: {
     hd: 'https://media.mercurypitch.com/learn/01/v1/lesson-01-1080p.mp4',
     sd: 'https://media.mercurypitch.com/learn/01/v1/lesson-01-720p.mp4',
