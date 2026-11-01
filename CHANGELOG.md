@@ -5,6 +5,35 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.28] - 2026-11-01
+
+Each lesson film gets a page of its own, warm-ups start inside your voice,
+and Home note lights its chords as they play.
+
+### Added
+
+- **Watch a lesson's film on its own page.** Lessons 1 and 2 have a Watch
+  the film button that opens the film with its chapters and transcript, and
+  a way back to the lesson.
+- **Home note's chords light up.** While the band plays, a small lamp lights
+  for each chord of the intro. At the end, tap a key's lamp to hear that
+  round again with Merc singing home.
+
+### Changed
+
+- **Warm-ups start inside your voice.** With a wide measured range, Lip roll,
+  Ng slides and Long note now begin a few notes in from your lowest, not on
+  it.
+- **Long note follows a new pick.** It keeps a note you chose yourself, and
+  otherwise opens on the note it suggests today.
+- **Merc steadier on Lip roll.** He no longer bounces with every flutter of a
+  lip trill.
+
+### Fixed
+
+- **A refused name says what to do.** A name or title with a word we don't
+  allow now says so in a sentence, instead of an error code or "try again".
+
 ## [0.9.27] - 2026-11-01
 
 A word filter checks the names other singers see, and the singing and piano

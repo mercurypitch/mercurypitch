@@ -9,6 +9,67 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.28] - 2026-11-01
+
+7 commits since `v0.9.27` (135ee60b3) before these notes, from 5 PRs:
+#1297 (3 commits), #1293 (1), #1294 (1), #1295 (1) and #1296 (1). All were rebased onto `main`, none came in
+with a merge commit, and every commit came through a PR.
+
+- **Home note's chord lamps and replayable keys** (#1293). From the Ear
+  rooms canvas (B1 and B3, 27 Oct). While the band plays, the intro's chords
+  (I IV V I, I IV V or IV V, as the level plays them) stand as lamps under
+  the chip, each lit as its chord reaches the speaker on the lighthouse's
+  clock and outlined once passed; they go when the singer's turn opens and
+  light again with a replayed intro. A screen reader hears "the one played,
+  the four playing, the five to come". At the result the run's six keys
+  stand as lamps (lit for a home found, an empty ring for a miss); a tap
+  replays that key's intro, then home's chord with Merc singing home. The
+  room kit's ShellHead takes an optional row under the chip; other rooms are
+  unchanged.
+- **Warm-ups placed in the voice** (#1294). Past two octaves,
+  `practiceRange` drops the excess from both ends, two parts from the bottom
+  to one from the top. F2 to D5 is placed in B2 to B4: Lip roll and Ng
+  slides start on D3 (were A2), Long note holds G3 (was F3), and Echo's
+  phrases, Home note's window and the onboarding's sung line move with it.
+  Ranges of two octaves or less are unchanged. Long note remembers whether
+  the singer chose its note; a pick held as offered follows the pick, and a
+  note kept before this change is read as offered. Lip roll's Merc stands on
+  the path and eases only the voice's distance from it (`rideFeet`, 0.2 s on
+  a lip roll), and his lean reads the slope eased over half a second.
+- **The word filter's refusals in words** (#1295). `refusedPublicTextField`
+  reads the worker's 400 `{"error":"<field> uses a word that is not
+allowed"}` from the body `CloudRequestError` now carries, against the
+  worker's wording in the new import-free `public-text-wording.ts` (worker
+  responses unchanged). Settings rename: "That name uses a word we don't
+  allow. Try another." Community: the melody title, the melody lyrics and the
+  run title each get their own line; every other failure keeps "Try sharing
+  it again".
+- **Sitemap dates measured and guarded** (#1296). Each URL's production
+  document was built at the 197 first-parent main commits since 89a9a9d1e
+  that touch its inputs and reduced to what a crawler reads; dates are the
+  day the last real change landed. /mirror, /vocal-range-test and /ear-lab
+  go to 2026-10-26 (lesson links), eleven rooms and /karaoke-app to
+  2026-10-21, /learn/ to 2026-10-28. v0.9.27's IndexNow step had sent
+  nothing. `scripts/sitemap-fingerprints.json` records each page's
+  fingerprint beside its date; `scripts/sitemap-lastmod.mjs` fails a build
+  whose page changed under an old date, and PR Gate's "Sitemap dates" job
+  runs it. `pnpm run sitemap:lastmod` re-dates and re-records.
+- **Watch pages for the lesson films** (#1297). Search Console said of
+  /learn/01's film "Video isn't on a watch page". `/learn/01/watch` and
+  `/learn/02/watch` put the film first, with VideoObject (duration measured
+  with ffprobe: PT5M36S, PT7M19S; uploadDate from v0.9.22), chapters, the
+  transcript and the series card. The lesson hero and the /learn/ hub link
+  to them; a watch page follows its lesson's draft state in the site worker,
+  the sitemap and llms.txt. Lesson 1's length reads 5:36 everywhere. First-
+  paint budgets: learn/04 130 to 131 KB, learn/05 136 to 137 KB.
+
+### Release steps
+
+- No D1 migration, no new secret, no Dexie change.
+- After the deploy: Search Console URL Inspection on /learn/01/watch and
+  /learn/02/watch, then Request indexing. IndexNow announces the re-dated
+  pages and the two watch pages on its own.
+
 ## [0.9.27] - 2026-11-01
 
 30 commits since `v0.9.26` (c6951964a) before these notes, from 22 PRs:
