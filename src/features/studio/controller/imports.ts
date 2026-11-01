@@ -103,6 +103,8 @@ export interface StudioRecordingImport {
   readonly sourceInFrame: number
   /** The armed lane, or null for a new one. */
   readonly trackId: string | null
+  /** The take's own id for its audio, so its journal can tell it was stored. */
+  readonly assetId?: string
 }
 
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
@@ -375,7 +377,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
             const data = await (options.prepareFile ?? prepareStudioAsset)(
               take.wav,
               {
-                id,
+                id: take.assetId ?? id,
                 projectId,
                 originalName: `${take.title}.wav`,
                 provenance: { kind: 'recording', importedAt },

@@ -67,7 +67,6 @@ interface Armed {
   readonly capture: StudioCaptureHandle
   readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
   readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
-  readonly roundTrip: number
 }
 
 interface Take {
@@ -79,6 +78,8 @@ interface Take {
   readonly peaks: StudioLivePeaks
   readonly fromFrame: number | null
   readonly countInEnd: number
+  /** Taken off the take's start, in seconds; read as the take starts. */
+  readonly roundTrip: number
   anchor: StudioTakeAnchor
   startFrame: number
   started: boolean
@@ -176,7 +177,6 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       capture,
       monitor,
       clicks: deps.createClicks(context),
-      roundTrip: deps.roundTrip(context, stream),
     }
   }
 
@@ -271,6 +271,8 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     }
     const id = deps.createId()
     const title = deps.title()
+    // Read now, so an offset changed while armed is in this take.
+    const roundTrip = deps.roundTrip(context, armed.stream)
     take = {
       id,
       title,
@@ -280,6 +282,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       peaks: createStudioLivePeaks(rate, maxFrames),
       fromFrame,
       countInEnd,
+      roundTrip,
       anchor,
       startFrame: Math.round(startTime * rate),
       started: false,
@@ -294,7 +297,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         title,
         sampleRate: rate,
         fromFrame,
-        heardFirst: studioHeardFirst(anchor, startTime, armed.roundTrip),
+        heardFirst: studioHeardFirst(anchor, startTime, roundTrip),
       }),
     }
     armed.capture.start(take.startFrame, maxFrames)
@@ -403,7 +406,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     const heardFirst = studioHeardFirst(
       current.anchor,
       frameTime(current.startFrame, current.sampleRate),
-      armed.roundTrip,
+      current.roundTrip,
     )
     set({
       live: {
@@ -427,7 +430,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     if (view.phase !== 'recording') return
     const context = armed.context
     const until = Math.round(
-      (context.currentTime + armed.roundTrip) * context.sampleRate,
+      (context.currentTime + take.roundTrip) * context.sampleRate,
     )
     armed.capture.stop(Math.max(take.startFrame + 1, until), 'stopped')
     endSound(take)
@@ -441,7 +444,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       () => {
         if (take === current) void onStopped(current.buffer.frames, reason)
       },
-      STOP_WATCHDOG_MS + (armed?.roundTrip ?? 0) * 1000,
+      STOP_WATCHDOG_MS + current.roundTrip * 1000,
     )
   }
 
@@ -497,7 +500,6 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     frames: number,
     notice: string | null,
   ): Promise<void> {
-    const roundTrip = armed?.roundTrip ?? 0
     closeArmed()
     try {
       if (!current.started || frames <= 0) {
@@ -519,7 +521,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         heardFirst: studioHeardFirst(
           current.anchor,
           frameTime(current.startFrame, current.sampleRate),
-          roundTrip,
+          current.roundTrip,
         ),
         fromFrame: current.fromFrame,
       }
@@ -602,6 +604,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     stop,
     micLost,
     clockStopped,
+    /** An armed lane follows the selection until the take starts. */
+    retarget(trackId: string | null): void {
+      if (view.phase !== 'armed' || trackId === view.targetTrackId) return
+      set({ targetTrackId: trackId })
+      armed?.monitor.set(deps.monitorLevel(trackId))
+    },
     /** The armed lane's monitoring follows the settings and the lane. */
     updateMonitor(): void {
       armed?.monitor.set(deps.monitorLevel(view.targetTrackId))

@@ -1,4 +1,5 @@
 // Studio transport — explicit playback, repeat, a typed clock and actual stereo output metering.
+import type { JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { Repeat } from '@/components/icons'
 import { publishFootSpace } from '@/lib/foot-space'
@@ -28,6 +29,8 @@ interface StudioTransportProps {
   onToggle(): void
   onStart(): void
   onSeek(frame: number): void
+  /** The record button, beside Play. */
+  record?: JSX.Element
 }
 
 export function StudioTransport(props: StudioTransportProps) {
@@ -84,6 +87,7 @@ export function StudioTransport(props: StudioTransportProps) {
           <PauseFilled />
         </Show>
       </button>
+      {props.record}
       <button
         type="button"
         class={styles.iconButton}

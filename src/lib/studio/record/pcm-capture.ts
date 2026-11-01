@@ -122,6 +122,32 @@ export function createStudioPcmCapture(send: Send) {
     send({ type: 'stopped', frames, reason })
   }
 
+  /** The pooled buffer to fill next, or null once the take has stopped. */
+  function room(): Float32Array | null {
+    if (frames >= limit) {
+      stop('limit')
+      return null
+    }
+    buffer ??= pool.pop()
+    if (buffer === undefined) {
+      stop('fell-behind')
+      return null
+    }
+    return buffer
+  }
+
+  /** Copy `n` samples of `input` from `from`, or `n` zeros, into `target`. */
+  function copy(
+    target: Float32Array,
+    input: Float32Array | null,
+    from: number,
+    n: number,
+  ): void {
+    // Plain indexing: no typed-array views made on the audio thread.
+    if (input === null) for (let at = 0; at < n; at++) target[used + at] = 0
+    else for (let at = 0; at < n; at++) target[used + at] = input[from + at]
+  }
+
   /**
    * Write `count` samples of `input` from `from`, or `count` frames of
    * silence for a null input; false once the take has stopped.
@@ -134,29 +160,18 @@ export function createStudioPcmCapture(send: Send) {
     let index = from
     const end = from + count
     while (index < end) {
-      if (frames >= limit) {
-        stop('limit')
-        return false
-      }
-      buffer ??= pool.pop()
-      if (buffer === undefined) {
-        stop('fell-behind')
-        return false
-      }
-      const n = Math.min(buffer.length - used, end - index, limit - frames)
-      // Plain indexing: no typed-array views made on the audio thread.
-      if (input === null) for (let at = 0; at < n; at++) buffer[used + at] = 0
-      else for (let at = 0; at < n; at++) buffer[used + at] = input[index + at]
+      const target = room()
+      if (target === null) return false
+      const n = Math.min(target.length - used, end - index, limit - frames)
+      copy(target, input, index, n)
       used += n
       index += n
       frames += n
-      if (used === buffer.length) flush()
+      if (used === target.length) flush()
     }
-    if (frames >= limit) {
-      stop('limit')
-      return false
-    }
-    return true
+    if (frames < limit) return true
+    stop('limit')
+    return false
   }
 
   function meter(input: Float32Array | null, length: number, at: number) {
