@@ -2627,3 +2627,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   measure step (pid 501), watcher b2gk805ny (to ~11:15; wakes on done/FAIL/exit>0 in film-06.status or / under
   40 MB free; / 112 MB now). The check-in's stored prompt still named film-05 and FILM5; rewritten for film-06,
   FILM6 and film-07 (same trigger, same schedule). Drafts for LEDGER 35 / DECISIONS 140: l4entr/f6-docs-draft.md.
+- 08:29 RENDER-L4 DONE 08:24 (measure render 0, audio 0). film-06 measured: holds 8.2 s inside the film (0.4 per
+  30 s), longest 0.4 s, no final hold (film-05: 25.7 s, 1.4, 0.9); -16.0 LUFS, LRA 5.5 LU, -2.4 dBTP (unchanged).
+  DISK: the FILM6 critic's transcript grows ~6 MB a minute (81 MB at 08:27; FILM5's ended at 55 MB) and / fell to
+  50 MB. Moved to RAM, nothing deleted: lesson-04/.transcode-cache (70 MB, the check's regenerable cache) and
+  review/measure-film-06/sheet-*.jpg (25 MB, regenerable by measure.py) into /dev/shm/l4-moved/; / 142 MB.
+  Next lever if needed: renders/film-04-music-only.mp4 (101 MiB) to /dev/shm. Watcher b4f7x4fb7 wakes under 50 MB
+  free (to ~10:28). render-l4.sh FIXED (backup render-l4.sh.before-master-first): the music-only stays in /dev/shm
+  while the master is not on disk; tested both ways in /dev/shm.

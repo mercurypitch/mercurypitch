@@ -101,14 +101,22 @@ if [ $code -eq 0 ]; then
   ffmpeg -v error -y -i $OUT/$NAME.mp4 -i assets/audio/music-only.wav -map 0:v:0 -map 1:a:0 \
     -c:v copy -c:a aac -movflags +faststart $OUT/$NAME-music-only.mp4
   echo "$(date -u +%T) music-only exit $?" >> $ST
-  # The master first: it is the film that must not be lost (the owner, 31 Oct).
+  # The master first: it is the film that must not be lost (the owner, 31 Oct). While the master is not on
+  # disk, the music-only stays in $OUT too, so that it never takes the room the master needs (film-06, 1 Nov:
+  # the master was refused at 185 MB free, and the music-only then filled that room).
   FD=$OUT
+  master_ok=0
   for f in $NAME.mp4 $NAME-music-only.mp4; do
+    if [ "$f" = "$NAME-music-only.mp4" ] && [ $master_ok = 0 ]; then
+      echo "$(date -u +%T) $f kept only in $OUT: the master is not on disk, so its room stays free for it" >> $ST
+      continue
+    fi
     need=$(( $(stat -c %s $OUT/$f) / 1048576 + 1 + KEEP_MB ))
     free=$(df -m --output=avail / | tail -1 | tr -d ' ')
     if [ "$free" -gt "$need" ]; then
       if cp $OUT/$f renders/$f.part && cmp -s $OUT/$f renders/$f.part && mv renders/$f.part renders/$f; then
         echo "$(date -u +%T) $f copied into renders/ and checked (free was $free MB)" >> $ST
+        [ "$f" = "$NAME.mp4" ] && master_ok=1
       else
         rm -f renders/$f.part
         echo "$(date -u +%T) $f copy into renders/ FAILED; it is only in $OUT" >> $ST
