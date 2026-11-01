@@ -1,0 +1,116 @@
+/* First note's "?" (FirstNoteHelp.tsx): the Songs sheet's head and rows
+   (FirstNoteSongs.module.css), with the round's steps in its gold rings. */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.title {
+  margin: 0;
+  font: 600 18px/24px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.sub {
+  margin: 2px 0 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px -8px 0 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.step {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  margin-top: -2px;
+  border: 1px solid color-mix(in srgb, #f0c75e 60%, transparent);
+  border-radius: 50%;
+  color: #f0c75e;
+  font: 600 12px/1 var(--font-body, sans-serif);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHead {
+  margin: 4px 2px 0;
+  font: 600 12px/16px var(--font-body, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.line {
+  margin: 0;
+  font: 400 14px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.needs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.needs li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.needName {
+  font: 600 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}

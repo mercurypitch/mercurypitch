@@ -199,8 +199,9 @@
 
 .song {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 0 12px;
   min-height: 52px;
   padding: 6px 10px;
   border-radius: 12px;
@@ -232,6 +233,55 @@
 
 .again:active {
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+/* The "i" of a song that sits out: a ring round the glyph, on the same
+   44 pt target as Read again beside it. */
+.infoMark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.again[aria-expanded='true'] {
+  color: var(--text-primary);
+}
+
+/* Why it sits out, opened under the row, in line with its title. */
+.why {
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  margin: 2px 0 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.whyHead {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.whyList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.whyTip {
+  margin: 0;
 }
 
 .bar {

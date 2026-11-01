@@ -315,12 +315,18 @@ export interface ShellBarEndProps<C extends string, T extends string> {
    * warm-up mode: the Warm-up's path carries the level.
    */
   showLevel: boolean
+  /**
+   * A room with no demo: "?" opens its own help, while it is given (First
+   * note's sheet). Never in warm-up mode, as the demo's.
+   */
+  help?: { readonly label: string; readonly open: () => void }
 }
 
 /**
  * The room's side of the bar: its level pill, and "?" while the demo
- * allows. In warm-up mode "Skip stop" takes the level's place before the
- * take, and "?" goes at the held result.
+ * allows, or the room's own help where it has no demo. In warm-up mode
+ * "Skip stop" takes the level's place before the take, and "?" goes at the
+ * held result.
  */
 export function ShellBarEnd<C extends string, T extends string>(
   props: ShellBarEndProps<C, T>,
@@ -355,6 +361,15 @@ export function ShellBarEnd<C extends string, T extends string>(
           label={DEMO_WORDS.ask}
           testId={`${shell.ids}-ask`}
         />
+      </Show>
+      <Show when={shell.demo === null && routine === null ? props.help : null}>
+        {(help) => (
+          <RoomAsk
+            onAsk={() => help().open()}
+            label={help().label}
+            testId={`${shell.ids}-help`}
+          />
+        )}
       </Show>
     </RoomBarEnd>
   )

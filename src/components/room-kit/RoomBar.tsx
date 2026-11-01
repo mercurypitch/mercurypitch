@@ -40,13 +40,13 @@ export function RoomBarEnd(props: RoomBarEndProps): JSX.Element {
 }
 
 export interface RoomAskProps {
-  /** Opens the room's "how it works" demo. */
+  /** Opens the room's "how it works" demo, or its own help where it has none. */
   onAsk: () => void
   label: string
   testId: string
 }
 
-/** "?": the room's demo, from the bar. */
+/** "?": the room's demo, or its help, from the bar. */
 export function RoomAsk(props: RoomAskProps): JSX.Element {
   return (
     <button

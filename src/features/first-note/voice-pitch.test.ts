@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { findEntries, loudness, runSteps } from './entry-rules'
-import type { SteadyNote } from './voice-pitch'
+import type { SteadyNote, SteadySearch } from './voice-pitch'
 import { firstSteady, VOCAL_RATE, yinMidi } from './voice-pitch'
 
 const rate = VOCAL_RATE
@@ -56,11 +56,16 @@ function sung(seconds: number, notes: readonly Sung[]): Float32Array {
   return samples
 }
 
-/** The first steady note from 1.4 to 3.2 s, of a voice that comes in at 2. */
-function steadyOf(samples: Float32Array): SteadyNote | null {
+/** The look for the first steady note from 1.4 to 3.2 s, of a voice that comes in at 2. */
+function lookAt(samples: Float32Array): SteadySearch {
   return runSteps(
     firstSteady({ samples, rate }, loudness(samples, rate), 1.4, 3.2),
   )
+}
+
+/** The first steady note from 1.4 to 3.2 s (`lookAt`). */
+function steadyOf(samples: Float32Array): SteadyNote | null {
+  return lookAt(samples).steady
 }
 
 describe("the voice's first steady note", () => {
@@ -117,6 +122,39 @@ describe("the voice's first steady note", () => {
         null,
       )
     }
+  })
+})
+
+describe('how much of a look heard a pitch', () => {
+  it('is nearly none for a rasp YIN cannot follow, where no note holds', () => {
+    // Noise where the voice is: loud enough to read, with no pitch in it.
+    const random = seeded(5)
+    const samples = new Float32Array(Math.round(5 * rate))
+    for (let i = 2 * rate; i < 3.5 * rate; i++) {
+      samples[i] = 0.5 * (random() * 2 - 1)
+    }
+    const look = lookAt(samples)
+    expect(look.steady).toBeNull()
+    expect(look.heard).toBeLessThan(0.1)
+  })
+
+  it('is most of it for a voice that slides, where no note holds either', () => {
+    const look = lookAt(sung(5, [{ from: 2, to: 3.5, midi: 55, slide: 8 }]))
+    expect(look.steady).toBeNull()
+    expect(look.heard).toBeGreaterThan(0.9)
+  })
+
+  it('counts only where the voice is on: a held note heard all through', () => {
+    // The look starts 0.6 s before the voice: that breath is no part of it.
+    const look = lookAt(sung(5, [{ from: 2, to: 3.5, midi: 57 }]))
+    expect(look.steady?.midi ?? 0).toBeCloseTo(57, 1)
+    expect(look.heard).toBeGreaterThan(0.9)
+  })
+
+  it('is none at all for a look that read no voice', () => {
+    const look = lookAt(sung(5, [{ from: 4, to: 4.5, midi: 57 }]))
+    expect(look.steady).toBeNull()
+    expect(look.heard).toBeNull()
   })
 })
 

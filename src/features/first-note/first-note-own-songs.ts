@@ -32,7 +32,10 @@
 // keeps them out of the settings sync: they are this phone's songs). A read
 // is let go only with its song: when the session is gone from this phone,
 // not while it is out of the library separating again. A read by rules the
-// room has moved on from (ENTRY_RULES_VERSION) is read again.
+// room has moved on from (ENTRY_RULES_VERSION) is read again, unless the
+// rules since read it the same (PLAYING_READS_STAND_FROM). A song that sits
+// out with too few entries keeps why, counted (first-note-left-out.ts), for
+// the "i" on its row in the Songs sheet.
 //
 // Each finished read is told to the console, which a test build shows on
 // the phone with a Copy button: how many lines it looked at, how far the
@@ -51,8 +54,10 @@ import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { hydrateSong, roomLibrary, } from '@/features/karaoke-room/karaoke-room-library'
 import { createPersistedSignal } from '@/lib/storage'
 import { getUvrSession, isSessionStoreReady } from '@/stores/uvr-store'
-import { ENTRY_RULES_VERSION } from './entry-rules-version'
+import { ENTRY_RULES_VERSION, PLAYING_READS_STAND_FROM, } from './entry-rules-version'
 import type { FirstNoteSource } from './first-note-choices'
+import type { LeftKind, LeftOut } from './first-note-left-out'
+import { isLeftOut, leftKind, leftOutOf } from './first-note-left-out'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 import { FIRST_NOTE_SONGS } from './first-note-songs'
@@ -71,7 +76,12 @@ export type OwnSongState =
   | { readonly kind: 'waiting' }
   | { readonly kind: 'reading'; readonly progress: number }
   | { readonly kind: 'ready'; readonly entries: readonly FirstNoteEntry[] }
-  | { readonly kind: 'few'; readonly entries: number }
+  | {
+      readonly kind: 'few'
+      readonly entries: number
+      /** Why, counted; absent from a read kept before it was. */
+      readonly why?: LeftOut
+    }
   | { readonly kind: 'failed'; readonly why: OwnSongFailure }
 
 export interface OwnSong {
@@ -87,6 +97,8 @@ interface KeptRead {
   readonly entries: readonly FirstNoteEntry[]
   /** The rules it was read by (ENTRY_RULES_VERSION); absent before 2. */
   readonly rules?: number
+  /** Why it gave too few entries to play, counted; absent for one that plays. */
+  readonly leftOut?: LeftOut
 }
 
 type KeptReads = Readonly<Record<string, KeptRead>>
@@ -118,7 +130,8 @@ function isKeptReads(value: unknown): value is KeptReads {
       typeof read.stems === 'string' &&
       Array.isArray(read.entries) &&
       read.entries.every(isEntry) &&
-      (read.rules === undefined || isNumber(read.rules))
+      (read.rules === undefined || isNumber(read.rules)) &&
+      (read.leftOut === undefined || isLeftOut(read.leftOut))
     )
   })
 }
@@ -176,13 +189,27 @@ function stateOf(song: RoomSong): OwnSongState {
   if (
     read === undefined ||
     read.stems !== stemsKey(song.sessionId) ||
-    read.rules !== ENTRY_RULES_VERSION
+    !stands(read)
   ) {
     return { kind: 'waiting' }
   }
   return read.entries.length < OWN_SONG_MIN_ENTRIES
-    ? { kind: 'few', entries: read.entries.length }
+    ? { kind: 'few', entries: read.entries.length, why: read.leftOut }
     : { kind: 'ready', entries: read.entries }
+}
+
+/**
+ * A kept read the room still stands by: one by today's rules, or one that
+ * found enough entries to play by rules the ones since read the same
+ * (entry-rules-version.ts, PLAYING_READS_STAND_FROM).
+ */
+function stands(read: KeptRead): boolean {
+  if (read.rules === ENTRY_RULES_VERSION) return true
+  return (
+    read.rules !== undefined &&
+    read.rules >= PLAYING_READS_STAND_FROM &&
+    read.entries.length >= OWN_SONG_MIN_ENTRIES
+  )
 }
 
 /** Whether two states of one song say the same. */
@@ -193,7 +220,7 @@ function sameState(a: OwnSongState, b: OwnSongState): boolean {
     case 'ready':
       return b.kind === 'ready' && b.entries === a.entries
     case 'few':
-      return b.kind === 'few' && b.entries === a.entries
+      return b.kind === 'few' && b.entries === a.entries && b.why === a.why
     case 'failed':
       return b.kind === 'failed' && b.why === a.why
     case 'waiting':
@@ -378,24 +405,30 @@ function keep(sessionId: string, stems: string, read: OwnSongRead): void {
       stems,
       entries: read.entries,
       rules: ENTRY_RULES_VERSION,
+      ...(read.entries.length < OWN_SONG_MIN_ENTRIES
+        ? { leftOut: leftOutOf(read) }
+        : {}),
     }
     return next
   })
 }
 
+/** What the log calls each kind of line left. */
+const LEFT_LOG: Readonly<Record<LeftKind, string>> = {
+  unsteady: 'no steady note',
+  late: 'settled late',
+  disagree: "the room's notes name another",
+  offKey: 'out of tune',
+  farOff: 'far from the song',
+}
+
 /** Why lines were left, counted: "3 no steady note, 2 notes differ". */
 function droppedCounts(dropped: readonly string[]): string {
-  const kinds: Array<[RegExp, string]> = [
-    [/no steady note/u, 'no steady note'],
-    [/settles/u, 'settled late'],
-    [/notes /u, "the room's notes name another"],
-    [/cents off/u, 'out of tune'],
-    [/far from/u, 'far from the song'],
-  ]
   const counts = new Map<string, number>()
   for (const why of dropped) {
-    const kind = kinds.find(([match]) => match.test(why))?.[1] ?? why
-    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+    const kind = leftKind(why)
+    const said = kind === null ? why : LEFT_LOG[kind]
+    counts.set(said, (counts.get(said) ?? 0) + 1)
   }
   return [...counts].map(([kind, count]) => `${count} ${kind}`).join(', ')
 }
@@ -432,7 +465,12 @@ export function readSummary(title: string, read: OwnSongRead): string {
     read.tuning === undefined || read.tuning === 0
       ? ''
       : `, tuned ${read.tuning > 0 ? '+' : ''}${read.tuning} cents`
-  const lines = read.lines === undefined ? '' : ` from ${read.lines} lines`
+  const short =
+    (read.shortBreaths ?? 0) > 0
+      ? ` (${read.shortBreaths} after a short breath)`
+      : ''
+  const lines =
+    read.lines === undefined ? '' : ` from ${read.lines} lines${short}`
   const left = leftCounts(read)
   return `[first-note] read "${title}": ${read.entries.length} entries${lines}${shift}${tuning}${left === '' ? '' : `; left: ${left}`}${voicedPart(read)}`
 }

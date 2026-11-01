@@ -151,6 +151,8 @@ export function median(values: readonly number[]): number {
 interface Reading {
   readonly t: number
   readonly midi: number | null
+  /** The voice was loud enough to read here (VoiceLevel's `read`). */
+  readonly voiced: boolean
 }
 
 /** A steady note: where it starts and where its last reading ends, s, and its note. */
@@ -175,6 +177,7 @@ function readingAt(vocal: Samples, level: VoiceLevel, t: number): Reading {
     midi: voiced
       ? yinMidi(vocal.samples, Math.round(t * vocal.rate), vocal.rate)
       : null,
+    voiced,
   }
 }
 
@@ -253,17 +256,42 @@ function swungNote(
 }
 
 /**
- * The voice's first steady note from `from` to `to`, s, or null. Read as
- * it goes: a note is judged once its last reading is in, so the first that
- * holds is the first a reading of the whole span would find. A step after
- * each reading.
+ * What a look for the first steady note found: the note, or null for none,
+ * and how much of the voice it read heard a pitch. A look that found none
+ * and heard little read a voice YIN cannot follow (a rasp, a growl, a split
+ * full of the band); one that heard most of it read a voice that never held
+ * still (a slide, a run, a wide wobble).
+ */
+export interface SteadySearch {
+  readonly steady: SteadyNote | null
+  /**
+   * The share of its readings with the voice on that heard a pitch, 0 to 1;
+   * null for a look that read no voice at all.
+   */
+  readonly heard: number | null
+}
+
+/** The share of `readings` with the voice on that heard a pitch; null for none on. */
+function heardShare(readings: readonly Reading[]): number | null {
+  const voiced = readings.filter((reading) => reading.voiced)
+  if (voiced.length === 0) return null
+  return (
+    voiced.filter((reading) => reading.midi !== null).length / voiced.length
+  )
+}
+
+/**
+ * The voice's first steady note from `from` to `to`, s, or null; and how
+ * much of the span heard a pitch (`SteadySearch`). Read as it goes: a note
+ * is judged once its last reading is in, so the first that holds is the
+ * first a reading of the whole span would find. A step after each reading.
  */
 export function* firstSteady(
   vocal: Samples,
   level: VoiceLevel,
   from: number,
   to: number,
-): RuleSteps<SteadyNote | null> {
+): RuleSteps<SteadySearch> {
   const span = Math.round(STEADY_SEC / READ_STEP_SEC)
   const swing = Math.round(SWING_SEC / READ_STEP_SEC)
   const readings: Reading[] = []
@@ -273,7 +301,9 @@ export function* firstSteady(
     readings.push(readingAt(vocal, level, t))
     yield
     const straight = heldStraight(readings, span)
-    if (straight !== null) return straight
+    if (straight !== null) {
+      return { steady: straight, heard: heardShare(readings) }
+    }
     if (readings.length < swing) continue
     swings.push(
       heardMedian(
@@ -286,8 +316,11 @@ export function* firstSteady(
     if (swings.length < span) continue
     const centre = heldNote(swings.slice(-span))
     if (centre !== null) {
-      return swungNote(readings, swings.length - span, swing, centre)
+      return {
+        steady: swungNote(readings, swings.length - span, swing, centre),
+        heard: heardShare(readings),
+      }
     }
   }
-  return null
+  return { steady: null, heard: heardShare(readings) }
 }

@@ -290,6 +290,25 @@ on the phone, with a Copy button. A read by rules the room has moved on from
 (`entry-rules-version.ts`) is read again. A line sung with you now ends before the next entry's
 voice, which it had run into by a moment.
 
+**A song sung line after line** (1 Nov 2026). The owner's "Shadow of the Gods" gave no entry from
+58 lines. Its log said why: 42 lines followed the one before after 0.3 to 1.4 s, short of the 1.6 s
+breath, and of the 16 with one, 10 had no steady note, 3 settled late, 2 had a note the two trackers
+disagreed on and 1 was out of tune. The band plays without the voice, so a singer hears the band
+alone before any line; the breath is what says a line starts there, and a synced lyric line starting
+there says so too. So a song that gives fewer than two entries (`FEW_ENTRIES`, the fewest a song of
+the singer's own plays with) is looked at again: its lyric lines after a breath of at least 0.6 s
+(`SHORT_BREATH_SEC`) are read too (`shortBreathLines`). A song that gives two or more is read as it
+always was, the examples' committed entries among them (7, 10 and 6), so a phone reads again only
+the songs that sat out: a read by rules 3 that plays still stands (`PLAYING_READS_STAND_FROM`).
+The log marks a line read that way ("entry C4, after a 0.8 s breath"), and a line with no steady
+note says how much of its look heard a pitch: little for a voice YIN cannot follow (a rasp, a
+growl), most of it for one that never held still (a slide, a wide wobble).
+
+The room's "?" (it has no demo) opens a sheet that says what a round is and what a place to come in
+needs, in plain words (`FirstNoteHelp.tsx`). A song that sits out with too few entries has an "i" on
+its row in the Songs sheet that says why with its own counts (`first-note-left-out.ts`): how many
+lines came straight after the one before, how many started with no clear note, and so on.
+
 **Show the words.** The owner asked for an optional hint (28 Oct 2026); it ships off by default, our
 choice, so the room stays ear first. It is a switch in the Songs sheet, kept on the phone
 (`mp_first_note_words`). On, the words of the line the singer comes in on show in Merc's place over
