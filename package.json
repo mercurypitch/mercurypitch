@@ -33,6 +33,8 @@
     "test:e2e:devices": "playwright test -c playwright.devices.config.ts",
     "test:e2e:cloud": "playwright test -c playwright.cloud.config.ts",
     "indexnow": "node scripts/indexnow.mjs",
+    "sitemap:check": "node scripts/sitemap-lastmod.mjs dist",
+    "sitemap:lastmod": "pnpm run build && node scripts/sitemap-lastmod.mjs --update dist",
     "lyrics:compare": "node scripts/compare-lrc-timing.mjs",
     "lesson:words": "node scripts/lesson-words.mjs",
     "marketing:capture": "node scripts/capture-marketing.mjs",

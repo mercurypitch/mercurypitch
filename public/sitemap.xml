@@ -5,7 +5,12 @@
        dates in this file stay believable. A page's date is the day its
        document last changed in a way a reader or a crawler would notice: its
        words, its structured data or its links. Move it in the same PR as that
-       change, and never for a change nobody would see. -->
+       change, and never for a change nobody would see.
+       scripts/sitemap-fingerprints.json records a fingerprint of what each
+       page says beside its date, and PR Gate's "Sitemap dates" job fails when
+       a production build's page no longer matches it. `pnpm run
+       sitemap:lastmod` builds, dates each changed page today and records
+       the new fingerprints. -->
   <url>
     <loc>https://mercurypitch.com/</loc>
     <lastmod>2026-10-19</lastmod>
@@ -17,15 +22,15 @@
        description, canonical) — e.g. via an HTMLRewriter step in the worker. -->
   <url>
     <loc>https://mercurypitch.com/mirror</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-26</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/vocal-range-test</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-26</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/karaoke-night</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <!-- The instrument rooms. Piano and Guitar Night were `noindex` pilots until
        2026-08-20 and Drum Night until 2026-09-08; each is finished enough to
@@ -33,72 +38,72 @@
        and share card. -->
   <url>
     <loc>https://mercurypitch.com/piano-night</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/guitar-night</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/drum-night</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <!-- The Ear Lab: a tab of the studio with a page of its own, so the bench
        has a URL that unfurls with its card. -->
   <url>
     <loc>https://mercurypitch.com/ear-lab</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-26</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/studio-night</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <!-- Jam Rooms: the rooms live behind the fragment router, but /jam is a real
        document with its own head and share card, so it belongs here like the
        instrument rooms above. -->
   <url>
     <loc>https://mercurypitch.com/jam</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <!-- Glassworks is the museum campaign. The original sixty-second /glass
        challenge below remains a separate, independently loadable room. -->
   <url>
     <loc>https://mercurypitch.com/glass-game</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <!-- Glass aliases (/break-glass-with-your-voice, /high-note-test, /shatter)
        serve the same page with canonical /glass, so only the canonical URL
        is listed. -->
   <url>
     <loc>https://mercurypitch.com/glass</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/pitch-training</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/voice-type-test</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/vocal-remover</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/which-singer-has-my-vocal-range</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/karaoke-app</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-21</lastmod>
   </url>
   <!-- Find Your Pitch: the series' hub, then each released lesson. The site
        worker adds a draft while it is published and takes out a lesson held
        back (src/lesson-gate.ts); the hub stays whatever the state. -->
   <url>
     <loc>https://mercurypitch.com/learn/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-28</lastmod>
   </url>
   <url>
     <loc>https://mercurypitch.com/learn/01</loc>

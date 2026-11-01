@@ -521,6 +521,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:e2e:devices` | `playwright test -c playwright.devices.config.ts` |
 | `pnpm test:e2e:cloud` | `playwright test -c playwright.cloud.config.ts` |
 | `pnpm indexnow` | `node scripts/indexnow.mjs` |
+| `pnpm sitemap:check` | `node scripts/sitemap-lastmod.mjs dist` |
+| `pnpm sitemap:lastmod` | `pnpm run build && node scripts/sitemap-lastmod.mjs --update dist` |
 | `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
 | `pnpm lesson:words` | `node scripts/lesson-words.mjs` |
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |

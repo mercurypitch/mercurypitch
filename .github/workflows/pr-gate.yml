@@ -319,6 +319,31 @@ jobs:
       - name: Check code health against the baseline
         run: pnpm run metrics:check
 
+  # Each sitemap URL's <lastmod> is the day its page last changed for a reader
+  # or a crawler, and IndexNow (scripts/indexnow.mjs) announces only the URLs
+  # whose date moved. Nothing held the dates to the pages, and the room and
+  # lesson changes of late October went out under old dates. This builds for
+  # production, as mercurypitch.com is built, and fails when a page's words,
+  # links or structured data changed without a new date: run
+  # `pnpm run sitemap:lastmod` and commit what it writes.
+  sitemap:
+    name: Sitemap dates
+    needs: scope
+    if: needs.scope.outputs.root == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        uses: ./.github/actions/lfs-pull
+      - uses: ./.github/actions/setup
+      - name: Build MercuryPitch for production
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: pnpm run build
+      - name: Check each page against its sitemap date
+        run: pnpm run sitemap:check
+
   units:
     name: Unit tests (${{ matrix.shard }}/2)
     needs: scope
@@ -720,6 +745,7 @@ jobs:
         validate,
         lint,
         metrics,
+        sitemap,
         units,
         e2e,
         e2e-smoke,
