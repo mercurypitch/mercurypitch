@@ -774,7 +774,6 @@ describe('a range this phone already keeps', () => {
     await nameNote(s)
 
     q('onboarding-see-saved')?.click()
-    q('onboarding-find-twin')?.click()
 
     expect(beat()).toBe('reveal')
     expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')

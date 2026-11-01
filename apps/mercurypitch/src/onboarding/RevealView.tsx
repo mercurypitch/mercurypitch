@@ -4,22 +4,21 @@
 //
 // Title "Your voice", then the card: the print (voiceprint-art.ts), "Your
 // range" and the range in big type, the voice type the range overlaps most
-// (a hint, never a verdict: voiceTypeHint), and "Your voice twin" with Find
-// my twin, which turns into the twin's face and name. Under it, Merc in his
-// guide slot with his line, then Continue, full width, and Share as a plain
-// button under it (concept 04). No glass game: that is V1.1 (S7b E7).
+// (a hint, never a verdict: voiceTypeHint), and "Your voice twin": the
+// twin's face and name, there from the start (useReveal.ts says why). Under
+// it, Merc in his guide slot with his line, then Continue, full width, and
+// Share as a plain button under it (concept 04). No glass game: that is
+// V1.1 (S7b E7).
 //
 // Merc's line is read out by the layer's one live region; the bubble is
-// hidden from a screen reader. A found twin takes the focus Find my twin
-// had, so a screen reader reads the name it turned into. The print and the
-// twin's face are pictures of what the card says in words.
+// hidden from a screen reader. The print and the twin's face are pictures
+// of what the card says in words.
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { RangeResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
-import { PersonIcon } from '../shell/icons'
 import styles from './NativeOnboarding.module.css'
 import { ONBOARDING_COPY, rangeSpan } from './onboarding-copy'
 import type { RevealController } from './useReveal'
@@ -41,13 +40,6 @@ export function RevealView(props: RevealViewProps): JSX.Element {
     voiceprintArt(props.range.lowMidi, props.range.highMidi),
   )
   const centre = PRINT_SIZE / 2
-
-  let name: HTMLElement | undefined
-  const findTwin = (): void => {
-    props.controller.findTwin()
-    // Where Find my twin was: the name it turned into.
-    queueMicrotask(() => name?.focus({ preventScroll: true }))
-  }
 
   return (
     <div class={styles.beat} data-testid="onboarding-reveal">
@@ -104,43 +96,19 @@ export function RevealView(props: RevealViewProps): JSX.Element {
             {(found) => (
               <div class={styles.twinRow}>
                 <span class={styles.twinFace} aria-hidden="true">
-                  <Show
-                    when={props.controller.twinShown()}
-                    fallback={<PersonIcon size={26} />}
-                  >
-                    <LegendCaricature
-                      legend={found()}
-                      tier="thumb"
-                      class={styles.twinPortrait}
-                    />
-                  </Show>
+                  <LegendCaricature
+                    legend={found()}
+                    tier="thumb"
+                    class={styles.twinPortrait}
+                  />
                 </span>
                 <span class={styles.twinText}>
                   <span class={styles.twinLabel}>
                     {ONBOARDING_COPY.twinLabel}
                   </span>
-                  <Show
-                    when={props.controller.twinShown()}
-                    fallback={
-                      <button
-                        type="button"
-                        class={styles.findTwin}
-                        onClick={findTwin}
-                        data-testid="onboarding-find-twin"
-                      >
-                        {ONBOARDING_COPY.findTwin}
-                      </button>
-                    }
-                  >
-                    <strong
-                      ref={name}
-                      class={styles.twinName}
-                      tabIndex={-1}
-                      data-testid="onboarding-twin"
-                    >
-                      {found()}
-                    </strong>
-                  </Show>
+                  <strong class={styles.twinName} data-testid="onboarding-twin">
+                    {found()}
+                  </strong>
                 </span>
               </div>
             )}

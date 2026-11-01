@@ -3,11 +3,11 @@
 // ============================================================
 //
 // The card arrives with the range just measured: Merc watches it come, then
-// is proud of it (S7b §3.1, "Watches, then proud"). The twin waits behind
-// Find my twin, so the singer finds it rather than being told; a range that
-// names no twin has no twin row (singerForRange). Share finds the twin first
-// when it is still hidden, so the card always shows what the share sheet
-// says, then shares (reveal-share.ts).
+// is proud of it (S7b §3.1, "Watches, then proud"). The twin is on the card
+// from the start, face and name: a twin hidden behind a button and a blank
+// figure read as a step to get through, not a reveal (owner, November 2026).
+// A range that names no twin has no twin row (singerForRange). Share sends
+// what the card shows (reveal-share.ts).
 
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, untrack } from 'solid-js'
@@ -28,8 +28,6 @@ import { LANDED_MS } from './useFirstNote'
 export const PROUD_MS = 900
 
 export interface RevealController {
-  /** The twin is found: its face and its name on the card. */
-  readonly twinShown: Accessor<boolean>
   /** What the last Share left to say, or null. */
   readonly shareNote: Accessor<string | null>
   readonly mercState: Accessor<MercState>
@@ -37,9 +35,7 @@ export interface RevealController {
   readonly still: () => boolean
   /** The card is up. */
   readonly arrive: () => void
-  /** Find my twin. */
-  readonly findTwin: () => void
-  /** Share this range: the twin found first, then the share sheet. */
+  /** Share this range: the share sheet, with the twin the card shows. */
   readonly share: (range: RangeResult) => void
 }
 
@@ -74,20 +70,12 @@ export function useReveal(options: RevealOptions = {}): RevealController {
     if (untrack(merc.state) === 'drop') merc.set('idle')
   })
 
-  const [twinShown, setTwinShown] = createSignal(false)
   const [shareNote, setShareNote] = createSignal<string | null>(null)
   let sharing = false
-
-  const findTwin = (): void => {
-    if (untrack(twinShown)) return
-    setTwinShown(true)
-    merc.cheer()
-  }
 
   onCleanup(() => life.dispose())
 
   return {
-    twinShown,
     shareNote,
     mercState: merc.state,
     mercVoice: () => SILENT_VOICE,
@@ -96,11 +84,9 @@ export function useReveal(options: RevealOptions = {}): RevealController {
       merc.set('listen')
       life.later(PROUD_MS, () => merc.cheer())
     },
-    findTwin,
     share: (range) => {
       if (sharing) return
       const twin = singerForRange(range)
-      if (twin !== null) findTwin()
       sharing = true
       setShareNote(null)
       void shareReveal(range, twin, options.ways)
