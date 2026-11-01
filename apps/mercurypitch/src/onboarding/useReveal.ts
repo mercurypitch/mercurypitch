@@ -64,6 +64,13 @@ export interface RevealController {
   readonly arrive: () => void
   /** Share this range: the share sheet, with the twin the cards show. */
   readonly share: (range: RangeResult) => void
+  /**
+   * The reveal is left (Continue, Not now, the layer gone): the twin's
+   * beat, if still to come, is called off. It was timed for the layer's
+   * life, so a Continue inside TWIN_MS still cheered Merc and tapped the
+   * hand under Keep.
+   */
+  readonly leave: () => void
 }
 
 export interface RevealOptions {
@@ -123,8 +130,17 @@ export function useReveal(options: RevealOptions = {}): RevealController {
     merc.cheer()
     haptics.tapLight()
   }
+  /** The twin's beat to come, while the reveal is up. */
+  let twinTimer: ReturnType<typeof setTimeout> | undefined
+  const callOffTwin = (): void => {
+    clearTimeout(twinTimer)
+    twinTimer = undefined
+  }
 
-  onCleanup(() => life.dispose())
+  onCleanup(() => {
+    callOffTwin()
+    life.dispose()
+  })
 
   return {
     twinShown,
@@ -133,13 +149,18 @@ export function useReveal(options: RevealOptions = {}): RevealController {
     mercVoice: () => SILENT_VOICE,
     still,
     arrive: () => {
+      callOffTwin()
       if (untrack(still)) {
         twinBeat()
         return
       }
       merc.set('listen')
-      life.later(TWIN_MS, twinBeat)
+      twinTimer = setTimeout(() => {
+        twinTimer = undefined
+        twinBeat()
+      }, TWIN_MS)
     },
+    leave: callOffTwin,
     share: (range) => {
       if (sharing) return
       const twin = singerForRange(range)
