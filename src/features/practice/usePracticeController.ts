@@ -14,9 +14,10 @@
 //
 // The controller lives for the whole session, but its frame loop runs only
 // while something reads it (frame-loop.ts): the Singing tab on screen, a
-// stage subscribed to the frame stream, an open mic, a run or count-in, or
-// Merc singing. With the Studio or any other tab up and none of those, it
-// asks for no frames.
+// stage subscribed to the frame stream, the practice mic on or its audio
+// engine holding the shared mic, a run or count-in, or Merc singing. With
+// the Studio or any other tab up and none of those, it asks for no frames,
+// even while that tab holds the mic under its own id (Studio's Record).
 
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
@@ -120,11 +121,21 @@ export function usePracticeController(deps: Deps): PracticeController {
     }
   }
 
-  // Whether any feature holds the shared mic open. The frame loop settles
-  // the engine's mic state against the audio engine's every frame
-  // (PracticeEngine.isMicActive), so it runs while a mic is open anywhere.
-  const [micDeviceOpen, setMicDeviceOpen] = createSignal(false)
-  onCleanup(micManager.subscribe((state) => setMicDeviceOpen(state.active)))
+  // Whether the practice engine's audio engine holds the shared mic, for
+  // practice or for another owner of the same engine (guitar practice, the
+  // piano game). The frame loop settles the engine's mic state against that
+  // engine's every frame (PracticeEngine.isMicActive), so it runs while that
+  // engine holds the mic. A feature that holds it under its own id (Studio's
+  // recorder, the stem mixer, Ear Lab) changes nothing a frame reads, and
+  // used to cost 60 frames a second all the same.
+  const [engineHoldsMic, setEngineHoldsMic] = createSignal(false)
+  onCleanup(
+    micManager.subscribe((state) =>
+      setEngineHoldsMic(
+        state.active && state.consumers.includes(audioEngine.micConsumerId),
+      ),
+    ),
+  )
 
   /**
    * Where the trace goes: the beat a frame arriving now was sung on. The scorer
@@ -226,7 +237,7 @@ export function usePracticeController(deps: Deps): PracticeController {
       deps.singingOnScreen() ||
       listenerCount() > 0 ||
       micActive() ||
-      micDeviceOpen() ||
+      engineHoldsMic() ||
       deps.isPlaying() ||
       editorIsPlaying() ||
       isCountingIn() ||
