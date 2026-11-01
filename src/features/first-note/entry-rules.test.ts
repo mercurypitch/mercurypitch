@@ -366,6 +366,24 @@ describe('a song sung line after line', () => {
     expect(found.told[2]).toMatch(/^8\.80 no breath before it \(0\.8 s\)$/u)
   })
 
+  it('reads no line that opens the song after a short intro: too little band to come in from', () => {
+    // One comes in 0.8 s into the song; Two after a long breath.
+    const sung = song([
+      { from: 0.8, to: 3, midi: 57 },
+      { from: 6, to: 8, midi: 60 },
+    ])
+    const reading = { ...sung, lines: [line(0.8, 'One'), line(6, 'Two')] }
+    const found = findEntries(reading)
+    expect(found.entries.map((entry) => entry.words)).toEqual(['Two'])
+    expect(found.shortBreaths).toBe(0)
+    const voices = [
+      runSteps(lineSteps(reading, 0)),
+      runSteps(lineSteps(reading, 1)),
+    ]
+    expect(voices[0]).toBeNull()
+    expect(shortBreathLines(reading, voices)).toEqual([])
+  })
+
   it('reads no line without words after a short breath: a gap in the voice may be inside a line', () => {
     const sung = song([
       { from: 2, to: 4, midi: 57 },

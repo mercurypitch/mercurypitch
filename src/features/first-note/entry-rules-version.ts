@@ -20,6 +20,10 @@ export const ENTRY_RULES_VERSION = 4
 /**
  * The oldest rules whose read still stands for a song it found enough
  * entries in to play (OWN_SONG_MIN_ENTRIES): 4 changed only the songs that
- * gave fewer, so a phone reads only those again, not every song.
+ * gave fewer, so a phone reads only those again, not every song. A change
+ * that finds different entries in a song that plays raises this to
+ * ENTRY_RULES_VERSION. A read by rules newer than this build's is read
+ * again, whatever it found: a phone back on an older build cannot tell
+ * what those rules changed.
  */
 export const PLAYING_READS_STAND_FROM = 3

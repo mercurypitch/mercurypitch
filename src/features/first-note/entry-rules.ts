@@ -61,7 +61,8 @@
 
 // A change here or in voice-pitch.ts that finds different entries raises
 // ENTRY_RULES_VERSION (entry-rules-version.ts), so phones read the singer's
-// songs again.
+// songs again; one that finds different entries in a song that already
+// plays raises PLAYING_READS_STAND_FROM to it as well.
 
 import type { RuleSteps, Samples, SteadyNote, VoiceLevel, } from './voice-pitch.ts'
 import { firstSteady, median, STEADY_SEC, SWING_SEC } from './voice-pitch.ts'
@@ -256,16 +257,23 @@ function gapBefore(level: VoiceLevel, t: number): number {
 }
 
 /**
- * The breath before line `i`, s: how long the voice was off before it. The
- * first line follows the intro, whatever breath the stem holds; so does the
- * first line with words, where the voice's lines begin with a blip of bleed
- * in the intro.
+ * Line `i` opens the song: the first line, or the first line with words,
+ * where the voice's lines begin with a blip of bleed in the intro.
+ */
+function opensSong(reading: EntryReading, i: number): boolean {
+  return i === 0 || i === reading.lines.findIndex((line) => line.words !== '')
+}
+
+/**
+ * The breath before line `i`, s: how long the voice was off before it. A
+ * line that opens the song (`opensSong`) follows the intro, whatever breath
+ * the stem holds.
  */
 export function breathBefore(reading: EntryReading, i: number): number {
-  const { level, lines } = reading
-  const start = lines[i].start
-  const first = i === 0 || i === lines.findIndex((line) => line.words !== '')
-  return first ? start : gapBefore(level, start - 0.3) + 0.3
+  const start = reading.lines[i].start
+  return opensSong(reading, i)
+    ? start
+    : gapBefore(reading.level, start - 0.3) + 0.3
 }
 
 /** Where the voiced run holding `t` began, s. */
@@ -575,7 +583,9 @@ export function* lineSteps(
  * for a song whose voices give FEW_ENTRIES or more; else each lyric line
  * not read with at least that breath before it. Only a lyric line: its
  * words say a line starts there, where a short gap in the voice alone may
- * be a breath inside one.
+ * be a breath inside one. Never the line that opens the song: its breath is
+ * the intro, and a short intro is too little band to come in from, short
+ * of the count-in's beats.
  */
 export function shortBreathLines(
   reading: EntryReading,
@@ -584,7 +594,8 @@ export function shortBreathLines(
   if (judgeSong(reading, voices).entries.length >= FEW_ENTRIES) return []
   const again: number[] = []
   for (const [i, voice] of voices.entries()) {
-    if (voice !== null || reading.lines[i].words === '') continue
+    const { words } = reading.lines[i]
+    if (voice !== null || words === '' || opensSong(reading, i)) continue
     if (breathBefore(reading, i) >= SHORT_BREATH_SEC) again.push(i)
   }
   return again

@@ -258,7 +258,7 @@ describe("a song of the singer's own", () => {
       startSec: line.from,
       endSec: line.to,
     }))
-    seams({
+    const made = seams({
       storedNotes: vi.fn(async () => notes),
       syncedLyrics: vi.fn(async () =>
         sung
@@ -273,13 +273,30 @@ describe("a song of the singer's own", () => {
         return { samples: vocal(sung), sampleRate: RATE, step: 1 }
       }),
     })
-    const read = await readOwnSong('mine')
+    // How many lines had been read (a moment for the screen after each)
+    // when each step of progress was told.
+    let drawn = 0
+    const at = new Map<number, number>()
+    setOwnSongReadSeams({
+      ...made,
+      breathe: async () => {
+        drawn += 1
+      },
+    })
+    const read = await readOwnSong('mine', {
+      onProgress: (percent) => at.set(percent, drawn),
+    })
 
     expect(read.entries.map((entry) => entry.words)).toEqual([
       'One',
       'Two',
       'Three',
     ])
+    // Progress moves while the second look reads: a step after each of its
+    // two lines, the first look's four told by 83.
+    const firstLook = at.get(83) ?? 0
+    expect(at.get(84)).toBe(firstLook + 1)
+    expect(at.get(85)).toBe(firstLook + 2)
     expect(read.shortBreaths).toBe(2)
     expect(read.breathless).toBe(1)
     expect(read.told?.[1]).toMatch(/entry C4, after a 0\.8 s breath$/u)

@@ -200,14 +200,16 @@ function stateOf(song: RoomSong): OwnSongState {
 
 /**
  * A kept read the room still stands by: one by today's rules, or one that
- * found enough entries to play by rules the ones since read the same
- * (entry-rules-version.ts, PLAYING_READS_STAND_FROM).
+ * found enough entries to play by older rules the ones since read the same
+ * (entry-rules-version.ts, PLAYING_READS_STAND_FROM). Never one by newer
+ * rules than these.
  */
 function stands(read: KeptRead): boolean {
   if (read.rules === ENTRY_RULES_VERSION) return true
   return (
     read.rules !== undefined &&
     read.rules >= PLAYING_READS_STAND_FROM &&
+    read.rules < ENTRY_RULES_VERSION &&
     read.entries.length >= OWN_SONG_MIN_ENTRIES
   )
 }

@@ -207,6 +207,12 @@
   border-radius: 12px;
 }
 
+/* The text takes what the row has left, so a long title is cut short
+   rather than the row wrapped: only the why opens below it. */
+.song .songText {
+  flex-basis: 0;
+}
+
 .songOut .songTitle {
   color: var(--text-secondary);
 }
