@@ -16,7 +16,7 @@ import { alleyGreeted, resetAlleyGreetingForTests } from './alley-greeting'
 import type { GuideInput } from './alley-guide-place'
 import { AlleyGuide, ASIDE_MS, ASIDE_STILL_MS, DOORS_IN_TURN, GUIDE_TIMES, heldAfterColon, START_DOOR, UNDRAWN_MS, } from './AlleyGuide'
 import { ONBOARDING_COPY } from './onboarding-copy'
-import { ONBOARDING_KEY, resetOnboardingFlagForTests } from './onboarding-flag'
+import { markOnboardingDone, ONBOARDING_KEY, resetOnboardingFlagForTests, } from './onboarding-flag'
 
 const stage = vi.hoisted(() => ({
   ok: true,
@@ -175,6 +175,41 @@ describe("Merc's welcome in the alley", () => {
     expect(q(root, 'alley-guide')).toBeNull()
     expect(q(root, 'alley-merc')).toBeNull()
     expect(sent()).toEqual([])
+  })
+
+  it('lights no door on an install whose onboarding is done, its welcome unseen', async () => {
+    // Not now from the rail's Sing on a first run, then back to the alley:
+    // no Merc, so no Sing door lit for good and nothing dimmed beside it.
+    localStorage.setItem(ONBOARDING_KEY, 'done')
+    resetOnboardingFlagForTests()
+    const [aside, setAside] = createSignal(false)
+    show({ aside })
+    await drawn()
+    vi.advanceTimersByTime(60_000)
+    setAside(true)
+    setAside(false)
+    vi.advanceTimersByTime(60_000)
+
+    expect(lights.filter((door) => door !== null)).toEqual([])
+  })
+
+  it('puts the lights out when the onboarding is done while the alley is up', async () => {
+    const [aside, setAside] = createSignal(false)
+    show({ aside })
+    await drawn()
+    vi.advanceTimersByTime(
+      GUIDE_TIMES.light + DOORS_IN_TURN.length * GUIDE_TIMES.every,
+    )
+    expect(lights.at(-1)).toBe(START_DOOR)
+
+    markOnboardingDone()
+    vi.advanceTimersByTime(60_000)
+    expect(lights.at(-1)).toBeNull()
+    // A door picked and put back: the door to start at is not lit again.
+    setAside(true)
+    setAside(false)
+
+    expect(lights.at(-1)).toBeNull()
   })
 
   it('counts the welcome once as it shows, and once more as a door opens from it', async () => {

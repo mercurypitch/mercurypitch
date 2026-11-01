@@ -161,10 +161,13 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   /**
    * The doors in turn, once, from his own beat or without him; then the
    * door to start at, lit for as long as he is there, and his word on it
-   * once he has said hello.
+   * once he has said hello. The welcome's, so only while the onboarding is
+   * due: an install that has done it with its welcome unseen (Not now from
+   * the rail's Sing, then back to the alley) had the Sing door lit for
+   * good and the doors not open yet dimmed, with no Merc to say why.
    */
   const lightDoors = (from: number): void => {
-    if (lighting) return
+    if (lighting || !untrack(onboardingDue)) return
     lighting = true
     DOORS_IN_TURN.forEach((door, index) => {
       later(from + index * times.every, () => light(door))
@@ -192,6 +195,18 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
   // Never drawn (no WebGL, or a load slower than this): the doors light all
   // the same, and he says hello if he arrives after all.
   later(UNDRAWN_MS, () => lightDoors(0))
+  // Done while the alley is up: the welcome's lights go out with him.
+  createEffect(
+    on(
+      onboardingDue,
+      (due) => {
+        if (due) return
+        quiet()
+        light(null)
+      },
+      { defer: true },
+    ),
+  )
 
   // Counted once each: the welcome on a due install, and a door opened
   // from it.
@@ -216,7 +231,7 @@ export function AlleyGuide(props: AlleyGuideProps): JSX.Element {
       () => props.aside(),
       (aside) => {
         if (!aside) {
-          if (settled) light(START_DOOR)
+          if (settled && untrack(onboardingDue)) light(START_DOOR)
           return
         }
         quiet()
