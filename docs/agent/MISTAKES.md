@@ -2476,9 +2476,9 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Rule:** in a worklet that places samples on clock frames, count frames quantum by quantum: every `process()` call is the next quantum. A reading behind the count is stale however far behind; only a reading ahead of it is a skipped stretch. Test it by holding the graph from the page (one `disconnect()` of a gain fanned out to 40000 others holds it about 18 ms), and probe a worklet's timing by logging the gap it computed, not by inferring it from the main thread.
 **See:** `src/lib/studio/record/pcm-capture.ts`, `src/e2e/studio-record.spec.ts`
 
-### A mic held by any feature wakes the practice frame loop
+### Wake a shared frame loop for the mic holds it reads, not for any hold
 
 **Symptom:** arming Studio's Record doubled the page's animation-frame requests (60 a second more), none of them from the Studio's chunk.
-**Cause:** `usePracticeController` runs its frame loop while any feature holds the shared mic (`micDeviceOpen`, from `micManager.subscribe`), whichever consumer opened it.
-**Rule:** when measuring a mic surface's own frame or CPU cost, attribute frame requests by the calling chunk (studio-record.spec.ts counts the `StudioPage-` chunk apart); the practice loop's share belongs to the practice controller.
+**Cause:** `usePracticeController` ran its frame loop while any feature held the shared mic (`MicState.active`), though a frame only settles the practice engine against its own audio engine's hold (`PracticeEngine.isMicActive`).
+**Rule:** gate a loop on the consumers it reads: the practice loop wakes for its audio engine's id (`AudioEngine.micConsumerId`) in `MicState.consumers`, never for `studio-record`, the stem mixer or Ear Lab. When reading a mic surface's frame counts, attribute requests by the calling chunk (studio-record.spec.ts counts the `StudioPage-` chunk apart), and know that Playwright's `waitForFunction` polls on every animation frame: a phase that waits on the audio clock asks for 60 frames a second of "other" itself, and keeps the frame pipeline running, so it hides what an idle page saves.
 **See:** `src/features/practice/usePracticeController.ts`, `src/e2e/studio-record.spec.ts`

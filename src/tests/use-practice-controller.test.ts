@@ -26,6 +26,16 @@ const DETECTED_PITCH: PitchResult = {
   octave: 4,
 }
 
+/** The id the practice engine's audio engine holds the shared mic under. */
+const ENGINE_MIC_ID = 'audio-engine-7'
+
+const micHeldBy = (...consumers: string[]): MicState => ({
+  active: consumers.length > 0,
+  error: null,
+  consumers,
+  blockedBy: null,
+})
+
 interface MountedController {
   controller: PracticeController
   dispose: () => void
@@ -75,6 +85,7 @@ describe('usePracticeController frame subscriptions', () => {
     } as unknown as RecordingController
     const audioEngine = {
       getFrequencyData: vi.fn().mockReturnValue(new Float32Array(8)),
+      micConsumerId: ENGINE_MIC_ID,
     } as unknown as AudioEngine
 
     let controller!: PracticeController
@@ -276,27 +287,54 @@ describe('usePracticeController frame subscriptions', () => {
     dispose()
   })
 
-  it('runs on any tab while another feature holds the shared mic open', () => {
-    let tell: ((state: MicState) => void) | undefined
+  /** Mount with the shared mic's state under the test's control. */
+  function mountWithMic(): {
+    tell: (state: MicState) => void
+    left: ReturnType<typeof vi.fn>
+  } {
+    let listen: ((state: MicState) => void) | undefined
     const left = vi.fn()
     vi.spyOn(micManager, 'subscribe').mockImplementation((listener) => {
-      tell = listener
-      listener({ active: false, error: null, consumers: [], blockedBy: null })
+      listen = listener
+      listener(micHeldBy())
       return left
     })
-    const { dispose } = mountController({ singingOnScreen: () => false })
-    expect(queuedFrames).toHaveLength(0)
-    tell?.({
-      active: true,
-      error: null,
-      consumers: ['ear-lab'],
-      blockedBy: null,
+    return { tell: (state) => listen?.(state), left }
+  }
+
+  it('runs on any tab while its audio engine holds the shared mic, for any owner of that engine', () => {
+    const { tell, left } = mountWithMic()
+    const { dispose, practiceEngine } = mountController({
+      singingOnScreen: () => false,
     })
+    expect(queuedFrames).toHaveLength(0)
+    tell(micHeldBy(ENGINE_MIC_ID))
     expect(queuedFrames).toHaveLength(1)
-    tell?.({ active: false, error: null, consumers: [], blockedBy: null })
+    runNextFrame()
+    expect(practiceEngine.isMicActive).toHaveBeenCalledOnce()
+    tell(micHeldBy())
     runNextFrame()
     expect(queuedFrames).toHaveLength(0)
     dispose()
     expect(left).toHaveBeenCalledOnce()
+  })
+
+  it("asks for no frame while Studio's recorder holds the shared mic", () => {
+    const { tell } = mountWithMic()
+    const { dispose, practiceEngine } = mountController({
+      singingOnScreen: () => false,
+    })
+    tell(micHeldBy('studio-record'))
+    expect(queuedFrames).toHaveLength(0)
+    expect(practiceEngine.update).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('asks for no frame while other features hold the shared mic under their own ids', () => {
+    const { tell } = mountWithMic()
+    const { dispose } = mountController({ singingOnScreen: () => false })
+    tell(micHeldBy('studio-record', 'stem-mixer', 'ear-lab'))
+    expect(queuedFrames).toHaveLength(0)
+    dispose()
   })
 })

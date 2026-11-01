@@ -49,9 +49,11 @@ const liveMicTracks = (page: Page) =>
 
 /**
  * Count the animation frames the page asks for: the Studio's own (its
- * chunk is on the stack) and everyone else's. The practice controller runs
- * a frame loop while any feature holds the microphone
- * (usePracticeController.ts, micDeviceOpen), so an armed Studio wakes it.
+ * chunk is on the stack) and everyone else's, which takes in Playwright's
+ * own polling while a phase waits on the audio clock (waitForFunction asks
+ * for every frame). The practice controller's frame loop runs for its own
+ * audio engine's hold on the microphone, not for the Studio's
+ * (usePracticeController.ts), so arming leaves it asleep.
  */
 async function countFrames(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -507,5 +509,10 @@ test.describe('Studio recording', () => {
     expect(idleFrames.studio).toBe(0)
     expect(armedFrames.studio).toBe(0)
     expect(recordingFrames.studio).toBeLessThanOrEqual(playingFramesBudget)
+    // Nothing else wakes for the Studio's microphone either: everyone else's
+    // frames, Playwright's polling of the clock among them, stay as they are
+    // idle. The practice loop it used to wake asked for 60 more a second.
+    expect(armedFrames.other).toBeLessThan(idleFrames.other * 1.25)
+    expect(recordingFrames.other).toBeLessThan(idleFrames.other * 1.25)
   })
 })

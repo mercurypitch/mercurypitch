@@ -123,8 +123,10 @@ export class AudioEngine {
   // Unique per-instance id for the shared MicManager. Several AudioEngine
   // instances exist (EngineContext, pitch canvases, etc.); each must hold the
   // shared device under its own id so releases are ref-counted correctly.
+  // Public so a reader of MicManager's consumers can tell this engine's hold
+  // from another feature's (usePracticeController's frame loop does).
   private static micSeq = 0
-  private readonly micConsumerId = `audio-engine-${(AudioEngine.micSeq += 1)}`
+  readonly micConsumerId = `audio-engine-${(AudioEngine.micSeq += 1)}`
   // Shared analyser used for both mic input and pitch detection (mirrors old JS behavior)
   private analyser: AnalyserNode | null = null
   private playbackAnalyser: AnalyserNode | null = null
