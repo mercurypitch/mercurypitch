@@ -355,6 +355,7 @@ export const KaraokeRoomStage: Component = () => {
   // Find by singing (karaoke-room-find.ts), from the Songs sheet.
   const find = createRoomFind({
     songs: library,
+    seeded: whenBundledExamplesSeeded,
     clearStage: () => {
       setLibraryOpen(false)
       mixer()?.pause()

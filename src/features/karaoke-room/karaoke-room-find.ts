@@ -15,13 +15,15 @@
 // (karaoke-notes-reader.ts): for a song just separated, and once the sheet
 // has been opened, for every song. So the sheet's open is remembered, and
 // the room reads nothing while the sheet holds the mic; a song read while
-// the sheet is quiet is found once it listens again.
+// the sheet is quiet is found once it listens again. Under a song it cannot
+// find yet, the sheet says why in the room's words (`notReadyWords`).
 
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import type { MercurySingCandidateView, MercurySingHost, MercurySingLibraryEntry, MercurySingStatus, } from '@/features/mercury-sing/mercury-sing-engine'
 import { showNotification } from '@/stores/notifications-store'
+import type { KaraokeNotesState } from './karaoke-notes-reader'
 import { markFindOpened } from './karaoke-notes-wanted'
 import type { RoomSong } from './karaoke-room-library'
 
@@ -55,21 +57,64 @@ export function holdsMic(status: MercurySingStatus): boolean {
   )
 }
 
+/** What the sheet says under a song nothing has read the notes of. */
+export const TURN_NOTES_ON = 'Turn its notes on once to find it by singing'
+
+/** What the listening is doing, for the words under a song. */
+export interface ListeningNow {
+  /** The engine is still fingerprinting songs for this listening. */
+  readonly fingerprinting: boolean
+  readonly holdsMic: boolean
+}
+
+/**
+ * What the sheet says under a song it cannot find yet, by what the room
+ * knows of its notes (karaoke-notes-reader.ts) and what the listening is
+ * doing. A song with notes being fingerprinted is getting ready, never one
+ * to turn the notes on for.
+ */
+export function notReadyWords(
+  notes: KaraokeNotesState,
+  listening: ListeningNow,
+): string {
+  if (notes.kind === 'reading') {
+    return `Getting ready to find, ${notes.percent}%`
+  }
+  if (notes.kind === 'failed') {
+    if (notes.why === 'too-long') return 'Too long for this phone to find'
+    return notes.why === 'unreadable' ? 'Could not be read' : TURN_NOTES_ON
+  }
+  if (listening.fingerprinting) return 'Getting ready to find'
+  if (notes.kind === 'waiting') {
+    return listening.holdsMic
+      ? 'Gets ready when you stop singing'
+      : 'Getting ready to find'
+  }
+  return notes.kind === 'read'
+    ? 'Ready to find when you listen again'
+    : TURN_NOTES_ON
+}
+
 export interface RoomFindInput {
   /** The room's library as it is now. */
   readonly songs: () => readonly RoomSong[]
+  /** Resolves once the bundled examples are in, with their notes. */
+  readonly seeded: () => Promise<void>
   /** Cue the song on the stage, playing from `startAtSec`. */
   readonly cue: (sessionId: string, startAtSec: number) => void
 }
 
 export function roomFindHost(input: RoomFindInput): MercurySingHost {
   return {
-    songs: () =>
-      Promise.resolve(
-        input
-          .songs()
-          .map((song) => ({ sessionId: song.sessionId, name: song.title })),
-      ),
+    // After the seed, so an example is listed with its notes there to
+    // fingerprint. The room cues nothing before it either, so this is a
+    // guard: a sheet opened earlier would list them unfindable.
+    songs: async () => {
+      await input.seeded().catch(() => undefined)
+      return input
+        .songs()
+        .map((song) => ({ sessionId: song.sessionId, name: song.title }))
+    },
     fingerprint: async (song) => {
       const saved = await loadPitchAnalysisFromDb(song.sessionId)
       if (saved === null) return null
@@ -89,6 +134,8 @@ export function roomFindHost(input: RoomFindInput): MercurySingHost {
 export interface RoomFindDeps {
   /** The room's library as it is now. */
   readonly songs: () => readonly RoomSong[]
+  /** Resolves once the bundled examples are in, with their notes. */
+  readonly seeded: () => Promise<void>
   /** Before the sheet opens: what is over the stage closes, its song stops. */
   readonly clearStage: () => void
   /** A song found, played on the stage from `startAtSec`. */
@@ -126,6 +173,7 @@ export function createRoomFind(deps: RoomFindDeps): RoomFind {
   }
   const host = roomFindHost({
     songs: deps.songs,
+    seeded: deps.seeded,
     cue: (sessionId, startAtSec) => {
       setOpen(false)
       const song = untrack(deps.songs).find(
