@@ -87,6 +87,17 @@ const MIC_ERRORS: Record<MicError['kind'], string> = {
 }
 
 /** What to say when the microphone, the memory or the recorder would not start. */
+/** Whether a journaled take holds anything past its trim to the frame the singer heard. */
+function placesSomething(row: {
+  readonly frames: number
+  readonly sampleRate: number
+  readonly heardFirst: number
+  readonly fromFrame: number | null
+}): boolean {
+  const frames = Math.round((row.frames * STUDIO_SAMPLE_RATE) / row.sampleRate)
+  return placeHeardTake(row.heardFirst, row.fromFrame, frames) !== null
+}
+
 export function describeStudioRecordError(error: unknown): string {
   const kind = (error as Partial<MicError> | null)?.kind
   if (typeof kind === 'string' && kind in MIC_ERRORS)
@@ -365,12 +376,15 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     try {
       const rows = await journal.list(current.id)
       const stored = new Set(untrack(options.assets).map((asset) => asset.id))
-      // A take stored before its rows could go: they go now.
+      // A take stored before its rows could go, or one whose tab closed in
+      // its count-in, leaving nothing past the trim: its rows go now.
+      const offered = rows.filter(
+        (row) => !stored.has(row.id) && placesSomething(row),
+      )
       for (const row of rows)
-        if (stored.has(row.id))
+        if (!offered.includes(row))
           void journal.discard(row.id).catch(() => undefined)
-      if (untrack(project)?.id === current.id)
-        setRecovery(rows.filter((row) => !stored.has(row.id)))
+      if (untrack(project)?.id === current.id) setRecovery(offered)
     } catch {
       setRecovery([])
     }

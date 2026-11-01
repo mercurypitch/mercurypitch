@@ -278,9 +278,22 @@ describe('useStudioRecorder', () => {
     expect(recorder.dispose).toHaveBeenCalledOnce()
   })
 
-  it('offers a journaled take that is not in the song, and drops the rows of one that is', async () => {
-    const row = (id: string) => ({ id, title: id, frames: 48000 })
-    mocks.journal.list.mockResolvedValue([row('take-kept'), row('take-lost')])
+  it('offers a journaled take that is not in the song, and drops the rows of one that is or that holds only its count-in', async () => {
+    // A second at 48 kHz, its first sample heard on the song's first frame.
+    const row = (id: string, heardFirst = 0) => ({
+      id,
+      title: id,
+      frames: 48000,
+      sampleRate: 48000,
+      fromFrame: 0,
+      heardFirst,
+    })
+    mocks.journal.list.mockResolvedValue([
+      row('take-kept'),
+      row('take-lost'),
+      // A tab closed one second into a two-second count-in.
+      row('take-count-in', -96000 - 4800),
+    ])
     const { hook, dispose } = mount({
       assets: [{ id: 'take-kept' } as StudioAsset],
     })
@@ -289,6 +302,7 @@ describe('useStudioRecorder', () => {
       expect(hook.recovery().map((take) => take.id)).toEqual(['take-lost']),
     )
     expect(mocks.journal.discard).toHaveBeenCalledWith('take-kept')
+    expect(mocks.journal.discard).toHaveBeenCalledWith('take-count-in')
     expect(hook.canArm()).toBe(true)
     dispose()
   })
