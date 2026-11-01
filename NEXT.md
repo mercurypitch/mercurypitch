@@ -2542,3 +2542,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   setsid nohup in the background; log l4entr/<name>-switch.log. Before it: delete /dev/shm/l4film/film-05*.mp4
   (my copies; renders/ has them byte-checked) to free 230 MB of the cap. The extract cache's 34 entries are all
   live (HyperFrames GC at 19:11; all touched 22:47): leave it.
+- 00:16 CHECK-IN: builders BC and D running (BC rendering s06 lab clips into /dev/shm/l4lab-BC). HyperFrames' own
+  cache GC ran at 23:59 (.hf-last-gc), from a lab render: the extract cache went 34 entries 4.9 GB -> 23 entries
+  2.0 GB (its policy, not a deletion by anyone; tools in /dev/shm intact). shmem now 4.9 GB. film-06's render will
+  re-extract the evicted entries (slower start, the cache grows back toward ~4.9 GB). / 224 MB free.
