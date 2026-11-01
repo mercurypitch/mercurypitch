@@ -319,14 +319,26 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 const finding = vi.hoisted(() => ({
   host: null as MercurySingHost | null,
   listening: 0,
+  /** How the listening tells the room whether it holds the mic. */
+  onMic: null as ((held: boolean) => void) | null,
+  /** What the room hands the listening of what its fingerprinting found. */
+  missOf: null as ((sessionId: string) => string | null) | null,
 }))
 vi.mock('./KaraokeFindListening', async () => {
   const { onCleanup } = await import('solid-js')
   return {
-    KaraokeFindListening: (props: { host: MercurySingHost }) => {
+    KaraokeFindListening: (props: {
+      host: MercurySingHost
+      onMic?: (held: boolean) => void
+      missOf?: (sessionId: string) => string | null
+    }) => {
       // The stand-in records at mount on purpose: a mount is a listening.
       // eslint-disable-next-line solid/reactivity
       finding.host = props.host
+      // eslint-disable-next-line solid/reactivity
+      finding.onMic = props.onMic ?? null
+      // eslint-disable-next-line solid/reactivity
+      finding.missOf = props.missOf ?? null
       finding.listening += 1
       onCleanup(() => {
         finding.listening -= 1
@@ -336,11 +348,16 @@ vi.mock('./KaraokeFindListening', async () => {
   }
 })
 
+import { resetSongReadLockForTests } from '@/lib/song-read-lock'
+import { setTabCoveredByShell } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import { resetKaraokeNotesForTests, setKaraokeNotesReaderForTests, } from './karaoke-notes-reader'
+import { reloadNotesWantedForTests, wantNotesRead, } from './karaoke-notes-wanted'
 import type { MercurySingHost } from './karaoke-room-find'
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeLibrary, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS, UNKNOWN_ARTIST, } from './KaraokeRoomStage'
+import { REST_DELAY_MS } from './useKaraokeNotesReading'
 
 const example = (slug: string, title: string, dir: string) => ({
   sessionId:
@@ -523,7 +540,13 @@ beforeEach(() => {
   missing.said = []
   finding.host = null
   finding.listening = 0
+  finding.onMic = null
+  finding.missOf = null
   localStorage.clear()
+  reloadNotesWantedForTests()
+  resetKaraokeNotesForTests()
+  resetSongReadLockForTests()
+  setTabCoveredByShell(false)
   resetKaraokeRoomForTests()
   resetRoomArrivalHolds()
   device = fakeDevice()
@@ -1651,6 +1674,21 @@ describe('Find by singing', () => {
     expect(finding.listening).toBe(0)
   })
 
+  it('hands the listening what its fingerprinting found of a song without notes', async () => {
+    await mountRoom()
+    await openFind()
+
+    await host().songs()
+    const fp = await host().fingerprint(
+      { sessionId: DARK.sessionId, name: DARK.title },
+      () => false,
+    )
+
+    expect(fp).toBeNull()
+    expect(finding.missOf?.(DARK.sessionId)).toBe('no-notes')
+    expect(finding.missOf?.(JOSEPHINE.sessionId)).toBeNull()
+  })
+
   it('is what Back closes first, its listening with it', async () => {
     await mountRoom()
     await openFind()
@@ -1674,6 +1712,98 @@ describe('Find by singing', () => {
     await openFind()
     device.windowed(true)
     expect(finding.listening).toBe(0)
+  })
+})
+
+describe("the songs' notes, read at rest", () => {
+  /** Each read the room started, held open until it is stopped. */
+  let reads: { sessionId: string; signal: AbortSignal }[] = []
+
+  beforeEach(() => {
+    // A phone that streams, and Josephine just separated, to be read.
+    vi.stubGlobal('AudioDecoder', vi.fn())
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    wantNotesRead(JOSEPHINE.sessionId)
+    reads = []
+    setKaraokeNotesReaderForTests(
+      (sessionId, run) =>
+        new Promise((_resolve, reject) => {
+          const signal = run?.signal
+          if (signal === undefined) return
+          reads.push({ sessionId, signal })
+          signal.addEventListener('abort', () => {
+            const error = new Error('stopped')
+            error.name = 'AbortError'
+            reject(error)
+          })
+        }),
+    )
+  })
+
+  afterEach(() => {
+    setKaraokeNotesReaderForTests(null)
+    setTabCoveredByShell(false)
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  /** The room up, its song loaded and paused: at rest from here, on a faked clock. */
+  const atRest = async (): Promise<void> => {
+    await mountRoom()
+    vi.useFakeTimers()
+    current().setLoading(false)
+  }
+
+  it('reads once the room has rested a while, and not for a shorter pause', async () => {
+    await atRest()
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS - 1)
+    current().setPlaying(true)
+    current().setPlaying(false)
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS - 1)
+    expect(reads).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(reads.map((read) => read.sessionId)).toEqual([JOSEPHINE.sessionId])
+  })
+
+  it('stops while Find by singing listens, and reads again once its listening lets the mic go', async () => {
+    await atRest()
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+    expect(reads).toHaveLength(1)
+    vi.useRealTimers()
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Find by singing/u }),
+    )
+    await screen.findByTestId('fake-find-listening')
+
+    expect(reads[0].signal.aborted).toBe(true)
+    vi.useFakeTimers()
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+    expect(reads).toHaveLength(1)
+    // The singing stopped: the listening lets the mic go, the sheet still up.
+    finding.onMic?.(false)
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+    expect(reads).toHaveLength(2)
+    expect(reads[1].signal.aborted).toBe(false)
+  })
+
+  it('stops while a screen is pushed over the room, and reads again after', async () => {
+    await atRest()
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+    expect(reads).toHaveLength(1)
+
+    setTabCoveredByShell(true)
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+
+    expect(reads[0].signal.aborted).toBe(true)
+    expect(reads).toHaveLength(1)
+    setTabCoveredByShell(false)
+    await vi.advanceTimersByTimeAsync(REST_DELAY_MS)
+    expect(reads).toHaveLength(2)
   })
 })
 

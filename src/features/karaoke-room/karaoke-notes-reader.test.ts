@@ -28,10 +28,14 @@ const phone = vi.hoisted(() => ({
   opened: [] as string[],
   /** Each vocal's length, s; two seconds unless said. */
   seconds: {} as Record<string, number>,
-  /** The packaged vocals asked for. */
-  fetched: [] as string[],
+  /** The packaged vocals asked for, and the signal each was asked under. */
+  fetched: [] as { url: string; signal: AbortSignal | undefined }[],
+  /** A download that waits until it is stopped. */
+  slowFetch: false,
   /** The songs with a vocal stem kept on the phone. */
   vocals: new Set<string>(),
+  /** The songs whose stem the store will not answer for. */
+  storeFails: new Set<string>(),
 }))
 
 vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
@@ -72,26 +76,46 @@ vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
 }))
 
 vi.mock('@/db/services/uvr-service', () => ({
-  getStemBlob: async (sessionId: string, type: string) =>
-    type === 'vocal' && phone.vocals.has(sessionId)
+  getStemBlobStrict: async (sessionId: string, type: string) => {
+    // A turn of the event loop, as the phone's store takes: a song read
+    // again and again would show, not hold the test's clock.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
+    if (phone.storeFails.has(sessionId)) {
+      throw new Error('the store would not answer')
+    }
+    return type === 'vocal' && phone.vocals.has(sessionId)
       ? Object.assign(new Blob([new Uint8Array(2_500_000)]), {
           song: sessionId,
         })
-      : null,
-}))
-
-vi.mock('@irchiinnuss/mobile-runtime/asset-fetch', () => ({
-  fetchAssetBytes: async (url: string) => {
-    phone.fetched.push(url)
-    return new ArrayBuffer(777)
+      : null
   },
 }))
 
-/** The session store: the songs removed from the phone are gone from it. */
-const sessions = vi.hoisted(() => ({ gone: new Set<string>() }))
+vi.mock('@irchiinnuss/mobile-runtime/asset-fetch', () => ({
+  fetchAssetBytes: async (url: string, init?: RequestInit) => {
+    const signal = init?.signal ?? undefined
+    phone.fetched.push({ url, signal })
+    if (!phone.slowFetch) return new ArrayBuffer(777)
+    return new Promise<ArrayBuffer>((_resolve, reject) => {
+      signal?.addEventListener('abort', () => {
+        reject(new DOMException('The download was stopped.', 'AbortError'))
+      })
+    })
+  },
+}))
+
+/** The session store: each song's vocal as its row keeps it, and the gone. */
+const sessions = vi.hoisted(() => ({
+  gone: new Set<string>(),
+  vocal: {} as Record<string, { size: number; duration: number }>,
+}))
 vi.mock('@/stores/uvr-store', () => ({
   getUvrSession: (sessionId: string) =>
-    sessions.gone.has(sessionId) ? undefined : { sessionId },
+    sessions.gone.has(sessionId)
+      ? undefined
+      : { sessionId, stemMeta: { vocal: sessions.vocal[sessionId] } },
   isSessionStoreReady: () => true,
 }))
 
@@ -119,6 +143,7 @@ const {
   stopReadingOwnSongs,
 } = await import('@/features/first-note/first-note-own-songs')
 const {
+  karaokeNotesHold,
   karaokeNotesState,
   karaokeNotesWaiting,
   readKaraokeNotes,
@@ -126,6 +151,7 @@ const {
   stopReadingKaraokeNotes,
 } = await import('./karaoke-notes-reader')
 const {
+  KARAOKE_NOTES_OUTCOMES_KEY,
   KARAOKE_NOTES_WANTED_KEY,
   markFindOpened,
   notesWanted,
@@ -203,6 +229,14 @@ const aWhile = (): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, 30)
   })
+/** The fixed outcomes kept on the phone. */
+const keptOnPhone = (): Record<string, unknown> =>
+  JSON.parse(localStorage.getItem(KARAOKE_NOTES_OUTCOMES_KEY) ?? '{}')
+/** A launch: what the phone keeps is read again, and nothing else is known. */
+const relaunch = (): void => {
+  reloadNotesWantedForTests()
+  resetKaraokeNotesForTests()
+}
 
 let info: MockInstance<typeof console.info>
 let disposeLibrary: () => void = () => undefined
@@ -217,13 +251,18 @@ beforeEach(() => {
   phone.opened = []
   phone.seconds = {}
   phone.fetched = []
+  phone.slowFetch = false
   phone.vocals = new Set(['a', 'b'])
+  phone.storeFails = new Set()
   sessions.gone = new Set()
+  sessions.vocal = {
+    a: { size: 2_500_000, duration: 200 },
+    b: { size: 2_400_000, duration: 180 },
+  }
   analyses = []
   clock = 0
   localStorage.clear()
-  reloadNotesWantedForTests()
-  resetKaraokeNotesForTests()
+  relaunch()
   resetSongReadLockForTests()
   resetOwnSongsForTests()
   resetKaraokeRoomForTests()
@@ -242,7 +281,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  stopReadingKaraokeNotes('the test is over')
+  stopReadingKaraokeNotes('closed')
   stopReadingOwnSongs()
   setOwnSongReaderForTests(null)
   setVocalNotesSeams(null)
@@ -254,6 +293,8 @@ describe('the songs just separated', () => {
   it('are read one at a time, and each one kept where the mixer looks', async () => {
     wantNotesRead('a')
     wantNotesRead('b')
+    readKaraokeNotes()
+    // The room asks again as the waiting songs change: one read goes on.
     readKaraokeNotes()
     await vi.waitFor(() => expect(analyses).toHaveLength(1))
     expect(phone.opened).toEqual(['a'])
@@ -282,32 +323,32 @@ describe('the songs just separated', () => {
       JSON.parse(localStorage.getItem(KARAOKE_NOTES_WANTED_KEY) ?? '[]'),
     ).toEqual(['b'])
 
-    // A launch: the list and the reader start again from the phone.
-    reloadNotesWantedForTests()
-    resetKaraokeNotesForTests()
+    relaunch()
 
     expect(notesWanted()).toEqual(['b'])
     expect(karaokeNotesWaiting()).toEqual(['b'])
     expect(state('a')).toBe('idle')
   })
 
-  it('leave no record behind a song removed while it was read, which is let go of', async () => {
+  it('stop being read when they leave the room, and leave no record', async () => {
     wantNotesRead('a')
     wantNotesRead('b')
     readKaraokeNotes()
     await vi.waitFor(() => expect(analyses).toHaveLength(1))
 
-    // Removed in the studio meanwhile.
+    // Removed in the studio meanwhile: its walk and its pitch read stop.
     sessions.gone.add('a')
     library.set?.([own('b', 'Bravo')])
-    analyses[0].finish(NOTES)
 
+    expect(analyses[0].signal?.aborted).toBe(true)
+    expect(told()).toContain(
+      `[notes-read] stopped reading "Alpha": it left the room's songs. It is read again from the start at the next rest`,
+    )
     await vi.waitFor(() => expect(analyses).toHaveLength(2))
     expect(await record('a')).toBeNull()
+    // What was kept for it goes at the next rest.
+    readKaraokeNotes()
     expect(notesWanted()).toEqual(['b'])
-    expect(told()).toContain(
-      '[notes-read] kept nothing of "Alpha": it left the phone while it was read',
-    )
   })
 })
 
@@ -351,7 +392,9 @@ describe('every song, once Find by singing has been opened', () => {
     await vi.waitFor(() => expect(analyses).toHaveLength(1))
     analyses[0].finish(NOTES)
     await vi.waitFor(() => expect(analyses).toHaveLength(2))
-    expect(phone.fetched).toEqual(['/karaoke/examples/spring/vocal.m4a'])
+    expect(phone.fetched.map((one) => one.url)).toEqual([
+      '/karaoke/examples/spring/vocal.m4a',
+    ])
     analyses[1].finish(NOTES)
 
     await vi.waitFor(() =>
@@ -362,18 +405,34 @@ describe('every song, once Find by singing has been opened', () => {
     expect((await record('spring'))?.segmentedNotes).toEqual(NOTES)
     expect(phone.opened).toEqual(['a', '777 bytes'])
     expect(analyses).toHaveLength(2)
-    expect(state('josephine')).toBe('idle')
+    expect(state('josephine')).toBe('noted')
+  })
+
+  it("stops an example's download when its read is stopped, and goes on", async () => {
+    library.set?.([example('spring', 'Goodbye to Spring'), own('a', 'Alpha')])
+    phone.slowFetch = true
+    markFindOpened()
+    readKaraokeNotes()
+    await vi.waitFor(() => expect(phone.fetched).toHaveLength(1))
+
+    stopReadingKaraokeNotes('playing')
+    readKaraokeNotes()
+
+    expect(phone.fetched[0].signal?.aborted).toBe(true)
+    // Its download let go of, the read in flight is over: the next starts.
+    await vi.waitFor(() => expect(phone.fetched).toHaveLength(2))
   })
 })
 
 describe('reading at rest', () => {
-  it('stops when the room lets go, keeps nothing, and reads that song again from the start', async () => {
+  it('stops when the room holds back, keeps nothing, and reads that song again from the start', async () => {
     wantNotesRead('a')
     readKaraokeNotes()
     await vi.waitFor(() => expect(analyses).toHaveLength(1))
 
-    stopReadingKaraokeNotes('a song is playing')
+    stopReadingKaraokeNotes('playing')
 
+    expect(karaokeNotesHold()).toBe('playing')
     await vi.waitFor(() => expect(state('a')).toBe('waiting'))
     expect(analyses[0].signal?.aborted).toBe(true)
     expect(await record('a')).toBeNull()
@@ -382,11 +441,12 @@ describe('reading at rest', () => {
     )
 
     readKaraokeNotes()
+    expect(karaokeNotesHold()).toBeNull()
     await vi.waitFor(() => expect(analyses).toHaveLength(2))
     expect(phone.opened).toEqual(['a', 'a'])
   })
 
-  it('tries a song it could not read again at the next launch, not before', async () => {
+  it('keeps on the phone a vocal too long for it, and reads it again only once replaced', async () => {
     // Longer than the walk may hold, even at every fourth sample.
     phone.seconds.a = 4 * 60 * 60
     wantNotesRead('a')
@@ -396,16 +456,78 @@ describe('reading at rest', () => {
     expect(told()).toContain(
       '[notes-read] could not read "Alpha": its vocal (2.5 MB) is too long for this phone to hold',
     )
-    expect(notesWanted()).toEqual(['a'])
 
+    relaunch()
     readKaraokeNotes()
     await aWhile()
     expect(phone.opened).toEqual(['a'])
+    expect(karaokeNotesState('a')).toEqual({ kind: 'failed', why: 'too-long' })
 
-    // The next launch.
-    resetKaraokeNotesForTests()
+    // Split again in the studio: a new vocal, read again.
+    sessions.vocal.a = { size: 1_900_000, duration: 150 }
+    phone.seconds.a = 2
+    library.set?.([own('a', 'Alpha'), own('b', 'Bravo')])
     readKaraokeNotes()
     await vi.waitFor(() => expect(phone.opened).toEqual(['a', 'a']))
+  })
+
+  it('keeps a song with no singing in it as one, through a launch', async () => {
+    wantNotesRead('a')
+    readKaraokeNotes()
+    await vi.waitFor(() => expect(analyses).toHaveLength(1))
+    analyses[0].finish([])
+    await vi.waitFor(() => expect(state('a')).toBe('failed'))
+
+    relaunch()
+    readKaraokeNotes()
+    await aWhile()
+
+    expect(karaokeNotesState('a')).toEqual({ kind: 'failed', why: 'no-notes' })
+    expect(analyses).toHaveLength(1)
+    expect(await record('a')).toBeNull()
+    expect(keptOnPhone()).toEqual({
+      a: { vocal: '2500000/200', outcome: 'no-notes' },
+    })
+  })
+
+  it('tries a read that threw again at the next launch, not before', async () => {
+    phone.storeFails.add('a')
+    wantNotesRead('a')
+    readKaraokeNotes()
+    await vi.waitFor(() => expect(state('a')).toBe('failed'))
+    expect(karaokeNotesState('a')).toEqual({
+      kind: 'failed',
+      why: 'unreadable',
+    })
+    expect(told()).toContain(
+      '[notes-read] could not read "Alpha": the store would not answer',
+    )
+    expect(keptOnPhone()).toEqual({})
+
+    readKaraokeNotes()
+    await aWhile()
+    expect(state('a')).toBe('failed')
+    phone.storeFails.clear()
+
+    relaunch()
+    readKaraokeNotes()
+    await vi.waitFor(() => expect(analyses).toHaveLength(1))
+    expect(phone.opened).toEqual(['a'])
+  })
+
+  it('lets go of what it keeps for a song once it has left the phone', async () => {
+    phone.vocals.delete('a')
+    wantNotesRead('a')
+    readKaraokeNotes()
+    await vi.waitFor(() => expect(state('a')).toBe('failed'))
+    expect(Object.keys(keptOnPhone())).toEqual(['a'])
+
+    sessions.gone.add('a')
+    library.set?.([own('b', 'Bravo')])
+    readKaraokeNotes()
+
+    expect(keptOnPhone()).toEqual({})
+    expect(notesWanted()).toEqual([])
   })
 
   it('leaves the song on the stage to its mixer, and lets go of a song put on it mid-read', async () => {

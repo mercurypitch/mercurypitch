@@ -13,6 +13,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MercurySingCandidateView, MercurySingLibraryEntry, MercurySingStatus, } from '@/features/mercury-sing/mercury-sing-engine'
 import type { MercurySingHost } from '@/features/mercury-sing/mercury-sing-host'
+import type { FingerprintMiss } from './karaoke-room-find'
 import type { RoomSong } from './karaoke-room-library'
 
 const engine = vi.hoisted(() => ({
@@ -79,6 +80,7 @@ const {
   readKaraokeNotes,
   resetKaraokeNotesForTests,
   setKaraokeNotesReaderForTests,
+  stopReadingKaraokeNotes,
 } = await import('./karaoke-notes-reader')
 const { reloadNotesWantedForTests, wantNotesRead } =
   await import('./karaoke-notes-wanted')
@@ -133,10 +135,20 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-async function openSheet(isOpen = true) {
+async function openSheet(
+  isOpen = true,
+  missOf: (sessionId: string) => FingerprintMiss | null = () => null,
+) {
   const close = vi.fn()
   const [open, setOpen] = createSignal(isOpen)
-  render(() => <KaraokeFindSheet isOpen={open()} close={close} host={HOST} />)
+  render(() => (
+    <KaraokeFindSheet
+      isOpen={open()}
+      close={close}
+      host={HOST}
+      missOf={missOf}
+    />
+  ))
   // The listening is loaded when the sheet first opens.
   if (isOpen) await screen.findByTestId('karaoke-find-status')
   return { close, setOpen }
@@ -183,18 +195,35 @@ describe('the find sheet', () => {
     expect(engine.opened).toEqual(['b'])
   })
 
-  it('says a song with notes is getting ready while it is fingerprinted, never to turn its notes on', async () => {
-    await openSheet()
+  it('never asks for the notes of a song while it is being fingerprinted', async () => {
+    // Its notes may well be there: an example's, on a fresh install.
+    const found: Record<string, FingerprintMiss> = {}
+    await openSheet(true, (sessionId) => found[sessionId] ?? null)
     setStatus('listening')
-    setFingerprinting({ done: 0, total: 1 })
-    setLibrary([{ sessionId: 'a', name: 'Alpha', ready: false }])
-    const row = (): string | null =>
-      screen.getByTestId('karaoke-find-song').textContent
+    setFingerprinting({ done: 0, total: 2 })
+    setLibrary([
+      { sessionId: 'a', name: 'Alpha', ready: false },
+      { sessionId: 'b', name: 'Bravo', ready: false },
+    ])
+    const rows = (): (string | null)[] =>
+      screen.getAllByTestId('karaoke-find-song').map((row) => row.textContent)
 
-    expect(row()).toBe('AlphaGetting ready to find')
-    setFingerprinting({ done: 1, total: 1 })
-    setLibrary([{ sessionId: 'a', name: 'Alpha', ready: true }])
-    expect(row()).toBe('Alpha')
+    expect(rows()).toEqual([
+      'AlphaLooking for its notes',
+      'BravoLooking for its notes',
+    ])
+    // Alpha's fingerprint is made; Bravo has no notes, and nothing here
+    // reads them (a phone that cannot stream).
+    found.b = 'no-notes'
+    setFingerprinting({ done: 2, total: 2 })
+    setLibrary([
+      { sessionId: 'a', name: 'Alpha', ready: true },
+      { sessionId: 'b', name: 'Bravo', ready: false },
+    ])
+    expect(rows()).toEqual([
+      'Alpha',
+      'BravoTurn its notes on once to find it by singing',
+    ])
   })
 
   it('says a song waits for the singing to stop, then how far its read has got', async () => {
@@ -210,12 +239,18 @@ describe('the find sheet', () => {
           progress = (percent) => run?.onProgress?.(percent)
         }),
     )
-    await openSheet()
+    await openSheet(true, () => 'no-notes')
     setStatus('listening')
     setLibrary([{ sessionId: 'b', name: 'Bravo', ready: false }])
+    // The room holds back while the sheet listens (useKaraokeNotesReading).
+    stopReadingKaraokeNotes('find')
     const row = (): string | null =>
       screen.getByTestId('karaoke-find-song').textContent
     expect(row()).toBe('BravoGets ready when you stop singing')
+
+    // Something else on the mic keeps the room from reading: no promise.
+    stopReadingKaraokeNotes('capture')
+    expect(row()).toBe('BravoGets ready when the microphone is free')
 
     // The singing stops, and the room, at rest, reads the song.
     setStatus('quiet')
@@ -228,15 +263,21 @@ describe('the find sheet', () => {
   it('says what keeps a song out, and that one read since is found on Listen again', async () => {
     vi.stubGlobal('AudioDecoder', vi.fn())
     vi.spyOn(console, 'info').mockImplementation(() => undefined)
-    room.songs = [song('b', 'Bravo'), song('c', 'Charlie'), song('d', 'Delta')]
+    room.songs = [
+      song('b', 'Bravo'),
+      song('c', 'Charlie'),
+      song('d', 'Delta'),
+      song('e', 'Echo'),
+    ]
     for (const one of room.songs) wantNotesRead(one.sessionId)
     setKaraokeNotesReaderForTests(async (sessionId) => {
       if (sessionId === 'd') throw new Error('the stream broke')
+      if (sessionId === 'e') return { kind: 'no-notes', seconds: 30 }
       return sessionId === 'b'
         ? { kind: 'too-long', bytes: 300_000_000 }
         : { kind: 'kept', notes: 120, seconds: 41 }
     })
-    await openSheet()
+    await openSheet(true, () => 'no-notes')
     setStatus('quiet')
     setLibrary(
       room.songs.map((one) => ({
@@ -257,7 +298,18 @@ describe('the find sheet', () => {
         'BravoToo long for this phone to find',
         'CharlieReady to find when you listen again',
         'DeltaCould not be read',
+        'EchoNo singing found in it to find it by',
       ]),
+    )
+  })
+
+  it('says notes too thin to find a song by are that', async () => {
+    await openSheet(true, (sessionId) => (sessionId === 'a' ? 'too-few' : null))
+    setStatus('quiet')
+    setLibrary([{ sessionId: 'a', name: 'Alpha', ready: false }])
+
+    expect(screen.getByTestId('karaoke-find-song').textContent).toBe(
+      'AlphaNo singing found in it to find it by',
     )
   })
 

@@ -6,26 +6,40 @@
 // is at rest and lets go the moment it is not, as First note's room does
 // with its own read (FirstNoteRoom.tsx): the read walks a vocal and runs the
 // pitch read on the thread that draws the screen, so it must never compete
-// with a song or a voice.
+// with a song or a voice being heard.
 //
 // At rest is all of these: the examples seeded, so their notes are there to
 // be seen; a song on the stage that has loaded and is not playing; the app
-// on the screen, and not in the small window; the mixer not reading notes
-// of its own; Find by singing not listening; and no capture holding the
-// microphone (micManager: the stem mixer's, Find by singing's, voice
-// control's, any other's), save a hold that keeps the device open between
-// two surfaces and captures nothing (BACKGROUND_HOLD_IDS). Anything else
-// stops the read in flight, which is read again from its start at the next
-// rest, and the room going stops it for good.
+// on the screen, not in the small window, and not under a screen the shell
+// pushed over the tab (tabCoveredByShell); the mixer not reading notes of
+// its own; Find by singing not listening; and nothing capturing from the
+// microphone (micManager). Three holds on the mic are not captures for this:
+// one that keeps the device open and captures nothing (BACKGROUND_HOLD_IDS);
+// the stage's own, which scores only while a song plays, when the read is
+// stopped anyway; and voice control's, listening for its wake word. The read
+// uses no mic, and gives the screen its moments as it goes.
 //
-// What stopped a read is told to the console with it, so a phone's log says
-// why a song was not ready.
+// A read starts only after REST_DELAY_MS of rest, so a pause between two
+// presses of play does not walk a vocal it throws away. Anything else stops
+// the read in flight, which is read again from its start at the next rest,
+// and the room going stops it for good. Why the room holds back is the
+// reader's to say (`karaokeNotesHold`), for the console and the find sheet.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createSignal, onCleanup, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { BACKGROUND_HOLD_IDS, micManager } from '@/lib/mic-manager'
+import { tabCoveredByShell } from '@/stores/native-shell-store'
+import type { NotesHold } from './karaoke-notes-reader'
 import { karaokeNotesWaiting, readKaraokeNotes, stopReadingKaraokeNotes, } from './karaoke-notes-reader'
+
+/** How long the room rests before a read starts, ms. */
+export const REST_DELAY_MS = 3000
+
+/** The stage's own hold on the mic (useStemMixerMicController.ts). */
+const STAGE_MIC = 'stem-mixer'
+/** Voice control's holds: 'voice-control#1' and on (local-whisper-listener.ts). */
+const VOICE_CONTROL_MIC = 'voice-control#'
 
 export interface KaraokeNotesReadingDeps {
   /** The bundled examples are in the library, with their notes. */
@@ -40,20 +54,30 @@ export interface KaraokeNotesReadingDeps {
   readonly findListening: Accessor<boolean>
 }
 
-/** Why the room is not at rest, in words for the console; null at rest. */
+/** A hold on the mic that is not a capture for the read (see the header). */
+function capturesNothingHere(id: string): boolean {
+  return (
+    BACKGROUND_HOLD_IDS.includes(id) ||
+    id === STAGE_MIC ||
+    id.startsWith(VOICE_CONTROL_MIC)
+  )
+}
+
+/** Why the room is not at rest; null at rest. */
 function busyWith(
   deps: KaraokeNotesReadingDeps,
   capturing: boolean,
-): string | null {
-  if (!deps.seeded()) return 'the examples are still being put in'
+): NotesHold | null {
+  if (!deps.seeded()) return 'seeding'
   const mixer = deps.mixer()
-  if (mixer === null || mixer.loading()) return 'a song is loading'
-  if (mixer.playing()) return 'a song is playing'
-  if (mixer.findingNotes()) return 'the mixer is reading its own notes'
-  if (deps.pageHidden()) return 'the app is hidden'
-  if (deps.inWindow()) return 'the room is in the small window'
-  if (deps.findListening()) return 'Find by singing is listening'
-  if (capturing) return 'the microphone is on'
+  if (mixer === null || mixer.loading()) return 'loading'
+  if (mixer.playing()) return 'playing'
+  if (mixer.findingNotes()) return 'mixer'
+  if (deps.pageHidden()) return 'hidden'
+  if (deps.inWindow()) return 'window'
+  if (tabCoveredByShell()) return 'covered'
+  if (deps.findListening()) return 'find'
+  if (capturing) return 'capture'
   return null
 }
 
@@ -66,22 +90,33 @@ export function useKaraokeNotesReading(deps: KaraokeNotesReadingDeps): void {
     }),
   )
   const capturing = (): boolean =>
-    holders().some((id) => !BACKGROUND_HOLD_IDS.includes(id))
+    holders().some((id) => !capturesNothingHere(id))
+  const busy = createMemo(() => busyWith(deps, capturing()))
 
+  // Set once the room has rested REST_DELAY_MS; anything else unsets it.
+  const [rested, setRested] = createSignal(false)
+  let timer: ReturnType<typeof setTimeout> | undefined
   createEffect(() => {
-    const busy = busyWith(deps, capturing())
-    if (busy !== null) {
-      untrack(() => {
-        stopReadingKaraokeNotes(busy)
-      })
-      return
-    }
-    // A song turning up waiting at rest is read too: one just separated,
-    // or the session store loading after the room opened.
+    const why = busy()
+    clearTimeout(timer)
+    setRested(false)
+    untrack(() => {
+      stopReadingKaraokeNotes(why ?? 'settling')
+    })
+    if (why !== null) return
+    timer = setTimeout(() => {
+      setRested(true)
+    }, REST_DELAY_MS)
+  })
+  // A song turning up waiting at rest is read too: one just separated, or
+  // the session store loading after the room opened.
+  createEffect(() => {
+    if (!rested()) return
     karaokeNotesWaiting()
     untrack(readKaraokeNotes)
   })
   onCleanup(() => {
-    stopReadingKaraokeNotes('the room closed')
+    clearTimeout(timer)
+    stopReadingKaraokeNotes('closed')
   })
 }

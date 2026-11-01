@@ -268,6 +268,22 @@ describe("the room's read of a song's notes", () => {
     expect(analyze).not.toHaveBeenCalled()
   })
 
+  it('fails, not reads as no vocal, when the store will not answer for it', async () => {
+    // A store that cannot say is tried again at the next launch; a song with
+    // no vocal is kept as one (karaoke-notes-reader.ts).
+    const stems = (store.adapter as InMemoryAdapter).getRepository(
+      'uvrStemBlobs',
+    )
+    stems.findAll = async () => {
+      throw new Error('the store would not answer')
+    }
+
+    await expect(readSongNotes('mine')).rejects.toThrow(
+      'the store would not answer',
+    )
+    expect(phone.stream?.opened).toEqual([])
+  })
+
   it('reads nothing of a song with no vocal', async () => {
     const read = await readSongNotes('mine', { vocal: async () => null })
 

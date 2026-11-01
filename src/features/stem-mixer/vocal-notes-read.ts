@@ -34,7 +34,7 @@
 
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { hasPitchAnalysisInDbStrict, savePitchAnalysisToDbStrict, } from '@/db/services/session-pitch-analysis-service'
-import { getStemBlob } from '@/db/services/uvr-service'
+import { getStemBlobStrict } from '@/db/services/uvr-service'
 import { audioDurationSecs } from '@/lib/audio-duration'
 import { DECODE_RATE, decodeAudioBytes } from '@/lib/decode-audio-to-mono'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
@@ -102,7 +102,10 @@ export interface SongNotesRun {
   readonly signal?: AbortSignal
   /** How far the read is, 0 to 100, rounded, and only ever forward. */
   readonly onProgress?: (percent: number) => void
-  /** The vocal; the stem kept on the phone when none is given. */
+  /**
+   * The vocal: null for a song with none; throws when it cannot be had. The
+   * stem kept on the phone when none is given.
+   */
   readonly vocal?: () => Promise<Blob | null>
 }
 
@@ -337,7 +340,11 @@ export async function readSongNotes(
   throwIfAborted(signal)
   if (await seams.hasRecord(sessionId)) return { kind: 'had-notes' }
   throwIfAborted(signal)
-  const blob = await (run.vocal ?? (() => getStemBlob(sessionId, 'vocal')))()
+  // Strict: a store that will not answer is a failure to try again, not a
+  // song with no vocal.
+  const blob = await (
+    run.vocal ?? (() => getStemBlobStrict(sessionId, 'vocal'))
+  )()
   throwIfAborted(signal)
   if (blob === null) return { kind: 'no-vocal' }
   report(0)
