@@ -8,7 +8,7 @@
 #
 #   mem-guard.sh <name> <frozen project> <pgid of render-l4.sh>      (MEM_STOP default 12400, KEEP_MB default 50)
 #
-# Log: l4entr/<name>-switch.log (the same log render-switch.sh writes).
+# Log: l4entr/<name>-switch.log (the same log render-switch.sh writes). It stands down when the capture ends.
 set -u
 NAME=${1:?name}; SRC=${2:?frozen project}; PG=${3:?pgid of render-l4.sh}
 S=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad
@@ -28,8 +28,13 @@ done_pieces() {
 m0=$(mem) || { say "mem-guard STOP: cannot read rss+shmem from $G"; exit 1; }
 kill -0 "$PG" 2>/dev/null || { say "mem-guard STOP: pgid $PG is not running"; exit 1; }
 say "mem-guard: watching render-l4.sh pgid $PG every 3 s in $G; now rss+shmem $m0 MiB, pieces $(done_pieces); switch at > $MEM_STOP MiB"
+# Armed only while the capture runs: once render-l4.sh writes "render end exit", it is into its seam check and
+# after-render steps (a trip there would start a needless resume render), so the guard stands down.
+n0=$(wc -l < "$ST")
 reason=""
 while kill -0 "$PG" 2>/dev/null; do
+  e=$(tail -n +$((n0 + 1)) "$ST" | grep -m1 "render end exit")
+  if [ -n "$e" ]; then say "mem-guard: the capture ended ($e); standing down"; exit 0; fi
   m=$(mem 2>/dev/null) || m=0
   if [ "${m:-0}" -gt "$MEM_STOP" ]; then reason="rss+shmem $m MiB"; break; fi
   sleep 3

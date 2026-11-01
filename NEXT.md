@@ -2591,3 +2591,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   should fit; the music-only stays in /dev/shm. If the master copy is refused ("kept only in"), push-film06.sh
   still secures it on GitHub; lesson-04/.transcode-cache (70 MB, regenerable check cache) is the one place to
   free room, only if needed. NEXT unchanged: on the copy line run push-film06.sh; on done, FILM6.
+- 06:23 GUARD RESTARTED (pid 15458): mem-guard.sh now stands down at render-l4.sh's first "render end exit" line
+  (armed during the after-render steps, a trip would have started a needless resume render). Restarting it, my
+  "pkill -f 'mem-guard.sh film-06'" also matched the shell running it and watcher bxflxr32a (both command lines
+  held that text) and killed them; the render (501) was untouched. LESSON: never pkill/pgrep -f a pattern that
+  appears in the command that runs it; kill by pid, or bracket a letter ("[m]em-guard"). Watcher b3tkenfws (2 h,
+  to ~08:23) replaces it, with bracketed patterns and "kept only in" added to its wake list.
