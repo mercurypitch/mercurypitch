@@ -632,7 +632,7 @@ sixteenths (an ear-drill link)'`, which no page draws
   fit and made true, "Same five notes, twice as fast: the note shapes change." (FACTS 5b), its note
   in `kit/team-notes.ts`'s `TEASE_NOTES`; and Lesson 18's tease, "Now you can read when each note
   comes, and where it sits." (FACTS 5). Each is a line of at most 70 characters, `TEASE_MAX`
-  (`src/features/lessons/kit/lesson-copy.ts:76`); the lead settles Lesson 17's two at review. No hook
+  (`src/features/lessons/kit/lesson-copy.ts:76`); the lead settled Lesson 17's two at review. No hook
   alternative.
 - **The explorer**: Season 2's tab, its line above the heading "Season 2 · Lesson 17" (FACTS 6), with
   Lesson 17's card showing only learner information: "Ready", "Coming later" or "Done", no
@@ -702,10 +702,10 @@ are in; items 6 to 8 and 12 come with the page's own PR.
 ## Decisions for the owner
 
 None is open. Everything the page needs is decided (SEASON-2 § 7), is the vocal coach's call
-(LESSON.md, For the vocal coach), or is the lead's to settle at review: this lesson's tease, proposed
-with the season plan's line, cut to fit and made true, as its alternative (Explorer and season data;
-FACTS 5b), and the words the voice choice shares with Lesson 15 (FACTS 52). The owner agreed to the
-lead's recommended teases, so neither comes back to the owner.
+(LESSON.md, For the vocal coach), or was settled at the lead's review on 1 November 2026: this
+lesson's tease, with the season plan's line, cut to fit and made true, as its alternative (Explorer
+and season data; FACTS 5b), and the voice choice's words, Lesson 15's buttons without its line
+(FACTS 52). The owner asked for the lead's recommended teases, so neither comes back to the owner.
 
 ## Edge cases
 
@@ -839,8 +839,8 @@ Where this package departs from ARTICLE-PLAN.md, and why, every one argued in FA
     once in Step 1, as SEASON-2 § 7 item 4 asks, so Go deeper does not list them again; the
     semibreve's history stays out with no musicology source read, and the item on which counting
     system works best is cut for length (FACTS 15, 25, 73).
-12. The tease for this lesson is proposed afresh, with the season plan's line, cut to fit and made
-    true, as its alternative; the lead settles the two at review (FACTS 5b).
+12. The tease for this lesson is new, with the season plan's line, cut to fit and made true, as its
+    alternative; the lead settled the two at review on 1 November 2026 (FACTS 5b).
 13. The checkpoint adds Hear the bars once a take has ended, since every written rhythm on the page
     plays and the plan's two bars had no play; it waits for the take so the bars are still read at
     sight, as The Chart lets its bar be heard only after the answer (FACTS 40; Toys 7).

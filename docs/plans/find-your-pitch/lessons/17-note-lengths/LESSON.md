@@ -59,7 +59,7 @@ the Season 2 kit work (WEB-SPEC, What the kit and the app still need), the lesso
 - Title (the hook question): **Why is a quarter note not a quarter of a second?** _[Editorial: the
   season's hook (SEASON-2 § 2), with no alternative in `kit/lesson-copy.ts`. It says what a quarter
   note is not, and names no length at either tempo, so it does not answer the cold open's predict
-  (FACTS 1, 1a). The tease Lesson 16's card shows above it is proposed in FACTS 5b.]_
+  (FACTS 1, 1a). The tease Lesson 16's card shows above it is settled in FACTS 5b.]_
 - Meta, as four chips: 16 minutes · After Lesson 8: Beat, tempo and the backbeat · Also useful:
   Lesson 15, The staff · Sound on
 - Promise: By the end you'll read whole, half, quarter, eighth and sixteenth notes, their rests, dots
