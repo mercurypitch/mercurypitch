@@ -12,8 +12,8 @@
 // request instead, for every picture in every premium room's folder, at
 // any depth (Echo's, Ng slides', Lip roll's and Home note's are in an art/
 // folder of their own), and every voice file (Merc's sung "ooh" set for Echo's
-// calls, in its voice/ folder, and his spoken opening lines in the Ear
-// rooms' voice/ folders; vite.config.ts, PREMIUM_VOICES). The Cloud
+// calls, in its voice/ folder, and his spoken lines beside it and in the
+// Ear rooms' voice/ folders; vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
 // same way, and so do the Ear Lab with Merc's pictures and serif
 // (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch),
@@ -115,19 +115,23 @@ describe("the premium rooms' pictures in a native build", () => {
 
   it("has Merc's voice for Echo to fold, so the voice checks are not vacuous", () => {
     const voices = PICTURES.filter(
-      (file) => file.room === 'echo' && file.name.endsWith('.mp3'),
+      (file) =>
+        file.room === 'echo' &&
+        /(?:^|\/)echo-merc-ooh-[^/]+\.mp3$/u.test(file.name),
     )
     expect(voices.length).toBe(10)
   })
 
-  it("has Merc's spoken lines for each Ear room to fold", () => {
-    for (const room of ['home-note', 'first-note', 'leap'] as const) {
+  it("has Merc's spoken lines to fold in each room he speaks in", () => {
+    // Each Ear room's opening and result lines, and Echo's opening lines.
+    const spoken = { 'home-note': 9, 'first-note': 9, leap: 9, echo: 4 }
+    for (const [room, count] of Object.entries(spoken)) {
       const lines = PICTURES.filter(
         (file) =>
           file.room === room &&
           /(?:^|\/)merc-says-[a-z-]+\.mp3$/u.test(file.name),
       )
-      expect(lines.length, room).toBe(3)
+      expect(lines.length, room).toBe(count)
     }
   })
 

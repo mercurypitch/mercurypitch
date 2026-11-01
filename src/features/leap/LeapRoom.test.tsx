@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
@@ -54,6 +55,7 @@ vi.mock('@/components/room-kit/useExerciseCapture', async () => {
       },
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(clock),
+      runningAudio: () => clock,
     }),
   }
 })
@@ -171,7 +173,10 @@ function toTurn(): void {
 // ── Merc's spoken lines, as calls the test can read ───────────
 
 const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
-vi.mock('@/components/room-kit/merc-speech', () => ({
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
   createMercSpeech: () => ({
     say: (id: string) => {
       spoken.said.push(id)
@@ -333,12 +338,17 @@ describe('Leap', () => {
     expect(recorded.calls).toHaveLength(1)
     expect(recorded.calls[0]).toMatchObject({ type: 'leap-cliffs', score: 83 })
 
+    // Merc says the result aloud; a row's leap hushes him.
+    expect(spoken.said.at(-1)).toBe('most-landed')
+    const hushes = spoken.hushed
+
     const rows = screen.getAllByTestId('leap-row')
     expect(rows.length).toBeGreaterThanOrEqual(1)
     expect(rows.length).toBeLessThanOrEqual(2)
     const sungBefore = merc.sung.length
     fireEvent.click(rows[0])
     await settle()
+    expect(spoken.hushed).toBeGreaterThan(hushes)
     expect(merc.sung).toHaveLength(sungBefore + 1)
     expect(lastCall()).toHaveLength(2)
     expect(screen.getAllByTestId('leap-row')[0].dataset.playing).toBe('true')

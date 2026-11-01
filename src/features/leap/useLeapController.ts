@@ -32,7 +32,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
-import { createMercSpeech } from '@/components/room-kit/merc-speech'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
@@ -66,7 +66,7 @@ import type { LeapLevel } from './leap-rules'
 import { AFTER_ANSWER_MS, BETWEEN_ROUNDS_MS, LEAP_LEVELS, LEAP_ROUNDS, leapName, leapSong, namesPrecisely, sizeName, SOUND_LEAD_SECONDS, } from './leap-rules'
 import type { LeapSummary } from './leap-run'
 import { callMoment, keepLeapRun, landedMoment, missedMoment, resultMoment, summarizeRun, } from './leap-run'
-import type { LeapLineFields, LeapMoment } from './merc-lines'
+import type { LeapLineFields } from './merc-lines'
 import { createLeapLines } from './merc-lines'
 import { LEAP_SPOKEN } from './merc-spoken'
 
@@ -163,10 +163,9 @@ export function useLeapController(
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
   const random = options.random ?? Math.random
   const lines = createLeapLines(random)
-  // His opening lines aloud, through the room's clock (room-kit
-  // merc-speech.ts).
+  // His lines at rest, aloud through the room's clock (merc-speech.ts).
   const speech = createMercSpeech(LEAP_SPOKEN, {
-    audio: () => capture.audio(),
+    clock: () => capture.runningAudio(),
   })
 
   const [state, setState] = createSignal<LeapState>(INITIAL_LEAP_STATE)
@@ -186,18 +185,7 @@ export function useLeapController(
     setState((current) => leapReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (
-    moment: LeapMoment,
-    fields?: LeapLineFields,
-    aloud = false,
-  ): void => {
-    const said = lines.line(moment, fields)
-    setLine(said.text)
-    // He says aloud only what the bubble shows, and only when asked
-    // to: any other line hushes him.
-    if (aloud) speech.say(said.id)
-    else speech.hush()
-  }
+  const say = speakingLines(lines, speech, setLine)
   /** His opening line, aloud unless the singer has just left the app. */
   const sayIntro = (aloud = true): void => {
     say(
@@ -564,11 +552,8 @@ export function useLeapController(
       setChip(null)
       setLamp(null)
       setAnswering(false)
-      say(resultMoment(shown, kept), {
-        found: shown.landed,
-        rounds: shown.rounds,
-        level: levelName,
-      })
+      // The run is over and the mic closed: Merc says the result aloud.
+      say(resultMoment(shown, kept), undefined, true)
     })
     if (kept.kept && shown.landed * 2 >= shown.rounds) {
       haptics.success()
@@ -604,6 +589,8 @@ export function useLeapController(
     const outcome = untrack(state).outcomes[index]
     if (outcome === undefined) return
     endReplay()
+    // The leap's own notes take over from Merc's line.
+    speech.hush()
     const mine = answerCount
     const current = (): boolean => mine === answerCount && phase() === 'result'
     // Asked inside the tap: iOS starts the clock only from a gesture.

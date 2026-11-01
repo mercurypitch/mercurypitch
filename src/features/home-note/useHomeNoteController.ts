@@ -31,7 +31,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
-import { createMercSpeech } from '@/components/room-kit/merc-speech'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
@@ -65,7 +65,6 @@ import type { HomeNoteLevel } from './home-note-rules'
 import { BETWEEN_ROUNDS_MS, CHORD_SECONDS, HOME_NOTE_LEVELS, HOME_NOTE_ROUNDS, MERC_GAP_SECONDS, MERC_HOME_SECONDS, SOUND_LEAD_SECONDS, } from './home-note-rules'
 import type { HomeNoteSummary } from './home-note-run'
 import { isQuick, keepHomeNoteRun, resultMoment, summarizeRun, } from './home-note-run'
-import type { HomeLineFields, HomeMoment } from './merc-lines'
 import { createHomeLines } from './merc-lines'
 import { HOME_SPOKEN } from './merc-spoken'
 
@@ -139,10 +138,9 @@ export function useHomeNoteController(
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
   const random = options.random ?? Math.random
   const lines = createHomeLines(random)
-  // His opening lines aloud, through the room's clock (room-kit
-  // merc-speech.ts).
+  // His lines at rest, aloud through the room's clock (merc-speech.ts).
   const speech = createMercSpeech(HOME_SPOKEN, {
-    audio: () => capture.audio(),
+    clock: () => capture.runningAudio(),
   })
 
   const [state, setState] = createSignal<HomeNoteState>(INITIAL_HOME_NOTE_STATE)
@@ -162,18 +160,7 @@ export function useHomeNoteController(
     setState((current) => homeNoteReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (
-    moment: HomeMoment,
-    fields?: HomeLineFields,
-    aloud = false,
-  ): void => {
-    const said = lines.line(moment, fields)
-    setLine(said.text)
-    // He says aloud only what the bubble shows, and only when asked
-    // to: any other line hushes him.
-    if (aloud) speech.say(said.id)
-    else speech.hush()
-  }
+  const say = speakingLines(lines, speech, setLine)
   /** His opening line, aloud unless the singer has just left the app. */
   const sayIntro = (aloud = true): void => {
     say(
@@ -454,11 +441,8 @@ export function useHomeNoteController(
       setSummary(shown)
       setResultLevel(levelName)
       setChip(null)
-      say(resultMoment(shown, kept), {
-        found: shown.found,
-        rounds: shown.rounds,
-        level: levelName,
-      })
+      // The run is over and the mic closed: Merc says the result aloud.
+      say(resultMoment(shown, kept), undefined, true)
     })
     if (kept.kept && shown.found * 2 >= shown.rounds) {
       haptics.success()
@@ -521,6 +505,8 @@ export function useHomeNoteController(
     const outcome = untrack(state).outcomes[index]
     if (outcome === undefined) return
     endReplay()
+    // The key's own sound takes over from Merc's line.
+    speech.hush()
     const mine = replayCount
     // Asked inside the tap: iOS starts the clock only from a gesture.
     void capture.audio().then((ctx) => {

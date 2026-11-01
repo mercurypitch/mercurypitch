@@ -17,10 +17,12 @@
 // First note's tap does the same: its theatre and its songs ship with the
 // app and load as the room opens. So does Leap's: its cliffs are drawn.
 //
-// In those three Ear rooms Merc says his opening line aloud as the room
-// opens (room-kit merc-speech.ts), through the app's one AudioContext,
-// which iOS starts only inside a tap. The room opens a frame or more after
-// the tap that opened it, so the tap starts the clock (startRoomClock).
+// In those three Ear rooms and in Echo, Merc says his opening line aloud as
+// the room opens (room-kit merc-speech.ts), through the app's one
+// AudioContext, which iOS starts only inside a tap. The room opens a frame
+// or more after the tap that opened it, so the tap starts the clock
+// (startRoomClock). Echo's first visit opens on its demo instead, which
+// finds the clock running.
 //
 // A build without the premium exercises (the store build, until the V1
 // flip) gets nothing. PREMIUM_EXERCISES is a compile-time constant there, so
@@ -99,6 +101,7 @@ export function preloadExercise(id: PremiumExerciseId): void {
 
 /** The rooms whose Merc says his opening line aloud as they open. */
 const SPEAKS_AS_IT_OPENS: ReadonlySet<PremiumExerciseId> = new Set([
+  EXERCISE_ECHO_STARS,
   EXERCISE_HOME_NOTE_LIGHTHOUSE,
   EXERCISE_FIRST_NOTE_STAGE,
   EXERCISE_LEAP_CLIFFS,
