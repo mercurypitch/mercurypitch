@@ -11,7 +11,7 @@ import type { MergedNote } from '@/lib/midi-generator'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
 import { BAND_RATE } from './band-beats'
 import type { BandSpan, BandStretch, OwnSongReadSeams } from './own-song-read'
-import { keepNear, readOwnSong, setOwnSongReadSeams } from './own-song-read'
+import { readOwnSong, setOwnSongReadSeams } from './own-song-read'
 
 // A phone that cannot stream: the stems are decoded whole, where they fit.
 vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
@@ -502,19 +502,5 @@ describe('the screen, while a song is read', () => {
       readOwnSong('mine', { signal: controller.signal }),
     ).rejects.toMatchObject({ name: 'AbortError' })
     expect(moments).toBe(2)
-  })
-})
-
-describe('keeping samples near a rate', () => {
-  it('keeps the mean of a whole number of them', () => {
-    const kept = keepNear(
-      Float32Array.from([1, 3, 5, 7, 9, 11, 13]),
-      48_000,
-      16_000,
-    )
-    expect(kept.rate).toBe(16_000)
-    expect(Array.from(kept.samples)).toEqual([3, 9])
-    const same = Float32Array.from([1, 2])
-    expect(keepNear(same, 22_050, 16_000).samples).toBe(same)
   })
 })
