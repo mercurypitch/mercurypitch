@@ -85,7 +85,6 @@ export const ONBOARDING_COPY = {
   revealTitle: 'Your voice',
   yourRange: 'Your range',
   twinLabel: 'Your voice twin',
-  findTwin: 'Find my twin',
   voiceprint: "That's your voiceprint. It changes as you practice.",
   continue: 'Continue',
   share: 'Share',

@@ -105,7 +105,7 @@ afterEach(() => {
 })
 
 describe('the reveal', () => {
-  it('shows the voice, the range, its type and a twin still to find', () => {
+  it('shows the voice, the range, its type and the twin, face and name, at once', () => {
     show(E2_G4, ways(true, true))
 
     expect(view?.container.querySelector('h2')?.textContent).toBe(
@@ -113,10 +113,9 @@ describe('the reveal', () => {
     )
     expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(q('onboarding-card-type')?.textContent).toBe('Baritone')
-    expect(q('onboarding-find-twin')?.textContent).toBe(
-      ONBOARDING_COPY.findTwin,
-    )
-    expect(q('onboarding-twin')).toBeNull()
+    // No button to find it, and no blank figure standing in for it.
+    expect(q('onboarding-find-twin')).toBeNull()
+    expect(q('onboarding-twin')?.textContent).toBe(singerForRange(E2_G4))
     expect(q('onboarding-line')?.textContent).toBe(ONBOARDING_COPY.voiceprint)
   })
 
@@ -129,27 +128,15 @@ describe('the reveal', () => {
     expect(controller?.mercState()).toBe('celebrate')
   })
 
-  it('finds the twin: its name where the button was, and the focus on it', async () => {
-    show(E2_G4, ways(true, true))
-
-    q('onboarding-find-twin')?.click()
-    await settle()
-
-    const twin = q('onboarding-twin')
-    expect(twin?.textContent).toBe(singerForRange(E2_G4))
-    expect(q('onboarding-find-twin')).toBeNull()
-    expect(document.activeElement).toBe(twin)
-  })
-
   it('has no type and no twin row for a range no voice type overlaps', () => {
     show(UNDER_ALL, ways(true, true))
 
     expect(q('onboarding-card-range')?.textContent).toBe('G#0\u2013D#1')
     expect(q('onboarding-card-type')).toBeNull()
-    expect(q('onboarding-find-twin')).toBeNull()
+    expect(q('onboarding-twin')).toBeNull()
   })
 
-  it('shares the twin it finds first, through the share sheet', async () => {
+  it('shares the twin the card shows, through the share sheet', async () => {
     const w = ways(true, true)
     show(E2_G4, w)
 

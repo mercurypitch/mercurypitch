@@ -13,7 +13,6 @@ import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MercView } from '@/components/room-kit/MercView'
 import type { RangeResult } from '@/lib/mirror/metrics'
-import { settle } from './onboarding/onboarding-capture.test-fixtures'
 import { RevealView } from './onboarding/RevealView'
 import { rangeFromEnds } from './onboarding/saved-range'
 import { useReveal } from './onboarding/useReveal'
@@ -75,15 +74,11 @@ afterEach(() => {
 })
 
 describe("the onboarding's reveal of a Bass/Baritone tie", () => {
-  it('reads Bass-baritone under E2 to G4 and finds its twin', async () => {
+  it('reads Bass-baritone under E2 to G4 and shows its twin', () => {
     show(rangeFromEnds(40, 67))
 
     expect(q('onboarding-card-range')?.textContent).toBe('E2\u2013G4')
     expect(q('onboarding-card-type')?.textContent).toBe('Bass-baritone')
-
-    q('onboarding-find-twin')?.click()
-    await settle()
-
     expect(q('onboarding-twin')?.textContent).toBe('Paul Robeson')
   })
 

@@ -52,7 +52,6 @@ const SEE_VOICE = '[data-testid="onboarding-see-voice"]'
 const PIN_LOW = '[data-testid="onboarding-pin-low"]'
 const PIN_HIGH = '[data-testid="onboarding-pin-high"]'
 const CARD_RANGE = '[data-testid="onboarding-card-range"]'
-const FIND_TWIN = '[data-testid="onboarding-find-twin"]'
 const TWIN = '[data-testid="onboarding-twin"]'
 const CONTINUE = '[data-testid="onboarding-continue"]'
 const SEE_SAVED = '[data-testid="onboarding-see-saved"]'
@@ -369,7 +368,6 @@ const readLayout = () => {
     skip: id('skip'),
     seeSaved: id('see-saved'),
     seeVoice: id('see-voice'),
-    findTwin: id('find-twin'),
     continue: id('continue'),
     share: id('share'),
     retry: id('retry'),
@@ -395,7 +393,6 @@ const readLayout = () => {
     'skip',
     'seeSaved',
     'seeVoice',
-    'findTwin',
     'continue',
     'share',
     'retry',
@@ -1092,18 +1089,10 @@ async function reveal(page, kit, range, see = SEE_VOICE) {
     throw new Error(`reveal: the card says "${card}"`)
   }
   await expectLayout(page, 'reveal')
-  if ((await page.locator(FIND_TWIN).count()) === 0) {
+  // The twin is on the card from the start, face and name: no button.
+  if ((await page.locator(TWIN).count()) === 0) {
     return `"${card}", no twin for it`
   }
-  await page.locator(FIND_TWIN).tap()
-  await page
-    .locator(TWIN)
-    .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
-    .catch(() => {
-      throw new Error('reveal: Find my twin found none')
-    })
-  await settleAnimations(page, LAYER)
-  await expectLayout(page, 'reveal, the twin found')
   const twin = (await page.locator(TWIN).textContent())?.trim() ?? ''
   return `"${card}", twin ${twin}`
 }
