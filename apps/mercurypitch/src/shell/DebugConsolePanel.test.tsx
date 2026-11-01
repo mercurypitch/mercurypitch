@@ -3,9 +3,9 @@
 // page, the log keeps filling underneath, and on brings the panel back.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PortableConsoleOnScreen } from '@/components/PortableConsole'
-import { initPortableConsoleVisibility, portableConsoleEntries, portableConsoleOnScreen, recordPortableConsole, resetPortableConsoleForTests, } from '@/lib/portable-console'
+import { initPortableConsoleVisibility, installPortableConsole, portableConsoleEntries, portableConsoleOnScreen, recordPortableConsole, resetPortableConsoleForTests, } from '@/lib/portable-console'
 import { DebugConsolePanel } from './DebugConsolePanel'
 
 const ON_SCREEN_KEY = 'mp:portableConsole:onScreen'
@@ -18,6 +18,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   resetPortableConsoleForTests()
+  vi.restoreAllMocks()
   localStorage.clear()
 })
 
@@ -71,5 +72,42 @@ describe('the Debug console switch', () => {
     resetPortableConsoleForTests()
     initPortableConsoleVisibility('')
     expect(portableConsoleOnScreen()).toBe(false)
+  })
+})
+
+describe('the routine logs switch', () => {
+  it('starts off: the routine lines are left out, the reports and the trouble kept', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    installPortableConsole()
+    render(() => <DebugConsolePanel />)
+    const toggle = screen.getByTestId('dev-debug-console-routine')
+
+    console.log('scheduling auto-play')
+    console.info('[first-note] read "Song": 6 entries')
+    console.warn('recognition ended, quiet')
+
+    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(portableConsoleEntries().map((entry) => entry.level)).toEqual([
+      'info',
+      'warn',
+    ])
+  })
+
+  it('keeps every line once turned on, and says so', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    installPortableConsole()
+    render(() => <DebugConsolePanel />)
+    const toggle = screen.getByTestId('dev-debug-console-routine')
+
+    fireEvent.click(toggle)
+    console.log('scheduling auto-play')
+
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(portableConsoleEntries().map((entry) => entry.text)).toEqual([
+      'scheduling auto-play',
+    ])
+    expect(localStorage.getItem('mp:portableConsole:routine')).toBe('1')
   })
 })

@@ -48,6 +48,15 @@ const QUERY_KEY = 'console'
  * off is never a trap: the switch that turned it off brings it back.
  */
 const ON_SCREEN_KEY = 'mp:portableConsole:onScreen'
+/**
+ * Whether the routine lines are kept: `console.log` and `console.debug`,
+ * the running commentary of the parts that work. Off by default, so what
+ * the console holds is what needs a look: what the app reports on purpose
+ * (`console.info`, a First note read, say), its warnings and its errors.
+ * Switched from the native Developer screen, or the panel's own button;
+ * off, those lines go nowhere, the browser's console included.
+ */
+const ROUTINE_KEY = 'mp:portableConsole:routine'
 
 /**
  * Where the capture survives a page load.
@@ -104,6 +113,7 @@ const listeners = new Set<Listener>()
 let entries: PortableConsoleEntry[] = []
 let visible = true
 let onScreen = true
+let routine = false
 let origin = 0
 let uninstall: (() => void) | null = null
 let persistTimer: ReturnType<typeof setTimeout> | null = null
@@ -238,6 +248,7 @@ export function installPortableConsole(
   if (uninstall !== null) return uninstall
   appName = options.appName ?? 'MercuryPitch'
   persistence = options.persistence ?? 'session'
+  routine = readRoutine()
   restore()
 
   const levels: PortableConsoleLevel[] = [
@@ -257,11 +268,15 @@ export function installPortableConsole(
     // eslint-disable-next-line no-console
     const previous = console[key] as (...args: unknown[]) => void
     original.set(level, previous)
+    const isRoutine = key === 'log' || key === 'debug'
     // eslint-disable-next-line no-console
     console[key] = (...args: unknown[]) => {
+      // A routine line with the routine lines off goes nowhere: kept, it
+      // buries the lines that need a look (owner, 1 Nov 2026).
+      if (isRoutine && !routine) return
       recordPortableConsole(level, args)
-      // Always call through: the dev-server relay reads the real console,
-      // and swallowing output would trade one blind spot for another.
+      // Call through: the dev-server relay reads the real console, and
+      // swallowing a line kept here would trade one blind spot for another.
       previous.apply(console, args)
     }
   }
@@ -362,6 +377,42 @@ export function setPortableConsoleOnScreen(next: boolean): void {
   notify()
 }
 
+function readRoutine(): boolean {
+  try {
+    return localStorage.getItem(ROUTINE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Whether `console.log` and `console.debug` are kept (ROUTINE_KEY). */
+export function portableConsoleRoutine(): boolean {
+  return routine
+}
+
+export function setPortableConsoleRoutine(next: boolean): void {
+  routine = next
+  try {
+    if (next) localStorage.setItem(ROUTINE_KEY, '1')
+    else localStorage.removeItem(ROUTINE_KEY)
+  } catch {
+    // Storage refused: the switch holds for this page.
+  }
+  notify()
+}
+
+/** A line's kind, as the panel sorts them: an error, a warning, or a log. */
+export type PortableConsoleKind = 'error' | 'warning' | 'log'
+
+export function portableConsoleKind(
+  level: PortableConsoleLevel,
+): PortableConsoleKind {
+  if (level === 'error' || level === 'onerror' || level === 'unhandled') {
+    return 'error'
+  }
+  return level === 'warn' ? 'warning' : 'log'
+}
+
 export function portableConsoleEntries(): readonly PortableConsoleEntry[] {
   return entries
 }
@@ -396,15 +447,24 @@ export function formatPortableConsoleEntry(
  * This is what Copy puts on the clipboard, so it has to survive being pasted
  * into a chat message and still say which phone produced it.
  */
-export function formatPortableConsole(): string {
+export function formatPortableConsole(
+  shown: {
+    /** The lines the panel shows; every line by default. */
+    readonly lines?: readonly PortableConsoleEntry[]
+    /** What the panel shows them by, said in the header: "errors". */
+    readonly by?: string
+  } = {},
+): string {
+  const lines = shown.lines ?? entries
   return [
     `${appName} portable console`,
     `when: ${new Date().toISOString()}`,
     `url: ${window.location.href}`,
     `agent: ${navigator.userAgent}`,
-    `lines: ${entries.length}${entries.length === MAX_ENTRIES ? ' (oldest dropped)' : ''}`,
+    `lines: ${lines.length}${shown.by === undefined ? '' : ` (${shown.by}, of ${entries.length})`}${entries.length === MAX_ENTRIES ? ' (oldest dropped)' : ''}`,
+    `routine logs: ${routine ? 'kept' : 'left out'}`,
     '',
-    ...entries.map(formatPortableConsoleEntry),
+    ...lines.map(formatPortableConsoleEntry),
   ].join('\n')
 }
 
@@ -417,8 +477,10 @@ export function resetPortableConsoleForTests(): void {
   listeners.clear()
   visible = true
   onScreen = true
+  routine = false
   origin = 0
   try {
+    localStorage.removeItem(ROUTINE_KEY)
     logStorage().removeItem(PERSIST_KEY)
     logStorage().removeItem(PERSIST_ORIGIN_KEY)
   } catch {

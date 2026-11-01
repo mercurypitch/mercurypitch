@@ -85,6 +85,8 @@ export interface OwnSongRead {
    * hold, or no voice to read. Absent for a song that was read.
    */
   readonly out?: OwnSongOut
+  /** The vocal's size, bytes, when it was too long to hold: for the log. */
+  readonly vocalBytes?: number
 }
 
 export interface OwnSongReadRun {
@@ -387,7 +389,14 @@ export async function readOwnSong(
   // The whole vocal is let go inside readVoice: from here on the read holds
   // only the voice at VOCAL_RATE, so the band is never read beside it.
   const voiced = await readVoice(sessionId, vocalBlob, stored, report, signal)
-  if (voiced === null) return { entries: [], dropped: [], out: 'too-long' }
+  if (voiced === null) {
+    return {
+      entries: [],
+      dropped: [],
+      out: 'too-long',
+      vocalBytes: vocalBlob.size,
+    }
+  }
   report(80)
   const { voice, notes } = voiced
   if (notes.length === 0) return { entries: [], dropped: ['no notes'] }

@@ -8,13 +8,14 @@
 // installed twice onto itself.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearPortableConsole, flushPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, setPortableConsoleVisible, } from './portable-console'
+import { clearPortableConsole, flushPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleKind, portableConsoleRoutine, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, setPortableConsoleRoutine, setPortableConsoleVisible, } from './portable-console'
 
 // The keys a PREVIOUS document wrote. Spelled out on purpose: this is the
 // contract across a navigation, and a rename that silently drops the log is
 // exactly the failure these tests are here to catch.
 const PERSIST_KEY = 'mp:portableConsole:log'
 const PERSIST_ORIGIN_KEY = 'mp:portableConsole:origin'
+const ROUTINE_KEY = 'mp:portableConsole:routine'
 
 let logSpy: ReturnType<typeof vi.spyOn>
 
@@ -22,6 +23,9 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   resetPortableConsoleForTests()
+  // These pin the capture itself, every line kept; the routine lines'
+  // switch has tests of its own (below).
+  localStorage.setItem(ROUTINE_KEY, '1')
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
   vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -361,5 +365,103 @@ describe('native test build capture', () => {
     expect(portableConsoleVisible()).toBe(true)
     initPortableConsoleVisibility('?console=0', true)
     expect(portableConsoleVisible()).toBe(false)
+  })
+})
+
+describe('the routine lines', () => {
+  beforeEach(() => {
+    localStorage.removeItem(ROUTINE_KEY)
+  })
+
+  it('leaves out console.log and console.debug by default, the console included', () => {
+    const debugSpy = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(() => undefined)
+    installPortableConsole()
+
+    console.log('scheduling auto-play')
+    // The one method the rest of the codebase may not call: the wrapper
+    // takes it as it finds it, and this pins that it is left out too.
+    // eslint-disable-next-line no-console
+    console.debug('frame 1')
+
+    expect(portableConsoleRoutine()).toBe(false)
+    expect(portableConsoleEntries()).toEqual([])
+    expect(logSpy).not.toHaveBeenCalled()
+    expect(debugSpy).not.toHaveBeenCalled()
+  })
+
+  it('keeps what the app reports, its warnings and its errors', () => {
+    const infoSpy = vi
+      .spyOn(console, 'info')
+      .mockImplementation(() => undefined)
+    installPortableConsole()
+
+    console.info('[first-note] read "Song": 6 entries')
+    console.warn('recognition ended, quiet')
+    console.error('the store would not answer')
+
+    expect(portableConsoleEntries().map((entry) => entry.level)).toEqual([
+      'info',
+      'warn',
+      'error',
+    ])
+    expect(infoSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps every line once switched on, and remembers it for the next page', () => {
+    installPortableConsole()
+    setPortableConsoleRoutine(true)
+
+    console.log('scheduling auto-play')
+
+    expect(portableConsoleEntries().map((entry) => entry.text)).toEqual([
+      'scheduling auto-play',
+    ])
+    expect(logSpy).toHaveBeenCalledWith('scheduling auto-play')
+    expect(localStorage.getItem(ROUTINE_KEY)).toBe('1')
+
+    // The next document reads the switch as it installs.
+    resetPortableConsoleForTests()
+    localStorage.setItem(ROUTINE_KEY, '1')
+    installPortableConsole()
+    expect(portableConsoleRoutine()).toBe(true)
+  })
+
+  it('tells subscribers when it is switched', () => {
+    const heard = vi.fn()
+    onPortableConsole(heard)
+
+    setPortableConsoleRoutine(true)
+
+    expect(heard).toHaveBeenCalled()
+  })
+})
+
+describe('lines by kind', () => {
+  it('sorts the levels into errors, warnings and logs', () => {
+    expect(portableConsoleKind('error')).toBe('error')
+    expect(portableConsoleKind('onerror')).toBe('error')
+    expect(portableConsoleKind('unhandled')).toBe('error')
+    expect(portableConsoleKind('warn')).toBe('warning')
+    expect(portableConsoleKind('info')).toBe('log')
+    expect(portableConsoleKind('log')).toBe('log')
+    expect(portableConsoleKind('debug')).toBe('log')
+  })
+
+  it('hands over the lines shown, and says what they were shown by', () => {
+    recordPortableConsole('log', ['boot'])
+    recordPortableConsole('error', ['the store would not answer'])
+    recordPortableConsole('warn', ['quiet'])
+    const errors = portableConsoleEntries().filter(
+      (entry) => portableConsoleKind(entry.level) === 'error',
+    )
+
+    const text = formatPortableConsole({ lines: errors, by: 'errors' })
+
+    expect(text).toContain('lines: 1 (errors, of 3)')
+    expect(text).toContain('the store would not answer')
+    expect(text).not.toContain('boot')
+    expect(text).toContain('routine logs: left out')
   })
 })

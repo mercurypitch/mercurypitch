@@ -105,6 +105,42 @@
   -webkit-touch-callout: default;
 }
 
+/* The kinds to show by: each a chip with its count, the shown one lit. */
+.kinds {
+  pointer-events: auto;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 12, 18, 0.94);
+}
+
+.kind {
+  min-height: 32px;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.kind[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.kind[data-kind='error'] {
+  color: #ff8080;
+}
+
+.kind[data-kind='warning'] {
+  color: #ffd27a;
+}
+
 .line {
   white-space: pre-wrap;
   word-break: break-word;

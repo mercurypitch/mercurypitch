@@ -8,8 +8,10 @@
 // its console saw. The capture and the build gate are in lib/portable-console.
 //
 // Collapsed it is one line — the newest entry — because the point is to watch
-// the app while USING it. Tapping it opens the log, with a filter, Copy, and
-// a flip to the other edge.
+// the app while USING it. Tapping it opens the log, with its lines sorted by
+// kind (errors, warnings, logs: each with its count, each to show alone), a
+// text filter, Copy of what is shown, the routine logs' switch, and a flip
+// to the other edge.
 //
 // Two things learned the hard way while placing it (2026-09-10):
 //
@@ -25,12 +27,22 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { render } from 'solid-js/web'
-import type { PortableConsoleOptions } from '../lib/portable-console'
-import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleOnScreen, portableConsoleVisible, setPortableConsoleVisible, } from '../lib/portable-console'
+import type { PortableConsoleKind, PortableConsoleOptions, } from '../lib/portable-console'
+import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleKind, portableConsoleOnScreen, portableConsoleRoutine, portableConsoleVisible, setPortableConsoleRoutine, setPortableConsoleVisible, } from '../lib/portable-console'
 import styles from '../styles/PortableConsole.module.css'
 import { Copy, Trash2 } from './icons'
 
 const HOST_ID = 'mp-portable-console'
+
+type ShownKind = PortableConsoleKind | 'all'
+
+/** The kinds to show by, in the order the chips read. */
+const KINDS: readonly { kind: ShownKind; label: string; by: string }[] = [
+  { kind: 'all', label: 'All', by: 'every line' },
+  { kind: 'error', label: 'Errors', by: 'errors' },
+  { kind: 'warning', label: 'Warnings', by: 'warnings' },
+  { kind: 'log', label: 'Logs', by: 'logs' },
+]
 
 /** What is left when the panel is out of the way: a dot, and a way back. */
 const MinimisedConsole: Component<{
@@ -59,6 +71,8 @@ export const PortableConsole: Component = () => {
   const [shown, setShown] = createSignal(portableConsoleVisible())
   const [open, setOpen] = createSignal(false)
   const [filter, setFilter] = createSignal('')
+  const [kind, setKind] = createSignal<ShownKind>('all')
+  const [routine, setRoutine] = createSignal(portableConsoleRoutine())
   const [copied, setCopied] = createSignal(false)
   const [edge, setEdge] = createSignal<'top' | 'bottom'>('bottom')
   let listEl: HTMLDivElement | undefined
@@ -66,19 +80,49 @@ export const PortableConsole: Component = () => {
   const off = onPortableConsole(() => {
     setEntries(portableConsoleEntries().slice())
     setShown(portableConsoleVisible())
+    setRoutine(portableConsoleRoutine())
   })
   onCleanup(off)
 
+  /** How many lines of each kind the capture holds. */
+  const counts = createMemo(() => {
+    const count: Record<ShownKind, number> = {
+      all: 0,
+      error: 0,
+      warning: 0,
+      log: 0,
+    }
+    for (const entry of entries()) {
+      count.all += 1
+      count[portableConsoleKind(entry.level)] += 1
+    }
+    return count
+  })
+
   const matching = createMemo(() => {
     const needle = filter().trim().toLowerCase()
-    const all = entries()
-    if (needle === '') return all
-    return all.filter(
+    const wanted = kind()
+    const ofKind =
+      wanted === 'all'
+        ? entries()
+        : entries().filter(
+            (entry) => portableConsoleKind(entry.level) === wanted,
+          )
+    if (needle === '') return ofKind
+    return ofKind.filter(
       (entry) =>
         entry.text.toLowerCase().includes(needle) ||
         entry.level.includes(needle),
     )
   })
+
+  /** What Copy says the lines were shown by, or nothing for every line. */
+  const shownBy = (): string | undefined => {
+    const needle = filter().trim()
+    const by = KINDS.find((each) => each.kind === kind())?.by ?? 'every line'
+    if (needle === '') return kind() === 'all' ? undefined : by
+    return `${by} with "${needle}"`
+  }
 
   // Follow the tail while open, the way a console does.
   createEffect(() => {
@@ -94,7 +138,10 @@ export const PortableConsole: Component = () => {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(formatPortableConsole())
+      // What is shown is what is copied: the errors alone, say.
+      await navigator.clipboard.writeText(
+        formatPortableConsole({ lines: matching(), by: shownBy() }),
+      )
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -149,6 +196,26 @@ export const PortableConsole: Component = () => {
         </button>
 
         <Show when={open()}>
+          <div
+            class={styles.kinds}
+            role="group"
+            aria-label="Show the lines of one kind"
+          >
+            <For each={KINDS}>
+              {(each) => (
+                <button
+                  type="button"
+                  class={styles.kind}
+                  data-kind={each.kind}
+                  aria-pressed={kind() === each.kind}
+                  data-testid={`portable-console-kind-${each.kind}`}
+                  onClick={() => setKind(each.kind)}
+                >
+                  {each.label} {counts()[each.kind]}
+                </button>
+              )}
+            </For>
+          </div>
           <div class={styles.log} ref={listEl} tabindex="0">
             <For each={matching()}>
               {(entry) => (
@@ -174,6 +241,15 @@ export const PortableConsole: Component = () => {
             >
               <Copy size={14} />
               {copied() ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              type="button"
+              class={styles.action}
+              aria-pressed={routine()}
+              data-testid="portable-console-routine"
+              onClick={() => setPortableConsoleRoutine(!routine())}
+            >
+              {routine() ? 'Routine logs: kept' : 'Routine logs: left out'}
             </button>
             <button
               type="button"
