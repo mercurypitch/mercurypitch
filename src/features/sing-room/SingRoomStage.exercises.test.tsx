@@ -248,6 +248,7 @@ describe('at rest', () => {
       'ng-slides-bridge',
       'home-note-lighthouse',
       'first-note-stage',
+      'leap-cliffs',
     ])
     fireEvent.click(cards[0])
 

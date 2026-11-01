@@ -109,13 +109,14 @@ These are the rules that break things when ignored.
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
+| `leap` | [LeapRoom.tsx](../../src/features/leap/LeapRoom.tsx) | 2.7k | LeapRoom — Merc sings a note and names a leap; sing his note, then leap The third Ear room (docs/plans/ear-rooms.md, Room 3). |
 | `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 2.5k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.7k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `mercury-sing` | [mercury-sing-engine.ts](../../src/features/mercury-sing/mercury-sing-engine.ts) | 1.4k | Mercury Sing engine — listen, match, decide, hand off The headless controller behind the stage: owns its own AudioEngine + LivePitchBuffe... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
-| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.3k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
+| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.4k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `tours` | [TourScreenHost.tsx](../../src/features/tours/TourScreenHost.tsx) | 1.3k | TourScreenHost — what a tour asks before it changes the screen Draws the question a door asks before a tour closes what the singer has op... |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 1.1k | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
@@ -162,9 +163,9 @@ These are the rules that break things when ignored.
 | `glide` | [glide-engine.ts](../../src/lib/glide/glide-engine.ts) | 1.9k | Glide engine — a voice following a moving target: the lit share of each arch Ng slides' engine, and Lip roll's. |
 | `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.9k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.7k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
+| `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.1k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
-| `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.0k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
 | `tv-stage` | [renderer.ts](../../src/lib/tv-stage/renderer.ts) | 900 | TV stage renderer — the stage, drawn on a canvas at the TV's size One frame of the stage from its state (model.ts) and the wall clock: th... |
@@ -255,6 +256,7 @@ These are the rules that break things when ignored.
 | [first-note-store.ts](../../src/stores/first-note-store.ts) | 100 | First note's records — the best at each level A best is the most entries a run came in on the note, and among runs that came in on as man... |
 | [home-note-store.ts](../../src/stores/home-note-store.ts) | 100 | Home note's records — the best at each level A best is the most rounds found in a run, and among runs that found as many, the quickest to... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
+| [leap-store.ts](../../src/stores/leap-store.ts) | 100 | Leap's records — the best at each level A best is the most leaps landed in a run, and among runs that landed as many, the quickest from M... |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [sing-takes-store.ts](../../src/stores/sing-takes-store.ts) | 100 | Sing takes — the summaries this phone keeps, and nothing else A kept take is four numbers and two timestamps. |

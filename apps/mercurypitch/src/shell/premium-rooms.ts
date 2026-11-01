@@ -39,6 +39,7 @@ export const PREMIUM_ROOM_SCREENS: Readonly<
   'warm-up': { fullBleed: true },
   'home-note': { fullBleed: true },
   'first-note': { fullBleed: true },
+  leap: { fullBleed: true },
   // The Legend (NATIVE_LEAGUES): a line on a dark stage, its own scroller.
   legend: { fullBleed: true },
 }

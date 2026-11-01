@@ -37,6 +37,7 @@ export type PushedScreen =
   | 'warm-up'
   | 'home-note'
   | 'first-note'
+  | 'leap'
   | 'developer'
   | 'leagues'
   | 'legend'

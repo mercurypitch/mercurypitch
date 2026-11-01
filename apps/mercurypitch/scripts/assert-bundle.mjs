@@ -383,6 +383,19 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Came in on the note', "First note's result"],
   ['mp_first_note_bests', "First note's bests"],
+  // Leap, the third Ear room: its room, its card, its level lines, its
+  // result and its bests, on the same switch. Its cliffs are drawn.
+  ['leap-room', 'the premium Leap exercise'],
+  [
+    'Merc sings a note and names a leap. Sing his note, then leap',
+    "the exercise picker's Leap card",
+  ],
+  [
+    'Thirds to the octave, up and down, named by the interval alone',
+    "Leap's level control",
+  ],
+  ['Leaps landed at', "Leap's result"],
+  ['mp_leap_bests', "Leap's bests"],
   // Its songs (the singer's own, read on the phone), its words hint and
   // its way on to the Karaoke room (owner, 28 Oct 2026), in the same lazy
   // chunk: the Songs sheet, the reads it keeps, the hint's switch and Sing

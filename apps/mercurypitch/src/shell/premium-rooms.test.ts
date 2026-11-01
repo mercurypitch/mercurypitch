@@ -48,6 +48,12 @@ describe('premium rooms', () => {
     expect(isPremiumRoom('first-note')).toBe(true)
   })
 
+  it('draws Leap, the third Ear room, full-bleed too, held upright on a phone', () => {
+    expect(PREMIUM_ROOM_SCREENS.leap).toEqual({ fullBleed: true })
+    expect(isFullBleed('leap')).toBe(true)
+    expect(isPremiumRoom('leap')).toBe(true)
+  })
+
   it('draws the Legend full-bleed, held upright on a phone', () => {
     expect(PREMIUM_ROOM_SCREENS.legend).toEqual({ fullBleed: true })
     expect(isFullBleed('legend')).toBe(true)
