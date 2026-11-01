@@ -114,4 +114,25 @@ describe('lineSays', () => {
     })
     expect(lineSays(again)).toBe('still-blocked')
   })
+
+  it('starts the count of failures over once the mic opens', () => {
+    const opened: LineEvent[] = [
+      { type: 'start' },
+      { type: 'mic-failed', run: 1, block: 'unavailable' },
+      { type: 'start' },
+      { type: 'mic-ready', run: 2 },
+    ]
+    expect(run(...opened).blocks).toBe(0)
+    // The line sung, then Once more, and the mic will not open this time:
+    // Merc says why as he did the first time, not that it still has not.
+    const failed = run(
+      ...opened,
+      { type: 'turn' },
+      { type: 'scored', score: SCORE },
+      { type: 'start' },
+      { type: 'mic-failed', run: 3, block: 'unavailable' },
+    )
+    expect(failed.phase).toBe('blocked')
+    expect(lineSays(failed)).toBe('blocked')
+  })
 })
