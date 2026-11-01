@@ -4,7 +4,6 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
-import { StudioInputMeter } from './StudioInputMeter'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
 
@@ -110,7 +109,6 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
             <Match when={recorder().phase() === 'armed'}>
               <span class={styles.statusMic}>
                 <MicSmall />
-                <StudioInputMeter level={recorder().level()} />
               </span>
               <p class={styles.statusText}>
                 <span>Armed on {lane()}. Press Record to start.</span>
@@ -140,7 +138,6 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
             <Match when={recorder().phase() === 'recording'}>
               <span class={styles.statusMic}>
                 <MicSmall />
-                <StudioInputMeter level={recorder().level()} />
               </span>
               <p class={styles.statusText}>
                 <span>

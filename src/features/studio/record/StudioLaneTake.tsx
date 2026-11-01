@@ -45,7 +45,9 @@ function drawLive(
   width: number,
 ): void {
   const ratio = globalThis.devicePixelRatio || 1
-  const height = canvas.clientHeight || 40
+  // The box's height, not the canvas's own, which follows its pixel size.
+  const boxHeight = canvas.parentElement?.clientHeight ?? 0
+  const height = boxHeight > 0 ? boxHeight : 40
   // Resizing reallocates the canvas, so it happens only when the size moves.
   const pixelWidth = Math.max(1, Math.round(width * ratio))
   const pixelHeight = Math.max(1, Math.round(height * ratio))
@@ -127,6 +129,7 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
         <span
           class={styles.laneMeter}
           data-studio-lane-meter=""
+          data-recording={props.live === null ? undefined : ''}
           style={{ left: `${props.scroll + 8}px` }}
         >
           <MicSmall />

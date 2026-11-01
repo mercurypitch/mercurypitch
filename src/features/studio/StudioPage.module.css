@@ -1361,6 +1361,15 @@
   border-radius: 0;
   background: var(--studio-bar);
 }
+/* With Record in it, the phone's transport fits a narrow phone only with
+   tighter spacing: 44 px targets 4 px apart keep every control on screen. */
+@media (max-width: 419px) {
+  .phone > .transport,
+  .phonePanelOpen .panel .transport {
+    gap: 4px;
+    padding-inline: 8px;
+  }
+}
 .phone .clock {
   width: 104px;
 }
