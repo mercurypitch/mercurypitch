@@ -13,6 +13,8 @@
 //
 // Keys: R arms, then records, then stops; Escape disarms, cancels a
 // count-in or stops a take; Space stops a take (StudioWorkspace's toggle).
+// Arming takes the focus in the Studio; once armed, R and Escape work
+// wherever the focus is, outside text fields and dialogs.
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { StudioTakeJournalRecord } from '@/db/services/studio-take-journal'
@@ -22,6 +24,7 @@ import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
+import { isInsideOverlay, isTypingTarget } from '@/lib/space-playback'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -280,6 +283,17 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     event.preventDefault()
     return true
   }
+
+  // A take in progress answers R and Escape wherever the focus went, as
+  // Space does: a button that re-renders mid-take can drop the focus to the
+  // page. The workspace handles its own keys first and marks them handled.
+  const onWindowKey = (event: KeyboardEvent) => {
+    if (phase() === 'idle' || event.defaultPrevented) return
+    if (isTypingTarget(event.target) || isInsideOverlay(event.target)) return
+    keyDown(event)
+  }
+  window.addEventListener('keydown', onWindowKey)
+  onCleanup(() => window.removeEventListener('keydown', onWindowKey))
 
   // The armed lane follows the selection until the take starts.
   createEffect(
