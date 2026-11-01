@@ -256,9 +256,15 @@ describe('untimed lyrics, timed from the notes', () => {
       expect(controller.lyricsVersions().map((v) => v.kind)).toEqual([
         'imported',
       ])
+      // The saves go out one after another: the paste, Auto-timed, then the
+      // delete. The paste's record is the Original too, so wait for the one
+      // that carries the singer's no, or the later visit can read the paste
+      // (or Auto-timed) before the delete has reached the store.
       await vi.waitFor(async () => {
         const stored = await loadLyricsFromDb('autotime-declined')
         expect(stored?.activeVersionKind).toBe('imported')
+        expect(stored?.autoTimeDeclined).toBe(true)
+        expect(stored?.versions?.map((v) => v.kind)).toEqual(['imported'])
       })
       dispose()
     })
