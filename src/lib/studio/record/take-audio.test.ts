@@ -82,6 +82,25 @@ describe('createStudioLivePeaks', () => {
     ])
   })
 
+  it('keeps the loudness of every 10 ms beside its peak, as the saved waveform draws its body', () => {
+    const live = createStudioLivePeaks(1000, 100)
+
+    // A full-scale square wave, then a bucket at half scale split across chunks.
+    live.push(Float32Array.from({ length: 10 }, (_, i) => (i % 2 ? 1 : -1)))
+    live.push(new Float32Array(4).fill(0.5))
+    live.push(new Float32Array(6).fill(-0.5))
+    // A lone click in silence: loud peak, quiet body.
+    live.push(Float32Array.from({ length: 10 }, (_, i) => (i === 0 ? 1 : 0)))
+
+    expect(live.count).toBe(3)
+    expect([...live.rms.subarray(0, 3)].map((v) => +v.toFixed(3))).toEqual([
+      1,
+      0.5,
+      +Math.sqrt(0.1).toFixed(3),
+    ])
+    expect([...live.peaks.subarray(0, 3)]).toEqual([1, 0.5, 1])
+  })
+
   it('never writes past the longest take', () => {
     const live = createStudioLivePeaks(1000, 20)
     live.push(new Float32Array(500).fill(0.25))

@@ -441,6 +441,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     )
     set({
       live: {
+        title: current.title,
         heardFirst,
         fromFrame: current.fromFrame,
         peaks: current.peaks,

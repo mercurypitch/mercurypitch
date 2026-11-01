@@ -25,6 +25,7 @@ describe('liveTakeSpan', () => {
     count: number
   }) => ({
     ...patch,
+    title: 'Take 1',
     peaks: createStudioLivePeaks(patch.sampleRate, patch.sampleRate * 10),
   })
 

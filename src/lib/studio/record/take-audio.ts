@@ -76,6 +76,11 @@ export function pcm16ToFloat(pcm: Int16Array): Float32Array {
   return out
 }
 
+/** A take's file name: what its clip shows once kept, and while it records. */
+export function studioTakeFileName(title: string): string {
+  return `${title}.wav`
+}
+
 /** The file a take is kept as: mono 16-bit WAV at the rate it was captured. */
 export function studioTakeWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([encodeMonoPcmSamplesToWav(samples, sampleRate)], {
@@ -87,8 +92,10 @@ export function studioTakeWav(samples: Float32Array, sampleRate: number): Blob {
 export const STUDIO_LIVE_PEAKS_PER_SECOND = 100
 
 /**
- * The loudest sample of every 10 ms of a take as it records, for the
- * waveform that grows in its lane. Fixed-size for the longest take, so
+ * The loudest sample and the loudness (RMS) of every 10 ms of a take as it
+ * records, for the waveform that grows in its lane: drawn as the saved
+ * clip's waveform is, a pale band to the peaks around a solid body, so the
+ * take keeps its shape when it lands. Fixed-size for the longest take, so
  * nothing grows while the take runs.
  */
 export function createStudioLivePeaks(sampleRate: number, maxFrames: number) {
@@ -97,13 +104,16 @@ export function createStudioLivePeaks(sampleRate: number, maxFrames: number) {
     Math.round(sampleRate / STUDIO_LIVE_PEAKS_PER_SECOND),
   )
   const peaks = new Float32Array(Math.ceil(maxFrames / bucket) + 1)
+  const rms = new Float32Array(peaks.length)
   let count = 0
   let loudest = 0
+  let squares = 0
   let filled = 0
   return {
     /** Frames of the take each peak covers. */
     bucketFrames: bucket,
     peaks,
+    rms,
     get count(): number {
       return count
     },
@@ -111,9 +121,14 @@ export function createStudioLivePeaks(sampleRate: number, maxFrames: number) {
       for (let i = 0; i < samples.length; i++) {
         const value = Math.abs(samples[i])
         if (value > loudest) loudest = value
+        squares += value * value
         if (++filled < bucket) continue
-        if (count < peaks.length) peaks[count++] = loudest
+        if (count < peaks.length) {
+          peaks[count] = loudest
+          rms[count++] = Math.sqrt(squares / bucket)
+        }
         loudest = 0
+        squares = 0
         filled = 0
       }
     },
