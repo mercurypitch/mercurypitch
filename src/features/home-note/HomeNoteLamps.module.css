@@ -1,0 +1,127 @@
+/* Home note's lamps, in the lighthouse's warm light (the Ear rooms canvas,
+   B1 and B3): the intro's chords under the chip while the band plays, and
+   the run's keys at its result. */
+
+.chords {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* A chord still to come is a dim ring; the one sounding is lit; one that
+   has passed keeps a warm outline. */
+.chord {
+  width: 44px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid rgb(230 237 243 / 24%);
+  background: rgb(10 18 44 / 55%);
+  color: #a3adbd;
+  font: 700 13px/1 var(--font-body, sans-serif);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease;
+}
+
+.chord[data-lamp='playing'] {
+  border-color: #f0c75e;
+  background: #f0c75e;
+  box-shadow: 0 0 18px rgb(240 199 94 / 70%);
+  color: #1a1405;
+}
+
+.chord[data-lamp='played'] {
+  border-color: rgb(240 199 94 / 55%);
+  color: #f0c75e;
+}
+
+/* The run's keys: six lamps a row, as wide as the phone allows, wider than
+   the head's own column and centred on it. */
+.keys {
+  list-style: none;
+  width: min(342px, calc(100vw - 32px));
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.key {
+  width: 100%;
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid rgb(230 237 243 / 14%);
+  background: rgb(10 12 30 / 62%);
+  color: #f2f4f8;
+  font: 600 13px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.key[data-found='false'] {
+  color: #a3adbd;
+}
+
+/* The key heard again now. */
+.key[data-playing='true'] {
+  border-color: rgb(240 199 94 / 70%);
+  box-shadow: 0 0 16px rgb(240 199 94 / 32%);
+}
+
+.key:focus-visible {
+  outline: 2px solid #f0c75e;
+  outline-offset: 2px;
+}
+
+.lamp {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #f0c75e;
+  box-shadow: 0 0 12px rgb(240 199 94 / 80%);
+}
+
+.key[data-found='false'] .lamp {
+  border: 1.5px dashed #8d97a3;
+  background: none;
+  box-shadow: none;
+}
+
+/* A short phone (360 x 640, 375 x 667): the lamps closer in. */
+@media (max-height: 700px) {
+  .chords {
+    margin-top: 6px;
+  }
+
+  .keys {
+    margin-top: 8px;
+  }
+
+  .key {
+    min-height: 52px;
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chord,
+  .key {
+    transition: none;
+  }
+}

@@ -16,7 +16,9 @@
 // line in his bubble, the mic or Again and Done in the dock, the live
 // region. This room brings its world (HarbourScene.tsx), Merc on the pier,
 // its words, its stylesheet and its test ids (`home-note-`), and what only
-// it has: "Hear it again" over the mic in the singer's turn.
+// it has: the intro's chords as lamps under the chip while the band plays,
+// "Hear it again" over the mic in the singer's turn, and the run's keys as
+// lamps at the result, each playing its key again (HomeNoteLamps.tsx).
 //
 // No "How it works" demo yet: the intro line says the task, and Learning's
 // first rounds have Merc sing home before the singer's turn.
@@ -39,6 +41,7 @@ import { HarbourScene } from './HarbourScene'
 import type { HomeNotePhase } from './home-note-machine'
 import type { HomeNoteSummary } from './home-note-run'
 import { detailLine } from './home-note-run'
+import { ChordLamps, KeyLamps } from './HomeNoteLamps'
 import { HomeNoteLevel } from './HomeNoteLevel'
 import styles from './HomeNoteRoom.module.css'
 import type { HomeNoteController } from './useHomeNoteController'
@@ -219,9 +222,28 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
         </div>
       </div>
 
-      <ShellHead shell={shell} summary={room.summary} chip={room.chip()}>
+      <ShellHead
+        shell={shell}
+        summary={room.summary}
+        chip={room.chip()}
+        belowChip={
+          <Show when={phase() === 'band'}>
+            <ChordLamps
+              chords={room.rules().intro}
+              begun={room.beat()}
+              over={room.chordsOver()}
+            />
+          </Show>
+        }
+      >
         {(summary) => (
-          <HomeResult summary={summary()} level={room.resultLevel()} />
+          <HomeResult summary={summary()} level={room.resultLevel()}>
+            <KeyLamps
+              outcomes={room.state().outcomes}
+              playing={room.replaying()}
+              onPlay={(index) => room.replayKey(index)}
+            />
+          </HomeResult>
         )}
       </ShellHead>
 
@@ -267,9 +289,11 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
 interface HomeResultProps {
   summary: HomeNoteSummary
   level: string
+  /** The run's keys, as lamps, under the numbers. */
+  children: JSX.Element
 }
 
-/** The result: keys found, how quickly, and at which level. */
+/** The result: keys found, how quickly, at which level, and each key. */
 function HomeResult(props: HomeResultProps): JSX.Element {
   return (
     <div class={styles.resultHead}>
@@ -284,6 +308,7 @@ function HomeResult(props: HomeResultProps): JSX.Element {
           Keys found at {props.level}
         </p>
       </Show>
+      {props.children}
     </div>
   )
 }

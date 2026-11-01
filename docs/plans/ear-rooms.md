@@ -103,8 +103,13 @@ notes (`src/lib/sequence/sequence-engine.ts`, a one-note phrase per round), and 
 which the native screen hands in. The band is a small organ synth in the room
 (`src/features/home-note/home-note-band.ts`) on the house pop-free envelope.
 
-**Next, from the canvas.** The intro's chords as small lamps under the chip (I, IV, V lit as each
-plays), and the result's six keys as lamps that replay their intro when tapped.
+**The lamps, from the canvas (1 Nov 2026).** While the band plays, the intro's chords stand as
+small lamps under the chip, as the level plays them (I IV V I, I IV V, or IV V): each lights as its
+chord reaches the speaker and keeps a warm outline once it has passed. They go when the singer's
+turn opens. At the result, the run's six keys stand under the numbers as lamps, lit for a home
+found and an empty ring for one missed, each named by its home. A tap plays that key again: its
+intro as the run played it, then home's chord with Merc singing home, at every level. Another lamp,
+Again or leaving cuts it short. (`home-note-lamps.ts`, `HomeNoteLamps.tsx`.)
 
 ### The harbour's painting
 
@@ -305,7 +310,12 @@ Both turn an Ear Lab drill into a voice room for the same subscriber.
    that opens on it (Here Comes the Bride for a fourth, Twinkle, Twinkle for a fifth, My Bonnie for
    a sixth); the singer sings Merc's note, then the second. Each note is a ledge on a cliff, the
    target faint at its height. It is the practice partner for lesson 9, "Landing a leap", whose
-   Practise card would open it.
+   Practise card would open it. Its mock-ups are redrawn in the rooms' current light, for the
+   owner's approval (1 Nov 2026): [Leap Native Room](https://claude.ai/artifact/DmZT3GvguZFkPEFqbTSLCV).
+   The kit's chip with the leap as a warm lamp under it, Merc's line in the room's glass bubble, a
+   lantern on the high ledge whose beam becomes the line once the leap lands, Merc singing both
+   notes after a miss, and at the result each leap with its song and a lamp per try, a tap playing
+   it again as Home note's keys do. The levels on it are a proposal.
 2. **Harmony** (new). Merc sings a short line; the singer sings a third above it. Duets are what
    karaoke apps sell, and the trail makes the target visible. Merc sings while the singer does, so
    it needs headphones and a judge that follows two voices: prototype it on phones first.

@@ -257,6 +257,8 @@ export interface ShellHeadProps<C extends string, T extends string, S> {
   summary: Accessor<S | null>
   /** The chip's words during a take; null for none. */
   chip: string | null
+  /** The room's own row under the chip (Home note's chord lamps). */
+  belowChip?: JSX.Element
   /** The result's numbers, drawn by the room. */
   children: (summary: Accessor<S>) => JSX.Element
 }
@@ -288,6 +290,7 @@ export function ShellHead<C extends string, T extends string, S>(
               testId={`${shell.ids}-chip`}
             />
           </div>
+          {props.belowChip}
         </Match>
       </Switch>
       {/* In warm-up mode the routine claims the badges, and its path says
