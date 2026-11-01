@@ -2468,3 +2468,17 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** two offline renders of the same full Studio graph are not bit-identical: the same build rendered twice was 7.6e-5 apart (RMS -97 dB). One chain through `renderThroughChain` comes much closer: the stereo change came out 0 apart on every role's setting, and the keys, bass and other chains render bit-identical run to run. The voice and backing-vocal chains do not: the same build twice was 3.7e-6 and 6.0e-7 apart (headless Chromium 148, 30 Oct 2026).
 **Rule:** prove a change exact by rendering a chain or an effect through `renderThroughChain`, which already removes the chain's own latency (do not shift the two outputs again), and render the old build twice as a control. Read any difference against that control's floor, not against zero.
 **See:** `src/lib/studio-fx/render.ts`
+
+### Count an AudioWorklet's clock; do not trust every currentFrame
+
+**Symptom:** about one Studio take in two stopped within five seconds with "Audio stopped for a moment", with the context running and no stop sent from the page.
+**Cause:** headless Chromium now and then hands `process()` the previous quantum's `currentFrame` (385792 twice, then the right frame), and the recorder read that as the clock running backwards. The level readings either side stayed on their 1536-frame grid, so no audio was skipped (1 Nov 2026).
+**Rule:** in a worklet that places samples on clock frames, count frames quantum by quantum and let `currentFrame` only move the count forward; treat a reading a few quanta behind the count as the next quantum. Probe a worklet's timing by logging the gap it computed, not by inferring it from the main thread.
+**See:** `src/lib/studio/record/pcm-capture.ts`
+
+### A mic held by any feature wakes the practice frame loop
+
+**Symptom:** arming Studio's Record doubled the page's animation-frame requests (60 a second more), none of them from the Studio's chunk.
+**Cause:** `usePracticeController` runs its frame loop while any feature holds the shared mic (`micDeviceOpen`, from `micManager.subscribe`), whichever consumer opened it.
+**Rule:** when measuring a mic surface's own frame or CPU cost, attribute frame requests by the calling chunk (studio-record.spec.ts counts the `StudioPage-` chunk apart); the practice loop's share belongs to the practice controller.
+**See:** `src/features/practice/usePracticeController.ts`, `src/e2e/studio-record.spec.ts`
