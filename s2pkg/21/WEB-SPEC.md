@@ -18,10 +18,11 @@ check, voice choice, feelings and rest card (Lesson 15 WEB-SPEC, Toys 1 and 5). 
 shares a behaviour with Lesson 15's, it is Lesson 15's, unchanged unless this spec says otherwise.
 
 One object carries the lesson: Lesson 2's ring of twelve beads, threaded by fifths. In the hero it
-lights G major and its one black key; in Step 2 it becomes the circle of fifths, and the house walks
-round it while the staff's key signature gains a sharp at each step; in Step 3 the house walks the
-other way and the flats come in; in Step 5 the thread is pulled taut, and twelve pure fifths miss
-the C they started from by 23.46 cents until equal temperament closes the ring. It is the card's
+lights D major and its two black keys, then A major, a fifth up, played both ways; in Step 2 it
+becomes the circle of fifths, and the house walks round it while the staff's key signature gains a
+sharp at each step; in Step 3 the house walks the other way and the flats come in; in Step 5 the
+thread is pulled taut, and twelve pure fifths run past the C they started from by 23.46 cents until
+equal temperament closes the ring. It is the card's
 signature: "Lesson 2's ring of twelve beads, re-threaded by fifths (C, G, D, A ...); the house walks
 round it, and each step lights one more sharp in the signature beside it; the flats light the other
 way" (FACTS 4).
@@ -40,9 +41,13 @@ written into a page's markup (FACTS 5, 5b).
 Lesson 15's look, unchanged: the dark listening room, the series colour code, Lesson 1's type and
 wordmark, and the motion rules (Lesson 15 WEB-SPEC, Look). On this page:
 
-- **Notation** is drawn in ink `#e6edf3` on chrome lines `#c3ccd6`: staff lines, clefs, noteheads,
-  sharps, flats and every key signature. A note lights in its singer's colour while it sounds, blue
-  `#58a6ff` for Merc and orange `#ff7448` for Tavi, by the voice that plays it (FACTS 10).
+- **Notation** is drawn on chrome lines `#c3ccd6`: staff lines, clefs, noteheads, sharps, flats
+  and every key signature. As on Lesson 15's page, noteheads are chrome at rest and ink `#e6edf3`,
+  lit, while their note sounds in the soft tone, as are the ring's beads and the keyboard's keys; in
+  Sing it the notes light in the app's target amber `#f59e0b` while the voice sings them, and on the
+  learner's turn the staff is plain chrome under a chrome sweep. Blue `#58a6ff` and orange `#ff7448`
+  are Merc's and Tavi's own: their bubbles, and in Sing it the still of the one who sings (FACTS
+  10).
 - **The key's own black keys** carry their sign on the ring, the keyboard and the staff, in ink. A
   sign the step has just added (F♯ in Step 1, each new sharp or flat in Steps 2 and 3) is outlined
   for the length of its scale, never filled with a colour of its own.
@@ -50,8 +55,9 @@ wordmark, and the motion rules (Lesson 15 WEB-SPEC, Look). On this page:
   home: with the house, never with a colour (`src/features/lessons/kit/home-glyph.ts:1-12`).
 - **Gold** `#ffd84d` marks nothing: nothing on this page is a fit or a score (MASTER-PLAN § 5;
   playbook rule 11). Find do's right place shows the house and plays, and its line says so.
-- **The gap** on Pure, in Step 5, is a short dashed arc in ink-2 `#a8b3bf` between the walk's last
-  bead and C, labelled "23.46 cents"; on Equal it closes.
+- **The gap** on Pure, in Step 5, is a short dashed arc in ink-2 `#a8b3bf` that runs on clockwise
+  past C, from C to where the walk ends, labelled "23.46 cents": the walk overshoots, as it sounds
+  (FACTS 31). On Equal the thread meets C and closes.
 - **The pitch-line view** ("See it on the pitch line", on every staff toy and in free play, SEASON-2
   § 1.4 item 1) is Lesson 15's: the hero's pitch line beside the staff, each note a band at its
   height, in the app's amber; no violet, since no line of the learner's is drawn.
@@ -60,7 +66,7 @@ wordmark, and the motion rules (Lesson 15 WEB-SPEC, Look). On this page:
 
 What moves: Merc and Tavi's idle loops; while something the learner started plays, the lit beads,
 keys and notes, the ring's thread drawn bead to bead, the house walking round the circle, and a
-signature's new sign fading in over 0.12 s when its scale starts. Under `prefers-reduced-motion`, or
+signature's new sign fading in over 0.12 s as its scale ends. Under `prefers-reduced-motion`, or
 with the masthead's Pause animations on, Merc and Tavi stop, the thread and the house jump to where
 they end, and each sign appears at once; what the learner starts still sounds (WCAG 2.2.2).
 
@@ -77,11 +83,11 @@ in LESSON.md ("Section headings").
 1. **Masthead**: Season 2's (What the kit and the app still need, item 1), "Season 2 · Lesson 21",
    with the lesson menu, which lists the five step headings from the first paint (FACTS 1a).
 2. **The hook**: the kicker, the hook question as the title (`h1.hook#hook`), the meta as five chips
-   (16 minutes, the two prerequisites as links to `/learn/06` and `/learn/15`, Lesson 13 as a plain
-   chip, Sound on), the promise.
+   (15 minutes, the two prerequisites by their full titles as links to `/learn/06` and `/learn/15`,
+   Lesson 13 by its short name as a plain chip, Sound on), the promise (FACTS 2, 3).
 3. **The stage**: Tavi's and Merc's bubbles over Merc and Tavi on the floor line, with Lesson 2's
-   ring of twelve beads between them and Lesson 1's keyboard under it, G3 to D5, G major lit on both
-   and F♯ glowing (Toys 3).
+   ring of twelve beads between them and Lesson 1's keyboard under it, D4 to A5, D major lit on both
+   and its two black keys, F♯ and C♯, glowing (Toys 3).
 4. **The sound gate**: LESSON.md's line and its button, between the stage and the predict at 1080 px
    and below.
 5. **The cold open's predict**: the predict card, `#predict`, under the stage (Toys 5).
@@ -90,12 +96,12 @@ in LESSON.md ("Section headings").
    its definition, a play and a figure (Toys 6).
 8. **The steps**: the kit's sticky stage and step deck ("N of 5", Previous and Next), every step on
    one stage: the staircase (Step 1), the circle with the staff (Steps 2 and 3), Find do (Step 4) and
-   the circle's walk (Step 5) (Toys 1 to 4). Step 2 has a Go deeper drawer (Toys 9).
+   the circle's walk (Step 5) (Toys 1 to 4). No step has a Go deeper drawer (Length).
 9. **Sing it**, `#sing`: the comfort check, the voice choice, Merc's two runs, the guide and the
    feeling question (Toys 7).
 10. **Quick check**: LESSON.md's four questions (Toys 8).
 11. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
-    picks, the Playground's free play, and the next-lesson card with its tease and still (Toys 10).
+    picks, the Playground's free play, and the next-lesson card with its tease and still (Toys 9).
 12. **Lesson explorer**: the kit's, with Lesson 21 as the current node, on Season 2's tab (Explorer
     and season data).
 13. **Footer**: Lesson 15's, with "Season 2 · Lesson 21 · Keys and the circle of fifths", the two
@@ -104,43 +110,45 @@ in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,198 words on `scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 181 (FACTS 3). The page runs about 16 minutes: 9.24 minutes of reading at
+The learner copy is 2,139 words on `scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 240 (FACTS 3). The page runs about 15 minutes: 8.99 minutes of reading at
 238 words a minute and about 6.4 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words", as every Season 1 page from Lesson 3 is. The
 chip's figure is an estimate until the staff toy and the circle are timed in their labs, as SEASON-2
 § 1.3 asks; the chip is then set from the lab. Each step's own text, with its Try, its Notice and
-any Tavi line, runs 110 to 120 words (Steps 1 to 5: 116, 119, 120, 120 and 110), inside § 4.2's 50
-to 120 a step. Three parts carry more beside it:
+any Tavi line, runs 110 to 120 words (Steps 1 to 5: 116, 111, 115, 120 and 110), inside § 4.2's 50
+to 120 a step. Two parts carry more beside it:
 
-- **Step 2, 170 words with its Go deeper drawer** (one item), closed by default. The plan's other
-  three items are left out (FACTS 68 to 70).
-- **Step 3, 200 words with its mix-up card**, which sits in the step whose toy refutes it.
-- **Sing it, 326 words.** It carries the series' singing lines, Lesson 15's word for word and not
+- **Step 3, 193 words with its mix-up card**, which sits in the step whose toy refutes it.
+- **Sing it, 323 words.** It carries the series' singing lines, Lesson 15's word for word and not
   cut.
 
-**Step 5 stays in the page.** The brief allowed it only if the page fits under about 2,230 words
-with it; it does, at 2,198 (FACTS 3). The hints and status lines are stage directions in LESSON.md
-and are not counted, as in the text packages of Lessons 9 to 14. A built page writes them in the open
-and counts them, about 150 words more (Lesson 8 FACTS 4), so the built page would be about 2,348
-words, 31 under the cap, with the chip still at 16 minutes: no cut is needed. If the built page's
-hints run longer than that, the first cuts are Step 2's Go deeper drawer (about 37 words; its item
-stays in FACTS 27) and the reveal's last sentence, on why G♯ was a fair guess (16 words).
+**The built page.** The hints and status lines are stage directions in LESSON.md and are not
+counted, as in the text packages of Lessons 9 to 14. A built page writes them in the open and counts
+them, and on this page they come to about 175 words, counted from LESSON.md's stage directions and
+this spec's toys: the predict's hints, about 25; Find do's lines with Next round and Again, about
+77; the two figure captions, 21; Spell it's two lines, 11; Sing it's "Play Merc's notes first" and
+its stored-voice line, 13; the toys' labels, about 30. That is within Lesson 8's measured 174 to 206
+(Lesson 8 FACTS 4). The built page then lands at about 2,314 words, some 65 under the cap. To make
+that room, the review cut Step 2's Go deeper drawer (its item stays in FACTS 27), Step 2's last
+line, which Step 4 says again, and Step 3's F major spelled out, which the mix-up card and the toy
+show (FACTS 3). **Step 5 stays in the page**: it still fits. If the built page's hints run longer
+than counted here, the next cut is the reveal's last sentence, on why D♯ was a fair guess (16
+words).
 
 ## Toys: what each reuses, and what is new
 
-| Toy                        | Reuses                                                                                                                                                                                                       | New in Lesson 21                                                                                                                                                  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The staircase           | Lesson 4's staircase and its White keys only (`lesson-04/stairs-toy.ts`), moved into the kit; the kit's scales (`kit/major-scale.ts`); Lesson 1's keyboard strip (`kit/key-strip.ts`)                        | Starts on G2 or G4 by the learner's clef; the staff beside it, written as the scale plays; the F♯'s sharp moving into the key signature                            |
-| 2. The staff               | Season 2's staff toy (Lesson 15 WEB-SPEC, Toys 1), both clefs, the house on the staff, the pitch-line switch                                                                                                  | Key signatures at each clef's places (FACTS 21); notes spelled by the key; a signature that grows a sign at a time; Spell it: A♯ · B♭                             |
-| 3. The circle              | Lesson 2's ring, the spiral seen from the top (`setView('top')`, `src/features/lessons/kit/spiral.ts:28-32`); the house (`kit/home-glyph.ts`)                                                                  | The ring threaded by fifths, the twelve keys' names round it, Step round · Step back, the flat side, Pure · Equal and the gap: the circle-of-fifths toy, SEASON-2 § 6.2 item 4 |
-| 4. Find do                 | The staff toy (2) and the house                                                                                                                                                                              | Six rounds, the eleven places to tap, the feedback lines                                                                                                          |
-| 5. Predict widget          | The kit's predict (`kit/predict.ts`), with a free play and `revealAfter: 'all'`, as Lesson 4's step 3 predict                                                                                                 | A small staircase under each D major play                                                                                                                         |
-| 6. Four words              | The kit's words strip (`kit/words-strip.ts`)                                                                                                                                                                 | Four figures: a small ring, a staff with G major's sharp, a small circle, a row of semitones                                                                      |
-| 7. Sing it                 | Lesson 15's sing-along, from Lesson 12's flow (`lesson-12/sing-flow.ts`): the comfort check, voice choice, feelings and rest card (`kit/comfort.ts`, `kit/voice-choice.ts`); the count-in (`kit/move-do.ts`) | Two runs with the key changing between them; a second count-in on the new so                                                                                       |
-| 8. Recall and quick check  | The kit's quiz (`kit/quiz.ts`); Lesson 6's question object `l06-q2`, imported; Lesson 15's `l15-q2` and its slot, imported                                                                                    | Nothing                                                                                                                                                           |
-| 9. Go deeper drawer        | Lesson 2's `details` drawer                                                                                                                                                                                  | One item                                                                                                                                                          |
-| 10. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                 | Lesson 5's band with a pitch line waving across both its edges                                                                                                    |
+| Toy                       | Reuses                                                                                                                                                                                                       | New in Lesson 21                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. The staircase          | Lesson 4's staircase and its White keys only (`lesson-04/stairs-toy.ts`), moved into the kit; the kit's scales (`kit/major-scale.ts`); Lesson 1's keyboard strip (`kit/key-strip.ts`)                        | Starts on G2 or G4 by the learner's clef; the staff beside it, written as the scale plays; the F♯'s sharp moving into the key signature, which White keys only drops                                                  |
+| 2. The staff              | Season 2's staff toy (Lesson 15 WEB-SPEC, Toys 1), both clefs, the house on the staff, the pitch-line switch                                                                                                 | Key signatures at each clef's places (FACTS 21); notes spelled by the key; a signature that grows a sign at a time; Spell it: A♯ · B♭                                                                                 |
+| 3. The circle             | Lesson 2's ring, the spiral seen from the top (`setView('top')`, `src/features/lessons/kit/spiral.ts:28-32`); the house (`kit/home-glyph.ts`)                                                                | The ring threaded by fifths, the twelve keys' names round it, the house within three sharps and three flats, Step round · Step back, Pure · Equal and the gap past C: the circle-of-fifths toy, SEASON-2 § 6.2 item 4 |
+| 4. Find do                | The staff toy (2) and the house                                                                                                                                                                              | Six rounds, the eleven places to tap, the feedback lines                                                                                                                                                              |
+| 5. Predict widget         | The kit's predict (`kit/predict.ts`), with a free play and `revealAfter: 'all'`, as Lesson 4's step 3 predict                                                                                                | A small staircase under each A major play                                                                                                                                                                             |
+| 6. Four words             | The kit's words strip (`kit/words-strip.ts`)                                                                                                                                                                 | Four figures: a small ring, a staff with G major's sharp, a small circle, a row of semitones                                                                                                                          |
+| 7. Sing it                | Lesson 15's sing-along, from Lesson 12's flow (`lesson-12/sing-flow.ts`): the comfort check, voice choice, feelings and rest card (`kit/comfort.ts`, `kit/voice-choice.ts`); the count-in (`kit/move-do.ts`) | Two runs with the key changing between them; a second count-in on the new so                                                                                                                                          |
+| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`); Lesson 6's question object `l06-q2`, imported; Lesson 15's `l15-q2` and its slot, imported                                                                                   | Nothing                                                                                                                                                                                                               |
+| 9. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                 | Lesson 5's band with a pitch line waving across both its edges                                                                                                                                                        |
 
 ### 1. The staircase (Step 1)
 
@@ -155,12 +163,17 @@ higher are hidden here: the step is about G.
   E F G, and the staircase draws their steps, the sixth short and the seventh tall, the wrong way
   round (FACTS 13); the seventh stair is outlined. Off, it plays G major with F♯.
 - **The staff beside it**, in the learner's clef, writes each note as it sounds. With White keys
-  only off, the first time G major plays, F♯ is written with its own sharp before it; at the end of
-  that play the sharp slides to the start of the staff, after the clef, into G major's key signature,
-  on its clef's F line (FACTS 21), and the note keeps no sign. From then on G major is written with
-  the signature. A caption under the staff: "Fig. 1 G major: one sharp, F♯, its ti."
+  only off, G major's F♯ is written with its own sharp before it as it plays; at the end of that play
+  the sharp slides to the start of the staff, after the clef, into G major's key signature, on its
+  clef's F line (FACTS 21), and the note keeps no sign. With White keys only on, the staff drops the
+  key signature and writes the white keys plain, G A B C D E F G, with no sign on F: under a
+  signature that F would need a natural sign, which this page does not teach. Switched off again,
+  the next G major play writes F♯ with its own sharp, and the sharp moves into the signature as the
+  scale ends, as it did the first time, so the sound still comes before the symbol. A caption under
+  the staff: "Fig. 1 G major: one sharp, F♯, its ti."
 - **Labels**: each stair says its syllable and name on focus ("Stair 7, ti, F sharp 3"), as Lesson
-  4's do. The syllables show only in this step's state, after the cold open's choice (FACTS 1a).
+  4's do. The syllables show from the first paint, as Step 1's text and caption name ti: the welcome
+  tour's hold, not the stairs, keeps a first visit from meeting them before the choice (FACTS 1a).
 - **See it on the pitch line**: on the staff, as in Lesson 15.
 
 ### 2. The staff with key signatures
@@ -194,28 +207,42 @@ choice in Sing it sets it for the visit; a Clef switch shows the other (FACTS 10
 Lesson 2's ring, seen from the top as Lesson 2's page draws it, grown into the circle-of-fifths toy
 SEASON-2 § 6.2 item 4 asks for (What the kit and the app still need, item 4).
 
-- **The hero's ring.** Twelve beads, a bead a semitone, with Lesson 1's keyboard under it from G3 to
-  D5. G major's seven beads and keys are lit, F♯ glowing. As a scale plays, each note lights its bead
-  and key, and a thread joins each bead to the one before. No names of degrees, no staff (FACTS 33).
+- **The hero's ring.** Twelve beads, a bead a semitone, with Lesson 1's keyboard under it from D4 to
+  A5. D major's seven beads and keys are lit, its two black keys, F♯ and C♯, glowing. As a scale
+  plays, each note lights its bead and key, and a thread joins each bead to the one before. No names
+  of degrees, no staff (FACTS 33).
 - **Threaded by fifths** (Step 2 on): the beads move round the ring until each sits a fifth from its
   neighbours, C at the top, G one place clockwise, F one place anticlockwise; each bead takes its
   key's name, and the bottom three take two names each, B and C♭, F♯ and G♭, C♯ and D♭ (FACTS 23,
-  24). A bead's key signature shows beside the circle, in the learner's clef, when the house is on it.
-- **The house** sits on C at first. **Step round** moves it a fifth clockwise and plays the new key's
-  scale at 0.3 s a note on the staff beside the circle, which then gains the new sharp; **Step back**
-  moves it a fifth anticlockwise. In Step 2 the house steps from C to A and no further, the end of
-  the page's reading (FACTS 25); in Step 3 from C to E♭. The other beads stay named and lit dimly:
-  the circle shows all twelve.
+  24). A bead's key signature shows beside the circle, in the learner's clef, when the house is on
+  it.
+- **The house** sits on C at first. **Step round** moves it a fifth clockwise and plays the new
+  key's scale, a note every 0.3 s, on the staff beside the circle, which then gains the new sharp;
+  **Step back** moves it a fifth anticlockwise. The house moves only within three sharps and three
+  flats, the page's reading (SEASON-2 § 7 item 13; FACTS 25), and each step has its own part of
+  that: in Step 2 from C round to A, the sharp side, where Step round stops at A and Step back at C;
+  in Step 3 from C round to E♭, the flat side, where Step back stops at E♭ and Step round at C; in
+  free play in the Wrap, anywhere from E♭ round to A. A bead in the step's part is a button that
+  moves the house there and plays its scale. At a stop, Step round or Step back is marked
+  `aria-disabled`, as Move do's buttons are at their ends (`setMoveEnds`,
+  `src/features/lessons/kit/move-do.ts:52-63`).
+- **Beads past three sharps or flats**: E, B or C♭, F♯ or G♭, C♯ or D♭, and A♭. They are drawn and
+  named, dimmed, and take no tap: the house never goes there, nothing plays, and no signature
+  shows beside the circle for them, since the page reads no signature past three. The bottom three
+  carry both names, the sharp name above the flat. The circle still shows all twelve (FACTS 23).
 - **Pure · Equal** (Step 5): a two-way switch and **Play the walk**. The walk starts on C4 and plays
   the twelve fifths up, each folded into the octave from C4, 0.45 s a note, the thread drawn bead to
-  bead round the circle, the last C held 1.0 s, then after 0.2 s the starting C again (FACTS 31, 63).
-  On Equal the thread meets C and closes; on Pure it stops short of C by the gap, drawn and labelled
-  "23.46 cents", and the last C sounds a little high against the first. A caption: "Fig. 5 Twelve
-  pure fifths overshoot by 23.46 cents; equal ones close the ring."
-- **Accessibility**: the circle is a `role="group"` named "Circle of fifths"; each bead is a button
-  of at least 44 px on a phone, named "G major, one sharp", that plays its scale and moves the house
-  there; Left and Right arrows step back and round. The walk's beads are announced only at its end:
-  "The walk ended 23.46 cents above C" on Pure, "The walk ended on C" on Equal.
+  bead round the circle, the last C held 1.0 s, then after 0.2 s the starting C again (FACTS 31,
+  63). On Equal the thread meets C and closes; on Pure it runs on clockwise past C by the gap, drawn
+  and labelled "23.46 cents", and the last C sounds a little high against the first. A caption:
+  "Fig. 5 Twelve pure fifths overshoot by 23.46 cents; equal ones close the ring."
+- **Accessibility**: the circle is a `role="group"` named "Circle of fifths"; each bead in the
+  step's part is a button of at least 44 px on a phone, named "G major, one sharp", that plays its
+  scale and moves the house there; Left and Right arrows step back and round, within the same part.
+  The beads past three sharps or flats are not buttons; the group's description names them: "Also on
+  the circle: E major, B or C flat major, F sharp or G flat major, C sharp or D flat major, and A
+  flat major." The walk's beads are announced only at its end: "The walk ended 23.46 cents above C"
+  on Pure, "The walk ended on C" on Equal.
 
 ### 4. Find do (Step 4)
 
@@ -240,14 +267,17 @@ rounds in a fixed order: G, D and A major, then F, B♭ and E♭ major (FACTS 26
 The kit's predict (`src/features/lessons/kit/predict.ts:1-17`), mounted on the predict card, as
 Lesson 4's step 3 predict compares two plays (FACTS 36).
 
-- **Play G major** is `data-free`: it works before a choice and never reveals.
-- **Play D with G♯** and **Play D with C♯** unlock with the choice; `revealOn` names both and
+- **Play D major** is `data-free`: it works before a choice and never reveals.
+- **Play A with D♯** and **Play A with G♯** unlock with the choice; `revealOn` names both and
   `revealAfter` is `'all'`, so the reveal waits until both have been heard to their end. Each draws a
-  small staircase under its own button as it plays, a stair a note, its steps' sizes drawn: with G♯
-  they run tone, tone, tone, semitone, tone, semitone, tone; with C♯ they are Lesson 4's (FACTS 37).
-- **Hints**: `chosen` "Locked in. Play D major both ways.", `next` "Now play the other one.",
-  `silent` "Sound is off: nothing played. Turn sound on, then play it again.", `again` "Play any of them
-  again.", and the guess line "You said: G♯" or "You said: C♯".
+  small staircase under its own button as it plays, a stair a note, its steps' sizes drawn: with D♯
+  they run tone, tone, tone, semitone, tone, semitone, tone; with G♯ they are Lesson 4's (FACTS 37).
+- **Hints**: `chosen` "Locked in. Play A major both ways.", which stays until the reveal; `silent`
+  "Sound is off: nothing played. Turn sound on, then play it again."; `again` "Play any of them
+  again."; and the guess line "You said: D♯" or "You said: G♯". No `next`: the kit shows it after any
+  heard play that does not reveal, the free Play D major included, so "Now play the other one."
+  would ask for the other one before either A major had played, as the review found; Lesson 19's
+  page made the same cut (FACTS 36).
 - **The tour**: the page calls `holdTour` with the choice's promise, so a first visit's welcome tour
   opens only after the choice (`src/features/lessons/kit/tour-gate.ts:57-69`; FACTS 1a).
 
@@ -299,11 +329,7 @@ Two quizzes share this page through the kit's quiz, each with its own prefix and
   each, shuffled per question from the stored seed, one-line feedback for every answer; the kit
   prints "Right." or "Not quite." before each line (`quiz.ts:315`).
 
-### 9. Go deeper drawer
-
-Lesson 2's `details` drawer under Step 2, closed by default, with LESSON.md's one item (FACTS 27).
-
-### 10. Tease still
+### 9. Tease still
 
 The kit's next-lesson card, drawn from the season and its lesson copy: Lesson 22's title, its hook,
 and one line above the hook, its tease (FACTS 5). In the card's slot, a still: Lesson 5's band, with
@@ -321,9 +347,11 @@ play button is pressed (the sound gate).
 - **The soft tone** plays every scale, the four words, Find do and the walk; **Merc's "ooh"** sings
   Sing it's runs, Tavi's an octave higher; the count-ins are the kit's, at half a tapped note's level
   (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-66`).
-- **Timings** (FACTS 61 to 64): a scale at 0.4 s a note, each note 0.35 s, 3.15 s; Step 2's at 0.3 s
-  a note, 2.37 s; F major spelled both ways, 6.8 s; Find do's answer, 2.7 s; the walk, 7.6 s; Merc's
-  two runs, 12.8 s; the guide, 13.8 s.
+- **Timings** (FACTS 61 to 64): a scale a note every 0.4 s, each note 0.35 s long, 3.15 s, as the
+  hero's three plays are (D major from D4, A major from A4 both ways); Step 2's scales a note every
+  0.3 s, each 0.27 s long, 2.37 s; the semitones word, thirteen notes 0.3 s apart, each 0.25 s long,
+  3.85 s; F major spelled both ways, 6.8 s; Find do's answer, 2.7 s; the walk, 7.6 s; Merc's two
+  runs, 12.8 s; the guide, 13.8 s.
 - **One sound at a time**: every source on the page takes the kit's now-playing owner, so a new play
   stops the one before with its own stop (`src/features/lessons/kit/now-playing.ts:1-15`).
 - **The predict's plays** report whether they were heard to their end, so a play cut short or kept
@@ -331,12 +359,12 @@ play button is pressed (the sound gate).
 
 ## Merc and Tavi
 
-Merc speaks once, in the hero: "D is a fifth above G. D major keeps G's F♯, and it needs one sharp
-more." Tavi speaks twice, each time a sincere guess or question (MERC-BIBLE): in the hero, "F, then
-the next letter up. Isn't the new sharp G♯?", and in Step 3, "A♯ and B♭ are one key. Can't F major
-use A♯?", which the step shows half right. In Sing it, Merc sings the lower voice's runs and Tavi
-the higher's. Their idle loops follow Lesson 15's; neither has a line after the hero but Tavi's in
-Step 3.
+Merc speaks once, in the hero: "A is a fifth above D. A major keeps D's F♯ and C♯, and it needs one
+sharp more." Tavi speaks twice, each time a sincere guess or question (MERC-BIBLE): in the hero,
+"F♯, then C♯. Isn't the new sharp D♯, the letter after C?", and in Step 3, "A♯ and B♭ are one piano
+key. Can't F major use A♯?", which the step shows half right. In Sing it, Merc sings the lower
+voice's runs and Tavi the higher's. Their idle loops follow Lesson 15's; neither has a line after
+the hero but Tavi's in Step 3.
 
 ## Practice links: what exists and what needs engineering
 
@@ -367,11 +395,11 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 8's,
 - `n: 21`, `lane: 'theory'`, `title: 'Keys and the circle of fifths'`, `short: 'Circle of fifths'`,
   `topics: ['T17', 'T18', 'T29']`, with their names as SEASON-2 § 4.1 gives them, "Keys, key
   signatures, transposition", "Circle of fifths" and "Tuning systems: why twelve, equal temperament"
-  (`docs/plans/find-your-pitch/SEASON-2.md:724-726`); the hook word for word (FACTS 1). `minutes: 16`
+  (`docs/plans/find-your-pitch/SEASON-2.md:724-726`); the hook word for word (FACTS 1). `minutes: 15`
   and `page: '/learn/21'` once the page is built, under the drafts' comment in Lesson 15's form: `//
-  A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides nothing about
-  being live: the draft list and the console do. The short name is proposed: "Keys" alone could be
-  read as a keyboard's keys.
+A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides nothing about
+  being live: the draft list and the console do. The short name is the lead's: "Keys" alone could
+  be read as a keyboard's keys.
 - `pr.link`: `href` `/?lesson=21#/compose`, `addr` `mercurypitch.com/#/compose`, `label` "Compose"
   and `note` "then choose Sheet Music", which the explorer's card prints after the address as
   "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:177-181`).
@@ -382,12 +410,13 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 8's,
 - `EDGES` gains [6, 21] and [15, 21], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 21's
   prerequisite list is then [6, 15].
 - The tease on this page's next-lesson card is Lesson 22's, set on Lesson 22 in the lesson copy:
-  proposed, `tease` "Merc holds one note, and its line swings past both edges of the band.", with
+  settled, `tease` "Merc holds one note, and its line swings past both edges of the band.", with
   the plan's line cut to fit as a variant, `teaseAlts` `[{ id: 'nudged', text: 'Each fifth is
-  nudged two cents. A held note can move far more.' }]`, and its note in the team's notes (FACTS 5).
-  This lesson's own, set on Lesson 21 and drawn on Lesson 20's card: proposed, `tease` "G major:
-  seven notes, one black key, F♯. Now step up a fifth.", with `teaseAlts` `[{ id: 'lesson-4', text:
-  'Lesson 4 slid the scale to G, with one sharp, and to D, with two.' }]` and its note (FACTS 5b).
+nudged two cents. A held note can move far more.' }]`, and its note in the team's notes (FACTS 5).
+  This lesson's own, set on Lesson 21 and drawn on Lesson 20's card: settled, `tease` "D major:
+  seven notes, two black keys, F♯ and C♯. Now step up a fifth.", with `teaseAlts` `[{ id:
+'lesson-4', text: 'Lesson 4 slid the scale to G, with one sharp, and to D, with two.' }]` and its
+  note (FACTS 5b). Both pairs were settled at the lead's review on 1 November 2026, as the owner asked.
   Each is at most `TEASE_MAX`, 70 characters (`src/features/lessons/kit/lesson-copy.ts:76`).
 - The signature line for the admin console, from the card (FACTS 4): "Lesson 2's ring of twelve
   beads, threaded by fifths; the house walks round it and each step adds a sharp to the signature
@@ -395,7 +424,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 8's,
   temperament closes the ring." It goes in the team's notes, which no lesson page loads.
 - No `fig`: the card shows no figure, as Lesson 14's does (`cardFigure`,
   `src/features/lessons/kit/explorer-figures.ts:188-194`). The explorer opens on Season 2's tab, and
-  its card reads "Ready · read" with "16 min" once the page is live.
+  its card reads "Ready · read" with "15 min" once the page is live.
 
 ## What the kit and the app still need
 
@@ -404,64 +433,94 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **Seasons in the kit** (SEASON-2 § 6.2 item 1): Season 2's data in its own module, the explorer's
    tab per season, the masthead's "Season 2 · Lesson 21", and `TOPICS` gaining T17, T18 and T29
    (`src/features/lessons/kit/season.ts:50`).
-2. **The head** (SEARCH § 3.1 and § 12): the title "Key signatures and the circle of fifths |
-   MercuryPitch", 54 characters, in searchers' words; the description, the hook and "A 16-minute
-   lesson on keys and the circle of fifths.", 151 characters; `og:title` "Keys and the circle of
-   fifths · Find Your Pitch, Lesson 21"; the share descriptions, the hook and "Hear each scale, then
-   see it written."; the share card, 1200 by 630, Lesson 2's ring with G major's seven notes lit and
-   its one black key, F♯, glowing, between Merc and Tavi, with no D major anywhere on it, and its
-   alt text "Lesson 2's ring of twelve beads, lit with G major's seven notes and its one black key,
-   F sharp, between Merc and Tavi." None of it names a note of D major (FACTS 1a).
-3. **Key signatures on the staff toy** (SEASON-2 § 6.2 item 2, extended): the staff toy as Lesson
+2. **The head, the structured data and llms.txt** (SEARCH § 3.1 and § 12), each checked against the
+   predict (FACTS 1a):
+   - the title "Key signatures and the circle of fifths | MercuryPitch", 54 characters, in
+     searchers' words;
+   - the description, the hook and "A 15-minute lesson on keys and the circle of fifths.", 151
+     characters; `og:title` "Keys and the circle of fifths · Find Your Pitch, Lesson 21"; the share
+     descriptions, the hook and "Hear each scale, then see it written.";
+   - the share card, `learn/lesson-21-og.jpg`, 1200 by 630: Lesson 2's ring with D major's seven
+     notes lit and its two black keys glowing, between Merc and Tavi, with no A major anywhere on it,
+     and its alt text "Lesson 2's ring of twelve beads, lit with D major's seven notes and its two
+     black keys, F sharp and C sharp, between Merc and Tavi.";
+   - the two structured-data blocks from Lesson 1's, with `timeRequired` `PT15M` and `teaches`
+     "Building a major scale on any note", "Key signatures of up to three sharps or flats", "The
+     circle of fifths" and "Why twelve notes: equal temperament";
+   - on release, the llms.txt line, in Season 1's form: "[Lesson 21: Keys and the circle of
+     fifths](https://mercurypitch.com/learn/21): Why each key a fifth up keeps its sharps and adds
+     one. Building a major scale on any note, reading key signatures of up to three sharps or
+     flats, the circle of fifths, and why twelve fifths close it."
+     None of them names a sharp of A major or says ti.
+3. **The lesson host and the draft line**: `learn/21.html` at `/learn/21`, with its entries beside
+   Lesson 15's, as Lesson 15's spec sets them out (Lesson 15 WEB-SPEC, What the kit and the app still
+   need, items 1 and 2), and the draft line `21: "the vocal coach's look at Sing it (MASTER-PLAN §
+12 item 8)"`.
+4. **Key signatures on the staff toy** (SEASON-2 § 6.2 item 2, extended): the staff toy as Lesson
    15's spec builds it draws no key signature, so it gains one, at each clef's places (FACTS 21), the
-   sharp and flat glyphs it already holds, spelling by key, a signature that grows a sign at a time,
-   and Spell it (Toys 2). Any later page that writes a key reuses it.
-4. **The circle-of-fifths toy** (SEASON-2 § 6.2 item 4): grown from the spiral's top view, with the
-   ring threaded by fifths, the twelve key names with the bottom three's two names, the house, Step
-   round · Step back, the signature beside it, and Pure · Equal with the gap (Toys 3). The pure walk
-   needs a note at an exact frequency, which the kit's voice already takes.
-5. **Lesson 4's staircase into the kit**, with its White keys only and its strip, and a start
+   sharp and flat glyphs it already holds, spelling by key, a signature that grows a sign as a scale
+   ends and drops away under White keys only, and Spell it (Toys 1 and 2). It needs no natural sign.
+   Any later page that writes a key reuses it.
+5. **The circle-of-fifths toy** (SEASON-2 § 6.2 item 4): grown from the spiral's top view, with the
+   ring threaded by fifths, the twelve key names with the bottom three's two names, the house and
+   Step round · Step back within each step's part of three sharps and three flats, the beads past
+   that range drawn and named but not buttons, the signature beside it, and Pure · Equal with the gap
+   drawn past C (Toys 3). The pure walk needs a note at an exact frequency, which the kit's voice
+   already takes.
+6. **Lesson 4's staircase into the kit**, with its White keys only and its strip, and a start
    outside Lesson 4's C4 to B4 (G2 and G4 here); Lesson 4's page then imports it from there
    (`src/features/lessons/lesson-04/stairs-toy.ts:1-16`).
-6. **Two runs in the sing-along**: Lesson 15's flow takes a line of any length in two parts with a
+7. **This page's own parts**, new in `src/features/lessons/lesson-21/`: Find do on the staff toy,
+   its six rounds, eleven places and lines (Toys 4); the small staircase under each of the predict's
+   A major plays (Toys 5); and the four words' figures, a small ring, a staff with G major's sharp, a
+   small circle of four beads and a row of thirteen tiles (Toys 6).
+8. **Two runs in the sing-along**: Lesson 15's flow takes a line of any length in two parts with a
    key change and a second count-in between them (Toys 7). The count-in already plays any note.
-7. **Lesson 15's quiz objects**: the recall imports `l15-q2` and its slot, which exist only once
-   Lesson 15's page is built, so this page is built after it (FACTS 7).
-8. **The lesson plumbing** (SEASON-2 § 5.2 item 21): the marker's reach to 21, the lesson-answer
-   bounds, the admin console's row and the released list, so `?lesson=21` reads as a lesson's link
-   and the page's answers are kept (FACTS 46).
-9. **For the lead, SEASON-2 § 5.1's row for Lesson 21** names the Singing tab's key picker and sheet
-   view; the package links Compose instead, since the Singing tab's picker changes only the view
-   (FACTS 41, 42). The row's "Needs building" list stands.
+9. **No decorative staff** (Look), as Lesson 15's spec sets it out: no `.mv-staff` on the section
+   heads, no engraved clefs, and no background staff (Lesson 15 WEB-SPEC, What the kit and the app
+   still need, item 7).
+10. **Lesson 15's quiz objects**: the recall imports `l15-q2` and its slot, which exist only once
+    Lesson 15's page is built, so this page is built after it (FACTS 7).
+11. **The lesson plumbing** (SEASON-2 § 5.2 item 21): the marker's reach to 21, the lesson-answer
+    bounds, the admin console's row and the released list, so `?lesson=21` reads as a lesson's link
+    and the page's answers are kept (FACTS 46).
+12. **For the lead, SEASON-2 § 5.1's row for Lesson 21** names the Singing tab's key picker and sheet
+    view; the package links Compose instead, since the Singing tab's picker changes only the view
+    (FACTS 41, 42). The row's "Needs building" list stands. And § 3's card for Lesson 21 still gives
+    the checkpoint as do re mi fa so in C, then in G, where the lead decided on so, la, ti, do (FACTS
+    54).
 
 ## Decisions for the owner
 
-1. **The two teases** (FACTS 5, 5b): each is proposed with an alternative; the lead settles them at
-   review, and the console can switch between a tease and its alternative later.
-2. **The short name on the map**, "Circle of fifths" as proposed, or "Keys" (Explorer and season
-   data).
+1. **The two teases** (FACTS 5, 5b): settled at the lead's review on 1 November 2026, as the owner asked, each with an
+   alternative the console can switch to later.
 
-The sing-along's key and notes, and its line for a second run that starts low, are the vocal coach's
-to confirm before publishing (LESSON.md, For the vocal coach), not the owner's.
+The short name on the map, "Circle of fifths", is the lead's. The sing-along's key and notes, and its
+line for a second run that starts low, are the vocal coach's to confirm before publishing (LESSON.md,
+For the vocal coach), not the owner's.
 
 ## Edge cases
 
 - **Sound off**: every play is silent and says so in its hint; the predict reveals nothing until a
   play is heard (FACTS 36); Find do's taps still move the house and show its line.
 - **A play cut short** by another play or Stop: it reveals nothing and releases the owner.
+- **Play D major again after the choice**: the locked-in hint stays, since the page sets no `next`
+  hint (Toys 5).
 - **No stored voice**: the steps' staff shows the bass clef until Sing it's choice, which then sets
   the clef for the visit (FACTS 10). **No storage** (a private window): the quiz seeds and the voice
   last for the visit; nothing breaks.
 - **A phone at 344 px**: the circle's twelve beads keep 44 px targets by drawing the names outside
   the ring; Find do's places, 13 px apart on a phone (Lesson 15 FACTS 71), are reached by Step up and
   Step down as well as by tap (Toys 4).
+- **A tap on a bead past three sharps or flats**: nothing happens; it is not a button (Toys 3).
 - **Lessons 6 and 15 not live**: the recall links keep their words and do not link, as the kit's
   quiz does for a lesson that is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-216`);
   the page publishes only after both are live.
 - **Compose hidden**: in the app's simple mode, or set to guitar, Compose is not a tab, and the link
   lands on Home (Lesson 15 FACTS 46). **Compose on a later visit** opens on the last melody open, not
   the C major scale, and the card says "on a first visit" (FACTS 39). **Compose's clef** changes as
-  the tune moves between keys (FACTS 42).
+  the tune moves between keys (FACTS 42). **Playback Setup turned off** in Settings: the panel, and
+  with it the card's key picker, is not in the sidebar until the learner turns it back on (FACTS 40).
 - **Before the plumbing**: `?lesson=21` is an ordinary visit, so First Light opens on a first visit
   and a returning visitor may meet the app's takeover over Compose (Lesson 15 FACTS 48), and the
   page's answers are refused (Lesson 15 FACTS 47); the page is built only after § 5.2 item 21
@@ -474,25 +533,31 @@ to confirm before publishing (LESSON.md, For the vocal coach), not the owner's.
 
 1. **Scales and signs**: for all twelve starts, the kit's major scale is spelled one letter per
    degree; the white keys from G and F give the steps of FACTS 13; each key a fifth up adds its ti,
-   each a fifth down its fa; the orders of sharps and flats (FACTS 12, 13, 16 to 19).
+   each a fifth down its fa; the orders of sharps and flats (FACTS 12, 13, 16 to 19). With White keys
+   only on, Step 1's staff shows no key signature and no sign on F; switched off, the next G major
+   play writes F♯ with its sharp and moves it into the signature as the scale ends.
 2. **Signature places**: for one to three sharps and flats in each clef, the signs sit at FACTS 21's
    places, and the bass clef's are one line lower than the treble's.
-3. **The predict**: Play G major works before a choice and never reveals; the reveal waits for both
-   D major plays; each hint at its moment; a play cut short or silent reveals nothing; the tour waits
-   for the choice.
+3. **The predict**: Play D major works before a choice and never reveals; choose, play D major again,
+   and the hint is still "Locked in. Play A major both ways."; the reveal waits for both A major
+   plays; a play cut short or silent reveals nothing; the tour waits for the choice.
 4. **The circle**: twelve fifths from C visit every bead once; the pure walk's thirteen frequencies
-   equal FACTS 31's to 0.01 Hz and end 23.46 cents above C4; the equal walk ends on C4; the house
-   stops at A in Step 2 and at E♭ in Step 3.
+   equal FACTS 31's to 0.01 Hz and end 23.46 cents above C4; on Pure the gap is drawn past C,
+   clockwise, and on Equal the thread closes on C; the house moves from C to A and no further in
+   Step 2, from C to E♭ in Step 3, and from E♭ to A in free play; the five beads past three sharps
+   or flats are not buttons, and no signature shows for them.
 5. **Find do**: each round's right places (FACTS 26) and its lines; every other place gives its
    note's name and the rule; six rounds, then "All six found."
-6. **Sing it**: every branch of Toys 7, the two count-ins on so and the new so, Again at most once a
+6. **Sing it**: every branch of Toys 7, the count-in on so before each run, Again at most once a
    visit, the rest card after Effortful, Uncomfortable and Just listen today.
 7. **The words**: LESSON.md's lines word for word in the page's modules; the recall's questions are
    Lesson 6's and Lesson 15's objects, by id; no feedback line starts with "Right", "Yes" or
    "Correct".
-8. **No leak**: a page test holds that nothing above the reveal names C♯: the title, the meta, the
-   promise, the gate, the step headings, the section headings, the recall, the four words and every
-   toy label shown before the choice.
+8. **No leak**: a page test holds that none of G♯, "ti" and "just below do" appears in the head, the
+   share card's alt, the structured data, the title, the promise, the sound gate, the lesson menu's
+   card and list, the step and section headings, the recall or the four words. The predict's own
+   choices and its two locked plays, which name D♯ and G♯ alike, are exempt; so are the steps'
+   stages, which the tour holds until the choice.
 9. **The season**: the entry, the edges, both teases and their alternatives at most 70 characters,
    each variant with its team note.
 10. **Stage fit**: every step's stage at 390 by 844 and 1440 by 900, in both clefs, as the kit's
@@ -504,13 +569,17 @@ to confirm before publishing (LESSON.md, For the vocal coach), not the owner's.
 - Sound comes before every symbol: each scale plays and lights before its key signature is written,
   and every staff example plays.
 - Every scale is spelled one letter per degree; every key signature sits at its clef's places
-  (FACTS 21); reading stops at three sharps and three flats, and the circle shows all twelve.
-- Nothing before the reveal names D major's new sharp; the tour waits for the choice.
+  (FACTS 21); reading stops at three sharps and three flats, the house moves only within them, and
+  the circle shows all twelve; no natural sign is drawn.
+- Nothing a learner meets before the choice, outside the predict's own choices and locked plays,
+  names A major's new sharp or says ti; the steps' stages wait behind the tour's hold.
 - Gold marks nothing; the house marks do; no decorative staff or clef.
 - Sing it keeps the comfort check, the voice choice, the stop line, the doctor lines and Lesson 8's
   rest card; nothing listens, records or scores.
-- The departures from the plan, each argued in FACTS: the sing-along so, la, ti, do in C, then in G
-  (54); the recall's Lesson 6 question 2 (7); Compose for the Singing tab (41, 42); the hero at G3
-  and D4 for everyone (34); the reveal after both plays and the tour's hold (36); Step 1's
-  staircase; Step 3's heading; the guide's two count-ins (56); the two teases (5, 5b); the signature
-  places from the app's notation library (21); and the smaller ones in FACTS 4.
+- The departures from the plan, each argued in FACTS: the predict on A major's third sharp, with
+  the bare notes as its choices (1a, 35); the hero at D4 and A4 for everyone (34); the reveal after
+  both plays, the locked-in hint until then, and the tour's hold (36); the sing-along so, la, ti, do
+  in C, then in G (54); the recall's Lesson 6 question 2 (7); Compose for the Singing tab (41, 42);
+  Step 1's staircase; Step 3's heading; the guide's count-in before each run (56); the two teases
+  (5, 5b); the signature places from the app's notation library (21); Step 2's Go deeper drawer
+  cut (3, 27); "piano key" for a key on the keyboard (22); and the smaller ones in FACTS 4.

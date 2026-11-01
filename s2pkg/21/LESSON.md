@@ -14,7 +14,8 @@ November 2026): both clefs, each learner reading their own (item 2), so the step
 sing-along follow the voice choice and every key signature is drawn at its own clef's heights; and
 reading stops at three sharps and three flats, while the circle shows all twelve keys (item 13).
 Every scale is spelled one letter per degree (FACTS 12). Step 5, why twelve, stays in the page: with
-it the page is 2,198 words, under the 2,230 the brief allows (FACTS 3).
+it the page is 2,139 words, which leaves room under the series' cap of 2,379 for the built page's
+hint and status lines, about 175 words on this page's own count (FACTS 3).
 
 Sound comes before every symbol (SEASON-2 § 1.4 item 1). Each scale plays and lights on Lesson 2's
 ring of twelve and the keyboard before its key signature is written, every staff example plays, and
@@ -38,10 +39,10 @@ left out, as Lesson 17 leaves it out: Lesson 15 teaches it, and the page has lit
 
 Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
 
-- **The sing-along is so, la, ti, do in C, then in G**, the plan's alternative, as the lead decided:
-  the learner sings each key's ti, G major's new sharp included. Every note sits at least 2
-  semitones inside every preset of its voice; the plan's do re mi fa so in C would start on the
-  floor of the tenor and soprano presets (FACTS 54).
+- **The sing-along is so, la, ti, do in C, then in G**, the plan's alternative, as the lead decided
+  on 1 November 2026: the learner sings each key's ti, G major's new sharp included. Every note sits
+  at least 2 semitones inside every preset of its voice; the plan's do re mi fa so in C would start
+  on the floor of the tenor and soprano presets (FACTS 54).
 - **Recall 1 is Lesson 6's question 2, the fifth's size, not its question 1.** The circle of fifths
   needs the fifth's size (SEASON-2 § 4.1, T18), and the page says "a fifth up" from its first
   bubble; question 2 checks exactly that, and it has no sound to adapt (FACTS 7).
@@ -50,11 +51,15 @@ Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
   visit's C major scale under another key's signature, and on a phone held upright the Singing tab
   has no sheet view at all. In Compose the same picker moves the tune into the key, and Sheet Music
   writes it with its signature (FACTS 41, 42).
-- **The hero plays G major from G3 and D major from D4 for everyone**, a fifth apart as Merc says,
-  where the plan played by the stored voice with the higher as the default. The hero draws no staff,
-  so nothing there depends on a clef (FACTS 34).
-- **The reveal waits until both D major plays have been heard**, and a first visit's welcome tour
-  waits for the choice, since Step 1's stage shows G major's ti (FACTS 1a, 36).
+- **The predict asks for A major's third sharp, not D major's second**, as the lead decided at
+  review: Lesson 4's page already builds D major with F♯ and C♯ and says "from D, ti is C♯", and no
+  earlier lesson builds A major. The title and every step stay. The hero plays D major from D4 and
+  A major from A4 for everyone, a fifth apart as Merc says, where the plan played G and D major by
+  the stored voice; the hero draws no staff, so nothing there depends on a clef. The choices are the
+  two notes, with no reason given, so neither label leans towards the answer (FACTS 1a, 34, 35).
+- **The reveal waits until both A major plays have been heard**, and the locked-in hint stays until
+  then. A first visit's welcome tour waits for the choice, since Step 1's stage shows that G major's
+  sharp is its ti and Step 2 names G♯ (FACTS 1a, 36).
 - **Step 1's toy is Lesson 4's staircase, with its own White keys only switch**, moved into the kit,
   in place of the plan's black key toggle (WEB-SPEC, Toys 1).
 - **Step 3's heading asks "Where do the flats come from?"**, a question, where the plan wrote "And
@@ -65,14 +70,21 @@ Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
 - **The tease on the next-lesson card is new**: "Merc holds one note, and its line swings past both
   edges of the band." sets up Lesson 22's opening in miniature. The plan's line is 107 characters,
   past the kit's 70; cut to "Each fifth is nudged two cents. A held note can move far more.", it
-  is the alternative (FACTS 5).
-- **This lesson's own tease, on Lesson 20's card, is proposed anew**: Lesson 20's plan gives "Lesson
+  is the alternative (FACTS 5; settled at the lead's review on 1 November 2026).
+- **This lesson's own tease, on Lesson 20's card, is new**: Lesson 20's plan gives "Lesson
   4 slid the scale to G, which needs one sharp, and to D, which needs two.", 79 characters, past
-  the kit's 70. The proposal and a cut of the planned line are in FACTS 5b, for the lead.
+  the kit's 70. The tease is the hero's D major in miniature, "D major: seven notes, two black keys,
+  F♯ and C♯. Now step up a fifth.", with a cut of the planned line as the alternative (FACTS 5b;
+  settled at the lead's review on 1 November 2026).
 - **Where a key signature's signs sit in each clef** rests on the app's own notation library, since
   no textbook read here says it in words (FACTS 21).
-- **Smaller changes** (the lock line, Merc's and Tavi's wording, the sing-along's speed, the Easy
-  and Workable line, and the Go deeper items left out) are listed, each with its reason, in FACTS 4.
+- **Step 2's Go deeper drawer is cut**, for length: the page is held to about 2,150 words, so the
+  built page keeps a margin under the cap (FACTS 3, 27).
+- **"Piano key" wherever "key" means a key on the keyboard**, in Tavi's Step 3 line, the mix-up card
+  and Quick check 3, since the page defines a key as a scale; "black key" and "white keys" stay, as
+  in Season 1 (FACTS 22).
+- **Smaller changes** (the lock line, the sing-along's speed, the Easy and Workable line, the chips'
+  names, and the Go deeper items the plan listed) are listed, each with its reason, in FACTS 4.
 
 ---
 
@@ -81,14 +93,14 @@ Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
 - Kicker: FIND YOUR PITCH · SEASON 2 · LESSON 21
 - Title (the hook question): **G major needs one sharp and D major two. Why does each key a fifth
   up keep its sharps and add one?**
-- Meta, as five chips: 16 minutes · After Lesson 6: Intervals · After Lesson 15: The staff · Also
-  useful: Lesson 13, Resonance and vowels · Sound on
+- Meta, as five chips: 15 minutes · After Lesson 6: Intervals: the distance between notes · After
+  Lesson 15: The staff: where notes sit · Also useful: Lesson 13, Vowels · Sound on
 - Promise: By the end you'll build a major scale on any note, read a key signature and find do, and
   walk the circle of fifths.
 
-_[Editorial: the chip's 16 minutes is the package's estimate, from its words and its sounds; the
+_[Editorial: the chip's 15 minutes is the package's estimate, from its words and its sounds; the
 staff toy and the circle are timed in their lab before the chip is set (SEASON-2 § 1.3; FACTS 3).
-Neither the title nor the promise names D major's new sharp or says where a new sharp falls in its
+Neither the title nor the promise names A major's new sharp or says where a new sharp falls in its
 scale (FACTS 1a).]_
 
 ## Sound gate
@@ -100,36 +112,36 @@ scale (FACTS 1a).]_
 
 (In the hero, as on Lesson 2's page: the bubbles over the stage, the predict card under it. On the
 stage, between Merc and Tavi, Lesson 2's ring of twelve beads, a bead a semitone, with Lesson 1's
-keyboard under it, from G3 to D5. G major's seven notes are lit on both, and its one black key, F♯,
-glows. No staff is drawn, and nothing names a degree.)
+keyboard under it, from D4 to A5. D major's seven notes are lit on both, and its two black keys, F♯
+and C♯, glow. No staff is drawn, and nothing names a degree.)
 
-[ Play G major ]
+[ Play D major ]
 
-(G major plays from G3 up to G4, a note every 0.4 s in the soft tone, each note lighting its bead
+(D major plays from D4 up to D5, a note every 0.4 s in the soft tone, each note lighting its bead
 and its key as it sounds, and a thread joins each bead to the one before. This play works before a
 choice.)
 
-Merc: "D is a fifth above G. D major keeps G's F♯, and it needs one sharp more."
-Tavi: "F, then the next letter up. Isn't the new sharp G♯?"
+Merc: "A is a fifth above D. A major keeps D's F♯ and C♯, and it needs one sharp more."
+Tavi: "F♯, then C♯. Isn't the new sharp D♯, the letter after C?"
 
-**Predict before you listen.** Which note does D major add as its second sharp?
-[ G♯, the next letter after F ] [ C♯, the note just below do ]
+**Predict before you listen.** Which note does A major add as its third sharp?
+[ D♯ ] [ G♯ ]
 
-Until a choice: "Choose an answer to unlock D major, played both ways."
+Until a choice: "Choose an answer to unlock A major, played both ways."
 
-(After a choice, Play D with G♯ and Play D with C♯ unlock, and the hint reads "Locked in. Play D
-major both ways." Each plays from D4 up to D5 as G major played, lighting the ring and the
-keyboard, and draws a small staircase under its own button, a stair for each note as it sounds. After
-the first is heard, the hint reads "Now play the other one." The reveal waits until both have been
-heard to their end. A play that sound off kept silent sets the hint to "Sound is off: nothing
-played. Turn sound on, then play it again." Before a choice, G major heard with sound on brings the
-lock line back. A play cut short changes nothing. The reveal opens on "You said: G♯" or "You said:
-C♯", and the hint then reads "Play any of them again.")
+(After a choice, Play A with D♯ and Play A with G♯ unlock, and the hint reads "Locked in. Play A
+major both ways." Each plays from A4 up to A5 as D major played, lighting the ring and the
+keyboard, and draws a small staircase under its own button, a stair for each note as it sounds. The
+locked-in hint stays until the reveal, which waits until both have been heard to their end. A play
+that sound off kept silent sets the hint to "Sound is off: nothing played. Turn sound on, then play
+it again." Before a choice, D major heard with sound on brings the lock line back. A play cut short
+changes nothing. The reveal opens on "You said: D♯" or "You said: G♯", and the hint then reads
+"Play any of them again.")
 
-Reveal: C♯, the note just below do. With G♯, the last step, C to D, came out a tone. D major keeps
-F♯ and raises C to C♯, its ti, a semitone under do. Each key a fifth up does the same: its new sharp
-is its own ti. That's this lesson's story. (F♯ came first, and G follows F in the alphabet, which
-made G♯ a fair guess.)
+Reveal: G♯. With D♯, the last step, G to A, came out a tone. A major keeps F♯ and C♯ and raises G
+to G♯, its ti, a semitone under do. Each key a fifth up does the same: its new sharp is its own ti.
+That's this lesson's story. (C♯ came last, and D follows C in the alphabet, which made D♯ a fair
+guess.)
 
 ## Recall from Lessons 6 and 15
 
@@ -179,48 +191,42 @@ and it makes every F a sharp, in every octave.
 
 _Toy: Lesson 4's staircase on G, in your clef's octave, with White keys only, its keyboard strip
 under it, and your staff beside it, where the scale is written as it plays, the F♯ first with its
-own sharp, then in the key signature, with See it on the pitch line._
+own sharp, then in the key signature, with See it on the pitch line. With White keys only on, the
+staff shows no key signature._
 
 ## Step 2 of 5: Why does each key a fifth up add a sharp?
 
 Thread Lesson 2's ring again, a fifth at a time: C, G, D, A. A key a fifth up starts on the last
 key's so. Its first six notes are ones the last key had. Its seventh, ti, was the last key's fa, a
 tone under the new do: it has to rise a semitone. C to G adds F♯, G to D adds C♯, D to A adds G♯,
-each a fifth above the last. The order of sharps is F, C, G, D, A, E, B. In a signature, the last
-sharp is ti.
+each a fifth above the last. The order of sharps is F, C, G, D, A, E, B.
 
 **Try:** step the house from C to A, listening to each scale.
 **Notice:** each key keeps the last key's sharps, and adds one.
 
 _Toy: the circle of fifths, grown from Lesson 2's ring, with the house on do and Step round · Step
-back, beside your staff, whose key signature grows by a sharp as each scale plays._
-
-> **Go deeper**
->
-> - **Five neighbours, then seven.** Take five neighbours on the circle, C, G, D, A and E, and you
->   have Lesson 20's pentatonic scale. Take seven, from F round to B, and you have C major.
+back, from C to A only, beside your staff, whose key signature grows by a sharp as each scale ends._
 
 ## Step 3 of 5: Where do the flats come from?
 
-Tavi: "A♯ and B♭ are one key. Can't F major use A♯?"
+Tavi: "A♯ and B♭ are one piano key. Can't F major use A♯?"
 
-Half right. On white keys, F major's fourth note, B, sits a tone above A [Play the white keys from
+Half right. On white keys, the fourth note from F, B, sits a tone above A [Play the white keys from
 F], where the pattern needs a semitone: it falls to B♭. A♯ would sound the same, but a scale uses
-each letter once: F, G, A, B♭, C, D, E. A fifth down each time, each key adds a flat on its fa: B♭
-for F major, E♭ for B♭ major, A♭ for E♭ major. The order of flats is the sharps', backwards: B, E,
-A, D, G, C, F.
+each letter once. A fifth down each time, each key adds a flat on its fa: B♭ for F major, E♭ for B♭
+major, A♭ for E♭ major. The order of flats is the sharps', backwards: B, E, A, D, G, C, F.
 
-> **Common mix-up:** "A♯ and B♭ are the same key: a key can use either."
-> **Why it seems right:** on a piano they're one key, with one sound.
-> **The evidence:** F major with A♯ would read F, G, A, A♯, C, D, E: two As, and no B. [Play F
-> major, spelled both ways]
-> **The better idea:** one letter for each step. The key decides which name a black key takes.
+> **Common mix-up:** "A♯ and B♭ are the same piano key: a key can use either."
+> **Why it seems right:** they're one piano key, with one sound.
+> **The evidence:** F major with A♯ would read F, G, A, A♯, C, D, E: two As, and no B.
+> [Play F major, spelled both ways]
+> **The better idea:** one letter for each step. The key decides which name the note takes.
 
 **Try:** switch the fourth note between A♯ and B♭.
 **Notice:** only B♭ puts a note on every letter.
 
-_Toy: the circle's flat side, F to E♭, beside your staff, with Spell it: A♯ · B♭ on F major's fourth
-note._
+_Toy: the circle's flat side, the house from C to E♭ only, beside your staff, with Spell it: A♯ · B♭
+on F major's fourth note._
 
 ## Step 4 of 5: How do I find do from a key signature?
 
@@ -246,16 +252,16 @@ tap tries again. After the sixth: "All six found." and Again.)
 ## Step 5 of 5: Why does the circle close after twelve?
 
 Walk twelve fifths up from C and you meet every note once, then land on a C, seven octaves up.
-Counting keys, that's exact. But a pure fifth, two notes whose frequencies are exactly 3 to 2, is a
-hair wider than an equal-tempered one: about 702 cents, against 700. Twelve pure fifths overshoot
-seven octaves by about a quarter of a semitone, 23.46 cents. Equal temperament, the tuning
+Counting semitones, that's exact. But a pure fifth, two notes whose frequencies are exactly 3 to 2,
+is a hair wider than an equal-tempered one: about 702 cents, against 700. Twelve pure fifths
+overshoot seven octaves by about a quarter of a semitone, 23.46 cents. Equal temperament, the tuning
 MercuryPitch uses, makes each fifth about 2 cents narrower, and the ring closes.
 
 **Try:** play the walk with pure fifths, then with equal ones.
 **Notice:** the pure walk ends a little higher than it began: about 2 cents for every step.
 
 _Toy: the circle with Pure · Equal: the walk plays each fifth folded into one octave, and on Pure
-the thread fails to meet C by the gap, drawn and labelled "23.46 cents"._
+the thread runs on past C by the gap, drawn and labelled "23.46 cents"._
 
 ## Sing it
 
@@ -288,8 +294,8 @@ Stop immediately if anything feels uncomfortable.
 
 [ Play Merc's notes ] [ Start the guide ]
 
-The guide counts you in on so, and again before the second run, then a line sweeps along the notes.
-Nothing listens here and nothing is scored. It's just for you.
+The guide counts you in on so before each run, and a line sweeps along the notes. Nothing listens
+here and nothing is scored. It's just for you.
 
 Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ].
 Easy or Workable: "So, la, ti, do, in two keys: the same syllables on a new do."
@@ -315,8 +321,8 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
    - On F♯ · Feedback: "F♯ is the first sharp, the same in every sharp key."
 3. In F major, is the fourth note A♯ or B♭?
    - B♭: each letter once **[correct]** · Feedback: "F, G, A, B♭: no letter twice."
-   - A♯ · Feedback: "A♯ is the same key, but then F major would have two As and no B. Try Step 3
-     again."
+   - A♯ · Feedback: "A♯ is the same piano key, but then F major would have two As and no B. Try
+     Step 3 again."
    - Either: they sound the same · Feedback: "They do, but a scale's spelling uses each letter once."
 4. Twelve pure fifths overshoot seven octaves by about a quarter of a semitone. What does equal
    temperament do?
@@ -334,7 +340,7 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 - The last sharp is ti; the second-to-last flat is do. Twelve fifths close the circle because equal
   temperament narrows each one by about 2 cents.
 
-**One-sentence challenge:** explain to a friend, in one sentence, why D major's second sharp is C♯.
+**One-sentence challenge:** explain to a friend, in one sentence, why A major's third sharp is G♯.
 
 **Practise it.** The practice card, in the version Sing it's ending picks:
 
@@ -342,8 +348,8 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 - Title: Compose, in Sheet Music
 - Text: Compose holds a tune on its piano roll: on a first visit, a C major scale. Open Playback
   Setup in the sidebar and set the key to G, then D, then A. The tune moves into each key, and
-  Sheet Music, or Split, writes it with its key signature, one more sharp each time. Then try F and
-  Bb, the menu's B♭. Compose is built for a bigger screen: on a phone, turn it sideways.
+  Sheet Music, or Split, writes it with its key signature, one more sharp each time. Then try F,
+  then B♭, which the menu writes as Bb. Compose is built for a bigger screen: on a phone, turn it sideways.
 - Address: Practise it free: **mercurypitch.com/#/compose**, then choose Sheet Music.
 - Second drill: For your ear, Ear Lab's Home plays four chords that set a key, then one note: tap
   its degree, do to ti. Each round picks its key at random. Free: **mercurypitch.com/ear-lab**,
@@ -366,8 +372,8 @@ signatures are taught here (FACTS 42). When the note-reading drill reads key sig
 why do we still hear one note?" One line above it, the tease: "Merc holds one note, and its line
 swings past both edges of the band."
 
-_[Editorial: the tease is proposed for the lead, with the plan's line, cut to fit, as its
-alternative (FACTS 5).]_
+_[Editorial: the tease was settled at the lead's review on 1 November 2026, with the plan's line,
+cut to fit, as its alternative (FACTS 5).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Beside the card's words, a still: Lesson 5's band, with a pitch line waving across both its
@@ -388,15 +394,15 @@ always music (SEASON-2 § 1.5 item 7).
 Each section has a short line above its heading, as in Lesson 1; where a section is the same as
 Lesson 15's, so are its words.
 
-| Section     | Line above the heading                                         | Heading                                                       |
-| ----------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
-| Recall      | From Lessons 6 and 15: two questions, asked afresh             | Recall from Lessons 6 and 15                                  |
-| Four words  | Four words you'll meet before the first step                   | Key, key signature, circle of fifths, equal temperament       |
-| Steps       | Five steps, one object: Lesson 2's ring, threaded by fifths    | Keys and the circle of fifths                                 |
-| Sing it     | Cadenza: your solo, and any octave counts                      | Sing it                                                       |
-| Quick check | Ripresa: the theme comes back, from memory                     | Quick check                                                   |
-| Wrap        | Coda: the closing bars                                         | Three lines to keep                                           |
-| Explorer    | Season 2 · Lesson 21                                           | The season, mapped                                            |
+| Section     | Line above the heading                                      | Heading                                                 |
+| ----------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| Recall      | From Lessons 6 and 15: two questions, asked afresh          | Recall from Lessons 6 and 15                            |
+| Four words  | Four words you'll meet before the first step                | Key, key signature, circle of fifths, equal temperament |
+| Steps       | Five steps, one object: Lesson 2's ring, threaded by fifths | Keys and the circle of fifths                           |
+| Sing it     | Cadenza: your solo, and any octave counts                   | Sing it                                                 |
+| Quick check | Ripresa: the theme comes back, from memory                  | Quick check                                             |
+| Wrap        | Coda: the closing bars                                      | Three lines to keep                                     |
+| Explorer    | Season 2 · Lesson 21                                        | The season, mapped                                      |
 
 The explorer's line above its heading is the masthead's, "Season 2 · Lesson 21", as on Lessons 15
 and 17's pages, in place of Season 1's "Season 1, fourteen lessons and a trailer" (SEASON-2 § 7 item
@@ -423,22 +429,22 @@ runs of four, as Lesson 15's sing-along asks for five:
 - Lesson 3's doctor lines: a couple of weeks (the NHS says two weeks; the US guideline four), "a
   doctor (a GP or an ear, nose and throat specialist)", and the urgent signs, "very painful, or
   breathing or swallowing is hard" (FACTS 53).
-- **To confirm: the key and the notes.** So, la, ti, do in C, then in G, as the lead decided over
-  the card's do re mi fa so: for the lower voice G3 A3 B3 C4, then D3 E3 F♯3 G3, written in the bass
-  clef; for the higher, G4 A4 B4 C5, then D4 E4 F♯4 G4, in the treble. The learner sings each key's
-  ti, B in C and F♯ in G, the sharp this lesson adds. Every note sits at least 2 semitones inside
-  every preset of its voice; the least room is at the floor, D3 against the tenor preset's C3 and D4
-  against the soprano's C4, 2 each. The card's line, do re mi fa so in C, would start on those two
-  floors with nothing to spare (FACTS 54):
+- **To confirm: the key and the notes.** So, la, ti, do in C, then in G, as the lead decided on 1
+  November 2026, over the card's do re mi fa so: for the lower voice G3 A3 B3 C4, then D3 E3 F♯3 G3,
+  written in the bass clef; for the higher, G4 A4 B4 C5, then D4 E4 F♯4 G4, in the treble. The
+  learner sings each key's ti, B in C and F♯ in G, the sharp this lesson adds. Every note sits at
+  least 2 semitones inside every preset of its voice; the least room is at the floor, D3 against the
+  tenor preset's C3 and D4 against the soprano's C4, 2 each. The card's line, do re mi fa so in C,
+  would start on those two floors with nothing to spare (FACTS 54):
 
-  | Preset        | Range  | The line | Room below | Room above |
-  | ------------- | ------ | -------- | ---------- | ---------- |
-  | Bass          | E2-E4  | D3-C4    | 10         | 4          |
-  | Baritone      | G2-G4  | D3-C4    | 7          | 7          |
-  | Tenor         | C3-C5  | D3-C4    | 2          | 12         |
-  | Alto          | F3-F5  | D4-C5    | 9          | 5          |
-  | Mezzo-soprano | A3-A5  | D4-C5    | 5          | 9          |
-  | Soprano       | C4-C6  | D4-C5    | 2          | 12         |
+  | Preset        | Range | The line | Room below | Room above |
+  | ------------- | ----- | -------- | ---------- | ---------- |
+  | Bass          | E2-E4 | D3-C4    | 10         | 4          |
+  | Baritone      | G2-G4 | D3-C4    | 7          | 7          |
+  | Tenor         | C3-C5 | D3-C4    | 2          | 12         |
+  | Alto          | F3-F5 | D4-C5    | 9          | 5          |
+  | Mezzo-soprano | A3-A5 | D4-C5    | 5          | 9          |
+  | Soprano       | C4-C6 | D4-C5    | 2          | 12         |
 
 - **To confirm: a second run that starts low.** Your turn says "If the second run starts low for you,
   join in on ti.", which leaves out so and la in G, the line's two lowest notes, and still sings G
@@ -452,10 +458,10 @@ runs of four, as Lesson 15's sing-along asks for five:
   scored. No warm-up: the coach may add Lesson 3's (FACTS 56).
 - The leap between the runs: run 1 ends on do in C (C4 or C5) and run 2 starts on so in G (D3 or D4),
   a seventh lower, which is why the guide gives the new so before the second run (FACTS 56).
-- How did that feel? and its endings: Lesson 3's four answers, asked after each run of the guide;
-  after "Effortful" and after "Uncomfortable" the guide is put away for the visit, as Lessons 10, 12
-  and 15 do. The new Easy and Workable line names the task, not the voice: "So, la, ti, do, in two
-  keys: the same syllables on a new do." (FACTS 57).
+- How did that feel? and its endings: Lesson 3's four answers, asked each time the guide runs to its
+  end; after "Effortful" and after "Uncomfortable" the guide is put away for the visit, as Lessons
+  10, 12 and 15 do. The new Easy and Workable line names the task, not the voice: "So, la, ti, do,
+  in two keys: the same syllables on a new do." (FACTS 57).
 - The rest card, Lesson 8's word for word: after "Effortful", "Uncomfortable" or "Just listen today"
   the Wrap shows "Rest today. This page's sung line will be here when your voice feels
   comfortable.", then both drills, since Compose asks for no voice and Ear Lab's Home answers by tap
