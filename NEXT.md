@@ -2648,3 +2648,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   done; still waiting on the owner: the Tavi ear check, Season 2's 13 decisions, the Cloudflare upload choice,
   the Sing covers. In /dev/shm (regenerable): film-05/06 music-onlys, /dev/shm/l4-moved/ (transcode cache, sheets).
 - 08:47 SENT the owner renders/film-06.mp4 and DELIVERY.md (SendUserFile, proactive) with the branch link. Lesson 4's film is done unless the owner asks for changes.
+- 10:16 CHECK-IN: nothing in flight and nothing due; everything left waits on the owner (their review of film-06, the Tavi ear check, Season 2's 13 decisions, the Cloudflare upload choice, the Sing covers). / 122 MB free; watcher b4f7x4fb7 runs to ~10:28 and is not re-armed (the critic is done). The check-in's stored prompt rewritten for the waiting state (same trigger, same schedule).
