@@ -257,9 +257,13 @@ export interface OfferFacts {
 /**
  * Before an offer opens: the singer's identity (E11), the server's word on
  * the songs, and the store's on the subscription. Within BEFORE_OFFER_MS;
- * past that, what is known and no store, while the asks carry on.
+ * past that, what is known and no store, while the asks carry on. A
+ * caller with an ask of its own before these passes its `deadline`, which
+ * stands in for that wait, so the two share one (onboarding-offer.ts).
  */
-export async function askBeforeOffering(): Promise<OfferFacts> {
+export async function askBeforeOffering(
+  deadline?: Promise<void>,
+): Promise<OfferFacts> {
   const ask = (async (): Promise<OfferFacts> => {
     await ensureSingerIdentity()
     const storeSubscribed =
@@ -273,11 +277,14 @@ export async function askBeforeOffering(): Promise<OfferFacts> {
     return { songs, storeHolds }
   })()
   let timer: ReturnType<typeof setTimeout> | undefined
-  const late = new Promise<OfferFacts>((resolve) => {
-    timer = setTimeout(() => {
-      resolve({ songs: karaokeSongs(), storeHolds: false })
-    }, BEFORE_OFFER_MS)
-  })
+  const wait =
+    deadline ??
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, BEFORE_OFFER_MS)
+    })
+  const late = wait.then(
+    (): OfferFacts => ({ songs: karaokeSongs(), storeHolds: false }),
+  )
   try {
     return await Promise.race([ask, late])
   } finally {

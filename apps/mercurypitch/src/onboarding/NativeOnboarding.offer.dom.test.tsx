@@ -150,7 +150,7 @@ vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
   }
 })
 
-import { closeCloudOffer, cloudOffer, cloudOfferGuest, cloudOfferOpen, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
+import { BEFORE_OFFER_MS, closeCloudOffer, cloudOffer, cloudOfferGuest, cloudOfferOpen, resetCloudOfferForTests, } from '@/features/karaoke-room/cloud-offer-store'
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
 
 const free: KaraokeSongs = {
@@ -793,6 +793,34 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     expect(funnel.sent).not.toContain('native_onboarding_not_now')
   })
 
+  it('waits three seconds in all on a store slow to price the plan, not three for the price and three more', async () => {
+    withStore(
+      store({
+        offer: async () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({ priceText: '\u20ac4.99', title: 'Mercury Pitch Cloud' })
+            }, BEFORE_OFFER_MS - 100)
+          }),
+      }),
+    )
+    // The server never answers.
+    identity.hold = new Promise<void>(() => undefined)
+    const s = mount()
+    await nameNote(s)
+
+    q('onboarding-not-now')?.click()
+    await settleAll()
+    vi.advanceTimersByTime(BEFORE_OFFER_MS - 1)
+    await settleAll()
+    const waiting = cloudOfferOpen()
+    vi.advanceTimersByTime(1)
+    await settleAll()
+
+    expect(waiting).toBe(false)
+    expect(cloudOffer()?.source).toBe('onboarding-exit')
+  })
+
   it("leaves Keep's own Not now going on to the line, after a reveal", async () => {
     const s = mount()
     await measureRange(s)
@@ -804,6 +832,40 @@ describe('Not now: the Cloud offer when it is due, then the alley (owner, 20 Oct
     expect(beat()).toBe('line')
     expect(cloudOfferOpen()).toBe(false)
     expect(onboardingShown()).toBe(true)
+  })
+})
+
+describe("beat 9's price, asked as the onboarding opens", () => {
+  it('asks the store for the plan and its price at once, and makes no identity for it', async () => {
+    const offer = vi.fn(async () =>
+      Promise.resolve({
+        priceText: '\u20ac4.99',
+        title: 'Mercury Pitch Cloud',
+      }),
+    )
+    withStore(store({ offer }))
+
+    mount()
+    await settleAll()
+
+    expect(offer).toHaveBeenCalledTimes(1)
+    expect(identity.made).toBe(0)
+  })
+
+  it('asks nothing for an install held out of beat 9', async () => {
+    localStorage.setItem(OFFER_GROUP_KEY, 'holdout')
+    const offer = vi.fn(async () =>
+      Promise.resolve({
+        priceText: '\u20ac4.99',
+        title: 'Mercury Pitch Cloud',
+      }),
+    )
+    withStore(store({ offer }))
+
+    mount()
+    await settleAll()
+
+    expect(offer).not.toHaveBeenCalled()
   })
 })
 

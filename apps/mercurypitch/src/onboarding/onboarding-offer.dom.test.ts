@@ -15,10 +15,14 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
   },
 }))
 
-const identity = vi.hoisted(() => ({ made: 0 }))
+const identity = vi.hoisted(() => ({
+  made: 0,
+  hold: null as Promise<void> | null,
+}))
 vi.mock('@/db/services/singer-identity', () => ({
   ensureSingerIdentity: vi.fn(async () => {
     identity.made += 1
+    if (identity.hold !== null) await identity.hold
     return Promise.resolve(true)
   }),
 }))
@@ -40,7 +44,7 @@ import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs
 import { setMicActive } from '@/stores/mic-store'
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
-import { HOLDOUT_SHARE, OFFER_GROUP_KEY, OFFER_SHOWN_KEY, offerSkipNow, onboardingOfferGroup, onboardingOfferShown, openOnboardingOffer, prepareOnboardingOffer, replayOnboardingOffer, resetOnboardingOfferForTests, } from './onboarding-offer'
+import { askOfferPrice, HOLDOUT_SHARE, OFFER_GROUP_KEY, OFFER_SHOWN_KEY, offerSkipNow, onboardingOfferGroup, onboardingOfferShown, openOnboardingOffer, prepareOnboardingOffer, replayOnboardingOffer, resetOnboardingOfferForTests, } from './onboarding-offer'
 
 const free: KaraokeSongs = {
   left: 0,
@@ -91,6 +95,7 @@ beforeEach(() => {
   resetCloudOfferForTests()
   resetKaraokeSongsForTests(free)
   identity.made = 0
+  identity.hold = null
   server.next = null
   build.cloud = true
   funnel.sent = []
@@ -233,6 +238,76 @@ describe('nothing to buy at a price', () => {
       await vi.advanceTimersByTimeAsync(BEFORE_OFFER_MS)
       await expect(prepared).resolves.toBe('unavailable')
       expect(identity.made).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('the price, asked early, and one wait for it all', () => {
+  beforeEach(() => {
+    onboardingOfferGroup(() => 0.5)
+  })
+
+  it('asks the store for the price as the onboarding opens, and makes no identity', async () => {
+    const offer = vi.fn(async () => Promise.resolve(PLAN))
+    withStore(store({ offer }))
+
+    const price = askOfferPrice()
+
+    expect(offer).toHaveBeenCalledTimes(1)
+    await expect(price).resolves.toBe(true)
+    expect(identity.made).toBe(0)
+  })
+
+  it('goes on that price at the end, and asks the store no more', async () => {
+    const offer = vi.fn(async () => Promise.resolve(PLAN))
+    withStore(store({ offer }))
+    const price = askOfferPrice()
+
+    await expect(prepareOnboardingOffer(price)).resolves.toBeNull()
+
+    expect(offer).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks nothing for the install held out', () => {
+    // Drawn into it, as the onboarding first opened.
+    resetOnboardingOfferForTests()
+    localStorage.setItem(OFFER_GROUP_KEY, 'holdout')
+    const offer = vi.fn(async () => Promise.resolve(PLAN))
+    withStore(store({ offer }))
+
+    expect(askOfferPrice()).toBeNull()
+    expect(offer).not.toHaveBeenCalled()
+  })
+
+  it('waits three seconds in all for a late price and the asks after it, not three each', async () => {
+    vi.useFakeTimers()
+    try {
+      withStore(
+        store({
+          offer: async () =>
+            new Promise((resolve) => {
+              setTimeout(() => resolve(PLAN), BEFORE_OFFER_MS - 100)
+            }),
+        }),
+      )
+      // The server never answers.
+      identity.hold = new Promise<void>(() => undefined)
+      let decided = false
+      const prepared = prepareOnboardingOffer().then((why) => {
+        decided = true
+        return why
+      })
+
+      await vi.advanceTimersByTimeAsync(BEFORE_OFFER_MS - 1)
+      const waiting = !decided
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(waiting).toBe(true)
+      expect(decided).toBe(true)
+      // On what is known: the offer opens.
+      await expect(prepared).resolves.toBeNull()
     } finally {
       vi.useRealTimers()
     }

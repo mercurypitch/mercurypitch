@@ -107,7 +107,7 @@ import { ONBOARDING_COPY } from './onboarding-copy'
 import { countFinished, leaveOnboarding, markFinished, markNotNow, onboardingEntry, registerLayerNotNow, registerLayerRange, } from './onboarding-layer'
 import { KEEP_CHOICE_EVENT, lineBandEvent } from './onboarding-measure'
 import type { OfferSkip } from './onboarding-offer'
-import { offerSkipNow, onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
+import { askOfferPrice, offerSkipNow, onboardingOfferGroup, openOnboardingOffer, prepareOnboardingOffer, } from './onboarding-offer'
 import { rangeSays, RangeView } from './RangeView'
 import { RevealView } from './RevealView'
 import { savedRange } from './saved-range'
@@ -230,6 +230,9 @@ export function NativeOnboarding(): JSX.Element {
   // This install's beat 9 group, drawn as its onboarding first opens, so
   // every install that starts it has one (onboarding-offer.ts).
   if (entry === 'onboarding') onboardingOfferGroup()
+  // The offer's price, asked now: it makes no identity, so it can be, and
+  // beat 9 then waits on the store only when the store is slow.
+  const price = entry === 'onboarding' ? askOfferPrice() : null
 
   let skipTimer: ReturnType<typeof setTimeout> | undefined
   onCleanup(() => clearTimeout(skipTimer))
@@ -412,7 +415,7 @@ export function NativeOnboarding(): JSX.Element {
     on(
       () => line.state().phase,
       (phase) => {
-        if (phase === 'done') offerAsks ??= prepareOnboardingOffer()
+        if (phase === 'done') offerAsks ??= prepareOnboardingOffer(price)
       },
       { defer: true },
     ),
@@ -440,7 +443,7 @@ export function NativeOnboarding(): JSX.Element {
   const finishLine = (): void => {
     if (untrack(continuing) || untrack(leaving) || exiting) return
     setContinuing(true)
-    const asks = offerAsks ?? prepareOnboardingOffer()
+    const asks = offerAsks ?? prepareOnboardingOffer(price)
     // Not now while the asks are out takes over: its offer, not this one.
     const stands = (): boolean => !untrack(leaving) && !exiting
     void openOnboardingOffer(asks, stands).then((opened) => {
@@ -500,7 +503,7 @@ export function NativeOnboarding(): JSX.Element {
     }
     setLeftFrom(untrack(beat))
     setDeciding(true)
-    const asks = offerAsks ?? prepareOnboardingOffer()
+    const asks = offerAsks ?? prepareOnboardingOffer(price)
     const stands = (): boolean => !untrack(leaving)
     void openOnboardingOffer(asks, stands, 'onboarding-exit').then((opened) => {
       setDeciding(false)

@@ -272,6 +272,28 @@ describe('askBeforeOffering', () => {
     await expect(asking).resolves.toEqual({ songs: free, storeHolds: false })
   })
 
+  it('waits on a deadline it is given instead of its own', async () => {
+    // The onboarding asks for the price before these, and shares one wait.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    identity.answer = new Promise<boolean>(() => undefined)
+    let end = (): void => undefined
+    const deadline = new Promise<void>((resolve) => {
+      end = resolve
+    })
+    let answered = false
+
+    const asking = askBeforeOffering(deadline).then((facts) => {
+      answered = true
+      return facts
+    })
+    await vi.advanceTimersByTimeAsync(BEFORE_OFFER_MS)
+    const waited = !answered
+    end()
+
+    expect(waited).toBe(true)
+    await expect(asking).resolves.toEqual({ songs: free, storeHolds: false })
+  })
+
   it('takes a store that cannot say as holding nothing', async () => {
     const unregister = registerShellApi({
       pushSettings: vi.fn(),
