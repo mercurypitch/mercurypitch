@@ -23,6 +23,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
+import { refusedPublicTextField } from '@/db/services/public-text-refusal'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_FORM_URL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -137,7 +138,13 @@ export const AccountSection: Component = () => {
       showNotification('Display name updated', 'info')
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(
+        refusedPublicTextField(err) !== null
+          ? "That name uses a word we don't allow. Try another."
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      )
       return false
     } finally {
       setBusy(false)

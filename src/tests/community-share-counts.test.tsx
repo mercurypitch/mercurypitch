@@ -12,6 +12,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { SessionRecord } from '@/db/entities'
 import { sessionFingerprint } from '@/features/community/share-identity'
 import { decodeSharePayload } from '@/lib/share-codec'
@@ -698,6 +699,70 @@ describe('Community publication lifecycle', () => {
     expect(screen.getByRole('button', { name: /^Share$/ })).not.toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Open New melody' })).toBeNull()
     expect(mocks.loadPublishedShareCounts).toHaveBeenCalledTimes(1)
+  })
+
+  /** A write the worker's word filter refused, as ServerAdapter throws it. */
+  function wordRefusal(field: string): CloudRequestError {
+    const body = `{"error":"${field} uses a word that is not allowed"}`
+    return new CloudRequestError(
+      400,
+      `ServerAdapter: 400 Bad Request on https://api.test/api/x — ${body}`,
+      body,
+    )
+  }
+
+  it.each([
+    [
+      'melodyName',
+      "This melody's title uses a word we don't allow. Rename it, then share it again.",
+    ],
+    [
+      'itemsJson',
+      "This melody's lyrics use a word we don't allow. Change them, then share it again.",
+    ],
+  ])(
+    'says what to change when the word filter refuses a melody (%s), not to retry',
+    async (field, message) => {
+      mocks.libraryMelodies.mockReturnValue([
+        {
+          ...boardMelody('library', '', 'New melody'),
+          bpm: 120,
+          items: [
+            {
+              id: 1,
+              note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+              startBeat: 0,
+              duration: 1,
+            },
+          ],
+        },
+      ])
+      mocks.saveSharedMelody.mockRejectedValueOnce(wordRefusal(field))
+      render(() => <CommunityShare />)
+      fireEvent.click(screen.getByRole('button', { name: /Share a melody/i }))
+      fireEvent.click(await screen.findByRole('button', { name: /^Share$/ }))
+      await waitFor(() =>
+        expect(mocks.notify).toHaveBeenCalledWith(message, 'error'),
+      )
+      expect(screen.getByRole('button', { name: /^Share$/ })).not.toBeDisabled()
+      expect(
+        screen.queryByRole('button', { name: 'Open New melody' }),
+      ).toBeNull()
+    },
+  )
+
+  it('says a refused run title cannot go on the board, not to retry', async () => {
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'practice')])
+    mocks.saveSharedSession.mockRejectedValueOnce(wordRefusal('sessionName'))
+    render(() => <CommunityShare />)
+    await publishRun()
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith(
+        "This run's title uses a word we don't allow, so it can't go on the board.",
+        'error',
+      ),
+    )
+    expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull()
   })
 
   it('keeps a guest share local and removes it without a server write or count refresh', async () => {

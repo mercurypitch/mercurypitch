@@ -339,6 +339,52 @@ describe('share flows', () => {
     expect(await unpublishShared('melody', 'm1')).toBe(false)
   })
 
+  /** The repository's create, refused the way ServerAdapter refuses one. */
+  const refuseCreate = (status: number, body: string) =>
+    vi.spyOn(adapter, 'getRepository').mockReturnValue({
+      create: () =>
+        Promise.reject(
+          new CloudRequestError(
+            status,
+            `ServerAdapter: ${status} on /api/x — ${body}`,
+            body,
+          ),
+        ),
+    } as never)
+
+  it('passes on a title the word filter refused, so the share can say so', async () => {
+    // A null reads as "try again", and trying again cannot help here.
+    refuseCreate(400, '{"error":"melodyName uses a word that is not allowed"}')
+    await expect(
+      saveSharedMelody({ name: 'Bad', items: [], author: 'A' }),
+    ).rejects.toBeInstanceOf(CloudRequestError)
+    refuseCreate(400, '{"error":"sessionName uses a word that is not allowed"}')
+    await expect(
+      saveSharedSession({
+        name: 'Bad',
+        items: [],
+        author: 'A',
+        results: [80],
+      }),
+    ).rejects.toBeInstanceOf(CloudRequestError)
+  })
+
+  it('still answers null for a publish that failed any other way', async () => {
+    refuseCreate(500, '{"error":"Internal error"}')
+    expect(
+      await saveSharedMelody({ name: 'Tune', items: [], author: 'A' }),
+    ).toBeNull()
+    refuseCreate(400, '{"error":"Invalid column: x"}')
+    expect(
+      await saveSharedSession({
+        name: 'Run',
+        items: [],
+        author: 'A',
+        results: [80],
+      }),
+    ).toBeNull()
+  })
+
   it('round-trips a shared melody', async () => {
     const saved = await saveSharedMelody({
       name: 'My Tune',

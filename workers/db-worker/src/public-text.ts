@@ -10,6 +10,7 @@
 
 import type { NameProblem, NameRules } from './name-filter'
 import { DISPLAY_NAME_MAX, hasSlur, nameProblem } from './name-filter'
+import { WORD_NOT_ALLOWED } from './public-text-wording'
 
 /** The longest share name: the app's shared result already caps it here. */
 export const SHARE_NAME_MAX = 200
@@ -45,11 +46,11 @@ const WORDS: Readonly<Record<TextProblem, string>> = {
   empty: 'is required',
   'too-long': 'is too long',
   unreadable: 'has characters that cannot be shown',
-  words: 'uses a word that is not allowed',
+  words: WORD_NOT_ALLOWED,
   'not-text': 'must be text',
   'too-many': `holds more than ${TAGS_MAX} tags`,
   'not-https': 'must be an https address',
-  slur: 'uses a word that is not allowed',
+  slur: WORD_NOT_ALLOWED,
 }
 
 function nameField(value: unknown, rules: NameRules): TextProblem | null {

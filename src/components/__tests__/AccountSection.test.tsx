@@ -553,6 +553,34 @@ describe('the display name editor', () => {
     expect(still.value).toBe('Maffy')
   })
 
+  it('says a refused name in a sentence, not as the transport error', async () => {
+    // The worker's word filter answers 400 with JSON; ServerAdapter puts the
+    // status, the URL and that JSON into its message. None of it is for the
+    // singer.
+    const body = '{"error":"displayName uses a word that is not allowed"}'
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    dbMocks.profileRepo.update.mockRejectedValueOnce(
+      new CloudRequestError(
+        400,
+        `ServerAdapter: 400 Bad Request on https://api.test/api/userProfiles/u — ${body}`,
+        body,
+      ),
+    )
+    render(() => <AccountSection />)
+
+    const input = await openEditor()
+    fireEvent.input(input, { target: { value: 'Maffy' } })
+    fireEvent.click(screen.getByTestId('display-name-save'))
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('auth-error').textContent).toBe(
+        "That name uses a word we don't allow. Try another.",
+      ),
+    )
+    // Still open, so the singer can try another straight away.
+    expect(screen.getByTestId('display-name-input')).toBeTruthy()
+  })
+
   it('does not rewrite the field under the caret when the profile reloads', async () => {
     // refreshMe() runs on its own schedule. Before the editor existed this
     // could not be noticed; now a badly timed one would erase what somebody
