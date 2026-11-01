@@ -143,6 +143,58 @@ describe('session archive codec', () => {
     )
   })
 
+  it('imports lyrics with a version kind from a newer build, that version left out', () => {
+    const payload = {
+      ...sessionPayload(),
+      lyrics: {
+        text: '[00:12.00]First line',
+        format: 'lrc',
+        filename: 'song.lrc',
+        activeVersionKind: 'some-later-kind',
+        versions: [
+          { kind: 'imported', text: 'First line', createdAt: 1 },
+          {
+            kind: 'some-later-kind',
+            text: '[00:12.00]First line',
+            createdAt: 2,
+          },
+        ],
+      },
+    }
+
+    const lyrics = parseSessionArchivePayload(payload).lyrics
+
+    expect(lyrics?.versions?.map((v) => v.kind)).toEqual(['imported'])
+    // What shows is the version it falls back to, under its own name.
+    expect(lyrics?.activeVersionKind).toBe('imported')
+    expect(lyrics?.text).toBe('First line')
+    expect(lyrics?.format).toBe('txt')
+  })
+
+  it('carries Auto-timed lyrics, and a no to auto-timing, both ways', () => {
+    const lyrics = {
+      text: '[00:12.00]First line',
+      format: 'lrc' as const,
+      filename: 'song.lrc',
+      activeVersionKind: 'auto-time' as const,
+      versions: [
+        { kind: 'imported' as const, text: 'First line', createdAt: 1 },
+        {
+          kind: 'auto-time' as const,
+          text: '[00:12.00]First line',
+          createdAt: 2,
+        },
+      ],
+      autoTimeDeclined: true,
+    }
+
+    const read = parseSessionArchivePayload(
+      JSON.parse(JSON.stringify({ ...sessionPayload(), lyrics })),
+    ).lyrics
+
+    expect(read).toEqual(lyrics)
+  })
+
   it('validates bounded melody fingerprints in session manifests', () => {
     const fingerprint = {
       melodyId: 'stem:old-session',

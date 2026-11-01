@@ -18,6 +18,9 @@ export interface LyricsData {
   fontSize?: number
   versions?: LyricsVersion[]
   activeVersionKind?: LyricsVersionKind
+  /** The singer said no to timing these lyrics from the song's notes
+   *  (useStemMixerLyricsController, "Untimed lyrics"). */
+  autoTimeDeclined?: boolean
 }
 
 /** Writes under way, by session id -- see `inTurn`. */
@@ -107,6 +110,7 @@ async function replaceLyrics(
         ? JSON.stringify(data.versions)
         : undefined,
     activeVersionKind: data.activeVersionKind,
+    autoTimeDeclined: data.autoTimeDeclined === true ? true : undefined,
   })
   for (const entry of existing) {
     if (entry.id !== created.id) await repo.delete(entry.id)
@@ -161,6 +165,7 @@ export async function loadLyricsFromDbStrict(
   if (entry.activeVersionKind !== undefined) {
     data.activeVersionKind = entry.activeVersionKind as LyricsVersionKind
   }
+  if (entry.autoTimeDeclined === true) data.autoTimeDeclined = true
   return data
 }
 
@@ -216,6 +221,7 @@ export async function loadLyricsFromDb(
     if (entry.activeVersionKind !== undefined) {
       data.activeVersionKind = entry.activeVersionKind as LyricsVersionKind
     }
+    if (entry.autoTimeDeclined === true) data.autoTimeDeclined = true
     return data
   } catch (err) {
     if (IS_DEV) console.warn('[LyricsDB] loadLyricsFromDb failed:', err)

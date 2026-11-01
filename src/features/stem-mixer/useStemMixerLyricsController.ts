@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type LyricsAlign = 'left' | 'center' | 'right'
@@ -18,6 +18,8 @@ import { fetchLyricsByIdOutcome, lyricsFromMatch, lyricsPickFailureMessage, } fr
 import { lyricLineAt } from '@/lib/lyric-line-at'
 import type { SungNote } from '@/lib/lyric-sung-end'
 import { clampLineEndToVocal, synthesizeLastWordEnd, } from '@/lib/lyric-sung-end'
+import type { TimedNote } from '@/lib/lyrics-automap'
+import { automappedLrc } from '@/lib/lyrics-automap'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
@@ -62,6 +64,11 @@ export interface StemMixerLyricsDeps {
    *  the last word across the silence before the next line. Optional: hosts
    *  without pitch analysis keep the estimate-based behavior. */
   melodyNotes?: () => SungNote[]
+  /** The vocal's notes as the analysis found them, before the clean-up that
+   *  joins a phrase into a few long notes: what untimed lyrics are timed
+   *  against (lyrics-automap.ts). Optional: without them, untimed lyrics
+   *  stay as they are. */
+  vocalNotes?: () => readonly TimedNote[]
   /** How long to wait for an example's authored lyrics before going online
    *  for them. Defaults to `EXAMPLE_LYRICS_WAIT_MS`. */
   exampleLyricsWaitMs?: number
@@ -387,6 +394,11 @@ export function useStemMixerLyricsController(
   const [lyricsVersions, setLyricsVersions] = createSignal<LyricsVersion[]>([])
   const [activeVersionKind, setActiveVersionKind] =
     createSignal<LyricsVersionKind | null>(null)
+  // The singer said no to timing these lyrics from the notes: they deleted
+  // Auto-timed, or their own mapping and kept the untimed Original. Kept
+  // with the lyrics, so it goes where they go (see "Untimed lyrics" below),
+  // and cleared when lyrics are brought in afresh.
+  const [autoTimeDeclined, setAutoTimeDeclined] = createSignal(false)
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
   const [editPopover, setEditPopover] = createSignal<EditPopover | null>(null)
   const blocksCtl = useLyricsBlocksController({
@@ -473,6 +485,7 @@ export function useStemMixerLyricsController(
       // carry over Edited/Auto-sync versions from a previously loaded file.
       // Every other kind builds on top of the current import.
       const base = versionKind === 'imported' ? [] : versions
+      if (versionKind === 'imported') setAutoTimeDeclined(false)
       versions = upsertVersion(base, {
         kind: versionKind,
         text,
@@ -509,6 +522,7 @@ export function useStemMixerLyricsController(
     payload.fontSize = lyricsFontSize()
     if (versions.length > 0) payload.versions = versions
     if (activeKind !== null) payload.activeVersionKind = activeKind
+    if (autoTimeDeclined()) payload.autoTimeDeclined = true
 
     // Update local cache immediately (keeps reads sync)
     _setLyricsCache(payload)
@@ -519,6 +533,10 @@ export function useStemMixerLyricsController(
 
   // ── Lyric versions (switch / delete) ─────────────────────────────
   const LRC_LINE_RE = /^\s*\[\d{1,3}:\d{2}/m
+  /** A version that times its lines: LRC, or words with times of their own. */
+  const isTimed = (version: LyricsVersion): boolean =>
+    LRC_LINE_RE.test(version.text) ||
+    Object.keys(version.wordTimings ?? {}).length > 0
   /** Load a saved version's text + timings into the live lyric state. */
   const applyVersionToLive = (version: LyricsVersion) => {
     const isLrc = LRC_LINE_RE.test(version.text)
@@ -586,6 +604,10 @@ export function useStemMixerLyricsController(
   }
 
   const deleteVersion = (kind: LyricsVersionKind) => {
+    // Deleting a timing (Auto-timed, or the singer's own mapping) and keeping
+    // untimed lyrics says no to timing them from the notes as well.
+    const deleted = findVersion(lyricsVersions(), kind)
+    if (deleted !== undefined && isTimed(deleted)) setAutoTimeDeclined(true)
     const remaining = removeVersion(lyricsVersions(), kind)
     setLyricsVersions(remaining)
     const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
@@ -619,6 +641,7 @@ export function useStemMixerLyricsController(
    *  song title so a fresh search is one tap). There is no undo. */
   const clearLyrics = (): void => {
     void deleteLyricsFromDb(deps.sessionId)
+    setAutoTimeDeclined(false)
     clearLrcGenProgress()
     _setLyricsCache(null)
     setRawLyricsText('')
@@ -887,6 +910,7 @@ export function useStemMixerLyricsController(
       const hadVersions =
         cache?.versions !== undefined && cache.versions.length > 0
       const activeVersion = hydrateVersions(cache)
+      setAutoTimeDeclined(cache?.autoTimeDeclined === true)
       setWordEndTimings(activeVersion?.wordEndTimings ?? {})
       setWordSweepTimings(activeVersion?.wordSweepTimings ?? {})
       if (!hadVersions && lyricsVersions().length > 0) {
@@ -1420,6 +1444,108 @@ export function useStemMixerLyricsController(
     flushLrcGenProgress,
     clearLrcGenProgress,
   } = gen
+
+  // ── Untimed lyrics, timed from the song's notes ─────────────────
+  //
+  // A paste, a .txt or an LRCLIB record with plain lyrics only used to be
+  // spread evenly over the whole song: line 1 lit at 0:00, a line typically
+  // 5 to 15 s out. With the vocal's notes in hand, the lines are placed on
+  // the singing instead (lyrics-automap.ts) and kept as a version of their
+  // own, Auto-timed, over the untimed Original.
+  //
+  // It is a rule, not a step of the import: whenever the untimed Original is
+  // up and the notes are in, in either order. Lyrics brought in before the
+  // notes (an analysis still running; on a phone, the notes read only when
+  // the mic is first turned on) are timed when the notes come, on this visit
+  // or a later one. Never over a mapping: only while nothing else has been
+  // made of the lyrics (no mapping, edit or Auto-timed version: a singer who
+  // switched back to the Original keeps it), not while they are being mapped
+  // or edited, and not after the singer deleted Auto-timed.
+
+  /** Untimed lyrics are up, nothing has timed them in any version, and
+   *  nothing maps, edits or marks them now. */
+  const untimedOriginalUp = (): boolean => {
+    const text = rawLyricsText()
+    const kind = activeVersionKind()
+    return (
+      // The Original, or a text edit of it (a typo fixed before the notes
+      // came is still untimed lyrics).
+      (kind === 'imported' || kind === 'edited') &&
+      lrcLines().length === 0 &&
+      text.trim() !== '' &&
+      // A pasted LRC whose first line is a tag ("[ar:...]") comes in as text;
+      // its own times stand.
+      !LRC_LINE_RE.test(text) &&
+      !lyricsVersions().some(isTimed) &&
+      !autoTimeDeclined() &&
+      !editMode() &&
+      !textEditMode() &&
+      !lrcGenMode() &&
+      !blockMarkMode() &&
+      // A tap-along left part-way on these lyrics is the singer's to finish.
+      !gen.hasTapProgress()
+    )
+  }
+
+  /** Times `text` from `notes` as the active version; false when the notes
+   *  cannot carry the lines. */
+  const autoTime = (text: string, notes: readonly TimedNote[]): boolean => {
+    const lrc = automappedLrc(text, notes)
+    if (lrc === null) return false
+    // Read before the resets below: reading the stored lyrics puts their
+    // repeats back as it goes.
+    const filename = loadPersistedLyrics()?.filename ?? 'lyrics.txt'
+    // A mapping of its own: no word times, sweeps or repeats carried over.
+    setWordTimings({})
+    setWordEndTimings({})
+    setWordSweepTimings({})
+    setBlocks([])
+    setBlockInstances({})
+    setRawLyricsText(lrc)
+    setLrcLines(parseLrcFile(lrc))
+    setLyricsLines([])
+    persistLyrics(
+      lrc,
+      'lrc',
+      `${filename.replace(/\.[^.]+$/, '')}.lrc`,
+      undefined,
+      undefined,
+      'auto-time',
+    )
+    showNotification('Lines timed to the singing', 'info')
+    return true
+  }
+
+  // Notes that could not carry these lines are not tried again until the
+  // notes or the lyrics change.
+  let triedInVain: { notes: readonly TimedNote[]; text: string } | null = null
+  const timeIfDue = (): void => {
+    const notes = deps.vocalNotes?.() ?? []
+    if (notes.length === 0 || !untimedOriginalUp()) return
+    const text = rawLyricsText()
+    if (triedInVain?.notes === notes && triedInVain.text === text) return
+    triedInVain = autoTime(text, notes) ? null : { notes, text }
+  }
+
+  // Looked at again once whatever changed has finished: an import sets the
+  // text, the versions and the lines one after another, and timing the
+  // lyrics halfway through would be undone by the rest of it.
+  let alive = true
+  onCleanup(() => {
+    alive = false
+  })
+  let queued = false
+  createEffect(() => {
+    if ((deps.vocalNotes?.() ?? []).length === 0 || !untimedOriginalUp()) {
+      return
+    }
+    if (queued) return
+    queued = true
+    queueMicrotask(() => {
+      queued = false
+      if (alive) untrack(timeIfDue)
+    })
+  })
 
   const handleDownloadLrc = () => {
     let lrcText = ''

@@ -7,6 +7,8 @@ import type { SessionPitchData } from '@/db/services/session-pitch-analysis-serv
 import type { PitchEditLayer } from '@/features/stem-mixer/pitch-edit-model'
 import type { PitchNote, WordSweepTimingsMap, } from '@/features/stem-mixer/types'
 import type { KeyRegion } from '@/lib/key-detection'
+import type { LyricsVersion } from '@/lib/lyrics-versions'
+import { sortVersions, VERSION_LABELS } from '@/lib/lyrics-versions'
 import type { MergedNote } from '@/lib/midi-generator'
 import type { MelodyFingerprint } from '@/lib/shazam/types'
 import type { WhisperSegment } from '@/lib/whisper-service'
@@ -32,13 +34,12 @@ const SESSION_STATUSES = new Set<UvrSession['status']>([
   'interrupted',
 ])
 
-const LYRIC_VERSION_KINDS = new Set([
-  'imported',
-  'edited',
-  'auto-sync',
-  'lrc-gen',
-  'whisper',
-])
+/** Every kind this build knows: a kind added there is known here too. */
+const LYRIC_VERSION_KINDS: ReadonlySet<string> = new Set(
+  Object.keys(VERSION_LABELS),
+)
+/** A lyric text that times its lines (the lyrics controller's own test). */
+const LRC_LINE_RE = /^\s*\[\d{1,3}:\d{2}/m
 
 export class SessionArchiveError extends Error {
   constructor(message: string) {
@@ -580,12 +581,15 @@ function parseLyrics(value: unknown): LyricsData | null {
       'lyrics.activeVersionKind',
       32,
     )
-    if (!LYRIC_VERSION_KINDS.has(kind))
-      throw new SessionArchiveError('lyrics.activeVersionKind is invalid')
-    lyrics.activeVersionKind = kind as NonNullable<
-      LyricsData['activeVersionKind']
-    >
+    // A kind this build does not know (from a newer one) is left out, not a
+    // reason to refuse the whole session: the lyrics fall back to the
+    // versions it knows, the way a deleted version does (see below).
+    if (LYRIC_VERSION_KINDS.has(kind))
+      lyrics.activeVersionKind = kind as NonNullable<
+        LyricsData['activeVersionKind']
+      >
   }
+  if (source.autoTimeDeclined === true) lyrics.autoTimeDeclined = true
   if (source.blocks !== undefined) {
     if (!Array.isArray(source.blocks) || source.blocks.length > 10_000)
       throw new SessionArchiveError('lyrics.blocks is malformed')
@@ -635,11 +639,11 @@ function parseLyrics(value: unknown): LyricsData | null {
   if (source.versions !== undefined) {
     if (!Array.isArray(source.versions) || source.versions.length > 16)
       throw new SessionArchiveError('lyrics.versions is malformed')
-    lyrics.versions = source.versions.map((rawVersion, index) => {
+    lyrics.versions = source.versions.flatMap((rawVersion, index) => {
       const version = record(rawVersion, `lyrics.versions.${index}`)
       const kind = stringValue(version.kind, 'lyrics version kind', 32)
-      if (!LYRIC_VERSION_KINDS.has(kind))
-        throw new SessionArchiveError('lyrics version kind is invalid')
+      // A newer build's kind: that version is left out (see above).
+      if (!LYRIC_VERSION_KINDS.has(kind)) return []
       return {
         kind: kind as NonNullable<LyricsData['activeVersionKind']>,
         text: stringValue(
@@ -674,8 +678,27 @@ function parseLyrics(value: unknown): LyricsData | null {
           : {}),
       }
     })
+    if (source.activeVersionKind !== undefined) showKnownVersion(lyrics)
   }
   return lyrics
+}
+
+/**
+ * Lyrics whose version on show was a newer build's, left out: show the
+ * version this build falls back to, as its versions menu will, rather than
+ * the left-out text under the fallback's name.
+ */
+function showKnownVersion(lyrics: LyricsData): void {
+  if (lyrics.activeVersionKind !== undefined) return
+  const fallback: LyricsVersion | undefined = sortVersions(
+    lyrics.versions ?? [],
+  )[0]
+  if (fallback === undefined) return
+  lyrics.activeVersionKind = fallback.kind
+  lyrics.text = fallback.text
+  lyrics.format = LRC_LINE_RE.test(fallback.text) ? 'lrc' : 'txt'
+  if (fallback.wordTimings === undefined) delete lyrics.wordTimings
+  else lyrics.wordTimings = fallback.wordTimings
 }
 
 function parseTranscription(value: unknown): WhisperSegment[] | null {
