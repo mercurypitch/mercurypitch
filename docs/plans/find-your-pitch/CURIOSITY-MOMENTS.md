@@ -278,6 +278,46 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   messa di voce (Titze 1999, Collyer 2007, Kirsch 2025), hearing your own voice (Orepic 2023); the tune's rights check
   is Lesson 6's (FACTS 28, 29).
 
+### Lesson 15 · The staff: where notes sit · theory; written; no page yet · hook kept
+
+- **Opening:** the pitch line between Merc and Tavi, a lane for every semitone; the climb plays nine white keys, E4 up
+  to F5, each lighting its lane. Tavi "Eighty-eight keys. Wouldn't you need 88 lines?" Merc "Let's see what five can
+  hold." Predict: "Merc will draw five lines. From the bottom line to the top line, how many places will there be for a
+  note?" [Five] [Nine]. No line is drawn before the choice, and the page's tour waits for it. The answering play folds
+  the black-key lanes away and closes the white-key lanes into the five lines. The plan's wording, "one on each line
+  and in each space", turned the guess into a sum, and its "Play nine notes" named the answer (Lesson 15 FACTS 39).
+- **Visual:** the pitch line (exists) folding into a staff, and the staff toy: both clefs, ledger lines, the grand
+  staff over Lesson 1's keyboard and a "See it on the pitch line" switch (new, SEASON-2 § 6.2 item 2). **Payoff:**
+  Step 5, where the grand staff joins the two staves at middle C over the keyboard, and a piano's 88 keys go on two
+  staves of five lines; the checkpoint, do re mi fa so in G sung along a guide on the learner's own staff, unscored.
+- **Tease:** a treble staff with five plain noteheads, up two places and back down, and a "?" (new still, silent):
+  "Five notes on the staff. Tavi has never heard them." It names no starting note, the answer to Lesson 16's predict.
+  The plan's line, "Now you can see where any note sits.", is the alternative `any-note` (Lesson 15 FACTS 5; settled
+  at the lead's review on 1 November 2026, as the owner asked).
+- **Facts:** sourced in Lesson 15's FACTS: lines, spaces, clefs, ledger lines and the grand staff (Open Music Theory
+  2e, 1.2 to 1.6; Ewell and Schmidt-Jones; ABRSM 2023), the octave treble clef (Ewell and Schmidt-Jones; Wikipedia,
+  Clef, at a named revision), 88 keys and Cristofori's 54 (Yamaha 2017); the app at `c60f0fdcb`. The first four-line
+  staves are left out until Haines 2008 is read.
+
+### Lesson 17 · How long is a note? · theory; written; no page yet · hook kept
+
+- **Opening:** an empty line over Lesson 8's four beat pads, with an empty stopwatch strip under them. Tavi "A quarter
+  note must be a set length of time. Isn't that what the name says?" Merc "Same bar, faster click. Watch the
+  stopwatch." The first play, at 60 BPM over the Ear Lab's woodblock click, writes four quarter notes as they sound,
+  and the strip reads "1 s" under each. Predict: "Merc plays the same written bar again, with the click at 120 BPM.
+  How long does each quarter note last now?" [One second, the same] [Half a second].
+- **Visual:** the rhythm bar on one line, then on the staff, and the stopwatch strip (new, SEASON-2 § 6.2 items 2 and
+  3); Lesson 8's pads (exist); the Ear Lab's woodblock (exists, moves into the kit). **Payoff:** Step 2's tempo slider
+  and Play both; the checkpoint, two written bars tapped on the pad after two bars of beat taps.
+- **Tease:** a still of Lesson 18's opening line on the staff over a beat grid, with no cursor or bracket, which does
+  not play: "Now you can read when each note comes, and where it sits." Lesson 17's own tease, on Lesson 16's card, is
+  "Same written bar, played twice. Only the tempo changes.", with the season plan's line, cut to fit a card, as the
+  alternative `shapes`: "Same five notes, twice as fast: the note shapes change." (Lesson 17 FACTS 5b; settled at
+  the lead's review on 1 November 2026, as the owner asked).
+- **Facts:** sourced in Lesson 17's FACTS: note values, rests, dots, ties and counting (Open Music Theory 2e, 1.2, 1.8
+  and 1.9), where rests go (Williams 2025), where dots and ties go (Wikipedia, after Read 1969), Takadimi (Hoffman,
+  Pelto and White 1996), the British names and the lesson's scope (ABRSM 2023, RCM 2019); the app at `c60f0fdcb`.
+
 ## 3. How it lands in each medium
 
 ### 3.1 The page

@@ -459,6 +459,22 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   close that knows a rest ending (its WEB-SPEC, What the kit and the app still need, item 12). It
   goes live when the console publishes it, after the coach's sign-off and once `/learn/05`,
   `/learn/08`, `/learn/09` and `/learn/12`, the pages its chips and its recall link to, are live.
+- Lesson 15: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/15-staff/`](lessons/15-staff/) (research, article plan, facts, copy and page spec). Its
+  unscored sing-along waits on the vocal coach's look (§ 12 item 8). No page is built yet: it waits
+  on Season 2's kit (seasons, with a season's end for each, and the staff toy with the F clef, ledger
+  lines and the grand staff, SEASON-2 § 6.2 items 1 and 2) and on the lesson plumbing for Lessons 15
+  to 28 (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, after the coach's look
+  and once `/learn/02`, the page its chip and its recall link to, is live, with Lesson 16 and the
+  trailer (SEASON-2 § 7 item 6).
+- Lesson 17: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/17-note-lengths/`](lessons/17-note-lengths/) (research, article plan, facts, copy and
+  page spec). Its optional sing-along waits on the vocal coach (§ 12 item 8). No page is built yet:
+  it waits on Season 2's kit (seasons, the staff toy with the F clef and rhythm on the staff,
+  SEASON-2 § 6.2 items 1 to 3, with the tap take and the Ear Lab's woodblock moved into the kit) and
+  on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the
+  console publishes it, after the coach's sign-off and once `/learn/08`, the page its chip and its
+  recall link to, is live.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready
