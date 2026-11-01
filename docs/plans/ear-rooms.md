@@ -28,6 +28,18 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   "?" sheet. The three extras are approved: Compare after a miss, "Remind me tomorrow" on Today
   done, and Hairline's loupe turned vertical.
 
+**The owner's answers of 1 Nov 2026**, with Leap's mock-ups approved.
+
+- Confirmed: the free taste, three runs per room, then the paywall. It comes with the V1 flip.
+- Decided: a room's best shows on its card in the Ear Lab tab's Ear rooms row, at the singer's
+  level ("Best 5 of 6"), as the picker's card shows it. Built (`EarRoomsRow.tsx`).
+- Decided: Harmony (Room 4) is sung both ways, taking turns on the speaker and together in
+  headphones.
+- Merc's voice: real recordings later. Until then, a few of his lines in his ElevenLabs voice, for
+  the owner to hear on the next TestFlight. Built: each Ear room's opening lines, nine in all,
+  said aloud as the room opens and after a run is stopped (room kit `merc-speech.ts`, each room's
+  `merc-spoken.ts`). He says nothing aloud during a run, where the bubble's lines stay silent.
+
 ## Why
 
 The native app sells one subscription, Mercury Pitch Cloud. It covers the Karaoke imports and five
@@ -344,8 +356,10 @@ Merc's sampled voice, which the native screen hands in. `src/features/leap/`.
 ## Room 4 (proposal)
 
 **Harmony** (new). Merc sings a short line; the singer sings a third above it. Duets are what karaoke
-apps sell, and the trail makes the target visible. Merc sings while the singer does, so it needs
-headphones and a judge that follows two voices: prototype it on phones first.
+apps sell, and the trail makes the target visible. It is sung two ways (owner, 1 Nov 2026). On the
+speaker they take turns: Merc sings his line, then the singer sings the third above it on their
+own, judged as Echo judges a phrase. In headphones Merc sings while the singer does, which needs a
+judge that follows two voices: prototype that on phones first.
 
 ## How they earn
 
@@ -362,9 +376,8 @@ that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 
 ## Open questions for the owner
 
-- Should a room's best appear on the Ear Lab bench as its own instrument line, or only on the
-  "With Merc" row?
-- Harmony: headphones only, or a take-turns fallback on the speaker.
 - First note on the web too, where splitting is free on the device, or native only.
-- Merc's voice is the development sample set (Echo's, `merc-voice-set.ts`). The real recordings
-  replace it without a change to the rooms.
+- Merc's voice is the development sample set (Echo's, `merc-voice-set.ts`) for his singing, and
+  ElevenLabs takes for his opening lines (each room's `voice/` folder). The real recordings
+  replace both without a change to the rooms. Which other lines he should say aloud, if any, once
+  the owner has heard these on TestFlight.
