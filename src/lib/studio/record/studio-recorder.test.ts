@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioCaptureEvents } from './capture-node'
 import type { StudioRecordSettings } from './record-settings'
 import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './studio-recorder'
-import { createStudioRecorder, MIC_LOST_ARMED, MIC_LOST_MID_TAKE, } from './studio-recorder'
+import { createStudioRecorder, MIC_LOST_ARMED, MIC_LOST_BEFORE_TAKE, MIC_LOST_MID_TAKE, } from './studio-recorder'
 
 afterEach(() => vi.useRealTimers())
 
@@ -364,14 +364,15 @@ describe('a take', () => {
 
   it('keeps what it heard when the microphone goes away mid-take, and says so', async () => {
     const h = await recording()
-    h.chunk(0, 2048)
+    h.chunk(0, 4096)
+    h.chunk(4096, 4096)
 
     h.recorder.micLost()
 
     expect(h.capture.stop).toHaveBeenCalledWith(null, 'input-lost')
-    h.worklet.stopped(2048, 'input-lost')
+    h.worklet.stopped(8192, 'input-lost')
     await settle()
-    expect(h.kept[0].samples).toHaveLength(2048)
+    expect(h.kept[0].samples).toHaveLength(8192)
     expect(h.view()).toMatchObject({
       phase: 'idle',
       notice: MIC_LOST_MID_TAKE,
@@ -381,14 +382,44 @@ describe('a take', () => {
 
   it('keeps a take the worklet ended on its own, naming why', async () => {
     const h = await recording()
-    h.chunk(0, 1024)
+    h.chunk(0, 4096)
 
-    h.worklet.stopped(1024, 'limit')
+    h.worklet.stopped(4096, 'limit')
     await settle()
 
     expect(h.kept).toHaveLength(1)
     expect(h.view().notice).toMatch(/five minutes/)
     expect(h.transport.pause).toHaveBeenCalled()
+  })
+
+  it('says nothing was recorded when a take ends before the song reaches it', async () => {
+    // Audio stopped in the count-in: the capture holds only the count-in.
+    const counting = harness()
+    await counting.recorder.arm('lane-1')
+    counting.recorder.record()
+    counting.worklet.started(1.1 * RATE)
+    counting.chunk(0, 4096)
+    counting.worklet.stopped(4096, 'interrupted')
+    await settle()
+    await settle()
+
+    expect(counting.deps.keep).not.toHaveBeenCalled()
+    expect(counting.view()).toMatchObject({
+      phase: 'idle',
+      notice:
+        'Audio stopped for a moment before the take began, so nothing was recorded. Press Record to try again.',
+    })
+    expect(counting.journal.discard).toHaveBeenCalledWith('take-1')
+
+    // The microphone gone inside the round trip the take's start drops.
+    const early = await recording()
+    early.chunk(0, 2048)
+    early.recorder.micLost()
+    early.worklet.stopped(2048, 'input-lost')
+    await settle()
+
+    expect(early.deps.keep).not.toHaveBeenCalled()
+    expect(early.view().notice).toBe(MIC_LOST_BEFORE_TAKE)
   })
 
   it('writes the journal out when the take could not be kept', async () => {

@@ -34,7 +34,7 @@ import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
 import type { StudioTakeJournalFeed } from './take-journal-feed'
 import { createStudioTakeJournalFeed } from './take-journal-feed'
 import type { StudioTakeAnchor } from './take-timing'
-import { studioClickBeats, studioCountInSeconds, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
+import { placeHeardTake, studioClickBeats, studioCountInSeconds, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
 
 /** The longest take, as the Studio's import allows: five minutes. */
 export const STUDIO_TAKE_MAX_SECONDS = 300
@@ -53,8 +53,20 @@ const STOP_NOTICES: Partial<Record<StudioCaptureStop, string>> = {
     'Audio stopped for a moment, so the take ends there. Studio kept what came before.',
 }
 
+/** A take that ended before the song reached it keeps nothing, and says so. */
+const ENDED_BEFORE_THE_TAKE: Partial<Record<StudioCaptureStop, string>> = {
+  'input-lost':
+    'The microphone went quiet before the take began, so nothing was recorded. Press Record to try again.',
+  'fell-behind':
+    'Studio fell behind before the take began, so nothing was recorded. Press Record to try again.',
+  interrupted:
+    'Audio stopped for a moment before the take began, so nothing was recorded. Press Record to try again.',
+}
+
 export const MIC_LOST_MID_TAKE =
   'The microphone went away mid-take. Studio kept what it heard up to then.'
+export const MIC_LOST_BEFORE_TAKE =
+  'The microphone went away before the take began, so nothing was recorded. Plug it back in, then press Record again.'
 export const MIC_LOST_ARMED =
   'The microphone went away. Plug it back in, then press Record again.'
 const AUDIO_DID_NOT_START = "Studio's audio didn't start. Press Record again."
@@ -91,6 +103,25 @@ interface Take {
   /** Finishes the take if the worklet never says it stopped. */
   watchdog: ReturnType<typeof setTimeout> | null
   readonly journal: StudioTakeJournalFeed
+}
+
+/** Whether any of a take is left once its start is trimmed to the song frame heard. */
+function reachesSong(current: Take, heardFirst: number): boolean {
+  const frames = Math.round(
+    (current.buffer.frames * STUDIO_SAMPLE_RATE) / current.sampleRate,
+  )
+  return placeHeardTake(heardFirst, current.fromFrame, frames) !== null
+}
+
+/** What a finished take says: why it ended, and whether anything was kept. */
+function endNotice(
+  kept: boolean,
+  named: string | null,
+  reason: StudioCaptureStop,
+): string | null {
+  if (kept) return named ?? STOP_NOTICES[reason] ?? null
+  if (named === MIC_LOST_MID_TAKE) return MIC_LOST_BEFORE_TAKE
+  return ENDED_BEFORE_THE_TAKE[reason] ?? TAKE_TOO_SHORT
 }
 
 export function createStudioRecorder(deps: StudioRecorderDeps) {
@@ -490,26 +521,29 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     }
     clearTimeout(current.watchdog ?? undefined)
     // A loss already named (the microphone gone) says it best.
-    const notice = view.notice ?? STOP_NOTICES[reason] ?? null
+    const named = view.notice
     take = null
-    await finish(current, frames, notice)
+    await finish(current, frames, reason, named)
   }
 
   async function finish(
     current: Take,
     frames: number,
-    notice: string | null,
+    reason: StudioCaptureStop,
+    named: string | null,
   ): Promise<void> {
     closeArmed()
     try {
-      if (!current.started || frames <= 0) {
+      const heardFirst = studioHeardFirst(
+        current.anchor,
+        frameTime(current.startFrame, current.sampleRate),
+        current.roundTrip,
+      )
+      const reached = current.started && reachesSong(current, heardFirst)
+      const notice = endNotice(reached && frames > 0, named, reason)
+      if (!reached || frames <= 0) {
         current.journal.discard()
-        set({
-          phase: 'idle',
-          live: null,
-          level: 0,
-          notice: notice ?? TAKE_TOO_SHORT,
-        })
+        set({ phase: 'idle', live: null, level: 0, notice })
         return
       }
       const captured: StudioCapturedTake = {
@@ -518,11 +552,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         trackId: current.trackId,
         sampleRate: current.sampleRate,
         samples: current.buffer.assemble(),
-        heardFirst: studioHeardFirst(
-          current.anchor,
-          frameTime(current.startFrame, current.sampleRate),
-          current.roundTrip,
-        ),
+        heardFirst,
         fromFrame: current.fromFrame,
       }
       current.buffer.clear()
