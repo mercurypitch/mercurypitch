@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
@@ -19,6 +19,13 @@ const pad = (n) => String(n).padStart(2, '0')
 const PAGES = readdirSync(new URL('../learn/', import.meta.url))
   .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
   .filter((nn) => nn !== undefined)
+  .map(Number)
+// The films' watch pages, learn/NN/watch.html.
+const WATCHES = readdirSync(new URL('../learn/', import.meta.url))
+  .filter((name) => /^\d{2}$/.test(name))
+  .filter((nn) =>
+    existsSync(new URL(`../learn/${nn}/watch.html`, import.meta.url)),
+  )
   .map(Number)
 const DRAFTS = PAGES.filter((n) => DRAFT_LESSONS[n] !== undefined)
 const RELEASED = PAGES.filter((n) => !DRAFTS.includes(n))
@@ -36,13 +43,21 @@ function distFiles(shown) {
     'llms.txt': RELEASED.map((n) => `- [Lesson ${n}](${site(n)}): a hook`).join(
       '\n',
     ),
-    'sw.js': `const S=new Set([${PAGES.map((n) => `"/learn/${pad(n)}","/learn/${pad(n)}.html"`).join(',')}]);`,
+    'sw.js': `const S=new Set([${[
+      ...PAGES.map((n) => `"/learn/${pad(n)}","/learn/${pad(n)}.html"`),
+      ...WATCHES.map(
+        (n) => `"/learn/${pad(n)}/watch","/learn/${pad(n)}/watch.html"`,
+      ),
+    ].join(',')}]);`,
     'assets/season-Ab12.js': `const L=[${PAGES.map((n) => `{n:${n},page:"/learn/${pad(n)}"}`).join(',')}];`,
     'assets/page-state-Cd34.js': `const B='{"version":1,"updatedAt":null,"lessons":{},"drafts":${shown}}';`,
   }
   for (const n of PAGES)
     files[`learn/${pad(n)}.html`] =
       `<!doctype html><link rel="canonical" href="${site(n)}" />`
+  for (const n of WATCHES)
+    files[`learn/${pad(n)}/watch.html`] =
+      `<!doctype html><link rel="canonical" href="${site(n)}/watch" />`
   return files
 }
 
@@ -88,6 +103,30 @@ for (const [mode, shown] of [
         new RegExp(`learn/${pad(n)}\\.html is missing`),
       )
     fails({ ...distFiles(shown), '404.html': null }, mode, /404\.html/)
+  })
+
+  test(`fails a dist missing a film's watch page (${mode})`, () => {
+    assert.ok(WATCHES.length > 0, 'the repository has no watch page')
+    for (const n of WATCHES)
+      fails(
+        { ...distFiles(shown), [`learn/${pad(n)}/watch.html`]: null },
+        mode,
+        new RegExp(`learn/${pad(n)}/watch\\.html is missing`),
+      )
+  })
+
+  test(`fails a service worker with no rule for a watch page (${mode})`, () => {
+    for (const n of WATCHES) {
+      const files = distFiles(shown)
+      fails(
+        {
+          ...files,
+          'sw.js': files['sw.js'].replace(`"/learn/${pad(n)}/watch",`, ''),
+        },
+        mode,
+        new RegExp(`sw\\.js has no /learn/${pad(n)}/watch rule`),
+      )
+    }
   })
 
   test(`fails a bundle whose default for drafts is the other one, or missing (${mode})`, () => {

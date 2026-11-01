@@ -171,7 +171,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the reader for the hold demo's readouts once Step 5 comes near: Voice
   // Mirror's scorer stays off first paint only while both imports stay
   // dynamic. The same headroom as Lessons 1 to 3, a quarter over.
-  'learn/05.html': 136,
+  // Raised to 137 for the films' watch pages: 139,050 bytes on main before
+  // them, 139,547 with them, against 139,264 at 136. None of it is new code
+  // on the page: the watch pages share the kit's episode, toast and films
+  // modules with the lessons, so Rollup gives those chunks of their own,
+  // each with its imports, on every lesson page.
+  'learn/05.html': 137,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -195,7 +200,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and the spiral's keys), regrouped into chunks of their own, each with
   // its imports. The kit's predict, quiz and hero sky are in the chunk
   // every lesson page shares again, as on main.
-  'learn/04.html': 130,
+  // Raised to 131 for the films' watch pages: 133,056 bytes on main before
+  // them, 133,496 with them, against 133,120 at 130. The 440 are the
+  // episode, toast and films modules in chunks of their own, as on Lesson 5.
+  'learn/04.html': 131,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -248,6 +256,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // ceiling is the smallest whole KB above the measure, raised with each
   // toy that joins until the page is whole and takes a quarter over.
   'learn/12.html': 110,
+
+  // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
+  // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
+  // 2026-11-01; the film itself is the markup's, so a quarter over holds.
+  'learn/01/watch.html': 24,
+  'learn/02/watch.html': 24,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -346,6 +360,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own, and the shared Inter and Outfit @font-face rules. The smallest
   // whole KB above that, as for its script.
   'learn/12.html': 87,
+
+  // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
+  // inlines the lessons' fonts, base and sections. Measured 36, a quarter
+  // over.
+  'learn/01/watch.html': 45,
+  'learn/02/watch.html': 45,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

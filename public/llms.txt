@@ -70,7 +70,7 @@ does it.
 
 Find Your Pitch, a free series on music theory and singing. Each lesson is a
 page with the whole lesson in its text and live sound examples, with its
-episode where the lesson has one.
+episode where the lesson has one. Each episode also has a page of its own.
 
 - [Find Your Pitch](https://mercurypitch.com/learn/): The series' hub. Every
   Season 1 lesson in its lane, theory or voice, the finale in both, and a link
@@ -81,6 +81,12 @@ episode where the lesson has one.
 - [Lesson 2: Twelve notes](https://mercurypitch.com/learn/02): Where the other
   five notes come from. The twelve notes on a keyboard, a semitone and a tone by
   ear, why one key has two names, and what a cent is.
+- [Lesson 1 film: What is a note?](https://mercurypitch.com/learn/01/watch):
+  Lesson 1 (What is a note?) as a film, with captions, chapters to jump between
+  and a transcript. It links back to the lesson.
+- [Lesson 2 film: Twelve notes](https://mercurypitch.com/learn/02/watch): Lesson
+  2 (Twelve notes) as a film, with captions, chapters to jump between and a
+  transcript. It links back to the lesson.
 
 ## Where it runs
 

@@ -115,9 +115,20 @@ describe('the season map', () => {
       const named = `Start lesson: Lesson ${L.n}, ${L.name}`
       expect(words(link ?? null), `Lesson ${L.n}`).toBe(named)
       expect(link?.closest(`[data-if-live="${L.n}"]`)).not.toBeNull()
+      // a lesson whose film has a watch page links that too, in the same block
+      const film =
+        L.watch === undefined ? '' : ` Watch the film: Lesson ${L.n}, ${L.name}`
       expect(Array.from(live).map(words).join(' ')).toBe(
-        L.minutes === undefined ? named : `${L.minutes} minutes ${named}`,
+        L.minutes === undefined
+          ? `${named}${film}`
+          : `${L.minutes} minutes ${named}${film}`,
       )
+      if (L.watch !== undefined)
+        expect(
+          item
+            ?.querySelector(`a[href="${L.watch}"]`)
+            ?.closest(`[data-if-live="${L.n}"]`),
+        ).not.toBeNull()
     }
   })
 
@@ -125,7 +136,11 @@ describe('the season map', () => {
     const links = Array.from(map.querySelectorAll('a'))
     expect(links.length).toBeGreaterThan(0)
     for (const a of links) {
-      expect(a.firstChild?.textContent).toBe('Start lesson')
+      const shown = Array.from(a.childNodes)
+        .filter((node) => !(node instanceof Element && node.matches('.sr')))
+        .map((node) => node.textContent)
+        .join('')
+      expect(['Start lesson', 'Watch the film']).toContain(shown)
       expect(a.querySelector('.sr')).not.toBeNull()
     }
     const names = links.map(words)

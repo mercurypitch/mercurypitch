@@ -21,7 +21,7 @@
 
 import { DRAFTS_SHOWN } from './draft-switch'
 import type { PageState, Reading } from './publish'
-import { isLive, lessonOfHref, PAGE_STATE_ID, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
+import { isLive, linkedLessonOfHref, PAGE_STATE_ID, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
 import type { Lesson } from './season'
 import { LESSONS } from './season'
 
@@ -83,14 +83,14 @@ function unlink(a: HTMLAnchorElement): void {
 
 /**
  * Settles `doc`'s own markup for its state: every link to a lesson that is
- * not live loses its link, and of each lesson-state reading the true one
+ * not live, or to its watch page, loses its link, and of each lesson-state reading the true one
  * stays, unwrapped, and the other goes. A reading whose lesson is not a
  * number is left as it is.
  */
 export function followPageState(doc: Document = document): void {
   const state = readPageState(doc)
   for (const a of Array.from(doc.querySelectorAll('a[href]'))) {
-    const n = lessonOfHref(a.getAttribute('href') ?? '')
+    const n = linkedLessonOfHref(a.getAttribute('href') ?? '')
     if (n !== null && !isLive(n, LESSONS, state)) unlink(a as HTMLAnchorElement)
   }
   for (const el of Array.from(

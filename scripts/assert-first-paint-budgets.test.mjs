@@ -166,7 +166,7 @@ test('every ceiling in the table is a whole number of KB, for a document', () =>
   const entries = Object.entries(FIRST_PAINT_BUDGETS_KB)
   assert.ok(entries.length > 0)
   for (const [name, budget] of entries) {
-    assert.match(name, /^(?:[a-z0-9-]+\/)?[a-z0-9-]+\.html$/)
+    assert.match(name, /^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$/)
     assert.ok(Number.isInteger(budget) && budget > 0, `${name}: ${budget}`)
   }
 })
@@ -315,7 +315,7 @@ test('every CSS ceiling is a whole number of KB, for a document', () => {
   const entries = Object.entries(FIRST_PAINT_CSS_BUDGETS_KB)
   assert.ok(entries.length > 0)
   for (const [name, budget] of entries) {
-    assert.match(name, /^(?:[a-z0-9-]+\/)?[a-z0-9-]+\.html$/)
+    assert.match(name, /^(?:[a-z0-9-]+\/)*[a-z0-9-]+\.html$/)
     assert.ok(Number.isInteger(budget) && budget > 0, `${name}: ${budget}`)
   }
 })

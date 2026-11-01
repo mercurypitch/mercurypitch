@@ -13,6 +13,12 @@
 // WebVTT track, on by default; the transcript is the same text, one
 // paragraph per speaker turn. Once the episode is also on YouTube, the
 // section links there ("Watch on YouTube"); it never embeds it.
+//
+// A film's watch page (kit/watch-pages.ts) runs this too, on the same
+// markup less the big play button: there the video carries its sources and
+// controls in its markup (`inMarkup`), so a crawler finds the film without
+// pressing anything, and this adds the chapters, the transcript and the
+// smooth jumps.
 
 import { clamp, lerp, q, qa } from './dom'
 import type { FilmSources } from './films'
@@ -36,6 +42,12 @@ export interface EpisodeOptions {
   readonly onDuration?: (len: string) => void
   /** The episode's YouTube address, once it is there: the section links to it. */
   readonly youtube?: string
+  /**
+   * The video already carries its sources and controls in the markup (a
+   * watch page): nothing is attached on the first play, and there is no
+   * big play button.
+   */
+  readonly inMarkup?: boolean
 }
 
 type Speaker = 'blue' | 'orange'
@@ -162,11 +174,11 @@ export function createEpisode(opts: EpisodeOptions): void {
   const film: FilmSources = opts.film
   const { chapters } = opts
   const v = q<HTMLVideoElement>('#ep')
-  const big = q<HTMLButtonElement>('#bigPlay')
+  const big = opts.inMarkup === true ? null : q<HTMLButtonElement>('#bigPlay')
   const list = q('#chapters')
   const grid = q('#playerGrid')
   const tx = q('#tx')
-  let attached = false
+  let attached = opts.inMarkup === true
   // a chapter picked before the film has its metadata: applied when it does
   let pending: number | null = null
 
@@ -271,7 +283,7 @@ export function createEpisode(opts: EpisodeOptions): void {
     v.src = window.matchMedia('(max-width: 900px)').matches ? film.sd : film.hd
     attached = true
     v.controls = true
-    big.hidden = true
+    if (big !== null) big.hidden = true
     showCaptions()
     return true
   }
@@ -331,7 +343,7 @@ export function createEpisode(opts: EpisodeOptions): void {
   if (opts.vtt.trim() !== '') renderTranscript(opts.vtt)
   if (opts.youtube !== undefined) linkYouTube(opts.youtube, grid)
 
-  big.addEventListener('click', () => start(null))
+  big?.addEventListener('click', () => start(null))
   v.addEventListener('loadedmetadata', () => {
     showCaptions()
     if (pending !== null) seek(pending)
@@ -354,4 +366,7 @@ export function createEpisode(opts: EpisodeOptions): void {
     })
     qa('li', list).forEach((li, i) => li.classList.toggle('on', i === k))
   })
+  // a video whose markup loaded its metadata before this ran
+  if (opts.inMarkup === true && v.readyState >= 1)
+    v.dispatchEvent(new Event('loadedmetadata'))
 }

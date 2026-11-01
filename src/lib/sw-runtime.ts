@@ -138,6 +138,12 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/learn/01.html',
   '/learn/02',
   '/learn/02.html',
+  // Each film's own page (learn/01/watch.html), which the site worker holds
+  // back with its lesson (src/lesson-gate.ts): its 404 page, never the shell.
+  '/learn/01/watch',
+  '/learn/01/watch.html',
+  '/learn/02/watch',
+  '/learn/02/watch.html',
   // A draft lesson too (src/features/lessons/kit/drafts.ts). Where it is not
   // published, the site worker answers its path with the 404 page
   // (src/lesson-gate.ts), and that is the right answer, never the shell.

@@ -5,7 +5,7 @@
 // Every build carries every Find Your Pitch lesson page (tools/draft-lessons.ts),
 // so whether one is live is answered here, per request, from the lesson state
 // the admin console keeps on the db-worker (src/lib/lesson-state.ts,
-// GET /api/lessons/state). src/worker.ts routes four kinds of request here:
+// GET /api/lessons/state). src/worker.ts routes five kinds of request here:
 //
 // - a lesson page, /learn/NN, /learn/NN.html or /learn/NN/ (GET or HEAD). A
 //   lesson that is not published answers with the 404 page: status 404,
@@ -19,6 +19,12 @@
 //   twitter: descriptions, the structured data); every link to a lesson that
 //   is not live loses its link; and of each `data-if-live` and
 //   `data-if-planned` reading the true one stays.
+// - a lesson film's watch page, /learn/NN/watch, /learn/NN/watch.html or
+//   /learn/NN/watch/ (GET or HEAD), which is its lesson's: the 404 page
+//   wherever the lesson is not published, as above, and otherwise the asset
+//   layer's answer, a whole page settled as a lesson page's markup is
+//   (kit/watch-pages.ts). It carries no state tag, since no script on it
+//   reads one.
 // - /sitemap.xml and /llms.txt, which list the released lessons as built.
 //   Each answers with a lesson that is not live taken out, and a published
 //   draft put in, in its file's own form.
@@ -52,7 +58,7 @@ import type { KVNamespace } from '@cloudflare/workers-types'
 import type { CuriosityCopy } from './features/lessons/kit/lesson-copy'
 import { hookFor, hookMarkup, isHookMarkup, LESSON_COPY, } from './features/lessons/kit/lesson-copy'
 import type { PageState, Reading } from './features/lessons/kit/publish'
-import { isLive, isPublished, lessonOfHref, PAGE_STATE_ID, pageStateJson, readingHolds, readingLesson, } from './features/lessons/kit/publish'
+import { isLive, isPublished, linkedLessonOfHref, PAGE_STATE_ID, pageStateJson, readingHolds, readingLesson, } from './features/lessons/kit/publish'
 import type { Lesson } from './features/lessons/kit/season'
 import { LESSONS, minutesSpan } from './features/lessons/kit/season'
 import { editLlms, editSitemap, liveLessons, SITE_ORIGIN, } from './lesson-listings'
@@ -127,13 +133,17 @@ const NOT_FOUND_PATH = '/404'
 
 const LESSON_PAGE = /^\/learn\/(\d{2})(?:\.html|\/)?$/
 
+/** A lesson film's watch page, in the same three spellings (kit/watch-pages.ts). */
+const WATCH_PAGE = /^\/learn\/(\d{2})\/watch(?:\.html|\/)?$/
+
 /** The hub, at its address and as its document; the asset layer redirects the second. */
 const HUB_PAGE = /^\/learn\/(?:index\.html)?$/
 
 // ── Routing ──────────────────────────────────────────────────────────
 
 /**
- * The answer for a lesson page, the hub, /sitemap.xml or /llms.txt; null
+ * The answer for a lesson page, a film's watch page, the hub, /sitemap.xml
+ * or /llms.txt; null
  * for any other request, which src/worker.ts serves as before.
  */
 export async function handleLessonRequest(
@@ -145,6 +155,8 @@ export async function handleLessonRequest(
   const { pathname } = new URL(request.url)
   const page = LESSON_PAGE.exec(pathname)
   if (page !== null) return lessonPage(Number(page[1]), request, env, ctx)
+  const watch = WATCH_PAGE.exec(pathname)
+  if (watch !== null) return watchPage(Number(watch[1]), request, env, ctx)
   if (HUB_PAGE.test(pathname)) return hubPage(request, env, ctx)
   if (pathname === '/sitemap.xml')
     return listing(request, env, ctx, editSitemap)
@@ -358,11 +370,17 @@ function rewrite(
   return new Response(body, { status: init.status, headers })
 }
 
-async function lessonPage(
+/**
+ * A page of lesson `n`'s, its own or its film's watch page: the 404 page
+ * while the lesson is not published, else the asset layer's answer, a
+ * whole page rewritten by `rewriterFor`.
+ */
+async function gatedPage(
   n: number,
   request: Request,
   env: LessonGateEnv,
   ctx: WaitUntil | undefined,
+  rewriterFor: (state: PageState) => Rewriter,
 ): Promise<Response> {
   const state = await pageStateFor(request, env, ctx)
   if (!isPublished(n, state)) {
@@ -382,11 +400,30 @@ async function lessonPage(
   }
   const asset = await env.ASSETS.fetch(unconditional(request))
   if (!isWholePage(asset)) return asset
-  return rewrite(asset, lessonRewriter(n, state), request.method, {
+  return rewrite(asset, rewriterFor(state), request.method, {
     status: 200,
     cacheControl: REVALIDATE,
   })
 }
+
+const lessonPage = (
+  n: number,
+  request: Request,
+  env: LessonGateEnv,
+  ctx: WaitUntil | undefined,
+): Promise<Response> =>
+  gatedPage(n, request, env, ctx, (state) => lessonRewriter(n, state))
+
+/** A film's watch page: its lesson's to hold back, its markup settled as a lesson page's is. */
+const watchPage = (
+  n: number,
+  request: Request,
+  env: LessonGateEnv,
+  ctx: WaitUntil | undefined,
+): Promise<Response> =>
+  gatedPage(n, request, env, ctx, (state) =>
+    followState(new HTMLRewriter(), state),
+  )
 
 async function listing(
   request: Request,
@@ -546,13 +583,14 @@ function reading(kind: Reading, state: PageState): Handlers {
 
 /**
  * Settles a page's markup for `state`, as page-state.ts `followPageState`
- * does in the browser: a link to a lesson that is not live goes from a nav
+ * does in the browser: a link to a lesson that is not live, at its page or
+ * its watch page, goes from a nav
  * and loses its link anywhere else, and the true reading of each lesson's
  * state stays.
  */
 export function followState(rewriter: Rewriter, state: PageState): Rewriter {
   const dead = (a: RewriterElement): boolean => {
-    const n = lessonOfHref(decodeHtml(a.getAttribute('href') ?? ''))
+    const n = linkedLessonOfHref(decodeHtml(a.getAttribute('href') ?? ''))
     return n !== null && !isLive(n, LESSONS, state)
   }
   return rewriter

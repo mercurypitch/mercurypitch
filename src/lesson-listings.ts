@@ -6,20 +6,31 @@
 // gate (src/lesson-gate.ts) answers each with its lesson entries settled for
 // the lesson state: a lesson that is not live taken out, and a published
 // draft put in, in its file's own form. The hub follows the same live
-// lessons (`liveLessons`).
+// lessons (`liveLessons`). A lesson film's watch page (kit/watch-pages.ts)
+// is listed with its lesson, after the lesson pages: in while the lesson is
+// live, out while it is not.
 
 import type { PageState } from './features/lessons/kit/publish'
 import { isLive, seasonFor } from './features/lessons/kit/publish'
 import type { Lesson } from './features/lessons/kit/season'
 import { LESSONS } from './features/lessons/kit/season'
+import { hasWatchPage, watchPath } from './features/lessons/kit/watch-pages'
 
 /** The site's address, as the sitemap and llms.txt write it. */
 export const SITE_ORIGIN = 'https://mercurypitch.com'
 
-/** Where a listed address leads: its site and lesson, for a lesson page; null otherwise. */
-function lessonAt(address: string): { origin: string; n: number } | null {
-  const m = /^(https?:\/\/[^/\s]+)\/learn\/(\d{2})$/.exec(address.trim())
-  return m === null ? null : { origin: m[1], n: Number(m[2]) }
+/** What a listed lesson address is: the lesson's own page, or its film's watch page. */
+type EntryKind = 'page' | 'watch'
+
+/** Where a listed address leads: its site, lesson and kind, for a lesson page or a watch page; null otherwise. */
+function lessonAt(
+  address: string,
+): { origin: string; n: number; kind: EntryKind } | null {
+  const m = /^(https?:\/\/[^/\s]+)\/learn\/(\d{2})(\/watch)?$/.exec(
+    address.trim(),
+  )
+  if (m === null) return null
+  return { origin: m[1], n: Number(m[2]), kind: m[3] ? 'watch' : 'page' }
 }
 
 /** The lessons a listing should hold for `state`, as the page shows the season: live, with a page. */
@@ -31,20 +42,31 @@ export function liveLessons(state: PageState): Lesson[] {
 
 interface Entry {
   readonly n: number
+  readonly kind: EntryKind
   readonly text: string
 }
 
+/** A listing's lesson entries in order: every lesson page, then every watch page, each in lesson order. */
+const entryOrder = (e: { n: number; kind: EntryKind }): number =>
+  (e.kind === 'watch' ? 1000 : 0) + e.n
+
+/** A lesson listing's address for `L`, of `kind`. */
+const addressOf = (L: Lesson, kind: EntryKind): string =>
+  kind === 'watch' ? watchPath(L.n) : (L.page ?? '')
+
 /**
  * A listing with its lesson entries settled: each lesson that is not live
- * taken out, and each live one it lacks put in, all in lesson order where
- * the first lesson entry stood. `at` is where the entries go when it has
- * none; null leaves such a listing as it is.
+ * taken out with its watch page, and each live one it lacks put in, with
+ * its watch page where its film has one, all where the first lesson entry
+ * stood: the lesson pages in lesson order, then the watch pages. `at` is
+ * where the entries go when it has none; null leaves such a listing as it
+ * is.
  */
 function settleEntries(
   text: string,
   entry: RegExp,
   state: PageState,
-  added: (L: Lesson, origin: string, lead: string) => string,
+  added: (L: Lesson, kind: EntryKind, origin: string, lead: string) => string,
   at: (rest: string) => number | null,
 ): string {
   const kept: Entry[] = []
@@ -52,14 +74,20 @@ function settleEntries(
   let origin = SITE_ORIGIN
   let lead = ''
   const live = liveLessons(state)
+  const wanted: { L: Lesson; kind: EntryKind }[] = [
+    ...live.map((L) => ({ L, kind: 'page' as const })),
+    ...live
+      .filter((L) => hasWatchPage(L.n))
+      .map((L) => ({ L, kind: 'watch' as const })),
+  ]
   const rest = text.replace(
     entry,
     (block: string, indent: string, address: string, offset: number) => {
       const where = lessonAt(address)
       if (where === null) return block
       if (first === -1) [first, origin, lead] = [offset, where.origin, indent]
-      if (live.some((L) => L.n === where.n))
-        kept.push({ n: where.n, text: block })
+      if (wanted.some((w) => w.L.n === where.n && w.kind === where.kind))
+        kept.push({ n: where.n, kind: where.kind, text: block })
       return ''
     },
   )
@@ -67,10 +95,16 @@ function settleEntries(
   if (insertAt === null) return text
   const entries = [
     ...kept,
-    ...live
-      .filter((L) => !kept.some((e) => e.n === L.n))
-      .map((L) => ({ n: L.n, text: added(L, origin, lead) })),
-  ].sort((a, b) => a.n - b.n)
+    ...wanted
+      .filter(
+        ({ L, kind }) => !kept.some((e) => e.n === L.n && e.kind === kind),
+      )
+      .map(({ L, kind }) => ({
+        n: L.n,
+        kind,
+        text: added(L, kind, origin, lead),
+      })),
+  ].sort((a, b) => entryOrder(a) - entryOrder(b))
   return (
     rest.slice(0, insertAt) +
     entries.map((e) => e.text).join('') +
@@ -95,8 +129,8 @@ export function editSitemap(xml: string, state: PageState): string {
     xml,
     SITEMAP_ENTRY,
     state,
-    (L, origin, lead) =>
-      `${lead}<url>\n${lead}  <loc>${origin}${L.page ?? ''}</loc>\n${
+    (L, kind, origin, lead) =>
+      `${lead}<url>\n${lead}  <loc>${origin}${addressOf(L, kind)}</loc>\n${
         day === null ? '' : `${lead}  <lastmod>${day}</lastmod>\n`
       }${lead}</url>\n`,
     (rest) => {
@@ -126,17 +160,29 @@ export function wrapItem(words: readonly string[], width = 80): string {
   return `${[...lines, line].join('\n')}\n`
 }
 
-/** llms.txt with its lesson items settled for `state`; an added item's line is its picked hook. */
+/** A watch page's line in llms.txt, after its link: what the page holds. */
+export const watchLine = (L: Lesson): string =>
+  `Lesson ${L.n} (${L.title}) as a film, with captions, chapters to jump between and a transcript. It links back to the lesson.`
+
+/**
+ * llms.txt with its lesson items settled for `state`; an added lesson's
+ * line is its picked hook, and an added watch page's says what it holds.
+ */
 export function editLlms(text: string, state: PageState): string {
   return settleEntries(
     text,
     LLMS_ENTRY,
     state,
-    (L, origin) =>
-      wrapItem([
-        `- [Lesson ${L.n}: ${L.title}](${origin}${L.page ?? ''}):`,
-        ...L.hook.split(/\s+/),
-      ]),
+    (L, kind, origin) =>
+      kind === 'watch'
+        ? wrapItem([
+            `- [Lesson ${L.n} film: ${L.title}](${origin}${watchPath(L.n)}):`,
+            ...watchLine(L).split(/\s+/),
+          ])
+        : wrapItem([
+            `- [Lesson ${L.n}: ${L.title}](${origin}${L.page ?? ''}):`,
+            ...L.hook.split(/\s+/),
+          ]),
     () => null,
   )
 }

@@ -12,10 +12,10 @@
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
-import { draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, liveByDefault, markLessonStates, releasedLessons, } from './draft-lessons'
+import { draftLessons, isDraftLessonsShown, lessonDocument, lessonInputs, lessonPages, lessonPath, lessonPaths, liveByDefault, markLessonStates, releasedLessons, watchPages, } from './draft-lessons'
 
 const ROOT = resolve(__dirname, '..')
 
@@ -33,7 +33,10 @@ function fixture(names: readonly string[]): string {
   const root = mkdtempSync(resolve(tmpdir(), 'draft-lessons-'))
   temporary.push(root)
   mkdirSync(resolve(root, 'learn'))
-  for (const name of names) writeFileSync(resolve(root, 'learn', name), '')
+  for (const name of names) {
+    mkdirSync(dirname(resolve(root, 'learn', name)), { recursive: true })
+    writeFileSync(resolve(root, 'learn', name), '')
+  }
   return root
 }
 
@@ -99,6 +102,26 @@ describe('every build', () => {
       lesson03: resolve(root, 'learn/03.html'),
     })
     expect(paths).toEqual(['/learn/01', '/learn/03'])
+  })
+
+  it("builds each film's watch page beside its lesson and rewrites its clean path", () => {
+    // Arrange
+    const root = fixture(['01.html', '01/watch.html', '03.html', '03/x.html'])
+
+    // Act
+    const inputs = lessonInputs(root)
+    const paths = lessonPaths(root)
+
+    // Assert
+    expect(watchPages(root)).toEqual([1])
+    expect(inputs).toEqual({
+      lesson01: resolve(root, 'learn/01.html'),
+      lesson03: resolve(root, 'learn/03.html'),
+      lesson01watch: resolve(root, 'learn/01/watch.html'),
+    })
+    expect(paths).toEqual(['/learn/01', '/learn/03', '/learn/01/watch'])
+    // a watch page is not a lesson page
+    expect(lessonPages(root)).toEqual([1, 3])
   })
 
   it('names the released pages, which the static listings link: every one with no line in drafts.ts', () => {

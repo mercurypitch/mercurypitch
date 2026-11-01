@@ -15,7 +15,10 @@
 //
 // Every lesson page is a hand-written document, learn/NN.html, served at
 // /learn/NN: each is a build input, and the dev and preview servers rewrite
-// each clean path to it. Nothing here or in vite.config.ts names a lesson.
+// each clean path to it. So is each lesson film's watch page,
+// learn/NN/watch.html at /learn/NN/watch (kit/watch-pages.ts), which the
+// site worker holds back with its lesson. Nothing here or in vite.config.ts
+// names a lesson.
 //
 // What the build still decides is the default of a page no worker served:
 // `pnpm dev`, the e2e bundle's static server, a page saved from the
@@ -47,6 +50,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import { DRAFT_LESSONS } from '../src/features/lessons/kit/drafts'
+import { watchDocument, watchPath, } from '../src/features/lessons/kit/watch-pages'
 
 export const DRAFT_LESSONS_ENV = 'VITE_DRAFT_LESSONS'
 
@@ -85,6 +89,17 @@ export function lessonPages(root: string): number[] {
     .sort((a, b) => a - b)
 }
 
+/** Every film's watch page in the repository at `root`, by lesson number: its learn/NN/watch.html documents. */
+export function watchPages(root: string): number[] {
+  const dir = resolve(root, 'learn')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((name) => /^\d{2}$/.test(name))
+    .filter((nn) => existsSync(resolve(root, watchDocument(Number(nn)))))
+    .map(Number)
+    .sort((a, b) => a - b)
+}
+
 /** The released lesson pages: every one with no line in drafts.ts, which is what a static listing names. */
 export function releasedLessons(
   root: string,
@@ -106,19 +121,26 @@ export function liveByDefault(
   return shown ? lessonPages(root) : releasedLessons(root, drafts)
 }
 
-/** Every lesson page as a Rollup input: `lesson01`, `lesson03`. */
+/** Every lesson page and watch page as a Rollup input: `lesson01`, `lesson03`, `lesson01watch`. */
 export function lessonInputs(root: string): Record<string, string> {
-  return Object.fromEntries(
-    lessonPages(root).map((n) => [
+  return Object.fromEntries([
+    ...lessonPages(root).map((n) => [
       `lesson${pad(n)}`,
       resolve(root, lessonDocument(n)),
     ]),
-  )
+    ...watchPages(root).map((n) => [
+      `lesson${pad(n)}watch`,
+      resolve(root, watchDocument(n)),
+    ]),
+  ])
 }
 
-/** Their clean paths, which the dev and preview servers rewrite to the documents. */
+/** Their clean paths, which the dev and preview servers rewrite to the documents: `/learn/01`, `/learn/01/watch`. */
 export function lessonPaths(root: string): string[] {
-  return lessonPages(root).map(lessonPath)
+  return [
+    ...lessonPages(root).map(lessonPath),
+    ...watchPages(root).map(watchPath),
+  ]
 }
 
 // One reading of a lesson's state: plain text or inline markup, never

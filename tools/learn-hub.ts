@@ -38,7 +38,8 @@ import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { Lane, Lesson } from '../src/features/lessons/kit/season'
 import { LESSONS, minutesSpan } from '../src/features/lessons/kit/season'
-import { lessonDocument, lessonPages, lessonPath } from './draft-lessons'
+import { watchPath } from '../src/features/lessons/kit/watch-pages'
+import { lessonDocument, lessonPages, lessonPath, watchPages, } from './draft-lessons'
 import { lessonHeadline } from './lesson-links'
 
 /** The hub's document, relative to the repository root and to dist. */
@@ -66,6 +67,8 @@ export interface HubLesson {
   readonly minutes?: number
   /** Its clean path, for a lesson with a document: `/learn/03`. */
   readonly page?: string
+  /** Its film's watch page, for a lesson with one (kit/watch-pages.ts): `/learn/01/watch`. */
+  readonly watch?: string
 }
 
 /** Every Season 1 lesson, the trailer left out, as the repository at `root` has it. */
@@ -74,6 +77,7 @@ export function hubLessons(
   lessons: readonly Lesson[] = LESSONS,
 ): HubLesson[] {
   const written = lessonPages(root)
+  const films = watchPages(root)
   return lessons
     .filter((L) => L.n >= 1)
     .map((L) => {
@@ -90,6 +94,7 @@ export function hubLessons(
         hook: L.hook,
         ...(L.minutes === undefined ? {} : { minutes: L.minutes }),
         ...(page ? { page: lessonPath(L.n) } : {}),
+        ...(page && films.includes(L.n) ? { watch: watchPath(L.n) } : {}),
       }
     })
 }
@@ -104,10 +109,15 @@ const LANES: readonly (readonly [Lane, string])[] = [
   ['both', 'Voice and theory'],
 ]
 
+/** The lesson kit's play icon, drawn inline: the hub has no sprite. */
+const PLAY_ICON =
+  '<svg class="ico fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>'
+
 /**
- * Where a lesson stands: its reading time and link while it is live,
- * "Coming" otherwise. Every link reads "Start lesson", so its hidden words
- * say which lesson it starts.
+ * Where a lesson stands: its reading time and link while it is live, with
+ * a link to its film's watch page where it has one, "Coming" otherwise.
+ * Every link reads "Start lesson" or "Watch the film", so its hidden words
+ * say which lesson it is.
  */
 function statusMarkup(L: HubLesson): string {
   const coming = `<span data-if-planned="${L.n}">Coming</span>`
@@ -116,7 +126,12 @@ function statusMarkup(L: HubLesson): string {
     L.minutes === undefined
       ? ''
       : `<span data-if-live="${L.n}">${L.minutes} minutes</span>`
-  const link = `<div data-if-live="${L.n}"><a class="btn sm" href="${L.page}">Start lesson<span class="sr">: Lesson ${L.n}, ${esc(L.name)}</span></a></div>`
+  const which = `<span class="sr">: Lesson ${L.n}, ${esc(L.name)}</span>`
+  const film =
+    L.watch === undefined
+      ? ''
+      : `<a class="btn sm hub-film" href="${L.watch}">${PLAY_ICON}Watch the film${which}</a>`
+  const link = `<div data-if-live="${L.n}"><a class="btn sm" href="${L.page}">Start lesson${which}</a>${film === '' ? '' : ` ${film}`}</div>`
   return [time, link, coming].filter(Boolean).join(' ')
 }
 
