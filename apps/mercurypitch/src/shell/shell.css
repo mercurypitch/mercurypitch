@@ -283,11 +283,14 @@
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
+/* A line tall enough for the font's descenders: at the item's line-height
+   of 1 the hidden overflow cut the foot off the g in "Progress". */
 .mp-rail__label {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 16px;
 }
 
 /* 52, not the bar's 64: the kit's `.tabbar__aside` is a 52 px circle centred
@@ -321,6 +324,25 @@
 
 .mp-more-aside[aria-current='page'] {
   color: var(--accent);
+}
+
+/* A 320 px phone: at 13 px "Progress" is 55 px wide, and a quarter of the
+   pill gave it 53.5, so it lost its last letters to an ellipsis. The gap to
+   More and the pill's inset give up 4 px between them and More comes down
+   to 48 (still over the 44 floor): 56.5 px an item. */
+@media (max-width: 359px) {
+  .mp-rail-row {
+    gap: 4px;
+  }
+
+  .mp-rail {
+    padding: 0 4px;
+  }
+
+  .mp-more-aside {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 /* Minimised on scroll (kit §9): only the current tab stays, the pill shrinks
