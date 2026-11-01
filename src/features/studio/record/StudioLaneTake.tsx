@@ -129,7 +129,6 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
         <span
           class={styles.laneMeter}
           data-studio-lane-meter=""
-          data-recording={props.live === null ? undefined : ''}
           style={{ left: `${props.scroll + 8}px` }}
         >
           <MicSmall />
