@@ -2597,3 +2597,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   held that text) and killed them; the render (501) was untouched. LESSON: never pkill/pgrep -f a pattern that
   appears in the command that runs it; kill by pid, or bracket a letter ("[m]em-guard"). Watcher b3tkenfws (2 h,
   to ~08:23) replaces it, with bracketed patterns and "kept only in" added to its wake list.
+- 06:52 FILM-06 CAPTURE DONE on 2 workers throughout (exit 0; peak rss+shmem ~11.3 GB; mem-guard never tripped and
+  stood down at "render end exit"). SEAMS: BAD 6 11 20, real this time: frames 9000, 16500-16501 and 30000-30002
+  (the first frames of pieces 6, 11, 20) are blank or half-painted (flat luma 15 = page background, then 24/28;
+  strips in l4entr/seams6/). Likely browser recycling (HF_SEGMENT_BROWSER_RECYCLE=3) starting a capture before
+  the page paints; pieces 0 and 1 (fresh browsers at the start) are clean. render-l4.sh dropped pieces 5 6 10 11 19
+  20 and re-renders them on 1 worker without recycling since 06:53 (the setup that repaired film-01's pieces 9-10
+  cleanly). Watcher bbhza6e17 (to ~08:55) wakes on the next "seams:" line, the copy line, "kept only in", FAIL,
+  exit>0, done, OOM. If the re-render's first piece comes back blank too (seam 5), stop the loop before it spends
+  3 tries and repair by hand. DISK: the new master is 142 MB (film-05 117 MB: the holds round's creeps compress
+  less); after the pieces go, / should have ~199 MiB against the copy's need of ~187 (size + 1 + KEEP_MB 50):
+  tight. If refused ("kept only in"), copy by hand with a smaller margin after push-film06.sh.
