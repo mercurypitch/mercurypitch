@@ -10,10 +10,12 @@
 // no Watch section, no Watch link in the masthead, no Watch button on its
 // card. A lesson missing from the list has no film at all.
 //
-// To put a film on, set its sources here. That one line is the whole
-// change: the Watch section and its masthead link appear on the lesson's
-// page, its card offers "Watch the episode", and the lesson reads as ready
-// to watch and read. The page's markup ships Watch hidden, as a film with
+// To put a film on, set its sources here: the Watch section and its
+// masthead link appear on the lesson's page, its card offers "Watch the
+// episode", and the lesson reads as ready to watch and read. A published
+// film also has a watch page of its own, learn/NN/watch.html, so Search can
+// list it as a video (watch-pages.ts says what else goes with it);
+// src/tests/lesson-watch-pages.test.ts fails until it does. The page's markup ships Watch hidden, as a film with
 // no sources needs, and kit/episode.ts shows it once the module runs;
 // taking `hidden` off the section and its link in learn/NN.html (and
 // numbering Explorer III) then paints it from the first frame instead.

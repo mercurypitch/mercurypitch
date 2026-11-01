@@ -294,7 +294,13 @@ Decided on 22 October 2026 (§13 item 3): a crawlable index of the series, which
   (Ahrefs, 2026). `YOUTUBE.md` already
   covers it: searcher-language titles, a description that links the lesson
   first, chapters, captions, end screens and Shorts.
-- **Watch pages, later. [open]**
+- **Watch pages. Built for Lessons 1 and 2 (1 November 2026).** Search
+  Console's URL Inspection of `/learn/01` said "Video isn't on a watch page",
+  so maff decided to build them ahead of the YouTube uploads. Each film is at
+  `/learn/NN/watch` (`src/features/lessons/kit/watch-pages.ts`), held back
+  with its lesson, and the lesson's hero links it. Not built yet: a `Clip`
+  per chapter (it needs `?t=` deep links) and the transcript in the
+  structured data. The plan as first written:
   - One page per episode, for example `/learn/01/watch`: the self-hosted MP4
     from R2 as the main content, the transcript (the VTT already exists), the
     chapters as seek links, and a link to the interactive lesson.
@@ -454,7 +460,8 @@ exist beyond a definition.
 3. **The hub** at `/learn/` when Lesson 2 ships. Decided (22 October 2026): yes,
    and #1188 built it (§5).
 4. **Watch pages.** After YouTube. Decided (22 October 2026): later, if Search
-   Console shows the lessons ranking.
+   Console shows the lessons ranking. Decided again (1 November 2026): build
+   them now, one per published film, linked both ways with its lesson (§6).
 5. **Articles.** Whether to write them, how often, and who writes them; the
    Markdown generator past three. Decided (22 October 2026): not yet, decided
    once Search Console shows what people search for.

@@ -41,6 +41,23 @@
   padding: 0;
   margin: 26px 0 0;
 }
+/* the hero's way to the film's own page (learn/NN/watch.html): a button of
+   its own under the chips, not a chip, so it reads as something to press;
+   its running time is the film's, which kit/episode.ts corrects once the
+   film's metadata loads */
+.hero-film {
+  margin: 14px 0 0;
+}
+.hero-film .ico {
+  width: 15px;
+  height: 15px;
+  color: var(--aqua);
+}
+.hero-film small {
+  color: var(--ink-3);
+  font: 500 var(--fs-12) / 1 var(--f-mono);
+  letter-spacing: 0.06em;
+}
 .promise {
   margin: 18px 0 0;
   color: var(--ink-2);
@@ -392,7 +409,8 @@
   .hook {
     order: 2;
   }
-  .meta {
+  .meta,
+  .hero-film {
     order: 3;
   }
   /* the sound gate sits between the stage and the predict card, so its button comes before the choices

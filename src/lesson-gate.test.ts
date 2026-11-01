@@ -17,10 +17,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LESSON_COPY } from '@/features/lessons/kit/lesson-copy'
 import type { PageState } from '@/features/lessons/kit/publish'
 import { LESSONS, minutesSpan } from '@/features/lessons/kit/season'
+import { watchDocument, watchLessons, watchPath, } from '@/features/lessons/kit/watch-pages'
 import type { LessonState } from '@/lib/lesson-state'
-import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, } from '../tools/draft-lessons'
+import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, watchPages, } from '../tools/draft-lessons'
 import { fillHub, HUB_DOCUMENT, hubLessons } from '../tools/learn-hub'
-import { fillLessonWays, lessonWays } from '../tools/lesson-ways'
+import { fillLessonWays, fillWatchTrail, lessonWays, } from '../tools/lesson-ways'
 import { HtmlRewriterDouble } from './html-rewriter.test-fixtures'
 import type { LessonGateEnv, WaitUntil } from './lesson-gate'
 import { draftsShownBy, FALLBACK_TTL_S, handleLessonRequest, hubRewriter, lessonRewriter, settleSeries, STATE_TIMEOUT_MS, STATE_TTL_S, } from './lesson-gate'
@@ -51,6 +52,14 @@ function builtLesson(n: number): string {
   )
 }
 
+/** Lesson `n`'s watch page as the production build writes it: its trail written in, its readings marked. */
+function builtWatch(n: number): string {
+  return markLessonStates(
+    fillWatchTrail(repoFile(watchDocument(n))),
+    liveByDefault(ROOT, false),
+  )
+}
+
 /** The files the stand-in asset layer serves, by address. */
 function filesByAddress(): Record<string, { body: string; type: string }> {
   const files: Record<string, { body: string; type: string }> = {
@@ -70,6 +79,11 @@ function filesByAddress(): Record<string, { body: string; type: string }> {
       body: builtLesson(n),
       type: 'text/html; charset=utf-8',
     }
+  for (const n of watchPages(ROOT))
+    files[watchPath(n)] = {
+      body: builtWatch(n),
+      type: 'text/html; charset=utf-8',
+    }
   return files
 }
 
@@ -78,7 +92,9 @@ function assetLayer() {
   const files = filesByAddress()
   return vi.fn(async (request: Request): Promise<Response> => {
     let { pathname } = new URL(request.url)
-    const spelling = /^(\/learn\/\d{2})(?:\.html|\/)$/.exec(pathname)
+    const spelling = /^(\/learn\/\d{2}(?:\/watch)?)(?:\.html|\/)$/.exec(
+      pathname,
+    )
     if (spelling !== null) {
       // Only a request that takes its redirects by hand sees the 307. The
       // runtime follows it for any other, as it does for a Request built
@@ -385,6 +401,130 @@ describe('a lesson page', () => {
     ])
       expect(await ask(path), path).toBeNull()
     expect(await ask('/learn/03', { method: 'POST' })).toBeNull()
+  })
+})
+
+// Lessons 1 and 2 have films with watch pages (kit/watch-pages.ts); Lesson 3
+// is a draft with none.
+describe("a film's watch page", () => {
+  it("serves a released lesson's watch page at its address, settled, with no validators", async () => {
+    // Arrange
+    const { ask } = gate()
+
+    // Act
+    const response = await ask('/learn/01/watch')
+
+    // Assert
+    expect(response?.status).toBe(200)
+    expect(response?.headers.get('ETag')).toBeNull()
+    expect(response?.headers.get('X-Robots-Tag')).toBeNull()
+    expect(response?.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, must-revalidate',
+    )
+    const doc = await page(response)
+    expect(doc.querySelector('video#ep')).not.toBeNull()
+    expect(
+      doc.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://mercurypitch.com/learn/01/watch')
+    // its own lesson is live, so every way back to it stays a link
+    expect(doc.querySelectorAll('a[href="/learn/01"]').length).toBeGreaterThan(
+      1,
+    )
+    // it carries no state tag: no script on it reads one
+    expect(doc.getElementById('lesson-state')).toBeNull()
+  })
+
+  it("passes the asset layer's redirect from its other spellings through as it came", async () => {
+    for (const path of ['/learn/01/watch.html', '/learn/01/watch/']) {
+      // Arrange
+      const { ask } = gate()
+
+      // Act
+      const response = await ask(path)
+
+      // Assert
+      expect(response?.status, path).toBe(307)
+      expect(response?.headers.get('Location'), path).toBe('/learn/01/watch')
+    }
+  })
+
+  it('answers the 404 page, at every spelling, while the console holds its lesson back', async () => {
+    for (const path of [
+      '/learn/02/watch',
+      '/learn/02/watch.html',
+      '/learn/02/watch/',
+    ]) {
+      // Arrange
+      const { ask } = gate({ state: stateOf({ 2: { published: false } }) })
+
+      // Act
+      const response = await ask(path)
+
+      // Assert
+      expect(response?.status, path).toBe(404)
+      expect(response?.headers.get('X-Robots-Tag'), path).toBe('noindex')
+      expect(response?.headers.get('Cache-Control'), path).toBe('no-store')
+      const doc = await page(response)
+      expect(doc.querySelector('main.error-scene'), path).not.toBeNull()
+      expect(doc.querySelector('video'), path).toBeNull()
+    }
+  })
+
+  it("answers a draft's address as the draft's own: the 404 page where drafts are held back", async () => {
+    // Arrange: mercurypitch.com, where a draft the console has not set waits
+    const held = gate({ drafts: '0' })
+    const shown = gate({ drafts: '1' })
+
+    // Act
+    const there = await held.ask('/learn/03/watch')
+    const none = await shown.ask('/learn/03/watch')
+
+    // Assert: held back, it is the lesson's 404; shown, the draft has no
+    // film, so the asset layer has no page for it either
+    expect(there?.status).toBe(404)
+    expect(there?.headers.get('X-Robots-Tag')).toBe('noindex')
+    expect(
+      held.assets.mock.calls.map(([r]) => new URL(r.url).pathname),
+    ).toEqual(['/404'])
+    expect(none?.status).toBe(404)
+  })
+
+  it("takes the hub's link to a held-back lesson's film with its lesson's", async () => {
+    // Arrange
+    const { ask } = gate({ state: stateOf({ 1: { published: false } }) })
+
+    // Act
+    const doc = await page(await ask('/learn/'))
+
+    // Assert
+    expect(doc.querySelector('a[href="/learn/01/watch"]')).toBeNull()
+    expect(doc.querySelector('a[href="/learn/01"]')).toBeNull()
+    expect(doc.querySelector('a[href="/learn/02/watch"]')).not.toBeNull()
+  })
+
+  it('unlinks a watch page wherever its lesson is not live, as it unlinks the lesson', async () => {
+    // Arrange: a nav and a paragraph that link Lesson 2's film
+    const html = repoFile('learn/05.html').replace(
+      '<p class="promise">',
+      '<nav id="films"><a href="/learn/02/watch">Film two</a><a href="/learn/01/watch">Film one</a></nav><p id="film"><a href="/learn/02/watch.html">the Lesson 2 film</a></p><p class="promise">',
+    )
+    const asset = new Response(html, {
+      headers: { 'Content-Type': 'text/html' },
+    })
+    const state: PageState = {
+      ...stateOf({ 2: { published: false } }),
+      drafts: false,
+    }
+
+    // Act
+    const doc = read(await lessonRewriter(5, state).transform(asset).text())
+
+    // Assert
+    expect(Array.from(doc.querySelectorAll('#films a')).map(words)).toEqual([
+      'Film one',
+    ])
+    expect(doc.querySelector('#film a')).toBeNull()
+    expect(words(doc.getElementById('film'))).toBe('the Lesson 2 film')
   })
 })
 
@@ -753,6 +893,15 @@ describe("a lesson page's ways to the lessons either side", () => {
   })
 })
 
+/** The hub's links for the lessons `live`: each one's page, and its film's watch page where it has one, sorted. */
+const linksTo = (live: readonly number[]): string[] =>
+  [
+    ...live.map((n) => `/learn/${String(n).padStart(2, '0')}`),
+    ...watchLessons()
+      .filter((n) => live.includes(n))
+      .map(watchPath),
+  ].sort()
+
 describe('the hub', () => {
   /** The structured-data blocks of a page, parsed. */
   const blocks = (doc: Document): Record<string, unknown>[] =>
@@ -851,8 +1000,9 @@ describe('the hub', () => {
     expect(words(item(doc, 3)?.querySelector('.hub-go') ?? null)).toBe('Coming')
     const one = item(doc, 1)
     expect(one?.querySelector('a')?.getAttribute('href')).toBe('/learn/01')
+    const name = words(one?.querySelector('h4') ?? null)
     expect(words(one?.querySelector('.hub-go') ?? null)).toBe(
-      `${LESSONS[1]?.minutes} minutes Start lesson: Lesson 1, ${words(one?.querySelector('h4') ?? null)}`,
+      `${LESSONS[1]?.minutes} minutes Start lesson: Lesson 1, ${name} Watch the film: Lesson 1, ${name}`,
     )
     // the time is Lesson 1's alone, the one lesson live
     expect(time(doc)).toBe(timeFor([1]))
@@ -910,7 +1060,7 @@ describe('the hub', () => {
       Array.from(doc.querySelectorAll('#season a'))
         .map((a) => a.getAttribute('href'))
         .sort(),
-    ).toEqual(withPage.map((n) => `/learn/${String(n).padStart(2, '0')}`))
+    ).toEqual(linksTo(withPage))
   })
 
   it('says as much where the build showed drafts and mercurypitch.com holds them back', async () => {
@@ -937,7 +1087,7 @@ describe('the hub', () => {
       Array.from(doc.querySelectorAll('#season a'))
         .map((a) => a.getAttribute('href'))
         .sort(),
-    ).toEqual(released.map((n) => `/learn/${String(n).padStart(2, '0')}`))
+    ).toEqual(linksTo(released))
   })
 
   it('asks the hook the console picked, for a lesson live or held back', async () => {
@@ -1057,10 +1207,59 @@ describe('the sitemap and llms.txt', () => {
     // Assert
     expect(xml).not.toContain('/learn/02')
     expect(xml).toContain('/learn/01')
-    expect(xml.split('\n').length).toBe(sitemap.split('\n').length - 4)
+    // its page and its film's watch page, four lines each
+    expect(xml.split('\n').length).toBe(sitemap.split('\n').length - 8)
     expect(text).not.toContain('/learn/02')
     expect(text).not.toContain('Where the other\n  five notes')
     expect(text).toContain('/learn/01')
+  })
+
+  it("list each live lesson's watch page after the lesson pages, and drop it with its lesson", () => {
+    // Act
+    const all = editSitemap(sitemap, asPage({}))
+    const held = asPage({ 1: { published: false } })
+    const xml = editSitemap(sitemap, held)
+    const text = editLlms(llms, held)
+
+    // Assert
+    const locs = (listing: string) =>
+      [
+        ...listing.matchAll(
+          /<loc>https:\/\/mercurypitch\.com(\/learn\/[^<]*)<\/loc>/g,
+        ),
+      ].map((m) => m[1])
+    expect(locs(all)).toEqual([
+      '/learn/',
+      '/learn/01',
+      '/learn/02',
+      '/learn/01/watch',
+      '/learn/02/watch',
+    ])
+    expect(locs(xml)).toEqual(['/learn/', '/learn/02', '/learn/02/watch'])
+    expect(text).not.toContain('/learn/01')
+    expect(text).toContain('](https://mercurypitch.com/learn/02/watch):')
+  })
+
+  it("put a live lesson's missing watch page back, in each file's own form", () => {
+    // Arrange: the files without Lesson 1's watch page
+    const bareXml = sitemap.replace(
+      / {2}<url>\n {4}<loc>https:\/\/mercurypitch\.com\/learn\/01\/watch<\/loc>\n[^]*?<\/url>\n/,
+      '',
+    )
+    const bareLlms = llms.replace(/^- \[Lesson 1 film: [^]*?(?=\n- )\n/m, '')
+    expect(bareXml).not.toContain('/learn/01/watch')
+    expect(bareLlms).not.toContain('/learn/01/watch')
+
+    // Act
+    const xml = editSitemap(bareXml, asPage({}))
+    const text = editLlms(bareLlms, asPage({}))
+
+    // Assert: back where it stood, with the day of the last change; llms.txt's
+    // item is the one written by hand, word for word
+    expect(xml).toContain(
+      '  <url>\n    <loc>https://mercurypitch.com/learn/01/watch</loc>\n    <lastmod>2026-10-20</lastmod>\n  </url>\n  <url>\n    <loc>https://mercurypitch.com/learn/02/watch</loc>',
+    )
+    expect(text).toBe(llms)
   })
 
   it('write no lastmod for a draft the environment shows when no override has ever changed', () => {

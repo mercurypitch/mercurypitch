@@ -12,6 +12,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSONS, minutesSpan } from '../features/lessons/kit/season'
+import { hasWatchPage, watchPath } from '../features/lessons/kit/watch-pages'
 
 const LAYOUTS = [
   { name: 'a phone', width: 390, height: 844 },
@@ -115,8 +116,15 @@ test('links lessons that each answer, and says the same in its head and structur
     .locator('#season a')
     .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   // The map draws lane by lane, so its links are compared in lesson order
+  // and each live lesson's film where it has a watch page (kit/watch-pages.ts)
   expect([...links].sort()).toEqual(
-    SEASON.flatMap((L) => (L.page === undefined ? [] : [L.page])).sort(),
+    SEASON.flatMap((L) =>
+      L.page === undefined
+        ? []
+        : hasWatchPage(L.n)
+          ? [L.page, watchPath(L.n)]
+          : [L.page],
+    ).sort(),
   )
   for (const href of links) {
     const answer = await page.request.get(href)
@@ -142,6 +150,9 @@ test('links lessons that each answer, and says the same in its head and structur
   expect(
     ((series?.hasPart ?? []) as { '@id': string }[]).map((part) => part['@id']),
   ).toEqual(
-    [...links].sort().map((href) => `https://mercurypitch.com${href}#lesson`),
+    [...links]
+      .filter((href) => !href.endsWith('/watch'))
+      .sort()
+      .map((href) => `https://mercurypitch.com${href}#lesson`),
   )
 })

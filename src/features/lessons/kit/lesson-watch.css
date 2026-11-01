@@ -1,0 +1,133 @@
+/* ============================================================
+   Lesson watch page — the stylesheet of a film's own page, learn/NN/watch.html
+   ============================================================
+   The lesson pages' fonts, base and sections, by @imports the build inlines,
+   and the few rules the watch page adds. Like the hub (lesson-hub.css), the
+   page links this sheet and its script imports no CSS: a second page that
+   took a lesson sheet from its script, or linked one, would move it out of
+   the stylesheet the lessons share into a sheet of its own, linked after
+   the lessons' own rules, and it would then win over the rules written to
+   refine it (docs/agent/MISTAKES.md). Dark only, as every lesson page is. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/outfit';
+@import './lesson-fonts.css';
+@import './lesson-base.css';
+@import './lesson-sections.css';
+
+/* the masthead's way to the lesson, at its end as the hub's way home is */
+.mast-lesson {
+  margin-left: auto;
+}
+
+.watch {
+  padding-top: clamp(8px, 1.6vw, 20px);
+}
+/* the trail runs through the lesson to "The film": on a phone the lesson's
+   name gives way, with an ellipsis, so the page's own step stays whole */
+.trail li:last-child {
+  flex: none;
+}
+.trail li:nth-last-child(2) {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.trail li:nth-last-child(2) a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 24px;
+}
+.watch-head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: clamp(16px, 2.4vw, 26px);
+}
+.watch-title {
+  margin: 0;
+  font: 600 clamp(30px, 4.6vw, 56px) / 1.06 var(--f-display);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* the film and what it is in the grid's first column, so a phone meets the
+   way to the lesson before the chapters */
+.watch-main {
+  min-width: 0;
+}
+.watch-about {
+  display: grid;
+  gap: 14px;
+  max-width: 68ch;
+  margin-top: clamp(20px, 2.6vw, 30px);
+}
+.watch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.watch-lede {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-18);
+  line-height: 1.6;
+}
+.watch-go {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: var(--fs-14);
+  line-height: 1.45;
+}
+.watch-go span {
+  flex: 1 1 18ch;
+  color: var(--ink-2);
+}
+@media (max-width: 560px) {
+  .watch-go span {
+    flex-basis: 100%;
+  }
+}
+
+.watch-series {
+  display: grid;
+  gap: 12px;
+  margin-top: clamp(32px, 5vw, 56px);
+  padding: clamp(20px, 3vw, 30px);
+}
+.watch-series h2 {
+  margin: 0;
+  font: 600 var(--fs-22) / 1.2 var(--f-display);
+  letter-spacing: -0.01em;
+}
+.watch-series p {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--ink-2);
+  font-size: var(--fs-16);
+  line-height: 1.6;
+}
+.watch-series .watch-go {
+  margin-top: 4px;
+}
+/* wide, the way to every lesson sits at the card's end, beside its words */
+@media (min-width: 760px) {
+  .watch-series {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 32px;
+  }
+  .watch-series > :not(.watch-go) {
+    grid-column: 1;
+  }
+  .watch-series .watch-go {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    margin: 0;
+  }
+}

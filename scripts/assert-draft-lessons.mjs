@@ -13,7 +13,8 @@
 // it:
 //
 // - every lesson page in the repository is in the build, learn/NN.html, and
-//   so is 404.html, which the worker answers a lesson held back with;
+//   so is every film's watch page, learn/NN/watch.html, and 404.html, which
+//   the worker answers a lesson held back with, and its watch page;
 // - every draft's path is in the bundle, so the season map can link it
 //   wherever the state publishes it;
 // - the bundle's default (kit/page-state.ts writes it as JSON text) is the
@@ -22,8 +23,9 @@
 //   while it is published;
 // - no document outside learn/ carries a draft's address, since the worker
 //   settles lesson pages by the state and no other document;
-// - the service worker leaves every lesson path to the network, so a lesson
-//   held back reaches the worker's 404 page, not the app shell;
+// - the service worker leaves every lesson path and watch page path to the
+//   network, so a lesson held back reaches the worker's 404 page, not the
+//   app shell;
 // - each reading a page writes of another lesson's state is a
 //   `<span data-if-live="N">` or `<span data-if-planned="N">`, or a
 //   `<div data-if-live="N">` round a block, that the worker and the page's
@@ -59,6 +61,12 @@ const learn = new URL('../learn/', import.meta.url)
 const pages = (existsSync(learn) ? readdirSync(learn) : [])
   .map((name) => /^(\d{2})\.html$/.exec(name)?.[1])
   .filter((nn) => nn !== undefined)
+  .map(Number)
+  .sort((a, b) => a - b)
+// The repository's watch pages, learn/NN/watch.html (kit/watch-pages.ts).
+const watches = (existsSync(learn) ? readdirSync(learn) : [])
+  .filter((name) => /^\d{2}$/.test(name))
+  .filter((nn) => existsSync(new URL(`${nn}/watch.html`, learn)))
   .map(Number)
   .sort((a, b) => a - b)
 // Live on a page no worker served, by this build's default.
@@ -99,6 +107,12 @@ for (const n of pages) {
   if (!has(`learn/${pad(n)}.html`))
     failures.push(
       `learn/${pad(n)}.html is missing from the build: every build carries every lesson page, and the site worker decides which are live`,
+    )
+}
+for (const n of watches) {
+  if (!has(`learn/${pad(n)}/watch.html`))
+    failures.push(
+      `learn/${pad(n)}/watch.html is missing from the build: every build carries every film's watch page, and the site worker holds it back with its lesson`,
     )
 }
 if (!has('404.html'))
@@ -157,13 +171,18 @@ if (defaults.has(!shown))
 
 const sw = has('sw.js') ? read('sw.js') : null
 if (sw === null) failures.push('sw.js is missing from the build')
-for (const n of sw === null ? [] : pages) {
-  for (const path of [`/learn/${pad(n)}`, `/learn/${pad(n)}.html`]) {
-    if (!sw.includes(`"${path}"`) && !sw.includes(`'${path}'`))
-      failures.push(
-        `sw.js has no ${path} rule: where the lesson is held back, the service worker would answer it with the app shell`,
-      )
-  }
+const swPaths = [
+  ...pages.flatMap((n) => [`/learn/${pad(n)}`, `/learn/${pad(n)}.html`]),
+  ...watches.flatMap((n) => [
+    `/learn/${pad(n)}/watch`,
+    `/learn/${pad(n)}/watch.html`,
+  ]),
+]
+for (const path of sw === null ? [] : swPaths) {
+  if (!sw.includes(`"${path}"`) && !sw.includes(`'${path}'`))
+    failures.push(
+      `sw.js has no ${path} rule: where the lesson is held back, the service worker would answer it with the app shell`,
+    )
 }
 
 // Each reading as the worker and the page's script select it, in the one
@@ -220,5 +239,5 @@ if (failures.length > 0) {
 const list = (ns) => ns.join(', ') || 'none'
 console.log(
   `assert-draft-lessons: drafts ${shown ? 'shown' : 'held back'} by default, ` +
-    `lesson ${list(drafts)}; lesson pages ${list(pages)} built (${root})`,
+    `lesson ${list(drafts)}; lesson pages ${list(pages)} and watch pages ${list(watches)} built (${root})`,
 )

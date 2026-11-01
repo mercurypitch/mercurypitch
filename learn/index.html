@@ -203,6 +203,14 @@
         color: var(--ink-3);
         font-size: var(--fs-14);
       }
+      /* a lesson's links are one block until the worker or the page settles
+         its reading, and laid out as the row's own items either way */
+      .hub-go [data-if-live] {
+        display: contents;
+      }
+      .hub-film .ico {
+        color: var(--aqua);
+      }
       .hub-home {
         margin-left: auto;
       }

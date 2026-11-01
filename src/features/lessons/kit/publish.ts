@@ -32,6 +32,7 @@ import { parseLessonState } from '@/lib/lesson-state'
 import { DRAFT_LESSONS } from './drafts'
 import { hookFor, teaseFor } from './lesson-copy'
 import type { Lesson } from './season'
+import { watchOfHref } from './watch-pages'
 
 /** The id of the tag that carries a page's state. */
 export const PAGE_STATE_ID = 'lesson-state'
@@ -131,6 +132,15 @@ const LESSON_HREF = /^\/learn\/(\d{2})(?:\.html|\/)?(?:[?#].*)?$/
 export function lessonOfHref(href: string): number | null {
   const m = LESSON_HREF.exec(href.trim())
   return m === null ? null : Number(m[1])
+}
+
+/**
+ * The lesson a same-site link leads to, at its own page or at its film's
+ * watch page (watch-pages.ts), which is live exactly while the lesson is;
+ * null for any other address. What a page's links are settled by.
+ */
+export function linkedLessonOfHref(href: string): number | null {
+  return lessonOfHref(href) ?? watchOfHref(href)
 }
 
 /** One of the two readings a page writes of another lesson's state. */

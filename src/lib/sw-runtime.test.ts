@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { allEntryPaths } from '@/seo/entry-pages'
@@ -263,6 +263,24 @@ describe('the standalone documents', () => {
     for (const n of lessons) {
       expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}`), n).toBe(true)
       expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}.html`), n).toBe(true)
+    }
+  })
+
+  it("leaves every film's watch page alone, at its clean path and as its document", () => {
+    // learn/NN/watch.html is a build input beside its lesson
+    // (tools/draft-lessons.ts `watchPages`), held back with it by the site
+    // worker, so the shell must not stand in for it either.
+    const learn = resolve(process.cwd(), 'learn')
+    const watches = readdirSync(learn)
+      .filter((name) => /^\d{2}$/.test(name))
+      .filter((n) => existsSync(resolve(learn, n, 'watch.html')))
+
+    expect(watches).toEqual(expect.arrayContaining(['01', '02']))
+    for (const n of watches) {
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}/watch`), n).toBe(true)
+      expect(STANDALONE_DOCUMENT_PATHS.has(`/learn/${n}/watch.html`), n).toBe(
+        true,
+      )
     }
   })
 

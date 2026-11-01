@@ -36,7 +36,8 @@
 
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
-import { lessonDocument, lessonPages } from './draft-lessons'
+import { watchDocument } from '../src/features/lessons/kit/watch-pages'
+import { lessonDocument, lessonPages, watchPages } from './draft-lessons'
 import { hubLessons } from './learn-hub'
 
 /** The site the structured data names, whichever environment serves the page. */
@@ -206,17 +207,35 @@ export function fillLessonWays(html: string, ways: LessonWays = {}): string {
   return trailed.replace(WAYS_AFTER, () => WAYS_AFTER + foot)
 }
 
-/** Writes each lesson page's ways on the dev server as in a build. */
+/**
+ * A film's watch page with its trail written in before its <main>, from its
+ * own BreadcrumbList, which leads through its lesson; it has no foot of
+ * lessons either side, since the lesson's own page has them.
+ */
+export function fillWatchTrail(html: string): string {
+  once(html, TRAIL_BEFORE, 'its trail')
+  return html.replace(
+    TRAIL_BEFORE,
+    () => trailMarkup(trailSteps(html)) + TRAIL_BEFORE,
+  )
+}
+
+/** Writes each lesson page's ways, and each watch page's trail, on the dev server as in a build. */
 export function lessonWaysPlugin(root: string): Plugin {
   const documents = new Map(
     lessonPages(root).map((n) => [resolve(root, lessonDocument(n)), n]),
+  )
+  const watches = new Set(
+    watchPages(root).map((n) => resolve(root, watchDocument(n))),
   )
   return {
     name: 'mercurypitch:lesson-ways',
     transformIndexHtml: {
       order: 'pre',
       handler: (html, ctx) => {
-        const n = documents.get(resolve(ctx.filename))
+        const file = resolve(ctx.filename)
+        if (watches.has(file)) return fillWatchTrail(html)
+        const n = documents.get(file)
         return n === undefined
           ? html
           : fillLessonWays(html, lessonWays(root, n))

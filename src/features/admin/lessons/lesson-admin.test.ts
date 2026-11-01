@@ -195,8 +195,9 @@ describe('the listings', () => {
     const released = lessonRows()
       .filter((row) => row.build === 'released')
       .map((row) => row.path)
+    // lesson pages only: a film's watch page (/learn/01/watch) is listed too
     const lessonsIn = (paths: Set<string>) =>
-      [...paths].filter((path) => path.startsWith('/learn/')).sort()
+      [...paths].filter((path) => /^\/learn\/\d{2}$/.test(path)).sort()
 
     expect(lessonsIn(sitemapPaths(repoFile('public/sitemap.xml')))).toEqual(
       released,
