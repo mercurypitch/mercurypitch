@@ -18,8 +18,10 @@
 //
 // His line goes under him, centred under his feet, on the cobbles in front
 // of the doors: never over a door, and clear of the dock. A door that comes
-// down past his feet there puts it under that door; where the dock leaves
-// it no room, he has no line, and his hello is still read (AlleyGuide.tsx).
+// down past his feet there puts it under that door; where that leaves it no
+// room over the dock, it tries again in two lines in a narrower box, which
+// the doors either side reach less of (a short phone); where that has no
+// room either, he has no line, and his hello is still read (AlleyGuide.tsx).
 //
 // His box is square, his feet at MERC_FEET of its height (MercView), his
 // body MERC_BODY of it (tip-target.ts).
@@ -45,6 +47,19 @@ export const LINE_MAX = 236
  * of padding each side and its 1 px border, rounded up.
  */
 export const LINE_H = 40
+/**
+ * His line's narrow box, px, where the wide one meets a door or the dock:
+ * "Start here: / the Sing room." in two lines. On a short phone the door on
+ * the right comes down past the wide box's end, and under that door there
+ * was no room left over the dock, so the line was not said at all.
+ */
+export const LINE_NARROW = 150
+/**
+ * Its height in two lines, px: alley-guide.css's 15 px at 1.25 for a line
+ * in two, its padding and its border, rounded up. A point smaller, so it
+ * still fits over the dock on a 320 by 568 phone with a gesture bar.
+ */
+export const LINE_H2 = 56
 /** Between the light under his feet, or a door, and his line, px. */
 const LINE_GAP = 6
 /** Between his line and the screen's sides, px. */
@@ -82,11 +97,15 @@ export interface GuidePlace {
   readonly x: number
   readonly y: number
   readonly size: number
-  /** His line under him: its middle, its top and its widest; null with no room. */
+  /**
+   * His line under him: its middle, its top, its widest and the height it
+   * is kept room for; null with no room.
+   */
   readonly line: {
     readonly x: number
     readonly y: number
     readonly width: number
+    readonly height: number
   } | null
 }
 
@@ -96,9 +115,17 @@ function heightOf(quad: Quad): number {
   return (d[1] - a[1] + (c[1] - b[1])) / 2
 }
 
-/** His line under him, clear of every door and of the dock, or null. */
-function lineUnder(input: GuideInput, size: number): GuidePlace['line'] {
-  const width = Math.min(LINE_MAX, input.w - 2 * LINE_EDGE)
+/**
+ * His line under him in a box `widest` across and `height` tall, clear of
+ * every door and of the dock, or null.
+ */
+function lineUnder(
+  input: GuideInput,
+  size: number,
+  widest: number,
+  height: number,
+): GuidePlace['line'] {
+  const width = Math.min(widest, input.w - 2 * LINE_EDGE)
   const x = Math.round(
     Math.min(
       input.w - LINE_EDGE - width / 2,
@@ -114,7 +141,7 @@ function lineUnder(input: GuideInput, size: number): GuidePlace['line'] {
       if (
         door.x0 < x + width / 2 &&
         door.x1 > x - width / 2 &&
-        door.y0 < y + LINE_H &&
+        door.y0 < y + height &&
         door.y1 > y
       ) {
         y = Math.ceil(door.y1 + LINE_GAP)
@@ -122,7 +149,7 @@ function lineUnder(input: GuideInput, size: number): GuidePlace['line'] {
       }
     }
   }
-  return y + LINE_H <= input.floor - DOCK_GAP ? { x, y, width } : null
+  return y + height <= input.floor - DOCK_GAP ? { x, y, width, height } : null
 }
 
 /** Where he stands for the welcome, or null where there is no room. */
@@ -139,6 +166,9 @@ export function guidePlace(input: GuideInput): GuidePlace | null {
     x: Math.round(feetX - size / 2),
     y: Math.round(feetY - MERC_FEET * size),
     size,
-    line: lineUnder(input, size),
+    // In one line where it fits, else in two in a narrower box.
+    line:
+      lineUnder(input, size, LINE_MAX, LINE_H) ??
+      lineUnder(input, size, LINE_NARROW, LINE_H2),
   }
 }

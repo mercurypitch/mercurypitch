@@ -86,6 +86,13 @@
   transform: translate(-50%, 0);
 }
 
+/* In two lines in its narrow box (alley-guide-place.ts LINE_H2): a point
+   smaller and a little closer, so it fits over the dock on a small phone. */
+.mp-alley-guide__line[data-lines='two'] {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
 /* His hello for a screen reader, read once. */
 .mp-alley-guide__said {
   position: absolute;
