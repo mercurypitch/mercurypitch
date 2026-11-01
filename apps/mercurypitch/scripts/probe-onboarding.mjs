@@ -1300,7 +1300,7 @@ async function expectSaid(page, kit, text, how) {
  */
 async function expectLine(page, kit, how) {
   await expectBeat(page, kit, 'line', how)
-  await expectSaid(page, kit, 'Sing this line with me.', how)
+  await expectSaid(page, kit, 'Listen first, then sing it back.', how)
   await settleAnimations(page, SUNG)
   const parts = await expectLayout(page, how)
   if (parts.sungLane === null || parts.words === null || parts.mic === null) {
@@ -1418,7 +1418,7 @@ async function singLine(page, kit, how) {
       `${how}: the lane lights ${seen.hits} of ${seen.judged} bars for "${seen.score}"`,
     )
   }
-  if (!seen.said || seen.said === 'Sing this line with me.') {
+  if (!seen.said || seen.said === 'Listen first, then sing it back.') {
     throw new Error(`${how}: Merc says "${seen.said}" of the score`)
   }
   if (seen.micOn) throw new Error(`${how}: the mic is still there`)

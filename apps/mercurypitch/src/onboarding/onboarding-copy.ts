@@ -10,7 +10,8 @@
 //
 // The deck's lines are kept as written: the first note, the range's result,
 // Merc's line on the reveal, the sung line's chip and Merc's band lines but
-// the lowest. The rest are this build's own, in the same voice: the slides'
+// the lowest, which ends on a statement under a big Once more rather than
+// on "Once more?" over a big Continue. The rest are this build's own, in the same voice: the slides'
 // nudges and the two ways a range can come up short, See my voice (concept
 // 03's button), Find my range again for a range this phone already keeps,
 // what Share says when there is no share sheet, the sung line's turn, its
@@ -109,12 +110,17 @@ export const ONBOARDING_COPY = {
   // ── The sung line (S7b beat 8) ──
   /** The layer's accessible name on the line. */
   lineTitle: 'Sing one line',
-  /** Merc's ask (S7b §6.1), through his call. */
-  lineAsk: 'Sing this line with me.',
+  /** Merc's ask, through his call: the deck's "Sing this line with me."
+   *  stayed up while he sang alone, so the line says the order of turns. */
+  lineAsk: 'Listen first, then sing it back.',
   /** Under the mic before the first tap: what the tap starts. */
   lineHow: "Merc sings it first, then it's your turn.",
   /** The mic's name: what a tap does. */
   singLine: 'Sing the line',
+  /** Under the mic while Merc sings his call: whose turn it is. */
+  mercsTurn: "Merc's turn",
+  /** The mic's name for a screen reader through his call. */
+  mercsTurnStop: "Merc's turn. Tap to stop",
   /** His call is over: the singer's turn, counted in. */
   yourTurn: 'Your turn.',
   /** No voice at all in the turn: the mic is shut, a tap tries again. */
@@ -186,7 +192,16 @@ export function lineVerdict(facts: LineFacts): string {
         return 'Good start. Listen once more, then match Merc note for note.'
     }
   }
-  return 'Your voice is still warming up. Once more?'
+  return 'Your voice is still warming up. Try it once more.'
+}
+
+/**
+ * Under four notes in ten (lineVerdict's lowest band): Once more is the
+ * way on Merc points to, so it is the big button and Continue the plain
+ * one under it.
+ */
+export function lineWarmingUp(hit: number, total: number): boolean {
+  return total > 0 && hit / total < 0.4
 }
 
 /** "That's an A3." The note named back, with its article. */

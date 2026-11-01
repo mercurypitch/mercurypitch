@@ -2,15 +2,15 @@
 // useLine: the sung line's controller (S7b beat 8)
 // ============================================================
 //
-// Merc asks: "Sing this line with me." The tap opens the mic inside it, as
-// every beat's does, and the audio clock with it: Merc sings the line once,
-// in his recorded voice (merc-call.ts, as Echo's calls), the words lighting
-// as he goes. Then the singer's turn: two beats counted in by the cursor,
-// then the line, the words lighting under the cursor and the voice drawn
-// over the notes. Once the line is over the mic shuts and the Karaoke
-// engine scores it (line-score.ts): "8 of 10 notes on pitch", and Merc says
-// how it went (onboarding-copy.ts lineVerdict). Once more sings it again
-// from Merc's call; a turn with no voice in it asks for one.
+// Merc asks: "Listen first, then sing it back." The tap opens the mic
+// inside it, as every beat's does, and the audio clock with it: Merc sings
+// the line once, in his recorded voice (merc-call.ts, as Echo's calls), the
+// words lighting as he goes. Then the singer's turn: two beats counted in
+// by the cursor, then the line, the words lighting under the cursor and the
+// voice drawn over the notes. Once the line is over the mic shuts and the
+// Karaoke engine scores it (line-score.ts): "8 of 10 notes on pitch", and
+// Merc says how it went (onboarding-copy.ts lineVerdict). Once more sings
+// it again from Merc's call; a turn with no voice in it asks for one.
 //
 // CALL AND RESPONSE, NOT A SING-ALONG. The mic is raw (echo cancellation
 // would bend the pitch), so whatever the phone plays while the singer
