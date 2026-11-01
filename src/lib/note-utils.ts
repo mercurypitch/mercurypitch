@@ -39,6 +39,15 @@ export function midiToNoteNameOctave(midi: number): string {
   return `${NOTE_NAMES[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`
 }
 
+/**
+ * A note's name as a singer reads it on screen: the sharp sign, not the
+ * hash a keyboard types, so "G#4" shows as "G♯4". Names stay ASCII
+ * wherever they are stored, parsed or compared; this is only for words.
+ */
+export function noteOnScreen(note: string): string {
+  return note.replace('#', '\u266f')
+}
+
 export function noteColor(midi: number): string {
   return NOTE_COLORS[midiToNoteName(midi)] ?? '#8b949e'
 }

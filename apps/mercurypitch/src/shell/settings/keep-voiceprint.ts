@@ -12,7 +12,7 @@
 import { getDeviceId } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { loadLocalVoiceprints, MADE_ANONYMOUSLY, recordMadeBy, } from '@/db/services/voiceprint-service'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { midiToNoteNameOctave, noteOnScreen } from '@/lib/note-utils'
 
 /** A take Keep can show: one with both ends of its range measured. */
 export interface KeepableVoiceprint {
@@ -44,5 +44,7 @@ export function keepableVoiceprint(): KeepableVoiceprint | null {
 
 /** "E2–G4": the range as Progress writes it. */
 export function keepRange(print: KeepableVoiceprint): string {
-  return `${midiToNoteNameOctave(print.lowMidi)}–${midiToNoteNameOctave(print.highMidi)}`
+  const low = noteOnScreen(midiToNoteNameOctave(print.lowMidi))
+  const high = noteOnScreen(midiToNoteNameOctave(print.highMidi))
+  return `${low}–${high}`
 }

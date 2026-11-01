@@ -10,7 +10,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import { settle } from './onboarding-capture.test-fixtures'
-import { ONBOARDING_COPY } from './onboarding-copy'
+import { ONBOARDING_COPY, twinLine } from './onboarding-copy'
 import type { ShareWays } from './reveal-share'
 import { revealPayload } from './reveal-share'
 import { RevealView } from './RevealView'
@@ -153,7 +153,7 @@ describe('the reveal', () => {
     expect(hand.taps).toBe(1)
     expect(
       q('onboarding-twin-card')?.textContent?.includes(
-        `You share a range with ${singerForRange(E2_G4) ?? ''}.`,
+        twinLine(singerForRange(E2_G4) ?? ''),
       ),
     ).toBe(true)
     // No button to find it, and no blank figure standing in for it.
@@ -185,7 +185,7 @@ describe('the reveal', () => {
       ONBOARDING_COPY.revealTitle,
     )
     expect(q('onboarding-card-range')?.textContent).toBe(
-      'G#0 to D#1 \u00b7 under an octave',
+      'G\u266f0 to D\u266f1 \u00b7 under an octave',
     )
     expect(q('onboarding-twin-card')).toBeNull()
     expect(q('onboarding-twin')).toBeNull()

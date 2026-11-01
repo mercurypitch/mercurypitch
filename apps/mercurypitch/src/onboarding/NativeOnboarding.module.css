@@ -350,6 +350,13 @@
   text-wrap: balance;
 }
 
+/* Under a named note, what its name means (onboarding-copy noteMeaning),
+   over the ways on. */
+.meaning {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
 /* Kept in the flow so nothing below it moves when it goes. */
 .away {
   visibility: hidden;
@@ -763,6 +770,7 @@
   margin-top: 2px;
   color: var(--text-secondary);
   font: 500 15px/1.35 var(--font-body, sans-serif);
+  text-wrap: balance;
 }
 
 /* Merc in his guide slot, his line beside him. */
