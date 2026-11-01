@@ -1132,11 +1132,13 @@
   text-wrap: balance;
 }
 
-/* Straight after a reveal the card flies in, small, from above (S7b §3.5),
-   as the sheet comes up. Transform and opacity only. The shell's motion
+/* Straight after a reveal the card lands as the sheet comes up (S7b §3.5):
+   from a little larger, as the reveal's card was, settling in place. It
+   no longer flies in from above: under the title, the flight ran through
+   "Keep your voiceprint". Transform and opacity only. The shell's motion
    tokens reach the sheet through its portal (Sheet.tsx), and reduced motion
-   sets them to no lift, no pop and a 120 ms fade, from the phone's setting
-   or the shell's own (shell.css), so it needs no rule of its own here. */
+   sets them to no pop and a 120 ms fade, from the phone's setting or the
+   shell's own (shell.css), so it needs no rule of its own here. */
 .mp-keep[data-arrival='reveal'] .mp-keep__print {
   animation: mp-keep-card-in calc(var(--mp-in, 280ms) * 1.8)
     var(--mp-ease, ease-out) both;
@@ -1145,8 +1147,7 @@
 @keyframes mp-keep-card-in {
   from {
     opacity: 0;
-    transform: translateY(calc(var(--mp-lift, 16px) * -3.5))
-      scale(calc(1 + (1 - var(--mp-pop, 0.6)) * 0.5));
+    transform: scale(calc(1 + (1 - var(--mp-pop, 0.6)) * 0.15));
   }
 
   to {
@@ -1168,14 +1169,17 @@
   color: var(--text-secondary);
 }
 
-/* "Find your range first": a row that leads somewhere. */
+/* "Find your range first": a row that leads somewhere. On a phone its line
+   takes two lines, which fill its 44 px target, so it keeps the rows' own
+   spacing: pulled 10 px into the rows round it, it sat 4 px under the
+   title and 2 px over the next row. */
 .mp-keep__find {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   min-height: 44px;
-  margin: -10px 0;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1187,6 +1191,8 @@
 
 .mp-keep__find span {
   flex: 1 1 auto;
+  /* Two even lines, never "minute." alone. */
+  text-wrap: balance;
 }
 
 .mp-keep__fact {
@@ -1210,10 +1216,13 @@
    its tokens set here, on the panel, at open, as the More sheet's are
    (MISTAKES.md: theme a portalled sheet with tokens, never a theme
    selector). The accent is the stage's violet, the reveal's, so the print
-   and the range's way back read as the onboarding's own. */
+   and the range's way back read as the onboarding's own. The ink is set
+   here too: the tokens alone left what only inherits its colour, the
+   rows, in the light theme's dark ink on the stage's dark panel. */
 [role='dialog'].mp-offer-sheet--stage {
   --accent: #bc8cff;
   --accent-hover: #d2b3ff;
+  color: var(--text-primary);
 }
 
 /* On its side the sheet sits in the middle, 560 wide, with the room showing
