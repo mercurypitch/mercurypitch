@@ -2858,3 +2858,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   plan-cites 0, whole plan 200, lesson-words, prettier, head test) -> commit as the owner -> push.
   Then 24 and 25 (refresh BRIEF-writer-common's head to the newest commit first).
 - Fallback wake-up armed for 07:06 UTC (trig_01Ccuz2Qtjapvh1L24j6iBDZ); delete it if both replies are handled first.
+
+## 2 Nov 06:36 UTC — L22 COMMITTED 5a283f8d9 (pushed); L18 fix pass back; L24 + L25 writers spawned
+
+- L22 lead review: plan-cites 311/0, whole plan 200 (no-arg run; `check docs/plans` reads 233, other
+  folders), lesson-words 2,229, description 153 with "A fifteen-minute lesson", teases bound (L21
+  FACTS 5 = L22 FACTS 5b; L22 FACTS 5 = L23 FACTS 5b), Merc amber as L11/L13. Prettier fixes: a line
+  starting "1)" re-wrapped ("item 1)"); FACTS 36's quote "Depth = 2 * mean RMS ..." became "mean RMS
+  (peak-to-peak estimate)" (prettier escapes the * and the quote check then fails). Commit msg:
+  s2pkg/lead22/COMMIT-MSG.txt; shared entries: s2pkg/shared-rest/L22-entries.md.
+- BRIEF-writer-common v7 (backup .v6.md): head 5a283f8d9, L20 and L22 as models, restarts five.
+- W24 and W25 spawned 06:36 (ids in agents.txt); rate limit "allowed" (resetsAt 1793616000).
+- L18 fix pass back (06:3x): 2,177 words, 247 cites/0, description 149 "A sixteen-minute lesson".
+  Departures to judge at the lead review: Step 2's lock removed (predict changed so its toy gives
+  nothing away); tune 1 changed to do re mi so, so mi do (half) (shares <=3 notes with L16); the
+  singer's first note may come up to two beats late; a note sung 150 cents flat near the next written
+  note reads as not heard. NEXT: lead review of L18, commit, push.

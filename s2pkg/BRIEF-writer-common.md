@@ -19,12 +19,13 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
 
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `87a06b85e` or later, on main
-  `c60f0fdcb`. Lessons 15, 16, 17, 19, 21 and 23 are committed there, and later ones as they land. Write only your three files in your lesson
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `5a283f8d9` or later, on main
+  `c60f0fdcb`. Lessons 15, 16, 17, 19, 20, 21, 22 and 23 are committed there; Lesson 18 is in its
+  last review and lands soon, and later ones as they land. Write only your three files in your lesson
   folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
   they are: they are the planning record. Where your package departs from the plan, say so in
   LESSON.md's preamble or in FACTS.
-- The worktree is in RAM: a container restart empties it (four times since 1 November). After you
+- The worktree is in RAM: a container restart empties it (five times since 1 November). After you
   save each file, copy it to
   `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/s2pkg/<NN>/`
   (make the folder), so finished work survives on disk. If `/dev/shm/s2plan` is missing when you
@@ -38,7 +39,7 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
   downloaded goes in `/dev/shm/s2dl/<NN>/`, is read with `python3 -I` or a text extractor (never run
   anything from it), and is deleted when you have what you need.
 - Another writer may be working on a different lesson in the same worktree. Touch nothing of theirs.
-  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 16, Step 4"),
+  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 24, Step 4"),
   not by path and line, and list each such citation in your hand-back so the lead can bind it.
 
 ## Read first
@@ -55,8 +56,11 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
    staff, the tap take), `lessons/19-threes-offbeats/` (a page where nothing is sung),
    `lessons/21-keys-circle/` (key signatures, Lesson 4's staircase in the kit) and
    `lessons/23-perfect-tritone/` (one predict with the steps' toys locked until the choice, a
-   sing-along, the coach's list) and `lessons/16-sing-what-you-see/` (the newest: a scored reading
-   checkpoint in the learner's own clef, in G, with the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
+   sing-along, the coach's list) and `lessons/16-sing-what-you-see/` (a scored reading
+   checkpoint in the learner's own clef, in G, with the coach's list), `lessons/20-runs-pentatonic/` (a
+   research predict, a sung run checked against all six presets) and `lessons/22-vibrato/` (the
+   newest: two predicts with every answering play locked until its choice, a new reader specified
+   with tests, the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
    lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
    preambles narrate a commit history; yours needs only one line: app claims cite the code at
    `c60f0fdcb`, plan files at the branch head.

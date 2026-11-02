@@ -23,8 +23,9 @@ written as its sound plays, each bracket lights as the sound reaches it, and eve
 it is heard is the checkpoint's tune: a sight-singing checkpoint "plays do first, never the melody"
 (SEASON-2 § 1.5 item 6). The steps' staff is the voice stored from an earlier lesson, the lower when
 none is stored, with a Clef switch for the other; the cold open's tune is Merc's, in the bass clef
-for everyone (FACTS 8). "Line" means a line of the staff here; a melody is "a tune", so the one word
-keeps one meaning, except in the lesson's own title.
+for everyone (FACTS 8). In this page's own sentences "line" means a line of the staff and a melody is
+"a tune", except in the lesson's own title; the shared lines keep "line" for a line of text too ("a
+line for each note", "the stop line"), as Lesson 16's do.
 
 Where this page shares a line with Season 1 and Lesson 16 (the comfort check, "Just listen today",
 the voice choice and Lesson 15's line under it, the stop line, the speaking-volume line, the four
@@ -32,41 +33,55 @@ feelings with their gentle and enough-for-today lines, and the doctor lines), it
 current text, which is Lesson 15's and Lesson 3's, word for word, with only the exercise changed:
 "Just listen today" names "the two tunes". The sound gate, the "What this does" box, the reading
 lines, the no-voice line and the no-microphone line are Lesson 16's, with this task's words; the box
-adds one sentence, on timing. The practice card's Sight-Singing text and care lines are Lesson 16's,
-with a first sentence on the beat; the rest card is Lesson 12's form, naming Sight-Singing, with the
-second drill kept, since The Chart asks for no voice (FACTS 43 to 60). Four lines are new: the two
-after Easy or Workable, Your turn's line for a so that feels high, and its line for reading the tune
-through first. Syllables follow Lesson 4's spelling, "so"; the page sings only G, A, B, C and D, so
-it draws no sharp and no key signature (FACTS 10).
+adds a clause on how each note is heard and one sentence, on timing. The practice card's
+Sight-Singing text and care lines are Lesson 16's, with a first sentence on the beat; the rest card
+is Lesson 12's form, naming Sight-Singing, with the second drill kept, since The Chart asks for no
+voice (FACTS 43 to 60). Seven lines about singing are new, and the coach's list carries each: the two
+after Easy or Workable; Your turn's lines for reading the tune through first, for the cursor that
+won't wait, for a note that slips and for a so that feels high; and the take's status, "Your turn:
+sing in time with the cursor." Syllables follow Lesson 4's spelling, "so"; the page sings only G, A,
+B, C and D, so it draws no sharp and no key signature (FACTS 10).
 
 Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
 - **Every pitch and place is in G**, the lead's answer: do is G4 on the treble clef's line and G3 in
   the bass staff's top space, as on Lesson 16's page, so the tunes use G, A, B, C and D, and the
   range table is Lesson 16's (FACTS 11 to 13, 51).
-- **The predict's second choice is "Two: a run of steps, then do-mi-so"**, not the plan's "Two: a
-  run and a chord", so "run" means what it means on Lesson 20's page; and the reveal says what Merc
-  reads, not what "the eye takes in": no source read says how readers see a line (FACTS 24, 33).
+- **The predict asks what reading note by note costs, and its answer is heard.** The plan asked how
+  many things Merc reads, "Seven: one per note" or "Two: a run and a chord". The title asks how
+  singers read "without stopping on every note", which ruled out the first choice, and the answer
+  was drawn by brackets, not heard. Now Merc gives each note a beat to name it, and the learner
+  predicts how much of the tune he sings before the two bars end: all seven, each a beat late, or
+  only the first four. The read plays it, and the reveal plays Merc's way after. Its bubble promises
+  nothing about his eyes, and the page never says what "the eye takes in": no source read says how
+  readers see a line (FACTS 1a, 24, 33).
+- **"A run of steps", never "a run"**, for notes on neighbouring places at any speed: Lesson 20's
+  Run is quick notes, by step or by leap, and neither page calls a slow line of steps "a run" (FACTS
+  10).
 - **No step heading names a pattern.** The lesson menu lists the headings from the first paint, and
-  the plan's "Do readers really name every note?" and "Which patterns should my eye look for?" give
-  the answer's gist; Steps 1 and 2's toys stay locked until the choice, and the first-visit tour
-  waits for it (FACTS 1a).
+  the plan's "Do readers really name every note?" and "Which patterns should my eye look for?" gave
+  the first draft's answer away; Step 1's toy, which plays the predict's answer, stays locked until
+  the choice, in the Wrap's free play too, and the first-visit tour waits for it (FACTS 1a).
 - **The cold open's tune is Merc's, in the bass clef for everyone**, as Lesson 16's is Tavi's in the
   treble, and **Merc sings it on "ooh"**: the kit's voices sing, click or clap, and none speaks
   syllables (FACTS 8, 34, 35).
-- **The checkpoint's tune is never played before it is read.** The plan's Step 3 played it as its
-  example; Step 3 has a tune of its own. The second tune is new too: the plan's, do re mi re, do mi
-  do, was the cold open's tune with its last note changed (FACTS 39, 50).
-- **The start is do and the count-in, with no tonic triad**, since tune 1 opens on do, mi and so,
-  which the triad would sing; and **nothing plays during a take**: the cursor and the beat grid keep
-  the beat in silence (FACTS 49, 52).
+- **The checkpoint's tunes are new, and never played before they are read.** The plan's Step 3
+  played its tune as an example; Step 3 has a tune of its own. The plan's tune 1, do mi so so, mi re
+  do, shared four notes in order with Lesson 16's second phrase, and the review's alternative four
+  with Lesson 16's start; tune 1 is now do re mi so, so mi do, which shares at most three notes in
+  order with anything the learner has heard. The plan's second tune, do re mi re, do mi do, was the
+  cold open's tune with its last note changed (FACTS 39, 50).
+- **The start is do and the count-in, with no tonic triad**, as the card asks: Lesson 16's triad
+  would sing tune 1's last three notes, so, mi and do. **Nothing plays during a take**: the cursor
+  and the beat grid keep the beat in silence, and each note is heard in its own beats, counted from
+  the singer's first note (FACTS 49, 52).
 - **Step 2's second tune is new**, so each bracket covers notes of its own; **Step 4's breath mark
   plays on Step 3's tune**, since the cold open's tune sounds only after the choice (FACTS 39, 41).
 - **The quick check asks one question a step.** The plan's question 2 was the recall's question in
   other words, and its "three lines in a row" left out the bass clef's spaces (FACTS 64).
 - **The practice card says what Sight-Singing does today**, as Lesson 16's does, with The Chart as
   its second drill; the plan's "practise the patterns here" promised too much, since the drill picks
-  its own notes and never repeats one (FACTS 65 to 73).
+  its own notes and never writes the same note twice running (FACTS 65 to 73).
 - **The promise drops the plan's "two-bar"**, and nothing above the predict says "two" (FACTS 1a).
 - **No Go deeper drawer**: its three items rest on sources read, and FACTS keeps them, but the page
   runs near the cap (FACTS 3).
@@ -85,8 +100,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
 _[Editorial: the chip's 16 minutes is the package's estimate, from its words and its sounds; the
 staff toy and the take are timed in their lab before the chip is set (SEASON-2 § 1.3; FACTS 3). The
-title is the season's hook, with no alternative proposed. Neither it nor the promise names a
-pattern, a group or a number of things read (FACTS 1a).]_
+title is the season's hook, with no alternative proposed. It does not decide the predict, whose two
+answers are both costs of stopping on every note, and the promise says nothing of either (FACTS
+1a).]_
 
 ## Sound gate
 
@@ -103,33 +119,37 @@ no bracket, no syllable and nothing lit. Nothing plays before a choice. The two 
 the start.)
 
 Tavi: "Seven notes. Don't you have to work out each one's name, then sing it?"
-Merc: "Watch what my eyes catch."
+Merc: "Let's try it your way, on the beat."
 
-**Predict before you watch.** Merc reads this tune and sings it in time, at 60 BPM. How many separate
-things does he read?
-[ Seven: one note at a time ] [ Two: a run of steps, then do-mi-so ]
+**Predict before you watch.** Merc gives each note a beat to name it, then sings it. At 60 BPM, how
+much of the tune does he sing before the two bars end?
+[ All seven notes, each a beat late ] [ Only the first four ]
 
 Until a choice: "Choose an answer to unlock Merc's read."
 
 (After a choice, Watch Merc read unlocks, and the hint reads "Locked in. Watch Merc read." It plays
-do, G3 in the soft tone, then the click counts in one bar at 60 BPM, and Merc sings the tune on
-"ooh" over the click while a cursor moves along the bars at tempo. As the cursor reaches bar 1, a
-bracket lights over its four notes, labelled "a run of steps"; as it reaches bar 2, a bracket lights
-over do, mi and so, labelled "do-mi-so". The reveal waits until the play has been heard to its end.
-A play that sound off kept silent sets the hint to "Sound is off: nothing played. Turn sound on, then
-play it again." A play cut short changes nothing. The reveal opens on "You said: seven" or "You
-said: two", and the hint then reads "Play it again.")
+do, G3 in the soft tone, then the click counts in one bar at 60 BPM, and the cursor moves along the
+bars on the beat, over the click. On beats 1, 3, 5 and 7 a note's name appears over it as Merc
+names it; on beats 2, 4, 6 and 8 he sings it on "ooh" and it lights. Do, re, mi and re sound, each
+further behind its place, and when the bars end, do, mi and so are still unlit. The reveal waits
+until the play has been heard to its end. A play that sound off kept silent sets the hint to "Sound
+is off: nothing played. Turn sound on, then play it again." A play cut short changes nothing. The
+reveal opens on "You said: all seven" or "You said: only four", and the hint then reads "Play it
+again.")
 
-Reveal: Two. A run of steps, up and back, then do-mi-so, the tonic triad. Merc knows both patterns,
-so he reads each one whole and keeps up with the beat. That's this lesson's story. (In Lesson 16 you
-read one note at a time, which made seven a fair guess.)
+Reveal: Only four. Each name takes a beat, so each note falls a beat further behind than the last,
+and the bars end before do, mi and so. Merc's own way is to read a run of steps, then do-mi-so, each
+as one thing: [ Read Merc's way ] That's this lesson's story. (Seven was a fair guess: it's easy to
+miss that every name costs another beat.)
+
+(Read Merc's way counts in one bar, then Merc sings the tune on the beat while a bracket lights over
+bar 1's four notes, labelled "a run of steps", then over do, mi and so, labelled "do-mi-so".)
 
 ## Recall from Lessons 16 and 17
 
 (Straight after the hero, as on Lesson 2's page: Lesson 16's question 3 and Lesson 17's question 1,
 asked afresh, for everyone, since both lessons are prerequisites. The page asks their own question
-objects, so the words below are theirs. Neither says how many things a reader reads, or that a
-pattern is read whole: FACTS 1a, 7.)
+objects, so the words below are theirs. Neither says what reading note by note costs: FACTS 1a, 7.)
 
 1. On the staff, do, mi and so sit...
    - On three lines in a row, or three spaces in a row **[correct]** · Feedback: "Each skips one
@@ -148,36 +168,37 @@ pattern is read whole: FACTS 1a, 7.)
 
 - **Count-in**: a bar of the beat before the music starts, to set the tempo. [Play: four clicks at
   60 BPM]
-- **Dynamics**: marks for loud and quiet: p for quiet, f for loud. [Play: do, mi, so, mi, do, quiet,
-  then loud]
+- **Dynamics**: marks for loud and quiet: p for quiet, f for loud. [Play: mi, re, do, quiet, then
+  loud]
 - **Staccato**: a dot over or under a note: sing it separated, with space after it. [Play: do, mi,
   so, staccato]
 - **Slur**: a curve over different notes: sing them smoothly, joined. [Play: do, re, mi, slurred]
 
-(Each word's figure is a small staff in the learner's clef, or for the count-in four beat pads; its
-mark is written as its sound plays and stays written: FACTS 41, 77.)
+(Each word's figure is a small staff in the learner's clef, in quarter notes with no time signature
+and no bar line, played at 60 BPM as written, or for the count-in four beat pads; its mark is written
+as its sound plays and stays written: FACTS 41, 77.)
 
 ## Step 1 of 4: Do I have to name every note?
 
 At first, yes: in Lesson 16 you counted up from the house to each note, and the page waited for
-you. A beat doesn't wait. [Read note by note] Give each note a beat to name it, and the two bars end
-with do, mi and so still unsung. [Read Merc's way] Read a run of steps, then do-mi-so, each as one
-thing, and the tune keeps up with the beat.
+you. A beat doesn't wait. [Read note by note] Each name takes a beat, so do comes one beat late, re
+two, mi three, and the two bars end before do, mi and so. [Read Merc's way] Read a run of steps,
+then do-mi-so, each as one thing, and the tune keeps up with the beat.
 
-**Try:** play both reads, and watch the cursor.
-**Notice:** read note by note, every note comes a beat late, and the bars run out first.
+**Try:** play both reads, and watch how far each note falls behind the cursor.
+**Notice:** read note by note, each note falls a beat further behind, and the bars run out first.
 
 > **Common mix-up:** "Sight-singing means working out each note's name, then singing it."
 > **Why it seems right:** that's how Lesson 16 began, and it works while the page waits for you.
-> **The evidence:** in time, the beat runs on without you. Teachers train patterns too: in one
+> **The evidence:** in time, the beat runs on without you. Some teachers train patterns: in one
 > study, 67 beginning high-school singers worked on 15 pitch skills from scales, cadences and chords
-> for 12 weeks, and their sight-singing improved. The study tried no other way of teaching, so it
-> shows a gain, not a winner.
+> for 12 weeks, and their sight-singing improved. Every group was taught the skills, so it shows a
+> gain, not a winner.
 > **The better idea:** learn the patterns, read each one whole, and keep the beat going.
 
-_Toy: your staff, the cold open's tune over the beat grid, with Read note by note and Read Merc's
-way, locked until the predict's choice, with the line "Choose an answer at the top of the page to
-unlock this." under it._
+_Toy: your staff, the cold open's tune over the beat grid, with Read note by note, which tags each
+sung note with how many beats late it came, and Read Merc's way; locked until the predict's choice,
+with the line "Choose an answer at the top of the page to unlock this." under it._
 
 ## Step 2 of 4: What should my eye look for?
 
@@ -190,15 +211,14 @@ lights.
 **Notice:** you can see each pattern's shape before you hear it.
 
 _Toy: your staff with tune A and tune B over the beat grid, their brackets lighting as the cursor
-reaches them, each bracket a button; locked until the predict's choice, with the same line under
-it._
+reaches them, each bracket a button. It is not locked: nothing in it bears on the predict._
 
 ## Step 3 of 4: How do I keep the beat going?
 
 Count in first. The Royal Conservatory's voice exams let a singer tap one bar of the beat before
 sight-singing, to set the tempo. Then keep going: the beat doesn't stop, so if a note slips, let it
 go and come in on the next one, on its beat. Each half note here holds two beats: count "1 (2) 3
-(4)" in your head, as in Lesson 17.
+(4)", the bracketed beats in your head, as in Lesson 17.
 
 **Try:** play the tune with its count-in, and tap the beat on the pad as it goes.
 **Notice:** the cursor never waits, and each half note lasts two of your taps.
@@ -208,19 +228,21 @@ _Toy: your staff with tune C over the beat grid, its count under the notes, a co
 
 ## Step 4 of 4: What do the other marks ask for?
 
-Other marks say how to sing the notes. p means quiet and f loud. A hairpin that opens means getting
-louder; one that closes, quieter. A staccato dot asks for a note separated, with space after it. A
-slur, a curve over different notes, asks for them smooth and joined; a tie, Lesson 17's curve, joins
-two of the same note. A breath mark, like a comma above the staff, shows where to breathe. The breath
-takes its time from the note before it, so the beat doesn't stop. And louder never means higher.
+Other marks say how to sing. p means quiet and f loud. A hairpin that opens means getting louder;
+one that closes, quieter. A staccato dot asks for a note separated, with space after it. A slur, a
+curve over different notes, asks for them smooth and joined; a tie, Lesson 17's curve, joins two of
+the same note. A breath mark, like a comma above the staff, shows where to breathe, at a phrase's
+end; here each bar is a short phrase. The breath takes its time from the note before, so the beat
+doesn't stop. Louder never means higher.
 
 **Try:** tap each mark to hear what it asks for.
-**Notice:** the notes stay on their lines and spaces; only how they sound changes.
+**Notice:** each note keeps its line or space.
 
 _Toy: your staff with five short examples, each mark written as its sound plays: p then f, a
-hairpin that opens and closes, staccato dots, a slur, and tune C with a breath mark._
+hairpin that opens and closes, staccato dots and a slur, in quarter notes with no time signature
+and no bar line, and tune C with a breath mark at its bar line._
 
-## Sing it: a tune from the page
+## Sing it: two tunes from the page
 
 > **Sore, hoarse or unwell today? Just listen along.**
 > Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels
@@ -254,15 +276,15 @@ staff. If so feels high, leave it out and come in again on the next note.
 Stop immediately if anything feels uncomfortable.
 
 > **What this does:** it measures how far each of your notes sits from the written note, in cents,
-> in any octave, listening for each note in its own beats, and shows your pitch line after each
-> tune, not while you sing. It doesn't score your timing. It doesn't diagnose anything, and it isn't
-> a test of whether you can sing. Your voice is analysed on this device: nothing is recorded, kept
-> or sent.
+> in any octave, listening for each note in its own beats, counted from your first note, and shows
+> your pitch line after each tune, not while you sing. It doesn't score your timing. It doesn't
+> diagnose anything, and it isn't a test of whether you can sing. Your voice is analysed on this
+> device: nothing is recorded, kept or sent.
 
 [ Start ] (it asks for the microphone)
 
 (Merc, or Tavi for the higher voice, sings do, then the click counts in one bar, with the status
-"Counting in: one bar.", and the take opens on the first beat of bar 1. Nothing plays during a take:
+"Counting in: one bar.", and the singing starts on the first beat of bar 1. Nothing plays during a take:
 the cursor moves along the bars at 60 BPM and the beat grid lights each beat in silence, with the
 status "Your turn: sing in time with the cursor." With sound off, Start plays nothing and asks for
 nothing, and the hint reads "Sound is off, so nothing played. Turn sound on to hear the start, then
@@ -291,13 +313,13 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
 No microphone: "No microphone? Play the start, read and sing anyway, then play Merc's tunes to
 check. Nothing listens." [ Play the start ]
 
-(Stop here ends the singing for the visit, with the practice card kept. Play the start sings do and
-counts in one bar, then the cursor keeps the beat through the two bars in silence, and no tune
-sounds. Play Merc's tunes appears only once the singing has ended, so the second tune is never heard
-before it is read: after the second tune, after Stop here, Effortful or Uncomfortable, after Just
-listen today, after the visit's last take, and with no microphone. It sings do, counts in, sings
-tune 1, counts in again and sings tune 2, in the chosen voice, each note lighting on the staff as it
-sounds.)
+(Stop here ends the singing for the visit, with the practice card kept. Each tune's staff has its
+own Play the start, which sings do and counts in one bar, then moves the cursor through that tune's
+two bars in silence, and no tune sounds. Play Merc's tunes appears only once the singing has ended,
+so the second tune is never heard before it is read: after the second tune, after Stop here,
+Effortful or Uncomfortable, after Just listen today, after the visit's last take, and with no
+microphone. It sings do, counts in, sings tune 1, counts in again and sings tune 2, in the chosen
+voice, each note lighting on the staff as it sounds.)
 
 ## Quick check
 
@@ -306,29 +328,31 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 1. Someone says: "To sight-sing, work out each note's name, then sing it." What does this lesson
    suggest?
-   - Read the patterns you know, and keep the beat going **[correct]** · Feedback: "Names help at
-     first. Reading patterns kept Merc on the beat."
-   - They're right: name every note first · Feedback: "Then each note waits while the beat runs on.
-     Try Step 1 again."
-   - Only sing tunes you already know · Feedback: "Then it wouldn't be sight-singing."
+   - Read patterns you know, and keep the beat **[correct]** · Feedback: "Names help at first.
+     Reading patterns kept Merc on the beat."
+   - They're right: name each note, then sing it · Feedback: "Then each note falls further behind
+     while the beat runs on. Try Step 1 again."
+   - Sing only tunes you've heard before · Feedback: "Then it wouldn't be sight-singing."
 2. On the staff, two notes side by side on the same line, with no curve joining them, are...
-   - One note, sung twice **[correct]** · Feedback: "A repeated note: the same line, sung again."
-   - A step · Feedback: "A step moves to the next line or space. Try Step 2 again."
-   - One long note · Feedback: "Only a tie, Lesson 17's curve, joins two notes into one sound."
+   - The same note, sung twice **[correct]** · Feedback: "A repeated note: the same line, sung
+     again."
+   - A step to the next place · Feedback: "A step moves to the next line or space. Try Step 2 again."
+   - One note, held for both beats · Feedback: "Only a tie, Lesson 17's curve, joins two notes into
+     one sound."
 3. Why does the click count in a bar before you sing?
-   - To set the tempo before the first note **[correct]** · Feedback: "Four clicks, and you know how
-     fast the beat goes."
-   - To give you do · Feedback: "Do comes from the note played first. The count-in sets the tempo.
-     Try Step 3 again."
+   - To set the tempo **[correct]** · Feedback: "Four clicks, and you know how fast the beat goes."
+   - To give you the first note · Feedback: "Do comes from the note played first. The count-in sets
+     the tempo. Try Step 3 again."
    - To warm up your voice · Feedback: "It's clicks, not singing: it sets how fast the beat goes."
 4. Listen. [Play] What changed the second time?
-   - Only the loudness **[correct]** · Feedback: "The same five notes, p, then f."
-   - The notes went higher · Feedback: "The same notes both times: louder never means higher. Try
+   - Only the loudness **[correct]** · Feedback: "The same three notes, f, then p."
+   - The notes went lower · Feedback: "The same notes both times: quieter never means lower. Try
      Step 4 again."
    - The tempo · Feedback: "The notes came just as fast both times."
 
-(Question 4's play: do, mi, so, mi, do, quiet, then the same five notes, loud, in the learner's
-octave. Its button reads "Play", so it names neither loudness: FACTS 83.)
+(Question 4's play: so, fa, mi, loud, then after a beat the same three notes, quiet, in quarter
+notes at 60 BPM in the learner's octave. It is not the four words' clip, so the ear answers, not the
+memory of a labelled sound, and its button reads "Play", so it names neither loudness: FACTS 83.)
 
 ## Wrap
 
@@ -344,9 +368,9 @@ without stopping on every note.
 - Eyebrow: Practise in MercuryPitch
 - Title: Sight-Singing
 - Text: Sight-Singing reads pitch, not rhythm: it writes six notes it picks itself, with no note
-  lengths and no beat, and gives you up to eight seconds to hold each one. It picks them in the key
-  it shows and the voice range saved in Settings: set yours first, under Singing Voice Range. It
-  plays nothing first.
+  lengths and no beat, and moves on once you've held a note for about half a second, or after eight
+  seconds. It picks them in the key it shows and the voice range saved in Settings: set yours first,
+  under Singing Voice Range. It plays nothing first.
   It writes only the treble clef, so a lower voice reads below it, on ledger lines, and it wants each
   note in the octave written. It prints each note's name under it: read the staff, not the names.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
@@ -408,7 +432,8 @@ Lesson 16's, so are its words.
 | Explorer    | Season 2 · Lesson 18                                               | The season, mapped                 |
 
 The steps' heading is the lesson's name, as on Lessons 15 and 16's pages, and its line names the
-two objects: neither names a pattern or a number of things read (FACTS 1a). Sing it's line is true
+one object, Lesson 16's staff over Lesson 17's beat grid: neither says what reading note by note
+costs (FACTS 1a). Sing it's line is true
 here in full, since the checkpoint reads every note in any octave. The explorer's line above its
 heading is the masthead's, "Season 2 · Lesson 18" (SEASON-2 § 7 item 1), as on Lessons 15, 16, 17,
 21 and 23. Its line under the heading is Lesson 1's, "Each lesson's closing question opens the next.
@@ -458,20 +483,30 @@ above; nothing waits on the coach to be written.
 - **Reading it through first**, new: "First, read it through and hear it inside." It follows
   Lesson 16's "hear it inside" and the exam's short silent look at the music before a singer sings
   (FACTS 61).
+- **The cursor that won't wait**, new: "This time the cursor won't wait for you: it moves on the
+  beat, and nothing plays while you sing." It says where Lesson 16's rule stops, where the next note
+  lit once the voice had held the last (FACTS 63).
+- **A note that slips**, new: "If a note slips, come in on the next one." Each note is heard in its
+  own beats, so a slip costs only that note (FACTS 52).
+- **The take's status**, new: "Your turn: sing in time with the cursor.", shown and announced from
+  the first beat of bar 1 to the take's end (FACTS 52).
 - **The start**: Merc sings do for 1.0 s on "ooh", or Tavi an octave higher for the higher voice;
-  after 0.4 s the click counts in one bar at 60 BPM, four clicks with beat 1 higher, 4.0 s; the take
-  opens on the next beat. No tonic triad: tune 1 opens on do, mi and so, which the triad would sing
-  (FACTS 49).
+  after 0.4 s the click counts in one bar at 60 BPM, four clicks with beat 1 higher, 4.0 s; the
+  singing starts on the next beat. No tonic triad, as the card asks: Lesson 16's triad would sing
+  tune 1's last three notes, so, mi and do (FACTS 49).
 - **The two tunes**, two bars of 4/4 each at 60 BPM, quarter and half notes, 8 s of singing each, on
   the syllables or on "ooh", with the house on do and the syllables hidden, and a Names switch to
-  show them. Tune 1, do mi so so, mi re do (half): lower G3 B3 D4 D4, B3 A3 G3, in the bass clef;
-  higher G4 B4 D5 D5, B4 A4 G4, in the treble. Tune 2, do do mi mi, so (half) do (half): lower G3
-  G3 B3 B3, D4 G3; higher G4 G4 B4 B4, D5 G4. Neither is played anywhere on the page before its take
-  ends or the singing ends (FACTS 50).
-- **To confirm: the breath mark's place**, at the bar line, after bar 1's last note: after the
-  second so in tune 1, after the second mi in tune 2, each a quarter note on beat 4. The breath takes
-  its time from that note, so bar 2 still starts on its beat; Your turn says "Breathe at the breath
-  mark." The coach may move it (FACTS 50).
+  show them. Tune 1, do re mi so, so mi do (half): lower G3 A3 B3 D4, D4 B3 G3, in the bass clef;
+  higher G4 A4 B4 D5, D5 B4 G4, in the treble. Tune 2, do do mi mi, so (half) do (half): lower G3
+  G3 B3 B3, D4 G3; higher G4 G4 B4 B4, D5 G4. So, the top, is a quarter either side of tune 1's
+  breath and a half note held two beats in tune 2: D4 for the lower voice, two semitones under the
+  bass preset's top. Neither tune is played anywhere on the page before its take ends or the
+  singing ends (FACTS 50, 51).
+- **To confirm: the breath mark's place**, at the bar line, after bar 1's last note: after so in
+  tune 1 and after the second mi in tune 2, each a quarter note on beat 4. Each bar is a short phrase
+  that ends on so, mi or do, so the breath comes at a phrase's end, as Lesson 14 taught. The breath
+  takes its time from that note, which keeps about 0.6 s of sound, so bar 2 still starts on its beat;
+  Your turn says "Breathe at the breath mark." The coach may move it (FACTS 30, 50).
 - **To confirm: nothing plays during a take.** After the count-in, the cursor and the beat grid
   keep the beat in silence, so no click reaches the microphone; the exam's tune is unaccompanied too
   (FACTS 52).
@@ -497,16 +532,26 @@ above; nothing waits on the coach to be written.
   note is mi, B3 or B4, with at least 5 semitones to spare. Each note is heard in its own beats, so
   a note left out reads "We didn't hear a steady note there." and changes nothing else (FACTS 51,
   52).
-- **To confirm: the pass rule.** Each note is read from the voice heard inside its own beats, from a
-  quarter of a beat before its first beat to a quarter of a beat after its last: a note counts as
-  in the band once the voice has been within 60 cents of it, in any octave, for 0.45 s in all inside
-  that window, Sight-Singing's 450 ms and 60 cents and Lesson 16's rule. Timing is not scored. The
-  window's edges are set in the lab on a phone; the coach may narrow the band (FACTS 52).
+- **To confirm: how each note is read.** Nothing moves on it and nothing passes: it only picks the
+  voice each note's line is read from.
+  - The beats are counted from the singer's first note: the first stretch of voice, if it starts
+    between a quarter of a beat early and two beats late, moves every note's beats with it, as The
+    Chart's first tap does, so coming in late moves nothing else.
+  - Each note is listened for from a quarter of a beat before its beats to a quarter of a beat after.
+    It is heard on its note once the voice has been within 60 cents of it, in any octave, for 0.45 s
+    in all, where time outside takes back half its length: Sight-Singing's 450 ms and 60 cents, and
+    Lesson 16's rule. Sixty cents is Voice Mirror's "close" edge, wider than Season 1's 35-cent band
+    on purpose, since the task is reading; the lines still say "in the band" only within 35.
+  - A note not heard on its note is read only from the voice inside its own beats. If that is too
+    little, or is another written note sung early or late, its line is "We didn't hear a steady note
+    there.", never a pitch gap: a note left out, or sung far late, is never read as out of tune.
+  - Timing is not scored. The values are new for a quarter note at 60 BPM and are set in the lab on
+    a phone; the coach may narrow the band (FACTS 52, 54).
 - **To confirm: the pitch line hidden during a take**, shown under the staff after each tune ("sing
   first, then see", playbook rule 23), as on Lesson 16's page (FACTS 53).
 - **The lines**, one a note, Lesson 16's: "Right in the middle", "In the band", "Close" or "About a
   semitone below, nearer a different note", with Lesson 3's octave line, or "We didn't hear a steady
-  note there."; no advice, no count and no score (FACTS 54).
+  note there."; no advice, no count, no score and no word on timing (FACTS 54).
 
 ### The checkpoint: dose, takes and endings
 
@@ -514,8 +559,9 @@ above; nothing waits on the coach to be written.
   counting a take with no voice; the second tune only after "Easy" or "Workable" on the first, with
   Stop here beside it; never another take after "Effortful" or "Uncomfortable" (FACTS 56, 57).
 - No microphone: Lesson 16's line with this task, "No microphone? Play the start, read and sing
-  anyway, then play Merc's tunes to check. Nothing listens.", and Play the start, which sings do and
-  counts in, then keeps the beat silently through the two bars (FACTS 58).
+  anyway, then play Merc's tunes to check. Nothing listens.", and a Play the start under each tune,
+  which sings do and counts in, then keeps the beat silently through that tune's two bars (FACTS
+  58).
 - How did that feel? and its endings: Lesson 3's four answers after each tune with voice. The new
   Easy and Workable lines name the task, never the voice: "Now another tune you've never heard." and
   "Two tunes, read in time from the page." After "Effortful", no more tunes, Lesson 3's gentle line
@@ -526,15 +572,16 @@ above; nothing waits on the coach to be written.
 - The rest card, Lesson 12's form: "Rest today. Sight-Singing will be here when your voice feels
   comfortable: mercurypitch.com/pitch-training, then tap Sight-Singing.", then The Chart, which asks
   for no voice. The coach confirms its wording (FACTS 60).
-- The practice card: Sight-Singing, which waits for each note with no beat, plays nothing first,
-  writes the treble clef only and scores the written octave, said on the card with its care lines
-  (FACTS 65 to 68).
+- The practice card: Sight-Singing, which moves on once a note is held for about half a second, or
+  after eight seconds, with no beat, plays nothing first, writes the treble clef only and scores the
+  written octave, said on the card with its care lines. The card asks for no hold: half a second is
+  when the drill moves on (FACTS 65 to 68).
 - No warm-up: two tunes of two bars inside every preset need none, as Lesson 16's phrases have none;
   the coach may add Lesson 3's (FACTS 62).
 
 ### Listening only
 
-- The sounds played only for listening: Merc's read in the cold open, the four words' plays, the
+- The sounds played only for listening: Merc's two reads in the cold open, the four words' plays, the
   steps' plays, quick check 4's play, and Merc's two tunes after the checkpoint or on the
   listen-only path (FACTS 76 to 83).
 
