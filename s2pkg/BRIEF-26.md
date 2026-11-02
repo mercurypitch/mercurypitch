@@ -7,10 +7,15 @@ there). Scratch copy folder: `.../scratchpad/s2pkg/26/`. Hand-back note:
 Read the shared brief first: `.../scratchpad/s2pkg/BRIEF-writer-common.md`.
 
 A voice lesson (S20b, new; T23 light), scored on the page. It needs Lessons 12 and 24 (SEASON-2
-§ 4.3), both committed on the branch. Lesson 24 is your closest model and the page you build on (its
-drone, headphones prompt, scoring band, six-preset table and coach's list); Lesson 23's two notes
-held together, Season 1's Lesson 6 ("Twinkle", moving a tune) and Lesson 12 (the chords, ii) and
-Lesson 2's ring are the rest. Lesson 28 builds on yours: it sings one part of a two-part song with
+§ 4.3), both committed on the branch (Lesson 24 at `b7af3ec27`). Lesson 24 is your closest model
+and the page you build on (its drone, headphones prompt, scoring band, six-preset table and coach's
+list). Its review settled things you reuse rather than respecify: the headphones line with its
+volume half, the quiet check before every set (any voiced run of 0.3 s or more fails it, and its
+line says what was heard), every note set against the drone starting on the drone's audio time,
+holds read on Lesson 22's centre-line reader (cited, not restated), Move do higher only, sets of
+holds with their rules (Toys 6), and sound claims worked out as arithmetic in FACTS. Its quick check
+1 is the one your recall asks. The other models: Lesson 23's two notes held together, Season 1's
+Lesson 6 ("Twinkle", moving a tune) and Lesson 12 (the chords, ii) and Lesson 2's ring. Lesson 28 builds on yours: it sings one part of a two-part song with
 the other part played, so whatever you specify for playing a part with the learner, the kit should
 be able to reuse. The plan was verified at `b803c7d43`; check every app claim again at
 `c60f0fdcb`, above all Jam's Harmony Stack (`src/lib/jam/jam-modes.ts`), Drone Intonation's thirds

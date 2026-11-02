@@ -2918,3 +2918,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - BRIEF-writer-common now v8 (head 9ae0e9162; models add L25; four new review lessons: Wrap free play holds, step text as reveal elements, plays worked out, drill cards). Backup .v7. BRIEF-27 notes L25 committed (.v1 backup).
 - W27 spawned 08:3x (BRIEF-27). W24 fix pass still running.
 - Next: W24 reply -> lead review L24 -> commit -> spawn W26 (BRIEF-26 already has L25's bound tease alt). Then R27 when W27 hands back; 28 after 26.
+
+## 2 Nov 09:0x UTC — L24 COMMITTED b7af3ec27 (pushed); W26 held for the rate limit
+- L24 lead review: checks clean (plan-cites 0, 305 cites; whole plan 200; prettier whitespace-only on all three, words verified; LESSON.md:152-154 still the predict). Accepted the writer's two "taken differently" items: B2 cents-wave refinement (lead re-ran: straight 0.357 @0.745 Hz; ±50c@6 cents wave 0.112 @0.6075 Hz, 31 %; s2pkg/24-lead/beat3.py) and S7's feelings question after a partly sung set.
+- Shared entries: s2pkg/shared-rest/L24-entries.md (S20a row, L23 FACTS 5 quote, Drone Intonation app items).
+- BRIEF-writer-common v9 (head b7af3ec27; models add L24). BRIEF-26 points at what L24 settled (.v2 backup).
+- 09:05 get_session: rate limit "allowed_warning" (resets ~10:40 UTC) -> W26 NOT spawned (owner rule: only while "allowed"). send_later 10:45 (trig_01NsaGoJdJD8D9wATkcPs5vn) spawns W26 (and R27 if W27 is back) once "allowed".
+- In flight: W27 (spawned 08:3x). Fallback trigger 09:40 for W27 (trig_01Ccuz2Qtjapvh1L24j6iBDZ; its L24 half is done).
+- Next: W27 hand-back -> R27 (when allowed); W26 at/after 10:45; 28 after 26; then the shared commit (#229).

@@ -24,20 +24,22 @@ says what it holds and what it scores against (answer 4).
 The page draws no staff: its one object is Lesson 5's band chart with a drone held under it, so
 nothing here is written before it is heard, and every example plays (SEASON-2 § 1.4 item 1). No
 decorative staff or clef appears (§ 1.5 item 7). Every beat the page plays is synthesised at its
-exact frequency, from tones with harmonics and no vibrato, since a vibrato hides beats (FACTS 37).
-The cold open and the steps play on A3 for everyone; Sing it plays in D, in the learner's voice
-(FACTS 8). "The piano" on this page means the series' keyboard and the app, whose tuning is equal
-temperament (FACTS 22); "beat" means the throb two close notes make, never Lesson 8's beat that a
-learner taps (FACTS 12).
+exact frequency, from tones with harmonics and no vibrato but Step 4's wave, since a wave makes
+beats far harder to hear (FACTS 37, 38). The cold open and the steps play on A3 for everyone; Sing
+it plays in D, in the learner's voice, or higher where Move do takes it (FACTS 8, 57). "The piano"
+on this page means the series' keyboard and the app, whose tuning is equal temperament (FACTS 22);
+"beat" means the throb two close notes make, never Lesson 8's beat that a learner taps (FACTS
+12).
 
 Where this page shares a line with Season 1, it is Lesson 5's text as its page stands, which is
 Lesson 3's where the two share it, word for word: the comfort check, the voice choice, the hold's
 briefing (with "the drone" for "Merc's note") and ring, the stop line, the speaking-volume line, the
 reading lines, the four feelings with their lines and the doctor lines. "Just listen today" is
 Lesson 5's with "three notes over the drone" for "the note". The rest card is Lesson 10's form,
-which is Lesson 12's, with this page's address (FACTS 63). New lines: the headphones check, the
-quiet check, the holds' cues, "What this does" in this page's words, the ten-second holds' summary,
-in the form of Lesson 22's, and the sing-along's lines.
+which is Lesson 12's, with this page's address (FACTS 63). Move do is Lesson 20's control, with a
+line in its manner. New lines: the headphones check, with the volume, the quiet check, the holds'
+cues, "What this does" in this page's words, the ten-second holds' summary, in the form of Lesson
+22's, the sing-along's lines and the two held lines in Steps 1 and 3.
 
 Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
@@ -56,38 +58,48 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   on Lesson 23's card draws it chrome (FACTS 40, 42).
 - **The slide holds 224 Hz for 1.5 seconds first and 220 Hz for 2.5 seconds after**, so the throb is
   heard before the glide and the stillness after it (FACTS 44).
-- **Nothing sounds a predict's answer before its choice.** Step 1's toy, every play of the steps over
-  the drone, the Pure word's play and quick check 4's play wait for the cold open's choice; Step 2's
-  predict waits for it too, and its two plays, its taps, its chord, Steps 3 and 4's plays and the
-  listening path's play for its own choice; the first-visit tour waits for the cold open's choice
-  (FACTS 1a, 46, 47).
+- **Nothing sounds or states a predict's answer before its choice.** Step 1's toy, every play of the
+  steps over the drone, the Pure word's play and quick check 4's play wait for the cold open's
+  choice; Step 2's predict waits for it too, and its two plays, its taps, its chord, Steps 3 and 4's
+  plays and the listening path's play for its own choice. Step 1's text, Try and Notice, which state
+  the cold open's answer, show with that predict's reveal, and Step 3's Tavi line, text, Try and
+  Notice, which lean on Step 2's answer, with Step 2's reveal, each under a held line until then; the
+  first-visit tour waits for the cold open's choice (FACTS 1a, 46, 47).
 - **Step 2 adds the chord**: do, mi and so together over the drone, pure and the piano's, so the page
-  makes Lesson 10's major chord, which Lesson 25's alternative tease names (FACTS 5b, 30).
+  makes Lesson 10's major chord, which Lesson 25's alternative tease names. The plan's Go deeper
+  drawer, "The formula", is cut for length: the step's text names the two harmonics and their gap
+  (FACTS 3, 5b, 27, 30).
 - **Step 3's heading names no third**, "Which should I sing: the piano's note, or the pure one?",
   since the lesson menu lists every heading from the first paint and "third" there leans on Step 2's
-  answer; Tavi's line names it after Step 2's reveal. Drone Intonation's score is said once, on the
-  practice card, not in Step 3 (FACTS 1a, 48, 60).
-- **Step 4's toy plays the piano's fifth with a wave and straight**, which the step's point needs,
-  in place of the plan's last state, a second singer's line, which is Lesson 26's to draw. The
-  mix-up card leaves out the quintet's rehearsals, and Step 4 has no Go deeper: "Lock and ring" has
-  the page's weakest source, could read as a rule against vibrato, and the page needs its words
-  (FACTS 3, 32, 38, 39).
-- **Sing it**: a quiet check before the first hold, the lab test's guard; Merc gives each note alone
-  and straight before the drone comes in; the holds are read on the middle of the line, so a wave
-  counts in full; "How did that feel?" after each set of holds; no Move do and no other octave
+  answer; Tavi's line, which names it, shows with Step 2's reveal. Drone Intonation's score is said
+  once, on the practice card, not in Step 3 (FACTS 1a, 48, 60).
+- **Step 4's toy plays the piano's fifth with a singer's wide wave and straight**: Lesson 22's
+  cold-open wave, 50 cents either side at six swings a second, which leaves the even throb about a
+  third as strong under a flutter, where Merc's usual wave would leave most of it. The plan's last
+  state, a second singer's line, is Lesson 26's to draw, and Step 4 draws no band, since the wave
+  swings past both its edges. The mix-up card leaves out the quintet's rehearsals, and Step 4 has no
+  Go deeper: "Lock and ring" has the page's weakest source, could read as a rule against vibrato,
+  and the page needs its words (FACTS 3, 32, 38 to 40).
+- **Sing it**: a quiet check before each set, the lab test's guard, which any note it hears fails;
+  Merc gives each note alone and straight before the drone comes in; the holds are read on the
+  middle of the line, so a wave counts in full; "How did that feel?" after each set; Move do goes
+  higher only, up to five semitones, with the drone, as on Lesson 20's page, and no other octave is
   offered; the ten-second holds for so and mi follow Easy or Workable, as Lesson 5's fifteen-second
-  hold does; the no-headphones path is the sing-along, in its own words (FACTS 49 to 59).
+  hold does; the no-headphones path is the sing-along, in its own words, sung again once a visit, as
+  Season 1's sing-alongs offer Again (FACTS 49 to 59).
 - **The chips** read "Microphone optional" and "Headphones optional", where the plan had
   "Headphones", and name all three prerequisites: the page works without either, and asks for both
-  only for the scored holds (FACTS 2). The sound gate is Lesson 5's line with this lesson's subject
-  and a clause on headphones (FACTS 6).
+  only for the scored holds (FACTS 2). The sound gate is Lesson 5's line with this lesson's subject;
+  the plan's line on headphones is left to Sing it's headphones check, where it matters (FACTS 6).
 - **The quick check's feedback** loses "most clearly", which no source supports, and is reworded to
   fit the page (FACTS 74 to 77).
 - **The practice card** says what its link opens, the two thirds only, what it scores against, what
-  a pure major third scores and that its drone is a plain tone by default; it leaves out Lesson 10's
-  line on the drill's sharps, which Lesson 10's card has given; Beat Hunt is the second drill (FACTS
-  60 to 64).
-- **The next-lesson tease** is the lead's line, with the plan's as its alternative (FACTS 5b).
+  a pure major third scores in a round, and that headphones help there too, since its drone plays
+  while it listens; it leaves out Lesson 10's line on the drill's sharps, which Lesson 10's card has
+  given, and the drill's run score, which tops out at 80, an app fix; Beat Hunt is the second drill
+  (FACTS 60 to 64, 66).
+- **The next-lesson tease** is the lead's line, with the plan's as its alternative, which leans
+  softly on Lesson 25's predict (FACTS 5b).
 - **The promise** says "over one" for the plan's "above one", since do is the drone's own note
   (FACTS 1).
 
@@ -118,8 +130,7 @@ stopping or which interval throbs faster (FACTS 1a).]_
 ## Sound gate
 
 > This lesson is about two notes held together, and your voice. Tap to turn the sound on: nothing
-> plays until you press play. We ask for the microphone only if you choose to sing, and headphones
-> keep the drone out of it.
+> plays until you press play. We ask for the microphone only if you choose to sing.
 
 ## Cold open: predict
 
@@ -155,8 +166,8 @@ speeds up"; the hint then reads "Play either of them again.")
 
 Reveal: It slows, then stops. Each throb is a beat, and two close notes beat as many times a second
 as the difference between their frequencies: 224 against 220 four times, and 220 against 220 not
-at all. So against a drone, you hear in tune when the beats stop. (Pushed closer, two notes
-might sound busier, which made "speeds up" a fair guess.)
+at all. Against a drone, you hear in tune when the beats stop. (Pushed closer, two notes might
+sound busier, which made "speeds up" a fair guess.)
 
 ## Recall from Lessons 10 and 23
 
@@ -183,8 +194,8 @@ objects, so the words below are theirs. Neither says anything about beats, tunin
   on A3]
 - **Harmonic**: one of the frequencies inside a note, at 1, 2, 3 or more times the note's own.
   [Play: A3, then its harmonics]
-- **Pure**: an interval whose two frequencies make an exact ratio: 3 to 2 for a fifth, 5 to 4 for a
-  major third. [Play: a pure fifth on A3]
+- **Pure**: tuned to an exact ratio of small whole numbers: 3 to 2 for a fifth, 5 to 4 for a major
+  third. [Play: a pure fifth on A3]
 - **Equal-tempered**: tuned with every semitone the same size, 100 cents: the piano's tuning here,
   and the app's. [Play: A3 up to A4 in semitones]
 
@@ -200,11 +211,14 @@ FACTS 1a, 71.)
 [Play 222 against 220] Two close notes beat: their sound swells and fades as their waves fall in
 and out of step, a throb in loudness, not Lesson 8's beat that you tap. The closer the notes, the
 slower the beats: 221 against 220 beats once a second, 220.5 once every two seconds. [Play the
-octave] It works an octave apart too: A4 at 441 Hz beats once a second against the drone, through
-the drone's second harmonic, 440 Hz.
+octave] It works an octave apart too: 441 Hz beats once a second against the drone's second
+harmonic, 440 Hz.
 
-**Try:** drag the top note until the throb stops. Then switch to the octave and do it again.
+**Try:** drag the top note until the throb stops, then do it again on the octave.
 **Notice:** the slower it throbs, the closer you are. In tune, it's still.
+
+(Held until the cold open's reveal, the text above, its two plays, Try and Notice show with it.
+Until then their place reads "Hear the slide at the top to unlock this step." FACTS 1a, 46.)
 
 _Toy: the drone chart in its first state: the drone band on A3 and the top note as a chrome line,
 dragged between 216 and 224 Hz, or with Octave between 432 and 448 Hz; the band and the line
@@ -213,9 +227,9 @@ brighten and dim at the beat rate, and a readout says it: "2 beats a second", "a
 cold open's choice: until then its controls are disabled, under the line "Choose an answer at the
 top to unlock this figure."_
 
-## Step 2 of 4: Do notes that aren't the same beat too?
+## Step 2 of 4: Do two different notes throb too?
 
-**Predict:** Merc plays the piano's fifth above the drone, then its major third. Which beats
+**Predict:** Merc plays the piano's fifth above the drone, then its major third. Which throbs
 faster?
 [ The fifth ] [ The major third ]
 
@@ -227,44 +241,40 @@ brightening and dimming at the beat rate, and the hint reads "Locked in. Play bo
 play that sound off kept silent sets the hint to "Sound is off: nothing played. Turn sound on, then
 play it again." The reveal waits until both have been heard to their end, and opens on "You said:
 the fifth" or "You said: the major third"; the hint then reads "Play either of them again." Until
-the reveal the step shows only its predict: the reveal, the step's text, Try, Notice and the Go
-deeper drawer appear with it.)
+the reveal the step shows only its predict: the reveal, the step's text, Try and Notice appear with
+it, and so do Step 3's Tavi line, text, Try and Notice.)
 
 Reveal: The major third, much faster. (The fifth is the wider interval, which made it a fair
 guess.)
 
 Harmonics beat too (Lesson 13). In a pure fifth, 3 to 2, the top note's second harmonic meets the
-drone's third at 660 Hz: nothing beats. The piano's fifth is a hair narrow, so they sit 0.75 Hz
-apart and beat slowly. Its third, 0.8 % wider than pure, beats almost nine times a second, near
-1,100 Hz.
+drone's third at 660 Hz: nothing beats. The piano's fifth is a hair narrow: they sit 0.75 Hz apart
+and beat slowly. Its third, 0.8 % wider than pure, beats almost nine times a second, near 1,100 Hz.
 
 **Try:** play so and mi both ways, then all three, pure.
-**Notice:** pure, do, mi and so, Lesson 10's major chord, ring still.
+**Notice:** tuned pure, do, mi and so, Lesson 10's major chord, ring still.
 
 _Toy: the drone chart with do, mi and so as three beads on its left edge, A3, C♯4 and E4, Lesson
 10's three notes; a tap on so or mi plays it over the drone; Piano · Pure moves the top note between
 the piano's pitch and the pure one, marked by a dashed tick, labelled "pure", where its harmonics
-meet the drone's; Play all three plays do, mi and so together, in the switch's tuning. The
+meet the drone's; Play all three plays the drone, do, with mi and so, in the switch's tuning. The
 predict's two plays, the taps, the switch and Play all three wait for this step's choice._
-
-> **Go deeper**
->
-> - **The formula.** The beats a second are the gap between the two harmonics that nearly meet.
->   Above A3, the piano's fifth: 2 × 329.63 against 3 × 220, 0.75. Its third: 4 × 277.18 against
->   5 × 220, 8.73. A higher drone beats faster: above D4, that third beats about 11.7 times a
->   second.
 
 ## Step 3 of 4: Which should I sing: the piano's note, or the pure one?
 
-Tavi: "So should I sing the piano's major third, or the pure one?"
+Tavi: "Should I sing the piano's major third, or the pure one?"
 
-[Play the piano's mi] [Play pure mi] Either lands in Sing it's band, Lesson 5's, 35 cents either
-side of the piano's note. A pure major third is 386 cents, 14 below the piano's 400; a pure fifth is
-2 above the piano's 700. One a cappella quintet sang major thirds that averaged 392 cents, between
-the two, with examples of both.
+[Play the piano's mi] [Play pure mi] Either lands in Sing it's band, 35 cents either side of the
+piano's note. A pure major third is 386 cents, 14 below the piano's 400; a pure fifth is 2 above the
+piano's 700. One a cappella quintet's major thirds averaged 392 cents, between the two, with
+examples of both.
 
 **Try:** drag mi from the piano's tick down to the pure one.
 **Notice:** both sit in the band, but only the pure one is still.
+
+(Held until Step 2's reveal, Tavi's line, the text above, its two plays, Try and Notice show with
+it. Until then their place reads "Hear Step 2's two intervals to unlock this step." FACTS 1a, 46,
+48.)
 
 _Toy: the drone chart with Lesson 5's amber band on mi, C♯4, 35 cents either side of the piano's
 note, two ticks across it, "piano" at its centre and a dashed "pure" 14 cents below, and the drone
@@ -274,25 +284,26 @@ wait for Step 2's choice, since the piano's mi over the drone answers it._
 ## Step 4 of 4: To hold my part, should I shut out the other one?
 
 > **Common mix-up:** "To hold your part, shut out the other voice."
-> **Why it seems right:** in one study, singers' own notes were more accurate alone, and singing a
-> different part from a partner was less accurate than singing the same one.
+> **Why it seems right:** in one study, singers were more accurate alone than with a partner, and
+> more accurate singing the same part than a different one.
 > **The evidence:** the same singers, hearing each other, adjusted "to mitigate a partner's error
 > and preserve harmonic intervals". Together, the harmony between them was closer than when each
 > sang alone.
-> **The better idea:** listen to the other part. Its beats tell you how close you are.
+> **The better idea:** listen to the other part. The beats between you tell you how close you are.
 
-[Play with a wave] [Play straight] Listening needs something to hear. A wave in the top note swings
-its harmonics past the drone's, and the even throb is lost. Against a drone, a straight note
-lets you hear the beats best. That's a way to listen, not a rule about singing: in Sing it, if a
-wave comes, that's fine.
+[Play with a wave] [Play straight] A singer's wide wave swings the top note's harmonics past the
+drone's: the even throb weakens under a flutter. Against a drone, a straight note lets you hear the
+beats best. That's a way to listen, not a rule about singing: in Sing it, if a wave comes, that's
+fine.
 
 **Try:** play the piano's fifth with a wave, then straight.
-**Notice:** straight, it throbs evenly. With the wave, that even throb is gone.
+**Notice:** straight, the throb is even. With the wave, it's much fainter and harder to follow.
 
-_Toy: the drone chart with the piano's fifth over the drone: Lesson 5's band on so, E4, and the
-drone pinned below the window; Play with a wave, the top note with Merc's usual wave, 5.5 swings a
-second, 14 cents either side, and Play straight, 4 seconds each, the brightness following the
-harmonics' difference as it moves. The toy waits for Step 2's choice, since the piano's fifth over
+_Toy: the drone chart with the piano's fifth over the drone: the top note's chrome line on so, E4,
+across a solid tick labelled "piano", with no band, and the drone pinned below the window; Play
+with a wave, the top note with a singer's wide wave, Lesson 22's cold-open wave, 50 cents either
+side at six swings a second, and Play straight, 4 seconds each, the brightness following the two
+harmonics' envelope as it moves. The toy waits for Step 2's choice, since the piano's fifth over
 the drone answers it._
 
 ## Sing it: three notes over a drone
@@ -310,10 +321,11 @@ or an ear, nose and throat specialist). If it's very painful, or breathing or sw
 get help straight away."
 
 (Under the line, Play the drone and Merc's notes, in the chosen voice, again on each tap: the
-sing-along's sounds, below, with no singing asked, each note alone, then the drone with it for 5
-seconds. Nothing listens, and the Wrap shows the rest card. Merc's so and mi over the drone are the
-piano's fifth and third, so the play waits for Step 2's choice: until then it is disabled, under
-the line "Answer Step 2's question first to hear this.")
+sing-along's sounds, below, with no singing asked, each note alone, then held straight with the
+drone for 5 seconds. Nothing listens; the headphones check, Start and the sing-along do not show,
+and the Wrap shows the rest card. Merc's so and mi over the drone are the piano's fifth and third,
+so the play waits for Step 2's choice: until then it is disabled, under the line "Answer Step 2's
+question first to hear this.")
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
 [ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
@@ -323,7 +335,16 @@ voice you chose before, or change it:" instead. With none stored, this choice co
 answer above and before anything plays, because it picks the Merc who sings and the drone's octave,
 as in Lessons 5 to 7 and 22.)
 
-Put on headphones, so the drone stays out of the microphone.
+If do feels low, move it higher.
+[ Move do: lower · higher ]
+
+(After "I'm comfortable: let's sing" only. Do starts on D every visit and goes up to five
+semitones higher, to G; "lower" rests at D and is the way back. Do, its drone, Merc's notes and the
+band move together, before Start, between sets and before the sing-along, never during a set: FACTS
+57.)
+
+Put on headphones to keep the drone out of the microphone, with the volume low enough to hear
+yourself.
 [ I have headphones on ] [ No headphones ]
 
 (No headphones opens the sing-along, below, and no microphone is asked for.)
@@ -338,10 +359,11 @@ Put on headphones, so the drone stays out of the microphone.
 First, stay quiet for two seconds while the drone plays: the page checks that the microphone can't
 hear it.
 
-(If the microphone hears the drone, the holds do not open, the line reads "The microphone can hear
-the drone, so nothing will listen this time.", and the sing-along, below, opens in their place, as
-it does after No headphones and with no microphone; Start stays under it, so the check can run
-again. The check runs again before the ten-second holds.)
+(If the microphone hears a note, a voiced run of 0.3 seconds or more at any pitch, the holds do not
+open, the line reads "The microphone heard a note during the drone. Check your headphones, then
+press Start again and stay quiet.", and the sing-along, below, opens in their place, as it
+does after No headphones and with no microphone; Start stays under it, so the check can run again.
+The check runs before every set, Again's included.)
 
 **Your turn:** before each hold, Merc, or Tavi for the higher voice, sings the note alone: do, then
 so, then mi. Then the drone comes in on do, and the hold goes **Listen · Breathe · Sing**. Listen to
@@ -354,7 +376,8 @@ Stop immediately if anything feels uncomfortable.
 
 (During a take the drone sounds and nothing else plays; the line draws, and nothing says whether it
 is in the band until the hold ends. Then the drone stops, and the next note is sung alone. The
-drone sits on D3 for the lower voice and D4 for the higher: FACTS 56.)
+drone sits on do: D3 for the lower voice and D4 for the higher, or up to G3 and G4 where Move do
+takes it: FACTS 56, 57.)
 
 After each hold, one line, such as:
 
@@ -374,18 +397,22 @@ After the three holds, **How did that feel?** [ Easy ] [ Workable ] [ Effortful 
 - Uncomfortable: no more holds. "Thanks for saying so. That's enough singing for today: rest your
   voice.", and the doctor lines.
 
-**The sing-along**, with no headphones or no microphone: Merc sings each note alone, then the drone
-plays with you for five seconds. Nothing listens. [ Start the sing-along ]
+(For no headphones, no microphone, a refused microphone or a quiet check that heard a note.)
+
+**The sing-along:** Merc sings each note alone, then the drone plays with you for five seconds.
+Nothing listens. [ Start the sing-along ]
 
 Then **How did that feel?**, with the endings above; Easy or Workable adds "A unison, a fifth and a
 major third, each over the drone." [ Sing along again ]
+
+(Sing along again is offered once a visit, as Season 1's sing-alongs offer Again: FACTS 59.)
 
 ## Quick check
 
 _[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
 not half. The page puts "Right." or "Not quite." before each feedback line. Question 4's Play
-waits for the cold open's choice: until then it is disabled, under the line "Answer the question
-at the top first to hear this."]_
+waits for the cold open's choice: until then it is disabled, under the line "Choose an answer at
+the top to hear this."]_
 
 1. Two notes, 220 Hz and 223 Hz, sound together. How many times a second do they beat?
    - 3 **[correct]** · Feedback: "Beats a second are the difference: 223 − 220."
@@ -395,8 +422,8 @@ at the top first to hear this."]_
    - Both beat, the third much faster **[correct]** · Feedback: "The piano's third is 0.8 % wide;
      its fifth only a hair narrow."
    - Only the fifth beats · Feedback: "The third beats too, and much faster. Try Step 2 again."
-   - Neither beats: the piano is in tune · Feedback: "The piano's fifth and third aren't pure, so
-     both beat."
+   - Neither beats: the piano is in tune · Feedback: "The piano's fifth and third aren't pure: both
+     beat."
 3. You hold a harmony note while another singer sings a different part. What helps keep the
    harmony together?
    - Listening to the other part **[correct]** · Feedback: "Singers who heard each other kept their
@@ -412,25 +439,25 @@ at the top first to hear this."]_
 
 ## Wrap
 
-- Two close notes beat as many times a second as their difference, and stop beating when they're
-  in tune.
+- Two close notes beat as many times a second as their difference, and stop when they're in tune.
 - Above a drone, the piano's fifth beats slowly and its major third fast; pure, both are still.
-- To hold a part, listen to the other one: its beats tell you how close you are.
+- To hold a part, listen to the other one: the beats between you tell you how close you are.
 
 **One-sentence challenge:** explain to a friend, in one sentence, how you can tell by ear that two
 held notes are in tune.
 
-**Practise it.** The practice card, in the version Sing it's ending picks:
+**Practise it.**
+
+(The practice card, in the version Sing it's ending picks.)
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Drone Intonation
-- Text: Drone Intonation holds a drone and shows you a note to sing above it, without playing that
-  note. This link opens it on the two thirds only: this lesson's so and do aren't in it. It scores
-  against the piano's tuning, so a pure major third, held throughout, scores about 79 a round. Its
-  drone is a plain tone by default, without the harmonics Step 2's beats come from. It wants each
-  note in the octave it asks for, not an octave away, so set your range in Settings first (under
-  Singing Voice Range). Sore, hoarse or unwell today? Just listen along. Sing at about
-  speaking volume, and stop immediately if anything feels uncomfortable.
+- Text: Drone Intonation holds a drone and shows you a note to sing above it, without playing it.
+  This link opens it on the two thirds only. It scores against the piano's tuning: a pure major
+  third, held throughout, scores about 79 a round. Headphones help here too: its drone plays while
+  it listens. It wants each note in the octave it asks for, not an octave away, so set your range in
+  Settings first (under Singing Voice Range). Sore, hoarse or unwell today? Just listen along. Sing
+  at about speaking volume, and stop immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/exercises/thirds-on-a-drone**
 - Second drill: For your ear, Ear Lab's Beat Hunt plays two pairs of tones, and you say which pair
   was beating. Free: **mercurypitch.com/ear-lab**, then tap Beat Hunt.
@@ -441,21 +468,26 @@ held notes are in tune.
 _[Editorial: the first address links `/exercises/thirds-on-a-drone?lesson=24` and the second
 `/ear-lab?lesson=24`. The page is not built before the lesson marker reads Season 2's numbers
 (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
-has no first-visit line (FACTS 64). When a slug for the fifth, the major third and the octave ships
-(SEASON-2 § 5.2 item 15), the link swaps to it, and the text's second sentence becomes "This link
-opens it on this lesson's fifth, major third and octave; do is the drone itself." When a pure-tuning
-option ships (item 15), the sentence on 79 goes. The rest version is Lesson 10's: Beat Hunt asks for
-no voice, so it stays (FACTS 63).]_
+has no first-visit line (FACTS 64). "About 79 a round" is a round's score, "Last round: 79%" on the
+drill's screen, not the run's, which tops out at 80 whatever the singing until the app reweights it
+(FACTS 60, 66). When a slug for the fifth, the major third and the octave ships (SEASON-2 § 5.2 item
+15), the link swaps to it, and the text's second sentence becomes "This link opens it on this
+lesson's fifth, major third and octave; do is the drone itself." When a pure-tuning option ships
+(item 15), the sentence on 79 goes. The headphones sentence stays while the drill's drone plays from
+the speakers as it listens; the card says nothing of its drone's timbre, a plain sine by default,
+which the app's item for a drone with harmonics would change (FACTS 51, 60, 66). The rest version is
+Lesson 10's: Beat Hunt asks for no voice, so it stays (FACTS 63).]_
 
 **Next lesson:** Lesson 25, Minor, properly. "Why does a minor key often raise one note just before
 it comes home?" One line above it, the tease: "A minor tune, played twice. The second ending changes
 one note."
 
 _[Editorial: the tease is the lead's line, Lesson 25's opening in miniature; Lesson 25's writer
-owns it and sets it on Lesson 25, and the lead binds it at review. The alternative, `plan`, is this
-lesson's planned line, "Do, mi and so made a major chord. Minor keys hide another change.", which
-the console can switch to; it is true of this page, whose Step 2 plays do, mi and so together over
-the drone, Lesson 10's major chord (FACTS 5b).]_
+owns it and sets it on Lesson 25, and the lead binds it. The alternative, `plan`, is this lesson's
+planned line, "Do, mi and so made a major chord. Minor keys hide another change.", which the
+console can switch to; it is true of this page, whose Step 2 plays do, mi and so together over the
+drone, Lesson 10's major chord, but it leans softly on Lesson 25's predict, which asks whether a
+raised note turns a minor chord major, so it is kept as an alternative only (FACTS 5b).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Its slot holds a still of Lesson 25's opening as Lesson 25's package draws it. It is a picture
@@ -476,15 +508,15 @@ item 7).
 Each section has a short line above its heading, as in Lesson 1; where a section is the same as
 Lesson 5's or Lesson 22's, so are its words.
 
-| Section     | Line above the heading                                 | Heading                                |
-| ----------- | ------------------------------------------------------ | -------------------------------------- |
-| Recall      | From Lessons 10 and 23: two questions, asked afresh    | Recall from Lessons 10 and 23          |
-| Four words  | Four words you'll meet before the first step           | Drone, harmonic, pure, equal-tempered  |
-| Steps       | Four steps, one drone: from a throb to a held harmony  | Harmony against a drone                |
-| Sing it     | Cadenza: your solo, and any octave counts              | Sing it                                |
-| Quick check | Ripresa: the theme comes back, from memory             | Quick check                            |
-| Wrap        | Coda: the closing bars                                 | Three lines to keep                    |
-| Explorer    | Season 2 · Lesson 24                                   | The season, mapped                     |
+| Section     | Line above the heading                                | Heading                               |
+| ----------- | ----------------------------------------------------- | ------------------------------------- |
+| Recall      | From Lessons 10 and 23: two questions, asked afresh   | Recall from Lessons 10 and 23         |
+| Four words  | Four words you'll meet before the first step          | Drone, harmonic, pure, equal-tempered |
+| Steps       | Four steps, one drone: from a throb to a held harmony | Harmony against a drone               |
+| Sing it     | Cadenza: your solo, and any octave counts             | Sing it                               |
+| Quick check | Ripresa: the theme comes back, from memory            | Quick check                           |
+| Wrap        | Coda: the closing bars                                | Three lines to keep                   |
+| Explorer    | Season 2 · Lesson 24                                  | The season, mapped                    |
 
 The steps' heading is the lesson's name, as on Lessons 15, 16 and 22's pages: it names no answer to
 either predict (FACTS 1a). Sing it's line is true in full on the scored path, since the reader folds
@@ -521,50 +553,66 @@ and band, so a decision here carries there.
 - The steps play everything for listening only, and nothing in them asks the viewer to sing, so the
   comfort check comes once, before Sing it. Among the sounds heard only: two close notes beating,
   up to four times a second, or eight an octave apart; the piano's major third over the drone,
-  almost nine beats a second, and its major chord, faster still; and the piano's fifth with Merc's
-  usual wave (FACTS 67 to 70).
-- **To confirm: Step 4's lines on a wave**, which must not read as a rule against vibrato: "A wave
-  in the top note swings its harmonics past the drone's, and the even throb is lost. Against a
-  drone, a straight note lets you hear the beats best. That's a way to listen, not a rule about
-  singing: in Sing it, if a wave comes, that's fine." (FACTS 37, 38). Lesson 22's own lines on a
-  straight note and a vibrato are Lesson 22's, and this page does not repeat them.
+  almost nine beats a second, and its major chord, faster still; and the piano's fifth with a
+  singer's wide wave, 50 cents either side at six swings a second, Lesson 22's cold-open wave
+  (FACTS 38, 67 to 70).
+- **To confirm: Step 4's lines on a wave**, which must not read as a rule against vibrato: "A
+  singer's wide wave swings the top note's harmonics past the drone's: the even throb weakens under
+  a flutter. Against a drone, a straight note lets you hear the beats best. That's a way to listen,
+  not a rule about singing: in Sing it, if a wave comes, that's fine.", its Try, "play the piano's
+  fifth with a wave, then straight.", and its Notice, "straight, the throb is even. With the wave,
+  it's much fainter and harder to follow." The wave is played, not sung, and the words say only
+  what it does to the throb (FACTS 37, 38). Lesson 22's own lines on a straight note and a vibrato
+  are Lesson 22's, and this page does not repeat them.
 - **To confirm: the mix-up card** and quick check 3, "Listening to the other part", which advise
   listening, from one study of sixteen singers (FACTS 33 to 36).
 
 ### The holds
 
-- **To confirm: the headphones check**, "Put on headphones, so the drone stays out of the
-  microphone." with "I have headphones on" and "No headphones", and the no-headphones line (FACTS
-  51).
-- **To confirm: the quiet check**, before each set, "First, stay quiet for two seconds while the
-  drone plays: the page checks that the microphone can't hear it.", and its line when it can (FACTS
-  52).
+- **To confirm: the headphones check**, "Put on headphones to keep the drone out of the microphone,
+  with the volume low enough to hear yourself." with "I have headphones on" and "No headphones",
+  and the no-headphones line (FACTS 51).
+- **To confirm: the headphones' volume**, the new half of that line, "with the volume low enough to
+  hear yourself": the page cannot set the device's volume, and a drone loud in the ears can push a
+  singer to sing over it (FACTS 51, 54).
+- **To confirm: the quiet check**, before every set, "First, stay quiet for two seconds while the
+  drone plays: the page checks that the microphone can't hear it.", and its line when it hears a
+  note, "The microphone heard a note during the drone. Check your headphones, then press Start again
+  and stay quiet." (FACTS 52).
 - **To confirm: the three holds and their order**: do, then so, then mi, five seconds each, then so
   and mi for ten seconds each, offered only after "Easy" or "Workable" and a rest the singer ends,
-  from a button that reads "Hold so and mi for 10 seconds"; up to three takes a set (FACTS 54, 55).
+  from a button that reads "Hold so and mi for 10 seconds"; up to three takes a set, Again
+  repeating the whole set (FACTS 54, 55).
+- **To look at: the four seconds between Merc's note and the singer's**, 2 of Listen and 2 of
+  Breathe, with the drone on do sounding under them, which asks a beginner to keep so or mi in mind
+  against do. The briefing and the ring are Lesson 5's; a shorter Listen would change them (FACTS
+  54).
 - **To confirm: the key and the range.** The drone on D: D3 for the lower voice with do, mi and so
   D3, F♯3 and A3; D4 for the higher with D4, F♯4 and A4. Every note keeps every preset of its voice
   at least two semitones inside its floor and top; the least room is 2 semitones, at the tenor's
   floor (D3 against C3) and the soprano's (D4 against C4) (FACTS 56):
 
-  | The notes                  | Preset        | Its range | Room below | Room above |
-  | -------------------------- | ------------- | --------- | ---------- | ---------- |
-  | Lower, D3, F♯3, A3         | Bass          | E2 to E4  | 10         | 7          |
-  | Lower, D3, F♯3, A3         | Baritone      | G2 to G4  | 7          | 10         |
-  | Lower, D3, F♯3, A3         | Tenor         | C3 to C5  | 2          | 15         |
-  | Higher, D4, F♯4, A4        | Alto          | F3 to F5  | 9          | 8          |
-  | Higher, D4, F♯4, A4        | Mezzo-soprano | A3 to A5  | 5          | 12         |
-  | Higher, D4, F♯4, A4        | Soprano       | C4 to C6  | 2          | 15         |
+  | The notes           | Preset        | Its range | Room below | Room above |
+  | ------------------- | ------------- | --------- | ---------- | ---------- |
+  | Lower, D3, F♯3, A3  | Bass          | E2 to E4  | 10         | 7          |
+  | Lower, D3, F♯3, A3  | Baritone      | G2 to G4  | 7          | 10         |
+  | Lower, D3, F♯3, A3  | Tenor         | C3 to C5  | 2          | 15         |
+  | Higher, D4, F♯4, A4 | Alto          | F3 to F5  | 9          | 8          |
+  | Higher, D4, F♯4, A4 | Mezzo-soprano | A3 to A5  | 5          | 12         |
+  | Higher, D4, F♯4, A4 | Soprano       | C4 to C6  | 2          | 15         |
 
-- **To confirm: no Move do and no other octave offered.** Moving do up by one to five semitones, to
-  G, keeps every preset inside the rule; any move down leaves the tenor or the soprano less than two
-  semitones; the line an octave lower or higher falls outside every voice's presets. So the page
-  offers no move, and the line above Sing it's heading keeps "any octave counts", which the reader
-  bears out. If the coach wants a way up for a do that feels low, "Move do: higher", up to five
-  semitones, passes the rule (FACTS 57).
+- **To confirm: Move do, higher only, and no other octave.** "If do feels low, move it higher."
+  with Lesson 20's control. Do, its drone and the three notes go up by one to
+  five semitones, to G: G3, B3 and D4 for the lower voice, G4, B4 and D5 for the higher, and every
+  position keeps every preset at least two semitones inside, the least room 2, at the bass's top (D4
+  against E4) with do on G3. Any move down leaves the tenor or the soprano less than two semitones,
+  so "lower" rests at D and only comes back; the line an octave lower or higher falls outside every
+  voice's presets, and the line above Sing it's heading keeps "any octave counts", which the reader
+  bears out. Is five semitones the right reach, and should a do that feels low have it at all
+  (FACTS 57)?
 - **To confirm: Merc's notes before each hold**: sung alone, straight, at the piano's pitch, the
-  band's centre, 2 seconds each, before the drone comes in; Tavi's an octave up for the higher voice
-  (FACTS 54).
+  band's centre, 2 seconds each, before the drone comes in, which waits until the note has ended;
+  Tavi's an octave up for the higher voice (FACTS 54).
 - **To confirm: the drone's loudness under the hold**: the soft level, below Merc's notes, so the
   singer's own voice stays clear in the headphones; the lab sets it (FACTS 54; WEB-SPEC, Audio).
 - **To confirm: the cues**: "If you can, hold each note straight; if a wave comes, that's fine." and
@@ -585,10 +633,11 @@ and band, so a decision here carries there.
 
 ### The sing-along and the feelings
 
-- **To confirm: the sing-along**, for no headphones, no microphone, or a microphone that hears the
-  drone: each note alone, then the drone with the singer for five seconds, nothing listening; its
-  Easy and Workable line, new, "A unison, a fifth and a major third, each over the drone." (FACTS
-  59).
+- **To confirm: the sing-along**, for no headphones, no microphone, or a quiet check that heard a
+  note: each note alone, then the drone with the singer for five seconds, nothing listening; its
+  Easy and Workable line, new, "A unison, a fifth and a major third, each over the drone."; and
+  "Sing along again", once a visit, the cap Season 1's sing-alongs put on Again, so a visit holds at
+  most two sing-alongs, against three takes a set on the scored path (FACTS 59).
 - How did that feel? and its endings: Lesson 3's four answers after each set of holds and after each
   sing-along. After "Effortful" the readings stay, no more holds, Lesson 3's gentle line and the rest
   card; after "Uncomfortable" no more holds, Lesson 3's enough line, the doctor lines and the rest

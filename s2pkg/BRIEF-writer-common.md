@@ -19,9 +19,8 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
 
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `9ae0e9162` or later, on main
-  `c60f0fdcb`. Lessons 15 to 23 and 25 are committed there; Lesson 24 is in its fix pass and lands
-  soon, and later ones as they land. Write only your three files in your lesson
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `b7af3ec27` or later, on main
+  `c60f0fdcb`. Lessons 15 to 25 are committed there, and later ones as they land. Write only your three files in your lesson
   folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
   they are: they are the planning record. Where your package departs from the plan, say so in
   LESSON.md's preamble or in FACTS.
@@ -60,7 +59,9 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
    checkpoint in the learner's own clef, in G, with the coach's list), `lessons/20-runs-pentatonic/` (a
    research predict, a sung run checked against all six presets), `lessons/22-vibrato/` (two
    predicts with every answering play locked until its choice, a new reader specified with tests,
-   the coach's list) and `lessons/25-minor-properly/` (the newest: a theory page whose step text,
+   the coach's list), `lessons/24-drone-harmony/` (a scored sung part against a drone, with the
+   headphones and quiet checks, holds read on the middle of the line, Move do higher only, sound
+   claims worked out as arithmetic) and `lessons/25-minor-properly/` (a theory page whose step text,
    toys and free play wait for the predict, a sing-along, a drill card that says what the drill
    does). Also `lessons/02-twelve-notes/LESSON.md` for a theory
    lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
