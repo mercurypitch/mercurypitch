@@ -2926,3 +2926,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 09:05 get_session: rate limit "allowed_warning" (resets ~10:40 UTC) -> W26 NOT spawned (owner rule: only while "allowed"). send_later 10:45 (trig_01NsaGoJdJD8D9wATkcPs5vn) spawns W26 (and R27 if W27 is back) once "allowed".
 - In flight: W27 (spawned 08:3x). Fallback trigger 09:40 for W27 (trig_01Ccuz2Qtjapvh1L24j6iBDZ; its L24 half is done).
 - Next: W27 hand-back -> R27 (when allowed); W26 at/after 10:45; 28 after 26; then the shared commit (#229).
+
+## 2 Nov 10:4x UTC — container restart #6; W27 died on the 5-hour limit at 09:2x
+- W27 ((builder)) failed ~09:2x: "hit your 5-hour limit, resets 10:40". Its s2pkg/27/LESSON.md (09:22) survived; FACTS and WEB-SPEC not yet written.
+- Container restarted before 10:45 (uptime 0): /dev/shm/s2plan gone; scratchpad intact. Rebuilding the worktree at b7af3ec27 and restoring lessons/27-sevenths-inversions/LESSON.md from s2pkg/27.
+- 10:45 get_session: rate limit "allowed" (new window to 15:40 UTC). Plan: resume W27 by SendMessage (worktree rebuilt; continue from its LESSON.md copy; re-read BRIEF-writer-common v9's review lessons), and spawn W26 (BRIEF-26). Two agents.
+- 10:4x: worktree rebuilt at b7af3ec27; lessons/27-sevenths-inversions/LESSON.md restored (md5 = s2pkg/27 copy). Rate limit "allowed" (window to 15:40 UTC).
+- W27 resumed by SendMessage 10:4x (told: worktree rebuilt, re-read LESSON.md, re-read brief v9's review lessons). W26 spawned 10:4x (BRIEF-26 .v3 state). Two agents running.
+- Next: W26/W27 hand-backs -> fresh reviewers at xhigh (one each, when the other agent count allows: at most two agents) -> fix passes -> lead reviews -> commits. Then 28 (after 26), then the shared commit (#229).

@@ -24,7 +24,7 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
   folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
   they are: they are the planning record. Where your package departs from the plan, say so in
   LESSON.md's preamble or in FACTS.
-- The worktree is in RAM: a container restart empties it (five times since 1 November). After you
+- The worktree is in RAM: a container restart empties it (six times since 1 November). After you
   save each file, copy it to
   `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/s2pkg/<NN>/`
   (make the folder), so finished work survives on disk. If `/dev/shm/s2plan` is missing when you
