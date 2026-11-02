@@ -38,3 +38,10 @@
   plan's "What does she need to hear first?"); Lesson 16 now asks "Tavi sings the line with no note
   to start from. What will you hear?" (Lesson 16 hand-back). Update both in the shared commit, with
   Lesson 16's final wording, if the review keeps the new predict.
+- From Lesson 18's hand-back (verify at the shared commit): Lesson 17's tease still and its FACTS 5
+  still use the plan's C pitches, "the learner's clef" and Lesson 18's old predict choices; three
+  edits listed in s2pkg/18-HANDBACK.md. Also a test gap for the owner's app list: the planning-text
+  test's topic-code pattern misses lettered codes (S11a, S11b, S20a, S20b); verify before reporting.
+- Lesson 20 is cited in words in Lesson 18 (preamble, coach list, FACTS sources line, FACTS 10, 27,
+  33, 42): rebind to Lesson 20's committed files (26d90e225) at Lesson 18's lead review if cheap,
+  else in the shared commit.

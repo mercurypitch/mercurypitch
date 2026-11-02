@@ -2807,3 +2807,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   attribution) -> push -> shared-rest/LNN-entries.md -> NEXT.md + push-notes.
 - After 18 and 22: 24 and 25 (briefs ready), then 26 (after 24), 27 (after 25), 28 last; then the
   shared commit (#229) from shared-rest/*.md and NOTES.md.
+
+## 2 Nov 03:27 UTC — W18 handed back; L18 reviewer running
+
+- L18: 2,120 words, 221 cites 0 findings; 22 departures (G; new predict choices "Seven: one note at
+  a time" / "Two: a run of steps, then do-mi-so"; Steps 1-2 locked until the choice; new tunes;
+  start = do + count-in; each note scored in its own beats). Reviewer spawned (xhigh) ->
+  s2pkg/18-REVIEW.md. W22 still writing. Notes for the shared commit added to shared-rest/NOTES.md.
