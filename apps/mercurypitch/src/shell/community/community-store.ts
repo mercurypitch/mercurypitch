@@ -24,12 +24,22 @@
 // A read that gets no answer says so (`communityProblem`) and keeps what
 // was loaded before; one the phone knows to be offline is not sent at all.
 //
+// A RESULT OPENED FROM THE LIST is kept as it was opened, with the account
+// that opened it and where the list was scrolled to, so Back lands on its
+// row, in view, without asking the worker anything, and the result screen,
+// drawn again later, can say what is true of it now (`openedResultState`).
+//
+// WHEN THE ACCOUNT CHANGES (`installCommunityWatch`), everything kept for
+// the account before goes, its counts in storage included, as the league
+// the Leagues row names goes. A token refreshed for the same account is
+// not a change.
+//
 // Behind NATIVE_COMMUNITY (src/lib/native-build.ts). The native config lists
 // this module as free of side effects, so a store build, where nothing
 // reaches it, carries none of it, its key included (assert-bundle.mjs
 // STAGE 2, `mp:community-card`).
 
-import { batch, createSignal, untrack } from 'solid-js'
+import { batch, createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import { accountHeld, currentAccountId } from '@/db/services/auth-service'
 import { loadProgressSessionRecords } from '@/db/services/progress-session-records'
 import type { PublishedShareCounts, SharedMelodyView, SharedSessionView, } from '@/db/services/share-service'
@@ -37,6 +47,7 @@ import { loadPublishedShareCounts, loadUserProfile, readSharedMelodies, readShar
 import { getCurrentStreak } from '@/db/services/streak-service'
 import type { ProgressRun } from '@/features/progress/run-kinds'
 import { isProgressRun, runFromRecord } from '@/features/progress/run-kinds'
+import { blockedSingerIds } from '@/stores/blocked-singers-store'
 import type { CommunityCounts } from '../more-lines'
 
 /** What other singers shared, as the last read found it. */
@@ -61,6 +72,17 @@ export interface CommunityProfile {
 
 /** Why the last read showed nothing new. */
 export type CommunityProblem = 'offline' | 'unreachable'
+
+/** What the result screen can truthfully show of the result opened. */
+export type OpenedResultState =
+  /** The result, as the latest read for this account has it. */
+  | { kind: 'shown'; result: SharedSessionView }
+  /** Its singer is blocked: nothing of theirs is shown. */
+  | { kind: 'blocked' }
+  /** The latest read no longer has it, or nothing was opened. */
+  | { kind: 'gone' }
+  /** Another account, or none, is signed in since it was opened. */
+  | { kind: 'account' }
 
 /** One answer, and the account it was read for. */
 interface Kept<T> {
@@ -118,8 +140,11 @@ const [profile, setProfile] = createSignal<Kept<CommunityProfile> | null>(null)
 const [counts, setCounts] = createSignal<KeptCounts | null>(readCounts())
 const [reading, setReading] = createSignal(false)
 const [problem, setProblem] = createSignal<Kept<CommunityProblem> | null>(null)
-/** The shared result the singer opened from the list, by id. */
-const [opened, setOpened] = createSignal<string | null>(null)
+/** The shared result the singer opened from the list, as it was then. */
+const [opened, setOpened] = createSignal<Kept<SharedSessionView> | null>(null)
+
+/** Where the list was scrolled to when a result was opened from it. */
+let listTop: Kept<number> | null = null
 
 /** Bumped per read, so a slow answer cannot overwrite a newer one. */
 let generation = 0
@@ -170,14 +195,29 @@ export function communityCounts(): CommunityCounts | null {
   return { melodies: kept.melodies, results: kept.results }
 }
 
-/** Open a shared result from the list, by its id. */
-export function openCommunityResult(id: string): void {
-  setOpened(id)
+/**
+ * Open a shared result from the list, `top` being where the list is
+ * scrolled to: Back comes back to both.
+ */
+export function openCommunityResult(
+  result: SharedSessionView,
+  top: number,
+): void {
+  const viewer = untrack(viewerNow)
+  listTop = { viewer, value: top }
+  setOpened({ viewer, value: result })
 }
 
 /** The id of the shared result the singer last opened, or null. */
 export function openedResultId(): string | null {
-  return opened()
+  return opened()?.value.id ?? null
+}
+
+/** Where the list was when this account opened a result, or null. */
+export function communityListTop(): number | null {
+  return listTop !== null && listTop.viewer === untrack(viewerNow)
+    ? listTop.value
+    : null
 }
 
 /**
@@ -188,11 +228,19 @@ export function forgetCommunityResult(): void {
   setOpened(null)
 }
 
-/** The result the singer opened, while this account's read still has it. */
-export function openedResult(): SharedSessionView | null {
-  const id = opened()
-  if (id === null) return null
-  return communityBoard()?.results.find((result) => result.id === id) ?? null
+/**
+ * The result opened, and what may be shown of it now. Reactive: a block,
+ * a read that drops it and an account change each answer differently.
+ */
+export function openedResultState(): OpenedResultState {
+  const kept = opened()
+  if (kept === null) return { kind: 'gone' }
+  if (kept.viewer !== viewerNow()) return { kind: 'account' }
+  if (blockedSingerIds().has(kept.value.userId)) return { kind: 'blocked' }
+  const read = communityBoard()
+  if (read === null) return { kind: 'shown', result: kept.value }
+  const now = read.results.find((result) => result.id === kept.value.id)
+  return now === undefined ? { kind: 'gone' } : { kind: 'shown', result: now }
 }
 
 function offline(): boolean {
@@ -334,15 +382,54 @@ function landed(viewer: string | null, read: CommunityRead): void {
   })
 }
 
+/**
+ * Let go of everything kept for an account: its read, its figures, its
+ * counts in storage and where its list was. A result screen still up keeps
+ * what it opened, to say the account changed.
+ */
+export function forgetCommunity(): void {
+  // A read still out for the account before lands as nobody's
+  // (readCommunity); one already out for the account now is left alone.
+  listTop = null
+  batch(() => {
+    setBoard(null)
+    setProfile(null)
+    setProblem(null)
+    setCounts(null)
+  })
+  writeCounts(null)
+}
+
+/** Something is kept for an account other than `viewer`. */
+function keptForAnother(viewer: string | null): boolean {
+  return [untrack(counts), untrack(board), untrack(profile), listTop].some(
+    (kept) => kept !== null && kept.viewer !== viewer,
+  )
+}
+
+/**
+ * Let go of what was kept for an account once it signs out or the phone
+ * changes hands, and of counts left in storage for an account that is not
+ * the one here as the shell starts. Keyed by the account, so a token
+ * refreshed for it changes nothing. Returns the teardown.
+ */
+export function installCommunityWatch(): () => void {
+  return createRoot((dispose) => {
+    const viewer = createMemo(viewerNow)
+    createEffect(
+      on(viewer, (now) => {
+        if (keptForAnother(now)) forgetCommunity()
+      }),
+    )
+    return dispose
+  })
+}
+
 /** Tests: nothing read, nothing kept, nothing open. */
 export function resetCommunityStoreForTests(): void {
   generation++
   inflight = null
-  setBoard(null)
-  setProfile(null)
-  setCounts(null)
   setReading(false)
-  setProblem(null)
+  forgetCommunity()
   setOpened(null)
-  writeCounts(null)
 }

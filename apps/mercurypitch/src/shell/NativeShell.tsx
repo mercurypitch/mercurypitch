@@ -34,7 +34,7 @@ import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { abandonOnboarding, installNativeOnboarding, onboardingMounted, } from '../onboarding/onboarding-layer'
-import { forgetCommunityResult } from './community/community-store'
+import { installCommunity, pushCommunity } from './community/community-entry'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
@@ -231,15 +231,6 @@ const COMMUNITY_SCREENS: Pick<
   : {}
 
 /**
- * More's Community row. Pushed afresh, Community opens at its title, not at
- * a result opened on an earlier visit.
- */
-function pushCommunity(): void {
-  if (NATIVE_COMMUNITY) forgetCommunityResult()
-  pushScreen('community')
-}
-
-/**
  * The native onboarding (src/onboarding), on a build with it
  * (`NATIVE_ONBOARDING`) and no other: the same ternary as Long note's. It
  * loads as a new install's first Sing door is picked (onboarding-layer.ts
@@ -317,6 +308,9 @@ export const NativeShell: Component = () => {
       onCleanup(installLeagueRefresh())
       onCleanup(installLegendRefresh())
     }
+    // What Community kept for an account goes when it signs out or the
+    // phone changes hands (community-entry.ts; nothing in a store build).
+    onCleanup(installCommunity())
 
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the

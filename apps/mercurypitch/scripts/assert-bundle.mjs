@@ -552,6 +552,9 @@ const KARAOKE_STAGE_2 = [
   ],
   ['mp:community-card', "the counts the More sheet's Community row says"],
   ['What other singers shared', "the More sheet's Community row"],
+  // The row's two-people chip (PeopleIcon, shell/icons.tsx): its last
+  // stroke's path data, written verbatim into the template that draws it.
+  ['M17.6 13.7a6.5 6.5 0 0 1 3.4 5.8', "the Community row's chip"],
 ]
 
 /**

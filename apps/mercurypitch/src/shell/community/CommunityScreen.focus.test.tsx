@@ -4,8 +4,9 @@
 //
 // A pushed screen hands the focus to its title. A result opened from the
 // list is pushed over it, so the phone's Back leaves the result first and
-// lands on the row that opened it, and the next Back leaves Community, as
-// it leaves the Leagues screen (shell-navigation.ts). Blocked from the
+// lands on the row that opened it, the list scrolled where it was and
+// nothing asked of the worker, and the next Back leaves Community, as it
+// leaves the Leagues screen (shell-navigation.ts). Blocked from the
 // result, its singer's result is hidden at once and the focus goes to the
 // screen's heading. The stores, the shell's stack and the sheet are real.
 
@@ -55,8 +56,10 @@ vi.mock('@/db/services/streak-service', () => ({
   getCurrentStreak: vi.fn(async () => 0),
 }))
 
+import { BLOCK_WORDS } from '@/components/moderation/singer-sheet-copy'
 import { SingerSheet } from '@/components/moderation/SingerSheet'
-import { readSharedSessions } from '@/db/services/share-service'
+import { loadProgressSessionRecords } from '@/db/services/progress-session-records'
+import { readSharedMelodies, readSharedSessions, } from '@/db/services/share-service'
 import { TAB_PROGRESS } from '@/features/tabs/constants'
 import { resetBlockedSingersForTests } from '@/stores/blocked-singers-store'
 import { closeSingerSheet } from '@/stores/singer-sheet-store'
@@ -97,6 +100,9 @@ const title = (): HTMLElement | null =>
 
 const opener = (id: string): HTMLElement | null =>
   document.querySelector<HTMLElement>(`[data-community-open="${id}"]`)
+
+const scroller = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>('.mp-pushed__body')
 
 function pressButton(name: string): void {
   const button = [...document.querySelectorAll('button')].find(
@@ -185,6 +191,43 @@ describe('Community, pushed and left', () => {
     expect(pushed()).toBeNull()
   })
 
+  it('puts the list back where it was scrolled to, on Back, before the row takes the focus', async () => {
+    pushScreen('community')
+    await settle()
+    const list = scroller()
+    if (list === null) throw new Error('No scroller')
+    list.scrollTop = 787
+
+    opener('r2')?.click()
+    await settle()
+    performBack(host())
+    await settle()
+
+    // A new scroller: the screen was drawn anew, at the top.
+    expect(scroller()).not.toBe(list)
+    expect(scroller()?.scrollTop).toBe(787)
+    expect(document.activeElement).toBe(opener('r2'))
+  })
+
+  it('asks the worker nothing on Back from a result', async () => {
+    pushScreen('community')
+    await settle()
+    const reads = (): number[] => [
+      vi.mocked(readSharedMelodies).mock.calls.length,
+      sessions.mock.calls.length,
+      vi.mocked(loadProgressSessionRecords).mock.calls.length,
+      vi.mocked(fetch).mock.calls.length,
+    ]
+    const before = reads()
+
+    opener('r2')?.click()
+    await settle()
+    performBack(host())
+    await settle()
+
+    expect(reads()).toEqual(before)
+  })
+
   it('hides a result whose singer is blocked from it, and gives the focus to its heading', async () => {
     pushScreen('community')
     await settle()
@@ -210,7 +253,7 @@ describe('Community, pushed and left', () => {
     expect(
       document.querySelector('[data-testid="community-result-gone"]')
         ?.textContent,
-    ).toBe('You blocked this singer, so their result is hidden.')
+    ).toBe(BLOCK_WORDS)
     expect(document.activeElement).toBe(heading)
     // Read again after the block: once as Community opened, once since.
     expect(sessions).toHaveBeenCalledTimes(2)

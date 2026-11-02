@@ -15,8 +15,9 @@
 //     static import would put the screens, their words and their
 //     stylesheet in every build.
 //   - The store the More row reads is free of side effects in the native
-//     config, and only the More sheet and the shell import it from outside
-//     its folder, each inside a branch the switch folds.
+//     config. From outside its folder only the More sheet reads it, inside
+//     a branch the switch folds; the shell reaches it through
+//     community-entry.ts, whose every call into it is behind the switch.
 //   - pushScreen refuses both screens on a build without the switch.
 //   - assert-bundle names what a store build must not carry.
 
@@ -88,17 +89,19 @@ describe('Community, in the sources', () => {
     )
   })
 
-  it('is imported from outside its folder only by the More sheet and the shell', () => {
-    const importers = EVERY_SOURCE()
-      .filter(outsideFolder)
-      .filter((path) =>
-        /from\s+['"][^'"]*community\/community-store['"]/u.test(
-          readFileSync(path, 'utf8'),
-        ),
-      )
-      .map((path) => relative(ROOT, path))
-      .sort()
-    expect(importers).toEqual(['shell/MoreSheet.tsx', 'shell/NativeShell.tsx'])
+  it('is reached from outside its folder only by the More sheet, and the shell through its entry', () => {
+    const importers = (module: string): string[] =>
+      EVERY_SOURCE()
+        .filter(outsideFolder)
+        .filter((path) =>
+          new RegExp(`from\\s+['"][^'"]*community/${module}['"]`, 'u').test(
+            readFileSync(path, 'utf8'),
+          ),
+        )
+        .map((path) => relative(ROOT, path))
+        .sort()
+    expect(importers('community-store')).toEqual(['shell/MoreSheet.tsx'])
+    expect(importers('community-entry')).toEqual(['shell/NativeShell.tsx'])
   })
 
   it('reads that store in the More sheet only inside its folded row', () => {
@@ -115,14 +118,16 @@ describe('Community, in the sources', () => {
     }
   })
 
-  it('lets the shell touch the store only behind the switch', () => {
-    const shell = read('./shell/NativeShell.tsx')
-    const calls = indexes(shell, /forgetCommunityResult\(\)/gu)
-    expect(calls.length).toBeGreaterThan(0)
-    for (const index of calls) {
-      expect(shell.slice(index - 'if (NATIVE_COMMUNITY) '.length, index)).toBe(
-        'if (NATIVE_COMMUNITY) ',
-      )
+  it('lets the shell’s entry reach the store only behind the switch', () => {
+    const entry = read('./shell/community/community-entry.ts')
+    for (const [call, guard] of [
+      ['forgetCommunityResult()', 'if (NATIVE_COMMUNITY) '],
+      ['installCommunityWatch()', 'return NATIVE_COMMUNITY ? '],
+    ]) {
+      const at = entry.indexOf(call)
+      expect(at, call).toBeGreaterThan(-1)
+      expect(entry.slice(at - guard.length, at)).toBe(guard)
+      expect(entry.indexOf(call, at + 1)).toBe(-1)
     }
   })
 
@@ -140,6 +145,7 @@ describe('Community, in the sources', () => {
       'Sign in to see your runs, your best and your streak here.',
       'mp:community-card',
       'What other singers shared',
+      'M17.6 13.7a6.5 6.5 0 0 1 3.4 5.8',
     ]) {
       expect(assert).toMatch(
         new RegExp(`\\[\\s*'${marker.replace(/[.?]/gu, '\\$&')}',`, 'u'),

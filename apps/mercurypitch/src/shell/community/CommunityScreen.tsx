@@ -13,7 +13,10 @@
 // a melody has no Open: the web opens one in Compose, its editor, which the
 // phone does not carry, and the Sing room sings only the singer's own
 // melodies, chosen from its own song list. A result opens over the list
-// (CommunityResultScreen.tsx), so Back leaves the result first.
+// (CommunityResultScreen.tsx), so Back leaves the result first. Back lands
+// on the row that opened it, the list scrolled where it was and the row
+// clear of the dock (list-place.ts), and asks the worker nothing: what was
+// read is still here, and a block made from the result asked already.
 //
 // Every share by another singer ends in a "...", which opens the singer
 // sheet with the share named in the report (slice 4b). The singer's own
@@ -38,11 +41,12 @@ import { ChevronIcon, MoreIcon, WarnIcon } from '../icons'
 import { pushScreen } from '../run-shell-store'
 import { accountSignedIn } from '../settings/account-state'
 import { signInOpen } from '../settings/sign-in-state'
-import { COMMUNITY_EMPTY, COMMUNITY_FAILED, COMMUNITY_LOADING, MELODIES_EMPTY, melodyFacts, offlineWords, resultAverage, resultFacts, RESULTS_ABOUT, RESULTS_EMPTY, } from './community-lines'
+import { COMMUNITY_EMPTY, COMMUNITY_FAILED, COMMUNITY_LOADING, MELODIES_EMPTY, melodyFacts, offlineWords, resultAverage, resultFacts, RESULTS_ABOUT, RESULTS_EMPTY, shareMoreLabel, } from './community-lines'
 import type { CommunityBoard } from './community-store'
-import { communityBoard, communityProblem, communityReading, forgetCommunityResult, openCommunityResult, openedResultId, refreshCommunity, viewerNow, } from './community-store'
+import { communityBoard, communityListTop, communityProblem, communityReading, forgetCommunityResult, openCommunityResult, openedResultId, refreshCommunity, viewerNow, } from './community-store'
 import { CommunityContact } from './CommunityContact'
 import { CommunityProfileCard } from './CommunityProfileCard'
+import { revealRow, scrollerOf } from './list-place'
 
 /** The singer behind a share who can be reported or blocked, or null. */
 function actionableSinger(share: { userId?: string }): string | null {
@@ -79,6 +83,7 @@ function ShareEnd(props: {
             onBlocked: () => void refreshCommunity(true),
           }}
           icon={<MoreIcon size={22} />}
+          label={shareMoreLabel(props.share)}
           class="mp-community-row__more"
         />
       )}
@@ -149,8 +154,9 @@ function ResultRow(props: {
         type="button"
         class="mp-community-row__main mp-community-row__open"
         data-community-open={props.result.id}
-        onClick={() => {
-          openCommunityResult(props.result.id)
+        onClick={(event) => {
+          const top = scrollerOf(event.currentTarget)?.scrollTop ?? 0
+          openCommunityResult(props.result, top)
           pushScreen('community-result')
         }}
       >
@@ -255,25 +261,42 @@ export function CommunityScreen(): JSX.Element {
     root?.querySelector<HTMLElement>('[data-community-focus]')?.focus()
   }
 
-  onMount(() => {
-    void refreshCommunity()
-    ensureBlockedSingers()
-    // Back from a result: to the row that opened it, which is still here.
-    const back = openedResultId()
-    if (back === null) return
-    forgetCommunityResult()
+  /**
+   * Back from a result: the list where it was, and the focus on the row
+   * that opened it, whole between the bar and the dock.
+   */
+  const returnToRow = (id: string): void => {
+    const scroller = scrollerOf(root ?? null)
+    const top = communityListTop()
+    if (scroller !== null && top !== null) scroller.scrollTop = top
     const rows = root?.querySelectorAll<HTMLElement>('[data-community-open]')
-    ;[...(rows ?? [])]
-      .find((row) => row.getAttribute('data-community-open') === back)
-      ?.focus({ preventScroll: true })
+    const row = [...(rows ?? [])].find(
+      (candidate) => candidate.getAttribute('data-community-open') === id,
+    )
+    if (row === undefined) return
+    row.focus({ preventScroll: true })
+    if (scroller !== null) revealRow(row, scroller)
+  }
+
+  onMount(() => {
+    ensureBlockedSingers()
+    const back = openedResultId()
+    forgetCommunityResult()
+    // Back from a result asks the worker nothing: the list it opened from
+    // is still read. Only an account changed meanwhile reads again.
+    if (back !== null && communityBoard() !== null) returnToRow(back)
+    else void refreshCommunity()
   })
 
   // An account signed in or out here: what it may see is read for it. The
   // profile's Sign in went with the sign-in, and the focus with it: the
   // profile's name takes it once the read lands, or the sheet closes.
+  // Keyed by the account, not the token: a token refreshed for the same
+  // account reads nothing again.
+  const viewer = createMemo(viewerNow)
   createEffect(
     on(
-      viewerNow,
+      viewer,
       () => {
         void refreshCommunity().then(() => {
           if (focusLost()) focusFirst()
@@ -305,8 +328,10 @@ export function CommunityScreen(): JSX.Element {
 
   const retry = (): void => {
     if (communityReading()) return
+    // Try again went with the problem: the focus follows it, unless the
+    // singer has put it somewhere else meanwhile.
     void refreshCommunity().then(() => {
-      if (communityProblem() === null) focusFirst()
+      if (communityProblem() === null && focusLost()) focusFirst()
     })
   }
 

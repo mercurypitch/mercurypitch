@@ -49,6 +49,17 @@ export function melodyFacts(
   return [`by ${melody.author}`, notes, when].filter((part) => part !== '')
 }
 
+/**
+ * The name of a share's "...": the share and its singer, so two shares by
+ * one singer are two buttons a screen reader tells apart.
+ */
+export function shareMoreLabel(share: {
+  name: string
+  author: string
+}): string {
+  return `More about ${share.name}, by ${share.author}`
+}
+
 /** A result's scores, averaged and rounded: what its row shows. */
 export function resultAverage(result: SharedSessionView): number {
   if (result.results.length === 0) return 0
@@ -181,6 +192,7 @@ export const RESULT_NOTE =
 export const RESULT_GONE =
   'This shared result is not here any more. It may have been taken down.'
 
-/** A result whose singer the reader has just blocked. */
-export const RESULT_BLOCKED =
-  'You blocked this singer, so their result is hidden.'
+/** A result opened for an account that is no longer the one signed in. */
+export function resultAccountWords(): string {
+  return `The account on ${thisDeviceLower()} changed since you opened this result. Go back to Community to see what is shared now.`
+}

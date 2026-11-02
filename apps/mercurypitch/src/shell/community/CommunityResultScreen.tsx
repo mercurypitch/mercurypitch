@@ -13,18 +13,24 @@
 // "..." that reports the result or blocks them. Blocked from here, the
 // result is hidden at once and the list is read again; the focus goes to
 // the screen's heading, the board's (sheet-focus.ts).
+//
+// Drawn again later (a screen pushed over it, then Back), it says what is
+// true of the result now (`openedResultState`): still there, its singer
+// blocked (in the sheet's own words), gone from the latest read, or opened
+// for an account that is no longer the one signed in.
 
 import type { JSX } from 'solid-js'
-import { For, Show, untrack } from 'solid-js'
+import { For, Show } from 'solid-js'
 import './community.css'
+import { BLOCK_WORDS } from '@/components/moderation/singer-sheet-copy'
 import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
 import type { SharedSessionView } from '@/db/services/share-service'
 import { getUserId } from '@/db/services/user-service'
 import { singerOfEntry } from '@/lib/singer-rows'
-import { blockedSingerIds } from '@/stores/blocked-singers-store'
 import { MoreIcon } from '../icons'
-import { RESULT_BLOCKED, RESULT_GONE, RESULT_NOTE, resultAverage, sharedOn, } from './community-lines'
-import { openedResult, refreshCommunity } from './community-store'
+import { RESULT_GONE, RESULT_NOTE, resultAccountWords, resultAverage, sharedOn, shareMoreLabel, } from './community-lines'
+import type { OpenedResultState } from './community-store'
+import { openedResultState, refreshCommunity } from './community-store'
 import { CommunityContact } from './CommunityContact'
 
 const BOARD = 'community-result'
@@ -49,6 +55,7 @@ function ResultBody(props: { result: SharedSessionView }): JSX.Element {
                 onBlocked: () => void refreshCommunity(true),
               }}
               icon={<MoreIcon size={22} />}
+              label={shareMoreLabel(props.result)}
               class="mp-community-result__more"
             />
           )}
@@ -77,17 +84,31 @@ function ResultBody(props: { result: SharedSessionView }): JSX.Element {
   )
 }
 
-export function CommunityResultScreen(): JSX.Element {
-  // The result as it was opened, so a block can still say whose it was.
-  const opened = untrack(openedResult)
-  const blocked = (): boolean =>
-    opened !== null && blockedSingerIds().has(opened.userId)
-  const result = (): SharedSessionView | null =>
-    blocked() ? null : openedResult()
+/** The heading, the board's, whatever the screen can show. */
+function headingOf(state: OpenedResultState): string {
+  switch (state.kind) {
+    case 'shown':
+      return state.result.name
+    case 'blocked':
+      return 'Result hidden'
+    case 'gone':
+      return 'Result not found'
+    case 'account':
+      return 'Account changed'
+  }
+}
 
-  const heading = (): string => {
-    if (blocked()) return 'Result hidden'
-    return result()?.name ?? 'Result not found'
+/** The line that stands in for a result the screen cannot show. */
+function noteOf(state: OpenedResultState): string {
+  if (state.kind === 'blocked') return BLOCK_WORDS
+  return state.kind === 'account' ? resultAccountWords() : RESULT_GONE
+}
+
+export function CommunityResultScreen(): JSX.Element {
+  const state = (): OpenedResultState => openedResultState()
+  const shown = (): SharedSessionView | null => {
+    const now = state()
+    return now.kind === 'shown' ? now.result : null
   }
 
   return (
@@ -103,17 +124,21 @@ export function CommunityResultScreen(): JSX.Element {
         data-singer-board-heading={BOARD}
         tabindex="-1"
       >
-        {heading()}
+        {headingOf(state())}
       </h2>
       <Show
-        when={result()}
+        when={shown()}
         fallback={
-          <p class="mp-set__caption" data-testid="community-result-gone">
-            {blocked() ? RESULT_BLOCKED : RESULT_GONE}
+          <p
+            class="mp-set__caption"
+            data-testid="community-result-gone"
+            data-state={state().kind}
+          >
+            {noteOf(state())}
           </p>
         }
       >
-        {(shown) => <ResultBody result={shown()} />}
+        {(result) => <ResultBody result={result()} />}
       </Show>
       <CommunityContact />
     </div>
