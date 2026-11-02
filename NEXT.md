@@ -2760,3 +2760,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Order still: 16+20 (reviews running) -> 18+22 -> 24+25 -> 26 (after 24) + 27 (after 25) -> 28.
   Before spawning W24/W25: refresh BRIEF-writer-common's head SHA and model list (add 16, 18, 20,
   22 as committed).
+
+## 2 Nov 02:3x UTC — both reviews in; both fix passes running
+
+- L16 review: 1 blocking (the new predict's choice 1 "Not this tune: that takes perfect pitch" is
+  true of the written line; thesis lines say "reading needs a first note" though Tavi read it from
+  F) + 8 should fix + 13 nits. Calls in s2pkg/16-FIXPASS-MSG.md; W16 resumed.
+- L20 review: 1 blocking (no way out at the top of the run) + 8 should fix + 18 nits; no leak. Calls
+  in s2pkg/20-FIXPASS-MSG.md; W20 resumed.
+- BRIEF-18 gained the L20 notes (staccato dot; "a run of steps").
+- NEXT: each fix-pass reply -> lead review (plan-cites 0, words, prettier, departures, teases; draft
+  shared-rest/L<NN>-entries.md) -> commit as the owner + push. Then W18 and W22.

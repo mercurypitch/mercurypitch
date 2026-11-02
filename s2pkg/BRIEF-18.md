@@ -51,3 +51,6 @@ Notes from the packages written beside yours:
   coach line). Keep the staccato dot in your Words and Step 4, or say in the hand-back why not. Your
   plan says "Lesson 20 sings staccato": it does not. Lesson 20 plays staccato and asks no one to sing
   it, so promise no more than that.
+- **"Run"** means quick notes one after another, by step or by skip, on Lesson 20's page (its run,
+  do re mi so la so mi re do, skips at mi and so). Your plan's "run" is a reading pattern of steps:
+  always write "a run of steps", in your Words, Step 3, quick check and Wrap, so the two pages agree.
