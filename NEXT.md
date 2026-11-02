@@ -2891,3 +2891,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - W24 still writing. Lesson 26's ARTICLE-PLAN is committed (the L25 writer asked).
 - L25 hand-back asks the lead: bind both teases (own on L24's card; L26's alternative mended to "Lesson 24's other part was a drone. What if it's a tune?"), keep Sight-Singing A harmonic minor as 2nd drill (writer recommends), choose head title (56 or 55 chars).
 - Next: R25 report -> fix-pass calls (s2pkg/25-FIXPASS-MSG.md) -> resume W25; W24 hand-back -> R24; then 26 (after 24), 27 (after 25), 28.
+
+## 2 Nov 07:5x UTC — W24 handed back; R24 spawned
+- L24 draft: 2,227 words, 240 citations, plan-cites 0; s2pkg/24 copies match the worktree.
+- R24 (fresh, xhigh) spawned 07:5x; report to s2pkg/24-REVIEW.md. R25 still running.
+- L24 hand-back asks the lead: head title ("Singing with a drone: pure intervals" recommended, or "How to sing in tune with a drone"); L23 FACTS 5 quote "It slows down, then stops" -> "It slows, then stops" (shared commit); amber band then chrome line for the drone; new app item (Drone Intonation drone harmonics) and whether the card says its run score tops out at 80; built page ~63 words over cap (cuts named in WEB-SPEC); bind L22 citations to path now.
+- Next: R24/R25 reports -> fix-pass calls -> resume W24/W25 -> lead reviews -> commits. Then 26 (after 24), 27 (after 25), 28.
