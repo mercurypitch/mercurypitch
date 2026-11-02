@@ -42,15 +42,21 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   [ Nothing: only perfect pitch could do it ] [ Just its first note ] is answered by a
   prerequisite: Lesson 9's Step 3 says that before a singer sings a new tune from the page, the
   Royal Conservatory's examiners play do, mi and so, then the tune's first note. No earlier lesson
-  says what a reader with no note to start from sings (FACTS 1a, 31).
+  says what a reader with no note to start from sings. The choices turn on what is heard, not on
+  perfect pitch: [ A jumble: with no note, she can't read it ] or
+  [ The tune, from a note of her own ], the tune at any pitch, as Lesson 6 has it. So the page says
+  what the one note is for wherever it states its point: landing on the written notes (FACTS 1a,
+  22, 31).
 - **Every pitch and place is in G**, the lead's answer: do is G4 on the treble clef's line and G3 in
   the bass staff's top space, so do, mi and so sit on three lines in a row in the treble and in three
-  spaces in a row in the bass, two of them above the staff (FACTS 11 to 14).
+  spaces in a row in the bass, two of them above the staff. Quick check 2 asks for the bass staff's
+  do, since the treble's, the clef's line, is the recall's question (FACTS 11 to 14).
 - **The checkpoint's second phrase is new: do, so, mi, re, do.** The plan's do, mi, so, mi, do is
   note for note the start the page sings first, and a sight-singing checkpoint "plays do first,
   never the melody" (SEASON-2 § 1.5 item 6). The first phrase stays Tavi's line, do, re, mi, re, do,
   heard in the cold open: a worked example with its names, then a line nobody has played, with the
-  names off. No step plays the new line (FACTS 43).
+  names off. Step 4 shows its opening leap, do up to so, a fifth, on the staff; no step plays the
+  new line (FACTS 43).
 - **Three words, not four**: Sight-singing, Tonic triad and Audiation. The plan's Relative pitch
   and Absolute pitch sat below the predict, where a phone shows them before the choice, and together
   they answer it; the reveal and Step 2 define them after the choice, in Lesson 6's words (FACTS 1a,
@@ -74,9 +80,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   it: a voice-like model is the one the playbook asks a singer to match (FACTS 42).
 - **The recall asks Lesson 9's question first**, in lesson order, as Lesson 21's recall does (FACTS
   7).
-- **The practice card says what Sight-Singing does at `c60f0fdcb`**: it names the note five ways, not
-  three, and a launch's notes are fitted to the saved range by whole octaves, which the plan could
-  not confirm. It promises nothing of SEASON-2 § 5.2 item 10 until it ships, prints the public
+- **The practice card says what Sight-Singing does at `c60f0fdcb`**: it names notes in six places,
+  not three, four of them on a pitch line the learner can hide, and a launch's notes are fitted to
+  the saved range by whole octaves, which the plan could not confirm. It promises nothing of SEASON-2 § 5.2 item 10 until it ships, prints the public
   address, and has no first-visit line, since the page waits on the lesson plumbing (FACTS 54 to
   63).
 - **No Go deeper drawer.** The plan's three items rest on sources read, but the page runs near the
@@ -114,7 +120,7 @@ Tavi: "I've never heard this tune. Don't I need perfect pitch to sing it straigh
 Merc: "Let's hear what the page gives you on its own."
 
 **Predict before you listen.** Tavi sings the line with no note to start from. What will you hear?
-[ Not this tune: that takes perfect pitch ] [ This tune, from a note of her own ]
+[ A jumble: with no note, she can't read it ] [ The tune, from a note of her own ]
 
 Until a choice: "Choose an answer to unlock Tavi's two tries."
 
@@ -125,14 +131,13 @@ plays alone, lighting the first note, then Tavi sings G4, A4, B4, A4 and G4, eac
 landing on its written note. The locked-in hint stays until the reveal, which waits until both have
 been heard to their end. A play that sound off kept silent sets the hint to "Sound is off: nothing
 played. Turn sound on, then play it again." A play cut short changes nothing. The reveal opens on
-"You said: not this tune" or "You said: this tune", and the hint then reads "Play either try
-again.")
+"You said: a jumble" or "You said: the tune", and the hint then reads "Play either try again.")
 
-Reveal: This tune, from a note of her own. With nothing played, Tavi still read the steps, up one,
+Reveal: The tune, from a note of her own. With nothing played, Tavi still read the steps, up one,
 up one, back, back, but from F, a step under the page. With one note first, every note landed where
-it's written. Hearing notes by their distances from each other is relative pitch, and reading runs
-on it. Absolute pitch, often called perfect pitch, would have let her start on G with nothing
-played. (Without that note she missed every written note, so "not this tune" was a fair guess.)
+it's written: that's what the note is for. Hearing notes by their distances from each other is
+relative pitch, and reading runs on it. Absolute pitch, often called perfect pitch, would have let
+her start on G with nothing played. (She missed every written note, so a jumble was a fair guess.)
 
 ## Recall from Lessons 9 and 15
 
@@ -158,13 +163,14 @@ from or perfect pitch: FACTS 1a, 7.)
 ## Three words you'll meet
 
 - **Sight-singing**: singing music from the page that you haven't seen or learned before.
-  [Play: Merc sings do, re, mi, fa, so]
+  [Play: do first, then Merc sings do to so]
 - **Tonic triad**: do, mi and so, the major chord on do (Lesson 9), here one note at a time.
   [Play: do, mi, so]
 - **Audiation**: hearing music in your head that isn't sounding. [Play: do, a silent beat, then re]
 
-(Each word's figure is a small staff in the learner's clef, its notes lighting as they play; the
-first word's Merc is Tavi for a stored higher voice: FACTS 1a, 8.)
+(Each word's figure is a small staff in the learner's clef, its notes lighting as they play. The
+first word's play gives do in the soft tone before the voice sings, as every sung reading on the
+page has its note first, and its voice is Tavi for a stored higher voice: FACTS 1a, 8, 67.)
 
 ## Step 1 of 5: Where is do on the page?
 
@@ -182,18 +188,18 @@ the notes, Play the stairs, Turn into the staff, the Clef switch and See it on t
 
 ## Step 2 of 5: Do I need perfect pitch for this?
 
-Tavi: "So how did I sing it without perfect pitch?"
+Tavi: "So what did that one note give me?"
 
-With one note to start from, each next note comes from the one before: that's relative pitch.
-Absolute pitch is something else: naming or singing a note with no other note to go by. Researchers
-think it's learned early, up to about age 6, and hard to learn after that (Takeuchi and Hulse,
-1993). Reading needs a first note, not a stored one. As Lesson 9 said, before a singer reads a new
-tune, the Royal Conservatory's examiners play do, mi and so, then its first note.
+The written notes. From that note, each next note comes from the one before: relative pitch.
+Absolute pitch is something else: naming or singing a note with no other note to go by. A 1993
+review found the evidence points to it being learned early, up to about age 6 (Takeuchi and Hulse).
+To land on the written notes, a reader needs one note to start from, not a stored one. As Lesson 9
+said, the Royal Conservatory's examiners give it: do, mi and so, then the first note.
 
 > **Common mix-up:** "You need perfect pitch to sing from the page."
 > **Why it seems right:** a good reader seems to pull each note out of the air.
 > **The evidence:** Tavi has no absolute pitch, yet with one note first she sang every written note.
-> Exams such as the Royal Conservatory's give that note first.
+> The Royal Conservatory's exams give that note first.
 > **The better idea:** hear do, then count the steps from it.
 
 **Try:** play do, hear re inside, then tap re to check.
@@ -206,8 +212,7 @@ _Toy: your staff, with Play do and a tap on any note to check it._
 Hear it inside. With Hear it inside on, each note lights a beat before it sounds: in that beat,
 imagine it. Edwin Gordon, who researched how people learn music, called this audiation. And in
 Lesson 9's study, students who said they imagine sounds vividly tended to sing more of their notes
-in tune. That's a link, not proof that practising helps. In Sing it, nothing plays your notes for
-you, so the beat before each one is yours.
+in tune. That's a link, not proof that practising helps.
 
 **Try:** switch on Hear it inside, play do to so, and imagine each note in its silent beat.
 **Notice:** each note sounds after its beat, so you can check what you imagined.
@@ -218,19 +223,19 @@ _Toy: your staff, with Hear it inside and Play do to so._
 
 [Play do, mi, so, mi, do] Do, mi and so, the tonic triad, skip a letter each time. In the treble
 clef they sit on three lines in a row; in the bass clef, in three spaces in a row, mi and so above
-the staff. Line to line, or space to space, is a leap of a third: do to mi is 4 semitones, mi to so
-3, Lesson 9's ladder. [Play do, re, mi, then do, mi] Steps use every line and space; a third skips
-one.
+the staff. [Play do, mi, then do, so] Line to line, or space to space, is a leap of a third: do
+to mi is 4 semitones, mi to so 3, Lesson 9's ladder. Do to so, two lines or two spaces up, is Lesson
+9's leap, a fifth.
 
 **Try:** play do, hear mi inside, then tap it.
 **Notice:** do, mi and so are all lines or all spaces, in either clef.
 
-_Toy: your staff, with Play do, mi, so, mi, do and Play do, re, mi, then do, mi._
+_Toy: your staff, with Play do, mi, so, mi, do and Play do, mi, then do, so._
 
 ## Step 5 of 5: Can I read it without the names?
 
-The names under the notes help at first, then they can go. In Sing it, your first phrase shows
-them, and your second shows only the house. Do is still there to count from. [Play do to so]
+The names help at first, then they can go. In Sing it, your first phrase shows them, and your
+second shows only the house. Do is still there to count from. [Play do to so]
 [Play do, mi, so, mi, do] Turn Names off and the notes stay where they are: only the help goes.
 
 **Try:** turn Names off, read a phrase in your head, then play it to check.
@@ -264,9 +269,9 @@ shows, as in Lesson 15.)
 
 **Your turn: two phrases from the page.** Merc sings do, then do, mi, so, mi, do, in G, or Tavi an
 octave higher: the tonic triad and the first note, as an exam gives them. Then read and sing at your
-own pace: first Tavi's line from the top of the page, with the names, then a line you've never
-heard, with the names off. Before each note, hear it inside. The next note lights once you've been
-close for about half a second. Sing on the syllables or on "ooh". Sing at about speaking volume. For
+own pace: first the tune Tavi sang at the top of the page, with the names, then a line you've never
+heard, with the names off. Before each note, hear it inside. The next note lights once you've held
+near it for about half a second. Sing on the syllables or on "ooh". Sing at about speaking volume. For
 the lower voice, mi and so sit above the bass staff. If so feels high, stop after the first phrase.
 
 Stop immediately if anything feels uncomfortable.
@@ -283,8 +288,7 @@ opens. Nothing plays during a take.)
 
 After each phrase, your pitch line appears, with a line for each note, such as:
 
-- "Re · In the band: 12 cents below the written note."
-- "So · Close: 45 cents above the written note."
+- "Re · In the band: 20 cents below the written note."
 - "Mi · About a semitone below, nearer a different note."
 - "Do · We didn't hear a steady note there."
 - Added when it applies: "You sang it an octave lower: same note."
@@ -295,31 +299,33 @@ If no voice came: "We didn't hear you start that time. Start on do when you're r
 Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]
 
 - After the first phrase, Easy or Workable: "Now a line you've never heard, with the names off."
-  [ Start phrase 2 ]
+  [ Start phrase 2 ] [ Stop here ]
 - After the second, Easy or Workable: "Two phrases from the page, each found from do."
   [ Play Merc's phrases ]
 - Effortful: no more phrases, then "Keep it gentle: rest before you sing again."
 - Uncomfortable: no more phrases and no lines, then "Thanks for saying so. That's enough singing for
   today: rest your voice.", and the doctor lines.
 
-No microphone: "No microphone? Read and sing anyway, then play Merc's phrases to check. Nothing
-listens."
+No microphone: "No microphone? Play the start, read and sing anyway, then play Merc's phrases to
+check. Nothing listens." [ Play the start ]
 
-(Play Merc's phrases appears only once the singing has ended, so the second phrase is never heard
-before it is read: after the second phrase, after Effortful or Uncomfortable, after Just listen
-today, after the visit's last take, and with no microphone. It sings the start and both phrases in
-the chosen voice, each note lighting on the staff as it sounds.)
+(Stop here ends the singing for the visit, with the practice card kept. Play the start sings do,
+then do, mi, so, mi, do, and no phrase. Play Merc's phrases appears only once the singing has ended,
+so the second phrase is never heard before it is read: after the second phrase, after Stop here,
+Effortful or Uncomfortable, after Just listen today, after the visit's last take, and with no
+microphone. It sings the start and both phrases in the chosen voice, each note lighting on the
+staff as it sounds.)
 
 ## Quick check
 
 _[Editorial: each question has three answers, shown in a shuffled order, so a guess scores a third,
 not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
-1. What does a singer need before reading a tune they've never heard?
+1. What does a singer need to sing a new tune on its written notes?
    - A note to start from, such as do **[correct]** · Feedback: "From one note, relative pitch
      finds the rest."
-   - Absolute pitch · Feedback: "Absolute pitch is thought to be learned in early childhood, and
-     reading doesn't need it. Try Step 2 again."
+   - Absolute pitch · Feedback: "Absolute pitch would do it with no note, but one note to start
+     from is enough. Try Step 2 again."
    - To hear the whole tune once · Feedback: "Then it wouldn't be sight-singing. One note is enough
      to start."
 2. In G, where does the lower voice's do sit on the bass staff?
@@ -330,8 +336,8 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 3. On the staff, do, mi and so sit...
    - On three lines in a row, or three spaces in a row **[correct]** · Feedback: "Each skips one
      letter: a leap of a third."
-   - On three neighbouring places: line, space, line · Feedback: "That's do, re, mi: steps. Try Step
-     4 again."
+   - On three neighbouring places, like line, space, line · Feedback: "Neighbouring places are steps,
+     like do, re, mi. Try Step 4 again."
    - Anywhere: the staff doesn't show leaps · Feedback: "It does: line to line skips one letter."
 4. Listen. [Play: do, a pause, then re] What helps most to sing the note after do?
    - Hearing it inside before you sing it **[correct]** · Feedback: "Imagine it in the beat before,
@@ -342,8 +348,8 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 ## Wrap
 
-- Reading a tune needs one note to start from, not absolute pitch: hear do, then count the steps
-  from it.
+- To sing a tune on its written notes, you need one note to start from, not absolute pitch: hear
+  do, then count the steps from it.
 - The house marks do. Each line or space up is the next syllable, and do, mi and so sit on three
   lines, or three spaces, in a row.
 - Hear each note inside before you sing it.
@@ -356,10 +362,10 @@ to sing from the page.
 - Eyebrow: Practise in MercuryPitch
 - Title: Sight-Singing
 - Text: Sight-Singing writes six notes it picks itself, in the key it shows and the voice range
-  saved in Settings: set yours first, under Singing Voice Range. Hold each note to light the next.
-  It plays nothing first, not even do. It writes only the treble clef, so a lower voice reads below
-  it, on ledger lines, and it wants each note in the octave written. It names every note and shows
-  your pitch line: read the staff, not the names.
+  saved in Settings: set yours first, under Singing Voice Range. It plays nothing first. It writes
+  only the treble clef, so a lower voice reads below it, on ledger lines, and it wants each note in
+  the octave written. Its round button at the top right hides your pitch line; the names under the
+  notes and on the hold bar stay.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Sight-Singing.
@@ -374,8 +380,8 @@ Light, the app's intro, steps aside on a first visit and the card has no first-v
 SEASON-2 § 5.2 item 10 ships, the card shrinks: a fixed-phrase address with this page's two phrases
 (10a) replaces "six notes it picks itself", a "hear do" start (10b) replaces "It plays nothing
 first", the bass clef (10c) and octave folding (10f) replace the clef and octave sentence, and
-names off (10e), once it hides the hold bar and the pitch line's labels too, replaces the last
-sentence (FACTS 63; WEB-SPEC, Practice links). The rest version is Lesson 12's form: Sight-Singing
+names off (10e), once it hides the letters under the notes and the hold bar's name, replaces the
+last sentence (FACTS 63; WEB-SPEC, Practice links). The rest version is Lesson 12's form: Sight-Singing
 asks for the voice, so after those endings the card names it for another day and is no longer a
 link (FACTS 52).]_
 
@@ -466,9 +472,9 @@ their text as it stands, so a decision there carries here.
   treble. Each take waits up to 8 s for the voice to start on do; each note then has up to 8 s
   before the next lights anyway. No warm-up: the coach may add Lesson 3's (FACTS 43, 45).
 - **To confirm: the second phrase's leap.** It opens with do up to so, Lesson 9's leap, a fifth,
-  two lines or two spaces up, just after the start has sung do, mi and so. If the coach wants
-  thirds only on a first reading, do, mi, re, mi, do keeps the season's rule (it is not the start)
-  and is played nowhere on the page (FACTS 43).
+  two lines or two spaces up, which Step 4 shows on the staff, just after the start has sung do, mi
+  and so. If the coach wants thirds only on a first reading, do, mi, re, mi, do keeps the season's
+  rule (it is not the start) and is played nowhere on the page (FACTS 43).
 - **To confirm: the key, G, as Lesson 15's.** Every sung note sits at least two semitones inside
   every preset of its voice; the least room is at the top, for the bass preset (D4 against its E4,
   2) and the alto preset (D5 against its F5, 3). In C, the plan's key, the line starts on the floor
@@ -500,15 +506,19 @@ their text as it stands, so a decision there carries here.
 - **To confirm: the pitch line hidden during a take**, shown beside the staff after each phrase
   ("sing first, then see", playbook rule 23), as the lead answered the plan's question; the lab
   tests it with the coach (FACTS 46).
-- **The lines**, one a note, Lesson 9's with "the written note": "In the band", "Close" or "About a
-  semitone below, nearer a different note", with Lesson 3's octave line, or "We didn't hear a steady
-  note there."; no advice, no count and no score (FACTS 47).
+- **The lines**, one a note, Lesson 9's with "the written note": "Right in the middle", "In the
+  band", "Close" or "About a semitone below, nearer a different note", with Lesson 3's octave line,
+  or "We didn't hear a steady note there."; no advice, no count and no score (FACTS 47).
 
 ### The checkpoint: dose, takes and endings
 
 - The dose: the start, then two phrases of five notes, a take each; at most three takes a visit,
-  counting a take with no voice; the second phrase only after "Easy" or "Workable" on the first;
-  never another take after "Effortful" or "Uncomfortable" (FACTS 49, 50).
+  counting a take with no voice; the second phrase only after "Easy" or "Workable" on the first,
+  with Stop here beside it for a learner who would rather not; never another take after
+  "Effortful" or "Uncomfortable" (FACTS 49, 50).
+- No microphone: Lesson 9's line with this task, "No microphone? Play the start, read and sing
+  anyway, then play Merc's phrases to check. Nothing listens.", and Play the start, so even a
+  learner singing with nothing listening hears do first (FACTS 51).
 - How did that feel? and its endings: Lesson 3's four answers after each phrase with voice. The new
   Easy and Workable lines name the task, never the voice: "Now a line you've never heard, with the
   names off." and "Two phrases from the page, each found from do." After "Effortful", no more

@@ -27,7 +27,10 @@
   hand-back: no drill in the app or the plan does).
 - Lesson 20 cites Lesson 18's ARTICLE-PLAN (FACTS 30) and Lesson 16's ARTICLE-PLAN (FACTS 54):
   rebind to their FACTS/LESSON once 16 and 18 are committed, if the lines still hold.
-- App notes from Lesson 20 (verify before telling the owner; not for the page): Staccato
+- App notes from Lesson 20 (VERIFIED by the lead 2 Nov 02:4x: Scale Runner's grade is
+  round(acc*0.4 + best*0.15 + evenness*0.25), at most 80, and both drills read `difficultyFactor`,
+  whose level rises at an average of 90; Staccato Precision scores pitch, best round and the attack's
+  pitch, not timing. For the owner's report and the app's own list, not the page): Staccato
   Precision's help says it scores timing (`exercise-help.ts:206`); Scale Runner's grade tops out at
   80 against a level-up average of 90 (`use-scale-runner-controller.ts:198-204`,
   `adaptive-difficulty.ts:12-13`).
