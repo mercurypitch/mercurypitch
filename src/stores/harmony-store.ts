@@ -17,6 +17,11 @@
 // picker would otherwise load the room to draw its card). On this device
 // only, for now: the `mp_` prefix keeps the keys out of the settings sync.
 //
+// Whether this device has seen the "how it works" demo is a device fact,
+// set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
+// lives here so the ways in (harmony-entry.ts) can say the demo plays by
+// itself without loading the room.
+//
 // Built on first read, not on import, so nothing at this module's top
 // level touches storage.
 
@@ -28,6 +33,8 @@ import { EXERCISE_LEVELS } from './exercise-level'
 export const HARMONY_BESTS_KEY = 'mp_harmony_bests'
 /** Where the way the singer sings is kept. */
 export const HARMONY_WAY_KEY = 'mp_harmony_way'
+/** Where the demo's seen flag lives: on this device only. */
+export const HARMONY_DEMO_SEEN_KEY = 'mp_harmony_demo_seen'
 
 /** Taking turns with Merc, or singing with him in headphones. */
 export type HarmonyWayId = 'turns' | 'together'
@@ -139,7 +146,36 @@ export function setHarmonyWay(next: HarmonyWayId): void {
 }
 
 /** Drop the signals read so far: the next read takes storage as it is now. */
+let demoSeen: Signal<boolean> | undefined
+
+function demoSeenSignal(): Signal<boolean> {
+  demoSeen ??= createPersistedSignal<boolean>(HARMONY_DEMO_SEEN_KEY, false, {
+    validator: (value): value is boolean => typeof value === 'boolean',
+  })
+  return demoSeen
+}
+
+/** This device has seen the demo: its end card, Skip or Not now. */
+export function harmonyDemoSeen(): boolean {
+  return demoSeenSignal()[0]()
+}
+
+export function markHarmonyDemoSeen(): void {
+  if (!harmonyDemoSeen()) demoSeenSignal()[1](true)
+}
+
+/**
+ * The demo plays by itself on the way in: a first visit, the demo unseen
+ * and no run kept yet (no best at any level). One rule for the room
+ * (demo/useHarmonyDemo.ts) and its ways in (harmony-entry.ts).
+ */
+export function harmonyDemoAutoPlays(): boolean {
+  if (harmonyDemoSeen()) return false
+  return EXERCISE_LEVELS.every((level) => harmonyBest(level) === null)
+}
+
 export function resetHarmonyStoreForTests(): void {
   table = undefined
   way = undefined
+  demoSeen = undefined
 }

@@ -15,6 +15,7 @@ import type { HarmonyLine } from './harmony-line'
 import type { HarmonyState } from './harmony-machine'
 import type { HarmonyLevel, HarmonyWay } from './harmony-rules'
 import type { HarmonySummary } from './harmony-run'
+import type { HarmonyScript } from './scripted-take'
 
 /** The chip while the singer sings on their own. */
 export const YOUR_TURN = 'Your turn'
@@ -42,6 +43,8 @@ export interface HarmonyControllerOptions {
    * sings him with the synth "ooh".
    */
   readonly voice?: RoundVoice
+  /** What that voice needs loaded before the demo sings (his sampled set). */
+  readonly ready?: () => Promise<unknown>
   readonly random?: () => number
 }
 
@@ -80,4 +83,6 @@ export interface HarmonyController extends ShellRun {
   readonly replayLine: (index: number) => void
   /** The room's trail, drawn every frame of the singer's turn. */
   readonly drawTrail: (sink: HarmonyTrailSink) => void
+  /** The demo's way in: its takes sung through the run's own steps. */
+  readonly script: HarmonyScript
 }

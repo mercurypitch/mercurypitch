@@ -17,6 +17,9 @@
 // (the level says how often). A run's way (turns or together) is fixed at
 // its start. A run stopped part-way (the mic tapped, the app leaving) goes
 // back to the intro and keeps nothing: an aborted run is not a result.
+// `demo` moves the room for the "how it works" demo (demo/), which sings its
+// takes through the room's own steps (scripted-take.ts): its line's call,
+// taking turns, or the room back at rest.
 
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import type { HarmonyLine } from './harmony-line'
@@ -99,6 +102,8 @@ export type HarmonyEvent =
   | { readonly type: 'finish' }
   /** The run is given up, or the room goes back to rest. */
   | { readonly type: 'stop' }
+  /** The demo's move: its line's call, taking turns, or the room at rest (null). */
+  | { readonly type: 'demo'; readonly line: HarmonyLine | null }
 
 export const INITIAL_HARMONY_STATE: HarmonyState = {
   phase: 'intro',
@@ -193,5 +198,15 @@ export function harmonyReducer(
         way: state.way,
         lines: state.lines,
       }
+    case 'demo':
+      return event.line === null
+        ? { ...INITIAL_HARMONY_STATE, run: state.run }
+        : {
+            ...INITIAL_HARMONY_STATE,
+            phase: 'call',
+            run: state.run,
+            way: 'turns',
+            lines: [event.line],
+          }
   }
 }

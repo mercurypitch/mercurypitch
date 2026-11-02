@@ -106,6 +106,22 @@
   visibility: hidden;
 }
 
+/* The demo's Skip, at the top right while it plays (room kit ShellSkip). */
+.skip {
+  position: absolute;
+  top: calc(var(--pushed-top, 0px) + 6px);
+  right: 12px;
+  z-index: 5;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+}
+
 /* Merc's line, over the lamps. The room sets its bottom, and at the
    result its left: beside Merc on the jetty, to the room's right margin. */
 .bubble {

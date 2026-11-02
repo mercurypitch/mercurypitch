@@ -99,6 +99,7 @@ These are the rules that break things when ignored.
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `harmony` | [HarmonyRoom.tsx](../../src/features/harmony/HarmonyRoom.tsx) | 4.6k | HarmonyRoom — Merc sings a line; sing it a third above him The fourth Ear room (docs/plans/ear-rooms.md, Room 4). |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.5k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
@@ -107,7 +108,6 @@ These are the rules that break things when ignored.
 | `leap` | [LeapRoom.tsx](../../src/features/leap/LeapRoom.tsx) | 3.8k | LeapRoom — Merc sings a note and names a leap; sing his note, then leap The third Ear room (docs/plans/ear-rooms.md, Room 3). |
 | `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.6k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in tabGroups(), so it never appears in the tab bar. |
-| `harmony` | [HarmonyRoom.tsx](../../src/features/harmony/HarmonyRoom.tsx) | 3.3k | HarmonyRoom — Merc sings a line; sing it a third above him The fourth Ear room (docs/plans/ear-rooms.md, Room 4). |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
@@ -247,13 +247,13 @@ These are the rules that break things when ignored.
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
 | [native-device-api.ts](../../src/stores/native-device-api.ts) | 250 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
+| [harmony-store.ts](../../src/stores/harmony-store.ts) | 200 | Harmony's records — the best at each level, and how it is sung A best is the most lines sung in harmony (every note a third from Merc's)... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |
-| [harmony-store.ts](../../src/stores/harmony-store.ts) | 150 | Harmony's records — the best at each level, and how it is sung A best is the most lines sung in harmony (every note a third from Merc's)... |
 | [leap-store.ts](../../src/stores/leap-store.ts) | 150 | Leap's records — the best at each level, the demo seen A best is the most leaps landed in a run, and among runs that landed as many, the... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |

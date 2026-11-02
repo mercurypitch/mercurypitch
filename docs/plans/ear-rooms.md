@@ -4,8 +4,8 @@
 on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026), both drawn in
 vector until their paintings come. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
-way on to the Karaoke room, and gives Home note its painted harbour. Leap has a "How it works" demo
-(2 Nov 2026); Home note, First note and Harmony have none yet. The owner's design
+way on to the Karaoke room, and gives Home note its painted harbour. Leap and Harmony have a "How it
+works" demo (2 Nov 2026); Home note and First note have none yet. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -447,9 +447,19 @@ window (`sung-window.ts`, shared with Leap). `src/features/harmony/`. Merc says 
 result lines aloud, ElevenLabs takes in its `voice/` folder (2 Nov 2026), as the other Ear rooms'
 are; his calls, cheers and the missed note's pair name notes, and stay in his bubble.
 
+**How it works** (2 Nov 2026). A first visit opens on a demo, as Leap's does, and "?" plays it again
+at rest or from a result. Merc sings his line, G A B in the singer's key, and the harmony is sung
+back after him through the room's own engine, twice, at Singer, taking turns (the level and the way
+a first visit starts on): "Not like this" sings the first note a third above, then Merc's own second
+note instead of the third over it, so that gold lamp stays dark and he sings his note, then the third
+from it; "Like this" sings every note a third above, and every gold lamp lights. Singing the tune
+instead of the part is the first thing harmony asks a singer not to do. Four tooltips, each on the
+moment it explains: his line first, yours a third above, my note not yours, and every lamp lit. Its
+words are the demo kit's; it never opens the mic, fires a haptic or keeps a result, and his opening
+line waits, unsaid, while it plays (`src/features/harmony/demo/`).
+
 **Next.** Prove Together on phones: Bluetooth headphones' delay (the windows allow 0.35 to 0.45 s
 late), and a wired pair's leak into the mic. The painting (lamps on two lines over a lake at night).
-A demo.
 
 ## How they earn
 
