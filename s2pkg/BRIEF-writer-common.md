@@ -19,8 +19,8 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
 
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `b55beeb20`, on main `c60f0fdcb`.
-  Lessons 15, 17, 19, 21 and 23 are committed there. Write only your three files in your lesson
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `87a06b85e` or later, on main
+  `c60f0fdcb`. Lessons 15, 16, 17, 19, 21 and 23 are committed there, and later ones as they land. Write only your three files in your lesson
   folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
   they are: they are the planning record. Where your package departs from the plan, say so in
   LESSON.md's preamble or in FACTS.
@@ -54,8 +54,9 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
    choice, a sing-along, the six-preset range table), `lessons/17-note-lengths/` (rhythm on the
    staff, the tap take), `lessons/19-threes-offbeats/` (a page where nothing is sung),
    `lessons/21-keys-circle/` (key signatures, Lesson 4's staircase in the kit) and
-   `lessons/23-perfect-tritone/` (the newest: one predict with the steps' toys locked until the
-   choice, a sing-along, the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
+   `lessons/23-perfect-tritone/` (one predict with the steps' toys locked until the choice, a
+   sing-along, the coach's list) and `lessons/16-sing-what-you-see/` (the newest: a scored reading
+   checkpoint in the learner's own clef, in G, with the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
    lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
    preambles narrate a commit history; yours needs only one line: app claims cite the code at
    `c60f0fdcb`, plan files at the branch head.

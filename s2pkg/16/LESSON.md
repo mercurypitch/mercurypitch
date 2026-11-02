@@ -31,7 +31,8 @@ with no voice, the no-microphone line and the "What this does" box are Lesson 9'
 note" for "Merc's note" and this task's words, and the box adds one clause, on when the pitch line
 shows. The practice card's care lines and its rest version are Lesson 12's, naming Sight-Singing,
 since that drill asks for the voice (FACTS 36 to 41, 47, 48, 51, 52). Three lines are new: the two
-after Easy or Workable, and Your turn's line for a top note that feels high. Syllables follow Lesson
+after Easy or Workable, and Your turn's line for a top note that feels high. So are two controls:
+Stop here beside the second phrase's offer, and Play the start with no microphone (FACTS 49, 51). Syllables follow Lesson
 4's spelling, "so"; black keys are named by their sharps, as the app names them, and none is sung
 (FACTS 10).
 
@@ -55,8 +56,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   note for note the start the page sings first, and a sight-singing checkpoint "plays do first,
   never the melody" (SEASON-2 § 1.5 item 6). The first phrase stays Tavi's line, do, re, mi, re, do,
   heard in the cold open: a worked example with its names, then a line nobody has played, with the
-  names off. Step 4 shows its opening leap, do up to so, a fifth, on the staff; no step plays the
-  new line (FACTS 43).
+  names off. Step 4 plays its opening leap, do up to so, a fifth, then shows it on the staff; no
+  step plays the new line (FACTS 43).
 - **Three words, not four**: Sight-singing, Tonic triad and Audiation. The plan's Relative pitch
   and Absolute pitch sat below the predict, where a phone shows them before the choice, and together
   they answer it; the reveal and Step 2 define them after the choice, in Lesson 6's words (FACTS 1a,
@@ -82,9 +83,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   7).
 - **The practice card says what Sight-Singing does at `c60f0fdcb`**: it names notes in six places,
   not three, four of them on a pitch line the learner can hide, and a launch's notes are fitted to
-  the saved range by whole octaves, which the plan could not confirm. It promises nothing of SEASON-2 § 5.2 item 10 until it ships, prints the public
-  address, and has no first-visit line, since the page waits on the lesson plumbing (FACTS 54 to
-  63).
+  the saved range by whole octaves, which the plan could not confirm. It promises nothing of
+  SEASON-2 § 5.2 item 10 until it ships, prints the public address, and has no first-visit line,
+  since the page waits on the lesson plumbing (FACTS 54 to 63).
 - **No Go deeper drawer.** The plan's three items rest on sources read, but the page runs near the
   cap; FACTS keeps them for a later page (FACTS 3, Unsupported, not used).
 
@@ -364,8 +365,7 @@ to sing from the page.
 - Text: Sight-Singing writes six notes it picks itself, in the key it shows and the voice range
   saved in Settings: set yours first, under Singing Voice Range. It plays nothing first. It writes
   only the treble clef, so a lower voice reads below it, on ledger lines, and it wants each note in
-  the octave written. Its round button at the top right hides your pitch line; the names under the
-  notes and on the hold bar stay.
+  the octave written. It prints each note's name under it: read the staff, not the names.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Sight-Singing.
@@ -472,15 +472,15 @@ their text as it stands, so a decision there carries here.
   treble. Each take waits up to 8 s for the voice to start on do; each note then has up to 8 s
   before the next lights anyway. No warm-up: the coach may add Lesson 3's (FACTS 43, 45).
 - **To confirm: the second phrase's leap.** It opens with do up to so, Lesson 9's leap, a fifth,
-  two lines or two spaces up, which Step 4 shows on the staff, just after the start has sung do, mi
-  and so. If the coach wants thirds only on a first reading, do, mi, re, mi, do keeps the season's
+  two lines or two spaces up, which Step 4 plays and shows on the staff, just after the start has
+  sung do, mi and so. If the coach wants thirds only on a first reading, do, mi, re, mi, do keeps the season's
   rule (it is not the start) and is played nowhere on the page (FACTS 43).
 - **To confirm: the key, G, as Lesson 15's.** Every sung note sits at least two semitones inside
-  every preset of its voice; the least room is at the top, for the bass preset (D4 against its E4,
-  2) and the alto preset (D5 against its F5, 3). In C, the plan's key, the line starts on the floor
-  of the tenor and soprano presets. The cost is on the page: for the lower voice mi and so sit above
-  the bass staff, B3 in the space above it and D4 just over middle C's ledger line, and Your turn
-  says so (FACTS 44):
+  every preset of its voice; the least room is at the top, for the bass preset (D4 against its
+  E4, 2) and the alto preset (D5 against its F5, 3). In C, the plan's key, the line starts on the
+  floor of the tenor and soprano presets. The cost is on the page: for the lower voice mi and so
+  sit above the bass staff, B3 in the space above it and D4 just over middle C's ledger line, and
+  Your turn says so (FACTS 44):
 
   | The line         | Preset        | Its range | Room below | Room above |
   | ---------------- | ------------- | --------- | ---------- | ---------- |

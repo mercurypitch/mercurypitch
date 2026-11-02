@@ -65,10 +65,12 @@ practice card sits in the Wrap. No Watch section. The page opens in Lesson 2's o
 Each section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 1. **Masthead**: Lesson 15's, with "Season 2 · Lesson 16", anchors Lesson, Sing and Explorer, the
-   Sound toggle off by default and Pause animations, through `initMasthead` with `{ lesson: 16,
-   deck }`. On a first visit its welcome tour waits for the predict's choice (Toys 1).
-2. **Hero, with the cold open**, laid out as Lesson 2's: the kicker, the hook as the title (`<h1
-   class="hook" id="hook">`), the meta as five chips, the promise and the sound gate from LESSON.md.
+   Sound toggle off by default and Pause animations, through `initMasthead` with
+   `{ lesson: 16, deck }`. On a first visit its welcome tour waits for the predict's choice
+   (Toys 1).
+2. **Hero, with the cold open**, laid out as Lesson 2's: the kicker, the hook as the title
+   (`<h1 class="hook" id="hook">`), the meta as five chips, the promise and the sound gate from
+   LESSON.md.
    The chips are "15 minutes" (FACTS 3), "After Lesson 9: Landing a leap" and "After Lesson 15: The
    staff: where notes sit", each a link to that page that stays a plain chip wherever the lesson is
    not live (FACTS 2), "Sound on" and "Microphone optional". The stage holds Tavi's and Merc's
@@ -95,17 +97,18 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
    None of these names a note to start from or what a reader sings without one (FACTS 1a). Lengths:
    `verify16.py`, section 7.
-3. **Recall from Lessons 9 and 15**, straight after the hero, shown to everyone (Toys 6; FACTS 7).
+
+3. **Recall from Lessons 9 and 15**, straight after the hero, shown to everyone (Toys 5; FACTS 7).
 4. **Three words you'll meet**: Sight-singing, Tonic triad, Audiation, each with its figure and play
    (Toys 4).
 5. **Steps**: the step deck, five steps, the staff toy stuck beside the text (Toys 2), Step 2's
    mix-up card in its text.
 6. **Sing it**: the comfort check, the voice choice and Lesson 15's line, Your turn, the stop line,
    the "What this does" box, the learner's staff, the takes, the reading and "How did that feel?"
-   (Toys 7).
-7. **Quick check**: four questions (Toys 6).
+   (Toys 6).
+7. **Quick check**: four questions (Toys 5).
 8. **Wrap**: the three lines, the one-sentence challenge, the practice card in the version Sing it's
-   ending picks (Practice links), the next-lesson card with Lesson 17's still (Toys 8), and free play,
+   ending picks (Practice links), the next-lesson card with Lesson 17's still (Toys 7), and free play,
    the step toys unlocked.
 9. **Explorer**: the season's map with a tab per season, opening on Season 2's.
 10. **Footer**: LESSON.md's, with the practice link, the fonts line and "Every sound on this page is
@@ -113,65 +116,64 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,225 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
-under the series' cap of 2,379 by 154. Each step's own text, with its Try, its Notice and any Tavi
-line, runs 81 to 118 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.35 of reading
-at 238 words a minute and about 5.6 of sound, toys and tasks, about 14.9 in all. The chip is an
-estimate until the staff toy and the take are timed in their lab (SEASON-2 § 1.3), and this section
-says so until then. Five parts carry more, for these reasons:
+The learner copy is 2,226 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+under the series' cap of 2,379 by 153. Each step's own text, with its Try, its Notice and any Tavi
+line, runs 78 to 118 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.35 of reading
+at 238 words a minute and about 5.1 of sound, toys and tasks, with six quiz questions, about 14.5 in
+all. The chip is an estimate until the staff toy and the take are timed in their lab (SEASON-2
+§ 1.3), and this section says so until then. Five parts carry more, for these reasons:
 
-- **Step 2, 193 words with its mix-up card.** The card sits in the step whose argument refutes it.
-- **Sing it, 531 words.** It holds the series' singing lines, Lesson 3's and Lesson 15's word for
-  word, which are not cut; Lesson 9's box and lines; the reading's five example lines; and three
-  lines of its own (FACTS 36 to 51).
-- **The quick check, 275 words.** Four questions with three answers each and a line of feedback for
+- **Step 2, 192 words with its mix-up card.** The card sits in the step whose argument refutes it.
+- **Sing it, 534 words.** It holds the series' singing lines, Lesson 3's and Lesson 15's word for
+  word, which are not cut; Lesson 9's box and lines; the reading's four example lines; Stop here and
+  Play the start; and lines of its own (FACTS 36 to 51).
+- **The quick check, 282 words.** Four questions with three answers each and a line of feedback for
   every answer, as MASTER-PLAN § 4.2 item 8 asks.
 - **The recall, 159 words.** Lessons 9 and 15's questions, word for word.
-- **The Wrap, 264 words.** The practice card says what Sight-Singing does today, with its care
-  lines and its rest version (FACTS 52 to 58).
+- **The Wrap, 267 words.** The practice card says what Sight-Singing does today, how to hide its
+  pitch line, its care lines and its rest version (FACTS 52 to 58).
 
 The hints and status lines are stage directions in LESSON.md and are not counted, as in every text
 package: the predict's hints and its "You said" lines, the stored voice's line, Sing it's status
 lines during a take, and the toys' labels and hints. A built page writes them in the open, about 150
-words more by Lesson 8's reckoning (Lesson 8 FACTS 4), so the built page would run about 2,375
-words, 4 under the cap. The reading's five example lines are not printed on the built page, since
-it prints the learner's own, which gives back about 40. If a build still runs over, it makes these
-cuts first, 42 words, and every fact they carry stays in FACTS:
+words more by Lesson 8's reckoning (Lesson 8 FACTS 4), so the built page would run about 2,376
+words, 3 under the cap. The reading's four example lines, 35 words, are not printed on the built
+page, since it prints the learner's own, which brings it to about 2,341. If a build still runs over,
+it makes these cuts first, 49 words, and every fact they carry stays in FACTS:
 
-1. Step 4's "Steps use every line and space; a third skips one." (11 words; FACTS 14), which its
-   Notice and quick check 3 repeat.
-2. The practice card's "It names every note and shows your pitch line: read the staff, not the
-   names." (15 words; FACTS 58), which goes anyway once names off ships (Practice links).
-3. Step 3's "In Sing it, nothing plays your notes for you, so the beat before each one is yours." (16
-   words; FACTS 30), which Your turn's "Before each note, hear it inside." carries.
+1. Step 2's "A 1993 review found the evidence points to it being learned early, up to about age 6
+   (Takeuchi and Hulse)." (20 words; FACTS 20), which the step's point does not rest on.
+2. Step 3's "And in Lesson 9's study, students who said they imagine sounds vividly tended to sing
+   more of their notes in tune. That's a link, not proof that practising helps." (29 words; FACTS
+   25), cut whole, since the second sentence is the first one's limit.
 
 The activities are timed from FACTS 66 to 70. Free play is not counted.
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                              | New in Lesson 16                                                                                                   |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1. Predict and hero staff | The kit's predict (`kit/predict.ts`) with `revealAfter: 'all'`; the tour's hold (`kit/tour-gate.ts`); the staff toy's drawing       | Tavi's sung notes drawn on the staff where she sang them, orange                                                   |
-| 2. The staff toy, steps   | Lesson 15's staff toy (its places, clefs, ledger lines, taps, the pitch-line switch); the house (`kit/home-glyph.ts`)                | Five step states; the Clef switch on a voice's default; Hear it inside; Names on · off                              |
-| 3. The staircase          | Lesson 4's staircase, moved into the kit for Lesson 21 (`lesson-04/stairs-toy.ts`), started on G3 or G4                              | Turn into the staff: each stair lands on its place                                                                 |
-| 4. Three words            | The kit's words strip (`kit/words-strip.ts`) with the page's sound owner                                                            | Three small staves in the learner's clef                                                                           |
-| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lesson 9's question object; Lesson 15's, once built                | Ids `l16-q1` to `l16-q4`; quick check 4's play                                                                     |
+| Toy                       | Reuses                                                                                                                                                                                            | New in Lesson 16                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1. Predict and hero staff | The kit's predict (`kit/predict.ts`) with `revealAfter: 'all'`; the tour's hold (`kit/tour-gate.ts`); the staff toy's drawing                                                                     | Tavi's sung notes drawn on the staff where she sang them, orange                                                    |
+| 2. The staff toy, steps   | Lesson 15's staff toy (its places, clefs, ledger lines, taps, the pitch-line switch); the house (`kit/home-glyph.ts`)                                                                             | Five step states; the Clef switch on a voice's default; Hear it inside; Names on · off                              |
+| 3. The staircase          | Lesson 4's staircase, moved into the kit for Lesson 21 (`lesson-04/stairs-toy.ts`), started on G3 or G4                                                                                           | Turn into the staff: each stair lands on its place                                                                  |
+| 4. Three words            | The kit's words strip (`kit/words-strip.ts`) with the page's sound owner                                                                                                                          | Three small staves in the learner's clef                                                                            |
+| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lesson 9's question object; Lesson 15's, once built                                                                              | Ids `l16-q1` to `l16-q4`; quick check 4's play                                                                      |
 | 6. Sing it                | Lesson 12's sing flow moved into the kit, its comfort check, voice choice and feelings (`kit/comfort.ts`, `kit/voice-choice.ts`); the listener (`kit/listen.ts`); the take reader (`kit/take.ts`) | The cursor take, read note by note; the start sung before each phrase; the pitch line after a phrase; the flow rule |
-| 7. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                        | Lesson 17's stage as a still, which plays nothing                                                                  |
+| 7. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                      | Lesson 17's stage as a still, which plays nothing                                                                   |
 
 ### 1. Predict and the hero's staff
 
 The hero's staff is the staff toy's drawing in a fixed state: a treble staff with its clef and five
 plain noteheads, G4, A4, B4, A4, G4, no stems, no names, no house, nothing lit, between Merc and
-Tavi; it takes no taps (FACTS 32). The kit's predict, as it is: two `.choice` buttons, "Not this
-tune: that takes perfect pitch" and "This tune, from a note of her own"; two plays, `alone` ("Tavi
+Tavi; it takes no taps (FACTS 32). The kit's predict, as it is: two `.choice` buttons, "A jumble:
+with no note, she can't read it" and "The tune, from a note of her own"; two plays, `alone` ("Tavi
 sings, no note first") and `note` ("One note first, then Tavi sings"), no free play; `revealOn:
 ['alone', 'note']` with `revealAfter: 'all'`, so the reveal waits until both have been heard to
 their end with sound on (`src/features/lessons/kit/predict.ts:55-59`); the hints from LESSON.md,
 `chosen` "Locked in. Play both tries.", `silent` "Sound is off: nothing played. Turn sound on, then
 play it again." and `again` "Play either try again.", with no `next`, so the locked-in hint stays
 until the reveal; the markup's lock hint, "Choose an answer to unlock Tavi's two tries."; and
-`guess` giving "You said: not this tune" or "You said: this tune" (FACTS 35).
+`guess` giving "You said: a jumble" or "You said: the tune" (FACTS 35).
 
 - **Tavi sings, no note first** (`alone`): Tavi sings F4, G4, A4, G4, F4 on "ooh", 0.6 s a note;
   as each note sounds an orange notehead appears where she sang it, one place under its written
@@ -187,8 +189,11 @@ On a first visit the welcome tour waits for the choice: its step "One step at a 
 steps' stage (`src/features/lessons/kit/tour-copy.ts:44-46`), which would carry a learner past the
 predict, so the page holds the tour until a choice through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), with no time limit, as Lessons 15, 21 and 23 do.
-Nothing in the steps answers the predict, and none of their toys plays a line with no note first or
-the cold open's line, so the steps need no predict lock (FACTS 1a).
+The hold matters here: Step 2's text points to the answer, saying what the one note gives and that
+Tavi has no absolute pitch, and it sits further down the page on a wide screen, under the recall and
+the three words, and one Next from Step 1 in a phone's deck. A learner who goes there unasked has
+passed the predict, as on Lesson 21's page. None of the steps' toys plays a line with no note first
+or the cold open's line, so the toys need no predict lock (FACTS 1a).
 
 ### 2. The staff toy in the steps
 
@@ -209,8 +214,10 @@ say it ("A3, the top line"); "See it on the pitch line" is on the toy in every s
 3. **Hear it inside (Step 3).** A switch, off at first. On, every run of notes lights each note 1.0
    s before it sounds; "Play do to so" plays do, re, mi, fa, so that way, 8.0 s. Off, it plays them
    at 0.6 s onsets, 2.9 s. The switch holds for the visit, in memory, across the steps and free play.
-4. **The triad (Step 4).** "Play do, mi, so, mi, do", 2.9 s, and "Play do, re, mi, then do, mi",
-   3.3 s; with Hear it inside on, each note lights its beat first.
+4. **The triad (Step 4).** "Play do, mi, so, mi, do", 2.9 s, and "Play do, mi, then do, so", 2.7 s,
+   the third and then the fifth that Step 4's text puts on the staff, line to line and two lines or
+   two spaces up, so the leap that opens the second phrase is heard before it is read (FACTS 43);
+   with Hear it inside on, each note lights its beat first.
 5. **Names (Step 5).** **Names on · off**, a radio group: off hides the syllables under every note
    and keeps the house; on shows them. "Play do to so" and "Play do, mi, so, mi, do" play with the
    names as they are.
@@ -218,7 +225,8 @@ say it ("A3, the top line"); "See it on the pitch line" is on the toy in every s
    pitch-line switch, and no reveal or quiz attached.
 
 No step's play is the cold open's line, G A B A G, or the second phrase, G D B A G, in either
-octave: the step toys play do to so, the triad and its turn, and single notes (FACTS 43). A
+octave: the step toys play do to so, the triad and its turn, do, mi then do, so, and single notes
+(FACTS 43). A
 learner's taps can play any note, as every staff toy's can.
 
 The steps' figure is `.viz.tall`, as Lesson 15's (FACTS 71): the lower voice's notes reach D4, the
@@ -241,10 +249,11 @@ one place."
 
 The kit's words strip, a ticket a word with its figure and play, with the page's sound owner. Each
 figure is a small staff in the learner's clef (the stored voice, the bass when none), its notes
-lighting as they play (FACTS 67): Sight-singing, do to so, sung by Merc, or Tavi for a stored higher
-voice; Tonic triad, do, mi, so; Audiation, do, then re lit through a silent beat, then re. No figure
-has the pitch-line switch, as Lesson 15's word figures have none: the steps play the same notes
-beside it.
+lighting as they play (FACTS 67): Sight-singing, do in the soft tone, 0.4 s of quiet, then do to so
+sung by Merc, or Tavi for a stored higher voice, 4.4 s, so no voice on the page sings written notes
+with no note first; Tonic triad, do, mi, so; Audiation, do, then re lit through a silent beat, then
+re. No figure has the pitch-line switch, as Lesson 15's word figures have none: the steps play the
+same notes beside it.
 
 ### 5. Recall and quick check
 
@@ -261,8 +270,11 @@ Two quizzes through the kit's quiz, each with its own prefix and keys.
   `fyp-l16-quiz-v1`, and `lesson: 16`, so answering all four marks Lesson 16 done. Three answers each,
   shuffled from the stored seed, one line of feedback for every answer, "Right." or "Not quite."
   before it (`src/features/lessons/kit/quiz.ts:315`). Question 4's slot holds its play, "Play do,
-  then re", in the learner's octave (FACTS 69). Question 3 keeps its wording: Lesson 18's recall plans
-  to ask it word for word (`docs/plans/find-your-pitch/lessons/18-read-a-line/ARTICLE-PLAN.md:45-50`).
+  then re", in the learner's octave (FACTS 69). Question 3 is the one Lesson 18's recall plans to ask
+  word for word (`docs/plans/find-your-pitch/lessons/18-read-a-line/ARTICLE-PLAN.md:45-50`), so
+  LESSON.md's wording is the one to carry: it says "places" for the plan's "positions" and "leaps"
+  for "skips", and its second answer, "On three neighbouring places, like line, space, line", holds
+  in both clefs.
 
 ### 6. Sing it
 
@@ -316,7 +328,9 @@ States:
    - After the first phrase, Easy or Workable: "Now a line you've never heard, with the names off."
      The staff draws the second phrase, do, so, mi, re, do (G3 D4 B3 A3 G3 or G4 D5 B4 A4 G4), with
      only the house, and a **Names on · off** switch, off; it can be read silently before **Start
-     phrase 2**, which runs states 5 to 8 again.
+     phrase 2**, which runs states 5 to 8 again. Beside it, **Stop here** ends the singing for the
+     visit: no second take, the lines stay, **Play Merc's phrases** shows, and the Wrap keeps the
+     practice card, since stopping reports no effort (FACTS 49).
    - After the second, Easy or Workable: "Two phrases from the page, each found from do." and **Play
      Merc's phrases**. The Wrap shows the practice card.
    - Effortful: no more phrases, Lesson 3's "Keep it gentle: rest before you sing again.", the lines
@@ -327,12 +341,15 @@ States:
    - Once "Effortful" or "Uncomfortable" has been answered, no further take and the rest card stay
      so for the visit, in memory (`VisitEnding`, `src/features/lessons/kit/comfort.ts:101-114`).
 9. **No microphone** (refused, no device, or the listener failed to load): LESSON.md's "No
-   microphone?" line, both phrases drawn, the first with its names, and **Play Merc's phrases**; the
-   Wrap keeps the practice card (FACTS 51). Without Web Audio, Sing it offers this path at once, and
+   microphone?" line, both phrases drawn, the first with its names, **Play the start**, which sings
+   do, then do, mi, so, mi, do in the chosen voice, 4.4 s, and no phrase, so a learner singing with
+   nothing listening still hears do first, and **Play Merc's phrases**; the Wrap keeps the practice
+   card (FACTS 51). Without Web Audio, Sing it offers this path at once, and
    Play Merc's phrases lights the notes in silence with "This browser can't play sound here."
 
 **Play Merc's phrases** appears only once the singing has ended (after the second phrase's answer,
-an Effortful or Uncomfortable answer, Just listen today, the visit's last take, or no microphone),
+Stop here, an Effortful or Uncomfortable answer, Just listen today, the visit's last take, or no
+microphone),
 so the second phrase is never heard before it is read. It sings the start, then both phrases in the
 chosen voice, each note lighting amber as it sounds, 12.0 s (FACTS 70).
 
@@ -340,14 +357,16 @@ The retry rules, all in the flow rule below (FACTS 50):
 
 - A visit allows at most three takes. Every take counts: one with no voice, one with no steady
   note, and one abandoned when the page was hidden.
-- The second phrase only after Easy or Workable on the first; no Again for either phrase.
+- The second phrase only after Easy or Workable on the first, and never after Stop here; no Again
+  for either phrase.
 - Never another take after "Effortful" or "Uncomfortable".
 - No reading line invites another try (FACTS 47), so no retry wording shows without a retry control.
 
 The flow is a pure rule (`lesson-16/sing-flow.ts`), as Lesson 9's is: from the comfort answer, the
 voice, whether sound and Web Audio are on, the takes so far (how many, which phrase each read,
 whether each had voice and whether it was abandoned) and the answers so far (the latest, and whether
-"Effortful" or "Uncomfortable" was ever answered), it gives the state, the controls shown, the lines,
+"Effortful" or "Uncomfortable" was ever answered, and whether Stop here was pressed), it gives the
+state, the controls shown, the lines,
 whether Play Merc's phrases shows and the Wrap's card, so every branch is unit-tested without a
 microphone (Tests, 8).
 
@@ -367,11 +386,11 @@ need, item 6):
   their median folded distance, with the octave they sat in; a note the 8 s limit moved past is read
   by `readTake` over its frames, after the 0.3 s attack and with 0.6 s of steady voice needed, which
   gives the not-steady line where there is too little (FACTS 47).
-- Each line is the rung line with the note's syllable and "the written note": "Re · In the band: 12
-  cents below the written note.", with Lesson 3's octave line within 50 cents of the note an octave
-  or more away, or "Do · We didn't hear a steady note there." (`rungLine`,
-  `src/features/lessons/kit/take.ts:280-287`, given whose note it is). No count, no score and no
-  celebration on a note.
+- Each line is the rung line with the note's syllable and "the written note": "Re · In the band: 20
+  cents below the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
+  within 50 cents of the note an octave or more away, or "Do · We didn't hear a steady note there."
+  (`rungLine`, `src/features/lessons/kit/take.ts:280-287`, given whose note it is). No count, no
+  score and no celebration on a note.
 
 On a phone the staff and its lines fit the card at 344 to 390 px: five notes at 52 px apart on a 26
 px staff space (FACTS 71), the lines under it wrapping, and the pitch line below the staff at full
@@ -403,6 +422,7 @@ plays in the soft tone; Merc's and Tavi's singing in Merc's "ooh", Tavi's an oct
 
   The kit has the helpers: the page-wide owner (`NowPlaying`, `src/features/lessons/kit/now-playing.ts:39`),
   which every source registers with, and the words strip already takes it.
+
 - **A run of notes** is timed from one start, every note on its own timer from the play's start, so
   the drawing and the sound share one clock. Hear it inside's silent beat is part of that schedule,
   each note lit 1.0 s before its onset.
@@ -430,9 +450,14 @@ stills when WebGL fails.
 - **Today, Sight-Singing.** The link is `/pitch-training?lesson=16`, printed
   "mercurypitch.com/pitch-training", with "then tap Sight-Singing", in Lesson 9's form (FACTS 60, 62).
   The card says what the drill does at `c60f0fdcb` (FACTS 54 to 58): six notes it picks itself, in
-  the key its start screen shows and the saved range; nothing played first; the treble clef only;
-  the written octave; and names and a pitch line throughout. It is the season plan's link for this
-  lesson, with its limits said (SEASON-2 § 5.1).
+  the key its start screen shows and the saved range, which it asks the learner to set first;
+  nothing played first; the treble clef only, a lower voice reading below it on ledger lines; the
+  written octave; and its names. It names notes in six places, four of them on its pitch tracker,
+  which its round button at the top right hides; that choice is remembered for every drill, so the
+  card does not suggest it and says only "It prints each note's name under it: read the staff, not
+  the names." (FACTS 58). The
+  drill is free (FACTS 62). It is the season plan's link for this lesson, with its limits said
+  (SEASON-2 § 5.1).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 12's form, "Rest today. Sight-Singing will be here when your voice feels comfortable:
   mercurypitch.com/pitch-training, then tap Sight-Singing.", and is no longer a link, since the drill
@@ -443,18 +468,23 @@ stills when WebGL fails.
   - (a) **Fixed phrases**, data: a launch's `notes` already replace the random round when there are
     two or more, and a link's notes are fitted to the saved range by whole octaves, the octave nearest
     the range's middle winning (FACTS 59). Proposed: one entry, `sing-what-you-see`, holding the two
-    phrases as one ten-note line, G4 A4 B4 A4 G4 G4 D5 B4 A4 G4, so one fit moves both phrases by the
-    same octave: the lower presets get G3 to D4, the page's own lower line, and the higher ones G4 to
-    D5. Two separate entries would be fitted apart and give a bass preset the second phrase at G2, an
-    octave under the page's (FACTS 59); a ten-note line also needs the drill to show a phrase break,
-    or the card says "two phrases, one after the other".
+    phrases as one ten-note line, G4 A4 B4 A4 G4 G4 D5 B4 A4 G4, so both phrases stay in one octave.
+    Today's fit would give the baritone and tenor presets G3 to D4, the higher presets G4 to D5, and
+    the bass preset G2 to D3, an octave under the page's lower line: with the bass clef (c), do
+    would sit on the bass staff's bottom line, not in the top space the page and quick check 2
+    teach. Written in the bass octave, the line still goes to G2 for the bass, and two separate
+    entries would part, the first at G3 and the second at G2 (FACTS 59). So the item asks for a
+    fixed-phrase link that skips the octave fit and writes the line in the octave of the singer's
+    voice: G3 to D4 for a lower preset, G4 to D5 for a higher one. A ten-note line also needs the
+    drill to show a phrase break, or the card says "two phrases, one after the other".
   - (b) a **"hear do" start** that plays do and do, mi, so, mi, do before the first note;
   - (c) the **bass clef** for lower voices;
   - (d) a **key signature and spelling by key**, needed here only once a lesson reads in a key with
     sharps or flats;
-  - (e) **names off**, which must hide every name the drill shows: the letters under the notes, the
-    hold bar's "Hold G4 to continue", the target line's label, the next two upcoming notes' labels,
-    and the live dot's label (FACTS 58). The item lists only the first;
+  - (e) **names off**, which needs to hide the letters under the notes and the hold bar's "Hold G4
+    to continue": the other four names, the target line's label, the next two upcoming notes'
+    labels, the live dot's label and the tracker's side labels, go with the tracker's own hide
+    (FACTS 58). The item lists the first;
   - (f) **octave-folded scoring**;
   - (g) a **`key` launch field**.
 - **The card once (a), (b), (c), (e) and (f) ship**, proposed: "Sight-Singing writes this page's two
@@ -462,17 +492,18 @@ stills when WebGL fails.
   octave; hold each note to light the next. Turn the names off to read from the house." with the
   care lines, and the address "Practise it free: mercurypitch.com/exercises/sing-what-you-see". Each
   new sentence waits for its item; until all ship, the card keeps today's sentences for the rest.
-- Not linked: no premium exercise.
+- Not linked: no premium exercise. Sight-Singing is free, an always-available card that the
+  premium switch does not gate (FACTS 62).
 
 ## Explorer and season data
 
 Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's entry form
 (Lesson 9's, `src/features/lessons/kit/season.ts:326-344`):
 
-- `n: 16`, `lane: 'voice'`, `title: 'Sing what you see'`, `short: 'Sight-singing'`, `topics:
-  ['S11a']`, with S11a's name as SEASON-2 § 4.1 gives it; the hook word for word (FACTS 1);
-  `minutes: 15` and `page: '/learn/16'` once the page is built, under the drafts' comment, `// A
-  draft until its sign-off (drafts.ts), as Lesson 3 is.`
+- `n: 16`, `lane: 'voice'`, `title: 'Sing what you see'`, `short: 'Sight-singing'`,
+  `topics: ['S11a']`, with S11a's name as SEASON-2 § 4.1 gives it; the hook word for word (FACTS
+  1); `minutes: 15` and `page: '/learn/16'` once the page is built, under the drafts' comment,
+  `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
 - `pr.link`: `href` `/pitch-training?lesson=16`, `addr` `mercurypitch.com/pitch-training`, `label`
   "Exercises" and `note` "then tap Sight-Singing", as Lesson 9's (FACTS 60). `pr.needs`, "Sight-Singing
   for the lessons: fixed phrases, a hear-do start, the bass clef, names off and octave-folded scoring
@@ -481,8 +512,9 @@ Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's
 - `EDGES` gains [9, 16], a cross-season edge, and [15, 16], as SEASON-2 § 4.3 gives them (FACTS 2);
   Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
 - The tease on Lesson 15's card is this lesson's, set on Lesson 16 in the lesson copy: `tease` "Five
-  notes on the staff. Tavi has never heard them.", `teaseAlts` `[{ id: 'any-note', text: 'Now you can
-  see where any note sits.' }]`, with the variant's team note (FACTS 5b). The tease on this page's
+  notes on the staff. Tavi has never heard them.", `teaseAlts`
+  `[{ id: 'any-note', text: 'Now you can see where any note sits.' }]`, with the variant's team note
+  (FACTS 5b). The tease on this page's
   card is Lesson 17's, set on Lesson 17: "Same written bar, played twice. Only the tempo changes.",
   with the alternative `shapes` (FACTS 5).
 - The signature line for the admin console, from the card (FACTS 4): "Lesson 4's staircase turns
@@ -498,8 +530,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/16` and `/learn/16.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets (FACTS 73). The
    lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
-2. **The draft line**, in the draft list's form: `16: "the vocal coach's sign-off (MASTER-PLAN § 12
-   item 8)"`, as Lesson 9's (`src/features/lessons/kit/drafts.ts:31-41`).
+2. **The draft line**, in the draft list's form:
+   `16: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 9's
+   (`src/features/lessons/kit/drafts.ts:31-41`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out.
 4. **The staff toy** (Lesson 15's item 4), with this page's options: the Clef switch on the stored
    voice; **Hear it inside**, a play option that lights each note 1.0 s before its onset; **Names on ·
@@ -527,7 +560,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    marker's range, so `?lesson=16` steps First Light aside (FACTS 60), and the lesson-answer bounds,
    which refuse Lesson 16's answers whole today (FACTS 61).
 10. **Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), the app's work (Practice links), with
-    names off covering all five name displays.
+    (a) a fixed-phrase link that skips the octave fit, so each voice reads its own octave (FACTS
+    59), and (e) names off covering the letters under the notes and the hold bar's name, since the
+    tracker's own hide covers its four (FACTS 58).
 11. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
     `learn/lesson-16-og.jpg` and its alt, and the structured data with `timeRequired` `PT15M`.
 12. **Lesson 15's questions as a module** (`lesson-15/quiz-questions.ts`), so this page imports
@@ -564,8 +599,12 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
   is chosen. A stored voice opens on its own clef.
 - **The Clef switch in the steps** changes the clef for the visit until Sing it's voice choice;
   switched mid-play it stops the play.
-- **The microphone refused** at Start: the no-microphone path, with Play Merc's phrases; no take is
-  counted.
+- **The microphone refused** at Start: the no-microphone path, with Play the start and Play Merc's
+  phrases; no take is counted.
+- **No microphone, and singing anyway**: Play the start gives do and the triad, as Start would, and
+  nothing listens; it can be played again, and Play Merc's phrases checks both phrases after.
+- **Stop here after the first phrase**: no second take this visit; the second phrase stays unheard
+  until Play Merc's phrases, which plays both; the Wrap keeps the practice card.
 - **A take with no voice in 8 s**: the no-voice line with Start again while takes remain; no feeling
   question (Toys 6, state 7).
 - **A take that stops mid-phrase**: each remaining note moves on after 8 s and reads "We didn't hear a
@@ -590,6 +629,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
   built before it (FACTS 60).
 - **Sight-Singing in another key**: the drill writes the key its start screen shows, the app's key,
   C major unless the learner changed it in the Singing tab; the card says "in the key it shows".
+- **Sight-Singing's tracker hidden**: the choice is kept on the device, so a learner who hides it for
+  this card finds it hidden in every drill that shows the tracker, until Show Tracker brings it
+  back; the drill says so with that button (FACTS 58).
 
 ## Tests
 
@@ -607,23 +649,28 @@ parts it adds:
    voice in `VOCAL_RANGES`, with the table's numbers; an octave lower fails four presets; G♯ leaves the
    bass preset 1 (FACTS 44).
 4. **Sounds**: every fixed sound's frequency equals `hz(m)` for FACTS 64's notes; the tries 3.0 s and
-   4.4 s, the stairs 2.9 s and 3.7 s, Hear it inside 8.0 s, the triad 2.9 s, do re mi then do mi 3.3
-   s, quick check 4 2.6 s, the start 4.4 s, Merc's phrases 12.0 s (FACTS 66 to 70).
+   4.4 s; the Sight-singing word 4.4 s, its do in the soft tone before the voice; the stairs 2.9 s
+   and 3.7 s, Hear it inside 8.0 s, the triad 2.9 s, do, mi then do, so 2.7 s, quick check 4 2.6 s,
+   the start 4.4 s, Play the start 4.4 s, Merc's phrases 12.0 s (FACTS 66 to 70). No play in which
+   a voice sings written notes starts without do first.
 5. **The predict**: neither try plays before a choice; the reveal waits for both heard with sound on;
    a try cut short reveals nothing and leaves the hint; no `next` hint is set; the hints and guesses
    are LESSON.md's (FACTS 35).
 6. **The recall and quick check**: `l09-q2` imported, not copied, and `l15-q1` once it exists; the
    links open `/learn/09#step-3` and `/learn/15#step-1`; ids `l16-q1` to `l16-q4`, three answers each,
-   one right, LESSON.md's words, and no feedback line starting "Right", "Yes" or "Correct".
+   one right, LESSON.md's words, quick check 3's word for word, since Lesson 18 asks it, and no
+   feedback line starting "Right", "Yes" or "Correct".
 7. **The cursor reader**: a note passes at 0.45 s of frames within 60 cents and not at 0.44; a frame
    outside takes back half its time and never below zero; a frame an octave away counts as in; at 8 s
    the next note lights; a take with no voiced frame reads as no voice; the readings use "the written
    note", Lesson 3's octave line within 50 cents, and the not-steady line; no reading has a count or
    advice (FACTS 45, 47).
-8. **The flow rule**: the voice before anything plays; the second phrase only after Easy or Workable;
-   at most three takes, every take counted; no take after Effortful or Uncomfortable; Uncomfortable
-   takes the lines away; Play Merc's phrases only once the singing has ended; the rest card after
-   Effortful, Uncomfortable and Just listen today, the practice card otherwise (FACTS 49 to 52).
+8. **The flow rule**: the voice before anything plays; the second phrase only after Easy or Workable,
+   never after Stop here; at most three takes, every take counted; no take after Effortful or
+   Uncomfortable; Uncomfortable takes the lines away; Play Merc's phrases only once the singing has
+   ended, Stop here included; Play the start on the no-microphone path, with no phrase in it; the
+   rest card after Effortful, Uncomfortable and Just listen today, the practice card otherwise,
+   after Stop here and with no microphone too (FACTS 49 to 52).
 9. **The second phrase is never heard before it is read**: no play source on the page sounds G D B A
    G, in any octave, before the second take has ended or the singing has ended (FACTS 43).
 

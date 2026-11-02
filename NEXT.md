@@ -2775,3 +2775,16 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 2 Nov 02:16 UTC — check-in
 
 - Check-in fired; both fix passes (W16, W20) running; worktree intact; notes pushed. Nothing for the owner.
+
+## 2 Nov 02:27 UTC — Lesson 16 committed; W18 started
+
+- L16 lead review: fix pass took every call; lead edit: the practice card's tracker tip replaced
+  with "It prints each note's name under it: read the staff, not the names." (the tracker's hide is
+  remembered for every drill); prettier fixes (blank line before FACTS 44's table, no line starting
+  "2)", code spans kept on one line). 2,217 words, 257 cites 0 findings; whole plan 200 (unchanged).
+  Committed 87a06b85e as the owner, pushed. Shared entries drafted: s2pkg/shared-rest/L16-entries.md
+  (MASTER-PLAN line, CM entry, Lesson 15 FACTS 5 + CM + WEB-SPEC Toys 8 rewording, SEASON-2 § 5.2
+  item 10 corrections a and e).
+- BRIEF-writer-common v6 (head 87a06b85e, L16 as newest model); BRIEF-18 updated for L16 as
+  committed (QC3 text, phrases, pass rule). W18 spawned. W20 fix pass still running.
+- NEXT: W20 reply -> lead review -> commit -> then W22 (slot). W18 hand-back -> reviewer -> fix -> lead.

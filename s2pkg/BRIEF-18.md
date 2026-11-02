@@ -28,8 +28,14 @@ The lead's answers to the plan's open questions:
 4. **The second try's line**: keep it, as planned, unlocking after Easy or Workable; it is the first
    cut if the page runs long.
 
-Your recall's Lesson 16 item is Lesson 16's quick check 3 word for word, as committed (not as your
-plan quotes it), and its Lesson 17 item is Lesson 17's quick check 1 word for word.
+Your recall's Lesson 16 item is Lesson 16's quick check 3 word for word, as committed at `87a06b85e`
+(not as your plan quotes it: "positions" became "places", "skips" became "leaps", and the second
+answer reads "On three neighbouring places, like line, space, line"), and its Lesson 17 item is
+Lesson 17's quick check 1 word for word. Lesson 16 as committed also changed things you build on:
+its predict asks what Tavi sings with no note to start from (do not ask it again), its second phrase
+is do, so, mi, re, do (yours must differ from both its phrases and from its start, do, mi, so, mi,
+do), its pass rule is ±60 cents for 0.45 s, octave-folded, its practice card says what Sight-Singing
+does today, and its lower voice reads mi and so above the bass staff. Read its three files first.
 
 The teases:
 
