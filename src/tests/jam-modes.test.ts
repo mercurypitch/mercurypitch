@@ -8,12 +8,16 @@ import { describe, expect, it } from 'vitest'
 import { diatonicStepUp, jamModeInfo, roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import type { MelodyData, MelodyItem, NoteName } from '@/types'
 
-function item(midi: number, startBeat: number): MelodyItem {
+function item(
+  midi: number,
+  startBeat: number,
+  name: NoteName = 'C',
+): MelodyItem {
   return {
     id: startBeat + 1,
     note: {
       midi,
-      name: 'C' as NoteName,
+      name,
       octave: Math.floor(midi / 12) - 1,
       freq: 440 * 2 ** ((midi - 69) / 12),
     },
@@ -37,6 +41,20 @@ function cMajor(): MelodyData {
 }
 
 const midis = (m: MelodyData | null) => (m?.items ?? []).map((i) => i.note.midi)
+
+/** A short line in C major, each note spelled with its own name. */
+function line(notes: Array<[number, NoteName]>): MelodyData {
+  return {
+    ...cMajor(),
+    items: notes.map(([midi, name], i) => item(midi, i, name)),
+  }
+}
+
+/** Each note as the canvas labels its block: name, then octave. */
+const labels = (m: MelodyData | null) =>
+  (m?.items ?? []).map((i) => `${i.note.name}${i.note.octave}`)
+
+const freqs = (m: MelodyData | null) => (m?.items ?? []).map((i) => i.note.freq)
 
 describe('role assignment', () => {
   const ids = ['zeta', 'alpha', 'mike']
@@ -111,6 +129,48 @@ describe('harmony stack', () => {
     expect(first.note.midi).toBe(67)
     expect(first.note.octave).toBe(4)
     expect(first.note.freq).toBeCloseTo(392, 0)
+  })
+
+  it('names each harmony note by its own pitch, not the melody note it came from', () => {
+    // A third above C-D-E is E-F-G. Spreading the melody's note kept its
+    // name, so the canvas drew the E4 block as "C4".
+    const third = targetForRole(
+      line([
+        [60, 'C'],
+        [62, 'D'],
+        [64, 'E'],
+      ]),
+      'harmony',
+      1,
+      3,
+    )
+    expect(midis(third)).toEqual([64, 65, 67])
+    expect(labels(third)).toEqual(['E4', 'F4', 'G4'])
+    const hz = freqs(third)
+    for (const [i, want] of [329.63, 349.23, 392.0].entries()) {
+      expect(hz[i]).toBeCloseTo(want, 1)
+    }
+  })
+
+  it('keeps the name and octave right across an octave boundary', () => {
+    // G-A-B a third up crosses into octave 5 at C; a fifth up crosses on
+    // every note, B4 included, whose fifth in the key is F5.
+    const m = line([
+      [67, 'G'],
+      [69, 'A'],
+      [71, 'B'],
+    ])
+    const third = targetForRole(m, 'harmony', 1, 3)
+    expect(midis(third)).toEqual([71, 72, 74])
+    expect(labels(third)).toEqual(['B4', 'C5', 'D5'])
+    const hz = freqs(third)
+    for (const [i, want] of [493.88, 523.25, 587.33].entries()) {
+      expect(hz[i]).toBeCloseTo(want, 1)
+    }
+
+    const fifth = targetForRole(m, 'harmony', 2, 3)
+    expect(midis(fifth)).toEqual([74, 76, 77])
+    expect(labels(fifth)).toEqual(['D5', 'E5', 'F5'])
   })
 
   it('falls back to a plain third and fifth on a chromatic note', () => {
