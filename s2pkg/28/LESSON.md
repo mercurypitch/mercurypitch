@@ -56,11 +56,11 @@ parts". The headphones check and the quiet check's two lines are Lesson 26's wit
 with Lesson 14's sentences on a recording, singular. The reading lines and the no-voice line are
 Lesson 26's and Lesson 18's, with this task's cue. Your turn's cues are Lesson 18's. The take's
 lines after Effortful and Uncomfortable, "Your take stays, to play back or delete.", and the
-can't-record line are Lesson 14's, singular. The practice card's Karaoke Night lines, its "Ten
-minutes" line and its rest card are Lesson 14's; its second drill opens on Lesson 12's line. The
+can't-record line are Lesson 14's, singular. The practice card's Karaoke Night lines and its rest
+card are Lesson 14's, without its "Ten minutes" line; its second drill opens on Lesson 12's line. The
 season's close is Lesson 14's card, the kit's, with "End of Season 2" and a line of its own (FACTS
-5). New lines: the line under the voice choice, the turns line, the playback's line and the line
-after Easy or Workable.
+5). New lines: the line under the voice choice, the headphones line under Your turn, the fail line's
+second half, the playback's line and the line after Easy or Workable.
 
 Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
@@ -68,8 +68,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   Merc's part). The plan's stem said the top part reached do "just as it does when the song ends",
   which answered its own question, as Lesson 27's writer found (FACTS 42).
 - **The reveal** says Merc's part leaps up a fourth, D to G, to end the song, where the plan said it
-  "fell to G"; and it says the interrupted cadence seems to end, then keeps going, in the words of
-  Lesson 27's tease (FACTS 44, 5b).
+  "fell to G"; and Step 2 says the interrupted cadence seems to end, then keeps going, in the words
+  of Lesson 27's tease, where the plan said it "sounds like an ending and swerves" (FACTS 44, 49,
+  5b).
 - **Tavi's bubble** guesses her own part changed, a sincere wrong guess; the plan's had her say a
   finished phrase ends the song, which is Step 2's mix-up (FACTS 41).
 - **The hero draws ten empty bars**, no notes: the plan drew the song on its staff, whose bar 8
@@ -86,19 +87,19 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   first cut when long (FACTS 50). **Step 4** explains the key signature in a sentence, since Lesson
   21 is not among this page's prerequisites (FACTS 51).
 - **Nothing on the page sounds or states the predict's answer before its choice.** The steps'
-  figure, every play that sounds bar 8 the song's way and the Wrap's free play wait for the choice,
+  figure, every play that sounds the song's ending and the Wrap's free play wait for the choice,
   and Step 2's words for its reveal, under held lines; the first-visit tour waits too (FACTS 1a,
   46).
 - **Sing it** reads the learner's part in time with Lesson 18's reader, the other part playing in
   the headphones as Lesson 26 plays a part under a take; records the take on the device as Lesson
-  14's spec does, and plays it back with the other part; and, without headphones or after a quiet
-  check that hears a note, has the learner sing alone with the cursor and hear the take with the
-  other part afterwards, the season's turn-taking fallback, where Lesson 26 sings along. The breath
-  marks fall after bars 2, 4 and 6, where the plan put them after bars 4 and 8. Do comes first, then
-  the count-in, as in Lesson 18, with no model run; there is no Move do and no octave (FACTS 53 to
-  69).
-- **The quick check**: question 2 asks for the Amen cadence, where the plan's stem named V and vi
-  in the open before the choice; question 4's feedback no longer says Merc's part "stepped up, not
+  14's spec does, and plays it back with the other part; and, after No headphones, at first or
+  after a quiet check that hears a note, has the learner sing alone with the cursor and hear the
+  take with the other part afterwards, the season's turn-taking fallback, where Lesson 26 sings
+  along. The breath marks fall after bars 2, 4 and 6, where the plan put them after bars 4 and 8.
+  Do comes first, then the count-in, as in Lesson 18, with no model run; there is no Move do and no
+  octave (FACTS 53 to 69).
+- **The quick check**: question 2 asks for the Amen cadence, so all four cadences are asked, where
+  the plan's asked again what V to vi is called; question 4's feedback no longer says Merc's part "stepped up, not
   down to the root", which was false (FACTS 77 to 80).
 - **The practice card** names Karaoke Night, in Lesson 14's words, and Ear Lab's Cadence, saying
   what it plays and how its progressions end; Jam's Harmony Stack is left out (FACTS 70 to 76).
@@ -579,11 +580,12 @@ season plans one coach batch for Lessons 24, 26 and 28 (SEASON-2 § 8.2 item 7).
   | Tavi's, F♯4 to D5      | Soprano       | C4 to C6  | 6          | 10         |
 
 - **To confirm: no Move do, and no other octave.** Do on G, G3 for the lower voice and G4 for the
-  higher, is the only start, as in Lessons 18 and 26. Any move of do lower would take the tenor's
-  room under two semitones, so none is offered; the parts an octave away fall outside a preset of
-  each voice, the lower part an octave down two semitones below the bass's floor and the higher an
-  octave up two past the soprano's top. Is a lower voice for whom D3 feels low better left to listen
-  (FACTS 68)?
+  higher, is the only start, as in Lessons 18 and 26. The lower voice's do could move up three
+  semitones and not down, the higher voice's down four or up one, inside every preset by two; but a
+  moved do changes the key the learner reads from the staff, so none is offered. The parts an octave
+  away fall outside a preset of each voice: the lower part an octave down two semitones below the
+  bass's floor, the higher an octave up two past the soprano's top. Is a lower voice for whom D3
+  feels low better left to listen (FACTS 68)?
 - **To confirm: the tempo and the run.** 72 quarter notes a minute: do, sung by Merc for the lower
   voice or Tavi for the higher, 1 second, and 0.4 seconds of quiet; a woodblock count-in of one bar,
   3.3 seconds; then the eight bars, 26.7 seconds, read from the staff in time, the season's last
@@ -598,14 +600,14 @@ season plans one coach batch for Lessons 24, 26 and 28 (SEASON-2 § 8.2 item 7).
   quiet check are Lesson 26's with "Tavi's part": "Put on headphones to keep Tavi's part out of the
   microphone, with the volume low enough to hear yourself." and "First, stay quiet for two seconds
   while Tavi's part plays: the page checks that the microphone can't hear it."; the fail line is new
-  in its second half: "The microphone heard a note during Tavi's part. Check your headphones and press
-  Start to try again, or choose No headphones to sing alone." (FACTS 56, 59).
-- **To confirm: singing alone, then together.** Without headphones, or after a quiet check that
-  hears a note, nothing plays during the take: the learner sings their part with the cursor alone,
-  as in Lesson 18, and hears the take with the other part afterwards. The line is new: "Without
-  headphones, nothing plays while you sing: sing your part with the cursor, then hear your take with
-  Tavi's." Lesson 26 sings along instead; this page can listen without headphones because nothing
-  plays into the microphone (FACTS 63).
+  in its second half: "The microphone heard a note during Tavi's part. Check your headphones, or
+  choose No headphones to sing alone." (FACTS 56, 59).
+- **To confirm: singing alone, then together.** After No headphones, at first or after a quiet
+  check that heard a note, nothing plays during the take: the learner sings their part with the
+  cursor alone, as in Lesson 18, and hears the take with the other part afterwards. The line under
+  Your turn is new: "With headphones, Tavi's part sings with yours; without them, you hear the two
+  together afterwards." Lesson 26 sings along instead; this page can listen without headphones
+  because nothing plays into the microphone (FACTS 63).
 - **To confirm: the cues**, Lesson 18's: "The cursor won't wait for you.", "Breathe at the breath
   marks." and "If a note slips, come in on the next one."; and "on the syllables or on "ooh"" (FACTS
   58).
@@ -639,8 +641,7 @@ season plans one coach batch for Lessons 24, 26 and 28 (SEASON-2 § 8.2 item 7).
   delete (FACTS 66).
 - **To confirm: the practice card's Karaoke Night**, Lesson 14's lines: its key chip and Find my
   key, so the learner can put a song in the comfortable middle; its scoring, in any octave; the care
-  lines, Lesson 10's; "Ten minutes, gently, most days. Missed a day? Just come back."; and the rest
-  card, "Rest today. Karaoke Night will be here when your voice feels comfortable:
+  lines, Lesson 10's; and the rest card, "Rest today. Karaoke Night will be here when your voice feels comfortable:
   mercurypitch.com/karaoke-night", after "Effortful", "Uncomfortable" or "Just listen today" (FACTS
   70).
 - The season's close after such an ending keeps "You've read a song in two parts." and drops "Now

@@ -2980,3 +2980,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 2 Nov 17:54
 - Fallback fired; W28 alive (s2pkg/28 and worktree files written 17:48-17:54; LESSON.md 2,051 words so far). No hand-back yet. Fallback re-armed for 19:07.
+
+## 2 Nov 18:0x
+- W28 done 17:5x: 2,051 words, 314 cites, 0 findings; built ~2,352; chip 19; head "Types of cadence and song form | MercuryPitch", description 130 chars. Predict "Which part changes its note at bar 8?" [Tavi's part] [Merc's part], answer Merc's. Writer's questions: Season 2 close words, alone path vs sing-along, breath marks 2/4/6, card 28 misconception fix (hand-back § 9, § 3).
+- Rate limit allowed. R28 (builder) spawned 18:0x UTC (fresh, xhigh; report s2pkg/28-REVIEW.md). Only agent running. Fallback trig_01PCa3KoERn1uEczDt67XyMh re-pointed at R28 for 19:07.
+- Next: R28 report -> s2pkg/28-FIXPASS-MSG.md -> resume W28 -> lead -> commit. Then #229.
