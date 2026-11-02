@@ -35,6 +35,9 @@ vi.mock('./settings/AccountNameScreen', () => ({
 vi.mock('./settings/DevicesScreen', () => ({
   DevicesScreen: marker('devices'),
 }))
+vi.mock('./settings/BlockedSingersScreen', () => ({
+  BlockedSingersScreen: marker('blocked-singers'),
+}))
 vi.mock('./settings/DeleteAccountScreen', () => ({
   DeleteAccountScreen: marker('delete-account'),
 }))
@@ -68,6 +71,7 @@ const SCREENS: readonly [PushedScreen, string][] = [
   ['account', 'Account'],
   ['account-name', 'Name'],
   ['devices', 'Devices'],
+  ['blocked-singers', 'Blocked singers'],
   ['delete-account', 'Delete account'],
   ['microphone', 'Microphone'],
   ['room-noise', 'Room noise'],

@@ -238,6 +238,12 @@
 
 /* A singer who has since asked not to be named. The score and the place stay
  * — the result happened — so only the identity is dimmed and italicised. */
+/* The "..." for Report (SingerMoreButton): a place with one is 44 px tall,
+   so no two targets overlap. Two classes beat the button's own. */
+.place .placeMore {
+  margin-right: -8px;
+}
+
 .placeRedacted {
   color: var(--text-muted);
   font-style: italic;

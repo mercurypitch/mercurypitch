@@ -1,8 +1,9 @@
 # The native More sheet as a list, and Together on the phone
 
-Status: slices 1 and 2 merged (the More sheet as a list, #1267; Leagues,
-read-only, #1272); slice 3 built (the Legend as a native room); slice 4
-planned. Each slice is its own PR.
+Status: slices 1 to 3 merged (the More sheet as a list, #1267; Leagues,
+read-only, #1272; the Legend as a native room, and 3b, its light), and 4a
+(the worker's reports, blocks and name filter, in v0.9.28); 4b built
+(Report and Block on the phone); 4c planned. Each slice is its own PR.
 
 The native app's More sheet (`apps/mercurypitch/src/shell/MoreSheet.tsx`) was
 six square tiles in a four-column grid: 11 px labels, a third of the sheet
@@ -552,6 +553,108 @@ undone from Settings, Blocked singers. The report sheet and Community's foot
 carry the contact line: the contact form (About's "Contact us" links
 `CONTACT_FORM_URL` today), opened through `contactFormUrl()` with a topic
 for reports.
+
+**As built** (the worker's half is REQ-RB-040 and REQ-RB-041 in
+[`docs/specs/reports-and-blocks.ears.md`](../specs/reports-and-blocks.ears.md)),
+with what moved from the paragraph above:
+
+- **Where the phone shows another singer's name, all of it.** In the store
+  build, where `NATIVE_LEAGUES` is off, one place: the web Leaderboard,
+  which Progress's league card opens ("Open Leaderboard", `#/leaderboard`,
+  `progress-view-model.ts`). Verified three ways. The source: the rail's
+  Progress is `TAB_PROGRESS`, which App draws in the native build as on the
+  web (only Home and Settings are the web's alone there); the card's action
+  is a plain hash link; the native tab guard (`appModeBounce`) lets every
+  available tab through; no build switch sits anywhere on that path. The
+  record: the owner reached it on build 451 (`native-assets.test.ts`), and
+  `scripts/probe-progress.mjs` follows the link on the built bundle
+  (`walkLeaderboard`). And the walk, on this branch's built native bundle
+  (a test build; nothing on the path differs in the store build): the probe's
+  `--progress-only` passed at 393 x 852 and 390 x 844, and a one-off walk at
+  390 x 844 opened the Leaderboard from the league card, found a 44 px "..."
+  on every other singer's row and none on a stand-in or the singer's own,
+  opened the sheet over it without the singer card, blocked a singer (the
+  table went 1, 2, 4, 5, the podium's bronze said Hidden), and closed the
+  sheet with Escape and with the shell's Back, the Leaderboard still up, no
+  sideways scroll and no page error. All four of its views name singers:
+  League (the standings), Friends and Global (the podium, the table, the
+  singer card a row opens, friend requests), and Legends (the live Legend's
+  top three, `WeeklyLegendHero`, and the past podiums,
+  `PastWeeklyChallenges`). A test build adds the
+  Leagues screen's standings, the Legend room's board and its past podiums.
+  Not reachable on the phone: Community (shares and their authors, 4c), the
+  Jam room, a shared result's page (no link opens the app) and the web
+  Home's Legend card (Home is the web's alone). A redeemed friend code says
+  "Ana added" in a toast, not a row; Ana is then a row on the Friends board.
+- **One sheet, from a "..." on the row.** `src/components/moderation/SingerSheet.tsx`,
+  on the kit's `Sheet`, in the app's tokens, drawn by one host per app
+  (App.tsx on the web, NativeShell.tsx on the phone; its code loads the
+  first time one opens) and opened from a 44 px "..." at the end of a row,
+  "More about Ana" (`SingerMoreButton.tsx`). No long press. Panes: the
+  choice; Report, with the worker's six reasons (`report-rules.ts`, worded
+  plainly), a note counted to 500 and Send; Sent ("Thanks. We read every
+  report within a day."); Block, saying what it does before it does it;
+  Blocked; and a pane for each way it can fail, worded from the service's
+  outcome (`moderation-service.ts`), with Try again where trying again can
+  help. Escape, the close button and the phone's Back (`shell-navigation.ts`)
+  close it, and each pane change hands the focus to its title.
+- **The rows.** Leagues and the web's League view: a named row that is not
+  the viewer's. The Legend boards: an entry with a `userId` that is not the
+  Founder's or the viewer's. The web's Global and Friends tables, in a last
+  column of their own that no width hides (the "..." stops its press, so the
+  singer card does not open as well), friend requests, and a past podium's
+  place, Report alone (a block cannot reach a podium, which is read without
+  an account). A row without one keeps its room, so the columns line up.
+- **No "..." on the native room's past podiums.** There a past Legend is one
+  line of words ("1 Iva, 2 Ben") beside its Practice pill: three 44 px
+  targets do not fit a 360 px row. A singer this account blocked is withheld
+  from those lines instead, as on the web's past podiums. A name on one is
+  reported through the contact form (About, Contact us) until the room's
+  past list gets a place per row.
+- **Without an account,** the sheet opens on "Sign in to report or block",
+  with Sign in (the shell's sheet on the phone, the web's dialog on the web)
+  and the contact form, and asks the worker nothing (decision 8).
+- **The contact line** is on the report, its answer, a failed report and the
+  account pane: the contact form on its `support` topic, with a first line
+  naming the report ("About a report on Ana (user ...)"). The form takes only
+  `ContactTopic`'s topics, so decision 9's reports topic waits for the
+  landing site, outside this repository. Opened as About's Contact us is, a
+  link to a new window, which the phone hands to its browser.
+- **Hidden at once.** `src/stores/blocked-singers-store.ts` keeps the
+  account's blocked ids, in memory only: read from `GET /api/blocks` the
+  first time a board or a Blocked singers list asks for the registered
+  singer signed in, not at every launch (the worker already leaves a blocked
+  singer out of every read after the block, so the ids only matter for what
+  a screen loaded before it), changed by every block and unblock made here,
+  and never shown to another account. Each board filters them out of what
+  it shows, places kept, and reads its data again (the sheet's `onBlocked`).
+- **Cut by place, not by position.** The phone's league cut
+  (`league-board.ts`) zoned each row by its position in the list, so a row
+  left out, by the worker's block since 4a or by the phone's, moved every
+  row under the gap up a zone. It cuts by `rank` now, and the web
+  Leaderboard reads the same module in place of its own copy. Its podium
+  reads its three places by rank too (`leaderboard-podium.ts`): a place
+  hidden by a block keeps its medal and says Hidden, so silver never goes to
+  whoever came third.
+- **Blocked singers, in Settings.** On the phone, Account, Blocked singers
+  (`'blocked-singers'`, `BlockedSingersScreen.tsx`): each singer with when
+  they were blocked and Unblock, loading, an empty list, a failed read with
+  Try again, and a refused session's Sign in. A button whose read or unblock
+  is out stays put, `aria-disabled`, and keeps the focus; when it goes with
+  what it did, the focus goes to what took its place. On the web, the same
+  list in account settings (`BlockedSingersList.tsx`). Both, the sheet and
+  every row but the Leagues and Legend screens' ship in every build.
+- **The worker,** two additive fields: `named` on each league standings row
+  (REQ-RB-040), `userId` on each non-Founder entry of the running Legend's
+  board (REQ-RB-041, `weekly-board.ts`). A worker without them sends rows on
+  which the phone offers nothing.
+
+Left for 4c and a device check: the sheet on real phones (the keyboard over
+the note, VoiceOver and TalkBack through the panes, Android's Back, the
+contact form in the system browser); the landing site's reports topic; a
+place per row for the native room's past podiums; and Community's shares,
+whose "..." reports a melody or a result (the sheet already takes
+`report: { kind, id }`).
 
 ### 4c, Community
 

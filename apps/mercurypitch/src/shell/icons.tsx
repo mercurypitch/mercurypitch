@@ -348,6 +348,14 @@ export const ShieldIcon: Component<ShellIconProps> = (props) => (
 )
 
 /** Copy: two sheets, one over the other. */
+/** Blocked singers: a circle struck through. */
+export const BlockIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M6 6l12 12" />
+  </svg>
+)
+
 export const CopyIcon: Component<ShellIconProps> = (props) => (
   <svg {...base(props)}>
     <rect x="8.5" y="8.5" width="11" height="11" rx="2" />

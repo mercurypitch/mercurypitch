@@ -19,17 +19,27 @@
 // they let public boards show it (leaderboardOptIn, one consent for every
 // board), a weekly stand-in otherwise. The phone adds none.
 //
+// A row that shows another member's own name ends in a "...", which opens
+// the singer sheet: Report or Block (slice 4b). A stand-in has none: its id
+// is the week's membership, not a singer's. A singer blocked from here
+// leaves the board at once, every other place kept, and the league is read
+// again.
+//
 // Behind NATIVE_LEAGUES, as a lazy chunk (NativeShell.tsx): a store build
 // carries none of it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import './leagues.css'
-import type { LeagueMe } from '@/db/services/league-service'
+import { SingerMoreButton, SingerMoreSpace, } from '@/components/moderation/SingerMoreButton'
+import type { LeagueMe, LeagueStanding } from '@/db/services/league-service'
 import { msUntilNextCut } from '@/db/services/league-service'
 import { getUserId } from '@/db/services/user-service'
+import type { LeagueBoardItem } from '@/lib/league-board'
 import { leagueBoard, leagueNeighbours, leagueZoneOf, LOCKED_TROPHY, rungRevealed, } from '@/lib/league-board'
-import { ChevronIcon, TrophyIcon, WarnIcon } from '../icons'
+import { canActOnStanding, withoutBlocked } from '@/lib/singer-rows'
+import { blockedSingerIds, ensureBlockedSingers, } from '@/stores/blocked-singers-store'
+import { ChevronIcon, MoreIcon, TrophyIcon, WarnIcon } from '../icons'
 import { accountSignedIn } from '../settings/account-state'
 import { SettingsGroup } from '../settings/SettingsList'
 import { openSignIn } from '../settings/sign-in-state'
@@ -38,6 +48,52 @@ import { leagueCard, leagueLadder, leagueReadFailed, leagueReading, leagueReadTh
 
 /** How often the next cut's words are worked out again. */
 const CLOCK_MS = 60_000
+
+/** One member's row of the standings, with its "..." where it has one. */
+function StandingRow(props: {
+  item: Extract<LeagueBoardItem, { kind: 'row' }>
+  /** Some row on the board has a "...": the others keep its room. */
+  roomForMore: boolean
+}): JSX.Element {
+  const row = (): LeagueStanding => props.item.row
+  const you = (): boolean => row().userId === getUserId()
+  return (
+    <div
+      class="mp-league-row"
+      data-zone={props.item.zone}
+      data-league-row={row().rank}
+      data-you={you() ? 'on' : undefined}
+    >
+      <span class="mp-league-row__rank">{row().rank}</span>
+      {/* The name gives way to a long one; the You beside it never does. */}
+      <span class="mp-league-row__name">
+        <span class="mp-league-row__text">{row().displayName}</span>
+        <Show when={you()}>
+          <span class="mp-league-row__you">You</span>
+        </Show>
+      </span>
+      <span class="mp-league-row__points">{pointsWord(row().points)}</span>
+      <Show
+        when={canActOnStanding(row(), getUserId())}
+        fallback={
+          props.roomForMore ? (
+            <SingerMoreSpace class="mp-league-row__more" />
+          ) : null
+        }
+      >
+        <SingerMoreButton
+          subject={{
+            userId: row().userId,
+            displayName: row().displayName,
+            onBlocked: () => void refreshLeague(),
+          }}
+          icon={<MoreIcon size={22} />}
+          class="mp-league-row__more"
+        />
+      </Show>
+    </div>
+  )
+}
 
 export function LeaguesScreen(): JSX.Element {
   const [now, setNow] = createSignal(Date.now())
@@ -52,13 +108,16 @@ export function LeaguesScreen(): JSX.Element {
 
   onMount(() => {
     void refreshLeague()
+    ensureBlockedSingers()
   })
   // Signing in from the card below: read the league of who signed in. Not
   // deferred: the first run records signed-out, so the sign-in that
   // follows is a change from it.
   createEffect(
     on(accountSignedIn, (signedIn, was) => {
-      if (signedIn && was === false) void refreshLeague()
+      if (!signedIn || was !== false) return
+      void refreshLeague()
+      ensureBlockedSingers()
     }),
   )
 
@@ -94,6 +153,21 @@ export function LeaguesScreen(): JSX.Element {
     const card = week()
     return card?.eligible === true && card.league !== undefined ? card : null
   })
+  /** The league as shown: a singer blocked from here gone, places kept. */
+  const shown = createMemo((): LeagueMe | null => {
+    const card = league()
+    const blocked = blockedSingerIds()
+    if (card?.standings === undefined || blocked.size === 0) return card
+    return {
+      ...card,
+      standings: withoutBlocked(card.standings, blocked, (row) => row.userId),
+    }
+  })
+  const roomForMore = createMemo((): boolean =>
+    (shown()?.standings ?? []).some((row) =>
+      canActOnStanding(row, getUserId()),
+    ),
+  )
   const myRank = (): number | undefined => league()?.league?.rank
   /**
    * The rung last known, whatever its week, for what the ladder unveils:
@@ -198,7 +272,7 @@ export function LeaguesScreen(): JSX.Element {
           </button>
         </Show>
 
-        <Show when={league()} fallback={waiting()}>
+        <Show when={shown()} fallback={waiting()}>
           {(card) => (
             <>
               <section class="mp-league-hero" data-testid="league-hero">
@@ -291,31 +365,7 @@ export function LeaguesScreen(): JSX.Element {
                           <span>{boardLine(item.zone, item.to)}</span>
                         </div>
                       ) : (
-                        <div
-                          class="mp-league-row"
-                          data-zone={item.zone}
-                          data-league-row={item.row.rank}
-                          data-you={
-                            item.row.userId === getUserId() ? 'on' : undefined
-                          }
-                        >
-                          <span class="mp-league-row__rank">
-                            {item.row.rank}
-                          </span>
-                          {/* The name gives way to a long one; the You
-                              beside it never does. */}
-                          <span class="mp-league-row__name">
-                            <span class="mp-league-row__text">
-                              {item.row.displayName}
-                            </span>
-                            <Show when={item.row.userId === getUserId()}>
-                              <span class="mp-league-row__you">You</span>
-                            </Show>
-                          </span>
-                          <span class="mp-league-row__points">
-                            {pointsWord(item.row.points)}
-                          </span>
-                        </div>
+                        <StandingRow item={item} roomForMore={roomForMore()} />
                       )
                     }
                   </For>

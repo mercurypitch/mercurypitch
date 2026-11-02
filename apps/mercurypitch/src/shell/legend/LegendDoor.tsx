@@ -8,15 +8,27 @@
 // the original, what it asks for, the Founder's score and the singer's best
 // as tiles, the counts, the board, and the past Legends to practise. Sing
 // it and Practice are the room's own dock, over the door's foot.
+//
+// A board entry that names a singer ends in a "...": Report or Block, in
+// the singer sheet (slice 4b). Not the Founder's, nor the singer's own. A
+// singer blocked from here leaves the board at once, places kept, and the
+// board is read again. The past podiums are one line of words a row: no
+// room for a "..." a place, so a name there is reported by the contact
+// form; a singer this account blocked is withheld from them on the phone,
+// as the worker cannot (it reads them without an account).
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
+import { getUserId } from '@/db/services/user-service'
 import { challengeToZenExercise } from '@/features/challenges/challenge-stage-model'
 import type { ArchivedWeeklyChallenge, WeeklyBoard, WeeklyChallenge, } from '@/features/challenges/weekly-service'
 import { podiumOf } from '@/features/challenges/weekly-service'
+import { singerOfEntry, withoutBlocked } from '@/lib/singer-rows'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
+import { blockedSingerIds } from '@/stores/blocked-singers-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { CalendarIcon, ExternalIcon, PlayIcon, StopIcon, WarnIcon, } from '../icons'
+import { CalendarIcon, ExternalIcon, MoreIcon, PlayIcon, StopIcon, WarnIcon, } from '../icons'
 import { posterView } from './legend-lane'
 import { closesLine, countsLine, endedLine, notesLine, rangeLine, rangeSide, standingLine, } from './legend-lines'
 import type { LegendTake } from './legend-take'
@@ -49,6 +61,8 @@ export interface DoorProps {
   onRetry: () => void
   board: () => WeeklyBoard | null
   archive: () => ArchivedWeeklyChallenge[]
+  /** A singer was blocked from the board: read it again. */
+  onBlocked: () => void
 }
 
 /** The running Legend, its board, and the past ones. */
@@ -61,7 +75,13 @@ export function LegendDoor(props: DoorProps): JSX.Element {
       getComfortableMidiRange(vocalRangePreset()),
     )
   }
-  const podium = () => (props.board()?.top ?? []).slice(0, 3)
+  // A singer blocked from here is gone at once; the rest keep their places.
+  const podium = () =>
+    withoutBlocked(
+      props.board()?.top ?? [],
+      blockedSingerIds(),
+      (entry) => entry.userId,
+    ).slice(0, 3)
   const poster = createMemo(() => {
     const picked = props.running()
     return picked === null ? [] : posterLine(picked)
@@ -201,6 +221,19 @@ export function LegendDoor(props: DoorProps): JSX.Element {
                     <span class="mp-legend-podium__score">
                       {Math.round(entry.best)}%
                     </span>
+                    <Show when={singerOfEntry(entry, getUserId())}>
+                      {(userId) => (
+                        <SingerMoreButton
+                          subject={{
+                            userId: userId(),
+                            displayName: entry.displayName,
+                            onBlocked: () => props.onBlocked(),
+                          }}
+                          icon={<MoreIcon size={22} />}
+                          class="mp-legend-podium__more"
+                        />
+                      )}
+                    </Show>
                   </li>
                 )}
               </For>
@@ -234,7 +267,7 @@ export function LegendDoor(props: DoorProps): JSX.Element {
                     <span class="mp-legend-past__sub">{endedLine(past)}</span>
                     <Show when={podiumOf(past.results).length > 0}>
                       <span class="mp-legend-past__sub">
-                        {podiumOf(past.results)
+                        {podiumOf(past.results, blockedSingerIds())
                           .map(
                             (place) =>
                               `${place.rank} ${place.displayName ?? 'Name withheld'}`,

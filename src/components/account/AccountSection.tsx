@@ -16,6 +16,7 @@ import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CheckSmall, Pencil, X } from '@/components/icons'
 import { MercuryCheckbox } from '@/components/MercuryCheckbox'
+import { BlockedSingersList } from '@/components/moderation/BlockedSingersList'
 import { getDb } from '@/db'
 import { CloudRequestError } from '@/db/adapters/server-adapter'
 import type { UserProfile } from '@/db/entities'
@@ -620,6 +621,14 @@ export const AccountSection: Component = () => {
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <SessionList />
+          </div>
+        </Show>
+
+        {/* Where a block made from a board is undone: the singer sheet says
+            "Settings, Blocked singers". Blocks are a registered account's. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <BlockedSingersList />
           </div>
         </Show>
 

@@ -23,6 +23,7 @@ import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING
 import { navigateTo } from '@/lib/hash-router'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { askRoomBack, nativeRunControls } from '@/stores/native-shell-store'
+import { closeSingerSheet, singerSheetOpen } from '@/stores/singer-sheet-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
 import { declineOffer, offerOpen } from './settings/account-offer'
@@ -205,6 +206,7 @@ function shellOverlayOpen(): boolean {
     settingsAlertOpen() ||
     moreOpen() ||
     signInOpen() ||
+    singerSheetOpen() ||
     latencySheetOpen() ||
     cloudOfferUp() ||
     offerOpen() ||
@@ -233,6 +235,7 @@ export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (
     moreOpen() ||
     signInOpen() ||
+    singerSheetOpen() ||
     latencySheetOpen() ||
     cloudOfferUp() ||
     offerOpen() ||
@@ -320,7 +323,11 @@ export function performBack(host: BackHost): BackOutcome {
       // other sheet, so it is first. The sign-in sheet steps back a pane
       // before it closes; closing the latency sheet ends a run in flight;
       // Keep, the Cloud offer and the voiceprint ask take Back as Not now.
+      // The singer sheet, over a board, closes whatever pane it is on: it
+      // hands over to the sign-in sheet by closing first, so the two are
+      // never up together.
       if (voiceprintAskUp()) voiceprintAskNotNow()
+      else if (singerSheetOpen()) closeSingerSheet()
       else if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
       else if (cloudOfferUp()) closeCloudOffer('not-now')

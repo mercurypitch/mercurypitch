@@ -60,15 +60,28 @@ const dbMocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/db/services/auth-service', async (importOriginal) => ({
-  // The real predicate: which providers count as an account is the
-  // behaviour these tests are about.
-  isRegisteredProvider: (await importOriginal<typeof AuthService>())
-    .isRegisteredProvider,
-  restoreAuth: mocks.restoreAuth,
-  deleteAccount: vi.fn(async () => undefined),
-  fetchMe: mocks.fetchMe,
-  logout: mocks.logout,
+vi.mock('@/db/services/auth-service', async (importOriginal) => {
+  const actual = await importOriginal<typeof AuthService>()
+  return {
+    // The real predicates: which providers count as an account is the
+    // behaviour these tests are about, and the Blocked singers list asks
+    // the same of the token.
+    isRegisteredProvider: actual.isRegisteredProvider,
+    accountHeld: actual.accountHeld,
+    currentAccountId: actual.currentAccountId,
+    handleAuthErrorResponse: () => false,
+    handleCloudSessionRejected: () => false,
+    restoreAuth: mocks.restoreAuth,
+    deleteAccount: vi.fn(async () => undefined),
+    fetchMe: mocks.fetchMe,
+    logout: mocks.logout,
+  }
+})
+// The Blocked singers list reads whom the account blocked: nobody here.
+vi.mock('@/db/services/moderation-service', () => ({
+  listBlockedSingers: async () => ({ status: 'ok', blocks: [] }),
+  blockSinger: async () => ({ status: 'blocked' }),
+  unblockSinger: async () => ({ status: 'unblocked' }),
 }))
 vi.mock('@/db/services/billing-service', async (importOriginal) => ({
   ...(await importOriginal<typeof BillingService>()),

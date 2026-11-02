@@ -21,6 +21,7 @@ export type PushedScreen =
   | 'account'
   | 'account-name'
   | 'devices'
+  | 'blocked-singers'
   | 'delete-account'
   | 'microphone'
   | 'room-noise'

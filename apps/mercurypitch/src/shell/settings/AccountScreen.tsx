@@ -27,7 +27,7 @@ import { authVersion } from '@/db/services/user-service'
 import { thisDevice } from '@/lib/device-noun'
 import { showNotification } from '@/stores/notifications-store'
 import { isApplePrivateRelayAddress } from '../../../../../workers/db-worker/src/apple-relay'
-import { AccountIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, TrophyIcon, WarnIcon, } from '../icons'
+import { AccountIcon, BlockIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, TrophyIcon, WarnIcon, } from '../icons'
 import { pushScreen } from '../run-shell-store'
 import { setProductNews, setPublicBoards, signOutHere } from './account-actions'
 import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, RELAY_NOTE, SIGN_OUT_QUESTION, takesStayHere, TWO_STEP, } from './account-copy'
@@ -251,6 +251,16 @@ function AccountSettings(): JSX.Element {
           sub={devicesSub()}
           onPress={() => {
             pushScreen('devices')
+          }}
+        />
+        {/* Where a block made from a board is undone (the singer sheet
+            says so: "Settings, Blocked singers"). */}
+        <SettingsRow
+          id="blocked-singers"
+          icon={<BlockIcon />}
+          label="Blocked singers"
+          onPress={() => {
+            pushScreen('blocked-singers')
           }}
         />
         <SettingsRow

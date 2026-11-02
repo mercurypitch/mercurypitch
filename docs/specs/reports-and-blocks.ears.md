@@ -1,24 +1,28 @@
 # EARS Specification — Reports, blocks and the name filter
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.0 | Date: 2026-10-31 | Scope: what App Store guideline 1.2 and
+> Version: 1.1 | Date: 2026-11-02 | Scope: what App Store guideline 1.2 and
 > Play's user-generated content policy ask of an app whose singers post: a
 > filter on what is posted, a way to report it and an answer in good time, a
-> way to block a singer. Slice 4a of
+> way to block a singer. Slices 4a and 4b of
 > [`docs/plans/native-more-and-community.md`](../plans/native-more-and-community.md).
 
 **Source:** `workers/db-worker/migrations/0072_reports_and_blocks.sql`,
 `workers/db-worker/src/name-filter.ts`, `name-filter-words.ts`,
 `public-text.ts`, `report-rules.ts`, `reports.ts`, `blocks.ts`,
-`share-authors.ts`, `registered.ts`, and the hooks in `index.ts` (shared
-reads, the leaderboard, the weekly board), `league.ts` (standings),
-`friends.ts`, `validation.ts`, `auth.ts` (names, rate limits, deletion) and
-`email.ts` (the owner's alert).
+`share-authors.ts`, `registered.ts`, `weekly-board.ts`, and the hooks in
+`index.ts` (shared reads, the leaderboard, the weekly board), `league.ts`
+(standings), `friends.ts`, `validation.ts`, `auth.ts` (names, rate limits,
+deletion) and `email.ts` (the owner's alert). The phone's side (section 5):
+`src/lib/singer-rows.ts`, `src/db/services/moderation-service.ts`.
 
 **Tests:** `workers/db-worker/src/name-filter.test.ts`,
 `workers/db-worker/src/public-text.test.ts`,
-`workers/db-worker/src/auth.test.ts` (the erasure list), and
-`workers/db-worker/node-tests/reports-and-blocks-integration.test.ts`.
+`workers/db-worker/src/auth.test.ts` (the erasure list),
+`workers/db-worker/src/league.test.ts`,
+`workers/db-worker/src/weekly-board.test.ts`,
+`workers/db-worker/node-tests/reports-and-blocks-integration.test.ts`, and
+`src/lib/singer-rows.test.ts`.
 
 ---
 
@@ -180,3 +184,28 @@ reports, every report about it, and its blocks from both sides. Its open
 reports shall stay in the owner's queue, unsigned (`reporterId` becomes
 `erased:<report id>`): they are about somebody else, and still owed an
 answer.
+
+## 5. What the phone can act on
+
+The phone offers Report and Block on a row only where the row names a singer
+by their own id (slice 4b). Two answers say which rows those are.
+
+### REQ-RB-040 — A league row says whether it names its member
+
+**Ubiquitous:** Each row of the league standings (`GET /api/league/me`) shall
+carry `named`: true where the row shows the member's own name and carries
+their own id (the caller's row, or a member who let public boards show their
+name), false for a weekly stand-in, whose `userId` is the week's membership
+id and leads to nobody. **Where** a row is named and is not the caller's, the
+phone shall offer Report and Block on it. It shall offer neither on a
+stand-in, nor on a row that carries no `named` (a worker that predates it).
+
+### REQ-RB-041 — The Legend's board names its singers by id
+
+**Ubiquitous:** Each entry of a running Legend's board (`GET
+/api/weekly/board`, `top`) shall carry the singer's `userId`, except the
+Founder's, which shall carry none. Every singer on it agreed to be named on
+public boards, as on the leaderboard, which sends the id beside each name.
+**Where** an entry carries a `userId` that is not the caller's, the phone
+shall offer Report and Block on it. It shall offer neither on the Founder's
+entry, nor on an entry from a worker that sends no `userId`.
