@@ -209,11 +209,12 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     ],
   },
   [EXERCISE_CHORD_STACKER]: {
-    summary: 'Add notes one at a time to build a chord in tune.',
+    summary:
+      'Hear a chord one note at a time, then sing each note back in tune.',
     body: [
-      'You sing a sequence of notes that stack into a chord, each one tuned against the notes already sounding.',
-      'Listen for each new note to "lock in" with the others before moving on.',
-      'It runs in rounds and scores how in-tune each stacked note is.',
+      'You hear a chord one note at a time, from the root up, then sing each note back on its own.',
+      'Each note is scored against the note played, in the octave it was played.',
+      'It runs in five rounds, one chord each, and scores how in tune each sung note is.',
     ],
   },
   [EXERCISE_STACCATO]: {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_HELP } from './exercise-help'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_STACCATO, } from './types'
+import { EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_STACCATO, } from './types'
 
 describe('exercise help', () => {
   it('says what the Long note lantern counts: a vibrato costs steadiness, and the Accuracy Tier sets the top', () => {
@@ -45,5 +45,21 @@ describe('exercise help', () => {
     // Assert
     expect(words).toMatch(/scores how in tune each note is/)
     expect(words).not.toMatch(/timing|rhythm|on the beat|in time/i)
+  })
+
+  it('says Chord Stacker plays its chord a note at a time, and each note is sung back alone', () => {
+    // The demo's tones never sound together, and nothing sounds while each
+    // note is sung back in its own window, so no note is tuned against
+    // others still sounding.
+    // Arrange
+    const help = EXERCISE_HELP[EXERCISE_CHORD_STACKER]
+
+    // Act
+    const words = [help.summary, ...help.body].join(' ')
+
+    // Assert
+    expect(words).toMatch(/one note at a time/)
+    expect(words).toMatch(/on its own/)
+    expect(words).not.toMatch(/already sounding|lock in/i)
   })
 })
