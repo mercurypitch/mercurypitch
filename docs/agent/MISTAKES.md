@@ -2162,6 +2162,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** Burn 1 - 1/k of every render quantum on the audio thread with an AudioWorklet to emulate a k-times slower device, throttle the main thread k times with CDP as well, and give Auto a benchmark k times the desktop's. Calibrated: k = 2 measured 49.8 % burned, k = 4 76.0 %.
 **See:** `src/lib/studio/playback/playback-benchmark.ts` (what Auto reads), `src/lib/studio/playback/song-load.ts`.
 
+### Name the timers to fake: `vi.useFakeTimers()` puts its own `requestAnimationFrame` over a stub
+
+**Symptom:** the Karaoke clock watch's test of its guard at the song's end passed with the guard deleted.
+**Cause:** the test stubbed `requestAnimationFrame` to keep the frames off, then called `vi.useFakeTimers()`, which in Vitest 4 fakes every timer it knows, `requestAnimationFrame` included, over the stub. Frames ran on fake time and ended the song at its end, so the guard never acted.
+**Rule:** when a test stubs `requestAnimationFrame`, or fakes the clock around something that draws, pass `toFake` with the timers it drives (`['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date']`). Take a guard out once to see its test go red.
+**See:** `src/features/stem-mixer/useStemMixerAudioController.stall.test.ts` (`playing`).
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

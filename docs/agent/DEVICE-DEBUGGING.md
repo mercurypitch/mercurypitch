@@ -152,10 +152,14 @@ looked like:
 | `suspend-fade`                  | The shared clock was about to stop (the app leaving with nothing to keep the song playing), so the playing song paused with its fade first                                                                                                                      |
 | `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run with a notice                                                                                                                 |
 | `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back                                                                                                                                                                           |
+| `clock-stall`                   | A warning: the clock stood still 1.5 s while the song played, after it had been moving. With the clock's `state`, the `route` and `port`, whether the stream had sound queued (`feeding`, `queued`), the place and `stoodMs`; one `clock-restart` follows       |
+| `clock-moving`                  | The clock moved again after a stall, and how long it stood (`stoodMs`); the song plays on                                                                                                                                                                       |
+| `clock-stall-stop`              | A warning: the clock still stood 1.5 s after the restart, so the song paused where it was, its clock parked, and the room says why                                                                                                                              |
 | `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                                                                                                                                 |
 | `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                                                                                                                     |
 
 Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts),
+[`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
 [`useStemMixerAudioController.ts`](../../src/features/stem-mixer/useStemMixerAudioController.ts)
 and [`streaming-stem-voice.ts`](../../src/features/stem-mixer/streaming-stem-voice.ts). On iOS the
 app's own plugin adds `[audio session]` lines beside them: another app's sound
@@ -229,6 +233,47 @@ asking (about half a minute of asking) before RevenueCat's webhook reached
 the server, and Settings says Not subscribed until something asks again. A
 store build carries none of it (`assert-no-portable-console.mjs
 --store-binary`).
+
+## A song that sticks with its sound on a TV (AirPlay)
+
+The owner's case (1 and 2 Nov 2026, an iPhone 13 Pro and an LG C2): AirPlay
+offered as the app opened, taken, and then the Karaoke song stood still with
+no error. For a test, turn on Developer > Debug console > "Keep routine logs"
+(the route and clock lines are routine), Clear log under Developer > Audio,
+take AirPlay, play a song in the Karaoke room, and copy the console.
+
+| Line                                                                                                                      | Shown      | What it says                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[audio route] airplay "LG C2", iOS: new device, was Speaker`                                                             | routine    | Each route the phone reports: its kind, the port as the phone names it, iOS's reason and the outputs before it. One `at launch`; on the way back only if it moved |
+| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                               | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                         |
+| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay port=LG C2 feeding=yes queued=2.4 ... stoodMs=1500` | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                       |
+| `karaoke clock-moving ... stoodMs=2100`                                                                                   | by default | It moved again, and the song plays on                                                                                                                             |
+| `karaoke clock-stall-stop ...`                                                                                            | by default | Still standing: the song paused where it was, and the room says why (on AirPlay: choose iPhone in Control Center, or use Screen Mirroring)                        |
+
+Reading them:
+
+- `clock-stall` with `state=running` and `feeding=yes` is the clock stopping
+  with the song's sound ready: WebKit's output stopped asking for audio on
+  that route. `feeding=no` means a stem's stream ran dry as well;
+  `feeding=buffered` is a song decoded whole.
+- An `[audio route]` line that moves the sound off AirPlay as the room opens
+  its mic (`iOS: category change`, or `no route for the category`) is iOS
+  taking the sound back to the phone, not a stall.
+- `[audio clock] shared: running -> interrupted` beside a route line is iOS
+  interrupting Web Audio for it; the room pauses, and only play resumes it.
+- No `clock-stall` while the time on screen stands still: the clock moves and
+  the frames do not, which is another bug.
+- A clock that never starts after play is the 700 ms start check's
+  (`clock-stuck`, "The song didn't start"); the stall watch takes over once
+  the clock has moved.
+
+A test build's audio record has the long form beside these: `output change
+route=airplay ... routeReason=...` and `census context-state`. Sources:
+[`audio-route-store.ts`](../../src/stores/audio-route-store.ts),
+[`shared-clock-log.ts`](../../apps/mercurypitch/src/infrastructure/shared-clock-log.ts),
+[`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts) and
+[`local-media.ts`](../../src/lib/local-media.ts), which keeps the unlock clip and
+the elements that feed Web Audio off AirPlay.
 
 ## A TestFlight Subscribe that asks for the password
 
