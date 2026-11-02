@@ -2977,3 +2977,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 2 Nov 16:4x
 - Worktree rebuilt at 85ccd03dd (clean). Rate limit allowed. W28 spawned 16:4x (BRIEF-writer-common + BRIEF-28; told: 24-27 committed, tease bound in L27 FACTS 5, L26 hand-back items 3-5, the four reviews' lessons, copy files to s2pkg/28 often). Only agent running. Fallback armed for 17:4x.
 - Next: W28 hand-back -> R28 (fresh, xhigh) -> fix pass -> lead -> commit. Then #229 (shared commit: shared-rest/*.md + NOTES.md, one reanchor, before/after compare).
+
+## 2 Nov 17:54
+- Fallback fired; W28 alive (s2pkg/28 and worktree files written 17:48-17:54; LESSON.md 2,051 words so far). No hand-back yet. Fallback re-armed for 19:07.
