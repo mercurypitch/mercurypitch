@@ -104,14 +104,15 @@ export function preloadExercise(id: PremiumExerciseId): void {
 
 /**
  * The rooms whose Merc says his opening line aloud as they open: every
- * premium room but two. The Warm-up opens on its path, where he says
- * nothing, and Harmony's lines are not recorded yet (its merc-spoken.ts).
+ * premium room but the Warm-up, which opens on its path, where he says
+ * nothing.
  */
 const SPEAKS_AS_IT_OPENS: ReadonlySet<PremiumExerciseId> = new Set([
   EXERCISE_ECHO_STARS,
   EXERCISE_HOME_NOTE_LIGHTHOUSE,
   EXERCISE_FIRST_NOTE_STAGE,
   EXERCISE_LEAP_CLIFFS,
+  EXERCISE_HARMONY_LAKE,
   EXERCISE_LONG_NOTE_LANTERN,
   EXERCISE_LIP_ROLL_BAY,
   EXERCISE_NG_SLIDES_BRIDGE,

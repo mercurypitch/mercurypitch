@@ -443,11 +443,13 @@ no voice keeps nothing.
 
 **Built from.** The room kit, the sequence engine (free time taking turns, timed together), Merc's
 sampled voice through the room kit's singer (`merc-singer.ts`, shared with Leap), and lib's sung
-window (`sung-window.ts`, shared with Leap). `src/features/harmony/`.
+window (`sung-window.ts`, shared with Leap). `src/features/harmony/`. Merc says its opening and
+result lines aloud, ElevenLabs takes in its `voice/` folder (2 Nov 2026), as the other Ear rooms'
+are; his calls, cheers and the missed note's pair name notes, and stay in his bubble.
 
 **Next.** Prove Together on phones: Bluetooth headphones' delay (the windows allow 0.35 to 0.45 s
 late), and a wired pair's leak into the mic. The painting (lamps on two lines over a lake at night).
-Merc's lines aloud (none recorded yet: `merc-spoken.ts`). A demo.
+A demo.
 
 ## How they earn
 
