@@ -2829,3 +2829,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - L22 reviewer still running (spawned 03:3x). When the window resets and get_session reads
   "allowed": send 18-FIXPASS-MSG.md to the L18 writer (SendMessage, id in agents.txt), then the L22
   fix pass when its review is in.
+
+## 2 Nov 04:00 UTC — L22 review in (2 blocking); calls written, waiting for the window
+
+- L22 review: 2 blocking (the slow wave and other answering plays not locked before Step 3's choice;
+  today's hold-reader figures ignore Voice Mirror's 5-frame median: ±50 reads ~6.1 not 4.9, ±40 ~10.0
+  not 6.8, Test 8g impossible), 9 should fix, 11 nits. Calls: s2pkg/22-FIXPASS-MSG.md, NOT YET SENT.
+- No agents running now. The 05:43 UTC wake-up (trig_01YbZRrFjK6SfSgmeLK7y1sY) sends both fix
+  passes (18 and 22) if get_session reads "allowed".
