@@ -405,12 +405,57 @@ export interface LeagueMe {
   points?: number
   rank?: number | null
   cohortSize?: number
-  standings?: Array<{
-    userId: string
-    displayName: string
-    points: number
-    rank: number
-  }>
+  standings?: LeagueStanding[]
+}
+
+/** One row of the standings, as the caller is sent it. */
+export interface LeagueStanding {
+  /** The member's id where the row shows their name; otherwise the week's
+   *  membership id, which leads nowhere. */
+  userId: string
+  displayName: string
+  points: number
+  rank: number
+  /**
+   * True where the row shows the member's own name: the caller's row, or a
+   * member who let public boards show theirs. False for a weekly stand-in,
+   * whose `userId` is no singer's, so the phone offers Report and Block on
+   * a named row only.
+   */
+  named: boolean
+}
+
+/** A standings row as the query reads it, before it is placed. */
+export interface StandingRead {
+  userId: string
+  displayName: string
+  points: number
+  /** 1 where the row shows the member's own name. */
+  named: number
+  /** 1 where a block stands between the member and the caller. */
+  hidden: number
+}
+
+/**
+ * The cohort placed, best first, and the rows the caller is shown: the
+ * whole cohort less the members hidden from them, every place kept as it
+ * would be without a block (blocks.ts). The cut reads the whole cohort.
+ */
+export function placeStandings(rows: readonly StandingRead[]): {
+  placed: LeagueStanding[]
+  shown: LeagueStanding[]
+} {
+  const placed = rows.map((row, index) => ({
+    userId: row.userId,
+    displayName: row.displayName,
+    points: row.points,
+    rank: index + 1,
+    named: row.named === 1,
+  }))
+  return {
+    placed,
+    shown: placed.filter((_, index) => rows[index].hidden !== 1),
+  }
 }
 
 /**
@@ -494,6 +539,10 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
     // A block (blocks.ts) hides a name, so only a row that shows one is
     // hidden. A pseudonym row stays: dropping it would tie the account just
     // blocked to the pseudonym, its points and its place.
+    //
+    // `named` says which rows show a name, and so carry the member's own id:
+    // the phone offers Report and Block on those, and on no stand-in, whose
+    // membership id leads to nobody it could report.
     const { results } = await env.DB.prepare(
       `SELECT m.points AS points,
               CASE
@@ -506,6 +555,11 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
                   THEN COALESCE(p.displayName, 'Singer-' || substr(m.userId, 1, 6))
                 ELSE 'Singer-' || substr(m.id, 1, 6)
               END AS displayName,
+              CASE
+                WHEN m.userId = ?2 OR COALESCE(p.leaderboardOptIn, 0) = 1
+                  THEN 1
+                ELSE 0
+              END AS named,
               CASE
                 WHEN m.userId <> ?2 AND COALESCE(p.leaderboardOptIn, 0) = 1
                   THEN EXISTS (
@@ -522,26 +576,15 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
        ORDER BY m.points DESC, m.userId ASC`,
     )
       .bind(cohort.id, userId)
-      .all<{
-        userId: string
-        points: number
-        displayName: string
-        hidden: number
-      }>()
-    const rows = results ?? []
-    const placed = rows.map((r, i) => ({
-      userId: r.userId,
-      displayName: r.displayName,
-      points: r.points,
-      rank: i + 1,
-    }))
+      .all<StandingRead>()
+    // A singer blocked either way is left out of the list, places kept, as
+    // the boards do (blocks.ts). The cut reads the whole cohort, untouched.
+    const { placed, shown } = placeStandings(results ?? [])
     const mine = placed.find((s) => s.userId === userId)
     myPoints = mine?.points ?? 0
     myRank = mine?.rank ?? null
     cohortSize = placed.length
-    // A singer blocked either way is left out of the list, places kept, as
-    // the boards do (blocks.ts). The cut reads the whole cohort, untouched.
-    standings = placed.filter((_, i) => rows[i].hidden !== 1)
+    standings = shown
   }
 
   return {
