@@ -23,10 +23,12 @@ export type HarmonyMoment =
   | 'intro'
   | 'introBoth'
   | 'introTogether'
+  | 'introBothTogether'
   | 'call'
   | 'callBoth'
   | 'callBelow'
   | 'callTogether'
+  | 'callBothTogether'
   | 'landed'
   | 'landedBelow'
   | 'missed'
@@ -70,6 +72,13 @@ export const HARMONY_LINES_TABLE: LineTable<HarmonyMoment> = {
       text: 'Headphones on. I sing my line, then we sing it together.',
     },
   ],
+  // Learning, together: the harmony first from him, then both voices.
+  introBothTogether: [
+    {
+      id: 'both-together-first',
+      text: 'Headphones on. I sing my line, then yours. Then we sing them together.',
+    },
+  ],
   call: [{ id: 'call-first', text: 'My line first. Then yours, a third up.' }],
   callBoth: [
     { id: 'call-both', text: 'My line, then yours. Then you sing it.' },
@@ -82,6 +91,12 @@ export const HARMONY_LINES_TABLE: LineTable<HarmonyMoment> = {
   ],
   callTogether: [
     { id: 'call-together', text: 'My line first. Then sing yours with me.' },
+  ],
+  callBothTogether: [
+    {
+      id: 'call-both-together',
+      text: 'My line, then yours. Then sing yours with me.',
+    },
   ],
   landed: [
     { id: 'landed-harmony', text: 'In harmony. Next line.' },

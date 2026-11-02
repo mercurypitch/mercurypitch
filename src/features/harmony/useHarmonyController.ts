@@ -27,7 +27,7 @@
 // frames' clock and the audio clock meet at one moment; the engine is
 // ticked once per CAPTURED frame, on the frames' own clock.
 
-import { batch, createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
@@ -45,11 +45,10 @@ import { EXERCISE_HARMONY_LAKE } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import type { MercVoice } from '@/lib/merc/sim'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { echoWindow } from '@/lib/sequence/phrase-fit'
 import type { Phrase, SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
-import { createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
+import { callSeconds, createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { NoteWindow } from '@/lib/sequence/sung-window'
-import { sungWindow } from '@/lib/sequence/sung-window'
+import { singerWindow } from '@/lib/sequence/sung-window'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { harmonyWay } from '@/stores/harmony-store'
@@ -62,11 +61,12 @@ import type { HarmonyLine } from './harmony-line'
 import { planLines } from './harmony-line'
 import type { HarmonyEvent, HarmonyState, LineOutcome } from './harmony-machine'
 import { harmonyReducer, INITIAL_HARMONY_STATE, isRunPhase, isSinging, liveLine, } from './harmony-machine'
-import { after, endOf, harmonyLine, harmonyPhrase, lineOutcome, mercCall, mercLine, missedPair, } from './harmony-phrase'
+import { after, harmonyLine, harmonyPhrase, lineOutcome, mercCall, mercLine, missedPair, } from './harmony-phrase'
 import type { HarmonyLevel } from './harmony-rules'
 import { AFTER_ANSWER_MS, BETWEEN_LINES_MS, HARMONY_LEVELS, HARMONY_LINES, MERC_GAP_SECONDS, SOUND_LEAD_SECONDS, taskName, TOGETHER_BREATH_SECONDS, togetherRules, VOICE_TAIL_SECONDS, } from './harmony-rules'
 import type { HarmonySummary } from './harmony-run'
 import { callMoment, keepHarmonyRun, landedMoment, missedFields, missedMoment, resultMoment, summarizeRun, } from './harmony-run'
+import type { HarmonyMoment } from './merc-lines'
 import { createHarmonyLines } from './merc-lines'
 import { HARMONY_SPOKEN } from './merc-spoken'
 
@@ -106,16 +106,17 @@ export function useHarmonyController(
   const phase = () => untrack(state).phase
   const runWay = () => untrack(state).way
   const say = speakingLines(lines, speech, setLine)
+  /** His opening line: for the way, and whether he sings the harmony first. */
+  const introMoment = createMemo((): HarmonyMoment => {
+    const both = level.preset().mercSingsBoth
+    if (harmonyWay() === 'together') {
+      return both ? 'introBothTogether' : 'introTogether'
+    }
+    return both ? 'introBoth' : 'intro'
+  })
   /** His opening line for the level and the way, aloud unless asked not to. */
   const sayIntro = (aloud = true): void => {
-    const both = untrack(level.preset).mercSingsBoth
-    const moment =
-      harmonyWay() === 'together'
-        ? 'introTogether'
-        : both
-          ? 'introBoth'
-          : 'intro'
-    say(moment, undefined, aloud)
+    say(untrack(introMoment), undefined, aloud)
   }
 
   // ── Timers that belong to the screen (room-kit room-life.ts) ───
@@ -147,6 +148,10 @@ export function useHarmonyController(
   /** What the engine hears by: the level's rules, or its rules together. */
   let heardRules: HarmonyLevel = rules
   let sound: { stop(): void } | null = null
+  /** When Merc's call ends, audio clock s, his voice's tail with it; 0 for none. */
+  let soundEnd = 0
+  /** Together, a line is over and Merc still sings his to its end. */
+  let finishing = false
   let engine: SequenceState = createSequenceState(0)
   let phrase: Phrase = { notes: [] }
   let processed = 0
@@ -193,6 +198,8 @@ export function useHarmonyController(
   const stopSound = (): void => {
     sound?.stop()
     sound = null
+    soundEnd = 0
+    finishing = false
   }
 
   /** Off the sound, the loop, the trail and Merc's voice. */
@@ -245,7 +252,7 @@ export function useHarmonyController(
     const { notes, his } = mercCall(current, rules)
     const sungWith = after(
       mercLine(current, rules),
-      endOf(notes) + TOGETHER_BREATH_SECONDS,
+      callSeconds({ notes }) + TOGETHER_BREATH_SECONDS,
     )
     const all = together ? [...notes, ...sungWith] : notes
     const lit = (i: number): void => {
@@ -261,6 +268,7 @@ export function useHarmonyController(
       lit,
     )
     sound = sung
+    soundEnd = sung.endAt
     const start = a0 + SOUND_LEAD_SECONDS
     callNotes = all.map((note) => ({
       midi: note.midi,
@@ -416,15 +424,39 @@ export function useHarmonyController(
     })
   }
 
-  /** A line is over: its lamps, Merc's line, then the next. */
+  /**
+   * A line is over: its lamps at once, then Merc's answer and the next.
+   * Together, the singer can land the last note while Merc still sings
+   * his: his line ends as sung, and his answer waits for it.
+   */
   function endLine(outcome: LineOutcome): void {
     const ctx = audio
     stopLoop()
     capture.takeFrames()
     dispatch({ type: 'outcome', outcome })
-    stopSound()
     bandSince = null
     sink(null)
+    const left =
+      ctx === null || runWay() !== 'together'
+        ? 0
+        : (soundEnd - ctx.currentTime) * 1000
+    if (left <= 0) {
+      answerLine(outcome)
+      return
+    }
+    finishing = true
+    const { run } = untrack(state)
+    life.later(left, () => {
+      const now = untrack(state)
+      if (now.run !== run || now.current !== outcome.line.index) return
+      if (now.phase === 'landed' || now.phase === 'missed') answerLine(outcome)
+    })
+  }
+
+  /** Merc's answer to a line: a cheer, or his note and the third from it. */
+  function answerLine(outcome: LineOutcome): void {
+    const ctx = audio
+    stopSound()
     const current = outcome.line
     if (outcome.inHarmony) {
       haptics.tapLight()
@@ -540,13 +572,11 @@ export function useHarmonyController(
   }
 
   /** The singer's window, as a run plans its harmonies in it. */
-  const runWindow = (): NoteWindow => {
-    const window = echoWindow({
+  const runWindow = (): NoteWindow =>
+    singerWindow({
       voiceprints: loadLocalVoiceprints(),
       voicePreset: untrack(vocalRangePreset),
     })
-    return sungWindow({ low: window.low, high: window.high })
-  }
 
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
@@ -621,9 +651,14 @@ export function useHarmonyController(
    * run is dropped, as the mic's tap drops it: no result, no best.
    */
   function leave(): void {
-    // Nothing he says is heard behind their back either.
+    // Nothing he says or sings is heard behind their back either: a line
+    // heard again at the result stops too.
     speech.hush()
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase())) {
+      endReplay()
+      stopSound()
+      return
+    }
     dropRun()
     sayIntro(false)
   }
@@ -636,10 +671,11 @@ export function useHarmonyController(
     })
   })
 
-  // A new way chosen at rest: his opening line for it, shown, not said.
+  // A new way or level chosen at rest: his opening line for it, shown, not
+  // said.
   createEffect(
     on(
-      () => harmonyWay(),
+      introMoment,
       () => {
         if (phase() === 'intro') sayIntro(false)
       },
@@ -672,7 +708,7 @@ export function useHarmonyController(
   const mercVoice = (): MercVoice => {
     const current = live()
     const p = phase()
-    if (current !== null && (p === 'call' || p === 'together')) {
+    if (current !== null && (p === 'call' || p === 'together' || finishing)) {
       const t = frameNow()
       const note = callNotes.find((n) => t >= n.from && t < n.to)
       if (note !== undefined) return singing(note.midi)

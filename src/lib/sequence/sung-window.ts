@@ -7,6 +7,8 @@
 // held to what a phone's speaker carries well, as Home note's is. A window
 // too narrow or unknown falls back to F3 to F4. Pure.
 
+import { echoWindow } from './phrase-fit'
+
 /** The notes a room may ask for, MIDI, inclusive. */
 export interface NoteWindow {
   readonly low: number
@@ -34,4 +36,16 @@ export function sungWindow(
   const low = Math.max(SUNG_LOW, Math.ceil(singer.low))
   const high = Math.min(SUNG_HIGH, Math.floor(singer.high))
   return high >= low ? { low, high } : DEFAULT_WINDOW
+}
+
+/**
+ * A singer's window: their voiceprint's range, else their voice type's
+ * (echoWindow), held to the band. Leap's rounds and Harmony's lines are
+ * planned in it.
+ */
+export function singerWindow(
+  singer: Parameters<typeof echoWindow>[0],
+): NoteWindow {
+  const window = echoWindow(singer)
+  return sungWindow({ low: window.low, high: window.high })
 }

@@ -139,8 +139,3 @@ export function after(
 ): PhraseNote[] {
   return notes.map((note) => ({ ...note, at: note.at + seconds }))
 }
-
-/** Where a run of sung notes ends, s from its start. */
-export function endOf(notes: readonly PhraseNote[]): number {
-  return Math.max(0, ...notes.map((note) => note.at + note.seconds))
-}

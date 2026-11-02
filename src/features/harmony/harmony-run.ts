@@ -89,7 +89,9 @@ export function callMoment(
   mercSingsBoth: boolean,
 ): HarmonyMoment {
   if (line.below) return 'callBelow'
-  if (way === 'together') return 'callTogether'
+  if (way === 'together') {
+    return mercSingsBoth ? 'callBothTogether' : 'callTogether'
+  }
   return mercSingsBoth ? 'callBoth' : 'call'
 }
 
