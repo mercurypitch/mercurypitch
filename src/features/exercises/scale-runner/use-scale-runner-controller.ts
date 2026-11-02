@@ -195,12 +195,16 @@ export function useScaleRunnerController(
         ? approximateRichness(claritySamples).richnessScore
         : 0
 
-    // Richness left the grade on 2026-10-25 without a reweighting: it
-    // read the detector's 0-1 clarity as 0-100, so it was 0 or 1 and the
-    // grade moves by at most 0.2 before rounding. Still recorded in the
+    // The grade is the note average at 50 %, the best note at 18.75 % and
+    // the evenness at 31.25 %, so a flawless run grades 100. These are the
+    // 0.4, 0.15 and 0.25 left when richness (0.2) left the grade on
+    // 2026-10-25, each divided by their sum, 0.8: as they were, they capped
+    // the grade at 80, under the level's step-up line of 90 (scoring
+    // version 2, exercise-comparability.ts). Richness read the detector's
+    // 0-1 clarity as 0-100, so it was 0 or 1; it is still recorded in the
     // metrics until the approximation itself is deleted.
     const score = Math.round(
-      avgAccuracy * 0.4 + bestNote * 0.15 + evennessScore * 0.25,
+      avgAccuracy * 0.5 + bestNote * 0.1875 + evennessScore * 0.3125,
     )
 
     return {

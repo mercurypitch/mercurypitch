@@ -17,7 +17,7 @@
 // trend across two different rulers.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_SIREN, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
@@ -32,6 +32,11 @@ const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
   // whole run. Version 1 blended in the best note and a dead richness term
   // and could not pass 75.
   [EXERCISE_ARPEGGIO_JUMPER]: 2,
+  // Rescored 2026-11-02: each grade's weights were divided by their sum,
+  // so a flawless run grades 100. Version 1 lost richness's 0.2 on
+  // 2026-10-25 without a reweighting and could not pass 80.
+  [EXERCISE_SCALE_RUNNER]: 2,
+  [EXERCISE_DRONE_INTONATION]: 2,
 }
 
 /**

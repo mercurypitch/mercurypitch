@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDroneIntonationController } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
+import { exerciseScoringVersion } from '@/features/exercises/exercise-comparability'
 import { pitchStabilityCents } from '@/features/exercises/exercise-scoring-utils'
+import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_DRONE_INTONATION } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
+import { computeEma } from '@/features/practice-intelligence/adaptive-difficulty'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { midiToFrequency } from '@/lib/frequency-to-note'
+import { applyPersistedValue } from '@/lib/storage'
 
 describe('pitchStabilityCents (per-note steadiness)', () => {
   it('is ~0 for a rock-steady note', () => {
@@ -72,6 +77,43 @@ const audioEngineMock = {
   stopTone: () => {},
 }
 
+/**
+ * Hold every round's target `centsSharp` off and dead steady, over a C4
+ * drone, and return the result. The singer follows whatever note the drill
+ * asks for, with the detector's realistic clarity (0 to 1). Runs on fake
+ * timers.
+ */
+async function holdRounds(centsSharp: number): Promise<ExerciseResult> {
+  let targetMidi = 60
+  const base = createMockBase({
+    _setTargetPitch: ((v: number | null) => {
+      if (typeof v === 'number' && v > 0) {
+        targetMidi = Math.round(12 * Math.log2(v / 440) + 69)
+      }
+      return v
+    }) as BaseExerciseController['_setTargetPitch'],
+    pitchHistory: () => {
+      const freq = midiToFrequency(targetMidi) * 2 ** (centsSharp / 1200)
+      const samples = []
+      for (let i = 0; i < 80; i++) {
+        samples.push({
+          freq,
+          time: 100 + i * 0.05,
+          cents: centsSharp,
+          clarity: 0.9,
+        })
+      }
+      return samples
+    },
+  })
+  const ctrl = useDroneIntonationController(base, audioEngineMock)
+  ctrl.setBase(60)
+  await ctrl.startRounds()
+  // Well past all six rounds (each its match window and a gap).
+  await vi.advanceTimersByTimeAsync(80000)
+  return ctrl.computeResult()
+}
+
 describe('useDroneIntonationController', () => {
   it('computeResult returns zero floor with real metric keys for empty history', () => {
     const base = createMockBase()
@@ -121,89 +163,39 @@ describe('useDroneIntonationController', () => {
     }
   })
 
-  it('scores high when the singer holds the target across every round', async () => {
+  it('grades six rounds held on pitch at 100', async () => {
     vi.useFakeTimers()
     try {
-      // Track the current target MIDI the controller asks for, then feed back
-      // a pitch history that sings exactly that note.
-      let targetMidi = 60
-      const base = createMockBase({
-        _setTargetPitch: ((v: number | null) => {
-          if (typeof v === 'number' && v > 0) {
-            targetMidi = Math.round(12 * Math.log2(v / 440) + 69)
-          }
-          return v
-        }) as BaseExerciseController['_setTargetPitch'],
-        pitchHistory: () => {
-          const freq = midiToFrequency(targetMidi)
-          const samples = []
-          for (let i = 0; i < 80; i++) {
-            samples.push({ freq, time: 100 + i * 0.05, cents: 0 })
-          }
-          return samples
-        },
-      })
-      const ctrl = useDroneIntonationController(base, audioEngineMock)
+      // Act
+      const result = await holdRounds(0)
 
-      ctrl.setBase(60)
-      await ctrl.startRounds()
-      // Advance well past all six rounds (each ~ match window + gaps).
-      await vi.advanceTimersByTimeAsync(80000)
-
-      const result = ctrl.computeResult()
+      // Assert: every round dead on and dead steady.
       expect(result.metrics.roundsCompleted).toBe(6)
       expect(result.metrics.avgAccuracy).toBe(100)
       expect(result.metrics.bestRound).toBe(100)
-      // Perfect accuracy/stability but no clarity samples (richness 0), so the
-      // weighted score caps at 80 here. Comfortably above the 40 threshold.
-      expect(result.score).toBeGreaterThan(40)
+      expect(result.metrics.stabilityCents).toBe(0)
+      // Version 1's weights summed to 0.8, so this run graded 80.
+      expect(result.score).toBe(100)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('grades six rounds 36 cents sharp at 50, with no richness in it', async () => {
+  it('grades six rounds 20 cents sharp at 79, with no richness in it', async () => {
     vi.useFakeTimers()
     try {
-      // Arrange: every round held 36 cents sharp and dead steady, with the
-      // detector's realistic clarity (0 to 1). Each round scores
-      // 100 - 1.5 x 36 = 46 and stability scores 100, so the grade is
-      // 0.4 x 46 + 0.15 x 46 + 0.25 x 100 = 50.3. The richness term read 0.9
-      // clarity as 1 and added 0.2: 50.5, so 51.
-      let targetMidi = 60
-      const base = createMockBase({
-        _setTargetPitch: ((v: number | null) => {
-          if (typeof v === 'number' && v > 0) {
-            targetMidi = Math.round(12 * Math.log2(v / 440) + 69)
-          }
-          return v
-        }) as BaseExerciseController['_setTargetPitch'],
-        pitchHistory: () => {
-          const freq = midiToFrequency(targetMidi) * 2 ** (36 / 1200)
-          const samples = []
-          for (let i = 0; i < 80; i++) {
-            samples.push({
-              freq,
-              time: 100 + i * 0.05,
-              cents: 36,
-              clarity: 0.9,
-            })
-          }
-          return samples
-        },
-      })
-      const ctrl = useDroneIntonationController(base, audioEngineMock)
-      ctrl.setBase(60)
+      // Each round scores 100 - 1.5 x 20 = 70 and stability scores 100, so
+      // the grade is 0.5 x 70 + 0.1875 x 70 + 0.3125 x 100 = 79.375, so 79.
+      // The richness term reads 0.9 clarity as 1: back in the grade at its
+      // old 0.2, it would make 79.575, so 80.
 
       // Act
-      await ctrl.startRounds()
-      await vi.advanceTimersByTimeAsync(80000)
-      const result = ctrl.computeResult()
+      const result = await holdRounds(20)
 
       // Assert
-      expect(result.metrics.avgAccuracy).toBe(46)
+      expect(result.metrics.avgAccuracy).toBe(70)
       expect(result.metrics.richnessScore).toBe(1)
-      expect(result.score).toBe(50)
+      expect(result.score).toBe(79)
     } finally {
       vi.useRealTimers()
     }
@@ -220,5 +212,59 @@ describe('useDroneIntonationController', () => {
     ctrl.stopRounds()
 
     expect(completed.length).toBe(1)
+  })
+})
+
+describe('Drone Intonation runs graded the old way are set aside', () => {
+  const HISTORY_KEY = 'mercurypitch_exercise_history'
+  /** Twelve runs graded the old way, every one held at its cap of 80. */
+  const oldRuns = Array.from({ length: 12 }, (_, i) => ({
+    type: EXERCISE_DRONE_INTONATION,
+    score: 80,
+    metrics: {},
+    completedAt: 1000 - i,
+  }))
+  const resetLevels = () => {
+    applyPersistedValue('mercurypitch_exercise_difficulty', JSON.stringify({}))
+    applyPersistedValue(
+      'mercurypitch_exercise_difficulty_adjusted_at',
+      JSON.stringify({}),
+    )
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    resetLevels()
+    applyPersistedValue(HISTORY_KEY, JSON.stringify(oldRuns))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    resetLevels()
+    applyPersistedValue(HISTORY_KEY, JSON.stringify([]))
+  })
+
+  it('steps the level up after five flawless runs', async () => {
+    // Arrange: five flawless runs, stamped with the drill's scoring.
+    const runs = []
+    for (let i = 0; i < 5; i++) {
+      const result = await holdRounds(0)
+      runs.unshift({
+        type: result.type,
+        score: result.score,
+        metrics: result.metrics,
+        completedAt: 2000 + i,
+        scoringVersion: exerciseScoringVersion(result.type),
+      })
+    }
+    applyPersistedValue(HISTORY_KEY, JSON.stringify([...runs, ...oldRuns]))
+
+    // Act
+    const level = updateDifficultyFromEma(EXERCISE_DRONE_INTONATION)
+
+    // Assert: version 1 held every run under the step-up line of 90, and
+    // its runs no longer pull the average down.
+    expect(runs.map((r) => r.score)).toEqual([100, 100, 100, 100, 100])
+    expect(computeEma(EXERCISE_DRONE_INTONATION)).toBe(100)
+    expect(level).toBe(6)
   })
 })

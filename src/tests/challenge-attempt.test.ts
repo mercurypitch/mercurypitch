@@ -138,5 +138,11 @@ describe('challenge attempt comparability', () => {
         exercise: 'arpeggio-jumper',
       }),
     ).not.toBe(firstScoringKey('arpeggio-jumper'))
+    // And Scale Runner and Drone Intonation, whose grades now reach 100.
+    for (const exercise of ['scale-runner', 'drone-intonation'] as const) {
+      expect(
+        challengeAttemptComparabilityKey({ ...target, exercise }),
+      ).not.toBe(firstScoringKey(exercise))
+    }
   })
 })

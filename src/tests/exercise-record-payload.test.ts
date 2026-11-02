@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_WARMUP, } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_SCALE_RUNNER, EXERCISE_WARMUP, } from '@/features/exercises/types'
 import type { ExerciseHistoryEntry } from '@/stores/exercise-history-store'
 import { exerciseSessionPayload } from '@/stores/exercise-history-store'
 import { validateWrite } from '../../workers/db-worker/src/validation'
@@ -55,6 +55,12 @@ describe('the plain-exercise session payload', () => {
       exerciseSessionPayload(entry(EXERCISE_ARPEGGIO_JUMPER), undefined)
         .sourceVersion,
     ).toBe(2)
+    // So did Scale Runner's and Drone Intonation's 2026-11-02 rescore.
+    for (const type of [EXERCISE_SCALE_RUNNER, EXERCISE_DRONE_INTONATION]) {
+      expect(exerciseSessionPayload(entry(type), undefined).sourceVersion).toBe(
+        2,
+      )
+    }
   })
 })
 
