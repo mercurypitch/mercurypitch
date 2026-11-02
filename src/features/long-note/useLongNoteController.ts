@@ -25,6 +25,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { createQuietWatch, secondsClock, } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, } from '@/components/room-kit/room-constants'
@@ -32,7 +33,7 @@ import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
 import { createRoomScript } from '@/components/room-kit/room-script'
 import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
-import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
+import { newestLevel } from '@/components/room-kit/voice-level'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -46,6 +47,7 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
+import { longNoteDemoAutoPlays } from './demo/demo-auto-play'
 import { createLanternEase } from './lantern-ease'
 import { fillLevel } from './lantern-geometry'
 import type { LongNoteController, LongNoteRunSummary, } from './long-note-controller-types'
@@ -53,8 +55,10 @@ import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
 import { heldNoteChosen, longNoteOpening } from './long-note-opening'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
+import { heldVoice, restingVoice, searchingVoice } from './merc-follow'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
+import { LONG_NOTE_SPOKEN } from './merc-spoken'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
@@ -84,6 +88,10 @@ export function useLongNoteController(
   const picked = loadHoldTarget(untrack(vocalRangePreset))
   const opening = longNoteOpening(picked, options.root ?? null)
   const lines = createMercLineSelector()
+  // His opening lines, aloud through the room's clock (merc-speech.ts).
+  const speech = createMercSpeech(LONG_NOTE_SPOKEN, {
+    clock: () => capture.runningAudio(),
+  })
 
   const [state, setState] = createSignal<LongNoteState>(
     initialLongNoteState(opening),
@@ -111,13 +119,19 @@ export function useLongNoteController(
   const dispatch = (event: LongNoteEvent): void => {
     setState((current) => longNoteReducer(current, event))
   }
-  const say = (moment: LongNoteMoment): void => {
-    setLine(lines.next(moment, untrack(noteName)))
+  const speak = speakingLines(lines, speech, setLine)
+  const say = (moment: LongNoteMoment, aloud = false): void => {
+    speak(moment, { note: untrack(noteName) }, aloud)
   }
-  const sayIntro = (): void => {
-    if (untrack(state).targetMidi === null) say('introAny')
-    else say(options.routine === true ? 'routine' : 'intro')
+  /** His opening line, aloud unless the singer has just left or the demo has it. */
+  const sayIntro = (aloud = true): void => {
+    if (untrack(state).targetMidi === null) say('introAny', aloud)
+    else say(options.routine === true ? 'routine' : 'intro', aloud)
   }
+  // A first visit opens on the demo, outside the Warm-up: Merc leaves the
+  // opening to it rather than be cut off by it.
+  const demoOpens = (): boolean =>
+    options.routine !== true && longNoteDemoAutoPlays()
 
   // ── Timers that belong to the screen ───────────────────────
   // The screen's life (room-kit room-life.ts): its timers from here, its
@@ -125,13 +139,7 @@ export function useLongNoteController(
   const life = createRoomLife()
 
   // ── Merc ───────────────────────────────────────────────────
-  let voice: MercVoice = {
-    voiced: false,
-    cents: 0,
-    level: 0,
-    steady: 0,
-    midi: opening ?? picked.midi,
-  }
+  let voice: MercVoice = restingVoice(opening ?? picked.midi)
 
   // ── The take ───────────────────────────────────────────────
   let engine = createHoldState()
@@ -274,7 +282,7 @@ export function useLongNoteController(
   const followChip = (dt: number): void => {
     const voiced = lastTick !== null && lastTick.offCents !== null
     const shown = chips.follow(engine, voiced, dt)
-    if (shown !== null) setChip(lines.next(shown, untrack(noteName)))
+    if (shown !== null) setChip(lines.next(shown, { note: untrack(noteName) }))
   }
 
   const finish = (): void => {
@@ -371,18 +379,7 @@ export function useLongNoteController(
     processed = frames.length
     if (!fresh) return
 
-    const step = lastTick
-    const cents = engine.needleCents ?? 0
-    voice = {
-      voiced: step !== null && step.offCents !== null,
-      cents,
-      level: levelFromRms(step?.level ?? 0),
-      steady:
-        step?.offCents !== null && step !== null
-          ? 1 - Math.min(1, Math.abs(cents) / rules.tolCents)
-          : 0,
-      midi: target + cents / 100,
-    }
+    voice = heldVoice(lastTick, engine.needleCents ?? 0, target, rules.tolCents)
     setHold(engine)
 
     if (phase === 'listen' && engine.phase !== 'waiting') {
@@ -409,13 +406,7 @@ export function useLongNoteController(
     // Against MIDI 0 the offset is the pitch itself, by the engine's own
     // rule for what counts as voiced.
     const step = holdTickFromFrame(frames[frames.length - 1], null, 0)
-    voice = {
-      voiced: step.offCents !== null,
-      cents: 0,
-      level: levelFromRms(step.level),
-      steady: 0,
-      midi: step.offCents === null ? voice.midi : step.offCents / 100,
-    }
+    voice = searchingVoice(step, voice.midi)
     const heard = settleLiveNote(frames)
     const midi = heard === null ? null : Math.round(heard)
     if (midi === null || !offerable(midi)) {
@@ -448,7 +439,7 @@ export function useLongNoteController(
     if (untrack(state).phase !== 'listen') return
     if (voice.voiced) quiet.heard()
     else if (quiet.quiet()) {
-      cancel()
+      backToIntro(false)
       say('rest')
     }
   }
@@ -498,7 +489,7 @@ export function useLongNoteController(
         dispatch({ type: 'mic-ready', run })
         beginListening(moment)
         // The page went away while the microphone opened.
-        if (document.visibilityState === 'hidden') stopListening()
+        if (document.visibilityState === 'hidden') stopListening(false)
       },
       onFail: (run, block) => {
         dispatch({ type: 'mic-failed', run, block })
@@ -510,35 +501,42 @@ export function useLongNoteController(
   const start = (): void => {
     const phase = untrack(state).phase
     if ((phase !== 'intro' && phase !== 'blocked') || demoOn()) return
+    // He stops talking before the mic opens.
+    speech.hush()
     dispatch({ type: 'start' })
     openMic(untrack(state).targetMidi === null ? 'introAny' : 'listen')
   }
 
-  const cancel = (): void => {
+  /** Back to the intro from a take waiting for its note; aloud on a tap. */
+  const backToIntro = (aloud: boolean): void => {
     if (untrack(state).phase !== 'listen' || demoOn()) return
     if (windowOpen) closeWindow()
     // Back in the intro nothing listens, so the mic goes back too.
     capture.release()
     dispatch({ type: 'cancel' })
-    sayIntro()
+    sayIntro(aloud)
     merc.put('idle', 'beside')
   }
+  const cancel = (): void => backToIntro(true)
 
   /**
    * The mic stops listening: a hold ends where it is, and a take still
    * waiting for a note goes back to the intro. So does a start whose note
-   * is playing or whose mic is opening: the mic stays shut.
+   * is playing or whose mic is opening: the mic stays shut. Merc says his
+   * opening line again on the singer's tap; a mic that died or an app that
+   * went away (`aloud` false) leaves him silent: a call or another app may
+   * have the sound.
    */
-  function stopListening(): void {
+  function stopListening(aloud = true): void {
     // The demo's takes listen to nothing; the demo stops itself.
     if (demoOn()) return
     if (untrack(state).phase === 'hold' && windowOpen) finish()
-    if (untrack(state).phase === 'listen') cancel()
+    if (untrack(state).phase === 'listen') backToIntro(aloud)
     if (untrack(state).phase !== 'starting') return
     // A mic still opening is handed straight back (useLongNoteCapture).
     capture.release()
     dispatch({ type: 'cancel' })
-    sayIntro()
+    sayIntro(aloud)
     merc.put('idle', 'beside')
   }
 
@@ -570,9 +568,13 @@ export function useLongNoteController(
 
   const nudge = (step: 1 | -1): void => {
     if (untrack(state).phase !== 'intro' || demoOn()) return
+    const any = untrack(state).targetMidi === null
     const midi = nudgeTarget(untrack(state).targetMidi ?? picked.midi, step)
     dispatch({ type: 'target', midi })
-    say('intro')
+    // The new note sounds, so Merc stops. His line names no note: it moves
+    // on only from the "any note" line.
+    if (any) sayIntro(false)
+    else speech.hush()
     void capture.playTone(midi, 0.8)
   }
 
@@ -586,13 +588,14 @@ export function useLongNoteController(
   const hearNote = (): void => {
     const { targetMidi } = untrack(state)
     if (untrack(canHear) && targetMidi !== null) {
+      speech.hush()
       void capture.playTone(targetMidi)
     }
   }
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
-    sayIntro()
+    sayIntro(!demoOpens())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
@@ -621,8 +624,10 @@ export function useLongNoteController(
    * still waiting for its note, or for the mic, goes back as before.
    */
   function leave(): void {
+    // Nothing he says is heard behind their back either.
+    speech.hush()
     if (demoOn() || untrack(state).phase !== 'hold') {
-      stopListening()
+      stopListening(false)
       return
     }
     clearTake(0)
@@ -653,7 +658,7 @@ export function useLongNoteController(
         const phase = untrack(state).phase
         return !demoOn() && (phase === 'listen' || phase === 'hold')
       },
-      died: stopListening,
+      died: () => stopListening(false),
     },
   })
 
@@ -678,7 +683,9 @@ export function useLongNoteController(
       phase: () => untrack(state).phase,
       audio: () => capture.audio(),
       note: () => untrack(state).targetMidi ?? picked.midi,
+      // The demo's words take over from Merc's.
       enter: (text) => {
+        speech.hush()
         clearForScript()
         batch(() => {
           setScriptActive(true)
@@ -719,7 +726,8 @@ export function useLongNoteController(
           dispatch({ type: 'demo', phase: 'intro' })
         })
         lantern.ease(0, 450)
-        sayIntro()
+        // His opening line, shown and not said: the demo has said it all.
+        sayIntro(false)
         if (inside && !still) merc.hopTo('beside', 'idle')
         else merc.put('idle', 'beside')
       },
@@ -735,6 +743,7 @@ export function useLongNoteController(
     lantern.stop()
     windowOpen = false
     setExerciseFocus(false)
+    speech.dispose()
     life.dispose()
   })
 
@@ -767,7 +776,7 @@ export function useLongNoteController(
     toleranceCents: () => level.preset().tolCents,
     start,
     cancel,
-    stop: stopListening,
+    stop: () => stopListening(),
     again,
     changeNote,
     nudge,

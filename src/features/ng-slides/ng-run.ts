@@ -52,8 +52,9 @@ export function planNgRun(fit: GlideTargets, preset: GlidePreset): NgPlan {
 }
 
 /**
- * The line a run opens with, before the first slide. In the Warm-up
- * (`routine`) Merc's cue, without the top.
+ * The line a run opens with, before the first slide: the intro, or in the
+ * Warm-up (`routine`) Merc's cue. Neither names a note, which the scene
+ * does, so Merc can say them aloud.
  */
 export function introLine(
   plan: NgPlan | null,
@@ -62,8 +63,7 @@ export function introLine(
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
-  if (routine) return { moment: 'routine', fields: {} }
-  return { moment: 'intro', fields: { top: noteName(plan.roots[0] + 7) } }
+  return { moment: routine ? 'routine' : 'intro', fields: {} }
 }
 
 /** One slide as the engine heard it, for its line. */

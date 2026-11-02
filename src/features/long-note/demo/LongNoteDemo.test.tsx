@@ -65,6 +65,8 @@ vi.mock('../useLongNoteCapture', async () => {
           fake.audio === 'running' ? ({} as AudioContext) : null,
         )
       },
+      // No clock runs for Merc's opening lines: he says none aloud here.
+      runningAudio: () => null,
     }),
   }
 })

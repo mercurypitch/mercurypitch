@@ -140,12 +140,13 @@ describe('the plan', () => {
     )
   })
 
-  it('opens on the slide to its top, or on an easy note when it has no root', () => {
+  it('opens on the slide, or on an easy note when it has no root', () => {
     const plan = planNgRun(
       { roots: [45, 46, 47, 48, 49], semitones: 7, source: 'voiceprint' },
       singer,
     )
-    expect(introLine(plan)).toEqual({ moment: 'intro', fields: { top: 'E3' } })
+    // The bridge names the top, so the line need not.
+    expect(introLine(plan)).toEqual({ moment: 'intro', fields: {} })
     expect(introLine(null).moment).toBe('introAny')
   })
 

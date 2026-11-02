@@ -14,13 +14,14 @@ import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import { NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import { fitNgSlides } from '@/lib/glide/glide-targets'
-import { rememberedNgNote } from '@/stores/ng-slides-store'
+import { ngDemoAutoPlays, rememberedNgNote } from '@/stores/ng-slides-store'
 import { preloadNgResult } from './bridge-art'
 import { ARCH, PLAYHEAD_X } from './bridge-geometry'
 import { pitchY } from './bridge-layout'
 import { RIDE_STATES, rideTarget, rideX } from './bridge-ride'
 import { createBridgeScroll, INTRO_CAMERA } from './bridge-scroll'
 import { createNgLines } from './merc-lines'
+import { NG_SPOKEN } from './merc-spoken'
 import type { NgController, NgTypes } from './ng-controller-contract'
 import { introLine, keepNgRun, planNgRun, resultLine, slideHeard, slideLine, summarize, } from './ng-run'
 import { useNgCapture } from './useNgCapture'
@@ -40,6 +41,7 @@ export function useNgController(options: RoutineRunOptions = {}): NgController {
     },
     words: {
       lines: createNgLines(),
+      spoken: NG_SPOKEN,
       intro: introLine,
       afterArch: slideLine,
       result: resultLine,
@@ -78,5 +80,6 @@ export function useNgController(options: RoutineRunOptions = {}): NgController {
       demoDrawsTake: false,
     },
     options,
+    demoAutoPlays: ngDemoAutoPlays,
   })
 }

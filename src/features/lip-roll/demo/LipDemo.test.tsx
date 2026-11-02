@@ -55,6 +55,7 @@ vi.mock('../useLipCapture', async () => {
       takeFrames: () => [],
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(fake.audio === 'running' ? ctx : null),
+      runningAudio: () => (fake.audio === 'running' ? ctx : null),
     }),
   }
 })

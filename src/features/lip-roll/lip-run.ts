@@ -58,8 +58,9 @@ export function planLipRun(fit: GlideTargets, preset: GlidePreset): LipPlan {
 }
 
 /**
- * The line a run opens with, before the first wave. In the Warm-up
- * (`routine`) Merc's cue, without the top.
+ * The line a run opens with, before the first wave: the intro, or in the
+ * Warm-up (`routine`) Merc's cue. Neither names a note, which the scene
+ * does, so Merc can say them aloud.
  */
 export function introLine(
   plan: LipPlan | null,
@@ -68,11 +69,7 @@ export function introLine(
   if (plan === null || plan.source === 'preset') {
     return { moment: 'introAny', fields: {} }
   }
-  if (routine) return { moment: 'routine', fields: {} }
-  return {
-    moment: 'intro',
-    fields: { top: noteName(plan.roots[0] + plan.semitones) },
-  }
+  return { moment: routine ? 'routine' : 'intro', fields: {} }
 }
 
 /** One wave as the engine heard it, for its line. */

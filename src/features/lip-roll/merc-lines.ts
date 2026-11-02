@@ -45,17 +45,19 @@ export type LipMoment =
   | 'left'
 
 export const LIP_LINES: LineTable<LipMoment> = {
+  // The scene names each wave's top, so the opening lines leave it out
+  // and Merc can say them aloud (merc-spoken.ts).
   intro: [
     {
       id: 'intro-roll',
-      text: 'Roll your lips, brrr, and ride the wave up to {top} and back.',
+      text: 'Roll your lips, brrr, and ride the wave up and back.',
     },
     {
       id: 'intro-follow',
-      text: 'Buzz your lips, then follow the wave up to {top} and down.',
+      text: 'Buzz your lips, then follow the wave up and down.',
     },
   ],
-  // In the Warm-up: the storyboard's cue, the intro without its top.
+  // In the Warm-up: the storyboard's cue, the intro in fewer words.
   routine: [
     { id: 'routine-roll', text: 'Roll your lips, brrr, and ride the wave.' },
   ],

@@ -143,12 +143,13 @@ describe('the plan', () => {
     )
   })
 
-  it('opens on the wave to its top, or on an easy note when it has no root', () => {
+  it('opens on the wave, or on an easy note when it has no root', () => {
     const plan = planLipRun(
       { roots: [48, 50, 52], semitones: 12, source: 'voiceprint' },
       singer,
     )
-    expect(introLine(plan)).toEqual({ moment: 'intro', fields: { top: 'C4' } })
+    // The bay names the top, so the line need not.
+    expect(introLine(plan)).toEqual({ moment: 'intro', fields: {} })
     expect(introLine(null).moment).toBe('introAny')
   })
 

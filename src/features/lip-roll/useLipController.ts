@@ -17,7 +17,7 @@ import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import { LIP_ROLL_LEVELS } from '@/lib/glide/glide-presets'
 import { fitLipRoll } from '@/lib/glide/glide-targets'
-import { rememberedLipNote } from '@/stores/lip-roll-store'
+import { lipDemoAutoPlays, rememberedLipNote } from '@/stores/lip-roll-store'
 import { preloadLipResult } from './bay-art'
 import { PLAYHEAD_X, WAVE } from './bay-geometry'
 import { pitchY } from './bay-layout'
@@ -27,6 +27,7 @@ import type { LipController, LipTypes } from './lip-controller-contract'
 import { introLine, keepLipRun, planLipRun, resultLine, summarize, waveHeard, waveLine, } from './lip-run'
 import { mercAheadOf } from './merc-ahead'
 import { createLipLines } from './merc-lines'
+import { LIP_SPOKEN } from './merc-spoken'
 import { useLipCapture } from './useLipCapture'
 
 export function useLipController(
@@ -46,6 +47,7 @@ export function useLipController(
     },
     words: {
       lines: createLipLines(),
+      spoken: LIP_SPOKEN,
       intro: introLine,
       afterArch: waveLine,
       result: resultLine,
@@ -100,6 +102,7 @@ export function useLipController(
       demoDrawsTake: true,
     },
     options,
+    demoAutoPlays: lipDemoAutoPlays,
   })
 
   return {

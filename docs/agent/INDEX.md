@@ -96,8 +96,8 @@ These are the rules that break things when ignored.
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.0k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
+| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
-| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.8k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 4.5k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |

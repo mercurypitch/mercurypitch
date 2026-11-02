@@ -17,6 +17,7 @@ import type { Accessor } from 'solid-js'
 import type { TakeClock } from '@/components/demo-kit/demo-plan'
 import type { DemoScript } from '@/components/demo-kit/useExerciseDemo'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import type { SpokenLines } from '@/components/room-kit/merc-speech'
 import type { RoomLine, RoomLines } from '@/components/room-kit/room-lines'
 import type { RoutineRunOptions } from '@/components/room-kit/routine-stop'
 import type { ExerciseCapture } from '@/components/room-kit/useExerciseCapture'
@@ -199,6 +200,8 @@ export interface GlideRoomSetup<R extends GlideRoomTypes> {
   readonly words: {
     /** Its table of lines; the core speaks at GlideCoreMoment too. */
     readonly lines: GlideLines<GlideCoreMoment | R['line']>
+    /** The lines Merc says aloud, by id: his opening lines (merc-speech.ts). */
+    readonly spoken: SpokenLines
     /**
      * The line a run opens with; null for arches that are a guess.
      * `routine`: the Warm-up's cue in place of the intro.
@@ -275,6 +278,8 @@ export interface GlideRoomSetup<R extends GlideRoomTypes> {
   }
   /** The Warm-up's stop, when the room is one (routine-stop.ts). */
   readonly options?: RoutineRunOptions
+  /** A first visit opens on the demo (the room's store). */
+  readonly demoAutoPlays: () => boolean
 }
 
 /** What the room's screen gets: its room, its demo and its fixture name it. */

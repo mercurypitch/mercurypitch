@@ -4,12 +4,14 @@
 //
 // Merc's lines show in his bubble (room-lines.ts). A line he has a
 // recording of is said aloud as well: so far the three Ear rooms' lines at
-// rest (their opening and result lines) and Echo's opening lines,
-// ElevenLabs takes in his voice (the owner's ask, 1 Nov 2026: hear him on
-// TestFlight), placeholders until real recordings come, as his sung set is
-// (echo/merc-voice-set.ts). A line with a field in it (a note, a count) has
-// no recording and stays silent. A room hands in its recordings by line
-// id, and says a line by its id as its bubble shows it (speakingLines).
+// rest (their opening and result lines) and the opening lines of Echo,
+// Long note, Lip roll and Ng slides (the last two through
+// glide/useGlideRoom.ts), ElevenLabs takes in his voice (the owner's ask,
+// 1 Nov 2026: hear him on TestFlight), placeholders until real recordings
+// come, as his sung set is (echo/merc-voice-set.ts). A line with a field
+// in it (a note, a count) has no recording and stays silent. A room hands
+// in its recordings by line id, and says a line by its id as its bubble
+// shows it (speakingLines).
 //
 // The rules:
 //   - He speaks only at rest: a room's opening line, as the room opens and

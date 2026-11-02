@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import { recordingContext, ribbonColours, } from '@/components/room-kit/ribbon-test-context'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
 import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
@@ -75,6 +76,7 @@ vi.mock('./useLongNoteCapture', async () => {
         fake.tones.push(midi)
         return fake.toneGate ?? Promise.resolve()
       },
+      runningAudio: () => null,
     }),
   }
 })
@@ -135,6 +137,33 @@ vi.mock('./remembered-note', () => ({
   rememberLongNote: (midi: number) => {
     memory.note = midi
   },
+}))
+
+// The demo opens a first visit only when a test asks for one.
+const demo = vi.hoisted(() => ({ autoPlays: false }))
+vi.mock('./demo/demo-auto-play', () => ({
+  longNoteDemoAutoPlays: () => demo.autoPlays,
+}))
+
+// ── Merc's spoken lines, as calls the test can read ───────────
+
+const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
+  createMercSpeech: () => ({
+    say: (id: string) => {
+      spoken.said.push(id)
+    },
+    hush: () => {
+      spoken.hushed += 1
+    },
+    speaking: () => false,
+    dispose: () => {
+      spoken.hushed += 1
+    },
+  }),
 }))
 
 // ── Frames the test advances one at a time ─────────────────────
@@ -432,6 +461,9 @@ describe('LongNoteRoom', () => {
     fake.toneGate = null
     target.pick = { midi: 57, source: 'voiceprint' }
     memory.note = null
+    demo.autoPlays = false
+    spoken.said = []
+    spoken.hushed = 0
     merc.states = []
     merc.options = []
     recorded.calls = []
@@ -453,11 +485,80 @@ describe('LongNoteRoom', () => {
     vi.restoreAllMocks()
   })
 
-  it('opens on the note to hold, with Merc saying it', () => {
+  it('opens on the note to hold, named on the stage, and Merc says his line aloud', () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     expect(phase()).toBe('intro')
     expect(screen.getByTestId('long-note-note').textContent).toBe('A3')
-    expect(screen.getByText(/A3/, { selector: 'p' })).toBeTruthy()
+    // His line names no note, which the stage's tag and the picker do: one
+    // recording says it for every note.
+    const line = screen.getByTestId('long-note-line').textContent ?? ''
+    expect(says('intro', line)).toBe(true)
+    expect(line).not.toContain('A3')
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-breathe', 'intro-easy', 'intro-fills']).toContain(
+      spoken.said[0],
+    )
+  })
+
+  it('says his "any easy note" line aloud when there is no note yet', () => {
+    target.pick = { midi: 52, source: 'preset' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    expect(['any-easy', 'any-follow']).toContain(spoken.said[0])
+  })
+
+  it('leaves the opening to the demo on a first visit', () => {
+    demo.autoPlays = true
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    expect(
+      says('intro', screen.getByTestId('long-note-line').textContent),
+    ).toBe(true)
+    expect(spoken.said).toEqual([])
+  })
+
+  it('stops talking for the note a tap asks for, the arrows or the tag, and keeps his line', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const line = screen.getByTestId('long-note-line').textContent
+    const before = spoken.hushed
+    fireEvent.click(screen.getByTestId('long-note-higher'))
+    await settle()
+    expect(spoken.hushed).toBe(before + 1)
+    expect(screen.getByTestId('long-note-line').textContent).toBe(line)
+    fireEvent.click(screen.getByTestId('long-note-note'))
+    expect(spoken.hushed).toBe(before + 2)
+    expect(fake.tones).toEqual([58, 58])
+    expect(spoken.said).toHaveLength(1)
+  })
+
+  it('moves on from the "any easy note" line when an arrow picks a note, without a word', async () => {
+    target.pick = { midi: 52, source: 'preset' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    fireEvent.click(screen.getByTestId('long-note-higher'))
+    await settle()
+    expect(
+      says('intro', screen.getByTestId('long-note-line').textContent),
+    ).toBe(true)
+    expect(spoken.said).toHaveLength(1)
+  })
+
+  it('hushes Merc as the take starts, and he says his line again when it is stopped', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(2)
+  })
+
+  it('says nothing aloud when the singer leaves the app while the room listens', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+    const before = spoken.hushed
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(before)
   })
 
   it('owns the dark stage, whatever the app theme', () => {
@@ -2066,6 +2167,8 @@ describe('LongNoteRoom', () => {
       expect(screen.getByTestId('long-note-line').textContent).toBe(
         fillNote(MERC_LINES.routine[0].text, 'A3'),
       )
+      // Said aloud as the stop opens.
+      expect(spoken.said).toEqual(['routine-breathe'])
       expect(screen.queryByTestId('long-note-level')).toBeNull()
       fireEvent.click(screen.getByTestId('long-note-skip-stop'))
       expect(handed.skip).toBe(1)

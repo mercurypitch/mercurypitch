@@ -45,6 +45,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { createQuietWatch, WALL_CLOCK } from '@/components/room-kit/quiet-watch'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { offerable, QUIET_LIMIT_SECONDS, SILENT_VOICE, } from '@/components/room-kit/room-constants'
@@ -66,7 +67,7 @@ import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { GlideMoment } from './glide-ride'
 import { introHum, rideFeet } from './glide-ride'
-import type { GlideCoreMoment, GlideLineFields, GlidePlan, GlideRoom, GlideRoomSetup, GlideRoomTypes, GlideRun, GlideView, } from './glide-room-contract'
+import type { GlidePlan, GlideRoom, GlideRoomSetup, GlideRoomTypes, GlideRun, GlideView, } from './glide-room-contract'
 import { BREATH_TONE_SEC, COUNT_IN_TONE_SEC } from './glide-room-contract'
 import type { GlideRoomEvent, GlideRoomState } from './glide-room-machine'
 import { glideRoomReducer, initialGlideRoomState, isRunPhase, } from './glide-room-machine'
@@ -128,12 +129,12 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     setState((current) => glideRoomReducer(current, event))
   }
   const phase = () => untrack(state).phase
-  const say = (
-    moment: GlideCoreMoment | R['line'],
-    fields?: GlideLineFields,
-  ): void => {
-    setLine(words.lines.next(moment, fields))
-  }
+  // His opening lines, aloud through the room's clock (merc-speech.ts);
+  // every other line is shown only, and hushes him.
+  const speech = createMercSpeech(words.spoken, {
+    clock: () => capture.runningAudio(),
+  })
+  const say = speakingLines(words.lines, speech, setLine)
 
   /** The arches as they would be fitted now, before the singer is heard. */
   const knownFit = (settledMidi: number | null = startNote()): GlideTargets =>
@@ -151,7 +152,8 @@ export function useGlideRoom<R extends GlideRoomTypes>(
   }
   /** His own sound at the intro, on the first root (introHum). */
   let introVoice: MercVoice = introHum(untrack(scenePlan).roots[0])
-  const sayIntro = (): void => {
+  /** His opening line, aloud unless the singer has just left or the demo has it. */
+  const sayIntro = (aloud = true): void => {
     const plan = introPlan()
     drawPlan(plan)
     introVoice = introHum(plan.roots[0])
@@ -159,8 +161,12 @@ export function useGlideRoom<R extends GlideRoomTypes>(
       plan.source === 'preset' ? null : plan,
       options.routine === true,
     )
-    say(moment, fields)
+    say(moment, fields, aloud)
   }
+  // A first visit opens on the demo, outside the Warm-up: Merc leaves the
+  // opening to it rather than be cut off by it.
+  const demoOpens = (): boolean =>
+    options.routine !== true && setup.demoAutoPlays()
 
   // ── Timers that belong to the screen ───────────────────────
   // The screen's life (room-kit room-life.ts): its timers from here, its
@@ -578,6 +584,8 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     if (demoOn()) return
     const from = phase()
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
+    // He stops talking before the mic opens.
+    speech.hush()
     level.take()
     runLevel = untrack(exerciseLevel)
     dispatch({ type: 'start' })
@@ -599,11 +607,21 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     sayIntro()
   }
 
+  // A mic that died stops the run as the mic's tap does, Merc silent: a
+  // call or another app may have the sound.
+  const micDied = (): void => {
+    if (!isRunPhase(phase()) || demoOn()) return
+    dropRun('stop')
+    sayIntro(false)
+  }
+
   /**
    * The singer left the app. Nothing listens behind their back, and the
    * run is dropped, as Back drops it: no result, no best.
    */
   function leave(): void {
+    // Nothing he says is heard behind their back either.
+    speech.hush()
     // The demo stops itself when the app goes (useExerciseDemo.ts).
     if (!isRunPhase(phase()) || demoOn()) return
     dropRun('leave')
@@ -612,7 +630,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
-    sayIntro()
+    sayIntro(!demoOpens())
     // He drops in, then sings at the first root on his own.
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop' && moment === 'intro') {
@@ -635,7 +653,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     mic: {
       exercise: setup.exercise,
       on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
-      died: stop,
+      died: micDied,
     },
   })
 
@@ -665,7 +683,9 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     audio: () => capture.audio(),
     // The arches the singer would sing now: the demo sings the first one.
     note: () => untrack(scenePlan).roots[0],
+    // The demo's words take over from Merc's.
     enter: (text) => {
+      speech.hush()
       clearForScript()
       batch(() => {
         setScriptActive(true)
@@ -697,7 +717,8 @@ export function useGlideRoom<R extends GlideRoomTypes>(
         setDemoPlaying(false)
         dispatch({ type: 'demo', phase: 'intro' })
       })
-      sayIntro()
+      // His opening line, shown and not said: the demo has said it all.
+      sayIntro(false)
       setMoment('intro')
     },
     playing: setDemoPlaying,
@@ -708,6 +729,7 @@ export function useGlideRoom<R extends GlideRoomTypes>(
     settling = false
     loop.stop()
     tones.stop()
+    speech.dispose()
     life.dispose()
   })
 
