@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { computeBackingSize, createRedrawScheduler, } from '@/lib/canvas-size-sync'
 import { renderScale } from '@/lib/device-tier'
+import { keepMediaLocal } from '@/lib/local-media'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
@@ -187,7 +188,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
         mediaSource?.disconnect()
         mediaSource = null
       }
-      audio = new Audio(url)
+      // Local: it plays through the envelope's gain (local-media.ts).
+      audio = keepMediaLocal(new Audio(url))
 
       const onEnded = () => setIsPlaying(false)
       const onPlay = () => setIsPlaying(true)

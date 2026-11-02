@@ -24,6 +24,8 @@
 // tab switch and screen lock). standUnlockClipAside() hands the clip's job
 // to an element that does it already: the iOS app's lock-screen carrier.
 
+import { keepMediaLocal } from './local-media'
+
 let silentEl: HTMLAudioElement | null = null
 let sessionPrimed = false
 let standingAside = false
@@ -80,7 +82,10 @@ function isInterrupted(ctx: AudioContext): boolean {
 function playClip(): void {
   try {
     if (silentEl === null) {
-      silentEl = new Audio(silentWavUrl())
+      // Kept local: a tool for this page's audio session, never a TV's to
+      // play, and the likeliest thing iOS offers one as the app opens
+      // (local-media.ts).
+      silentEl = keepMediaLocal(new Audio(silentWavUrl()))
       silentEl.setAttribute('playsinline', '')
       silentEl.preload = 'auto'
     }

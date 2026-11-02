@@ -30,6 +30,7 @@
 // running context, and makes a new one each run.
 
 import { roomOutput } from '@/components/room-kit/room-output'
+import { keepMediaLocal } from '@/lib/local-media'
 import { closeEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
 import { BAND_RELEASE_SECONDS } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
@@ -70,7 +71,8 @@ interface Track {
 }
 
 function makeTrack(): Track {
-  const el = new Audio()
+  // Local: a stem AirPlay took would leave the room's graph silent.
+  const el = keepMediaLocal(new Audio())
   el.preload = 'auto'
   return { el, gain: null }
 }

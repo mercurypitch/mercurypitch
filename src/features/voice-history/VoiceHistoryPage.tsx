@@ -34,6 +34,7 @@ import { EXERCISE_PITCH_HOLD } from '@/lib/domain/exercise-contracts'
 import { performanceTakeSourceLabel, takeSupportsVoiceAnalysis, } from '@/lib/domain/performance-take'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
+import { keepMediaLocal } from '@/lib/local-media'
 import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
 import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
@@ -1155,7 +1156,9 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     // A browser that cannot decode this WebM can still try its native media
     // element. That preserves dry playback as the final fallback.
     const nextAudioUrl = URL.createObjectURL(blob)
-    const nextAudio = new Audio(nextAudioUrl)
+    // Local: it plays through the listening room, which AirPlay would leave
+    // silent (local-media.ts).
+    const nextAudio = keepMediaLocal(new Audio(nextAudioUrl))
     if (!autoplay) nextAudio.preload = 'metadata'
     nextAudio.setAttribute('playsinline', '')
     audioUrl = nextAudioUrl

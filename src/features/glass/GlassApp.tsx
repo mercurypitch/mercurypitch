@@ -36,6 +36,7 @@ import { initialPhysics, shatterReady, startRep, tickPhysics, } from '@/lib/glas
 import type { GlassEvent, GlassSessionState } from '@/lib/glass/session'
 import { initialSessionState, reduceSession } from '@/lib/glass/session'
 import { computeTarget } from '@/lib/glass/target'
+import { keepMediaLocal } from '@/lib/local-media'
 import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
@@ -1033,7 +1034,8 @@ export const GlassApp: Component = () => {
       } catch {
         try {
           playbackUrl = URL.createObjectURL(takeBlob)
-          playbackElement = new Audio(playbackUrl)
+          // Local: the take is heard through the rack, never on a TV.
+          playbackElement = keepMediaLocal(new Audio(playbackUrl))
           const elementSource =
             audioContext.createMediaElementSource(playbackElement)
           elementSource.connect(fxAudio.input)

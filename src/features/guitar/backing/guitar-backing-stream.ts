@@ -1,6 +1,7 @@
 // Guitar backing stream keeps memory-heavy local stems aligned without decoding whole songs to PCM.
 // ============================================================
 
+import { keepMediaLocal } from '@/lib/local-media'
 import type { GuitarBackingTrack } from './guitar-backing-transport'
 
 interface StreamedTrack {
@@ -482,7 +483,8 @@ export function createGuitarBackingStreamEngine(
 
       for (const track of tracks) {
         try {
-          const element = options.createMediaElement()
+          // Local: a stem AirPlay took would leave its bus silent.
+          const element = keepMediaLocal(options.createMediaElement())
           element.preload = 'auto'
           // Set before `src`, and unconditionally: a cross-origin stem
           // (the remote demo song) that is not requested with CORS taints

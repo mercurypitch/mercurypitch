@@ -129,6 +129,20 @@ describe('iOS audio unlock', () => {
     uninstall()
   })
 
+  it('keeps the clip off AirPlay, whose offer of it greeted the app opening', async () => {
+    const { unlockAudio } = await import('@/lib/audio-unlock')
+
+    unlockAudio(null)
+
+    const clip = vi.mocked(Audio).mock.results[0]?.value as {
+      disableRemotePlayback?: boolean
+      setAttribute: ReturnType<typeof vi.fn>
+    }
+    expect(clip.disableRemotePlayback).toBe(true)
+    expect(clip.setAttribute).toHaveBeenCalledWith('x-webkit-airplay', 'deny')
+    expect(playSilent).toHaveBeenCalledOnce()
+  })
+
   it('stands the clip aside while another element holds the session', async () => {
     const { standUnlockClipAside, unlockAudio } =
       await import('@/lib/audio-unlock')

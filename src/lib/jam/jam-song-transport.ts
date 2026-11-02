@@ -32,6 +32,7 @@
 // handed over the moment the context runs -- a cut and a fade-in, once,
 // rather than the wrong key for the rest of the song. See `adopt`.
 
+import { keepMediaLocal } from '@/lib/local-media'
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
 
 /** Wall-clock headroom after a release before the element is paused, so
@@ -214,6 +215,10 @@ export function createJamSongTransport(
       if (disposed) return Promise.resolve()
       const el = deps.element()
       if (el === undefined) return Promise.resolve()
+      // Local before it ever plays: it goes into the graph the moment the
+      // context runs, and an element AirPlay took would leave the graph
+      // silent then (local-media.ts).
+      keepMediaLocal(el)
       wantPlaying = true
       revision += 1
       const intent = revision
