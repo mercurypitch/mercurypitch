@@ -111,8 +111,13 @@ function makeElement() {
     plays: 0,
     pauses: 0,
     reject: null as Error | null,
+    attributes: new Map<string, string>(),
   }
   const el = {
+    disableRemotePlayback: false,
+    setAttribute(name: string, value: string) {
+      state.attributes.set(name, value)
+    },
     get paused() {
       return state.paused
     },
@@ -158,6 +163,17 @@ afterEach(() => {
 })
 
 describe('attaching', () => {
+  it('keeps the backing track off AirPlay from its first play, routed or not', async () => {
+    for (const contextState of ['running', 'suspended'] as const) {
+      const { el, state, transport } = setup({ contextState })
+
+      await transport.play()
+
+      expect(el.disableRemotePlayback).toBe(true)
+      expect(state.attributes.get('x-webkit-airplay')).toBe('deny')
+    }
+  })
+
   it('routes through a gain once the context is running', async () => {
     const { fake, transport } = setup()
     await transport.play()

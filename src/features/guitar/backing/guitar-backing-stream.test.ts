@@ -43,6 +43,9 @@ class FakeStemElement extends EventTarget {
   ended = false
   src = ''
   preload = ''
+  disableRemotePlayback = false
+  /** Attributes set by name, as an element keeps them. */
+  readonly attributes = new Map<string, string>()
   /** How long this element takes to complete a seek. */
   seekLatencyMs = 0
   /** Every seek this element was asked to perform. */
@@ -98,6 +101,10 @@ class FakeStemElement extends EventTarget {
   play = vi.fn(async () => {
     this.paused = false
   })
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value)
+  }
 
   pause = vi.fn(() => {
     this.paused = true
@@ -227,6 +234,23 @@ async function playing(trackIds?: readonly string[]): Promise<Rig> {
 async function flushMicrotasks(): Promise<void> {
   for (let index = 0; index < 8; index += 1) await Promise.resolve()
 }
+
+describe('the stems a song streams', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    return () => vi.useRealTimers()
+  })
+
+  it('play from elements kept off AirPlay, which would leave their buses silent', () => {
+    const harness = rig()
+
+    expect(harness.elements).toHaveLength(2)
+    for (const element of harness.elements) {
+      expect(element.disableRemotePlayback).toBe(true)
+      expect(element.attributes.get('x-webkit-airplay')).toBe('deny')
+    }
+  })
+})
 
 describe('holding two stems together', () => {
   beforeEach(() => {

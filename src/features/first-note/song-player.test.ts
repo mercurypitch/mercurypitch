@@ -49,8 +49,10 @@ class FakeAudio extends EventTarget {
   preload = ''
   readyState = 0
   paused = true
+  disableRemotePlayback = false
   private at = 0
   private source: string | null = null
+  private readonly attributes = new Map<string, string>()
 
   constructor() {
     super()
@@ -58,10 +60,15 @@ class FakeAudio extends EventTarget {
   }
 
   getAttribute(name: string): string | null {
-    return name === 'src' ? this.source : null
+    return name === 'src' ? this.source : (this.attributes.get(name) ?? null)
+  }
+  setAttribute(name: string, value: string): void {
+    if (name === 'src') this.source = value
+    else this.attributes.set(name, value)
   }
   removeAttribute(name: string): void {
     if (name === 'src') this.source = null
+    else this.attributes.delete(name)
   }
   get src(): string {
     return this.source ?? ''
@@ -143,6 +150,18 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
+})
+
+describe('the stems', () => {
+  it('play from elements kept off AirPlay, which would leave the room silent', () => {
+    createSongPlayer(fakeContext())
+
+    expect(FakeAudio.made).toHaveLength(2)
+    for (const stem of FakeAudio.made) {
+      expect(stem.disableRemotePlayback).toBe(true)
+      expect(stem.getAttribute('x-webkit-airplay')).toBe('deny')
+    }
+  })
 })
 
 describe('a lead-in', () => {

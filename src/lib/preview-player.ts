@@ -35,6 +35,7 @@
 // a usable AudioContext (jsdom) degrade to direct element control.
 
 import { showNotification } from '@/stores/notifications-store'
+import { keepMediaLocal } from './local-media'
 
 export const ENVELOPE_DEFAULTS = {
   /** Exponential fade-in on play/resume. */
@@ -281,7 +282,9 @@ export function createPreviewPlayer(
 
   const ensureGraph = (): HTMLAudioElement => {
     if (el) return el
-    el = new Audio()
+    // Local: its sound is the envelope's, and an element AirPlay took would
+    // leave the envelope silent (local-media.ts).
+    el = keepMediaLocal(new Audio())
     el.preload = 'auto'
     el.onended = () => {
       playIntent++

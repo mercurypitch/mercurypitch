@@ -74,8 +74,14 @@ class FakeAudio extends EventTarget {
   seeking = false
   /** Empty string is what a real element reports with no attribute set. */
   crossOrigin = ''
+  disableRemotePlayback = false
+  readonly attributes = new Map<string, string>()
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value)
+  }
   removeAttribute = vi.fn((name: string) => {
     if (name === 'crossorigin') this.crossOrigin = ''
+    this.attributes.delete(name)
   })
   onended: (() => void) | null = null
   play = vi.fn(() => {
@@ -119,6 +125,16 @@ afterEach(() => {
 })
 
 describe('createPreviewPlayer', () => {
+  it('keeps its element off AirPlay, which would leave the envelope silent', async () => {
+    const player = createPreviewPlayer()
+
+    expect(await player.play('blob:take')).toBe(true)
+
+    expect(lastElement().disableRemotePlayback).toBe(true)
+    expect(lastElement().attributes.get('x-webkit-airplay')).toBe('deny')
+    player.dispose()
+  })
+
   it('positions the first Play before opening its output envelope', async () => {
     const player = createPreviewPlayer()
     const started = player.play('blob:offset', { startSeconds: 1.237 })
