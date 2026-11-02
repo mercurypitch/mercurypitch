@@ -117,8 +117,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
      song sheet carries."
 
    The head's description writes the run time as a word, "A sixteen-minute lesson", inside the
-   test's 160 characters; were the lab to set the chip at 17, "A seventeen-minute lesson" makes it
-   151. None of these says what reading note by note costs, so none decides the predict (FACTS 1a).
+   test's 160 characters; were the lab to set the chip at 17, "A seventeen-minute lesson" makes it 151. None of these says what reading note by note costs, so none decides the predict (FACTS 1a).
    Lengths: `verify18.mjs`, section 7.
 
 3. **Recall from Lessons 16 and 17**, straight after the hero, shown to everyone (Toys 4; FACTS 7).
@@ -490,6 +489,7 @@ kit and the app still need, item 15).
 
   No gap is ever measured from the wrong note, and nothing reads when in its window the voice came,
   so timing is never scored and never becomes a pitch line.
+
 - **The line**: the rung line with the note's syllable and "the written note": "So · In the band: 20
   cents above the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
   within 50 cents of the note an octave or more away, or "Mi · We didn't hear a steady note there."

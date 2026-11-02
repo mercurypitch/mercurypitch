@@ -2874,3 +2874,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   nothing away); tune 1 changed to do re mi so, so mi do (half) (shares <=3 notes with L16); the
   singer's first note may come up to two beats late; a note sung 150 cents flat near the next written
   note reads as not heard. NEXT: lead review of L18, commit, push.
+
+## 2 Nov 06:5x UTC — L18 COMMITTED 984c2c2dc (pushed)
+
+- L18 lead review: plan-cites 247/0, whole plan 200, lesson-words 2,177, description 149 with "A
+  sixteen-minute lesson", teases bound (L17 FACTS 5 = L18 FACTS 5b; L18 FACTS 5 = L19 FACTS 5b),
+  predict arithmetic checked (notes sung on beats 2/4/6/8; do, mi, so unsung), neighbour rule
+  consistent (within 60 cents of a written note up to two places away -> not heard). Prettier fixes
+  were whitespace only. Departures accepted (s2pkg/shared-rest/L18-entries.md).
+- Packages committed: 15-23 all done. In flight: W24, W25 (spawned 06:36). Next: their reviews
+  (fresh reviewer each, xhigh, BRIEF-reviewer.md), then 26 (after 24), 27 (after 25), 28.

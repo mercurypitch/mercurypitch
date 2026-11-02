@@ -42,9 +42,7 @@
   still use the plan's C pitches, "the learner's clef" and Lesson 18's old predict choices; three
   edits listed in s2pkg/18-HANDBACK.md. Also a test gap for the owner's app list: the planning-text
   test's topic-code pattern misses lettered codes (S11a, S11b, S20a, S20b); verify before reporting.
-- Lesson 20 is cited in words in Lesson 18 (preamble, coach list, FACTS sources line, FACTS 10, 27,
-  33, 42): rebind to Lesson 20's committed files (26d90e225) at Lesson 18's lead review if cheap,
-  else in the shared commit.
+- Lesson 20 citations in Lesson 18: DONE in L18 fix pass (all by path; committed 984c2c2dc).
 - From Lesson 22's hand-back (verify at the shared commit): Lesson 21 FACTS 5's tease note says
   "steady note" where Lesson 22 now says "straight note"; SEASON-2 § 3 Lesson 22's card "inside the
   band counts in full" -> "counts in full"; SEASON-2 § 5.2 gains item 22, the centre-line hold

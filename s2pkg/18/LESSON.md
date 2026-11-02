@@ -421,15 +421,15 @@ and `/ear-lab?lesson=18`, with "Sight-Singing and The Chart are free." Lesson 1'
 Each section has a short line above its heading, as in Lesson 1; where a section is the same as
 Lesson 16's, so are its words.
 
-| Section     | Line above the heading                                             | Heading                            |
-| ----------- | ------------------------------------------------------------------ | ---------------------------------- |
-| Recall      | From Lessons 16 and 17: two questions, asked afresh                | Recall from Lessons 16 and 17      |
-| Four words  | Four words you'll meet before the first step                       | Count-in, dynamics, staccato, slur |
-| Steps       | Four steps, one object: Lesson 16's staff over Lesson 17's beat grid | Read and sing a whole line       |
-| Sing it     | Cadenza: your solo, and any octave counts                          | Sing it                            |
-| Quick check | Ripresa: the theme comes back, from memory                         | Quick check                        |
-| Wrap        | Coda: the closing bars                                             | Three lines to keep                |
-| Explorer    | Season 2 · Lesson 18                                               | The season, mapped                 |
+| Section     | Line above the heading                                               | Heading                            |
+| ----------- | -------------------------------------------------------------------- | ---------------------------------- |
+| Recall      | From Lessons 16 and 17: two questions, asked afresh                  | Recall from Lessons 16 and 17      |
+| Four words  | Four words you'll meet before the first step                         | Count-in, dynamics, staccato, slur |
+| Steps       | Four steps, one object: Lesson 16's staff over Lesson 17's beat grid | Read and sing a whole line         |
+| Sing it     | Cadenza: your solo, and any octave counts                            | Sing it                            |
+| Quick check | Ripresa: the theme comes back, from memory                           | Quick check                        |
+| Wrap        | Coda: the closing bars                                               | Three lines to keep                |
+| Explorer    | Season 2 · Lesson 18                                                 | The season, mapped                 |
 
 The steps' heading is the lesson's name, as on Lessons 15 and 16's pages, and its line names the
 one object, Lesson 16's staff over Lesson 17's beat grid: neither says what reading note by note
