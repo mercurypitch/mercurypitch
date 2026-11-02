@@ -18,7 +18,7 @@ import { createMemo, Show } from 'solid-js'
 import './settings.css'
 import { Sheet } from '@/components/mobile/Sheet'
 import { accountHeld } from '@/db/services/auth-service'
-import { WaveIcon } from '../icons'
+import { PrintIcon } from '../icons'
 import { VOICEPRINT_ASK, voiceprintAskBody, voiceprintAskTitle, } from './account-copy'
 import { VoiceprintCard } from './AccountOffer'
 import { keepableVoiceprint } from './keep-voiceprint'
@@ -88,7 +88,7 @@ export function VoiceprintAskNote(): JSX.Element {
   return (
     <Show when={count() > 0}>
       <div class="mp-set-note" role="status" data-testid="voiceprint-note">
-        <WaveIcon size={20} />
+        <PrintIcon size={20} />
         <div class="mp-set-note__body">
           <p>{voiceprintAskBody(count())}</p>
           <button

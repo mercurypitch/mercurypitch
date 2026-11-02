@@ -17,6 +17,11 @@ import { accountCard, accountSignedIn } from './account-state'
 export interface SettingsGroupProps {
   /** The small caps title over the group; a group of one may go without. */
   title?: string
+  /**
+   * The title can take focus (`data-settings-focus`): where a screen hands
+   * it once a read lands in place of the Try again that held it.
+   */
+  focusable?: boolean
   children: JSX.Element
 }
 
@@ -24,7 +29,15 @@ export function SettingsGroup(props: SettingsGroupProps): JSX.Element {
   return (
     <section class="mp-set-group" aria-label={props.title}>
       <Show when={props.title}>
-        {(title) => <h2 class="mp-set-group__title">{title()}</h2>}
+        {(title) => (
+          <h2
+            class="mp-set-group__title"
+            tabindex={props.focusable === true ? '-1' : undefined}
+            data-settings-focus={props.focusable === true ? '' : undefined}
+          >
+            {title()}
+          </h2>
+        )}
       </Show>
       <div class="mp-set-list">{props.children}</div>
     </section>

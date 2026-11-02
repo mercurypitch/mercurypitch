@@ -15,6 +15,10 @@
 // A build that imports songs (Stage 2) adds the songs on this phone above
 // them, and on Android Play's review access (KaraokeSongsGroups.tsx). The
 // subscription is Mercury Pitch Cloud's, in Settings itself (CloudGroup.tsx).
+//
+// Last, whether the room gets songs ready to find by singing while it rests
+// (karaoke-notes-reader.ts): the web's "Index new songs", synced, the one
+// way to turn those reads off.
 
 import { Capacitor } from '@capacitor/core'
 import type { JSX } from 'solid-js'
@@ -22,6 +26,7 @@ import { For, Show } from 'solid-js'
 import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, karaokePictureInPicture, karaokePlayNext, setKaraokeBackgroundPlay, setKaraokeLyricsSize, setKaraokePictureInPicture, setKaraokePlayNext, } from '@/features/karaoke-room/karaoke-room-store'
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
+import { karaokeAutoIndexShazam, setKaraokeAutoIndexShazam, } from '@/stores/karaoke-settings-store'
 import { KaraokeSongsGroups } from './KaraokeSongsGroups'
 import { SettingsChoice, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
@@ -121,6 +126,22 @@ export function KaraokeSettingsScreen(
             }
           />
         </Show>
+      </SettingsGroup>
+      <SettingsGroup title="Find by singing">
+        <SettingsRow
+          id="karaoke-find-ready"
+          label="Get songs ready to find by singing"
+          sub="Reads each song's singing while the room rests. Off, a song is ready once you turn its notes on."
+          accessory={
+            <SettingsSwitch
+              checked={karaokeAutoIndexShazam()}
+              label="Get songs ready to find by singing"
+              onChange={(next) => {
+                setKaraokeAutoIndexShazam(next)
+              }}
+            />
+          }
+        />
       </SettingsGroup>
     </div>
   )

@@ -675,10 +675,12 @@
   height: 20px;
 }
 
-/* A short screen (320 x 568): the chip goes, the path keeps its room
-   (§3). Not on the day already warmed up: that path is packed as the end
-   is, under a taller top room, and "Warmed up today" fits in it. */
-@media (max-height: 600px) {
+/* A screen shorter than the shortest phone held upright (320 x 568, where
+   the chip sits clear above the path's first stop, measured): the chip
+   goes, the path keeps its room (§3). That is a phone on its side. Not on
+   the day already warmed up: that path is packed as the end is, under a
+   taller top room, and "Warmed up today" fits in it. */
+@media (max-height: 560px) {
   .path:not([data-state='done']) .chip {
     display: none;
   }

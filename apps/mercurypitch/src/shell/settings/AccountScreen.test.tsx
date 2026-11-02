@@ -4,6 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
+import type { MeRead } from '@/db/services/auth-me-service'
 import { readMe } from '@/db/services/auth-me-service'
 import { setAuthToken } from '@/db/services/user-service'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
@@ -128,6 +129,40 @@ describe('the Account screen', () => {
     expect(text()).not.toContain(ACCOUNT_OFFLINE.title)
     expect(text()).toContain('Alex')
     expect(text()).toContain('singer@example.test')
+  })
+
+  it('keeps Try again, and its focus, while the read is out, then hands focus to the name', async () => {
+    setAuthToken(token('google'))
+    readMeMock.mockResolvedValueOnce({ status: 'unreachable' })
+    const shown = renderShell(() => <AccountScreen />)
+    view = shown
+    await settle()
+    let land: (read: MeRead) => void = () => undefined
+    readMeMock.mockReturnValueOnce(
+      new Promise<MeRead>((resolve) => {
+        land = resolve
+      }),
+    )
+    const retry = (): HTMLButtonElement | null =>
+      shown.container.querySelector<HTMLButtonElement>(
+        '[data-testid="account-retry"]',
+      )
+    const button = retry()
+    button?.focus()
+    button?.click()
+    await settle()
+
+    // Out: the same button, still focused, saying it is busy.
+    expect(retry()).toBe(button)
+    expect(document.activeElement).toBe(button)
+    expect(button?.getAttribute('aria-disabled')).toBe('true')
+    button?.click()
+    expect(readMeMock).toHaveBeenCalledTimes(2)
+
+    land(ALEX)
+    await settle()
+    expect(retry()).toBeNull()
+    expect(document.activeElement?.textContent).toContain('Alex')
   })
 
   it('names the account from what the phone kept before the network went', async () => {
