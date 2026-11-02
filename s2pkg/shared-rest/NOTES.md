@@ -48,3 +48,15 @@
   band counts in full" -> "counts in full"; SEASON-2 § 5.2 gains item 22, the centre-line hold
   reader (Lesson 22 WEB-SPEC item 6). Owner question taken as recommended: title "What is vibrato in
   singing? | MercuryPitch".
+- App note from Lesson 24 (VERIFIED by the lead 2 Nov 08:1x): Drone Intonation's run score is
+  round(accuracy*0.4 + best*0.15 + stability*0.25), at most 80 since richness left the grade on
+  25 Oct without a reweighting (`use-drone-intonation-controller.ts:284-292`), and its level rises
+  only at an EMA of 90 (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so it can
+  never level up, as Scale Runner cannot. For the owner's report and the app's list.
+- From Lesson 25's review: SEASON-2 § 3, Lesson 25's "Closes on" line ("So far you've sung against a
+  drone that never moves...", SEASON-2.md:627-628) is false: Lesson 12's sing-along already sang over
+  moving chords. Replace with the writer's line from the L25 hand-back.
+- From Lesson 24: Lesson 23 FACTS 5 quotes L24's first answer as "It slows down, then stops"; it is
+  now "It slows, then stops" (exact line in the L24 hand-back). SEASON-2 § 4.1's S20a row ("against a
+  drone the third and fifth are intervals, not yet a chord", SEASON-2.md:754) no longer matches
+  Step 2's chord: replace from the L24 hand-back.

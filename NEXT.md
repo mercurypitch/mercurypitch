@@ -2904,3 +2904,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - BRIEF-26 updated to the bound L26 alternative (.v1 backup).
 - Shared commit (#229) gains: SEASON-2 § 3 L25 card "Closes on" line is false (Lesson 12 sang over moving chords) -> writer proposes replacement in hand-back.
 - In flight: R24, W25 (fix pass). Next: R24 report -> W24 fix pass; W25 reply -> lead review L25 -> commit.
+
+## 2 Nov 08:1x UTC — R24 reported; W24 resumed for its fix pass
+- R24: 2 blocking (Step 3 answers Step 2 before its choice; Step 4's wave claim), 12 should, 21 nits; s2pkg/24-REVIEW.md.
+- Lead's own check: the review's "±50 cents kills the throb (0.005)" is WRONG. Slow beat = J0(beta) x straight: ±14@5.5 78 %, ±30@5.5 17 %, ±50@6 33 % (0.117 of 0.361); zero only near beta 2.4. Simulation in s2pkg/24-lead/beat.py. Call: play L22's ±50@6 wave, copy says "much weaker, a flutter rides over it", never "gone".
+- Drone Intonation run score max 80, level-up EMA 90: never levels up (verified; NOTES.md app note).
+- Calls sent (s2pkg/24-FIXPASS-MSG.md): head title "How to sing in tune with a drone | MercuryPitch"; Move do: higher up to 5 (as L20); quiet check fails on any voiced run; set rules defaults; built page must fit 2,379 (cuts now); drone colours accepted.
+- In flight: W24 (fix pass), W25 (fix pass). Next: their replies -> lead reviews -> commits; then 26 and 27 writers; then 28.

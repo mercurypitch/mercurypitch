@@ -51,16 +51,25 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The cold open plays the tune twice as a melody alone before the choice**, and its two endings
   with their chords only after it: a chord heard before the choice would answer it by ear (FACTS
   31, 34).
+- **The cold open plays in A3 to A4 for everyone**, Merc's register, where the plan had A4 to A5 for
+  the higher voice: the voice choice comes later on the page (FACTS 8).
 - **The page has one predict.** The plan's Step 2 predict, how far le is from ti, is Step 2's
   Notice: the staircase draws the wider stair the moment te lifts, in the hero's second ending and
   in the steps' toy, so no predict there could be asked unanswered (FACTS 38).
-- **The steps' toy holds back the chord on so until the choice**, and so does the first-visit tour:
-  Raise te, the chord's three beads and Play the chord on so, then home wait for it (FACTS 1a, 36,
-  61).
+- **Step 1's chord on so waits for the cold open, in the toy and in words**: the toy's Raise te,
+  its three beads and Play the chord on so, then home until the choice, under the steps' line
+  "Choose an answer at the top to unlock the rest of this figure."; Step 1's two sentences that name
+  the chord's quality until the reveal, as a second part of it, with a held line in their place.
+  The Wrap's free play holds the same controls until the choice, and the first-visit tour waits for
+  it too (FACTS 1a, 36).
 - **The header names all three prerequisites**, Lessons 10, 21 and 23, where the plan named Lesson
   23 alone (FACTS 2).
 - **Step 4 shows C minor's three flats once in each clef**, on the learner's staff and on a small
   staff in the other clef beside it, as the lead asked, with no E♭ major demonstration (FACTS 27).
+- **Step 4 says where Lesson 21's rule stops**: Lesson 21's "no sharps or flats, C major" now names
+  only the major key's home, and the house says which key is home. The plan's note that A major's
+  three sharps are also F♯ minor's signature is dropped: the page gives relative keys one sentence,
+  on C major and A minor, as the lead asked (FACTS 7, 26).
 - **The sing-along offers no Move do and no octave below.** Lesson 10's four semitones lower would
   put the line's lowest note on the tenor's and the soprano's floors; the line as it stands keeps
   every preset of its voice at least four semitones inside (FACTS 42, 43).
@@ -71,7 +80,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   linked the Singing tab itself.** The Singing tab's scale picker plays nothing: it renames the
   singing canvas's rows and sets the scale Sight-Singing writes from, and Sight-Singing spells A
   harmonic minor's G♯ as this page does. The app's Melodic Minor is the going-up form only, in
-  both directions, so the card names Harmonic Minor alone (FACTS 52, 53).
+  both directions, so the card names Harmonic Minor alone. It says what the drill does in Lesson
+  16's words: nothing played first, the treble clef only, each note wanted in the octave written,
+  and each note's name printed under it (FACTS 52, 53).
 - **Go deeper keeps "Do or la?"** with its source read, and leaves out "For instrumentalists",
   whose second sentence no source says (FACTS 28; Unsupported, not used).
 - **The quick check** keeps the plan's questions and most of its feedback. It changes question 1's
@@ -84,8 +95,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The teases.** This lesson's, on Lesson 24's card, is the lead's, "A minor tune, played twice.
   The second ending changes one note.", which still fits this opening, with Lesson 24's planned
   line as the alternative. Lesson 26's, on this page's card, is the lead's, with the plan's line
-  mended as its alternative: "So far the other part was a drone." is not true on this page, whose
-  cold open puts chords that move under the tune (FACTS 5, 5b).
+  mended as its alternative: "So far the other part was a drone." is not true for a learner who
+  reaches Lesson 26, who sang over moving chords in Lesson 12. The lead bound both on 2 November
+  2026 (FACTS 5, 5b).
 
 The page is published only after Lessons 10, 21 and 23 are live, `/learn/10`, `/learn/21` and
 `/learn/23`, because its prerequisite chips link there and its recall imports Lesson 10's and Lesson
@@ -133,8 +145,8 @@ a choice.)
 Tavi: "It's still a minor key. Won't the chord before home stay minor?"
 Merc: "Choose, and we'll play each ending with its chords."
 
-**Predict before you listen.** Under the first ending, the chord before home is E, G and B. The
-second ending raises G to G♯. What does that do to the chord?
+**Predict before you listen.** Each ending has chords, not yet played. In the first, the chord
+before home is E, G and B. The second raises G to G♯. What does that do to the chord?
 [ It turns major ] [ It stays minor ]
 
 Until a choice: "Choose an answer to unlock the two endings with their chords."
@@ -149,13 +161,13 @@ endings have been heard to their end. A play that sound off kept silent sets the
 off: nothing played. Turn sound on, then play it again." Before a choice, Play the tune, twice heard
 with sound on brings the lock line back. A play cut short changes nothing. The reveal opens on "You
 said: it turns major" or "You said: it stays minor", and the hint then reads "Play any of them
-again.")
+again." The reveal also shows Step 1's held paragraph.)
 
 Reveal: It turns major. G is the chord's third, three letters up from E. E up to G is 3 semitones, a
 minor third; E up to G♯ is 4, a major third, and the chord becomes E major (Lesson 10). The key is
-still A minor: only the chord before home changed. And G♯ is ti, a semitone under do, leaning up to
-it as Lesson 4's leading note does. That's this lesson's story. (The key stays minor, which made "it
-stays minor" a fair guess.)
+still A minor, and its home chord stays A minor: of the chords, only the one before home changed.
+And G♯ is ti, a semitone under do, leaning up to it as Lesson 4's leading note does. That's this
+lesson's story. (The key stays minor, which made "it stays minor" a fair guess.)
 
 ## Recall from Lessons 10 and 21
 
@@ -192,19 +204,26 @@ down to A. None plays or draws a chord: FACTS 1a, 60.)
 
 ## Step 1 of 4: Why raise te?
 
-Natural minor's seventh note, te, sits a tone under do. [Play so, te, do] Raise it a semitone and
-it's ti, a semitone under do: Lesson 4's leading note. [Play so, ti, do] One open textbook says
-natural minor's ending lacks major's sense of closure, which ti rising to do partly creates. The
-chord on so changes too: so, te and re, E, G and B, make a minor chord; so, ti and re, E, G♯ and B,
-a major one. [Play the chord on so, then home] Natural minor with te raised to ti is harmonic
-minor.
+Natural minor's seventh note, te, sits a tone under do. [Play so, te, do] Raised a semitone, it's
+ti, a semitone under do: Lesson 4's leading note. [Play so, ti, do] One open textbook says natural
+minor's ending lacks major's sense of closure, which ti rising to do partly creates.
+
+The chord before home, the chord on so, changes too: so, te and re, E, G and B, make a minor chord;
+so, ti and re, E, G♯ and B, a major one. [Play the chord on so, then home]
+
+(Held until the cold open's reveal, the paragraph above shows with it, its play included. Until
+then its place reads "Choose an answer at the top, then hear both endings, to unlock this
+paragraph." FACTS 1a, 36.)
+
+Natural minor with te raised to ti is harmonic minor.
 
 **Try:** play so, te, do, then so, ti, do.
 **Notice:** the last step shrinks from a tone to a semitone.
 
 _Toy: Lesson 10's minor staircase on A, in your clef's octave, with Raise te; the chord on so's
 three beads beside it; and your staff, which writes each figure as it plays, G♯ with its own sharp.
-Raise te, the beads and the chord's play wait for the cold open's choice._
+Raise te and the beads wait for the cold open's choice, under the steps' line "Choose an answer at
+the top to unlock the rest of this figure."_
 
 ## Step 2 of 4: What does the raised note do to the scale?
 
@@ -245,16 +264,16 @@ then coming down as a figure of its own._
 
 ## Step 4 of 4: Why do C major and A minor share a key signature?
 
-[Play C major, then A minor] A minor's notes are C major's, all white piano keys, started on la.
-Same notes, same key signature: none. Keys that share a signature are relative keys, and the
-minor's do sits three semitones below the major's. Here do follows home: A is la in C major and do
-in A minor. Keys that share do are parallel, like Lesson 10's C major and C minor. [Play C minor] C
-minor's signature has three flats: B♭, E♭ and A♭.
+[Play C major, then A minor] A minor's notes are C major's, started on la. Same notes, same
+signature: none. Keys sharing a signature are relative keys; the minor's do sits three semitones
+below the major's. A is la in C major and do in A minor: do follows home. Lesson 21's "no sharps or
+flats, C major" now names only the major key's home. Lesson 10's C major and C minor share do:
+they're parallel. [Play C minor] C minor's signature has three flats: B♭, E♭ and A♭.
 
 Tavi: "Same notes, different home. The signature gives the notes; the house shows where home is."
 
-**Try:** play C major, then A minor, and watch the house.
-**Notice:** the signature never changes. Only home moves.
+**Try:** play both scales and watch the house.
+**Notice:** the signature stays; only home moves.
 
 _Toy: your staff, with the house on do and a small staff in the other clef beside it, which shows
 the same key signature and no notes: none for C major and A minor, and C minor's three flats,
@@ -353,18 +372,19 @@ A.
 - Eyebrow: Practise in MercuryPitch
 - Title: Ear Lab's Gravity
 - Text: Gravity plays four chords that set a major key, then one note, any of the twelve, and you
-  tap which: the scale's seven by number, the other five by their leaning, each with its syllable.
-  Two of the twelve are this lesson's: Te, ♭7, a tone under do, and Ti, 7, a semitone under it. A
-  drill on those two alone isn't in the app yet.
+  tap which: the scale's seven by number, the other five as a number with ♭ or ♯, such as ♯4, each
+  with its syllable. Two of the twelve are this lesson's: Te, ♭7, a tone under do, and Ti, 7, a
+  semitone under it. A drill on those two alone isn't in the app yet.
 - Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Gravity.
 - Second drill: For your voice, Sight-Singing writes six notes in the key and scale the Singing tab
   is set to, inside the voice range saved in Settings: set yours first, under Singing Voice Range.
   In the Singing tab, set the key to A and the scale to Harmonic Minor: on a phone, tap the chip
-  that shows the key; on a bigger screen, open Playback Setup in the sidebar. Then go to Exercises
-  and tap Sight-Singing. It writes G♯ as this page does. It plays nothing first, and it writes only
-  the treble clef: a lower voice reads below it, on ledger lines. Sore, hoarse or unwell today?
-  Just listen along. Sing at about speaking volume, and stop immediately if anything feels
-  uncomfortable. Free: **mercurypitch.com/#/singing**.
+  that shows the key; on a bigger screen, open Playback Setup in the sidebar. Then go straight to
+  Exercises and tap Sight-Singing. It writes G♯ as this page does. It plays nothing first. It writes
+  only the treble clef, a lower voice reading below it on ledger lines, and it wants each note in
+  the octave written. It prints each note's name under it: read the staff, not the names. Sore,
+  hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop immediately if
+  anything feels uncomfortable. Free: **mercurypitch.com/#/singing**.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": Gravity, as above, since it
   asks for no voice, then "Rest today. Sight-Singing will be here when your voice feels
   comfortable: **mercurypitch.com/#/singing**, set to A and Harmonic Minor."
@@ -373,10 +393,16 @@ _[Editorial: the links are `/ear-lab?lesson=25` and `/?lesson=25#/singing`, prin
 marker, as every card prints the public address. The page is not built before the lesson marker
 reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a
 first visit and the card has no first-visit line (FACTS 50). When the `ear-drill` launch kind ships
-(item 12), the card can open Gravity on Te and Ti alone, and its last sentence goes (FACTS 49);
-when Scale Runner's harmonic and melodic minor ship (item 13), its card replaces the second drill,
-with its own care lines and the coach's look (FACTS 51). The Singing tab's Melodic Minor is not
-named: it is the going-up form only, in both directions (FACTS 52).]_
+(item 12), the card can open Gravity on Te and Ti alone, and its last sentence goes (FACTS 49).
+Sight-Singing's lines say the drill as it stands at `c60f0fdcb` (FACTS 53). When SEASON-2 § 5.2
+item 10 ships, the second drill shrinks as Lesson 16's card does: a `key` launch field (10g) lets
+its link open Sight-Singing in A harmonic minor directly, in Lesson 16's way, and replaces the
+route through the Singing tab; a "hear do" start (10b) replaces "It plays nothing first"; the bass
+clef (10c) and octave folding (10f) replace the clef and octave sentence; and names off (10e)
+replaces the sentence on the names. When Scale Runner's harmonic and melodic minor ship (item 13),
+its card can replace the second drill, with its own care lines and the coach's look (FACTS 51). The
+Singing tab's Melodic Minor is not named: it is the going-up form only, in both directions (FACTS
+52).]_
 
 **Next lesson:** Lesson 26, A second voice. "Can you make a harmony by singing the tune a third
 higher?" One line above it, the tease: "‘Twinkle’, and the same tune four semitones higher, played
@@ -384,12 +410,18 @@ together."
 
 _[Editorial: the tease is the lead's, Lesson 26's opening in miniature, with the plan's line,
 mended, as its alternative, which the admin console can switch to: "Lesson 24's other part was a
-drone. What if it's a tune?" The plan's own line is withdrawn (FACTS 5).]_
+drone. What if it's a tune?" The plan's own line, "So far the other part was a drone.", is
+withdrawn: a learner who reaches Lesson 26 has sung over moving chords in Lesson 12 (FACTS 5).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Its slot holds a still of Lesson 26's opening as Lesson 26's package draws it. It is a picture
 and plays nothing, and the card stays one link. Until Lesson 26's page is live, the card says
 "Coming later" and "See it on the map": FACTS 5.)
+
+(Free play, under the card: the steps' toys on one card, with every control. Raise te, Raise le,
+the chord column and the chord's play wait for the cold open's choice, under the steps' line,
+"Choose an answer at the top to unlock the rest of this figure.", and a return visit holds them
+again: FACTS 1a, 36.)
 
 ## Footer
 
@@ -477,7 +509,9 @@ figures, as Lesson 23 asks for two leaps, and its practice card names a sung dri
   then so, ti, do: you just raised the seventh." (FACTS 46).
 - The practice card's Sight-Singing, the card's one sung drill: six notes of A harmonic minor in
   the range saved in Settings, nothing played first, the treble clef only, scored against the
-  written octave, with Lesson 16's care lines on the card (FACTS 53).
+  written octave, with Lesson 16's care lines and its two sentences on the octave and the names on
+  the card. Its notes can fall anywhere in the saved preset, its floor and top included, and in A
+  harmonic minor it can ask for F to G♯, the step Step 2 calls challenging to sing (FACTS 53).
 - The rest version, Lesson 12's form naming Sight-Singing: after "Effortful", "Uncomfortable" or
   "Just listen today" the card keeps Gravity, which asks for no voice, then shows "Rest today.
   Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/#/singing, set to
