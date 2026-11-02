@@ -43,8 +43,18 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   lines. Built: each Ear room's result lines aloud as a run ends, and Echo's opening lines. The
   result lines no longer carry the run's counts, which the result card shows, so a recording can
   say them ("A good run. Tap a leap below to hear it again."). Long note, Lip roll and Ng slides
-  name the singer's note in their opening line ("Hold {note} for as long as it feels easy"), which
-  a recording cannot say, so they stay silent: see the open questions.
+  named the singer's note in their opening line ("Hold {note} for as long as it feels easy"), which
+  a recording cannot say.
+- Asked, 2 Nov 2026, to carry on with the follow-ups: the recommended way was taken for those three
+  rooms. Their opening lines leave the note to the scene, which already names it (Long note's tag
+  and picker, the tops under Lip roll's crests and Ng slides' arches), and Merc says them aloud as
+  the room opens and after a run is stopped, the Warm-up's cue included: "Hold your note for as
+  long as it feels easy", "Roll your lips, brrr, and ride the wave up and back". Thirteen takes;
+  "Hum ng" is recorded with a pause after "Hum", where a take without one ran the two together.
+  A tap that asks for a note (Long note's arrows and its tag) hushes him. The shell starts the
+  clock on the tap that opens each of them, as for the others: every premium room now speaks as
+  it opens. If the name should sound as well, a recording per note is the other way, and the
+  scene's names stay either way.
 
 ## Why
 
@@ -402,10 +412,7 @@ that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 ## Open questions for the owner
 
 - First note on the web too, where splitting is free on the device, or native only.
-- Merc's opening lines in Long note, Lip roll and Ng slides name the singer's note. To have him say
-  them, either the note moves to the scene and the line drops it, or each note gets a recording of
-  its own. Until then they stay silent.
 - Merc's voice is the development sample set (Echo's, `merc-voice-set.ts`) for his singing, and
-  ElevenLabs takes for his opening lines (each room's `voice/` folder). The real recordings
+  ElevenLabs takes for his lines at rest (each room's `voice/` folder). The real recordings
   replace both without a change to the rooms. Which other lines he should say aloud, if any, once
   the owner has heard these on TestFlight.
