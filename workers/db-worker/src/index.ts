@@ -53,6 +53,7 @@ import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { ManagedTestAccountInactiveError, managedTestAccountErrorResponse, } from './testing-account-state'
 import { handleTestingAccountRequest } from './testing-accounts'
 import { validateWrite } from './validation'
+import { boardTop } from './weekly-board'
 import { sweepWithdrawals } from './withdrawal'
 
 const CORS: Record<string, string> = {
@@ -1790,18 +1791,16 @@ async function handleWeeklyBoard(
   entries.sort((a, b) => b.best - a.best)
   const auth = await getAuth(request, env)
   // Placed over everyone, then whoever is hidden from the viewer dropped
-  // (blocks.ts), as the leaderboard does. No singer's id leaves the worker.
+  // (blocks.ts), as the leaderboard does. Each singer's entry carries their
+  // id, as the leaderboard's does: all of them opted in to be named, and the
+  // phone reports or blocks a singer by it (weekly-board.ts). The Founder's
+  // carries none.
   const shown = await withoutHidden(
     env.DB,
     auth,
     entries.map((e, i) => ({ rank: i + 1, ...e })),
   )
-  const top = shown.slice(0, 10).map((e) => ({
-    rank: e.rank,
-    displayName: e.displayName,
-    best: e.best,
-    isFounder: e.isFounder,
-  }))
+  const top = boardTop(shown)
 
   // Caller's standing (ranked among real singers only).
   //

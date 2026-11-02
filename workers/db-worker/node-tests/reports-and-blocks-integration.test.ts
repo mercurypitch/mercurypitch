@@ -372,9 +372,69 @@ describe('a block', () => {
       ['Ben Singer', 2],
       ['Cleo Singer', 3],
     ])
-    expect(body.top.every((row) => !('userId' in row))).toBe(true)
     expect(body.you.rank).toBe(3)
     expect(body.rankedCount).toBe(3)
+  })
+
+  it('names each singer on the Legend’s board by their id, and the Founder by none', async () => {
+    seedChallenge()
+    sqlite
+      .prepare('UPDATE weeklyChallenges SET founderScore = 85 WHERE id = ?')
+      .run(CHALLENGE_ID)
+    seedBoardRun(ada, 90)
+    seedBoardRun(ben, 80)
+
+    const response = await authed(cleo, `/api/weekly/board?id=${CHALLENGE_ID}`)
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      top: Array<Record<string, unknown>>
+    }
+    // The phone reports and blocks a singer on the board by this id, so it
+    // must be the account's own: the one the leaderboard sends beside a name.
+    expect(body.top.map((row) => [row.displayName, row.userId])).toEqual([
+      ['Ada Singer', ada.userId],
+      ['The Founder', undefined],
+      ['Ben Singer', ben.userId],
+    ])
+    expect('userId' in body.top[1]).toBe(false)
+    const reported = await post(cleo, '/api/reports', {
+      targetKind: 'user',
+      targetId: body.top[0].userId,
+      reason: 'offensive',
+    })
+    expect(reported.status).toBe(201)
+  })
+
+  it('says which league rows show a name, so a stand-in is never reported', async () => {
+    seedLeague([
+      [ada, 300],
+      [ben, 200],
+      [cleo, 100],
+    ])
+    // Ben never opted in: the others see his row under a weekly stand-in.
+    sqlite
+      .prepare('UPDATE userProfiles SET leaderboardOptIn = 1 WHERE id <> ?')
+      .run(ben.userId)
+
+    const response = await authed(cleo, '/api/league/me')
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      standings: Array<{ userId: string; named: boolean; rank: number }>
+    }
+    expect(
+      body.standings.map((row) => [row.rank, row.userId, row.named]),
+    ).toEqual([
+      [1, ada.userId, true],
+      [2, `member-${ben.userId}`, false],
+      [3, cleo.userId, true],
+    ])
+    // The stand-in's id is a membership's: there is nobody behind it to report.
+    const reported = await post(cleo, '/api/reports', {
+      targetKind: 'user',
+      targetId: body.standings[1].userId,
+      reason: 'offensive',
+    })
+    expect(reported.status).toBe(404)
   })
 
   it('hides names in the league and keeps every place and the cohort’s size', async () => {
