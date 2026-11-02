@@ -3,8 +3,10 @@
 // The transport reads every lane's peak on the same tick as the master
 // meter, so this component runs no loop of its own: it redraws when the
 // level it is given changes. It is hidden from screen readers, which hear
-// the fader's own value; the numbers are in its title. With no level (the
-// song stopped, or the lane not built) it sits at the floor.
+// the fader's own value; the numbers are in its title, which follows the
+// level eight times a second while the bars follow every tick
+// (meter-text.ts). With no level (the song stopped, or the lane not built)
+// it sits at the floor.
 //
 // It lives inside the fader's drag area: a press on it starts a fader drag
 // there, and a pointer resting on it still reads its title. Its 0 dBFS
@@ -12,6 +14,7 @@
 // a level reads against the marks printed beside the fader.
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
+import { createMeterText } from '../audio/meter-text'
 import { STUDIO_FADER_MAX_DB, STUDIO_FADER_MIN_DB, } from '../timeline/StudioTrackControls'
 import type { StripHold } from './strip-meter'
 import { amplitudeDb, reductionTravel, stepStripHold, stripHoldDb, stripMeterTitle, stripTravel, } from './strip-meter'
@@ -70,8 +73,13 @@ export function StudioStripMeter(props: Props) {
       db,
       holdDb: stripHoldDb(hold, now, reduced),
       reductionDb: level.reductionDb,
+      measurement: level.measurement,
     }
   })
+  const text = createMeterText(
+    () => reading(),
+    (shown, next) => shown.measurement === next.measurement,
+  )
   // Moved, not laid out again: the hold rides a transform over the rail.
   const holdPixels = () =>
     ((box()?.height ?? 0) * stripTravel(reading()?.holdDb ?? -Infinity)) / 100
@@ -110,10 +118,10 @@ export function StudioStripMeter(props: Props) {
       ref={meter}
       class={styles.meter}
       aria-hidden="true"
-      title={stripMeterTitle(props.name, reading())}
+      title={stripMeterTitle(props.name, text())}
       data-studio-strip-meter
-      data-level-db={reading() ? decibels(reading()!.db) : undefined}
-      data-reduction-db={reading()?.reductionDb?.toFixed(1)}
+      data-level-db={text() ? decibels(text()!.db) : undefined}
+      data-reduction-db={text()?.reductionDb?.toFixed(1)}
       style={
         box()
           ? {
