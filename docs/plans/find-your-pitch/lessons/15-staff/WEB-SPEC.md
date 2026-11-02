@@ -434,8 +434,8 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
 in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
 of a treble staff with five plain noteheads stepping up two places and back down, no syllables, no
-house and nothing lit, and a "?" beside it (FACTS, Illustrations without claims). It names no note
-to start from, so it does not answer Lesson 16's predict (FACTS 5). It holds no button, since the
+house and nothing lit, and a "?" beside it (FACTS, Illustrations without claims). It says nothing of what Tavi sings with no note to start from, so it does not answer Lesson
+16's predict (FACTS 5). It holds no button, since the
 card is a link, and does not move. It plays no sound, on purpose: Lesson 16's opening plays nothing
 until its predict, and a phrase played here would undo "Tavi has never heard them"; it is the card's
 picture, not a staff example (FACTS, Illustrations without claims). Its styles go under a class of
@@ -529,7 +529,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
 
 - `n: 15`, `lane: 'theory'`, `title: 'The staff: where notes sit'`, `short: 'The staff'`, `topics:
 ['T30']`, with T30's name, "Staff notation: staff, clefs, ledger lines, grand staff", as SEASON-2
-  § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:735`); the hook word for word (FACTS 1).
+  § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:756`); the hook word for word (FACTS 1).
   `minutes: 15` and `page: '/learn/15'` once the page is built, under the drafts' comment in Lesson
   6's form (`src/features/lessons/kit/season.ts:270`): `// A draft until the vocal coach's look at
 Sing it (drafts.ts).` The entry decides nothing about being live: the draft list and the console do.

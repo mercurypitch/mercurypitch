@@ -511,8 +511,8 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
 
 - `n: 20`, `lane: 'voice'`, `title: 'Runs and the pentatonic scale'`, `short: 'Runs'`, `topics:
 ['S18', 'T16']`, with their names as SEASON-2 § 4.1 gives them: S18, "Agility: staccato, runs,
-  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:752`), and T16, "Pentatonic and
-  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:739`); the hook word for word (FACTS 1).
+  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:773`), and T16, "Pentatonic and
+  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:760`); the hook word for word (FACTS 1).
   `minutes: 15` and `page: '/learn/20'` once the page is built, under the drafts' comment in Lesson
   9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` The entry decides nothing
   about being live: the draft list and the console do.

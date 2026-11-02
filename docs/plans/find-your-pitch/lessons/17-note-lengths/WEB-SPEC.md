@@ -536,11 +536,11 @@ Takadimi and "1 e and a" (FACTS 23, 24).
 ### 11. Tease still
 
 The kit's next-lesson card for Lesson 18, its tease above its hook (FACTS 5). Its slot holds a still
-of Lesson 18's opening line as Lesson 18's stage draws it, in the learner's clef from `fyp-voice`
-(treble for the higher voice, bass for the lower or for none stored): two bars, four quarters and
-then two quarters and a half note, C4 D4 E4 D4 and C4 E4 G4 on the treble staff or an octave lower on
-the bass, engraved as Toys 1 engraves, with the beat grid under them and no cursor, no bracket and no
-syllable, so it shows no group and no count, which Lesson 18's predict asks about. It does not play,
+of Lesson 18's opening line as Lesson 18's stage draws it, on the bass staff for everyone: two
+bars, four quarters and then two quarters and a half note, G3 A3 B3 A3 and G3 B3 D4, engraved as
+Toys 1 engraves, with the pitch generalised from its A3 or A4 (Lesson 18's kit item 4), with the
+beat grid under them and no cursor, no bracket, no name and no syllable, so it shows nothing Lesson
+18's predict turns on. It does not play,
 and nothing above the card plays it, though CURIOSITY-MOMENTS § 3.1 allows a tease sound a Play there:
 Lesson 18 sounds this line only once its own predict is answered, so a play here would hand that
 predict a clue. It teaches nothing on this page, and each symbol in it is one Lessons 15 and 17 have
@@ -652,8 +652,8 @@ are in; items 6 to 8 and 12 come with the page's own PR.
    proposed "Note values: whole, half and quarter notes \| MercuryPitch" (57 characters, the bar and
    the name included, as SEARCH § 4 counts its titles); a description of 80 to 160 characters, the
    hook then what the lesson covers, proposed "Why is a quarter note not a quarter of a second? A
-   16-minute lesson on whole, half, quarter, eighth and sixteenth notes, rests, dots and ties, with
-   sound toys." (159 characters), which says nothing of tempo or seconds (FACTS 1a); the og and
+   sixteen-minute lesson with sound toys: whole to sixteenth notes, rests, dots and ties." (137
+   characters, the minutes as a word, as the head test asks), which says nothing of tempo or seconds (FACTS 1a); the og and
    twitter descriptions the same; the share card, `learn/lesson-17-og.jpg`, the hero's pads with the
    written bar and an empty strip; the two structured-data blocks from Lesson 1's; `learn/17.html`
    in `kit/drafts.ts`; and on release, as SEARCH § 12 item 3 lists them for

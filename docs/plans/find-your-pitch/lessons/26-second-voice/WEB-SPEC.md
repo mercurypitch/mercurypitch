@@ -41,7 +41,7 @@ module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1146-1147`). Lesson 28 sings one part of a two-part song with
+`docs/plans/find-your-pitch/SEASON-2.md:1239-1240`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
 headphones and quiet checks as they are specified here.
 
@@ -590,7 +590,7 @@ stills when WebGL fails.
   fifth a third singer takes, which runs a semitone past the bass preset's top, and it does not say
   which friend gets which part, since that follows the room's order, which the room shows. It is the
   season plan's link for this lesson (SEASON-2 § 5.1, row 26,
-  `docs/plans/find-your-pitch/SEASON-2.md:842`).
+  `docs/plans/find-your-pitch/SEASON-2.md:863`).
 - **The second drill, alone, Drone Intonation's thirds**: `/exercises/thirds-on-a-drone?lesson=26`,
   printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:75-81`),
   with Lesson 24's card lines cut to this page: what it does, now "names a third to sing above it",
@@ -606,7 +606,7 @@ stills when WebGL fails.
 - **The first visit and the marker.** Nothing reads `?lesson=26` until SEASON-2 § 5.2 item 21
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that, so First Light steps aside and the card has no first-visit line (FACTS 67).
-- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:891-893`),
+- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:928-930`),
   the app's work: a melody played and a third above or below it sung, scored per note, octave-folded,
   with a headphones prompt. When it ships it takes the card's first place, as the drill a learner can
   do alone, with its own care lines and the coach's look, and Harmony Stack moves to second (FACTS
