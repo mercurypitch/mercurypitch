@@ -1047,8 +1047,25 @@ export function createJamService(callbacks: JamCallbacks) {
     })
   }
 
-  function sendMelody(melody: MelodyData, mode?: string): void {
-    broadcastData({ type: 'melody' as const, action: 'set', melody, mode })
+  /**
+   * The room's drill, with the mode it is sung in, to the room or to one
+   * peer. One peer is how a late arrival is caught up: taking a drill
+   * rewinds a guest's transport, so the room already singing is left out.
+   */
+  function sendMelody(
+    melody: MelodyData,
+    mode?: string,
+    targetPeerId?: string,
+  ): void {
+    const message = { type: 'melody' as const, action: 'set', melody, mode }
+    if (targetPeerId === undefined) {
+      broadcastData(message)
+      return
+    }
+    const channel = dataChannels.get(targetPeerId)
+    if (channel?.readyState === 'open') {
+      channel.send(JSON.stringify(message))
+    }
   }
 
   /** A song manifest -- URLs and lyrics, never audio. */
