@@ -1,10 +1,10 @@
 # EARS Specification — Reports, blocks and the name filter
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.1 | Date: 2026-11-02 | Scope: what App Store guideline 1.2 and
+> Version: 1.2 | Date: 2026-11-02 | Scope: what App Store guideline 1.2 and
 > Play's user-generated content policy ask of an app whose singers post: a
 > filter on what is posted, a way to report it and an answer in good time, a
-> way to block a singer. Slices 4a and 4b of
+> way to block a singer. Slices 4a, 4b and 4c of
 > [`docs/plans/native-more-and-community.md`](../plans/native-more-and-community.md).
 
 **Source:** `workers/db-worker/migrations/0072_reports_and_blocks.sql`,
@@ -15,8 +15,9 @@
 archive), `league.ts`
 (standings), `friends.ts`, `validation.ts`, `auth.ts` (names, rate limits,
 deletion) and `email.ts` (the owner's alert). The phone's side (section 5):
-`src/lib/singer-rows.ts`, `src/db/services/moderation-service.ts`, and the
-archive's read (`src/features/challenges/weekly-service.ts`).
+`src/lib/singer-rows.ts`, `src/db/services/moderation-service.ts`, the
+archive's read (`src/features/challenges/weekly-service.ts`), and
+Community's shares (`apps/mercurypitch/src/shell/community/`).
 
 **Tests:** `workers/db-worker/src/name-filter.test.ts`,
 `workers/db-worker/src/public-text.test.ts`,
@@ -24,6 +25,8 @@ archive's read (`src/features/challenges/weekly-service.ts`).
 `workers/db-worker/src/league.test.ts`,
 `workers/db-worker/src/weekly-board.test.ts`,
 `workers/db-worker/node-tests/reports-and-blocks-integration.test.ts`,
+`workers/db-worker/node-tests/community-share-singers-integration.test.ts`,
+`apps/mercurypitch/src/shell/community/CommunityScreen.singers.test.tsx`,
 `src/lib/singer-rows.test.ts`, and
 `src/features/challenges/weekly-service-read.test.ts` (the archive read
 with the session).
@@ -227,3 +230,17 @@ public boards, as on the leaderboard, which sends the id beside each name.
 **Where** an entry carries a `userId` that is not the caller's, the phone
 shall offer Report and Block on it. It shall offer neither on the Founder's
 entry, nor on an entry from a worker that sends no `userId`.
+
+### REQ-RB-042 — A share names its poster by id
+
+**Ubiquitous:** Each shared melody and result the DB worker sends from its
+public reads (`GET /api/sharedMelodies` and `GET /api/sharedSessions`, a
+list or one share by its id) shall carry `userId`, the poster's own account
+id, beside `author`, their current display name (REQ-RB-006), to a reader
+signed in or not, and nothing else of the poster: the id leads to the
+singer who posted the share, and to nobody else. **Where** a share's
+`userId` is not the caller's, the phone shall offer Report, naming the share
+(`melody` or `session`, and its id), and Block, of that `userId`. It shall
+offer neither on the caller's own share, nor on a share that carries no
+`userId`. The field is as old as the share tables: 4c needed no change to
+the worker, and this pins what the phone reads.
