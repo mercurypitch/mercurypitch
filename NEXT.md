@@ -2788,3 +2788,22 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - BRIEF-writer-common v6 (head 87a06b85e, L16 as newest model); BRIEF-18 updated for L16 as
   committed (QC3 text, phrases, pass rule). W18 spawned. W20 fix pass still running.
 - NEXT: W20 reply -> lead review -> commit -> then W22 (slot). W18 hand-back -> reviewer -> fix -> lead.
+
+## 2 Nov 02:34 UTC — Lesson 20 committed; W18 and W22 running (STATE FOR A RESUME)
+
+- L20 lead review: fix pass took every call but N14 (kept: "lower" is the way back after "higher"),
+  S2 made in the soft tone as an illustrated violet singer's line, S4 "by step or by leap" (all
+  accepted). Lead edits: prettier fixes; FACTS 54's L16 citation moved to L16 FACTS 45
+  (FACTS.md:127). 2,221 words, 270 cites 0 findings; whole plan 200. Committed 26d90e225 as the
+  owner, pushed. Shared entries: s2pkg/shared-rest/L20-entries.md. W18 told "leap", not "skip".
+- Branch head 26d90e225 (L16 87a06b85e, L20 26d90e225). Running: W18 (Lesson 18, a980fec9...),
+  W22 (Lesson 22, a767b433...). Ids in s2pkg/agents.txt.
+- Pipeline per package: hand-back -> fresh reviewer (general-purpose, effort xhigh, prompt as for
+  L16/L20: BRIEF-reviewer.md with <NN>, report s2pkg/NN-REVIEW.md) -> lead's calls written to
+  s2pkg/NN-FIXPASS-MSG.md and sent by SendMessage to the writer -> lead review (plan-cites 0,
+  lesson-words, prettier --check on the 3 files and fix: blank line before tables in list items, no
+  line starting "N)", code spans on one line, sub-item indent = parent number width; whole-plan
+  findings still 200) -> commit as Komediruzecki (msg in s2pkg/leadNN/COMMIT-MSG.txt, no
+  attribution) -> push -> shared-rest/LNN-entries.md -> NEXT.md + push-notes.
+- After 18 and 22: 24 and 25 (briefs ready), then 26 (after 24), 27 (after 25), 28 last; then the
+  shared commit (#229) from shared-rest/*.md and NOTES.md.

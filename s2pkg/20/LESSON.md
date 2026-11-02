@@ -25,13 +25,16 @@ Where this page shares a line with Lessons 3, 9 and 12 (the comfort check, "Just
 voice choice, the warm-up, the Move do control, the stop line, "What this does", the reading lines,
 the four feelings with their gentle and enough-for-today lines, the doctor lines and the rest card),
 it is their current text, word for word, with only the exercise changed: Lesson 9's "the ladder"
-becomes "the run". Three lines are new: Your turn, the faster pass's line and its Easy and Workable
-line. The rest card is Lesson 12's form, since both practice drills ask for the voice (FACTS 72).
+becomes "the run". Four lines are new or changed: Your turn, with its choice of run; the faster
+pass's line and its Easy and Workable line; and the listen path's voice line, Lesson 9's with "who
+sings" for "the Merc who sings", since Tavi sings for the higher voice. The rest card is Lesson 12's
+form, since both practice drills ask for the voice (FACTS 72).
 Syllables follow Lesson 4's spelling, "so", and minor is do-based, as in Lesson 10: do, me, fa, so,
 te (FACTS 9, 25). Black keys are named by their sharps, except C minor's E♭ and B♭, spelled one
 letter per degree as Lesson 10 spells C minor (FACTS 10).
 
-Where this package departs from the article plan, and why (each argued in FACTS 4):
+Where this package departs from the article plan, and why: the main departures, with FACTS 4
+listing and arguing every one.
 
 - **Lesson 5 gets its chip.** The plan wrote it off as "a prerequisite through 9", but Lesson 9 needs
   Lessons 3 and 6, not 5; SEASON-2 § 4.3 lists 5, 9 and 10 (FACTS 2).
@@ -40,22 +43,31 @@ Where this package departs from the article plan, and why (each argued in FACTS 
 - **The predict's second choice reads "What share of their tries came out right"**, and the question
   asks what "went with" better playing: the study ranked 17 pianists and found correlations with the
   share of correct tries, not their number (FACTS 1a, 14).
+- **Tavi voices the first choice's guess**, "To sing it fast, you just practise it a lot, don't
+  you?", so the learner commits on an idea the stage has voiced; the card's misconception, "Speed
+  comes from practising it fast.", is Step 3's mix-up card, as the card asks (FACTS 13, 20).
 - **Merc's fast run is drawn as sung**: nine beads close together, each in its band. The plan's beads
   "blur between bands", but Merc's synthesised run lands every note, and a drawing must match its
-  sound (FACTS 38).
+  sound. The smudging is shown in Step 3 instead, as an illustrated singer's run (FACTS 38, 82a).
 - **The recall asks Lesson 9's question 2 and Lesson 10's question 4.** The series' recalls ask the
   lessons a page builds on, and Lesson 4 is not one, so Lesson 9's question takes the place of Lesson
   4's, as the plan allowed (FACTS 7).
 - **Step 3's Try is for listening.** The plan's "drag the tempo up until the beads start to blur"
   asked learners to judge their own singing in a step that asks for no voice; Sing it's faster pass
-  is where the tempo goes up. Step 3 also sets Lesson 9's slow-singing study beside the pianists',
-  and calls the plan that joins them an inference (FACTS 18, 19).
+  is where the tempo goes up, and Play it smudged, an illustration, shows what "drop back a notch"
+  answers. Step 3 also sets Lesson 9's slow-singing study beside the pianists', calls the plan that
+  joins them an inference, and its mix-up card's better idea is the Wrap's, a tempo where every note
+  lands, then nudge it up (FACTS 18 to 20, 82a).
 - **Step 4 says what Arneson's guide says**: staccato is sung like legato without carrying the sound
   between notes, and staccato exercises train onsets. The plan's "one way teachers make the notes
-  distinct" has no source (FACTS 29, 30).
+  distinct" has no source. Its line on the staccato dot is cut for length, the cut the page's length
+  named first, and the dot is left to Lesson 18 (FACTS 29, 30).
+- **Sing it offers a smaller run**, do re mi so mi re do, beside the full one, as Lesson 9 offers its
+  smaller ladder, with "If the top feels high, sing the smaller run." in Your turn (FACTS 51).
 - **Move do goes higher only**: up to three semitones for the lower voice and four for the higher.
   Do on D already sits two semitones above the tenor's and the soprano's floors, so any move lower
-  breaks the season's rule (FACTS 51, 52).
+  breaks the season's rule; "lower" is the way back after "higher", and rests at its end at D
+  (FACTS 51, 52).
 - **The band is Lessons 3 and 9's, 35 cents either side**, where the plan proposed Lesson 16's 60:
   on this page "in the band" means what Lesson 9's landing zone means (FACTS 54).
 - **The faster pass listens to nothing** and asks "How did that feel?" again; the beads light after
@@ -105,7 +117,7 @@ mi, so, la, so, mi, re, do from D3. Nothing is lit or named yet.)
 slowly, a note every 0.6 s. Each bead lights and shows its syllable as its note sounds; fast, the
 beads crowd together, each still in its band. Both plays work before a choice and after it.)
 
-Tavi: "To sing it fast, you just practise it fast, don't you?"
+Tavi: "To sing it fast, you just practise it a lot, don't you?"
 Merc: "Let's see what one study found."
 
 **Predict before you see the result.** Seventeen piano students practised a hard passage until they
@@ -117,8 +129,8 @@ Until a choice: "Choose an answer to see what the study found."
 Reveal: What share of their tries came out right. How long they practised didn't go with how well
 they played, and nor did how many tries they made; the share of tries played right did (Duke,
 Simmons and Cash, 2009). One small study: a link, not proof. For a run, it suggests a tempo slow
-enough to land every note, then a little faster: this lesson's story. (Practising longer feels as if
-it should help, which made "how long" a fair guess.)
+enough to land every note, then a little faster. (Practising longer feels as if it should help,
+which made "how long" a fair guess.)
 
 ## Recall from Lessons 9 and 10
 
@@ -141,7 +153,8 @@ asked afresh, for everyone, since both lessons are prerequisites. FACTS 7.)
 
 ## Four words you'll meet
 
-- **Run**: quick notes one after another, like Merc's nine. [Play: the run, slowly]
+- **Run**: quick notes one after another, by step or by leap, like Merc's nine. [Play: the run,
+  slowly]
 - **Pentatonic scale**: a scale of five notes. The major one is do, re, mi, so and la. [Play: C, D,
   E, G, A, C]
 - **Minor pentatonic**: the same five notes started on la; sung from do, they're do, me, fa, so and
@@ -188,32 +201,31 @@ _Toy: the staircase, the five notes only, with Major · Minor and the house on d
 
 ## Step 3 of 4: How do I make a run faster without smudging it?
 
-Fast is the goal, and a guide for new singing teachers builds agility with fast scales and
-arpeggios, on "oo" and "ah". But in the pianists' study, the share of tries that came out right
-went with better playing, not how long anyone practised. And in Lesson 9, occasional singers'
-intervals came out more accurate the slower they sang. Together they suggest a plan, though no study
-here tested it on singers: a tempo slow enough for every note to land in its band, repeated, then
-nudged up. When notes start to smudge, drop back a notch.
+Fast is the goal: a guide for new singing teachers builds agility with fast scales and arpeggios
+on "oo" and "ah". But for the pianists, the share of tries played right went with better playing;
+practice time didn't. In Lesson 9, occasional singers' intervals came out more accurate the
+slower they sang. Together they suggest a plan, though no study here tested it on singers: a tempo
+slow enough for every note to land in its band, repeated, then nudged up.
 
 > **Common mix-up:** "Speed comes from practising it fast."
 > **Why it seems right:** you want a fast run, and practising fast looks like the direct way.
 > **The evidence:** in one study of 17 pianists, neither practice time nor the number of tries went
 > with how well they played the next day; the share of tries played right did.
-> **The better idea:** find the fastest tempo you can sing right, practise there, then nudge it up.
+> **The better idea:** a tempo where every note lands, then nudge it up.
 
-**Try:** play the run at 0.6 seconds a note, then 0.45, then 0.3.
-**Notice:** the beads crowd closer, each still in its band.
+**Try:** play the run at 0.6 seconds a note, then 0.3, then Play it smudged.
+**Notice:** faster, the beads crowd closer, each in its band; smudged, notes slip out of their
+bands, the cue to drop back a notch.
 
-_Toy: the run, its beads on a string on the pitch line, in the learner's voice, with Tempo, Play
-and See it on the staff._
+_Toy: the run, its beads on a string on the pitch line, in the learner's voice, with Tempo, Play,
+See it on the staff and Play it smudged, an illustrated singer's run drawn as a violet line._
 
 ## Step 4 of 4: How do short notes help?
 
 Notes sung short and separate, with a gap after each, are staccato. Joined smoothly, they're
 legato. [Play staccato, then legato] The same guide says staccato is sung much like legato, but
 without carrying the sound from note to note. It uses staccato exercises to train onsets, the starts
-of notes (Lesson 5): in a staccato run, each note has its own. On the staff, a dot over or under a
-note asks for staccato (Lesson 18).
+of notes (Lesson 5): in a staccato run, each note has its own.
 
 **Try:** play the run staccato, then legato.
 **Notice:** each staccato bead starts on its own, with a gap before the next.
@@ -238,19 +250,22 @@ Choose a voice to sing with. If you chose one in an earlier lesson, pick it agai
 [ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
 
 (A stored voice shows pressed and can be changed, and the line above the buttons reads "Keep the
-voice you chose before, or change it:" instead. With none stored, this choice comes after either
-answer above and before anything plays, because it picks the voice that sings, as in Lessons 9 and
-15. Just listen today's line and the doctor lines show at once, with the choice.)
+voice you chose before, or change it:" instead; after Just listen today, with none stored, it reads
+"Choose a voice: it picks who sings.", Lesson 9's line for a page where Tavi sings too. With none
+stored, this choice comes after either answer above and before anything plays, because it picks the
+voice that sings, as in Lessons 9 and 15. Just listen today's line and the doctor lines show at
+once, with the choice.)
 
 **Warm-up, optional, about a minute.** Three sighs: a quiet "hoo" sliding down, like a relieved
 sigh. Then, if you like, lip trills ("brrr", lips loose, up a little and back), or hum, or sing a
 soft "oo". Copy the way Merc's voice slides, not the exact notes. Nothing listens. Stop immediately
 if anything feels uncomfortable. [Play Merc's sigh] [Play the slide] [ Skip ]
 
-**Your turn: the run.** Merc sings it first in D, or Tavi an octave higher, a note every three
-quarters of a second. Take an easy breath, then sing it back on one breath, on "oo" or "ah", or on
-the names. Sing at about speaking volume. Move on as each bead lights. If the bottom feels low, move
-do, your starting note, higher.
+**Your turn: the run.** Choose a run: [ The run: up to la ] [ Smaller: up to so ]. Merc sings it
+first, or Tavi an octave higher, a note every 0.75 seconds. Take an easy breath, then sing it back
+on one breath, on "oo" or "ah", or on the names. Sing at about speaking volume. Move on as each bead
+lights. If the top feels high, sing the smaller run. If the bottom feels low, move do, your starting
+note, higher.
 [ Move do: lower · higher ]
 
 Stop immediately if anything feels uncomfortable.
@@ -271,17 +286,18 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
 
 - Easy or Workable: the count, such as "This time, 7 of your 9 notes landed in the band." If not
   every note we heard landed: "If that felt tricky, good: that's learning." Then, once a visit,
-  [ Again ] and [ Again, faster ], and [ Done for today ].
+  [ Again ], with [ Again, smaller ] after the full run, and [ Again, faster ]; and
+  [ Done for today ].
 - Effortful: the count and no more runs, then "Keep it gentle: rest before you sing again."
   [ Done for today ]
 - Uncomfortable: no lines, no count and no more runs, then "Thanks for saying so. That's enough
   singing for today: rest your voice.", and the doctor lines.
 
-Again, faster: "Merc sings it at a note every 0.45 seconds, then the guide lights each bead in turn.
-Sing along if you like: nothing listens and nothing is scored." Then **How did that feel?** again.
-Easy or Workable: "That's the next notch up."
+Again, faster: "Merc sings it at a note every 0.45 seconds, then the beads light in turn. Sing along
+if you like: nothing listens and nothing is scored." Then **How did that feel?** again. Easy or
+Workable: "That's the run, faster."
 
-(After the faster pass, Effortful and Uncomfortable end the singing as above.)
+(After the faster pass, Effortful and Uncomfortable end the singing as above, with no count.)
 
 No microphone: "No microphone? Sing along anyway: Merc sings the run first, and nothing listens."
 
@@ -293,7 +309,7 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 1. Which notes of the major scale does the major pentatonic leave out?
    - Fa and ti **[correct]** · Feedback: "And with them, both semitones."
    - Re and la · Feedback: "Re and la stay: do, re, mi, so, la. Try Step 1 again."
-   - Do and so · Feedback: "Do is its home and so its fifth: both stay."
+   - Do and so · Feedback: "Its home, do, and its fifth, so, both stay."
 2. Are the pentatonic's steps all the same size?
    - No: 2, 2, 3, 2 and 3 semitones **[correct]** · Feedback: "No semitones, but two steps of
      three."
@@ -327,15 +343,14 @@ smudging it.
 - Eyebrow: Practise in MercuryPitch
 - Title: Scale Runner
 - Text: Scale Runner is an echo: it plays a note, then gives you two seconds or more to sing it
-  back. Good for tuning the pattern; this page is where you run it. Under Scale, choose Pentatonic.
-  It starts from the voice range saved in Settings and wants each note in the octave it plays, not
-  an octave away: set your range there first, under Singing Voice Range. Sore, hoarse or unwell
-  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
-  uncomfortable.
+  back, in the octave it plays. Good for tuning the pattern; this page is where you run it. Under
+  Scale, choose Pentatonic. It starts from the voice range saved in Settings: set yours there first,
+  under Singing Voice Range. Sore, hoarse or unwell today? Just listen along. Sing at about speaking
+  volume, and stop immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner.
-- Second drill: For short notes, Staccato Precision plays short notes from the major scale in a
-  random order; sing each back in the octave it plays. Free: **mercurypitch.com/pitch-training**,
-  then tap Staccato Precision.
+- Second drill: For short notes, Staccato Precision plays short notes from the major scale,
+  shuffled; sing each back in the octave it plays. Free: **mercurypitch.com/pitch-training**, then
+  tap Staccato Precision.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Scale Runner will
   be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap Scale
   Runner."
@@ -376,15 +391,15 @@ your browser." No decorative clef or staff: on a Season 2 page a staff is always
 Each section has a short line above its heading, as in Lesson 1; where a section is the same as
 Lesson 21's, so are its words.
 
-| Section     | Line above the heading                                   | Heading                                    |
-| ----------- | -------------------------------------------------------- | ------------------------------------------ |
-| Recall      | From Lessons 9 and 10: two questions, asked afresh       | Recall from Lessons 9 and 10               |
-| Four words  | Four words you'll meet before the first step             | Run, pentatonic, minor pentatonic, agility |
-| Steps       | Four steps, one object: a staircase that becomes a run   | Runs and the pentatonic scale              |
-| Sing it     | Cadenza: your solo, and any octave counts                | Sing it: the run                           |
-| Quick check | Ripresa: the theme comes back, from memory               | Quick check                                |
-| Wrap        | Coda: the closing bars                                   | Three lines to keep                        |
-| Explorer    | Season 2 · Lesson 20                                     | The season, mapped                         |
+| Section     | Line above the heading                                 | Heading                                    |
+| ----------- | ------------------------------------------------------ | ------------------------------------------ |
+| Recall      | From Lessons 9 and 10: two questions, asked afresh     | Recall from Lessons 9 and 10               |
+| Four words  | Four words you'll meet before the first step           | Run, pentatonic, minor pentatonic, agility |
+| Steps       | Four steps, one object: a staircase that becomes a run | Runs and the pentatonic scale              |
+| Sing it     | Cadenza: your solo, and any octave counts              | Sing it: the run                           |
+| Quick check | Ripresa: the theme comes back, from memory             | Quick check                                |
+| Wrap        | Coda: the closing bars                                 | Three lines to keep                        |
+| Explorer    | Season 2 · Lesson 20                                   | The season, mapped                         |
 
 The explorer's line above its heading is the masthead's, "Season 2 · Lesson 20" (SEASON-2 § 7 item
 1), as on Lessons 15, 17, 19, 21 and 23. Its line under the heading is Lesson 1's, "Each lesson's
@@ -416,21 +431,32 @@ decision there carries here.
 
 - Every step plays for listening only; nothing in them asks the viewer to sing, so the comfort check
   comes once, before Sing it (FACTS 49).
-- **Step 3's practice advice**: "a tempo slow enough for every note to land in its band, repeated,
-  then nudged up. When notes start to smudge, drop back a notch." It is an inference from a piano
-  study and Lesson 9's slow-singing study, said as one, beside Arneson's guide: "a guide for new
-  singing teachers builds agility with fast scales and arpeggios, on "oo" and "ah"" (FACTS 17 to
-  20).
-- **Step 4, kept short as planned and the first cut if the page runs long**: staccato and legato
-  played, never sung; Arneson's description of staccato and his "Staccato exercises develop onset".
-  If the coach wants learners to try staccato, the line would be "light, never pushed", unscored;
-  the page does not ask for it today, and Lesson 18's plan expects Lesson 20 to sing staccato
-  (FACTS 29, 30).
+- **Step 3's practice advice**, four lines the learner reads, all inference from a piano study and
+  Lesson 9's slow-singing study, said as one (FACTS 17 to 20, 78):
+  - the plan: "a tempo slow enough for every note to land in its band, repeated, then nudged up.";
+  - its Notice: "smudged, notes slip out of their bands, the cue to drop back a notch.";
+  - the mix-up card's better idea: "a tempo where every note lands, then nudge it up.", softened
+    from the plan's "practise as fast as you can sing it right", which invited working at the edge;
+  - the Wrap: "For speed, keep your tries right: a tempo where every note lands, then nudge it up."
+
+  Beside them, Arneson's guide: "Fast is the goal: a guide for new singing teachers builds agility
+  with fast scales and arpeggios on "oo" and "ah"."
+
+- **Play it smudged**, in Step 3: an illustrated singer's run at 0.2 s a note in the soft tone, never
+  Merc's voice, drawn as a violet line slipping out of the bands; listening only (FACTS 82a).
+- **Step 4, kept short as planned**: staccato and legato played, never sung; Arneson's description
+  of staccato and his "Staccato exercises develop onset". Its line on the staccato dot is cut for
+  length. If the coach wants learners to try staccato, the line would be "light, never pushed",
+  unscored; the page does not ask for it today, and Lesson 18's plan expects Lesson 20 to sing
+  staccato (FACTS 29, 30).
 
 ### The run and the range
 
 - The run: do, re, mi, so, la, so, mi, re, do on "oo" or "ah", or on the names, a note every 0.75 s,
-  6.75 s on one breath; Merc sings it first on "ooh" (FACTS 50, 53).
+  6.75 s on one breath; or the smaller run, do, re, mi, so, mi, re, do, 5.25 s; Merc sings it first
+  on "ooh" (FACTS 50, 53).
+- **To confirm: the top line**, "If the top feels high, sing the smaller run.", and the run choice,
+  [ The run: up to la ] [ Smaller: up to so ], as Lesson 9's ladders (FACTS 51).
 - **To confirm: do on D.** D3 to B3 for the lower voice and D4 to B4 for the higher keeps every
   preset of each voice at least two semitones inside its floor and top; the least room is the
   tenor's and the soprano's floors, 2 semitones (FACTS 51):
@@ -444,24 +470,28 @@ decision there carries here.
   | Higher, D4 to B4 | Mezzo-soprano | A3 to A5  | 5          | 10         |
   | Higher, D4 to B4 | Soprano       | C4 to C6  | 2          | 13         |
 
+  The smaller run tops out at so, A3 or A4: the bass 7 under its top, the baritone 10, the tenor
+  15; the alto 8, the mezzo-soprano 12, the soprano 15.
+
 - **To confirm: Move do, higher only.** The lower voice's do goes from D3 up to F3, three
   semitones, where la reaches D4, 2 under the bass preset's top; the higher voice's from D4 up to
-  F♯4, four, where la reaches D♯5, 2 under the alto's top. Any move lower leaves the tenor or the
-  soprano 1 semitone or less above the floor, so the lower button rests at D. Your turn says only
-  "If the bottom feels low, move do, your starting note, higher.", where Season 1 offers both ways.
-  The plan's four semitones either way breaks four presets (FACTS 52). E, Lesson 10's do, would
-  give Move do room both ways (two lower, one or two higher), at the cost of three black keys.
-- No smaller run is offered: la sits at least 5 semitones under the top of every preset of its
-  voice. The coach may ask for one, do re mi so mi re do, as Lesson 9 offers its smaller ladder
-  (FACTS 51).
+  F♯4, four, where la reaches D♯5, 2 under the alto's top; the smaller run's so then sits 4 under
+  the bass's top and the alto's. Any move lower leaves the tenor or the soprano 1 semitone or less
+  above the floor, so the lower button rests at D, and works only as the way back after "higher".
+  Your turn says "If the bottom feels low, move do, your starting note, higher.", where Season 1
+  offers both ways, and the smaller run answers a top that feels high. The plan's four semitones
+  either way breaks four presets (FACTS 52). E, Lesson 10's do, would give Move do room both ways
+  (two lower, one or two higher), at the cost of three black keys.
 - No octave below is offered; the reading folds any octave, "any octave counts" (FACTS 55).
 
 ### The checkpoint: dose, retries and readings
 
-- The dose: Merc's run, then the singer's; the take waits up to 6 s for a voice; one more run at
-  the same tempo ("Again") and one faster pass ("Again, faster"), each once a visit, only after
-  "Easy" or "Workable"; never after "Effortful" or "Uncomfortable"; at most three takes a visit, as
-  Lesson 9 (FACTS 57).
+- The dose: Merc's run, then the singer's; the take waits up to 6 s for a voice; one more run
+  ("Again", or "Again, smaller" after the full run) and one faster pass ("Again, faster"), each once
+  a visit, only after "Easy" or "Workable"; never after "Effortful" or "Uncomfortable"; at most three
+  takes a visit, as Lesson 9. **To confirm:** that makes at most three sung runs a visit, two read
+  and the faster pass, where Lesson 9 caps its sung ladders at two: 6.75 + 6.75 + 4.05 s at most,
+  less with the smaller run (FACTS 57).
 - **The band and the reading**: each note in its own 0.75 s slot, octave-folded, against Lessons 3
   and 9's band, 35 cents either side; the plan proposed 60, Lesson 16's. A note is read after its
   first 0.15 s and needs 0.45 s of steady voice, where Lesson 9's 1.5 s notes need 0.3 s and 0.6 s:
@@ -471,9 +501,10 @@ decision there carries here.
 
 ### The faster pass
 
-- **Is 0.45 s a note gentle enough?** "Again, faster": Merc's run at 0.45 s a note, 4.05 s, then the
-  count-in on do and the guide at the same tempo; nothing listens and nothing is scored; offered once, only after "Easy" or "Workable". Its
-  Easy and Workable line names the task, never the voice: "That's the next notch up." (FACTS 63).
+- **Is 0.45 s a note gentle enough?** "Again, faster": Merc's run, the one last sung, at 0.45 s a
+  note, 4.05 s (3.15 s for the smaller), then the count-in on do and the guide at the same tempo;
+  nothing listens and nothing is scored; offered once, only after "Easy" or "Workable". Its Easy and
+  Workable line names the task, never the voice: "That's the run, faster." (FACTS 63).
 
 ### The feelings and the Wrap
 
@@ -481,8 +512,9 @@ decision there carries here.
   "Uncomfortable" no more runs and the rest card (FACTS 59, 60).
 - The practice card: Scale Runner on Pentatonic, an echo of six notes, each 0.7 s, then 2 s to
   answer at its starting level, in the octave it plays; Staccato Precision, up to eight notes, each
-  0.2 s, then 1.5 s, in the octave it plays. Both are sung, so the rest card names Scale Runner for
-  later and drops Staccato Precision (FACTS 64 to 67, 72).
+  0.2 s, then 1.5 s at its starting level, shorter if its level rises, in the octave it plays. Both
+  are sung, so the rest card names Scale Runner for later and drops Staccato Precision (FACTS 64 to
+  67, 72).
 
 ### Proposed, not applied: the four answers to "How did that feel?"
 

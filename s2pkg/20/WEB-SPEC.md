@@ -3,10 +3,10 @@
 The Lesson 20 page is the web lesson for "Runs and the pentatonic scale": written steps, two toys on
 the step deck's stage (Lesson 4's staircase and the run toy, Merc's run as beads on a string, with
 the staff as a switch), one research predict, the four words, a sung checkpoint scored on the page,
-two quizzes (the recall and the quick check) and the lesson explorer. Copy is in
-[LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is a text-only package: no film
-exists for Lesson 20, so the page has no Watch section and the masthead's anchors are Lesson, Sing
-it and Explorer.
+the run or a smaller one, two quizzes (the recall and the quick check) and the lesson explorer.
+Copy is in [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is a text-only
+package: no film exists for Lesson 20, so the page has no Watch section and the masthead's anchors
+are Lesson, Sing and Explorer.
 
 It is built on the kit (`src/features/lessons/kit/`) as Season 2's kit PR leaves it (SEASON-2 § 8.2
 item 1): the season structure, the staff toy with both clefs and the lesson plumbing. Like every
@@ -21,8 +21,10 @@ it, it is Lesson 9's, unchanged unless this spec says otherwise (Lesson 9 WEB-SP
 One object carries the lesson: Lesson 4's staircase becoming a run. In Step 1 it loses fa and ti,
 and both of its semitone risers go with them; in Step 2 the same five notes start on la; from Step 3
 the five are Merc's run, do re mi so la so mi re do, drawn as nine beads on a string on the pitch
-line, spaced in time, drawn closer as the tempo rises, each bead still in its band; in Sing it the
-learner's line joins the beads. It is the card's signature (FACTS 4).
+line, spaced in time, drawn closer as the tempo rises, each bead still in its band, while an
+illustrated singer's smudged run slips out of the bands; in Sing it the learner's line joins the
+beads.
+It is the card's signature (FACTS 4).
 
 Its public home is `mercurypitch.com/learn/20` (SEASON-2 § 7 item 1): a hand-written document
 `learn/20.html` with its module in `src/features/lessons/lesson-20/`, wired as Lesson 15's page is.
@@ -44,24 +46,26 @@ wordmark, and the motion rules (Lesson 15 WEB-SPEC, Look). On this page:
   time. A bead glows while its note sounds. The learner's line in Sing it is singer violet
   `#a78bfa`, which means a singer only, and a band's edge lights mint `#80ffca` with the words "IN
   THE BAND" while the line sits inside it (`drawLitEdge`), so the word, not the colour, carries it.
-  Gold `#ffd84d`, "the fit", is not used: the band is the landing zone.
+  Play it smudged's illustrated singer, in Step 3, is a violet line too, labelled "An illustration"
+  as Lesson 9's illustrated landing is, and sounds in the soft tone, never in Merc's voice (FACTS
+  82a). Gold `#ffd84d`, "the fit", is not used: the band is the landing zone.
 - **The staircase** keeps Lesson 4's drawing (Lesson 4 WEB-SPEC, Toys 1), with a number in place of
-  T or S on each riser (Toys 1). **The house** marks do, never a colour
-  (`src/features/lessons/kit/home-glyph.ts:1-13`).
+  T or S on each riser and each stair's syllable printed in ink over its letter (Toys 1). **The
+  house** marks do, never a colour (`src/features/lessons/kit/home-glyph.ts:1-13`).
 - **The staff**, when its switch is on, is Lesson 15's: chrome lines, clefs and noteheads, a
-  notehead ink `#e6edf3` while its note sounds; the sharp on F♯ in ink, beside its note; the
-  staccato dots, with Staccato on, in ink.
+  notehead ink `#e6edf3` while its note sounds; the sharp on F♯ in ink, beside its note. It draws no
+  staccato dot (FACTS 30, 47).
 - Merc's blue `#58a6ff` and Tavi's orange `#ff7448` are their own: their bubbles, and in Sing it the
   still of the one who sings.
 - **No decorative staves or clefs** anywhere on the page: on this page a staff is always music
   (SEASON-2 § 1.5 item 7).
 
 What moves: Merc and Tavi's idle loops; while something the learner started plays, the lit beads
-and stairs, the string drawn bead to bead, the house sliding with Slide or moving to la, and in
-Sing it the guide's glow and the learner's line. Under `prefers-reduced-motion`, or with the
-masthead's Pause animations on, Merc and Tavi stop, a bead lights without a swell, the string and
-the line draw whole, and the house jumps to where it ends; what the learner starts still sounds
-(WCAG 2.2.2).
+and stairs, the string drawn bead to bead, the smudged run's violet line, the house sliding with
+Slide or moving to la, and in Sing it the guide's glow and the learner's line. Under
+`prefers-reduced-motion`, or with the masthead's Pause animations on, Merc and Tavi stop, a bead
+lights without a swell, the string and the lines draw whole, and the house jumps to where it ends;
+what the learner starts still sounds (WCAG 2.2.2).
 
 ## Sections
 
@@ -111,12 +115,12 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
    question 4, shown to everyone (Toys 8; FACTS 7).
 4. **Four words you'll meet**: Run, Pentatonic scale, Minor pentatonic and Agility, each with its
    definition and its play, Agility's none (Toys 4).
-5. **Steps**: the step deck, four steps, the staircase (Steps 1 and 2) and the run toy (Steps 3 and
-   4) stuck beside the text (Toys 1 and 5), Step 3's mix-up card in its text, a Go deeper drawer in
-   Steps 1 and 2 (Toys 7).
-6. **Sing it**, `#sing`: the comfort check, the voice choice, the warm-up, Your turn with Move do,
-   the take on Sing it's chart, the reading lines, "How did that feel?", Again and Again, faster
-   (Toys 6).
+5. **Steps**: the step deck, four steps, the staircase (Steps 1 and 2) and the run toy (Steps 3
+   and 4) stuck beside the text (Toys 1 and 5), Step 3's mix-up card in its text, a Go deeper
+   drawer in Steps 1 and 2 (Toys 7).
+6. **Sing it**, `#sing`: the comfort check, the voice choice, the warm-up, Your turn with the run
+   choice and Move do, the take on Sing it's chart, the reading lines, "How did that feel?", Again
+   (or Again, smaller) and Again, faster (Toys 6).
 7. **Quick check**: four questions (Toys 8).
 8. **Wrap**: the three lines, the one-sentence challenge, the practice card in the version Sing
    it's ending picks (Practice links), the next-lesson card with its still (Toys 9), and free play,
@@ -127,49 +131,64 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,230 words on `scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 149 (FACTS 3). The page runs about 15 minutes: 9.37 minutes of reading at
-238 words a minute and about 5.9 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
+The learner copy is 2,221 words on `scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 158 (FACTS 3). The page runs about 15 minutes: 9.33 minutes of reading at
+238 words a minute and about 6.1 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words", as every Season 1 page from Lesson 3 is. The
 chip's figure is an estimate until the run toy and the take are timed in their lab, as SEASON-2 §
 1.3 asks; the chip is then set from the lab. Each step's own text, with its Try and its Notice,
-runs 97 to 120 words (Steps 1 to 4: 119, 111, 120 and 97), inside § 4.2's 50 to 120 a step. Two
+runs 82 to 120 words (Steps 1 to 4: 119, 111, 120 and 82), inside § 4.2's 50 to 120 a step. Two
 parts carry more beside it:
 
-- **Step 3, 208 words with its mix-up card**, which sits in the step whose toy shows the tempos.
-- **Sing it, 525 words.** It carries the series' singing lines, Lessons 3 and 9's word for word and
-  not cut.
+- **Step 3, 204 words with its mix-up card**, which sits in the step whose toy shows the tempos.
+- **Sing it, 545 words.** It carries the series' singing lines, Lessons 3 and 9's word for word and
+  not cut, and the choice of the smaller run.
 
 **The built page.** The hints, status lines and labels are stage directions in LESSON.md and are not
 counted, as in the text packages of Lessons 9 to 23. A built page writes them in the open and counts
-them, and on this page they come to about 140 words, counted from LESSON.md's stage directions and
-this spec's toys: the cold open's sound-off hint, 13; the toys' visible labels, 34 (Step 1's "Play
-up", "Leave out fa and ti", "Start lower" and "Start higher"; Step 2's "Major · Minor"; the run toy's
-"Tempo", its five notches, "Play the run", "See it on the staff" and "Staccato · Legato"); Sing it's
-lines, 70 (the readout "Do is D3", the take's status, the one sound-off hint, the no-voice line and
-"Start again", the faster pass's status and the stored-voice line); the quizzes' "Right." and "Not
-quite.", about 12; the next-lesson card's "Coming later" and "See it on the map", 7. The research
-predict has no lock hints, the bead and stair names are drawn on canvas, and Sing it has one
-sound-off hint for every button, not one a button as Lesson 9's has, which is what keeps this page
-under Lesson 8's measured 174 to 206 (Lesson 8 FACTS 4). The built page then lands near 2,370, just
-under the cap. **If it runs over**, the first cut is Step 4, as the lead's answer has it: its last
-sentence first, "On the staff, a dot over or under a note asks for staccato (Lesson 18).", 15 words,
-with the staff's staccato dots; then the step whole, 106 words, with the run toy's Staccato ·
-Legato, the second drill staying on the practice card under "For short notes" (FACTS 3, 31).
+them, and on this page they come to about 151 words, counted from LESSON.md's stage directions and
+this spec's toys:
+
+- the cold open's sound-off hint, 13;
+- the toys' visible labels, 37: Step 1's "Play up", "Leave out fa and ti", "Start lower" and "Start
+  higher"; Step 2's "Major · Minor"; the run toy's "Tempo", its five notches, "Play the run", "See
+  it on the staff", "Play it smudged" and "Staccato · Legato";
+- the smudged run's label, "An illustration", 2;
+- the stairs' printed names, 16 at most, a syllable and a letter on each of eight stairs (Toys 1);
+- Sing it's lines, 64: the take's status, "Start on do when you're ready.", the one sound-off hint,
+  the no-voice line and "Start again", the faster pass's status, the stored-voice line and the
+  listening path's "Choose a voice: it picks who sings.";
+- the quizzes' "Right." and "Not quite.", about 12;
+- the next-lesson card's "Coming later" and "See it on the map", 7.
+
+The research predict has no lock hints, the beads' names are drawn on canvas, Lesson 4's readout is
+hidden (Toys 1), "Do is D3" is the chart's summary for a screen reader, never printed, and Sing it
+has one sound-off hint for every button, not one a button as Lesson 9's has, which is what keeps
+this page under Lesson 8's measured 174 to 206 (Lesson 8 FACTS 4). The built page then lands near
+2,372, 7 under the cap.
+
+**Cuts.** To make room for the smaller run, Play it smudged and the stairs' printed names, the page
+has taken the first cut the package named, Step 4's last sentence, "On the staff, a dot over or
+under a note asks for staccato (Lesson 18).", 15 words, and the staff's staccato dots with it (FACTS
+3, 30); the reveal's last sentence and the take's status are trimmed too. **If the built page still
+runs over**, the next cuts, in order: Step 1's drawer's last sentence, "Where they occur, their step
+patterns tend to be alike.", 10 words; Step 2's drawer, "Blues", 23 words with its heading; then
+Step 4 whole, 91 words with its heading, with the run toy's Staccato · Legato, the second drill
+staying on the practice card under "For short notes" (FACTS 3, 31).
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                     | New in Lesson 20                                                                                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The staircase          | Lesson 4's staircase in the kit, as Lesson 21's kit work moves it (`lesson-04/stairs-toy.ts`), with its Slide; the kit's scales (`kit/major-scale.ts`); the house (`kit/home-glyph.ts`)    | Leave out fa and ti; a semitone count on each riser; Major · Minor, the five notes from do or from la, with the house moving; Play both and Play it on C    |
-| 2. The hero's pitch line  | The kit's band chart with rungs over slots (`kit/band-chart-rungs.ts`), the beads drawn as the run toy draws them (5)                                                                      | Two free plays, the run fast and slowly, Merc's for everyone                                                                                               |
-| 3. Predict widget         | The kit's predict (`kit/predict.ts`) as Lesson 3's research predict mounts it, no plays and no reveal, the reveal shown in `onChoice`; the tour's hold (`kit/tour-gate.ts`)                | The hero's own plays outside the predict; the lock hint hidden on the choice                                                                               |
-| 4. Four words             | The kit's words strip (`kit/words-strip.ts`), with the page's sound owner                                                                                                                  | Three plays and three small figures: beads on a string, the five-note staircase, the same five from la                                                     |
-| 5. The run toy            | The kit's band chart and rungs over slots; Merc's contour voice (`kit/sound.ts`); Lesson 15's staff toy for the staff switch                                                               | The bead style: a bead on each rung and the string between them; Tempo's five notches; Staccato · Legato; the staff switch's stemless run and staccato dots |
-| 6. Sing it                | Lesson 9's Sing it, its take and its flow, moved into the kit (`lesson-09/sing-take.ts`, `lesson-09/ladder-flow.ts`); `kit/comfort.ts`, `kit/voice-choice.ts`, `kit/take.ts`, `kit/move-do.ts` | Nine 0.75 s slots and the reader's two options; Move do higher only; Again, faster, the unscored pass                                                      |
-| 7. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                | Two items, one drawer each in Steps 1 and 2                                                                                                                |
-| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`); Lesson 9's `l09-q2` and Lesson 10's `l10-q4`, imported                                                                                                     | Ids and keys; quick check 4's play                                                                                                                         |
-| 9. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                               | One still: Lesson 21's opening, which plays nothing                                                                                                        |
+| Toy                       | Reuses                                                                                                                                                                                                                 | New in Lesson 20                                                                                                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. The staircase          | Lesson 4's staircase in the kit, as Lesson 21's kit work moves it (`lesson-04/stairs-toy.ts`), with its Slide; the kit's scales (`kit/major-scale.ts`); the house (`kit/home-glyph.ts`); the kit's signs (`signsHtml`) | Leave out fa and ti; a semitone count on each riser; each stair's syllable printed over its letter, with no names switch; Major · Minor, the five notes from do or from la, with the house moving; Play both and Play it on C |
+| 2. The hero's pitch line  | The kit's band chart with rungs over slots (`kit/band-chart-rungs.ts`), the beads drawn as the run toy draws them (5)                                                                                                  | Two free plays, the run fast and slowly, Merc's for everyone                                                                                                                                                                  |
+| 3. Predict widget         | The kit's predict (`kit/predict.ts`) as Lesson 3's research predict mounts it, no plays and no reveal, the reveal shown in `onChoice`; the tour's hold (`kit/tour-gate.ts`)                                            | The hero's own plays outside the predict; the lock hint hidden on the choice                                                                                                                                                  |
+| 4. Four words             | The kit's words strip (`kit/words-strip.ts`), with the page's sound owner                                                                                                                                              | Three plays and three small figures: beads on a string, the five-note staircase, the same five from la                                                                                                                        |
+| 5. The run toy            | The kit's band chart and rungs over slots; the kit's contour voice (`kit/sound.ts`), Merc's "ooh" and the soft tone; Lesson 15's staff toy for the staff switch                                                        | The bead style: a bead on each rung and the string between them; Tempo's five notches; Play it smudged, an illustrated singer's line; Staccato · Legato; the staff switch's stemless run                                      |
+| 6. Sing it                | Lesson 9's Sing it, its take and its flow, moved into the kit (`lesson-09/sing-take.ts`, `lesson-09/ladder-flow.ts`); `kit/comfort.ts`, `kit/voice-choice.ts`, `kit/take.ts`, `kit/move-do.ts`                         | The run choice; nine or seven 0.75 s slots and the reader's two options; Move do higher only; Again, faster, the unscored pass                                                                                                |
+| 7. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                                            | Two items, one drawer each in Steps 1 and 2                                                                                                                                                                                   |
+| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`); Lesson 9's `l09-q2` and Lesson 10's `l10-q4`, imported                                                                                                                                 | Ids and keys; quick check 4's play, E minor pentatonic                                                                                                                                                                        |
+| 9. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                           | One still: Lesson 21's opening, which plays nothing                                                                                                                                                                           |
 
 ### 1. The staircase (Steps 1 and 2)
 
@@ -180,28 +199,42 @@ It plays as Lesson 4's does, the soft tone at 0.45 s a note with the last note 0
 stair is a real button that plays its note and says its syllable and name on focus ("Stair 3, mi, E
 3"), as Lesson 4's do (`src/features/lessons/lesson-04/stairs-toy.ts:5-8`).
 
+- **What each stair shows**: its syllable, and under it its letter, both printed, with no names
+  switch. Lesson 4's stairs show one name in the page's names mode, Letters, Numbers or Do-re-mi
+  (`src/features/lessons/lesson-04/stairs-words.ts:5-11`); this page needs two at once, since Step
+  1's text speaks in syllables and its Notice in letters, and Step 2 speaks in both. Letters follow
+  each scale's own spelling as the kit spells it: from D, F♯ and C♯; on the Slide's other black-key
+  starts, the kit's D♭, E♭, A♭ and B♭ major with flats, and F major's B♭
+  (`src/features/lessons/kit/major-scale.ts:6-10`; FACTS 10). Every ♯ and ♭ prints through
+  `signsHtml` (`src/features/lessons/kit/notes.ts:221-227`), the sign shown and hidden from a screen
+  reader, its word after it for one. Lesson 4's visible readout, "C major · no black keys", and its
+  white-key note are hidden on this page, since the printed names say what they said; its summary
+  and its polite line stay, for a screen reader only (`learn/04.html:761-772`; FACTS 26).
 - **Step 1**: Play up (the major scale), **Leave out fa and ti** (a switch, off at first) and
   Lesson 4's Slide with Start lower and Start higher, its slider running C3 to B3 for the lower
-  voice and C4 to B4, Lesson 4's own range, for the higher. On, Leave out fa and ti takes away fa's and
-  ti's treads; the stairs left close up, and the two risers that held a semitone each go: mi to so
-  and la to do are drawn as single risers of three semitones. Every riser carries its size as a
-  number, 2 or 3 (1 for a semitone, with the switch off), in place of Lesson 4's T and S, since a
-  riser of three is neither (`src/features/lessons/lesson-04/stairs-draw.ts:36`). Play up then plays
-  the five with the top do, 3.15 s. The inline play, Play C major, then the five, plays the major
-  scale (4.05 s), 0.5 s of quiet and the five (3.15 s), 7.7 s, with the switch moving as it plays.
-  Slide is silent, as in Lesson 4; from D the five are D, E, F♯, A and B, and their names show on
-  focus. The step's Try reads LESSON.md's.
+  voice and C4 to B4, Lesson 4's own range, for the higher. On, Leave out fa and ti takes away fa's
+  and ti's treads, with their names; the stairs left close up, and the two risers that held a
+  semitone each go: mi to so and la to do are drawn as single risers of three semitones. Every
+  riser carries its size as a number, 2 or 3 (1 for a semitone, with the switch off), in place of
+  Lesson 4's T and S, since a riser of three is neither
+  (`src/features/lessons/lesson-04/stairs-draw.ts:36`). Play up then plays the five with the top
+  do, 3.15 s. The inline play, Play C major, then the five, plays the major scale (4.05 s), 0.5 s of
+  quiet and the five (3.15 s), 7.7 s, with the switch moving as it plays. Slide is silent, as in
+  Lesson 4; from D the five print do, re, mi, so and la over D, E, F♯, A and B, as Step 1's Notice
+  reads them. The step's Try reads LESSON.md's.
 - **Step 2**: the five notes only, with **Major · Minor** (Major at first) and the house on do.
   Minor moves the house from C to A below it, A2 (or A3), and the staircase draws the same five
-  from A to A: A, C, D, E, G and A, the first riser three semitones (FACTS 24, 27). **Play both**
-  plays C, D, E, G, A, C, then 0.5 s of quiet, then A, C, D, E, G, A, the house moving as the
-  second begins, 6.8 s; **Play it on C** plays C, E♭, F, G, B♭ and C, the minor pentatonic with C
-  as do, its stairs named do, me, fa, so, te and do, 3.15 s (FACTS 25). Slide is hidden: the step is
-  about C and A.
-- **Labels and lines**: each stair's name is spoken as the kit's notes spell it, E♭ and B♭ in Play
-  it on C ("Stair 2, me, E flat 3"), sharps everywhere else (FACTS 10). The polite status says each
-  change in words: "Fa and ti left out: five notes, steps of 2, 2, 3, 2 and 3 semitones." and
-  "Minor: the same five notes from A, steps of 3, 2, 2, 3 and 2."
+  from A to A: A, C, D, E, G and A, the first riser three semitones, named do, me, fa, so, te and
+  do, since minor is sung from do (FACTS 24, 27). **Play both** plays C, D, E, G, A, C, then 0.5 s
+  of quiet, then A, C, D, E, G, A, the house moving as the second begins, 6.8 s; **Play it on C**
+  plays C, E♭, F, G, B♭ and C, the minor pentatonic with C as do, 3.15 s, the stairs showing do,
+  me, fa, so, te and do over C, E♭, F, G, B♭ and C while it plays and A's five again after it
+  (FACTS 25). Slide is hidden: the step is about C and A.
+- **Labels and lines**: each stair's name is spoken as it is printed: E♭ and B♭ in Play it on C
+  ("Stair 2, me, E flat 3"), F♯ from D ("Stair 3, mi, F sharp 3") and each Slide start's own
+  sharps or flats (FACTS 10). The polite line says each change in words: "Fa and ti left out: five
+  notes, steps of 2, 2, 3, 2 and 3 semitones." and "Minor: the same five notes from A, steps of 3,
+  2, 2, 3 and 2."
 
 ### 2. The hero's pitch line
 
@@ -235,7 +268,8 @@ calls a choice wrong. There is no "Now play the other one." and no play inside t
   `src/features/lessons/kit/tour-gate.ts:57-69`), as on Lesson 23's page, since Step 3's text and
   its mix-up card give the answer and the tour scrolls to the steps (FACTS 1a).
 - No step's toy holds anything back: nothing in the staircase or the run toy sounds, draws or reads
-  out how practice should go (FACTS 1a).
+  out how practice should go. Play it smudged shows what a smudged run is, as the hero's fast play
+  shows what a fast run is, and says nothing of how to practise (FACTS 1a).
 
 ### 4. Four words
 
@@ -249,18 +283,27 @@ everyone, before the voice choice.
 ### 5. The run toy (Steps 3 and 4)
 
 New, `lesson-20/run-toy.ts`, on the kit's band chart and its rungs over slots (What the kit and the
-app still need, item 7): the run as Merc's rungs over their slots, each rung's band 35 cents either side with Merc's steady line at its
-centre, drawn in the bead style, new to `kit/band-chart-rungs.ts`: a bead on the steady line at the
-start of each slot and the string joining bead to bead. The window runs from a semitone under do to
-a semitone over la, 11 semitones; the time axis is fixed, 6.75 s across, so each tempo draws the same
-nine beads over a shorter span, closer together, their heights unchanged (FACTS 39). It sings in the
-learner's voice: Merc from D3, or Tavi from D4 (FACTS 8), the kit's contour voice, held on each note
-and glided between them over 50 ms (`src/features/lessons/kit/sound.ts:15-20`).
+app still need, item 7): the run as Merc's rungs over their slots, each rung's band 35 cents either
+side with Merc's steady line at its centre, drawn in the bead style, new to
+`kit/band-chart-rungs.ts`: a bead on the steady line at the start of each slot and the string
+joining bead to bead. The window runs from a semitone under do to a semitone over la, 11 semitones;
+the time axis is fixed, 6.75 s across, so each tempo draws the same nine beads over a shorter span,
+closer together, their heights unchanged (FACTS 39). It sings in the learner's voice: Merc from D3,
+or Tavi from D4 (FACTS 8), the kit's contour voice, held on each note and glided between them over
+50 ms (`src/features/lessons/kit/sound.ts:15-20`).
 
 - **Step 3**: **Tempo**, a segmented control with five notches, "0.75 s", "0.6 s", "0.45 s", "0.3
   s" and "0.2 s" (a note), at 0.6 s at first; moving it is silent and redraws the slots. **Play the
-  run** sings the run at the notch's tempo, each bead glowing as its note sounds (5.40, 4.05 and
-  2.70 s at the Try's three notches). **See it on the staff** (below).
+  run** sings the run at the notch's tempo, each bead glowing as its note sounds (5.40 and 2.70 s at
+  the Try's two notches). **Play it smudged** moves Tempo to 0.2 s (and in free play Staccato ·
+  Legato to Legato, since its notes glide), then plays an illustrated singer's run from D3 (or D4),
+  1.80 s, in the soft tone, never in Merc's voice, drawn live as a violet line over Merc's beads
+  and labelled "An illustration" (FACTS 82a). Each of its notes glides for 0.12 s of its 0.2 s and
+  lands short: re 20 cents flat, mi 50, so 45 and la 60 on the way up; so 45 and mi 50 sharp on the
+  way down, re 25 and do 15 at the end. The four notes that land light their edges, "IN THE BAND",
+  and the five that slip out of their bands do not, so the Notice's "notes slip out of their bands"
+  is what the chart shows. Nothing of Merc's plays, nothing scores it, and the line stays until the
+  next play. **See it on the staff** (below).
 - **Step 4**: **Staccato · Legato** (Legato at first), the tempo held at 0.45 s and Tempo hidden.
   Staccato sings each note for 0.15 s, its own voice with its own start, a note every 0.45 s, 3.75
   s; each rung is drawn 0.15 s wide with the gap after it, and no string joins the beads. Legato
@@ -271,14 +314,16 @@ and glided between them over 50 ms (`src/features/lessons/kit/sound.ts:15-20`).
 - **See it on the staff**: a switch, off at first, in Steps 3 and 4 and in free play. On, Lesson
   15's staff toy appears under the beads in the learner's clef, bass for the lower voice and treble
   for the higher, and the next play writes each note as it sounds: nine stemless noteheads in
-  order, F♯ with its own sharp to its left, no key signature, no ledger line, and with Staccato on a
-  staccato dot with each notehead. The written run stays after the play, and each notehead lights
+  order, F♯ with its own sharp to its left, no key signature, no ledger line, and no staccato dot,
+  with Staccato on or off. The written run stays after the play, and each notehead lights
   as its note sounds on any later play; switched on before any play, the staff shows its clef and
   nothing more until the run plays, so the sound always comes first. Off, the staff goes and the
-  beads stay (FACTS 47).
+  beads stay (FACTS 47). Play it smudged leaves the staff as it was: the staff writes the run, not
+  a singer's miss.
 - **Labels and lines**: each bead says its syllable and name on focus ("Bead 3, mi, F sharp 3");
-  the polite status says what plays, "The run at 0.45 seconds a note." and "The run, staccato.".
-  Nothing in the run toy listens.
+  the polite status says what plays, "The run at 0.45 seconds a note.", "The run, staccato." and
+  "An illustration: a smudged run, five of its nine notes outside their bands.". Nothing in the run
+  toy listens.
 
 ### 6. Sing it
 
@@ -287,62 +332,88 @@ need, item 5), with the run in place of the ladder; every state, rule and line n
 Lesson 9's (Lesson 9 WEB-SPEC, Toys 4).
 
 1. **Comfort check**, **voice choice**, **Just listen today** and the **warm-up**: Lesson 9's states
-   1 to 4 and their lines, word for word, with "Merc sings the run" (FACTS 41 to 46). Just listen
-   today offers Play Merc's run, in the chosen voice, and nothing listens.
-2. **Your turn and briefing**: LESSON.md's Your turn text, the stop line, "What this does", **Move
-   do** and **Play Merc's run** and **Start**, the only control that asks for the microphone.
-   - Sing it's chart is a band chart in `.sing-chart` (FACTS 81) with the run's nine rungs over
-     0.75 s slots in the bead style, faint until Merc sings; each rung named on the chart by its
-     syllable, and the chart's summary saying where do is ("Do is D3").
+   1 to 4 and their lines, word for word, with "Merc sings the run" (FACTS 41 to 46); after Just
+   listen today with no voice stored, the line above the voice buttons is "Choose a voice: it picks
+   who sings.", Lesson 9's with "who" for "the Merc who", since Tavi sings for the higher voice.
+   Just listen today offers the run choice, Move do and Play Merc's run, in the chosen voice, and
+   nothing listens.
+2. **Your turn and briefing**: LESSON.md's Your turn text with its two controls, the run choice and
+   **Move do**; the stop line, "What this does", **Play Merc's run** and **Start**, the only control
+   that asks for the microphone.
+   - **The run choice**: Lesson 9's ladder choice with this page's runs, two buttons with
+     `aria-pressed`, "The run: up to la" (pressed at first) and "Smaller: up to so", the smaller
+     run do re mi so mi re do, seven notes (FACTS 50, 51). Your turn's "If the top feels high, sing
+     the smaller run." is the way past a top that feels high, as Lesson 9's smaller ladder is. The
+     run choice and Move do can change before Start or Start again, and before Again; never during
+     a take.
+   - Sing it's chart is a band chart in `.sing-chart` with the pressed run's rungs over 0.75 s slots
+     in the bead style, nine or seven, faint until Merc sings, each rung named on the chart by its
+     syllable. Its window runs from a semitone under do to a semitone over the run's top, 11
+     semitones for the run and 9 for the smaller, as Lesson 9's live chart follows its ladder (FACTS
+     81), and its summary says where do is, for a screen reader ("Do is D3").
    - **Move do**: Lesson 4's control as Lesson 9 has it, a group labelled "Move do:" with "lower"
      and "higher", with this page's reach, `{ lower: 0, higher: 3 }` for the lower voice and
      `{ lower: 0, higher: 4 }` for the higher (`MoveReach`,
-     `src/features/lessons/kit/move-do.ts:29-36`; FACTS 52): "lower" is `aria-disabled` from the
-     start, never `disabled`, and a press on it does nothing. The rungs, their names and the
+     `src/features/lessons/kit/move-do.ts:29-36`; FACTS 52), one reach for both runs, so changing
+     run never puts do out of range. "lower" rests at its end at D, `aria-disabled`, never
+     `disabled`, so a press there does nothing; after any press of "higher" it is the way back.
+     Both buttons stay: the kit marks an end `aria-disabled` so that the keyboard's place stays on
+     it (`src/features/lessons/kit/move-do.ts:8-12`), and Lesson 9's flow keeps Move do at its ends
+     as the one exception to "absent, never disabled"
+     (`src/features/lessons/lesson-09/ladder-flow.ts:15-18`). The rungs, their names and the
      chart's window move with do.
-   - With sound off, Play Merc's run, Start, Start again, Again and Again, faster play nothing and
-     ask for nothing, and one hint shows for all of them: "Sound is off, so nothing played. Turn
-     sound on to hear Merc's run, then press it again." Sound turned off while Merc sings, before
-     the take opens, ends the take uncounted, as on Lesson 9's page.
-3. **Merc sings**: the run in the chosen voice, at 0.75 s a note, 6.75 s, each bead glowing as he
-   sings it; the other Merc listens.
-4. **Take**: at least 0.4 s after Merc's last note, with every sound held off, the status reads
-   "Your turn: start on do when you're ready. Move on each time the next bead lights." The take
-   waits up to 6 s for the first voiced frame, then runs nine 0.75 s slots from it, 6.75 s (FACTS
-   50, 53). Before the voice starts do's bead glows; from the first voiced frame each slot's bead
-   glows in turn: that is the guide. The violet line draws live, folded around the glowing bead's
-   note, with Lesson 9's octave tag.
-5. **Reading**: the ladder reader over the nine slots, `slotSec` 0.75, with the two new options,
-   `attackSec` 0.15 and `steadySec` 0.45, each the lab's to tune (FACTS 56); one line a note,
-   `rungLine` with the labels Do, Re, Mi, So, La, So again, Mi again, Re again and Do again (FACTS
-   58); each bead whose note landed lights its edge, "IN THE BAND". No voice within 6 s: Lesson 9's
-   line with this task's cue, "We didn't hear you start that time. Start on do when its bead
-   lights.", with **Start again** while the visit has had fewer than three takes, and no feeling
-   question.
+   - With sound off, Play Merc's run, Start, Start again, Again, Again, smaller and Again, faster
+     play nothing and ask for nothing, and one hint shows for all of them: "Sound is off, so nothing
+     played. Turn sound on to hear Merc's run, then press it again." Sound turned off while Merc
+     sings, before the take opens, ends the take uncounted, as on Lesson 9's page.
+3. **Merc sings**, or Tavi for the higher voice: the pressed run, at 0.75 s a note, 6.75 s (5.25 s
+   for the smaller), each bead glowing as it sounds; the one who does not sing listens.
+4. **Take**: at least 0.4 s after the last note, with every sound held off, the status reads "Start
+   on do when you're ready.", shorter than Lesson 9's, since Your turn has said "Move on as each
+   bead lights". The take waits up to 6 s for the first voiced frame, then runs one 0.75 s slot a
+   note from it: nine slots, 6.75 s, or seven, 5.25 s (FACTS 50, 53). Before the voice starts do's
+   bead glows; from the first voiced frame each slot's bead glows in turn: that is the guide. The
+   violet line draws live, folded around the glowing bead's note, with Lesson 9's octave tag.
+5. **Reading**: the ladder reader over the slots, `slotSec` 0.75, with the two new options,
+   `attackSec` 0.15 and `steadySec` 0.45, which it passes on to the one-take reader, each the lab's
+   to tune (FACTS 56); one line a note, `rungLine` with the labels Do, Re, Mi, So, La, So again, Mi
+   again, Re again and Do again for the run, and Do, Re, Mi, So, Mi again, Re again and Do again
+   for the smaller (FACTS 58); each bead whose note landed lights its edge, "IN THE BAND". No voice
+   within 6 s: Lesson 9's line with this task's cue, "We didn't hear you start that time. Start on
+   do when its bead lights.", with **Start again** while the visit has had fewer than three takes,
+   and no feeling question.
 6. **How did that feel?**: Lesson 3's four answers through `mountFeelings`, locking, after each take
-   with voice (FACTS 59). Easy or Workable: the count (`countLine`), the tricky line where it applies
-   (FACTS 61), then **Again** if the visit's one Again is unused and fewer than three takes have
-   been made, **Again, faster** if the visit's one faster pass is unused, and **Done for today**.
-   Merc celebrates once when every heard note landed. Effortful and Uncomfortable: LESSON.md's
-   lines, no more runs, Move do and Start go, and the Wrap shows the rest card (FACTS 60).
-7. **Again**: states 3 to 6 again, the same run at the same tempo, Move do free to change before it.
-8. **Again, faster**: Merc's run at 0.45 s a note, 4.05 s, then the count-in on do
-   (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-67`), then the guide lights each bead in
-   turn at 0.45 s, 4.05 s; the status reads "Sing along as each bead lights, if you like."
-   Nothing listens: the microphone is not opened, the chart draws no line, the beads keep the lit
-   edges the last take left them, and nothing is counted (FACTS 63). Then **How did that feel?**:
-   Easy or Workable, "That's the next notch up.", with Again if still unused and Done for today;
-   Effortful and Uncomfortable end the singing as in state 6. Merc does not celebrate. Again,
-   faster is offered once a visit.
-9. **No microphone**: LESSON.md's line; Play Merc's run sings it, then the guide's sweep at 0.75 s,
-   and nothing listens. With no Web Audio at all the same card shows, and its plays light the beads
-   in silence, as on Lesson 9's page. The Wrap shows the practice card.
+   with voice (FACTS 59). Easy or Workable: the count (`countLine`), "of your 9" or "of your 7", and
+   the tricky line where it applies (FACTS 61); then, if the visit's one Again is unused and fewer
+   than three takes have been made, **Again** (the same run, named "Again: the run" or "Again: the
+   smaller run") and, after the full run, **Again, smaller** too (named "Again, smaller run", which
+   holds its visible label), either using the one Again, as Lesson 9's do; **Again, faster** if the
+   visit's one faster pass is unused; and **Done for today**. Merc celebrates once when every heard
+   note landed. Effortful and Uncomfortable: LESSON.md's lines, no more runs, the run choice, Move
+   do and Start go, and the Wrap shows the rest card (FACTS 60).
+7. **Again**: states 3 to 6 again, the same run, or the smaller after Again, smaller, at the same
+   tempo, Move do free to change before it. Once a smaller run has been sung, the full run is
+   offered no more, as Lesson 9's ladder can only get smaller within a visit (FACTS 57).
+8. **Again, faster**: the run last sung, at 0.45 s a note, 4.05 s (3.15 s for the smaller), then the
+   count-in on do (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-67`), then the guide lights
+   each bead in turn at 0.45 s; 9.1 s in all (7.3 s). The status reads "Sing along as each bead
+   lights, if you like." Nothing listens: the microphone is not opened, the chart draws no line,
+   the beads keep the lit edges the last take left them, and nothing is counted (FACTS 63). Then
+   **How did that feel?**: Easy or Workable, "That's the run, faster.", with Again (and Again,
+   smaller after the full run) if still unused, and Done for today; Effortful and Uncomfortable end
+   the singing as in state 6, with no count. Merc does not celebrate. Again, faster is offered once
+   a visit.
+9. **No microphone**: LESSON.md's line; the run choice and Move do stay, Play Merc's run sings the
+   pressed run, then the guide's sweep at 0.75 s, and nothing listens. With no Web Audio at all the
+   same card shows, and its plays light the beads in silence, as on Lesson 9's page. The Wrap shows
+   the practice card.
 
 **The flow rule**: `lesson-20/run-flow.ts`, pure, in the moved flow's form (Lesson 9's
 `ladder-flow.ts`, `src/features/lessons/lesson-09/ladder-flow.ts:1-40`): from the comfort answer,
-the voice, the sound, the microphone, Move do's place, the takes so far, whether Again and the
-faster pass have gone and the answers to "How did that feel?", it gives the card's stage, its
-controls, its lines and the Wrap's card, so every branch is unit-tested without a microphone.
+the voice, the sound, the microphone, the run pressed, Move do's place, the takes so far (each one's
+run and what it came to), whether Again and the faster pass have gone and the answers to "How did
+that feel?", it gives the card's stage, its controls, its lines and the Wrap's card, so every branch
+is unit-tested without a microphone.
 
 ### 7. Go deeper drawers
 
@@ -358,9 +429,9 @@ The kit's quiz. The recall imports Lesson 9's question object `l09-q2`
 again", opening `/learn/09#step-3` and `/learn/10#step-5` in a new tab (`recallStepHref`,
 `src/features/lessons/kit/quiz.ts:142`), as words while that page is not live (`linkAway`,
 `src/features/lessons/kit/quiz.ts:191`). The quick check's ids are `l20-q1` to `l20-q4`, three
-answers each in a shuffled order, LESSON.md's words; question 4 plays A3, C4, D4, E4, G4 and A4 in
-the soft tone, 3.15 s (FACTS 76). Storage keys: `fyp-l20-recall-seed`, `fyp-l20-recall-v1`,
-`fyp-l20-seed`, `fyp-l20-quiz-v1`.
+answers each in a shuffled order, LESSON.md's words; question 4 plays E4, G4, A4, B4, D5 and E5 in
+the soft tone, 3.15 s, E minor pentatonic, not the sound the Minor pentatonic word plays (FACTS
+76). Storage keys: `fyp-l20-recall-seed`, `fyp-l20-recall-v1`, `fyp-l20-seed`, `fyp-l20-quiz-v1`.
 
 ### 9. Tease still
 
@@ -373,28 +444,30 @@ Lesson 21's page is live the card says "Coming later" and "See it on the map".
 ## Audio
 
 Every sound is synthesised in the browser by the kit's `Sound`, after a tap, at the frequencies of
-FACTS 79; nothing is recorded or streamed. Merc's "ooh" sings every run, Tavi's an octave higher for
-the higher voice; the staircase, the four words' scales and quick check 4 are in the soft tone
-(FACTS 37). One sound at a time across the page: any play stops whatever else plays, the take holds
-every sound off while it listens (`Sound.hush`), and leaving Sing it ends a take uncounted, as on
-Lesson 9's page.
+FACTS 79; nothing is recorded or streamed. Merc's "ooh" sings every run but the illustration, Tavi's
+an octave higher for the higher voice; the staircase, the four words' scales, Play it smudged and
+quick check 4 are in the soft tone (FACTS 37, 82a). One sound at a time across the page: any play
+stops whatever else plays, the take holds every sound off while it listens (`Sound.hush`), and
+leaving Sing it ends a take uncounted, as on Lesson 9's page.
 
-| Sound                            | Notes                                         | Timing                                              | Voice |
-| -------------------------------- | --------------------------------------------- | --------------------------------------------------- | ----- |
-| Cold open, Play the run fast     | D3 E3 F♯3 A3 B3 A3 F♯3 E3 D3                  | 0.2 s a note, 1.80 s                                | Merc  |
-| Cold open, Play it slowly        | the same                                      | 0.6 s a note, 5.40 s                                | Merc  |
-| Run (word)                       | the same                                      | 0.6 s a note, 5.40 s                                | Merc  |
-| Pentatonic scale (word)          | C4 D4 E4 G4 A4 C5                             | 0.45 s a note, the last 0.9 s, 3.15 s               | soft  |
-| Minor pentatonic (word)          | A3 C4 D4 E4 G4 A4                             | the same, 3.15 s                                    | soft  |
-| Step 1, C major, then the five   | C3 to C4, then C3 D3 E3 G3 A3 C4 (or C4 up)   | 4.05 s, 0.5 s quiet, 3.15 s; 7.7 s                  | soft  |
-| Step 2, Play both                | C D E G A C, then A2 C3 D3 E3 G3 A3 (or up)   | 3.15 s, 0.5 s quiet, 3.15 s; 6.8 s                  | soft  |
-| Step 2, Play it on C             | C3 E♭3 F3 G3 B♭3 C4 (or C4 up)                | 3.15 s                                              | soft  |
-| Step 3, the run at each notch    | D3 run (or D4)                                | 6.75, 5.40, 4.05, 2.70 or 1.80 s                    | voice |
-| Step 4, staccato, then legato    | the same                                      | 0.15 s notes every 0.45 s, 3.75 s; 0.5 s; 4.05 s    | voice |
-| Sing it, Merc's run and the take | D3 run (or D4), moved by Move do              | 0.75 s a note, 6.75 s; nine 0.75 s slots            | voice |
-| Sing it, the warm-up             | Lesson 3's sigh and slide                     | Lesson 9's                                          | voice |
-| Sing it, Again, faster           | the run, the count-in on do, the guide        | 4.05 s, 0.8 s and 0.2 s quiet, 4.05 s; 9.1 s        | voice |
-| Quick check 4                    | A3 C4 D4 E4 G4 A4                             | 3.15 s                                              | soft  |
+| Sound                            | Notes                                                           | Timing                                                        | Voice |
+| -------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------- | ----- |
+| Cold open, Play the run fast     | D3 E3 F♯3 A3 B3 A3 F♯3 E3 D3                                    | 0.2 s a note, 1.80 s                                          | Merc  |
+| Cold open, Play it slowly        | the same                                                        | 0.6 s a note, 5.40 s                                          | Merc  |
+| Run (word)                       | the same                                                        | 0.6 s a note, 5.40 s                                          | Merc  |
+| Pentatonic scale (word)          | C4 D4 E4 G4 A4 C5                                               | 0.45 s a note, the last 0.9 s, 3.15 s                         | soft  |
+| Minor pentatonic (word)          | A3 C4 D4 E4 G4 A4                                               | the same, 3.15 s                                              | soft  |
+| Step 1, C major, then the five   | C3 to C4, then C3 D3 E3 G3 A3 C4 (or C4 up)                     | 4.05 s, 0.5 s quiet, 3.15 s; 7.7 s                            | soft  |
+| Step 2, Play both                | C D E G A C, then A2 C3 D3 E3 G3 A3 (or up)                     | 3.15 s, 0.5 s quiet, 3.15 s; 6.8 s                            | soft  |
+| Step 2, Play it on C             | C3 E♭3 F3 G3 B♭3 C4 (or C4 up)                                  | 3.15 s                                                        | soft  |
+| Step 3, the run at each notch    | D3 run (or D4)                                                  | 6.75, 5.40, 4.05, 2.70 or 1.80 s                              | voice |
+| Step 3, Play it smudged          | D3 run (or D4), each note gliding and landing short (FACTS 82a) | 0.2 s a note, 1.80 s                                          | soft  |
+| Step 4, staccato, then legato    | D3 run (or D4)                                                  | 0.15 s notes every 0.45 s, 3.75 s; 0.5 s; 4.05 s              | voice |
+| Sing it, Merc's run and the take | D3 run (or D4), moved by Move do                                | 0.75 s a note, 6.75 s; nine 0.75 s slots                      | voice |
+| Sing it, the smaller run         | D3 E3 F♯3 A3 F♯3 E3 D3 (or D4), moved by Move do                | 0.75 s a note, 5.25 s; seven 0.75 s slots                     | voice |
+| Sing it, the warm-up             | Lesson 3's sigh and slide                                       | Lesson 9's                                                    | voice |
+| Sing it, Again, faster           | the run last sung, the count-in on do, the guide                | 4.05 s, 0.8 s and 0.2 s quiet, 4.05 s; 9.1 s (smaller: 7.3 s) | voice |
+| Quick check 4                    | E4 G4 A4 B4 D5 E5                                               | 3.15 s                                                        | soft  |
 
 "Voice" is Merc from D3 for the lower voice and Tavi from D4 for the higher, the stored or chosen
 voice; the count-in plays do at the soft tone's half level (FACTS 63). A phone's speaker plays D3,
@@ -403,11 +476,12 @@ voice; the count-in plays do at the soft tone's half level (FACTS 63). A phone's
 ## Merc and Tavi
 
 Lesson 15's pair and poses. Tavi's bubble carries the cold open's sincere guess, "To sing it fast,
-you just practise it fast, don't you?", and Merc's "Let's see what one study found." (FACTS 13). Both
-listen (`mercListen`, `src/features/lessons/kit/merc-duo.ts:207`) while a run plays, in the hero,
-the steps and Sing it; in Sing it the one who does not sing listens to the take, and Merc
-celebrates once after "Easy" or "Workable" when every heard note landed, never after Again, faster
-(FACTS 59). Neither speaks a line the page does not print.
+you just practise it a lot, don't you?", the predict's first choice in Tavi's words, and Merc's
+"Let's see what one study found." (FACTS 13). Both listen (`mercListen`,
+`src/features/lessons/kit/merc-duo.ts:207`) while a run plays, in the hero, the steps and Sing it,
+Play it smudged's illustration among them; in Sing it the one who does not sing listens to the
+take, and Merc celebrates once after "Easy" or "Workable" when every heard note landed, never after
+Again, faster (FACTS 59). Neither speaks a line the page does not print.
 
 ## Practice links: what exists and what needs engineering
 
@@ -417,10 +491,11 @@ celebrates once after "Easy" or "Workable" when every heard note landed, never a
 - **Scale Runner**, then choose Pentatonic: the major pentatonic, six notes up or down from the
   preset's anchor, one note at a time, each played, then a window to sing it back, 2 s at its
   starting level and longer if it eases, scored in the octave it plays (FACTS 64 to 66). The card
-  says it is an echo, good for tuning the pattern, and that this page is where the run is sung.
-- **Staccato Precision**, the second drill: short notes from the major scale in a random order, eight
-  at its starting level, each sung back in the octave it plays (FACTS 67). The rest card drops it,
-  since it asks for the voice (FACTS 72).
+  says it is an echo, good for tuning the pattern, that this page is where the run is sung, and
+  that it starts from the voice range saved in Settings, under Singing Voice Range (FACTS 66).
+- **Staccato Precision**, the second drill: short notes from the major scale, shuffled, eight at its
+  starting level, fewer and longer if it eases and shorter if its level rises, each sung back in
+  the octave it plays (FACTS 67). The rest card drops it, since it asks for the voice (FACTS 72).
 - Not linked: `/exercises/speed-scales`, Scale Runner at level 8 (FACTS 68).
 
 **When SEASON-2 § 5.2 item 13 ships**: Scale Runner's scale-type launch field and minor pentatonic,
@@ -437,9 +512,10 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
 - `n: 20`, `lane: 'voice'`, `title: 'Runs and the pentatonic scale'`, `short: 'Runs'`, `topics:
 ['S18', 'T16']`, with their names as SEASON-2 § 4.1 gives them: S18, "Agility: staccato, runs,
   pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:752`), and T16, "Pentatonic and
-  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:739`); the hook word for word (FACTS 1). `minutes: 15` and `page: '/learn/20'` once the page is built, under
-  the drafts' comment in Lesson 9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3
-is.` The entry decides nothing about being live: the draft list and the console do.
+  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:739`); the hook word for word (FACTS 1).
+  `minutes: 15` and `page: '/learn/20'` once the page is built, under the drafts' comment in Lesson
+  9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` The entry decides nothing
+  about being live: the draft list and the console do.
 - `pr.link`: `href` `/pitch-training?lesson=20`, `addr` `mercurypitch.com/pitch-training`, `label`
   "Exercises" and `note` "then tap Scale Runner", which the explorer's card prints after the address
   as "Exercises, then tap Scale Runner" (`practiseMarkup`,
@@ -476,35 +552,44 @@ are listed so this page's needs are in one place.
    draft's included (`lessonPages`, `tools/draft-lessons.ts:82-90`); `/learn/20` and
    `/learn/20.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint
    budgets. The lesson pages' route already takes any two digits (`LESSON_PAGE`,
-   `src/lesson-gate.ts:134`). The draft line, in the draft list's form
-   (`src/features/lessons/kit/drafts.ts:39`): `20: "Lessons 5, 9 and 10's pages, and the vocal
-coach's look at the sung checkpoint"`. Releasing it is deleting that line, then listing the page
-   in the sitemap and llms.txt (SEARCH.md § 12 item 3).
+   `src/lesson-gate.ts:134`). The draft line, in the draft list's form for a voice lesson with a
+   scored checkpoint, as Lesson 9's (`src/features/lessons/kit/drafts.ts:38`):
+   `20: "Lessons 5, 9 and 10's pages, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`.
+   Releasing it is deleting that line, then listing the page in the sitemap and llms.txt (SEARCH.md § 12 item 3).
 2. **Seasons in the kit** (SEASON-2 § 6.2 item 1): Season 2's data in its own module, Lesson 20's
    entry and its three edges, the masthead's season from the data, and the explorer's tab per
    season.
 3. **The staff toy** (SEASON-2 § 6.2 item 2), Lesson 15's page, with both clefs; this page asks it
-   for stemless noteheads in order, a sharp before a note, and the staccato dot, the same dot
-   Lesson 18's staff marks need (Lesson 18's plan, its Step 4).
+   for stemless noteheads in order and a sharp before a note, and for no staccato dot, which is
+   Lesson 18's (FACTS 30).
 4. **Lesson 4's staircase in the kit** (Lesson 21 WEB-SPEC, What the kit and the app still need,
    item 5), with three new states for this page: Leave out fa and ti, a number on each riser in
    place of T and S, and Major · Minor, the five from do or from la with the house moving; Play both
-   and Play it on C as plays of those states. Pure helpers with unit tests: the steps of a set of
-   degrees, a rotation from la, and a scale's spelling with flats for a minor pentatonic.
+   and Play it on C as plays of those states. Two options as well: both names on every stair, the
+   syllable over the letter through `signsHtml`, in place of the names mode, and the readout and the
+   white-key note hidden (Toys 1). Pure helpers with unit tests: the steps of a set of degrees, a
+   rotation from la, the minor syllables from do, and a scale's spelling with flats for a minor
+   pentatonic.
 5. **Lesson 9's scored take in the kit**: `lesson-09/sing-take.ts` and `lesson-09/ladder-flow.ts`
    move into the kit, as Lesson 12's sing flow moves for the sing-alongs (Lesson 15 WEB-SPEC, What
-   the kit and the app still need, item 6), with the slot length, the reader's options, the rung
+   the kit and the app still need, item 6), with the two exercises of the choice (Lesson 9's full
+   and smaller ladders, this page's two runs), the slot length, the reader's options, the rung
    labels, the offers after Easy or Workable and Move do's reach as options; Lesson 9's page then
    imports them. This page adds a second offer, Again, faster, an unscored guide with the count-in.
-6. **The ladder reader's two options** (FACTS 56): `readLadder`
-   (`src/features/lessons/kit/take.ts:320-337`) reads every slot with the kit's 0.3 s attack and
-   0.6 s steady stretch (`ATTACK_SEC`, `src/features/lessons/kit/take.ts:50`), which no 0.75 s slot
-   can hold, so `LadderOptions` gains `attackSec` and `steadySec`, defaulting to the two constants,
-   so Lesson 9's reading does not change; with unit tests on synthetic frames: a steady 0.6 s note
-   in a 0.75 s slot reads, a 0.4 s one does not, and the defaults read Lesson 9's frames as today.
+6. **The reader's two options** (FACTS 56): `readLadder`
+   (`src/features/lessons/kit/take.ts:320-337`) reads each slot through `readTake`
+   (`src/features/lessons/kit/take.ts:126-147`), which drops the kit's 0.3 s attack and needs 0.6 s
+   of steady voice itself (`ATTACK_SEC` and `STEADY_SEC`, `src/features/lessons/kit/take.ts:49-52`,
+   read at `:133-134`), more than a 0.75 s slot holds. So `readTake` takes an options argument with
+   `attackSec` and `steadySec`, defaulting to the two constants, and `LadderOptions` gains the same
+   two, which `readLadder` passes on to it; Lessons 3 and 9's readings do not change. Unit tests on
+   synthetic frames: a steady 0.6 s note in a 0.75 s slot reads, a 0.4 s one does not, and the
+   defaults read Lesson 9's frames, and Lesson 3's one-note takes, as today.
 7. **The bead style** (Toys 5): the bead and the string as an option of
-   `kit/band-chart-rungs.ts`, slots that follow a tempo, and Staccato's short rungs, with unit tests
-   on the geometry; the run toy's controls stay in `lesson-20/run-toy.ts`.
+   `kit/band-chart-rungs.ts`, slots that follow a tempo, Staccato's short rungs, and an illustrated
+   singer's line drawn over the beads from a contour, with no microphone, as Lesson 9's illustrated
+   landing is drawn; with unit tests on the geometry. The run toy's controls and Play it smudged's
+   contour stay in `lesson-20/run-toy.ts`.
 8. **No decorative staff** (Look; Lesson 15 WEB-SPEC, What the kit and the app still need, item 7).
 9. **The lesson copy and the team's notes**: Lesson 20's tease set on Lesson 20 with its variant
    and note (`src/features/lessons/kit/lesson-copy.ts:10-12`; FACTS 5b), and Lesson 20's signature
@@ -528,32 +613,36 @@ coach's look at the sung checkpoint"`. Releasing it is deleting that line, then 
 
 ## Decisions for the owner
 
-1. **The two teases** (FACTS 5, 5b): both settled at the lead's reviews on 1 November 2026, each with
-   an alternative the console can switch to later.
-
-The head title is proposed in Sections, 2, as Lessons 15 to 23 propose theirs: "Pentatonic scale and
-singing fast runs | MercuryPitch" (53), with "How to sing fast runs: the pentatonic scale |
-MercuryPitch" (56) beside it if the lead prefers; neither says what the study found. Do on D, Move do
-higher only, the faster pass's tempo and Step 4 are the vocal coach's to confirm before publishing
+None open. The two teases (FACTS 5, 5b) were settled at the lead's reviews on 1 November 2026, each
+with an alternative the console can switch to later, and the lead's review of 2 November 2026
+settled the rest. The head title is proposed in Sections, 2, as Lessons 15 to 23 propose theirs:
+"Pentatonic scale and singing fast runs | MercuryPitch" (53), with "How to sing fast runs: the
+pentatonic scale | MercuryPitch" (56) beside it if the lead prefers; neither says what the study
+found. Do on D, Move do higher only, the smaller run and its top line, the faster pass's tempo and
+its line, Step 3's practice advice and Step 4 are the vocal coach's to confirm before publishing
 (LESSON.md, For the vocal coach), not the owner's.
 
 ## Edge cases
 
 - **Sound off**: the hero's plays light the beads in time and show the hint; the predict works, since
-  it needs no sound; the toys draw as they would play; Sing it's buttons play nothing and show the
-  one hint, and nothing opens the microphone (Toys 6, state 2).
+  it needs no sound; the toys draw as they would play, Play it smudged's line among them; Sing it's
+  buttons play nothing and show the one hint, and nothing opens the microphone (Toys 6, state 2).
 - **No microphone, or permission refused**: Sing it falls back to the listening path with LESSON.md's
   line; the practice card, not the rest card, shows, since nothing was sung (Toys 6, state 9).
 - **A take with no voice**: no feeling question, Start again while fewer than three takes; after the
   last, the line keeps no cue (Toys 6, state 5).
 - **A take with voice but too little in a slot**: that note is left out of the count, which reads "N
   of the M notes we heard" (FACTS 61).
+- **The smaller run**: chosen before Start, it has Merc sing seven notes, the take read seven slots
+  and the count say "of your 7"; once a smaller run has been sung, the full run's button is gone
+  and Again offers only the smaller; the faster pass plays the run last sung (FACTS 50, 57, 63).
 - **A singer who starts late or races**: the slots run from the first voiced frame at 0.75 s each;
   a singer ahead of the guide is read in the slots the guide sets, so a note sung early is read
   against the note before it. The lab tunes the attack and steady options against real runs before
   the page is built (FACTS 56).
-- **Move do at its end**: "lower" from the start, and "higher" after three (or four) presses, are
-  `aria-disabled`, and a press neither moves do nor stops what plays (FACTS 52).
+- **Move do at its end**: "lower" at D, where every visit starts, and "higher" after three (or four)
+  presses, are `aria-disabled`, and a press neither moves do nor stops what plays; changing run
+  keeps do where it is, since one reach serves both runs (FACTS 52).
 - **Voice changed mid-visit**: the staircase, the run toy, the staff's clef and Sing it's chart follow
   the new voice at once; a take in progress ends uncounted first.
 - **Leaving Sing it during a take**, or hiding the tab: the take ends uncounted and asks no feeling,
@@ -573,17 +662,24 @@ parts it adds:
 
 1. **Steps**: the major pentatonic's degrees give 2, 2, 3, 2 and 3; read from la, 3, 2, 2, 3 and 2;
    C minor pentatonic spells C, E♭, F, G, B♭, C; from D the five are D, E, F♯, A, B (FACTS 22 to 25).
-2. **The run against the presets**: D3 to B3 and D4 to B4 against `VOCAL_RANGES`, every note at
+2. **The runs against the presets**: D3 to B3 and D4 to B4 against `VOCAL_RANGES`, every note at
    least 2 semitones inside every preset of its voice; every Move do position the reach allows
-   passes, every one beyond it fails; the octave below fails (FACTS 51, 52, 55).
+   passes, for the run and for the smaller run, D3 to A3 and D4 to A4, and every one beyond it fails
+   for the run; the octave below fails (FACTS 51, 52, 55).
 3. **The reader's options**: with `attackSec` 0.15 and `steadySec` 0.45, a steady note filling a
    0.75 s slot reads and lands; one 0.4 s long reads "not steady"; a note an octave down folds and
-   says so within 50 cents; with no options, Lesson 9's fixtures read exactly as today (FACTS 56).
+   says so within 50 cents; with no options, `readLadder` reads Lesson 9's fixtures and `readTake`
+   Lesson 3's exactly as today (FACTS 56).
 4. **The count**: nine slots, seven landed of nine heard, gives "This time, 7 of your 9 notes landed
-   in the band." and the tricky line; a slot with no steady voice is left out (FACTS 61).
+   in the band." and the tricky line; seven slots, the smaller run's, read with the labels Do, Re,
+   Mi, So, Mi again, Re again and Do again and count "of your 7"; a slot with no steady voice is
+   left out (FACTS 58, 61).
 5. **Sounds**: every fixed note's frequency equals `hz(m)` for FACTS 79; the runs last 6.75, 5.40,
-   4.05, 2.70 and 1.80 s, the staircase's scale 4.05 s and its five 3.15 s, Step 1's play 7.7 s,
-   Play both 6.8 s, the staccato run 3.75 s, the faster pass 9.1 s (FACTS 80).
+   4.05, 2.70 and 1.80 s and the smaller run 5.25 s, the staircase's scale 4.05 s and its five
+   3.15 s, Step 1's play 7.7 s, Play both 6.8 s, the staccato run 3.75 s, the faster pass 9.1 s
+   (7.3 s for the smaller), quick check 4 E4 to E5 in 3.15 s (FACTS 80). Play it smudged is the soft
+   tone, never Merc's voice, 1.80 s: nine notes, each gliding 0.12 s and landing at FACTS 82a's
+   offsets, five of them more than 35 cents off.
 6. **The predict**: no play inside it; the reveal shows on the choice, with either choice, opening
    on the answer; the lock hint hides; the hero's two plays work before and after the choice and
    never reveal; nothing on the page says "Now play the other one." (FACTS 15).
@@ -591,13 +687,15 @@ parts it adds:
    `/learn/09#step-3` and `/learn/10#step-5`; no text in either names the study, a practice method,
    "slow" or "accurate" (FACTS 1a, 7).
 8. **The quick check**: ids `l20-q1` to `l20-q4`, three answers each, one right, LESSON.md's words;
-   no feedback line starts with "Right", "Yes" or "Correct" (FACTS 73 to 77).
+   question 4's notes are E4, G4, A4, B4, D5 and E5, not the Minor pentatonic word's; no feedback
+   line starts with "Right", "Yes" or "Correct" (FACTS 73 to 77).
 9. **Sing it's flow**, in Lesson 9's tests' form (`ladder-flow.test.ts` and its siblings): the voice
-   before anything plays; Again and Again, faster each once a visit, only after Easy or Workable;
-   at most three takes; the faster pass never opens the microphone, never counts and never moves
-   the lit edges; Effortful, Uncomfortable and Just listen today give the rest card, naming Scale
-   Runner and not Staccato Precision; no microphone gives the practice card (FACTS 57, 59, 60, 63,
-   72).
+   before anything plays; Again (or Again, smaller after the full run, either using it) and Again,
+   faster each once a visit, only after Easy or Workable; after a sung smaller run the full run is
+   offered no more; at most three takes; the faster pass plays the run last sung, never opens the
+   microphone, never counts and never moves the lit edges; Effortful, Uncomfortable and Just listen
+   today give the rest card, naming Scale Runner and not Staccato Precision; no microphone gives
+   the practice card (FACTS 57, 59, 60, 63, 72).
 
 Page tests, against a local or dev build, never production:
 
@@ -607,7 +705,8 @@ Page tests, against a local or dev build, never production:
 11. No planning text on the page: no topic code such as "S18", no "planned" or "for the team"
     (`src/e2e/learn-no-planning-text.spec.ts:22-40`).
 12. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
-    stage stuck, Tempo's notches and the staff switch among them (`src/e2e/learn-stage-fit.spec.ts:33-54`).
+    stage stuck, Tempo's notches, Play it smudged and the staff switch among them
+    (`src/e2e/learn-stage-fit.spec.ts:33-54`).
 13. The first-paint budgets for `learn/20.html`.
 14. The claims validator over LESSON.md and WEB-SPEC.md (`validateGuidedDynamicClaim`), 0 flagged
     lines, as Lessons 12 and 14 ran it (FACTS 85).
@@ -617,9 +716,11 @@ Page tests, against a local or dev build, never production:
 17. **The tour's hold**: on a first visit the welcome tour does not open before the predict's choice
     and opens after it; "Tour this page" opens it at once (Toys 3).
 18. **Nothing answers the predict before the choice**: at first paint, with no choice made, the
-    head, the hero, the recall, the four words and the step headings hold no "share", "correct",
-    "accurate", "slow" or "how long" beyond the predict's own choices, and the reveal is hidden
-    (FACTS 1a).
+    visible text of the head, the hero, the recall, the four words and the step headings holds no
+    "share", "correct", "accurate" or "how long" beyond the predict's own choices, and no "slow"
+    beyond the two play labels, "Play it slowly" and the Run word's "the run, slowly", which name a
+    tempo to hear (FACTS 1a); the recall's feedback lines, hidden until an answer, are not
+    first-paint text; and the reveal is hidden.
 
 ## Contract
 
@@ -632,8 +733,10 @@ real buttons over their drawings, and Tempo's notches a segmented control), visi
 dark theme with every colour a token and an explicit body background, sound only after a tap,
 localStorage only for per-viewer conveniences inside try/catch, and the whole page usable with no
 sound, no microphone, no WebGL and no storage (the toys and Sing it then say why they wait). Every ♯
-and ♭ the page prints in text (F♯ in Step 1 and Sing it, E♭ and B♭ in Step 2, the sharp on the
-staff) has a spoken name, the sign `aria-hidden` and a visually hidden word after it (`signsHtml`,
+and ♭ the page prints in text (F♯ in Step 1's Notice; E♭ and B♭ in Step 2's text; every letter the
+stairs print, F♯ and C♯ from D, the sharps and flats of the Slide's other starts, and E♭ and B♭
+during Play it on C (Toys 1); the sharp on the staff; and the next-lesson card's tease, F♯ and C♯)
+has a spoken name, the sign `aria-hidden` and a visually hidden word after it (`signsHtml`,
 `src/features/lessons/kit/notes.ts:221`); the figures' accessible names and every live region use
 words only, and every note is spoken with its letter and octave. The page stores the quiz seeds and
 records (Toys 8), `fyp-done` (`src/features/lessons/kit/progress.ts:12-15`), `fyp-voice`
@@ -641,22 +744,29 @@ records (Toys 8), `fyp-done` (`src/features/lessons/kit/progress.ts:12-15`), `fy
 masthead's Pause animations choice, `fyp-motion` (`src/features/lessons/kit/motion-switch.ts:12`),
 the steps the viewer reached, `fyp-pos` (`src/features/lessons/kit/position.ts:20`), and its record
 of the welcome tour, `fyp-tour` (`src/features/lessons/kit/tour-gate.ts:29`); nothing from the toys
-or the take but the voice and the Skip. The predict's choice, the toys' switches, Move do and the
-visit's Again and faster pass hold for the visit, in memory. The take's audio is analysed on the
-device and never recorded, kept or sent, and no analytics carry its notes, readings or feelings.
+or the take but the voice and the Skip. The predict's choice, the toys' switches, the run choice,
+Move do and the visit's Again and faster pass hold for the visit, in memory. The take's audio is
+analysed on the device and never recorded, kept or sent, and no analytics carry its notes, readings
+or feelings.
 
-The departures from ARTICLE-PLAN.md, each argued in FACTS and listed in LESSON.md's preamble:
-Lesson 5's chip (FACTS 2); the predict asking what "went with" better playing, its second choice
-"What share of their tries came out right", and Merc's shorter line (13, 14); Merc's fast run drawn
-as sung, each bead in its band (38); the recall asking Lesson 9's question 2 in place of Lesson 4's
-(7); the Run definition without "sung on one breath" (28); Step 1's Slide and riser counts (26);
-Step 3's Try for listening, with Lesson 9's study beside the pianists' and the plan called an
-inference (18, 19); Step 4 saying what Arneson says (29, 30); Move do higher only (52); the band at
-35 cents, not 60 (54); the reader's two options (56); the count and the faster pass's line in place
-of the plan's Easy and Workable line, and a faster pass that listens to nothing (61, 63); the
-practice card's account of both drills (64 to 67); the quick check's lines reworded where they used
-"so" as a conjunction, repeated the right answer or said "predict" (73 to 76); Go deeper with two items (32 to 36); the sound gate in Lesson 9's form, naming the voice and
-the microphone; and the next-lesson tease, Lesson 21's settled line (5).
+The departures from ARTICLE-PLAN.md, each argued in FACTS and all listed in FACTS 4, with the main
+ones named in LESSON.md's preamble: Lesson 5's chip (FACTS 2); the sound gate in Lesson 9's form,
+naming the voice and the microphone (1a); Tavi voicing the first choice's guess, "practise it a
+lot", and Merc's shorter line (13); the predict asking what "went with" better playing, its second
+choice "What share of their tries came out right" (14); Merc's fast run drawn as sung, each bead in
+its band, with the smudging shown in Step 3 as an illustrated singer's run, Play it smudged (38,
+82a); the recall asking Lesson 9's question 2 in place of Lesson 4's (7); the Run definition
+without "sung on one breath", and with "by step or by leap" (28); Step 1's Slide, its riser counts,
+"Leave out fa and ti" and both names on every stair (26); Step 3's Try for listening, with Lesson
+9's study beside the pianists', the plan called an inference, and the mix-up card's better idea the
+Wrap's (18 to 20); Step 4 saying what Arneson says, its line on the staccato dot cut (29, 30); the
+smaller run beside the full one, with a line for a top that feels high (50, 51); Move do higher
+only (52); the band at 35 cents, not 60 (54); the reader's two options (56); the count and "That's
+the run, faster." in place of the plan's Easy and Workable line, and a faster pass that listens to
+nothing (61, 63); the practice card's account of both drills (64 to 67); the quick check's lines
+reworded where they used "so" as a conjunction, repeated the right answer or said "predict", and
+question 4 on E minor pentatonic (73 to 76); the Wrap's third line reworded (78); Go deeper with two
+items (32 to 36); and the next-lesson tease, Lesson 21's settled line (5).
 
 Page QA before publishing adds, for this page, every check against a local or dev build, never
 production:
@@ -665,16 +775,18 @@ production:
   reader hears every bead and stair with its syllable, letter and octave, and each reading line in
   words.
 - At 390 x 844 every target is at least 44 px square and nothing scrolls sideways at 344, 360 and
-  375 px; the beads, their names and the staff fit the stage without overlap, in both clefs.
+  375 px; the beads, their names, the stairs' two names and the staff fit the stage without
+  overlap, in both clefs.
 - On a real phone, by ear and by eye (`docs/agent/DEVICE-DEBUGGING.md`): D3 and A2 audible on the
-  speaker; the fast run's nine notes each heard, with no smear; the staccato notes separate, with no
-  click; each bead lighting as its note starts; a real run read note by note, with the attack and
-  steady options set from the lab's runs.
+  speaker; the fast run's nine notes each heard, with no smear, and Play it smudged heard as
+  smudged beside it; the staccato notes separate, with no click; each bead lighting as its note
+  starts; a real run, and a real smaller run, read note by note, with the attack and steady options
+  set from the lab's runs.
 - The network panel stays quiet through Sing it: no request carries the take; the browser's
   microphone indicator shows only between Start and the take's end, and never in Again, faster.
 - The Wrap's practice card shows the rest card after "Effortful", "Uncomfortable" and "Just listen
   today", naming Scale Runner, and the practice card after every other ending; every link opens in a
   new tab.
-- The app-check sweep at phone and desktop width, with Sing it open in each state, the staircase in
-  each state, the run toy at every notch with the staff on, and the cold open before and after its
-  reveal.
+- The app-check sweep at phone and desktop width, with Sing it open in each state and with each
+  run, the staircase in each state with its printed names, the run toy at every notch with the
+  staff on and after Play it smudged, and the cold open before and after its reveal.
