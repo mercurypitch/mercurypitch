@@ -1302,6 +1302,24 @@ export function selectJamRoomMode(mode: JamRoomMode): void {
 }
 
 /**
+ * Catch one peer up on the room's drill and the mode it is sung in.
+ *
+ * Both reach a peer only when the host changes them, so somebody arriving
+ * later sat on a drill of their own, in unison, until the host touched
+ * something. This runs when their channel opens, not when they are
+ * announced: onPeerJoined fires before there is a channel to them, and a
+ * message sent then reaches everyone but the newcomer. It goes to them
+ * alone because taking a drill rewinds and stops a guest's transport, and
+ * an arrival must not stop the room already singing. A song room holds no
+ * drill, so nothing is sent there.
+ */
+function sendRoomDrillTo(peerId: string): void {
+  if (!jamIsHost()) return
+  const melody = jamExerciseMelody()
+  if (melody !== null) jamService?.sendMelody(melody, jamRoomMode(), peerId)
+}
+
+/**
  * How the room is split right now, and where I sit in it.
  *
  * Everyone computes this from the same sorted peer list, so no part
@@ -2270,6 +2288,9 @@ export function initJam() {
       }
     },
     onPeerChannelReady: (peerId) => {
+      // Ahead of the background, which returns early whenever the room has
+      // no capability to hand out, as most rooms have not.
+      sendRoomDrillTo(peerId)
       if (
         jamIsHost() &&
         jamBackgroundCapabilityNeedsRefresh(jamRoomBackgroundCapability())
