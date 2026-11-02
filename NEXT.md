@@ -2837,3 +2837,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   not 6.8, Test 8g impossible), 9 should fix, 11 nits. Calls: s2pkg/22-FIXPASS-MSG.md, NOT YET SENT.
 - No agents running now. The 05:43 UTC wake-up (trig_01YbZRrFjK6SfSgmeLK7y1sY) sends both fix
   passes (18 and 22) if get_session reads "allowed".
+
+## 2 Nov 04:16 UTC — check-in: container restarted, worktree gone; rebuilding
+
+- /dev/shm/s2plan was empty (another container restart). Local branch feat/season-2-plan is at
+  26d90e225 (safe). Rebuilding the worktree in the background; then restore lessons/18-read-a-line/
+  and lessons/22-vibrato/ from s2pkg/18/ and s2pkg/22/ (FACTS, LESSON, WEB-SPEC only).
+- No agents were running. The 05:43 wake-up still sends both fix passes if the rate limit allows.
