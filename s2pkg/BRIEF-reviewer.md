@@ -14,13 +14,18 @@ your own view, and only to check its claims.
 
 - The lesson's RESEARCH.md and ARTICLE-PLAN.md (the inputs), its card in
   `docs/plans/find-your-pitch/SEASON-2.md` § 3, and SEASON-2 § 1, § 4.3, § 5, § 6 and § 7 (decided
-  on 1 November 2026: every recommendation taken).
+  on 1 November 2026: every recommendation taken). The writer's lesson brief,
+  `.../scratchpad/s2pkg/BRIEF-<NN>.md`, holds the lead's answers to the plan's open questions (the
+  owner, 2 November: "use recommended"; the owner's and the vocal coach's review come later, so the
+  package must still list every line the coach signs off). A lesson that was not committed while the
+  writer worked may be cited in words; check those citations against that lesson as it now stands.
 - The house rules: `TEACHING-PLAYBOOK.md`, `MERC-BIBLE.md`, `CURIOSITY-MOMENTS.md` (§ 3, § 5),
   `HANDOFF.md` § 5 and § 6, `SEARCH.md` § 12, and the copy rules in the header of
   `src/features/lessons/kit/lesson-copy.ts`.
 - The model packages: `lessons/12-chords-four-chord-song/` and `lessons/14-phrasing-whole-song/`,
   and Season 2's reviewed ones on the branch: `lessons/15-staff/`, `lessons/17-note-lengths/`,
-  `lessons/19-threes-offbeats/` and `lessons/21-keys-circle/`. The writer's shared brief,
+  `lessons/19-threes-offbeats/`, `lessons/21-keys-circle/` and `lessons/23-perfect-tritone/`. The
+  writer's shared brief,
   `.../scratchpad/s2pkg/BRIEF-writer-common.md`, lists what their reviews caught: check each.
 - The app at `c60f0fdcb` (the branch's base; `docs/agent/INDEX.md` is the module map) for every app
   claim the package makes.

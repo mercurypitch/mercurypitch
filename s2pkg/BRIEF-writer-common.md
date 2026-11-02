@@ -11,41 +11,54 @@ are made: the owner took every recommendation in SEASON-2 § 7 on 1 November 202
 answers and drop the "Depends on decision" uncertainty. Also decided that day: a lesson film may run
 up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 
+Decided on 2 November 2026, when the owner asked for the rest of the season: "use recommended, my
+and vocal coach review comes later". So where your plan leaves a question open, take its
+recommended answer (your lesson's brief gives the lead's answers); where a recommended line turns
+out false or leaks, propose a true one and say why. Write every sung part in full and list every
+line the vocal coach must sign off in "For the vocal coach": nothing waits on the coach or the owner.
+
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `fe1ca2216`, on main `c60f0fdcb`. The worktree is in RAM: a container
-  restart empties it (it happened twice on 1 November). Copy your files to the scratchpad after every
-  save; if `/dev/shm/s2plan` is missing when you resume, say so and stop, and the lead re-makes it.
-  Write only your three files in your lesson folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`).
-  Leave RESEARCH.md and ARTICLE-PLAN.md as they are: they are the planning record. Where your
-  package departs from the plan, say so in LESSON.md's preamble or in FACTS.
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `b55beeb20`, on main `c60f0fdcb`.
+  Lessons 15, 17, 19, 21 and 23 are committed there. Write only your three files in your lesson
+  folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
+  they are: they are the planning record. Where your package departs from the plan, say so in
+  LESSON.md's preamble or in FACTS.
+- The worktree is in RAM: a container restart empties it (four times since 1 November). After you
+  save each file, copy it to
+  `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/s2pkg/<NN>/`
+  (make the folder), so finished work survives on disk. If `/dev/shm/s2plan` is missing when you
+  resume, say so and stop; the lead re-makes it.
 - Never edit a shared file (SEASON-2.md, CURRICULUM.md, MASTER-PLAN.md, CURIOSITY-MOMENTS.md,
   HANDOFF.md, SEARCH.md, another lesson's files) or any code. What the shared files or the code need
   goes in your hand-back note (below); the lead writes those entries.
-- No git at all (no add, commit, stash, checkout, reset). No pnpm, npm, builds, browsers or renders.
-  The two node scripts below use only node's built-ins and are fine to run.
-- `/dev/shm` is RAM and a container restart empties it. After you save each file, copy it to
-  `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/s2pkg/<NN>/`
-  (make the folder), so finished work survives on disk.
+- No git at all (no add, commit, stash, checkout, reset, log, diff, status). No pnpm, npm, builds,
+  browsers or renders. The two node scripts below use only node's built-ins and are fine to run.
 - Disk on / is short (about 600 MB). Do not download unless you must; prefer WebFetch. Anything
   downloaded goes in `/dev/shm/s2dl/<NN>/`, is read with `python3 -I` or a text extractor (never run
   anything from it), and is deleted when you have what you need.
+- Another writer may be working on a different lesson in the same worktree. Touch nothing of theirs.
+  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 16, Step 4"),
+  not by path and line, and list each such citation in your hand-back so the lead can bind it.
 
 ## Read first
 
 1. Your lesson's RESEARCH.md and ARTICLE-PLAN.md, whole.
 2. `docs/plans/find-your-pitch/SEASON-2.md`: § 1 whole, your lesson's card in § 3, § 4.3 (lesson
    prerequisites), your rows in § 5 (practise links), § 6 (production: the film kit, the web toy
-   kit, who sings), § 7 (decided) and § 8 (risks and order). `season-2/ARC-C-REPORT.md` ("Across
-   the arc" and your lesson) and `season-2/LEAD-REVIEW.md`.
+   kit, who sings), § 7 (decided) and § 8 (risks and order). `season-2/ARC-C-REPORT.md` or
+   `season-2/ARC-D-REPORT.md` ("Across the arc" and your lesson) and `season-2/LEAD-REVIEW.md`.
 3. The model packages, for structure, depth and voice: `lessons/12-chords-four-chord-song/` and
-   `lessons/14-phrasing-whole-song/` (all three files each; the most reviewed in the series), and
-   Season 2's own, `lessons/15-staff/`, `lessons/17-note-lengths/` and `lessons/19-threes-offbeats/`
-   (reviewed and fixed: the closest models for the staff toy, both clefs, the singing lines, rhythm on
-   the staff, the tap take, and a page where nothing is sung), and
-   `lessons/02-twelve-notes/LESSON.md` for a theory lesson's shape. Mirror their section order,
-   front matter and level of detail. Their FACTS preambles narrate a commit history; yours needs
-   only one line: app claims cite the code at `c60f0fdcb`, plan files at the branch head.
+   `lessons/14-phrasing-whole-song/` (all three files each; the most reviewed in Season 1), and
+   Season 2's own, all reviewed and fixed: `lessons/15-staff/` (the staff toy, both clefs, the voice
+   choice, a sing-along, the six-preset range table), `lessons/17-note-lengths/` (rhythm on the
+   staff, the tap take), `lessons/19-threes-offbeats/` (a page where nothing is sung),
+   `lessons/21-keys-circle/` (key signatures, Lesson 4's staircase in the kit) and
+   `lessons/23-perfect-tritone/` (the newest: one predict with the steps' toys locked until the
+   choice, a sing-along, the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
+   lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
+   preambles narrate a commit history; yours needs only one line: app claims cite the code at
+   `c60f0fdcb`, plan files at the branch head.
 4. `TEACHING-PLAYBOOK.md` (the rules, the claims rules, the house rules for voice safety),
    `MERC-BIBLE.md` (Merc and Tavi; Tavi's lines are sincere questions or guesses),
    `CURIOSITY-MOMENTS.md` (§ 3 the opening order, § 5 the decisions on hooks, teases and predicts),
@@ -91,8 +104,12 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
   both clefs from Lesson 15, counting with numbers ("1 and 2 and"), the American note-value names
   lead with the British named once where a lesson introduces them, and syllables as Lesson 4 spells
   them. Never write a model name, a scratchpad path or an agent id into a lesson file.
+- **Markdown the lead's formatter keeps**: inside a blockquote, keep each bracketed button label on
+  one line (a label wrapped across two lines gets mangled); and quote cited text without markdown
+  characters (asterisks, underscores, backticks), trimming the quote if you must, or the quote check
+  breaks once the file is formatted.
 
-## What the reviews of Lessons 15, 17, 19 and 21 caught (check these before you hand back)
+## What the reviews of Lessons 15 to 23 caught (check these before you hand back)
 
 - **Step headings leak too.** The masthead's lesson menu lists every step's heading from the first
   paint, and heads its card "Lesson NN · <Step 1's heading>"; on a phone it is the page's only menu.
@@ -100,7 +117,12 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
   would show the answer, hold the tour until the predict's choice (the kit's `holdTour`).
 - **What sits below the predict can be read before the choice**: the recall, the Words section, a
   toy's label. On a phone the predict's choices sit below the first screen, so a learner scrolls past
-  them. Keep the answer out of all of it, and list each in FACTS 1a's leak check.
+  them. Keep the answer out of all of it, and list each in FACTS 1a's leak check. Lesson 23's recall
+  printed "7 semitones: a perfect fifth" under a predict that turned on it, and had to be swapped.
+- **The steps' toys are below the predict too.** Anything a step's toy would sound, draw or read out
+  that answers the predict is locked until the choice (the kit's predict lock), or held back: Lesson
+  23's toy could sound F♯, fold the fifth and show black-key lanes before the choice, while four
+  places in the package said it could not.
 - **The built page counts more words.** A built page writes the hints and status lines in the open,
   about 150 words more than lesson-words counts in a text package (Lesson 8 FACTS 4). Aim for about
   2,230 words or fewer, so the built page fits the 2,379 cap without cuts; if you go over, name the
@@ -108,14 +130,13 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 - **Sung parts keep the rest card** (SEASON-2 § 1.4 item 4; HANDOFF § 5), in Lesson 8's or Lesson
   12's words, whichever fits; drills that ask for no voice stay on offer under it.
 - **Any range advice is checked against all six presets** (`VOCAL_RANGES`, the app's settings store):
-  an "octave lower" or a moved key must keep every preset of that voice at least two semitones inside
-  its floor and top, or the page must not offer it. Put the table in FACTS for the coach.
+  a key, an "octave lower" or a Move do must keep every preset of that voice at least two semitones
+  inside its floor and top, or the page must not offer it. Put the table in FACTS for the coach.
 - **Every app claim at `c60f0fdcb` is read in the code**, not taken from a drill's name or the plan:
   Lesson 17's plan had the click wrong (the Ear Lab's woodblock), and Lesson 15's had a tour and a
   page background it did not know about.
 - **No "Now play the other one."** The kit shows it after any heard play that does not reveal,
-  including a free play after the choice, so it misleads. Keep the locked-in hint until the reveal
-  (Lessons 19 and 21 both dropped it).
+  including a free play after the choice, so it misleads. Keep the locked-in hint until the reveal.
 - **A predict must not ask what an earlier lesson already answered.** Read the reveals, steps and
   quick checks of the lessons yours builds on: Lesson 21's first predict asked for D major's sharps,
   which Lesson 4's reveal gives, and had to move to A major's third sharp.
@@ -131,6 +152,9 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 - **When an earlier lesson's rule stops being true, say so where it breaks**: Lesson 17 taught that
   the bottom number names the beat, which is false in 6/8, so Lesson 19's Step 1 restates the old
   rule and says what changes.
+- **Claims stay as strong as their source.** How notes "sound" to everyone is a convention, not a
+  fact: Lesson 23 says the fifth "counts as settled" and the tritone "counts as restless". A claim
+  whose source nobody read comes out: Lesson 23 cut a sentence about a church ban on the tritone.
 
 ## Hand back
 
@@ -138,7 +162,8 @@ up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
 - `.../scratchpad/s2pkg/<NN>-HANDBACK.md`: the entries the shared files need (MASTER-PLAN § 11's
   line, the CURIOSITY-MOMENTS heading, the `kit/season.ts` entry and prerequisites, the hook and
   tease for `kit/lesson-copy.ts`), the kit and app work the page waits for, every departure from
-  ARTICLE-PLAN.md and why, and any question for the owner.
+  ARTICLE-PLAN.md and why, every citation of an uncommitted lesson made in words, and any question
+  for the owner.
 - Your final message: under 300 words, with the word count, the plan-cites result, the departures
   and the open questions.
 
