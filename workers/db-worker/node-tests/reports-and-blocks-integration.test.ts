@@ -405,6 +405,61 @@ describe('a block', () => {
     expect(reported.status).toBe(201)
   })
 
+  it('withholds names on a closed Legend’s podium either way, places kept', async () => {
+    seedChallenge()
+    seedBoardRun(ada, 90)
+    seedBoardRun(ben, 80)
+    seedBoardRun(cleo, 70)
+    const closed = await admin(`/api/weekly/${CHALLENGE_ID}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'closed' }),
+    })
+    expect(closed.status).toBe(200)
+    await block(ada, cleo)
+
+    const podium = async (viewer: Account | null) => {
+      const response =
+        viewer === null
+          ? await workerRequest('/api/weekly/archive')
+          : await authed(viewer, '/api/weekly/archive')
+      expect(response.status).toBe(200)
+      const body = (await response.json()) as {
+        archive: Array<{ id: string; results: { top3: unknown[] } }>
+      }
+      return body.archive.find((week) => week.id === CHALLENGE_ID)?.results.top3
+    }
+    const named = [
+      { userId: ada.userId, displayName: 'Ada Singer', best: 90, rank: 1 },
+      { userId: ben.userId, displayName: 'Ben Singer', best: 80, rank: 2 },
+      { userId: cleo.userId, displayName: 'Cleo Singer', best: 70, rank: 3 },
+    ]
+    const withheld = (place: (typeof named)[number]) => ({
+      best: place.best,
+      rank: place.rank,
+      displayName: null,
+      redacted: true,
+    })
+    // The block is Ada's, and it reaches Cleo's reading as far as Ada's.
+    expect(await podium(cleo)).toEqual([withheld(named[0]), ...named.slice(1)])
+    expect(await podium(ada)).toEqual([
+      ...named.slice(0, 2),
+      withheld(named[2]),
+    ])
+    expect(await podium(ben)).toEqual(named)
+    expect(await podium(null)).toEqual(named)
+  })
+
+  it('never lets a reader’s own podium be stored, or stand in for another’s', async () => {
+    const mine = await authed(cleo, '/api/weekly/archive')
+    expect(mine.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(mine.headers.get('Vary')).toBe('Authorization')
+    const anyones = await workerRequest('/api/weekly/archive')
+    expect(anyones.headers.get('Cache-Control')).toBe(
+      'private, max-age=0, must-revalidate',
+    )
+    expect(anyones.headers.get('Vary')).toBe('Authorization')
+  })
+
   it('says which league rows show a name, so a stand-in is never reported', async () => {
     seedLeague([
       [ada, 300],

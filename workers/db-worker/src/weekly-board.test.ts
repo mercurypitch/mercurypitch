@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { PlacedBoardEntry } from './weekly-board'
-import { BOARD_TOP_SIZE, boardTop } from './weekly-board'
+import type { PlacedBoardEntry, StoredPodiumPlace } from './weekly-board'
+import { BOARD_TOP_SIZE, boardTop, withholdNames } from './weekly-board'
 
 const singer = (rank: number, best: number): PlacedBoardEntry => ({
   rank,
@@ -67,5 +67,35 @@ describe('the top of the Legend’s board', () => {
 
     expect(top).toHaveLength(BOARD_TOP_SIZE)
     expect(top.at(-1)?.rank).toBe(10)
+  })
+})
+
+describe('a closed Legend’s podium, read by one singer', () => {
+  const podium: StoredPodiumPlace[] = [
+    { userId: 'singer-1', displayName: 'Singer 1', best: 95, rank: 1 },
+    { userId: 'singer-2', displayName: 'Singer 2', best: 90, rank: 2 },
+    // A week closed before podiums carried ids: nobody to withhold.
+    { displayName: 'Singer 3', best: 85 },
+  ]
+
+  it('withholds a name and its id, and keeps the place and the score', () => {
+    const { podium: next, changed } = withholdNames(
+      podium,
+      (userId) => userId !== 'singer-2',
+    )
+
+    expect(changed).toBe(true)
+    expect(next).toEqual([
+      podium[0],
+      { best: 90, rank: 2, displayName: null, redacted: true },
+      podium[2],
+    ])
+  })
+
+  it('hands the podium back untouched when every name may show', () => {
+    const { podium: next, changed } = withholdNames(podium, () => true)
+
+    expect(changed).toBe(false)
+    expect(next).toEqual(podium)
   })
 })
