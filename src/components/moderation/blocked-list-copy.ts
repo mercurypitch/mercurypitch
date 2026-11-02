@@ -8,6 +8,9 @@
 // undone, on either.
 
 import type { ModerationProblem } from '@/db/services/moderation-service'
+import { SERVER_WORDS, SUSPENDED_TITLE, suspendedContactUrl, } from './singer-sheet-copy'
+
+export { suspendedContactUrl }
 
 /** What a block does, over the list. */
 export const BLOCKED_ABOUT =
@@ -20,33 +23,56 @@ export const BLOCKED_EMPTY =
 /** While the list is read. */
 export const BLOCKED_LOADING = 'Loading the singers you blocked'
 
+/**
+ * What stands in for the list: why it could not be read, or that nobody is
+ * signed in to read it for (blocked-list-flow.ts).
+ */
+export type ListStop = ModerationProblem | 'signed-out'
+
 export interface ListFailedWords {
   title: string
   body: string
-  /** Signing in again is the way on, not trying again. */
-  signIn: boolean
+  /** The one way on: sign in, try again, or write to us. */
+  next: 'sign-in' | 'retry' | 'contact'
 }
 
-/** Why the list could not be shown. */
-export function listFailedWords(problem: ModerationProblem): ListFailedWords {
-  if (problem === 'refused') {
-    return {
-      title: 'Sign in again',
-      body: 'This device is no longer signed in to your account. Sign in again to see whom you blocked.',
-      signIn: true,
-    }
-  }
-  if (problem === 'account') {
-    return {
-      title: 'Blocking is for registered singers',
-      body: 'Sign in to your account to see whom you blocked.',
-      signIn: true,
-    }
-  }
-  return {
-    title: 'Could not load the singers you blocked.',
-    body: 'Check the connection and try again.',
-    signIn: false,
+const COULD_NOT_LOAD = 'Could not load the singers you blocked.'
+
+/** Why the list is not shown, and the way on. */
+export function listFailedWords(stop: ListStop): ListFailedWords {
+  switch (stop) {
+    case 'signed-out':
+      return {
+        title: 'Sign in to see whom you blocked',
+        body: 'Your blocks are kept with your account.',
+        next: 'sign-in',
+      }
+    case 'refused':
+      return {
+        title: 'Sign in again',
+        body: 'This device is no longer signed in to your account. Sign in again to see whom you blocked.',
+        next: 'sign-in',
+      }
+    case 'account':
+      return {
+        title: 'Blocking is for registered singers',
+        body: 'Sign in or create an account to block a singer and see whom you blocked.',
+        next: 'sign-in',
+      }
+    case 'suspended':
+      return {
+        title: SUSPENDED_TITLE,
+        body: 'A suspended account cannot see or change its blocks. If you think this is a mistake, tell us through the contact form.',
+        next: 'contact',
+      }
+    case 'server':
+      return { title: COULD_NOT_LOAD, body: SERVER_WORDS, next: 'retry' }
+    default:
+      return {
+        title: COULD_NOT_LOAD,
+        body: 'Check the connection and try again.',
+        next: 'retry',
+      }
   }
 }
 
@@ -61,6 +87,8 @@ export function unblockFailedWords(
       return `Sign in again to unblock ${name}.`
     case 'busy':
       return 'You have blocked or unblocked a lot of singers in the last hour. Try again later.'
+    case 'server':
+      return `Could not unblock ${name}. ${SERVER_WORDS}`
     default:
       return `Could not unblock ${name}. Check the connection and try again.`
   }

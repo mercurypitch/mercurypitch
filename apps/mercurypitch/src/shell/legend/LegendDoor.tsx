@@ -12,14 +12,17 @@
 // A board entry that names a singer ends in a "...": Report or Block, in
 // the singer sheet (slice 4b). Not the Founder's, nor the singer's own. A
 // singer blocked from here leaves the board at once, places kept, and the
-// board is read again. The past podiums are one line of words a row: no
-// room for a "..." a place, so a name there is reported by the contact
-// form; a singer this account blocked is withheld from them on the phone,
-// as the worker cannot (it reads them without an account).
+// board and the past podiums are read again. Each past podium place has a
+// line of its own, with a "..." where it names another singer, as on the
+// web; the archive is read with the session, so the worker withholds the
+// singers in a block with this account, either way (REQ-RB-014). A close
+// of the sheet hands the focus back to the board it was opened from
+// (sheet-focus.ts): each section here is one.
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
-import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
+import './legend-past.css'
+import { SingerMoreButton, SingerMoreSpace, } from '@/components/moderation/SingerMoreButton'
 import { getUserId } from '@/db/services/user-service'
 import { challengeToZenExercise } from '@/features/challenges/challenge-stage-model'
 import type { ArchivedWeeklyChallenge, WeeklyBoard, WeeklyChallenge, } from '@/features/challenges/weekly-service'
@@ -61,7 +64,7 @@ export interface DoorProps {
   onRetry: () => void
   board: () => WeeklyBoard | null
   archive: () => ArchivedWeeklyChallenge[]
-  /** A singer was blocked from the board: read it again. */
+  /** A singer was blocked from here: read the board and podiums again. */
   onBlocked: () => void
 }
 
@@ -204,8 +207,18 @@ export function LegendDoor(props: DoorProps): JSX.Element {
 
       <Show when={props.running() !== null ? props.board() : null}>
         {(scores) => (
-          <section class="mp-legend-group" data-testid="legend-board">
-            <h3 class="mp-legend-cap">The board</h3>
+          <section
+            class="mp-legend-group"
+            data-testid="legend-board"
+            data-singer-board="legend-board"
+          >
+            <h3
+              class="mp-legend-cap"
+              tabindex="-1"
+              data-singer-board-heading="legend-board"
+            >
+              The board
+            </h3>
             <ol class="mp-legend-card mp-legend-podium">
               <For each={podium()}>
                 {(entry) => (
@@ -256,34 +269,37 @@ export function LegendDoor(props: DoorProps): JSX.Element {
       </Show>
 
       <Show when={props.archive().length > 0}>
-        <section class="mp-legend-group" data-testid="legend-past">
-          <h3 class="mp-legend-cap">Past Legends</h3>
+        <section
+          class="mp-legend-group"
+          data-testid="legend-past"
+          data-singer-board="legend-past"
+        >
+          <h3
+            class="mp-legend-cap"
+            tabindex="-1"
+            data-singer-board-heading="legend-past"
+          >
+            Past Legends
+          </h3>
           <ul class="mp-legend-card mp-legend-past">
             <For each={props.archive()}>
               {(past) => (
                 <li class="mp-legend-past__row" data-legend-past={past.id}>
-                  <div class="mp-legend-past__text">
-                    <span class="mp-legend-past__title">{past.title}</span>
-                    <span class="mp-legend-past__sub">{endedLine(past)}</span>
-                    <Show when={podiumOf(past.results).length > 0}>
-                      <span class="mp-legend-past__sub">
-                        {podiumOf(past.results, blockedSingerIds())
-                          .map(
-                            (place) =>
-                              `${place.rank} ${place.displayName ?? 'Name withheld'}`,
-                          )
-                          .join(', ')}
-                      </span>
-                    </Show>
+                  <div class="mp-legend-past__head">
+                    <div class="mp-legend-past__text">
+                      <span class="mp-legend-past__title">{past.title}</span>
+                      <span class="mp-legend-past__sub">{endedLine(past)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="mp-legend-pill"
+                      data-testid="legend-past-practice"
+                      onClick={() => props.take.start(past, 'practice')}
+                    >
+                      Practice
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    class="mp-legend-pill"
-                    data-testid="legend-past-practice"
-                    onClick={() => props.take.start(past, 'practice')}
-                  >
-                    Practice
-                  </button>
+                  <PastPodium past={past} onBlocked={props.onBlocked} />
                 </li>
               )}
             </For>
@@ -291,6 +307,62 @@ export function LegendDoor(props: DoorProps): JSX.Element {
         </section>
       </Show>
     </div>
+  )
+}
+
+/**
+ * How a past Legend finished: a line a place, its "..." where it names
+ * another singer, a place withheld kept as a place.
+ */
+function PastPodium(props: {
+  past: ArchivedWeeklyChallenge
+  onBlocked: () => void
+}): JSX.Element {
+  const places = () => podiumOf(props.past.results, blockedSingerIds())
+  const roomForMore = (): boolean =>
+    places().some((place) => singerOfEntry(place, getUserId()) !== null)
+  return (
+    <Show when={places().length > 0}>
+      <ol
+        class="mp-legend-past__podium"
+        aria-label={`How ${props.past.title} finished`}
+      >
+        <For each={places()}>
+          {(place) => (
+            <li class="mp-legend-past__place" data-rank={place.rank}>
+              <span class="mp-legend-past__rank">{place.rank}</span>
+              <span
+                class="mp-legend-past__name"
+                data-withheld={place.displayName === null ? 'on' : undefined}
+              >
+                {place.displayName ?? 'Name withheld'}
+              </span>
+              <span class="mp-legend-past__score">{place.best}%</span>
+              <Show
+                when={singerOfEntry(place, getUserId())}
+                fallback={
+                  roomForMore() ? (
+                    <SingerMoreSpace class="mp-legend-past__more" />
+                  ) : null
+                }
+              >
+                {(userId) => (
+                  <SingerMoreButton
+                    subject={{
+                      userId: userId(),
+                      displayName: place.displayName ?? '',
+                      onBlocked: () => props.onBlocked(),
+                    }}
+                    icon={<MoreIcon size={22} />}
+                    class="mp-legend-past__more"
+                  />
+                )}
+              </Show>
+            </li>
+          )}
+        </For>
+      </ol>
+    </Show>
   )
 }
 

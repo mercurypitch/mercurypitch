@@ -6,22 +6,26 @@
 // BlockedSingersScreen); a singer who blocked someone on the web undoes it
 // here, in the account settings, under the same name the block sheet gives
 // it: "Settings, Blocked singers". Same reading and unblocking as the phone
-// (blocked-list-flow.ts), same words (blocked-list-copy.ts). A button whose
-// read or unblock is out stays where it is (aria-disabled), and keeps its
-// focus; when it goes with what it did, the focus goes to what took its
-// place. Its states carry no live role, as the device list's beside it do
-// not (SessionList.tsx): the settings page is read, not watched.
+// (blocked-list-flow.ts), same words (blocked-list-copy.ts): signed out, a
+// device with no account and a refused session are asked to sign in, a
+// suspended account is pointed to the contact form, and a read that failed
+// is tried again. A button whose read or unblock is out stays where it is
+// (aria-disabled), and keeps its focus; when it goes with what it did, the
+// focus goes to what took its place, and after a sign-in from here to the
+// list read for that account. Its states carry no live role, as the device
+// list's beside it do not (SessionList.tsx): the settings page is read, not
+// watched.
 
 import type { JSX } from 'solid-js'
-import { For, onMount, Show } from 'solid-js'
+import { For, Match, Show, Switch } from 'solid-js'
 import type { BlockedSinger } from '@/db/services/moderation-service'
+import { focusLost } from '@/lib/focus-lost'
 import { openAuthModal } from '@/stores/ui-store'
-import { BLOCKED_ABOUT, BLOCKED_EMPTY, BLOCKED_LOADING, blockedWhen, listFailedWords, unblockFailedWords, } from './blocked-list-copy'
+import { BLOCKED_ABOUT, BLOCKED_EMPTY, BLOCKED_LOADING, blockedWhen, listFailedWords, suspendedContactUrl, unblockFailedWords, } from './blocked-list-copy'
 import { createBlockedList } from './blocked-list-flow'
 import styles from './BlockedSingersList.module.css'
 
 export function BlockedSingersList(): JSX.Element {
-  const list = createBlockedList()
   let root: HTMLDivElement | undefined
 
   /** The row at `index` now, or the one above it, or the empty list. */
@@ -37,14 +41,17 @@ export function BlockedSingersList(): JSX.Element {
     })
   }
 
-  onMount(() => {
-    void list.load()
+  const list = createBlockedList({
+    // The Sign in pressed here went with the sign-in: on to the list.
+    onSignedInRead: () => {
+      if (focusLost()) focusAt(0)
+    },
   })
 
   const retry = (): void => {
     if (list.reading()) return
     void list.load().then(() => {
-      if (list.failed() === null) focusAt(0)
+      if (list.stop() === null) focusAt(0)
     })
   }
 
@@ -60,16 +67,14 @@ export function BlockedSingersList(): JSX.Element {
       <span class={styles.label}>Blocked singers</span>
       <p class={styles.hint}>{BLOCKED_ABOUT}</p>
 
-      <Show when={list.failed()}>
-        {(problem) => (
+      <Show when={list.stop()}>
+        {(stop) => (
           <div class={styles.failed} data-testid="blocked-failed">
             <p class={styles.error}>
-              {listFailedWords(problem()).title}{' '}
-              {listFailedWords(problem()).body}
+              {listFailedWords(stop()).title} {listFailedWords(stop()).body}
             </p>
-            <Show
-              when={listFailedWords(problem()).signIn}
-              fallback={
+            <Switch>
+              <Match when={listFailedWords(stop()).next === 'retry'}>
                 <button
                   type="button"
                   class={styles.action}
@@ -79,21 +84,34 @@ export function BlockedSingersList(): JSX.Element {
                 >
                   Try again
                 </button>
-              }
-            >
-              <button
-                type="button"
-                class={styles.action}
-                onClick={() => openAuthModal('login')}
-              >
-                Sign in
-              </button>
-            </Show>
+              </Match>
+              <Match when={listFailedWords(stop()).next === 'sign-in'}>
+                <button
+                  type="button"
+                  class={styles.action}
+                  data-testid="blocked-sign-in"
+                  onClick={() => openAuthModal('login')}
+                >
+                  Sign in
+                </button>
+              </Match>
+              <Match when={listFailedWords(stop()).next === 'contact'}>
+                <a
+                  class={styles.action}
+                  href={suspendedContactUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="blocked-contact"
+                >
+                  Contact us
+                </a>
+              </Match>
+            </Switch>
           </div>
         )}
       </Show>
 
-      <Show when={list.singers() === null && list.reading() && !list.failed()}>
+      <Show when={list.singers() === null && list.reading() && !list.stop()}>
         <p class={styles.hint} data-testid="blocked-loading">
           {BLOCKED_LOADING}
         </p>

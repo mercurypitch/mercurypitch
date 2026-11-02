@@ -6,8 +6,9 @@
 // docs/plans/native-more-and-community.md: workers/db-worker/src/reports.ts
 // and blocks.ts). Every call answers with what happened, typed, so the
 // sheet that asked can say it in words: sent, already with the owner, not
-// for a singer without an account, a session the server refused, nobody
-// there, the singer themself, too many this hour, a full list, no answer.
+// for a singer without an account, a session the server refused, a
+// suspended account, nobody there, the singer themself, too many this
+// hour, a full list, no answer, or an answer the server could not give.
 //
 // The reasons and the note's limit are the worker's own (report-rules.ts,
 // pure), so the sheet offers exactly what the worker accepts, and a report
@@ -15,10 +16,15 @@
 // comes back after that check is the one it cannot see: the singer behind
 // the target is the caller.
 //
-// A suspended account is told so here as on every other read
-// (`handleAuthErrorResponse`, as league-service.ts `readLeagueMe` does). A
-// session the server refused comes back as `refused` and changes nothing
-// itself: the caller asks for a sign-in again.
+// A suspended account is signed out here as on every other read
+// (`handleAuthErrorResponse`, as league-service.ts `readLeagueMe` does) and
+// comes back as `suspended`, never as a session to sign in to again. A
+// report, a block or an unblock is always asked for from a sheet or a list
+// that says so in its own words, with the contact form beside them, so
+// those say nothing more; the list is read for the boards as well, unseen,
+// so its read is told the app's way too. A session the server refused comes
+// back as `refused` and changes nothing itself: the caller asks for a
+// sign-in again.
 
 import { handleAuthErrorResponse } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
@@ -33,8 +39,10 @@ export type { ReportKind, ReportReason }
 export type ModerationProblem =
   /** A 403: reports and blocks are for registered singers. */
   | 'account'
-  /** A 401, or a suspended account: the session is no good. */
+  /** A 401: the session is no good. */
   | 'refused'
+  /** The account is suspended, and signed out here (a 403 that says so). */
+  | 'suspended'
   /** A 404: nobody, or nothing, is there any more. */
   | 'missing'
   /** The singer is the caller (the worker's 400 after the parser's check). */
@@ -45,8 +53,10 @@ export type ModerationProblem =
   | 'busy'
   /** A 409: the block list holds as many as it can. */
   | 'full'
-  /** No answer, or one that could not be read. */
+  /** No answer: no connection, or no server to ask. */
   | 'unreachable'
+  /** An answer, but no use: the server failed, or said what is not read. */
+  | 'server'
 
 export type ReportOutcome =
   | { status: 'sent' }
@@ -100,8 +110,14 @@ async function send(path: string, init: RequestInit): Promise<Response | null> {
   }
 }
 
-/** What a refusal means, read from its status. */
-export async function problemOf(res: Response): Promise<ModerationProblem> {
+/**
+ * What a refusal means, read from its status. `notify`: whether a
+ * suspension is told the app's way as well (`handleAuthErrorResponse`).
+ */
+export async function problemOf(
+  res: Response,
+  notify = true,
+): Promise<ModerationProblem> {
   switch (res.status) {
     case 400:
       return 'self'
@@ -111,7 +127,9 @@ export async function problemOf(res: Response): Promise<ModerationProblem> {
       // A suspension signs the account out here, as on every other read;
       // any other 403 on these routes is the account rule.
       const body = await res.text().catch(() => '')
-      return handleAuthErrorResponse(res.status, body) ? 'refused' : 'account'
+      return handleAuthErrorResponse(res.status, body, undefined, notify)
+        ? 'suspended'
+        : 'account'
     }
     case 404:
       return 'missing'
@@ -120,7 +138,7 @@ export async function problemOf(res: Response): Promise<ModerationProblem> {
     case 429:
       return 'busy'
     default:
-      return 'unreachable'
+      return 'server'
   }
 }
 
@@ -137,7 +155,7 @@ export async function reportContent(
   if (res === null) return { status: 'unreachable' }
   if (res.status === 201) return { status: 'sent' }
   if (res.ok) return { status: 'already-open' }
-  return { status: await problemOf(res) }
+  return { status: await problemOf(res, false) }
 }
 
 /** Block a singer: neither sees the other's name or posts from now on. */
@@ -150,7 +168,7 @@ export async function blockSinger(userId: string): Promise<BlockOutcome> {
   if (res === null) return { status: 'unreachable' }
   // 201 is a new block, 200 one that already stood: blocked either way.
   if (res.ok) return { status: 'blocked' }
-  return { status: await problemOf(res) }
+  return { status: await problemOf(res, false) }
 }
 
 /** Lift a block. Lifting one that is not there is no error. */
@@ -161,7 +179,7 @@ export async function unblockSinger(userId: string): Promise<UnblockOutcome> {
   })
   if (res === null) return { status: 'unreachable' }
   if (res.ok) return { status: 'unblocked' }
-  return { status: await problemOf(res) }
+  return { status: await problemOf(res, false) }
 }
 
 function blockedSingerOf(value: unknown): BlockedSinger | null {
@@ -184,7 +202,7 @@ export async function listBlockedSingers(): Promise<BlockListRead> {
   if (!res.ok) return { status: await problemOf(res) }
   try {
     const data = (await res.json()) as { blocks?: unknown }
-    if (!Array.isArray(data.blocks)) return { status: 'unreachable' }
+    if (!Array.isArray(data.blocks)) return { status: 'server' }
     return {
       status: 'ok',
       blocks: data.blocks
@@ -192,6 +210,6 @@ export async function listBlockedSingers(): Promise<BlockListRead> {
         .filter((row): row is BlockedSinger => row !== null),
     }
   } catch {
-    return { status: 'unreachable' }
+    return { status: 'server' }
   }
 }

@@ -184,7 +184,7 @@ describe('the singer sheet', () => {
     )
   })
 
-  it('says so when the singer had reported it already', async () => {
+  it('says the report is with us already, not that one was sent', async () => {
     answer('/api/reports', { status: 200, body: { status: 'open' } })
     open()
     fireEvent.click(button(/^Report/u))
@@ -193,10 +193,14 @@ describe('the singer sheet', () => {
     fireEvent.click(button('Send report'))
 
     await waitFor(() =>
-      expect(screen.getByTestId('singer-sent').textContent).toContain(
-        'You reported this already',
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+        'We have your report already',
       ),
     )
+    expect(screen.getByTestId('singer-sent').textContent).toBe(
+      'Your earlier report on this is still open, so nothing new was sent. We read every report within a day.',
+    )
+    expect(screen.getByRole('link', { name: 'Contact us' })).toBeTruthy()
   })
 
   it('says what a block does before it blocks, hides the singer, and has the board read again', async () => {
@@ -322,15 +326,5 @@ describe('the singer sheet', () => {
     await settle()
     fireEvent.click(button('Close'))
     expect(singerSheetSubject()).toBeNull()
-  })
-
-  it('offers Report alone where a block cannot reach', () => {
-    open({ ...ADA, reportOnly: true })
-
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
-      'Report Ada',
-    )
-    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^Block/u })).toBeNull()
   })
 })

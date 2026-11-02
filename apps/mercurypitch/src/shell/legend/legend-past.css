@@ -1,0 +1,69 @@
+/* ============================================================
+   The Legend room's past podiums (LegendDoor.tsx, PastPodium)
+   ============================================================
+
+   Each past Legend: its name and close beside its Practice pill, then how
+   it finished, a line a place. Kept apart from legend.css, which holds the
+   rest of the room. */
+
+/* The Legend's name and close beside its Practice pill. A name that runs to
+   three lines on a 320 px phone keeps clear of the card's edge above it. */
+.mp-legend-past__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding-block: 10px;
+}
+
+/* How it finished: a 44 px line a place, its "..." at the end where the
+   place names another singer (SingerMoreButton), a name that is too long
+   for a 320 px phone cut short rather than pushing the line wide. */
+.mp-legend-past__podium {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-legend-past__place {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font: 500 14px/1.2 var(--legend-sans);
+}
+
+.mp-legend-past__rank {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 50%;
+  font: 600 12px/1 var(--legend-sans);
+  color: #e7e3f7;
+}
+
+.mp-legend-past__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--legend-text);
+}
+
+.mp-legend-past__name[data-withheld='on'] {
+  color: var(--legend-text-3);
+}
+
+.mp-legend-past__score {
+  flex: none;
+  font-weight: 600;
+  color: #e7e3f7;
+}
+
+.mp-legend-past__place .mp-legend-past__more {
+  color: var(--legend-text-2);
+}

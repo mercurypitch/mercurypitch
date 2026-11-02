@@ -69,9 +69,14 @@ export const FriendRequests: Component<FriendRequestsProps> = (props) => {
       <section
         class={styles.panel}
         data-testid="friend-requests"
+        data-singer-board="friend-requests"
         aria-label="Friend requests"
       >
-        <h3 class={styles.title}>
+        <h3
+          class={styles.title}
+          tabindex="-1"
+          data-singer-board-heading="friend-requests"
+        >
           {props.requests.length === 1
             ? 'One singer wants to be friends'
             : `${props.requests.length} singers want to be friends`}

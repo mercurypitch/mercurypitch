@@ -12,10 +12,12 @@
 // thing in the app on the page for personal practice drills and left the
 // Leaderboard — the page for competition — without it.
 //
-// A place that names a singer ends in a "...", for Report only (slice 4b):
-// the worker reads these podiums without an account, so a block cannot
-// reach them. A singer this account blocked is withheld here instead, by
-// the viewer's own device, the place kept.
+// A place that names a singer ends in a "...": Report or Block, in the
+// singer sheet (slice 4b). The archive is read with the session, so the
+// worker withholds the name of a singer in a block with this reader, either
+// way, the place kept (REQ-RB-014); it is read again when the account
+// changes, and after a block made here. A singer blocked from here is
+// withheld at once, by the device, until that read lands.
 
 import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
@@ -29,7 +31,7 @@ import { openChallengeStage } from '@/stores/ui-store'
 import styles from './PastWeeklyChallenges.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
 import type { WeeklyChallenge } from './weekly-service'
-import { getWeeklyArchive, podiumOf } from './weekly-service'
+import { archiveReader, getWeeklyArchive, podiumOf } from './weekly-service'
 
 const PAST_WEEKLY_CHALLENGES_ID = 'past-weekly-challenges'
 
@@ -76,7 +78,12 @@ export function practicePastChallenge(challenge: WeeklyChallenge): void {
 }
 
 export const PastWeeklyChallenges: Component = () => {
-  const [archive] = createResource(getWeeklyArchive)
+  const [archive, { refetch }] = createResource(archiveReader, () =>
+    getWeeklyArchive(),
+  )
+  // The last archive read, kept on screen while the next is out, so a read
+  // after a block redraws the podiums rather than blanking the list.
+  const shown = () => archive.latest
 
   return (
     <section
@@ -84,13 +91,20 @@ export const PastWeeklyChallenges: Component = () => {
       class={styles.section}
       aria-labelledby="past-weekly-challenges-title"
       aria-busy={archive.loading}
+      data-singer-board="past-legends"
     >
       <div class={styles.headingRow}>
         <div class={styles.headingIcon} aria-hidden="true">
           <History />
         </div>
         <div>
-          <h3 id="past-weekly-challenges-title">Past Legends</h3>
+          <h3
+            id="past-weekly-challenges-title"
+            tabindex="-1"
+            data-singer-board-heading="past-legends"
+          >
+            Past Legends
+          </h3>
           <p>
             How each one finished, and who finished first. Missed one? Its
             melody is still here to practice; practice runs never touch a board.
@@ -99,11 +113,11 @@ export const PastWeeklyChallenges: Component = () => {
       </div>
 
       <Show
-        when={!archive.loading}
+        when={shown() !== undefined}
         fallback={<p class={styles.state}>Loading past challenges…</p>}
       >
         <Show
-          when={(archive() ?? []).length > 0}
+          when={(shown() ?? []).length > 0}
           fallback={
             <p class={styles.state}>
               No past Legends yet. Finished ones will collect here.
@@ -111,7 +125,7 @@ export const PastWeeklyChallenges: Component = () => {
           }
         >
           <div class={styles.list}>
-            <For each={archive() ?? []}>
+            <For each={shown() ?? []}>
               {(challenge) => (
                 <article class={styles.item}>
                   <div class={styles.itemBody}>
@@ -183,7 +197,7 @@ export const PastWeeklyChallenges: Component = () => {
                                     subject={{
                                       userId: userId(),
                                       displayName: place.displayName ?? '',
-                                      reportOnly: true,
+                                      onBlocked: () => void refetch(),
                                     }}
                                     class={styles.placeMore}
                                   />

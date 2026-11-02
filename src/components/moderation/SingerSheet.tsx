@@ -13,17 +13,20 @@
 // Built on the kit's Sheet, so the one sheet serves the web's chrome and
 // the phone's shell, in the app's tokens for light and dark. Escape closes
 // it (the Sheet's focus trap), and so does the phone's Back
-// (shell-navigation.ts). Each pane change hands the focus to its title.
-// The flow is singer-sheet-flow.ts; the words are singer-sheet-copy.ts.
+// (shell-navigation.ts). Each pane change hands the focus to its title, and
+// a close hands it back to the board, at the place the sheet was opened
+// from, whatever became of that row (sheet-focus.ts). The flow is
+// singer-sheet-flow.ts; the words are singer-sheet-copy.ts.
 
 import type { JSX } from 'solid-js'
-import { For, Match, Show, Switch } from 'solid-js'
+import { createEffect, For, Match, on, Show, Switch } from 'solid-js'
 import { AlertTriangle, ChevronLeft, X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { REPORT_NOTE_MAX, REPORT_REASONS, } from '@/db/services/moderation-service'
 import type { SingerSheetSubject } from '@/stores/singer-sheet-store'
-import { closeSingerSheet } from '@/stores/singer-sheet-store'
-import { ALREADY_OPEN_WORDS, BLOCK_WORDS, noteCount, paneTitle, problemWords, REASON_WORDS, reportContactUrl, SENT_WORDS, } from './singer-sheet-copy'
+import { closeSingerSheet, takeSingerSheetOpener, } from '@/stores/singer-sheet-store'
+import { returnFocus, stopReturningFocus } from './sheet-focus'
+import { ALREADY_OPEN_WORDS, BLOCK_WORDS, noteCount, paneTitle, problemWords, REASON_WORDS, reportContactUrl, SENT_WORDS, suspendedContactUrl, } from './singer-sheet-copy'
 import type { SingerSheetFlow } from './singer-sheet-flow'
 import { createSingerSheetFlow } from './singer-sheet-flow'
 import styles from './SingerSheet.module.css'
@@ -42,6 +45,24 @@ interface PaneProps {
   onSignIn?: () => void
 }
 
+/** A line that ends in the contact form. */
+function ContactLink(props: { lead: string; href: string }): JSX.Element {
+  return (
+    <p class={styles.contact}>
+      <span>{props.lead}</span>
+      <a
+        class={styles.contactLink}
+        href={props.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="singer-contact"
+      >
+        Contact us
+      </a>
+    </p>
+  )
+}
+
 /** "Need to tell us more? Contact us": the contact form, about a report. */
 function ContactLine(props: { subject: SingerSheetSubject }): JSX.Element {
   const href = (): string => {
@@ -51,20 +72,7 @@ function ContactLine(props: { subject: SingerSheetSubject }): JSX.Element {
     }
     return reportContactUrl(props.subject.displayName, target.kind, target.id)
   }
-  return (
-    <p class={styles.contact}>
-      <span>Need to tell us more?</span>
-      <a
-        class={styles.contactLink}
-        href={href()}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-testid="singer-contact"
-      >
-        Contact us
-      </a>
-    </p>
-  )
+  return <ContactLink lead="Need to tell us more?" href={href()} />
 }
 
 function SignInButton(props: { onSignIn?: () => void }): JSX.Element {
@@ -77,6 +85,10 @@ function SignInButton(props: { onSignIn?: () => void }): JSX.Element {
           data-testid="singer-sign-in"
           onClick={() => {
             closeSingerSheet()
+            // Back on the board before the sign-in opens, so the sign-in
+            // hands the focus back there when it closes.
+            const opener = takeSingerSheetOpener()
+            if (opener !== null) returnFocus(opener)
             signIn()()
           }}
         >
@@ -183,11 +195,15 @@ function ReportPane(props: PaneProps): JSX.Element {
   )
 }
 
-function SentPane(props: PaneProps): JSX.Element {
+/** A report's answer: sent now, or one already with us. */
+function SentPane(props: {
+  subject: SingerSheetSubject
+  words: string
+}): JSX.Element {
   return (
     <>
       <p class={styles.body} data-testid="singer-sent">
-        {props.flow.sentBefore() ? ALREADY_OPEN_WORDS : SENT_WORDS}
+        {props.words}
       </p>
       <ContactLine subject={props.subject} />
       <button type="button" class={styles.primary} onClick={closeSingerSheet}>
@@ -275,8 +291,14 @@ function ProblemPane(props: PaneProps): JSX.Element {
           <Show when={said().signIn}>
             <SignInButton onSignIn={props.onSignIn} />
           </Show>
-          <Show when={props.flow.failed()?.action === 'report'}>
+          <Show when={said().contact === 'report'}>
             <ContactLine subject={props.subject} />
+          </Show>
+          <Show when={said().contact === 'account'}>
+            <ContactLink
+              lead="About your account?"
+              href={suspendedContactUrl()}
+            />
           </Show>
           <button
             type="button"
@@ -300,8 +322,27 @@ export function SingerSheet(props: SingerSheetProps): JSX.Element {
   })
   const name = (): string => flow.subject()?.displayName ?? ''
   const canGoBack = (): boolean =>
-    flow.pane() === 'block' ||
-    (flow.pane() === 'report' && flow.subject()?.reportOnly !== true)
+    flow.pane() === 'block' || flow.pane() === 'report'
+
+  // Closed: the focus goes back to the board, once the sheet has gone and
+  // the board has drawn what the sheet did. Opened: a close before this
+  // one stops putting it back.
+  createEffect(
+    on(
+      flow.subject,
+      (subject) => {
+        if (subject !== null) {
+          stopReturningFocus()
+          return
+        }
+        queueMicrotask(() => {
+          const opener = takeSingerSheetOpener()
+          if (opener !== null) returnFocus(opener)
+        })
+      },
+      { defer: true },
+    ),
+  )
 
   return (
     <Sheet
@@ -352,7 +393,10 @@ export function SingerSheet(props: SingerSheetProps): JSX.Element {
                 <ReportPane flow={flow} subject={subject()} />
               </Match>
               <Match when={flow.pane() === 'sent'}>
-                <SentPane flow={flow} subject={subject()} />
+                <SentPane subject={subject()} words={SENT_WORDS} />
+              </Match>
+              <Match when={flow.pane() === 'already'}>
+                <SentPane subject={subject()} words={ALREADY_OPEN_WORDS} />
               </Match>
               <Match when={flow.pane() === 'block'}>
                 <BlockPane flow={flow} subject={subject()} />

@@ -163,7 +163,10 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
   }
 
   return (
-    <section class={`${styles.card} home-legend-card`}>
+    <section
+      class={`${styles.card} home-legend-card`}
+      data-singer-board="legend-hero"
+    >
       <div class={styles.eyebrowRow}>
         <span class={styles.eyebrow}>Legend Attempt</span>
         <Show when={challenge()?.slug.includes('-encore-') === true}>
@@ -185,7 +188,13 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
           </p>
         }
       >
-        <h3 class={styles.title}>{challenge()!.title}</h3>
+        <h3
+          class={styles.title}
+          tabindex="-1"
+          data-singer-board-heading="legend-hero"
+        >
+          {challenge()!.title}
+        </h3>
         <div class={styles.tags}>
           <span class={styles.tag}>{challenge()!.featType}</span>
           <span class={styles.tag}>{challenge()!.difficulty}</span>

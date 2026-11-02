@@ -566,11 +566,7 @@
 }
 
 .mp-legend-past__row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 0 10px 0 16px;
+  padding: 0 10px 6px 16px;
   border-top: 1px solid var(--legend-line);
 }
 

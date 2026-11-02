@@ -99,10 +99,12 @@ vi.mock('@/stores/settings-store', async (importOriginal) => ({
   vocalRangePreset: () => 'baritone',
 }))
 
+import { setAuthToken } from '@/db/services/user-service'
 import { grantBoardConsent, hasBoardConsent, } from '@/features/challenges/board-consent'
 import { whileFinalizing } from '@/features/challenges/challenge-result-store'
 import { getWeeklyArchive, getWeeklyBoard, readActiveWeekly, } from '@/features/challenges/weekly-service'
 import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
+import { closeSingerSheet, singerSheetSubject, } from '@/stores/singer-sheet-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { openSignIn } from '../settings/sign-in-state'
@@ -257,8 +259,14 @@ describe('the door', () => {
     await open()
     const past = q('[data-legend-past="legend-0"]')
     expect(past?.textContent).toContain('Nessun dorma')
-    expect(past?.textContent).toContain('1 Iva, 2 Name withheld')
-    past?.querySelector<HTMLButtonElement>('button')?.click()
+    expect(
+      [...(past?.querySelectorAll('.mp-legend-past__place') ?? [])].map(
+        (place) => place.textContent,
+      ),
+    ).toEqual(['1Iva91%', '2Name withheld84%'])
+    past
+      ?.querySelector<HTMLButtonElement>('[data-testid="legend-past-practice"]')
+      ?.click()
     expect(fakeTake.start).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'legend-0' }),
       'practice',
@@ -434,6 +442,64 @@ describe('signing in from the room', () => {
     auth.set(true)
     await settle()
     expect(boardOf).toHaveBeenCalledTimes(2)
+  })
+})
+
+/** A session for `sub`, as a sign-in leaves it. */
+function token(sub: string): string {
+  const body = btoa(
+    JSON.stringify({
+      sub,
+      provider: 'password',
+      exp: Math.floor(Date.now() / 1000) + 3600 + Math.random() * 60,
+    }),
+  )
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return `header.${body}.signature`
+}
+
+// The worker withholds from each reader the singers in a block with them
+// (REQ-RB-014), so the podiums are read again for another account.
+describe('the past podiums, read for whoever holds the phone', () => {
+  afterEach(() => {
+    setAuthToken(null)
+  })
+
+  it('are read again when another account signs in, not for a refreshed token', async () => {
+    setAuthToken(token('acc-1'))
+    await open()
+    expect(archiveOf).toHaveBeenCalledTimes(1)
+
+    setAuthToken(token('acc-1'))
+    await settle()
+    expect(archiveOf).toHaveBeenCalledTimes(1)
+
+    setAuthToken(token('acc-2'))
+    await settle()
+    expect(archiveOf).toHaveBeenCalledTimes(2)
+  })
+
+  it('are read again, with the board, after a block made in the room', async () => {
+    archiveOf.mockResolvedValue([
+      {
+        ...PAST,
+        results: {
+          ...PAST.results!,
+          top3: [{ rank: 1, userId: 'iva', displayName: 'Iva', best: 91 }],
+        },
+      },
+    ])
+    await open()
+    q('[data-singer-more="iva"]')?.click()
+
+    singerSheetSubject()?.onBlocked?.()
+    await settle()
+
+    expect(archiveOf).toHaveBeenCalledTimes(2)
+    expect(boardOf).toHaveBeenCalledTimes(2)
+    closeSingerSheet()
   })
 })
 

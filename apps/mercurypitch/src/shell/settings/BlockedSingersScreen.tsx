@@ -7,24 +7,29 @@
 // block is undone in "Settings, Blocked singers": this is that place. Each
 // singer can be unblocked here, one at a time; a list that cannot be read
 // says so and offers to try again, rather than showing nobody blocked.
+// Signed out here (a session refused, a sign-out elsewhere), it asks for a
+// sign-in, and reads the list again for whoever signs in, as the Leagues
+// screen reads its league; a suspended account is pointed to the contact
+// form instead (blocked-list-flow.ts).
 //
 // DevicesScreen's pattern, with one thing it lacks: the button the focus
 // is on stays put while its read or unblock is out (aria-disabled, as the
 // Leagues screen's Try again is), and when the button goes with what it
-// did, the focus goes to what took its place. Ships in every build: the
-// boards it undoes blocks from are in the store build too.
+// did, the focus goes to what took its place, the Sign in included. Ships
+// in every build: the boards it undoes blocks from are in the store build
+// too.
 
 import type { JSX } from 'solid-js'
-import { For, onMount, Show } from 'solid-js'
-import { BLOCKED_ABOUT, BLOCKED_EMPTY, BLOCKED_LOADING, blockedWhen, listFailedWords, unblockFailedWords, } from '@/components/moderation/blocked-list-copy'
+import { For, Match, Show, Switch } from 'solid-js'
+import { BLOCKED_ABOUT, BLOCKED_EMPTY, BLOCKED_LOADING, blockedWhen, listFailedWords, suspendedContactUrl, unblockFailedWords, } from '@/components/moderation/blocked-list-copy'
 import { createBlockedList } from '@/components/moderation/blocked-list-flow'
 import type { BlockedSinger } from '@/db/services/moderation-service'
+import { focusLost } from '@/lib/focus-lost'
 import { WarnIcon } from '../icons'
 import { SettingsGroup } from './SettingsList'
 import { openSignIn } from './sign-in-state'
 
 export function BlockedSingersScreen(): JSX.Element {
-  const list = createBlockedList()
   let root: HTMLDivElement | undefined
 
   /** The row at `index` now, or the one above it, or the empty list. */
@@ -40,14 +45,17 @@ export function BlockedSingersScreen(): JSX.Element {
     })
   }
 
-  onMount(() => {
-    void list.load()
+  const list = createBlockedList({
+    // The Sign in pressed here went with the sign-in: on to the list.
+    onSignedInRead: () => {
+      if (focusLost()) focusAt(0)
+    },
   })
 
   const retry = (): void => {
     if (list.reading()) return
     void list.load().then(() => {
-      if (list.failed() === null) focusAt(0)
+      if (list.stop() === null) focusAt(0)
     })
   }
 
@@ -62,8 +70,8 @@ export function BlockedSingersScreen(): JSX.Element {
     <div class="mp-set" data-testid="blocked-singers-screen" ref={root}>
       <p class="mp-set__caption">{BLOCKED_ABOUT}</p>
 
-      <Show when={list.failed()}>
-        {(problem) => (
+      <Show when={list.stop()}>
+        {(stop) => (
           <>
             <div
               class="mp-set-note mp-set-note--warn"
@@ -72,15 +80,14 @@ export function BlockedSingersScreen(): JSX.Element {
             >
               <WarnIcon size={20} />
               <p>
-                <strong>{listFailedWords(problem()).title}</strong>{' '}
-                {listFailedWords(problem()).body}
+                <strong>{listFailedWords(stop()).title}</strong>{' '}
+                {listFailedWords(stop()).body}
               </p>
             </div>
-            <Show
-              when={listFailedWords(problem()).signIn}
-              fallback={
-                // Not `disabled` while the read is out: a disabled button
-                // drops the focus it has.
+            <Switch>
+              <Match when={listFailedWords(stop()).next === 'retry'}>
+                {/* Not `disabled` while the read is out: a disabled button
+                    drops the focus it has. */}
                 <button
                   type="button"
                   class="mp-set-button mp-set-button--secondary"
@@ -90,22 +97,34 @@ export function BlockedSingersScreen(): JSX.Element {
                 >
                   Try again
                 </button>
-              }
-            >
-              <button
-                type="button"
-                class="mp-set-button"
-                data-testid="blocked-sign-in"
-                onClick={() => openSignIn()}
-              >
-                Sign in
-              </button>
-            </Show>
+              </Match>
+              <Match when={listFailedWords(stop()).next === 'sign-in'}>
+                <button
+                  type="button"
+                  class="mp-set-button"
+                  data-testid="blocked-sign-in"
+                  onClick={() => openSignIn()}
+                >
+                  Sign in
+                </button>
+              </Match>
+              <Match when={listFailedWords(stop()).next === 'contact'}>
+                <a
+                  class="mp-set-button mp-set-button--secondary"
+                  href={suspendedContactUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="blocked-contact"
+                >
+                  Contact us
+                </a>
+              </Match>
+            </Switch>
           </>
         )}
       </Show>
 
-      <Show when={list.singers() === null && list.reading() && !list.failed()}>
+      <Show when={list.singers() === null && list.reading() && !list.stop()}>
         <p class="mp-set__caption" role="status" data-testid="blocked-loading">
           {BLOCKED_LOADING}
         </p>

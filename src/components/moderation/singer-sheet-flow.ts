@@ -4,11 +4,17 @@
 //
 // SingerSheet.tsx draws; this decides. Each open starts afresh on the pane
 // the singer can use: the account pane without a registered account
-// (reports and blocks are theirs alone, decision 8 of the plan), the report
-// itself where Block is not offered, the choice otherwise. A report or a
-// block that fails says why in the service's words (singer-sheet-copy.ts),
-// and a session the server refused is asked to sign in again, as every
-// other refused read is.
+// (reports and blocks are theirs alone, decision 8 of the plan), the choice
+// otherwise. A report or a block that fails says why in the service's words
+// (singer-sheet-copy.ts), and a session the server refused is asked to sign
+// in again, as every other refused read is; a suspended account is told
+// so, and never asked to sign in.
+//
+// One request at a time: while a report or a block is out, a second tap on
+// Send, Block or Try again does nothing (`busy`). A request belongs to the
+// open it was made in: once the sheet has closed, or opened again, its
+// answer moves no pane and frees nothing, though a block that landed still
+// has its board read again.
 
 import { batch, createComputed, createSignal, on } from 'solid-js'
 import { accountHeld, handleCloudSessionRejected, } from '@/db/services/auth-service'
@@ -30,8 +36,6 @@ export interface SingerSheetFlow {
   setNote: (note: string) => void
   /** A request is out. */
   busy: () => boolean
-  /** The report sent was one the singer had already made, still open. */
-  sentBefore: () => boolean
   failed: () => SheetProblem | null
   sendReport: () => Promise<void>
   block: () => Promise<void>
@@ -40,12 +44,8 @@ export interface SingerSheetFlow {
 }
 
 /** The pane an open starts on. */
-export function firstPane(
-  subject: SingerSheetSubject,
-  registered: boolean,
-): SheetPane {
-  if (!registered) return 'account'
-  return subject.reportOnly === true ? 'report' : 'choose'
+export function firstPane(registered: boolean): SheetPane {
+  return registered ? 'choose' : 'account'
 }
 
 /** What a report names: the subject's share, or the singer themself. */
@@ -60,7 +60,6 @@ export function createSingerSheetFlow(
   const [reason, setReason] = createSignal<ReportReason | null>(null)
   const [note, setNote] = createSignal('')
   const [busy, setBusy] = createSignal(false)
-  const [sentBefore, setSentBefore] = createSignal(false)
   const [failed, setFailed] = createSignal<SheetProblem | null>(null)
 
   // Before the sheet draws, so an open never shows the last one's pane.
@@ -71,9 +70,8 @@ export function createSingerSheetFlow(
         setReason(null)
         setNote('')
         setBusy(false)
-        setSentBefore(false)
         setFailed(null)
-        setPane(firstPane(subject, accountHeld()))
+        setPane(firstPane(accountHeld()))
       })
     }),
   )
@@ -88,6 +86,7 @@ export function createSingerSheetFlow(
     singerSheetSubject() === subject
 
   function fail(action: SheetAction, problem: ModerationProblem): void {
+    // A suspension was signed out by the service, and says so on its pane.
     if (problem === 'refused') handleCloudSessionRejected()
     if (problem === 'account') {
       go('account')
@@ -110,14 +109,11 @@ export function createSingerSheetFlow(
       reason: chosen,
       note: words,
     })
-    setBusy(false)
     if (!stillOn(subject)) return
-    if (outcome.status === 'sent' || outcome.status === 'already-open') {
-      setSentBefore(outcome.status === 'already-open')
-      go('sent')
-      return
-    }
-    fail('report', outcome.status)
+    setBusy(false)
+    if (outcome.status === 'sent') go('sent')
+    else if (outcome.status === 'already-open') go('already')
+    else fail('report', outcome.status)
   }
 
   async function block(): Promise<void> {
@@ -125,18 +121,19 @@ export function createSingerSheetFlow(
     if (subject === null || busy()) return
     setBusy(true)
     const outcome = await blockSingerAndHide(subject.userId)
-    setBusy(false)
     // The board reads again whether or not the sheet is still up: the
     // block stands either way.
     if (outcome.status === 'blocked') subject.onBlocked?.()
     if (!stillOn(subject)) return
+    setBusy(false)
     if (outcome.status === 'blocked') go('blocked')
     else fail('block', outcome.status)
   }
 
+  /** Each request it makes again turns a second tap away itself. */
   function retry(): void {
     const last = failed()
-    if (last === null || busy()) return
+    if (last === null) return
     if (last.problem === 'invalid') {
       go('report')
       return
@@ -153,7 +150,6 @@ export function createSingerSheetFlow(
     note,
     setNote,
     busy,
-    sentBefore,
     failed,
     sendReport,
     block,

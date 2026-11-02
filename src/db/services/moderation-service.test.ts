@@ -124,7 +124,9 @@ describe('a report', () => {
     [401, 'refused'],
     [404, 'missing'],
     [429, 'busy'],
-    [500, 'unreachable'],
+    [500, 'server'],
+    [503, 'server'],
+    [413, 'server'],
   ] as const)('reads a %i as %s', async (status, problem) => {
     answer(status, { error: 'No' })
     expect(await reportContent(REPORT)).toEqual({ status: problem })
@@ -138,12 +140,13 @@ describe('a report', () => {
     expect(showNotification).not.toHaveBeenCalled()
   })
 
-  it('tells a suspended account so, as every other read does', async () => {
+  it('reads a suspension as suspended, and signs the account out', async () => {
     answer(403, { error: 'Suspended', code: 'account_suspended' })
 
-    expect(await reportContent(REPORT)).toEqual({ status: 'refused' })
+    expect(await reportContent(REPORT)).toEqual({ status: 'suspended' })
     expect(getAuthToken()).toBeNull()
-    expect(showNotification).toHaveBeenCalledTimes(1)
+    // The sheet that asked says so itself, with the contact form.
+    expect(showNotification).not.toHaveBeenCalled()
   })
 
   it('names a lost connection as unreachable', async () => {
@@ -208,9 +211,17 @@ describe('the blocked list', () => {
     })
   })
 
-  it('takes an answer with no list for no answer', async () => {
+  it('takes an answer with no list for the server’s fault', async () => {
     answer(200, { nothing: true })
-    expect(await listBlockedSingers()).toEqual({ status: 'unreachable' })
+    expect(await listBlockedSingers()).toEqual({ status: 'server' })
+  })
+
+  it('tells a suspension the app’s way, as a board reads it unseen', async () => {
+    answer(403, { error: 'Suspended', code: 'account_suspended' })
+
+    expect(await listBlockedSingers()).toEqual({ status: 'suspended' })
+    expect(getAuthToken()).toBeNull()
+    expect(showNotification).toHaveBeenCalledTimes(1)
   })
 
   it('reads a refused session as refused', async () => {

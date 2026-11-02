@@ -69,6 +69,8 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
     isRegisteredProvider: actual.isRegisteredProvider,
     accountHeld: actual.accountHeld,
     currentAccountId: actual.currentAccountId,
+    hasValidToken: actual.hasValidToken,
+    storedTokenProvider: actual.storedTokenProvider,
     handleAuthErrorResponse: () => false,
     handleCloudSessionRejected: () => false,
     restoreAuth: mocks.restoreAuth,

@@ -48,7 +48,7 @@ vi.mock('../settings/sign-in-state', async (importOriginal) => ({
 import { fetchLeagueLadder, readLeagueMe } from '@/db/services/league-service'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { openSignIn } from '../settings/sign-in-state'
+import { closeSignIn, openSignIn, openSignInByEmail, } from '../settings/sign-in-state'
 import { refreshLeague, resetLeagueStoreForTests } from './league-store'
 import { LeaguesScreen } from './LeaguesScreen'
 
@@ -160,6 +160,45 @@ describe('the Leagues screen, signed out', () => {
     await settle()
     expect(me).toHaveBeenCalledTimes(1)
     expect(q('.mp-league-hero__name')?.textContent).toBe('Sparkwing')
+  })
+
+  it('gives the league’s name the focus once the league of who signed in is read', async () => {
+    await open()
+    const signIn = q('[data-testid="league-sign-in"]') as HTMLButtonElement
+    signIn.focus()
+    const answer = heldRead()
+
+    // The invite, and its Sign in, go with the sign-in; the read is out.
+    auth.as('acc-1')
+    await settle()
+    expect(document.activeElement).toBe(document.body)
+
+    answer(ok(league()))
+    await settle()
+
+    expect(document.activeElement).toBe(q('.mp-league-hero__name'))
+  })
+
+  it('gives it the focus when the sign-in sheet closes after the read', async () => {
+    await open()
+    openSignInByEmail()
+    const sheet = document.createElement('div')
+    sheet.setAttribute('aria-modal', 'true')
+    const field = document.createElement('input')
+    sheet.append(field)
+    document.body.append(sheet)
+    field.focus()
+
+    // The read lands while the sheet still holds the focus.
+    auth.as('acc-1')
+    await settle()
+    expect(document.activeElement).toBe(field)
+
+    sheet.remove()
+    closeSignIn()
+    await settle()
+
+    expect(document.activeElement).toBe(q('.mp-league-hero__name'))
   })
 
   it('shows the ladder, with every rung above the first veiled', async () => {
