@@ -38,10 +38,11 @@ tenth" is the hosts' character moment, labelled once (SEASON-2 § 7 item 10).
 The teases:
 
 - Your own, one line above your hook on Lesson 25's card: the lead's line, your opening in
-  miniature, "‘Twinkle’, and the same tune four semitones higher, played together.", with Lesson
-  25's planned line as the alternative `plan`, "So far the other part was a drone. What if it's a
-  tune?" (Lesson 25 FACTS 5 and 5b, as committed; if Lesson 25 is not yet committed when you write,
-  use the lead's line and say so). You own it: check it against your final opening and predict.
+  miniature, "‘Twinkle’, and the same tune four semitones higher, played together.", with the
+  alternative `plan` bound at Lesson 25's review, "Lesson 24's other part was a drone. What if it's
+  a tune?" (Lesson 25 FACTS 5). The plan's own line, "So far the other part was a drone. What if
+  it's a tune?", is withdrawn: Lesson 12's sing-along already had the learner sing over moving
+  chords. You own it: check it against your final opening and predict.
 - Lesson 27's, on your next-lesson card (Lesson 27's writer owns it and may be writing beside you):
   the lead's line, "G, B and D going home to C, E and G. Now stack one more third.", with your plan's
   line as the alternative `plan`, "Stack thirds and you get a chord. Stack one more on V, and it

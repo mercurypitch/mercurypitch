@@ -2897,3 +2897,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - R24 (fresh, xhigh) spawned 07:5x; report to s2pkg/24-REVIEW.md. R25 still running.
 - L24 hand-back asks the lead: head title ("Singing with a drone: pure intervals" recommended, or "How to sing in tune with a drone"); L23 FACTS 5 quote "It slows down, then stops" -> "It slows, then stops" (shared commit); amber band then chrome line for the drone; new app item (Drone Intonation drone harmonics) and whether the card says its run score tops out at 80; built page ~63 words over cap (cuts named in WEB-SPEC); bind L22 citations to path now.
 - Next: R24/R25 reports -> fix-pass calls -> resume W24/W25 -> lead reviews -> commits. Then 26 (after 24), 27 (after 25), 28.
+
+## 2 Nov 08:0x UTC — R25 reported; W25 resumed for its fix pass
+- R25: 1 blocking (Wrap's free play answers before the choice), 9 should fix, 12 nits; s2pkg/25-REVIEW.md. Lead verified predict.ts:70-71 (reveal takes several elements), lesson-10/chords.ts ROOTS C4-B4, lesson-06/examples.ts PAIR gap is quiet, L22 free play holds, SEASON-2 § 5.2 item 10 names L25.
+- Calls sent (s2pkg/25-FIXPASS-MSG.md): all taken; teases bound (L24 card: lead's line + plan alt; L25 card: L26 lead's line + mended alt "Lesson 24's other part was a drone. What if it's a tune?"); second drill Sight-Singing A harmonic minor; head title "Harmonic and melodic minor, relative keys | MercuryPitch".
+- BRIEF-26 updated to the bound L26 alternative (.v1 backup).
+- Shared commit (#229) gains: SEASON-2 § 3 L25 card "Closes on" line is false (Lesson 12 sang over moving chords) -> writer proposes replacement in hand-back.
+- In flight: R24, W25 (fix pass). Next: R24 report -> W24 fix pass; W25 reply -> lead review L25 -> commit.
