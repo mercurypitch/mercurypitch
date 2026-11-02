@@ -6,6 +6,7 @@ import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import type * as LeapStoreModule from '@/stores/leap-store'
 import { BETWEEN_ROUNDS_MS, LEAP_ROUNDS } from './leap-rules'
 
 // ── A capture the test feeds by hand ────────────────────────────
@@ -105,6 +106,13 @@ vi.mock('@/stores/exercise-history-store', () => ({
 
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
+}))
+
+// The demo has been seen, so no first visit opens on it here (demo/'s
+// tests play it through the room).
+vi.mock('@/stores/leap-store', async () => ({
+  ...(await vi.importActual<typeof LeapStoreModule>('@/stores/leap-store')),
+  leapDemoAutoPlays: () => false,
 }))
 
 // ── Frames the test advances one at a time ─────────────────────

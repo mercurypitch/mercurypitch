@@ -74,9 +74,20 @@
   margin-top: 12px;
 }
 
-/* The demo's Skip has no demo here yet; the kit still names the class. */
+/* The demo's Skip, top right while it plays (the shell's ShellSkip). */
 .skip {
-  display: none;
+  position: absolute;
+  top: calc(var(--pushed-top, 0px) + 6px);
+  right: 12px;
+  z-index: 5;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
 }
 
 .bottomAway > * {

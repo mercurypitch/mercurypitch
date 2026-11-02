@@ -3,7 +3,8 @@
 **Status:** in progress. Three rooms are built: **Home note** (Room 1) and **First note** (Room 2),
 on TestFlight, and **Leap** (Room 3, 1 Nov 2026), drawn in vector until its painting comes. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
-way on to the Karaoke room, and gives Home note its painted harbour. No room has a demo yet. Room 4 is a proposal. The owner's design
+way on to the Karaoke room, and gives Home note its painted harbour. Leap has a "How it works" demo
+(2 Nov 2026); Home note and First note have none yet. Room 4 is a proposal. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -385,8 +386,17 @@ a run with no voice keeps nothing.
 **Built from.** The room kit, the sequence engine as a two-note phrase in free time (Echo's), and
 Merc's sampled voice, which the native screen hands in. `src/features/leap/`.
 
+**How it works** (2 Nov 2026). A first visit opens on a demo, as Echo's and the Warm-up rooms' do,
+and "?" plays it again at rest or from a result. Merc sings his note, then sings the leap back
+himself through the room's own engine, twice, at Singer (the level a first visit starts at, where
+he sings his note alone): "Not like this" leaps a fifth up but falls 70 cents short, so the lantern
+stays dark and he sings both notes; "Like this" leaps into the band of light and holds, and the
+lantern lights. Four tooltips, each on the moment it explains: his note first, sing it back and
+leap, short, and landed. Its words are the demo kit's; it never opens the mic, fires a haptic or
+keeps a result, and his opening line waits, unsaid, while it plays (`src/features/leap/demo/`).
+
 **Next.** The painting (two cliffs at night, the lantern on the far ledge), as the harbour's was. Lesson
-9's Practise card opening the room, once the lessons reach the native app. A demo.
+9's Practise card opening the room, once the lessons reach the native app.
 
 ## Room 4 (proposal)
 

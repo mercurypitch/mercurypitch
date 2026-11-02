@@ -21,8 +21,11 @@
 // the singer's turn, and the result's leaps, each a row that plays it
 // again (LeapResult.tsx).
 //
-// No "How it works" demo yet: Merc's line says the task, and Learning has
-// him sing both notes before the singer's turn.
+// "How it works" (demo/) plays over the same room: Merc sings his note,
+// then sings the leap back himself through the room's own engine, short of
+// the target once and into its band once, with the demo kit's layer, cards
+// and take pill over it. A first visit opens on it; "?" plays it again at
+// rest or from a result.
 
 import type { JSX } from 'solid-js'
 import { createMemo, onMount, Show } from 'solid-js'
@@ -31,13 +34,17 @@ import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { createMeasure } from '@/components/room-kit/room-measure'
-import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, } from '@/components/room-kit/RoomShell'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { bandHalfHeight, layoutCliffs } from './cliff-layout'
 import { CliffScene } from './CliffScene'
+import type { DemoCueId, DemoTarget } from './demo/demo-cues'
+import { aimLeapTip } from './demo/tip-targets'
+import { useLeapDemo } from './demo/useLeapDemo'
+import type { LeapController } from './leap-controller-contract'
 import type { LeapPhase } from './leap-machine'
 import type { LeapRound } from './leap-round'
 import { leapName, namesPrecisely } from './leap-rules'
@@ -45,7 +52,6 @@ import { detailLine } from './leap-run'
 import { LeapLevel } from './LeapLevel'
 import { LeapLamp, LeapResult } from './LeapResult'
 import styles from './LeapRoom.module.css'
-import type { LeapController } from './useLeapController'
 import { useLeapController } from './useLeapController'
 
 export interface LeapRoomProps {
@@ -53,6 +59,8 @@ export interface LeapRoomProps {
   onDone: () => void
   /** Merc's voice: his sampled one on the phone (LeapScreen). */
   voice?: RoundVoice
+  /** What that voice needs loaded before the demo sings (his sampled set). */
+  voiceReady?: () => Promise<unknown>
   /** The run, when it is not the room's own (a test's). Read once. */
   controller?: LeapController
   /** No animation at all (the fixtures). */
@@ -62,8 +70,12 @@ export interface LeapRoomProps {
 /** A stage before its first measure: a phone's size, so nothing is zero. */
 const FALLBACK_SIZE = { width: 390, height: 760 }
 
-/** The mic for each phase: ready, waiting, the singer's turn, or done. */
-export function leapMicState(phase: LeapPhase): MicState {
+/**
+ * The mic for each phase: ready, waiting, the singer's turn, or done. The
+ * demo's takes never open it: they wait.
+ */
+export function leapMicState(phase: LeapPhase, demo = false): MicState {
+  if (demo) return 'wait'
   switch (phase) {
     case 'intro':
     case 'blocked':
@@ -77,8 +89,12 @@ export function leapMicState(phase: LeapPhase): MicState {
   }
 }
 
-/** The mic's name as the phase has it. */
-function micName(phase: LeapPhase): string {
+/** The mic's start, as its name says it at rest. */
+const START_LABEL = "Start: hear Merc's note, then leap"
+
+/** The mic's name as the phase has it; the demo's start's while it plays. */
+function micName(phase: LeapPhase, demo: boolean): string {
+  if (demo) return START_LABEL
   switch (phase) {
     case 'starting':
       return 'Opening the microphone'
@@ -88,18 +104,23 @@ function micName(phase: LeapPhase): string {
     case 'missed':
       return 'The next leap is coming. Tap to stop'
     default:
-      return labelFor(leapMicState(phase), "Start: hear Merc's note, then leap")
+      return labelFor(leapMicState(phase), START_LABEL)
   }
 }
 
 export function LeapRoom(props: LeapRoomProps): JSX.Element {
+  // The run and Merc's voice are the room's from the start: read once.
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = props.controller ?? useLeapController({ voice: props.voice })
-  const shell = createRoomShell<string, string>({
+  const given = props.controller
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const voice = { voice: props.voice, ready: props.voiceReady }
+  const room = given ?? useLeapController(voice)
+  const demo = given === undefined ? useLeapDemo(room) : null
+  const shell = createRoomShell<DemoCueId, DemoTarget>({
     ids: 'leap',
     styles,
     run: room,
-    demo: null,
+    demo,
   })
   const phase = (): LeapPhase => room.state().phase
 
@@ -184,6 +205,8 @@ export function LeapRoom(props: LeapRoomProps): JSX.Element {
 
   /** What a screen reader hears, from the one polite region. */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (shell.busy() || room.script.active()) return ''
     const round = room.round()
     switch (phase()) {
       case 'call':
@@ -228,7 +251,7 @@ export function LeapRoom(props: LeapRoomProps): JSX.Element {
       }}
       testId="leap-room"
       said={said()}
-      aim={() => null}
+      aim={(tip, layer) => aimLeapTip(tip.target, layer)}
     >
       <div ref={stageEl} class={styles.stage}>
         <CliffScene
@@ -296,16 +319,18 @@ export function LeapRoom(props: LeapRoomProps): JSX.Element {
       <ShellBarEnd
         shell={shell}
         showLevel={
-          phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
+          !room.script.active() &&
+          (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
         }
         level={<LeapLevel />}
       />
+      <ShellSkip shell={shell} />
 
       <ShellDock
         shell={shell}
         onDone={() => props.onDone()}
-        mic={leapMicState(phase())}
-        micLabel={micName(phase())}
+        mic={leapMicState(phase(), room.script.active())}
+        micLabel={micName(phase(), room.script.active())}
         still={props.still}
         overMic={
           <Show when={room.canHearAgain()}>
