@@ -3,11 +3,39 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
+import { STUDIO_METER_TEXT_MS } from './meter-text'
 import { StudioOutputMeter } from './StudioOutputMeter'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
+/** The meter's clock, moved by the test: its numbers follow eight times a second. */
+function clock() {
+  let now = 1000
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  return {
+    advance(ms: number) {
+      now += ms
+    },
+  }
+}
+
+const PLAYING: StudioMeterSnapshot = {
+  frames: 19200,
+  momentaryLufs: -18.2,
+  shortTermLufs: null,
+  peakL: 0.5,
+  peakR: 0.25,
+  holdL: 0.5,
+  holdR: 0.25,
+  clipL: false,
+  clipR: false,
+}
 
 it('updates measured windows, marks clipping and resets held peaks through its explicit action', () => {
+  const time = clock()
   const [snapshot, setSnapshot] = createSignal<StudioMeterSnapshot | null>(null)
   const reset = vi.fn()
   render(() => (
@@ -21,23 +49,14 @@ it('updates measured windows, marks clipping and resets held peaks through its e
   // Nothing is held before playback, so there is nothing to reset yet.
   expect(screen.queryByRole('button', { name: 'Reset peak hold' })).toBeNull()
   expect(screen.getByText('Press play to see live loudness.')).toBeTruthy()
-  setSnapshot({
-    frames: 19200,
-    momentaryLufs: -18.2,
-    shortTermLufs: null,
-    peakL: 0.5,
-    peakR: 0.25,
-    holdL: 0.5,
-    holdR: 0.25,
-    clipL: false,
-    clipR: false,
-  })
+  setSnapshot(PLAYING)
   expect(screen.getByRole('meter')).toHaveAttribute(
     'aria-valuetext',
     '-6.0 dBFS',
   )
   expect(screen.getByLabelText('Live loudness')).toHaveTextContent('-18.2')
   expect(screen.getByLabelText('Live loudness')).toHaveTextContent('—')
+  time.advance(STUDIO_METER_TEXT_MS)
   setSnapshot((previous) => ({
     ...previous!,
     frames: 144000,
@@ -49,6 +68,37 @@ it('updates measured windows, marks clipping and resets held peaks through its e
   expect(screen.getByLabelText('Live loudness')).toHaveTextContent('-16.4')
   fireEvent.click(screen.getByRole('button', { name: 'Reset peak hold' }))
   expect(reset).toHaveBeenCalledTimes(1)
+})
+
+it('follows the level with its rails every tick and with its numbers eight times a second, CLIP at once', () => {
+  // Arrange
+  const time = clock()
+  const [snapshot, setSnapshot] = createSignal<StudioMeterSnapshot | null>(
+    PLAYING,
+  )
+  render(() => (
+    <StudioOutputMeter snapshot={snapshot()} ready onReset={() => {}} />
+  ))
+  const meter = screen.getByRole('meter')
+  const rail = () => meter.querySelector<HTMLElement>('i')!.style.clipPath
+  const before = rail()
+
+  // Act: the next tick, 40 ms on, is louder and clips.
+  time.advance(40)
+  setSnapshot({ ...PLAYING, peakL: 1.2, holdL: 1.2, clipL: true })
+  const tick = {
+    rail: rail(),
+    reading: meter.getAttribute('aria-valuetext'),
+    text: meter.textContent,
+  }
+  time.advance(STUDIO_METER_TEXT_MS)
+  setSnapshot({ ...PLAYING, peakL: 1.2, holdL: 1.2, clipL: true })
+
+  // Assert
+  expect(tick.rail).not.toBe(before)
+  expect(tick.reading).toBe('-6.0 dBFS')
+  expect(tick.text).toContain('CLIP')
+  expect(meter).toHaveAttribute('aria-valuetext', '1.6 dBFS')
 })
 
 it('makes the upright peak reading the reset, outside the meter it reads', () => {

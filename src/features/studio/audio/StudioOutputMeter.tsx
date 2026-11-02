@@ -3,9 +3,11 @@
 // It redraws on every meter tick, so a tick changes only styles and the
 // text of the readings: the rails and their labels stay the same elements,
 // and the held peak is a band clipped out of its rail, so a tick lays
-// nothing out again.
+// nothing out again. The readings follow eight times a second, the rails
+// every tick (meter-text.ts); CLIP shows at once.
 import { For, Index, Show } from 'solid-js'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
+import { createMeterText } from './meter-text'
 import styles from './StudioOutputMeter.module.css'
 
 interface Props {
@@ -82,7 +84,17 @@ export function StudioOutputMeter(props: Props) {
     { name: 'R', peak: peakR(), hold: props.snapshot?.holdR ?? 0 },
   ]
   const full = () => props.compact !== true && !vertical()
-  const peakText = () => reading(decibels(peak()))
+  const text = createMeterText(
+    () => ({
+      live: props.snapshot != null,
+      peak: peak(),
+      momentary: props.snapshot?.momentaryLufs,
+      shortTerm: props.snapshot?.shortTermLufs,
+    }),
+    (shown, next) => shown.live === next.live,
+  )
+  const shownPeak = () => text()?.peak ?? 0
+  const peakText = () => reading(decibels(shownPeak()))
   return (
     <div
       class={styles.output}
@@ -98,10 +110,8 @@ export function StudioOutputMeter(props: Props) {
         aria-label="Output sample peak"
         aria-valuemin={-60}
         aria-valuemax={6}
-        aria-valuenow={Math.max(-60, Math.min(6, decibels(peak())))}
-        aria-valuetext={
-          peak() > 0 ? `${reading(decibels(peak()))} dBFS` : 'Silent'
-        }
+        aria-valuenow={Math.max(-60, Math.min(6, decibels(shownPeak())))}
+        aria-valuetext={shownPeak() > 0 ? `${peakText()} dBFS` : 'Silent'}
         title="Output sample peak, left and right"
       >
         <div class={styles.bars} aria-hidden="true">
@@ -157,7 +167,7 @@ export function StudioOutputMeter(props: Props) {
           <span>Short-term</span>
           <strong>
             <data class={styles.reading}>
-              {props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}
+              {props.ready ? reading(text()?.shortTerm) : '—'}
             </data>
           </strong>
           <small>LUFS</small>
@@ -169,17 +179,13 @@ export function StudioOutputMeter(props: Props) {
             <dt title="Momentary loudness, 400 milliseconds">
               Momentary <span>LUFS</span>
             </dt>
-            <dd>
-              {props.ready ? reading(props.snapshot?.momentaryLufs) : '—'}
-            </dd>
+            <dd>{props.ready ? reading(text()?.momentary) : '—'}</dd>
           </div>
           <div>
             <dt title="Short-term loudness, 3 seconds">
               Short-term <span>LUFS</span>
             </dt>
-            <dd>
-              {props.ready ? reading(props.snapshot?.shortTermLufs) : '—'}
-            </dd>
+            <dd>{props.ready ? reading(text()?.shortTerm) : '—'}</dd>
           </div>
         </dl>
         <div class={styles.detail}>

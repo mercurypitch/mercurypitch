@@ -3,6 +3,7 @@ import { cleanup, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioLaneLevel } from '@/lib/studio/playback/transport'
+import { STUDIO_METER_TEXT_MS } from '../audio/meter-text'
 import { STUDIO_FADER_MIN_DB } from '../timeline/StudioTrackControls'
 import { STRIP_FLOOR_DB } from './strip-meter'
 import { StudioStripMeter } from './StudioStripMeter'
@@ -10,6 +11,7 @@ import { StudioStripMeter } from './StudioStripMeter'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 /** A strip with a fader 34 px wide and 200 px tall, its cap 14 px. */
@@ -81,6 +83,29 @@ describe('Studio strip meter', () => {
     expect(meter).not.toHaveAttribute('data-level-db')
     expect(level().style.clipPath).toBe('inset(100% 0 0 0)')
     expect(meter.querySelectorAll('i')).toHaveLength(1)
+  })
+
+  it('moves its bar on every reading and its numbers eight times a second', () => {
+    // Arrange
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const { meter, setLevel } = mount()
+    const bar = () => meter.querySelector<HTMLElement>('i')!.style.clipPath
+    setLevel({ trackId: 'bass', peak: 0.5, reductionDb: null, measurement: 1 })
+    const quieter = bar()
+
+    // Act: the next tick, 33 ms on, is louder.
+    now += 33
+    setLevel({ trackId: 'bass', peak: 0.9, reductionDb: null, measurement: 1 })
+    const tick = { bar: bar(), title: meter.title }
+    now += STUDIO_METER_TEXT_MS
+    setLevel({ trackId: 'bass', peak: 0.9, reductionDb: null, measurement: 1 })
+
+    // Assert
+    expect(tick.bar).not.toBe(quieter)
+    expect(tick.title).toBe('Bass: peak -6.0 dB after the fader')
+    expect(meter.title).toBe('Bass: peak -0.9 dB after the fader')
+    expect(meter).toHaveAttribute('data-level-db', '-0.9')
   })
 
   it('holds the highest peak while one measurement of the lane lasts', () => {
