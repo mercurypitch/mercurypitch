@@ -2965,3 +2965,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 2 Nov 12:5x
 - R26 done (s2pkg/26-REVIEW.md): B1 steps stage/free play draw the answer pre-choice (only controls locked); B2 Jam card order (late joiner gets no mode/tune; host range default tenor); S1 letter counts; S2 3-then-4; S3 range clause; S4 length (cut + count all page lines, built <= 2,379); S5 chip 16; S6 reader same-beat by audio clock. Lead calls in s2pkg/26-FIXPASS-MSG.md (Sing it bands: FACTS 1a open list + narrow Page QA; card as-is line "on the third, its boxes print the tune's letters"; chip 16; quick check 2 held).
 - W26 resumed 12:5x for the fix pass. App notes verified (harmoniseItems names; late-join mode) in shared-rest/NOTES.md. Next: W26 hand-back -> lead review -> commit -> W28 (BRIEF-28) -> R28 -> fix -> commit -> #229.
+
+## 2 Nov 13:08
+- Fallback fired: worktree ok; W26 fix pass alive (LESSON.md 13:07). Next fallback trig_01JrgK1yYiNxuYUoH7ci55Xt at 13:59.
