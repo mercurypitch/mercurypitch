@@ -16,6 +16,12 @@
 // (the level says how often). A run stopped part-way (the mic tapped, the
 // app leaving) goes back to the intro and keeps nothing: an aborted run is
 // not a result.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which sings
+// its one leap through the room with no microphone: to the intro as it
+// starts, between its takes and as it ends, and to the leap's call as each
+// take starts. The leap's own steps (`turn`, `outcome`) move it as they
+// move a run's.
 
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import type { LeapRound } from './leap-round'
@@ -95,6 +101,8 @@ export type LeapEvent =
   | { readonly type: 'finish' }
   /** The run is given up, or the room goes back to rest. */
   | { readonly type: 'stop' }
+  /** The demo's move: its leap's call, or the room at rest (null). */
+  | { readonly type: 'demo'; readonly round: LeapRound | null }
 
 export const INITIAL_LEAP_STATE: LeapState = {
   phase: 'intro',
@@ -172,5 +180,14 @@ export function leapReducer(state: LeapState, event: LeapEvent): LeapState {
         : state
     case 'stop':
       return { ...INITIAL_LEAP_STATE, run: state.run, rounds: state.rounds }
+    case 'demo':
+      return event.round === null
+        ? { ...INITIAL_LEAP_STATE, run: state.run }
+        : {
+            ...INITIAL_LEAP_STATE,
+            phase: 'call',
+            run: state.run,
+            rounds: [event.round],
+          }
   }
 }

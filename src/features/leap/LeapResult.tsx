@@ -15,12 +15,12 @@
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
 import { ResultCard } from '@/components/room-kit/RoomHeader'
+import type { LeapLampView } from './leap-controller-contract'
 import type { RoundOutcome } from './leap-machine'
 import type { LeapLevel } from './leap-rules'
 import type { LeapRow, LeapSummary } from './leap-run'
 import { detailLine, leapRows } from './leap-run'
 import styles from './LeapResult.module.css'
-import type { LeapLampView } from './useLeapController'
 
 /** An arrow up or down, for the leap's way. */
 function WayArrow(props: { up: boolean }): JSX.Element {

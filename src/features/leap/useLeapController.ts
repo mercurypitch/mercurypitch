@@ -26,8 +26,13 @@
 // that end plus RESPONSE_GATE_SECONDS (his voice through the speaker
 // reaches the mic). The engine is ticked once per CAPTURED frame, on the
 // frames' own clock, never once per screen frame.
+//
+// "How it works" (demo/useLeapDemo.ts) sings its takes through the same
+// steps by `script` (scripted-take.ts): frames in place of the mic, Merc's
+// call and his answer on the take's clock, the demo's own sound singing
+// them. A scripted take never opens the mic, fires a haptic, says a line or
+// keeps a result, and a run's moves wait while the demo has the room.
 
-import type { Accessor } from 'solid-js'
 import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
@@ -37,30 +42,29 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
-import type { ShellRun } from '@/components/room-kit/RoomShell'
-import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { outputLatency, SYNTH_VOICE } from '@/components/room-kit/round-voice'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
-import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
+import { newestLevel } from '@/components/room-kit/voice-level'
 import type { TrailPoint } from '@/components/room-kit/voice-trail'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_LEAP_CLIFFS } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
-import { offTarget } from '@/lib/hold/hold-reading'
 import type { MercVoice } from '@/lib/merc/sim'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { echoWindow } from '@/lib/sequence/phrase-fit'
-import type { PhraseNote, SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
+import type { SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
 import { createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import { leapDemoAutoPlays } from '@/stores/leap-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { trailNote } from './cliff-layout'
+import type { LeapController, LeapControllerOptions, LeapLampView, TrailSink, } from './leap-controller-contract'
+import { YOUR_TURN } from './leap-controller-contract'
 import type { LeapEvent, LeapState, RoundOutcome } from './leap-machine'
 import { INITIAL_LEAP_STATE, isRunPhase, leapReducer, liveRound, } from './leap-machine'
 import { leapOutcome, leapPhrase, mercNotes } from './leap-phrase'
-import type { LeapRound } from './leap-round'
+import type { LeapRound, NoteWindow } from './leap-round'
 import { planRounds, roundWindow } from './leap-round'
 import type { LeapLevel } from './leap-rules'
 import { AFTER_ANSWER_MS, BETWEEN_ROUNDS_MS, LEAP_LEVELS, LEAP_ROUNDS, leapName, leapSong, namesPrecisely, sizeName, SOUND_LEAD_SECONDS, } from './leap-rules'
@@ -68,93 +72,11 @@ import type { LeapSummary } from './leap-run'
 import { callMoment, keepLeapRun, landedMoment, missedMoment, resultMoment, summarizeRun, } from './leap-run'
 import type { LeapLineFields } from './merc-lines'
 import { createLeapLines } from './merc-lines'
+import { createMercSinger, singing } from './merc-singing'
 import { LEAP_SPOKEN } from './merc-spoken'
-
-/** The chip while the singer sings. */
-export const YOUR_TURN = 'Your turn'
-/** Merc's voice while he sings (demo-voice's held level). */
-const SUNG_LEVEL = 0.8
-/** His voice's tail through the speaker, past the end of his last note, s. */
-const VOICE_TAIL_SECONDS = 0.18
-
-/** Merc's face while he sings `midi`, held and on it. */
-function singing(midi: number): MercVoice {
-  return { voiced: true, cents: 0, level: SUNG_LEVEL, steady: 1, midi }
-}
-
-/** What the leap's lamp under the chip shows. */
-export type LeapLampState = 'toCome' | 'landed' | 'missed'
-
-/** The leap's lamp: "Up a fifth", which way, and how it went. */
-export interface LeapLampView {
-  readonly name: string
-  readonly up: boolean
-  readonly state: LeapLampState
-}
-
-/** Draws the voice: its readings and now (frames' clock), the hold; null clears it. */
-export type TrailSink = (
-  trail: {
-    readonly points: readonly TrailPoint[]
-    readonly now: number
-    /** The target's hold so far, 0 to 1 of the land time. */
-    readonly hold: number
-  } | null,
-) => void
-
-export interface LeapControllerOptions {
-  /**
-   * Merc's voice: the native screen's sampled one. Without it the room
-   * sings him with the synth "ooh".
-   */
-  readonly voice?: RoundVoice
-  readonly random?: () => number
-}
-
-export interface LeapController extends ShellRun {
-  readonly state: Accessor<LeapState>
-  /** Merc's line, in his bubble; '' for none. */
-  readonly line: Accessor<string>
-  /** The chip under the bar; null for none. */
-  readonly chip: Accessor<string | null>
-  /** The leap's lamp under the chip: its name, its way and how it went. */
-  readonly lamp: Accessor<LeapLampView | null>
-  /** The run's numbers, at its result; null before. */
-  readonly summary: Accessor<LeapSummary | null>
-  /** The level's name the result was sung at. */
-  readonly resultLevel: Accessor<string>
-  /** The round on screen, or null outside a run. */
-  readonly round: Accessor<LeapRound | null>
-  /** The rules the run is heard by (the band's height on screen). */
-  readonly rules: Accessor<LeapLevel>
-  /** The rules of the last run, as its result names its leaps. */
-  readonly runRules: Accessor<LeapLevel>
-  /** The voice sits on Merc's note now. */
-  readonly onFrom: Accessor<boolean>
-  /** The voice is in the target's band now: the lantern warms. */
-  readonly onTarget: Accessor<boolean>
-  /** The target's name shows: once the leap has landed or Merc has sung it. */
-  readonly revealed: Accessor<boolean>
-  /** Merc sings both notes after a miss: his line draws. */
-  readonly answering: Accessor<boolean>
-  readonly mercState: ReturnType<typeof createMercMoves>['state']
-  readonly mercVoice: () => MercVoice
-  /** "Hear Merc again" can be tapped now. */
-  readonly canHearAgain: Accessor<boolean>
-  readonly hearAgain: () => void
-  /** The round of the result heard again now, by its index; null for none. */
-  readonly replaying: Accessor<number | null>
-  /** At the result: round `index` again, Merc singing both its notes. */
-  readonly replayLeap: (index: number) => void
-  /** The room's trail, drawn every frame of the singer's turn. */
-  readonly drawTrail: (sink: TrailSink) => void
-}
-
-/** A sound of Merc's, scheduled on the audio clock. */
-interface Sung {
-  readonly endAt: number
-  stop(): void
-}
+import type { LeapDemoMark, ScriptedLeapTake } from './scripted-take'
+import { createScriptedRoom } from './scripted-take'
+import { readLeapVoice } from './voice-reading'
 
 export function useLeapController(
   options: LeapControllerOptions = {},
@@ -180,6 +102,11 @@ export function useLeapController(
   const [answering, setAnswering] = createSignal(false)
   const [replaying, setReplaying] = createSignal<number | null>(null)
   const level = createLevelPreset(LEAP_LEVELS, () => isRunPhase(state().phase))
+  // The demo's: on from its enter to its leave, playing, and its rules.
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const [demoRules, setDemoRules] = createSignal<LeapLevel | null>(null)
+  const demoOn = (): boolean => untrack(scriptActive)
 
   const dispatch = (event: LeapEvent): void => {
     setState((current) => leapReducer(current, event))
@@ -203,7 +130,16 @@ export function useLeapController(
   const merc = createMercMoves({
     later: life.later,
     still: prefersReducedMotion,
-    afterCheer: () => (isRunPhase(phase()) ? 'listen' : 'idle'),
+    afterCheer: () => (isRunPhase(phase()) && !demoOn() ? 'listen' : 'idle'),
+  })
+  const { faceFor, sing } = createMercSinger({
+    voice: voiceOfMerc,
+    later: life.later,
+    face: (next) => {
+      voice = next
+    },
+    merc,
+    after: () => (isRunPhase(phase()) ? 'listen' : 'idle'),
   })
 
   // ── The run ────────────────────────────────────────────────
@@ -213,7 +149,7 @@ export function useLeapController(
   const [runRules, setRunRules] = createSignal<LeapLevel>(rules)
   /** The run names its sixths "major": it asks for the minor one too. */
   const precise = (): boolean => namesPrecisely(rules)
-  let sound: Sung | null = null
+  let sound: { stop(): void } | null = null
   let engine: SequenceState = createSequenceState(0)
   let processed = 0
   let windowStartedAt = 0
@@ -232,9 +168,19 @@ export function useLeapController(
   /** Counts Merc's answers and replays, so an old one's moments never fire. */
   let answerCount = 0
   let sink: TrailSink = () => undefined
+  /** The demo's take singing through the room in place of the mic. */
+  let scripted: ScriptedLeapTake | null = null
 
-  const frameNow = (): number => (performance.now() - windowStartedAt) / 1000
+  /** Seconds on the frames' clock: since the window opened, or the take's. */
+  const frameNow = (): number =>
+    scripted === null
+      ? (performance.now() - windowStartedAt) / 1000
+      : scripted.now()
   const live = (): LeapRound | null => liveRound(untrack(state))
+  /** The demo's moment, to its tooltips; the singer's run has none. */
+  const mark = (moment: LeapDemoMark): void => {
+    scripted?.onEvent(moment)
+  }
 
   const loop = createFrameLoop(screenFrame, {
     alive: life.alive,
@@ -268,39 +214,9 @@ export function useLeapController(
     })
   }
 
-  /** Merc sings `notes` from a moment from now; his face follows each one. */
-  const sing = (
-    ctx: AudioContext,
-    notes: readonly PhraseNote[],
-    current: () => boolean,
-  ): Sung => {
-    const start = ctx.currentTime + SOUND_LEAD_SECONDS
-    const sung = voiceOfMerc.sing(ctx, notes, start)
-    const latency = outputLatency(ctx)
-    const at = (t: number, then: () => void): void => {
-      life.later(Math.max(0, (t - ctx.currentTime + latency) * 1000), () => {
-        if (current()) then()
-      })
-    }
-    for (const note of notes) {
-      at(start + note.at, () => {
-        voice = singing(note.midi)
-        merc.stopCheering()
-        merc.set('sing')
-      })
-    }
-    const last = notes[notes.length - 1]
-    if (last !== undefined) {
-      at(start + last.at + last.seconds + 0.1, () => {
-        voice = SILENT_VOICE
-        merc.set(isRunPhase(phase()) ? 'listen' : 'idle')
-      })
-    }
-    return {
-      endAt: sung.endAt + VOICE_TAIL_SECONDS,
-      stop: () => sung.stop(),
-    }
-  }
+  /** Notes on the take's clock (`at`), on the wall clock, ms from now. */
+  const onTake = (take: ScriptedLeapTake) => (at: number) =>
+    take.startsAt + at * 1000 - performance.now()
 
   /**
    * The round's call: Merc's note (both, at Learning), a fresh capture
@@ -344,6 +260,47 @@ export function useLeapController(
     startLoop()
   }
 
+  /**
+   * One of the demo's takes in place of the mic: its leap called as a
+   * round's is, on the take's clock, its frames flowing. The demo's own
+   * sound sings Merc's call; his face follows it.
+   */
+  const playScripted = (take: ScriptedLeapTake): void => {
+    scripted = take
+    rules = take.rules
+    engine = createSequenceState(take.responseStart)
+    processed = 0
+    points = []
+    voicedInTurn = false
+    heardAgain = false
+    bandSince = null
+    callNotes = take.call.map((note) => ({
+      midi: note.midi,
+      from: note.at,
+      to: note.at + note.seconds,
+    }))
+    const { round } = take
+    batch(() => {
+      dispatch({ type: 'demo', round })
+      setDemoRules(take.rules)
+      setLamp({
+        name: leapName(round.kind, precise()),
+        up: round.kind.up,
+        state: 'toCome',
+      })
+      setRevealed(take.rules.mercSingsBoth)
+    })
+    callCount += 1
+    const call = callCount
+    faceFor(
+      take.call,
+      onTake(take),
+      () => call === callCount && phase() === 'call',
+    )
+    merc.set('listen')
+    startLoop()
+  }
+
   /** A round begins: Merc names the leap and calls it. */
   const beginRound = (index: number): void => {
     dispatch({ type: 'call', index })
@@ -377,34 +334,15 @@ export function useLeapController(
 
   /** The singer's voice against both notes: the trail, the lines, the lantern. */
   const hearVoice = (frame: PitchFrame, round: LeapRound): void => {
-    const toTarget = offTarget(frame, round.to)
-    const toFrom = offTarget(frame, round.from)
-    const off = offTarget(frame, trailNote(round))
-    points.push({ t: frame.t, cents: off })
-    if (toTarget === null || toFrom === null) {
-      voice = { ...voice, voiced: false, level: 0 }
-      bandSince = null
-      batch(() => {
-        setOnFrom(false)
-        setOnTarget(false)
-      })
-      return
-    }
-    voicedInTurn = true
-    const tol = rules.tolCents
-    const inTarget = Math.abs(toTarget) <= tol
-    bandSince = inTarget ? (bandSince ?? frame.t) : null
+    const read = readLeapVoice(frame, round, rules.tolCents)
+    points.push(read.point)
+    voice = read.voice ?? { ...voice, voiced: false, level: 0 }
+    if (read.voice !== null) voicedInTurn = true
+    bandSince = read.inTarget ? (bandSince ?? frame.t) : null
     batch(() => {
-      setOnTarget(inTarget)
-      setOnFrom(Math.abs(toFrom) <= tol)
+      setOnTarget(read.inTarget)
+      setOnFrom(read.onFrom)
     })
-    voice = {
-      voiced: true,
-      cents: toTarget,
-      level: levelFromRms(frame.rms),
-      steady: 1 - Math.min(1, Math.abs(toTarget) / (tol * 4)),
-      midi: round.to + toTarget / 100,
-    }
   }
 
   /** The leap's outcome from the engine, once its target is decided. */
@@ -412,6 +350,9 @@ export function useLeapController(
     leapOutcome(engine, round, { voiced: voicedInTurn, heardAgain })
 
   const onEvent = (event: SequenceEvent, round: LeapRound): void => {
+    mark(
+      event.type === 'phraseEnd' ? 'phraseEnd' : `${event.type}:${event.index}`,
+    )
     if (event.type === 'phraseEnd') {
       const outcome = outcomeOf(round)
       if (outcome !== null) endRound(outcome)
@@ -449,13 +390,16 @@ export function useLeapController(
     const round = live()
     if (round === null) return
     if (phase() === 'call' && frameNow() >= engine.responseStart) toTurn()
-    const frames = capture.peekFrames()
+    const frames = scripted?.frames() ?? capture.peekFrames()
     follow(frames, round)
     if (!listening) return
     if (phase() === 'sing') {
       const last = frames.length === 0 ? null : frames[frames.length - 1]
+      // The demo's voice is not the singer's: the mic's ring stays still.
       loudness =
-        last === null || last.t < engine.responseStart ? 0 : newestLevel(frames)
+        scripted !== null || last === null || last.t < engine.responseStart
+          ? 0
+          : newestLevel(frames)
       const now = frameNow()
       sink({ points, now, hold: holdAt(now) })
     } else {
@@ -478,8 +422,11 @@ export function useLeapController(
   /** A round is over: the lantern, Merc's line, then the next leap. */
   function endRound(outcome: RoundOutcome): void {
     const ctx = audio
+    // A demo's take is felt, said and followed by nothing: its tooltip
+    // explains it, and the demo moves on.
+    const take = scripted
     stopLoop()
-    capture.takeFrames()
+    if (take === null) capture.takeFrames()
     dispatch({ type: 'outcome', outcome })
     const { round } = outcome
     const note = midiToNoteNameOctave(round.to)
@@ -495,7 +442,7 @@ export function useLeapController(
     bandSince = null
     sink(null)
     if (outcome.landed) {
-      haptics.tapLight()
+      if (take === null) haptics.tapLight()
       batch(() => {
         setChip(`Landed: ${note}`)
         setLamp({
@@ -505,10 +452,11 @@ export function useLeapController(
         })
         setRevealed(true)
         setOnTarget(true)
-        say(landedMoment(rules, round.kind), fields)
+        if (take === null) say(landedMoment(rules, round.kind), fields)
       })
       merc.cheer()
-      nextAfter(BETWEEN_ROUNDS_MS, round.index)
+      if (take === null) nextAfter(BETWEEN_ROUNDS_MS, round.index)
+      else mark('outcome')
       return
     }
     batch(() => {
@@ -521,16 +469,22 @@ export function useLeapController(
       setRevealed(true)
       setOnTarget(false)
       setAnswering(true)
-      say(missedMoment(outcome), fields)
+      if (take === null) say(missedMoment(outcome), fields)
     })
     // He sings both notes, his line drawn as he sings them.
     answerCount += 1
     const answer = answerCount
+    const current = (): boolean =>
+      answer === answerCount && phase() === 'missed'
+    if (take !== null) {
+      // The demo's sound sings them, on the take's clock.
+      faceFor(take.answer, onTake(take), current)
+      mark('outcome')
+      return
+    }
     let wait = AFTER_ANSWER_MS
     if (ctx !== null) {
-      const sung = sing(ctx, mercNotes(round, true), () => {
-        return answer === answerCount && phase() === 'missed'
-      })
+      const sung = sing(ctx, mercNotes(round, true), current)
       sound = sung
       wait += Math.max(0, (sung.endAt - ctx.currentTime) * 1000)
     }
@@ -608,9 +562,19 @@ export function useLeapController(
     })
   }
 
+  /** The singer's window, as a run plans its leaps in it. */
+  const runWindow = (): NoteWindow => {
+    const window = echoWindow({
+      voiceprints: loadLocalVoiceprints(),
+      voicePreset: untrack(vocalRangePreset),
+    })
+    return roundWindow({ low: window.low, high: window.high })
+  }
+
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
     const from = phase()
+    if (demoOn()) return
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
     // He stops talking before the mic opens.
     speech.hush()
@@ -622,16 +586,7 @@ export function useLeapController(
     runLevel = untrack(exerciseLevel)
     rules = untrack(level.preset)
     setRunRules(() => rules)
-    const window = echoWindow({
-      voiceprints: loadLocalVoiceprints(),
-      voicePreset: untrack(vocalRangePreset),
-    })
-    const rounds = planRounds(
-      LEAP_ROUNDS,
-      roundWindow({ low: window.low, high: window.high }),
-      rules,
-      random,
-    )
+    const rounds = planRounds(LEAP_ROUNDS, runWindow(), rules, random)
     batch(() => {
       dispatch({ type: 'start', rounds })
       setSummary(null)
@@ -659,7 +614,7 @@ export function useLeapController(
   }
 
   const stop = (): void => {
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun()
     sayIntro()
   }
@@ -667,7 +622,7 @@ export function useLeapController(
   /** Merc's call again, in the singer's turn, as the level allows. */
   const canHearAgain = (): boolean => {
     const now = state()
-    if (now.phase !== 'sing') return false
+    if (now.phase !== 'sing' || scriptActive()) return false
     const allowance = level.preset().hearAgain
     if (allowance === 'never') return false
     return allowance === 'anyTime' || now.replays === 0
@@ -692,14 +647,16 @@ export function useLeapController(
   function leave(): void {
     // Nothing he says is heard behind their back either.
     speech.hush()
-    if (!isRunPhase(phase())) return
+    // The demo stops itself on the way out (useExerciseDemo).
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun()
     sayIntro(false)
   }
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
-    sayIntro()
+    // A first visit opens on the demo, which says it all: his line waits.
+    sayIntro(!leapDemoAutoPlays())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
@@ -707,16 +664,60 @@ export function useLeapController(
 
   life.watch({
     leave,
-    listening: () => isRunPhase(state().phase),
-    demo: { on: () => false, playing: () => false },
+    listening: () => isRunPhase(state().phase) && !scriptActive(),
+    demo: { on: scriptActive, playing: demoPlaying },
     holdsFocus: true,
     mic: {
       exercise: EXERCISE_LEAP_CLIFFS,
-      on: () => isRunPhase(phase()) && phase() !== 'starting',
+      on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
       // A mic that died drops the run as leaving does, Merc silent: a call
       // or another app may have the sound, and his line would take it back.
       died: leave,
     },
+  })
+
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  const script = createScriptedRoom({
+    voice: voiceOfMerc,
+    active: scriptActive,
+    setActive: setScriptActive,
+    setPlaying: setDemoPlaying,
+    phase,
+    audio: () => capture.audio(),
+    ready: options.ready,
+    // Merc's note for the demo's leap: the middle of the singer's window.
+    note: () => {
+      const window = runWindow()
+      return Math.round((window.low + window.high) / 2)
+    },
+    clear: () => {
+      scripted = null
+      callCount += 1
+      endReplay()
+      hush()
+      merc.stopCheering()
+      batch(() => {
+        dispatch({ type: 'demo', round: null })
+        setDemoRules(null)
+        setSummary(null)
+        setChip(null)
+        setLamp(null)
+        setRevealed(false)
+        setAnswering(false)
+      })
+    },
+    load: playScripted,
+    current: () => scripted,
+    // The demo's words take over from his, and its end shows his opening
+    // line without saying it: the demo has just said it all.
+    line: (text) => {
+      speech.hush()
+      setLine(text)
+    },
+    sayIntro: () => sayIntro(false),
+    merc: merc.set,
+    later: life.later,
+    mark,
   })
 
   onCleanup(() => {
@@ -746,7 +747,7 @@ export function useLeapController(
     summary,
     resultLevel,
     round: () => liveRound(state()),
-    rules: level.preset,
+    rules: () => demoRules() ?? level.preset(),
     runRules,
     onFrom,
     onTarget,
@@ -764,6 +765,6 @@ export function useLeapController(
     drawTrail: (next) => {
       sink = next
     },
-    script: { active: () => false },
+    script,
   }
 }

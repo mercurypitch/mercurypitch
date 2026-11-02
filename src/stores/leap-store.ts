@@ -1,5 +1,5 @@
 // ============================================================
-// Leap's records — the best at each level
+// Leap's records — the best at each level, the demo seen
 // ============================================================
 //
 // A best is the most leaps landed in a run, and among runs that landed as
@@ -15,6 +15,11 @@
 // On this device only, for now: the `mp_` prefix keeps the key out of the
 // settings sync, as Home note's and First note's are.
 //
+// Whether this device has seen the "how it works" demo is a device fact,
+// set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
+// lives here so the ways in (leap-entry.ts) can say the demo plays by
+// itself without loading the room.
+//
 // Built on first read, not on import, so nothing at this module's top
 // level touches storage.
 
@@ -24,6 +29,8 @@ import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
 export const LEAP_BESTS_KEY = 'mp_leap_bests'
+/** Where the demo's seen flag lives: on this device only. */
+export const LEAP_DEMO_SEEN_KEY = 'mp_leap_demo_seen'
 
 /** A level's best run. */
 export interface LeapBest {
@@ -107,7 +114,36 @@ export function recordLeapBest(
   return { previous, improved: previous !== null }
 }
 
-/** Drop the signal read so far: the next read takes storage as it is now. */
+let demoSeen: Signal<boolean> | undefined
+
+function demoSeenSignal(): Signal<boolean> {
+  demoSeen ??= createPersistedSignal<boolean>(LEAP_DEMO_SEEN_KEY, false, {
+    validator: (value): value is boolean => typeof value === 'boolean',
+  })
+  return demoSeen
+}
+
+/** This device has seen the demo: its end card, Skip or Not now. */
+export function leapDemoSeen(): boolean {
+  return demoSeenSignal()[0]()
+}
+
+export function markLeapDemoSeen(): void {
+  if (!leapDemoSeen()) demoSeenSignal()[1](true)
+}
+
+/**
+ * The demo plays by itself on the way in: a first visit, the demo unseen
+ * and no run kept yet (no best at any level). One rule for the room
+ * (demo/useLeapDemo.ts) and its ways in (leap-entry.ts).
+ */
+export function leapDemoAutoPlays(): boolean {
+  if (leapDemoSeen()) return false
+  return EXERCISE_LEVELS.every((level) => leapBest(level) === null)
+}
+
+/** Drop the signals read so far: the next read takes storage as it is now. */
 export function resetLeapStoreForTests(): void {
   table = undefined
+  demoSeen = undefined
 }

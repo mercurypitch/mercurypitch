@@ -44,6 +44,8 @@ export const MERC_NOTE_SECONDS = 0.9
 export const MERC_GAP_SECONDS = 0.15
 /** A call is scheduled this far ahead of now, s. */
 export const SOUND_LEAD_SECONDS = 0.1
+/** Merc's voice's tail through the speaker, past the end of his last note, s. */
+export const VOICE_TAIL_SECONDS = 0.18
 /** A landing is cheered this long before the next leap, ms. */
 export const BETWEEN_ROUNDS_MS = 1900
 /** After Merc's answer to a miss, this long before the next leap, ms. */

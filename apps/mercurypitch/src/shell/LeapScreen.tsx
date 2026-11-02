@@ -11,14 +11,15 @@
 //
 // The room sings Merc with his sampled voice, Echo's (merc-sampler.ts): the
 // screen hands it in, so the room's feature reaches into no other feature.
-// Until his set has loaded the call goes to the synth "ooh", as Echo's does.
+// Until his set has loaded the call goes to the synth "ooh", as Echo's does;
+// the demo waits a moment for it (`voiceReady`), as Echo's does.
 //
 // Opening is the choice: the screen records Leap as the last exercise the
 // moment it mounts, as HomeNoteScreen does for Home note.
 
 import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
-import { MERC_CALL } from '@/features/echo/merc-sampler'
+import { MERC_CALL, preloadMercVoice } from '@/features/echo/merc-sampler'
 import { LeapRoom } from '@/features/leap/LeapRoom'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
 import { EXERCISE_LEAP_CLIFFS } from '@/lib/domain/exercise-contracts'
@@ -26,5 +27,11 @@ import { popScreen } from './run-shell-store'
 
 export function LeapScreen(): JSX.Element {
   onMount(() => rememberLastExercise(EXERCISE_LEAP_CLIFFS))
-  return <LeapRoom onDone={popScreen} voice={MERC_CALL} />
+  return (
+    <LeapRoom
+      onDone={popScreen}
+      voice={MERC_CALL}
+      voiceReady={preloadMercVoice}
+    />
+  )
 }

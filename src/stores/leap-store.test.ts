@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { isLeapBestTable, LEAP_BESTS_KEY, leapBeats, leapBest, recordLeapBest, resetLeapStoreForTests, } from './leap-store'
+import { isLeapBestTable, LEAP_BESTS_KEY, LEAP_DEMO_SEEN_KEY, leapBeats, leapBest, leapDemoAutoPlays, leapDemoSeen, markLeapDemoSeen, recordLeapBest, resetLeapStoreForTests, } from './leap-store'
 
 const best = (landed: number, seconds: number) => ({
   landed,
@@ -40,5 +40,31 @@ describe("Leap's bests", () => {
       false,
     )
     expect(isLeapBestTable([])).toBe(false)
+  })
+})
+
+describe("Leap's demo, seen or not", () => {
+  beforeEach(() => {
+    localStorage.removeItem(LEAP_BESTS_KEY)
+    localStorage.removeItem(LEAP_DEMO_SEEN_KEY)
+    resetLeapStoreForTests()
+  })
+
+  it('plays by itself on a first visit, the demo unseen and no run kept', () => {
+    expect(leapDemoSeen()).toBe(false)
+    expect(leapDemoAutoPlays()).toBe(true)
+  })
+
+  it('stops playing by itself once seen, on this device', () => {
+    markLeapDemoSeen()
+    expect(leapDemoAutoPlays()).toBe(false)
+    resetLeapStoreForTests()
+    expect(leapDemoSeen()).toBe(true)
+  })
+
+  it('stops playing by itself once a run has kept a best, at any level', () => {
+    recordLeapBest('professional', best(2, 1.2))
+    expect(leapDemoSeen()).toBe(false)
+    expect(leapDemoAutoPlays()).toBe(false)
   })
 })
