@@ -10,7 +10,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SIREN, } from '@/features/exercises/types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, } from '@/features/exercises/types'
 import { applyPersistedValue } from '@/lib/storage'
 
 const saveSessionRecord = vi.fn(async (..._args: unknown[]) => null)
@@ -61,6 +61,15 @@ describe('exerciseComparabilityKey', () => {
     // 1 could not pass 75, version 2 grades a flawless run 100.
     expect(exerciseComparabilityKey(EXERCISE_ARPEGGIO_JUMPER)).toBe(
       'voice:exercise:arpeggio-jumper:v2',
+    )
+    // Scale Runner's and Drone Intonation's weights summed to 0.8 once
+    // richness left them: version 1 could not pass 80, version 2 grades a
+    // flawless run 100.
+    expect(exerciseComparabilityKey(EXERCISE_SCALE_RUNNER)).toBe(
+      'voice:exercise:scale-runner:v2',
+    )
+    expect(exerciseComparabilityKey(EXERCISE_DRONE_INTONATION)).toBe(
+      'voice:exercise:drone-intonation:v2',
     )
   })
 })
@@ -133,8 +142,22 @@ describe('local bests compare only runs scored the same way', () => {
       metrics: {},
       completedAt: 4,
     })
+    recordExerciseResult({
+      type: EXERCISE_SCALE_RUNNER,
+      score: 100,
+      metrics: {},
+      completedAt: 5,
+    })
+    recordExerciseResult({
+      type: EXERCISE_DRONE_INTONATION,
+      score: 100,
+      metrics: {},
+      completedAt: 6,
+    })
     await flushExerciseHistoryWrites()
     expect(exerciseHistory().map((e) => [e.type, e.scoringVersion])).toEqual([
+      [EXERCISE_DRONE_INTONATION, 2],
+      [EXERCISE_SCALE_RUNNER, 2],
       [EXERCISE_ARPEGGIO_JUMPER, 2],
       [EXERCISE_LONG_NOTE, 1],
       [EXERCISE_SIREN, 2],
