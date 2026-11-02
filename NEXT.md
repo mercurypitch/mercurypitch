@@ -2988,3 +2988,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 2 Nov 18:1x
 - R28 still running. While it runs: #229 drafted for Lessons 15-27 in /dev/shm/s2shared (detached at 85ccd03dd), saved as s2pkg/shared-rest/draft/shared-16-27.content.patch; test re-anchor gives 200 findings, none new (details and the real-run pipeline in shared-rest/NOTES.md, "Draft status"). The Lesson 28 wave follows its commit.
+
+## 2 Nov 18:2x
+- R28 done 18:2x (1 blocking, 9 should, 13 nits; plan-cites 0 on 314; verify28 clean). B1: the hero's Play the song sounds both ways before the choice (bars 9-10 were the ending's bars 7-8).
+- Lead's calls in s2pkg/28-FIXPASS-MSG.md: B1 route (a), bars 9-10 go on into A (bars 1-2), no G over G before the choice; S1 one-reading stem; S2 Sing it's staffs empty before the choice, quick check 4 held, Wrap's "V to vi" held or reworded; S3-S9 taken (breath marks 2/4/6 kept with one page sentence; alone path kept with an optional "Hear Tavi's part first"; playback aligned on the first voiced onset; SEARCH § 8 row split); nits taken; Season 2 close lines taken.
+- Rate limit allowed; W28 (builder) resumed 18:2x for the fix pass. Only agent running. Fallback trig_01PCa3KoERn1uEczDt67XyMh re-pointed for 19:37.
+- Next: W28 fix pass -> lead review -> commit L28 -> shared commit (#229: apply draft/shared-16-27.content.patch + L28 wave; pipeline in shared-rest/NOTES.md).
