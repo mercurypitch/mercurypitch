@@ -2846,3 +2846,14 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - No agents were running. The 05:43 wake-up still sends both fix passes if the rate limit allows.
 
 ## 2 Nov 04:23 UTC — worktree rebuilt (26d90e225); L18 and L22 drafts restored from s2pkg (221 and 281 cites, 0 findings). Waiting for the 05:43 wake-up to send both fix passes.
+
+## 2 Nov 05:50 UTC — container restarted again; worktree rebuilt; BOTH FIX PASSES SENT
+
+- /dev/shm/s2plan was gone again at 05:46. Rebuilt from feat/season-2-plan (26d90e225); L18 and L22
+  drafts restored from s2pkg/18 and s2pkg/22 (md5 identical; 221 and 281 cites, 0 findings).
+- get_session read "allowed" at 05:48 (new window, resetsAt 1793616000). Sent 18-FIXPASS-MSG.md to
+  W18 and 22-FIXPASS-MSG.md to W22 by SendMessage (both resumed), each told of the rebuild and asked
+  to copy files to s2pkg/NN/ after any large step. The 06:08 wake-up (trig_01RjN2...) deleted.
+- Next: each writer's reply -> lead review (read the three files against the review and the calls,
+  plan-cites 0, whole plan 200, lesson-words, prettier, head test) -> commit as the owner -> push.
+  Then 24 and 25 (refresh BRIEF-writer-common's head to the newest commit first).
