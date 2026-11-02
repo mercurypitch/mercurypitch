@@ -125,6 +125,20 @@ export interface NativeAudioOutputReading {
   readonly reason: string | null
 }
 
+/**
+ * What a change of route says beyond its kind: the ports, what sent it and,
+ * on iOS, why the route moved (packages/mobile-runtime audio-output.ts).
+ */
+export interface NativeAudioRouteChange {
+  readonly outputs: readonly { readonly type: string; readonly name: string }[]
+  /** 'route', or on iOS 'app in front' as the app comes back. */
+  readonly reason: string | null
+  /** iOS's reason: 'new device', 'device gone', 'category change'... */
+  readonly routeReason: string | null
+  /** iOS: the output port types before it. */
+  readonly previousOutputs: readonly string[]
+}
+
 /** The phone's output, read now and heard on every change. */
 export interface NativeAudioOutput {
   /** Null where the phone gives no reading. */
@@ -137,7 +151,9 @@ export interface NativeAudioOutput {
    * keeps nothing running on the phone between changes. Returns the
    * unsubscribe. Absent where the app cannot say.
    */
-  watchRoute?: (handler: (route: NativeAudioRoute) => void) => () => void
+  watchRoute?: (
+    handler: (route: NativeAudioRoute, change?: NativeAudioRouteChange) => void,
+  ) => () => void
 }
 
 /** Whether the phone will show a reminder: 'prompt' until it has been

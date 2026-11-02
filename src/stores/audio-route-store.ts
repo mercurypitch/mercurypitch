@@ -5,7 +5,8 @@
 // The route the phone plays the app's sound on (the speaker, headphones,
 // Bluetooth, AirPlay to a TV, HDMI), for what depends on it for as long as
 // the app runs: the latency offset (mic-latency-store.ts), since a TV on
-// AirPlay plays the song well behind the phone's own speaker.
+// AirPlay plays the song well behind the phone's own speaker, and the
+// Karaoke room's word when its song's clock stops.
 //
 // The native app follows it from its entry (`followAudioRoute`): one reading
 // at launch, every change the phone reports, and a fresh reading whenever the
@@ -14,15 +15,57 @@
 // web, which cannot say where its sound goes, and before the first reading:
 // what depends on the route treats null as the phone's own output.
 //
+// EACH ROUTE IS SAID in the console, at the routine level (console.log, kept
+// when the console keeps routine logs): its kind, the port as the phone
+// names it and, on iOS, the reason iOS gave with the outputs before it:
+//
+//   [audio route] airplay "LG C2", iOS: new device, was Speaker
+//
+// One at launch, so a log starts from where the sound went. iOS reports the
+// route again each time the app comes to the front, moved or not, so that
+// and a reading on the way back are said only where they differ from the
+// last line. A test build's audio record has the long form of each change
+// (audio-census.ts, `output change`).
+//
 // Tests: src/tests/audio-route-store.test.ts.
 
 import { createSignal } from 'solid-js'
-import type { NativeAudioOutput, NativeAudioRoute, } from '@/stores/native-shell-store'
+import type { NativeAudioOutput, NativeAudioRoute, NativeAudioRouteChange, } from '@/stores/native-shell-store'
 
 const [route, setRoute] = createSignal<NativeAudioRoute | null>(null)
+const [port, setPort] = createSignal<string | null>(null)
 
 /** Where the sound goes now, or null where nobody can say. */
 export const audioRoute = route
+
+/** The port it goes to, as the phone names it ("LG C2"), or null. */
+export const audioRoutePort = port
+
+const firstPort = (
+  outputs: readonly { readonly name: string }[] | undefined,
+): string | null => outputs?.[0]?.name ?? null
+
+/** Why the route moved, in the change's words: iOS's reason where it gave one. */
+function whyOf(change: NativeAudioRouteChange | undefined): string {
+  if (change === undefined) return ''
+  const words: string[] = []
+  if (change.routeReason !== null) words.push(`iOS: ${change.routeReason}`)
+  else if (change.reason !== null && change.reason !== 'route')
+    words.push(change.reason)
+  if (change.previousOutputs.length > 0)
+    words.push(`was ${change.previousOutputs.join(', ')}`)
+  return words.join(', ')
+}
+
+/** The console's line for a route: its kind, its port, and why. */
+export function routeLine(
+  next: NativeAudioRoute,
+  portName: string | null,
+  why: string,
+): string {
+  const named = portName === null ? '' : ` "${portName}"`
+  return `[audio route] ${next}${named}${why === '' ? '' : `, ${why}`}`
+}
 
 /**
  * Follow the phone's route: read it now and whenever the page comes back
@@ -35,29 +78,48 @@ export function followAudioRoute(
   if (output === undefined) return () => undefined
   let following = true
   let changes = 0
+  /** The route and port the last line named. */
+  let said: string | null = null
 
-  const readNow = (): void => {
+  const take = (
+    next: NativeAudioRoute,
+    portName: string | null,
+    why: string,
+    sayAnyway: boolean,
+  ): void => {
+    setRoute(next)
+    setPort(portName)
+    const heard = `${next} ${portName ?? ''}`
+    if (!sayAnyway && heard === said) return
+    said = heard
+    console.log(routeLine(next, portName, why))
+  }
+
+  const readNow = (why: string): void => {
     const heardBefore = changes
     void output.read().then(
       (reading) => {
         if (following && changes === heardBefore && reading !== null) {
-          setRoute(reading.route)
+          take(reading.route, firstPort(reading.outputs), why, false)
         }
       },
       () => undefined,
     )
   }
   const onVisible = (): void => {
-    if (document.visibilityState === 'visible') readNow()
+    if (document.visibilityState === 'visible') readNow('read on the way back')
   }
 
-  readNow()
+  readNow('at launch')
   document.addEventListener('visibilitychange', onVisible)
   const stopWatching =
-    output.watchRoute?.((next) => {
+    output.watchRoute?.((next, change) => {
       if (!following) return
       changes += 1
-      setRoute(next)
+      // A route iOS moved is said even on the same port: its reason is the
+      // news (a category change as the mic opens).
+      const moved = change?.reason === 'route'
+      take(next, firstPort(change?.outputs), whyOf(change), moved)
     }) ?? (() => undefined)
 
   return () => {
@@ -68,6 +130,10 @@ export function followAudioRoute(
 }
 
 /** Tests only: set the route as if the phone had said it, or none. */
-export function setAudioRouteForTests(next: NativeAudioRoute | null): void {
+export function setAudioRouteForTests(
+  next: NativeAudioRoute | null,
+  portName: string | null = null,
+): void {
   setRoute(next)
+  setPort(portName)
 }

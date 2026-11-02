@@ -94,6 +94,13 @@ export interface StreamingStemVoice {
   readonly envelope: GainNode
   /** True once the stream ran out and its last window ended, or after stop. */
   readonly ended: boolean
+  /**
+   * Song seconds scheduled past where the clock is now: the sound the
+   * stream has ready. 0 once it has run dry, or before its first window.
+   * A clock that stopped with sound queued stopped on its own; the stream
+   * did its part (clock-watchdog.ts says which).
+   */
+  queuedSeconds(): number
   /** Stop every scheduled window at the given context time. */
   stop(atContextTime: number): void
   dispose(): void
@@ -393,6 +400,13 @@ export function createStreamingStemVoice(
     envelope,
     get ended() {
       return ended
+    },
+    queuedSeconds() {
+      if (stopped || ended) return 0
+      // From the song's place, or where the voice starts if the clock has
+      // not reached it yet.
+      const from = Math.max(sourceOffsetSeconds, songTimeNow())
+      return Math.max(0, scheduledUntil - from)
     },
     stop(stopAtContextTime: number) {
       if (stopped) return

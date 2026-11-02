@@ -76,6 +76,21 @@ export interface AudioOutputReading {
   readonly reason: string | null
 }
 
+/**
+ * What a change of route says beyond its kind, for a console line that
+ * names the port and iOS's reason (audio-route-store.ts in the app).
+ */
+export interface AudioRouteChange {
+  /** The outputs now, as the phone names them: "LG C2", "AirPods Pro". */
+  readonly outputs: readonly AudioOutputPort[]
+  /** What sent it: 'route', or on iOS 'app in front' as the app comes back. */
+  readonly reason: string | null
+  /** iOS's reason for the new route: 'new device', 'category change'... */
+  readonly routeReason: string | null
+  /** iOS: the output port types before it ('Speaker'). */
+  readonly previousOutputs: readonly string[]
+}
+
 /** The plugin's answer, before it is checked. */
 type RawOutput = Record<string, unknown>
 
@@ -238,15 +253,38 @@ export function onAudioOutput(
   })
 }
 
+const textOrNull = (value: unknown): string | null =>
+  typeof value === 'string' ? value : null
+
+/** The change's own words: the ports, what sent it and why iOS moved it. */
+function routeChangeOf(
+  event: RawOutput,
+  outputs: readonly AudioOutputPort[],
+): AudioRouteChange {
+  const before = Array.isArray(event.previousOutputs)
+    ? event.previousOutputs
+    : []
+  return {
+    outputs,
+    reason: textOrNull(event.reason),
+    routeReason: textOrNull(event.routeReason),
+    previousOutputs: before.filter(
+      (type): type is string => typeof type === 'string',
+    ),
+  }
+}
+
 /**
  * Every change of route, alone: the plugin sends it as the route moves, and
  * on iOS as the app comes back to the front, where the route may have moved
  * meanwhile. Unlike `onAudioOutput`, a listener here keeps nothing running
  * between changes (AudioOutputPlugin.swift, needsLooking), so it can listen
- * for as long as the app runs. Returns the unsubscribe.
+ * for as long as the app runs. The handler gets the route's kind and what
+ * the change said of it: the ports and, on iOS, the reason. Returns the
+ * unsubscribe.
  */
 export function onAudioRoute(
-  handler: (route: AudioRoute) => void,
+  handler: (route: AudioRoute, change: AudioRouteChange) => void,
 ): Unsubscribe {
   if (!isNative()) return () => undefined
   return lazyListener((dispose) => {
@@ -254,7 +292,8 @@ export function onAudioRoute(
       try {
         dispose(
           await audioOutput().addListener('audioRouteChange', (event) => {
-            handler(routeOf(ports(event.outputs)))
+            const outputs = ports(event.outputs)
+            handler(routeOf(outputs), routeChangeOf(event, outputs))
           }),
         )
       } catch {

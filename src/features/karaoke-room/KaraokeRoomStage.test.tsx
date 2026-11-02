@@ -35,6 +35,8 @@ interface FakeMixer {
   setPlaying: Setter<boolean>
   /** The system taking the sound: the real mixer pauses and says so. */
   setInterrupted: Setter<boolean>
+  /** The song's clock stopped and stayed stopped: the mixer paused it. */
+  setStalled: Setter<boolean>
   setLoading: Setter<boolean>
   setElapsed: Setter<number>
   /** The clock the lyrics follow: what has reached the speakers. */
@@ -97,6 +99,7 @@ vi.mock('@/components/StemMixer', async () => {
     }) => {
       const [playing, setPlaying] = createSignal(false)
       const [interrupted, setInterrupted] = createSignal(false)
+      const [stalled, setStalled] = createSignal(false)
       const [loading, setLoading] = createSignal(true)
       const [loadError, setLoadError] = createSignal('')
       const [elapsed, setElapsed] = createSignal(0)
@@ -154,6 +157,7 @@ vi.mock('@/components/StemMixer', async () => {
         alive: true,
         setPlaying,
         setInterrupted,
+        setStalled,
         setLoading,
         setElapsed,
         setAudibleElapsed,
@@ -195,6 +199,7 @@ vi.mock('@/components/StemMixer', async () => {
         given.hosted.attach({
           playing,
           interrupted,
+          stalled,
           loading,
           loadError,
           elapsed,
@@ -2373,6 +2378,21 @@ describe('the device', () => {
     expect(current().hosted.keepsPlayingHidden?.()).toBe(true)
     setKaraokeBackgroundPlay(false)
     expect(current().hosted.keepsPlayingHidden?.()).toBe(false)
+  })
+
+  it('says why its song stopped when the clock did, and plays it again from there', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    // The mixer's watchdog: the clock stood still, so the song was paused.
+    current().setPlaying(false)
+    current().setStalled(true)
+
+    const notice = screen.getByTestId('karaoke-sound-stopped')
+    expect(notice).toHaveTextContent('The sound stopped.')
+    fireEvent.click(within(notice).getByRole('button', { name: 'Play again' }))
+    expect(current().play).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the screen awake while a song plays, and only then', async () => {

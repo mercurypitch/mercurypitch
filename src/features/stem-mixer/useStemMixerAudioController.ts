@@ -29,6 +29,8 @@ import { platform } from '@/lib/platform'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
+import { audioRoute, audioRoutePort } from '@/stores/audio-route-store'
+import { streamFeed, watchSongClock } from './clock-watchdog'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { createHiddenClock } from './hidden-clock'
 import type { LoopPointPlacement } from './loop-points'
@@ -270,6 +272,12 @@ export interface StemMixerAudioController {
    * stops it.
    */
   interrupted: Accessor<boolean>
+  /**
+   * The song's clock stopped while it played and stood still after it was
+   * asked back, so the song was paused (clock-watchdog.ts). A room that
+   * hosts the mixer says why. Until the singer next plays, pauses or stops.
+   */
+  stalled: Accessor<boolean>
   elapsed: Accessor<number>
   /** Song position that has reached the output device, for lyric visuals. */
   audibleElapsed: Accessor<number>
@@ -1891,6 +1899,55 @@ export const useStemMixerAudioController = (
     )
   }
 
+  // ── The song's clock, watched while it plays ──────────────────
+  // A clock that stops mid-song stops the transport and the stream with it,
+  // and raises nothing (clock-watchdog.ts). In a room that hosts the mixer
+  // a stall is warned with the route and the stream's state and asked back
+  // once; a clock that still stands has its song paused and parked, as a
+  // silent start's is, and `stalled` set for the room to say why.
+  const [stalled, setStalled] = createSignal(false)
+  const songPlace = (ctx: BaseAudioContext): number =>
+    bufferPlayStart + (ctx.currentTime - wallPlayStart) * playbackSpeed
+  const stallFacts = (): Record<string, unknown> => {
+    const ctx = audioCtx
+    return {
+      state: ctx === null ? 'none' : String(ctx.state),
+      route: audioRoute() ?? 'unknown',
+      port: audioRoutePort() ?? 'unknown',
+      ...streamFeed(deps.tracks().flatMap((track) => track.streamVoice ?? [])),
+      position: ctx === null ? null : Math.round(songPlace(ctx) * 1000) / 1000,
+      clock: ctx === null ? null : Math.round(ctx.currentTime * 1000) / 1000,
+    }
+  }
+  const stopForStalledClock = (): void => {
+    if (!playing()) return
+    handlePause()
+    void audioCtx?.suspend().catch(() => undefined)
+    setStalled(true)
+  }
+  const songShouldSound = (): boolean => {
+    const ctx = audioCtx
+    const length = duration()
+    return playing() && ctx !== null && (length <= 0 || songPlace(ctx) < length)
+  }
+  if (deps.followEndWhileHidden === true) {
+    createEffect(
+      on(playing, (isPlaying) => {
+        if (!isPlaying) return
+        onCleanup(
+          watchSongClock({
+            clock: () => audioCtx,
+            watching: songShouldSound,
+            report: reportPlayback,
+            facts: stallFacts,
+            recover: restartClock,
+            giveUp: stopForStalledClock,
+          }),
+        )
+      }),
+    )
+  }
+
   const handlePlay = () => {
     // Runs inside the play gesture — the one moment iOS lets us both resume
     // the context and promote the audio session past the silent switch. The
@@ -1901,6 +1958,7 @@ export const useStemMixerAudioController = (
     const clockWas = audioCtx === null ? 'none' : String(audioCtx.state)
     unlockForPlayback(ensureAudioCtx)
     setInterrupted(false)
+    setStalled(false)
     disconnectSources()
     createSources(pauseOffset)
     wallPlayStart = audioCtx!.currentTime
@@ -1935,6 +1993,7 @@ export const useStemMixerAudioController = (
   const handlePause = () => {
     stopStartCheck()
     setInterrupted(false)
+    setStalled(false)
     catchUpClocks()
     pauseOffset = elapsed()
     disconnectSources()
@@ -1971,6 +2030,7 @@ export const useStemMixerAudioController = (
   const handleStop = () => {
     stopStartCheck()
     setInterrupted(false)
+    setStalled(false)
     let completedScore: MicScore | null = null
     if (deps.micActive() && deps.comparisonData().length > 0) {
       const s = deps.computeScore()
@@ -2468,6 +2528,7 @@ export const useStemMixerAudioController = (
     midiPhase,
     playing,
     interrupted,
+    stalled,
     elapsed,
     audibleElapsed,
     jumps,

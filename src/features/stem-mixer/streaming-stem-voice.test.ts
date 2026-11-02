@@ -223,6 +223,56 @@ describe('what a streamed voice holds', () => {
   })
 })
 
+describe('the sound it has ready', () => {
+  it('counts what is scheduled past the clock, held while the clock stands still', async () => {
+    const { context, setTime } = fakeContext()
+    const stem = chunkedStem({ chunkSeconds: 0.5, totalSeconds: 60 })
+    const voice = createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open: stem.open,
+      atContextTime: 10,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 1,
+      lookaheadWindows: 2,
+    })
+    expect(voice.queuedSeconds()).toBe(0)
+    setTime(10)
+    await settle()
+
+    // Two windows waiting on a clock that has not moved: the stream did its
+    // part, so a stall with sound queued is the clock's.
+    expect(voice.queuedSeconds()).toBeCloseTo(2, 6)
+    setTime(11.5)
+    expect(voice.queuedSeconds()).toBeCloseTo(0.5, 6)
+    // Past the last window, with none ended to make room: run dry.
+    setTime(13)
+    expect(voice.queuedSeconds()).toBe(0)
+  })
+
+  it('has nothing ready once stopped', async () => {
+    const { context } = fakeContext()
+    const stem = chunkedStem({ chunkSeconds: 0.5, totalSeconds: 60 })
+    const voice = createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open: stem.open,
+      atContextTime: 0,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 1,
+      lookaheadWindows: 2,
+    })
+    await settle()
+    expect(voice.queuedSeconds()).toBeGreaterThan(0)
+
+    voice.stop(0)
+
+    expect(voice.queuedSeconds()).toBe(0)
+  })
+})
+
 describe('where the windows land on the clock', () => {
   it('places them end to end from the start time it was given', async () => {
     const { context, started } = fakeContext()

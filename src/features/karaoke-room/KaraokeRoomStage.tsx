@@ -105,6 +105,7 @@ import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
+import { KaraokeSoundStopped } from './KaraokeSoundStopped'
 import { isMissing, sayMissingSong } from './missing-song'
 import { useKaraokeNotesReading } from './useKaraokeNotesReading'
 import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
@@ -738,6 +739,7 @@ export const KaraokeRoomStage: Component = () => {
             />
           )}
         </Show>
+        <KaraokeSoundStopped mixer={mixer} />
       </div>
       <Show when={pageInWindow() ? cue() : null} keyed>
         {(entry) => (

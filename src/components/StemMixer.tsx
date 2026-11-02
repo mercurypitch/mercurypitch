@@ -2395,6 +2395,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     hosted?.attach({
       playing: audio.playing,
       interrupted: audio.interrupted,
+      stalled: audio.stalled,
       loading: audio.loading,
       loadError: audio.loadError,
       elapsed: audio.elapsed,

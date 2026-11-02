@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 31.1k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
-| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 18.3k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
+| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 18.6k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 14.8k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
@@ -86,7 +86,7 @@ These are the rules that break things when ignored.
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.7k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.8k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `karaoke-room` | [karaoke-room-find.ts](../../src/features/karaoke-room/karaoke-room-find.ts) | 7.6k | Find a song by singing it, in the Karaoke room The web's Mercury Sing listens for every separated song and opens Karaoke Night by its add... |
+| `karaoke-room` | [karaoke-room-find.ts](../../src/features/karaoke-room/karaoke-room-find.ts) | 7.7k | Find a song by singing it, in the Karaoke room The web's Mercury Sing listens for every separated song and opens Karaoke Night by its add... |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.5k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 6.8k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
 | `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 6.8k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
@@ -241,14 +241,15 @@ These are the rules that break things when ignored.
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 350 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 300 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
+| [native-device-api.ts](../../src/stores/native-device-api.ts) | 300 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 250 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
-| [native-device-api.ts](../../src/stores/native-device-api.ts) | 250 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [harmony-store.ts](../../src/stores/harmony-store.ts) | 200 | Harmony's records — the best at each level, and how it is sung A best is the most lines sung in harmony (every note a third from Merc's)... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
+| [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 150 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
@@ -265,7 +266,6 @@ These are the rules that break things when ignored.
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [sing-takes-store.ts](../../src/stores/sing-takes-store.ts) | 100 | Sing takes — the summaries this phone keeps, and nothing else A kept take is four numbers and two timestamps. |
-| [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 50 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [background-store.ts](../../src/stores/background-store.ts) | 50 | Premium background store compatibility facade The account-safe catalog store is route-neutral so standalone surfaces can use it without i... |
 | [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |
 | [developer-console-store.ts](../../src/stores/developer-console-store.ts) | 50 | Developer console store — whether the floating console is switched on The switch, kept apart from the log it shows (console-store.ts). |
@@ -421,9 +421,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.6k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 2.6k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.6k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 2.5k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.4k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.3k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 2.3k |

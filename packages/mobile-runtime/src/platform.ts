@@ -47,6 +47,7 @@ export type {
   AudioOutputPort,
   AudioOutputReading,
   AudioRoute,
+  AudioRouteChange,
 } from './audio-output'
 export { onAudioOutput, onAudioRoute, readAudioOutput } from './audio-output'
 export type { Unsubscribe } from './native-calls'
