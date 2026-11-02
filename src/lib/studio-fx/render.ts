@@ -9,7 +9,8 @@
 //
 //   PRE-ROLL — a new DynamicsCompressorNode fades in: it starts about 17 dB
 //   down and needs ~300 ms to reach unity (Chrome 153). The source therefore
-//   starts after half a second of silence, which is cut away afterwards.
+//   starts after half a second of silence, which is cut away afterwards. It
+//   starts on that frame, as a Studio Play starts a clip (whole-frame.ts).
 //
 //   LATENCY — compressors carry a lookahead and oversampled shapers a
 //   resampling delay (6 ms and 4 ms at 48 kHz on Chrome 153). The chain's
@@ -22,6 +23,7 @@
 //   TAIL — the render runs on past the source by the chain's tail (reverb
 //   decay, delay repeats), so an export never cuts a tail.
 
+import { frameTime } from '@/lib/studio/playback/whole-frame'
 import { createStudioFxChain } from './chain'
 import type { ChainSpec } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
@@ -108,7 +110,7 @@ async function renderChain(
   player.buffer = input
   player.connect(chain.input)
   chain.output.connect(ctx.destination)
-  player.start(preRoll / input.sampleRate)
+  player.start(frameTime(preRoll, input.sampleRate))
   try {
     return { rendered: await ctx.startRendering(), ctx, preRoll }
   } finally {
