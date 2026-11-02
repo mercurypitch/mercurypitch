@@ -14,7 +14,7 @@ November 2026): each learner reads their own clef, the bass for the lower voice 
 the higher, and every chord and inversion is written in either clef (item 2). Roman numerals are
 Lesson 12's (I, V, V7), and the chords keep the names the app uses, "dominant seventh" and "major
 seventh": "major seventh" alone always means the interval, and the chord is always a "major seventh
-chord" (FACTS 10). Its learner copy is 2,160 words on the series' counter (WEB-SPEC, Length).
+chord" (FACTS 10). Its learner copy is 2,178 words on the series' counter (WEB-SPEC, Length).
 
 Sound comes before every symbol (SEASON-2 § 1.4 item 1). Every chord plays and lights on Lesson
 12's ring of rooms before the learner's staff writes it, every staff example plays, and the staff
@@ -74,8 +74,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   length (FACTS 47).
 - **The sing-along** is the plan's figure in G, written with F♯'s own sharp and no key signature, as
   Lesson 23 writes in D; no Move do and no octave is offered (FACTS 52 to 55).
-- **The quick check** changes question 1's second and third feedback, question 2's wording and its
-  third feedback, question 3's feedback and question 4's stem (FACTS 75 to 78).
+- **The quick check** keeps the plan's questions and answers, and rewords question 2 and question
+  4's stems and most feedback lines: G7 and "usually" go, and a wrong answer's line no longer
+  gives the answer (FACTS 75 to 78).
 - **The practice card** says what Chord Stacker does at every level, which its own help does not,
   and what waits; Stack's line says its six choices hold no major seventh chord (FACTS 62 to 69).
 - **The teases.** This lesson's, on Lesson 26's card, is the lead's, with Lesson 26's planned line
@@ -183,8 +184,8 @@ example stands on C; none is built on G: FACTS 1a, 41.)
 
 ## Step 1 of 4: How do you build a seventh chord?
 
-Stack one more third on a triad, as Lesson 12 stacked them, and you have a seventh chord, named by
-its triad and its seventh. On do, C, E and G take a B, a major seventh above C. [Play C, E and G,
+Stack one more third on a triad, as Lesson 12 did, and you have a seventh chord, named by its
+triad and its seventh. On do, C, E and G take a B, a major seventh above C. [Play C, E and G,
 then C, E, G and B] A major triad with a major seventh is a major seventh chord.
 
 On so, G, B and D take an F, a minor seventh above G. [Play G, B and D, then G, B, D and F] A major
@@ -194,7 +195,7 @@ triad with a minor seventh is a dominant seventh chord.
 then its place reads "Choose an answer at the top, then hear both chords, to unlock this
 paragraph." FACTS 1a, 39.)
 
-**Try:** tap I, then Add the seventh, and play it.
+**Try:** tap I, then Add the seventh.
 **Notice:** B sits one bead from C, a semitone short of an octave.
 
 _Toy: Lesson 12's ring of rooms with two chips, I and V, Add the seventh and a readout of the root's
@@ -210,9 +211,9 @@ Now hear where one of them goes. [Play the dominant seventh, then I]
 > **Common mix-up:** "Adding a note just makes a chord richer."
 > **Why it seems right:** one open textbook, pairing each seventh chord with a mood as a way to
 > learn its sound, suggests hearing the major seventh chord as "happy and jazzy".
-> **The evidence:** the same book hears the dominant seventh as "unresolved", "like they strongly
-> need to move to another chord". It says the added note is a dissonance, which strengthens the
-> pull of V towards I.
+> **The evidence:** the same book suggests hearing the dominant seventh as "unresolved", "like they
+> strongly need to move to another chord". It says the added note adds dissonance, which
+> strengthens the pull of V towards I.
 > **The better idea:** what a seventh does depends on the chord it joins. On V, it pulls home.
 
 **Try:** play each seventh chord, then the dominant seventh going home.
@@ -268,11 +269,11 @@ bass, C major is in first inversion, written C/E; with its fifth, in second inve
 chord has a third inversion. [Play C major's three positions]
 
 **Try:** turn V7 over three times.
-**Notice:** the bass changes; the room on the ring stays.
+**Notice:** the bass changes; the room stays.
 
 _Toy: the ring with two chips, I and V7, a mark on the corner in the bass, Turn over, and the step's
-play, beside your staff, which restacks the chord as it plays. Turn over and the play wait for this
-step's choice._
+play, beside your staff, which restacks the chord as it plays. The chips, Turn over and the play
+wait for this step's choice, which itself waits for the cold open's._
 
 > **Go deeper**
 >
@@ -305,9 +306,8 @@ voice you chose before, or change it:" instead. With none stored, this choice co
 answer above and before anything plays, because it picks the voice that sings and the staff that
 shows, as in Lesson 15.)
 
-**Your turn:** Merc sings so, ti, re and fa, the dominant seventh's notes, slowly, then mi, then
-do, in G, or Tavi an octave higher, and each note lights on your staff as it sounds, with the house
-on do. Play Merc's notes, then start the guide and sing along, on the syllables or on "ooh". Listen
+**Your turn:** Merc sings so, ti, re and fa, slowly, then mi, then do, in G, or Tavi an octave
+higher, and each note lights on your staff as it sounds, with the house on do. Play Merc's notes, then start the guide and sing along, on the syllables or on "ooh". Listen
 for fa stepping down to mi. Sing at about speaking volume.
 
 Stop immediately if anything feels uncomfortable.
@@ -354,7 +354,7 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 - Stack one more third on a triad and you have a seventh chord, named by its triad and its seventh.
   On do it's a major seventh chord.
 - On so the added note is fa: the dominant seventh, V7. Its ti and fa are Lesson 23's tritone, and
-  in V7 to I they close inwards to do and mi.
+  in V7 to I they tend to close inwards to do and mi.
 - A chord is named by its root, whatever is in the bass: root position, then first, second and, for
   a seventh chord, third inversion.
 
@@ -368,8 +368,9 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
   each note back in turn, with nothing sounding under you. Its five chords are the major seventh,
   minor seventh, dominant seventh, diminished seventh and major sixth chords, in a shuffled order,
   each on the root note you pick, and it doesn't say which one is playing. Every chord starts on its
-  root: it has no triads or inversions yet. It shows each note's name as you sing it, and it wants
-  each note in the octave it plays, not an octave away. Its root starts low in the voice range saved
+  root: it has no triads or inversions yet. It shows each note's name as you sing it, and a dot that
+  sits on a line when you're in tune, but no staff. It wants each note in the octave it plays, not an
+  octave away. Its root starts low in the voice range saved
   in Settings, and a chord climbs up to 11 semitones above it: set your range there first, under
   Singing Voice Range. A higher level plays the notes faster and gives you less time to sing them;
   the five chords stay the same at every level.
@@ -515,7 +516,7 @@ as Lesson 25 asks for two three-note ones, and its practice card names a sung dr
   note against the octave it plays. Its sung steps are thirds, and the major sixth chord's last a
   tone; each chord spans up to 11 semitones, a major seventh, from the root, and the diminished
   seventh chord holds two tritones, never sung as a leap. Its root starts on the saved preset's
-  starting note, from which every chord stays 8 to 10 semitones under the preset's top; a root
+  starting note, from which no chord's top comes within 8 semitones of the preset's top; a root
   picked higher on its dial can take a chord up to 11 semitones past the top. At every level the
   chords are the same; level 1 plays each note for 0.79 s and gives 3.3 s to sing it, level 5 0.6 s
   and 2.5 s, level 10 0.36 s and 1.5 s, and the level moves with the singer's scores.

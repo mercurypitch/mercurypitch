@@ -37,9 +37,17 @@ season's last sung task, the playback of the learner's take and "How did that fe
 are written in treble and bass (SEASON-2 § 7 item 2), and the learner reads their own clef.
 
 Your tease, one line above your hook on Lesson 27's card, as Lesson 27 committed it (Lesson 27
-FACTS 5): the lead proposed "A song in two parts. At bar 8 it sounds finished, then keeps going.",
-your opening in miniature. You own it (FACTS 5b; your entry in `kit/lesson-copy.ts`): check it
-against your final opening and predict, and that it names no chord and no cadence.
+FACTS 5): the lead first proposed "A song in two parts. At bar 8 it sounds finished, then keeps
+going.", your opening in miniature; Lesson 27's writer found "sounds finished" stronger than your
+plan ("sounds like an ending and swerves") and your research ("a weak cadence"), and offered "A song
+in two parts. At bar 8 it seems to end, then keeps going." (64 characters), which the lead takes
+unless Lesson 27's review binds otherwise. You own it (FACTS 5b; your entry in
+`kit/lesson-copy.ts`): check it against your final opening and predict, and that it names no chord
+and no cadence.
+
+Lesson 27's writer also found that your plan's predict stem ("just as it does when the song ends")
+rules out its own second choice. Word the stem so both choices stay open, and check it against the
+tease above.
 
 Go deeper items stay out unless a source is read for them; the card's "if long" items (plagal and
 interrupted cadences beyond one example each, AABA) are the first to go.

@@ -2934,3 +2934,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - 10:4x: worktree rebuilt at b7af3ec27; lessons/27-sevenths-inversions/LESSON.md restored (md5 = s2pkg/27 copy). Rate limit "allowed" (window to 15:40 UTC).
 - W27 resumed by SendMessage 10:4x (told: worktree rebuilt, re-read LESSON.md, re-read brief v9's review lessons). W26 spawned 10:4x (BRIEF-26 .v3 state). Two agents running.
 - Next: W26/W27 hand-backs -> fresh reviewers at xhigh (one each, when the other agent count allows: at most two agents) -> fix passes -> lead reviews -> commits. Then 28 (after 26), then the shared commit (#229).
+
+## 2 Nov 11:1x UTC — W27 handed back; R27 spawned
+- L27 draft: 2,178 words, 233 citations, plan-cites 0; copies match. R27 (fresh, xhigh) spawned 11:1x; told to weigh the predict [F] [F♯] against Lesson 26's plan (its Step 2, mix-up and quick check 1 teach exactly "the third above D in C is F") and propose a predict no earlier lesson answers if it fails the house rule. Lead's leaning: change L27's predict (L26's core teaching cannot move), e.g. which way the new top note F goes on the way home (down to E), tied to Lesson 23's tritone and Lesson 4's ti-to-do; decide after R27.
+- W27's other questions: L28 tease "...it seems to end, then keeps going." (64) and L28's predict stem: both put into BRIEF-28 (.v1 backup). SEASON-2 card "Closes on" for L27 and Chord Stacker's help text: in the hand-back for the shared commit / app list. Coach: minor-seventh span.
+- In flight: W26 (since 10:4x), R27 (since 11:1x).
