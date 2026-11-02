@@ -6,6 +6,7 @@ import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PhraseNote } from '@/lib/sequence/sequence-engine'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import type * as HarmonyStoreModule from '@/stores/harmony-store'
 import { HARMONY_BESTS_KEY, HARMONY_WAY_KEY, resetHarmonyStoreForTests, } from '@/stores/harmony-store'
 import { BETWEEN_LINES_MS, HARMONY_LEVELS, HARMONY_LINES, MERC_GAP_SECONDS, } from './harmony-rules'
 
@@ -109,6 +110,15 @@ vi.mock('@/stores/exercise-history-store', () => ({
 
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
+}))
+
+// The room on its own: the demo that plays by itself on a first visit has
+// its own tests (demo/HarmonyDemo.test.tsx).
+vi.mock('@/stores/harmony-store', async () => ({
+  ...(await vi.importActual<typeof HarmonyStoreModule>(
+    '@/stores/harmony-store',
+  )),
+  harmonyDemoAutoPlays: () => false,
 }))
 
 const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))

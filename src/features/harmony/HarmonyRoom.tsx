@@ -23,8 +23,11 @@
 // singer's own turn, and the result's lines, each a row that plays it in
 // two voices (HarmonyResult.tsx).
 //
-// No "How it works" demo yet: Merc's line says the task, the lamps show
-// where to go, and Learning has him sing the harmony first.
+// "How it works" (demo/) plays over the same room: Merc sings his line,
+// and the harmony is sung back after him twice, through the room's own
+// engine, his own note once instead of the third over it and once a third
+// above all the way, with the demo kit's layer, cards and tooltips. It
+// plays by itself on a first visit, and from "?" any time at rest.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
@@ -33,9 +36,12 @@ import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { createMeasure } from '@/components/room-kit/room-measure'
-import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, } from '@/components/room-kit/RoomShell'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
+import type { DemoCueId, DemoTarget } from './demo/demo-cues'
+import { aimHarmonyTip } from './demo/tip-targets'
+import { useHarmonyDemo } from './demo/useHarmonyDemo'
 import type { HarmonyController } from './harmony-controller-contract'
 import type { HarmonyPhase } from './harmony-machine'
 import type { HarmonyWay } from './harmony-rules'
@@ -55,6 +61,8 @@ export interface HarmonyRoomProps {
   onDone: () => void
   /** Merc's voice: his sampled one on the phone (HarmonyScreen). */
   voice?: RoundVoice
+  /** What that voice needs loaded before the demo sings (his sampled set). */
+  voiceReady?: () => Promise<unknown>
   /** The run, when it is not the room's own (a test's). Read once. */
   controller?: HarmonyController
   /** No animation at all (the fixtures). */
@@ -69,7 +77,9 @@ const RESULT_BUBBLE_ROOM = 100
 const BUBBLE_MAX = 320
 
 /** The mic for each phase: ready, waiting, the singer's turn, or done. */
-export function harmonyMicState(phase: HarmonyPhase): MicState {
+export function harmonyMicState(phase: HarmonyPhase, demo = false): MicState {
+  // The demo's takes never open the mic: they wait.
+  if (demo) return 'wait'
   switch (phase) {
     case 'intro':
     case 'blocked':
@@ -91,8 +101,14 @@ function startLabel(way: HarmonyWay): string {
     : 'Start: Merc sings his line, then it is your turn'
 }
 
-/** The mic's name as the phase has it. */
-function micName(phase: HarmonyPhase, way: HarmonyWay, task: string): string {
+/** The mic's name as the phase has it; the start's while the demo plays. */
+function micName(
+  phase: HarmonyPhase,
+  way: HarmonyWay,
+  task: string,
+  demo: boolean,
+): string {
+  if (demo) return startLabel(way)
   switch (phase) {
     case 'starting':
       return 'Opening the microphone'
@@ -141,12 +157,14 @@ export function HarmonyRoom(props: HarmonyRoomProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- read once, as documented
   const given = props.controller
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = given ?? useHarmonyController({ voice: props.voice })
-  const shell = createRoomShell<string, string>({
+  const voice = { voice: props.voice, ready: props.voiceReady }
+  const room = given ?? useHarmonyController(voice)
+  const demo = given === undefined ? useHarmonyDemo(room) : null
+  const shell = createRoomShell<DemoCueId, DemoTarget>({
     ids: 'harmony',
     styles,
     run: room,
-    demo: null,
+    demo,
   })
   const phase = (): HarmonyPhase => room.state().phase
 
@@ -278,6 +296,8 @@ export function HarmonyRoom(props: HarmonyRoomProps): JSX.Element {
 
   /** What a screen reader hears, from the one polite region. */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (shell.busy() || room.script.active()) return ''
     const current = room.current()
     switch (phase()) {
       case 'call':
@@ -310,7 +330,7 @@ export function HarmonyRoom(props: HarmonyRoomProps): JSX.Element {
       }}
       testId="harmony-room"
       said={said()}
-      aim={() => null}
+      aim={(tip, layer) => aimHarmonyTip(tip.target, layer)}
     >
       <div ref={stageEl} class={styles.stage}>
         <LakeScene
@@ -396,7 +416,8 @@ export function HarmonyRoom(props: HarmonyRoomProps): JSX.Element {
       <ShellBarEnd
         shell={shell}
         showLevel={
-          phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
+          !room.script.active() &&
+          (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
         }
         level={
           <>
@@ -405,12 +426,13 @@ export function HarmonyRoom(props: HarmonyRoomProps): JSX.Element {
           </>
         }
       />
+      <ShellSkip shell={shell} />
 
       <ShellDock
         shell={shell}
         onDone={() => props.onDone()}
-        mic={harmonyMicState(phase())}
-        micLabel={micName(phase(), room.way(), task())}
+        mic={harmonyMicState(phase(), room.script.active())}
+        micLabel={micName(phase(), room.way(), task(), room.script.active())}
         still={props.still}
         overMic={
           <Show when={room.canHearAgain()}>

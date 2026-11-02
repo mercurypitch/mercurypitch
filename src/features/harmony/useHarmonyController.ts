@@ -26,6 +26,12 @@
 // One capture window per line, opened as its call is scheduled, so the
 // frames' clock and the audio clock meet at one moment; the engine is
 // ticked once per CAPTURED frame, on the frames' own clock.
+//
+// "How it works" (demo/useHarmonyDemo.ts) sings its takes through the same
+// steps by `script` (scripted-take.ts): frames in place of the mic, Merc's
+// call and his pair on the take's clock, the demo's own sound singing them.
+// A scripted take never opens the mic, fires a haptic, says a line or keeps
+// a result, and a run's moves wait while the demo has the room.
 
 import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
@@ -44,31 +50,31 @@ import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { EXERCISE_HARMONY_LAKE } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import type { MercVoice } from '@/lib/merc/sim'
-import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import type { Phrase, SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
-import { callSeconds, createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
+import { callSeconds, RESPONSE_GATE_SECONDS, } from '@/lib/sequence/sequence-engine'
 import type { NoteWindow } from '@/lib/sequence/sung-window'
 import { singerWindow } from '@/lib/sequence/sung-window'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
-import { harmonyWay } from '@/stores/harmony-store'
+import { harmonyDemoAutoPlays, harmonyWay } from '@/stores/harmony-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { HarmonyController, HarmonyControllerOptions, HarmonyLampState, HarmonyTrailSink, } from './harmony-controller-contract'
 import { YOUR_TURN } from './harmony-controller-contract'
-import type { HarmonyTrailPoint } from './harmony-ear'
-import { readHarmonyVoice, togetherIndex, togetherPos, turnPos, } from './harmony-ear'
 import type { HarmonyLine } from './harmony-line'
 import { planLines } from './harmony-line'
 import type { HarmonyEvent, HarmonyState, LineOutcome } from './harmony-machine'
 import { harmonyReducer, INITIAL_HARMONY_STATE, isRunPhase, isSinging, liveLine, } from './harmony-machine'
-import { after, harmonyLine, harmonyPhrase, lineOutcome, mercCall, mercLine, missedPair, } from './harmony-phrase'
+import { after, mercCall, mercLine, missedPair } from './harmony-phrase'
+import { createLineReplay } from './harmony-replay'
 import type { HarmonyLevel } from './harmony-rules'
-import { AFTER_ANSWER_MS, BETWEEN_LINES_MS, HARMONY_LEVELS, HARMONY_LINES, MERC_GAP_SECONDS, SOUND_LEAD_SECONDS, taskName, TOGETHER_BREATH_SECONDS, togetherRules, VOICE_TAIL_SECONDS, } from './harmony-rules'
+import { AFTER_ANSWER_MS, BETWEEN_LINES_MS, HARMONY_LEVELS, HARMONY_LINES, SOUND_LEAD_SECONDS, taskName, TOGETHER_BREATH_SECONDS, togetherRules, VOICE_TAIL_SECONDS, } from './harmony-rules'
 import type { HarmonySummary } from './harmony-run'
 import { callMoment, keepHarmonyRun, landedMoment, missedFields, missedMoment, resultMoment, summarizeRun, } from './harmony-run'
+import { createHarmonyTurn } from './harmony-turn'
 import type { HarmonyMoment } from './merc-lines'
 import { createHarmonyLines } from './merc-lines'
 import { HARMONY_SPOKEN } from './merc-spoken'
+import type { HarmonyDemoMark, ScriptedHarmonyTake } from './scripted-take'
+import { createScriptedRoom } from './scripted-take'
 
 /** Every lamp of a line waiting for the voice. */
 const waiting = (line: HarmonyLine): HarmonyLampState[] =>
@@ -95,7 +101,11 @@ export function useHarmonyController(
   const [mercLit, setMercLit] = createSignal(0)
   const [lamps, setLamps] = createSignal<readonly HarmonyLampState[]>([])
   const [answering, setAnswering] = createSignal<number | null>(null)
-  const [replaying, setReplaying] = createSignal<number | null>(null)
+  // The demo's: on from its enter to its leave, playing, and its rules.
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const [demoRules, setDemoRules] = createSignal<HarmonyLevel | null>(null)
+  const demoOn = (): boolean => untrack(scriptActive)
   const level = createLevelPreset(HARMONY_LEVELS, () =>
     isRunPhase(state().phase),
   )
@@ -129,7 +139,7 @@ export function useHarmonyController(
     still: prefersReducedMotion,
     afterCheer: () => (isRunPhase(phase()) ? 'listen' : 'idle'),
   })
-  const { sing } = createMercSinger({
+  const { sing, faceFor } = createMercSinger({
     voice: voiceOfMerc,
     lead: SOUND_LEAD_SECONDS,
     tail: VOICE_TAIL_SECONDS,
@@ -145,42 +155,54 @@ export function useHarmonyController(
   let audio: AudioContext | null = null
   let runLevel: ExerciseLevel = 'singer'
   let rules: HarmonyLevel = untrack(level.preset)
-  /** What the engine hears by: the level's rules, or its rules together. */
-  let heardRules: HarmonyLevel = rules
   let sound: { stop(): void } | null = null
   /** When Merc's call ends, audio clock s, his voice's tail with it; 0 for none. */
   let soundEnd = 0
   /** Together, a line is over and Merc still sings his to its end. */
   let finishing = false
-  let engine: SequenceState = createSequenceState(0)
-  let phrase: Phrase = { notes: [] }
-  let processed = 0
   let windowStartedAt = 0
   /** Merc's notes in the call (and with the singer), on the frames' clock. */
   let callNotes: { midi: number; from: number; to: number }[] = []
-  /** The singer's turn begins here, frames' clock. */
-  let turnAt = 0
   /** The frame loop runs: a call or a turn is on. */
   let listening = false
   let loudness = 0
-  let points: HarmonyTrailPoint[] = []
   let heardAgain = false
-  let voicedInTurn = false
-  /** When the voice entered the band of its note, frames' clock; null outside. */
-  let bandSince: number | null = null
-  /** The harmony note the voice is on, and since when (frames' clock). */
-  let onNote = 0
-  let onNoteSince = 0
   /** Counts calls, so a replayed call's pending moments never fire. */
   let callCount = 0
   /** Counts Merc's answers and replays, so an old one's moments never fire. */
   let answerCount = 0
   let sink: HarmonyTrailSink = () => undefined
 
-  const frameNow = (): number => (performance.now() - windowStartedAt) / 1000
+  /** The demo's take singing through the room in place of the mic. */
+  let scripted: ScriptedHarmonyTake | null = null
+
+  /** Seconds on the frames' clock: since the window opened, or the take's. */
+  const frameNow = (): number =>
+    scripted === null
+      ? (performance.now() - windowStartedAt) / 1000
+      : scripted.now()
+  /** The demo's moment, to its tooltips; the singer's run has none. */
+  const mark = (moment: HarmonyDemoMark): void => {
+    scripted?.onEvent(moment)
+  }
+  /** Notes on the take's clock (`at`), on the wall clock, ms from now. */
+  const onTake = (take: ScriptedHarmonyTake) => (at: number) =>
+    take.startsAt + at * 1000 - performance.now()
   const live = (): HarmonyLine | null => liveLine(untrack(state))
-  /** Merc's pace: from one of his notes to the next, s. */
-  const step = (): number => rules.noteSeconds + MERC_GAP_SECONDS
+
+  // ── The line's ears (harmony-turn.ts) ──────────────────────
+  const turn = createHarmonyTurn({
+    singing: () => isSinging(phase()),
+    together: () => runWay() === 'together',
+    listening: () => listening,
+    heardAgain: () => heardAgain,
+    lamp: (index, next) => lamp(index, next),
+    mark,
+    face: (heard) => {
+      voice = heard ?? { ...voice, voiced: false, level: 0 }
+    },
+    decided: (outcome) => endLine(outcome),
+  })
 
   const loop = createFrameLoop(screenFrame, {
     alive: life.alive,
@@ -207,7 +229,7 @@ export function useHarmonyController(
     stopLoop()
     stopSound()
     sink(null)
-    points = []
+    turn.clear()
     voice = SILENT_VOICE
   }
 
@@ -221,11 +243,7 @@ export function useHarmonyController(
     stopSound()
     capture.startWindow()
     windowStartedAt = performance.now()
-    processed = 0
-    points = []
-    voicedInTurn = false
-    bandSince = null
-    onNote = 0
+    turn.clear()
     sink(null)
   }
 
@@ -275,16 +293,59 @@ export function useHarmonyController(
       from: onFrames(start + note.at),
       to: onFrames(start + note.at + note.seconds),
     }))
-    phrase = harmonyPhrase(current, rules)
-    if (together) {
-      heardRules = togetherRules(rules)
-      turnAt = onFrames(start + sungWith[0].at)
-      engine = createSequenceState(turnAt)
-    } else {
-      heardRules = rules
-      engine = createSequenceState(onFrames(sung.endAt) + RESPONSE_GATE_SECONDS)
-      turnAt = engine.responseStart
-    }
+    // Together the singer comes in with him; taking turns, after his
+    // voice has left the speaker.
+    const turnAt = together
+      ? onFrames(start + sungWith[0].at)
+      : onFrames(sung.endAt) + RESPONSE_GATE_SECONDS
+    turn.open({
+      line: current,
+      rules,
+      heardBy: together ? togetherRules(rules) : rules,
+      responseStart: turnAt,
+      turnAt,
+    })
+    merc.set('listen')
+    startLoop()
+  }
+
+  /**
+   * One of the demo's takes in place of the mic: its line called as a run's
+   * is, taking turns, on the take's clock, its frames flowing. The demo's
+   * own sound sings Merc's call; his face and his lamps follow it.
+   */
+  const playScripted = (take: ScriptedHarmonyTake): void => {
+    scripted = take
+    rules = take.rules
+    heardAgain = false
+    turn.open({
+      line: take.line,
+      rules: take.rules,
+      heardBy: take.rules,
+      responseStart: take.responseStart,
+      turnAt: take.responseStart,
+    })
+    callNotes = take.call.map((note) => ({
+      midi: note.midi,
+      from: note.at,
+      to: note.at + note.seconds,
+    }))
+    batch(() => {
+      dispatch({ type: 'demo', line: take.line })
+      setDemoRules(take.rules)
+      setMercLit(0)
+      setLamps(waiting(take.line))
+      setTask(taskName(take.line.below))
+      setAnswering(null)
+    })
+    callCount += 1
+    const call = callCount
+    faceFor(
+      take.call,
+      onTake(take),
+      () => call === callCount && phase() === 'call',
+      (i) => setMercLit(i + 1),
+    )
     merc.set('listen')
     startLoop()
   }
@@ -307,8 +368,7 @@ export function useHarmonyController(
   /** The call has reached its end at the speaker: the singer's turn. */
   const toTurn = (): void => {
     dispatch({ type: 'turn' })
-    onNote = 0
-    onNoteSince = turnAt
+    turn.start()
     const current = live()
     batch(() => {
       if (current !== null) setLamps(waiting(current))
@@ -321,95 +381,24 @@ export function useHarmonyController(
     if (runWay() === 'turns') merc.set('listen')
   }
 
-  /** The note the voice is on now: the engine's, or Merc's clock's together. */
-  const noteAt = (t: number, current: HarmonyLine): number => {
-    const notes = current.harmony.length
-    return runWay() === 'together'
-      ? togetherIndex(t, turnAt, step(), notes)
-      : Math.min(notes - 1, engine.current)
-  }
-
-  /** The singer's voice against its note: the trail, Merc's face, the band. */
-  const hearVoice = (frame: PitchFrame, current: HarmonyLine): void => {
-    const note = noteAt(frame.t, current)
-    if (note !== onNote) {
-      onNote = note
-      onNoteSince = frame.t
-      bandSince = null
-    }
-    const together = runWay() === 'together'
-    const pos = together
-      ? togetherPos(frame.t, turnAt, step(), current.harmony.length)
-      : turnPos(note, onNoteSince, frame.t)
-    const read = readHarmonyVoice(
-      frame,
-      current.harmony[note],
-      rules.tolCents,
-      pos,
-    )
-    points.push(read.point)
-    if (read.voice !== null) voicedInTurn = true
-    if (!together) voice = read.voice ?? { ...voice, voiced: false, level: 0 }
-    bandSince = read.inBand ? (bandSince ?? frame.t) : null
-  }
-
-  /** A note of the harmony landed or missed: its lamp says so. */
-  const onEvent = (event: SequenceEvent): void => {
-    if (event.type === 'phraseEnd') return
-    lamp(event.index, event.type === 'land' ? 'lit' : 'missed')
-  }
-
-  /** New captured frames: the turn's trail, its engine, its outcome. */
-  const follow = (
-    frames: readonly PitchFrame[],
-    current: HarmonyLine,
-  ): void => {
-    const from = processed
-    processed = frames.length
-    for (let i = from; i < frames.length && listening; i++) {
-      const frame = frames[i]
-      if (!isSinging(phase()) || frame.t < engine.responseStart) continue
-      hearVoice(frame, current)
-      engine = tickSequence(engine, frame, phrase, heardRules)
-      for (const event of engine.events) onEvent(event)
-      const outcome = lineOutcome(engine, current, {
-        voiced: voicedInTurn,
-        heardAgain,
-      })
-      if (outcome !== null) {
-        endLine(outcome)
-        return
-      }
-    }
-  }
-
-  /** The note's hold so far, 0 to 1, at `now` on the frames' clock. */
-  const holdAt = (now: number): number =>
-    bandSince === null
-      ? 0
-      : Math.min(1, Math.max(0, ((now - bandSince) * 1000) / rules.landMs))
-
   /** One screen frame while the room listens (frame-loop.ts). */
   function screenFrame(): void {
-    const current = live()
-    if (current === null) return
-    if (phase() === 'call' && frameNow() >= turnAt) toTurn()
-    const frames = capture.peekFrames()
-    follow(frames, current)
+    if (live() === null) return
+    if (phase() === 'call' && frameNow() >= turn.turnAt()) toTurn()
+    const frames = scripted?.frames() ?? capture.peekFrames()
+    turn.follow(frames)
     if (!listening) return
     if (!isSinging(phase())) {
       loudness = 0
       return
     }
     const last = frames.length === 0 ? null : frames[frames.length - 1]
+    // The demo's voice is not the singer's: the mic's ring stays still.
     loudness =
-      last === null || last.t < engine.responseStart ? 0 : newestLevel(frames)
-    const head = points.length === 0 ? null : points[points.length - 1]
-    sink({
-      points,
-      head: head === null || head.midi === null ? null : head,
-      hold: holdAt(frameNow()),
-    })
+      scripted !== null || last === null || last.t < turn.responseStart()
+        ? 0
+        : newestLevel(frames)
+    sink(turn.trail(frameNow()))
   }
 
   /** On to the next line after `ms`: only for this run and this line. */
@@ -432,9 +421,8 @@ export function useHarmonyController(
   function endLine(outcome: LineOutcome): void {
     const ctx = audio
     stopLoop()
-    capture.takeFrames()
+    if (scripted === null) capture.takeFrames()
     dispatch({ type: 'outcome', outcome })
-    bandSince = null
     sink(null)
     const left =
       ctx === null || runWay() !== 'together'
@@ -455,34 +443,52 @@ export function useHarmonyController(
 
   /** Merc's answer to a line: a cheer, or his note and the third from it. */
   function answerLine(outcome: LineOutcome): void {
-    const ctx = audio
     stopSound()
+    if (outcome.inHarmony) cheerLine(outcome.line)
+    else answerMiss(outcome)
+  }
+
+  /**
+   * A line sung in harmony: cheered, then the next. A demo's take is felt,
+   * said and followed by nothing: its tooltip explains it.
+   */
+  function cheerLine(current: HarmonyLine): void {
+    const take = scripted
+    if (take === null) haptics.tapLight()
+    batch(() => {
+      setChip('In harmony')
+      if (take === null) say(landedMoment(current))
+    })
+    merc.cheer()
+    if (take === null) nextAfter(BETWEEN_LINES_MS, current.index)
+    else mark('outcome')
+  }
+
+  /** A note missed: he sings his note, then the third from it, drawn as he does. */
+  function answerMiss(outcome: LineOutcome): void {
+    const ctx = audio
+    const take = scripted
     const current = outcome.line
-    if (outcome.inHarmony) {
-      haptics.tapLight()
-      batch(() => {
-        setChip('In harmony')
-        say(landedMoment(current))
-      })
-      merc.cheer()
-      nextAfter(BETWEEN_LINES_MS, current.index)
-      return
-    }
     const at = outcome.firstMiss ?? 0
     const fields = missedFields(outcome)
     batch(() => {
       setChip(fields === null ? null : `It was ${fields.note}`)
       setAnswering(at)
-      say(missedMoment(outcome), fields ?? undefined)
+      if (take === null) say(missedMoment(outcome), fields ?? undefined)
     })
-    // He sings his note, then the third from it, the pair drawn as he does.
     answerCount += 1
     const answer = answerCount
+    const answering = (): boolean =>
+      answer === answerCount && phase() === 'missed'
+    if (take !== null) {
+      // The demo's sound sings the pair, on the take's clock.
+      faceFor(take.answer, onTake(take), answering)
+      mark('outcome')
+      return
+    }
     let wait = AFTER_ANSWER_MS
     if (ctx !== null) {
-      const sung = sing(ctx, missedPair(current, at), () => {
-        return answer === answerCount && phase() === 'missed'
-      })
+      const sung = sing(ctx, missedPair(current, at), answering)
       sound = sung
       wait += Math.max(0, (sung.endAt - ctx.currentTime) * 1000)
     }
@@ -514,6 +520,15 @@ export function useHarmonyController(
     }
   }
 
+  /** No line on the lake: no chip, no task, no pair, no lamp lit. */
+  const clearLine = (): void => {
+    setChip(null)
+    setTask(null)
+    setAnswering(null)
+    setMercLit(0)
+    setLamps([])
+  }
+
   /** The run stops where it is: nothing kept, the mic closed. */
   function dropRun(): void {
     capture.release()
@@ -521,54 +536,31 @@ export function useHarmonyController(
     merc.stopCheering()
     batch(() => {
       dispatch({ type: 'stop' })
-      setChip(null)
-      setTask(null)
-      setAnswering(null)
-      setMercLit(0)
-      setLamps([])
+      clearLine()
     })
     merc.set('idle')
   }
 
-  /** A line heard again at the result goes quiet, its moments with it. */
-  const endReplay = (): void => {
-    answerCount += 1
-    setReplaying(null)
-  }
-
-  /** At the result, a line's row: Merc sings it in two voices. */
-  const replayLine = (index: number): void => {
-    if (phase() !== 'result') return
-    const outcome = untrack(state).outcomes[index]
-    if (outcome === undefined) return
-    endReplay()
-    // The line's own voices take over from Merc's words.
-    speech.hush()
-    const mine = answerCount
-    const current = (): boolean => mine === answerCount && phase() === 'result'
-    // Asked inside the tap: iOS starts the clock only from a gesture.
-    void capture.audio().then((ctx) => {
-      if (ctx === null || !current()) return
+  // ── The result's lines heard again (harmony-replay.ts) ─────
+  const replay = createLineReplay({
+    audio: () => capture.audio(),
+    sing,
+    voice: voiceOfMerc,
+    rules: () => rules,
+    atResult: () => phase() === 'result',
+    hush: () => speech.hush(),
+    play: (ctx, next) => {
       audio = ctx
       stopSound()
-      const his = sing(ctx, mercLine(outcome.line, rules), current)
-      const theirs = voiceOfMerc.sing(
-        ctx,
-        harmonyLine(outcome.line, rules),
-        ctx.currentTime + SOUND_LEAD_SECONDS,
-      )
-      sound = {
-        stop: () => {
-          his.stop()
-          theirs.stop()
-        },
-      }
-      setReplaying(index)
-      const ms = (his.endAt - ctx.currentTime + outputLatency(ctx)) * 1000
-      life.later(Math.max(0, ms), () => {
-        if (current()) setReplaying(null)
-      })
-    })
+      sound = next
+    },
+    later: life.later,
+  })
+  const endReplay = replay.end
+  /** At the result, a line's row: Merc sings it in two voices. */
+  const replayLine = (index: number): void => {
+    const outcome = untrack(state).outcomes[index]
+    if (outcome !== undefined) replay.play(index, outcome.line)
   }
 
   /** The singer's window, as a run plans its harmonies in it. */
@@ -581,6 +573,7 @@ export function useHarmonyController(
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
     const from = phase()
+    if (demoOn()) return
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
     // He stops talking before the mic opens.
     speech.hush()
@@ -620,7 +613,7 @@ export function useHarmonyController(
   }
 
   const stop = (): void => {
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun()
     sayIntro()
   }
@@ -628,7 +621,7 @@ export function useHarmonyController(
   /** Merc's call again, in the singer's own turn, as the level allows. */
   const canHearAgain = (): boolean => {
     const now = state()
-    if (now.phase !== 'sing') return false
+    if (now.phase !== 'sing' || scriptActive()) return false
     const allowance = level.preset().hearAgain
     if (allowance === 'never') return false
     return allowance === 'anyTime' || now.replays === 0
@@ -654,6 +647,8 @@ export function useHarmonyController(
     // Nothing he says or sings is heard behind their back either: a line
     // heard again at the result stops too.
     speech.hush()
+    // The demo stops itself on the way out (useExerciseDemo).
+    if (demoOn()) return
     if (!isRunPhase(phase())) {
       endReplay()
       stopSound()
@@ -665,7 +660,8 @@ export function useHarmonyController(
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
-    sayIntro()
+    // A first visit opens on the demo, which says it all: his line waits.
+    sayIntro(!harmonyDemoAutoPlays())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
@@ -685,16 +681,57 @@ export function useHarmonyController(
 
   life.watch({
     leave,
-    listening: () => isRunPhase(state().phase),
-    demo: { on: () => false, playing: () => false },
+    listening: () => isRunPhase(state().phase) && !scriptActive(),
+    demo: { on: scriptActive, playing: demoPlaying },
     holdsFocus: true,
     mic: {
       exercise: EXERCISE_HARMONY_LAKE,
-      on: () => isRunPhase(phase()) && phase() !== 'starting',
+      on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
       // A mic that died drops the run as leaving does, Merc silent: a call
       // or another app may have the sound, and his line would take it back.
       died: leave,
     },
+  })
+
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  const script = createScriptedRoom({
+    voice: voiceOfMerc,
+    active: scriptActive,
+    setActive: setScriptActive,
+    setPlaying: setDemoPlaying,
+    phase,
+    audio: () => capture.audio(),
+    ready: options.ready,
+    // The demo's harmony about the middle of the singer's window.
+    note: () => {
+      const window = runWindow()
+      return Math.round((window.low + window.high) / 2)
+    },
+    clear: () => {
+      scripted = null
+      callCount += 1
+      endReplay()
+      hush()
+      merc.stopCheering()
+      batch(() => {
+        dispatch({ type: 'demo', line: null })
+        setDemoRules(null)
+        setSummary(null)
+        clearLine()
+      })
+    },
+    load: playScripted,
+    current: () => scripted,
+    // The demo's words take over from his, and its end shows his opening
+    // line without saying it: the demo has just said it all.
+    line: (text) => {
+      speech.hush()
+      setLine(text)
+    },
+    sayIntro: () => sayIntro(false),
+    merc: merc.set,
+    later: life.later,
+    mark,
   })
 
   onCleanup(() => {
@@ -725,7 +762,7 @@ export function useHarmonyController(
     summary,
     resultLevel,
     current: () => liveLine(state()),
-    rules: level.preset,
+    rules: () => demoRules() ?? level.preset(),
     way: () => {
       const now = state()
       return isRunPhase(now.phase) || now.phase === 'result'
@@ -740,13 +777,13 @@ export function useHarmonyController(
     micLevel: () => loudness,
     canHearAgain,
     hearAgain,
-    replaying,
+    replaying: replay.playing,
     replayLine,
+    script,
     start,
     stop,
     drawTrail: (next) => {
       sink = next
     },
-    script: { active: () => false },
   }
 }

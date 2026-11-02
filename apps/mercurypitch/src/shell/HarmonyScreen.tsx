@@ -12,14 +12,15 @@
 // The room sings Merc with his sampled voice, Echo's (merc-sampler.ts): the
 // screen hands it in, so the room's feature reaches into no other feature.
 // Until his set has loaded his line goes to the synth "ooh", as Echo's
-// call does.
+// call does, and the demo waits a moment for it (`voiceReady`), as Leap's
+// does.
 //
 // Opening is the choice: the screen records Harmony as the last exercise
 // the moment it mounts, as LeapScreen does for Leap.
 
 import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
-import { MERC_CALL } from '@/features/echo/merc-sampler'
+import { MERC_CALL, preloadMercVoice } from '@/features/echo/merc-sampler'
 import { HarmonyRoom } from '@/features/harmony/HarmonyRoom'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
 import { EXERCISE_HARMONY_LAKE } from '@/lib/domain/exercise-contracts'
@@ -27,5 +28,11 @@ import { popScreen } from './run-shell-store'
 
 export function HarmonyScreen(): JSX.Element {
   onMount(() => rememberLastExercise(EXERCISE_HARMONY_LAKE))
-  return <HarmonyRoom onDone={popScreen} voice={MERC_CALL} />
+  return (
+    <HarmonyRoom
+      onDone={popScreen}
+      voice={MERC_CALL}
+      voiceReady={preloadMercVoice}
+    />
+  )
 }
