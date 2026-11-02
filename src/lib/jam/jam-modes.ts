@@ -18,7 +18,7 @@
 // hear anybody else in time. Everyone sings to the same count-in, and only
 // the scoreboard combines.
 
-import { scaleDegreeSet } from '@/lib/scale-data'
+import { midiToFreq, midiToNote, scaleDegreeSet } from '@/lib/scale-data'
 import type { MelodyData, MelodyItem } from '@/types'
 
 export type JamRoomMode = 'unison' | 'harmony' | 'relay'
@@ -140,14 +140,13 @@ function harmoniseItems(
   if (steps === 0) return items
   return items.map((item) => {
     const midi = diatonicStepUp(item.note.midi, key, scaleType, steps)
+    // The name moves with the pitch. Spreading the note kept the melody's
+    // name, so the canvas, which labels a block name + octave, drew a
+    // third above C4 as "C4" on the E4 it actually is.
+    const { name, octave } = midiToNote(midi)
     return {
       ...item,
-      note: {
-        ...item.note,
-        midi,
-        octave: Math.floor(midi / 12) - 1,
-        freq: 440 * 2 ** ((midi - 69) / 12),
-      },
+      note: { ...item.note, midi, name, octave, freq: midiToFreq(midi) },
     }
   })
 }
