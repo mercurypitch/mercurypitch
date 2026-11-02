@@ -2857,3 +2857,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Next: each writer's reply -> lead review (read the three files against the review and the calls,
   plan-cites 0, whole plan 200, lesson-words, prettier, head test) -> commit as the owner -> push.
   Then 24 and 25 (refresh BRIEF-writer-common's head to the newest commit first).
+- Fallback wake-up armed for 07:06 UTC (trig_01Ccuz2Qtjapvh1L24j6iBDZ); delete it if both replies are handled first.
