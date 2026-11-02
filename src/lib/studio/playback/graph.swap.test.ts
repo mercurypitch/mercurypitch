@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { CHAIN_SPEC_VERSION, createEffectSpec, } from '@/lib/studio-fx/chain-spec'
-import type { FakeNode } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { FakeDelay, FakeNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import type { StudioClip, StudioProject } from '../model/types'
@@ -152,6 +152,31 @@ describe('Studio graph swap', () => {
     expect(release).not.toHaveBeenCalled()
     f.graph.dispose()
     expect(release).toHaveBeenCalledOnce()
+  })
+
+  it('holds a chain it swaps in at two channels behind its input, as a lane chain is built', () => {
+    // Arrange
+    const f = swappingGraph()
+    f.graph.scheduleUntil(1)
+    f.ctx.currentTime = 1
+
+    // Act
+    f.graph.swapChains(
+      [{ trackId: 'late', spec: COMPRESSED, latency: 0.004, release: vi.fn() }],
+      1.02,
+    )
+    f.graph.scheduleUntil(3)
+
+    // Assert: the lane's inlet feeds the chain's input, and that the hold.
+    const [chainInput] = f.inputOf(f.sources()[2]).targets
+    const [hold] = chainInput.targets as FakeDelay[]
+    expect([
+      hold.nodeType,
+      hold.delayTime.value,
+      hold.channelCount,
+      hold.channelCountMode,
+    ]).toEqual(['delay', 0, 2, 'explicit'])
+    f.graph.dispose()
   })
 
   it("takes the new sources' frame once the chain is built, as far ahead of the clock as asked, so a slow build cannot start them late", () => {

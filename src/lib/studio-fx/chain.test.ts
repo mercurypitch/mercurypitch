@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import type { StudioFxChainOptions } from './chain'
 import { createStudioFxChain } from './chain'
 import type { EffectSpec } from './chain-spec'
 import { moveEffect, normalizeChainSpec, removeEffect, updateEffect, } from './chain-spec'
 import type { EffectUnit } from './effect-shell'
-import type { FakeGain } from './fake-audio-graph.test-fixtures'
+import type { FakeDelay, FakeGain } from './fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeNode, FakeOfflineAudioContext, } from './fake-audio-graph.test-fixtures'
 
 interface FakeUnit extends EffectUnit {
@@ -51,10 +52,11 @@ function harness(options: { offline?: boolean } = {}) {
     units.push(unit)
     return unit
   }
-  const build = (spec: unknown) =>
+  const build = (spec: unknown, extra: StudioFxChainOptions = {}) =>
     createStudioFxChain(ctx.asContext, spec, {
       schedule: scheduler.schedule,
       createUnit,
+      ...extra,
     })
   return { ctx, scheduler, units, build }
 }
@@ -134,6 +136,40 @@ describe('createStudioFxChain', () => {
     const input = chain.input as unknown as FakeNode
     const duck = input.targets[0] as FakeGain
     expect(duck.targets).toEqual([chain.output])
+  })
+
+  it('holds a lane chain at two channels behind its input, so what its effects hold plays out when its sources end', () => {
+    // Arrange
+    const { build, ctx, units } = harness({ offline: true })
+    const chain = build(VOCAL, { stereoHold: true })
+    const [hold] = ctx.ofType<FakeDelay>('delay')
+
+    // Act: a re-patch, which rewires everything after the input.
+    chain.setSpec(moveEffect(chain.getSpec(), 'reverb', 0))
+
+    // Assert
+    expect(hold.delayTime.value).toBe(0)
+    expect([hold.channelCount, hold.channelCountMode]).toEqual([2, 'explicit'])
+    expect((chain.input as unknown as FakeNode).targets).toEqual([hold])
+    expect(signalOrder(hold as unknown as AudioNode, units)).toEqual([
+      'reverb',
+      'eq',
+      'compressor',
+    ])
+  })
+
+  it('wires an empty held chain straight through: it holds nothing to lose', () => {
+    // Arrange
+    const { build, ctx } = harness()
+
+    // Act
+    const chain = build({ effects: [] }, { stereoHold: true })
+
+    // Assert
+    const input = chain.input as unknown as FakeNode
+    const duck = input.targets[0] as FakeGain
+    expect(duck.targets).toEqual([chain.output])
+    expect(ctx.ofType('delay')).toHaveLength(0)
   })
 
   it('reuses running effects by id and sends only what changed', () => {

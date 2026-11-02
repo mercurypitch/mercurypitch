@@ -144,7 +144,10 @@ export function buildGraphLane(
 ): StudioGraphLane {
   if (lane.compensationSeconds === null)
     throw new Error('Studio chain timing has not been measured.')
-  const chain = createStudioFxChain(ctx, lane.spec, { profile: place.profile })
+  const chain = createStudioFxChain(ctx, lane.spec, {
+    profile: place.profile,
+    stereoHold: true,
+  })
   try {
     const fade = ctx.createGain()
     chain.output.connect(fade)

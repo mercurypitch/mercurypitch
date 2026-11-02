@@ -256,7 +256,9 @@ function buildParts(
   let buses: StudioReverbBuses | null = null
   try {
     if (options.master) {
-      master = createStudioFxChain(ctx, options.master.spec)
+      master = createStudioFxChain(ctx, options.master.spec, {
+        stereoHold: true,
+      })
       master.output.connect(output)
     }
     const fromFrame = options.fromFrame ?? plan.startFrame

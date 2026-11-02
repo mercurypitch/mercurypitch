@@ -1,6 +1,8 @@
 // Studio lane freeze render — a lane renders run by run: each on a context the length of its own clips and tail, never the whole song.
 import { describe, expect, it } from 'vitest'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import { createEffectSpec } from '@/lib/studio-fx/chain-spec'
+import type { FakeDelay } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { FakeNode, FakeOfflineAudioContext, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioPlannedLane } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
@@ -108,5 +110,40 @@ describe('Studio lane freeze render', () => {
     expect(
       frozen.chunks.every((chunk) => chunk.frames <= FREEZE_CHUNK_FRAMES),
     ).toBe(true)
+  })
+  it("holds its chain at two channels behind its input, so each run's last clip plays out as it does live", async () => {
+    // Arrange
+    const planned = {
+      ...lane(),
+      spec: { version: 1 as const, effects: [createEffectSpec('gain')] },
+    }
+    const contexts: RenderContext[] = []
+    const buffers = new Map(
+      planned.segments.map((segment) => [segment.assetId, {} as AudioBuffer]),
+    )
+
+    // Act
+    await renderLaneFreeze(planned, buffers, {
+      latencyFrames: 0,
+      key: 'k',
+      signal: new AbortController().signal,
+      createContext: (frames) => {
+        const ctx = new RenderContext(frames)
+        contexts.push(ctx)
+        return ctx as unknown as OfflineAudioContext
+      },
+    })
+
+    // Assert: one hold a run, a zero delay fixed at two channels.
+    const holds = contexts.map((ctx) =>
+      ctx
+        .ofType<FakeDelay>('delay')
+        .map((delay) => [
+          delay.delayTime.value,
+          delay.channelCount,
+          delay.channelCountMode,
+        ]),
+    )
+    expect(holds).toEqual(contexts.map(() => [[0, 2, 'explicit']]))
   })
 })

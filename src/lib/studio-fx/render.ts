@@ -105,7 +105,10 @@ async function renderChain(
     length: preRoll + length,
     sampleRate: input.sampleRate,
   })
-  const chain = createStudioFxChain(ctx, spec)
+  // A stereo render plays out what its chain holds past the input's end (chain.ts).
+  const chain = createStudioFxChain(ctx, spec, {
+    stereoHold: input.numberOfChannels > 1,
+  })
   const player = ctx.createBufferSource()
   player.buffer = input
   player.connect(chain.input)
