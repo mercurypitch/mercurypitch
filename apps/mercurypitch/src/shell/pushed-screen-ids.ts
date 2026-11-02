@@ -38,6 +38,7 @@ export type PushedScreen =
   | 'home-note'
   | 'first-note'
   | 'leap'
+  | 'harmony'
   | 'developer'
   | 'leagues'
   | 'legend'

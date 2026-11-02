@@ -15,7 +15,8 @@
 // same way, by id (WarmUpScreen.tsx). Home note has no plates (its harbour
 // is drawn); its tap starts Merc's voice set loading, which it sings with.
 // First note's tap does the same: its theatre and its songs ship with the
-// app and load as the room opens. So does Leap's: its cliffs are drawn.
+// app and load as the room opens. So do Leap's and Harmony's: their cliffs
+// and their lake are drawn.
 //
 // In those three Ear rooms and in Echo, Merc says his opening line aloud as
 // the room opens (room-kit merc-speech.ts), through the app's one
@@ -32,7 +33,7 @@
 // draws no way in (assert-bundle.mjs STAGE 2 holds the output to it).
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
@@ -52,6 +53,7 @@ const SCREENS: Readonly<Record<PremiumExerciseId, PushedScreen>> = {
   [EXERCISE_HOME_NOTE_LIGHTHOUSE]: 'home-note',
   [EXERCISE_FIRST_NOTE_STAGE]: 'first-note',
   [EXERCISE_LEAP_CLIFFS]: 'leap',
+  [EXERCISE_HARMONY_LAKE]: 'harmony',
 }
 
 /**
@@ -93,6 +95,7 @@ export function preloadExercise(id: PremiumExerciseId): void {
     case EXERCISE_HOME_NOTE_LIGHTHOUSE:
     case EXERCISE_FIRST_NOTE_STAGE:
     case EXERCISE_LEAP_CLIFFS:
+    case EXERCISE_HARMONY_LAKE:
       void import('@/features/echo/merc-sampler').then((voice) => {
         void voice.preloadMercVoice()
       })
@@ -101,7 +104,8 @@ export function preloadExercise(id: PremiumExerciseId): void {
 
 /**
  * The rooms whose Merc says his opening line aloud as they open: every
- * premium room. The Warm-up opens on its path, where he says nothing.
+ * premium room but two. The Warm-up opens on its path, where he says
+ * nothing, and Harmony's lines are not recorded yet (its merc-spoken.ts).
  */
 const SPEAKS_AS_IT_OPENS: ReadonlySet<PremiumExerciseId> = new Set([
   EXERCISE_ECHO_STARS,

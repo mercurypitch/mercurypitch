@@ -5,6 +5,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import { recordHarmonyBest, resetHarmonyStoreForTests, } from '@/stores/harmony-store'
 import { recordHomeNoteBest, resetHomeNoteStoreForTests, } from '@/stores/home-note-store'
 import { recordLeapBest, resetLeapStoreForTests } from '@/stores/leap-store'
 import { EarRoomsRow } from './EarRoomsRow'
@@ -22,6 +23,7 @@ describe('the Ear rooms row', () => {
     localStorage.removeItem('mp_leap_bests')
     localStorage.removeItem('mp_home_note_bests')
     resetLeapStoreForTests()
+    resetHarmonyStoreForTests()
     resetHomeNoteStoreForTests()
     setExerciseLevel('singer')
   })
@@ -37,7 +39,12 @@ describe('the Ear rooms row', () => {
       screen
         .getAllByTestId('ear-rooms-card')
         .map((one) => one.dataset.exercise),
-    ).toEqual(['home-note-lighthouse', 'first-note-stage', 'leap-cliffs'])
+    ).toEqual([
+      'home-note-lighthouse',
+      'first-note-stage',
+      'leap-cliffs',
+      'harmony-lake',
+    ])
     fireEvent.click(card('leap-cliffs'))
     expect(onOpen).toHaveBeenCalledWith('leap-cliffs')
   })
@@ -52,6 +59,14 @@ describe('the Ear rooms row', () => {
     recordHomeNoteBest('learning', { found: 6, rounds: 6, seconds: 1.1, at: 1 })
     render(() => <EarRoomsRow onOpen={() => undefined} />)
     expect(card('leap-cliffs').textContent).toContain('Best 5 of 6')
+    recordHarmonyBest('singer', {
+      inHarmony: 4,
+      lines: 6,
+      notesLanded: 21,
+      notes: 24,
+      at: 1,
+    })
+    expect(card('harmony-lake').textContent).toContain('Best 4 of 6')
     // Home note's best is at another level: not the singer's.
     expect(card('home-note-lighthouse').textContent).not.toContain('Best')
     setExerciseLevel('learning')

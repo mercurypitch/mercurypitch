@@ -249,6 +249,7 @@ describe('at rest', () => {
       'home-note-lighthouse',
       'first-note-stage',
       'leap-cliffs',
+      'harmony-lake',
     ])
     fireEvent.click(cards[0])
 

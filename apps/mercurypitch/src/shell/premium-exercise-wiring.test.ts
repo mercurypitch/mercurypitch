@@ -205,6 +205,22 @@ describe('the shell in a build with the premium exercises', () => {
     ])
   })
 
+  it("pushes Harmony for its id, and starts Merc's voice loading on the same tap", async () => {
+    build.premium = true
+    const api = installPremiumExercises()
+
+    api.openExercise?.('harmony-lake')
+
+    expect(pushed()).toBe('harmony')
+    await vi.waitFor(() => {
+      expect(art.voice).toBe(1)
+    })
+    // Its lake is drawn: no room's plates load for it.
+    expect([art.preloads, art.ng, art.lip, art.long, art.warm]).toEqual([
+      0, 0, 0, 0, 0,
+    ])
+  })
+
   it("starts no other room's art", async () => {
     build.premium = true
     const api = installPremiumExercises()
@@ -326,6 +342,13 @@ describe('the tap that opens a room Merc speaks in', () => {
   it('starts no clock for the Warm-up, whose path Merc says nothing on', () => {
     build.premium = true
     installPremiumExercises().openExercise?.('warm-up-path')
+
+    expect(leases).toEqual([])
+  })
+
+  it('starts no clock for Harmony, whose lines are not recorded yet', () => {
+    build.premium = true
+    installPremiumExercises().openExercise?.('harmony-lake')
 
     expect(leases).toEqual([])
   })

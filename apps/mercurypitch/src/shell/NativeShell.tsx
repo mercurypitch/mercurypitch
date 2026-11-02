@@ -162,6 +162,15 @@ const LeapScreen: Component = PREMIUM_EXERCISES
     )
   : () => null
 
+/** Harmony, the fourth Ear room: the same ternary as Long note's. */
+const HarmonyScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./HarmonyScreen').then((module) => ({
+        default: module.HarmonyScreen,
+      })),
+    )
+  : () => null
+
 /**
  * Leagues (slice 2 of docs/plans/native-more-and-community.md), on a build
  * with them (`NATIVE_LEAGUES`) and no other: the same ternary as Long
@@ -527,6 +536,7 @@ export const NativeShell: Component = () => {
             homeNote={PREMIUM_EXERCISES ? HomeNoteScreen : undefined}
             firstNote={PREMIUM_EXERCISES ? FirstNoteScreen : undefined}
             leap={PREMIUM_EXERCISES ? LeapScreen : undefined}
+            harmony={PREMIUM_EXERCISES ? HarmonyScreen : undefined}
             leagues={NATIVE_LEAGUES ? LeaguesScreen : undefined}
             legend={NATIVE_LEAGUES ? LegendScreen : undefined}
           />

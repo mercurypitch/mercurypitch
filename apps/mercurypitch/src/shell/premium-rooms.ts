@@ -40,6 +40,7 @@ export const PREMIUM_ROOM_SCREENS: Readonly<
   'home-note': { fullBleed: true },
   'first-note': { fullBleed: true },
   leap: { fullBleed: true },
+  harmony: { fullBleed: true },
   // The Legend (NATIVE_LEAGUES): a line on a dark stage, its own scroller.
   legend: { fullBleed: true },
 }

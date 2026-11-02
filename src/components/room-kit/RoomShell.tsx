@@ -406,6 +406,8 @@ export interface ShellBubbleProps<C extends string, T extends string> {
   line: string
   /** Its bottom edge, px up from the room's bottom: over Merc's head. */
   bottom: number
+  /** Its left edge, px from the room's left: the room's stylesheet's when unset. */
+  left?: number
   /** A class of the room's own while its result shows (Lip roll's). */
   atResult?: string
 }
@@ -427,7 +429,10 @@ export function ShellBubble<C extends string, T extends string>(
       <div
         class={shell.styles.bubble}
         classList={atResult()}
-        style={{ bottom: `${props.bottom}px` }}
+        style={{
+          bottom: `${props.bottom}px`,
+          left: props.left === undefined ? undefined : `${props.left}px`,
+        }}
       >
         <RoomBubble testId={`${shell.ids}-bubble`}>{props.line}</RoomBubble>
       </div>

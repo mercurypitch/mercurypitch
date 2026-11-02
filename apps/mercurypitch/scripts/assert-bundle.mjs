@@ -403,6 +403,18 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Leaps landed at', "Leap's result"],
   ['mp_leap_bests', "Leap's bests"],
+  // Harmony, the fourth Ear room: its room, its card, its level lines, its
+  // result, its bests and the way it is sung, on the same switch. Its lake
+  // is drawn.
+  ['harmony-room', 'the premium Harmony exercise'],
+  [
+    'Merc sings a short line. Sing it a third above him',
+    "the exercise picker's Harmony card",
+  ],
+  ['Five notes with a leap, some a third below', "Harmony's level control"],
+  ['Lines in harmony at', "Harmony's result"],
+  ['mp_harmony_bests', "Harmony's bests"],
+  ['mp_harmony_way', "Harmony's way, kept for next time"],
   // Its songs (the singer's own, read on the phone), its words hint and
   // its way on to the Karaoke room (owner, 28 Oct 2026), in the same lazy
   // chunk: the Songs sheet, the reads it keeps, the hint's switch and Sing
