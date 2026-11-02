@@ -46,3 +46,47 @@ export function boardTop(shown: readonly PlacedBoardEntry[]): BoardTopEntry[] {
     return sent
   })
 }
+
+// ── The closed Legends' podiums ──────────────────────────────────────
+//
+// A podium is frozen when its Legend closes, so a name that may no longer be
+// shown is withheld as it is read (index.ts, `redactPodiums`): a singer who
+// opted out, was suspended or withdrew their score, and, for a reader with a
+// session, a singer in a block with them, either way (REQ-RB-014). The place
+// and the score stay, so nobody moves up into it; the name and the id go.
+
+/** A podium place as a closed Legend's `resultsJson` keeps it. */
+export interface StoredPodiumPlace {
+  userId?: unknown
+  displayName?: unknown
+  best?: unknown
+  rank?: unknown
+  redacted?: boolean
+}
+
+/**
+ * The podium with every name `shows` refuses withheld, and whether any was.
+ * A place with no id (a version 1 row) is kept as stored: there is nobody
+ * to ask about.
+ */
+export function withholdNames(
+  podium: readonly StoredPodiumPlace[],
+  shows: (userId: string) => boolean,
+): { podium: StoredPodiumPlace[]; changed: boolean } {
+  let changed = false
+  const next = podium.map((place): StoredPodiumPlace => {
+    const id = place.userId
+    if (typeof id !== 'string' || id === '' || shows(id)) return place
+    changed = true
+    // The id goes with the name: nothing downstream needs it once the name
+    // is gone, and shipping it would leave the singer identifiable to
+    // anyone holding an older copy of the same archive.
+    return {
+      best: place.best,
+      rank: place.rank,
+      displayName: null,
+      redacted: true,
+    }
+  })
+  return { podium: next, changed }
+}

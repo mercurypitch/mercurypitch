@@ -28,7 +28,7 @@ import { handleNewsletterRoute } from './newsletter'
 import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
-import { handleBlocks, shareVisible, visibleShareSql, withoutHidden, } from './blocks'
+import { handleBlocks, hiddenSingers, shareVisible, visibleShareSql, withoutHidden, } from './blocks'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { sweepFreeSongEmails } from './free-song-email'
@@ -53,7 +53,8 @@ import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { ManagedTestAccountInactiveError, managedTestAccountErrorResponse, } from './testing-account-state'
 import { handleTestingAccountRequest } from './testing-accounts'
 import { validateWrite } from './validation'
-import { boardTop } from './weekly-board'
+import type { StoredPodiumPlace } from './weekly-board'
+import { boardTop, withholdNames } from './weekly-board'
 import { sweepWithdrawals } from './withdrawal'
 
 const CORS: Record<string, string> = {
@@ -1953,20 +1954,13 @@ function reportMissingPodiumDefinitions(
 // exactly as stored. Those weeks predate consent being asked for at all, and
 // the alternative to showing them as written is showing nothing.
 
-interface StoredPodiumEntry {
-  userId?: unknown
-  displayName?: unknown
-  best?: unknown
-  rank?: unknown
-}
-
 /** The podium out of a parsed `resultsJson`, or `[]` when it has none. */
-function storedPodium(parsed: unknown): StoredPodiumEntry[] {
+function storedPodium(parsed: unknown): StoredPodiumPlace[] {
   if (parsed === null || typeof parsed !== 'object') return []
   const top3 = (parsed as { top3?: unknown }).top3
   if (!Array.isArray(top3)) return []
   return top3.filter(
-    (e): e is StoredPodiumEntry => e !== null && typeof e === 'object',
+    (e): e is StoredPodiumPlace => e !== null && typeof e === 'object',
   )
 }
 
@@ -2017,10 +2011,14 @@ async function namesStillShowable(
   return showable
 }
 
-/** Each row's `resultsJson`, parsed, with no-longer-showable names removed. */
+/**
+ * Each row's `resultsJson`, parsed, with no-longer-showable names removed,
+ * and the names of `hidden` too: the singers in a block with the reader.
+ */
 async function redactPodiums(
   rows: readonly WeeklyRow[],
   env: Env,
+  hidden: ReadonlySet<string>,
 ): Promise<unknown[]> {
   const parsed = rows.map((r) =>
     r.resultsJson ? safeJson(r.resultsJson) : null,
@@ -2038,24 +2036,45 @@ async function redactPodiums(
   return parsed.map((results, i) => {
     const podium = storedPodium(results)
     if (podium.length === 0) return results
-    let changed = false
-    const next = podium.map((entry) => {
-      if (typeof entry.userId !== 'string' || entry.userId === '') return entry
-      if (showable.has(`${rows[i].id}:${entry.userId}`)) return entry
-      changed = true
-      // The id goes too. Nothing downstream needs it once the name is gone,
-      // and shipping it would leave the singer identifiable to anyone holding
-      // an older copy of the same archive.
-      return {
-        best: entry.best,
-        rank: entry.rank,
-        displayName: null,
-        redacted: true,
-      }
-    })
+    const { podium: next, changed } = withholdNames(
+      podium,
+      (userId) =>
+        showable.has(`${rows[i].id}:${userId}`) && !hidden.has(userId),
+    )
     if (!changed) return results
     return { ...(results as object), top3: next }
   })
+}
+
+const NO_ONE: ReadonlySet<string> = new Set()
+
+/**
+ * The closed Legends, each with its frozen podium. Read with a session, the
+ * names of the singers in a block with the reader are withheld as well,
+ * either way, places kept (REQ-RB-014, blocks.ts): a block says the two
+ * will not see each other's names. That answer is the reader's alone, so it
+ * is never stored, and the anonymous one says what it varies on.
+ */
+async function handleWeeklyArchive(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM weeklyChallenges WHERE status = 'closed' ORDER BY endsAt DESC LIMIT 20`,
+  ).all<WeeklyRow>()
+  const rows = results ?? []
+  const auth = await getAuth(request, env)
+  const hidden =
+    auth === null ? NO_ONE : await hiddenSingers(env.DB, auth.userId)
+  const redacted = await redactPodiums(rows, env, hidden)
+  const archive = rows.map((r, i) => ({
+    ...publicWeekly(r),
+    results: redacted[i],
+  }))
+  const vary = { headers: { Vary: 'Authorization' } }
+  return auth === null
+    ? respond({ archive }, vary)
+    : respondNoStore({ archive }, vary)
 }
 
 // ── The badge for placing ────────────────────────────────────────────
@@ -2692,16 +2711,7 @@ async function handleWeekly(
     return handleWeeklyBoard(url, request, env)
   }
   if (method === 'GET' && sub === 'archive') {
-    const { results } = await env.DB.prepare(
-      `SELECT * FROM weeklyChallenges WHERE status = 'closed' ORDER BY endsAt DESC LIMIT 20`,
-    ).all<WeeklyRow>()
-    const rows = results ?? []
-    const redacted = await redactPodiums(rows, env)
-    const archive = rows.map((r, i) => ({
-      ...publicWeekly(r),
-      results: redacted[i],
-    }))
-    return respond({ archive })
+    return handleWeeklyArchive(request, env)
   }
 
   return respond({ error: 'Not found' }, { status: 404 })
