@@ -318,6 +318,7 @@ describe('the tap that opens a room Merc speaks in', () => {
     'home-note-lighthouse',
     'first-note-stage',
     'leap-cliffs',
+    'harmony-lake',
     'long-note-lantern',
     'lip-roll-bay',
     'ng-slides-bridge',
@@ -342,13 +343,6 @@ describe('the tap that opens a room Merc speaks in', () => {
   it('starts no clock for the Warm-up, whose path Merc says nothing on', () => {
     build.premium = true
     installPremiumExercises().openExercise?.('warm-up-path')
-
-    expect(leases).toEqual([])
-  })
-
-  it('starts no clock for Harmony, whose lines are not recorded yet', () => {
-    build.premium = true
-    installPremiumExercises().openExercise?.('harmony-lake')
 
     expect(leases).toEqual([])
   })

@@ -42,6 +42,7 @@ const ROOMS = [
   'home-note',
   'first-note',
   'leap',
+  'harmony',
   'ear-lab/merc',
 ] as const
 
@@ -130,6 +131,7 @@ describe("the premium rooms' pictures in a native build", () => {
       'home-note': 9,
       'first-note': 9,
       leap: 9,
+      harmony: 11,
       echo: 4,
       'long-note': 5,
       'lip-roll': 4,

@@ -184,7 +184,7 @@ const PREMIUM_IMAGES =
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_VOICES =
-  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|first-note|leap)\/(?:[^/]+\/)*[^/]+\.mp3$/u
+  /\/src\/features\/(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|first-note|leap|harmony)\/(?:[^/]+\/)*[^/]+\.mp3$/u
 
 /**
  * The browsers this bundle's CSS is written for: the iOS floor, and nothing

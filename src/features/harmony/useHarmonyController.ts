@@ -81,7 +81,7 @@ export function useHarmonyController(
   const voiceOfMerc = options.voice ?? SYNTH_VOICE
   const random = options.random ?? Math.random
   const lines = createHarmonyLines(random)
-  // His lines at rest, aloud through the room's clock once recorded.
+  // His lines at rest, aloud through the room's clock (merc-spoken.ts).
   const speech = createMercSpeech(HARMONY_SPOKEN, {
     clock: () => capture.runningAudio(),
   })

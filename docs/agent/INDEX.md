@@ -107,7 +107,7 @@ These are the rules that break things when ignored.
 | `leap` | [LeapRoom.tsx](../../src/features/leap/LeapRoom.tsx) | 3.8k | LeapRoom — Merc sings a note and names a leap; sing his note, then leap The third Ear room (docs/plans/ear-rooms.md, Room 3). |
 | `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.6k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in tabGroups(), so it never appears in the tab bar. |
-| `harmony` | [HarmonyRoom.tsx](../../src/features/harmony/HarmonyRoom.tsx) | 3.2k | HarmonyRoom — Merc sings a line; sing it a third above him The fourth Ear room (docs/plans/ear-rooms.md, Room 4). |
+| `harmony` | [HarmonyRoom.tsx](../../src/features/harmony/HarmonyRoom.tsx) | 3.3k | HarmonyRoom — Merc sings a line; sing it a third above him The fourth Ear room (docs/plans/ear-rooms.md, Room 4). |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
