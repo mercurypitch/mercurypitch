@@ -2956,3 +2956,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 ## 2 Nov 12:2x
 - L27 COMMITTED 94997815c (pushed). Lead edit: reveal "the next third above D" (was "next note"); FACTS quote "Math.abs((midi - targetMidi)" (prettier escaped the * and broke the quote). Checks: dir 0 (273), plan 200, 2,195 words, prettier ok. Shared entries copied to s2pkg/shared-rest/L27-entries.md (from 27-HANDBACK.md).
 - Running: W26 only. Next: W28 (BRIEF-28) if rate limit allowed; W26 hand-back -> R26 -> fix pass -> lead -> commit; then #229.
+
+## 2 Nov 12:3x
+- W26 handed back 12:29 (s2pkg/26-HANDBACK.md): 2,166 words, 321 cites, 0 findings, built ~2,377 (2 under cap), 15 min, head "How to sing a harmony in thirds | MercuryPitch" (46). Asks: head title, 15 vs 16 min, Jam harmoniseItems note-name bug (fix first or fallback card line), coach items, shared entries.
+- R26 spawned 12:3x (xhigh; report s2pkg/26-REVIEW.md). Only agent running. W28 waits for L26 committed (BRIEF-28 says all prerequisites committed).
+- Fallback trig_01ADdt7J38saP3XmeqSNs3qG at 13:06 now covers R26 (it names W26; treat as R26).

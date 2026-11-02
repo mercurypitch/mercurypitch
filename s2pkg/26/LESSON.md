@@ -77,8 +77,12 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The quick check** keeps the plan's questions. Question 2's wrong answers and question 4's play,
   on do re mi re do, are new, and question 4's play waits for the cold open's choice (FACTS 71 to
   74).
-- **The practice card** puts Harmony Stack first, with what the room does, and Drone Intonation
-  second, in Lesson 24's words (FACTS 63 to 68).
+- **The practice card** puts Harmony Stack first, with what the room does to a learner, where the
+  plan's card named only the parts: one sings the tune, not the plan's root, and one a third above;
+  the room plays nothing; it scores in the octave the host's voice range sets, so two lower or two
+  higher voices suit it; and its boxes name their notes, once an app fix makes the part above the
+  tune print its own. The fifth is left out. Drone Intonation is second, in Lesson 24's words, cut
+  (FACTS 63 to 68).
 - **The chips** name both prerequisites, with "Microphone optional" and "Headphones optional" as
   Lesson 24's, and read 15 minutes, the package's estimate, where the plan's read about 16; the
   sound gate is Lesson 5's line with this lesson's subject; and the promise says what the learner
@@ -87,7 +91,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 The page is published only after Lessons 12 and 24 are live, because its prerequisite chips link
 there and its recall imports their questions. It also waits on the Season 2 kit work, on Lesson
 18's in-time reader, on Lesson 24's headphones and quiet checks and a part that sounds under a take,
-and on this page's own kit work (WEB-SPEC, What the kit and the app still need).
+and on this page's own kit work and one app fix, Harmony Stack's note names (WEB-SPEC, What the kit
+and the app still need).
 
 ---
 
@@ -213,9 +218,9 @@ E and A. Both sizes count as consonances. Moved four semitones everywhere, a cop
 leaves the key.
 
 > **Common mix-up:** "A harmony is the tune moved up by the same distance everywhere."
-> **Why it seems right:** a harmony in thirds does move with the tune, up and down with it.
+> **Why it seems right:** a harmony in thirds does move up and down with the tune.
 > **The evidence:** four semitones above re gives F♯, but C major's third above re is F, three
-> semitones up. MercuryPitch's Jam builds its harmony from the key's notes on purpose.
+> semitones up.
 > **The better idea:** keep the tune's shape and the key's notes. The key decides each third's size.
 
 **Try:** switch the copy between C major's thirds and four semitones up.
@@ -411,43 +416,58 @@ four semitones doesn't give a harmony in its key.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Harmony Stack, in Jam
-- Text: With a friend: open a Jam room, share its link, and have its host pick Harmony Stack. One
-  of you sings the room's tune, the other a third above it, in the key; with three, one takes the
-  fifth above. Each of you is scored on your own part. Sore, hoarse or unwell today? Just listen
-  along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
+- Text: With a friend: open a Jam room, pick Harmony Stack and share its link. One of you sings the
+  room's tune, the other a third above it, in the key; each is scored on their own part. It plays
+  nothing; its boxes name their notes. It scores each note in the octave shown, not an octave away,
+  set by the host's voice range: two lower or two higher voices suit it. Sore, hoarse or unwell
+  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
+  uncomfortable.
 - Address: Practise it free: **mercurypitch.com/jam**
-- Second drill: Alone, Drone Intonation holds a drone and shows you a third to sing above it,
-  without playing it. Headphones help here too: its drone plays while it listens. It wants each
-  note in the octave it asks for, not an octave away, so set your range in Settings first (under
-  Singing Voice Range). Free: **mercurypitch.com/exercises/thirds-on-a-drone**
+- Second drill: Alone, Drone Intonation holds a drone and names a third to sing above it, without
+  playing it. Headphones help: its drone plays while it listens. It too wants each note in the
+  octave it asks for, so set your range in Settings first (under Singing Voice Range). Free:
+  **mercurypitch.com/exercises/thirds-on-a-drone**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Harmony Stack will
   be here when your voice feels comfortable: **mercurypitch.com/jam**"
 
 _[Editorial: the addresses link `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. The
 page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
 First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
-(FACTS 67). Drone Intonation's lines are Lesson 24's card's, cut to what this page needs: its sentence
-on scoring a pure third stays on Lesson 24's card, since this page teaches no tuning. Both drills ask
-for the voice, so the rest version keeps neither and names Harmony Stack, in Lesson 10's form (FACTS
-66). When the harmony-line drill ships (SEASON-2 § 5.2 item 17), it takes the card's first place, as
-the drill a learner can do alone, with its own care lines and the coach's look (FACTS 68).]_
+(FACTS 67). Harmony Stack's lines say what the room does to a learner, read from the app: whoever
+opens a room hosts it, and only the host picks its mode; the room plays nothing, not even a first
+note, and counts in on screen; it scores every note unfolded, in the octave the host's voice range
+sets; and its first tune, the C major scale, keeps the tune and the third inside every preset of two
+lower voices or of two higher ones, where a lower and a higher voice leave a note outside a preset
+unless a tenor draws the tune in a higher voice's room (FACTS 63, 63a, 63b and 64). This page's own
+reader counts any octave, so the card says "not an octave away". "Its boxes name their notes" waits
+on an app fix, and the page is not built before it: today the part above the tune prints the tune's
+letters (WEB-SPEC, What the kit and the app still need, item 15). The card names the tune, not the
+plan's root, and leaves out the fifth a third singer takes, which runs a semitone past the bass
+preset's top. Drone Intonation's lines are Lesson 24's card's, cut to what this page needs: it names
+its note, as Lesson 24's FACTS reads it, and its sentence on scoring a pure third stays on Lesson
+24's card, since this page teaches no tuning (FACTS 65). The page calls no interval hard, and
+neither drill writes a staff. Both drills ask for the voice, so the rest version keeps neither and
+names Harmony Stack, in Lesson 10's form (FACTS 66). When the harmony-line drill ships (SEASON-2
+§ 5.2 item 17), it takes the card's first place, as the drill a learner can do alone, with its own
+care lines and the coach's look (FACTS 68).]_
 
 **Next lesson:** Lesson 27, Seventh chords and inversions. "Add one note to the V chord and it pulls
 towards home. Which note, and why?" One line above it, the tease: "G, B and D going home to C, E and
 G. Now add one note on top."
 
 _[Editorial: the tease is the lead's line and the default, Lesson 27's opening in miniature; Lesson
-27's writer owns it and sets it on Lesson 27, and the lead binds it. The alternative the console can
-switch to is the lead's too, "Three notes make a chord. Add one more to V, and hear where it goes."
-This lesson's planned line, "Stack thirds and you get a chord. Stack one more on V, and it pulls.",
-is dropped: it says the added note pulls, which leans on Lesson 27's predict. Neither line names a
-note to add or says how it pulls, and neither leans on anything this page does not teach (FACTS
-5b).]_
+27's package owns it and sets it on Lesson 27, as its FACTS 5b says, and the lead binds it. The
+alternative the console can switch to is the lead's too, `three-notes`, "Three notes make a chord.
+Add one more to V, and hear where it goes." This lesson's planned line, "Stack thirds and you get a
+chord. Stack one more on V, and it pulls.", is dropped: it says the added note pulls, which leans on
+Lesson 27's predict. Neither line names a note to add or says how it pulls, and neither leans on
+anything this page does not teach (FACTS 5b).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
-hook. Its slot holds a still of Lesson 27's opening as Lesson 27's package draws it. It is a picture
-and plays nothing, and the card stays one link. Until Lesson 27's page is live, the card says
-"Coming later" and "See it on the map": FACTS 5b.)
+hook. Its slot holds Lesson 27's still, its stage as its cold open opens: the ring with the V room
+lit and the I room faint, Merc and Tavi, no bubbles. It is a picture and plays nothing, and the card
+stays one link. Until Lesson 27's page is live, the card says "Coming later" and "See it on the
+map": FACTS 5b.)
 
 (Free play, under the card: the steps' tune line in every state, with every control. It waits for
 the cold open's choice, under the steps' line, "Choose an answer at the top to unlock this figure.",
@@ -466,15 +486,15 @@ clef or staff: on a Season 2 page a staff is always music (SEASON-2 § 1.5 item 
 Each section has a short line above its heading, as in Lesson 1; where a section is the same as
 Lesson 24's, so are its words.
 
-| Section     | Line above the heading                                      | Heading                        |
-| ----------- | ----------------------------------------------------------- | ------------------------------ |
-| Recall      | From Lessons 12 and 24: two questions, asked afresh         | Recall from Lessons 12 and 24  |
-| Three words | Three words you'll meet before the first step               | Part, chord note, passing note |
+| Section     | Line above the heading                                        | Heading                        |
+| ----------- | ------------------------------------------------------------- | ------------------------------ |
+| Recall      | From Lessons 12 and 24: two questions, asked afresh           | Recall from Lessons 12 and 24  |
+| Three words | Three words you'll meet before the first step                 | Part, chord note, passing note |
 | Steps       | Four steps, one tune line: ‘Twinkle’, and a part a third away | A second voice                 |
-| Sing it     | Duet: your part with Merc's, and any octave counts          | Sing it                        |
-| Quick check | Ripresa: the theme comes back, from memory                  | Quick check                    |
-| Wrap        | Coda: the closing bars                                      | Three lines to keep            |
-| Explorer    | Season 2 · Lesson 26                                        | The season, mapped             |
+| Sing it     | Duet: your part with Merc's, and any octave counts            | Sing it                        |
+| Quick check | Ripresa: the theme comes back, from memory                    | Quick check                    |
+| Wrap        | Coda: the closing bars                                        | Three lines to keep            |
+| Explorer    | Season 2 · Lesson 26                                          | The season, mapped             |
 
 The steps' heading is the lesson's name, as on Lessons 15, 16, 22 and 24's pages: it names no
 answer to the predict (FACTS 1a). Sing it's line takes "Duet" for Lesson 24's "Cadenza: your solo",
@@ -575,9 +595,28 @@ take and its reader's new line, so a decision here carries there.
   "Uncomfortable" no more runs, Lesson 3's enough line, the doctor lines and the rest card (FACTS 59,
   60).
 - The practice card's care lines, Lesson 10's: "Sore, hoarse or unwell today? Just listen along.
-  Sing at about speaking volume, and stop immediately if anything feels uncomfortable."; Harmony
-  Stack's parts, the tune, a third above it and a fifth above it, in the room's key and range, which
-  the page does not set; and Drone Intonation's two thirds, Lesson 24's (FACTS 63 to 66).
+  Sing at about speaking volume, and stop immediately if anything feels uncomfortable.", and
+  Drone Intonation's two thirds, Lesson 24's (FACTS 65, 66).
+- **To confirm: Harmony Stack's range and its line "two lower or two higher voices suit it".** The
+  room plays nothing, not even a first note, and scores each note in the octave the host's voice
+  range sets, not folded; its parts are the room's tune, a third above it and, for a third singer,
+  a fifth above it, in the key; no interval the page calls hard. Its first tune is the C major
+  scale, C up to B, on C3 in a lower voice's room and on C4 in a higher voice's. Two lower voices
+  or two higher ones keep the tune and the third inside every preset of their voices, the least
+  room 0, at the tenor's floor and the soprano's on the tune's first note; the fifth runs a
+  semitone past the bass's top and sits on the alto's, so the card leaves it out. A lower and a
+  higher voice together leave a note outside a preset, unless a tenor draws the tune in a higher
+  voice's room. Room below and above each part, in semitones, "out" for a note outside the preset
+  (FACTS 63):
+
+  | Room, part         | Notes    | Bass   | Baritone | Tenor  | Alto   | Mezzo-soprano | Soprano |
+  | ------------------ | -------- | ------ | -------- | ------ | ------ | ------------- | ------- |
+  | Lower (C3), tune   | C3 to B3 | 8 / 5  | 5 / 8    | 0 / 13 | out    | out           | out     |
+  | Lower (C3), third  | E3 to D4 | 12 / 2 | 9 / 5    | 4 / 10 | out    | out           | out     |
+  | Lower (C3), fifth  | G3 to F4 | out    | 12 / 2   | 7 / 7  | 2 / 12 | out           | out     |
+  | Higher (C4), tune  | C4 to B4 | out    | out      | 12 / 1 | 7 / 6  | 3 / 10        | 0 / 13  |
+  | Higher (C4), third | E4 to D5 | out    | out      | out    | 11 / 3 | 7 / 7         | 4 / 10  |
+  | Higher (C4), fifth | G4 to F5 | out    | out      | out    | 14 / 0 | 10 / 4        | 7 / 7   |
 - The rest card, Lesson 10's form: "Rest today. Harmony Stack will be here when your voice feels
   comfortable: mercurypitch.com/jam", after "Effortful", "Uncomfortable" or "Just listen today"
   (FACTS 66).

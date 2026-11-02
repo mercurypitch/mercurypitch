@@ -144,26 +144,28 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
 
 ## Length
 
-The learner copy is 2,163 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+The learner copy is 2,166 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
 under the series' cap of 2,379. Each step's own text, with its Try, its Notice and any Tavi line,
-runs 103, 97, 119 and 87 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.09 of
-reading at 238 words a minute and about 5.9 of sound, toys and tasks, 14.99 in all, where the plan
+runs 103, 97, 119 and 87 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.10 of
+reading at 238 words a minute and about 5.9 of sound, toys and tasks, 15.00 in all, where the plan
 expected about 16. The chip is an estimate until the tune line's states and the runs are timed in
-their lab (SEASON-2 § 1.3), and this section says so until then. Five parts carry more, for these
+their lab (SEASON-2 § 1.3), and this section says so until then. Four parts carry more, for these
 reasons:
 
 - **Sing it, 563 words.** It holds the series' singing lines, Lesson 3's, Lesson 18's and Lesson
   24's word for word, which are not cut; the headphones check and the quiet check, which the scored
   path needs; the briefing's cues; the "What this does" box; the reading's example lines; the
   feelings' and the swap's lines; and the sing-along (FACTS 49 to 62).
-- **The Wrap, 306 words.** The practice card says what Harmony Stack does and how to reach it with
-  a friend, with Drone Intonation for a learner alone, its care lines and its rest version (FACTS 63
-  to 66), and the next lesson.
+- **The Wrap, 322 words.** The practice card says what Harmony Stack does to a learner and how to
+  reach it with a friend: nothing played, the octave it scores and who sets it, its boxes' names,
+  and which pairs of voices it suits; then Drone Intonation for a learner alone, its care lines and
+  its rest version (FACTS 63 to 66), and the next lesson.
 - **The quick check, 256 words.** Four questions with three answers each and a line of feedback for
   every answer, as MASTER-PLAN § 4.2 item 8 asks.
-- **Step 2, 187 words.** Its own text is 97; the rest is its heading and the mix-up card, which sits
-  in the step whose question it answers.
 - **The recall, 152 words.** Lessons 12 and 24's questions, word for word.
+
+Step 2 runs 174 words: its own text is 97, and the rest is its heading and the mix-up card, which
+sits in the step whose question it answers.
 
 The hints and status lines are stage directions in LESSON.md and are not counted, as in every text
 package: the predict's hints and its "You said" lines, the stored voice's line, Sing it's status
@@ -174,7 +176,7 @@ steps' figure's lock line, "Choose an answer at the top to unlock this figure." 
 line, "Choose an answer at the top to hear this." (9); "Just listen today"'s play, "Play the two
 parts" (4); and the quiet check's line when it hears a note, "The microphone heard a note during
 Merc's part. Check your headphones, then press Start again and stay quiet." (18). So the built page
-runs about 2,374 words, 5 under the cap (`verify26.py`, section 12).
+runs about 2,377 words, 2 under the cap (`verify26.py`, section 12).
 
 The first draft counted 2,323 words, about 2,534 built, and Step 3's own text ran 127. The cuts are
 made, every fact they carried staying in FACTS: the promise's second clause; the reveal's sentence
@@ -182,9 +184,11 @@ on the copy's other notes; the Part word's second example; a sentence in each of
 the mix-up card's second piece of evidence; Your turn's second voice's line, now a stage direction;
 two of the reading's example lines; the feelings' lines and the sing-along's line, shortened; the
 quick check's longer feedback; the Wrap's "note for note"; and the practice card's room steps,
-shortened. A build counts its own page; if that count runs over the cap, the next cut is the
-practice card's "with three, one takes the fifth above" (7 words; FACTS 63), which a learner with
-one friend does not need.
+shortened. The card then gained 34 words on what Harmony Stack does, paid for by its fifth, its
+shorter room steps, its second drill's "here too" and "not an octave away", and the mix-up card's
+line on Jam with a shorter "Why it seems right": 3 words more in all (FACTS 3). A build counts its
+own page; if that count runs over the cap, the next cut is the Wrap's "An octave further apart, a
+third is a tenth." (9 words), which Step 3 says in full.
 
 The activities are timed from FACTS 75 to 78. Free play is not counted.
 
@@ -438,9 +442,11 @@ check runs before every set and the lab test comes first (What the kit and the a
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
 in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
-of Lesson 27's opening as Lesson 27's package draws it. It holds no button, since the card is a
-link, does not move and plays no sound. Its styles go under a class of its own, not the tease line's
-`.next-tease` (FACTS 5b).
+of Lesson 27's stage as its cold open opens, as Lesson 27's package draws it: the ring with the V
+room lit and the I room faint, no fourth corner, Merc and Tavi, no bubbles
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:314-317`). It holds no
+button, since the card is a link, does not move and plays no sound. Its styles go under a class of
+its own, not the tease line's `.next-tease` (FACTS 5b).
 
 ## Audio
 
@@ -511,17 +517,29 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Jam's Harmony Stack**, for two or more: the link is `/jam?lesson=26`, printed
-  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says what the room does and
-  how to reach it: open a room, share its link, and the host picks Harmony Stack; the first singer
-  in the room's order sings its tune, the next a third above it in the key, a third a fifth above;
-  each is scored on their own part; alone, the mode is unison (FACTS 63, 64). It does not say which
-  of two friends gets which part, since that follows the room's order, which the room shows. It is
-  the season plan's link for this lesson (SEASON-2 § 5.1, row 26,
-  `docs/plans/find-your-pitch/SEASON-2.md:842`).
+  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it and what
+  it does to a learner (FACTS 63, 63a, 63b and 64): whoever opens a room hosts it and picks its
+  mode, then shares its link; one singer takes the room's tune and the other a third above it, in
+  the key, each scored on their own part; the room plays nothing, not even a first note; its boxes
+  name their notes; it scores each note in the octave shown, unfolded, where this page's reader
+  folds; and the host's voice range sets that octave, so two lower or two higher voices suit it. The
+  range is checked against all six presets on the room's first tune, the C major scale on C3 or C4:
+  two lower or two higher voices keep the tune and the third inside every preset, the least room 0
+  at the tenor's and the soprano's floors, on the tune's C; a lower and a higher voice leave a note
+  outside a preset, unless a tenor draws the tune in a higher voice's room; the coach's list carries
+  the table (`verify26.py`, section 13). The card leaves out the fifth a third singer takes, which
+  runs a semitone past the bass preset's top, and it does not say which friend gets which part,
+  since that follows the room's order, which the room shows. "Its boxes name their notes" is true
+  once item 15 of What the kit and the app still need ships, and the page waits for it; if the lead
+  links the room first, that sentence reads "It plays nothing; on the third, its boxes print the
+  tune's letters." (4 words more, paid for by the next cut in Length). It is the season plan's link
+  for this lesson (SEASON-2 § 5.1, row 26, `docs/plans/find-your-pitch/SEASON-2.md:842`).
 - **The second drill, alone, Drone Intonation's thirds**: `/exercises/thirds-on-a-drone?lesson=26`,
   printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:75-81`),
-  with Lesson 24's card lines cut to this page: what it does, the headphones line and the range line;
-  its scoring sentence stays on Lesson 24's card (FACTS 65).
+  with Lesson 24's card lines cut to this page: what it does, now "names a third to sing above it",
+  since it prints the interval and the note's name; the headphones line; and the range line, its
+  "too" pointing back to Harmony Stack's octave. It writes no staff and plays nothing first; its
+  scoring sentence stays on Lesson 24's card (FACTS 65).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 10's form, headed "Rest today", and is no longer a link, naming Harmony Stack; both drills
   ask for the voice, so neither stays on offer (`mountPractiseCard`,
@@ -558,10 +576,12 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   note in `TEASE_NOTES` (`src/features/lessons/kit/team-notes.ts:70-71`) proposed as "The plan's
   line, mended: its ‘So far the other part was a drone’ was false, since Lesson 12's sing-along had
   the learner sing over moving chords. It is true of Lesson 24 and answers nothing of the predict;
-  the lead's line, the opening in miniature, is the default." (FACTS 5). The tease on this page's card is Lesson
-  27's, set on Lesson 27 by Lesson 27's package: the lead's "G, B and D going home to C, E and G.
-  Now add one note on top." as the default, and the lead's alternative, "Three notes make a chord.
-  Add one more to V, and hear where it goes." (FACTS 5b). Each is at most `TEASE_MAX`, 70 characters
+  the lead's line, the opening in miniature, is the default." (FACTS 5). The tease on this page's
+  card is Lesson 27's, set on Lesson 27 by Lesson 27's package
+  (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:385-388`): the lead's "G,
+  B and D going home to C, E and G. Now add one note on top." as the default, and the lead's
+  alternative, `teaseAlts` id `three-notes`, "Three notes make a chord. Add one more to V, and hear
+  where it goes." (FACTS 5b). Each is at most `TEASE_MAX`, 70 characters
   (`src/features/lessons/kit/lesson-copy.ts:76`): 68, 56, 61 and 68.
 - The signature line for the admin console, from the card (FACTS 4): "Lesson 6's ‘Twinkle’ copied a
   third higher, the copy bending to the key's rows: some thirds four semitones and some three."
@@ -641,12 +661,28 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     (FACTS 67).
 13. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work (Practice links).
 14. **At release, the room's link back**, optional: SEARCH § 8's row for Jam gains 26.
+15. **Harmony Stack's note names**, the app's work, before this page is built: `harmoniseItems`
+    moves a part's notes and rewrites each one's MIDI number, octave and frequency, but keeps the
+    tune's note name (`src/lib/jam/jam-modes.ts:134-153`), and the canvas prints that name with the
+    new octave on the box (`src/components/jam/JamExerciseCanvas.tsx:68`, `:356-365`). So today the
+    third's boxes over the C major scale in a higher voice's room read C4 to G4, A5 and B5 where
+    they sit at E4 to D5 (`verify26.py`, section 13), and the fifth's are wrong the same way. The
+    fix names each moved note from its MIDI number; the test that pins the octave and the frequency
+    (`src/tests/jam-modes.test.ts:108-114`) pins the name too: in C major, the third over C4 is E4
+    and over A4 is C5, the fifth over B4 is F5. The card's "its boxes name their notes" rests on it
+    (FACTS 63a).
 
 ## Decisions for the owner
 
-One, for the lead: the head's title. This package proposes "How to sing a harmony in thirds |
-MercuryPitch" (46), query-led as SEARCH § 13 item 1 decided; it names no answer to the predict
+Two, for the lead. First, the head's title. This package proposes "How to sing a harmony in thirds
+| MercuryPitch" (46), query-led as SEARCH § 13 item 1 decided; it names no answer to the predict
 (FACTS 1a). Lesson 24's was the lead's answer; this one waits for the lead's.
+
+Second, Harmony Stack's note names. The card says "its boxes name their notes", true once the app
+fix in item 15 of What the kit and the app still need ships, and the page waits for it. If the
+lead would rather link the room before the fix, the card's sentence reads "It plays nothing; on the
+third, its boxes print the tune's letters." instead, 4 words more, and the build takes the next cut
+in Length (Practice links; FACTS 63a).
 
 ## Edge cases
 
@@ -691,6 +727,10 @@ MercuryPitch" (46), query-led as SEARCH § 13 item 1 decided; it names no answer
   their brackets, never over a bead.
 - **Leaving Sing it mid-run**: the take is abandoned and counts as one of the set's three, Merc's
   part stops and the microphone is released.
+- **The card's drills, off this page.** A learner with no one to sing with gets unison in Harmony
+  Stack, so the card offers Drone Intonation for a learner alone; a lower and a higher voice in one
+  room leave a note outside a preset, since the room scores the host's octave, and the card names
+  the pairs it suits (FACTS 63, 63b, 65).
 
 ## Tests
 
@@ -785,3 +825,7 @@ production:
   reads as his, and a part sung an octave away reads in full, by ear, with the coach.
 - On a real phone at 390 px, the tune line's four states, the brackets' numbers and the run's lines
   fit their cards, and C3 and E3 are heard through the speaker.
+- The practice card's Harmony Stack lines hold in a local Jam room with two peers, opened from the
+  card's link: the room opens on the C major scale in the host's octave, nothing plays, a note sung
+  an octave from its box scores nothing, and, once item 15 has shipped, each part's boxes name its
+  own notes (FACTS 63a, 63b).

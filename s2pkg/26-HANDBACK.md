@@ -62,8 +62,9 @@ on purpose.", not evidence of a key's thirds) and small trims: 3 words more in a
   yet: it waits on Season 2's kit (seasons), on Lesson 18's in-time reader and count-in, on Lesson
   24's headphones and quiet checks and its kept source under a take, widened here to a sung part,
   on its own kit work (the tune line's two-part states, the reader's line for a note sung on the
-  other part's note), on a lab test (silence with Merc's part from the speakers) and on the lesson
-  plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). Until the lab test passes, its Sing it
+  other part's note), on a lab test (silence with Merc's part from the speakers), on one app fix
+  (Jam's Harmony Stack naming each part's own notes) and on the lesson plumbing for Lessons 15 to 28
+  (SEASON-2 § 5.2 item 21). Until the lab test passes, its Sing it
   ships as the sing-along only. It goes live after the coach's sign-off and once `/learn/12` and
   `/learn/24`, the pages its chips and its recall link to, are live.
 
