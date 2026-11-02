@@ -5,8 +5,7 @@
 // Owner, 9 Oct 2026: Merc's lines live in one place and change in one file.
 // Every moment has a few variants, and the room kit's room-lines.ts never
 // says the same line twice in a row for a moment. `{note}` becomes the
-// target ("A3"), the room's one field, which its selector takes by position:
-// `next(moment, note)`.
+// target ("A3"), the room's one field: `next(moment, { note })`.
 //
 // Owner, 11 Oct 2026: plain words, one register. Each line says what the
 // voice is doing (on the note, a little sharp, flat, steady, off the note)
@@ -21,7 +20,7 @@
 // steadiness itself (STEADY_WORDS, chip-follower.ts), the same at every
 // level. Past the goal the lines say what the top did and the one fix.
 
-import type { LineTable } from '@/components/room-kit/room-lines'
+import type { LineTable, RoomLines } from '@/components/room-kit/room-lines'
 import { createRoomLines, fillLine } from '@/components/room-kit/room-lines'
 
 export type LongNoteMoment =
@@ -61,16 +60,23 @@ export const STEADY_CLAIMS: ReadonlySet<LongNoteMoment> =
   new Set<LongNoteMoment>(['steady', 'topSteady'])
 
 export const MERC_LINES: LineTable<LongNoteMoment> = {
+  // The opening lines leave the note to the stage's tag and the picker,
+  // which name it, so Merc can say them aloud (merc-spoken.ts).
   intro: [
-    { id: 'intro-breathe', text: 'Breathe in, then hold {note}.' },
-    { id: 'intro-easy', text: 'Hold {note} for as long as it feels easy.' },
+    { id: 'intro-breathe', text: 'Breathe in, then hold your note.' },
+    {
+      id: 'intro-easy',
+      text: 'Hold your note for as long as it feels easy.',
+    },
     {
       id: 'intro-fills',
-      text: 'Hold {note}. The light fills while you stay on it.',
+      text: 'Hold your note. The light fills while you stay on it.',
     },
   ],
   // In the Warm-up: the storyboard's cue, one line every time.
-  routine: [{ id: 'routine-breathe', text: 'Breathe in, then hold {note}.' }],
+  routine: [
+    { id: 'routine-breathe', text: 'Breathe in, then hold your note.' },
+  ],
   // No note yet: the singer picks one by singing it.
   introAny: [
     { id: 'any-easy', text: "Sing any note that sits easy. I'll find it." },
@@ -235,18 +241,12 @@ export function fillNote(text: string, note: string): string {
   return fillLine(text, { note })
 }
 
-export interface MercLineSelector {
-  /** The next line for a moment, with `{note}` filled in. */
-  next(moment: LongNoteMoment, note: string): string
-}
+/** Merc's lines for Long note: the next for a moment, `{note}` filled in. */
+export type MercLineSelector = RoomLines<LongNoteMoment, { note?: string }>
 
 /** Merc's lines for Long note, from this table. */
 export function createMercLineSelector(
   random: () => number = Math.random,
 ): MercLineSelector {
-  const roomLines = createRoomLines<LongNoteMoment, { note?: string }>(
-    MERC_LINES,
-    random,
-  )
-  return { next: (moment, note) => roomLines.next(moment, { note }) }
+  return createRoomLines<LongNoteMoment, { note?: string }>(MERC_LINES, random)
 }

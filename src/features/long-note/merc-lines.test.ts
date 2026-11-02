@@ -19,9 +19,9 @@ describe('merc-lines', () => {
     const moments = Object.keys(MERC_LINES) as LongNoteMoment[]
     for (const moment of moments) {
       if (MERC_LINES[moment].length < 2) continue
-      let previous = selector.next(moment, 'A3')
+      let previous = selector.next(moment, { note: 'A3' })
       for (let i = 0; i < 6; i++) {
-        const line = selector.next(moment, 'A3')
+        const line = selector.next(moment, { note: 'A3' })
         expect(line).not.toBe(previous)
         previous = line
       }
@@ -30,7 +30,7 @@ describe('merc-lines', () => {
 
   it('survives a broken random source', () => {
     const selector = createMercLineSelector(() => Number.NaN)
-    expect(selector.next('lock', 'C4')).toBe(
+    expect(selector.next('lock', { note: 'C4' })).toBe(
       fillNote(MERC_LINES.lock[0].text, 'C4'),
     )
   })

@@ -302,6 +302,9 @@ describe('the tap that opens a room Merc speaks in', () => {
     'home-note-lighthouse',
     'first-note-stage',
     'leap-cliffs',
+    'long-note-lantern',
+    'lip-roll-bay',
+    'ng-slides-bridge',
   ] as const)(
     "starts the clock for Merc's opening line in %s, and lets it go once the room holds its own",
     (id) => {
@@ -320,9 +323,9 @@ describe('the tap that opens a room Merc speaks in', () => {
     },
   )
 
-  it('starts no clock for a room Merc says nothing in as it opens', () => {
+  it('starts no clock for the Warm-up, whose path Merc says nothing on', () => {
     build.premium = true
-    installPremiumExercises().openExercise?.('long-note-lantern')
+    installPremiumExercises().openExercise?.('warm-up-path')
 
     expect(leases).toEqual([])
   })

@@ -43,14 +43,16 @@ export type NgMoment =
   | 'left'
 
 export const NG_LINES: LineTable<NgMoment> = {
+  // The scene names the root and each slide's top, so the opening lines
+  // leave them out and Merc can say them aloud (merc-spoken.ts).
   intro: [
     {
       id: 'intro-sing',
-      text: 'Hum ng, like the end of sing. Slide up to {top} and back.',
+      text: 'Hum ng, like the end of sing. Slide up and back.',
     },
-    { id: 'intro-follow', text: 'Hum ng and follow the arch up to {top}.' },
+    { id: 'intro-follow', text: 'Hum ng and follow the arch up and down.' },
   ],
-  // In the Warm-up: the storyboard's cue, the intro without its top.
+  // In the Warm-up: the storyboard's cue, the intro in fewer words.
   routine: [{ id: 'routine-slide', text: 'Hum ng and slide over the arch.' }],
   // No voiceprint and no note kept: the singer's own note fits the slides.
   introAny: [

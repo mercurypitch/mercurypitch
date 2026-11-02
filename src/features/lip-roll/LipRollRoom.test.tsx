@@ -13,6 +13,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CREST_NOTE } from '@/components/room-kit/CrestNote'
 import type { LitStrip } from '@/components/room-kit/glide-reveal'
+import type * as SpeechModule from '@/components/room-kit/merc-speech'
 import mic from '@/components/room-kit/RoomControls.module.css'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
 import { ROUTINE_RESULT_HOLD_MS, ROUTINE_WORDS, } from '@/components/room-kit/routine-stop'
@@ -80,9 +81,31 @@ vi.mock('./useLipCapture', async () => {
       },
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(ctx),
+      runningAudio: () => ctx,
     }),
   }
 })
+
+// ── Merc's spoken lines, as calls the test can read ───────────
+
+const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+vi.mock('@/components/room-kit/merc-speech', async () => ({
+  ...(await vi.importActual<typeof SpeechModule>(
+    '@/components/room-kit/merc-speech',
+  )),
+  createMercSpeech: () => ({
+    say: (id: string) => {
+      spoken.said.push(id)
+    },
+    hush: () => {
+      spoken.hushed += 1
+    },
+    speaking: () => false,
+    dispose: () => {
+      spoken.hushed += 1
+    },
+  }),
+}))
 
 // ── The room's tones: recorded, never heard ────────────────────
 
@@ -172,6 +195,8 @@ const kept = vi.hoisted(() => ({
   history: [] as { type: string; score: number; metrics: object }[],
   bests: [] as { level: string; best: { lit: number } }[],
   note: 52 as number | null,
+  /** A first visit: the demo opens the room. */
+  demoAutoPlays: false,
 }))
 vi.mock('@/stores/exercise-history-store', () => ({
   recordExerciseResult: (entry: {
@@ -193,7 +218,7 @@ vi.mock('@/stores/lip-roll-store', () => ({
   // The demo has been seen on this device: these runs are the singer's.
   lipDemoSeen: () => true,
   markLipDemoSeen: () => undefined,
-  lipDemoAutoPlays: () => false,
+  lipDemoAutoPlays: () => kept.demoAutoPlays,
 }))
 // No voiceprint on this device: the root is the one kept, or the singer's.
 vi.mock('@/db/services/voiceprint-service', () => ({
@@ -422,6 +447,9 @@ beforeEach(() => {
   kept.history = []
   kept.bests = []
   kept.note = 52
+  kept.demoAutoPlays = false
+  spoken.said = []
+  spoken.hushed = 0
   stage.opts = []
   felt.taps = 0
   felt.successes = 0
@@ -443,11 +471,14 @@ describe('the intro', () => {
     expect(said(bubble() ?? '', 'intro')).toBe(true)
     expect(screen.getByTestId('lip-level').textContent).toContain('Learning')
     expect(chip()).toBeNull()
-    // The kept note's fit names the first wave's top.
-    expect(bubble()).toContain('C4')
+    // The bay names the first wave's top; his line, said aloud, names none.
+    expect(screen.getAllByTestId('lip-top-name')[0].textContent).toBe('C4')
+    expect(bubble()).not.toContain('C4')
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-roll', 'intro-follow']).toContain(spoken.said[0])
   })
 
-  it("names each wave's top under the middle of its crest, as Merc's line does", () => {
+  it("names each wave's top under the middle of its crest", () => {
     render(() => <LipRollRoom onDone={() => undefined} />)
 
     const names = screen.getAllByTestId('lip-top-name')
@@ -1085,5 +1116,58 @@ describe('in the Warm-up', () => {
     fireEvent.click(screen.getByTestId('lip-routine-on'))
     vi.advanceTimersByTime(10_000)
     expect(calls.finish).toHaveLength(1)
+  })
+})
+
+describe("Merc's spoken lines", () => {
+  it('says his "any easy note" line aloud when the waves are only a guess', () => {
+    kept.note = null
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    expect(spoken.said).toEqual(['any-set'])
+  })
+
+  it('leaves the opening to the demo on a first visit', () => {
+    kept.demoAutoPlays = true
+    render(() => <LipRollRoom onDone={() => undefined} />)
+
+    expect(said(bubble() ?? '', 'intro')).toBe(true)
+    expect(spoken.said).toEqual([])
+  })
+
+  it('hushes Merc as the run starts, and he says his opening line again after a stop', async () => {
+    await startRun()
+    // Said as the room opened, hushed by the tap before the mic opened.
+    expect(spoken.said).toHaveLength(1)
+    expect(['intro-roll', 'intro-follow']).toContain(spoken.said[0])
+    expect(spoken.hushed).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('lip-mic'))
+
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(2)
+  })
+
+  it('says nothing aloud when the singer leaves the app mid-run', async () => {
+    await startRun()
+    const before = spoken.hushed
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(phase()).toBe('intro')
+    expect(spoken.said).toHaveLength(1)
+    expect(spoken.hushed).toBeGreaterThan(before)
+  })
+
+  it("says the Warm-up's cue aloud as the stop opens", () => {
+    const stop: RoutineStop = {
+      index: 0,
+      count: 4,
+      settledNote: null,
+      finish: () => undefined,
+      skip: () => undefined,
+    }
+    render(() => <LipRollRoom onDone={() => undefined} routine={stop} />)
+
+    expect(spoken.said).toEqual(['routine-roll'])
   })
 })

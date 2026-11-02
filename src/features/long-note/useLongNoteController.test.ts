@@ -52,6 +52,7 @@ vi.mock('./useLongNoteCapture', async () => {
       takeFrames: () => [],
       playTone: () => Promise.resolve(),
       audio: () => Promise.resolve(null),
+      runningAudio: () => null,
     }),
   }
 })

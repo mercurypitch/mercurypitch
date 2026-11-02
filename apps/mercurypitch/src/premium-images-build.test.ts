@@ -13,7 +13,8 @@
 // any depth (Echo's, Ng slides', Lip roll's and Home note's are in an art/
 // folder of their own), and every voice file (Merc's sung "ooh" set for Echo's
 // calls, in its voice/ folder, and his spoken lines beside it and in the
-// Ear rooms' voice/ folders; vite.config.ts, PREMIUM_VOICES). The Cloud
+// voice/ folders of the Ear rooms, Long note, Lip roll and Ng slides;
+// vite.config.ts, PREMIUM_VOICES). The Cloud
 // offer's art (src/features/karaoke-room/assets/) is Stage 2 and folds the
 // same way, and so do the Ear Lab with Merc's pictures and serif
 // (src/features/ear-lab/merc/; EAR_LAB_WITH_MERC rides the same switch),
@@ -123,8 +124,17 @@ describe("the premium rooms' pictures in a native build", () => {
   })
 
   it("has Merc's spoken lines to fold in each room he speaks in", () => {
-    // Each Ear room's opening and result lines, and Echo's opening lines.
-    const spoken = { 'home-note': 9, 'first-note': 9, leap: 9, echo: 4 }
+    // Each Ear room's opening and result lines, and the opening lines of
+    // Echo, Long note, Lip roll and Ng slides.
+    const spoken = {
+      'home-note': 9,
+      'first-note': 9,
+      leap: 9,
+      echo: 4,
+      'long-note': 5,
+      'lip-roll': 4,
+      'ng-slides': 4,
+    }
     for (const [room, count] of Object.entries(spoken)) {
       const lines = PICTURES.filter(
         (file) =>
