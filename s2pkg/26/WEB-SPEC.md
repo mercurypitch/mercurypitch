@@ -2,11 +2,11 @@
 
 The Lesson 26 page is the web lesson for "A second voice", Season 2's sixth voice lesson and the
 third of Arc D, Harmonise it: a cold open in which "Twinkle" plays with a copy of itself moved up
-four semitones and three of the copy's notes leave the key, a recall from Lessons 12 and 24, three
-words, written steps on one main toy, Lesson 6's tune line with a second part drawn beside the tune,
-in four step states with free play, a scored checkpoint in which the learner sings a part a third
-from Merc's tune and then the tune against it, with headphones, read note by note in time, an
-unscored sing-along without them, two quizzes and the lesson explorer. Copy is in
+four semitones and six of the copy's notes, on three pitches, leave the key, a recall from Lessons
+12 and 24, three words, written steps on one main toy, Lesson 6's tune line with a second part drawn
+beside the tune, in four step states with free play, a scored checkpoint in which the learner sings
+a part a third from Merc's tune and then the tune against it, with headphones, read note by note in
+time, an unscored sing-along without them, two quizzes and the lesson explorer. Copy is in
 [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is a text-only package: no film
 exists for Lesson 26, so the page has no Watch section and the masthead's anchors are Lesson, Sing
 and Explorer. It is built on the kit (`src/features/lessons/kit/`) as it stands on main at
@@ -29,12 +29,12 @@ voice; until then, and wherever the learner has no headphones, Sing it is the un
 answer 3 (FACTS 30).
 
 One object carries the lesson: Lesson 6's tune line, "Twinkle" as beads on semitone rows. In the
-cold open a copy draws itself four semitones above the tune and three of its beads land off C
-major's rows; in Step 1 the key's thirds walk up the scale, 4 or 3 semitones; in Step 2 the copy
-bends to the key, the season's signature; in Step 3 a part sits above or below, and Merc and Tavi
-sing it a tenth apart; in Step 4 a chord lights its notes gold under the part and a passing note
-stays hollow; in Sing it the learner's own part lies on the rows as amber bands, Merc's part beside
-it (FACTS 31, 44).
+cold open a copy draws itself four semitones above the tune and six of its beads land off C major's
+rows, on three of them; in Step 1 the key's thirds walk up the scale, 4 or 3 semitones; in Step 2
+the copy bends to the key, the season's signature; in Step 3 a part sits above or below, and Merc
+and Tavi sing it a tenth apart; in Step 4 a chord lights its notes gold under the part and a passing
+note stays hollow; in Sing it the learner's own part lies on the rows as amber bands, Merc's part
+beside it (FACTS 31, 44).
 
 Its public home is `mercurypitch.com/learn/26`: a hand-written document `learn/26.html` with its
 module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a draft until the vocal
@@ -54,8 +54,10 @@ wordmark, and the motion rules. On this page:
   sounding bead lit ink, Lesson 4's house on do. Its rows carry no names
   (`docs/plans/find-your-pitch/lessons/06-intervals/WEB-SPEC.md:149-151`).
 - **A lane is a key's row lit**: the rows of C major's seven notes drawn a step brighter across the
-  figure, the others left faint, as Lessons 4 and 6 draw a key's rows (FACTS 31). No lane is lit in
-  the hero before the answering play (FACTS 32).
+  figure, the others left faint, as Lessons 4 and 6 draw a key's rows (FACTS 31). No C major lane is
+  lit before the cold open's choice: the hero waits for the answering play, and the steps' stage
+  and free play draw the hero's plain rows until the choice (FACTS 32, 40). Sing it's figure lights
+  G's lanes under the learner's part, choice or no choice: it is in G and names no copy (FACTS 1a).
 - **A second part is a second chrome line**, with its own beads, labelled at its start ("tune",
   "copy" or "part"), so position and label tell the two apart, never colour alone. A bead off the
   lanes shows its name beside it, C♯, G♯ or F♯. A bracket between the two lines at each note names
@@ -92,7 +94,7 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
    tour waits for the cold open's choice (Toys 1).
 2. **Hero, with the cold open**, laid out as Lesson 2's: the kicker, the hook as the title
    (`<h1 class="hook" id="hook">`), the meta as six chips, the promise and the sound gate from
-   LESSON.md. The chips are "15 minutes" (FACTS 3); "After Lesson 12: Chords and the four-chord
+   LESSON.md. The chips are "16 minutes" (FACTS 3); "After Lesson 12: Chords and the four-chord
    song" and "After Lesson 24: Harmony against a drone", links to `/learn/12` and `/learn/24` that
    stay plain chips wherever their lesson is not live (FACTS 2); "Sound on"; "Microphone optional";
    and "Headphones optional". The stage holds Tavi's and Merc's bubbles over Merc and Tavi, the
@@ -101,9 +103,9 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
    head:
    - the title, at most 60 characters: "How to sing a harmony in thirds | MercuryPitch" (46),
      query-led as SEARCH.md § 13 item 1 decided (`docs/plans/find-your-pitch/SEARCH.md:454-456`),
-     proposed for the lead (Decisions for the owner);
+     the lead's choice;
    - the description, 121 characters: "Can you make a harmony by singing the tune a third higher? A
-     fifteen-minute lesson with sound toys and a harmony to sing.", which the head test holds to 80
+     sixteen-minute lesson with sound toys and a harmony to sing.", which the head test holds to 80
      to 160 characters (`src/tests/lesson-pages.test.ts:156-159`) and to the chip's run time in
      words (`src/tests/lesson-pages.test.ts:191-210`);
    - og:title and twitter:title "A second voice · Find Your Pitch, Lesson 26" (43);
@@ -113,7 +115,7 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
      Pitch, Lesson 26, A second voice, above the start of ‘Twinkle’ drawn as beads on rows, between
      Merc and Tavi." (135);
    - the Article's structured data: headline "A second voice", `alternativeHeadline` the hook, the
-     description, `timeRequired` `PT15M`, position 26, and `teaches` "A harmony a third above or
+     description, `timeRequired` `PT16M`, position 26, and `teaches` "A harmony a third above or
      below a tune, in its key", "Why a key's thirds are major on do, fa and so and minor on re, mi,
      la and ti", "Chord notes and passing notes" and "Singing a part while another part sings the
      tune"; and on release a line in llms.txt in its own form (`public/llms.txt:78-80`): "- [Lesson
@@ -134,74 +136,90 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
 6. **Sing it**: the comfort check, the voice choice, the headphones check, the "What this does" box,
    Start, the quiet check, the briefing, the runs, their readings and "How did that feel?", the swap;
    or the sing-along (Toys 5).
-7. **Quick check**: four questions, question 4's play waiting for the cold open's choice (Toys 4).
+7. **Quick check**: four questions, question 2 and question 4's play waiting for the cold open's
+   choice (Toys 4).
 8. **Wrap**: the three lines, the one-sentence challenge, the practice card in the version Sing it's
    ending picks (Practice links), the next-lesson card with Lesson 27's still (Toys 6), and free
-   play, the steps' tune line in every state, locked until the cold open's choice (Toys 2).
+   play, the steps' tune line in every state, drawing the hero's plain rows under its lock line
+   until the cold open's choice (Toys 2).
 9. **Explorer**: the season's map with a tab per season, opening on Season 2's.
 10. **Footer**: LESSON.md's, with the practice links, the fonts line and "Every sound on this page
     is synthesised in your browser."
 
 ## Length
 
-The learner copy is 2,166 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+The learner copy is 2,052 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
 under the series' cap of 2,379. Each step's own text, with its Try, its Notice and any Tavi line,
-runs 103, 97, 119 and 87 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.10 of
-reading at 238 words a minute and about 5.9 of sound, toys and tasks, 15.00 in all, where the plan
-expected about 16. The chip is an estimate until the tune line's states and the runs are timed in
-their lab (SEASON-2 § 1.3), and this section says so until then. Four parts carry more, for these
-reasons:
+runs 108, 83, 101 and 83 words, inside 50 to 120 a step.
 
-- **Sing it, 563 words.** It holds the series' singing lines, Lesson 3's, Lesson 18's and Lesson
+The built page is counted as the review counts it: the brief's 150 for the hints and status lines
+a built page writes in the open (Lesson 8 FACTS 4), plus every line this page adds that the counter
+would count, 168 in all (`verify26.py`, section 12): the steps' figure's lock line and its copy in
+free play, "Choose an answer at the top to unlock this figure." (10 each); Steps 1 and 2's held
+lines, "Hear the copy at the top to unlock this step." (10 each); quick check 2's lock line, "Choose
+an answer at the top to try this." (9), and quick check 4's, "Choose an answer at the top to hear
+this." (9); "Just listen today"'s play, "Play the two parts" (4); the quiet check's line when it
+hears a note (18); the predict's two "You said" lines (14); the stored voice's line (9); Your
+turn's other part lines, "mi fa so fa mi, a third above the tune" and "do re mi re do, the tune"
+(17); Sing it's status lines, "Counting in: one bar.", "Your turn: sing your part with Merc's." and
+"Done for today." (14); Step 1's Step up, Step down and bracket, "D up to F: 3 semitones" (10); Step
+2's switch and Play (7); Step 3's switch and the tenth's bracket, "a tenth" (4); Step 4's Play both
+and its bar, "C major chord" (5); the hero's label, "‘Twinkle’ in C major" (4); and free play's
+state switch, 1 to 4 (4). Marks that are a numeral or a single name, the brackets' 4s and 3s, the
+beads' sharps, the lines' tags and the syllables under Sing it's bands, are not counted, as a
+chart's ticks are not. So the built page runs about 2,052 + 150 + 168 = 2,370 words, 9 under the
+cap.
+
+The page runs about 16 minutes: 9.96 of reading the built page at 238 words a minute and about 5.9
+of sound, toys and tasks, 15.86 in all, the plan's "about 16 minutes (lab-timed)"; the text's count
+alone gives 14.52. The chip, the head's "A sixteen-minute lesson", `timeRequired` `PT16M` and the
+season's `minutes` say 16 until the tune line's states and the runs are timed in their lab (SEASON-2
+§ 1.3), which may move them. Two parts carry more, for these reasons:
+
+- **Sing it, 521 words.** It holds the series' singing lines, Lesson 3's, Lesson 18's and Lesson
   24's word for word, which are not cut; the headphones check and the quiet check, which the scored
-  path needs; the briefing's cues; the "What this does" box; the reading's example lines; the
-  feelings' and the swap's lines; and the sing-along (FACTS 49 to 62).
-- **The Wrap, 322 words.** The practice card says what Harmony Stack does to a learner and how to
-  reach it with a friend: nothing played, the octave it scores and who sets it, its boxes' names,
-  and which pairs of voices it suits; then Drone Intonation for a learner alone, its care lines and
-  its rest version (FACTS 63 to 66), and the next lesson.
-- **The quick check, 256 words.** Four questions with three answers each and a line of feedback for
-  every answer, as MASTER-PLAN § 4.2 item 8 asks.
-- **The recall, 152 words.** Lessons 12 and 24's questions, word for word.
+  path needs; the briefing, one for every set; the "What this does" box; the reading's example
+  lines; the feelings' and the swap's lines; and the sing-along (FACTS 49 to 62).
+- **The Wrap, 302 words.** The practice card says what Harmony Stack does to a learner and how to
+  reach it with a friend in the order that works today: the range, the room, the link, and the mode
+  once the friend is in; nothing played; the third's boxes; the octave it scores. Then Drone
+  Intonation for a learner alone, the care lines and the rest version (FACTS 63 to 66), and the
+  next lesson.
 
-Step 2 runs 174 words: its own text is 97, and the rest is its heading and the mix-up card, which
-sits in the step whose question it answers.
+The quick check runs 242 words, four questions with three answers each and a line of feedback for
+every answer (MASTER-PLAN § 4.2 item 8); the recall 152, Lessons 12 and 24's questions word for
+word.
 
-The hints and status lines are stage directions in LESSON.md and are not counted, as in every text
-package: the predict's hints and its "You said" lines, the stored voice's line, Sing it's status
-lines, and the toys' labels. A built page writes them in the open: about 150 words by Lesson 8's
-reckoning (Lesson 8 FACTS 4), and 61 more for this page's six lock, held and status lines: the
-steps' figure's lock line, "Choose an answer at the top to unlock this figure." (10); Steps 1 and
-2's held lines, "Hear the copy at the top to unlock this step." (10 and 10); quick check 4's lock
-line, "Choose an answer at the top to hear this." (9); "Just listen today"'s play, "Play the two
-parts" (4); and the quiet check's line when it hears a note, "The microphone heard a note during
-Merc's part. Check your headphones, then press Start again and stay quiet." (18). So the built page
-runs about 2,377 words, 2 under the cap (`verify26.py`, section 12).
-
-The first draft counted 2,323 words, about 2,534 built, and Step 3's own text ran 127. The cuts are
-made, every fact they carried staying in FACTS: the promise's second clause; the reveal's sentence
-on the copy's other notes; the Part word's second example; a sentence in each of Steps 1, 3 and 4;
-the mix-up card's second piece of evidence; Your turn's second voice's line, now a stage direction;
-two of the reading's example lines; the feelings' lines and the sing-along's line, shortened; the
-quick check's longer feedback; the Wrap's "note for note"; and the practice card's room steps,
-shortened. The card then gained 34 words on what Harmony Stack does, paid for by its fifth, its
-shorter room steps, its second drill's "here too" and "not an octave away", and the mix-up card's
-line on Jam with a shorter "Why it seems right": 3 words more in all (FACTS 3). A build counts its
-own page; if that count runs over the cap, the next cut is the Wrap's "An octave further apart, a
-third is a tenth." (9 words), which Step 3 says in full.
+The cuts, every fact they carried staying in FACTS. The first draft counted 2,323 words, about
+2,534 built on the brief's rule, and was cut in the promise, the reveal, the Part word, the four
+steps, the mix-up card, Your turn, the readings, the feelings, the sing-along, the quick check's
+feedback, the Wrap's "note for note" and the practice card's room steps. The review's five cuts then
+went in its order: the Wrap's "An octave further apart, a third is a tenth." (9); Step 3's "In Sing
+it, the lower voice takes the part below, the higher voice the part above." (16); Step 2's "Both
+sizes count as consonances." (5); the reading's "your pitch line appears, with" (5); and Drone
+Intonation's range line, now "It too wants each note in the octave your range sets." (10). Then the
+reserve line, "Listen to the tune as you sing." (7), with Your turn rewritten to serve every set;
+then this package's own: the reveal's "and every note fits"; the after-swap line, "Both parts: the
+harmony, then the tune."; the sing-along's "A part a third from the tune, sung with it."; the
+reading's example "La · We didn't hear a steady note there."; the promise's "with the tune"; the
+Tries of Steps 1 to 4; Step 2's opening and Notice; quick check 2's and 4's longer feedback; the
+Wrap's first and third lines; Step 4's toy buttons for the part and the tune, which the text's plays
+sound; and the tenth's bracket, now "a tenth" (FACTS 3). If a build's own count still runs over the
+cap, the next cut is the reading's example of the octave line, "Added when it applies: "You sang it
+an octave lower: same note."" (11), which the reader still gives.
 
 The activities are timed from FACTS 75 to 78. Free play is not counted.
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                                                         | New in Lesson 26                                                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Hero and predict       | The kit's predict (`kit/predict.ts`) with a free play, `onChoice`, `unlocks` and three reveal elements; the kit's tune line (`kit/tune-line.ts`) in its compact state, with its contrast case; the tour's hold (`kit/tour-gate.ts`) | The copy as a second line drawn as it sounds; the lanes lit by the answering play; a name beside a bead off the lanes; Steps 1 and 2's words held as reveal elements                                                            |
-| 2. The tune line, steps   | The kit's tune line, its stacked lines, beads, brackets and one-sound owner; Lesson 6's tune toy as the model of its states (`lesson-06/tune-toy.ts`)                                                                            | Four step states and free play, locked until the choice: Step 1's pair walk, Step 2's switch, Step 3's switch and Merc and Tavi state, Step 4's chord bar with gold and hollow beads; brackets between two lines; lanes            |
-| 3. Three words            | Lesson 5's word tickets (`lesson-05/words.ts`), with the page's sound owner                                                                                                                                                    | Three small figures that draw their plays                                                                                                                                                                                         |
-| 4. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lesson 12's question object; Lesson 24's, once built                                                                                                           | Ids `l26-q1` to `l26-q4`; quick check 4's play, by ear, held until the cold open's choice                                                                                                                                         |
-| 5. Sing it                | Lesson 18's sing flow, take read in time and in-time reader, with its count-in; Lesson 24's headphones check, quiet check and kept source; the comfort check, voice choice and feelings (`kit/comfort.ts`, `kit/voice-choice.ts`) | The other part sung under the take; the model before each run; the swap; the reader's line for a note sung on the other part's note; three takes a set, as Lesson 24's sets; the sing-along with the tune                       |
-| 6. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                                    | Lesson 27's opening as a still, as Lesson 27's package draws it, which plays nothing                                                                                                                                              |
+| Toy                       | Reuses                                                                                                                                                                                                                              | New in Lesson 26                                                                                                                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Hero and predict       | The kit's predict (`kit/predict.ts`) with a free play, `onChoice`, `unlocks` and three reveal elements; the kit's tune line (`kit/tune-line.ts`) in its compact state, with its contrast case; the tour's hold (`kit/tour-gate.ts`) | The copy as a second line drawn as it sounds; the lanes lit by the answering play; a name beside a bead off the lanes; Steps 1 and 2's words held as reveal elements                                                                   |
+| 2. The tune line, steps   | The kit's tune line, its stacked lines, beads, brackets and one-sound owner; Lesson 6's tune toy as the model of its states (`lesson-06/tune-toy.ts`)                                                                               | Four step states and free play, the hero's plain rows until the choice: Step 1's pair walk, Step 2's switch, Step 3's switch and Merc and Tavi state, Step 4's chord bar with gold and hollow beads; brackets between two lines; lanes |
+| 3. Three words            | Lesson 5's word tickets (`lesson-05/words.ts`), with the page's sound owner                                                                                                                                                         | Three small figures that draw their plays                                                                                                                                                                                              |
+| 4. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lesson 12's question object; Lesson 24's, once built                                                                                                               | Ids `l26-q1` to `l26-q4`; quick check 2's answers and 4's play, by ear, held until the cold open's choice                                                                                                                              |
+| 5. Sing it                | Lesson 18's sing flow, take read in time and in-time reader, with its count-in; Lesson 24's headphones check, quiet check and kept source; the comfort check, voice choice and feelings (`kit/comfort.ts`, `kit/voice-choice.ts`)   | The other part sung under the take; the model before each run; the swap; the reader's line for a note sung on the other part's note; three takes a set, as Lesson 24's sets; the sing-along with the tune                              |
+| 6. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                                        | Lesson 27's opening as a still, as Lesson 27's package draws it, which plays nothing                                                                                                                                                   |
 
 ### 1. The hero and the cold open's predict
 
@@ -221,7 +239,7 @@ a bead (FACTS 31, 32). It takes no taps.
   semitones above it, note against note, 8.0 s, as one run (Audio). As it starts, the rows of C
   major's seven notes light as lanes; each note of the copy draws its bead on its row as it
   sounds, a line joining it to the copy's bead before, and a bead off the lanes shows its name
-  beside it, "C♯5", "G♯4" or "F♯4", as it lands. The predict's `revealOn` names this play alone.
+  beside it, "C♯", "G♯" or "F♯", as it lands. The predict's `revealOn` names this play alone.
 - **The reveal** waits until the play is heard to its end with sound on, and shows three elements
   at once, which the kit announces in order (`showReveal`, `src/features/lessons/kit/predict.ts:133-148`):
   the hero's reveal, "You said: …" and LESSON.md's text, with **Play the copy that stays in the
@@ -233,8 +251,8 @@ a bead (FACTS 31, 32). It takes no taps.
   lane beads, as Lesson 6's swapped version is drawn (`TuneOverlay`,
   `src/features/lessons/kit/tune-line.ts:85-89`).
 - **Spoken summary** of the figure, in words, never signs: at first, "‘Twinkle’ in C major: two
-  lines of seven notes, from C 4 up to A 4."; after the answering play, "The copy: three of its
-  notes, C sharp 5, G sharp 4 and F sharp 4, are off C major's rows."; after the reveal's play, "The
+  lines of seven notes, from C 4 up to A 4."; after the answering play, "The copy: six of its notes,
+  on C sharp 5, G sharp 4 and F sharp 4, are off C major's rows."; after the reveal's play, "The
   copy that stays in the key: every note on C major's rows."
 - **The tour**: the first-visit tour's step "One step at a time" scrolls to the steps' stage, past
   the predict, so the page holds it until the choice (`holdTour`, `src/features/lessons/kit/tour-gate.ts:57-69`),
@@ -242,21 +260,33 @@ a bead (FACTS 31, 32). It takes no taps.
 
 ### 2. The tune line in the steps
 
-One stage beside the steps' text, the kit's tune line in four states, each step's own, and free
-play in the Wrap. Before the cold open's choice every control and play of the stage, the plays in
-the steps' text among them, is disabled, under the line "Choose an answer at the top to unlock this
-figure.", which the predict's `onChoice` and `unlocks` remove (FACTS 40); Steps 1 and 2's text, its
-plays, Try and Notice stay hidden until the reveal, the held line "Hear the copy at the top to
-unlock this step." in their place (FACTS 41). Every play is the page's one sound (Audio). Each state
-has a spoken summary that says what it draws whenever it changes.
+One stage beside the steps' text, the kit's tune line in four states, each step's own, and free play
+in the Wrap. **Before the cold open's choice** the stage and free play draw no step's state, since
+every one shows the answer through its lanes, its brackets or its Four semitones up setting, and the
+kit's lock disables controls, not drawings (`unlocks`, "Controls elsewhere that the choice unlocks
+too", `src/features/lessons/kit/predict.ts:66-67`). Until then both draw the hero's state:
+"Twinkle"'s two lines alone on plain rows, as the hero draws them, with no lane, no second line, no
+bracket and no name on a bead, and the hero's spoken summary, "‘Twinkle’ in C major: two lines of
+seven notes, from C 4 up to A 4."; every control and play, the plays in the steps' text among them,
+is disabled with its name kept, under the line "Choose an answer at the top to unlock this figure.".
+The predict's `onChoice` draws each step's own state and free play's, and removes the line, and
+`unlocks` enables the controls; a return visit holds them again (FACTS 40), as Lesson 25's stage
+leaves its chord column undrawn
+(`docs/plans/find-your-pitch/lessons/25-minor-properly/WEB-SPEC.md:241-245`) and Lesson 27's draws
+V with three corners until the choice
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:213-214`). Steps 1 and 2's
+text, its plays, Try and Notice stay hidden until the reveal, the held line "Hear the copy
+at the top to unlock this step." in their place (FACTS 41). Every play is the page's one sound
+(Audio). Each state has a spoken summary that says what it draws whenever it changes.
 
 - **Step 1, the thirds up the scale**: one band, C4 to D5, the lanes lit, the house on do. A note of
   the scale and the key's note a third above it light together as two beads joined by a bracket that
-  names the letters and the semitones, "C up to E: 4" to "B up to D: 3", the bracket's words spoken
-  "C up to E, 4 semitones". **Step up** and **Step down** walk the pair from do to ti and back, each
-  step playing its two notes together, 1.0 s, "Step down" `aria-disabled` at do and "Step up" at ti.
-  **Play the thirds up the scale**, in the text, plays the seven pairs in turn, 7.0 s, the pair
-  walking with it (FACTS 43, 77).
+  names the letters and the semitones, "C up to E: 4 semitones" to "B up to D: 3 semitones", with
+  the unit, since a bare 3 beside a third would read as its letters (FACTS 11), the bracket's words
+  spoken "C up to E, 4 semitones". **Step up** and **Step down** walk the pair from do to ti and
+  back, each step playing its two notes together, 1.0 s, "Step down" `aria-disabled` at do and "Step
+  up" at ti. **Play the thirds up the scale**, in the text, plays the seven pairs in turn, 7.0 s,
+  the pair walking with it (FACTS 43, 77).
 - **Step 2, "Twinkle" with its copy**: the two lines stacked, each band C4 to D5 with the lanes lit,
   the copy a second chrome line labelled "copy", a bracket at each note naming 4 or 3, and a switch,
   **C major's thirds · Four semitones up**, on the first. Switched, the copy's beads over D, E and A
@@ -268,23 +298,30 @@ has a spoken summary that says what it draws whenever it changes.
   la, labelled "part", a bracket at each note naming 4 or 3. **Play above** and **Play below**, in
   the text and the toy, set the switch and play the tune with that part, 3.0 s each. **Play Merc and
   Tavi** redraws the band from C3 to G4, Merc's tune in blue, C3 to E3, Tavi's part in orange, E4 to
-  G4, each line labelled with its singer, and a bracket between their first notes labelled "a tenth:
-  an octave and a third"; it plays both in Merc's "ooh", 3.0 s (FACTS 45, 77).
+  G4, each line labelled with its singer, and a bracket between their first notes labelled "a
+  tenth", the text giving "an octave and a third"; it plays both in Merc's "ooh", 3.0 s (FACTS 45,
+  77).
 - **Step 4, the note in the middle**: one band, C4 to G4, the tune do re mi on C4 and the part mi fa
   so above it, over a bar at the band's foot named "C major chord", its lanes of C, E and G glowing.
-  Each play holds the chord, C3, E3 and G3, for 3.0 s under its notes: a chord note's bead glows gold
-  as it sounds, and a passing note's bead, re or fa, is drawn hollow, with no glow, and named
-  "passing" in the spoken summary. **Play the part**, **Play the tune** and **Play both**, the text's
-  two plays among them (FACTS 46, 77).
-- **Free play**, under the next-lesson card: the four states on one stage, with a state switch and
-  every control, locked until the cold open's choice under the same line, and again on a return
+  Each play holds the chord, C3, E3 and G3, for 3.0 s under its notes: a chord note's bead glows
+  gold as it sounds, and a passing note's bead, re or fa, is drawn hollow, with no glow, and named
+  "passing" in the spoken summary. The text's two plays sound the part and the tune, each over the
+  chord, and the toy's **Play both** sounds the two together over it, as Try asks (FACTS 46, 77).
+- **Free play**, under the next-lesson card: the four states on one stage, with every control and a
+  state switch of four buttons, 1 to 4, each named by its step's heading. Until the cold open's
+  choice it draws the hero's state under the same line, its controls disabled, and again on a return
   visit, as Lessons 22 and 25's free play keeps its steps' holds (FACTS 40).
 
-Layout: the stage takes the kit's tune line layout, every bead, bracket and control a target of at
-least 44 px with no two overlapping, at every width from 344 px up. Step 2's two lines stack, each
-on a band of fifteen rows with no gap strip, so the figure keeps about the 350 px Lesson 6 measured
-at 390 by 844; Step 3's Merc and Tavi state draws 32 rows, about 280 px, near Lesson 6's one-line
-states (FACTS 80). The lab confirms both on a phone (What the kit and the app still need, item 8).
+Layout: the stage takes the kit's tune line layout at every width from 344 px up. No bead and no
+bracket is a button in any state: `beadButtons` is off, and the kit's `brackets`, a button each, are
+not used, since this page's brackets stand between two lines and are drawn only (item 7;
+`src/features/lessons/kit/tune-line.ts:70-73`). The targets are the controls, each at least 44 px,
+no two overlapping: Step up and Step down, the switches, the plays and free play's state switch.
+Step 2's two lines stack, each on a band of fifteen rows with no gap strip, so the figure keeps
+about the 350 px Lesson 6 measured at 390 by 844, though two of its beads and their bracket can
+share one 44.25 px column a few rows apart, which is why they are not buttons; Step 3's Merc and
+Tavi state draws C3 to G4, 20 rows, about 180 px of rows, inside Lesson 6's one-line states (FACTS
+80). The lab confirms both on a phone (What the kit and the app still need, item 8).
 
 ### 3. Three words
 
@@ -299,15 +336,19 @@ moved four semitones or names a third's size, so none waits for the choice (FACT
 The kit's quiz, as on Lesson 24's page. The recall imports Lesson 12's `l12-q3`
 (`src/features/lessons/lesson-12/quiz-questions.ts:73-91`) and Lesson 24's question 1, `l24-q1`,
 once Lesson 24's questions are a module, each with its away links, "Try Lesson 12, Step 4 again"
-becoming plain words where Lesson 12 is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:191-205`);
-its keys are `fyp-l26-recall-seed` and `fyp-l26-recall-v1`. The quick check's ids are `l26-q1` to
-`l26-q4`, its keys `fyp-l26-seed` and `fyp-l26-quiz-v1`, its words LESSON.md's, in authored order,
-each ♯ made speakable (FACTS 71 to 74). Question 4's **Play** plays do re mi re do on C4 with the part
-four semitones up, then, after 1.0 s, with the key's thirds, 7.0 s, by ear only: nothing draws.
-Until the cold open's choice it is disabled, under "Choose an answer at the top to hear this.".
-Lesson 28's recall imports `l26-q2` as this page words it (FACTS 72).
+becoming plain words where Lesson 12 is not live (`linkAway`,
+`src/features/lessons/kit/quiz.ts:191-205`); its keys are `fyp-l26-recall-seed` and
+`fyp-l26-recall-v1`. The quick check's ids are `l26-q1` to `l26-q4`, its keys `fyp-l26-seed` and
+`fyp-l26-quiz-v1`, its words LESSON.md's, in authored order, each ♯ made speakable (FACTS 71 to 74).
+Question 4's **Play** plays do re mi re do on C4 with the part four semitones up, then, after 1.0 s,
+with the key's thirds, 7.0 s, by ear only: nothing draws. Until the cold open's choice it is
+disabled, under "Choose an answer at the top to hear this.". Question 2 asks the predict's question
+again, with its right answer and feedback that states it, so until the choice its three answers are
+disabled with their words kept, under "Choose an answer at the top to try this.", the kit's quiz
+answer buttons passed to the predict's `unlocks`; a return visit holds both again (FACTS 1a, 40,
+72). Lesson 28's recall imports `l26-q2` as this page words it (FACTS 72).
 
-### 5. Sing it: your part with Merc's
+### 5. Sing it: two parts
 
 Lesson 18's sing flow, as its spec moves it into the kit, with a take read in time
 (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:349-448`), and Lesson 24's
@@ -335,12 +376,13 @@ States:
    with **I have headphones on** and **No headphones**. No headphones opens the sing-along (state 11)
    and asks for no microphone. The answer holds for the visit, in memory, never stored (FACTS 52).
 5. **Briefing**: the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026; FACTS
-   58), Your turn with the chosen voice's part, the stop line on its own line, and **Start**, the only
-   control that asks for the microphone, through the kit's listener under the page's consumer id,
-   `lesson-26`. Under Your turn the figure draws the learner's part as amber bands on G's lanes, the
-   other part's notes as chrome beads beside them, and the count-in strip. With sound off, Start
-   asks for nothing and plays nothing, with the hint "Sound is off, so nothing played. Turn sound on
-   to hear Merc's part, then press Start." A refused microphone opens the sing-along.
+   58), Your turn, its first line the part the set sings, the chosen voice's part or, in the swap,
+   the tune (FACTS 55), the stop line on its own line, and **Start**, the only control that asks for
+   the microphone, through the kit's listener under the page's consumer id, `lesson-26`. Under Your
+   turn the figure draws the learner's part as amber bands on G's lanes, the other part's notes as
+   chrome beads beside them, and the count-in strip. With sound off, Start asks for nothing and
+   plays nothing, with the hint "Sound is off, so nothing played. Turn sound on to hear Merc's part,
+   then press Start." A refused microphone opens the sing-along.
 6. **The quiet check**, Lesson 24's, after the microphone opens and before every set, Again's
    included: LESSON.md's line, and the first 2.0 s of the part Merc sings in that set, at the run's
    level, nothing else playing, while the listener reads the frames. It fails on any voiced run of
@@ -369,8 +411,8 @@ States:
    - Easy or Workable after the learner's part: the tricky line where the set's rules give it, then
      "Now swap: sing the tune while Merc sings your part." with **Swap parts**, **Again** (while the
      set has takes left) and **Done for today**.
-   - Easy or Workable after the swap: "Both parts: the harmony, then the tune." with **Again** (while
-     the swap's set has takes left) and **Done for today**.
+   - Easy or Workable after the swap: **Again** (while the swap's set has takes left) and **Done for
+     today**.
    - Effortful: the lines stay; no Again, no swap; "Keep it gentle: rest before you sing again."
      with only **Done for today**; the Wrap shows the rest card.
    - Uncomfortable: the lines and the pitch line are taken away; no Again, no swap; "Thanks for
@@ -378,18 +420,19 @@ States:
      microphone is released; the Wrap shows the rest card (REQ-GVC-021, REQ-GVC-023, REQ-GVC-024).
    - Once "Effortful" or "Uncomfortable" has been answered, no further run and the rest card stay
      so for the visit, in memory (`VisitEnding`, `src/features/lessons/kit/comfort.ts:101-114`).
-10. **The swap**: states 6 to 9 with the parts exchanged: the quiet check plays the first 2.0 s of
-    the harmony; the model is the tune sung alone; the learner sings the tune while Merc sings the
-    harmony; the figure draws the tune as the amber bands and the harmony as the chrome beads; the
-    lines read against the tune, with the harmony as the other part (FACTS 56).
+10. **The swap**: states 6 to 9 with the parts exchanged: Your turn's first line reads "do re mi re
+    do, the tune"; the quiet check plays the first 2.0 s of the harmony; the model is the tune sung
+    alone; the learner sings the tune while Merc sings the harmony; the figure draws the tune as the
+    amber bands and the harmony as the chrome beads; the lines read against the tune, with the
+    harmony as the other part (FACTS 56).
 11. **The sing-along**, for No headphones, no microphone, a refused microphone or a quiet check that
     heard a note: LESSON.md's line and **Start the sing-along**: the model, 0.4 s of quiet, the
     count-in, then the other part, 6.0 s, the cursor moving and the bands lighting as their beats
-    come; nothing listens and no line is drawn. Then "How did that feel?" with the same endings; Easy
-    or Workable adds "A part a third from the tune, sung with it." with **Swap parts** and **Sing
-    along again**. Swap parts sings along with the parts exchanged; Sing along again is offered once
-    a visit, the cap Season 1's sing-alongs put on their Again (the kit's `AfterFeeling`, "still
-    offered only once a visit", `src/features/lessons/kit/comfort.ts:41`; FACTS 61).
+    come; nothing listens and no line is drawn. Then "How did that feel?" with the same endings;
+    Easy or Workable offers **Swap parts** and **Sing along again**. Swap parts sings along with the
+    parts exchanged; Sing along again is offered once a visit, the cap Season 1's sing-alongs put on
+    their Again (the kit's `AfterFeeling`, "still offered only once a visit",
+    `src/features/lessons/kit/comfort.ts:41`; FACTS 61).
 12. **Done for today** ends the checkpoint with the status "Done for today." and leaves the practice
     card in the version the visit's ending picks.
 
@@ -415,28 +458,37 @@ one:
 - **Input**: beside the written notes, here the learner's part, the reader takes the other part's
   notes, each a MIDI note with its onset and length in beats, and the name each line uses for it,
   "Merc's" or "Tavi's".
+- **The anchor** is Lesson 18's, unchanged, for the learner's own part: a late start, up to two
+  beats, moves every one of its notes' beats, so a late start still reads its notes.
 - **The other part's note**: a note not heard on its note, whose voiced frames inside its own beats,
-  anchored, have a median more than 60 cents from its own note and within 60 cents, folded, of the
-  other part's note in the same beat, reads "That was Merc's note:" with that note's syllable,
-  through the rung line's form: "Do · That was Merc's note: mi." This rule comes first among the
-  not-heard rules, before Lesson 18's rule for a neighbouring written note, since in these parts the
-  other part's note in one beat is sometimes the learner's own note two places away (FACTS 58). It
-  never gives a gap, never names a cause and gives no advice.
+  anchored, have a median more than 60 cents from its own note, is compared frame by frame with the
+  other part as played: each frame against the note the other part is sounding at that frame's time
+  on the audio clock, from bar 1's first beat, where the part is booked, never anchored. If those
+  distances, folded, have their median within 60 cents, the note reads "That was Merc's note:" with
+  the syllable of the other part's note most of those frames sat on, through the rung line's form:
+  "Do · That was Merc's note: mi." A device's round trip shifts the frames against the part by a
+  fraction of a beat, which the median absorbs; the lab measures it (item 8). This rule comes first
+  among the not-heard rules, before Lesson 18's rule for a neighbouring written note, since in these
+  parts the other part's note at one moment is sometimes the learner's own note two places away
+  (FACTS 58). It never gives a gap, never names a cause and gives no advice.
 - **Never "in the band" for the other part**: the parts are a third apart in every beat, three or
   four semitones, so a note sung on the other part's note is 300 or 400 cents from the learner's
   own (FACTS 28).
 - **The lines** take "your part's note" where Lesson 18's take "the written note", through
   `gapWords`, which takes whose note it is (`src/features/lessons/kit/band-words.ts:55-61`).
 
-Run on synthetic takes before the lab (Tests 7): the lower part sung on pitch and on time reads every
-note heard on its note; sung a whole beat late, the same; do sung on Merc's mi, B3, reads "Do · That
-was Merc's note: mi."; la sung on G3 in beat 1, which is Merc's do there and the learner's own do two
-places on, reads "La · That was Merc's note: do.", not the neighbour's line; ti sung on G♯3, off both
-parts, reads its gap; the higher part's so sung on B4 in beat 3 reads "So · That was Tavi's note:
-mi."; in the swap, do sung on E3 in beat 1 reads "Do · That was Merc's note: la."; and a take of
-frames on Merc's part alone, the voice silent, reads every note as Merc's, which is why the quiet
-check runs before every set and the lab test comes first (What the kit and the app still need, item
-8).
+Run on synthetic takes before the lab (Tests 7): the lower part sung on pitch and on time reads
+every note heard on its note; sung a whole beat late on its own notes, the same, as the anchor
+allows; sung a beat late on Merc's sounding notes, A3, B3, A3, G3 and G3, stopping with him, "La ·
+That was Merc's note: re.", "Ti · That was Merc's note: mi.", "Do · That was Merc's note: re.", "Ti
+· That was Merc's note: do." and "La · That was Merc's note: do.", where a rule on the anchored beat
+would read gaps; do sung on Merc's mi, B3, reads "Do · That was Merc's note: mi."; la sung on G3 in
+beat 1, which is Merc's do there and the learner's own do two places on, reads "La · That was Merc's
+note: do.", not the neighbour's line; ti sung on G♯3, off both parts, reads its gap; the higher
+part's so sung on B4 in beat 3 reads "So · That was Tavi's note: mi."; in the swap, do sung on E3 in
+beat 1 reads "Do · That was Merc's note: la."; and a take of frames on Merc's part alone, the voice
+silent, reads every note as Merc's, which is why the quiet check runs before every set and the lab
+test comes first (What the kit and the app still need, item 8).
 
 ### 6. Tease still
 
@@ -517,28 +569,35 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Jam's Harmony Stack**, for two or more: the link is `/jam?lesson=26`, printed
-  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it and what
-  it does to a learner (FACTS 63, 63a, 63b and 64): whoever opens a room hosts it and picks its
-  mode, then shares its link; one singer takes the room's tune and the other a third above it, in
-  the key, each scored on their own part; the room plays nothing, not even a first note; its boxes
-  name their notes; it scores each note in the octave shown, unfolded, where this page's reader
-  folds; and the host's voice range sets that octave, so two lower or two higher voices suit it. The
-  range is checked against all six presets on the room's first tune, the C major scale on C3 or C4:
-  two lower or two higher voices keep the tune and the third inside every preset, the least room 0
-  at the tenor's and the soprano's floors, on the tune's C; a lower and a higher voice leave a note
-  outside a preset, unless a tenor draws the tune in a higher voice's room; the coach's list carries
-  the table (`verify26.py`, section 13). The card leaves out the fifth a third singer takes, which
-  runs a semitone past the bass preset's top, and it does not say which friend gets which part,
-  since that follows the room's order, which the room shows. "Its boxes name their notes" is true
-  once item 15 of What the kit and the app still need ships, and the page waits for it; if the lead
-  links the room first, that sentence reads "It plays nothing; on the third, its boxes print the
-  tune's letters." (4 words more, paid for by the next cut in Length). It is the season plan's link
-  for this lesson (SEASON-2 § 5.1, row 26, `docs/plans/find-your-pitch/SEASON-2.md:842`).
+  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it, in the
+  order that works today, and what it does to a learner (FACTS 63, 63a, 63b and 64). The order: set
+  your Singing Voice Range in Settings, since the room's octave is the host's range, which reads
+  tenor until it is set; open a Jam room and share its link; and pick Harmony Stack under More
+  controls once the friend is in, since the mode and the drill reach only a friend already in the
+  room, and a friend who joins after the pick stays in unison, on their own scale in their own
+  octave. What it does: one singer takes the room's tune and the other a third above it, in the key,
+  each scored on their own part; the room plays nothing, not even a first note; on the third, its
+  boxes print the tune's letters; and it scores each note in the octave the host's range sets,
+  unfolded, where this page's reader folds. That sentence on the boxes describes the app as it is,
+  the lead's call; when item 15 of What the kit and the app still need ships, it becomes "It plays
+  nothing; its boxes name their notes.", 4 words fewer; when item 16 ships, a friend who joins late
+  gets the mode and the drill, and the order matters less. The card gives no advice on which voices
+  to pair: checked against all six presets on the room's first tune, the C major scale on C3 or C4,
+  two lower or two higher voices keep the tune and the third inside every preset, but with no room
+  at the tenor's floor or the soprano's, on the tune's C, under the series' two semitones, and a
+  lower and a higher voice leave a note outside a preset unless a tenor draws the tune in a higher
+  voice's room; the coach's list carries the table (`verify26.py`, section 13). It leaves out the
+  fifth a third singer takes, which runs a semitone past the bass preset's top, and it does not say
+  which friend gets which part, since that follows the room's order, which the room shows. It is the
+  season plan's link for this lesson (SEASON-2 § 5.1, row 26,
+  `docs/plans/find-your-pitch/SEASON-2.md:842`).
 - **The second drill, alone, Drone Intonation's thirds**: `/exercises/thirds-on-a-drone?lesson=26`,
   printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:75-81`),
   with Lesson 24's card lines cut to this page: what it does, now "names a third to sing above it",
-  since it prints the interval and the note's name; the headphones line; and the range line, its
-  "too" pointing back to Harmony Stack's octave. It writes no staff and plays nothing first; its
+  since it prints the interval and the note's name; the headphones line, "Headphones help: its
+  drone plays while it listens."; and the range line, "It too wants each note in the octave your
+  range sets.", its "too" pointing back to Harmony Stack's octave and its range the one the card's
+  first line sets, with no "so" for "therefore". It writes no staff and plays nothing first; its
   scoring sentence stays on Lesson 24's card (FACTS 65).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 10's form, headed "Rest today", and is no longer a link, naming Harmony Stack; both drills
@@ -559,15 +618,15 @@ stills when WebGL fails.
 Lesson 26's entry, proposed for Season 2's data in its own module, in Season 1's entry form, as
 Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
 
-- `n: 26`, `lane: 'voice'`, `title: 'A second voice'`, `short: 'Second voice'`, `topics: ['S20b',
-  'T23']`, with their names as SEASON-2 § 4.1 gives them, "Sing a second part with a melody" and
-  "Chord tones and non-chord tones"; the hook word for word (FACTS 1); `minutes: 15` and `page:
-  '/learn/26'` once the page is built, under the drafts' comment, `// A draft until its sign-off
-  (drafts.ts), as Lesson 3 is.`
+- `n: 26`, `lane: 'voice'`, `title: 'A second voice'`, `short: 'Second voice'`,
+  `topics: ['S20b', 'T23']`, with their names as SEASON-2 § 4.1 gives them, "Sing a second part with
+  a melody" and "Chord tones and non-chord tones"; the hook word for word (FACTS 1); `minutes: 16`,
+  which the lab may move (FACTS 3), and `page: '/learn/26'` once the page is built, under the
+  drafts' comment, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
 - `pr.link`: `href` `/jam?lesson=26`, `addr` `mercurypitch.com/jam`, `label` "Harmony Stack" and
-  `note` "with a friend: the host picks Harmony Stack"; `pr.needs`, "The harmony-line drill (SEASON-2
-  § 5.2 item 17)", is the team's only: the field is "Admin only, never drawn on a lesson page"
-  (`src/features/lessons/kit/season.ts:102-103`).
+  `note` "with a friend: once they join, the host picks Harmony Stack", in the card's order (FACTS
+  64); `pr.needs`, "The harmony-line drill (SEASON-2 § 5.2 item 17)", is the team's only: the field
+  is "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [12, 26] and [24, 26], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 26's
   prerequisite list is then [12, 24].
 - The tease on Lesson 25's card is this lesson's, set on Lesson 26 in the lesson copy: `tease`
@@ -585,7 +644,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   (`src/features/lessons/kit/lesson-copy.ts:76`): 68, 56, 61 and 68.
 - The signature line for the admin console, from the card (FACTS 4): "Lesson 6's ‘Twinkle’ copied a
   third higher, the copy bending to the key's rows: some thirds four semitones and some three."
-- The explorer's card shows "15 min" once the page is live.
+- The explorer's card shows "16 min" once the page is live.
 
 ## What the kit and the app still need
 
@@ -605,8 +664,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    woodblock and the count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:684-685`);
    and its item 16, the planning-text test's codes, which this page's S20b needs before it is built
    (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:738-741`). Then this page's
-   additions to the reader, code with tests (Toys 5): the other part's notes as input, and the rule
-   and line for a note sung on the other part's note, read before the neighbour rule. Lesson 18's
+   additions to the reader, code with tests (Toys 5): the other part's notes as input, with their
+   times on the audio clock as booked, and the rule and line for a note sung on the note the other
+   part is sounding, each frame compared by its clock time, never by an anchored beat, read before
+   the neighbour rule. Lesson 18's
    flow allows three takes a visit; this page's options give three a set, and a model before each
    run.
 5. **Lesson 24's checks**, its item 6, `kit/headphones.ts` and `kit/quiet-check.ts`
@@ -630,7 +691,8 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    a name beside a bead off the lanes; a line that draws its beads as they sound; Step 1's pair and
    its walk; Step 2's switch moving some beads of a line; Step 3's switch and its two-colour state;
    Step 4's chord bar, gold glow and hollow beads; the lock, in the step and in free play, as Lesson
-   18's item 4 gives it; and each state's spoken summary.
+   18's item 4 gives it, drawing the hero's state, the tune alone on plain rows, until the choice
+   and from the page's `onChoice` each step's own; and each state's spoken summary.
 8. **The lab test, on a phone**, before the scored runs ship and before the chip is set, on the
    lab's phones (one iPhone, one Android) and laptops, with the coach where a run is sung:
    - **Silence over Merc's part from the speakers**: with nobody singing, the other part played at
@@ -642,14 +704,16 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - **The reader with a part playing**: Lesson 18's lab items on real takes
      (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:721-737`), here with Merc's
      part in the headphones: whether learners come in with it, whether 0.45 s within 60 cents is
-     reachable on a one-beat note against a part a third away, and how often the new line shows.
+     reachable on a one-beat note against a part a third away, how often the new line shows, and
+     how far each device's round trip, output and input, shifts a take's frames against the part as
+     played, which the new line compares by clock time (Toys 5).
    - **Levels and sounds**: the other part's level in the headphones, so the learner hears their
      own voice; the soft tone's C3 and the "ooh"'s E3 on a phone's speaker.
    - **The states' timing** for the chip (SEASON-2 § 1.3), and the tune line's two-part states at
      344 to 390 px.
 9. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
-   `learn/lesson-26-og.jpg` and its alt, and the structured data with `timeRequired` `PT15M`; the
-   head test already has its word for fifteen (`src/tests/lesson-pages.test.ts:83`).
+   `learn/lesson-26-og.jpg` and its alt, and the structured data with `timeRequired` `PT16M`; the
+   head test already has its word for sixteen (`src/tests/lesson-pages.test.ts:84`).
 10. **Lesson 24's questions as a module** (`lesson-24/quiz-questions.ts`), so this page imports
     `l24-q1`; Lesson 12's module exists (Toys 4).
 11. **The lesson copy**: this lesson's tease and its `plan` variant set on Lesson 26, with the
@@ -661,28 +725,37 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     (FACTS 67).
 13. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work (Practice links).
 14. **At release, the room's link back**, optional: SEARCH § 8's row for Jam gains 26.
-15. **Harmony Stack's note names**, the app's work, before this page is built: `harmoniseItems`
-    moves a part's notes and rewrites each one's MIDI number, octave and frequency, but keeps the
-    tune's note name (`src/lib/jam/jam-modes.ts:134-153`), and the canvas prints that name with the
-    new octave on the box (`src/components/jam/JamExerciseCanvas.tsx:68`, `:356-365`). So today the
-    third's boxes over the C major scale in a higher voice's room read C4 to G4, A5 and B5 where
-    they sit at E4 to D5 (`verify26.py`, section 13), and the fifth's are wrong the same way. The
-    fix names each moved note from its MIDI number; the test that pins the octave and the frequency
+15. **Harmony Stack's note names**, the app's work: `harmoniseItems` moves a part's notes and
+    rewrites each one's MIDI number, octave and frequency, but keeps the tune's note name
+    (`src/lib/jam/jam-modes.ts:134-153`), and the canvas prints that name with the new octave on the
+    box (`src/components/jam/JamExerciseCanvas.tsx:68`, `:356-365`). So today the third's boxes over
+    the C major scale in a higher voice's room read C4 to G4, A5 and B5 where they sit at E4 to D5
+    (`verify26.py`, section 13), and the fifth's are wrong the same way. The fix names each moved
+    note from its MIDI number; the test that pins the octave and the frequency
     (`src/tests/jam-modes.test.ts:108-114`) pins the name too: in C major, the third over C4 is E4
-    and over A4 is C5, the fifth over B4 is F5. The card's "its boxes name their notes" rests on it
-    (FACTS 63a).
+    and over A4 is C5, the fifth over B4 is F5. The same edit can mend the comment above the call,
+    "a fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:210-211`), since
+    `roleCountFor` caps the parts at three and a fourth singer sings the tune (FACTS 63). The card
+    describes the app as it is, the lead's call, "It plays nothing; on the third, its boxes print
+    the tune's letters.", and switches to "It plays nothing; its boxes name their notes." when this
+    ships (FACTS 63a).
+16. **Harmony Stack for a friend who joins late**, the app's work: the mode travels only with the
+    drill, sent when the host picks it (`selectJamRoomMode`, `src/stores/jam-store.ts:1297-1302`),
+    and only to channels open at that moment (`broadcastData`, `src/lib/jam/service.ts:1131-1138`);
+    a peer who joins is sent a song and nothing else (`onPeerJoined`,
+    `src/stores/jam-store.ts:1970-1983`), so a friend who joins after the pick stays in unison on
+    their own default scale (FACTS 64). The host sends the drill and the mode to a peer whose
+    channel opens, as `onPeerJoined` does for a song, with a test that a late joiner gets both.
+    Until it ships the card's order, the friend in first and the mode picked after, is the one that
+    works; after it, that order still works.
 
 ## Decisions for the owner
 
-Two, for the lead. First, the head's title. This package proposes "How to sing a harmony in thirds
-| MercuryPitch" (46), query-led as SEARCH § 13 item 1 decided; it names no answer to the predict
-(FACTS 1a). Lesson 24's was the lead's answer; this one waits for the lead's.
-
-Second, Harmony Stack's note names. The card says "its boxes name their notes", true once the app
-fix in item 15 of What the kit and the app still need ships, and the page waits for it. If the
-lead would rather link the room before the fix, the card's sentence reads "It plays nothing; on the
-third, its boxes print the tune's letters." instead, 4 words more, and the build takes the next cut
-in Length (Practice links; FACTS 63a).
+None is open. The lead chose the head's title, "How to sing a harmony in thirds | MercuryPitch"
+(46), query-led as SEARCH § 13 item 1 decided, and the chip's 16 minutes (FACTS 3); and the card
+describes Harmony Stack as it is, "It plays nothing; on the third, its boxes print the tune's
+letters.", until item 15 ships (Practice links; FACTS 63a). Items 15 and 16, the app's work on
+Harmony Stack, go to the owner's list (What the kit and the app still need).
 
 ## Edge cases
 
@@ -691,8 +764,9 @@ in Length (Practice links; FACTS 63a).
   readable, every play runs its drawing in silence with its hint, and Sing it offers the sing-along
   as words alone.
 - **Before the cold open's choice**: Play them together is locked and the reveal hidden; the steps'
-  stage, its text's plays and free play are disabled under their lock line; quick check 4's play is
-  disabled; the tour waits (Toys 1, 2).
+  stage and free play draw only the hero's plain "Twinkle", their controls and the text's plays
+  disabled under their lock line; quick check 2's answers and quick check 4's play are disabled;
+  the tour waits (Toys 1, 2, 4).
 - **Before the cold open's reveal**, its choice made: the steps' stage works, and Steps 1 and 2's
   text, plays, mix-up card, Try and Notice stay hidden under their held lines until the copy has
   been heard to its end (Toys 1).
@@ -728,9 +802,12 @@ in Length (Practice links; FACTS 63a).
 - **Leaving Sing it mid-run**: the take is abandoned and counts as one of the set's three, Merc's
   part stops and the microphone is released.
 - **The card's drills, off this page.** A learner with no one to sing with gets unison in Harmony
-  Stack, so the card offers Drone Intonation for a learner alone; a lower and a higher voice in one
-  room leave a note outside a preset, since the room scores the host's octave, and the card names
-  the pairs it suits (FACTS 63, 63b, 65).
+  Stack, so the card offers Drone Intonation for a learner alone. A friend who joins after the host
+  has picked Harmony Stack stays in unison on their own scale until the host picks it again, which
+  is why the card has the friend join first (item 16; FACTS 64). A host who never set a range opens
+  on the tenor's octave, which is why the card sets the range first; a lower and a higher voice in
+  one room leave a note outside a preset, since the room scores the host's octave, and the card
+  advises no pairing, the coach's list carrying the table (FACTS 63b, 65).
 
 ## Tests
 
@@ -756,17 +833,24 @@ parts it adds:
    1 and 2's words stay hidden, the held lines in their place, until the reveal, and show with it,
    after the hero's reveal in the announcement (FACTS 35, 40, 41).
 5. **Nothing answers the predict before its choice**: the lesson menu's headings, the recall, the
-   three words and the head's lines name no third's size and nothing that leaves a key; the steps'
-   stage, free play and quick check 4's play sound and draw nothing until the choice; no copy four
-   semitones up sounds anywhere before it (FACTS 1a, 40).
+   three words and the head's lines name no third's size and nothing that leaves a key; until the
+   choice the steps' stage and free play draw the hero's state alone, "Twinkle" on plain rows with
+   no lane, no second line, no bracket and no name on a bead, with the hero's spoken summary, and
+   sound nothing; quick check 2's answers take no tap and quick check 4's play sounds nothing; no C
+   major lane lights and no copy four semitones up sounds anywhere; from the choice each step draws
+   its own state, and a return visit holds them all again (FACTS 1a, 40).
 6. **The quiz**: the recall imports `l12-q3` and `l24-q1` unchanged, with their away links; the
-   quick check's ids, keys and words as LESSON.md gives them.
+   quick check's ids, keys and words as LESSON.md gives them; question 2's answers are disabled
+   under "Choose an answer at the top to try this." until the cold open's choice, and enabled by it
+   (FACTS 72).
 7. **The reader's new rule**, on synthetic takes through Voice Mirror's `preprocess`, as Lesson
    18's tests run (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:865-881`), with the
-   cases of Toys 5: on pitch and on time; a whole beat late; do on Merc's mi; la on Merc's do in beat
-   1, read before the neighbour rule; ti off both parts, its gap; the higher part's so on Tavi's mi;
-   the swap's do on Merc's la; and Merc's part alone with no voice, every note read as Merc's. No
-   line ever reads "in the band" for a note sung on the other part's note.
+   cases of Toys 5: on pitch and on time; a whole beat late on its own notes, read in the band; the
+   lower part's singer a beat late on Merc's sounding notes, each note read as Merc's by the note he
+   is sounding at its frames' clock time, never by the anchored beat; do on Merc's mi; la on Merc's
+   do in beat 1, read before the neighbour rule; ti off both parts, its gap; the higher part's so on
+   Tavi's mi; the swap's do on Merc's la; and Merc's part alone with no voice, every note read as
+   Merc's. No line ever reads "in the band" for a note sung on the other part's note.
 8. **The quiet check with a part** (What the kit and the app still need, item 5): it plays the
    set's other part's first 2.0 s; a voiced run of 0.3 s at any pitch fails it, with its line naming
    Merc's part, or Tavi's for the higher voice; it runs before every set, Again's included.
@@ -785,7 +869,7 @@ parts it adds:
     REQ-GVC-055).
 
 Page tests (the series' own, run on every lesson page): the head test, with the title, the
-description's length and its "A fifteen-minute lesson", the chip and `timeRequired`
+description's length and its "A sixteen-minute lesson", the chip and `timeRequired`
 (`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, S20b included
 once the test's pattern takes it (`src/e2e/learn-no-planning-text.spec.ts:39`); the stage fits a 390
 px screen; first paint within the budget; the claims validator; one sound at a time; no background
@@ -818,14 +902,18 @@ production:
 - Every play, switch and button works by keyboard alone and announces what LESSON.md shows.
 - The cold open's plays sound and draw as FACTS 35 says: the copy's three notes off C major land off
   the lanes with their names; the key's copy lands on them.
-- No source on the page sounds a copy four semitones up, or lights a lane, before the cold open's
-  choice.
+- No source on the page sounds a copy four semitones up, or lights a C major lane, before the cold
+  open's choice; the steps' stage and free play show the hero's plain "Twinkle" until then.
 - The lab test has passed and is written down where the coach's sign-off is.
 - With headphones, a part sung in tune reads in the band note by note, a note sung on Merc's note
   reads as his, and a part sung an octave away reads in full, by ear, with the coach.
 - On a real phone at 390 px, the tune line's four states, the brackets' numbers and the run's lines
   fit their cards, and C3 and E3 are heard through the speaker.
-- The practice card's Harmony Stack lines hold in a local Jam room with two peers, opened from the
-  card's link: the room opens on the C major scale in the host's octave, nothing plays, a note sung
-  an octave from its box scores nothing, and, once item 15 has shipped, each part's boxes name its
-  own notes (FACTS 63a, 63b).
+- The practice card's Harmony Stack lines hold in a local Jam room with two peers, the card's steps
+  followed in its order: the host sets a range in Settings and opens the room from the card's link,
+  the room opening on the C major scale in that range's octave; the guest joins by the shared link;
+  then the host picks Harmony Stack under More controls, and the two get the tune and the third.
+  Nothing plays; on the third the boxes print the tune's letters, until item 15 ships, and then
+  their own; a note sung an octave from its box scores nothing. Once, the repo's two-peer check is
+  run with its join and mode steps swapped, the mode picked before the guest joins, to show the
+  late-join case: the guest stays in unison on their own scale (item 16; FACTS 63a, 63b, 64).

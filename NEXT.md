@@ -2968,3 +2968,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 2 Nov 13:08
 - Fallback fired: worktree ok; W26 fix pass alive (LESSON.md 13:07). Next fallback trig_01JrgK1yYiNxuYUoH7ci55Xt at 13:59.
+
+## 2 Nov 16:3x
+- L26 COMMITTED 85ccd03dd 13:2x (pushed; origin matches). Lead: prettier formatting only (no word changes), accepted no-turn-taking departure. W26 done.
+- 13:29 rate limit read allowed_warning: W28 held. Container restart #7 between 13:29 and 16:35 (/dev/shm emptied; scratchpad survived). Worktree rebuilding 16:36 from local feat/season-2-plan (85ccd03dd).
+- 16:36 rate limit allowed (new window). Next: spawn W28 (BRIEF-28) once the worktree is up; then R28 -> fix -> lead -> commit; then #229.
