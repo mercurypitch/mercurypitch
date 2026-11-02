@@ -358,11 +358,11 @@ the card has no first-visit line.]_
 heard without stopping on every note?" One line above it, the tease: "Now you can read when each
 note comes, and where it sits."
 
-(The kit's next-lesson card, drawn from the season and its lesson copy: the tease line sits above the
-hook. Its slot holds a still of Lesson 18's opening line as Lesson 18's stage shows it, in the
-learner's clef: two bars on the staff, four quarters and then two quarters and a half note, with the
-beat grid under them and no cursor, no bracket and no syllable on them. It is a picture and does not
-play, and the card stays one link: Lesson 18 plays that line only after its own predict is
+(The kit's next-lesson card, drawn from the season and its lesson copy: the tease line sits above
+the hook. Its slot holds a still of Lesson 18's opening line on the bass staff, as Lesson 18's stage
+draws it for everyone: two bars, four quarters and then two quarters and a half note, with the beat
+grid under them and no cursor, no bracket, no name and no syllable on them. It is a picture and does
+not play, and the card stays one link: Lesson 18 plays that line only after its own predict is
 answered. Until Lesson 18's page is live, the card says "Coming later" and "See it on the map":
 FACTS 5.)
 

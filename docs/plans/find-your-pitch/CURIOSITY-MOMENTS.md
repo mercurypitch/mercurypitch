@@ -291,13 +291,43 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   Step 5, where the grand staff joins the two staves at middle C over the keyboard, and a piano's 88 keys go on two
   staves of five lines; the checkpoint, do re mi fa so in G sung along a guide on the learner's own staff, unscored.
 - **Tease:** a treble staff with five plain noteheads, up two places and back down, and a "?" (new still, silent):
-  "Five notes on the staff. Tavi has never heard them." It names no starting note, the answer to Lesson 16's predict.
+  "Five notes on the staff. Tavi has never heard them." It says nothing of what Tavi sings with no note to start from, the answer to Lesson 16's predict.
   The plan's line, "Now you can see where any note sits.", is the alternative `any-note` (Lesson 15 FACTS 5; settled
   at the lead's review on 1 November 2026, as the owner asked).
 - **Facts:** sourced in Lesson 15's FACTS: lines, spaces, clefs, ledger lines and the grand staff (Open Music Theory
   2e, 1.2 to 1.6; Ewell and Schmidt-Jones; ABRSM 2023), the octave treble clef (Ewell and Schmidt-Jones; Wikipedia,
   Clef, at a named revision), 88 keys and Cristofori's 54 (Yamaha 2017); the app at `c60f0fdcb`. The first four-line
   staves are left out until Haines 2008 is read.
+
+### Lesson 16 · Sing what you see · voice; written; no page yet · hook kept
+
+- **Opening:** a treble staff with five plain notes, G4 A4 B4 A4 G4, up two places and back down,
+  between Merc and Tavi, nothing lit and nothing played. Tavi "I've never heard this tune. Don't I
+  need perfect pitch to sing it straight off the page?" Merc "Let's hear what the page gives you on
+  its own." Predict: "Tavi sings the line with no note to start from. What will you hear?" [A jumble:
+  with no note, she can't read it] [The tune, from a note of her own]. After the choice, two tries:
+  with no note first she sings the tune a step low, from F, each orange note one place under its
+  written note; with one note first, G, every note lands on the page. The reveal waits for both:
+  "The tune, from a note of her own", the tune at any pitch, as Lesson 6 has it; the one note is
+  what lands it on the written notes. The plan's predict, "What does she need to hear first?", was
+  answered by Lesson 9's Step 3 (the Royal Conservatory plays do, mi and so, then the first note)
+  and is replaced (Lesson 16 FACTS 31). The page's tour waits for the choice, since Step 2 points to
+  the answer.
+- **Visual:** the staff toy in the learner's clef with the house on do (Lesson 15's, new to the kit),
+  Lesson 4's staircase turning into it (new), Hear it inside and Names on · off (new), Tavi's sung
+  notes drawn on the staff (new), and the learner's pitch line drawn after each phrase (new).
+  **Payoff:** Step 5, the names gone and only the house left; the checkpoint, two phrases read from
+  the learner's own staff after Merc sings do and the tonic triad, the second a line nobody has
+  played, read note by note, octave-folded, with the pitch line shown only after.
+- **Tease:** a still of Lesson 17's stage before its first play (Lesson 8's four beat pads, an empty
+  line, an empty stopwatch strip), which plays nothing: "Same written bar, played twice. Only the
+  tempo changes.", alternative `shapes` (Lesson 17 FACTS 5b).
+- **Facts:** sourced in Lesson 16's FACTS: absolute pitch and early learning (Takeuchi and Hulse
+  1993, abstract, dated on the page), relative pitch (Lesson 6, after Wikipedia), the Royal
+  Conservatory's sight-singing tests (RCM 2025 via Lesson 9; RCM 2019), audiation (Wikipedia,
+  "Gordon music learning theory", revision 1379965924), the imagery study as Lesson 9 says it
+  (Pfordresher and Halpern 2013), sight-singing (Wikipedia, "Sight-reading", revision 1371524263);
+  the app at `c60f0fdcb`. No prevalence for absolute pitch, so no "rare".
 
 ### Lesson 17 · How long is a note? · theory; written; no page yet · hook kept
 
@@ -317,6 +347,39 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** sourced in Lesson 17's FACTS: note values, rests, dots, ties and counting (Open Music Theory 2e, 1.2, 1.8
   and 1.9), where rests go (Williams 2025), where dots and ties go (Wikipedia, after Read 1969), Takadimi (Hoffman,
   Pelto and White 1996), the British names and the lesson's scope (ABRSM 2023, RCM 2019); the app at `c60f0fdcb`.
+
+### Lesson 18 · Read and sing a whole line · voice; written; no page yet · hook kept
+
+- **Opening:** a bass staff of two bars of 4/4 over Lesson 17's beat grid, between Merc and Tavi,
+  with Merc's tune: G3 A3 B3 A3, then G3 B3 and a long D4. Tavi "Seven notes. Don't you have to work
+  out each one's name, then sing it?" Merc "Let's try it your way, on the beat." Predict: "Merc gives
+  each note a beat to name it, then sings it. At 60 BPM, how much of the tune does he sing before the
+  two bars end?" [All seven notes, each a beat late] [Only the first four]. Until the choice, the
+  read and Step 1's toy are locked, in the step and in the Wrap's free play, and the page's tour
+  waits, since Step 1 states the answer. The read: do, a bar's count-in, then the bars over the
+  click. Each note's name appears over it on beats 1, 3, 5 and 7, and Merc sings it on "ooh" on
+  beats 2, 4, 6 and 8, so do, re, mi and re fall one to four beats behind, and the bars end with do,
+  mi and so unsung. Reveal: "Only four. Each name takes a beat, so each note falls a beat further
+  behind than the last, and the bars end before do, mi and so. Merc's own way is to read a run of
+  steps, then do-mi-so, each as one thing:" [Read Merc's way] "That's this lesson's story. (Seven
+  was a fair guess: it's easy to miss that every name costs another beat.)" Read Merc's way sings
+  the tune on the beat while a gold bracket lights over each pattern as the cursor reaches it.
+- **Visual:** Lesson 16's staff over Lesson 17's beat grid (new with Season 2's kit, SEASON-2 § 6.2
+  items 2 and 3); on it, all new: a cursor at tempo, names written over the notes, gold brackets
+  over patterns, and the song sheet's marks written as they sound. **Payoff:** Step 1's two reads,
+  Read note by note tagging each sung note with how late it came and Merc's way keeping up; the
+  checkpoint, after do and a count-in, two bars read and sung in time, each note heard in its own
+  beats counted from the singer's first note, timing shown, not scored.
+- **Tease:** Lesson 19's stage as a still, six of Lesson 8's pads in a row, all one size and
+  ungrouped, which does not play: "Same six notes, same speed. Only the accents move.", with its
+  alternative `written` (Lesson 19 FACTS 5b). Lesson 18's own tease, on Lesson 17's card, is "Now you
+  can read when each note comes, and where it sits." (Lesson 18 FACTS 5b).
+- **Facts:** sourced in Lesson 18's FACTS: the count-in and the exam's two-bar unaccompanied tune
+  (RCM 2025, pp. 7 and 9); dynamics, hairpins, staccato, slurs, ties and breath marks, and where
+  dynamics sit (Open Music Theory 2e, 1.7 and 1.8; ABRSM 2023; Wikipedia, Dynamics, at a named
+  revision); pattern teaching (Henry 2004, abstract only); the app at `c60f0fdcb`. Not claimed: how
+  readers see or group a line. The note-by-note read's beat a name is the page's illustration, not a
+  measured time.
 
 ### Lesson 19 · Threes, offbeats and syncopation · theory; written; no page yet · hook kept
 
@@ -346,6 +409,34 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   goes in 4/4 (Williams 2023), Takadimi (Hoffman, Pelto and White 1996), the exam grades (ABRSM
   2023), "Row, row, row your boat" in 6/8 (the _Franklin Square Song Collection_, 1881, p. 69); the
   app at `c60f0fdcb`, with the checkpoint's figures from a simulation on the app's own modules.
+
+### Lesson 20 · Runs and the pentatonic scale · voice; written; no page yet · hook kept
+
+- **Opening:** the pitch line between Merc and Tavi with the run's nine beads on a string, each
+  in its band; Play the run fast (0.2 s a note, five every second) and Play it slowly (0.6 s) both
+  work before the choice. Tavi "To sing it fast, you just practise it a lot, don't you?" Merc
+  "Let's see what one study found." A research predict, as Lesson 3's: "Seventeen piano students
+  practised a hard passage until they felt ready, then played it the next day. Which went with
+  playing it better?" [How long they practised] [What share of their tries came out right]; the
+  reveal comes with the choice (Duke, Simmons and Cash 2009: one small study, a link, not proof).
+  The welcome tour waits for the choice, since Step 3 restates the answer (Lesson 20 FACTS 1a,
+  13, 14, 15).
+- **Visual:** Lesson 4's staircase (moving into the kit) losing fa and ti, a number on each riser
+  and both names on every stair, then the same five from la; the run toy, Merc's run as beads on a
+  string on the kit's band chart, Tempo's five notches drawing the beads closer, each still in its
+  band, beside Play it smudged, an illustrated singer's run whose notes slip out of their bands;
+  Staccato · Legato and See it on the staff (new). **Payoff:** Step 3's plan, a tempo where every
+  note lands, nudged up, said as an inference; Sing it's scored run, or a smaller one, read note
+  by note, then the unscored faster pass.
+- **Tease:** a still of Lesson 21's opening, Lesson 2's ring over Lesson 1's keyboard with D major
+  lit and F♯ and C♯ glowing, silent: "D major: seven notes, two black keys, F♯ and C♯. Now step up
+  a fifth."; the alternative `lesson-4`. Lesson 20's own tease, on Lesson 19's card, is "Merc
+  sings a run of nine notes, five every second.", with the plan's line as the alternative `plan`
+  (Lesson 20 FACTS 5, 5b; settled at the lead's reviews on 1 November 2026).
+- **Facts:** sourced in Lesson 20's FACTS: the pentatonic's degrees, steps and rotations (Open
+  Music Theory 2e, 8.9 and 7.13), the study of 304 recordings (Savage et al. 2015), the pianists'
+  practice (Duke, Simmons and Cash 2009, abstract only), agility and staccato (Arneson's guide for
+  beginning singing teachers); the app at `c60f0fdcb`.
 
 ### Lesson 21 · Keys and the circle of fifths · theory; written; no page yet · hook kept
 
@@ -377,6 +468,45 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   sit in each clef (VexFlow 5.0.0, the app's notation library), the comma and equal temperament
   (arithmetic; Wolfe 2011; Rubinstein's cents figure only); the app at `c60f0fdcb`. The circle's
   history is left out until Jensen 1992 is read.
+
+### Lesson 22 · Vibrato · voice; written; no page yet · hook kept
+
+- **Opening:** Lesson 5's band between Merc and Tavi, with no centre line, no note named and no
+  cents marked, and across it from the first paint Merc's line as a still, swinging past both edges,
+  as Lesson 21's card drew it. Play Merc's note works before the choice: A3 for every learner, 3 s,
+  six swings a second at ±50 cents, his amber line redrawn past both edges swing after swing. Tavi
+  "It peaks above the band, swing after swing. Won't the peaks be what I hear?" Merc "Listen, then
+  match it." Predict: "Merc's note swings 50 cents up and 50 cents down, six times a second. Which
+  straight note, with no wave, sounds the same?" [The top of the swing] [The middle of the swing].
+  Each answering play sets the wave beside a straight note, the top (A3 and 50 cents) or the middle
+  (A3); the reveal waits for both, says a wave this wide doesn't fit inside the band but its middle
+  does, and a dashed amber line labelled "middle" draws itself. Nothing on the page plays a straight
+  note on A before the choice: the steps' toy and free play wait, the four words' straight note
+  plays D, Sing it's notes are Merc's "ooh", and the first-visit tour waits too (Lesson 22 FACTS 1a,
+  24, 41). Step 3 has a second predict, as the lead allowed: the same wave at two swings a second,
+  [Still one note] [A note that moves up and down]. Until the cold open's choice its hint reads
+  "Choose an answer at the top first."; its slow play, Rate and Drift, quick check 3's play and free
+  play's slow wave all wait for its choice, and the step's text under the predict shows with its
+  reveal.
+- **Visual:** Lesson 5's band chart (exists), with new states: no centre, Merc's wave in amber drawn
+  from its play's schedule and as a still, a dashed middle, a one-second sweep with a swing counter
+  and a ruler, Drift, and the app's own vibrato ribbon (`vibratoShapePath`) beside Merc's sung wave.
+  **Payoff:** Step 3's slow wave heard moving, and Drift's middle leaving the band; Step 4's ribbon
+  gaining swings as it widens while the sung line keeps its 11; Sing it's two holds, each line drawn,
+  then, where a vibrato was found, its middle, read on the middle, with the vibrato described and
+  never scored.
+- **Tease:** this lesson's, on Lesson 21's card: "Merc holds one note, and its line swings past both
+  edges of the band." (69), alternative `nudged`, "Each fifth is nudged two cents. A held note can
+  move far more." (62). On this lesson's card, Lesson 23's: "One note, swinging. Now two notes
+  together: one pair wants to move." (67), alternative `hold` (66), with Lesson 23's opening as the
+  still. Both pairs as settled at the lead's review on 1 November 2026, and checked true of this page:
+  Merc holds the cold open's note for every learner.
+- **Facts:** sourced in Lesson 22's FACTS: rate and extent, the measured ranges and averages, slow
+  rates heard moving and pitch judged as well with a vibrato (Sundberg 1994, read in full); the heard
+  pitch near the geometric mean (Shonle and Horan 1980, abstract, and d'Alessandro and Castellengo
+  1994, read in full); 6.1 swings a second across ten singers (Prame 1992, abstract); choir views and
+  singers' adjustment (Acosta Martínez and Daffern 2025, read in full); the app at `c60f0fdcb`.
+  Nothing is said about how a vibrato is made, whether it can be trained, or health.
 
 ### Lesson 23 · Perfect, major, minor and the tritone · theory; written; no page yet · hook kept
 
@@ -410,6 +540,174 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   1e 2.12), the ratios (Wolfe, UNSW), the tritone's name and nickname (Wikipedia, Tritone, at a named
   revision; Fux 1725 as RESEARCH reads the Latin); the app at `c60f0fdcb`. Nothing is said about a
   church ban until the card's sources are read.
+
+### Lesson 24 · Harmony against a drone · voice; written; no page yet · hook kept
+
+- **Opening:** Lesson 5's band chart between Merc and Tavi, a wide amber band at A3 named "drone ·
+  A3" and a thin chrome line just above it, still, as Lesson 23's card drew them; Play the drone and
+  the top note works before the choice, 220 Hz with 224 Hz, throbbing four times a second. Tavi:
+  "They're nearly the same note. Push them closer: won't they clash even more?" Merc: "Hear them
+  together first. Then I'll slide the top note down." Predict: "Merc slides the top note down,
+  slowly, until it matches the drone. What happens to the throbbing as it arrives?" [ It slows, then
+  stops ] [ It speeds up ]. The slide holds 224 for 1.5 s, glides to 220 over 6 s and holds 220 for
+  2.5 s; the reveal waits for its end, and Step 1's words show with it. The plan's Beats word is
+  replaced by Harmonic; every play of the steps, the Pure word's play, quick check 4's play, Step
+  2's predict and the tour wait for the choice (Lesson 24 FACTS 1a, 40 to 47, 71). Lesson 3's closed
+  Go deeper said the answer once, as the season's card intends.
+- **Second predict (Step 2):** "Merc plays the piano's fifth above the drone, then its major third.
+  Which throbs faster?" [ The fifth ] [ The major third ]. Its reveal, "The major third, much faster.
+  (The fifth is the wider interval, which made it a fair guess.)", waits for both plays; Step 2's
+  text and Step 3's words show with it.
+- **Visual:** the drone chart, Lesson 5's band chart with a drone under it, the throb drawn as
+  brightness from the harmonics' envelope, under 0.1 in relative luminance, never a flash: the drag
+  and the octave, Lesson 10's beads with Piano · Pure, Lesson 5's band on mi with the piano's tick
+  and the pure one, a singer's wide wave on the fifth. **Payoff:** the cold open's reveal (two close
+  notes beat as fast as their difference, and stop in tune); Step 2's reveal, the piano's major third
+  beating much faster than its fifth, and the pure chord ringing still; Sing it, do, so and mi held
+  over a drone on do, with headphones, read on the middle of the line.
+- **Tease:** a still of Lesson 25's opening as Lesson 25's package draws it, silent: "A minor tune,
+  played twice. The second ending changes one note." (the lead's line), with the plan's line as the
+  alternative `plan`, "Do, mi and so made a major chord. Minor keys hide another change.", true of
+  this page but leaning softly on Lesson 25's predict. Lesson 24's own tease, on Lesson 23's card,
+  is "A drone, and a second note just above it, almost in tune.", with the alternative `fifths`
+  (Lesson 24 FACTS 5, 5b).
+- **Facts:** sourced in Lesson 24's FACTS: beats (Wolfe, UNSW, both pages), harmonics and pure
+  intervals, the piano's fifth and third against a drone and a wave's effect on the throb
+  (arithmetic for steady harmonic tones), singers in pairs (Dai & Dixon 2019) and a quintet's thirds
+  (D'Amario et al. 2020), sung vibrato hiding beats (Sundberg 1994, as RESEARCH reads it); the app at
+  `c60f0fdcb`. Kodály's part singing is not verified and not used.
+
+### Lesson 25 · Minor, properly · theory; written; no page yet · hook kept
+
+- **Opening:** Lesson 10's minor staircase on A, A3 to A4 for everyone, the house on do, between
+  Merc and Tavi. The tune play, Play the tune, twice, works before the choice: a four-bar tune
+  written for the lesson, sung on "ooh" as a melody alone, its second ending's G raised to G♯, the te
+  stair lifting to ti as it sounds; no chord plays or is drawn before the choice. Tavi "It's still a
+  minor key. Won't the chord before home stay minor?" Merc "Choose, and we'll play each ending with
+  its chords." Predict: "Each ending has chords, not yet played. In the first, the chord before home
+  is E, G and B. The second raises G to G♯. What does that do to the chord?" [It turns major] [It
+  stays minor]. The answering plays, Play ending 1, with chords and Play ending 2, with chords, play
+  each ending's last two bars over their chords and draw the chord column, its gaps 3 and 4 or 4
+  and 3; the reveal waits for both, opens "It turns major." and shows Step 1's held paragraph on the
+  chord on so with it. A reasoning check on Lesson 10's thirds, the lead's: the plan's predict,
+  which note was raised, was answered by the hook's "just before it comes home" and by Lesson 21's
+  reveal (Lesson 25 FACTS 1a, 31, 33).
+- **Visual:** Lesson 10's chord beads and their staircase (moved into the kit) beside the staff toy:
+  Raise te, the le-to-ti stair widened to three semitones, Raise le going up only, and in Step 4 the
+  staircase redrawn from C major to A minor, the house moving from C to A under one empty
+  signature, then C minor's three flats in each clef. The chord on so is held back until the choice,
+  in Step 1 and in the Wrap's free play, and Step 1's sentences on it until the reveal.
+  **Payoff:** Step 1's chord on so turning major as te rises; Step 3's melodic minor; Step 4's house
+  moving; the sing-along, so, te, do, then so, ti, do in A minor, unscored.
+- **Tease:** on Lesson 24's card, the lead's "A minor tune, played twice. The second ending changes
+  one note.", with Lesson 24's planned line as the alternative `plan`. On this page's card, Lesson
+  26's: the lead's "‘Twinkle’, and the same tune four semitones higher, played together.", with the
+  plan's line mended as the alternative `plan`, "Lesson 24's other part was a drone. What if it's a
+  tune?"; the plan's own line is withdrawn, since a learner who reaches Lesson 26 sang over moving
+  chords in Lesson 12 (Lesson 25 FACTS 5, 5b; bound by the lead on 2 November 2026).
+- **Facts:** sourced in Lesson 25's FACTS: the three forms, closure, the chord on so, relative and
+  parallel keys (Open Music Theory 2e, 1.13 and 4.02), the augmented second as hard to sing
+  (Sharkey, Sierra College, 5.2.3), ti's and te's sounds and la-based minor's si (Wikipedia,
+  Solfège, at a named revision); the app at `c60f0fdcb`. No mood is claimed for any form of minor.
+
+### Lesson 26 · A second voice · voice; written; no page yet · hook kept
+
+- **Opening:** Lesson 6's tune line between Merc and Tavi, "Twinkle"'s two lines in C as fourteen
+  chrome beads on plain rows, the house on do, labelled "‘Twinkle’ in C major"; Play the tune works
+  before the choice. Tavi: "A harmony is just the tune, higher. Move every note up a third and
+  you've got one." Merc: "Let's try a major third, four semitones, above every note." Predict:
+  "‘Twinkle’ is in C major. Merc moves every note up four semitones and plays the copy with the tune.
+  Will every note of the copy fit the key?" [ Every note fits the key ] [ Some notes leave the key ].
+  The answering play, unlocked by the choice, lights C major's rows as lanes and draws the copy, six
+  of its beads landing off them, named C♯, G♯ and F♯; the reveal, "Some notes leave the key.", waits
+  for its end, and Steps 1 and 2's words show with it. The plan's word "Diatonic third" is cut. Until
+  the choice the steps' stage and free play draw only the hero's plain "Twinkle", their controls
+  disabled, and quick check 2's answers, quick check 4's play and the first-visit tour wait too
+  (Lesson 26 FACTS 1a, 31 to 42).
+- **Visual:** the tune line with a second part a third away, brackets naming the semitones: the
+  key's thirds walked up the scale ("D up to F: 3 semitones"), "Twinkle"'s copy bending to the key
+  (the signature), a part above or below, Merc and Tavi a tenth apart in blue and orange, a C major
+  chord lighting chord notes gold and leaving a passing note hollow. **Payoff:** the reveal (a copy
+  moved four semitones leaves the key; the key's own thirds fit); Step 1 (major thirds on do, fa and
+  so; minor thirds on re, mi, la and ti); Sing it, a part a third from Merc's tune sung with it, then
+  the tune against it.
+- **Tease:** Lesson 27's still, its ring with the V room lit and the I room faint, Merc and Tavi,
+  silent: "G, B and D going home to C, E and G. Now add one note on top." (the lead's line, default),
+  with the lead's alternative `three-notes`, "Three notes make a chord. Add one more to V, and hear
+  where it goes." Lesson 26's own tease, on Lesson 25's card, is "‘Twinkle’, and the same tune four
+  semitones higher, played together.", with the alternative `plan`, "Lesson 24's other part was a
+  drone. What if it's a tune?" (Lesson 26 FACTS 5, 5b).
+- **Facts:** sourced in Lesson 26's FACTS: thirds in a key, counted as spans as Lesson 23 counts
+  them, and compound intervals (OMT 2e 1.15), passing notes (OMT 2e 4.04; MyMusicTheory; Collins;
+  Merriam-Webster; Wikipedia), "part" (Wikipedia), singers in pairs (Dai & Dixon 2019, as Lesson 24
+  reads it); the app at `c60f0fdcb` (Jam's Harmony Stack, its diatonic harmony, its boxes' names and
+  its late joiner, Drone Intonation's thirds, the kit).
+
+### Lesson 27 · Seventh chords and inversions · theory; written; no page yet · hook kept
+
+- **Opening:** Lesson 12's ring of rooms seen from above between Merc and Tavi, two rooms drawn, V
+  (G, B, D) lit and I (C, E, G) faint, the black piano keys smaller and named beside their beads;
+  it plays in Merc's register for everyone. Play V, then I works before the choice. Tavi "F♯ sits a
+  semitone under G, and G is in the home chord. Won't F♯ pull hardest?" Merc "Choose, then hear
+  both go home." Predict: "Merc puts one more note on top of G, B and D, then goes home to C, E and
+  G. Which note makes the chord pull harder towards home?" [F] [F♯]. The answering plays, Play it
+  with F and Play it with F♯, sound V with its fourth note and then I, growing the V room's fourth
+  corner; the reveal waits for both, opens "F.", and shows Step 1's held paragraph and Steps 2 and
+  3's text with it. It asks the hook's own question, a reasoning check on Lesson 23's B and F ("Lesson
+  27 comes back to this pair"); F♯'s fair guess is the semitone under G. The first version asked
+  which note stacks a third above D in C major, which Lesson 12 prints ("On re it's D, F, A") and
+  Lesson 26 teaches and tests; the review caught it, and the lead bound this predict (Lesson 27
+  FACTS 1a, 34 to 38).
+- **Visual:** Lesson 12's ring (moved into the kit) beside the staff toy: a room grows a fourth
+  corner; V7's diagonal, B to F, crosses the centre and folds into C and E; in Step 4 a chord turns
+  over, its bottom note climbing an octave on the staff while its room on the ring stays and a mark
+  moves to the corner in the bass, and the press after the last inversion brings it back. Step 4's
+  predict, "Merc plays C, E and G, then moves C up an octave: E, G and C. What is the chord now?"
+  [Still C major] [E minor], waits for the cold open's choice; its reveal sets Lesson 23's
+  intervals, whose names changed upside down, against a chord, which keeps its name. **Payoff:**
+  Step 3's tritone closing to a major third, with B and F♯ a settled fifth beside it; Step 4's room
+  staying put; the sing-along, so, ti, re and fa, then mi, then do in G, unscored.
+- **Tease:** on Lesson 26's card, the lead's "G, B and D going home to C, E and G. Now add one note
+  on top.", with "Three notes make a chord. Add one more to V, and hear where it goes." as the
+  alternative `three-notes`; the lead's first line ("Now stack one more third.") and Lesson 26's
+  planned line are withdrawn, since after Lesson 26's teaching they lean on the predict. On this
+  page's card, Lesson 28's: the lead's "A song in two parts. At bar 8 it seems to end, then keeps
+  going."; the plan's "V7 to I sounds like the end. Songs use it to finish." is withdrawn, since no
+  source says the second sentence (Lesson 27 FACTS 5, 5b).
+- **Facts:** sourced in Lesson 27's FACTS: seventh chords, their names, the dominant seventh's pull,
+  inversions and figures (Open Music Theory 2e, 1.17, 1.18 and 4.2), the tendencies of ti and of a
+  chord's seventh (Open Music Theory 1e, 2.12); the app at `c60f0fdcb`. The "happy and jazzy" and
+  "unresolved" sounds, and which of F and F♯ pulls harder, are given as one textbook's account and
+  Lesson 23's convention, not as fact.
+
+### Lesson 28 · Cadences, form and a song in two parts · voice and theory; written; no page yet · hook kept
+
+- **Opening:** a song in two parts written for the lesson, drawn as ten empty bars in two rows
+  between Merc and Tavi, Tavi's part above in orange and Merc's below in blue, no notes; Play the
+  song plays it as it kept going, ten bars, bar 8 on vi and bars 9 and 10 starting A again, where it
+  stops, and works before the choice; the ending's G over G is not in it. Tavi: "At bar 8 I thought
+  we'd finished. But it went on. I must have missed do." Merc: "Let's sing bars 7 and 8 both ways."
+  Predict: "Merc and Tavi sing bars 7 and 8 two ways: ending the song there, and going on, as you
+  heard. At bar 8, whose note is different the second way?" [ Tavi's part ] [ Merc's part ]. The two
+  answering plays, Play the ending and Play it going on, unlocked by the choice, write bars 7 and 8
+  on two staffs as they sound; the reveal, "Merc's part.", waits for both, and Step 2's words show
+  with it.
+- **Visual:** the song on two staffs, treble over bass; tags at each phrase's end naming its
+  cadence (the signature); bars 7 and 8 three ways, perfect, interrupted and plagal; form letters
+  gathering over four blocks, A A B A; each part a tune of its own; at the close the season's
+  objects along the song's sections. **Payoff:** the reveal (to end, Merc's part leaps from D to G,
+  V to I; to keep going, it steps to E, V to vi, an interrupted cadence); Step 2 (it seems to end,
+  then keeps going); Sing it, one part read and sung in time, then heard with the other part (without
+  headphones, after an optional turn that plays the other part first).
+- **Tease:** none. The season's close: "End of Season 2", "You've read a song in two parts. Now sing
+  a whole song.", Karaoke Night and the season map; after Effortful, Uncomfortable or Just listen
+  today, "You've read a song in two parts." and the map alone. Lesson 28's own tease, on Lesson
+  27's card, is "A song in two parts. At bar 8 it seems to end, then keeps going." (the lead's,
+  bound; Lesson 28 FACTS 5b).
+- **Facts:** sourced in Lesson 28's FACTS: the four cadences and their names (Wikipedia, Cadence,
+  rev. 1373604555; OMT 2e 4.01), song form, AABA, the bridge, verse and chorus (OMT 2e 7.4 to 7.6);
+  the song's arithmetic and ranges (`verify28.py`); the app at `c60f0fdcb` (Karaoke Night, Ear Lab's
+  Cadence, the kit's close).
 
 ## 3. How it lands in each medium
 

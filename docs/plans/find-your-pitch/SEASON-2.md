@@ -172,8 +172,9 @@ Each card is what a script writer needs before the first draft, in CURRICULUM §
 "Misconception" is Tavi's sincere guess (playbook rule 3); "Signature" is the episode's persistent
 object and its transformation (rule 6); "Checkpoint" is the sung moment (rule 16), under the house
 rules in § 1.4 item 4; "Practise" is the app link (§ 5 says what exists and what needs building);
-"Facts to check" lists the claims the lesson will make and where each is checked. No Season 2
-lesson has a package yet: each card is status "proposed".
+"Facts to check" lists the claims the lesson will make and where each is checked. Each card is the
+plan its lesson was written from. Every Season 2 lesson now has a written package (MASTER-PLAN
+§ 11), and where a package departs from its card, its FACTS say why.
 
 **Lesson 15. The staff: where notes sit** (theory; T30)
 
@@ -307,8 +308,8 @@ lesson has a package yet: each card is status "proposed".
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
   the Singing tab's sheet view moves one, `src/App.tsx:4050-4098`); patterns bracket themselves
-  as the cursor reaches them (a run, a repeat, do-mi-so); the marks of T32 appear one by one over
-  the sound they ask for.
+  as the cursor reaches them (a run of steps, a repeated note, do-mi-so); the marks of T32 appear
+  one by one over the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
   60 BPM, then the learner reads and sings two bars of 4/4 in quarters and halves, steps and
   do-mi-so, in their own clef. Pitch is scored per note, octave-folded, in a generous band; the
@@ -469,7 +470,7 @@ lesson has a package yet: each card is status "proposed".
 - Checkpoint (scored on the page): comfort check first; a 10 s hold on a comfortable note, straight,
   as in Lesson 5; then a second 10 s hold: "Let the note float. If a wave comes, let it; if it
   doesn't, the note is just as finished." Both holds are scored only on the note's centre staying
-  in the band; a vibrato inside the band counts in full, and nothing scores a vibrato's presence,
+  in the band; a vibrato counts in full, and nothing scores a vibrato's presence,
   rate or width. If the page finds one, it describes the sound ("a wave about 5.5 times a second,
   about 50 cents either side of its centre", the ± form Voice Mirror uses; an example of the
   wording, which reports what was measured). No instruction for making a vibrato appears unless the coach writes it.
@@ -591,9 +592,11 @@ lesson has a package yet: each card is status "proposed".
   slightly nearer just (D'Amario et al. 2018, J Voice, doi:10.1016/j.jvoice.2018.07.015; abstract),
   for Go deeper; that Kodály's method brings in unaccompanied part singing from the start (the
   publisher's listing for Bicinia Hungarica, through a search summary, **not verified**).
-- Closes on: Lesson 25's hook. "Do, mi and so against a drone: a major chord. Lower mi and it turns
-  minor, Lesson 10. But minor keys hide another change: why does a minor key often raise one note
-  just before it comes home?"
+- Closes on: Lesson 25's hook. "A minor tune, played twice. The second ending changes one note. Why
+  does a minor key often raise one note just before it comes home?" The planned tease, "Do, mi and
+  so made a major chord. Minor keys hide another change.", is true of Lesson 24 but leans a little
+  on Lesson 25's predict, and is the alternative (Lesson 25 FACTS 5b; bound at Lesson 25's review
+  on 2 November 2026).
 
 **Lesson 25. Minor, properly** (theory; T15b)
 
@@ -624,8 +627,12 @@ lesson has a package yet: each card is status "proposed".
   do-based syllables (MASTER-PLAN § 12 item 12); the AP reports; the app's scale description "Sad
   and introspective" (`src/lib/scale-data.ts:88`), against Lesson 10's misconception, if it is
   shown on a screen (**not verified**).
-- Closes on: Lesson 26's hook. "So far you've sung against a drone that never moves. Now let the
-  other part be a tune: can you make a harmony by singing the tune a third higher?"
+- Closes on: Lesson 26's hook. "‘Twinkle’, and the same tune four semitones higher, played
+  together. Can you make a harmony by singing the tune a third higher?" The planned tease, "So far
+  the other part was a drone. What if it's a tune?", is withdrawn: a learner who reaches Lesson 26
+  has sung over moving chords in Lesson 12. Mended, "Lesson 24's other part was a drone. What if
+  it's a tune?", it is the alternative (Lesson 26 FACTS 5; bound at Lesson 25's review on 2
+  November 2026).
 
 **Lesson 26. A second voice** (voice; S20b, new; T23 light)
 
@@ -650,8 +657,12 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: diatonic thirds (Open Music Theory; Hooktheory); chord tones and passing notes
   (musictheory.net and Hooktheory II ch. 3, as the benchmark cites them for T23); Dai & Dixon (2019),
   as Lesson 24; the app (above).
-- Closes on: Lesson 27's hook. "Stack thirds and you get chords: three notes, Lesson 12. Add a fourth
-  to the V chord and it pulls towards home. Which note, and why?"
+- Closes on: Lesson 27's hook. "G, B and D going home to C, E and G. Now add one note on top. Add
+  one note to the V chord and it pulls towards home. Which note, and why?" The planned tease,
+  "Stack thirds and you get a chord. Stack one more on V, and it pulls.", is withdrawn: after this
+  lesson's thirds it points to the note that stacks, and "it pulls" names what Lesson 27's predict
+  asks. The alternative is "Three notes make a chord. Add one more to V, and hear where it goes."
+  (Lesson 27 FACTS 5b; bound at Lesson 27's review on 2 November 2026).
 
 **Lesson 27. Seventh chords and inversions** (theory; T24, T25)
 
@@ -679,8 +690,10 @@ lesson has a package yet: each card is status "proposed".
 - Facts to check: seventh-chord qualities (Hooktheory II ch. 1 and Bennett L5, as the benchmark
   cites them for T24; Open Music Theory's seventh chords chapter); V7's resolution (the same, to
   check); inversions (Hooktheory I ch. 5 and OMT 1.18, as the benchmark cites them for T25).
-- Closes on: Lesson 28's hook. "V7 to I: the strongest way home, and songs use it to end. So how
-  can a song sound as if it's ending, then keep going?"
+- Closes on: Lesson 28's hook. "A song in two parts. At bar 8 it seems to end, then keeps going.
+  How can a song sound as if it's ending, then keep going?" The planned tease, "V7 to I sounds like
+  the end. Songs use it to finish.", is withdrawn, since no source read says its second sentence,
+  and it has no alternative (Lesson 27 FACTS 5; bound at Lesson 27's review on 2 November 2026).
 
 **Lesson 28. Cadences, form and a song in two parts** (voice and theory; T22, T31)
 
@@ -690,9 +703,9 @@ lesson has a package yet: each card is status "proposed".
   sections, verse, chorus and bridge, and read form as letters (A A B A); sing one part of a
   two-part song from the staff, recorded and played back with the other part (S22, as Lesson 14).
 - Misconception: "When a phrase sounds finished, the song is over." (Shown half right. A perfect
-  cadence does sound final, and songs usually end on one, Lesson 14's perfect and imperfect
-  cadences (lessons/14-phrasing-whole-song/LESSON.md:182-184); but cadences end phrases all through
-  a song, and the interrupted cadence, V to vi, sounds like an ending and swerves.)
+  cadence does sound final, and a song can end on one, as "Twinkle" does in Lesson 14
+  (lessons/14-phrasing-whole-song/LESSON.md:182-184); but cadences end phrases all through a song,
+  and the interrupted cadence, V to vi, seems to end, then keeps going.)
 - Signature: Lesson 14's song line, now written on a two-part staff, Merc's lower part blue and
   Tavi's upper part orange; a tag appears at each phrase end naming its cadence, and form letters
   gather above the sections. At the close the season's objects line up along the song: the staff,
@@ -703,24 +716,32 @@ lesson has a package yet: each card is status "proposed".
   part, and the page names the cadence that ends it. "How did that feel?" closes the season's last
   sung moment.
 - Practise: Karaoke Night (`/karaoke-night?lesson=28`), a whole song with the singer's take played
-  back, as Lesson 14 links it; Jam's Harmony Stack (`/jam?lesson=28`); Ear Lab's Cadence
-  (`/ear-lab?lesson=28`, then tap Cadence), which names progressions, I-IV-V, I-V-vi-IV, ii-V-I and
-  others, not cadence types (`src/lib/ear/progressions.ts:57-59`). Needs building: a cadence-type
-  ear drill (§ 5 item 19) and the harmony-line drill (§ 5 item 17). The two-part song is written
-  for the lesson (§ 8, risk 11).
-- Facts to check: the four cadences, and that a song usually ends on a perfect cadence
-  (Wikipedia's Cadence article at the revision Lesson 14's FACTS cites; musictheory.net and Coursera M5, as the benchmark cites them for T22; Open Music Theory's
-  cadences chapter); song form (Ableton's Song structure and Coursera M3, as the benchmark cites
-  them for T31); the app (above).
+  back, as Lesson 14 links it; Ear Lab's Cadence (`/ear-lab?lesson=28`, then tap Cadence), which
+  names progressions, I-IV-V, I-V-vi-IV, ii-V-I and others, not cadence types
+  (`src/lib/ear/progressions.ts:57-59`). Jam's Harmony Stack stays on Lesson 26's card: it needs a
+  friend, and its parts are the room's tune moved up a third or a fifth, not a written part
+  (Lesson 28 FACTS 74). Needs building: a cadence-type ear drill (§ 5 item 19) and the
+  harmony-line drill (§ 5 item 17). The two-part song is written for the lesson (§ 8, risk 11).
+- Facts to check: the four cadences (Wikipedia's Cadence article at the revision Lesson 14's FACTS
+  cites; musictheory.net and Coursera M5, as the benchmark cites them for T22; Open Music Theory's
+  cadences chapter); that a song usually ends on a perfect cadence, **not found**: no source that
+  Lesson 28's research read says it, and Open Music Theory says many recordings end with a
+  fade-out, so the lesson does not say it (Lesson 28 FACTS 13, 21); song form (Ableton's Song
+  structure and Coursera M3, as the benchmark cites them for T31); the app (above).
 - Go deeper if long: plagal and interrupted cadences beyond one example each, and AABA.
 - Closes on: its own answer. The season ends with the song, and teases nothing unless Season 3 is
-  committed (§ 7 item 8; CURIOSITY-MOMENTS § 5 item 4).
+  committed (§ 7 item 8; CURIOSITY-MOMENTS § 5 item 4). Season 2's close takes Lesson 28's lines:
+  "End of Season 2", "You've read a song in two parts. Now sing a whole song.", Karaoke Night and
+  the season map, and after Effortful, Uncomfortable or Just listen today the first sentence and
+  the map alone (Lesson 28 FACTS 5; taken at Lesson 28's review on 2 November 2026).
 
 **Season 2 trailer. Read it, harmonise it** (2 to 3 minutes, no lesson number)
 
 - The promise and the map of Lessons 15 to 28's hooks, as Season 1's trailer maps its fourteen
   (CURRICULUM § 2). It also does what Lesson 14 does not: it tells a Season 1 viewer that Season 2
   exists. Its practise link is the explorer's Season 2 map.
+- Its question (§ 2) is the one Season 2's close answers: "You've read a song in two parts."
+  (Lesson 28 FACTS 5). If the question changes, so does that line.
 
 ## 4. Topic graph and prerequisites
 
@@ -730,29 +751,29 @@ The benchmark's IDs and prerequisites, with this plan's changes marked. A Season
 Season 1 topics; no Season 1 topic needs a Season 2 one, so the Season 1 graph in CURRICULUM § 3
 stands as it is.
 
-| ID   | Topic                                                                   | Prerequisites  | Lesson | Change from CURRICULUM § 3                                                                                              |
-| ---- | ----------------------------------------------------------------------- | -------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03            | 15     | T07 dropped: Lesson 15 draws pitch only, noteheads without stems, before rhythm (Lesson 17)                             |
-| T07  | Note values, rests, dots, ties, subdivision                             | T06            | 17     | none                                                                                                                    |
-| T32  | Dynamics and articulation terms                                         | none           | 18     | none (light)                                                                                                            |
-| T08  | Simple and compound metre; triplets; syncopation                        | T07            | 19     | none                                                                                                                    |
-| T16  | Pentatonic and blues scales                                             | T09, T15a      | 20     | T15a added for minor pentatonic, as the benchmark notes ("T15 for minor pentatonic")                                    |
-| T17  | Keys, key signatures, transposition                                     | T09, T30       | 21     | T30 added: a key signature is written on the staff                                                                      |
-| T18  | Circle of fifths                                                        | T17, T12       | 21     | T13 replaced by T12: the circle needs the fifth's size (Lesson 6), not interval quality, which follows in Lesson 23     |
-| T29  | Tuning systems: why twelve, equal temperament                           | T04, T18       | 21     | T28 replaced by T18: the lesson gives the fifth as 3:2 directly, as Lesson 1 gives the octave as 2:1; Lesson 13 helps   |
-| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12            | 23     | none                                                                                                                    |
-| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13, T17 | 25     | T17 added: relative keys share a key signature                                                                          |
-| T23  | Chord tones and non-chord tones                                         | T20, T11       | 26     | none (light)                                                                                                            |
-| T24  | Seventh chords                                                          | T19, T13       | 27     | T13 added: the dominant seventh's pull is its tritone                                                                   |
-| T25  | Inversions and voicing                                                  | T19            | 27     | none                                                                                                                    |
-| T22  | Phrases and cadences                                                    | T20, T06       | 28     | none (its light part is Season 1's, Lesson 14)                                                                          |
-| T31  | Song form                                                               | T22            | 28     | none                                                                                                                    |
-| S11a | Sight-singing pitch: steps and the tonic triad from the staff, after do | S10, T10, T30  | 16     | **New**, the first half of S11 (S11 needed S10 and T10; reading from the staff adds T30)                                |
-| S11b | Sight-singing in time: short melodies with rhythm                       | S11a, T07      | 18     | **New**, the second half of S11                                                                                         |
-| S18  | Agility: staccato, runs, pentatonic patterns                            | S09, S04, T16  | 20     | none                                                                                                                    |
-| S19  | Vibrato                                                                 | S06, S17       | 22     | none                                                                                                                    |
-| S20a | Hold a part against a drone; beats                                      | S06, T13, T14  | 24     | **New**, the first half of S20; T19 replaced by T14: against a drone the third and fifth are intervals, not yet a chord |
-| S20b | Sing a second part with a melody                                        | S20a, T11, T19 | 26     | **New**, the second half of S20                                                                                         |
+| ID   | Topic                                                                   | Prerequisites  | Lesson | Change from CURRICULUM § 3                                                                                                                                              |
+| ---- | ----------------------------------------------------------------------- | -------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T30  | Staff notation: staff, clefs, ledger lines, grand staff                 | T03            | 15     | T07 dropped: Lesson 15 draws pitch only, noteheads without stems, before rhythm (Lesson 17)                                                                             |
+| T07  | Note values, rests, dots, ties, subdivision                             | T06            | 17     | none                                                                                                                                                                    |
+| T32  | Dynamics and articulation terms                                         | none           | 18     | none (light)                                                                                                                                                            |
+| T08  | Simple and compound metre; triplets; syncopation                        | T07            | 19     | none                                                                                                                                                                    |
+| T16  | Pentatonic and blues scales                                             | T09, T15a      | 20     | T15a added for minor pentatonic, as the benchmark notes ("T15 for minor pentatonic")                                                                                    |
+| T17  | Keys, key signatures, transposition                                     | T09, T30       | 21     | T30 added: a key signature is written on the staff                                                                                                                      |
+| T18  | Circle of fifths                                                        | T17, T12       | 21     | T13 replaced by T12: the circle needs the fifth's size (Lesson 6), not interval quality, which follows in Lesson 23                                                     |
+| T29  | Tuning systems: why twelve, equal temperament                           | T04, T18       | 21     | T28 replaced by T18: the lesson gives the fifth as 3:2 directly, as Lesson 1 gives the octave as 2:1; Lesson 13 helps                                                   |
+| T13  | Interval quality: major, minor, perfect; tritone; inversion             | T12            | 23     | none                                                                                                                                                                    |
+| T15b | Harmonic and melodic minor; relative keys                               | T15a, T13, T17 | 25     | T17 added: relative keys share a key signature                                                                                                                          |
+| T23  | Chord tones and non-chord tones                                         | T20, T11       | 26     | none (light)                                                                                                                                                            |
+| T24  | Seventh chords                                                          | T19, T13       | 27     | T13 added: the dominant seventh's pull is its tritone                                                                                                                   |
+| T25  | Inversions and voicing                                                  | T19            | 27     | none                                                                                                                                                                    |
+| T22  | Phrases and cadences                                                    | T20, T06       | 28     | none (its light part is Season 1's, Lesson 14)                                                                                                                          |
+| T31  | Song form                                                               | T22            | 28     | none                                                                                                                                                                    |
+| S11a | Sight-singing pitch: steps and the tonic triad from the staff, after do | S10, T10, T30  | 16     | **New**, the first half of S11 (S11 needed S10 and T10; reading from the staff adds T30)                                                                                |
+| S11b | Sight-singing in time: short melodies with rhythm                       | S11a, T07      | 18     | **New**, the second half of S11                                                                                                                                         |
+| S18  | Agility: staccato, runs, pentatonic patterns                            | S09, S04, T16  | 20     | none                                                                                                                                                                    |
+| S19  | Vibrato                                                                 | S06, S17       | 22     | none                                                                                                                                                                    |
+| S20a | Hold a part against a drone; beats                                      | S06, T13, T14  | 24     | **New**, the first half of S20; T19 replaced by T14: against a drone the third and fifth are heard as intervals, and do, mi and so together as T14's major triad by ear |
+| S20b | Sing a second part with a melody                                        | S20a, T11, T19 | 26     | **New**, the second half of S20                                                                                                                                         |
 
 Moved out of Season 2: S15, consonants and diction. CURRICULUM § 3.2 marks it Season 2, but § 5
 already lists diction in Season 3; this plan keeps it in Season 3 (§ 7 item 12). Mixed voice gets no
@@ -841,7 +862,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor            | Harmonic and melodic minor in Scale Runner (item 13, code)                                                          |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
 | 27     | Chord Stacker; Ear Lab: Stack                                         | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                                       |
-| 28     | Karaoke Night; Jam's Harmony Stack; Ear Lab: Cadence                  | Cadence-type drill (item 19, data and code); harmony-line drill (item 17)                                           |
+| 28     | Karaoke Night; Ear Lab: Cadence                                       | Cadence-type drill (item 19, data and code); harmony-line drill (item 17)                                           |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -862,10 +883,20 @@ and First Light does not step aside. Item 21 fixes it.
     (letters are drawn under every note, SightSingingExercise.tsx:130-140); (f) octave-folded scoring
     (it scores against the written octave, use-sight-singing-controller.ts:192-198; CURRICULUM § 4
     item 7); (g) a `key` launch field (key and scale come from the Singing tab,
-    SightSingingExercise.tsx:276-279). Lessons 16, 18, 21, 25.
+    SightSingingExercise.tsx:276-279). Lessons 16, 18, 21, 25. Two details from Lesson 16: (a)'s
+    link also skips the octave fit, so each voice reads its own octave (today `fitPhraseToRange`,
+    `src/App.tsx:794-798`, moves a bass preset's phrase to G2 to D3, an octave under the page's
+    lower line: Lesson 16 FACTS 59, 63); and (e) hides two displays, the letter and octave under
+    each note and the hold bar's name, since the pitch tracker's names have their own hide (Lesson
+    16 FACTS 58, 63).
 11. **Sight-singing in time** (code with tests, the largest item): a count-in and a click, notes that
     advance on the beat rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch
-    scored per note, timing shown. Lesson 18, then 28.
+    scored per note, timing shown. Each note's beats are counted from the singer's first note, as
+    The Chart anchors a tapped bar on its first tap (`src/features/ear-lab/anchored-take.ts:10-11`),
+    so a steady delay or a late entry is never read as a wrong pitch, and a note not heard is read
+    as not heard, never as a gap from another note (Lesson 18 FACTS 52, 54). Whether the click
+    sounds under the singing, where a raw-signal microphone hears it, is a question for Lesson 18's
+    lab (its WEB-SPEC, What the kit and the app still need, item 15). Lesson 18, then 28.
 12. **The `ear-drill` launch kind** (CURRICULUM § 4 item 5; code with tests): Ear Lab has no launch
     of its own today (`pendingEarDrill` is set only from inside the app, `src/stores/ui-store.ts:578`).
     Once it exists, Season 2's subsets are data: quarters, halves and eighths (Lesson 17); the 3/4 and
@@ -886,14 +917,26 @@ and First Light does not step aside. Item 21 fixes it.
 15. **Drone Intonation for Lesson 24**: a slug with intervals 7, 4 and 12 (data, one registry line;
     its pool, use-drone-intonation-controller.ts:18-25, and launch intervals, :41-46). A "pure"
     scoring option, just fifths and thirds as targets, is code with tests; until it ships, Lesson 24
-    says the drill scores to the piano's equal-tempered notes (:15-16).
+    says the drill scores to the piano's equal-tempered notes (:15-16). Two more fixes, code with
+    tests: a drone with harmonics up to at least the sixth, whatever the app's instrument, so its
+    fifths and thirds can beat; and the run score reweighted so that a full score reads 100. Today
+    `round(accuracy × 0.4 + best round × 0.15 + stability × 0.25)` tops out at 80, since richness
+    left the grade on 25 October (use-drone-intonation-controller.ts:284-292), and the level rises
+    only at an average of 90 (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so
+    the drill can never level up (Lesson 24 FACTS 60, 66).
 16. **Interval Trainer's `perfect-intervals`** slug, intervals 5, 7 and 12 (data). Lesson 23.
 17. **A harmony-line drill** (code with tests): the app plays a melody and the learner sings a
     diatonic third above or below it, scored per note, octave-folded, against the line computed with
     `diatonicStepUp` (`src/lib/jam/jam-modes.ts:108`), with a headphones prompt. Lessons 26 and 28.
 18. **Chord Stacker's chord types and inversions** (code with tests): a chord-type launch field and
     triads (CURRICULUM § 4 item 4), and inversions; today it shuffles five four-note chords
-    (`use-chord-stacker-controller.ts:13-19`, :86-99). Lesson 27.
+    (`use-chord-stacker-controller.ts:13-19`, :86-99). Two fixes beside it, not blocking: its play
+    loop waits only a fixed 300 ms after each note (`use-chord-stacker-controller.ts:144-162`), so
+    notes 1 to 3 are cut off 0.3 s in at every level, and it should wait each note out, as Arpeggio
+    Jumper does; and its help (`src/features/exercises/exercise-help.ts:193-200`) says each note is
+    tuned against the notes already sounding, though nothing sounds while the learner sings, so it
+    takes the text Lesson 27 proposes (Lesson 27 WEB-SPEC, What the kit and the app still need, item
+    10). Lesson 27.
 19. **A cadence-type ear drill** (a bank of perfect, imperfect, plagal and interrupted cadences is
     data; a new drill, or a mode of Cadence, which names progressions today,
     `src/lib/ear/progressions.ts:57-59`, is code with tests). Lesson 28.
@@ -908,17 +951,53 @@ and First Light does not step aside. Item 21 fixes it.
     (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
     (`src/lib/current-lesson.ts:34-37`). The lesson pages' own route already takes any two digits
     (`src/lesson-gate.ts:128`), and the done list stores any lesson number
-    (`src/lib/lesson-done.ts:17-24`).
+    (`src/lib/lesson-done.ts:17-24`). At each lesson's release, SEARCH § 8's table and the entry
+    pages' `lessonsPractised` change together, since a test holds them equal room by room
+    (`src/tests/entry-page-model.test.ts:497-529`); Lesson 28's links split the shared Karaoke
+    Night and Jam row (Lesson 28 WEB-SPEC item 15).
+22. **A hold read on its middle** (kit code with tests, small): the kit's hold reader counts frames
+    inside the band (`src/features/lessons/kit/hold-take.ts:285-291`), on frames that Voice Mirror's
+    preprocessing has median-filtered over 5 frames. On the kit's 16 ms frames a held vibrato of ±50
+    cents at six swings a second reads about 6.1 to 6.4 of 10 seconds in the band, by how the frames
+    fall on the wave, and ±60 at 5.5 a second about 4, although its middle never leaves the band.
+    Voice Mirror's wave finding (`src/lib/mirror/metrics.ts:496-511`) moves into one exported
+    function, which its steadiness calls once on the whole trimmed hold, as now, and the new reader
+    calls on 3-second windows every half second, so a vibrato that comes late or whose rate wanders
+    is found too. Where a window finds one, the reader takes it out with a running mean one swing
+    long, reads the hold on that middle line by the hold reader's own rules, and describes the
+    vibrato's rate from its windows and its extent from the line less its middle (√2 × RMS); the
+    score stays the time on the middle line, and nothing scores the vibrato. Both this reader and
+    Voice Mirror report a real vibrato about 10 to 30 % below its sung extent, since the median and
+    the analysis buffer trim its peaks. The hold summary takes its subject as an option. Lesson 22's
+    page ships only with it (Lesson 22 WEB-SPEC, What the kit and the app still need, item 6, with
+    Tests 8 to 10). Lessons 22 and 24.
+23. **Harmony Stack's note names** (code with a test, small): `harmoniseItems` moves a part's notes
+    but keeps the tune's note name (`src/lib/jam/jam-modes.ts:134-153`), so the third's boxes over
+    the C major scale on C4 read C4 to G4, A5 and B5 where they sit at E4 to D5. The fix names each
+    moved note from its MIDI number, and the test that pins the octave and frequency
+    (`src/tests/jam-modes.test.ts:108-114`) pins the name too. The same edit can mend the comment "a
+    fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:210-211`): `roleCountFor` caps
+    the parts at three, and a fourth singer sings the tune. Until it ships, Lesson 26's practice
+    card describes the boxes as they are (Lesson 26 WEB-SPEC item 15). Lesson 26.
+24. **Harmony Stack for a friend who joins late** (code with a test, small): the mode and the drill
+    go only to the channels open when the host picks the mode (`selectJamRoomMode`,
+    `src/stores/jam-store.ts:1297-1302`; `broadcastData`, `src/lib/jam/service.ts:1131-1138`), and a
+    joining peer is sent only a song (`onPeerJoined`, `src/stores/jam-store.ts:1971-1983`), so a
+    friend who joins after the pick stays in unison on their own scale. The host sends the drill and
+    the mode to a peer whose channel opens, as it does a song, with a test that a late joiner gets
+    both. Until it ships, Lesson 26's card has the friend join first (Lesson 26 WEB-SPEC item 16).
+    Lesson 26.
 
 The kit's own work (the staff, rhythm on the staff, the circle, two voices, the vibrato view,
 headphones) is in § 6.2.
 
 ### 5.3 Gaps with no drill planned
 
-Rhythm scored while singing, beyond item 11's one drill; recognising song form (Karaoke Night has
-no song sections); a vibrato practice that neither scores the vibrato nor rewards a straight tone,
-other than Voice Mirror's report; sung tritones and sung sevenths, deliberately left to listening;
-compound-metre reading drills, since the app writes only 4-beat bars
+Rhythm scored while singing, beyond item 11's one drill; a drill that sings a run continuously and
+reads it note by note (Lesson 20: no drill in the app or this plan does); recognising song form
+(Karaoke Night has no song sections); a vibrato practice that neither scores the vibrato nor rewards
+a straight tone, other than Voice Mirror's report; sung tritones and sung sevenths, deliberately
+left to listening; compound-metre reading drills, since the app writes only 4-beat bars
 (`src/lib/ear/rhythm-notation.ts:24`).
 
 ## 6. Production
@@ -946,11 +1025,11 @@ compound-metre reading drills, since the app writes only 4-beat bars
    one clock) and on screen. Colour: in explanatory diagrams Merc's part is blue and Tavi's orange
    (MASTER-PLAN § 5); on a pitch canvas the learner's target band is amber, the learner's line
    violet, and the other part chrome, "any other note", so violet still means only the singer.
-6. **Vibrato as the app draws it.** Two drawings, labelled apart: the measured wave (a pitch trace
-   whose rate and extent are the real ones), and the app's ribbon for a vibrato note, whose wave
-   count follows the note's width (`src/lib/effect-renderer.ts:216-241`, :226). The kit's Merc voice
-   has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:189-198`); Lesson 22's
-   examples need rate and extent as parameters, which the demo voice already takes
+6. **Vibrato as the app draws it.** Two drawings, labelled apart: a sung or measured wave (a pitch
+   trace whose rate and extent are the real ones), and the app's ribbon for a vibrato note, whose
+   wave count follows the note's width (`src/lib/effect-renderer.ts:216-241`, :226). The kit's Merc
+   voice has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:189-198`); Lesson
+   22's examples need rate and extent as parameters, which the demo voice already takes
    (`src/lib/demo-voice.ts:37`).
 7. **Merc performances.** New passes for reading, conducting and a two-host duet, priced by the
    measured table (PRODUCTION-PIPELINE.md:93-101: 0.64 to 0.85 s a frame
@@ -970,7 +1049,12 @@ compound-metre reading drills, since the app writes only 4-beat bars
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page
    carries the season's data today, so the first paint grows with every lesson (HANDOFF § 5); Season
-   2's data goes in its own module, which a Season 1 page does not load.
+   2's data goes in its own module, which a Season 1 page does not load. A season's end card per
+   season, and a season that knows its last lesson, are required before Lesson 28 is built:
+   without them Lesson 14's page draws Lesson 15's card in place of Season 1's close (Lesson 15
+   WEB-SPEC, What the kit and the app still need, item 3), and Lesson 28's draws none (Lesson 28
+   WEB-SPEC, Toys 7). Season 2's close takes Lesson 28's lines (§ 3, Lesson 28's card), and Season
+   1's gains its rest line, as Lesson 14's spec gives it (Lesson 14 WEB-SPEC item 12).
 2. **A staff toy**: the engraving of § 6.1 item 1 as a page toy, with the F clef (the kit has only a
    G clef path, `src/features/lessons/kit/glyphs.ts:10`), the house on do (`home-glyph.ts`), the
    pitch-line toggle, and play on every example.
@@ -980,14 +1064,23 @@ compound-metre reading drills, since the app writes only 4-beat bars
 4. **A circle-of-fifths toy** (Lesson 21).
 5. **Two-voice playback**: the demo voice plays one line per call (`src/lib/demo-voice.ts:244`) and
    `allOf` starts runs together (`src/features/lessons/kit/run.ts:167`); two independent parts need
-   one scheduler for both lines.
+   one scheduler for both lines. Two parts note against note already play together through
+   `playNotes`, whose notes that share an onset start in one timer task (`run.ts:9-10`); what is
+   missing is a part under a take, which Lesson 26 specifies as Lesson 24's kept source widened to
+   a sung contour voice, booked on the audio clock, with a level dip for repeated notes (Lesson 26
+   WEB-SPEC item 6), for Lesson 28 too.
 6. **A vibrato view** that draws the learner's wave, rate and extent from the app's analyser.
 7. **Headphones, or turns.** The microphone runs with echo cancellation, noise suppression and
    automatic gain all off, so the detector hears the raw signal (`src/lib/mic-manager.ts:47-56`). A
    page that plays a part during a take therefore sends it into the microphone. Harmony checkpoints
    ask for headphones and offer a turn-taking fallback (the page plays, then the learner sings).
    Whether the detector locks onto the page's part without headphones was **not verified**; the
-   harmony lessons' labs test it before their checkpoints are written.
+   harmony lessons' labs test it before their checkpoints are written. Lesson 26 offers no
+   turn-taking fallback: without headphones the learner sings along with the other part and nothing
+   listens, so the harmony is heard live on every device (Lesson 26 FACTS 62). Lesson 28 keeps the
+   order and adds the recording: without headphones it offers the other part first, an optional
+   turn, then the learner sings alone and the take plays back with the other part, so the harmony
+   is heard afterwards, from the recording (Lesson 28 FACTS 63).
 
 ### 6.3 Who sings the second part
 

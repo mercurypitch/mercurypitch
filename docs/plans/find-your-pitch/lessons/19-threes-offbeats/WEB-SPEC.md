@@ -394,9 +394,9 @@ The page is built only after these, most of them shared with Lessons 15 and 17:
 
 1. **Seasons in the kit** (SEASON-2 § 6.2 item 1): Season 2's data, its masthead and explorer tab.
 2. **The head** (SEARCH § 3.1 and § 12): the title "6/8 time, triplets and syncopation explained |
-   MercuryPitch" (59 characters), the meta and share description "Six notes in a bar, grouped two
-   ways: why does one feel like two beats, the other three? A 12-minute lesson on 6/8, triplets and
-   syncopation, with sound toys." (158 characters, the hook, then what and how, as SEARCH § 3.1
+   MercuryPitch" (59 characters), the meta and share description "Six notes in a bar, grouped two ways: why does one feel like two beats, the other three? A
+   twelve-minute lesson with sound toys: 6/8, triplets and syncopation." (159 characters, the
+   minutes as a word, as the head test asks, the hook, then what and how, as SEARCH § 3.1
    asks), `og:title` "Threes, offbeats and syncopation · Find
    Your Pitch", and a share card of the six pads ungrouped between Merc and Tavi (FACTS 1a).
 3. **Rhythm on the staff** (SEASON-2 § 6.2 item 3), generalised past four-beat bars: 6/8, 3/4 and 2/4

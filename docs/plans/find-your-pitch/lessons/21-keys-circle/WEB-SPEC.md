@@ -395,7 +395,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 8's,
 - `n: 21`, `lane: 'theory'`, `title: 'Keys and the circle of fifths'`, `short: 'Circle of fifths'`,
   `topics: ['T17', 'T18', 'T29']`, with their names as SEASON-2 § 4.1 gives them, "Keys, key
   signatures, transposition", "Circle of fifths" and "Tuning systems: why twelve, equal temperament"
-  (`docs/plans/find-your-pitch/SEASON-2.md:740-742`); the hook word for word (FACTS 1). `minutes: 15`
+  (`docs/plans/find-your-pitch/SEASON-2.md:761-763`); the hook word for word (FACTS 1). `minutes: 15`
   and `page: '/learn/21'` once the page is built, under the drafts' comment in Lesson 15's form: `//
 A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides nothing about
   being live: the draft list and the console do. The short name is the lead's: "Keys" alone could
@@ -437,8 +437,8 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    predict (FACTS 1a):
    - the title "Key signatures and the circle of fifths | MercuryPitch", 54 characters, in
      searchers' words;
-   - the description, the hook and "A 15-minute lesson on keys and the circle of fifths.", 151
-     characters; `og:title` "Keys and the circle of fifths · Find Your Pitch, Lesson 21"; the share
+   - the description, the hook and "A fifteen-minute lesson on keys and the circle of fifths.",
+     156 characters, the minutes as a word, as the head test asks; `og:title` "Keys and the circle of fifths · Find Your Pitch, Lesson 21"; the share
      descriptions, the hook and "Hear each scale, then see it written.";
    - the share card, `learn/lesson-21-og.jpg`, 1200 by 630: Lesson 2's ring with D major's seven
      notes lit and its two black keys glowing, between Merc and Tavi, with no A major anywhere on it,

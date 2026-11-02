@@ -467,6 +467,17 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   to 28 (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, after the coach's look
   and once `/learn/02`, the page its chip and its recall link to, is live, with Lesson 16 and the
   trailer (SEASON-2 § 7 item 6).
+- Lesson 16: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/16-sing-what-you-see/`](lessons/16-sing-what-you-see/) (research, article plan, facts,
+  copy and page spec). Its scored checkpoint waits on the vocal coach's sign-off (§ 12 item 8). No
+  page is built yet: it waits on Season 2's kit (seasons, the staff toy with both clefs and the
+  house, Lesson 4's staircase moved into the kit, and Lesson 12's sing flow moved into the kit with
+  a scored take that reads along written notes, SEASON-2 § 6.2 items 1 and 2), on the lesson
+  plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21), and, as the season orders it, on
+  Sight-Singing's "hear do" start, bass clef, key signature and octave folding (§ 5.2 item 10, § 8.2
+  item 4). It goes live when the console publishes it, after the coach's sign-off and once
+  `/learn/09` and `/learn/15`, the pages its chips and its recall link to, are live, with Lesson 15
+  and the trailer (SEASON-2 § 7 item 6).
 - Lesson 17: a written lesson, text only, reviewed once and fixed, in
   [`lessons/17-note-lengths/`](lessons/17-note-lengths/) (research, article plan, facts, copy and
   page spec). Its optional sing-along waits on the vocal coach (§ 12 item 8). No page is built yet:
@@ -475,6 +486,17 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the
   console publishes it, after the coach's sign-off and once `/learn/08`, the page its chip and its
   recall link to, is live.
+- Lesson 18: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/18-read-a-line/`](lessons/18-read-a-line/) (research, article plan, facts, copy and page
+  spec). Its scored checkpoint waits on the vocal coach's sign-off (§ 12 item 8). No page is built
+  yet: it waits on Season 2's kit (seasons, the staff toy with both clefs and rhythm on the staff,
+  SEASON-2 § 6.2 items 1 to 3, with Lesson 17's woodblock and pitch-line view of a rhythm and Lesson
+  12's sing flow with Lesson 16's additions moved into the kit; new on this page, a count-in, a
+  cursor at tempo, brackets, the song sheet's marks and a take read in time from the singer's first
+  note) and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live with
+  Lesson 16 (SEASON-2 § 8.2 item 4) when the console publishes it, after the coach's sign-off,
+  Sight-Singing's work for the lessons and sight-singing in time (SEASON-2 § 5.2 items 10 and 11),
+  and once `/learn/16` and `/learn/17`, the pages its chips and its recall link to, are live.
 - Lesson 19: a written lesson, text only, reviewed once and fixed, in
   [`lessons/19-threes-offbeats/`](lessons/19-threes-offbeats/) (research, article plan, facts, copy
   and page spec). Nothing on it is sung, so it waits on no vocal coach. No page is built yet: it
@@ -484,6 +506,16 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   WEB-SPEC, What the kit and the app still need, item 13) and on the lesson plumbing for Lessons 15
   to 28 (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, once `/learn/17`, the
   page its chip and its recall link to, is live.
+- Lesson 20: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/20-runs-pentatonic/`](lessons/20-runs-pentatonic/) (research, article plan, facts, copy
+  and page spec). Its sung checkpoint, scored on the page, the run or a smaller one, waits on the
+  vocal coach's sign-off (§ 12 item 8). No page is built yet: it waits on Season 2's kit (seasons
+  and the staff toy with both clefs, SEASON-2 § 6.2 items 1 and 2, with Lesson 4's staircase moved
+  into the kit and given three new states and both names on every stair, Lesson 9's scored take and
+  flow moved into the kit, the reader's attack and steady options, and the band chart's bead style
+  with an illustrated singer's line) and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2
+  item 21). It goes live when the console publishes it, after the coach's sign-off and once
+  `/learn/05`, `/learn/09` and `/learn/10`, the pages its chips and its recall link to, are live.
 - Lesson 21: a written lesson, text only, reviewed once and fixed, in
   [`lessons/21-keys-circle/`](lessons/21-keys-circle/) (research, article plan, facts, copy and page
   spec). Its unscored sing-along waits on the vocal coach's look (§ 12 item 8). No page is built yet:
@@ -492,6 +524,15 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the
   console publishes it, after the coach's look and once `/learn/06` and `/learn/15`, the pages its
   chips and its recall link to, are live.
+- Lesson 22: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/22-vibrato/`](lessons/22-vibrato/) (research, article plan, facts, copy and page spec).
+  Its scored checkpoint, two ten-second holds read on the middle of the learner's line, waits on the
+  vocal coach's sign-off (§ 12 item 8). No page is built yet: it waits on Season 2's kit (seasons,
+  SEASON-2 § 6.2 item 1; Merc's voice with its vibrato as a parameter, § 6.1 item 6; new band chart
+  states; Lesson 5's hold flow moved into the kit), on a centre-line hold reader, without which it
+  does not ship (SEASON-2 § 5.2 item 22), and on the lesson plumbing for Lessons 15 to 28 (SEASON-2
+  § 5.2 item 21). It goes live when the console publishes it, after the coach's sign-off and once
+  `/learn/05` and `/learn/14`, the pages its chip and its recall link to, are live.
 - Lesson 23: a written lesson, text only, reviewed once and fixed, in
   [`lessons/23-perfect-tritone/`](lessons/23-perfect-tritone/) (research, article plan, facts, copy
   and page spec). Its unscored sing-along waits on the vocal coach's look (§ 12 item 8). No page is
@@ -500,6 +541,67 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   pair and Lesson 12's sing flow moved into the kit) and on the lesson plumbing for Lessons 15 to 28
   (SEASON-2 § 5.2 item 21). It goes live when the console publishes it, after the coach's look and
   once `/learn/06`, the page its chip and its recall link to, is live.
+- Lesson 24: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/24-drone-harmony/`](lessons/24-drone-harmony/) (research, article plan, facts, copy and
+  page spec). A voice lesson with a scored checkpoint, three holds over a drone with headphones, and
+  an unscored sing-along without them; both gates of the vocal coach bind it (§ 12 item 8). No page
+  is built yet: it waits on Season 2's kit (seasons), on Lesson 22's four kit pieces (Merc's voice
+  with its vibrato as a parameter, the band chart's new states, the centre-line reader, Lesson 5's
+  hold flow in the kit), on its own (the drone chart's states, a drone under a take, the headphones
+  check and the quiet check), on two lab tests (silence over a speaker drone; the drone's timbre)
+  and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). Until the first lab test
+  passes, its Sing it ships as the sing-along only. It goes live after the coach's sign-off and once
+  `/learn/05`, `/learn/10` and `/learn/23`, the pages its chips and its recall link to, are live.
+- Lesson 25: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/25-minor-properly/`](lessons/25-minor-properly/) (research, article plan, facts, copy
+  and page spec). Its unscored sing-along and its practice card's sung drill wait on the vocal
+  coach's look (§ 12 item 8). No page is built yet: it waits on Season 2's kit (seasons, the staff
+  toy with both clefs and key signatures, SEASON-2 § 6.2 items 1 and 2, with Lesson 10's chord beads
+  and staircase, Lesson 12's chord levels, Lesson 6's interval pair and Lesson 12's sing flow moved
+  into the kit), on Lesson 21's page registering its quick-check questions, and on the lesson
+  plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). It goes live when the console publishes
+  it, after the coach's look and once `/learn/10`, `/learn/21` and `/learn/23`, the pages its chips
+  and its recall link to, are live.
+- Lesson 26: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/26-second-voice/`](lessons/26-second-voice/) (research, article plan, facts, copy and
+  page spec). A voice lesson with a scored checkpoint, a part a third from Merc's tune sung with it,
+  then the tune against the part, in G, with headphones, read note by note in time, and an unscored
+  sing-along without them; both gates of the vocal coach bind it (§ 12 item 8). No page is built
+  yet: it waits on Season 2's kit (seasons), on Lesson 18's in-time reader and count-in, on Lesson
+  24's headphones and quiet checks and its kept source under a take, widened here to a sung part, on
+  its own kit work (the tune line's two-part states and its locked stage, the reader's line for a
+  note sung on the note the other part is sounding), on a lab test (silence with Merc's part from
+  the speakers) and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). Until the
+  lab test passes, its Sing it ships as the sing-along only. Its practice card describes Jam's
+  Harmony Stack as the app is today; two app items would mend the room (SEASON-2 § 5.2 items 23 and
+  24). It goes live after the coach's sign-off and once `/learn/12` and `/learn/24`, the pages its
+  chips and its recall link to, are live.
+- Lesson 27: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/27-sevenths-inversions/`](lessons/27-sevenths-inversions/) (research, article plan,
+  facts, copy and page spec). Its unscored sing-along and its practice card's sung drill wait on the
+  vocal coach's look (§ 12 item 8). No page is built yet: it waits on Season 2's kit (seasons, the
+  staff toy with both clefs and chords, SEASON-2 § 6.2, with Lesson 12's ring of rooms, its chord
+  levels and Lesson 6's interval pair moved into the kit), on Lesson 23's page registering its
+  quick-check questions, and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21).
+  It goes live when the console publishes it, after the coach's look and once `/learn/12` and
+  `/learn/23`, the pages its chips and its recall link to, are live.
+- Lesson 28: a written lesson, text only, reviewed once and fixed, in
+  [`lessons/28-cadences-form/`](lessons/28-cadences-form/) (research, article plan, facts, copy and
+  page spec). Season 2's last lesson, voice and theory: the four cadences, song form as letters,
+  and a scored checkpoint in which the learner reads and sings one part of a song in two parts,
+  written for the lesson, in G, in their own clef, with the other part in the headphones, recorded
+  on the device and played back with the other part; without headphones the page can play the other
+  part first, then the learner sings alone and hears the two together afterwards, from the
+  recording; an unscored sing-along without a microphone. Both gates of the vocal coach bind it
+  (§ 12 item 8). No page is built yet: it waits on Season 2's kit (seasons, and a season's close per
+  season, which it needs before it is built), the staff toy with two staffs and key signatures,
+  rhythm on the staff, Lesson 18's in-time reader and count-in, Lesson 24's headphones and quiet
+  checks, Lesson 26's part under a take, Lesson 14's recorder with the listener's stream, its own kit
+  work (the song strip, the form strip, the tags, the playback aligned on the take's first sung
+  note), a lab test and the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). Until the
+  lab test passes, its Sing it ships as the sing-along only. It closes the season on its own answer
+  and teases nothing. It goes live after the coach's sign-off and once `/learn/18` and `/learn/26`,
+  the pages its chips and its recall link to, are live.
 - YouTube: [`youtube/YOUTUBE.md`](youtube/YOUTUBE.md) is the upload guide for Lessons 1 and 2
   (every Studio field, chapters, end screens, cards and pinned comments, checked against YouTube's
   help pages on 19 October 2026), with three thumbnails per film, end-screen maps, paste-ready

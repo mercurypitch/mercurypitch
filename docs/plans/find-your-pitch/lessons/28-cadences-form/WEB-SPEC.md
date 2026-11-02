@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1146-1147`).
+`docs/plans/find-your-pitch/SEASON-2.md:1239-1240`).
 
 ## Look
 
@@ -617,10 +617,11 @@ stills when WebGL fails.
   not cadences; five of its eight stop on V, as an imperfect cadence does; it asks for no voice,
   writes no staff and plays nothing a learner must sing (FACTS 72, 73). It asks for no voice, so it
   stays on offer under the rest card.
-- **Left out: Jam's Harmony Stack**, which the plan and SEASON-2 § 5.1's row link: it needs two
-  singers in a room, its parts are the room's tune moved up a third or a fifth in the key, not a
-  written part, and its card is Lesson 26's, with its two app items still open (FACTS 74; SEASON-2 §
-  5.1, row 28, `docs/plans/find-your-pitch/SEASON-2.md:844`).
+- **Left out: Jam's Harmony Stack**, which the plan links, as SEASON-2 § 5.1's row did until the
+  shared entries: it needs two singers in a room, its parts are the room's tune moved up a third or
+  a fifth in the key, not a written part, and its card is Lesson 26's, with its two app items still
+  open (FACTS 74; SEASON-2 § 5.1, row 28,
+  `docs/plans/find-your-pitch/SEASON-2.md:844` at `85ccd03dd`).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Karaoke Night; the
   second drill stays (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`).
@@ -628,11 +629,11 @@ stills when WebGL fails.
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Needed: a cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:897-899`), the app's work: a bank of perfect, imperfect,
+  `docs/plans/find-your-pitch/SEASON-2.md:940-942`), the app's work: a bank of perfect, imperfect,
   plagal and interrupted cadences, as a new drill or a mode of Cadence. When it ships, it takes the
   second drill's place, with a card that says what it plays and asks.
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
-  `docs/plans/find-your-pitch/SEASON-2.md:891-893`), the app's work, which Lesson 26's card takes
+  `docs/plans/find-your-pitch/SEASON-2.md:928-930`), the app's work, which Lesson 26's card takes
   first when it ships; this page's card can add it then, as a drill for singing a part alone.
 - No premium exercise is linked: Karaoke Night's example song and Ear Lab are free (FACTS 76).
 
