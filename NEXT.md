@@ -3003,3 +3003,19 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 2 Nov 20:16
 - Check-in fired. Container restart #8 between 19:2x and 20:15 (/dev/shm emptied: s2plan, s2shared and s2base gone; scratchpad survived). origin/feat/season-2-plan = 60e83bee0, so nothing was lost. Nothing in flight, so the worktree is not rebuilt; when work resumes: git worktree prune, then git worktree add /dev/shm/s2plan feat/season-2-plan.
+
+## 2 Nov 23:1x — follow-ups and merges (owner: "fix follow-ups and unfixed stuff review everything and merge your PRs for season two so I can inspect on dev domain later")
+- Fix agents running (max two):
+  - A in /dev/shm/s2fix on feat/season-2-app-fixes: Scale Runner and Drone Intonation /0.8 plus SCORING_VERSION 2; Staccato help; Chord Stacker wait-out plus help; planning-text guard `[TS]\d\d[a-z]?`.
+  - B in /dev/shm/s2jam on feat/season-2-jam-fixes: harmoniseItems names; onPeerJoined sends drill and mode.
+  - Both commit as the owner and push their branches. No PR.
+- Next steps:
+  - cherry-pick B onto A;
+  - fresh reviewer on the combined diff;
+  - PR (no template; AGENTS.md: pr:prepare before the first push, merge --rebase for distinct fixes);
+  - CI green, merge, verify (subjects, messages, authors, patch-ids, tree).
+- Docs:
+  - /dev/shm/s2plan rebased onto main 52c294af0 (a1ada688c, 20 commits, owner-authored). Not pushed: the rebase is trivial to redo.
+  - Citation check at 52c294af0: 210 findings (base 200). Reanchor from c60f0fdcb: 73 moved, 194 edited. Do it once, after the fix merge.
+  - Then a docs agent: reanchor, update the text for the fixes (L26 Harmony Stack names, L27 Chord Stacker, L20/L24 level-up, SEASON-2 § 5.2) and main's Harmony room 4 (402c0af12) / Leap room 3. Then a reviewer, PR, merge.
+- Report to the owner at the end: Season 2 is text only (no pages built); the two Singing-tab items are by design; the optional HANDOFF § 4.2 extras.
