@@ -79,7 +79,7 @@ These are the rules that break things when ignored.
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 31.1k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 18.3k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 14.7k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 14.8k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 14.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
@@ -148,10 +148,10 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 15.7k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept One press arms: the... |
+| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 15.8k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept One press arms: the... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
-| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 5.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
+| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.0k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |
@@ -184,7 +184,7 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k | Piano Roll Editor — Canvas-based note editor |
-| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.7k | Audio Engine — Web Audio API playback and microphone input |
+| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 950 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 950 | UVR API Client - Frontend Integration |
@@ -413,7 +413,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
-| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.7k |
+| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.6k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.6k |
