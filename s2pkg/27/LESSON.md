@@ -153,7 +153,7 @@ on brings the lock line back. A play cut short changes nothing. The reveal opens
 "You said: F♯", and the hint then reads "Play any of them again." The reveal also shows Step 1's
 held paragraph and Steps 2 and 3's held text, and from then on the F play's centre reads "V7".)
 
-Reveal: F. Stacked in C major, as Lesson 12 built its chords, the next note above D is F, the key's
+Reveal: F. Stacked in C major, as Lesson 12 built its chords, the next third above D is F, the key's
 fa: G, B, D and F is V's seventh chord, the dominant seventh, written V7. One open textbook says
 that added note strengthens V's pull towards I; F♯ isn't in C major at all. Why does F pull? That's
 this lesson's story. (F♯ sits a semitone under G, a note of the home chord, which made it a fair
