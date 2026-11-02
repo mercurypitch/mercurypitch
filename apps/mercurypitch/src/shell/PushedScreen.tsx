@@ -22,9 +22,14 @@
 // native-shell-store.ts) the screen under it fills. A premium room puts its
 // level pill and its "?" there (RoomBarEnd in the room kit); every other
 // screen leaves it empty.
+//
+// A screen that asks (`focusTitle`) is handed the focus at its title as it
+// is pushed, so a screen reader starts at the top of what just opened
+// rather than on the page. The screen under it may move the focus on
+// afterwards: its own mount runs after this one's.
 
 import type { Component, JSX } from 'solid-js'
-import { onCleanup } from 'solid-js'
+import { onCleanup, onMount } from 'solid-js'
 import { registerPushedBarEnd } from '@/stores/native-shell-store'
 import { BackIcon } from './icons'
 
@@ -33,38 +38,52 @@ export interface PushedScreenProps {
   onBack: () => void
   /** A premium room's full-bleed variant: the bar over the art, no rail. */
   bleed?: boolean
+  /** Hand the focus to the title as the screen is pushed. */
+  focusTitle?: boolean
   children: JSX.Element
 }
 
-export const PushedScreen: Component<PushedScreenProps> = (props) => (
-  <div
-    class="mp-pushed"
-    classList={{ 'mp-pushed--bleed': props.bleed === true }}
-    role="group"
-    aria-label={props.title}
-    data-testid="shell-pushed"
-    data-bleed={props.bleed === true ? 'on' : undefined}
-  >
+export const PushedScreen: Component<PushedScreenProps> = (props) => {
+  let title: HTMLSpanElement | undefined
+  onMount(() => {
+    if (props.focusTitle === true) title?.focus({ preventScroll: true })
+  })
+  return (
     <div
-      class="mp-pushed__bar"
-      classList={{ 'mp-dark-stage': props.bleed === true }}
+      class="mp-pushed"
+      classList={{ 'mp-pushed--bleed': props.bleed === true }}
+      role="group"
+      aria-label={props.title}
+      data-testid="shell-pushed"
+      data-bleed={props.bleed === true ? 'on' : undefined}
     >
-      <button
-        type="button"
-        class="mp-iconbtn"
-        aria-label="Back"
-        data-testid="shell-pushed-back"
-        onClick={() => props.onBack()}
-      >
-        <BackIcon />
-      </button>
-      <span class="mp-pushed__title">{props.title}</span>
       <div
-        class="mp-pushed__end"
-        ref={(el) => onCleanup(registerPushedBarEnd(el))}
-        data-testid="shell-pushed-end"
-      />
+        class="mp-pushed__bar"
+        classList={{ 'mp-dark-stage': props.bleed === true }}
+      >
+        <button
+          type="button"
+          class="mp-iconbtn"
+          aria-label="Back"
+          data-testid="shell-pushed-back"
+          onClick={() => props.onBack()}
+        >
+          <BackIcon />
+        </button>
+        <span
+          ref={title}
+          class="mp-pushed__title"
+          tabindex={props.focusTitle === true ? '-1' : undefined}
+        >
+          {props.title}
+        </span>
+        <div
+          class="mp-pushed__end"
+          ref={(el) => onCleanup(registerPushedBarEnd(el))}
+          data-testid="shell-pushed-end"
+        />
+      </div>
+      <div class="mp-pushed__body">{props.children}</div>
     </div>
-    <div class="mp-pushed__body">{props.children}</div>
-  </div>
-)
+  )
+}

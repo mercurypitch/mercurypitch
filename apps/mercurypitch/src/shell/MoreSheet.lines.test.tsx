@@ -62,6 +62,7 @@ function openSheet(): void {
       onPushDeveloper={vi.fn()}
       onPushLeagues={vi.fn()}
       onPushLegend={vi.fn()}
+      onPushCommunity={vi.fn()}
     />
   ))
 }

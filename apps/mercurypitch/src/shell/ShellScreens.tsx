@@ -73,6 +73,13 @@ export interface ShellScreensProps {
   leagues?: Component
   /** The Legend room, on a build with it (NATIVE_LEAGUES). */
   legend?: Component
+  /**
+   * Community and a shared result opened from it, on a build with them
+   * (NATIVE_COMMUNITY): passed in as Developer is, so a store build carries
+   * no chunk for either.
+   */
+  community?: Component
+  communityResult?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -101,11 +108,31 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   developer: 'Developer',
   leagues: 'Leagues',
   legend: 'Legend',
+  community: 'Community',
+  'community-result': 'Shared result',
 }
+
+/**
+ * The screens that hand the focus to their title as they are pushed
+ * (PushedScreen.tsx): Community's two, so a screen reader starts at the top
+ * of what opened. The others keep the focus rules they were built with.
+ */
+const TITLE_FOCUS: ReadonlySet<PushedScreenId> = new Set([
+  'community',
+  'community-result',
+])
 
 /** The device's own screen is named for what it is: "This iPad" on an iPad. */
 function titleOf(screen: PushedScreenId): string {
   return screen === 'this-phone' ? thisDevice() : TITLES[screen]
+}
+
+/**
+ * A screen only some builds carry (passed in, behind its build constant),
+ * or nothing on a build without it.
+ */
+function drawn(Screen: Component | undefined): JSX.Element {
+  return Screen === undefined ? null : <Screen />
 }
 
 export function ShellScreens(props: ShellScreensProps): JSX.Element {
@@ -139,54 +166,34 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <KaraokeSettingsScreen />
       case 'karaoke-studio':
         return <KaraokeStudioScreen />
-      case 'long-note': {
-        const LongNote = props.longNote
-        return LongNote === undefined ? null : <LongNote />
-      }
-      case 'echo': {
-        const Echo = props.echo
-        return Echo === undefined ? null : <Echo />
-      }
-      case 'lip-roll': {
-        const LipRoll = props.lipRoll
-        return LipRoll === undefined ? null : <LipRoll />
-      }
-      case 'ng-slides': {
-        const NgSlides = props.ngSlides
-        return NgSlides === undefined ? null : <NgSlides />
-      }
-      case 'warm-up': {
-        const WarmUp = props.warmUp
-        return WarmUp === undefined ? null : <WarmUp />
-      }
-      case 'home-note': {
-        const HomeNote = props.homeNote
-        return HomeNote === undefined ? null : <HomeNote />
-      }
-      case 'first-note': {
-        const FirstNote = props.firstNote
-        return FirstNote === undefined ? null : <FirstNote />
-      }
-      case 'leap': {
-        const Leap = props.leap
-        return Leap === undefined ? null : <Leap />
-      }
-      case 'harmony': {
-        const Harmony = props.harmony
-        return Harmony === undefined ? null : <Harmony />
-      }
-      case 'developer': {
-        const Developer = props.developer
-        return Developer === undefined ? null : <Developer />
-      }
-      case 'leagues': {
-        const Leagues = props.leagues
-        return Leagues === undefined ? null : <Leagues />
-      }
-      case 'legend': {
-        const Legend = props.legend
-        return Legend === undefined ? null : <Legend />
-      }
+      case 'long-note':
+        return drawn(props.longNote)
+      case 'echo':
+        return drawn(props.echo)
+      case 'lip-roll':
+        return drawn(props.lipRoll)
+      case 'ng-slides':
+        return drawn(props.ngSlides)
+      case 'warm-up':
+        return drawn(props.warmUp)
+      case 'home-note':
+        return drawn(props.homeNote)
+      case 'first-note':
+        return drawn(props.firstNote)
+      case 'leap':
+        return drawn(props.leap)
+      case 'harmony':
+        return drawn(props.harmony)
+      case 'developer':
+        return drawn(props.developer)
+      case 'leagues':
+        return drawn(props.leagues)
+      case 'legend':
+        return drawn(props.legend)
+      case 'community':
+        return drawn(props.community)
+      case 'community-result':
+        return drawn(props.communityResult)
     }
   }
 
@@ -197,6 +204,7 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
           title={titleOf(screen)}
           onBack={popScreen}
           bleed={isFullBleed(screen)}
+          focusTitle={TITLE_FOCUS.has(screen)}
         >
           {/* One iOS volume from the door to the way out (room-visit.ts):
               before the room, so its first sound already has it. */}

@@ -15,6 +15,8 @@
  * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A), and
  * Leagues, reached from More's Together group (NATIVE_LEAGUES), and the
  * Legend room beside it, a premium room drawn full-bleed (premium-rooms.ts).
+ * Community stands there too (NATIVE_COMMUNITY), with a shared result
+ * opened from its list pushed over it, so Back leaves the result first.
  */
 export type PushedScreen =
   | 'settings'
@@ -43,6 +45,8 @@ export type PushedScreen =
   | 'developer'
   | 'leagues'
   | 'legend'
+  | 'community'
+  | 'community-result'
 
 /** A screen that is only ever reached through Settings. */
 export type SettingsChild = Exclude<
@@ -57,4 +61,6 @@ export type SettingsChild = Exclude<
   | 'warm-up'
   | 'leagues'
   | 'legend'
+  | 'community'
+  | 'community-result'
 >

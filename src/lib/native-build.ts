@@ -106,6 +106,22 @@ export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT
 export const NATIVE_LEAGUES: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build carries Community on the phone
+ * (docs/plans/native-more-and-community.md, slice 4c): the More sheet's
+ * Community row, the screens it pushes (what other singers shared, the
+ * singer's own profile, a shared result) and the line the row says. A
+ * switch of its own, because its store gate is the moderation work, not a
+ * product call: never flipped before report, block, the name filter and
+ * the contact line are live (App Store guideline 1.2). On in a native test
+ * build, TestFlight among them, off in the store build, and folded like
+ * `KARAOKE_IMPORT`, so the store build carries none of it
+ * (assert-bundle.mjs STAGE 2): the screens are lazy chunks behind this
+ * constant (NativeShell.tsx), and the store the row reads is free of side
+ * effects in the native config.
+ */
+export const NATIVE_COMMUNITY: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.

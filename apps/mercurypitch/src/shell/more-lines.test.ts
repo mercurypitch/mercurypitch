@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LeagueMe } from '@/db/services/league-service'
-import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
+import { accountLine, communityLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
 
 describe('the Karaoke line', () => {
   it('counts the songs ready on a fresh install', () => {
@@ -217,5 +217,31 @@ describe('the Legend line', () => {
         /\b(weekly|monthly|fortnightly|this week|this month)\b/iu,
       )
     }
+  })
+})
+
+describe('the Community line', () => {
+  it('says what Community is for before the screen has loaded anything', () => {
+    expect(communityLine(null)).toBe('What other singers shared')
+  })
+
+  it('counts what the last load found, in words short enough for 320 px', () => {
+    expect(communityLine({ melodies: 3, results: 12 })).toBe(
+      '3 melodies, 12 results',
+    )
+    expect(communityLine({ melodies: 1, results: 1 })).toBe(
+      '1 melody, 1 result',
+    )
+  })
+
+  it('leaves out a list that was empty', () => {
+    expect(communityLine({ melodies: 0, results: 2 })).toBe('2 results')
+    expect(communityLine({ melodies: 4, results: 0 })).toBe('4 melodies')
+  })
+
+  it('says nothing was shared, not "0 melodies", when both were empty', () => {
+    expect(communityLine({ melodies: 0, results: 0 })).toBe(
+      'Nothing shared yet',
+    )
   })
 })

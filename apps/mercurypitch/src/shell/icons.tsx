@@ -398,6 +398,16 @@ export const TrophyIcon: Component<ShellIconProps> = (props) => (
   </svg>
 )
 
+/** Community: two singers, the second a step behind the first. */
+export const PeopleIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="9.5" cy="8" r="3.5" />
+    <path d="M3 19.5a6.5 6.5 0 0 1 13 0" />
+    <path d="M15.5 4.7a3.4 3.4 0 0 1 0 6.6" />
+    <path d="M17.6 13.7a6.5 6.5 0 0 1 3.4 5.8" />
+  </svg>
+)
+
 /**
  * A voiceprint: the rings of a fingerprint, the reveal's print (S7b beat 5)
  * drawn in the kit's line, so the card the reveal showed and the card Keep
