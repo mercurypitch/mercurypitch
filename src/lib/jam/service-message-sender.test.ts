@@ -8,12 +8,16 @@
 // it is handed. The service names the sender by the DataChannel a message
 // came in on, never by anything in the message, which any peer can write.
 //
+// The other way round, a drill the host sends to catch up one late arrival
+// goes out on that peer's channel alone (jam-store.late-join.test.ts).
+//
 // This runs the REAL createJamService, as service-local-media.test.ts does.
 // Signaling is a stub that lets the test announce peers, and jsdom has no
 // WebRTC, so RTCPeerConnection is a stand-in whose one channel the test can
 // deliver messages on.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MelodyData } from '@/types'
 import { createJamService } from './service'
 import type { JamCallbacks, JamPeer } from './types'
 
@@ -159,4 +163,50 @@ describe('a room message, as the service hands it to the store', () => {
       ])
     },
   )
+})
+
+describe('a drill, as the service sends it', () => {
+  const melody: MelodyData = {
+    id: 'arpeggio',
+    name: 'Arpeggio Jumper',
+    bpm: 110,
+    key: 'C',
+    scaleType: 'major',
+    createdAt: 0,
+    updatedAt: 0,
+    items: [
+      {
+        id: 1,
+        note: { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        duration: 1,
+        startBeat: 0,
+      },
+    ],
+  }
+
+  /** What went out on `channel`, as the peer at the other end reads it. */
+  const received = (channel: FakeChannel): unknown[] =>
+    channel.send.mock.calls.map(([raw]) => JSON.parse(raw as string))
+
+  beforeEach(() => {
+    for (const pc of built) pc.channel.readyState = 'open'
+  })
+
+  it('goes to one peer alone, with its mode, when it is sent to them', () => {
+    const [toA, toB] = built.map((pc) => pc.channel)
+    service.sendMelody(melody, 'harmony', 'peer-b')
+
+    expect([received(toA), received(toB)]).toEqual([
+      [],
+      [{ type: 'melody', action: 'set', melody, mode: 'harmony' }],
+    ])
+  })
+
+  it('goes to the whole room when it is sent to nobody in particular', () => {
+    const [toA, toB] = built.map((pc) => pc.channel)
+    service.sendMelody(melody, 'relay')
+
+    const message = { type: 'melody', action: 'set', melody, mode: 'relay' }
+    expect([received(toA), received(toB)]).toEqual([[message], [message]])
+  })
 })
