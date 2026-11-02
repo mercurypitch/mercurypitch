@@ -45,3 +45,8 @@
 - Lesson 20 is cited in words in Lesson 18 (preamble, coach list, FACTS sources line, FACTS 10, 27,
   33, 42): rebind to Lesson 20's committed files (26d90e225) at Lesson 18's lead review if cheap,
   else in the shared commit.
+- From Lesson 22's hand-back (verify at the shared commit): Lesson 21 FACTS 5's tease note says
+  "steady note" where Lesson 22 now says "straight note"; SEASON-2 § 3 Lesson 22's card "inside the
+  band counts in full" -> "counts in full"; SEASON-2 § 5.2 gains item 22, the centre-line hold
+  reader (Lesson 22 WEB-SPEC item 6). Owner question taken as recommended: title "What is vibrato in
+  singing? | MercuryPitch".

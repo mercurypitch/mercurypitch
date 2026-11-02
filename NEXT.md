@@ -2814,3 +2814,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   a time" / "Two: a run of steps, then do-mi-so"; Steps 1-2 locked until the choice; new tunes;
   start = do + count-in; each note scored in its own beats). Reviewer spawned (xhigh) ->
   s2pkg/18-REVIEW.md. W22 still writing. Notes for the shared commit added to shared-rest/NOTES.md.
+
+## 2 Nov 03:39 UTC — W22 handed back; L22 reviewer running
+
+- L22: 2,228 words, 281 cites 0 findings, chip 16 min, description 153 chars; 14 departures
+  (hand-back § 7). Reviewer spawned (xhigh) -> s2pkg/22-REVIEW.md. L18 reviewer still running.
+  Both writers idle until their fix passes (ids in agents.txt).

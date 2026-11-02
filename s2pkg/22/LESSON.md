@@ -3,7 +3,8 @@
 Status: Written, text only, for review. Its scored checkpoint waits on the vocal coach's sign-off
 before publishing (MASTER-PLAN § 12 item 8).
 
-The web lesson's copy, step by step, for Season 2's second voice lesson and the first of Arc D.
+The web lesson's copy, step by step, for Season 2's fourth voice lesson and the first of Arc D,
+Harmonise it.
 Every claim is in [FACTS.md](FACTS.md). Written in British English (MASTER-PLAN § 12 item 5); the
 app's screens stay American. Each step names its toy (the interactive visual it sits beside); the
 page spec is [WEB-SPEC.md](WEB-SPEC.md), which also holds the rules behind the checkpoint's lines.
@@ -44,7 +45,7 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   defines hertz as swings a second. The predict asks for a straight note, not a steady one: in
   Lesson 5 a steady note can carry a small vibrato (FACTS 10).
 - **Each answering play sets Merc's wave beside a straight note**, the wave first, so the ear can
-  compare them; the plan played the wave and the straight notes apart (FACTS 37).
+  compare them; the plan played the wave and the straight notes apart (FACTS 41).
 - **Nothing before a choice plays its answer.** The Words' straight note plays D, a note no wave
   on the page swings round before the cold open's choice; the steps' toys wait for that choice;
   Step 2's rate starts at 5 swings a second, not 4, so nothing slow enough to be heard moving
@@ -172,9 +173,10 @@ grows, and the line stays level. [Play a swell]
 **Try:** play the straight note, then the one with a wave, then the swell.
 **Notice:** the wave moves the line; the swell moves only the strip.
 
-_Toy: Lesson 5's band chart with its level strip, on A3 or A4: Play straight, Play with a wave (six
-swings a second, ±40 cents) and Play a swell, 3 seconds each. The toy waits for the cold open's
-choice._
+_Toy: Lesson 5's band chart with its level strip, on A3 or A4: Play straight and Play with a wave
+(six swings a second, ±40 cents), 3 seconds each, and Play a swell, Lesson 14's, 4 seconds, straight
+and on pitch. The toy waits for the cold open's choice, as every step's does: until then its
+controls are disabled, under the line "Choose an answer at the top to unlock this figure."_
 
 ## Step 2 of 4: How fast, and how far?
 
@@ -198,8 +200,11 @@ Play, 4 seconds, its sound following the sliders. The toy waits for the cold ope
 
 (Until a choice, the hint reads "Choose an answer to unlock the slow wave." After a choice, Play:
 two a second unlocks and the hint reads "Locked in. Play the slow wave."; Play: six a second, the
-cold open's wave, works from the start and never reveals. The reveal waits until the slow wave has
-been heard to its end, and opens on "You said: still one note" or "You said: a note that moves".)
+cold open's wave, needs no choice here and never reveals. A play that sound off kept silent sets
+the hint to "Sound is off: nothing played. Turn sound on, then play it again." The reveal waits
+until the slow wave has been heard to its end, and opens on "You said: still one note" or "You
+said: a note that moves"; the hint then reads "Play either wave again." Until the reveal the step
+shows only its predict: the reveal, Tavi's line, the mix-up card, Try and Notice appear with it.)
 
 Reveal: A note that moves. Slow enough, and your ear follows the pitch up and down. At singers'
 usual speeds it hears one note, at the middle. (At six a second you heard one note, so "still one
@@ -218,9 +223,10 @@ Tavi: "So a wave that crosses the band isn't out of tune?"
 **Try:** slide Rate from 7 down to 2, then switch on Drift.
 **Notice:** as the wave slows, the note starts to move. With Drift, the middle leaves the band.
 
-_Toy: the band chart with Merc's wave at ±50 cents and its middle drawn as a dashed line; Rate, 2
-to 7 swings a second, and Drift, which lifts the middle 50 cents over 3 seconds. Play: two a second
-waits for this step's choice; the rest of the toy waits for the cold open's._
+_Toy: the band chart with Merc's wave at ±50 cents and its middle drawn as a dashed line; Play: six
+a second and Play: two a second; Rate, 2 to 7 swings a second, with Play at this rate, and Drift,
+which lifts the middle 50 cents over 3 seconds. The toy waits for the cold open's choice; Play: two
+a second, Rate and Drift wait for this step's choice too._
 
 > **Go deeper**
 >
@@ -260,6 +266,9 @@ Just listen today: "Good call. Merc holds the note for you, twice, and nothing l
 voice. If hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP or an ear,
 nose and throat specialist). If it's very painful, or breathing or swallowing is hard, get help
 straight away."
+
+(Under the line, [ Play Merc's straight note ] and [ Play Merc's "ooh" ], 10 seconds each, a tap
+each, in the chosen voice. Nothing listens, and the Wrap shows the rest card.)
 
 Choose a voice to sing with. If you chose one in an earlier lesson, pick it again:
 [ Lower: sing with Merc, around A3 ] [ Higher: sing with Tavi, around A4 ]
@@ -457,14 +466,14 @@ with Lesson 5 are its text as its page stands, so a decision there carries here.
 - **Step 4, every sentence**: "No. Choir experts' views range from a free vibrato, like a soloist's,
   to a minimal one or none, and singers can change theirs. This lesson asks for none and scores
   none: a straight note is a finished answer." and its reading of Voice Mirror's report and the
-  app's ribbon (FACTS 25 to 28).
+  app's ribbon (FACTS 25, 26, 28, 30).
 - Step 2's numbers, "about 5 to 8 swings a second, usually under a semitone", "averages sit near
   six" and Merc's "5.5 a second, ±14 cents": measurements of trained singers and of the page's own
   voice, which nothing asks anyone to copy (FACTS 12 to 15).
 - **To confirm: the page gives no instruction for making a vibrato**, and no line says how one is
   made, whether it can be trained or anything about health. The research's lines on those (the
   cricothyroid's pulses; that a vibrato "develops quasi automatically as voice training successfully
-  proceeds"; Sundberg's "acceptable" rates) are left out. Is any of it ever wanted? (FACTS 24,
+  proceeds"; Sundberg's "acceptable" rates) are left out. Is any of it ever wanted? (FACTS 27,
   Unsupported, not used.)
 
 ### The holds
@@ -501,7 +510,7 @@ with Lesson 5 are its text as its page stands, so a decision there carries here.
 - **To confirm: what the holds score**: the time the middle of the line stays inside the band, 35
   cents either side of Merc's note, in any octave, with any wave between 3.5 and 8.5 swings a second
   taken out first; a vibrato counts in full, and nothing scores a vibrato's presence, rate or extent
-  (FACTS 41 to 45).
+  (FACTS 43, 44, 46).
 - **To confirm: the vibrato line**, "The note had a wave: about 5.6 swings a second, ±38 cents.",
   shown only when the hold had one, in Voice Mirror's numbers, a description of the sound; and no
   line at all when none was found. A wave wider than the band, say ±60 cents, is described the same
