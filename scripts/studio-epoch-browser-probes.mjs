@@ -349,8 +349,10 @@ async function fourLaneMix() {
 
 /**
  * A lane played from its render against the same lane live, Played on a
- * whole frame and asked for half a frame off one: they line up at lag 0 and
- * keep the same treble both times.
+ * whole frame and asked for half a frame off one: they line up at lag 0,
+ * keep the same treble both times, and stay within -40 dBFS of each other.
+ * Before lane chains held two channels (chain.ts), the end of the last clip
+ * was cut where each render's quantum fell: -17.3 dBFS apart there.
  */
 async function frozenAgainstLive() {
   setPlaybackChoice('best')
@@ -381,7 +383,8 @@ async function frozenAgainstLive() {
   return {
     ...results,
     pass: Object.values(results).every(
-      (result) => result.lag === 0 && bandsHeld(result),
+      (result) =>
+        result.lag === 0 && result.worstDbfs <= -40 && bandsHeld(result),
     ),
   }
 }
@@ -501,6 +504,47 @@ async function exportFourLanes() {
   }
 }
 
+/** The largest difference between two renders on the song's frames from `from` to `to`, in dBFS. */
+function worstBetween(a, b, from, to) {
+  const offA = Math.round(a.heardFrame)
+  const offB = Math.round(b.heardFrame)
+  let worst = 0
+  for (const channel of ['left', 'right'])
+    for (let f = from; f < to; f++)
+      worst = Math.max(
+        worst,
+        Math.abs(a[channel][offA + f] - b[channel][offB + f]),
+      )
+  return round(db(worst), 1)
+}
+
+/**
+ * A lane's last clip plays out to its end: two Plays of a voice lane that
+ * land 16 frames apart in a render quantum differ no more over the clip's
+ * last 50 ms and the 100 ms after it than over the rest of that clip.
+ * Chromium resets a node that holds audio when its input changes channel
+ * count, as a lane's input does when its last source ends; before lane
+ * chains held two channels (chain.ts), the end was cut wherever the
+ * quantum fell, -10 dBFS apart there.
+ */
+async function laneEndPlaysOut() {
+  setPlaybackChoice('best')
+  const made = song(['voice'], false)
+  const prepared = await prepare(made, false)
+  const a = await renderPlay(made, prepared, 2, CALLBACK - 0.5)
+  const b = await renderPlay(made, prepared, 2, CALLBACK + 15.5)
+  const end = Math.round(3.2 * SR)
+  const near = end - Math.round(0.05 * SR)
+  const endDbfs = worstBetween(a, b, near, end + Math.round(0.1 * SR))
+  const bodyDbfs = worstBetween(a, b, Math.round(1.8 * SR), near)
+  return {
+    heardFrames: [a.heardFrame, b.heardFrame],
+    endDbfs,
+    bodyDbfs,
+    pass: endDbfs <= bodyDbfs + 3,
+  }
+}
+
 export async function runStudioEpochProbes() {
   return {
     dryLane: await dryLane(),
@@ -509,5 +553,6 @@ export async function runStudioEpochProbes() {
     frozenAgainstLive: await frozenAgainstLive(),
     exportDryLane: await exportDryLane(),
     exportFourLanes: await exportFourLanes(),
+    laneEndPlaysOut: await laneEndPlaysOut(),
   }
 }

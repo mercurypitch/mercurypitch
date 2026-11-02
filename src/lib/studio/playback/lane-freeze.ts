@@ -33,8 +33,11 @@ import { compileStudioArrangement, studioLaneSpec, } from '../model/arrangement-
 import type { StudioAsset, StudioProject } from '../model/types'
 import { STUDIO_EDGE_FRAMES, STUDIO_EDGE_POLICY_VERSION } from './edge-envelope'
 
-/** Bumped when a render made before would no longer match the live chain. */
-export const LANE_FREEZE_VERSION = 1
+/**
+ * Bumped when a render made before would no longer match the live chain:
+ * 2 since a chain holds two channels, so a run's last clip plays out (chain.ts).
+ */
+export const LANE_FREEZE_VERSION = 2
 /** Four seconds a chunk: about two of them per frozen lane are decoded at a time. */
 export const FREEZE_CHUNK_FRAMES = 4 * 48000
 /** The crossover between adjacent chunks, centred on their join. */

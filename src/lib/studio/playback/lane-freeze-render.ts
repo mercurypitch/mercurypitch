@@ -127,7 +127,10 @@ async function renderRun(
   const ctx =
     options.createContext?.(skip + run.length) ??
     new OfflineAudioContext(2, skip + run.length, STUDIO_SAMPLE_RATE)
-  const chain = createStudioFxChain(ctx, spec, { profile: FULL_FX_PROFILE })
+  const chain = createStudioFxChain(ctx, spec, {
+    profile: FULL_FX_PROFILE,
+    stereoHold: true,
+  })
   try {
     chain.output.connect(ctx.destination)
     chain.settle(0)

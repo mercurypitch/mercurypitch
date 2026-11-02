@@ -28,6 +28,22 @@
 // ~300 ms. Its latency twin does the same, so the fade is smooth and bypass
 // never jumps, but a chain should be built before its audio starts. Offline
 // renders pre-roll past it (render.ts).
+//
+// A lane's chain is held at two channels behind its input (`stereoHold`).
+// Chromium resets a DelayNode, a biquad or IIR filter and an oversampled
+// WaveShaperNode whenever its input changes channel count, and a stereo
+// input changes it when its last source ends: at the next render quantum
+// the finished source's outputs are disabled down to the first node with a
+// tail, and an input with nothing enabled counts as one channel. What those
+// nodes still held was dropped there, a compressor twin's lookahead, an
+// oversampler's delay, a reverb's pre-delay: a lane's last clip lost the
+// end of its sound before its own de-click fade, at a frame set by where
+// the song fell in a quantum. Two Plays of one voice lane landing 16
+// frames apart in a quantum differed there by -10 dBFS, a frozen guitar
+// lane and the same lane live by -17.3 dBFS (Chromium 148). The hold is a
+// zero delay fixed at two channels: it has a tail, so it stays enabled for
+// HOLD_SECONDS after the sources end and keeps everything after it at two
+// channels, so it all plays out. It passes audio bit for bit.
 
 import type { ChainSpec, EffectSpec, ParamValues } from './chain-spec'
 import { CHAIN_SPEC_VERSION, normalizeChainSpec, normalizeEffectParams, } from './chain-spec'
@@ -37,6 +53,8 @@ import { createEffectUnit } from './effects'
 import type { StudioFxProfile } from './fx-profile'
 
 const DUCK_MS = 40
+/** How long a held chain stays whole after its sources end: past every delay line and filter ring in it. */
+const HOLD_SECONDS = 0.25
 const DUCK_TIME_CONSTANT = 0.006
 const OPEN_TIME_CONSTANT = 0.012
 
@@ -70,11 +88,22 @@ export interface StudioFxChainOptions {
   ) => EffectUnit
   /** How much work the chain's effects do (fx-profile.ts); full quality when absent. */
   readonly profile?: StudioFxProfile
+  /** Keep a chain fed two channels at two where its sources end (see the header). */
+  readonly stereoHold?: boolean
 }
 
 interface Slot {
   spec: EffectSpec
   readonly unit: EffectUnit
+}
+
+/** A zero delay fixed at two channels: what keeps a chain whole when its sources end. */
+function createHold(ctx: BaseAudioContext): DelayNode {
+  const hold = ctx.createDelay(HOLD_SECONDS)
+  hold.delayTime.value = 0
+  hold.channelCount = 2
+  hold.channelCountMode = 'explicit'
+  return hold
 }
 
 function defaultSchedule(callback: () => void, delayMs: number): () => void {
@@ -108,6 +137,7 @@ export function createStudioFxChain(
   }
   const createUnit = options.createUnit ?? createEffectUnit
   const input = ctx.createGain()
+  let hold: DelayNode | null = null
   const duck = ctx.createGain()
   const output = ctx.createGain()
   duck.connect(output)
@@ -123,8 +153,15 @@ export function createStudioFxChain(
 
   const patch = (): void => {
     input.disconnect()
+    hold?.disconnect()
     for (const unit of wired) unit.output.disconnect()
     let previous: AudioNode = input
+    // An empty chain holds nothing to lose.
+    if (options.stereoHold === true && slots.length > 0) {
+      hold ??= createHold(ctx)
+      input.connect(hold)
+      previous = hold
+    }
     let runInput: AudioNode | null = null
     for (const { unit } of slots) {
       previous.connect(unit.input)
@@ -218,6 +255,7 @@ export function createStudioFxChain(
       cancelRepatch?.()
       cancelRepatch = null
       input.disconnect()
+      hold?.disconnect()
       duck.disconnect()
       output.disconnect()
       for (const { unit } of slots) unit.dispose()

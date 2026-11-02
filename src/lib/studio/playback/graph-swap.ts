@@ -93,6 +93,7 @@ function buildChains(
     for (const [index, swap] of swaps.entries()) {
       const chain = createStudioFxChain(state.ctx, swap.spec, {
         profile: state.profile,
+        stereoHold: true,
       })
       const fade = state.ctx.createGain()
       fade.gain.value = 0

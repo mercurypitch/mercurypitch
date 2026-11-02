@@ -1,6 +1,7 @@
 // Studio graph tests prove shared lane topology, actual-rate compensation and source ownership.
 import { describe, expect, it } from 'vitest'
-import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
+import { createEffectSpec, normalizeChainSpec, } from '@/lib/studio-fx/chain-spec'
+import type { FakeDelay } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import { studioFixture } from '../model/model.test-fixtures'
 import { buildStudioGraph } from './graph'
@@ -142,6 +143,43 @@ describe('shared Studio graph', () => {
     graph.setLaneSpec('missing', trim(-4.5))
     expect(at(Math.pow(10, -4.5 / 20))).toHaveLength(0)
     expect(ctx.created.length).toBe(nodes)
+    graph.dispose()
+  })
+
+  it("holds each lane chain and the master at two channels behind their inputs, so a lane's last clip plays out", () => {
+    // Arrange
+    const { project, asset } = studioFixture()
+    const trim = { version: 1 as const, effects: [createEffectSpec('gain')] }
+    const song = {
+      ...project,
+      tracks: project.tracks.map((track) => ({
+        ...track,
+        fx: { ...track.fx, baseSpec: trim },
+      })),
+    }
+    const plan = compileStudioArrangement(song, [asset], {
+      latencies: { sampleRate: 48000, framesByTrack: { 'track-1': 0 } },
+    })
+    const ctx = new PlaybackContext()
+    ctx.state = 'suspended'
+
+    // Act
+    const graph = buildStudioGraph(ctx.asContext, plan, new Map(), 0.5, {
+      master: { spec: trim },
+    })
+
+    // Assert: the lane's and the master's, each a zero delay fixed at two channels.
+    const holds = ctx
+      .ofType<FakeDelay>('delay')
+      .map((delay) => [
+        delay.delayTime.value,
+        delay.channelCount,
+        delay.channelCountMode,
+      ])
+    expect(holds).toEqual([
+      [0, 2, 'explicit'],
+      [0, 2, 'explicit'],
+    ])
     graph.dispose()
   })
 

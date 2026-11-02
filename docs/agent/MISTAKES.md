@@ -514,6 +514,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** Put each fresh place on the clock on the next whole frame of `ctx.sampleRate`, rounding up so it is never sooner than asked, derive every later start in whole timeline frames from it, and never let a frame's time fall short of its frame. Measured after: the dry pair is bit-identical, and the four-lane pair sits at its own floor (the same Play rendered twice differs by -73 dBFS: a lane with a reverb never renders the same twice in Chromium).
 **See:** `src/lib/studio/playback/whole-frame.ts` and `scripts/check-studio-epoch-browser.mjs`.
 
+### Hold a stereo chain at two channels where its sources end
+
+**Symptom:** a Studio lane's last clip ended differently in every render: two Plays of a voice lane landing 16 frames apart in a render quantum differed by -10 dBFS over its last milliseconds, a frozen guitar lane and the same lane live by -17.3 dBFS, and the end was cut before its own de-click fade.
+**Cause:** Chromium resets a DelayNode, a biquad or IIR filter and an oversampled WaveShaperNode when the channel count of its input changes. When the last source feeding a stereo path ends, its outputs are disabled at the next render quantum down to the first node with a tail, and an input with nothing enabled counts as one channel, so those nodes drop what they hold (a compressor twin's lookahead, an oversampler's delay, a reverb's pre-delay) at a frame set by where the quantum falls. DynamicsCompressorNode, ConvolverNode and an unoversampled WaveShaperNode keep theirs (Chromium 148). A GainNode with an explicit channel count does not help: it has no tail, so it is disabled too.
+**Rule:** put a zero DelayNode fixed at two channels (`channelCountMode: 'explicit'`) behind the input of a stereo chain that outlives its sources: it has a tail, stays enabled for its maximum delay, and keeps everything after it at two channels. Studio chains take `stereoHold`. The hold is bit-exact while audio passes and costs about 1 µs a render quantum.
+**See:** `src/lib/studio-fx/chain.ts`, and `laneEndPlaysOut` in `scripts/studio-epoch-browser-probes.mjs`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
