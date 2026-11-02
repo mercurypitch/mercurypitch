@@ -37,6 +37,7 @@ import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
 import { createMercMoves } from '@/components/room-kit/merc-moves'
+import { createMercSinger, singing } from '@/components/room-kit/merc-singer'
 import { createMercSpeech, speakingLines, } from '@/components/room-kit/merc-speech'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
@@ -67,12 +68,11 @@ import { leapOutcome, leapPhrase, mercNotes } from './leap-phrase'
 import type { LeapRound, NoteWindow } from './leap-round'
 import { planRounds, roundWindow } from './leap-round'
 import type { LeapLevel } from './leap-rules'
-import { AFTER_ANSWER_MS, BETWEEN_ROUNDS_MS, LEAP_LEVELS, LEAP_ROUNDS, leapName, leapSong, namesPrecisely, sizeName, SOUND_LEAD_SECONDS, } from './leap-rules'
+import { AFTER_ANSWER_MS, BETWEEN_ROUNDS_MS, LEAP_LEVELS, LEAP_ROUNDS, leapName, leapSong, namesPrecisely, sizeName, SOUND_LEAD_SECONDS, VOICE_TAIL_SECONDS, } from './leap-rules'
 import type { LeapSummary } from './leap-run'
 import { callMoment, keepLeapRun, landedMoment, missedMoment, resultMoment, summarizeRun, } from './leap-run'
 import type { LeapLineFields } from './merc-lines'
 import { createLeapLines } from './merc-lines'
-import { createMercSinger, singing } from './merc-singing'
 import { LEAP_SPOKEN } from './merc-spoken'
 import type { LeapDemoMark, ScriptedLeapTake } from './scripted-take'
 import { createScriptedRoom } from './scripted-take'
@@ -134,6 +134,8 @@ export function useLeapController(
   })
   const { faceFor, sing } = createMercSinger({
     voice: voiceOfMerc,
+    lead: SOUND_LEAD_SECONDS,
+    tail: VOICE_TAIL_SECONDS,
     later: life.later,
     face: (next) => {
       voice = next

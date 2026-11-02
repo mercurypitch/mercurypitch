@@ -50,8 +50,8 @@
 }
 
 /* Each room's own light: the harbour's sea for Home note, the stage's
-   for First note, the lantern's for Leap, violet for any room still to
-   come. */
+   for First note, the lantern's for Leap, the lamps' for Harmony, violet
+   for any room still to come. */
 .card {
   --room-a: 154 135 240;
   --room-b: 93 140 255;
@@ -96,6 +96,12 @@
 .card[data-exercise='leap-cliffs'] {
   --room-a: 240 199 94;
   --room-b: 154 135 240;
+}
+
+/* Harmony's two lines of lamps: Merc's teal under the harmony's gold. */
+.card[data-exercise='harmony-lake'] {
+  --room-a: 94 233 218;
+  --room-b: 240 199 94;
 }
 
 .card:focus-visible {

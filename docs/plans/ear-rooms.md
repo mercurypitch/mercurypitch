@@ -1,10 +1,11 @@
 # Ear rooms — Merc-led ear training in the native app
 
-**Status:** in progress. Three rooms are built: **Home note** (Room 1) and **First note** (Room 2),
-on TestFlight, and **Leap** (Room 3, 1 Nov 2026), drawn in vector until its painting comes. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
+**Status:** in progress. Four rooms are built: **Home note** (Room 1) and **First note** (Room 2),
+on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026), both drawn in
+vector until their paintings come. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
 way on to the Karaoke room, and gives Home note its painted harbour. Leap has a "How it works" demo
-(2 Nov 2026); Home note and First note have none yet. Room 4 is a proposal. The owner's design
+(2 Nov 2026); Home note, First note and Harmony have none yet. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -398,13 +399,55 @@ keeps a result, and his opening line waits, unsaid, while it plays (`src/feature
 **Next.** The painting (two cliffs at night, the lantern on the far ledge), as the harbour's was. Lesson
 9's Practise card opening the room, once the lessons reach the native app.
 
-## Room 4 (proposal)
+## Room 4: Harmony
 
-**Harmony** (new). Merc sings a short line; the singer sings a third above it. Duets are what karaoke
-apps sell, and the trail makes the target visible. It is sung two ways (owner, 1 Nov 2026). On the
-speaker they take turns: Merc sings his line, then the singer sings the third above it on their
-own, judged as Echo judges a phrase. In headphones Merc sings while the singer does, which needs a
-judge that follows two voices: prototype that on phones first.
+**The skill.** Holding a line of one's own a third from another voice: the first harmony a singer
+learns, and what every duet asks. Duets are what karaoke apps sell, and the lamps make the target
+visible.
+
+**The task.** Merc stands on a jetty and sings a short line; the singer sings it a third above, the
+key's own third, major or minor as the line goes (G A B A in C under B C D C). Each note is a lamp on a
+line across a lake at night: his line in teal, the harmony in gold, so the singer sees where to go
+before singing. His lamps light as he sings them; the harmony's light gold as the voice holds each
+note. After a missed note, Merc sings his note, then the third from it, the pair drawn as he sings.
+
+It is sung two ways (owner, 1 Nov 2026), chosen from the first chip ("How to sing it") and kept for
+next time:
+
+- **Take turns**, on the speaker: Merc sings his line (at Learning the harmony after it), then the
+  singer sings the harmony on their own, heard by the sequence engine as Echo hears a phrase, in
+  free time.
+- **Together**, in headphones: after his call Merc sings his line again and the singer sings with
+  him, each harmony note heard in its time on his clock (the engine's timed mode, with room for
+  headphones that run late). The headphones keep his voice out of the mic, so the judge follows one
+  voice, the singer's: the two-voice judge the proposal named is not needed (the room's mock-ups,
+  1 Nov 2026). The sheet asks; the room does not read the phone's audio route.
+
+**Levels**, approved with the mock-ups (owner, 2 Nov 2026,
+[Harmony Native Room](https://claude.ai/artifact/3F1646iCX6Y7ETbNvicCX1)):
+
+| Level        | Lines                                           | Merc gives                                | Band      |
+| ------------ | ----------------------------------------------- | ----------------------------------------- | --------- |
+| Learning     | Three notes by step                             | His line, then the harmony                | ±50 cents |
+| Singer       | Four notes by step                              | His line; the gold lamps show where to go | ±35 cents |
+| Professional | Five notes with a leap, two lines a third below | His line; the lamps unlit until sung      | ±25 cents |
+
+A run is six lines, each placed so the harmony sits in the singer's window (the voiceprint's range,
+else the voice type's), each in a key of its own where it can be. "Hear Merc again" is offered at any
+time at Learning, once a line at Singer, and never at Professional, taking turns only.
+
+**The result.** Lines sung in harmony (every note landed) out of six, and the notes a third above out
+of all; the best per level (`mp_harmony_bests`, this device only for now). Under them, each line by
+its harmony's notes, with a lamp a note; a tap plays it in two voices, his and the harmony. A run with
+no voice keeps nothing.
+
+**Built from.** The room kit, the sequence engine (free time taking turns, timed together), Merc's
+sampled voice through the room kit's singer (`merc-singer.ts`, shared with Leap), and lib's sung
+window (`sung-window.ts`, shared with Leap). `src/features/harmony/`.
+
+**Next.** Prove Together on phones: Bluetooth headphones' delay (the windows allow 0.35 to 0.45 s
+late), and a wired pair's leak into the mic. The painting (lamps on two lines over a lake at night).
+Merc's lines aloud (none recorded yet: `merc-spoken.ts`). A demo.
 
 ## How they earn
 

@@ -80,6 +80,14 @@ export const EXERCISE_FIRST_NOTE_STAGE = 'first-note-stage' as const
  */
 export const EXERCISE_LEAP_CLIFFS = 'leap-cliffs' as const
 /**
+ * The premium Harmony, the fourth Ear room (Merc sings a short line and the
+ * singer sings it a third above, the key's own third, each note a lamp on
+ * a line across a lake at night). Named as the others are: the exercise
+ * and what it draws. Its ruler is lines sung in harmony and the notes in
+ * them, sung after Merc or with him in headphones.
+ */
+export const EXERCISE_HARMONY_LAKE = 'harmony-lake' as const
+/**
  * The premium Warm-up: the rooms above run one after another, each a stop
  * on a glass path through the night, with the singer's song on top. Not an
  * exercise with a ruler of its own: each stop records in its own room, so
@@ -114,11 +122,12 @@ export type ExerciseType =
   | typeof EXERCISE_HOME_NOTE_LIGHTHOUSE
   | typeof EXERCISE_FIRST_NOTE_STAGE
   | typeof EXERCISE_LEAP_CLIFFS
+  | typeof EXERCISE_HARMONY_LAKE
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,
  * Echo, Ng slides, Lip roll, then the Warm-up) and from the Ear Lab (Home
- * note, First note, Leap). A type here, below the features, so the shell bridge in
+ * note, First note, Leap, Harmony). A type here, below the features, so the shell bridge in
  * `src/stores` can name one without importing a feature.
  */
 export type PremiumExerciseId =
@@ -130,6 +139,7 @@ export type PremiumExerciseId =
   | typeof EXERCISE_HOME_NOTE_LIGHTHOUSE
   | typeof EXERCISE_FIRST_NOTE_STAGE
   | typeof EXERCISE_LEAP_CLIFFS
+  | typeof EXERCISE_HARMONY_LAKE
 
 // ── Config ──────────────────────────────────────────────────────
 

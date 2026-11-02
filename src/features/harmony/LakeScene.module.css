@@ -1,0 +1,250 @@
+/* Harmony's world: the lake at night (LakeScene.tsx). Every colour of the
+   drawing is a stand-in's flat colour until the painting comes; the lines,
+   the lamps and the trail are the exercise and keep their look over
+   either. Teal is Merc's, gold the harmony's, as in the room's mock-ups. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #050816;
+  isolation: isolate;
+}
+
+.backdrop,
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.star {
+  fill: #dfe6ff;
+  opacity: 0.75;
+}
+
+.moon {
+  fill: #f1ecff;
+}
+
+.hills {
+  fill: #20234f;
+}
+
+.shoreLine {
+  stroke: rgb(106 108 174 / 35%);
+  stroke-width: 1;
+}
+
+.shimmer {
+  fill: none;
+  stroke: rgb(233 228 255 / 22%);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The jetty moves as Merc does (HarmonyRoom.module.css): down to the dock
+   at the result. */
+.jetty {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The result is up: the lamps leave the lake, and the moon and its light
+   step back behind the numbers. */
+.moonlight,
+.overlay {
+  transition: opacity 420ms ease;
+}
+
+.away .moonlight,
+.away .overlay {
+  opacity: 0;
+}
+
+.deck {
+  fill: #2e2448;
+}
+
+.post {
+  fill: #1c1630;
+}
+
+/* Merc's line: teal, faint at rest, clearer once a run is on. */
+.mercLine {
+  fill: none;
+  stroke: #5ee9da;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  opacity: 0.3;
+  transition: opacity 220ms ease;
+}
+
+.live .mercLine {
+  opacity: 0.55;
+}
+
+/* The harmony's line: a gold dash while Merc calls, solid in the turn. */
+.harmonyLine {
+  fill: none;
+  stroke: #f0c75e;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-dasharray: 6 8;
+  opacity: 0.4;
+  transition: opacity 220ms ease;
+}
+
+.turn .harmonyLine {
+  stroke-dasharray: none;
+  opacity: 0.55;
+}
+
+/* Merc's lamps: dark with a teal ring, lit as he sings each. */
+.mercLamp {
+  fill: #0b1030;
+  stroke: #5ee9da;
+  stroke-opacity: 0.6;
+  stroke-width: 2;
+  transition:
+    fill 200ms ease,
+    filter 200ms ease;
+}
+
+.mercLamp[data-lit='true'] {
+  fill: #8ff0e4;
+  stroke: #8ff0e4;
+  filter: drop-shadow(0 0 6px rgb(94 233 218 / 85%));
+}
+
+/* The harmony's lamps: a dashed gold ring waiting, a soft glow where Merc
+   sings them first, lit gold where the voice holds the note, a grey ring
+   where it missed. Hidden while waiting where the level hides them. */
+.harmonyLamp {
+  fill: #0b1030;
+  stroke: #f0c75e;
+  stroke-opacity: 0.55;
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+  transition:
+    fill 200ms ease,
+    opacity 200ms ease,
+    filter 200ms ease;
+}
+
+.harmonyLamp[data-shown='false'] {
+  opacity: 0;
+}
+
+.harmonyLamp[data-state='heard'] {
+  fill: rgb(240 199 94 / 35%);
+  stroke-dasharray: none;
+}
+
+.harmonyLamp[data-state='lit'] {
+  fill: #ffe7a3;
+  stroke: #ffe7a3;
+  stroke-opacity: 1;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 7px rgb(240 199 94 / 90%));
+}
+
+.harmonyLamp[data-state='missed'] {
+  stroke: #8d97a3;
+  stroke-opacity: 0.8;
+  stroke-dasharray: none;
+}
+
+.mercName,
+.harmonyName {
+  font: 600 13px/1 var(--font-body, sans-serif);
+}
+
+.mercName {
+  fill: #8ff0e4;
+}
+
+.harmonyName {
+  fill: #ffe7a3;
+}
+
+/* After a miss: his note, then the third from it, drawn as he sings. */
+.pair {
+  fill: none;
+  stroke: #ffe7a3;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  opacity: 0;
+}
+
+.answering .pair {
+  opacity: 0.9;
+  animation: harmony-pair 2s ease-out 0.1s forwards;
+}
+
+@keyframes harmony-pair {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The voice's trail along the lamps: violet, gold at its head. */
+.trail {
+  fill: none;
+  stroke: #c9b6ff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 4px rgb(167 139 250 / 60%));
+}
+
+.head {
+  fill: #fff8e1;
+  filter: drop-shadow(0 0 6px rgb(240 199 94 / 90%));
+}
+
+/* The hold: a ring round the head that fills to the land time while the
+   voice stays on its note. */
+.ring {
+  fill: none;
+  stroke: #f0c75e;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+}
+
+.still .mercLine,
+.still .harmonyLine,
+.still .mercLamp,
+.still .harmonyLamp,
+.still .moonlight,
+.still .overlay,
+.still .jetty {
+  transition: none;
+}
+
+.still.answering .pair {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mercLine,
+  .harmonyLine,
+  .mercLamp,
+  .harmonyLamp,
+  .moonlight,
+  .overlay,
+  .jetty {
+    transition: none;
+  }
+
+  .answering .pair {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

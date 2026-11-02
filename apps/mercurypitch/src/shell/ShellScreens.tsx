@@ -63,6 +63,8 @@ export interface ShellScreensProps {
   firstNote?: Component
   /** Leap, the third Ear room, passed in as Long note is. */
   leap?: Component
+  /** Harmony, the fourth Ear room, passed in as Long note is. */
+  harmony?: Component
   /**
    * Leagues, on a build with them (NATIVE_LEAGUES): passed in as Developer
    * is, so a store build carries no chunk for it.
@@ -93,6 +95,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   'home-note': 'Home note',
   'first-note': 'First note',
   leap: 'Leap',
+  harmony: 'Harmony',
   developer: 'Developer',
   leagues: 'Leagues',
   legend: 'Legend',
@@ -163,6 +166,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
       case 'leap': {
         const Leap = props.leap
         return Leap === undefined ? null : <Leap />
+      }
+      case 'harmony': {
+        const Harmony = props.harmony
+        return Harmony === undefined ? null : <Harmony />
       }
       case 'developer': {
         const Developer = props.developer

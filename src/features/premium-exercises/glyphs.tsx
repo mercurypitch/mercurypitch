@@ -162,6 +162,26 @@ export const LeapGlyph: Component = () => (
   </svg>
 )
 
+/** Harmony: two lines of lamps, a third apart, as the lake draws them. */
+export const HarmonyGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 17h4l2-2h4l2-2h6" />
+    <path d="M3 11h4l2-2h4l2-2h6" />
+    <circle cx="5" cy="17" r="0.9" fill="currentColor" />
+    <circle cx="11" cy="15" r="0.9" fill="currentColor" />
+    <circle cx="5" cy="11" r="0.9" fill="currentColor" />
+    <circle cx="11" cy="9" r="0.9" fill="currentColor" />
+  </svg>
+)
+
 /** The running Legend: a calendar, as More's Together row draws it. */
 export const LegendGlyph: Component = () => (
   <svg

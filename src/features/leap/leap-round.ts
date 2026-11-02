@@ -14,6 +14,8 @@
 // before it. Pure: the controller passes its random source in, a test a
 // seeded one.
 
+import type { NoteWindow } from '@/lib/sequence/sung-window'
+import { SUNG_HIGH, SUNG_LOW, sungWindow } from '@/lib/sequence/sung-window'
 import type { LeapKind, LeapLevel } from './leap-rules'
 import { sameLeap } from './leap-rules'
 
@@ -28,34 +30,15 @@ export interface LeapRound {
   readonly to: number
 }
 
-/** The notes a round may use, MIDI, inclusive. */
-export interface NoteWindow {
-  readonly low: number
-  readonly high: number
-}
+/** The notes a round may use, MIDI, inclusive (lib's sung window). */
+export type { NoteWindow }
 
 /** The lowest and highest note a leap may use: C3 and E5. */
-export const AUDIBLE_LOW = 48
-export const AUDIBLE_HIGH = 76
-/** With nothing known of the singer: F3 to F4. */
-const DEFAULT_WINDOW: NoteWindow = { low: 53, high: 65 }
+export const AUDIBLE_LOW = SUNG_LOW
+export const AUDIBLE_HIGH = SUNG_HIGH
 
 /** The window a run draws its leaps from: the singer's, in the audible band. */
-export function roundWindow(
-  singer: { readonly low: number; readonly high: number } | null,
-): NoteWindow {
-  if (
-    singer === null ||
-    !Number.isFinite(singer.low) ||
-    !Number.isFinite(singer.high) ||
-    singer.high < singer.low
-  ) {
-    return DEFAULT_WINDOW
-  }
-  const low = Math.max(AUDIBLE_LOW, Math.ceil(singer.low))
-  const high = Math.min(AUDIBLE_HIGH, Math.floor(singer.high))
-  return high >= low ? { low, high } : DEFAULT_WINDOW
-}
+export const roundWindow = sungWindow
 
 /** A whole number from `low` to `high`, inclusive. */
 function between(low: number, high: number, random: () => number): number {

@@ -9,7 +9,8 @@
 // one ("Best 5 of 6"), in the room's own light: the owner's ask of 1 Nov
 // 2026. It is the best the picker's card shows, read from the entry each
 // room keeps beside the catalogue (home-entry.ts, first-entry.ts,
-// leap-entry.ts), so the tab and the room cannot disagree.
+// leap-entry.ts, harmony-entry.ts), so the tab and the room cannot
+// disagree.
 
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
