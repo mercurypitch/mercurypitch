@@ -10,11 +10,13 @@
 // progress never starts a render it would outdate.
 //
 // A run built later holds the renders that match its lanes (hold) until it
-// is released; a render whose lane changed goes once nothing holds it. The
-// renders count against the Studio memory budget, at most three quarters of
-// it, and an import or an export that needs the room takes back the ones no
-// run holds. A run already playing keeps what it was built with: renders
-// that finish while it plays are heard from the next Play.
+// is released, and so does an export, which plays them instead of running
+// those lanes' chains again (offline-render.ts); a render whose lane
+// changed goes once nothing holds it. The renders count against the Studio
+// memory budget, at most three quarters of it, and an import or an export
+// that needs the room takes back the ones nothing holds. A run already
+// playing keeps what it was built with: renders that finish while it plays
+// are heard from the next Play.
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import { isStudioMemoryRefusal, registerStudioMemoryReclaimer, reserveStudioMemory, studioWorkingBytes, } from '../memory-budget'
 import type { StudioPlannedLane } from '../model/arrangement-plan'

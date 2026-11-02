@@ -258,6 +258,85 @@ describe('Studio verified WAV job', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
+  it('plays the held lane renders in the arrangement and lets them go before the bus renders', async () => {
+    // Arrange
+    const { project, asset } = studioFixture()
+    const adapters = testAdapters()
+    const lanes = new Map()
+    const release = vi.fn()
+    const releasedAtBus: number[] = []
+    const chain = vi.fn<typeof renderStudioChain>((...args) => {
+      releasedAtBus.push(release.mock.calls.length)
+      return adapters.chain(...args)
+    })
+
+    // Act
+    const result = await renderStudioWav(project, [asset], vi.fn(), {
+      dependencies: { ...adapters, chain },
+      frozen: { lanes, release },
+    })
+    result.release()
+
+    // Assert
+    expect(adapters.arrangement.mock.calls[0][3]?.frozen).toBe(lanes)
+    expect(releasedAtBus[0]).toBe(1)
+    expect(release).toHaveBeenCalledOnce()
+  })
+
+  it('lets the held lane renders go when another render holds the admission', async () => {
+    // Arrange
+    const { project, asset } = studioFixture()
+    let finish!: () => void
+    const adapters = testAdapters()
+    adapters.arrangement.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      return {
+        ...owned(audio(new Float32Array(10))),
+        projectId: project.id,
+        revision: project.revision,
+      }
+    })
+    const first = renderStudioWav(project, [asset], vi.fn(), {
+      dependencies: adapters,
+    })
+    const release = vi.fn()
+
+    // Act
+    const second = renderStudioWav(project, [asset], vi.fn(), {
+      frozen: { lanes: new Map(), release },
+    })
+
+    // Assert
+    await expect(second).rejects.toThrow('still rendering')
+    expect(release).toHaveBeenCalledOnce()
+    finish()
+    await first.then(
+      (result) => result.release(),
+      () => undefined,
+    )
+  })
+
+  it('lets the held lane renders go when the arrangement fails', async () => {
+    // Arrange
+    const { project, asset } = studioFixture()
+    const adapters = testAdapters()
+    adapters.arrangement.mockRejectedValueOnce(new Error('No room to render.'))
+    const release = vi.fn()
+
+    // Act
+    const rendering = renderStudioWav(project, [asset], vi.fn(), {
+      dependencies: adapters,
+      frozen: { lanes: new Map(), release },
+    })
+
+    // Assert
+    await expect(rendering).rejects.toThrow('No room to render.')
+    expect(release).toHaveBeenCalledOnce()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
   it('stops after the bounded correction attempts and releases every result', async () => {
     const { project, asset } = studioFixture()
     const adapters = testAdapters()

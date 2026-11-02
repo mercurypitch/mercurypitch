@@ -23,7 +23,7 @@ const freezer = vi.hoisted(() => ({
   resume: vi.fn(),
   pause: vi.fn(),
   dispose: vi.fn(),
-  hold: vi.fn(() => null),
+  hold: vi.fn((): unknown => null),
   differs: vi.fn(() => false),
 }))
 
@@ -63,7 +63,7 @@ function mount() {
   })
   const edit = () =>
     setProject((song) => ({ ...song, revision: song.revision + 1 }))
-  return { transport, dispose, setBusy, edit }
+  return { transport, dispose, setBusy, edit, fixture }
 }
 
 describe('Studio transport and the lane freezer', () => {
@@ -89,6 +89,23 @@ describe('Studio transport and the lane freezer', () => {
     dispose()
     await vi.advanceTimersByTimeAsync(0)
     expect(freezer.dispose).toHaveBeenCalled()
+  })
+
+  it("lends an export the freezer's renders that match the song", () => {
+    // Arrange
+    const { transport, dispose, fixture } = mount()
+    const held = { lanes: new Map(), release: vi.fn() }
+    freezer.hold.mockReturnValueOnce(held)
+
+    // Act
+    const lent = transport.holdFrozen(fixture.project, [fixture.asset])
+    dispose()
+
+    // Assert
+    expect(lent).toBe(held)
+    expect(freezer.hold).toHaveBeenCalledExactlyOnceWith(fixture.project, [
+      fixture.asset,
+    ])
   })
 
   it('builds the graph for Play again once renders stop landing', async () => {

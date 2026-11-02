@@ -465,6 +465,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     primeAudio,
     stopPreview,
     releaseAudio,
+    /** The renders that match the song, held for an export to play (lane-freezer.ts). */
+    holdFrozen: (project: StudioProject, assets: readonly StudioAsset[]) =>
+      freezer.hold(project, assets),
     dispose,
   }
 }

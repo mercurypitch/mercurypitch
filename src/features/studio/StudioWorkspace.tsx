@@ -143,6 +143,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     canStart: () => canProcess() && !sound.busy() && !comparison.busy(),
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     releaseAudio: releaseFinishingAudio,
+    holdFrozen: transport.holdFrozen,
   })
   const comparison = useStudioComparison({
     project: () => props.studio.project(),

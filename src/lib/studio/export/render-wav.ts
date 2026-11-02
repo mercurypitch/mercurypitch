@@ -6,6 +6,7 @@ import type { StudioLoudnessMeasurement } from '../metering/stream-meter'
 import { STUDIO_TRUE_PEAK_VERSION } from '../metering/true-peak'
 import type { StudioAsset, StudioProject } from '../model/types'
 import { validateStudioProject } from '../model/validation'
+import type { StudioFreezeHold } from '../playback/lane-freezer'
 import { renderStudioArrangement } from '../playback/offline-render'
 import { encodeStudioWav, STUDIO_WAV_ENCODER_WORKING_BYTES } from './encode-wav'
 import { acquireStudioRenderJob } from './render-admission'
@@ -46,6 +47,12 @@ export interface StudioExportOptions {
   onStage?: (stage: StudioExportStage) => void
   isCurrent?: (token: StudioExportToken) => boolean
   createContext?: (options: OfflineAudioContextOptions) => OfflineAudioContext
+  /**
+   * Lane renders that match the song (lane-freezer.ts `hold`): the
+   * arrangement plays them instead of running those lanes' chains. They are
+   * let go once the arrangement is rendered, or the export fails.
+   */
+  frozen?: StudioFreezeHold | null
   /** Native render/worker adapters are injectable for focused lifecycle tests. */
   dependencies?: {
     arrangement?: typeof renderStudioArrangement
@@ -61,14 +68,16 @@ export async function renderStudioWav(
   read: (id: string) => Promise<Blob>,
   options: StudioExportOptions = {},
 ): Promise<StudioWavExport> {
-  const releaseJob = acquireStudioRenderJob()
   const signal = options.signal ?? new AbortController().signal
+  let held = options.frozen ?? undefined
+  let releaseJob: (() => void) | undefined
   let arrangement: StudioRenderedBuffer | undefined
   let bus: StudioRenderedBuffer | undefined
   let candidate: StudioRenderedBuffer | undefined
   let releaseBytes: (() => void) | undefined
   let releaseBlob: (() => void) | undefined
   try {
+    releaseJob = acquireStudioRenderJob()
     const owned = structuredClone(assets)
     const snapshot = validateStudioProject(project, owned)
     if (snapshot.export.range !== 'song')
@@ -104,7 +113,9 @@ export async function renderStudioWav(
     check('preparing')
     arrangement = await (
       options.dependencies?.arrangement ?? renderStudioArrangement
-    )(snapshot, owned, read, renderOptions)
+    )(snapshot, owned, read, { ...renderOptions, frozen: held?.lanes })
+    held?.release()
+    held = undefined
     check('rendering')
     bus = await chain(
       arrangement.buffer,
@@ -177,11 +188,12 @@ export async function renderStudioWav(
     }
     throw new Error('The WAV could not be verified. Try exporting again.')
   } finally {
+    held?.release()
     arrangement?.release()
     bus?.release()
     candidate?.release()
     releaseBytes?.()
     releaseBlob?.()
-    releaseJob()
+    releaseJob?.()
   }
 }
