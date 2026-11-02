@@ -3,12 +3,12 @@
 // ============================================================
 //
 // Slice 4b. The live board's entries carry each singer's id (the Founder's
-// none), so a singer's row ends in a "..." for Report and Block; the past
-// podiums are read without an account, so a place there offers Report
-// alone, and a singer the viewer blocked is withheld by the viewer's own
-// device. Both are on the Leaderboard's Legends view, which the phone
-// reaches from Progress. The blocked store is real; the worker is a
-// stand-in at the network edge.
+// none), so a singer's row ends in a "..." for Report and Block, and so
+// does a past podium's place: the archive is read with the session, so the
+// worker withholds the singers in a block with the viewer (REQ-RB-014),
+// and the device withholds one blocked from here at once. Both are on the
+// Leaderboard's Legends view, which the phone reaches from Progress. The
+// blocked store is real; the worker is a stand-in at the network edge.
 
 import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,7 @@ import type * as WeeklyService from './weekly-service'
 const data = vi.hoisted(() => ({
   board: null as unknown,
   archive: [] as unknown[],
+  archiveReads: 0,
 }))
 
 vi.mock('./weekly-service', async (importOriginal) => ({
@@ -36,7 +37,10 @@ vi.mock('./weekly-service', async (importOriginal) => ({
       founderScore: 88,
     }),
   getWeeklyBoard: () => Promise.resolve(data.board),
-  getWeeklyArchive: () => Promise.resolve(data.archive),
+  getWeeklyArchive: () => {
+    data.archiveReads += 1
+    return Promise.resolve(data.archive)
+  },
   hoursUntil: () => 72,
 }))
 
@@ -106,6 +110,7 @@ beforeEach(() => {
     frozen: false,
     you: null,
   }
+  data.archiveReads = 0
   data.archive = [
     {
       id: 'p1',
@@ -164,7 +169,7 @@ describe('the live Legend’s board', () => {
 })
 
 describe('a past Legend’s podium', () => {
-  it('offers Report alone on a place that names another singer', async () => {
+  it('offers Report and Block on a place that names another singer, and reads the archive again after a block', async () => {
     render(() => <PastWeeklyChallenges />)
     const more = await waitFor(() =>
       screen.getByRole('button', { name: 'More about Iva' }),
@@ -173,10 +178,11 @@ describe('a past Legend’s podium', () => {
     more.click()
 
     expect(moreButtons()).toEqual(['More about Iva'])
-    expect(singerSheetSubject()).toMatchObject({
-      userId: 'iva',
-      reportOnly: true,
-    })
+    const subject = singerSheetSubject()
+    expect(subject).toMatchObject({ userId: 'iva', displayName: 'Iva' })
+    expect(data.archiveReads).toBe(1)
+    subject?.onBlocked?.()
+    await waitFor(() => expect(data.archiveReads).toBe(2))
   })
 
   it('withholds the name of a singer the viewer blocked, the place kept', async () => {

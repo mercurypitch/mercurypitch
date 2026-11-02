@@ -11,18 +11,22 @@
 `workers/db-worker/src/name-filter.ts`, `name-filter-words.ts`,
 `public-text.ts`, `report-rules.ts`, `reports.ts`, `blocks.ts`,
 `share-authors.ts`, `registered.ts`, `weekly-board.ts`, and the hooks in
-`index.ts` (shared reads, the leaderboard, the weekly board), `league.ts`
+`index.ts` (shared reads, the leaderboard, the weekly board and its
+archive), `league.ts`
 (standings), `friends.ts`, `validation.ts`, `auth.ts` (names, rate limits,
 deletion) and `email.ts` (the owner's alert). The phone's side (section 5):
-`src/lib/singer-rows.ts`, `src/db/services/moderation-service.ts`.
+`src/lib/singer-rows.ts`, `src/db/services/moderation-service.ts`, and the
+archive's read (`src/features/challenges/weekly-service.ts`).
 
 **Tests:** `workers/db-worker/src/name-filter.test.ts`,
 `workers/db-worker/src/public-text.test.ts`,
 `workers/db-worker/src/auth.test.ts` (the erasure list),
 `workers/db-worker/src/league.test.ts`,
 `workers/db-worker/src/weekly-board.test.ts`,
-`workers/db-worker/node-tests/reports-and-blocks-integration.test.ts`, and
-`src/lib/singer-rows.test.ts`.
+`workers/db-worker/node-tests/reports-and-blocks-integration.test.ts`,
+`src/lib/singer-rows.test.ts`, and
+`src/features/challenges/weekly-service-read.test.ts` (the archive read
+with the session).
 
 ---
 
@@ -104,7 +108,8 @@ caller's own, by current name.
 
 **While** a block stands, each singer shall be hidden from the other on the
 shared melodies and results (lists, counts and reads by id), the leaderboard,
-the weekly board and the league standings. A league row shown under a
+the weekly board and the league standings, and their names withheld from each
+other on the closed Legends' podiums (REQ-RB-014). A league row shown under a
 pseudonym shall stay: hiding it would tie the account just blocked to the
 pseudonym. Every other singer's view shall be unchanged.
 
@@ -126,6 +131,19 @@ the two a place that is not theirs, beside a cut and a podium that disagree.
 between the two shall be refused: the blocker with 409 and words saying to
 unblock first, the blocked singer with the 404 the route gives when nobody is
 there, so no refusal tells anyone who blocked them.
+
+### REQ-RB-014 — The closed Legends' podiums
+
+**When** `GET /api/weekly/archive` is read with a session, the DB worker
+shall withhold, on every podium, the name and the id of each singer in a
+block with the reader, either way, as it withholds a name that may no longer
+be shown: the place and the score stay, the place reads `displayName: null,
+redacted: true`, and nobody moves up into it. Read without a session, the
+archive shall be unchanged. Because that answer belongs to its reader, it
+shall be sent `Cache-Control: private, no-store`, and every archive answer
+shall carry `Vary: Authorization`, so no cache serves one reader's podium to
+another. The phone shall send its session with the read, and read the archive
+again when its account changes.
 
 ## 3. Reports
 

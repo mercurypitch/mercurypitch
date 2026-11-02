@@ -8,7 +8,7 @@
 // page). Everything degrades to null when no API is configured or on error —
 // telemetry/UI must never break the app.
 
-import { getAuthHeaders } from '@/db/services/user-service'
+import { authVersion, getAuthHeaders, getUserId, } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
 import { isE2ETestMode } from '@/lib/test-utils'
@@ -220,10 +220,27 @@ export async function getWeeklyBoard(id: string): Promise<WeeklyBoard | null> {
   }
 }
 
+/**
+ * Whose session reads the archive: a key that changes with the account, and
+ * not with a refreshed token. The podiums differ by reader (REQ-RB-014), so
+ * a screen reads the archive again when this changes. Reactive.
+ */
+export function archiveReader(): string {
+  authVersion()
+  return getUserId()
+}
+
+/**
+ * The closed Legends. Read with the session, so the podiums withhold the
+ * names of the singers in a block with this reader (REQ-RB-014); a reader
+ * whose account changes reads it again (`archiveReader`).
+ */
 export async function getWeeklyArchive(): Promise<ArchivedWeeklyChallenge[]> {
   if (base() === '') return []
   try {
-    const res = await fetch(`${base()}/api/weekly/archive`)
+    const res = await fetch(`${base()}/api/weekly/archive`, {
+      headers: getAuthHeaders(),
+    })
     if (!res.ok) return []
     const data = (await res.json()) as { archive: ArchivedWeeklyChallenge[] }
     return data.archive ?? []

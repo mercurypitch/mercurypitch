@@ -593,30 +593,64 @@ with what moved from the paragraph above:
   "More about Ana" (`SingerMoreButton.tsx`). No long press. Panes: the
   choice; Report, with the worker's six reasons (`report-rules.ts`, worded
   plainly), a note counted to 500 and Send; Sent ("Thanks. We read every
-  report within a day."); Block, saying what it does before it does it;
-  Blocked; and a pane for each way it can fail, worded from the service's
-  outcome (`moderation-service.ts`), with Try again where trying again can
-  help. Escape, the close button and the phone's Back (`shell-navigation.ts`)
-  close it, and each pane change hands the focus to its title.
+  report within a day."); "We have your report already", when the singer's
+  report on it is still open and nothing new was sent; Block, saying what
+  it does before it does it; Blocked; and a pane for each way it can fail,
+  worded from the service's outcome (`moderation-service.ts`), with Try
+  again where trying again can help. A suspended account is told so, with
+  the contact form and no Sign in; a server that failed (a 5xx, or an
+  answer the phone cannot read) says "MercuryPitch could not answer just
+  now. Try again in a moment.", apart from no connection. One request at a
+  time: a second tap on Send, Block or Try again while one is out asks the
+  worker nothing, and a request still out when the sheet closes moves no
+  pane and frees nothing in the sheet opened next (a block that lands still
+  has its board read again). Escape, the close button and the phone's Back
+  (`shell-navigation.ts`) close it, and each pane change hands the focus to
+  its title.
+- **The focus, back to the board** (WCAG 2.4.3, `sheet-focus.ts`). The
+  "..." records its board and its place there as it opens the sheet; a
+  close hands the focus back to it, or, when a block took its row away, to
+  the "..." now at that place, else the one before it, else the board's
+  heading. For a minute after, a board read that draws every row anew puts
+  the focus back the same way, and moves it on from the heading once the
+  rows are back; it stops when the singer moves the focus or presses on the
+  page, or another sheet opens, and waits out a sheet opened over the board
+  (the sign-in). Every
+  board says which it is (`data-singer-board`, its heading
+  `data-singer-board-heading`): on the web the Leaderboard's table, its
+  League standings, friend requests, the live Legend's card and the past
+  Legends; on the phone the Leagues screen and the Legend room's board and
+  past podiums. Two more places where a sign-in took the button the focus
+  was on: the phone's Account screen hands it to the account's name, and
+  the Leagues screen to the league's name once it is read.
 - **The rows.** Leagues and the web's League view: a named row that is not
   the viewer's. The Legend boards: an entry with a `userId` that is not the
   Founder's or the viewer's. The web's Global and Friends tables, in a last
   column of their own that no width hides (the "..." stops its press, so the
   singer card does not open as well), friend requests, and a past podium's
-  place, Report alone (a block cannot reach a podium, which is read without
-  an account). A row without one keeps its room, so the columns line up.
-- **No "..." on the native room's past podiums.** There a past Legend is one
-  line of words ("1 Iva, 2 Ben") beside its Practice pill: three 44 px
-  targets do not fit a 360 px row. A singer this account blocked is withheld
-  from those lines instead, as on the web's past podiums. A name on one is
-  reported through the contact form (About, Contact us) until the room's
-  past list gets a place per row.
+  place, Report and Block. A row without one keeps its room, so the columns
+  line up.
+- **The past podiums, a place a line.** The archive is read with the
+  session, and the worker withholds the names of the singers in a block
+  with the reader, either way, places kept (REQ-RB-014); it is read again
+  when the account changes (`archiveReader`, keyed by the account, not the
+  token) and after a block made from it, and stays on screen while that
+  read is out. On the phone's Legend room each past Legend is its name and
+  close beside its Practice pill, then a 44 px line a place: the place, the
+  name (cut short, never wide), the score and its "..." (`PastPodium`,
+  `legend-past.css`). Walked on a test build at 320 x 640 and 360 x 640,
+  dark and light, every request to the worker answered by the walk: no
+  sideways scroll, each place and its "..." 44 px, the Practice pill 44 px
+  high, the archive read with the session and again after a block, and the
+  focus on the "..." now at the blocked place's after the read.
 - **Without an account,** the sheet opens on "Sign in to report or block",
   with Sign in (the shell's sheet on the phone, the web's dialog on the web)
   and the contact form, and asks the worker nothing (decision 8).
 - **The contact line** is on the report, its answer, a failed report and the
   account pane: the contact form on its `support` topic, with a first line
-  naming the report ("About a report on Ana (user ...)"). The form takes only
+  naming the report ("About a report on Ana (user ...)"). For a suspended
+  account, on the sheet and the Blocked singers lists, the same form opens
+  "About my suspended account". The form takes only
   `ContactTopic`'s topics, so decision 9's reports topic waits for the
   landing site, outside this repository. Opened as About's Contact us is, a
   link to a new window, which the phone hands to its browser.
@@ -628,6 +662,10 @@ with what moved from the paragraph above:
   a screen loaded before it), changed by every block and unblock made here,
   and never shown to another account. Each board filters them out of what
   it shows, places kept, and reads its data again (the sheet's `onBlocked`).
+  The web's Global and Friends boards read again from the top, as deep as
+  they were loaded: the worker drops the singer from its ranking, so a Load
+  more from the old depth would skip the singer after them, and a page
+  asked for before that read is dropped when it lands.
 - **Cut by place, not by position.** The phone's league cut
   (`league-board.ts`) zoned each row by its position in the list, so a row
   left out, by the worker's block since 4a or by the phone's, moved every
@@ -639,22 +677,33 @@ with what moved from the paragraph above:
 - **Blocked singers, in Settings.** On the phone, Account, Blocked singers
   (`'blocked-singers'`, `BlockedSingersScreen.tsx`): each singer with when
   they were blocked and Unblock, loading, an empty list, a failed read with
-  Try again, and a refused session's Sign in. A button whose read or unblock
+  Try again, and, in place of the list, nobody signed in, a device with no
+  account and a refused session, each with Sign in, and a suspended account,
+  with the contact form. The list is the account's: read as it opens and
+  again for each account that signs in with it open, as the Leagues screen
+  reads its league, and shown to no other. A button whose read or unblock
   is out stays put, `aria-disabled`, and keeps the focus; when it goes with
-  what it did, the focus goes to what took its place. On the web, the same
-  list in account settings (`BlockedSingersList.tsx`). Both, the sheet and
-  every row but the Leagues and Legend screens' ship in every build.
+  what it did, the focus goes to what took its place, and after a sign-in
+  from the list to its first row. On the web, the same list in account
+  settings (`BlockedSingersList.tsx`, `blocked-list-flow.ts`). Both, the
+  sheet and every row but the Leagues and Legend screens' ship in every
+  build.
 - **The worker,** two additive fields: `named` on each league standings row
   (REQ-RB-040), `userId` on each non-Founder entry of the running Legend's
   board (REQ-RB-041, `weekly-board.ts`). A worker without them sends rows on
-  which the phone offers nothing.
+  which the phone offers nothing. And the archive read with a session
+  withholds the singers in a block with the reader (REQ-RB-014,
+  `withholdNames`). Nothing stored that answer before: the worker uses no
+  edge cache, its answers say `private`, and the service worker leaves
+  `/api/` and every other origin alone (`sw-runtime.ts`). The reader's own
+  answer now says `private, no-store`, and every archive answer
+  `Vary: Authorization`, so none can stand in for another reader's.
 
 Left for 4c and a device check: the sheet on real phones (the keyboard over
 the note, VoiceOver and TalkBack through the panes, Android's Back, the
-contact form in the system browser); the landing site's reports topic; a
-place per row for the native room's past podiums; and Community's shares,
-whose "..." reports a melody or a result (the sheet already takes
-`report: { kind, id }`).
+contact form in the system browser); the landing site's reports topic; and
+Community's shares, whose "..." reports a melody or a result (the sheet
+already takes `report: { kind, id }`).
 
 ### 4c, Community
 

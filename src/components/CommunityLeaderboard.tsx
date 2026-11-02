@@ -375,13 +375,19 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     return { ...u, avatar: IconUser, joinDate: 0 }
   }
 
-  async function loadPage(offset: number): Promise<void> {
+  /** Bumped by each read from the top: a page read before it is stale. */
+  let fromTheTop = 0
+
+  async function loadPage(offset: number, limit = PAGE_SIZE): Promise<void> {
+    if (offset === 0) fromTheTop += 1
+    const read = fromTheTop
     const page = await loadLeaderboardPage({
       category: activeCategory() as DBLeaderboardCategory,
       view: activeView() === 'friends' ? 'friends' : 'global',
-      limit: PAGE_SIZE,
+      limit,
       offset,
     })
+    if (read !== fromTheTop) return
     setTotalEntries(page.total)
     const users = page.users.map(toLeaderboardUser)
     setDbLeaderboardUsers((prev) =>
@@ -599,10 +605,18 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     withoutBlocked(dbLeaderboardUsers(), blockedSingerIds(), (u) => u.userId),
   )
 
-  /** After a block from a board here: read what it showed again. */
+  /**
+   * After a block from a board here: read it again. The worker drops the
+   * singer, moving every later row up one, so Global and Friends are read
+   * from the top, as deep as loaded: Load more would skip a singer.
+   */
   function afterBlock(): void {
-    if (activeView() === 'league') void readLeague()
-    else void afterFriendChange()
+    if (activeView() === 'league') {
+      void readLeague()
+      return
+    }
+    void refreshFollowing()
+    void loadPage(0, Math.max(PAGE_SIZE, dbLeaderboardUsers().length))
   }
 
   /** The "..." on a row naming another singer: the singer sheet. */
@@ -723,7 +737,14 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       {/* Header */}
       <div class="leaderboard-header">
         <div class="leaderboard-header-content">
-          <h2>Leaderboard</h2>
+          {/* The focus's place when a singer sheet closes on a table or
+              friend requests with no row left (sheet-focus.ts). */}
+          <h2
+            tabindex="-1"
+            data-singer-board-heading="leaderboard-table friend-requests"
+          >
+            Leaderboard
+          </h2>
           <p class="leaderboard-subtitle">
             Compete with other singers worldwide
           </p>
@@ -931,7 +952,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                   rail above — spotlit — so the hero is pure typography. */}
               <div class="league-hero" data-testid="league-rung-card">
                 <span class="league-hero-eyebrow">Your league</span>
-                <h3 class="league-hero-name" data-testid="league-rung-name">
+                <h3
+                  class="league-hero-name"
+                  data-testid="league-rung-name"
+                  tabindex="-1"
+                  data-singer-board-heading="leaderboard-league"
+                >
                   {leagueMe()?.league?.name}
                 </h3>
                 <p class="league-hero-stats">
@@ -978,7 +1004,11 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                   </p>
                 }
               >
-                <div class="league-standings" data-testid="league-standings">
+                <div
+                  class="league-standings"
+                  data-testid="league-standings"
+                  data-singer-board="leaderboard-league"
+                >
                   <For each={leagueBoard()}>
                     {(item) =>
                       item.kind === 'line' ? (
@@ -1093,7 +1123,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               )}
               onAccept={acceptRequest}
               onDecline={declineRequest}
-              onBlocked={() => void afterFriendChange()}
+              onBlocked={afterBlock}
             />
           </Show>
           {/* Everything below needs somebody on the board. The podium pads
@@ -1174,7 +1204,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             </div>
 
             {/* Leaderboard Table */}
-            <div class="leaderboard-table-container">
+            <div
+              class="leaderboard-table-container"
+              data-singer-board="leaderboard-table"
+            >
               {/* The category tells a phone which column to keep: below
                   480px the table drops to the score plus the number the
                   board is ranked by (vocal-analysis.css). */}

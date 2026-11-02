@@ -23,7 +23,10 @@
 // the singer sheet: Report or Block (slice 4b). A stand-in has none: its id
 // is the week's membership, not a singer's. A singer blocked from here
 // leaves the board at once, every other place kept, and the league is read
-// again.
+// again. The screen is the sheet's board (sheet-focus.ts): a close hands
+// the focus back to the "..." at the place the sheet was opened from, or to
+// the league's name. A sign-in from the card below hands it to the league
+// too, once it is read: the card's Sign in has gone with the sign-in.
 //
 // Behind NATIVE_LEAGUES, as a lazy chunk (NativeShell.tsx): a store build
 // carries none of it.
@@ -35,6 +38,7 @@ import { SingerMoreButton, SingerMoreSpace, } from '@/components/moderation/Sing
 import type { LeagueMe, LeagueStanding } from '@/db/services/league-service'
 import { msUntilNextCut } from '@/db/services/league-service'
 import { getUserId } from '@/db/services/user-service'
+import { focusLost } from '@/lib/focus-lost'
 import type { LeagueBoardItem } from '@/lib/league-board'
 import { leagueBoard, leagueNeighbours, leagueZoneOf, LOCKED_TROPHY, rungRevealed, } from '@/lib/league-board'
 import { canActOnStanding, withoutBlocked } from '@/lib/singer-rows'
@@ -42,7 +46,7 @@ import { blockedSingerIds, ensureBlockedSingers, } from '@/stores/blocked-singer
 import { ChevronIcon, MoreIcon, TrophyIcon, WarnIcon } from '../icons'
 import { accountSignedIn } from '../settings/account-state'
 import { SettingsGroup } from '../settings/SettingsList'
-import { openSignIn } from '../settings/sign-in-state'
+import { openSignIn, signInOpen } from '../settings/sign-in-state'
 import { boardLine, nextCutLine, placeLine, pointsWord, rulesLines, rungLine, rungName, zoneLine, } from './league-lines'
 import { leagueCard, leagueLadder, leagueReadFailed, leagueReading, leagueReadThisWeek, refreshLeague, } from './league-store'
 
@@ -112,13 +116,29 @@ export function LeaguesScreen(): JSX.Element {
   })
   // Signing in from the card below: read the league of who signed in. Not
   // deferred: the first run records signed-out, so the sign-in that
-  // follows is a change from it.
+  // follows is a change from it. The card's Sign in went with the sign-in,
+  // and the focus with it: the league's name takes it, whichever of the
+  // read and the sheet's close comes last.
   createEffect(
     on(accountSignedIn, (signedIn, was) => {
       if (!signedIn || was !== false) return
-      void refreshLeague()
+      void refreshLeague().then(() => {
+        if (focusLost()) focusLeague()
+      })
       ensureBlockedSingers()
     }),
+  )
+  createEffect(
+    on(
+      signInOpen,
+      (open) => {
+        if (open) return
+        queueMicrotask(() => {
+          if (accountSignedIn() && focusLost()) focusLeague()
+        })
+      },
+      { defer: true },
+    ),
   )
 
   /**
@@ -216,7 +236,12 @@ export function LeaguesScreen(): JSX.Element {
   }
 
   return (
-    <div class="mp-set mp-league" data-testid="shell-leagues" ref={root}>
+    <div
+      class="mp-set mp-league"
+      data-testid="shell-leagues"
+      data-singer-board="leagues"
+      ref={root}
+    >
       <Show when={!accountSignedIn()}>
         <section class="mp-league-invite" data-testid="league-invite">
           <span class="mp-league-invite__icon" aria-hidden="true">
@@ -292,6 +317,7 @@ export function LeaguesScreen(): JSX.Element {
                   <h2
                     class="mp-league-hero__name"
                     data-league-focus=""
+                    data-singer-board-heading="leagues"
                     tabindex="-1"
                   >
                     {card().league?.name}

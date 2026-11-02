@@ -29,6 +29,8 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
     // Read by the Blocked singers list a signed-in account shows.
     accountHeld: actual.accountHeld,
     currentAccountId: actual.currentAccountId,
+    hasValidToken: actual.hasValidToken,
+    storedTokenProvider: actual.storedTokenProvider,
     restoreAuth: () => Promise.resolve(true),
     fetchMe: () =>
       new Promise<MeResponse | null>((resolve) => {

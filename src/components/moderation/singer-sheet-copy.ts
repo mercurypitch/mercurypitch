@@ -24,9 +24,16 @@ export const REASON_WORDS: Readonly<Record<ReportReason, string>> = {
 /** After a report reaches the owner. */
 export const SENT_WORDS = 'Thanks. We read every report within a day.'
 
-/** After a report the singer had already sent, still open. */
+/** The title over a report the singer had already sent, still open. */
+export const ALREADY_OPEN_TITLE = 'We have your report already'
+
+/** And under it: nothing new was sent, and what happens to the old one. */
 export const ALREADY_OPEN_WORDS =
-  'You reported this already, and that report is still with us. We read every report within a day.'
+  'Your earlier report on this is still open, so nothing new was sent. We read every report within a day.'
+
+/** The server answered, but could not do what was asked. */
+export const SERVER_WORDS =
+  'MercuryPitch could not answer just now. Try again in a moment.'
 
 /** What a block does, said before it and after it. */
 export const BLOCK_WORDS =
@@ -52,6 +59,11 @@ export function reportContactUrl(
   )
 }
 
+/** The contact form for a suspended account, about the suspension. */
+export function suspendedContactUrl(): string {
+  return contactFormUrl('support', 'About my suspended account:\n\n')
+}
+
 export type SheetAction = 'report' | 'block'
 
 /** The sheet's panes (SingerSheet.tsx). */
@@ -59,6 +71,7 @@ export type SheetPane =
   | 'choose'
   | 'report'
   | 'sent'
+  | 'already'
   | 'block'
   | 'blocked'
   | 'account'
@@ -77,7 +90,12 @@ export interface ProblemWords {
   retry: 'again' | 'edit' | null
   /** Whether signing in is the way on. */
   signIn: boolean
+  /** The contact form under the words: about the report, the account, none. */
+  contact: 'report' | 'account' | null
 }
+
+/** Reports and blocks are closed to a suspended account. */
+export const SUSPENDED_TITLE = 'This account is suspended'
 
 /** Why a report or a block did not happen, and what to do about it. */
 export function problemWords(
@@ -92,7 +110,13 @@ export function problemWords(
   const words = (
     body: string,
     retry: ProblemWords['retry'] = null,
-  ): ProblemWords => ({ title: failed, body, retry, signIn: false })
+  ): ProblemWords => ({
+    title: failed,
+    body,
+    retry,
+    signIn: false,
+    contact: action === 'report' ? 'report' : null,
+  })
   switch (problem) {
     case 'account':
       return {
@@ -100,6 +124,7 @@ export function problemWords(
         body: 'Reports and blocks are for registered singers. Sign in or create an account, or tell us about it through the contact form.',
         retry: null,
         signIn: true,
+        contact: 'report',
       }
     case 'refused':
       return {
@@ -107,6 +132,15 @@ export function problemWords(
         body: 'This device is no longer signed in to your account. Sign in again to report or block.',
         retry: null,
         signIn: true,
+        contact: null,
+      }
+    case 'suspended':
+      return {
+        title: SUSPENDED_TITLE,
+        body: 'A suspended account cannot report or block. If you think this is a mistake, tell us through the contact form.',
+        retry: null,
+        signIn: false,
+        contact: 'account',
       }
     case 'missing':
       return words(
@@ -140,6 +174,8 @@ export function problemWords(
         'Could not reach MercuryPitch. Check the connection and try again.',
         'again',
       )
+    case 'server':
+      return words(SERVER_WORDS, 'again')
   }
 }
 
@@ -156,6 +192,8 @@ export function paneTitle(
       return `Report ${name}`
     case 'sent':
       return 'Report sent'
+    case 'already':
+      return ALREADY_OPEN_TITLE
     case 'block':
       return `Block ${name}?`
     case 'blocked':

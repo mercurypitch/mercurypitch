@@ -33,7 +33,7 @@ import { grantBoardConsent, hasBoardConsent, } from '@/features/challenges/board
 import { roomFinalizing } from '@/features/challenges/challenge-result-store'
 import { weeklyAttemptVersion } from '@/features/challenges/weekly-attempt'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
-import { getWeeklyArchive, getWeeklyBoard, readActiveWeekly, } from '@/features/challenges/weekly-service'
+import { archiveReader, getWeeklyArchive, getWeeklyBoard, readActiveWeekly, } from '@/features/challenges/weekly-service'
 import { ensureBlockedSingers } from '@/stores/blocked-singers-store'
 import { MicIcon, TrophyIcon } from '../icons'
 import { accountSignedIn, refreshAccount } from '../settings/account-state'
@@ -66,7 +66,12 @@ export function LegendRoom(): JSX.Element {
     },
     (source) => getWeeklyBoard(source.id),
   )
-  const [archive] = createResource(getWeeklyArchive)
+  // Read with the session: the podiums withhold the singers in a block
+  // with this account (REQ-RB-014), so another account reads them again.
+  const [archive, { refetch: readArchive }] = createResource(
+    archiveReader,
+    () => getWeeklyArchive(),
+  )
   // A posted take is on the board now.
   createEffect(
     on(
@@ -173,9 +178,10 @@ export function LegendRoom(): JSX.Element {
               void readAgain()
             }}
             board={() => board() ?? null}
-            archive={() => archive() ?? []}
+            archive={() => archive.latest ?? []}
             onBlocked={() => {
               void readBoard()
+              void readArchive()
             }}
           />
         </div>

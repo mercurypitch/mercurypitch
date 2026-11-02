@@ -6,12 +6,18 @@
 // answer alike. The native Legend room says those two differently ("No
 // Legend is open right now" against "Could not load the Legend"), so it
 // reads through this, and the web keeps its null.
+//
+// The archive is read with the session, so the worker can withhold the
+// names of the singers in a block with the reader (REQ-RB-014).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
+vi.mock('@/db/services/user-service', () => ({
+  getAuthHeaders: () => ({ Authorization: 'Bearer reader-token' }),
+}))
 
-import { getActiveWeekly, readActiveWeekly } from './weekly-service'
+import { getActiveWeekly, getWeeklyArchive, readActiveWeekly, } from './weekly-service'
 
 function answer(status: number, body: unknown): void {
   vi.stubGlobal(
@@ -58,5 +64,18 @@ describe('readActiveWeekly', () => {
     expect(await getActiveWeekly()).toBeNull()
     answer(503, { error: 'Unavailable' })
     expect(await getActiveWeekly()).toBeNull()
+  })
+})
+
+describe('getWeeklyArchive', () => {
+  it('reads the closed Legends with the reader’s session', async () => {
+    answer(200, { archive: [{ id: 'legend-0', title: 'Vincero' }] })
+
+    expect(await getWeeklyArchive()).toEqual([
+      { id: 'legend-0', title: 'Vincero' },
+    ])
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe('http://api.test/api/weekly/archive')
+    expect(init?.headers).toEqual({ Authorization: 'Bearer reader-token' })
   })
 })

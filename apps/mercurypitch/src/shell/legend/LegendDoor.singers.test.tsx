@@ -3,10 +3,10 @@
 // ============================================================
 //
 // Slice 4b. The board's entries carry the singer's id (the Founder's does
-// not, nor does an entry from a worker before it), and the past podiums are
-// read without an account, so a block reaches them only on the phone. The
-// sheet, its flow, the service and the blocked store are real; the worker's
-// block route is a stand-in at the network edge.
+// not, nor does an entry from a worker before it), and so do the past
+// podiums' places, each on a line of its own with its "...", as on the web.
+// The sheet, its flow, the service and the blocked store are real; the
+// worker's block route is a stand-in at the network edge.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ArchivedWeeklyChallenge, WeeklyBoard, WeeklyChallenge, } from '@/features/challenges/weekly-service'
@@ -84,6 +84,7 @@ const PAST = {
     top3: [
       { rank: 1, userId: 'iva', displayName: 'Iva', best: 91 },
       { rank: 2, userId: 'ben', displayName: 'Ben', best: 84 },
+      { rank: 3, userId: 'acc-1', displayName: 'Maya', best: 80 },
     ],
     attemptedCount: 40,
     completedCount: 12,
@@ -176,15 +177,78 @@ describe('the Legend board’s singers', () => {
     expect(podium()).toEqual(['2', '3', '4'])
     expect(onBlocked).toHaveBeenCalledTimes(1)
   })
+})
 
-  it('withholds a blocked singer’s name from a past podium, the place kept', async () => {
+/** Each past podium place, as its line reads: place, name, score. */
+const pastPlaces = (): string[][] =>
+  [...document.querySelectorAll('.mp-legend-past__place')].map((place) =>
+    [...place.querySelectorAll('span')]
+      .filter((part) => part.getAttribute('aria-hidden') !== 'true')
+      .map((part) => part.textContent ?? ''),
+  )
+
+const pastMore = (): string[] =>
+  [
+    ...document.querySelectorAll(
+      '[data-singer-board="legend-past"] [data-singer-more]',
+    ),
+  ].map((button) => button.getAttribute('aria-label') ?? '')
+
+describe('a past Legend’s podium in the room', () => {
+  it('gives each place a line of its own, a "..." where it names another singer, and keeps Practice', () => {
     show(TOP, [PAST])
-    const past = (): string =>
-      document.querySelector('[data-legend-past="legend-0"]')?.textContent ?? ''
-    expect(past()).toContain('1 Iva, 2 Ben')
+
+    expect(pastPlaces()).toEqual([
+      ['1', 'Iva', '91%'],
+      ['2', 'Ben', '84%'],
+      ['3', 'Maya', '80%'],
+    ])
+    expect(pastMore()).toEqual(['More about Iva', 'More about Ben'])
+    expect(
+      document.querySelector('[data-testid="legend-past-practice"]')
+        ?.textContent,
+    ).toBe('Practice')
+  })
+
+  it('offers Report and Block on a place, and has the podiums read again after a block', async () => {
+    show(TOP, [PAST])
+
+    press('[data-singer-board="legend-past"] [data-singer-more="ben"]')
+    expect(
+      document.querySelector('[data-testid="singer-choose-report"]'),
+    ).not.toBeNull()
+    press('[data-testid="singer-choose-block"]')
+    press('[data-testid="singer-block-confirm"]')
+    await settle()
+
+    expect(onBlocked).toHaveBeenCalledTimes(1)
+    expect(pastPlaces()[1]).toEqual(['2', 'Name withheld', '84%'])
+  })
+
+  it('withholds a blocked singer’s name, the place kept, with no "..." on it', async () => {
+    show(TOP, [PAST])
 
     await blockSingerAndHide('iva')
 
-    expect(past()).toContain('1 Name withheld, 2 Ben')
+    expect(pastPlaces()[0]).toEqual(['1', 'Name withheld', '91%'])
+    expect(pastMore()).toEqual(['More about Ben'])
+  })
+
+  it('hands the focus to the "..." now at the blocked place’s, as the sheet closes', async () => {
+    show(TOP, [PAST])
+
+    press('[data-singer-board="legend-past"] [data-singer-more="iva"]')
+    press('[data-testid="singer-choose-block"]')
+    press('[data-testid="singer-block-confirm"]')
+    await settle()
+    const done = [...document.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Done',
+    )
+    done?.click()
+    await settle()
+
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(
+      'More about Ben',
+    )
   })
 })

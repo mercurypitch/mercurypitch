@@ -15,6 +15,10 @@
 // "signed out" for a phone that is not (S6 audit D1, REQ-NAM-049). What
 // needs the server waits for it: those rows appear once the account has
 // answered, and not before (4g).
+//
+// A sign-in from here replaces the signed-out view, its Sign in with it,
+// so the sign-in sheet has no button to give the focus back to: the
+// account's name takes it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
@@ -25,6 +29,7 @@ import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions } from '@/db/services/auth-sessions-service'
 import { authVersion } from '@/db/services/user-service'
 import { thisDevice } from '@/lib/device-noun'
+import { focusLost } from '@/lib/focus-lost'
 import { showNotification } from '@/stores/notifications-store'
 import { isApplePrivateRelayAddress } from '../../../../../workers/db-worker/src/apple-relay'
 import { AccountIcon, BlockIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, TrophyIcon, WarnIcon, } from '../icons'
@@ -38,7 +43,7 @@ import { copyText } from './copy-text'
 import { askSettings } from './settings-alert'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
-import { openSignIn } from './sign-in-state'
+import { openSignIn, signInOpen } from './sign-in-state'
 import { VoiceprintAskNote } from './VoiceprintAsk'
 
 function NoAccount(): JSX.Element {
@@ -396,12 +401,28 @@ function SignedIn(): JSX.Element {
 }
 
 export function AccountScreen(): JSX.Element {
+  let root: HTMLDivElement | undefined
   onMount(() => {
     if (accountSignedIn()) void refreshAccount()
   })
+  // The sign-in sheet closed on an account: its way back went with the
+  // signed-out view, so the account's name takes the focus.
+  createEffect(
+    on(
+      signInOpen,
+      (open) => {
+        if (open) return
+        queueMicrotask(() => {
+          if (!accountSignedIn() || !focusLost()) return
+          root?.querySelector<HTMLElement>('[data-account-focus]')?.focus()
+        })
+      },
+      { defer: true },
+    ),
+  )
 
   return (
-    <div class="mp-set" data-testid="account-screen">
+    <div class="mp-set" data-testid="account-screen" ref={root}>
       <Show when={accountSignedIn()} fallback={<NoAccount />}>
         <SignedIn />
       </Show>

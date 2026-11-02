@@ -340,6 +340,11 @@
   color: var(--text-primary);
 }
 
+/* A link drawn as a button (Blocked singers' contact form). */
+a.mp-set-button {
+  text-decoration: none;
+}
+
 .mp-set-button--danger {
   background: transparent;
   color: var(--red);

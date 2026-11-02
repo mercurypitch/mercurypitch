@@ -3,15 +3,18 @@
 // ============================================================
 //
 // One 44 px button, named for the singer ("More about Ada"), that opens the
-// singer sheet on them (singer-sheet-store.ts): Report, and Block where a
-// block can reach. It stops its press there, so a row that opens something
-// of its own (the Leaderboard's singer card) does not open that as well.
+// singer sheet on them (singer-sheet-store.ts): Report and Block. It stops
+// its press there, so a row that opens something of its own (the
+// Leaderboard's singer card) does not open that as well. It hands the sheet
+// its board and its place there, so the focus can come back to that place
+// when the sheet closes, whatever the sheet did to the row (sheet-focus.ts).
 // The phone's screens hand it their own drawing of the dots.
 
 import type { JSX } from 'solid-js'
 import { MoreHorizontal } from '@/components/icons'
 import type { SingerSheetSubject } from '@/stores/singer-sheet-store'
 import { openSingerSheet } from '@/stores/singer-sheet-store'
+import { openerOf } from './sheet-focus'
 import styles from './SingerMoreButton.module.css'
 
 export interface SingerMoreButtonProps {
@@ -35,7 +38,7 @@ export function SingerMoreButton(props: SingerMoreButtonProps): JSX.Element {
       data-singer-more={props.subject.userId}
       onClick={(event) => {
         event.stopPropagation()
-        openSingerSheet(props.subject)
+        openSingerSheet(props.subject, openerOf(event.currentTarget))
       }}
     >
       {props.icon ?? <MoreHorizontal size={20} />}

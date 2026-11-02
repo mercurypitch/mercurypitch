@@ -1512,6 +1512,20 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** a place is the row's `rank`. Code that counts positions in a board's list breaks the moment a row is left out, by the worker or by the phone hiding a singer just blocked; test a board with a gap in it.
 **See:** `leagueBoard` in `src/lib/league-board.ts`, `src/components/leaderboard-podium.ts`.
 
+### Give the focus back to a place on the board, not to the button that opened the sheet
+
+**Symptom:** after a block from a board's "...", closing the singer sheet left the focus on the page (WCAG 2.4.3); where the focus did land on a row, the board's read a moment later took it to the page again.
+**Cause:** the block takes the opener's row off the board at once, so a trap that restores the element it saw at open has nothing to restore to. And a board read redraws every row: Solid's `<For>` keys rows by object, and a read hands it new objects, so the button the focus went back to is replaced too.
+**Rule:** record the opener as its board and its place there, land on the "..." now at that place, else the one before, else the board's heading, and keep putting it back through redraws for a while (`returnFocus`). A new board marks itself `data-singer-board` and its heading `data-singer-board-heading` with `tabindex="-1"`. Test it with a read that lands after the close.
+**See:** `src/components/moderation/sheet-focus.ts`, `CommunityLeaderboard.after-block.test.tsx`, `LeaguesScreen.focus.test.tsx`.
+
+### Read a paged board again from the top after it drops a row
+
+**Symptom:** after a block on the web's Global board, Load more skipped the singer ranked just past the loaded page.
+**Cause:** the worker leaves the blocked singer out of its ranking, so every later row moves up one, and Load more asked from the old length.
+**Rule:** after a change that removes a row server-side, read the board again from offset 0, as deep as it was loaded, and drop any page asked for before that read.
+**See:** `afterBlock` and `loadPage` in `src/components/CommunityLeaderboard.tsx`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

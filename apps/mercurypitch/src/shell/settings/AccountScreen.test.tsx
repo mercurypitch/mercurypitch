@@ -13,7 +13,7 @@ import { renderShell } from '../render-for-test'
 import { ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, accountPromises, } from './account-copy'
 import { refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
-import { resetSignIn, signInOpen } from './sign-in-state'
+import { closeSignIn, resetSignIn, signInOpen } from './sign-in-state'
 
 vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
@@ -85,6 +85,27 @@ describe('the Account screen', () => {
     expect(text()).toContain(ACCOUNT_SIGNED_OUT.title)
     for (const promise of accountPromises()) expect(text()).toContain(promise)
     expect(readMeMock).not.toHaveBeenCalled()
+  })
+
+  it('gives the account’s name the focus when a sign-in from here lands', async () => {
+    resetSignIn()
+    readMeMock.mockResolvedValue(ALEX)
+    view = renderShell(() => <AccountScreen />)
+    const signIn = view.container.querySelector<HTMLButtonElement>(
+      '[data-testid="account-sign-in"]',
+    )
+    signIn?.focus()
+    signIn?.click()
+
+    // The sheet signs in, which takes the signed-out view and its button
+    // away, then closes with no button to give the focus back to.
+    setAuthToken(token('google'))
+    closeSignIn()
+    await settle()
+
+    const name = view.container.querySelector('[data-account-focus]')
+    expect(name).not.toBeNull()
+    expect(document.activeElement).toBe(name)
   })
 
   it('opens the sign-in sheet from its one button while there is no account', () => {
