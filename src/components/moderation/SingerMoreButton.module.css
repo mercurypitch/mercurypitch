@@ -1,0 +1,38 @@
+/* The "..." on a row that names a singer (SingerMoreButton.tsx): 44 px,
+   in the colour of the row's quieter words. The host places it; the button
+   sets no margin of its own. */
+
+.more {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* As tall as the button, so a row without one keeps the height of a row
+   with one. */
+.space {
+  flex: none;
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+}
+
+@media (hover: hover) {
+  .more:hover {
+    background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    color: var(--text-primary);
+  }
+}

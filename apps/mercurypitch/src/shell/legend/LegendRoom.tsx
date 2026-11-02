@@ -34,6 +34,7 @@ import { roomFinalizing } from '@/features/challenges/challenge-result-store'
 import { weeklyAttemptVersion } from '@/features/challenges/weekly-attempt'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getWeeklyArchive, getWeeklyBoard, readActiveWeekly, } from '@/features/challenges/weekly-service'
+import { ensureBlockedSingers } from '@/stores/blocked-singers-store'
 import { MicIcon, TrophyIcon } from '../icons'
 import { accountSignedIn, refreshAccount } from '../settings/account-state'
 import { openSignIn } from '../settings/sign-in-state'
@@ -84,6 +85,8 @@ export function LegendRoom(): JSX.Element {
     on(accountSignedIn, (signedIn) => {
       setConsent(undefined)
       if (!signedIn) return
+      // Whom this account blocked, for the board's rows on screen (4b).
+      ensureBlockedSingers()
       void hasBoardConsent().then((given) => {
         if (accountSignedIn()) setConsent(given)
       })
@@ -171,6 +174,9 @@ export function LegendRoom(): JSX.Element {
             }}
             board={() => board() ?? null}
             archive={() => archive() ?? []}
+            onBlocked={() => {
+              void readBoard()
+            }}
           />
         </div>
         <Show when={running()}>

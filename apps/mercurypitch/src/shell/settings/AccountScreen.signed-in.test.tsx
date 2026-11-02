@@ -234,6 +234,15 @@ describe("the account's own settings", () => {
     expect(pushed()).toBe('devices')
   })
 
+  it('opens Blocked singers, where a block from a board is undone', async () => {
+    await open('google', 'singer@example.test')
+
+    row('blocked-singers')?.click()
+
+    expect(row('blocked-singers')?.textContent).toContain('Blocked singers')
+    expect(pushed()).toBe('blocked-singers')
+  })
+
   it('turns product news on through the account', async () => {
     newsMock.mockResolvedValue(undefined)
     await open('google', 'singer@example.test')

@@ -1,6 +1,12 @@
 // ============================================================
 // CommunityLeaderboard — League / Friends / Legends / Global
 // ============================================================
+//
+// Reached on the phone too, in every build: Progress's league card opens it
+// ("Open Leaderboard"). So every row here that names another singer ends in
+// a "..." that opens the singer sheet, Report and Block (slice 4b of
+// docs/plans/native-more-and-community.md), and a singer blocked from here
+// leaves every view at once, the others keeping their places.
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
@@ -8,19 +14,25 @@ import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 's
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { FriendRequests } from '@/components/friends/FriendRequests'
 import { CheckCircle, ChevronDown } from '@/components/icons'
+import { podiumPlaces } from '@/components/leaderboard-podium'
+import { SingerMoreButton, SingerMoreSpace, } from '@/components/moderation/SingerMoreButton'
 import type { LeaderboardCategory as DBLeaderboardCategory } from '@/db/entities'
 import { accountHeld, hasValidToken } from '@/db/services/auth-service'
 import type { FriendRequest } from '@/db/services/follow-service'
 import { acceptFriend, FRIENDS_NEED_ACCOUNT, listFriendRequests, loadFollowState, removeFriend, requestFriend, } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
-import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
+import type { LeagueMe, LeagueRung } from '@/db/services/league-service'
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { LegendsShowcase } from '@/features/challenges/LegendsShowcase'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { API_BASE_URL } from '@/lib/defaults'
+import type { LeagueBoardItem } from '@/lib/league-board'
+import { leagueBoard as cutLeague } from '@/lib/league-board'
 import { peekPendingFriendCode } from '@/lib/pending-friend-code'
 import { takeRequestedLeaderboardView } from '@/lib/pending-leaderboard-view'
+import { canActOnStanding, withoutBlocked } from '@/lib/singer-rows'
+import { blockedSingerIds, ensureBlockedSingers, } from '@/stores/blocked-singers-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
@@ -394,20 +406,28 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   const cutTimer = setInterval(() => setNowMs(Date.now()), 60_000)
   onCleanup(() => clearInterval(cutTimer))
 
+  async function readLeague(): Promise<void> {
+    const [me, ladder] = await Promise.all([
+      fetchLeagueMe(),
+      fetchLeagueLadder(),
+    ])
+    // Both fetchers resolve empty on network failure. Keep whatever was
+    // already loaded rather than blanking the rail — and, worse, showing a
+    // signed-in user the "create an account" copy — over a blip.
+    if (me != null) setLeagueMe(me)
+    if (ladder.length > 0) setLeagueLadder(ladder)
+  }
+
   createEffect(() => {
     authVersion()
     if (activeView() !== 'league' || !cloudConfigured) return
-    void (async () => {
-      const [me, ladder] = await Promise.all([
-        fetchLeagueMe(),
-        fetchLeagueLadder(),
-      ])
-      // Both fetchers resolve empty on network failure. Keep whatever was
-      // already loaded rather than blanking the rail — and, worse, showing a
-      // signed-in user the "create an account" copy — over a blip.
-      if (me != null) setLeagueMe(me)
-      if (ladder.length > 0) setLeagueLadder(ladder)
-    })()
+    void readLeague()
+  })
+
+  // Whom this account blocked, for the rows already on screen.
+  createEffect(() => {
+    authVersion()
+    ensureBlockedSingers()
   })
 
   /** The rung one above / below the signed-in user's, for zone hints. */
@@ -421,54 +441,28 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     }
   })
 
-  type LeagueBoardItem =
-    | { kind: 'row'; row: LeagueStanding; zone: '' | 'promote' | 'demote' }
-    | { kind: 'divider'; zone: 'promote' | 'demote'; to?: string }
-
   /**
    * Standings cut into promotion / safe / relegation zones, with divider
-   * rows at the boundaries (the Duolingo pattern). Mirrors the server cut
-   * (league-cut.ts): only members with points promote, up to promoteCount;
-   * the bottom relegateCount of the REST relegate; small cohorts can have no
-   * safe band at all. The relegation boundary is derived from the full
-   * cohortSize, not the visible slice, because the server caps standings at
-   * its top rows.
+   * rows at the boundaries (the Duolingo pattern): the cut the phone and the
+   * Progress card read (league-board.ts), which mirrors the server's and
+   * cuts each row by its place. A singer blocked from here is left out at
+   * once, every other place kept.
    */
   const leagueBoard = createMemo<LeagueBoardItem[]>(() => {
     const me = leagueMe()
-    const rows = me?.standings ?? []
-    const n = rows.length
-    const total = me?.cohortSize ?? n
-    const promoteCount = me?.league?.promoteCount ?? 0
-    const relegateCount = me?.league?.relegateCount ?? 0
-    // Only active members promote — trim trailing zero-point rows out.
-    let promoteEnd = Math.min(promoteCount, n)
-    while (promoteEnd > 0 && (rows[promoteEnd - 1]?.points ?? 0) <= 0)
-      promoteEnd--
-    const demoteStart =
-      relegateCount > 0 ? Math.max(promoteEnd, total - relegateCount) : total
-    const items: LeagueBoardItem[] = []
-    rows.forEach((row, i) => {
-      if (promoteEnd > 0 && promoteEnd < total && i === promoteEnd)
-        items.push({
-          kind: 'divider',
-          zone: 'promote',
-          to: leagueNeighbours().up?.name,
-        })
-      if (demoteStart < total && i === demoteStart)
-        items.push({
-          kind: 'divider',
-          zone: 'demote',
-          to: leagueNeighbours().down?.name,
-        })
-      items.push({
-        kind: 'row',
-        row,
-        zone: i < promoteEnd ? 'promote' : i >= demoteStart ? 'demote' : '',
-      })
-    })
-    return items
+    if (me === null) return []
+    const standings = withoutBlocked(
+      me.standings ?? [],
+      blockedSingerIds(),
+      (row) => row.userId,
+    )
+    return cutLeague({ ...me, standings }, leagueLadder())
   })
+  const leagueRoomForMore = createMemo(() =>
+    leagueBoard().some(
+      (item) => item.kind === 'row' && canActOnStanding(item.row, getUserId()),
+    ),
+  )
 
   /**
    * The climb reveals the art: rungs ABOVE yours show a draped, veiled
@@ -599,8 +593,25 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   }
 
   // Real data only — server-derived in cloud mode, locally-derived from
-  // your own sessionRecords otherwise. Never fabricated competitors.
-  const allLeaderboardUsers = createMemo(() => dbLeaderboardUsers())
+  // your own sessionRecords otherwise. Never fabricated competitors. A
+  // singer blocked from here is gone at once, the others keep their ranks.
+  const allLeaderboardUsers = createMemo(() =>
+    withoutBlocked(dbLeaderboardUsers(), blockedSingerIds(), (u) => u.userId),
+  )
+
+  /** After a block from a board here: read what it showed again. */
+  function afterBlock(): void {
+    if (activeView() === 'league') void readLeague()
+    else void afterFriendChange()
+  }
+
+  /** The "..." on a row naming another singer: the singer sheet. */
+  const moreAbout = (userId: string, displayName: string): JSX.Element => (
+    <SingerMoreButton
+      subject={{ userId, displayName, onBlocked: afterBlock }}
+      class="leaderboard-row-more"
+    />
+  )
 
   /** The number the table's streak column shows — see the header. */
   const rowStreak = (user: LeaderboardUser): number =>
@@ -704,24 +715,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     </div>
   )
 
-  // Podium: top 3 from the unified list
-  const podiumData = createMemo(() => {
-    const users = allLeaderboardUsers()
-    const fallback = {
-      userId: '',
-      displayName: '—',
-      avatar: '',
-      score: 0,
-      rank: 0,
-      streak: 0,
-      longestStreak: 0,
-      totalSessions: 0,
-      bestScore: 0,
-      accuracy: 0,
-      joinDate: 0,
-    } satisfies LeaderboardUser
-    return [users[0] ?? fallback, users[1] ?? fallback, users[2] ?? fallback]
-  })
+  // Podium: the first three places, each by its rank (leaderboard-podium.ts)
+  const podiumData = createMemo(() => podiumPlaces(allLeaderboardUsers()))
 
   return (
     <div class="community-leaderboard">
@@ -986,7 +981,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 <div class="league-standings" data-testid="league-standings">
                   <For each={leagueBoard()}>
                     {(item) =>
-                      item.kind === 'divider' ? (
+                      item.kind === 'line' ? (
                         <div class={`league-zone-divider ${item.zone}`}>
                           <svg
                             viewBox="0 0 24 24"
@@ -1014,7 +1009,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         <div
                           class={`league-standing-row ${
                             item.row.userId === getUserId() ? 'me' : ''
-                          } ${item.zone}`}
+                          } ${item.zone === 'hold' ? '' : item.zone}`}
                         >
                           <span class="league-standing-rank">
                             {item.row.rank}
@@ -1030,6 +1025,16 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                           <span class="league-standing-points">
                             {item.row.points} pts
                           </span>
+                          <Show
+                            when={canActOnStanding(item.row, getUserId())}
+                            fallback={
+                              leagueRoomForMore() ? (
+                                <SingerMoreSpace class="leaderboard-row-more" />
+                              ) : null
+                            }
+                          >
+                            {moreAbout(item.row.userId, item.row.displayName)}
+                          </Show>
                         </div>
                       )
                     }
@@ -1081,9 +1086,14 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 answered the sender is on nobody's board, so there is no row
                 to hang the answer off. */}
             <FriendRequests
-              requests={incoming()}
+              requests={withoutBlocked(
+                incoming(),
+                blockedSingerIds(),
+                (request) => request.userId,
+              )}
               onAccept={acceptRequest}
               onDecline={declineRequest}
+              onBlocked={() => void afterFriendChange()}
             />
           </Show>
           {/* Everything below needs somebody on the board. The podium pads
@@ -1094,14 +1104,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             {/* Top 3 Podium */}
             <div class="podium-section">
               <For each={podiumData()}>
-                {(user, index) => {
-                  // podiumData() pads to three with a blank row, and a blank
-                  // row is not a singer with no picture — it is an open
-                  // place. It carries an empty userId, which is the only
-                  // field that says so; `avatar` is `''` on it, so the old
-                  // `!== undefined` test never fired and places 2 and 3 sat
-                  // as empty grey rings.
-                  const claimed = user.userId !== ''
+                {(place, index) => {
+                  // An open place is not a singer with no picture, and a
+                  // place hidden by a block is neither: it keeps its medal
+                  // and says nothing of who holds it.
+                  const user = place.kind === 'singer' ? place.user : null
+                  const claimed = user !== null
                   return (
                     <div
                       class={`podium-item podium-${index() + 1} ${
@@ -1128,7 +1136,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         <div class="podium-avatar">
                           {/* Accounts carry no picture yet — this is the
                               slot one goes in. */}
-                          {claimed ? (
+                          {user !== null ? (
                             renderIcon(user.avatar ?? IconUser)
                           ) : (
                             <IconUnclaimedPlace />
@@ -1136,19 +1144,26 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         </div>
                         <div class="podium-ident">
                           <span class="podium-name">
-                            {claimed ? user.displayName : 'Open place'}
+                            {user?.displayName ??
+                              (place.kind === 'hidden'
+                                ? 'Hidden'
+                                : 'Open place')}
                           </span>
                           <Show
-                            when={claimed}
+                            when={user}
                             fallback={
-                              <span class="podium-score-display podium-score-open">
-                                Yours to take
-                              </span>
+                              <Show when={place.kind === 'open'}>
+                                <span class="podium-score-display podium-score-open">
+                                  Yours to take
+                                </span>
+                              </Show>
                             }
                           >
-                            <span class="podium-score-display">
-                              {categoryMetric(user, activeCategory())}
-                            </span>
+                            {(held) => (
+                              <span class="podium-score-display">
+                                {categoryMetric(held(), activeCategory())}
+                              </span>
+                            )}
                           </Show>
                         </div>
                       </div>
@@ -1176,6 +1191,9 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     </th>
                     <th class="sessions-th">Sessions</th>
                     <th class="best-th">Best</th>
+                    <th class="more-th">
+                      <span class="more-th-label">Report or block</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1240,6 +1258,19 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         </td>
                         <td class="sessions-td">{user.totalSessions}</td>
                         <td class="best-td">{user.bestScore}%</td>
+                        {/* The row's last cell, on every width: the "..."
+                            on a row naming another singer. */}
+                        <td class="more-td">
+                          <Show
+                            when={
+                              user.userId !== '' &&
+                              user.userId !== 'me' &&
+                              user.userId !== getUserId()
+                            }
+                          >
+                            {moreAbout(user.userId, user.displayName)}
+                          </Show>
+                        </td>
                       </tr>
                     )}
                   </For>

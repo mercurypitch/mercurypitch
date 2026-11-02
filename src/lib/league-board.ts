@@ -47,7 +47,25 @@ export function leagueNeighbours(
   }
 }
 
-/** The standings cut into zones, with a line where each zone ends. */
+/** The zone of a place, once the cut's two places are known. */
+function zoneAt(
+  rank: number,
+  promoteEnd: number,
+  demoteStart: number,
+): LeagueZone {
+  if (rank <= promoteEnd) return 'promote'
+  return rank > demoteStart ? 'demote' : 'hold'
+}
+
+/**
+ * The standings cut into zones, with a line where each zone ends.
+ *
+ * Each row is cut by its own place (`rank`), never by where it sits in the
+ * list. The two agree until a row is left out: the worker leaves out a
+ * singer hidden by a block and keeps every other place (REQ-RB-012), and a
+ * board hides a singer blocked from it at once, the same way. Cut by
+ * position, every row under the gap would move up a zone.
+ */
 export function leagueBoard(
   me: LeagueMe,
   ladder: readonly LeagueRung[],
@@ -56,34 +74,34 @@ export function leagueBoard(
   const total = me.cohortSize ?? rows.length
   const promoteCount = me.league?.promoteCount ?? 0
   const relegateCount = me.league?.relegateCount ?? 0
-  // Only members with points move up: the trailing rows without any are
-  // trimmed out of the promotion zone.
-  let promoteEnd = Math.min(promoteCount, rows.length)
-  while (promoteEnd > 0 && (rows[promoteEnd - 1]?.points ?? 0) <= 0) {
-    promoteEnd--
-  }
+  // Only members with points move up, and points fall with the place: the
+  // places that move up end at the last one shown with points.
+  const lastWithPoints = rows.reduce(
+    (last, row) => (row.points > 0 ? Math.max(last, row.rank) : last),
+    0,
+  )
+  const promoteEnd = Math.min(promoteCount, lastWithPoints)
   const demoteStart =
     relegateCount > 0 ? Math.max(promoteEnd, total - relegateCount) : total
   const { up, down } = leagueNeighbours(me.league?.rank, ladder)
   const items: LeagueBoardItem[] = []
-  rows.forEach((row, index) => {
-    if (promoteEnd > 0 && promoteEnd < total && index === promoteEnd) {
+  let promoteLine = promoteEnd > 0 && promoteEnd < total
+  let demoteLine = demoteStart < total
+  for (const row of rows) {
+    if (promoteLine && row.rank > promoteEnd) {
       items.push({ kind: 'line', zone: 'promote', to: up?.name })
+      promoteLine = false
     }
-    if (demoteStart < total && index === demoteStart) {
+    if (demoteLine && row.rank > demoteStart) {
       items.push({ kind: 'line', zone: 'demote', to: down?.name })
+      demoteLine = false
     }
     items.push({
       kind: 'row',
       row,
-      zone:
-        index < promoteEnd
-          ? 'promote'
-          : index >= demoteStart
-            ? 'demote'
-            : 'hold',
+      zone: zoneAt(row.rank, promoteEnd, demoteStart),
     })
-  })
+  }
   return items
 }
 

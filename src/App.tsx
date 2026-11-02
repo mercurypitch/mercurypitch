@@ -254,6 +254,7 @@ import { LocalProgressNotice } from '@/components/account/LocalProgressNotice'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
 import { InstallAppButton } from '@/components/InstallAppButton'
+import { SingerSheetHost } from '@/components/moderation/SingerSheetHost'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SkeletonTabContent } from '@/components/Skeleton'
@@ -387,7 +388,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
+import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openAuthModal, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
 import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -5016,6 +5017,11 @@ const AppShell: Component<AppProps> = (props) => {
             (openAuthModal hands it there), so the web dialog, with the
             television's phone row, leaves that bundle (S6, D2). */}
         {IS_NATIVE_BUILD ? null : <AuthModal adoptsGoogleSignup />}
+        {/* Report or block a singer, from any board that names one. The
+            native shell mounts its own, under its own sign-in sheet. */}
+        {IS_NATIVE_BUILD ? null : (
+          <SingerSheetHost onSignIn={() => openAuthModal('login')} />
+        )}
         {/* The phone's half of signing a TV in. Beside AuthModal because
             a signed-out phone that scanned the code has to sign in first,
             and then come back to the same request. */}

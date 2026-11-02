@@ -11,10 +11,14 @@
 // opens your streak, scores and practice counts to that singer and theirs to
 // you — the singer pressing it is making a privacy decision, and a bare
 // "Accept" would not tell them so.
+//
+// A request names a singer, so it ends in a "..." too: Report or Block, in
+// the singer sheet (slice 4b). A block ends the request with the rest.
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { CheckCircle } from '@/components/icons'
+import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
 import type { FriendRequest } from '@/db/services/follow-service'
 import { IconCloseSimple } from '../hidden-features-icons'
 import styles from './FriendRequests.module.css'
@@ -24,6 +28,8 @@ export interface FriendRequestsProps {
   /** Resolve when the graph has been re-read, so the row can stay disabled. */
   onAccept: (userId: string) => Promise<void>
   onDecline: (userId: string) => Promise<void>
+  /** A singer who asked was blocked from here: read the requests again. */
+  onBlocked?: () => void
 }
 
 export const FriendRequests: Component<FriendRequestsProps> = (props) => {
@@ -98,6 +104,13 @@ export const FriendRequests: Component<FriendRequestsProps> = (props) => {
                   >
                     <IconCloseSimple /> Decline
                   </button>
+                  <SingerMoreButton
+                    subject={{
+                      userId: request.userId,
+                      displayName: request.displayName,
+                      onBlocked: () => props.onBlocked?.(),
+                    }}
+                  />
                 </span>
               </li>
             )}

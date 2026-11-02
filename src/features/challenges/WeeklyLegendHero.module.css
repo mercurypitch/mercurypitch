@@ -150,6 +150,12 @@
 .rankScore {
   font-variant-numeric: tabular-nums;
 }
+/* The "..." (SingerMoreButton): 44 px to the finger, so a row with one
+   is 44 px tall and no two targets overlap. Two classes, so its place does
+   not hang on which stylesheet loads last. */
+.rankRow .rankMore {
+  margin-right: -8px;
+}
 .youRow {
   margin-top: 8px;
   font-size: 0.8rem;

@@ -34,6 +34,13 @@ export interface LeagueStanding {
   displayName: string
   points: number
   rank: number
+  /**
+   * True where the row shows the member's own name (yours, or a member who
+   * let public boards show theirs); false for a weekly stand-in, whose
+   * `userId` is a membership's. Absent from a worker that predates it, and
+   * then no row can be reported or blocked (src/lib/singer-rows.ts).
+   */
+  named?: boolean
 }
 
 export interface LeagueMe {

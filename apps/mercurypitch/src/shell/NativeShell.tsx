@@ -24,6 +24,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, ErrorBoundary, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
+import { SingerSheetHost } from '@/components/moderation/SingerSheetHost'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { KARAOKE_IMPORT, NATIVE_LEAGUES, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -608,6 +609,11 @@ export const NativeShell: Component = () => {
               Account screen's button, the offer and every in-app "Sign
               in". */}
           <SignInSheet />
+
+          {/* Report or block a singer, from any board that names one: the
+              Leagues and the Legend room's, and the web Leaderboard's under
+              Progress. Its Sign in hands over to the sheet above. */}
+          <SingerSheetHost onSignIn={openSignIn} />
 
           {/* After a sign-in to an account that already existed: whether
               this phone's voiceprints go to it (voiceprint-ask.ts). After

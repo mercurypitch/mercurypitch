@@ -1505,6 +1505,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** decide that a session has audio from what lasts (its status, `stemMeta`, the stems on disk), and mint the URLs when the song is opened (`ensureSessionHydrated`). Test a list across two launches that share one database, and take a probe through `page.reload()`.
 **See:** `src/features/karaoke-room/karaoke-room-library.ts`, `src/features/karaoke-room/karaoke-room-library.restart.test.ts`, `apps/mercurypitch/scripts/probe-karaoke-import.mjs`
 
+### Read a board's place from its row's rank, never from its index in the list
+
+**Symptom:** with a block standing, the league board drew its promotion line a row too low and coloured a holding row as moving up; the web podium gave silver to whoever came third. Nothing failed: every fixture was a full board.
+**Cause:** since slice 4a the worker leaves a hidden singer's row out and keeps every other place (REQ-RB-012), so a row's index is no longer `rank - 1`. The cut zoned rows by index, and the podium took the list's first three.
+**Rule:** a place is the row's `rank`. Code that counts positions in a board's list breaks the moment a row is left out, by the worker or by the phone hiding a singer just blocked; test a board with a gap in it.
+**See:** `leagueBoard` in `src/lib/league-board.ts`, `src/components/leaderboard-podium.ts`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

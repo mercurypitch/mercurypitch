@@ -48,6 +48,11 @@ export interface WeeklyChallenge {
 
 export interface WeeklyBoardEntry {
   rank: number
+  /**
+   * The singer's id, for reporting or blocking them from the board. Absent
+   * for the Founder, and from a worker that predates it.
+   */
+  userId?: string
   displayName: string
   best: number
   isFounder: boolean
@@ -120,6 +125,18 @@ export type ArchivedWeeklyChallenge = WeeklyChallenge & {
   results: WeeklyResults | null
 }
 
+/** A place on a closed Legend's podium, as a card draws it. */
+export interface PodiumPlace {
+  rank: number
+  /** Null when redacted, or withheld from a singer who blocked them. */
+  displayName: string | null
+  best: number
+  /** The singer's id, where a named version 2 place carries one. */
+  userId?: string
+}
+
+const NO_ONE: ReadonlySet<string> = new Set()
+
 /**
  * The podium as the card should draw it: at most three entries, each with a
  * definite rank and a name or the redaction marker.
@@ -127,20 +144,36 @@ export type ArchivedWeeklyChallenge = WeeklyChallenge & {
  * Total by construction — a malformed or absent `results` yields an empty
  * list, so the card simply renders no podium rather than throwing on a row
  * written by an older worker.
+ *
+ * `hidden` is whom the viewer blocked (blocked-singers-store.ts). The
+ * worker reads the podiums without an account, so a block never reaches
+ * them; the viewer's own device withholds those names instead, place kept.
  */
 export function podiumOf(
   results: WeeklyResults | null | undefined,
-): Array<{ rank: number; displayName: string | null; best: number }> {
+  hidden: ReadonlySet<string> = NO_ONE,
+): PodiumPlace[] {
   if (results === null || results === undefined) return []
   if (!Array.isArray(results.top3)) return []
-  return results.top3.slice(0, 3).map((entry, index) => ({
-    rank: typeof entry.rank === 'number' ? entry.rank : index + 1,
-    displayName:
-      typeof entry.displayName === 'string' && entry.displayName !== ''
-        ? entry.displayName
-        : null,
-    best: Math.round(entry.best),
-  }))
+  return results.top3.slice(0, 3).map((entry, index) => {
+    const id =
+      typeof entry.userId === 'string' && entry.userId !== ''
+        ? entry.userId
+        : undefined
+    const withheld = id !== undefined && hidden.has(id)
+    const place: PodiumPlace = {
+      rank: typeof entry.rank === 'number' ? entry.rank : index + 1,
+      displayName:
+        !withheld &&
+        typeof entry.displayName === 'string' &&
+        entry.displayName !== ''
+          ? entry.displayName
+          : null,
+      best: Math.round(entry.best),
+    }
+    if (place.displayName !== null && id !== undefined) place.userId = id
+    return place
+  })
 }
 
 function base(): string {

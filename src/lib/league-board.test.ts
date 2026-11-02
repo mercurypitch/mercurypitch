@@ -122,6 +122,29 @@ describe('the league board', () => {
     )
   })
 
+  it('cuts each row by its place when a blocked singer is left out', () => {
+    // Third and twenty-fifth are hidden by a block: the worker sends every
+    // other place as it was (REQ-RB-012), and the phone hides a singer
+    // blocked from the board the same way.
+    const full = me(descending(30), LADDER[1])
+    const gapped = {
+      ...full,
+      standings: full.standings?.filter(
+        (row) => row.rank !== 3 && row.rank !== 25,
+      ),
+    }
+
+    const items = leagueBoard(gapped, LADDER)
+
+    expect(shape(items)).toBe(
+      `${'P'.repeat(9)}^${'H'.repeat(10)}v${'D'.repeat(9)}`,
+    )
+    const zoneOf = (rank: number) =>
+      items.find((item) => item.kind === 'row' && item.row.rank === rank)
+    expect(zoneOf(11)).toMatchObject({ zone: 'hold' })
+    expect(zoneOf(21)).toMatchObject({ zone: 'demote' })
+  })
+
   it('names the zone of every row the same way for the singer on it', () => {
     for (const points of [
       descending(30),

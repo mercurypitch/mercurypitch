@@ -538,6 +538,14 @@
   color: #e7e3f7;
 }
 
+/* The "..." that opens the singer sheet (SingerMoreButton), in the room's
+   own ink, reaching into the row's padding. Two classes, so its place does
+   not hang on which stylesheet loads last. */
+.mp-legend-podium__row .mp-legend-podium__more {
+  margin-right: -10px;
+  color: var(--legend-text-2);
+}
+
 .mp-legend-you {
   display: flex;
   align-items: center;

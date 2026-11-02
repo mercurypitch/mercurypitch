@@ -12,14 +12,22 @@
 // challenge stage (zen canvas), and a compact board (top singers + the
 // founder + your standing). The stage reports through the exercise-history
 // funnel, so the weekly-attempt return path is unchanged.
+//
+// A board row that names a singer ends in a "...": Report or Block (slice
+// 4b). The card is in the Leaderboard's Legends view, which the phone
+// reaches from Progress, so this ships in every build.
 
 import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, For, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Trophy } from '@/components/icons'
+import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
+import { getUserId } from '@/db/services/user-service'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { TAB_LEADERBOARD } from '@/features/tabs/constants'
 import { stashRequestedLeaderboardView } from '@/lib/pending-leaderboard-view'
+import { singerOfEntry, withoutBlocked } from '@/lib/singer-rows'
+import { blockedSingerIds } from '@/stores/blocked-singers-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
 import { grantBoardConsent, hasBoardConsent } from './board-consent'
@@ -49,6 +57,14 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
     () => challenge()?.id,
     (id) => getWeeklyBoard(id),
   )
+
+  // A singer blocked from here is gone at once; the rest keep their places.
+  const topThree = () =>
+    withoutBlocked(
+      board()?.top ?? [],
+      blockedSingerIds(),
+      (entry) => entry.userId,
+    ).slice(0, 3)
 
   // Re-pull the board after each recorded attempt.
   createEffect(() => {
@@ -208,7 +224,7 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
               </Show>
             </div>
             <ol class={styles.rankList}>
-              <For each={board()!.top.slice(0, 3)}>
+              <For each={topThree()}>
                 {(e) => (
                   <li
                     class={`${styles.rankRow} ${e.isFounder ? styles.founder : ''}`}
@@ -216,6 +232,18 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
                     <span class={styles.rankNum}>{e.rank}</span>
                     <span class={styles.rankName}>{e.displayName}</span>
                     <span class={styles.rankScore}>{e.best}%</span>
+                    <Show when={singerOfEntry(e, getUserId())}>
+                      {(userId) => (
+                        <SingerMoreButton
+                          subject={{
+                            userId: userId(),
+                            displayName: e.displayName,
+                            onBlocked: () => void refetchBoard(),
+                          }}
+                          class={styles.rankMore}
+                        />
+                      )}
+                    </Show>
                   </li>
                 )}
               </For>

@@ -27,6 +27,7 @@ import { AboutScreen } from './settings/AboutScreen'
 import { AccountNameScreen } from './settings/AccountNameScreen'
 import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
+import { BlockedSingersScreen } from './settings/BlockedSingersScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
 import { KaraokeSettingsScreen } from './settings/KaraokeSettingsScreen'
@@ -79,6 +80,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   account: 'Account',
   'account-name': 'Name',
   devices: 'Devices',
+  'blocked-singers': 'Blocked singers',
   'delete-account': 'Delete account',
   microphone: 'Microphone',
   'room-noise': 'Room noise',
@@ -117,6 +119,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <AccountNameScreen />
       case 'devices':
         return <DevicesScreen />
+      case 'blocked-singers':
+        return <BlockedSingersScreen />
       case 'delete-account':
         return <DeleteAccountScreen />
       case 'microphone':

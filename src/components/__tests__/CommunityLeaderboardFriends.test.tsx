@@ -58,7 +58,16 @@ vi.mock('@/db/services/follow-service', async () => {
 
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => mocks.registered,
+  currentAccountId: () => (mocks.registered ? 'me' : null),
+  handleAuthErrorResponse: () => false,
   hasValidToken: () => true,
+}))
+
+// The board reads whom the singer blocked (blocked-singers-store.ts): nobody.
+vi.mock('@/db/services/moderation-service', () => ({
+  listBlockedSingers: async () => ({ status: 'ok', blocks: [] }),
+  blockSinger: async () => ({ status: 'blocked' }),
+  unblockSinger: async () => ({ status: 'unblocked' }),
 }))
 
 vi.mock('@/db/services/user-service', () => ({

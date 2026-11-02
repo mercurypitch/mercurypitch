@@ -11,11 +11,20 @@
 // It used to be a rail on the Challenges tab, which put the one competitive
 // thing in the app on the page for personal practice drills and left the
 // Leaderboard — the page for competition — without it.
+//
+// A place that names a singer ends in a "...", for Report only (slice 4b):
+// the worker reads these podiums without an account, so a block cannot
+// reach them. A singer this account blocked is withheld here instead, by
+// the viewer's own device, the place kept.
 
 import type { Component } from 'solid-js'
 import { createResource, For, Show } from 'solid-js'
 import { History, Play } from '@/components/icons'
+import { SingerMoreButton } from '@/components/moderation/SingerMoreButton'
+import { getUserId } from '@/db/services/user-service'
 import { badgeArtSrc } from '@/lib/badge-art'
+import { singerOfEntry } from '@/lib/singer-rows'
+import { blockedSingerIds } from '@/stores/blocked-singers-store'
 import { openChallengeStage } from '@/stores/ui-store'
 import styles from './PastWeeklyChallenges.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
@@ -126,7 +135,9 @@ export const PastWeeklyChallenges: Component = () => {
                         class={styles.podium}
                         data-testid={`podium-${challenge.id}`}
                       >
-                        <For each={podiumOf(challenge.results)}>
+                        <For
+                          each={podiumOf(challenge.results, blockedSingerIds())}
+                        >
                           {(place) => (
                             <li class={styles.place}>
                               {/* The medal for the place, when it has one;
@@ -166,6 +177,18 @@ export const PastWeeklyChallenges: Component = () => {
                               <span class={styles.placeScore}>
                                 {place.best}%
                               </span>
+                              <Show when={singerOfEntry(place, getUserId())}>
+                                {(userId) => (
+                                  <SingerMoreButton
+                                    subject={{
+                                      userId: userId(),
+                                      displayName: place.displayName ?? '',
+                                      reportOnly: true,
+                                    }}
+                                    class={styles.placeMore}
+                                  />
+                                )}
+                              </Show>
                             </li>
                           )}
                         </For>

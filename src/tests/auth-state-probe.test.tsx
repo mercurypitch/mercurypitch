@@ -23,9 +23,12 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 
 vi.mock('@/db/services/auth-service', async (importOriginal) => {
   let resolveMe: (me: MeResponse | null) => void = () => {}
+  const actual = await importOriginal<typeof AuthService>()
   return {
-    isRegisteredProvider: (await importOriginal<typeof AuthService>())
-      .isRegisteredProvider,
+    isRegisteredProvider: actual.isRegisteredProvider,
+    // Read by the Blocked singers list a signed-in account shows.
+    accountHeld: actual.accountHeld,
+    currentAccountId: actual.currentAccountId,
     restoreAuth: () => Promise.resolve(true),
     fetchMe: () =>
       new Promise<MeResponse | null>((resolve) => {
@@ -35,6 +38,13 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
     __resolveMe: (me: MeResponse | null) => resolveMe(me),
   }
 })
+
+// The Blocked singers list reads whom the account blocked: nobody here.
+vi.mock('@/db/services/moderation-service', () => ({
+  listBlockedSingers: async () => ({ status: 'ok', blocks: [] }),
+  blockSinger: async () => ({ status: 'blocked' }),
+  unblockSinger: async () => ({ status: 'unblocked' }),
+}))
 
 vi.mock('@/db/services/billing-service', () => ({
   fetchBillingMe: () => Promise.resolve(null),

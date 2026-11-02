@@ -3639,6 +3639,37 @@
   color: var(--accent, #58a6ff);
 }
 
+/* The "..." on a row that names a singer (SingerMoreButton), and the room
+   it keeps on a row without one: at the row's end, reaching into its
+   padding so the row keeps its height. Two classes, so the place does not
+   hang on which stylesheet loads last. */
+.league-standing-row .leaderboard-row-more {
+  margin: -10px -10px -10px -6px;
+}
+
+/* The table's "..." has a column of its own, the row's last, kept on every
+   width (the phone rule above hides other columns, never this one). Its
+   header is for a screen reader alone. */
+.leaderboard-table .more-th,
+.leaderboard-table td.more-td {
+  width: 44px;
+  padding: 0;
+}
+
+.leaderboard-table td.more-td {
+  height: 44px;
+  text-align: right;
+}
+
+.more-th-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .league-zone-divider {
   display: flex;
   align-items: center;

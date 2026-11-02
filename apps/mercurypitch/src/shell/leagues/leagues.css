@@ -180,6 +180,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The "..." that opens the singer sheet (SingerMoreButton): 44 px to the
+   finger, reaching into the row's padding so the row keeps its height,
+   and the same room kept on a row without one, so the points line up. */
+/* Two classes: the button's own module sets its chrome, and whichever
+   stylesheet loads last must not decide its place. */
+.mp-league-row .mp-league-row__more {
+  margin: -6px -10px -6px -6px;
+}
+
 /* The line across the board where a zone ends: its words say which. */
 .mp-league-line {
   display: flex;
