@@ -2986,5 +2986,5 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Rate limit allowed. R28 (builder) spawned 18:0x UTC (fresh, xhigh; report s2pkg/28-REVIEW.md). Only agent running. Fallback trig_01PCa3KoERn1uEczDt67XyMh re-pointed at R28 for 19:07.
 - Next: R28 report -> s2pkg/28-FIXPASS-MSG.md -> resume W28 -> lead -> commit. Then #229.
 
-## 2 Nov 18:5x
+## 2 Nov 18:1x
 - R28 still running. While it runs: #229 drafted for Lessons 15-27 in /dev/shm/s2shared (detached at 85ccd03dd), saved as s2pkg/shared-rest/draft/shared-16-27.content.patch; test re-anchor gives 200 findings, none new (details and the real-run pipeline in shared-rest/NOTES.md, "Draft status"). The Lesson 28 wave follows its commit.
