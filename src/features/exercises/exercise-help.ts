@@ -221,7 +221,7 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     body: [
       '"Staccato" means short, separated notes — quick and clean, with a tiny silence between each.',
       'Use light, controlled bursts of breath so each note starts exactly on pitch and stops cleanly.',
-      'It runs in rounds and scores the precision and timing of your short notes.',
+      'It runs in rounds and scores how in tune each note is, how close to pitch it starts, and your best round.',
     ],
   },
   [EXERCISE_ROUTINE_RUNNER]: {
