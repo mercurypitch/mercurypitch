@@ -60,3 +60,11 @@
   now "It slows, then stops" (exact line in the L24 hand-back). SEASON-2 § 4.1's S20a row ("against a
   drone the third and fifth are intervals, not yet a chord", SEASON-2.md:754) no longer matches
   Step 2's chord: replace from the L24 hand-back.
+- App notes from Lesson 27 (VERIFIED by the lead 2 Nov 11:4x at c60f0fdcb): Chord Stacker plays notes
+  1 to 3 for about 0.3 s each at every level. It awaits `audioEngine.playTone`, which settles once the
+  tone is scheduled, then only `GAP_BETWEEN_NOTES_MS` (300) before the next note cuts it off
+  (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:32`, `:149-155`). Arpeggio
+  Jumper waits each tone out (`use-arpeggio-jumper-controller.ts:316-319`). App fix: wait out
+  `notePlayDurationMs` the same way. Its help text describes a sustained stack that never sounds
+  ("each one tuned against the notes already sounding", `src/features/exercises/exercise-help.ts:194-197`,
+  summary line included): replace it with the Lesson 27 hand-back's proposed text (app content, for the owner).
