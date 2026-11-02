@@ -76,3 +76,31 @@
   only a loaded song (`src/stores/jam-store.ts:1971-1983`), and the mode travels only inside a melody
   message. App fix: send the drill and mode to a peer whose channel opens, with a late-join test
   (Lesson 26 hand-back). The card is worded so the friend joins first.
+
+## Draft status (2 Nov 18:5x, lead)
+- Lessons 15-27's shared edits are DRAFTED as a content-only patch: s2pkg/shared-rest/draft/shared-16-27.content.patch
+  (made in a detached worktree /dev/shm/s2shared at 85ccd03dd; applies with `git apply` on any commit whose
+  shared files match 85ccd03dd, e.g. Lesson 28's commit). Contents: MASTER-PLAN § 11 lines 16, 18, 20, 22, 24-27;
+  CURIOSITY-MOMENTS § 2 entries 16, 18, 20, 22, 24-27 (every quote checked against the committed lessons, checkq2.py);
+  SEASON-2: card 18 signature, card 22 checkpoint, cards 24-27 "Closes on" in the settled form, S20a row,
+  § 5.2 items 10 (L16 a/e), 11 (L18), 15 (L24), 18 (L27 Chord Stacker), new 22 (L22), 23-24 (L26 Jam),
+  § 5.3 (L20), § 6.1 item 6, § 6.2 items 5 and 7 (L26); L15 FACTS 5 x2 + CM entry + WEB-SPEC Toys 8;
+  L17 FACTS 5 x3 (+ L18 LESSON cites), LESSON still, WEB-SPEC Toys 11; 17/19/21 descriptions as words;
+  L19 FACTS 5 (quote + LESSON.md:123-125); L20 FACTS 30 (L18 page cites); L21 FACTS 5 x2; L23 FACTS 5;
+  L25 FACTS 5 (N9); six facts that quoted replaced card lines (L25 x2, L26, L27 pinned "at `85ccd03dd`";
+  L18 FACTS 5 and L22 FACTS 68 reworded).
+- Not taken: card 17's closing line stays (L18 hand-back: "two" no longer leans); L26 entry 5 (L28's plan
+  recall: the plan is an input; L28's page chose its own recall); SEASON-2 § 5.1 row 22 (optional).
+- Pipeline for the real run, on s2plan after Lesson 28 is committed:
+  1. `git apply .../draft/shared-16-27.content.patch`, then add L28's entries (below);
+  2. `node scripts/plan-cites.mjs reanchor --base HEAD --write > rw.txt`;
+  3. `python3 -I .../draft/repoint.py /dev/shm/s2plan HEAD rw.txt --write` (maps "rewritten"/"edited" by line diff);
+  4. `node scripts/plan-cites.mjs check docs/plans/find-your-pitch` must give 200 (diff with line numbers
+     stripped against the pre-commit run; the two section findings in L9/L14 move digits only).
+  Test run on the draft: 216 moved, 48 re-pointed, 200 findings, none new.
+- Lesson 28 wave, still to add: its MASTER-PLAN line and CM entry (from the final hand-back); SEASON-2 card 28
+  (Misconception, Practise, Facts to check), § 5.1 row 28, § 6.2 item 1 (season close required), § 6.2 item 7
+  (L28's alone path records the take), trailer card line if kept; L27 FACTS 5 (43) still describes L28's PLAN
+  predict ("whether the chord under do changed or the top part sang a different note") and plan reveal
+  ("sounds like an ending and swerves") and Tavi's "sounded finished": rewrite to L28's final predict and
+  wording, cite L28's LESSON.md lines.
