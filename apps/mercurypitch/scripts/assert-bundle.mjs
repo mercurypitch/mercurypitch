@@ -540,6 +540,18 @@ const KARAOKE_STAGE_2 = [
   // The Sing room's card over its exercises is worded by the shell
   // (legend-card-wiring.ts), so a store build carries none of its words.
   ['Everyone sings the same notes', "the Sing room's Legend card"],
+  // Community (slice 4c), on a switch of its own until the owner flips it
+  // (NATIVE_COMMUNITY): its two screens are lazy chunks behind it, the
+  // counts its More row says are free of side effects in the native config,
+  // and the row's line is worked out inside the folded Together group.
+  ['shell-community', 'the Community screen'],
+  ['shell-shared-result', 'a shared result opened from Community'],
+  [
+    'Sign in to see your runs, your best and your streak here.',
+    "Community's profile, signed out",
+  ],
+  ['mp:community-card', "the counts the More sheet's Community row says"],
+  ['What other singers shared', "the More sheet's Community row"],
 ]
 
 /**

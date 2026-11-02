@@ -58,7 +58,7 @@
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_PIANO } from '@/features/tabs/constants'
-import { NATIVE_LEAGUES } from '@/lib/native-build'
+import { NATIVE_COMMUNITY, NATIVE_LEAGUES } from '@/lib/native-build'
 import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, setTabCoveredByShell, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
@@ -439,8 +439,9 @@ const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
 export function pushScreen(screen: PushedScreen): void {
   if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
   // Leagues and the Legend the same way, on a build without them
-  // (NATIVE_LEAGUES).
+  // (NATIVE_LEAGUES), and Community's two screens (NATIVE_COMMUNITY).
   if ((screen === 'leagues' || screen === 'legend') && !NATIVE_LEAGUES) return
+  if (screen.startsWith('community') && !NATIVE_COMMUNITY) return
   closeColumn()
   closeMore()
   setPushedStack((stack) => {

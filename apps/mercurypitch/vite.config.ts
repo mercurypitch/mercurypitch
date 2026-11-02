@@ -99,6 +99,10 @@ const KARAOKE_STAGE_2 = [
   // statically and which reads storage as it is made.
   '/apps/mercurypitch/src/shell/leagues/league-store.ts',
   '/apps/mercurypitch/src/shell/legend/legend-store.ts',
+  // And Community (NATIVE_COMMUNITY): the counts the More sheet's row says,
+  // which the sheet and the shell import statically, read from storage as
+  // the module is made.
+  '/apps/mercurypitch/src/shell/community/community-store.ts',
 ]
 
 function isKaraokeStage2(id: string): boolean {

@@ -166,54 +166,62 @@ export async function loadUserProfile(): Promise<UserProfileView | null> {
   }
 }
 
+/**
+ * The public melodies, newest first, one page. Rejects when the board could
+ * not be read, so a screen can tell a failed read from an empty board (the
+ * phone's Community, slice 4c); `loadSharedMelodies` is the web's quiet read.
+ */
+export async function readSharedMelodies(): Promise<SharedMelodyView[]> {
+  const db = await getDb()
+  const repo = db.getRepository<SharedMelody>('sharedMelodies')
+  const items = await repo.findAll({
+    where: { isPublic: true },
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    throwOnError: true,
+  })
+  return items.flatMap((m) => {
+    try {
+      return [
+        {
+          id: m.id,
+          userId: m.userId,
+          name: m.melodyName,
+          items: parseMelodyItems(JSON.parse(m.itemsJson)),
+          author: m.author ?? 'Unknown',
+          tags: m.tags ?? [],
+          date: new Date(m.createdAt).getTime(),
+        },
+      ]
+    } catch {
+      // A malformed public row must not hide everyone else's melodies.
+      return []
+    }
+  })
+}
+
 export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<SharedMelody>('sharedMelodies')
-    const items = await repo.findAll({
-      where: { isPublic: true },
-      orderBy: 'createdAt',
-      orderDir: 'desc',
-    })
-    return items.flatMap((m) => {
-      try {
-        return [
-          {
-            id: m.id,
-            userId: m.userId,
-            name: m.melodyName,
-            items: parseMelodyItems(JSON.parse(m.itemsJson)),
-            author: m.author ?? 'Unknown',
-            tags: m.tags ?? [],
-            date: new Date(m.createdAt).getTime(),
-          },
-        ]
-      } catch {
-        // A malformed public row must not hide everyone else's melodies.
-        return []
-      }
-    })
-  } catch {
-    return []
-  }
+  return readSharedMelodies().catch(() => [])
+}
+
+/** The public results, newest first, rejecting as `readSharedMelodies`. */
+export async function readSharedSessions(): Promise<SharedSessionView[]> {
+  const db = await getDb()
+  const repo = db.getRepository<SharedSession>('sharedSessions')
+  const items = await repo.findAll({
+    where: { isPublic: true },
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    throwOnError: true,
+  })
+  return items.flatMap((row) => {
+    const result = sharedSessionView(row)
+    return result ? [result] : []
+  })
 }
 
 export async function loadSharedSessions(): Promise<SharedSessionView[]> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<SharedSession>('sharedSessions')
-    const items = await repo.findAll({
-      where: { isPublic: true },
-      orderBy: 'createdAt',
-      orderDir: 'desc',
-    })
-    return items.flatMap((row) => {
-      const result = sharedSessionView(row)
-      return result ? [result] : []
-    })
-  } catch {
-    return []
-  }
+  return readSharedSessions().catch(() => [])
 }
 
 function sharedSessionView(row: SharedSession): SharedSessionView | null {

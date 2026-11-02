@@ -1,0 +1,339 @@
+/* ============================================================
+   Community (slice 4c, docs/plans/native-more-and-community.md)
+   ============================================================
+
+   The Settings stack's grouped list (settings.css) with parts of its own:
+   the singer's profile card, the rows of what other singers shared, a
+   shared result opened from them, and the contact line at the foot. Tokens
+   only, so dark, light and every preset carry over. Nothing under 13 px,
+   every target 44 px, and nothing wider than the phone: a long name gives
+   way, cut short, and never pushes the row.
+
+   Loaded by the screens' lazy chunks alone, so a store build carries none. */
+
+/* The Settings stack titles its groups at 11 px; here, as on the More
+   sheet and the Leagues screen, nothing is under 13. */
+.mp-community .mp-set-group__title {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-secondary);
+}
+
+/* ---------- the profile ---------- */
+
+.mp-community-profile,
+.mp-community-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.mp-community-profile__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The name's first letter, as ProfileView draws a singer without a twin. */
+.mp-community-profile__mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-tertiary));
+  color: var(--text-primary);
+  font: 700 20px/1 var(--font-body, sans-serif);
+}
+
+.mp-community-profile__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-community-profile__eyebrow {
+  margin: 0;
+  font: 500 13px/18px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.mp-community-profile__name {
+  margin: 0;
+  font: 700 22px/28px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-community-profile__since,
+.mp-community-profile__published {
+  margin: 0;
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* Two to a row on a phone, four on a wider screen: the number leads. */
+.mp-community-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .mp-community-figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.mp-community-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+}
+
+.mp-community-figure__value {
+  font: 700 22px/28px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-community-figure__label {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* ---------- signed out ---------- */
+
+.mp-community-invite {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mp-community-invite__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0e8f7f;
+  color: #ffffff;
+}
+
+.mp-community-invite__title {
+  margin: 4px 0 0;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-community-invite__body {
+  margin: 0 0 8px;
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* ---------- what singers shared ---------- */
+
+.mp-community-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 0 4px 0 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mp-community-row:last-child {
+  border-bottom: 0;
+}
+
+/* The row's words, and on a result the button that opens it: as tall as
+   the row, so the whole of it is the target. */
+.mp-community-row__main {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 6px 8px 0;
+}
+
+.mp-community-row__open {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-community-row__open:active {
+  background: var(--bg-tertiary);
+}
+
+.mp-community-row__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* A long title gives way, cut short; the You beside it never does. The
+   line under it wraps instead: it names who shared the share, which is
+   what a report is about, so it is never cut. */
+.mp-community-row__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font: 500 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-community-row__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-community-row__sub {
+  min-width: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* "3 runs," and "2 Nov" stay whole; the name before them may wrap. */
+.mp-community-row__fact {
+  white-space: nowrap;
+}
+
+.mp-community-row__fact:first-child {
+  white-space: normal;
+}
+
+.mp-community-row__you {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-secondary));
+  color: var(--text-primary);
+  font: 600 13px/18px var(--font-body, sans-serif);
+}
+
+.mp-community-row__score {
+  flex: 0 0 auto;
+  color: var(--text-primary);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-community-row__chev {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+/* ---------- a shared result ---------- */
+
+.mp-community-result__name {
+  margin: 0;
+  font: 700 24px/30px var(--font-body, sans-serif);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Who shared it, and their "..." at the line's end. */
+.mp-community-result__by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: -8px;
+}
+
+.mp-community-result__line {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.mp-community-result__average {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.mp-community-result__score {
+  font: 700 44px/1 var(--font-body, sans-serif);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-community-result__of {
+  font: 400 15px/20px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-community-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-community-scores__score {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- the foot ---------- */
+
+.mp-community-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.mp-community-contact .mp-set__caption {
+  flex: 1 1 12em;
+}

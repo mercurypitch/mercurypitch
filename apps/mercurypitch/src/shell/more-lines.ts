@@ -150,6 +150,35 @@ export function legendLine(facts: LegendRowFacts): string {
   )
 }
 
+/** How many shares the Community screen found on its last load. */
+export interface CommunityCounts {
+  melodies: number
+  results: number
+}
+
+/** "1 melody", "3 results". */
+function counted(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`
+}
+
+/**
+ * Community: what the screen found when it last loaded, counted and never
+ * named, since the phone keeps no singer's name or share for the row
+ * (community-store.ts): "4 melodies, 12 results", short enough for a 320 px
+ * phone. Before that first load, what the screen is for.
+ */
+export function communityLine(counts: CommunityCounts | null): string {
+  if (counts === null) return 'What other singers shared'
+  const parts: string[] = []
+  if (counts.melodies > 0) {
+    parts.push(counted(counts.melodies, 'melody', 'melodies'))
+  }
+  if (counts.results > 0) {
+    parts.push(counted(counts.results, 'result', 'results'))
+  }
+  return parts.length === 0 ? 'Nothing shared yet' : parts.join(', ')
+}
+
 /** Settings: a microphone the phone refused is the one thing to say. */
 export function settingsLine(microphoneRefused: boolean): string {
   return microphoneRefused

@@ -17,8 +17,8 @@
 // TOGETHER, ON ITS SWITCHES. Leagues, Legend and Community form a group
 // between Rooms and You, each row behind a build switch in
 // src/lib/native-build.ts (docs/plans/native-more-and-community.md). Leagues
-// and Legend ride NATIVE_LEAGUES; with no switch on, the group is not drawn
-// at all.
+// and Legend ride NATIVE_LEAGUES, Community NATIVE_COMMUNITY; with no switch
+// on, the group is not drawn at all.
 //
 // A test build also gets Developer, because a TestFlight build has no
 // devtools and a panel only a keyboard can reach is a panel the tester does
@@ -43,13 +43,14 @@ import { importsInFlight, karaokeNewSongs, } from '@/features/karaoke-room/karao
 import { roomLibrary } from '@/features/karaoke-room/karaoke-room-library'
 import { TAB_GUITAR, TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
 import { API_BASE_URL, COMMIT_SHA } from '@/lib/defaults'
-import { KARAOKE_IMPORT, NATIVE_LEAGUES } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_COMMUNITY, NATIVE_LEAGUES, } from '@/lib/native-build'
 import { gameState, selectedSongName } from '@/stores/falling-notes-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
-import { AccountIcon, CalendarIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, TrophyIcon, } from './icons'
+import { communityCounts } from './community/community-store'
+import { AccountIcon, CalendarIcon, ChevronIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PeopleIcon, PianoIcon, TrophyIcon, } from './icons'
 import { leagueCard, leagueReadThisWeek } from './leagues/league-store'
 import { legendCard, legendStanding } from './legend/legend-store'
-import { accountLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
+import { accountLine, communityLine, developerLine, guitarLine, karaokeLine, leaguesLine, legendLine, pianoLine, settingsLine, } from './more-lines'
 import { accountCard, accountProviderLine, accountSignedIn, } from './settings/account-state'
 import { knownInput } from './settings/level-check'
 import { goToTab } from './shell-navigation'
@@ -65,6 +66,8 @@ export interface MoreSheetProps {
   onPushLeagues: () => void
   /** The Legend room (NATIVE_LEAGUES). */
   onPushLegend: () => void
+  /** Community (NATIVE_COMMUNITY). */
+  onPushCommunity: () => void
 }
 
 const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
@@ -201,35 +204,49 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
           />
         </MoreGroup>
 
-        {/* Together, on a build with any of its rows: a ternary, as
+        {/* Together, on a build with any of its rows: ternaries, as
             Developer's is, so a store build carries no group, no row and
-            no read of the league the row names (league-store.ts). The
-            row's line is worked out inside the branch for the same
-            reason: a closure outside it would keep the store alive. */}
-        {NATIVE_LEAGUES ? (
+            no read of the league or the counts a row names
+            (league-store.ts, community-store.ts). Each row's line is
+            worked out inside its branch for the same reason: a closure
+            outside it would keep the store alive. */}
+        {NATIVE_LEAGUES || NATIVE_COMMUNITY ? (
           <MoreGroup title="Together" tint="together">
-            <MoreRow
-              id="leagues"
-              icon={<TrophyIcon />}
-              name="Leagues"
-              line={leaguesLine({
-                signedIn: accountSignedIn(),
-                me: leagueCard(),
-                thisWeek: leagueReadThisWeek(),
-              })}
-              onPress={() => leaveTo(props.onPushLeagues)}
-            />
-            <MoreRow
-              id="legend"
-              icon={<CalendarIcon />}
-              name="Legend"
-              line={legendLine({
-                challenge: legendCard(),
-                best: legendStanding()?.best ?? null,
-                nowMs: Date.now(),
-              })}
-              onPress={() => leaveTo(props.onPushLegend)}
-            />
+            {NATIVE_LEAGUES ? (
+              <>
+                <MoreRow
+                  id="leagues"
+                  icon={<TrophyIcon />}
+                  name="Leagues"
+                  line={leaguesLine({
+                    signedIn: accountSignedIn(),
+                    me: leagueCard(),
+                    thisWeek: leagueReadThisWeek(),
+                  })}
+                  onPress={() => leaveTo(props.onPushLeagues)}
+                />
+                <MoreRow
+                  id="legend"
+                  icon={<CalendarIcon />}
+                  name="Legend"
+                  line={legendLine({
+                    challenge: legendCard(),
+                    best: legendStanding()?.best ?? null,
+                    nowMs: Date.now(),
+                  })}
+                  onPress={() => leaveTo(props.onPushLegend)}
+                />
+              </>
+            ) : null}
+            {NATIVE_COMMUNITY ? (
+              <MoreRow
+                id="community"
+                icon={<PeopleIcon />}
+                name="Community"
+                line={communityLine(communityCounts())}
+                onPress={() => leaveTo(props.onPushCommunity)}
+              />
+            ) : null}
           </MoreGroup>
         ) : null}
 

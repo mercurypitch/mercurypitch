@@ -3,7 +3,8 @@
 Status: slices 1 to 3 merged (the More sheet as a list, #1267; Leagues,
 read-only, #1272; the Legend as a native room, and 3b, its light), and 4a
 (the worker's reports, blocks and name filter, in v0.9.28); 4b built
-(Report and Block on the phone); 4c planned. Each slice is its own PR.
+(Report and Block on the phone); 4c built (Community on the phone, behind
+its own switch). Each slice is its own PR.
 
 The native app's More sheet (`apps/mercurypitch/src/shell/MoreSheet.tsx`) was
 six square tiles in a four-column grid: 11 px labels, a third of the sheet
@@ -716,6 +717,113 @@ like Leagues'. New shell icon: two people, in the house style.
 
 `NATIVE_COMMUNITY` stays off in the store build until 4a is live on the
 production worker and 4b ships with it.
+
+**As built** (the worker's half is REQ-RB-042 in
+[`docs/specs/reports-and-blocks.ears.md`](../specs/reports-and-blocks.ears.md)),
+with what moved from the paragraph above:
+
+- **The switch.** `NATIVE_COMMUNITY` in `src/lib/native-build.ts`, equal to
+  `KARAOKE_IMPORT`: on in a test build, off in the store build. Two pushed
+  screens, `'community'` and `'community-result'`
+  (`apps/mercurypitch/src/shell/community/`), each a lazy chunk behind it
+  in `NativeShell.tsx`; `pushScreen` refuses both without it.
+- **The row.** Community, last in the Together group, on a two-people chip
+  (`PeopleIcon`, new in `shell/icons.tsx`). The group is drawn when either
+  switch is on, and each row keeps a ternary of its own. The line counts
+  what the screen found when it last loaded: "4 melodies, 12 results",
+  "2 results", "Nothing shared yet", and "What other singers shared" before
+  the first load, each short enough for a 320 px phone.
+  `community-store.ts` keeps the two numbers under `mp:community-card`,
+  with the account they were counted for, and never a name or a title. Only
+  the screen fills it: no read on the return to the front, and none from
+  the sheet.
+- **The screen.** The singer's profile, then Melodies, then Results, then
+  the contact line. The lists are the web's public reads, one page, newest
+  first, everyone's, the singer's own marked You. `readSharedMelodies` and
+  `readSharedSessions` (`share-service.ts`) reject when the worker does not
+  answer, where the web's `load*` answer an empty list
+  ([MISTAKES.md](../agent/MISTAKES.md), "Ask a cloud read to throw before
+  calling what it returned empty"); the `load*` are wrappers over them now.
+  A row's line says who shared it, how many notes or runs, and the day,
+  and wraps between those, never inside one, so a singer's name is never
+  cut short.
+- **A melody has no Open.** The web opens one in Compose, its piano-roll
+  editor, which the phone does not carry. The Sing room is the phone's room
+  for a melody, but it sings only the singer's own melodies, picked from its
+  own song list in its own tap (its sound starts in that gesture). Opening a
+  share there would mean writing it into the singer's library, counted as a
+  melody they wrote (`updateMelody` records `melody_created`), and still
+  leaving them to find it at the foot of that list. So a melody row says
+  what the melody is, and nothing pretends to open it.
+- **A shared result** is pushed over the list (`CommunityResultScreen.tsx`):
+  SharedRunResult's content, its name, who shared it and when, the average
+  at 44 px and each run's score, and "This is a shared result. Viewing it
+  does not add a run to your practice history." It is the result the list
+  read: nothing is asked of the worker for it. No link opens the app, so it
+  is opened from the list alone, and `shared-run-link.ts` stays the web's.
+  Back, the bar's or the phone's, leaves it for the list, the focus on the
+  row that opened it; the next Back leaves Community.
+- **Your profile.** ProfileView's figures, from the same `run-kinds.ts`:
+  the runs (every run the account holds, `loadProgressSessionRecords`, as
+  Progress counts them, not ProfileView's last 50), the best, the recent
+  average and the streak once there is one; "Member since October 2026";
+  and "You shared 2 melodies and 1 result". No runs: "Nothing to show yet.
+  Finish a run and your figures start filling in here." The card waits for
+  those figures: before them it would name nobody. The trend chart, the
+  badges and the voice twin stay on the web. Signed out, a card asks for a
+  sign-in ("Sign in to see your runs, your best and your streak here."),
+  the lists still show, since anyone may read them, and the screen reads
+  again for whoever signs in.
+- **The states.** "Loading what singers shared"; "Nothing shared yet. When
+  singers share a melody or a result, it shows here."; "Could not load
+  Community. Check the connection and try again." with Try again, which
+  keeps its focus while its read is out; and offline, where the phone asks
+  nothing: "You are offline. Community shows what singers shared once this
+  phone is online again.", read again when it is. A signed-in singer whose
+  runs could not be read is a failed read too: a profile of no runs would
+  be a profile that is wrong. What was loaded before stays on screen.
+- **Report and Block.** Every share by another singer ends in a 44 px
+  "...": the singer sheet, with the share named in its report,
+  `report: { kind: 'melody' | 'session', id }`. None on the singer's own,
+  none on a share with no `userId`. The worker already sent the poster's
+  `userId` on every public share read, so no field was added; REQ-RB-042
+  pins it, with a test on the real migrations
+  (`community-share-singers-integration.test.ts`). A block takes the
+  singer's shares off both lists at once (`blocked-singers-store.ts`) and
+  reads them again, a fresh read rather than one already out. Each list is
+  a board of its own (`community-melodies`, `community-results`, its title
+  the heading), so the focus goes to the "..." now at the blocked share's
+  place on that list; with both lists empty, the empty line takes it. A read that brings
+  a row back unchanged keeps the object the screen drew, so Solid redraws
+  only the rows that changed and the focus stays on the rest. Blocked from
+  a result, the result is hidden ("You blocked this singer, so their result
+  is hidden.") and the focus goes to its heading.
+- **The contact line** is the foot of both screens: "Something here that
+  should not be?" and Contact us, the contact form on its support topic.
+- **Focus.** A pushed screen that asks hands the focus to its title as it
+  opens (`PushedScreen`'s `focusTitle`); Community's two ask. The other
+  screens keep the focus rules they were built with.
+- **The fold.** STAGE 2 markers: `shell-community`, `shell-shared-result`,
+  the profile's signed-out line, `mp:community-card` and the row's first
+  line. `community-store.ts` is in the native config's side-effect-free
+  list, the More sheet and the shell import it only inside a branch the
+  switch folds, and `community-fold.test.ts` holds the sources to all of
+  it, the never-a-`<Show>` rule included.
+
+Walked on the native dev build in Chromium at 320 x 640 and 390 x 844,
+light and dark, every request to the worker answered by the walk: no
+sideways scroll and every target 44 px on the list, a result, the
+signed-out card, a failed read and offline; the sheet from a share's "...";
+after a block, the singer's shares gone from both lists and the focus on
+the next "..."; the focus on each screen's title as it opens, and Back from
+a result on its row. assert-bundle passed on a test build (every STAGE 2
+piece, Community's among them) and on a production-target build, which
+carries none of the screens' words, the row or its icon.
+
+Left: posting and sharing from the phone, which wait on the Terms (open,
+below); a melody's Open, until the Sing room can be handed a melody;
+another singer's public profile, which nothing has; and the device check
+4b left, now with Community's sheets in it.
 
 ---
 

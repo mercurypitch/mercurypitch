@@ -26,7 +26,7 @@ import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SingerSheetHost } from '@/components/moderation/SingerSheetHost'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { KARAOKE_IMPORT, NATIVE_LEAGUES, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_COMMUNITY, NATIVE_LEAGUES, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { onUnlockShown, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -34,6 +34,7 @@ import { practiceScope } from '@/stores/settings-store'
 import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { abandonOnboarding, installNativeOnboarding, onboardingMounted, } from '../onboarding/onboarding-layer'
+import { forgetCommunityResult } from './community/community-store'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
@@ -61,6 +62,7 @@ import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellCloudOffer } from './ShellCloudOffer'
 import { ShellRoot } from './ShellRoot'
+import type { ShellScreensProps } from './ShellScreens'
 import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
 
@@ -197,6 +199,45 @@ const LegendScreen: Component = NATIVE_LEAGUES
       })),
     )
   : () => null
+
+/**
+ * Community (slice 4c of docs/plans/native-more-and-community.md) and a
+ * shared result opened from it, on a build with them (`NATIVE_COMMUNITY`)
+ * and no other: the same ternary as Long note's, so the store build keeps
+ * no chunk for either.
+ */
+const CommunityScreen: Component = NATIVE_COMMUNITY
+  ? lazy(async () =>
+      import('./community/CommunityScreen').then((module) => ({
+        default: module.CommunityScreen,
+      })),
+    )
+  : () => null
+
+const CommunityResultScreen: Component = NATIVE_COMMUNITY
+  ? lazy(async () =>
+      import('./community/CommunityResultScreen').then((module) => ({
+        default: module.CommunityResultScreen,
+      })),
+    )
+  : () => null
+
+/** The two, for ShellScreens: none at all on a build without them. */
+const COMMUNITY_SCREENS: Pick<
+  ShellScreensProps,
+  'community' | 'communityResult'
+> = NATIVE_COMMUNITY
+  ? { community: CommunityScreen, communityResult: CommunityResultScreen }
+  : {}
+
+/**
+ * More's Community row. Pushed afresh, Community opens at its title, not at
+ * a result opened on an earlier visit.
+ */
+function pushCommunity(): void {
+  if (NATIVE_COMMUNITY) forgetCommunityResult()
+  pushScreen('community')
+}
 
 /**
  * The native onboarding (src/onboarding), on a build with it
@@ -540,6 +581,7 @@ export const NativeShell: Component = () => {
             harmony={PREMIUM_EXERCISES ? HarmonyScreen : undefined}
             leagues={NATIVE_LEAGUES ? LeaguesScreen : undefined}
             legend={NATIVE_LEAGUES ? LegendScreen : undefined}
+            {...COMMUNITY_SCREENS}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom
@@ -567,6 +609,7 @@ export const NativeShell: Component = () => {
               quietRunForRoom()
               pushScreen('legend')
             }}
+            onPushCommunity={pushCommunity}
           />
 
           <KeepAlert
@@ -611,8 +654,9 @@ export const NativeShell: Component = () => {
           <SignInSheet />
 
           {/* Report or block a singer, from any board that names one: the
-              Leagues and the Legend room's, and the web Leaderboard's under
-              Progress. Its Sign in hands over to the sheet above. */}
+              Leagues and the Legend room's, Community's shares, and the web
+              Leaderboard's under Progress. Its Sign in hands over to the
+              sheet above. */}
           <SingerSheetHost onSignIn={openSignIn} />
 
           {/* After a sign-in to an account that already existed: whether

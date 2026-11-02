@@ -1526,6 +1526,13 @@ advanced together; a request between renewal and sweeping can hide the bug.
 **Rule:** after a change that removes a row server-side, read the board again from offset 0, as deep as it was loaded, and drop any page asked for before that read.
 **See:** `afterBlock` and `loadPage` in `src/components/CommunityLeaderboard.tsx`.
 
+### Ask a cloud read to throw before calling what it returned empty
+
+**Symptom:** the phone's Community, built on the web's `loadSharedMelodies`, drew "Nothing shared yet" for a worker that never answered, with no Try again.
+**Cause:** two layers each turn a failure into an empty answer: `ServerRepository.findAll` and `count` catch a failed request and return `[]` or `0` unless the caller passes `throwOnError: true`, and most services wrap the read in a `catch` that returns `[]` again.
+**Rule:** a screen that says "nothing yet" or offers Try again reads through a function that rejects and passes `throwOnError: true` (`readSharedMelodies`, `loadPublishedShareCounts`, or `available` on `loadProgressSessionRecords`). Keep the quiet `load*` as a wrapper over it, never a copy, and test it on the real `ServerAdapter` with a failing fetch.
+**See:** `src/db/services/share-service.ts`, `src/db/services/share-service-read.test.ts`, `src/db/adapters/server-adapter.ts`.
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents
