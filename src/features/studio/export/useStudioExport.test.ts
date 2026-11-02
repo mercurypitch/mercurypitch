@@ -3,6 +3,7 @@ import { createRoot, createSignal, untrack } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { renderStudioWav } from '@/lib/studio/export/render-wav'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { deferred, wavResult } from './export.test-fixtures'
 import { useStudioExport } from './useStudioExport'
 
@@ -22,15 +23,30 @@ function mount() {
     const render = vi.fn<typeof renderStudioWav>(async () =>
       wavResult(untrack(project).revision),
     )
+    const held = { lanes: new Map(), release: vi.fn() }
+    const holdFrozen = vi.fn(
+      (_project: StudioProject, _assets: readonly StudioAsset[]) => held,
+    )
     const controller = useStudioExport({
       project,
       assets: () => [fixture.asset],
       canStart: () => true,
       readCanonicalAsset: vi.fn(async () => new Blob()),
       releaseAudio,
+      holdFrozen,
       render,
     })
-    return { controller, project, setProject, render, releaseAudio, dispose }
+    return {
+      controller,
+      fixture,
+      project,
+      setProject,
+      render,
+      releaseAudio,
+      held,
+      holdFrozen,
+      dispose,
+    }
   })
 }
 const flush = async () => {
@@ -39,6 +55,47 @@ const flush = async () => {
 }
 
 describe('Studio export lifecycle', () => {
+  it('holds the lane renders that match the song before letting the audio go, renders with them and lets them go after', async () => {
+    // Arrange
+    const ui = mount()
+    const order: string[] = []
+    ui.holdFrozen.mockImplementationOnce(() => {
+      order.push('hold')
+      return ui.held
+    })
+    ui.releaseAudio.mockImplementationOnce(async () => {
+      order.push('release audio')
+    })
+
+    // Act
+    expect(await ui.controller.exportWav()).toBe(true)
+
+    // Assert
+    expect(order).toEqual(['hold', 'release audio'])
+    expect(ui.holdFrozen).toHaveBeenCalledExactlyOnceWith(ui.fixture.project, [
+      ui.fixture.asset,
+    ])
+    expect(ui.render.mock.calls[0][3]?.frozen).toBe(ui.held)
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
+  it('lets the held lane renders go when the song moves on before rendering', async () => {
+    // Arrange
+    const ui = mount()
+    const release = deferred<undefined>()
+    ui.releaseAudio.mockReturnValueOnce(release.promise)
+
+    // Act
+    const pending = ui.controller.exportWav()
+    ui.setProject((project) => ({ ...project, id: 'other' }))
+    release.resolve(undefined)
+
+    // Assert
+    expect(await pending).toBe(false)
+    expect(ui.render).not.toHaveBeenCalled()
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
   it('freezes a revision and refuses to start after navigation during audio release', async () => {
     const ui = mount()
     const release = deferred<undefined>()

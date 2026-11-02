@@ -3,6 +3,7 @@ import { createEffect, createSignal, onCleanup } from 'solid-js'
 import type { StudioExportStage, StudioExportToken, StudioWavExport, } from '@/lib/studio/export/render-wav'
 import { renderStudioWav } from '@/lib/studio/export/render-wav'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioFreezeHold } from '@/lib/studio/playback/lane-freezer'
 import type { OwnedStudioExport } from './export-download'
 import { ownStudioExport } from './export-download'
 import type { StudioRenderJob } from './render-job'
@@ -13,6 +14,11 @@ export interface StudioExportControllerOptions {
   canStart(): boolean
   readCanonicalAsset(id: string): Promise<Blob>
   releaseAudio(): Promise<void>
+  /** The lane renders that match the song (lane-freezer.ts), held for the export to play. */
+  holdFrozen?(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+  ): StudioFreezeHold | null
   render?: typeof renderStudioWav
 }
 
@@ -89,6 +95,8 @@ export function useStudioExport(options: StudioExportControllerOptions) {
     setNotice(null)
     setStage('preparing')
     clearResult()
+    // Held before the audio goes: the room the export takes back is then never these renders.
+    const held = options.holdFrozen?.(snapshot, assets) ?? null
     try {
       await options.releaseAudio()
       job.abort.signal.throwIfAborted()
@@ -100,6 +108,7 @@ export function useStudioExport(options: StudioExportControllerOptions) {
         {
           signal: job.abort.signal,
           isCurrent,
+          frozen: held,
           onStage: (next) => {
             if (!disposed && !job.abort.signal.aborted) setStage(next)
           },
@@ -123,6 +132,7 @@ export function useStudioExport(options: StudioExportControllerOptions) {
         )
       return false
     } finally {
+      held?.release()
       finishJob(job)
     }
   }
