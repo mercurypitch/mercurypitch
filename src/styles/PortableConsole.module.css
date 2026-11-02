@@ -246,3 +246,16 @@
 
   cursor: pointer;
 }
+
+/* The pill stays small, its press does not: 44 px square round it, the
+   least a finger needs (it was 25.6 px). The pill is fixed, so this is
+   placed by it. */
+.handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: 44px;
+  transform: translate(-50%, -50%);
+}

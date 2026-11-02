@@ -108,7 +108,12 @@ describe('Settings, Karaoke, in a build with Import', () => {
   it('puts the songs on this phone above the lyrics and playback, and no subscription', async () => {
     const root = await mount()
 
-    expect(groups(root)).toEqual(['Songs on this phone', 'Lyrics', 'Playback'])
+    expect(groups(root)).toEqual([
+      'Songs on this phone',
+      'Lyrics',
+      'Playback',
+      'Find by singing',
+    ])
     expect(row(root, 'karaoke-subscription')).toBeNull()
     expect(row(root, 'karaoke-restore')).toBeNull()
     expect(root.textContent).toContain(
@@ -124,6 +129,7 @@ describe('Settings, Karaoke, in a build with Import', () => {
       'Songs on this phone',
       'Lyrics',
       'Playback',
+      'Find by singing',
     ])
     expect(row(android, 'karaoke-review-access')).not.toBeNull()
     view?.unmount()

@@ -10,6 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { karaokeBackgroundPlay, karaokeLyricsSize, karaokePictureInPicture, karaokePlayNext, resetKaraokeRoomForTests, setKaraokeLyricsSize, } from '@/features/karaoke-room/karaoke-room-store'
+import { karaokeAutoIndexShazam, setKaraokeAutoIndexShazam, } from '@/stores/karaoke-settings-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KaraokeSettingsScreen } from './KaraokeSettingsScreen'
@@ -76,7 +77,7 @@ describe('Settings, Karaoke', () => {
       [...root.querySelectorAll('section')].map((group) =>
         group.getAttribute('aria-label'),
       ),
-    ).toEqual(['Lyrics', 'Playback'])
+    ).toEqual(['Lyrics', 'Playback', 'Find by singing'])
     expect(root.textContent).not.toMatch(/subscri|import|songs left/iu)
   })
 
@@ -91,6 +92,20 @@ describe('Settings, Karaoke', () => {
 
     expect(karaokePlayNext()).toBe(false)
     expect(next?.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('gets songs ready to find by singing until that is turned off, the setting the web syncs', () => {
+    setKaraokeAutoIndexShazam(true)
+    const root = mount()
+    const ready = root.querySelector<HTMLElement>(
+      '[role="switch"][aria-label="Get songs ready to find by singing"]',
+    )
+    expect(ready?.getAttribute('aria-checked')).toBe('true')
+
+    ready?.click()
+
+    expect(karaokeAutoIndexShazam()).toBe(false)
+    expect(ready?.getAttribute('aria-checked')).toBe('false')
   })
 
   it('keeps a song playing in the background until that is turned off', () => {

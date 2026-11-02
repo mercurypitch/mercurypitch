@@ -98,7 +98,10 @@ function IdentityCard(): JSX.Element {
       <div class="mp-set-card__row">
         <AccountAvatar large />
         <div class="mp-set-card__text">
-          <strong>{accountDisplayName()}</strong>
+          {/* Where Try again hands focus once the account answers. */}
+          <strong data-account-focus="" tabindex="-1">
+            {accountDisplayName()}
+          </strong>
           <Show when={accountCard()?.email}>
             {(email) => <span class="mp-set-card__email">{email()}</span>}
           </Show>
@@ -294,6 +297,21 @@ function AccountSettings(): JSX.Element {
 
 function SignedIn(): JSX.Element {
   const unreachable = (): boolean => accountReach() === 'unreachable'
+  /**
+   * Try again's read is out. Its note and its button stay until the read
+   * lands: a button taken away, or `disabled`, drops the focus it has.
+   */
+  const [retrying, setRetrying] = createSignal(false)
+  let root: HTMLDivElement | undefined
+  const retry = (): void => {
+    if (retrying()) return
+    setRetrying(true)
+    void refreshAccount().finally(() => {
+      setRetrying(false)
+      if (accountReach() === 'unreachable') return
+      root?.querySelector<HTMLElement>('[data-account-focus]')?.focus()
+    })
+  }
   // The server's rows, once the account has answered at least once while
   // this screen is up. A later failed read keeps them: they were real.
   const [answered, setAnswered] = createSignal(false)
@@ -304,9 +322,9 @@ function SignedIn(): JSX.Element {
   )
 
   return (
-    <div class="mp-set__cols">
+    <div class="mp-set__cols" ref={root}>
       <div class="mp-set__col">
-        <Show when={unreachable()}>
+        <Show when={unreachable() || retrying()}>
           <div
             class="mp-set-note mp-set-note--warn"
             role="status"
@@ -328,14 +346,13 @@ function SignedIn(): JSX.Element {
             back for anyone who said Not now to the ask. */}
         <VoiceprintAskNote />
         <IdentityCard />
-        <Show when={unreachable()}>
+        <Show when={unreachable() || retrying()}>
           <button
             type="button"
             class="mp-set-button mp-set-button--secondary"
             data-testid="account-retry"
-            onClick={() => {
-              void refreshAccount()
-            }}
+            aria-disabled={retrying() ? 'true' : undefined}
+            onClick={retry}
           >
             Try again
           </button>

@@ -54,25 +54,43 @@ function thisPhoneFirst(sessions: readonly AuthSession[]): AuthSession[] {
 export function DevicesScreen(): JSX.Element {
   const [sessions, setSessions] = createSignal<AuthSession[] | null>(null)
   const [failed, setFailed] = createSignal(false)
+  /** A read is out: Try again stays, so the focus on it stays too. */
+  const [reading, setReading] = createSignal(false)
+  let root: HTMLDivElement | undefined
   const [ending, setEnding] = createSignal<string | null>(null)
   let live = true
   onCleanup(() => {
     live = false
   })
 
-  async function load(): Promise<void> {
-    setFailed(false)
+  /** Read the list; true once it landed. */
+  async function load(): Promise<boolean> {
+    setReading(true)
     try {
       const list = await fetchSessions()
-      if (live) setSessions(thisPhoneFirst(list))
+      if (live) {
+        setSessions(thisPhoneFirst(list))
+        setFailed(false)
+      }
+      return true
     } catch {
       if (live) setFailed(true)
+      return false
+    } finally {
+      if (live) setReading(false)
     }
   }
 
   onMount(() => {
     void load()
   })
+
+  /** Try again: read the list, and hand focus to it once it lands. */
+  async function retry(): Promise<void> {
+    if (reading()) return
+    if (!(await load())) return
+    root?.querySelector<HTMLElement>('[data-settings-focus]')?.focus()
+  }
 
   async function signOutDevice(session: AuthSession): Promise<void> {
     if (ending() !== null) return
@@ -92,7 +110,7 @@ export function DevicesScreen(): JSX.Element {
   }
 
   return (
-    <div class="mp-set" data-testid="devices-screen">
+    <div class="mp-set" data-testid="devices-screen" ref={root}>
       <Show when={failed()}>
         <div class="mp-set-note mp-set-note--warn" role="status">
           <WarnIcon size={20} />
@@ -101,12 +119,16 @@ export function DevicesScreen(): JSX.Element {
             and try again.
           </p>
         </div>
+        {/* Not `disabled` while the read is out, and not taken away: either
+            drops the focus it has. It stays until a read lands, then hands
+            focus to the list that took its place. */}
         <button
           type="button"
           class="mp-set-button mp-set-button--secondary"
           data-testid="devices-retry"
+          aria-disabled={reading() ? 'true' : undefined}
           onClick={() => {
-            void load()
+            void retry()
           }}
         >
           Try again
@@ -114,7 +136,7 @@ export function DevicesScreen(): JSX.Element {
       </Show>
       <Show when={sessions()}>
         {(list) => (
-          <SettingsGroup title="Signed in on">
+          <SettingsGroup title="Signed in on" focusable>
             <For each={list()}>
               {(session) => (
                 <div class="mp-set-row" data-device={session.id}>

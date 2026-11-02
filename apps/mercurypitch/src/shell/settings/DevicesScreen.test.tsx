@@ -131,6 +131,58 @@ describe('the Devices screen', () => {
     expect(said).toContain('Could not load your devices.')
     expect(devices()).toHaveLength(1)
   })
+
+  it('keeps Try again, and its focus, while the read is out, then hands focus to the list', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    let land: (list: AuthSession[]) => void = () => undefined
+    fetchMock.mockReturnValueOnce(
+      new Promise<AuthSession[]>((resolve) => {
+        land = resolve
+      }),
+    )
+    const shown = renderShell(() => <DevicesScreen />)
+    view = shown
+    await settle()
+    const retry = (): HTMLButtonElement | null =>
+      shown.container.querySelector<HTMLButtonElement>(
+        '[data-testid="devices-retry"]',
+      )
+    retry()?.focus()
+    retry()?.click()
+    await settle()
+
+    // Out: the same button, still focused, saying it is busy.
+    expect(retry()).not.toBeNull()
+    expect(document.activeElement).toBe(retry())
+    expect(retry()?.getAttribute('aria-disabled')).toBe('true')
+    retry()?.click()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    land([session('s-1', 'Safari on iPhone', true)])
+    await settle()
+    expect(retry()).toBeNull()
+    expect(document.activeElement?.textContent).toBe('Signed in on')
+  })
+
+  it('keeps the focus on Try again when the read fails again', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    const shown = renderShell(() => <DevicesScreen />)
+    view = shown
+    await settle()
+    const retry = (): HTMLButtonElement | null =>
+      shown.container.querySelector<HTMLButtonElement>(
+        '[data-testid="devices-retry"]',
+      )
+    const before = retry()
+    before?.focus()
+    before?.click()
+    await settle()
+
+    expect(retry()).toBe(before)
+    expect(document.activeElement).toBe(before)
+    expect(before?.getAttribute('aria-disabled')).toBeNull()
+  })
 })
 
 describe('onComputer', () => {
