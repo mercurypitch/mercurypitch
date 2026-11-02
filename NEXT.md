@@ -2820,3 +2820,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - L22: 2,228 words, 281 cites 0 findings, chip 16 min, description 153 chars; 14 departures
   (hand-back § 7). Reviewer spawned (xhigh) -> s2pkg/22-REVIEW.md. L18 reviewer still running.
   Both writers idle until their fix passes (ids in agents.txt).
+
+## 2 Nov 03:46 UTC — L18 review in (3 blocking); RATE LIMIT allowed_warning -> paused spawns
+
+- L18 review: 3 blocking (hook answers the predict; Step 1 beat arithmetic; the in-time reader turns
+  lateness into false pitch lines), 10 should fix, 12 nits. Calls written: s2pkg/18-FIXPASS-MSG.md,
+  NOT YET SENT (rate limit read "allowed_warning" at 03:46; window resets 05:40 UTC).
+- L22 reviewer still running (spawned 03:3x). When the window resets and get_session reads
+  "allowed": send 18-FIXPASS-MSG.md to the L18 writer (SendMessage, id in agents.txt), then the L22
+  fix pass when its review is in.
