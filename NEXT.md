@@ -2742,3 +2742,21 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Then W18 (BRIEF-18 + L16/L20 notes) and W22. Meanwhile draft BRIEF-24..28 (teases: SEASON-2 § 3
   "Closes on" lines for 24-27 differ from the plans' teases; settle each against the next plan's
   predict).
+
+## 2 Nov 02:1x UTC — briefs 24 to 28 drafted
+
+- s2pkg/BRIEF-24.md .. BRIEF-28.md written from each plan's open questions (recommended answers).
+  Lead calls beyond the plans: L25's hook ("raise one note just before it comes home") answers its
+  planned predict (te vs le) -> keep the hook, change the predict (suggested: G up to G♯, what does
+  that do to the chord before home? turns major / stays minor). L27's predict leans on Lesson 26,
+  not a prerequisite (12, 23) -> lean on Lesson 12. L26's role swap puts the higher voice's tune on
+  C4 (soprano floor) -> octave or key. L28's plagal tag stays block chords (C3 = tenor floor).
+- Teases proposed (each the next opening in miniature; owner of each = the lesson teased):
+  L25 "A minor tune, played twice. The second ending changes one note." (63; alt plan);
+  L26 "‘Twinkle’, and the same tune four semitones higher, played together." (68; alt plan);
+  L27 "G, B and D going home to C, E and G. Now stack one more third." (62; alt plan);
+  L28 "A song in two parts. At bar 8 it sounds finished, then keeps going." (67; alt plan).
+  L24's own stays Lesson 23 FACTS 5's settled line.
+- Order still: 16+20 (reviews running) -> 18+22 -> 24+25 -> 26 (after 24) + 27 (after 25) -> 28.
+  Before spawning W24/W25: refresh BRIEF-writer-common's head SHA and model list (add 16, 18, 20,
+  22 as committed).

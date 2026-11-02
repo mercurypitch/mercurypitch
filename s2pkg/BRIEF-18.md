@@ -43,3 +43,11 @@ The teases:
   still true at your page: every bar written in Lessons 15 to 18 has four beats.
 
 Go deeper items stay out unless a source is read for them.
+
+Notes from the packages written beside yours:
+
+- **Lesson 20** (written, under review) leans on your staccato dot: its Step 4 plays legato and
+  staccato and names your page for the dot (Lesson 20 FACTS 30 cites your plan's Words, Step 4 and
+  coach line). Keep the staccato dot in your Words and Step 4, or say in the hand-back why not. Your
+  plan says "Lesson 20 sings staccato": it does not. Lesson 20 plays staccato and asks no one to sing
+  it, so promise no more than that.
