@@ -2973,3 +2973,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - L26 COMMITTED 85ccd03dd 13:2x (pushed; origin matches). Lead: prettier formatting only (no word changes), accepted no-turn-taking departure. W26 done.
 - 13:29 rate limit read allowed_warning: W28 held. Container restart #7 between 13:29 and 16:35 (/dev/shm emptied; scratchpad survived). Worktree rebuilding 16:36 from local feat/season-2-plan (85ccd03dd).
 - 16:36 rate limit allowed (new window). Next: spawn W28 (BRIEF-28) once the worktree is up; then R28 -> fix -> lead -> commit; then #229.
+
+## 2 Nov 16:4x
+- Worktree rebuilt at 85ccd03dd (clean). Rate limit allowed. W28 spawned 16:4x (BRIEF-writer-common + BRIEF-28; told: 24-27 committed, tease bound in L27 FACTS 5, L26 hand-back items 3-5, the four reviews' lessons, copy files to s2pkg/28 often). Only agent running. Fallback armed for 17:4x.
+- Next: W28 hand-back -> R28 (fresh, xhigh) -> fix pass -> lead -> commit. Then #229 (shared commit: shared-rest/*.md + NOTES.md, one reanchor, before/after compare).
