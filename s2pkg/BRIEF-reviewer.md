@@ -23,9 +23,9 @@ your own view, and only to check its claims.
   `HANDOFF.md` § 5 and § 6, `SEARCH.md` § 12, and the copy rules in the header of
   `src/features/lessons/kit/lesson-copy.ts`.
 - The model packages: `lessons/12-chords-four-chord-song/` and `lessons/14-phrasing-whole-song/`,
-  and Season 2's reviewed ones on the branch: `lessons/15-staff/`, `lessons/17-note-lengths/`,
-  `lessons/19-threes-offbeats/`, `lessons/21-keys-circle/` and `lessons/23-perfect-tritone/`. The
-  writer's shared brief,
+  and Season 2's reviewed ones on the branch, Lessons 15 to 23 (`lessons/15-staff/` to
+  `lessons/23-perfect-tritone/`; the newest are `lessons/18-read-a-line/` and `lessons/22-vibrato/`).
+  The writer's shared brief,
   `.../scratchpad/s2pkg/BRIEF-writer-common.md`, lists what their reviews caught: check each.
 - The app at `c60f0fdcb` (the branch's base; `docs/agent/INDEX.md` is the module map) for every app
   claim the package makes.

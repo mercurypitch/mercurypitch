@@ -2884,3 +2884,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   were whitespace only. Departures accepted (s2pkg/shared-rest/L18-entries.md).
 - Packages committed: 15-23 all done. In flight: W24, W25 (spawned 06:36). Next: their reviews
   (fresh reviewer each, xhigh, BRIEF-reviewer.md), then 26 (after 24), 27 (after 25), 28.
+
+## 2 Nov 07:4x UTC — W25 handed back; R25 spawned
+- L25 draft: 2,117 words, 288 citations, plan-cites 0; s2pkg/25 copies match the worktree.
+- R25 (fresh, xhigh) spawned 07:4x; report to s2pkg/25-REVIEW.md. BRIEF-reviewer.md now v5 (models: Lessons 15 to 23; backup .v4).
+- W24 still writing. Lesson 26's ARTICLE-PLAN is committed (the L25 writer asked).
+- L25 hand-back asks the lead: bind both teases (own on L24's card; L26's alternative mended to "Lesson 24's other part was a drone. What if it's a tune?"), keep Sight-Singing A harmonic minor as 2nd drill (writer recommends), choose head title (56 or 55 chars).
+- Next: R25 report -> fix-pass calls (s2pkg/25-FIXPASS-MSG.md) -> resume W25; W24 hand-back -> R24; then 26 (after 24), 27 (after 25), 28.
