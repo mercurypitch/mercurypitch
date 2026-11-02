@@ -2,18 +2,19 @@
 
 Files: `docs/plans/find-your-pitch/lessons/26-second-voice/` FACTS.md, LESSON.md, WEB-SPEC.md in
 `/dev/shm/s2plan`, copied to `s2pkg/26/`. RESEARCH.md and ARTICLE-PLAN.md are unchanged. Lesson 27's
-folder was not touched; Lesson 27 is cited in words only.
+folder was read, never touched; since its commit (94997815c) it is cited by path and line (section 8).
 
 Checks, run from `/dev/shm/s2plan`:
 
-- `node scripts/plan-cites.mjs check docs/plans/find-your-pitch/lessons/26-second-voice`: **281
+- `node scripts/plan-cites.mjs check docs/plans/find-your-pitch/lessons/26-second-voice`: **321
   citations read, 0 findings**.
-- `node scripts/lesson-words.mjs docs/plans/find-your-pitch/lessons/26-second-voice`: **2,163
-  words**, cap 2,379 (216 under), under the lead's 2,230; steps' own text 103, 97, 119, 87.
-- Built page: 2,163 + about 150 (Lesson 8 FACTS 4) + 61 for this page's six lock, held and status
-  lines = **about 2,374, 5 under the cap** (WEB-SPEC Length; `verify26.py` section 12). Next cut if a
-  build runs over: the card's "with three, one takes the fifth above" (7 words).
-- Chip: **15 minutes** (9.09 of reading + 5.90 of sound and tasks = 14.99), where the plan said
+- `node scripts/lesson-words.mjs docs/plans/find-your-pitch/lessons/26-second-voice`: **2,166
+  words**, cap 2,379 (213 under), under the lead's 2,230; steps' own text 103, 97, 119, 87.
+- Built page: 2,166 + about 150 (Lesson 8 FACTS 4) + 61 for this page's six lock, held and status
+  lines = **about 2,377, 2 under the cap** (WEB-SPEC Length; `verify26.py` section 12). Next cut if a
+  build runs over: the Wrap's "An octave further apart, a third is a tenth." (9 words), which Step 3
+  says in full.
+- Chip: **15 minutes** (9.10 of reading + 5.90 of sound and tasks = 15.00), where the plan said
   about 16; description **121 characters**, "Can you make a harmony by singing the tune a third
   higher? A fifteen-minute lesson with sound toys and a harmony to sing."; `timeRequired` `PT15M`;
   the head test has "fifteen" (`lesson-pages.test.ts:83`).
@@ -22,7 +23,8 @@ Checks, run from `/dev/shm/s2plan`:
 Process: no git, no pnpm, no builds; no shared file or code touched; only the two node scripts ran.
 Web sources by WebFetch (OMT 2e 1.15, 2.01, 4.04; MyMusicTheory; dictionary.com's Collins entry;
 Merriam-Webster; Wikipedia, Nonchord tone and Part (music)); nothing downloaded. Arithmetic:
-`s2pkg/26-tools/verify26.py` (`python3 -I verify26.py 2163`).
+`s2pkg/26-tools/verify26.py` (`python3 -I verify26.py 2166`); section 13 checks Harmony Stack's
+range against all six presets and its boxes' names.
 
 The lead's note on Lesson 27's tease is applied: the card shows "G, B and D going home to C, E and
 G. Now add one note on top." (61) as the default, with the lead's alternative "Three notes make a
@@ -30,6 +32,25 @@ chord. Add one more to V, and hear where it goes." (68); the plan's "Stack third
 dropped. The check against this page is FACTS **5b** (this package numbers its own tease 5 and the
 next lesson's 5b, as Lesson 24 does): neither line names a note to add or how a chord pulls, and
 neither presumes anything this page does not teach.
+
+The lead's second note (Lesson 27 committed) is applied: every citation of Lesson 27 is bound to
+path and line (FACTS 5b, 71, the sources and the illustrations; WEB-SPEC, Toys 6 and Explorer and
+season data), the alternative carries its id, `three-notes`, and quick check 1 keeps "the third
+above D in C is F", which Lesson 27's preamble says "Lesson 26 teaches and tests"
+(`27-sevenths-inversions/LESSON.md:42-45`; FACTS 71).
+
+**The practice card now says what its drills do to a learner**, as the writers' brief asks, read
+from the app (FACTS 63a, 63b, 65): Harmony Stack plays nothing, not even a first note; its scoring is
+not octave-folded (`jam-pitch-view.ts:14-16`), so "not an octave away", where this page's own reader
+folds; the room's tune sits in the octave the host's voice range sets (the C major scale on C3 or
+C4), which, checked against all six presets, suits two lower or two higher voices and leaves a note
+outside a preset for a lower and a higher voice; its boxes name their notes. One app bug found:
+`harmoniseItems` (`jam-modes.ts:134-153`) moves a part's notes but keeps the tune's note names, so
+the third's boxes read C4 to G4, A5 and B5 at E4 to D5; WEB-SPEC item 15 specifies the fix and its
+test, and the page waits for it. The card drops the fifth (it runs a semitone past the bass preset's
+top). Drone Intonation now "names a third to sing above it", as it prints the interval and the note.
+Paid for by the mix-up card's app line ("MercuryPitch's Jam builds its harmony from the key's notes
+on purpose.", not evidence of a key's thirds) and small trims: 3 words more in all.
 
 ## 1. MASTER-PLAN § 11 (proposed line, after Lesson 25's)
 
@@ -66,7 +87,7 @@ neither presumes anything this page does not teach.
   passing note hollow. **Payoff:** the reveal (a copy moved four semitones leaves the key; the key's
   own thirds fit); Step 1 (major on do, fa and so, minor on re, mi, la and ti); Sing it, a part a
   third from Merc's tune sung with it, then the tune against it.
-- **Tease:** a still of Lesson 27's opening as Lesson 27's package draws it, silent: "G, B and D going
+- **Tease:** Lesson 27's still, its ring with the V room lit, silent: "G, B and D going
   home to C, E and G. Now add one note on top." (the lead's line, default), with the lead's
   alternative "Three notes make a chord. Add one more to V, and hear where it goes." Lesson 26's own
   tease, on Lesson 25's card, is "‘Twinkle’, and the same tune four semitones higher, played
@@ -102,6 +123,9 @@ neither presumes anything this page does not teach.
    harmonises a tune in C major by moving every note up four semitones. What happens?" with "Some
    notes leave the key", "Every note stays in the key" and "It turns into a different tune"
    (Lesson 26 FACTS 72). Lesson 28 imports the object, so it takes these words.
+6. **SEASON-2 § 5.2** (app work), a proposed item: Jam's Harmony Stack names each part's own notes
+   on its boxes; today a part above the tune keeps the tune's names (`jam-modes.ts:134-153`). One
+   line and a test; Lesson 26's page waits for it (its WEB-SPEC item 15).
 
 ## 4. `kit/season.ts` (Season 2's module) entry and prerequisites
 
@@ -141,9 +165,9 @@ neither presumes anything this page does not teach.
   plan's line, mended: its ‘So far the other part was a drone’ was false, since Lesson 12's
   sing-along had the learner sing over moving chords. It is true of Lesson 24 and answers nothing of
   the predict; the lead's line, the opening in miniature, is the default."
-- Lesson 27 (set on Lesson 27, its writer's): the lead's "G, B and D going home to C, E and G. Now add
-  one note on top." (61) as default, the lead's "Three notes make a chord. Add one more to V, and hear
-  where it goes." (68) as the alternative, its id and team note Lesson 27's package's.
+- Lesson 27 (set on Lesson 27, by its package, `27-sevenths-inversions/WEB-SPEC.md:385-388`): the
+  lead's "G, B and D going home to C, E and G. Now add one note on top." (61) as default, the lead's
+  "Three notes make a chord. Add one more to V, and hear where it goes." (68) as `three-notes`.
 
 ## 6. Kit and app work the page waits for (WEB-SPEC, What the kit and the app still need)
 
@@ -170,6 +194,8 @@ neither presumes anything this page does not teach.
    (SEASON-2 § 5.2 item 21) (items 9 to 12).
 8. The app (item 13): the harmony-line drill (SEASON-2 § 5.2 item 17), which then takes the card's
    first place.
+9. The app (item 15), before the page: Harmony Stack's boxes name each part's own notes
+   (`harmoniseItems` names a moved note from its MIDI number; the jam-modes test pins the name).
 
 ## 7. Departures from ARTICLE-PLAN.md, and why
 
@@ -215,23 +241,23 @@ Each is argued in FACTS (numbers in brackets) and listed in LESSON.md's preamble
 16. **The quick check**: question 1 reworded and sent to Step 1; question 2 names the key, its wrong
     answers in the predict's words and as Lesson 6's misconception; question 4's play, do re mi re do
     with the two parts, is new and locked until the choice (71 to 74).
-17. **The practice card**: Harmony Stack first, with what the room does and how a friend joins; Drone
-    Intonation second, in Lesson 24's words less its scoring sentence; the rest card names Harmony
-    Stack (63 to 68).
+17. **The practice card**: Harmony Stack first, with how a friend joins and what the room does to a
+    learner (nothing played, the octave scored and who sets it, the pairs of voices it suits, its
+    boxes' names), the tune for the plan's "root", and no fifth; Drone Intonation second, in Lesson
+    24's words, cut, naming its note; the rest card names Harmony Stack (63 to 68).
 18. **The chips** name both prerequisites and read 15 minutes; "Microphone optional" and "Headphones
     optional" (2, 3). **The sound gate** drops "how one fits the other", which pointed at the predict
     (6). **The promise** says what the learner does (1).
 19. **The next-lesson tease** is the lead's new line; the plan's is dropped (5b).
 
-## 8. Citations of uncommitted lessons, made in words
+## 8. Citations of other lessons' new work
 
-- **Lesson 27** (being written beside this one): FACTS 5b (its predict as the lead's note gives it,
-  its tease and alternative, its still); LESSON.md, the next-lesson card's editorial and stage
-  direction; WEB-SPEC, Toys 6 and Explorer and season data.
-- **Lesson 28's plan** (cited in words, in case it is not committed): FACTS 18 (its higher voices
-  take the upper part), 30 (its playback with a recorder), 72 (its recall of question 2); WEB-SPEC's
-  opening and Audio (its song's part under a take, repeated notes); LESSON.md, For the vocal coach's
-  opening line.
+None is left in words. **Lesson 27**, committed: FACTS 5b (its tease and `three-notes`,
+`FACTS.md:45`, `WEB-SPEC.md:385-388`; its predict, `LESSON.md:140-142`; its still,
+`WEB-SPEC.md:314-317`), 71 (`LESSON.md:42-45`) and the illustrations; WEB-SPEC, Toys 6 and Explorer
+and season data. **Lesson 28's ARTICLE-PLAN.md**, which was in the checkout from the start, is now
+cited by path and line too: FACTS 18 (`:137-140`), 30 (`:162-163`), 72 (`:72-74`). If it turns out
+not to be committed, those three go back to words.
 
 ## 9. Questions for the owner, the lead and the coach
 
@@ -247,4 +273,11 @@ Each is argued in FACTS (numbers in brackets) and listed in LESSON.md's preamble
    harmony live on every device; confirm.
 6. **The coach's list** in LESSON.md: the two parts and the table, the tempo and the run, the cues,
    the swap, the sets, the sing-along and its line, the headphones and quiet checks' lines with
-   "Merc's part", and the plain-language labels question shared with Lessons 3 to 24.
+   "Merc's part", Harmony Stack's range and its table, and the plain-language labels question shared
+   with Lessons 3 to 24.
+7. **Harmony Stack's note names** (lead): fix first (WEB-SPEC item 15), as the package assumes, or
+   link the room before it with the card's fallback, "It plays nothing; on the third, its boxes print
+   the tune's letters." (4 words more, paid by the next cut).
+8. **"Two lower or two higher voices suit it"** (coach): true against all six presets for the tune
+   and the third, but the tenor's and the soprano's floors meet the tune's first note, C3 or C4, with
+   no room; confirm the line.
