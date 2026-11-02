@@ -2761,7 +2761,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   Before spawning W24/W25: refresh BRIEF-writer-common's head SHA and model list (add 16, 18, 20,
   22 as committed).
 
-## 2 Nov 02:3x UTC — both reviews in; both fix passes running
+## 2 Nov 02:1x UTC — both reviews in; both fix passes running
 
 - L16 review: 1 blocking (the new predict's choice 1 "Not this tune: that takes perfect pitch" is
   true of the written line; thesis lines say "reading needs a first note" though Tavi read it from
@@ -2771,3 +2771,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - BRIEF-18 gained the L20 notes (staccato dot; "a run of steps").
 - NEXT: each fix-pass reply -> lead review (plan-cites 0, words, prettier, departures, teases; draft
   shared-rest/L<NN>-entries.md) -> commit as the owner + push. Then W18 and W22.
+
+## 2 Nov 02:16 UTC — check-in
+
+- Check-in fired; both fix passes (W16, W20) running; worktree intact; notes pushed. Nothing for the owner.

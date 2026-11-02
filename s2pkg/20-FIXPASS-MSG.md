@@ -1,4 +1,4 @@
-Lesson 20 fix pass (sent 2 Nov 02:3x UTC). Review: s2pkg/20-REVIEW.md (1 blocking, 8 should fix,
+Lesson 20 fix pass (sent 2 Nov 02:1x UTC). Review: s2pkg/20-REVIEW.md (1 blocking, 8 should fix,
 18 nits; no leak found). The lead's calls:
 
 1. B1: offer the smaller run, do re mi so mi re do, as a choice beside the full run (Lesson 9's
