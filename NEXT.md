@@ -2949,3 +2949,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 
 ## 2 Nov 12:10
 - Fallback 12:05 fired: worktree ok; both agents alive (L26 worktree files 12:03, s2pkg/26 12:01; L27 s2pkg/27 copied 12:10:08). Nothing resumed. Next fallback trig_01ADdt7J38saP3XmeqSNs3qG at 13:06.
+
+## 2 Nov 12:4x
+- W27 fix pass handed back (~12:4x): plan-cites 0 (273), lesson-words 2,195, built ~2,345, 15 min. All taken except nit 8 (Stack share rises then falls; line only partly true). Tease alt id `three-notes`. SEASON-2 3 Closes-on for L27: "A song in two parts, and at bar 8 it seems to end. How can a song sound as if it's ending, then keep going?" Next: lead review of L27 (predict/reveal, FACTS 1a/34-38, Step 2 hold, card timing, letters, Step 4 clause, Turn over, checks: dir 0, whole plan 200, prettier, head test, words-unchanged), then commit as owner + push. W26 still writing.
