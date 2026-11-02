@@ -80,8 +80,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The practice card** puts Harmony Stack first, with what the room does, and Drone Intonation
   second, in Lesson 24's words (FACTS 63 to 68).
 - **The chips** name both prerequisites, with "Microphone optional" and "Headphones optional" as
-  Lesson 24's; the sound gate is Lesson 5's line with this lesson's subject; and the promise says
-  what the learner does, not what makes a harmony fit (FACTS 1, 2, 6).
+  Lesson 24's, and read 15 minutes, the package's estimate, where the plan's read about 16; the
+  sound gate is Lesson 5's line with this lesson's subject; and the promise says what the learner
+  does, not what makes a harmony fit (FACTS 1, 2, 3, 6).
 
 The page is published only after Lessons 12 and 24 are live, because its prerequisite chips link
 there and its recall imports their questions. It also waits on the Season 2 kit work, on Lesson
@@ -94,13 +95,13 @@ and on this page's own kit work (WEB-SPEC, What the kit and the app still need).
 
 - Kicker: FIND YOUR PITCH · SEASON 2 · LESSON 26
 - Title (the hook question): **Can you make a harmony by singing the tune a third higher?**
-- Meta, as six chips: 16 minutes · After Lesson 12: Chords and the four-chord song · After Lesson
+- Meta, as six chips: 15 minutes · After Lesson 12: Chords and the four-chord song · After Lesson
   24: Harmony against a drone · Sound on · Microphone optional · Headphones optional
 - Promise: By the end you'll find a harmony a third from a tune, sing it with the tune, and hear a
   passing note.
 
 _[Editorial: the title is the season's hook (SEASON-2 § 2), with no alternative proposed. The chip's
-16 minutes is the package's estimate from its words and its sounds; the tune line's states and the
+15 minutes is the package's estimate from its words and its sounds; the tune line's states and the
 runs are timed in their lab before the chip is set (SEASON-2 § 1.3; FACTS 3). Neither the title nor
 the promise says whether a copy moved four semitones stays in the key, or that a key's thirds come
 in two sizes (FACTS 1a).]_
@@ -133,13 +134,13 @@ plays the copy with the tune. Will every note of the copy fit the key?
 Until a choice: "Choose an answer to unlock the copy."
 
 (After a choice, Play them together unlocks, and the hint reads "Locked in. Play them together." It
-plays the tune with the copy four semitones above it, 8 seconds. As it starts, C major's seven rows
-light as lanes; each note of the copy draws its bead as it sounds, and a bead on a row outside the
-lanes shows its name, C♯, G♯ or F♯. A play that sound off kept silent sets the hint to "Sound is
-off: nothing played. Turn sound on, then play it again." A play cut short changes nothing. The
-reveal waits until the copy has been heard to its end, and opens on "You said: every note fits the
-key" or "You said: some notes leave the key"; the hint then reads "Play any of them again." The
-reveal also shows Steps 1 and 2's held words.)
+plays the tune with the copy four semitones above it, 8 seconds. As it starts, the rows of C
+major's seven notes light as lanes, the others staying faint; each note of the copy draws its bead
+as it sounds, and a bead on a row outside the lanes shows its name, C♯, G♯ or F♯. A play that
+sound off kept silent sets the hint to "Sound is off: nothing played. Turn sound on, then play it
+again." A play cut short changes nothing. The reveal waits until the copy has been heard to its
+end, and opens on "You said: every note fits the key" or "You said: some notes leave the key"; the
+hint then reads "Play any of them again." The reveal also shows Steps 1 and 2's held words.)
 
 Reveal: Some notes leave the key. Four semitones above A, E and D are C♯, G♯ and F♯, three notes C
 major doesn't have; its own notes a third above them are C, G and F, three semitones up. [Play the
@@ -180,9 +181,9 @@ objects, so the words below are theirs. Neither names a third, a key's notes or 
   next, in one direction. [Play: E, F and G over a C major chord]
 
 (Each word has a small figure that draws its play as it sounds, with no rows and no numbers. Part
-plays do re mi re do on C4, then the same with mi fa so fa mi above it; Chord note plays C, E and G
-together, then E4 over them; Passing note plays E4, F4 and G4 over the same chord, F drawn hollow as
-it sounds. None sounds a copy moved four semitones, or names a third's size: FACTS 1a, 37 to 39.)
+plays do re mi re do on C4, then the same with mi fa so fa mi above it; Chord note plays C3, E3 and
+G3 together, then E4 over them; Passing note plays E4, F4 and G4 over the same chord, F drawn hollow
+as it sounds. None sounds a copy moved four semitones, or names a third's size: FACTS 1a, 37 to 39.)
 
 ## Step 1 of 4: What's a third above each note?
 
@@ -197,11 +198,12 @@ A, is minor: D up to F is 3.
 (Held until the cold open's reveal, the text above, its play, Try and Notice show with it. Until
 then their place reads "Hear the copy at the top to unlock this step." FACTS 1a, 41.)
 
-_Toy: the tune line's rows from C4 to D5, C major's seven rows lit as lanes and the house on do; a
-note of the scale and the key's note a third above it light together, joined by a bracket that names
-the letters and the semitones, "D up to F: 3"; Step up and Step down walk the pair from do to ti,
-each step playing its two notes together. The figure waits for the cold open's choice: until then
-its controls are disabled, under the line "Choose an answer at the top to unlock this figure."_
+_Toy: the tune line's rows from C4 to D5, the rows of C major's notes lit as lanes and the house
+on do; a note of the scale and the key's note a third above it light together, joined by a bracket
+that names the letters and the semitones, "D up to F: 3"; Step up and Step down walk the pair from
+do to ti, each step playing its two notes together. The figure waits for the cold open's choice:
+until then its controls are disabled, under the line "Choose an answer at the top to unlock this
+figure."_
 
 ## Step 2 of 4: Is a harmony the tune moved up?
 
@@ -257,9 +259,11 @@ note. [Play do, re, mi over the chord] The tune does it too: re passes from do t
 **Try:** play the tune and the part together over the chord.
 **Notice:** re and fa pass at the same moment, still a third apart.
 
-_Toy: the tune line with do re mi on C4 and mi fa so above it, over the C major chord: the lanes of
-C, E and G glow, chord notes are filled beads and passing notes hollow ones; Play plays the tune,
-the part, or both, over the chord. The figure waits for the cold open's choice._
+_Toy: the tune line with do re mi on C4 and mi fa so above it, over the C major chord, drawn as a
+bar at the foot named "C major chord": the lanes of C, E and G glow, a chord note's bead glows gold
+as it sounds, as Lesson 12's corners do, and a passing note's bead is drawn hollow, with no glow;
+Play plays the tune, the part, or both, over the chord. The figure waits for the cold open's
+choice._
 
 ## Sing it: your part with Merc's
 
@@ -296,7 +300,7 @@ yourself.
 (No headphones opens the sing-along, below, and no microphone is asked for.)
 
 > **What this does:** it measures how far each of your notes sits from your part's note, in cents,
-> in any octave, listening for each note in its own beat, counted from your first note, and shows
+> in any octave, listening for each note in its own beats, counted from your first note, and shows
 > your pitch line after each run, not while you sing. It doesn't score your timing. It doesn't
 > diagnose anything, and it isn't a test of whether you can sing. Your voice is analysed on this
 > device: nothing is recorded, kept or sent.
@@ -334,7 +338,7 @@ After each run, your pitch line appears, with a line a note, such as:
 - "La · We didn't hear a steady note there."
 - Added when it applies: "You sang it an octave lower: same note."
 
-If no voice came: "We didn't hear you start that time. Come in with the tune after the count-in."
+If no voice came: "We didn't hear you start that time. Come in with Merc after the count-in."
 [ Start again ]
 
 Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable ]
@@ -343,7 +347,7 @@ Then **How did that feel?** [ Easy ] [ Workable ] [ Effortful ] [ Uncomfortable 
   [ Swap parts ] [ Again ] [ Done for today ]
 - After the swap, Easy or Workable: "Both parts: the harmony, then the tune." [ Again ]
   [ Done for today ]
-- If fewer than half a run's notes were in the band: "If that felt tricky, good: that's learning."
+- Under half a run's notes in the band: "If that felt tricky, good: that's learning."
 - Effortful: no more runs, then "Keep it gentle: rest before you sing again." [ Done for today ]
 - Uncomfortable: no more runs. "Thanks for saying so. That's enough singing for today: rest your
   voice.", and the doctor lines.
@@ -394,8 +398,7 @@ to hear this."]_
 
 - A harmony in thirds takes the key's own note a third above or below each note of the tune: some
   thirds are 4 semitones, some 3.
-- It moves with the tune, note for note, above or below. An octave further apart, a third is a
-  tenth.
+- It moves with the tune, above or below. An octave further apart, a third is a tenth.
 - A note outside the chord that steps from one chord note to the next, in one direction, is a
   passing note.
 
@@ -408,16 +411,15 @@ four semitones doesn't give a harmony in its key.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Harmony Stack, in Jam
-- Text: With a friend: open a Jam room, share its link, and have the room's host pick Harmony Stack.
-  One of you sings the room's tune, the other a third above it, in the key; with three, one takes
-  the fifth above. Each of you is scored on your own part. Sore, hoarse or unwell
-  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
-  uncomfortable.
+- Text: With a friend: open a Jam room, share its link, and have its host pick Harmony Stack. One
+  of you sings the room's tune, the other a third above it, in the key; with three, one takes the
+  fifth above. Each of you is scored on your own part. Sore, hoarse or unwell today? Just listen
+  along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/jam**
 - Second drill: Alone, Drone Intonation holds a drone and shows you a third to sing above it,
-  without playing it. It wants each note in the octave it asks for, not an octave away, so set your
-  range in Settings first (under Singing Voice Range). Free:
-  **mercurypitch.com/exercises/thirds-on-a-drone**
+  without playing it. Headphones help here too: its drone plays while it listens. It wants each
+  note in the octave it asks for, not an octave away, so set your range in Settings first (under
+  Singing Voice Range). Free: **mercurypitch.com/exercises/thirds-on-a-drone**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Harmony Stack will
   be here when your voice feels comfortable: **mercurypitch.com/jam**"
 
@@ -432,13 +434,15 @@ the drill a learner can do alone, with its own care lines and the coach's look (
 
 **Next lesson:** Lesson 27, Seventh chords and inversions. "Add one note to the V chord and it pulls
 towards home. Which note, and why?" One line above it, the tease: "G, B and D going home to C, E and
-G. Now stack one more third."
+G. Now add one note on top."
 
-_[Editorial: the tease is the lead's line, Lesson 27's opening in miniature; Lesson 27's writer owns
-it and sets it on Lesson 27, and the lead binds it. The alternative, `plan`, is this lesson's planned
-line, "Stack thirds and you get a chord. Stack one more on V, and it pulls.", which the console can
-switch to. Checked against this page, neither line says anything this page does not: the series
-stacked thirds into chords in Lesson 12, and this page plays no chord on V (FACTS 5b).]_
+_[Editorial: the tease is the lead's line and the default, Lesson 27's opening in miniature; Lesson
+27's writer owns it and sets it on Lesson 27, and the lead binds it. The alternative the console can
+switch to is the lead's too, "Three notes make a chord. Add one more to V, and hear where it goes."
+This lesson's planned line, "Stack thirds and you get a chord. Stack one more on V, and it pulls.",
+is dropped: it says the added note pulls, which leans on Lesson 27's predict. Neither line names a
+note to add or says how it pulls, and neither leans on anything this page does not teach (FACTS
+5b).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Its slot holds a still of Lesson 27's opening as Lesson 27's package draws it. It is a picture
@@ -545,15 +549,15 @@ take and its reader's new line, so a decision here carries there.
   1 second each and the last 2, 6 seconds, with the tune sung through it (FACTS 54).
 - **To confirm: the swap.** After Easy or Workable on the learner's part, the parts exchange: Merc or
   Tavi sings the harmony and the learner the tune, the tune heard alone first (FACTS 56).
-- **To confirm: the cues**: "hold your last note until the tune ends", "Listen to the tune as you
-  sing, as in Lesson 24." and "If a note slips, come in on the next one.", Lesson 18's (FACTS 55).
+- **To confirm: the cues**: "hold your last note until the tune ends" and "Listen to the tune as
+  you sing.", new, and "If a note slips, come in on the next one.", Lesson 18's (FACTS 55).
 - **To confirm: the reading lines**, Lesson 18's with "your part's note", and the new one for a note
   sung on the other part's note: "Do · That was Merc's note: mi." It describes where the note sat,
   never the singer (FACTS 58).
-- "What this does", Lesson 18's box with "your part's note", "its own beat" and "each run": "it
-  measures how far each of your notes sits from your part's note, in cents, in any octave, listening
-  for each note in its own beat, counted from your first note, and shows your pitch line after each
-  run, not while you sing. It doesn't score your timing." with its last three sentences (FACTS 58).
+- "What this does", Lesson 18's box with "your part's note" and "each run": "it measures how far
+  each of your notes sits from your part's note, in cents, in any octave, listening for each note in
+  its own beats, counted from your first note, and shows your pitch line after each run, not while
+  you sing. It doesn't score your timing." with its last three sentences (FACTS 58).
 - **To confirm: the sets.** A set is one run of a part; each set allows three takes in a visit, every
   take counted; Again sings the set again, the quiet check and the model first; a run with no voice
   gives Lesson 18's line with this task's cue and Start again, with no feeling question; the swap is

@@ -2946,3 +2946,6 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - R26 brief, add: check L26's letter-count phrasing ("three letters up") against L23's rule (both ends counted, lessons/23-perfect-tritone/LESSON.md:195-196); check the L27 tease is bound as above.
 - App notes to verify before reporting: Chord Stacker notes 1-3 cut at 0.3 s at every level (use-chord-stacker-controller.ts:32, :149-154; playTone resolves on schedule); its help (exercise-help.ts:194-197) describes a sustained stack that never sounds.
 - Next: W26 hand-back -> R26 (fresh, xhigh) -> fix pass; W27 hand-back -> lead review -> commit. Then 28, then #229.
+
+## 2 Nov 12:10
+- Fallback 12:05 fired: worktree ok; both agents alive (L26 worktree files 12:03, s2pkg/26 12:01; L27 s2pkg/27 copied 12:10:08). Nothing resumed. Next fallback trig_01ADdt7J38saP3XmeqSNs3qG at 13:06.

@@ -42,15 +42,16 @@ rooms as Lesson 12's page draws it. On this page:
 - **Notation** is ink `#e6edf3` on chrome lines `#c3ccd6`: plain noteheads without stems, since no
   note value is taught, accidentals to the left of their notes, no key signature, and ledger lines
   no further than a note needs (FACTS 51). A chord's notes stack on one stem-less column; two notes
-  a second apart, F and G in V7's third inversion, sit side by side, the upper to the right, as
-  engravers write a second. A note lights in its singer's colour while it sounds, blue `#58a6ff` on
-  the bass staff and orange `#ff7448` on the treble, by the voice the learner chose.
-- **The ring** keeps Lesson 12's look: twelve beads on a ring, each named, the black piano keys in
-  sharps, the rooms chrome with a halo on each corner, the lit room with a brighter line and a faint
-  fill, the others faint, and the ring's centre naming the lit room in JetBrains Mono (FACTS 30). A
-  room of four corners is drawn through its corners in their order round the ring, which for every
-  chord on this page is the order of root, third, fifth and seventh. A fourth corner grows out of
-  its bead in 0.3 s.
+  a second apart, F and G in V7's inversions and B and C in those of I with its seventh, sit side by
+  side, the upper to the right, as engravers write a second. A note lights in its singer's colour
+  while it sounds, blue `#58a6ff` on the bass staff and orange `#ff7448` on the treble, by the voice
+  the learner chose.
+- **The ring** keeps Lesson 12's look: twelve beads on a ring, each named, the black piano keys
+  smaller, lit, named in sharps beside them, the rooms chrome with a halo on each corner, the lit
+  room with a brighter line and a faint fill, the others faint, and the ring's centre naming the lit
+  room in JetBrains Mono (FACTS 30). A room of four corners is drawn through its corners in their
+  order round the ring, which for every chord on this page is the order of root, third, fifth and
+  seventh. A fourth corner grows out of its bead in 0.3 s.
 - **The diagonal**: in Step 3 and in free play, while V7 is lit, a chrome line runs from B to F
   across the ring's centre, and as I sounds two short arrows show B moving one bead to C and F one
   bead to E. Nothing marks it in colour alone: the line is labelled "B to F: 6 semitones".
@@ -130,39 +131,49 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,178 words on `node scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 201 (FACTS 3). The page runs about 15 minutes: 9.15 minutes of reading at
-238 words a minute and about 5.6 of sound, toys and tasks, 14.71 in all, past MASTER-PLAN § 4.2's
-"8 to 12 minutes of active time, 500 to 900 words", as Lessons 10, 12, 15, 21, 23 and 25 are. The
-chip is an estimate until the ring's states and the staff's chords are timed in their lab, as
-SEASON-2 § 1.3 asks, and this section says so until then. Each step's own text, with its Try, its
-Notice and any Tavi line, runs 57 to 119 words (Steps 1 to 4: 118, 57, 118 and 119), inside 50 to
-120 words a step; Step 1's count includes its paragraph on V's seventh, which shows with the cold
-open's reveal, and Step 4's its predict and its reveal. Six parts carry more, by the same counter,
-for these reasons:
+The learner copy is 2,195 words on `node scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 184, and inside the lead's aim for this pass of 2,230 (FACTS 3). The page
+runs about 15 minutes: 9.22 minutes of reading at 238 words a minute and about 5.5 of sound, toys
+and tasks, 14.69 in all, past MASTER-PLAN § 4.2's "8 to 12 minutes of active time, 500 to 900
+words", as Lessons 10, 12, 15, 21, 23 and 25 are. The chip is an estimate until the ring's states
+and the staff's chords are timed in their lab, as SEASON-2 § 1.3 asks, and this section says so
+until then. Each step's own text, with its Try and its Notice, runs 57 to 120 words (Steps 1 to 4:
+119, 57, 119 and 120), inside 50 to 120 words a step; Step 1's count includes its paragraph on V's
+seventh, which shows with the cold open's reveal, and Step 4's its predict and its reveal. Eight
+parts run past a step's 120 words, by the same counter, for these reasons:
 
-- **Step 2, 165 words with its mix-up card**, and **Step 3, 171 with its drawer**: the card sits in
+- **Step 2, 165 words with its mix-up card**, and **Step 3, 172 with its drawer**: the card sits in
   the step whose plays refute it; the drawer has one item, closed by default.
-- **Step 4, 180 words with its drawer**, one item, closed by default.
+- **Step 4, 181 words with its drawer**, one item, closed by default.
 - **Sing it, 321 words.** It holds the series' singing lines, Lesson 3's word for word, which are
   not cut, Lesson 15's line under the voice choice and two lines of its own (Your turn's listening
   line, and Easy and Workable's) (FACTS 56 to 61).
 - **The quick check, 256 words**, and **the recall, 151**: three answers a question with a line of
-  feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lessons 12's and 23's, word
-  for word.
-- **The cold open, 174 words**: the predict gives Lesson 12's way of stacking, so a learner can
-  reason it out, and the reveal says why F and why F♯ was fair (FACTS 34, 36, 38).
-- **The Wrap, 452 words**: the practice card says what Chord Stacker does at every level, what it
-  shows and what it scores, and what the app lacks; its second drill is Stack; its rest version is
-  Lesson 12's (FACTS 62 to 70).
+  feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lessons 12's and 23's, word for
+  word.
+- **The cold open, 159 words**: the hook's own question, and a reveal that says which note, says the
+  pull in one textbook's words, and says why F♯ was fair (FACTS 34 to 38).
+- **The Wrap, 478 words**: the practice card says what Chord Stacker does at every level, its pace
+  and its printed sharps included, what it shows and what it scores, and what the app lacks; its
+  second drill is Stack; its rest version is Lesson 12's (FACTS 62 to 70).
 
-The hints and status lines are stage directions in LESSON.md and are not counted, as in the text
-packages of Lessons 9 to 25: the two predicts' hints and their "You said" lines, the names of the
-plays a choice unlocks, the stored voice's line, the steps' lock lines and the held lines, Sing it's
-hints, and the toys' labels, readouts and hints. A built page writes them in the open and counts
-them, about 150 words more (Lesson 8 FACTS 4), so the built page is about 2,330 words, under the
-cap, with the chip still at 15 minutes. No cut is needed. The article plan budgeted near 1,250
-words.
+The fix pass after the review added the new reveal, Step 3's sentence on B and F♯, Step 4's clause
+on Lesson 23's intervals and "its seventh in the bass", the letters counted with both ends, and the
+card's account of Chord Stacker's pace, and made room with these cuts:
+
+- **The cold open**: the review's stem, 29 words for 32, and its reveal, 80 for 91 (FACTS 34, 38).
+- **Step 3**: Tavi's line, "Then the note we added is what makes it pull?", and "G, B and D alone
+  hold no tritone." (FACTS 23, 44).
+- **Step 4**: "stacked in thirds", and the play of C major's three positions, whose work the
+  predict's plays and the Try now do (FACTS 49).
+
+The count went from 2,178 to 2,195. The hints and status lines are stage directions in LESSON.md and
+are not counted, as in the text packages of Lessons 9 to 25: the two predicts' hints and their "You
+said" lines, the names of the plays a choice unlocks, the stored voice's line, the steps' lock lines
+and the held lines, Sing it's hints, and the toys' labels, readouts and hints. A built page writes
+them in the open and counts them, about 150 words more (Lesson 8 FACTS 4), so the built page is
+about 2,345 words, under the cap, with the chip still at 15 minutes. The article plan budgeted near
+1,250 words.
 
 The activities are timed from this spec's lengths (FACTS 3, 72). Free play is not counted.
 
@@ -172,7 +183,7 @@ The activities are timed from this spec's lengths (FACTS 3, 72). Free play is no
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | 1. The steps' toy          | Lesson 12's ring of rooms, moved into the kit; Season 2's staff toy, both clefs, with its Clef and "See it on the pitch line" switches; Lesson 12's chord levels               | Rooms of four corners, the diagonal, the bass mark, Turn over, the readout, the held V chip             |
 | 2. The hero's ring         | Toy 1, two rooms, no staff                                                                                                                                                   | The fourth corner on F or F♯ after the choice                                                           |
-| 3. Predict widgets         | The kit's predict (`src/features/lessons/kit/predict.ts`), two on the page, the second disabled until the first's choice as on Lesson 22's page; `holdTour`                   | Three reveal elements for the first predict                                                             |
+| 3. Predict widgets         | The kit's predict (`src/features/lessons/kit/predict.ts`), two on the page, the second disabled until the first's choice as on Lesson 22's page; `holdTour`                   | Four reveal elements for the first predict                                                              |
 | 4. Three words             | Lesson 25's words strip with small staffs; Lesson 6's interval pair, moved into the kit                                                                                      | A four-note arpeggio, then the chord                                                                    |
 | 5. Sing it                 | Lesson 25's sing flow (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`, `kit/move-do.ts`'s count-in), its staff guide, its feelings and rest card                         | The figure in G                                                                                         |
 | 6. Go deeper drawers       | The kit's drawer                                                                                                                                                             | Held until a reveal                                                                                     |
@@ -188,45 +199,53 @@ item 4). Beside it, Season 2's staff toy in the learner's clef, with its Clef sw
 on the pitch line" switch (SEASON-2 § 1.4 item 1); every chord the toy plays, the staff writes as it
 sounds, in the same voice (FACTS 8, 51). One toy, four step states, then free play:
 
-- **Step 1**: two chips, I and V, and a switch, Add the seventh, off at first. A chip plays its
-  triad, 1.2 s, and lights its room; with Add the seventh on, a chip plays its seventh chord, and
-  switching it on plays the lit chord with its seventh, the fourth corner growing as it sounds. A
-  readout under the ring says "Root to seventh: 11 semitones" for I and "Root to seventh: 10
-  semitones" for V. The step's plays are LESSON.md's: C, E and G, then C, E, G and B; and, held
-  with the paragraph, G, B and D, then G, B, D and F (FACTS 42). The V chip and its plays are
-  disabled until the cold open's choice, under the steps' line "Choose an answer at the top to
-  unlock the rest of this figure." (FACTS 39).
-- **Step 2**: the I room and the V room, each with its fourth corner, and the step's two plays: the
-  major seventh chord, then the dominant seventh; the dominant seventh, then I (FACTS 43). Until the
-  cold open's choice the V room has three corners and both plays are disabled, under the same line.
-- **Step 3**: the V7 room with its diagonal, B to F, across the centre, and the I room. The plays:
-  B and F, then C and E, with the arrows; V7, then I (FACTS 44). The whole step waits for the cold
-  open's reveal (Toys 3).
-- **Step 4**: two chips, I and V7, Turn over, the bass mark and the step's play, C major's three
-  positions. Turn over moves the chord's lowest note up an octave and plays the chord, 1.2 s: the
-  staff restacks it, the bass mark moves to the new bottom note's corner, and the room on the ring
-  does not change (FACTS 50). A fourth press returns a triad to root position, a fifth a seventh
-  chord. All of it waits for Step 4's choice, which waits for the cold open's (Toys 3).
+- **Step 1**: two chips, I and V, and a switch, Add the seventh, off at first, with I lit at first
+  paint, so the switch can sound only I's seventh before the choice. A chip plays its triad, 1.2 s,
+  and lights its room; with Add the seventh on, a chip plays its seventh chord, and switching it on
+  plays the lit chord with its seventh, the fourth corner growing as it sounds. A readout under the
+  ring says "Root to seventh: 11 semitones" for I and "Root to seventh: 10 semitones" for V. The
+  step's plays are LESSON.md's: C, E and G, then C, E, G and B; and, held with the paragraph, G, B
+  and D, then G, B, D and F (FACTS 42). The V chip and its plays are disabled until the cold open's
+  choice, under the steps' line "Choose an answer at the top to unlock the rest of this figure."
+  (FACTS 39).
+- **Step 2**: the I room and the V room, each with its fourth corner, and the step's two plays, in
+  its text: the major seventh chord, then the dominant seventh; the dominant seventh, then I (FACTS
+  43). Until the cold open's choice the V room has three corners, under the same line; the step's
+  text, its plays among it, waits for the cold open's reveal (Toys 3).
+- **Step 3**: the V7 room with its diagonal, B to F, across the centre, and the I room. The plays: B
+  and F, then C and E, with the arrows; V7, then I (FACTS 44). The whole step, its plays among it,
+  waits for the cold open's reveal (Toys 3).
+- **Step 4**: two chips, I and V7, Turn over, the bass mark and the position's name under the ring,
+  "Root position", "First inversion", "Second inversion" or "Third inversion". Turn over moves the
+  chord's lowest note up an octave and plays the chord, 1.2 s: the staff restacks it, the bass mark
+  moves to the new bottom note's corner, the name changes, and the room on the ring does not change
+  (FACTS 50). The press after the last inversion returns the chord to root position at its first
+  pitches, the third press for a triad and the fourth for a seventh chord, so no press sounds a
+  pitch outside FACTS 72's. All of it waits for Step 4's choice, which waits for the cold open's
+  (Toys 3).
 - **Free play**, in the Wrap: one card with every control: chips I and V, Add the seventh, Turn over
-  and the bass mark, the diagonal while V7 is lit. The V chip, V's seventh, the diagonal and V7's
-  plays wait for the cold open's choice, under the steps' line; Turn over and the inversion play
-  wait for Step 4's choice, under "Choose an answer in Step 4 to unlock this.". A return visit holds
-  them again (FACTS 1a, 1b, 39).
+  with the bass mark and the position's name, and the diagonal while V7 is lit. Turn over turns
+  whichever chord is lit, I or V, with or without its seventh, and returns it as Step 4's does. The
+  V chip, V's seventh, the diagonal and V7's plays wait for the cold open's choice, under the steps'
+  line; Turn over waits for Step 4's choice, under "Choose an answer in Step 4 to unlock this.". A
+  return visit holds them again (FACTS 1a, 1b, 39).
 
 The figure's accessible name and live region use words only: "V, G major: G, B and D", "V7: G, B, D
-and F", "I with its seventh: C, E, G and B. Root to seventh: 11 semitones", "C major, E in the bass:
-E, G and C", each note spoken with its letter and octave when the staff reads it out.
+and F", "I with its seventh: C, E, G and B. Root to seventh: 11 semitones", "C major, first
+inversion, E in the bass: E, G and C", each note spoken with its letter and octave when the staff
+reads it out.
 
 ### 2. The hero's ring
 
 Toy 1's ring, alone on the stage, with no staff: the cold open plays in Merc's register for
-everyone, since the voice choice comes later (FACTS 8, 74). Two rooms: V's, lit, and I's, faint;
-the centre reads "V · G major" (FACTS 33). Play V, then I sounds G3, B3 and D4, then C4, E4 and G4,
-1.5 s each, lighting each room and naming it in the centre (FACTS 32). After a choice, Play it with
-F and Play it with F♯ each sound V with its fourth note, F4 or F♯4, 1.5 s, then I, 1.5 s; as the
+everyone, since the voice choice comes later (FACTS 8, 74). Two rooms: V's, lit, and I's, faint; the
+centre reads "V · G major" (FACTS 33). Play V, then I sounds G3, B3 and D4, then C4, E4 and G4, 1.5
+s each, lighting each room and naming it in the centre (FACTS 32). After a choice, Play it with F
+and Play it with F♯ each sound V with its fourth note, F4 or F♯4, 1.5 s, then I, 1.5 s; as the
 fourth note sounds its bead lights and the V room grows its fourth corner there, and the centre
 names the four letters with no chord's name. After the reveal, the F play's centre reads "V7". IV's
-room is never drawn here (FACTS 1a).
+room is never drawn here (FACTS 1a). The black piano keys are drawn as on Lesson 12's ring, smaller,
+lit, their names beside them, F♯ among them (FACTS 1a, 30).
 
 ### 3. Predict widgets
 
@@ -235,20 +254,21 @@ gives and no `next` hint, so the locked-in hint stays until the reveal (FACTS 37
 
 - **The cold open's**: choices F and F♯; Play V, then I is a free play (`data-free`); the answering
   plays are `revealOn` both, with `revealAfter: 'all'`; `guess` gives "You said: F" or "You said:
-  F♯". Its reveal is three elements (`src/features/lessons/kit/predict.ts:70-71`): the reveal under
-  the predict; Step 1's held paragraph and its play; and Step 3's text, plays, Tavi's line, Try,
-  Notice and Go deeper drawer. Each held element's place shows its held line until then, and none
-  is announced as it appears. Its `unlocks` are the steps' toy's V chip and Steps 1 and 2's V7 plays,
-  and the free play's V chip, V's seventh, diagonal and V7 plays
-  (`src/features/lessons/kit/predict.ts:66-67`). Its `onChoice` releases the tour's hold
-  (`holdTour`, `src/features/lessons/kit/tour-gate.ts:57-69`) and enables Step 4's predict.
+  F♯". Its reveal is four elements (`src/features/lessons/kit/predict.ts:70-71`): the reveal under
+  the predict; Step 1's held paragraph and its play; Step 2's text, plays, mix-up card, Try and
+  Notice; and Step 3's text, plays, Try, Notice and Go deeper drawer. Each held element's place
+  shows its held line until then, and none is announced as it appears. Its `unlocks` are the steps'
+  toy's V chip, with which Add the seventh plays V7, and the free play's V chip, V's seventh,
+  diagonal and V7 plays (`src/features/lessons/kit/predict.ts:66-67`). Its `onChoice` lets Step 2's
+  V room grow its fourth corner, releases the tour's hold (`holdTour`,
+  `src/features/lessons/kit/tour-gate.ts:57-69`) and enables Step 4's predict.
 - **Step 4's**: choices "Still C major" and "E minor", and both plays, disabled at first paint with
   the hint "Choose an answer at the top first.". The cold open's `onChoice` sets the lock line
   "Choose an answer to unlock the two comparisons.", enables the choices and only then mounts this
-  predict, which keeps the hint it finds, as Lesson 22's page wires its second predict (FACTS 48). Its plays are `revealOn` both with `revealAfter: 'all'`; `guess`
-  gives "You said: still C major" or "You said: E minor"; its reveal is the reveal, the text after
-  it, the Try and Notice and the Go deeper drawer; its `unlocks` are Step 4's chips, Turn over and
-  play, and the free play's Turn over and inversion play.
+  predict, which keeps the hint it finds, as Lesson 22's page wires its second predict (FACTS 48).
+  Its plays are `revealOn` both with `revealAfter: 'all'`; `guess` gives "You said: still C major"
+  or "You said: E minor"; its reveal is the reveal, the text after it, the Try and Notice and the Go
+  deeper drawer; its `unlocks` are Step 4's chips and Turn over, and the free play's Turn over.
 - On a first visit the welcome tour, whose "One step at a time" scrolls to the steps
   (`src/features/lessons/kit/tour-copy.ts:44-46`), waits for the cold open's choice. Neither
   predict's choice is stored: a return visit starts both afresh.
@@ -303,32 +323,39 @@ nothing playing until a press, and one sound at a time: a new play stops the one
 (`src/features/lessons/kit/now-playing.ts:39`). The levels are Lesson 12's, moved into the kit with
 its ring: a single note at 0.13, each voice of a three-note chord at 0.075, Merc's "ooh" at 0.2
 (`src/features/lessons/lesson-12/sounds.ts:41-48`); each voice of a four-note chord at 0.056, so a
-seventh chord sounds no louder in all than a triad, 0.224 against 0.225, and Step 2 compares two
-chords, not two loudnesses (FACTS 73). Every pitch is FACTS 72's. The lowest, G2 at 98 Hz in the
-lower voice's V7, is checked on a phone's speaker in the lab (Edge cases). Chords sound their notes
-together, with no arpeggio, except the Seventh chord word's and Merc's line. The guide's count-in is
-Lesson 25's (`src/features/lessons/kit/move-do.ts:65-74`).
+seventh chord sounds no louder in all than a triad, 0.224 against 0.225, and in power about 1.3 dB
+quieter, and Step 2 compares two chords, not two loudnesses (FACTS 73). Every pitch is FACTS 72's.
+The lowest, G2 at 98 Hz in the lower voice's V and V7, is checked on a phone's speaker in the lab
+(Edge cases); the highest, G5 at 784 Hz, sounds only in free play (FACTS 72). Chords sound their
+notes together, with no arpeggio, except the Seventh chord word's and Merc's line. The guide's
+count-in is Lesson 25's (`src/features/lessons/kit/move-do.ts:65-74`).
 
 ## Merc and Tavi
 
 Merc and Tavi stand either side of the ring on the floor line, as on Lesson 25's stage, with the
 kit's idle loops and celebration (`src/features/lessons/kit/merc-duo.ts:119`). Their lines are
-LESSON.md's: in the hero, Tavi's guess for F♯ and Merc's "Choose, then hear both go home." (FACTS
-35); in Step 3, Tavi's question, held with the step (FACTS 44). Merc sings the sing-along on "ooh"
-for the lower voice, Tavi an octave higher for the higher voice, as in Lesson 25. Neither says
-"right" or "wrong"; the reveal's line says what the learner chose.
+LESSON.md's: in the hero, Tavi's guess for F♯, "F♯ sits a semitone under G, and G is in the home
+chord. Won't F♯ pull hardest?", and Merc's "Choose, then hear both go home." (FACTS 35). Neither
+speaks in the steps: the plan's Tavi line for Step 3 is left out for length (FACTS 44). Merc sings
+the sing-along on "ooh" for the lower voice, Tavi an octave higher for the higher voice, as in
+Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the learner chose.
 
 ## Practice links: what exists and what needs engineering
 
 1. **Chord Stacker**, `/pitch-training?lesson=27`, printed mercurypitch.com/pitch-training, then tap
    Chord Stacker. Today it plays five four-note chords in a shuffled order, root first, a note at a
-   time, then has the learner sing each note back with nothing sounding, scoring each against its
-   own octave; it names no chord, prints each note's name, shows a tuning dot and no staff, starts
-   its root on the preset's starting note, and its level changes only its speed and the time to sing
-   (FACTS 62 to 65). Needs engineering, none of it blocking this page: a chord-type launch field,
-   triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the dominant seventh
-   and its inversions; and its help text corrected, since nothing sounds while the learner sings
-   (FACTS 66; new, hand-back).
+   time, the first three about 0.3 s apart, each cut off by the next at every level, then has the
+   learner sing each note back, with nothing sounding but, below level 10, the top note's tail for
+   up to 0.4 s; it scores each note against its own octave, names no chord, prints each note's name
+   with every black piano key as a sharp, shows a tuning dot and no staff, and starts its root on
+   the preset's starting note; its level changes the top note's length and the time to sing, not the
+   pace (FACTS 62 to 65). Needs engineering, none of it blocking this page: a chord-type launch
+   field, triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the dominant
+   seventh and its inversions; each note waited out before the next, as Arpeggio Jumper does
+   (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:316-319`), so the
+   first three notes sound their full length (FACTS 62; new, hand-back); and its help text
+   corrected, its summary with it, since nothing sounds while the learner sings (FACTS 66; new,
+   hand-back).
 2. **Ear Lab's Stack**, `/ear-lab?lesson=27`, printed mercurypitch.com/ear-lab, then tap Stack. Today
    it plays one block chord on a roved root and asks for its quality from six, the dominant seventh's
    pad marked 7; no major seventh chord (FACTS 67). Needs engineering: the `ear-drill` launch kind
@@ -350,19 +377,21 @@ app still need, item 3), in the form of Lesson 12's entry
   `topics: ['T24', 'T25']`, `minutes: 15`, `page: '/learn/27'`, `hook`: the title (FACTS 1).
 - `pr.link`: `href: '/pitch-training?lesson=27'`, `addr: 'mercurypitch.com/pitch-training'`,
   `label: 'Exercises'`, `note: 'then tap Chord Stacker'`.
-- `pr.needs` (admin only): "Chord Stacker opening on the dominant seventh, with triads and
-  inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack with major against dominant
-  seventh alone".
+- `pr.needs` (admin only), as the hand-back writes it: "Chord Stacker opening on the dominant
+  seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack
+  with major against dominant seventh alone (the ear-drill launch kind)".
 - Two edges: `[12, 27]` and `[23, 27]`, so the explorer lights Lessons 12 and 23 as this lesson's
   path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:431-458`).
 - In `kit/lesson-copy.ts` (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): the hook
   with no alternative; the tease for this lesson, which Lesson 26's card prints, "G, B and D going
-  home to C, E and G. Now stack one more third.", with `teaseAlts` `plan`, "Stack thirds and you get
-  a chord. Stack one more on V, and it pulls." (FACTS 5b). Lesson 28's tease is Lesson 28's entry.
+  home to C, E and G. Now add one note on top.", with `teaseAlts` `three-notes`, "Three notes make a
+  chord. Add one more to V, and hear where it goes." (FACTS 5b). Lesson 28's tease, "A song in two
+  parts. At bar 8 it seems to end, then keeps going.", is Lesson 28's entry, as the lead bound it
+  (FACTS 5).
 - In `kit/team-notes.ts`: the signature line from the card (FACTS 4), "Lesson 12's rooms on the
   ring; the V room gains a fourth corner; ti and fa lie straight across and fold inwards to do and
   mi; a chord turns over and keeps its name", and a `TEASE_NOTES` line saying the tease is this
-  page's opening in miniature and names no fourth note.
+  page's opening in miniature and names no note and no third.
 
 The explorer opens on Season 2's tab with this lesson lit; its line above the heading is "Season 2 ·
 Lesson 27" and under it Lesson 1's line (FACTS 6).
@@ -388,7 +417,8 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
 4. **Lesson 12's ring of rooms in the kit**: `lesson-12/rooms-draw.ts`, its marks and its plays move
    into the kit, and Lesson 12's page then imports them. They gain: rooms of four corners, drawn in
    their order round the ring; a room set per page, so the hero draws two; the diagonal with its two
-   arrows; the bass mark; Turn over; a chip and a control that a predict's `unlocks` can hold; and
+   arrows; the bass mark; Turn over, with the position's name and the press after the last inversion
+   back to the first pitches; a chip and a control that a predict's `unlocks` can hold; and
    the centre's text set by the page ("V · G major", the four letters, "V7").
 5. **The staff toy's chords** (SEASON-2 § 6.2): a chord written as stacked noteheads on one column,
    a second set side by side, in either clef, its notes lit as they sound; an octave climb drawn as a
@@ -407,30 +437,34 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
    lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:57-67`), the admin console's
    lesson list (`src/features/admin/lessons/lesson-admin.ts:88`) and the current lesson's reader
    (`src/lib/current-lesson.ts:34-37`).
-10. **Chord Stacker's help text** (`src/features/exercises/exercise-help.ts:193-200`): it says each
-    note is tuned against the notes already sounding, and none is (FACTS 66). Proposed: "You hear a
-    chord one note at a time, then sing each note back on its own." App content, not blocking.
+10. **Chord Stacker's help text and its note lengths**, app content and an app fix, not blocking.
+    The help (`src/features/exercises/exercise-help.ts:193-200`) says each note is tuned against the
+    notes already sounding, and its summary that the learner builds a chord, and nothing sounds
+    while the learner sings (FACTS 66). Proposed: the summary "Hear a chord one note at a time, then
+    sing each note back in tune." and the body "You hear a chord one note at a time, from the root
+    up, then sing each note back on its own." The play loop waits only a fixed 300 ms after each
+    note (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:144-162`), so notes
+    1 to 3 are cut off 0.3 s in at every level; it should wait each note out before the next, as
+    Arpeggio Jumper does (FACTS 62). The card describes the drill as it is; when the fix lands, its
+    "about a third of a second apart" and the coach's list are looked at again.
 
 ## Decisions for the owner
 
-Most of this page follows decisions already made (SEASON-2 § 7) or the lead's answers. Open:
+Most of this page follows decisions already made (SEASON-2 § 7) or the lead's answers, the cold
+open's predict, both teases and the head title among them. Open:
 
-1. **Lesson 26's overlap with the cold open.** Lesson 26's plan asks, in its quick check, for the
-   third above D in C major, F, and names F♯ as the wrong third: the step this page's predict asks a
-   learner to reason out from Lesson 12. A learner who takes Lesson 26 first has been told it. Keep
-   the predict as a reasoning check, or have Lesson 26 use another note for its question (FACTS 1a).
-2. **The coach's call on the sing-along's span**, a minor seventh by thirds, with two shorter
+1. **The coach's call on the sing-along's span**, a minor seventh by thirds, with two shorter
    figures ready (FACTS 54).
-3. **Lesson 28's tease**: the lead's "it sounds finished" or the milder "it seems to end" (FACTS 5).
 
 ## Edge cases
 
 - **Sound off**: every play shows the kit's sound-off line and changes nothing; neither predict
   reveals; the steps' plays and the guide wait. The page is readable throughout.
 - **A play cut short** by another play or by Stop counts as not heard: it reveals nothing.
-- **Scrolling past the predict**: the steps' toy and the free play hold their V7 controls, Steps 1
-  and 3 their held text, Step 4 its whole predict, as Toys 1 and 3 say; Sing it, the quick check and
-  the Wrap's lines, which state the answers, sit below Sing it (FACTS 1a).
+- **Scrolling past the predict**: the steps' toy and the free play hold their V7 controls, Steps 1,
+  2 and 3 their held text, Step 4 its whole predict, as Toys 1 and 3 say, and the welcome tour waits
+  for the choice; Sing it, the quick check and the Wrap, whose lines state or lean on the answers,
+  sit below the steps (FACTS 1a).
 - **A return visit**: neither choice is stored; every hold applies again, and the tour, once seen,
   does not run again (`fyp-tour`, `src/features/lessons/kit/tour-gate.ts:29`).
 - **No stored voice**: the staffs show the bass clef and play the lower voice until the voice
@@ -443,9 +477,15 @@ Most of this page follows decisions already made (SEASON-2 § 7) or the lead's a
   light as they sound.
 - **Screen readers**: the reveal and the held elements are not announced as they appear; the
   predict's "You said" line is; every ♯ and ♭ has a spoken name.
-- **Low notes on a phone**: G2, 98 Hz, sounds only in the lower voice's V7; the lab checks it on a
-  phone's speaker, and if it is lost there the lower voice's examples move up an octave, to the
-  higher voice's pitches, while the staff keeps the bass clef and its ledger lines.
+- **Low notes on a phone**: G2, 98 Hz, sounds only in the lower voice's V and V7, in Step 1's V chip
+  and held play, Steps 2 to 4 and free play; the lab checks it on a phone's speaker, and if it is
+  lost there the lower voice's examples move up an octave, to the higher voice's pitches, while the
+  staff keeps the bass clef and its ledger lines.
+- **High notes**: G5, 784 Hz, sounds only in free play, the higher voice's I with its seventh turned
+  over three times; it is written in the space above the treble staff, with no ledger line, and the
+  next press returns the chord to C4, E4, G4 and B4.
+- **Turn over pressed again and again** cycles through the chord's positions and back to its first
+  pitches; it never climbs past them (FACTS 50).
 - **Quick check before the cold open**: allowed; its question 1 offers F among three answers, below
   Sing it (FACTS 1a).
 
@@ -455,30 +495,34 @@ Unit tests (vitest) on the page's pure helpers in `src/features/lessons/lesson-2
 kit parts it adds:
 
 1. **Chords**: I and V stacked in C major, with and without their sevenths, give FACTS 15 and 16's
-   notes and thirds; C up to B is 11, G up to F 10; G, B and D hold no pair six apart and G, B, D
-   and F hold one, B and F (FACTS 13, 23).
+   notes and thirds; C up to B is 11, G up to F 10; G, B and D hold no pair six apart, G, B, D and F
+   hold one, B and F, and G, B, D and F♯ none, B up to F♯ being 7 (FACTS 13, 23).
 2. **The ring**: B and F 180 degrees apart; a room's corners at its notes' places whatever their
    octave; a four-corner room's corners in ring order; Turn over leaves a room's corners unchanged
-   and moves the bass mark (FACTS 30, 31, 50).
-3. **The cold open's lock**: at first paint, with no choice, the steps' toy's V chip and Steps 1
-   and 2's V7 plays are disabled under the steps' line; Step 1's paragraph on so and its play are
-   hidden and the held line shows; Step 3 shows only its heading and held line; the free play's V
+   and moves the bass mark; the black piano keys, F♯ among them, drawn smaller with their names
+   beside them, as on Lesson 12's ring (FACTS 1a, 30, 31, 50).
+3. **The cold open's lock**: at first paint, with no choice, the steps' toy lights I, and its V chip
+   and V7 plays are disabled under the steps' line; Step 1's paragraph on so and its play are hidden
+   and the held line shows; Steps 2 and 3 show only their headings and held lines; the free play's V
    chip, seventh, diagonal and V7 plays are disabled; the hero draws two rooms and no fourth corner;
-   Step 4's choices and plays are disabled with their hint. After a choice the V controls are
-   enabled and Step 4's choices too, while the held text stays hidden; after both answering plays
-   are heard with sound on, in either order, the reveal, Step 1's paragraph and Step 3's text show.
-   A new visit holds all of them again. A play cut short reveals nothing (FACTS 1a, 37, 39, 40).
+   Step 4's choices and plays are disabled with their hint. After a choice the V controls and Step
+   2's fourth corner on V are enabled, and Step 4's choices too, while the held text stays hidden;
+   after both answering plays are heard with sound on, in either order, the reveal, Step 1's
+   paragraph and Steps 2 and 3's text show. A new visit holds all of them again. A play cut short
+   reveals nothing (FACTS 1a, 37, 39, 40).
 4. **No "Now play the other one"**: neither predict has a `next` hint, and after one answering
    play the hint is still "Locked in. Play both." (FACTS 37).
-5. **Step 4's lock**: Turn over, the chips and the step's play, and the free play's Turn over and
-   inversion play, are disabled until Step 4's choice; the reveal shows the body, Try, Notice and
-   drawer only after both of its plays (FACTS 1b, 48, 50).
+5. **Step 4's lock**: Turn over and the chips, and the free play's Turn over, are disabled until
+   Step 4's choice; the reveal shows the body, Try, Notice and drawer only after both of its plays
+   (FACTS 1b, 48, 50).
 6. **The tour** waits for the cold open's choice on a first visit (FACTS 39).
 7. **The plays**: each play's notes, for each voice, are FACTS 72's; three-note chords at 0.075 a
    voice, four-note at 0.056; the hero and quick check 4 the same for both voices (FACTS 72 to 74).
-8. **The staff**: every chord and inversion written in both clefs with no key signature; G3 and B3
-   on their ledger lines in the treble, E4 on its in the bass; F♯ with its sharp; V7's third
-   inversion with F and G side by side (FACTS 51, 52).
+8. **The staff**: every chord and inversion written in both clefs with no key signature; in the
+   treble, G3 under the second ledger line below, B3 under the first, and G5 in the space above the
+   staff with no ledger line; in the bass, E4 on the second ledger line above and G4 on the third;
+   F♯ with its sharp; two notes a second apart side by side, F and G in V7's inversions and B and C
+   in those of I with its seventh (FACTS 51, 52).
 9. **The headings**: the masthead's menu lists the four headings, and none contains F, F♯,
    "inversion" or "bottom note" (FACTS 1a, 1b).
 10. **The head**: the title at most 60 characters; the description 80 to 160 characters with "A
@@ -495,12 +539,17 @@ kit parts it adds:
     version; nothing asks for a microphone (FACTS 52, 56 to 61).
 15. **The practice card**: its links carry `?lesson=27`; its printed addresses carry none; the rest
     version names Chord Stacker and keeps Stack (FACTS 69, 70).
-16. **The next card**: Lesson 28's hook and the tease from the season data, and "Coming later" while
-    Lesson 28's page is not live (FACTS 5).
+16. **The next card**: Lesson 28's hook and the tease from the season data, "A song in two parts. At
+    bar 8 it seems to end, then keeps going.", and "Coming later" while Lesson 28's page is not live
+    (FACTS 5).
 17. **Accessibility**: the figures' accessible names use words only; every ♯ and ♭ has a spoken
     name (`signsHtml`, `src/features/lessons/kit/notes.ts:221`); the held elements are not
     announced.
 18. **The tease still** on Lesson 26's card shows the V room with three corners (FACTS 1a).
+19. **Turn over's pitches**: from each chord it can turn, in each voice, every press sounds FACTS
+    72's pitches for the next position; the press after the last inversion sounds the first pitches
+    again, the third for a triad and the fourth for a seventh chord; and no press, however many,
+    sounds a pitch outside FACTS 72's, G2 to G5 (FACTS 50, 72).
 
 ## Contract
 
@@ -526,14 +575,15 @@ voice. The predicts' choices, the Clef switch, the pitch-line switch, Add the se
 chord hold for the visit, in memory.
 
 The departures from ARTICLE-PLAN.md, each argued in FACTS and listed in LESSON.md's preamble: the
-predict leaning on Lessons 12 and 23, not Lesson 26, the lead's (FACTS 1a, 34); both choices played,
-the reveal waiting for both (37); two rooms in the hero, not four (33); Tavi's bubble arguing F♯,
-the plan's line moved to Step 2's card, and Merc's line changed (35); the fair guess resting on
-Lesson 12's G major (36); both prerequisites on the chips (2); the promise and the words keeping
-both answers back, three words in place of four (1a, 1b, 41); Step 1's paragraph on V7 and Step 3's
-text waiting for the reveal, and the toys, the free play and the tour holding until the choice
-(39, 40); Step 3 without a predict and without minor (45, 46); Step 4's heading, its wait for the
-cold open, and its reveal restating Lessons 10 and 12's rule where it breaks (48, 49); Go deeper
-keeping two of three items (47); the quick check's reworded stems and feedback (75 to 78); the practice
-card's account of Chord Stacker and Stack (62 to 70); Tavi's Step 3 line without "So" (10, 44);
-the run time at 15 minutes, not 14 (3); and Lesson 28's tease the lead's, the plan's withdrawn (5).
+predict asking the hook's own question, which note makes V pull harder, F or F♯, after the review
+(FACTS 1a, 34); both choices played, the reveal waiting for both (37); two rooms in the hero, not
+four (33); Tavi's bubble arguing F♯, a semitone under G, the plan's line moved to Step 2's card, and
+Merc's line changed (35, 36); both prerequisites on the chips (2); the promise and the words keeping
+both answers back, three words in place of four (1a, 1b, 41); Step 1's paragraph on V7 and Steps 2
+and 3's text waiting for the reveal, and the toys, the free play and the tour holding until the
+choice (39, 40); Step 3 without a predict, without minor and without the plan's Tavi line, with B
+and F♯ beside B and F (23, 44, 45, 46); Step 4's heading, its wait for the cold open, and its reveal
+naming the two rules it breaks (48, 49); Go deeper keeping two of three items (47); the quick
+check's reworded stems and feedback (75 to 78); the practice card's account of Chord Stacker and
+Stack (62 to 70); the run time at 15 minutes, not 14 (3); and both teases the lead's, the plan's
+lines withdrawn (5, 5b).
