@@ -77,6 +77,8 @@
   message. App fix: send the drill and mode to a peer whose channel opens, with a late-join test
   (Lesson 26 hand-back). The card is worded so the friend joins first.
 
+## DONE 2 Nov 19:2x: committed as 60e83bee0 (with the Lesson 28 wave; findings 200 = base). Below, the draft status as it stood.
+
 ## Draft status (2 Nov 18:1x, lead)
 - Lessons 15-27's shared edits are DRAFTED as a content-only patch: s2pkg/shared-rest/draft/shared-16-27.content.patch
   (made in a detached worktree /dev/shm/s2shared at 85ccd03dd; applies with `git apply` on any commit whose

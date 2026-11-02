@@ -2,12 +2,13 @@
 
 The Lesson 28 page is the web lesson for "Cadences, form and a song in two parts", Season 2's last
 lesson, its voice and theory finale, the fourth of Arc D, Harmonise it: a cold open in which a song
-in two parts seems to end at bar 8, then keeps going, and the learner predicts which part changed
-its note; a recall from Lessons 18 and 26; three words; written steps on one main toy, the song on
-two staffs, in four step states with free play, and a form strip; a scored checkpoint in which the
-learner reads and sings one part of the song's eight bars in time, in their own clef, with the other
-part in the headphones, recorded on the device and played back with the other part; a way to sing
-alone without headphones and hear the two together afterwards; an unscored sing-along without a
+in two parts seems to end at bar 8, then keeps going, and the learner predicts whose note at bar 8
+differs from the way the song ends; a recall from Lessons 18 and 26; three words; written steps on
+one main toy, the song on two staffs, in four step states with free play, and a form strip; a
+scored checkpoint in which the learner reads and sings one part of the song's eight bars in time, in
+their own clef, with the other part in the headphones, recorded on the device and played back with
+the other part; a way to sing alone without headphones, the page playing the other part first if
+the learner likes, and hear the two together afterwards; an unscored sing-along without a
 microphone; two quizzes; the season's close; and the lesson explorer. Copy is in
 [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is a text-only package: no film
 exists for Lesson 28, so the page has no Watch section and the masthead's anchors are Lesson, Sing
@@ -16,22 +17,24 @@ and Explorer. It is built on the kit (`src/features/lessons/kit/`) as it stands 
 lesson's module moves into the kit first.
 
 It stands on Season 2's kit work, none of it built yet, and specifies again none of what other
-packages give: the seasons in the kit (SEASON-2 § 6.2 item 1); the staff toy (SEASON-2 § 6.2 item 2; Lesson
-15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:580-585`), with key
-signatures (Lesson 21's item 4, `docs/plans/find-your-pitch/lessons/21-keys-circle/WEB-SPEC.md:459-463`)
-and rhythm on the staff (§ 6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing
-flow with a take read in time and its marks (its items 4, 5, 7 and 8,
+packages give: the seasons in the kit (SEASON-2 § 6.2 item 1); the staff toy (SEASON-2 § 6.2 item 2;
+Lesson 15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:580-585`), with key
+signatures (Lesson 21's item 4,
+`docs/plans/find-your-pitch/lessons/21-keys-circle/WEB-SPEC.md:459-463`) and rhythm on the staff (§
+6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing flow with a take read in
+time and its marks (its items 4, 5, 7 and 8,
 `docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:657-708`); Lesson 24's headphones
 check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:747-755`);
 Lesson 26's options for them, its part under a take and its reader's rule for a note sung on the
 other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:661-687`); and
-Lesson 14's recorder (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:564-591`)
-and its rest-aware close (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:877-886`).
-This spec adds only what a song in two parts needs: two staffs in one figure, its tags and its
-plagal tag; the song strip and the form strip; a take played back with the other part; the alone
-path; the season's close for Season 2; and a lab test. The scored runs ship only after that lab
-test, in which silence with the other part from the speakers reads as no voice and a take plays back
-in time with the part; until then Sing it is the unscored sing-along (FACTS 59 to 64).
+Lesson 14's recorder
+(`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:564-591`) and its rest-aware
+close (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:877-886`). This spec
+adds only what a song in two parts needs: two staffs in one figure, its tags and its plagal tag; the
+song strip and the form strip; a take played back with the other part; the alone path; the season's
+close for Season 2; and a lab test. The scored runs ship only after that lab test, in which silence
+with the other part from the speakers reads as no voice and a take plays back in time with the part;
+until then Sing it is the unscored sing-along (FACTS 59 to 64).
 
 One object carries the lesson: a song in two parts, written for it, in G major, Tavi's part in the
 treble clef above and Merc's in the bass clef below. In the cold open it is ten empty bars that
@@ -69,9 +72,10 @@ wordmark, and the motion rules. On this page:
   under its bars and nowhere else (FACTS 32, 48, 49).
 - **The form strip**: four blocks of eight bars, their capital letters fading in above them in ink,
   the section sounding outlined (FACTS 50).
-- **Sing it is a staff with the learner's part lit**: the learner's part's notes amber `#f59e0b` on
-  their beat, the other part's notes chrome, and after a run the learner's pitch line violet
-  `#a78bfa` on the run's time axis under the staffs, folded into the part's octave (FACTS 60).
+- **Sing it is a staff with the learner's part lit**, from the cold open's choice; before it, the
+  hero's empty bars (FACTS 46). The learner's part's notes are amber `#f59e0b` on their beat, the
+  other part's notes chrome, and after a run the learner's pitch line violet `#a78bfa` on the run's
+  time axis under the staffs, folded into the part's octave (FACTS 60).
 - **No decorative staff or clef anywhere** (SEASON-2 § 1.5 item 7): every staff on the page is
   music, and it plays.
 
@@ -84,9 +88,9 @@ For everyone else the masthead's Pause animations toggle stops the same things.
 ## Sections
 
 The page anatomy (MASTER-PLAN § 4.2) with Season 1's departures kept: the step toys double as the
-Playground, unlocked in the Wrap once the cold open's choice is made; the mix-up card sits in Step 2,
-whose question it answers; the practice card sits in the Wrap. No Watch section. The page opens in
-Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are in LESSON.md
+Playground, unlocked in the Wrap once the cold open's choice is made; the mix-up card sits in Step
+2, whose question it answers; the practice card sits in the Wrap. No Watch section. The page opens
+in Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are in LESSON.md
 ("Section headings").
 
 1. **Masthead**: Season 1's, with the kit's seasons: "Season 2 · Lesson 28", anchors Lesson, Sing
@@ -101,8 +105,8 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
    and "After Lesson 26: A second voice", links to `/learn/18` and `/learn/26` that stay plain chips
    wherever their lesson is not live (FACTS 2); "Sound on"; "Microphone optional"; and "Headphones
    optional". The stage holds Tavi's and Merc's bubbles over Merc and Tavi, the song strip between
-   them, and under it Play the song, which works from the start, and Play the ending and Play the
-   way it kept going, locked until a choice; the predict card sits under the stage (Toys 1). The
+   them, and under it Play the song, which works from the start, and Play the ending and Play it
+   going on, locked until a choice; the predict card sits under the stage (Toys 1). The
    head:
    - the title, at most 60 characters: "Types of cadence and song form | MercuryPitch" (45),
      query-led as SEARCH.md § 13 item 1 decided (`docs/plans/find-your-pitch/SEARCH.md:454-456`);
@@ -127,7 +131,7 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
      and how to read and sing one part of a song in two parts."
 
    Nothing a learner can meet before the choice, the title, the descriptions, the share card and
-   its alt, says which part changes at bar 8 (FACTS 1a). Lengths: `verify28.py`, section 10.
+   its alt, says whose note at bar 8 is different (FACTS 1a). Lengths: `verify28.py`, section 10.
 
 3. **Recall from Lessons 18 and 26**, straight after the hero, shown to everyone (Toys 5; FACTS 7).
 4. **Three words you'll meet**: Cadence, Section and Form, with their figures (Toys 4).
@@ -136,8 +140,9 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
    (Toys 3).
 6. **Sing it**: the comfort check, the voice choice and its line, the headphones check, the "What
    this does" box, Start, the quiet check, Your turn, the runs, their readings, the playback and
-   "How did that feel?"; the alone path; or the sing-along (Toys 6).
-7. **Quick check**: four questions, none held (Toys 5).
+   "How did that feel?"; the alone path, with its optional first turn; or the sing-along (Toys 6).
+7. **Quick check**: four questions, question 4's play and answers held until the cold open's
+   choice (Toys 5).
 8. **Wrap**: the three lines, the one-sentence challenge, the practice card in the version Sing
    it's ending picks (Practice links), the season's close in place of a next-lesson card (Toys 7),
    and free play, the steps' staffs in every state, drawing the hero's empty bars under its lock
@@ -149,49 +154,50 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
 
 ## Length
 
-The learner copy is 2,051 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+The learner copy is 2,062 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
 under the series' cap of 2,379. Each step's own text, with its Try, its Notice and any Tavi line,
-runs 100, 107, 109 and 117 words, inside 50 to 120 a step.
+runs 100, 104, 109 and 116 words, inside 50 to 120 a step.
 
 The built page is counted as the review counts it: the brief's 150 for the hints and status lines a
 built page writes in the open (Lesson 8 FACTS 4), plus every line this page adds that the counter
-would count, 151 in all (`verify28.py`, section 11): the hero's strip labels, "Tavi's part" and
-"Merc's part" (4); the answering plays, "Play the ending" and "Play the way it kept going" (9); the
-predict's two "You said" lines (8); the steps' figure's lock line, "Choose an answer at the top to
-unlock this figure." (10); the steps' staff labels, the same two (4); Step 1's tags, "Imperfect: on
-V" and "Perfect: V to I" (7); Step 2's switch, "Perfect · Interrupted · Plagal", its tags
-"Interrupted: V to vi" and "Plagal: IV to I", and the tag's word, "A-" and "men" (13); Step 2's held
-line, "Hear both ways at the top to unlock this step." (10); Step 4's Play both (2); the steps'
-"See it on the pitch line" (6); the stored voice's line (9); the quiet check's line when it hears a
-note (18); Sing it's status lines, "Counting in: one bar.", "Your turn: sing in time with the
-cursor." and "Done for today." (15); Sing it's lock line, the figure's (10); Sing along again (3);
-the close's rest line, "You've read a song in two parts." (7); and free play's lock line and its
-"See it on the pitch line" (16). Marks that are a numeral, a letter or a single name, the bar
-numbers, the cadences' numerals, the form's letters and free play's state numbers, are not counted,
-as a chart's ticks are not; the section lines above the headings and the kit's own hints sit inside
-the 150, as Lessons 24 and 26 count them. So the built page runs about 2,051 + 150 + 151 = 2,352
-words, 27 under the cap.
+would count, 159 in all (`verify28.py`, section 11): the hero's strip labels, "Tavi's part" and
+"Merc's part" (4); the answering plays, "Play the ending" and "Play it going on" (7); the predict's
+two "You said" lines (8); the steps' figure's lock line, "Choose an answer at the top to unlock this
+figure." (10); the steps' staff labels, the same two (4); Step 1's tags, "Imperfect: on V" and
+"Perfect: V to I" (7); Step 2's switch, "Perfect · Interrupted · Plagal", its tags "Interrupted: V
+to vi" and "Plagal: IV to I", and the tag's word, "A-" and "men" (13); Step 2's held line, "Hear
+both ways at the top to unlock this step." (10); Step 4's Play both (2); the steps' "See it on the
+pitch line" (6); the stored voice's line (9); the quiet check's line when it hears a note (18); Sing
+it's status lines, "Counting in: one bar.", "Your turn: sing in time with the cursor." and "Done for
+today." (15); Sing it's lock line, "Choose an answer at the top to sing or listen here." (11); quick
+check 4's lock line, "Choose an answer at the top to try this." (9); Sing along again (3); the
+close's rest line, "You've read a song in two parts." (7); and free play's lock line and its "See it
+on the pitch line" (16). Marks that are a numeral, a letter or a single name, the bar numbers, the
+cadences' numerals, the form's letters and free play's state numbers, are not counted, as a chart's
+ticks are not; the section lines above the headings and the kit's own hints sit inside the 150, as
+Lessons 24 and 26 count them. So the built page runs about 2,062 + 150 + 159 = 2,371 words, 8 under
+the cap.
 
-The page runs about 19 minutes: 9.88 of reading the built page at 238 words a minute and about 8.98
-of sound, toys and tasks, 18.87 in all, near the plan's "about 20 minutes (lab-timed)" and under the
-season's cap of 20 for a film; the text's count alone gives 17.60. It is the season's longest page,
+The page runs about 19 minutes: 9.96 of reading the built page at 238 words a minute and about 8.98
+of sound, toys and tasks, 18.94 in all, near the plan's "about 20 minutes (lab-timed)" and under the
+season's cap of 20 for a film; the text's count alone gives 17.64. It is the season's longest page,
 as SEASON-2 § 1.3 expects of Lesson 28. The chip, the head's "A nineteen-minute lesson",
 `timeRequired` `PT19M` and the season's `minutes` say 19 until the staffs' plays and the runs are
 timed in their lab (SEASON-2 § 1.3), which may move them. Its sounds carry the time: the song's
 plays are long at 72 beats a minute, eight bars 26.7 seconds (FACTS 38). These parts carry more
 words, for these reasons:
 
-- **Sing it, 591 words.** It holds the series' singing lines, Lesson 3's, Lesson 18's, Lesson 24's
+- **Sing it, 595 words.** It holds the series' singing lines, Lesson 3's, Lesson 18's, Lesson 24's
   and Lesson 26's word for word, which are not cut; the headphones and quiet checks, which the
-  scored path needs; the briefing and the headphones line; the "What this does" box with Lesson
-  14's two sentences on a recording; the reading's example lines; the playback and its cadence line;
-  the feelings' lines with Lesson 14's take lines; the sing-along; and the can't-record line (FACTS
-  53 to 69).
+  scored path needs; the briefing and the headphones line; the alone path's first turn; the "What
+  this does" box with Lesson 14's two sentences on a recording; the reading's example lines; the
+  playback and its cadence line; the feelings' lines with Lesson 14's take lines; the sing-along;
+  and the can't-record line (FACTS 53 to 69).
 - **The Wrap, 251 words.** The three lines, the challenge, Karaoke Night's card in Lesson 14's
   words with its care lines and rest version, Cadence as the second drill, and the season's close
   (FACTS 5, 70 to 73).
-- **Step 2, 177 words with its mix-up card**: the card sits in the step whose plays refute it.
-- **The quick check, 178 words, and the recall, 157**: three answers a question with a line of
+- **Step 2, 175 words with its mix-up card**: the card sits in the step whose plays refute it.
+- **The quick check, 181 words, and the recall, 157**: three answers a question with a line of
   feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lessons 18's and 26's, word for
   word.
 
@@ -200,25 +206,31 @@ built, and was cut in the reveal, Steps 1 to 4, Your turn, the voice line, the h
 playback's lead-in, the feelings' line, the quiet check's fail line, the quick check's feedback, the
 Wrap's second line and the Ear Lab line, and by the plan's Lesson 14 recall question, the mix-up
 card's "and a song can end on one", and Karaoke Night's "Ten minutes, gently, most days. Missed a
-day? Just come back." (11), Lesson 14's habit line, which this card leaves out. If a build's own
-count still runs over the cap, the next cuts are the can't-record line (16), whose state can show
+day? Just come back." (11), Lesson 14's habit line, which this card leaves out. The review's fix
+pass added the predict's new stem, the fair guess's missing step, Step 4's sentence on the breath
+marks, the first turn's button and quick check 4's lock line, and made room by cutting Step 4's
+"The parts sit mostly a tenth apart, as in Lesson 26." (10), which kept the step inside 120 words,
+and by shorter lines in Tavi's bubble (4 fewer), Step 2's bars 9 and 10 (3), the answering plays'
+labels (2) and quick check 1's feedback (1). If a build's own count still runs over the cap, the
+next cuts are the can't-record line (16), whose state can show
 its playback button absent with the kit's own hint, and the Easy or Workable line, "Your part, read
 in time from the page." (8).
 
-The activities are timed from FACTS 3 and 38. Free play is not counted.
+The activities are timed from FACTS 3 and 38. Free play and the alone path's optional first turn
+are not counted.
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                                                                                              | New in Lesson 28                                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Hero and predict       | The kit's predict (`kit/predict.ts`) with a free play, `onChoice`, `unlocks` and two reveal elements; the tour's hold (`kit/tour-gate.ts`); the staff toy for the answering plays                                                                                   | The song strip; two staffs written as both ways play; bar 8's ring after the reveal                                                                                                   |
-| 2. The steps' staffs      | Season 2's staff toy with key signatures and rhythm, as Lessons 15, 17, 18 and 21's specs build it, with Lesson 18's cursor, breath marks and lock; the page's one sound owner                                                                                       | Two staffs in one figure, a part on each; four step states and free play, the hero's empty bars until the choice; tags; the cadences' numerals; the plagal tag's chords and its word |
-| 3. The form strip         | The step deck's stage                                                                                                                                                                                                                                               | Four blocks, A A B A, the letters fading in as their sections play; B written on the staffs as it plays                                                                               |
-| 4. Three words            | Lesson 5's word tickets (`lesson-05/words.ts`), with the page's sound owner                                                                                                                                                                                         | Cadence's play of bars 3 and 4; Form's letters                                                                                                                                        |
-| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lessons 18 and 26's question objects, once built                                                                                                                                                   | Ids `l28-q1` to `l28-q4`; quick check 4's play                                                                                                                                        |
-| 6. Sing it                | Lesson 18's sing flow, take read in time and in-time reader; Lesson 24's headphones and quiet checks with Lesson 26's options; Lesson 26's part under a take and its reader's rule; Lesson 14's recorder; the comfort check, voice choice and feelings (`kit/comfort.ts`) | Fourteen notes at 72 beats a minute in halves and wholes; the playback with the other part and its cadence line; the alone path; the voice line                                       |
-| 7. The season's close     | The kit's next-lesson card and its slot (`kit/next-card.ts`), its close (`endCard`)                                                                                                                                                                                  | Season 2's close and its rest version; its figure                                                                                                                                     |
-| 8. Tease still            | Lesson 27's next-lesson card and its slot                                                                                                                                                                                                                            | This page's stage as a still, which plays nothing                                                                                                                                     |
+| Toy                       | Reuses                                                                                                                                                                                                                                                                    | New in Lesson 28                                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1. Hero and predict       | The kit's predict (`kit/predict.ts`) with a free play, `onChoice`, `unlocks` and two reveal elements; the tour's hold (`kit/tour-gate.ts`); the staff toy for the answering plays                                                                                         | The song strip; two staffs written as both ways play; bar 8's ring after the reveal                                                                                                  |
+| 2. The steps' staffs      | Season 2's staff toy with key signatures and rhythm, as Lessons 15, 17, 18 and 21's specs build it, with Lesson 18's cursor, breath marks and lock; the page's one sound owner                                                                                            | Two staffs in one figure, a part on each; four step states and free play, the hero's empty bars until the choice; tags; the cadences' numerals; the plagal tag's chords and its word |
+| 3. The form strip         | The step deck's stage                                                                                                                                                                                                                                                     | Four blocks, A A B A, the letters fading in as their sections play; B written on the staffs as it plays                                                                              |
+| 4. Three words            | Lesson 5's word tickets (`lesson-05/words.ts`), with the page's sound owner                                                                                                                                                                                               | Cadence's play of bars 3 and 4; Form's letters                                                                                                                                       |
+| 5. Recall and quick check | The kit's quiz (`kit/quiz.ts`), its prefix, keys and away links; Lessons 18 and 26's question objects, once built                                                                                                                                                         | Ids `l28-q1` to `l28-q4`; quick check 4's play, and its hold until the choice                                                                                                        |
+| 6. Sing it                | Lesson 18's sing flow, take read in time and in-time reader; Lesson 24's headphones and quiet checks with Lesson 26's options; Lesson 26's part under a take and its reader's rule; Lesson 14's recorder; the comfort check, voice choice and feelings (`kit/comfort.ts`) | Fourteen notes at 72 beats a minute in halves and wholes; the playback aligned on the first sung note, and its cadence line; the alone path and its first turn; the voice line       |
+| 7. The season's close     | The kit's next-lesson card and its slot (`kit/next-card.ts`), its close (`endCard`)                                                                                                                                                                                       | Season 2's close and its rest version; its figure                                                                                                                                    |
+| 8. Tease still            | Lesson 27's next-lesson card and its slot                                                                                                                                                                                                                                 | This page's stage as a still, which plays nothing                                                                                                                                    |
 
 ### 1. The hero and the cold open's predict
 
@@ -227,28 +239,33 @@ Merc's below in blue, each row labelled "Tavi's part" and "Merc's part", with no
 (FACTS 40). It takes no taps.
 
 - **Play the song** is a free play (`[data-free]`): the song as it kept going, ten bars, both parts
-  on "ooh", 33.33 s, as one run (Audio), each bar's two boxes lighting as it sounds. It works before
-  a choice and never reveals.
+  on "ooh", 33.33 s, as one run (Audio), each bar's two boxes lighting as it sounds: bars 1 to 7 as
+  in A, bar 8 with E3 under G4, V to vi, then bars 9 and 10 starting A again, bars 1 and 2, B4 A4 |
+  G4 B4 over G3 F♯3 | E3 G3, and it stops at bar 10's end. It never sounds G4 over G3: the way the
+  song ends is not in it, so the learner hears one way and predicts the other. It works before a
+  choice and never reveals (FACTS 33, 40).
 - **The predict card**: LESSON.md's question and its two choices, with the kit's hints: before a
   choice, "Choose an answer to unlock both ways."; after one, "Locked in. Play both ways."; a play
   that sound off kept silent, "Sound is off: nothing played. Turn sound on, then play it again.";
   after the reveal, "Play either again." No "Now play the other one." shows: the locked-in hint
   holds until the reveal. The choice holds for the visit, in memory.
-- **Play the ending** and **Play the way it kept going**, the answering plays, locked until a
-  choice: bars 7 and 8, both parts, 6.67 s each, the first with G3 in Merc's part at bar 8 and the
-  second with E3. As each starts, the strip's bars 7 and 8 open into two staffs, treble above bass,
-  the key's sharp after each clef, and each note is written as it sounds, lighting; each play draws
-  its own pair of staffs, the ending's above the other way's. The predict's `revealOn` names both,
-  and `revealAfter` is `'all'` (FACTS 43).
+- **Play the ending** and **Play it going on**, the answering plays, locked until a choice, named as
+  the stem names the two ways: bars 7 and 8, both parts, 6.67 s each, the first with G3 in Merc's
+  part at bar 8 and the second with E3. As each starts, the strip's bars 7 and 8 open into two
+  staffs, treble above bass, the key's sharp after each clef, and each note is written as it sounds,
+  lighting; each play draws its own pair of staffs, the ending's above the other way's. The
+  predict's `revealOn` names both, and `revealAfter` is `'all'` (FACTS 43).
 - **The reveal** waits until both are heard to their end with sound on, and shows two elements,
   which the kit announces in order: the hero's reveal, "You said: …" and LESSON.md's text; then Step
   2's held words, in its step (Toys 2). The predict's `onReveal` hides Step 2's held line and rings
   bar 8's note in Merc's part on both pairs of staffs, G3 and E3, with V and I, V and vi, under the
   bars.
-- **Spoken summary** of the figure, in words: at first, "The song in two parts, ten bars: Tavi's part
-  above, Merc's below."; after each answering play, "Bars 7 and 8, the ending: Tavi's part F sharp 4
-  to G 4, Merc's D 3, D 3, then G 3." and "Bars 7 and 8, the way it kept going: Tavi's part F sharp
-  4 to G 4, Merc's D 3, D 3, then E 3."; the summaries come only after their plays.
+- **Spoken summary** of the figure, in words: at first, "The song in two parts, ten bars: Tavi's
+  part above, Merc's below."; after Play the song, "The song as it kept going: bars 1 to 8, then
+  bars 1 and 2 again."; after each answering play, "Bars 7 and 8, the ending: Tavi's part A 4, F
+  sharp 4, then G 4; Merc's D 3, D 3, then G 3." and "Bars 7 and 8, going on: Tavi's part A 4, F
+  sharp 4, then G 4; Merc's D 3, D 3, then E 3."; the summaries that name notes come only after
+  their plays.
 - **The tour**: the first-visit tour's step "One step at a time" scrolls to the steps' stage, past
   the predict, so the page holds it until the choice (`holdTour`,
   `src/features/lessons/kit/tour-gate.ts:57-69`), with no time limit (FACTS 1a, 46).
@@ -268,15 +285,16 @@ semitone rows, Merc's blue and Tavi's orange, and back.
   draws the strip until the choice and the staffs from then on. The plays in the steps' text wait
   with it. A return visit holds it again (FACTS 46).
 - **Step 1**: the A section, bars 1 to 8. Play bars 1 to 4 and Play bars 5 to 8, 13.33 s each; as a
-  phrase's last bar sounds, its tag fades in over it, "Imperfect: on V" over bar 4 and "Perfect: V to
-  I" over bar 8, and its numerals under its bars, V, then V and I (FACTS 48).
+  phrase's last bar sounds, its tag fades in over it, "Imperfect: on V" over bar 4 and "Perfect: V
+  to I" over bar 8, and its numerals under its bars, V, then V and I (FACTS 48).
 - **Step 2**: the staffs from bar 7, and a three-way switch, "Perfect · Interrupted · Plagal".
   Perfect plays bars 7 and 8 as the song ends, 6.67 s; Interrupted plays bars 7 to 10, the way it
-  kept going, 13.33 s; Plagal plays bars 7 and 8, then the tag, 13.33 s: both parts hold G, G4 and
-  G3, on "ooh" for two whole notes while the soft tone plays IV, C3, C4 and E4, then I, B3 and D4,
-  "A-" and "men" written under the two notes and IV and I under the bars; the tag's chords are named,
-  not engraved. Each way ends on its tag, "Perfect: V to I", "Interrupted: V to vi" or "Plagal: IV to
-  I". The text's two plays sound Interrupted and Plagal (FACTS 33, 35, 49).
+  kept going, A starting again at bar 9, 13.33 s; Plagal plays bars 7 and 8, then the tag, 13.33 s:
+  both parts hold G, G4 and G3, on "ooh" for two whole notes while the soft tone plays IV, C3, C4
+  and E4, then I, B3 and D4, "A-" and "men" written under the two notes and IV and I under the bars;
+  the tag's chords are named, not engraved. Each way ends on its tag, "Perfect: V to I",
+  "Interrupted: V to vi" or "Plagal: IV to I". The text's two plays sound Interrupted and Plagal
+  (FACTS 33, 35, 49).
 - **Step 3**: the form strip (Toys 3) above the staffs.
 - **Step 4**: the A section; tap a staff to hear its part alone, 26.67 s, or Play both; the text's
   Play Tavi's part and Play Merc's part are the same plays (FACTS 51).
@@ -305,14 +323,18 @@ four blocks (Toys 3). None sounds bar 8 (FACTS 47).
 
 - **Recall**: Lesson 18's question 2 and `l26-q2`, imported from their modules, with their away
   links reading "Try Lesson 18, Step 2 again" and "Try Lesson 26, Step 2 again" and opening those
-  pages at that step in a new tab, under the recall's own seed and record keys, `fyp-l28-recall-seed`
-  and `fyp-l28-recall-v1` (FACTS 7).
+  pages at that step in a new tab, under the recall's own seed and record keys,
+  `fyp-l28-recall-seed` and `fyp-l28-recall-v1` (FACTS 7).
 - **Quick check**: LESSON.md's four questions, ids `l28-q1` to `l28-q4`, keys `fyp-l28-seed` and
   `fyp-l28-quiz-v1`, and `lesson: 28`, so answering all four marks Lesson 28 done. Three answers
-  each, shuffled; "Right." or "Not quite." before each feedback line. None waits for the cold open's
-  choice: no question or answer names a part or a note of bar 8, and question 4's Play sounds bars 5
-  to 8 the way the song kept going, both parts, 13.33 s, the hero's free play's notes, its button
-  reading "Play" (FACTS 77 to 80).
+  each, shuffled; "Right." or "Not quite." before each feedback line. Question 4's **Play** sounds
+  bars 5 to 8 the way the song kept going, both parts, 13.33 s, stopping on bar 8's vi, its button
+  reading "Play". Until the cold open's choice question 4's Play and its three answers are disabled,
+  their words kept, under "Choose an answer at the top to try this.", the play and the kit's quiz
+  answer buttons passed to the predict's `unlocks`, as Lesson 26 holds its question 2: its right
+  answer names the cadence at bar 8 the way the song kept going. Questions 1 to 3 name no part, no
+  note of bar 8 and no chord vi, and stay open; a return visit holds question 4 again (FACTS 1a, 77
+  to 80).
 
 ### 6. Sing it: one part of the song
 
@@ -321,34 +343,39 @@ headphones check and quiet check with Lesson 26's options; Lesson 26's part unde
 14's recorder, with these changes: the learner reads fourteen notes of halves and wholes from the
 staff at 72 beats a minute; the take is recorded and played back with the other part; without
 headphones the learner sings alone. Every state has a visible status line that is also announced
-(`aria-live="polite"`). Until the cold open's choice Sing it's plays, Play the song, Start and Start
-the sing-along, are disabled under the line "Choose an answer at the top to unlock this figure.",
-since each sounds the song's ending; the staffs show the song as written (FACTS 1a).
+(`aria-live="polite"`). Until the cold open's choice Sing it's staffs draw only the hero's ten empty
+bars, as the steps' figure does, and its plays and runs, Play the song, Hear Tavi's part first,
+Start and Start the sing-along, are disabled under the line "Choose an answer at the top to sing or
+listen here.", since the song they play and sing ends both parts on G at bar 8; from the choice
+the staffs draw the A section, the learner's part lit once a voice is chosen (FACTS 1a, 46).
 
 States:
 
 1. **Comfort check**, always first and asked every visit, never stored: Lesson 3's line, its list
    of six conditions and its two buttons (FACTS 53), through the kit's `mountComfort`
    (`src/features/lessons/kit/comfort.ts:159`).
-2. **Voice choice**, after either comfort answer when none is stored, and before anything in Sing
-   it plays: Lesson 3's two buttons with Merc's and Tavi's stills (`aria-pressed`, at least 44 px),
-   under LESSON.md's line in its two forms, then LESSON.md's line on the parts (FACTS 55); it reads
-   and writes `fyp-voice` (`src/features/lessons/kit/voice-choice.ts:20`). The lower voice sings
-   Merc's part with do on G3, the higher Tavi's with do on G4; the staffs' learner's part lights
-   amber. No Move do and no other octave (FACTS 68).
+2. **Voice choice**, after "I'm comfortable: let's sing" and before anything in Sing it plays; not
+   after "Just listen today", whose Play the song sounds both parts for everyone, and after which
+   nothing on the page uses it: Lesson 3's two buttons with Merc's and Tavi's stills
+   (`aria-pressed`, at least 44 px), under LESSON.md's line in its two forms, then LESSON.md's line
+   on the parts (FACTS 55); it reads and writes `fyp-voice`
+   (`src/features/lessons/kit/voice-choice.ts:20`). The lower voice sings Merc's part with do on G3,
+   the higher Tavi's with do on G4; the staffs' learner's part lights amber. No Move do and no other
+   octave (FACTS 68).
 3. **Just listen today**: LESSON.md's line with the doctor lines, and **Play the song**, bars 1 to
    8, both parts, 26.67 s, again on each tap, the notes lighting as they sound. Nothing listens; the
-   headphones check, Start and the sing-along do not show, and nothing asks the viewer to sing
-   (REQ-GVC-021, REQ-GVC-055). The Wrap shows the rest card and the close's rest version (FACTS 54).
+   voice choice, the headphones check, Start and the sing-along do not show, and nothing asks the
+   viewer to sing (REQ-GVC-021, REQ-GVC-055). The Wrap shows the rest card and the close's rest
+   version (FACTS 54).
 4. **Headphones check**: LESSON.md's line, "Tavi's part" read "Merc's part" for the higher voice,
    with **I have headphones on** and **No headphones**. The answer holds for the visit, in memory,
    never stored, and can be changed (FACTS 56).
-5. **Briefing**: the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026;
-   FACTS 57), Your turn and its headphones line, the stop line on its own line, and **Start**, the
-   only control that asks for the microphone, through the kit's listener under the page's consumer
-   id, `lesson-28`. With sound off, Start asks for nothing and plays nothing, with the hint "Sound is
-   off, so nothing played. Turn sound on to hear do, then press Start." A refused microphone, or none,
-   opens the sing-along (state 11).
+5. **Briefing**: the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026; FACTS
+   57), Your turn and its headphones line, the stop line on its own line, and **Start**, the only
+   control that asks for the microphone, through the kit's listener under the page's consumer id,
+   `lesson-28`. With sound off, Start asks for nothing and plays nothing, with the hint "Sound is
+   off, so nothing played. Turn sound on to hear do, then press Start." A refused microphone, or
+   none, opens the sing-along (state 11).
 6. **The quiet check**, with headphones only, after the microphone opens and before every run,
    Again's included: LESSON.md's line, and the first 2.0 s of the other part at the run's level,
    nothing else playing, while the listener reads the frames. It fails on any voiced run of 0.3 s or
@@ -357,14 +384,20 @@ States:
 7. **The run, together**: do, sung by Merc for the lower voice or Tavi for the higher, 1.0 s; 0.4 s
    of quiet; the count-in, Lesson 18's one bar of woodblock, here at 72 BPM, 3.33 s, beat 1 higher,
    the strip lighting a dot a click, status "Counting in: one bar."; then the take, as Lesson 18's:
-   frames kept from half a beat before bar 1's first beat, read in time from the singer's first note,
-   and recorded from the same moment. From bar 1's first beat the other part sings, the one sound
-   the take allows (Audio), its notes lighting chrome, and the cursor moves at the beat, the
+   frames kept from half a beat before bar 1's first beat, read in time from the singer's first
+   note, and recorded, the recorder started as the take opens. From bar 1's first beat the other part sings, the one
+   sound the take allows (Audio), its notes lighting chrome, and the cursor moves at the beat, the
    learner's notes lighting amber on their beats, status "Your turn: sing in time with the cursor.";
    nothing draws the learner's line. The take ends when the last note's window closes, as Lesson
    18's does, 26.67 s after bar 1's first beat at the earliest (FACTS 58, 59).
-8. **The run, alone**, after No headphones: states 5 and 7 with nothing playing during the take, no
-   quiet check, and the same status; the reader has no other part to compare (FACTS 63).
+8. **The run, alone**, after No headphones: first, beside Start, **Hear Tavi's part first** (Merc's
+   for the higher voice), an optional turn offered before each run: the other part alone, bars 1 to
+   8, 26.67 s, one `playNotes` run on "ooh" as the steps' Play Tavi's part plays it, the cursor
+   moving and its notes lighting chrome, outside any take, the listener reading nothing and the
+   recorder off; Start, or any other play, stops it. Then states 5 and 7 with nothing playing during
+   the take, no quiet check, and the same status; the reader has no other part to compare. The
+   order is SEASON-2 § 6.2 item 7's, the page playing, then the learner singing, and the playback
+   then sounds the two together (FACTS 63).
 9. **After the run**, 0.5 s later: the learner's pitch line drawn under the staffs on the run's time
    axis, folded into the part's octave with the octave tag where it applies; under it, one line a
    note in order, from the reading (The reader, below). If no note's window held any voice: "We
@@ -390,9 +423,10 @@ States:
 11. **The sing-along**, for no microphone or a refused one: LESSON.md's line and **Start the
     sing-along**: do, 0.4 s of quiet, the count-in, then the other part, 26.67 s, the cursor moving
     and the learner's notes lighting as their beats come; nothing listens, nothing is recorded and
-    no line is drawn. Then "How did that feel?" with the same endings; Easy or Workable offers **Sing
-    along again**, once a visit, the cap Season 1's sing-alongs put on their Again (the kit's
-    `AfterFeeling`, "still offered only once a visit", `src/features/lessons/kit/comfort.ts:41`), and
+    no line is drawn. Then "How did that feel?" with the same endings; Easy or Workable offers
+    **Sing along again**, once a visit, the cap Season 1's sing-alongs put on their Again (the kit's
+    `AfterFeeling`, "still offered only once a visit", `src/features/lessons/kit/comfort.ts:41`),
+    and
     **Done for today** (FACTS 64).
 12. **Done for today** ends the checkpoint with the status "Done for today." and leaves the practice
     card and the close in the version the visit's ending picks.
@@ -418,45 +452,55 @@ reads it in the band, and the other-part rule never names a note sung on the lea
 `gapWords`, which takes whose note it is (`src/features/lessons/kit/band-words.ts:55-61`).
 
 **The playback.** The recorder is Lesson 14's proposed `kit/record.ts` over the app's own recorder,
-`createTakeRecorder(listener.media)` (`src/lib/voice-capture.ts:82`), as Lesson 14's spec gives it:
-started when the take opens, stopped when it ends, the take decoded into a buffer on the page's one
-audio context and kept in memory only, beside the take's lines, until Delete, until Again records
-its next take, or until the page is left; played at one set level, past the master bus's
-compressor; a take that cannot be decoded leaves its lines and no playback, with the can't-record
-line. What is new is the other part with it: Hear it with Tavi's part schedules, on one audio-clock
-time, the buffer from the point that was bar 1's first beat in the take and the other part's
-contour voice from its bar 1, the two ending together, 26.9 s; during the playback the staffs'
-cursor runs again and both parts' notes light. A device's round trip, output and input, puts the
-voice late against the part by that much; the app keeps a measured round trip per device and treats
-zero as uncompensated (`src/stores/mic-latency-store.ts:1-23`), but a lesson page reads none of it,
-so the playback is uncompensated and the lab measures the offset (What the kit and the app still
-need, item 9). On the alone path the playback is the only time the two parts sound together, which
-is the point of the turns (FACTS 62, 63).
+`createTakeRecorder(listener.media)` (`src/lib/voice-capture.ts:82`), as Lesson 14's spec gives it,
+with the listener's stream, which the kit's listener does not expose yet (What the kit and the app
+still need, item 8): started when the take opens, stopped when it ends, the take decoded into a
+buffer on the page's one audio context and kept in memory only, beside the take's lines, until
+Delete, until Again records its next take, or until the page is left; played at one set level, past
+the master bus's compressor; a take that cannot be decoded leaves its lines and no playback, with
+the can't-record line. What is new is the other part with it, aligned on a moment both clocks see.
+The recorder gives no audio-clock time for its first sample (`TakeRecorder`,
+`src/lib/voice-capture.ts:10-22`, over MediaRecorder, whose start is asynchronous), so where bar 1's
+first beat falls in the buffer is not known, and it varies take by take. The take's first run of
+voice at least 0.15 s long, Lesson 18's anchor, is found twice: in the listener's frames, which
+share the page's audio clock, at a time F against bar 1's first beat B as booked, and in the decoded
+buffer, by the same detector, at an offset O. Hear it with Tavi's part books the other part's
+contour voice from its bar 1 at a time P on the audio clock, and the buffer so that its offset O
+plays at P + (F - B): `start(P, O - (F - B))`, or `start(P + (F - B) - O, 0)` when that offset would
+be negative. A learner who came in late plays back late, which is what they sang. The two end with
+the part's last note, 26.67 s after P, and its release; during the playback the staffs' cursor runs
+again from P and both parts' notes light. A take with no run of voice that long has no playback, as
+a run with no voice has none. A device's round trip, output and input, still puts the voice late
+against the part by that much; the app keeps a measured round trip per device and treats zero as
+uncompensated (`src/stores/mic-latency-store.ts:1-23`), but a lesson page reads none of it, so the
+playback is uncompensated and the lab measures the offset (What the kit and the app still need,
+item 9). On the alone path the playback is the only time the learner's part and the other part
+sound together (FACTS 62, 63).
 
-Run on synthetic takes before the lab (Tests 7): the lower part sung on pitch and on time reads every
-note in the band; sung a beat late, the same, as the anchor allows; bar 7's two D3s sung as one held
-note reads the second D3 on its own note, since its window holds the same pitch; bar 8's G sung as
-G3 or G4 reads in the band, the second with the octave line; the lower part's ti sung on Tavi's re,
-A, reads "Ti · That was Tavi's note: re."; the higher part's mi sung on Merc's do, G3, in bar 1 reads
-"Mi · That was Merc's note: do."; a take on the alone path reads no note as the other part's; and a
-take of frames on the other part alone, the voice silent, which only the together path can make,
-reads every note as the other part's, which is why the quiet check runs before every run and the lab
-test comes first.
+Run on synthetic takes before the lab (Tests 7): the lower part sung on pitch and on time reads
+every note in the band; sung a beat late, the same, as the anchor allows; bar 7's two D3s sung as
+one held note reads the second D3 on its own note, since its window holds the same pitch; bar 8's G
+sung as G3 or G4 reads in the band, the second with the octave line; the lower part's ti sung on
+Tavi's re, A, reads "Ti · That was Tavi's note: re."; the higher part's mi sung on Merc's do, G3, in
+bar 1 reads "Mi · That was Merc's note: do."; a take on the alone path reads no note as the other
+part's; and a take of frames on the other part alone, the voice silent, which only the together path
+can make, reads every note as the other part's, which is why the quiet check runs before every run
+and the lab test comes first.
 
 ### 7. The season's close
 
 The Wrap's last card, in the page's `[data-next-card]` mark, drawn by the kit's close
-(`endCard`, `src/features/lessons/kit/next-card.ts:148-174`) in Season 2's words, which the kit
-does not have yet (What the kit and the app still need, item 3): the eyebrow "End of Season 2", the
-line "You've read a song in two parts. Now sing a whole song.", **Karaoke Night**, a link to
-`/karaoke-night?lesson=28` in a tab of its own, marked with the out icon, and **See the season map**,
-`#explorer`. After "Effortful", "Uncomfortable" or "Just listen today" it reads "You've read a song in
-two parts." with See the season map alone. The card holds two links, so it is no link itself. Its
-slot, which the kit keeps after its words (`src/features/lessons/kit/next-card.ts:27-30`), holds the
-figure: an SVG, `aria-hidden`, of the four section blocks, A A B A, and along them a staff, a beat
-grid, Lesson 12's ring and Lesson 6's beads, drawn in light, with no note; it does not move and plays
-no sound (FACTS 5, 85). No tease and no next lesson appear anywhere on the page (SEASON-2 § 7 item
-8).
+(`endCard`, `src/features/lessons/kit/next-card.ts:148-174`) in Season 2's words, which the kit does
+not have yet (What the kit and the app still need, item 3): the eyebrow "End of Season 2", the line
+"You've read a song in two parts. Now sing a whole song.", **Karaoke Night**, a link to
+`/karaoke-night?lesson=28` in a tab of its own, marked with the out icon, and **See the season
+map**, `#explorer`. After "Effortful", "Uncomfortable" or "Just listen today" it reads "You've read
+a song in two parts." with See the season map alone. The card holds two links, so it is no link
+itself. Its slot, which the kit keeps after its words
+(`src/features/lessons/kit/next-card.ts:27-30`), holds the figure: an SVG, `aria-hidden`, of the
+four section blocks, A A B A, and along them a staff, a beat grid, Lesson 12's ring and Lesson 6's
+beads, drawn in light, with no note; it does not move and plays no sound (FACTS 5, 85). No tease and
+no next lesson appear anywhere on the page (SEASON-2 § 7 item 8).
 
 What the kit's card does on this page today, at `c60f0fdcb`: `createNextCard(28)` reads the page's
 season, which holds Lessons 0 to 14; `nextCard` finds no Lesson 29 and no Lesson 28, and returns
@@ -465,7 +509,8 @@ null; the card is not drawn, and the mark stays as the page wrote it, its figure
 `src/features/lessons/kit/next-card.ts:176-210`). With Season 2's lessons in the same list it would
 draw the close in Season 1's words, "End of Season 1" and "You've seen every note you sing. Now sing
 a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:130-141`), and Lesson 14's
-page would draw Lesson 15's card instead of its own close. Either way it draws once and never redraws
+page would draw Lesson 15's card instead of its own close. Either way it draws once and never
+redraws
 (`src/features/lessons/kit/next-card.ts:190-193`), so it cannot follow Sing it's ending (FACTS 5).
 
 ### 8. Tease still
@@ -484,7 +529,7 @@ bed (FACTS 81 to 83).
 
 - **The sound rules**, for every source of sound on the page (the cold open's three plays, the
   words' play, every play of the steps' staffs and of free play, quick check 4's play, do, the
-  count-in, the other part, the playback and the sing-along):
+  count-in, the other part, the alone path's first turn, the playback and the sing-along):
   1. One sound plays at a time, across the whole page: a new play stops the one before. Two parts
      playing together, or the tag's chords with the parts, are one sound.
   2. Leaving a step, by any route, stops its sound and any queued play; scrolling Sing it off screen
@@ -493,7 +538,11 @@ bed (FACTS 81 to 83).
   4. During a take only the other part plays, and on the alone path nothing: every play control is
      disabled from Start until the take ends.
   5. A play that would answer the predict, any play that sounds the song's ending, stays disabled
-     until its choice, wherever it sits on the page (Toys 1, 2, 6).
+     until its choice, wherever it sits on the page (Toys 1, 2, 5, 6). Two sources sound before
+     the choice: Cadence's play in the three words, bars 3 and 4, ending on bar 4's V; and the
+     hero's free play, the way the song kept going, bar 8 on vi and bars 9 and 10 starting A again,
+     which never sounds G4 over G3: the way the song ends is not in it, so the learner hears one
+     way and predicts the other (FACTS 33, 40, 47).
 
   The kit has the page-wide owner every source registers with (`NowPlaying`,
   `src/features/lessons/kit/now-playing.ts:39`).
@@ -503,7 +552,8 @@ bed (FACTS 81 to 83).
   both parts' notes, each note its own voice, so notes that share an onset start in one timer task
   (`src/features/lessons/kit/run.ts:9-10`); the tag's chords are notes of the same run in the soft
   tone (`src/features/lessons/kit/run.ts:38-39`). Bar 7's two D3s are two notes, so the second
-  sounds as a new note. Nothing new is needed for these.
+  sounds as a new note. The alone path's first turn is one part's notes in the same kind of run.
+  Nothing new is needed for these.
 - **Timbres.** Both parts sing on Merc's "ooh", Tavi's part at her pitches, in every play, since the
   cold open says Merc and Tavi sing; the tag's chords are in the soft tone; do in Sing it is the
   chosen voice's "ooh"; the count-in is the woodblock.
@@ -517,12 +567,13 @@ bed (FACTS 81 to 83).
   for 0.08 s between them; and at each breath mark, after bars 2, 4 and 6, its level falls to a
   quarter for the last half beat, 0.42 s, of the note before the mark, so it breathes where the
   learner breathes. Its release ends it as its last note ends (FACTS 59, 67).
-- **The playback** plays the take's buffer and a new contour voice of the other part, started on one
-  audio-clock time, through the page's owner as one sound (Toys 6).
+- **The playback** plays the take's buffer and a new contour voice of the other part, booked on the
+  audio clock so that the take's first voiced onset plays as far after the part's bar 1 as it came
+  in the run, through the page's owner as one sound (Toys 6).
 - **Levels.** A note at the kit's 0.13 and Merc's "ooh" at 0.2
   (`src/features/lessons/kit/sound.ts:181`); in a two-part play each part at 0.2, the master bus's
-  compressor holding the two (`src/features/lessons/kit/sound.ts:109-118`); the tag's chords at
-  0.13 a voice. In a run the other part sits at a level the lab sets, so the singer's own voice stays
+  compressor holding the two (`src/features/lessons/kit/sound.ts:109-118`); the tag's chords at 0.13
+  a voice. In a run the other part sits at a level the lab sets, so the singer's own voice stays
   clear in the headphones; the playback sets the take's peak to one level, the same for every take,
   and the part under it at the run's level.
 - **Low notes.** The page's lowest sounds are C3, 130.81 Hz, the tag's IV in the soft tone, and D3,
@@ -555,10 +606,10 @@ stills when WebGL fails.
   card is Lesson 14's, read again in the app: it draws every note sung against the one aimed for and
   plays the singer's take back, keeping it in memory; it scores the singing in any octave, comparing
   pitch class; its example song is free; its key chip moves a song up or down by up to six semitones
-  and Find my key picks a key from the singer's range, so a song can sit in the comfortable middle of
-  every preset; its care lines are Lesson 10's. It reads no lesson marker and shows no intro, so the
-  card has no first-visit line (FACTS 70, 71). Lesson 14's "Ten minutes, gently, most days" is left
-  out for length (Length).
+  and Find my key picks a key from the singer's range, so a song can sit in the comfortable middle
+  of every preset; its care lines are Lesson 10's. It reads no lesson marker and shows no intro, so
+  the card has no first-visit line (FACTS 70, 71). Lesson 14's "Ten minutes, gently, most days" is
+  left out for length (Length).
 - **The second drill, Ear Lab's Cadence**: `/ear-lab?lesson=28`, printed mercurypitch.com/ear-lab,
   then tap Cadence (`/ear-lab`, `src/lib/sw-runtime.ts:123`). The card opens on Lesson 12's line and
   says what the drill does to a learner: it strums a progression of three or four chords on the
@@ -567,8 +618,9 @@ stills when WebGL fails.
   writes no staff and plays nothing a learner must sing (FACTS 72, 73). It asks for no voice, so it
   stays on offer under the rest card.
 - **Left out: Jam's Harmony Stack**, which the plan and SEASON-2 § 5.1's row link: it needs two
-  singers in a room, gives each a chord tone of a scale, and its card is Lesson 26's, with its two
-  app items still open (FACTS 74; SEASON-2 § 5.1, row 28, `docs/plans/find-your-pitch/SEASON-2.md:844`).
+  singers in a room, its parts are the room's tune moved up a third or a fifth in the key, not a
+  written part, and its card is Lesson 26's, with its two app items still open (FACTS 74; SEASON-2 §
+  5.1, row 28, `docs/plans/find-your-pitch/SEASON-2.md:844`).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Karaoke Night; the
   second drill stays (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`).
@@ -609,8 +661,8 @@ Lesson 14's is (`src/features/lessons/kit/season.ts:405-419`):
   its rest line "You've read a song in two parts.", with Karaoke Night and the map (FACTS 5).
 - The signature line for the admin console (`SIGNATURES`,
   `src/features/lessons/kit/team-notes.ts:31-46`), from the card (FACTS 4): "A song in two parts on
-  two staffs, Merc's lower part blue and Tavi's upper part orange; a tag names each phrase's cadence,
-  and form letters gather above the sections."
+  two staffs, Merc's lower part blue and Tavi's upper part orange; a tag names each phrase's
+  cadence, and form letters gather above the sections."
 - The explorer's card shows "19 min" once the page is live.
 
 ## What the kit and the app still need
@@ -631,9 +683,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      Lesson 14's page would draw Lesson 15's card, and Lesson 28's draws nothing until it is in the
      list;
    - a close per season: `SEASON_END` is one, "End of Season 1"
-     (`src/features/lessons/kit/lesson-copy.ts:130-141`); Season 2's is LESSON.md's, its eyebrow, its
-     line and its rest line, with the same two ways on, kept free of the team's words as the copy's
-     test asks;
+     (`src/features/lessons/kit/lesson-copy.ts:130-141`); Season 2's is LESSON.md's, its eyebrow,
+     its line and its rest line, with the same two ways on, kept free of the team's words as the
+     copy's test asks;
    - the rest-aware close Lesson 14's item 12 requires, for both seasons: after "Effortful",
      "Uncomfortable" or "Just listen today" the close keeps the rest line and the map and drops the
      invitation and its Karaoke Night button; since the kit draws the close once
@@ -650,43 +702,53 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    to the staff toy, code with tests: two staffs in one figure, treble over bass with a brace and
    the system's bar lines, a part on each with its label; the bar numbers; tags over a bar; numerals
    under chosen bars; words under notes, "A-" and "men"; the house on do on both staffs; the lock
-   that draws ten empty bars, as the hero's strip, until the page's `onChoice`; and the pitch-line
+   that draws ten empty bars, as the hero's strip, until the page's `onChoice`, in the steps'
+   figure, free play and Sing it's staffs; and the pitch-line
    view of two parts in two colours. The song's notes need no ledger line: D3 is the bass staff's
    middle line and B3 the space above it, F♯4 the treble's bottom space and D5 its fourth line.
 5. **Lesson 24's checks**, its item 6, with Lesson 26's options, its item 5
    (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:673-677`): the check's line
-   names "Tavi's part" or "Merc's part", and the quiet check plays the first 2.0 s of the run's other
-   part; and one for this page: the fail line ends "or choose No headphones to sing alone".
+   names "Tavi's part" or "Merc's part", and the quiet check plays the first 2.0 s of the run's
+   other part; and one for this page: the fail line ends "or choose No headphones to sing alone".
 6. **Lesson 26's part under a take**, its item 6
-   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:678-687`), with its repeated-note
-   dip, and this page's breath dip: a breath mark's half beat taken from the note before, its level
-   to a quarter; tests: the dips at their times on the audio clock.
+   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:678-687`), with its
+   repeated-note dip, and this page's breath dip: a breath mark's half beat taken from the note
+   before, its level to a quarter; tests: the dips at their times on the audio clock.
 7. **Lesson 26's reader rule**, its item 4's additions
    (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:661-672`), here for fourteen
    notes of two and four beats at 72 BPM; tests: this spec's synthetic takes (Tests 7). On the alone
    path the reader is called with no other part.
 8. **Lesson 14's recorder and a playback with a part**: `kit/record.ts` as Lesson 14's spec proposes
    it (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:564-591`), whichever
-   page builds it first, and this page's playback (Toys 6): the take's buffer and the other part's
-   contour voice started on one audio-clock time from bar 1, as one sound for the page's owner; the
-   recorder's own header, since the listener says nothing is recorded (`src/features/lessons/kit/listen.ts:18-22`);
-   tests: the take kept in memory only and dropped on Delete, on Again and on leaving; the playback's
-   two sources start together; no playback for a take with no voice.
-9. **The lab test, on a phone**, before the scored runs ship and before the chip is set, on the lab's
-   phones (one iPhone, one Android) and laptops, with the coach where a run is sung:
+   page builds it first; the listener's stream for it, `Listener.media`, which the kit's listener
+   does not expose today (`Listener`, `src/features/lessons/kit/listen.ts:36-45`, holds `holding`,
+   `latest`, `release` and `releaseNow`) and Lesson 14's spec does not list either; the recorder's
+   own header, since the listener says nothing is recorded
+   (`src/features/lessons/kit/listen.ts:18-22`); and this page's playback (Toys 6): the take's first
+   voiced onset, found in the decoded buffer with the listener's detector, set to the audio-clock
+   time of the listener's first voiced frame in the take, and the other part's contour voice from
+   its bar 1 on that clock, as one sound for the page's owner. Tests: the take kept in memory only
+   and dropped on Delete, on Again and on leaving; the onset found in a buffer where the listener
+   finds it in frames; a synthetic take whose recording starts at a random offset, 0 to 3 s before
+   bar 1, plays back with its first sung note where it was sung against the part, within one
+   analysis frame, and a take sung half a beat late plays back half a beat late; no playback for a
+   take with no voice.
+9. **The lab test, on a phone**, before the scored runs ship and before the chip is set, on the
+   lab's phones (one iPhone, one Android) and laptops, with the coach where a run is sung:
    - **Silence over the other part from the speakers**, as Lesson 26's item 8 runs it
      (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:696-713`), here for 26.7 s
      of a part with a repeated note and three breaths.
    - **The reader**: Lesson 18's lab items on real takes of fourteen notes, here at 72 BPM with
      whole notes, with and without the other part in the headphones: whether learners come in on bar
-     1 after do and the count-in, whether the higher voice finds mi from do, how the whole notes read,
-     and how often "That was Tavi's note" shows.
-   - **The playback's timing**: how far each device's round trip puts the voice behind the part on
-     playback, measured with a click sung into the microphone; if it is audible, a per-device offset
-     for the page is a kit item, read from a measure the lab makes.
+     1 after do and the count-in, whether the higher voice finds mi from do, how the whole notes
+     read, and how often "That was Tavi's note" shows.
+   - **The playback's timing**: on real takes, whether the voice plays back against the part where
+     it was sung, and how far each device's round trip puts it behind, measured with a click sung
+     into the microphone; if that is audible, a per-device offset for the page is a kit item, read
+     from a measure the lab makes.
    - **Levels and sounds**: the other part's level in the headphones, so the learner hears their own
      voice; two "ooh" parts together at 0.2 each under the compressor; C3 and D3 on a phone's
-     speaker; the plagal tag's chords under the held G.
+     speaker; the plagal tag's chords with the held G.
    - **The states' timing** for the chip (SEASON-2 § 1.3), and the two staffs and the form strip at
      344 to 390 px.
 10. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
@@ -703,9 +765,15 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     (FACTS 75).
 14. **The cadence-type ear drill and the harmony-line drill** (SEASON-2 § 5.2 items 19 and 17), the
     app's work (Practice links).
-15. **At release, the rooms' links back**, optional: SEARCH § 8's rows for `/karaoke-night` and
-    `/ear-lab` gain 28 (`docs/plans/find-your-pitch/SEARCH.md:370`, `:373`), and Karaoke Night's
-    entry page lists Lesson 28 beside 14 (`lessonsPractised`, `src/seo/entry-pages.ts:272`).
+15. **At release, the rooms' links back**, optional: in SEARCH § 8 the shared row for
+    `/karaoke-night` and `/jam`, Lesson 14 alone, splits into `/karaoke-night` with 14 and 28 and
+    `/jam` with 14 (and 26, once Lesson 26's entry lands, which touches the same row), and the
+    `/ear-lab` row gains 28 (`docs/plans/find-your-pitch/SEARCH.md:370`, `:373`). The entry pages
+    follow, since the entry test holds that table equal to the entry pages' lessons, room by room
+    (`src/tests/entry-page-model.test.ts:497-529`): Karaoke Night's list gains 28 beside 14
+    (`lessonsPractised`, `src/seo/entry-pages.ts:272`), Ear Lab's gains 28 beside 2, 6 and 10
+    (`lessonsPractised`, `src/seo/entry-pages.ts:503`), and Jam's stays 14
+    (`lessonsPractised`, `src/seo/entry-pages.ts:537`).
 
 ## Decisions for the owner
 
@@ -717,7 +785,10 @@ Open:
    whole song.", with the rest line "You've read a song in two parts.", proposed to answer the
    Season 2 trailer's question as Season 1's close answers its own (FACTS 5). The trailer is not
    written yet; if its question changes, so does this line.
-2. **The coach's call on the breath marks**: after bars 2, 4 and 6, or only bar 4's (FACTS 67).
+2. **The coach's call on the breath marks**: after bars 2, 4 and 6, the page's default, with Step
+   4's sentence, "Breathe at the breath marks: at this slow tempo, each phrase takes a quick breath
+   halfway."; or bar 4's alone, at the phrase's end, where Lessons 14 and 18 teach a breath goes,
+   bars 1 to 4 then running 12.9 s on one breath and the sentence going (FACTS 67).
 
 ## Edge cases
 
@@ -725,18 +796,19 @@ Open:
   for both plays heard with sound on; Start waits for sound (Toys 6). With no Web Audio the page
   stays readable, every play runs its drawing in silence with its hint, and Sing it offers the
   sing-along as words alone.
-- **Before the cold open's choice**: the answering plays are locked and the reveal hidden; the steps'
-  stage and free play draw only the hero's ten empty bars, their controls and the text's plays
-  disabled under their lock line; Sing it's plays are disabled under the same line; the tour waits
-  (Toys 1, 2, 6).
+- **Before the cold open's choice**: only the hero's free play, the way the song kept going, and
+  Cadence's play of bars 3 and 4 sound; the answering plays are locked and the reveal hidden; the steps' stage, free play and Sing
+  it's staffs draw only the hero's ten empty bars, their controls and the text's plays disabled
+  under their lock lines; quick check 4's play and answers are disabled under theirs; the tour
+  waits (Toys 1, 2, 5, 6).
 - **Before the cold open's reveal**, its choice made: the steps' stage, Sing it and free play work,
   and Step 2's text, plays, mix-up card, Try and Notice stay hidden under their held line until both
   ways have been heard to their end (Toys 1).
 - **Only one way heard**: no reveal; the hint stays "Locked in. Play both ways."
 - **A play cut short** (another sound, a step link, leaving the hero or the step): not heard, no
   reveal, the hint as it was; the staffs keep what they last drew.
-- **A return visit** starts with the predict fresh, so the steps' stage, Sing it's plays and free
-  play hold back again until the choice, and Step 2's words until the reveal.
+- **A return visit** starts with the predict fresh, so the steps' stage, Sing it, quick check 4 and
+  free play hold back again until the choice, and Step 2's words until the reveal.
 - **The switch pressed during a play**: the play stops and the switch moves the staffs; a new Play
   plays the new way.
 - **Reduced motion**: notes light with no transition, tags and letters land at once, the cursor
@@ -744,7 +816,11 @@ Open:
 - **A first visit that never chooses**: the welcome tour waits, and the next lesson page opened at
   the top offers it again; "Tour this page" runs it at once (Toys 1).
 - **No voice chosen**: every example sounds both parts at their pitches; nothing in Sing it plays
-  until a voice is chosen.
+  until a voice is chosen. After "Just listen today" none is asked, and Play the song sounds both
+  parts.
+- **The first turn, Hear Tavi's part first, cut short** by Start, another play or leaving Sing it:
+  it stops, as any play does (Audio, rule 1), and nothing was read or recorded, so no take is
+  counted.
 - **"I have headphones on" with none on**: the quiet check hears the other part and its fail line
   shows (Toys 6, state 6).
 - **A hum, an early answer, a television or a second singer during the quiet check**: it fails as
@@ -764,8 +840,8 @@ Open:
 - **Leaving Sing it mid-run**: the take is abandoned and counts as one of the visit's three, the
   other part stops, the microphone is released and nothing is recorded.
 - **Leaving the page**: the recording goes with it; nothing is stored.
-- **A narrow phone**: the two staffs and the form strip fit 344 px, with every target at least 44 px;
-  a tag sits above its bar, never over a note.
+- **A narrow phone**: the two staffs and the form strip fit 344 px, with every target at least 44
+  px; a tag sits above its bar, never over a note.
 - **The card's drills, off this page.** Karaoke Night asks for the voice, so the rest version names
   it for another day; Cadence asks for none, so it stays.
 
@@ -776,14 +852,15 @@ parts it adds:
 
 1. **Sounds**: every note's frequency as FACTS 81 gives it; every play's length, 33.33 s for the
    hero's free play, 6.67 s for each answering play and the word's, 13.33 s for Steps 1 and 2's
-   plays and quick check 4's, 53.33 s for Play B, then A, 26.67 s for a section, a part, "Just listen
-   today"'s play and a run's eight bars, 1.0, 0.4 and 3.33 s for do, the quiet and the count-in, 2.0
-   s for the quiet check; every two-part play's notes share their onsets.
+   plays and quick check 4's, 53.33 s for Play B, then A, 26.67 s for a section, a part, "Just
+   listen today"'s play, a run's eight bars, the alone path's first turn and the playback's part,
+   1.0, 0.4 and 3.33 s for do, the quiet and the count-in, 2.0 s for the quiet check; every two-part
+   play's notes share their onsets.
 2. **The arithmetic**: the song's A section, its syllables and its verticals, all tenths, twelfths
    or octaves and all in G; bar 4 on V; bars 7 and 8 V to I with the lower part D3 to G3, five
-   semitones up; the way it kept going, bar 8 E3, and its bars 9 and 10 equal to bars 7 and 8 of the
-   ending; the upper part the same both ways; the plagal tag's chords; the bridge's verticals and its
-   ends on vi and V; 32 bars in all (FACTS 29 to 36).
+   semitones up; the way it kept going, bar 8 E3, and its bars 9 and 10 equal to bars 1 and 2 of A,
+   with no vertical G4 over G3 in its ten bars; the upper part the same both ways; the plagal tag's
+   chords; the bridge's verticals and its ends on vi and V; 32 bars in all (FACTS 29 to 36).
 3. **The range**: every note of both parts at least 2 semitones inside every preset of its voice in
    `VOCAL_RANGES`, with the table's numbers (FACTS 37); no Move do control and no octave switch.
 4. **The predict**: at first paint the hero draws ten empty bars and no note; Play the song works
@@ -793,12 +870,16 @@ parts it adds:
    line in their place, until the reveal, and show with it, after the hero's reveal in the
    announcement (FACTS 40 to 45).
 5. **Nothing answers the predict before its choice**: the lesson menu's headings, the recall, the
-   three words, the quick check and the head's lines name no part and no note of bar 8; until the
-   choice the steps' stage and free play draw ten empty bars with the hero's spoken summary and sound
-   nothing; no play anywhere sounds the song's ending, Sing it's included; from the choice each step
-   draws its own state, and a return visit holds them all again (FACTS 1a, 46).
+   three words, quick check questions 1 to 3, the Wrap's first line and the head's lines name no
+   part, no note of bar 8 and no chord for the interrupted cadence; the hero's free play schedules
+   no G4 over G3 and stops at bar 10's end; until the choice the steps' stage, free play and Sing
+   it's staffs draw ten empty bars with the hero's spoken summary and sound nothing, quick check 4's
+   play and answers take no tap, and no other play sounds the song's ending; from the choice each
+   draws its own state, and a return visit holds them all again (FACTS 1a, 33, 46).
 6. **The quiz**: the recall imports Lesson 18's question 2 and `l26-q2` unchanged, with their away
-   links; the quick check's ids, keys and words as LESSON.md gives them, none held.
+   links; the quick check's ids, keys and words as LESSON.md gives them; question 4's play and
+   answers disabled under "Choose an answer at the top to try this." until the cold open's choice,
+   and enabled by it (FACTS 80).
 7. **The reader on synthetic takes**, through Voice Mirror's `preprocess`, as Lesson 18's tests run
    (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:865-881`), with the cases of Toys
    6: on pitch and on time; a beat late; bar 7's two D3s as one held note; bar 8's G in either
@@ -810,7 +891,11 @@ parts it adds:
    before every run with headphones and never on the alone path.
 9. **The part under a take** (item 6): its notes at their onsets on the audio clock, the dip between
    the two D3s, the breath dips after bars 2, 4 and 6.
-10. **The recorder and the playback** (item 8).
+10. **The recorder and the playback** (item 8): the take kept in memory only and dropped on
+    Delete, on Again and on leaving; a synthetic take whose recording starts at a random offset
+    before bar 1 plays back with its first sung note where it was sung against the part, within one
+    analysis frame, and one sung half a beat late plays back half a beat late; no playback for a
+    take with no voice.
 11. **The flow and the visit's rules** (Toys 6): do, the count-in and the run in order; three takes
     a visit, a take with no voice or one cut short counted; Again sings again, the quiet check first
     with headphones; a run with no voice gives the no-voice line and no feeling question; Effortful
@@ -818,10 +903,11 @@ parts it adds:
     with the doctor lines and the rest card; after either the take stays to play back or delete; no
     celebration; the tricky line at its share.
 12. **The alone path, the sing-along and the listening path**: the alone path opens after No
-    headphones and plays nothing during the take; the sing-along opens with no microphone or a
-    refused one, asks for no microphone, plays do, the count-in and the other part, and offers Sing
-    along again once a visit. After "Just listen today", the headphones check, Start and the
-    sing-along do not show, and Play the song plays bars 1 to 8.
+    headphones, offers Hear Tavi's part first before each run, which plays the other part alone and
+    reads and records nothing, and plays nothing during the take; the sing-along opens with no
+    microphone or a refused one, asks for no microphone, plays do, the count-in and the other part,
+    and offers Sing along again once a visit. After "Just listen today", the voice choice, the
+    headphones check, Start and the sing-along do not show, and Play the song plays bars 1 to 8.
 13. **The season's close**: the card reads "End of Season 2", its line and its two ways after any
     other ending, and its rest line with the map alone after "Effortful", "Uncomfortable" or "Just
     listen today", redrawn when the ending changes; no next-lesson card and no tease anywhere on the
@@ -839,28 +925,29 @@ background staff or clef; the tour's hold.
 Lesson 1's contract, unchanged and binding: no CDN, self-hosted fonts, Web Animations in place of
 GSAP, and practice links that carry `?lesson=28`. Then the layout, accessibility, sound, motion and
 storage rules: 16 px side gutters, no sideways scroll at 390 px, `min-width: 0` on text children,
-touch targets of at least 44 px with no two tap zones overlapping, visible focus, a single dark theme
-with every colour a token and an explicit body background, sound only after a tap, the microphone
-only after Start, localStorage only for per-viewer conveniences inside try/catch, and the whole page
-usable with no sound, no microphone, no headphones, no WebGL and no storage. The figures' accessible
-names and every live region use words only, and every note is spoken with its letter and octave, "F
-sharp 4", never the sign. The page stores the quiz seeds and records (`fyp-l28-recall-seed`,
-`fyp-l28-recall-v1`, `fyp-l28-seed`, `fyp-l28-quiz-v1`), `fyp-done`
+touch targets of at least 44 px with no two tap zones overlapping, visible focus, a single dark
+theme with every colour a token and an explicit body background, sound only after a tap, the
+microphone only after Start, localStorage only for per-viewer conveniences inside try/catch, and the
+whole page usable with no sound, no microphone, no headphones, no WebGL and no storage. The figures'
+accessible names and every live region use words only, and every note is spoken with its letter and
+octave, "F sharp 4", never the sign. The page stores the quiz seeds and records
+(`fyp-l28-recall-seed`, `fyp-l28-recall-v1`, `fyp-l28-seed`, `fyp-l28-quiz-v1`), `fyp-done`
 (`src/features/lessons/kit/progress.ts:12-15`), `fyp-voice`
 (`src/features/lessons/kit/voice-choice.ts:20`), `fyp-motion`
-(`src/features/lessons/kit/motion-switch.ts:12`), `fyp-pos` (`src/features/lessons/kit/position.ts:20`)
-and `fyp-tour` (`src/features/lessons/kit/tour-gate.ts:29`); nothing from the toys, the headphones
-answer, the quiet check or the runs: the headphones answer holds for the visit, in memory. The take
-is recorded on the device and kept in memory only, never stored, never sent, and gone on Delete, on
-Again and when the page is left; no frame, reading or answer from Sing it is kept or sent. The
-predict's choice holds for the visit, in memory: a return visit starts fresh.
+(`src/features/lessons/kit/motion-switch.ts:12`), `fyp-pos`
+(`src/features/lessons/kit/position.ts:20`) and `fyp-tour`
+(`src/features/lessons/kit/tour-gate.ts:29`); nothing from the toys, the headphones answer, the
+quiet check or the runs: the headphones answer holds for the visit, in memory. The take is recorded
+on the device and kept in memory only, never stored, never sent, and gone on Delete, on Again and
+when the page is left; no frame, reading or answer from Sing it is kept or sent. The predict's
+choice holds for the visit, in memory: a return visit starts fresh.
 
 This package departs from ARTICLE-PLAN.md where LESSON.md's preamble lists and FACTS argues: the
-predict's stem and the reveal's move (42, 44); the hero's empty bars (40); the bubbles (41); the
-recall (7); the three words (47); Step 2's held words and the waiting plays (46); the plagal tag's
-"ooh" (35); Step 3 without a predict or Go deeper (50); the breath marks (67); the alone path (63);
-quick check 2 and 4's feedback (78, 80); the practice card without Harmony Stack (74); the chips
-and the promise (2, 3, 17).
+predict's stem and the reveal's move (42, 44); the hero's empty bars and its bars 9 and 10 (33, 40);
+the bubbles (41); the recall (7); the three words (47); Step 2's held words and the waiting plays
+(46); the plagal tag's "ooh" (35); Step 3 without a predict or Go deeper (50); the breath marks
+(67); the alone path and its first turn (63); quick check 2 and 4's feedback, and quick check 4's
+hold (78, 80); the practice card without Harmony Stack (74); the chips and the promise (2, 3, 17).
 
 Page QA before publishing adds, for this page, every check against a local or dev build, never
 production:
@@ -868,13 +955,17 @@ production:
 - Every play, switch and button works by keyboard alone and announces what LESSON.md shows.
 - The cold open's plays sound and draw as FACTS 40 and 43 say: ten empty bars at first, then bars 7
   and 8 written both ways as they play, Merc's bar 8 G3 and E3.
-- No source on the page sounds the song's ending before the cold open's choice, and no note is drawn
-  in the steps' stage or free play until then; Sing it's staff shows the song as written.
+- Before the cold open's choice only two plays sound: Cadence's, bars 3 and 4, and the hero's free
+  play, the way the song kept going, bar 8 on vi and bars 9 and 10 starting A again, with no G4
+  over G3 anywhere in it, so the learner hears one way and predicts the other. No other source
+  sounds the song's ending until the choice, no note is drawn in the steps' stage, Sing it or free
+  play, and quick check 4's play and answers wait.
 - The lab test has passed and is written down where the coach's sign-off is.
 - With headphones, a part sung in tune reads in the band note by note, a note sung on the other
   part's note reads as theirs, and a part sung an octave away reads in full, by ear, with the coach;
-  the playback sounds the take in time with the part.
-- Without headphones, the alone path reads the take and plays it back with the other part.
+  the playback sounds the take against the part where it was sung, a late entry late.
+- Without headphones, the alone path's first turn plays the other part, the run reads the take, and
+  the playback plays it with the other part.
 - On a real phone at 390 px, the two staffs, the tags, the form strip and the run's lines fit their
   cards, and C3 and D3 are heard through the speaker.
 - The season's close reads Season 2's words, and its rest version after each of the three endings;
