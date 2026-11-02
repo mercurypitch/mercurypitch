@@ -2844,3 +2844,5 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   26d90e225 (safe). Rebuilding the worktree in the background; then restore lessons/18-read-a-line/
   and lessons/22-vibrato/ from s2pkg/18/ and s2pkg/22/ (FACTS, LESSON, WEB-SPEC only).
 - No agents were running. The 05:43 wake-up still sends both fix passes if the rate limit allows.
+
+## 2 Nov 04:23 UTC — worktree rebuilt (26d90e225); L18 and L22 drafts restored from s2pkg (221 and 281 cites, 0 findings). Waiting for the 05:43 wake-up to send both fix passes.
