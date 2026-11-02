@@ -68,3 +68,11 @@
   `notePlayDurationMs` the same way. Its help text describes a sustained stack that never sounds
   ("each one tuned against the notes already sounding", `src/features/exercises/exercise-help.ts:194-197`,
   summary line included): replace it with the Lesson 27 hand-back's proposed text (app content, for the owner).
+- App notes from Lesson 26 (VERIFIED by the lead 2 Nov 12:5x at c60f0fdcb): (1) Jam's Harmony Stack
+  boxes print the tune's letters on the harmony part: `harmoniseItems` rewrites MIDI, octave and
+  frequency but keeps the note's name (`src/lib/jam/jam-modes.ts:134-153`), so the third over C4..B4
+  reads C4, D4, E4, F4, G4, A5, B5 (Lesson 26 WEB-SPEC item 15 has the fix and test). (2) A friend who
+  joins a Jam room after the host picks a drill or mode never receives either: `onPeerJoined` re-sends
+  only a loaded song (`src/stores/jam-store.ts:1971-1983`), and the mode travels only inside a melody
+  message. App fix: send the drill and mode to a peer whose channel opens, with a late-join test
+  (Lesson 26 hand-back). The card is worded so the friend joins first.

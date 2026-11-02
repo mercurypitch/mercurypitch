@@ -2961,3 +2961,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - W26 handed back 12:29 (s2pkg/26-HANDBACK.md): 2,166 words, 321 cites, 0 findings, built ~2,377 (2 under cap), 15 min, head "How to sing a harmony in thirds | MercuryPitch" (46). Asks: head title, 15 vs 16 min, Jam harmoniseItems note-name bug (fix first or fallback card line), coach items, shared entries.
 - R26 spawned 12:3x (xhigh; report s2pkg/26-REVIEW.md). Only agent running. W28 waits for L26 committed (BRIEF-28 says all prerequisites committed).
 - Fallback trig_01ADdt7J38saP3XmeqSNs3qG at 13:06 now covers R26 (it names W26; treat as R26).
+
+## 2 Nov 12:5x
+- R26 done (s2pkg/26-REVIEW.md): B1 steps stage/free play draw the answer pre-choice (only controls locked); B2 Jam card order (late joiner gets no mode/tune; host range default tenor); S1 letter counts; S2 3-then-4; S3 range clause; S4 length (cut + count all page lines, built <= 2,379); S5 chip 16; S6 reader same-beat by audio clock. Lead calls in s2pkg/26-FIXPASS-MSG.md (Sing it bands: FACTS 1a open list + narrow Page QA; card as-is line "on the third, its boxes print the tune's letters"; chip 16; quick check 2 held).
+- W26 resumed 12:5x for the fix pass. App notes verified (harmoniseItems names; late-join mode) in shared-rest/NOTES.md. Next: W26 hand-back -> lead review -> commit -> W28 (BRIEF-28) -> R28 -> fix -> commit -> #229.
