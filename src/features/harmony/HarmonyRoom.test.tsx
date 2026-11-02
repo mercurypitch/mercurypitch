@@ -270,9 +270,20 @@ describe('Harmony', () => {
     expect(screen.getByTestId('harmony-mic').getAttribute('aria-label')).toBe(
       'Start: Merc sings his line, then you sing it with him',
     )
-    // His line for the way, shown and not said again.
+    // His line for the way (Learning: the harmony from him first), shown
+    // and not said again.
     expect(screen.getByTestId('harmony-bubble').textContent).toBe(
-      'Headphones on. I sing my line, then we sing it together.',
+      'Headphones on. I sing my line, then yours. Then we sing them together.',
+    )
+    expect(spoken.said).toHaveLength(1)
+  })
+
+  it('says the opening line for a level chosen at rest, shown and not said again', () => {
+    setExerciseLevel('singer')
+    render(() => <HarmonyRoom onDone={() => undefined} />)
+    setExerciseLevel('learning')
+    expect(screen.getByTestId('harmony-bubble').textContent).toBe(
+      'I sing my line, then yours. Then you sing yours, a third above.',
     )
     expect(spoken.said).toHaveLength(1)
   })
@@ -356,6 +367,27 @@ describe('Harmony', () => {
     expect(lampStates()).toEqual(['lit', 'lit', 'lit'])
   })
 
+  it('lets Merc finish his line together when the last note lands early, then answers', async () => {
+    localStorage.setItem(HARMONY_WAY_KEY, 'together')
+    render(() => <HarmonyRoom onDone={() => undefined} />)
+    await startRun()
+    const notes = harmony()
+    toTurn()
+    const step = (HARMONY_LEVELS.learning.noteSeconds + MERC_GAP_SECONDS) * 1000
+    singLine(notes.slice(0, 2), step)
+    // The last note held just long enough to land, well before his ends.
+    singing(notes[2])
+    run(HARMONY_LEVELS.learning.landMs + 100)
+    expect(phase()).toBe('landed')
+    expect(lampStates()).toEqual(['lit', 'lit', 'lit'])
+    // His line plays on to its end, and his answer waits for it.
+    expect(merc.stopped).toBe(0)
+    expect(chip()).toBe('Line 1 of 6')
+    silent()
+    run(1000)
+    expect(chip()).toBe('In harmony')
+  })
+
   it('misses a note sung together after its time has passed', async () => {
     localStorage.setItem(HARMONY_WAY_KEY, 'together')
     render(() => <HarmonyRoom onDone={() => undefined} />)
@@ -418,6 +450,16 @@ describe('Harmony', () => {
     expect(theirs).toHaveLength(3)
     expect(merc.starts[before]).toBeCloseTo(merc.starts[before + 1], 6)
     expect(screen.getAllByTestId('harmony-row')[0].dataset.playing).toBe('true')
+
+    // Leaving the app stops both voices, at the result too.
+    const stopped = merc.stopped
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(merc.stopped).toBe(stopped + 2)
+    expect(screen.getAllByTestId('harmony-row')[0].dataset.playing).toBe(
+      'false',
+    )
+    expect(phase()).toBe('result')
   })
 
   it('hears Merc again in the turn, as Learning allows at any time', async () => {

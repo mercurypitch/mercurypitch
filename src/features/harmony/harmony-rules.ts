@@ -23,12 +23,13 @@
 
 import type { SequencePreset } from '@/lib/sequence/sequence-engine'
 import type { ExerciseLevel } from '@/stores/exercise-level'
+import type { HarmonyWayId } from '@/stores/harmony-store'
 
 /** Lines in a run. */
 export const HARMONY_LINES = 6
 
 /** How the singer sings: after Merc, or with him. */
-export type HarmonyWay = 'turns' | 'together'
+export type HarmonyWay = HarmonyWayId
 
 /** The breath between two of Merc's notes, s. */
 export const MERC_GAP_SECONDS = 0.06

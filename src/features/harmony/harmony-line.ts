@@ -121,8 +121,29 @@ function placesFor(
 }
 
 /**
- * A shape wider than the window: its harmony's middle on the window's
- * middle, in C, held to the band the speaker carries.
+ * Every place a shape fits near the singer: in their window, or for a
+ * shape wider than it, in the window widened about its middle a semitone
+ * each side at a time, inside the band. The harmony runs past the singer's
+ * ends as little as it can, and its key can still change from line to line.
+ */
+function placesNear(
+  shape: readonly number[],
+  below: boolean,
+  window: NoteWindow,
+): Place[] {
+  for (let wider = 0; wider <= SUNG_HIGH - SUNG_LOW; wider++) {
+    const places = placesFor(shape, below, {
+      low: Math.max(SUNG_LOW, window.low - wider),
+      high: Math.min(SUNG_HIGH, window.high + wider),
+    })
+    if (places.length > 0) return places
+  }
+  return []
+}
+
+/**
+ * A shape no place in the band holds (none at these levels): its
+ * harmony's middle on the window's middle, in C, held to the band's floor.
  */
 function middlePlace(
   shape: readonly number[],
@@ -170,7 +191,7 @@ export function planLines(
     }
     lastShape = shape
     const isBelow = below.has(index)
-    const places = placesFor(shape, isBelow, window)
+    const places = placesNear(shape, isBelow, window)
     const previous = lines[index - 1]?.tonic
     const fresh = places.filter((place) => place.tonic !== previous)
     const choices = fresh.length > 0 ? fresh : places

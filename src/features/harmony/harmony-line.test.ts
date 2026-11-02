@@ -110,20 +110,36 @@ describe("Harmony's lines", () => {
     }
   })
 
-  it('places a line in a narrow window about its middle, in the band', () => {
-    const lines = planLines(
-      HARMONY_LINES,
-      { low: 60, high: 62 },
-      HARMONY_LEVELS.professional,
-      seededRandom(3),
-    )
-    for (const line of lines) {
-      for (const midi of line.harmony) {
-        expect(midi).toBeGreaterThanOrEqual(SUNG_LOW)
-        expect(midi).toBeLessThanOrEqual(SUNG_HIGH + 7)
+  it.each([
+    { low: 60, high: 62 },
+    { low: 52, high: 55 },
+    { low: 72, high: SUNG_HIGH },
+    { low: SUNG_LOW, high: 50 },
+  ])(
+    'places a line wider than a narrow window about its middle, in the band, in more than one key ($low to $high)',
+    (window) => {
+      const middle = (window.low + window.high) / 2
+      for (let seed = 1; seed <= 20; seed++) {
+        const lines = planLines(
+          HARMONY_LINES,
+          window,
+          HARMONY_LEVELS.professional,
+          seededRandom(seed),
+        )
+        for (const line of lines) {
+          const low = Math.min(...line.harmony)
+          const high = Math.max(...line.harmony)
+          expect(low).toBeGreaterThanOrEqual(SUNG_LOW)
+          expect(high).toBeLessThanOrEqual(SUNG_HIGH)
+          // Over the singer's window, its middle near the window's.
+          expect(high).toBeGreaterThanOrEqual(window.low)
+          expect(low).toBeLessThanOrEqual(window.high)
+          expect(Math.abs((low + high) / 2 - middle)).toBeLessThanOrEqual(4)
+        }
+        expect(new Set(lines.map((line) => line.tonic)).size).toBeGreaterThan(1)
       }
-    }
-  })
+    },
+  )
 
   it('is the same run for the same seed', () => {
     const plan = () =>

@@ -124,6 +124,8 @@ describe('a Harmony run', () => {
     expect(callMoment(line(0), 'turns', true)).toBe('callBoth')
     expect(callMoment(line(0), 'turns', false)).toBe('call')
     expect(callMoment(line(0), 'together', false)).toBe('callTogether')
+    // Learning, together: his line, then the harmony, then both voices.
+    expect(callMoment(line(0), 'together', true)).toBe('callBothTogether')
     expect(callMoment(line(0, true), 'turns', false)).toBe('callBelow')
     expect(landedMoment(line(0, true))).toBe('landedBelow')
     expect(missedMoment(outcome(0, [false], { voiced: false }))).toBe(

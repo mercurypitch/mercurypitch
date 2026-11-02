@@ -53,9 +53,9 @@ import { haptics } from '@/lib/haptics'
 import type { MercVoice } from '@/lib/merc/sim'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { echoWindow } from '@/lib/sequence/phrase-fit'
 import type { SequenceEvent, SequenceState, } from '@/lib/sequence/sequence-engine'
 import { createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
+import { singerWindow } from '@/lib/sequence/sung-window'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { leapDemoAutoPlays } from '@/stores/leap-store'
@@ -66,7 +66,7 @@ import type { LeapEvent, LeapState, RoundOutcome } from './leap-machine'
 import { INITIAL_LEAP_STATE, isRunPhase, leapReducer, liveRound, } from './leap-machine'
 import { leapOutcome, leapPhrase, mercNotes } from './leap-phrase'
 import type { LeapRound, NoteWindow } from './leap-round'
-import { planRounds, roundWindow } from './leap-round'
+import { planRounds } from './leap-round'
 import type { LeapLevel } from './leap-rules'
 import { AFTER_ANSWER_MS, BETWEEN_ROUNDS_MS, LEAP_LEVELS, LEAP_ROUNDS, leapName, leapSong, namesPrecisely, sizeName, SOUND_LEAD_SECONDS, VOICE_TAIL_SECONDS, } from './leap-rules'
 import type { LeapSummary } from './leap-run'
@@ -565,13 +565,11 @@ export function useLeapController(
   }
 
   /** The singer's window, as a run plans its leaps in it. */
-  const runWindow = (): NoteWindow => {
-    const window = echoWindow({
+  const runWindow = (): NoteWindow =>
+    singerWindow({
       voiceprints: loadLocalVoiceprints(),
       voicePreset: untrack(vocalRangePreset),
     })
-    return roundWindow({ low: window.low, high: window.high })
-  }
 
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
@@ -647,10 +645,16 @@ export function useLeapController(
    * run is dropped, as the mic's tap drops it: no result, no best.
    */
   function leave(): void {
-    // Nothing he says is heard behind their back either.
+    // Nothing he says or sings is heard behind their back either: a leap
+    // heard again at the result stops too.
     speech.hush()
     // The demo stops itself on the way out (useExerciseDemo).
-    if (!isRunPhase(phase()) || demoOn()) return
+    if (demoOn()) return
+    if (!isRunPhase(phase())) {
+      endReplay()
+      stopSound()
+      return
+    }
     dropRun()
     sayIntro(false)
   }
