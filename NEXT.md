@@ -2724,3 +2724,21 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   00:4x L16 WRITER and L20 WRITER STARTED (general-purpose, background; ids in s2pkg/agents.txt). Rate limit "allowed" (window to 00:40, then new). Slots: 2/2.
   NEXT: each hand-back -> fresh reviewer (xhigh) -> writer's fix pass -> lead review (draft shared entries) -> commit -> push. Then 18 + 22.
 - 00:5x BRIEF-18.md and BRIEF-22.md drafted (ready for when slots free; BRIEF-18 to be re-read against Lesson 16 as committed). s2pkg/shared-rest/NOTES.md started (Lesson 17's card line still says "Put the two together"). Check-in prompt updated for the 2 Nov scope. push-notes now carries the remaining lessons' s2pkg files.
+
+## 2 Nov 01:5x UTC — both writers handed back; both reviews running
+
+- L20 handed back 01:36 (2,230 words, 246 cites 0 findings); reviewer spawned 01:38 (xhigh) ->
+  s2pkg/20-REVIEW.md. L16 handed back 01:39 (2,225 words, 239 cites 0 findings; new predict "Tavi
+  sings the line with no note to start from. What will you hear?"; second phrase do so mi re do);
+  reviewer spawned 01:5x (xhigh) -> s2pkg/16-REVIEW.md. Writers' ids in s2pkg/agents.txt (resume
+  each by SendMessage for its fix pass).
+- Found: committed Lessons 17, 19, 21 write the head description's minutes in digits; the head test
+  wants the word, 80-160 chars (`src/tests/lesson-pages.test.ts:156-159`, `:200-209`). Fix in the
+  shared commit (#229); wording in s2pkg/shared-rest/NOTES.md. Rule added to BRIEF-writer-common v5
+  and BRIEF-reviewer v4 (backups .v4/.v3).
+- shared-rest/NOTES.md also holds: L19 FACTS 5 (old L20 predict quote), L15 FACTS 5 + CM entry (old
+  L16 predict), SEASON-2 § 5.3 run drill, rebinding L20 FACTS 30/54, L20's app notes (verify).
+- NEXT: each review -> writer's fix pass (SendMessage, FIXPASS-MSG) -> lead review -> commit + push.
+  Then W18 (BRIEF-18 + L16/L20 notes) and W22. Meanwhile draft BRIEF-24..28 (teases: SEASON-2 § 3
+  "Closes on" lines for 24-27 differ from the plans' teases; settle each against the next plan's
+  predict).

@@ -53,7 +53,10 @@ your own view, and only to check its claims.
 9. **Length**: `node scripts/lesson-words.mjs` agrees with the count the package states, and it is
    under the series' cap.
 10. **The spec can be built**: what WEB-SPEC says the kit already does, it does at `c60f0fdcb`;
-    what is new is listed as new; tests and edge cases cover what the page promises.
+    what is new is listed as new; tests and edge cases cover what the page promises. The head's
+    proposed description must pass the head test as written: the run time as a word with its
+    article ("A fourteen-minute lesson"), 80 to 160 characters (`src/tests/lesson-pages.test.ts:156-159`
+    and `:200-209`); count it yourself.
 11. **Departures** from ARTICLE-PLAN.md are justified, and the three files agree with each other.
 
 ## Rules

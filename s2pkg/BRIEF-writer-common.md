@@ -156,6 +156,12 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
   fact: Lesson 23 says the fifth "counts as settled" and the tritone "counts as restless". A claim
   whose source nobody read comes out: Lesson 23 cut a sentence about a church ban on the tritone.
 
+- **The head's description writes the run time as a word**, with its article: "A fourteen-minute
+  lesson", "An eighteen-minute lesson", never "A 14-minute lesson", and stays between 80 and 160
+  characters, as the head test asks (`src/tests/lesson-pages.test.ts:156-159` and `:200-209`).
+  Lessons 17, 19 and 21 wrote digits, and two of them run past 160 once the word goes in. Count the
+  description as it will be written, and quote it the same way in FACTS 1a.
+
 ## Hand back
 
 - Your three files, saved and copied to the scratchpad as above.
