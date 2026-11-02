@@ -35,8 +35,9 @@ const PLANNING: readonly RegExp[] = [
   /one a week after launch/i,
   /for the team/i,
   /\bblueprint\b/i,
-  // a topic's code (T01, S05) in place of its name
-  /\b[TS]\d\d\b/,
+  // a topic's code (T01, S05, or a lettered one such as S11a) in place of
+  // its name
+  /\b[TS]\d\d[a-z]?\b/,
 ]
 
 /** What no reader meets. */
