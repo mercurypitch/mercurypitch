@@ -132,9 +132,9 @@ export function useChordStackerController(
   }
 
   // Tracked via `phaseTimer` (like every other scheduled delay in this
-  // controller) so stopRounds()/reset() can cancel an inter-note gap
-  // immediately instead of leaving an untracked native timer to fire on
-  // an already-stopped exercise.
+  // controller) so stopRounds()/reset() can cancel a tone's wait or an
+  // inter-note gap immediately instead of leaving an untracked native
+  // timer to fire on an already-stopped exercise.
   function delay(ms: number): Promise<void> {
     return new Promise((resolve) => {
       phaseTimer = setTimeout(resolve, ms)
@@ -147,6 +147,12 @@ export function useChordStackerController(
       const midi = chordNotes[i]
       batch(() => base._updateMetrics({ currentMidi: midi }))
       await audioEngine.playTone(midiToFreq(midi), notePlayDurationMs)
+      if (_cancelled) return
+      // The promise settles when the tone is scheduled, and the next
+      // playTone releases the one before it. Wait it out, so each note
+      // sounds in full before the gap, and the last one ends before the
+      // singing starts.
+      await delay(notePlayDurationMs)
       if (_cancelled) return
       if (i < chordNotes.length - 1) {
         await delay(GAP_BETWEEN_NOTES_MS)
