@@ -1,0 +1,92 @@
+/* Why the Karaoke song stopped by itself (KaraokeSoundStopped.tsx). */
+
+/* Always there, empty while the song is fine, so a screen reader hears the
+   notice the moment it appears. Over the stage's pills and bar (z-index 3
+   to 6 in KaraokeMobileStage.module.css), and below the shell's chrome and
+   sheets, which sit over the whole room. The slot takes no taps; the card
+   does. */
+.slot {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 max(16px, var(--safe-right, 0px)) 0
+    max(16px, var(--safe-left, 0px));
+  pointer-events: none;
+}
+
+/* The rooms' dark glass, as the volume hint's: the stage under it is dark
+   in either app theme, so its ink is the dark stage's and not the theme's. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(10, 18, 44, 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #e6edf3;
+  font: 500 15px/1.35 var(--font-body, sans-serif);
+  pointer-events: auto;
+  animation: arrive 220ms ease-out both;
+}
+
+.icon {
+  flex: none;
+  display: flex;
+  margin-top: 1px;
+  color: #ffd166;
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.words p {
+  margin: 0;
+}
+
+.play {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 22px;
+  background: #ffd166;
+  color: #0a122c;
+  font: 600 15px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.play:focus-visible {
+  outline: 2px solid #e6edf3;
+  outline-offset: 2px;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}

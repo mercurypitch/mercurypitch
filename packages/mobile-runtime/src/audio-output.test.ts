@@ -368,8 +368,61 @@ describe('onAudioRoute', () => {
       'audioRouteChange',
       expect.any(Function),
     )
-    expect(handler.mock.calls).toEqual([['airplay'], ['speaker'], ['none']])
+    expect(handler.mock.calls.map(([route]) => route as unknown)).toEqual([
+      'airplay',
+      'speaker',
+      'none',
+    ])
     expect(remove).toHaveBeenCalled()
+  })
+
+  it('hands on the port and iOS’s reason with each route', async () => {
+    capacitor.isNativePlatform.mockReturnValue(true)
+    capacitor.getPlatform.mockReturnValue('ios')
+    let send: (event: Record<string, unknown>) => void = () => undefined
+    plugin.addListener.mockImplementation(
+      (_name: string, listener: (event: Record<string, unknown>) => void) => {
+        send = listener
+        return Promise.resolve({ remove: vi.fn(() => Promise.resolve()) })
+      },
+    )
+    const handler = vi.fn()
+
+    const stop = onAudioRoute(handler)
+    await Promise.resolve()
+    await Promise.resolve()
+    // What AudioOutputPlugin.swift adds to the snapshot for a new route.
+    send({
+      ...IOS_SPEAKER,
+      outputs: [{ type: 'AirPlay', name: 'LG C2' }],
+      reason: 'route',
+      routeReason: 'new device',
+      previousOutputs: ['Speaker'],
+    })
+    // Android's: the route, and no reason of iOS's.
+    send({ ...ANDROID_HEADSET, reason: 'route', previousOutputs: 'none' })
+    stop()
+
+    expect(handler.mock.calls).toEqual([
+      [
+        'airplay',
+        {
+          outputs: [{ type: 'AirPlay', name: 'LG C2' }],
+          reason: 'route',
+          routeReason: 'new device',
+          previousOutputs: ['Speaker'],
+        },
+      ],
+      [
+        'headphones',
+        {
+          outputs: [{ type: 'wired-headset', name: 'USB-C to 3.5mm' }],
+          reason: 'route',
+          routeReason: null,
+          previousOutputs: [],
+        },
+      ],
+    ])
   })
 
   it('hears nothing from an app without the plugin', async () => {

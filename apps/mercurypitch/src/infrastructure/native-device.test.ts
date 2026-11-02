@@ -384,3 +384,46 @@ describe('the device a room reaches through the bridge', () => {
     expect(stop).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('the shared clock, in the console', () => {
+  /** A clock whose state the test moves, as iOS and the broker would. */
+  class StatedClock extends EventTarget {
+    state = 'suspended'
+    currentTime = 0
+    resume = vi.fn(async () => {
+      this.goes('running')
+      return Promise.resolve()
+    })
+    suspend = vi.fn(async () => Promise.resolve())
+    close = vi.fn(async () => Promise.resolve())
+
+    goes(state: string): void {
+      this.state = state
+      this.dispatchEvent(new Event('statechange'))
+    }
+  }
+
+  it('says every state the one shared clock takes, from the first lease that makes it', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    const clock = new StatedClock()
+    resetSharedAudioContext({
+      createContext: () => clock as unknown as AudioContext,
+    })
+    const device = createNativeDevice()
+    const karaoke = device.acquireAudio('karaoke-room')
+    const door = device.acquireAudio('room-door')
+
+    await karaoke.unlock()
+    door.ensure()
+    clock.goes('interrupted')
+
+    expect(log.mock.calls.map(([line]) => line)).toEqual([
+      '[audio clock] shared: suspended, first seen',
+      '[audio clock] shared: suspended -> running, at 0.000 s',
+      '[audio clock] shared: running -> interrupted, at 0.000 s',
+    ])
+    karaoke.release()
+    door.release()
+    log.mockRestore()
+  })
+})

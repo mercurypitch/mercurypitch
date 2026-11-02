@@ -11,6 +11,7 @@
 // Registered once from `main.tsx` through `registerNativeDevice`; the web
 // registers nothing.
 
+import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
 import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
@@ -18,6 +19,7 @@ import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { createNativeReminders } from './native-reminders'
 import { createTvStage } from './native-tv-stage'
+import { logClockStates } from './shared-clock-log'
 
 /**
  * The picture the system's media controls show with every song: behind it in
@@ -47,12 +49,33 @@ function watchTvLyrics(handler: (showing: boolean) => void): () => void {
   }
 }
 
+/**
+ * A lease whose clock says every state it takes in the console, from the
+ * moment the clock exists (shared-clock-log.ts). An unlock makes the clock
+ * first, in the same gesture, so it is watched before it is resumed.
+ */
+function sayingClockStates(lease: SharedAudioLease): SharedAudioLease {
+  const watch = (context: AudioContext | null): AudioContext | null => {
+    if (context !== null) logClockStates(context, 'shared')
+    return context
+  }
+  return {
+    ...lease,
+    ensure: () => watch(lease.ensure()),
+    unlock: () => {
+      watch(lease.ensure())
+      return lease.unlock()
+    },
+  }
+}
+
 export function createNativeDevice(): NativeDeviceApi {
   // A TV that draws the room's whole stage, on the phone that can give one.
   const tvStage = createTvStage()
   return {
     micStopsOtherApps: micStopsOtherApps(),
-    acquireAudio: (owner, options) => acquireSharedAudioContext(owner, options),
+    acquireAudio: (owner, options) =>
+      sayingClockStates(acquireSharedAudioContext(owner, options)),
     keepAwake: (on) => {
       // A phone without the plugin keeps its own sleep rules; nothing about
       // a song is worth an unhandled rejection.

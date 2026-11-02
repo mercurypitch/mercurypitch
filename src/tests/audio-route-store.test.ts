@@ -6,27 +6,51 @@
 // route listener it was handed, so each case says exactly what the phone
 // reported, and in which order.
 
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { audioRoute, followAudioRoute, setAudioRouteForTests, } from '@/stores/audio-route-store'
-import type { NativeAudioOutput, NativeAudioOutputReading, NativeAudioRoute, } from '@/stores/native-shell-store'
+import { audioRoute, audioRoutePort, followAudioRoute, setAudioRouteForTests, } from '@/stores/audio-route-store'
+import type { NativeAudioOutput, NativeAudioOutputReading, NativeAudioRoute, NativeAudioRouteChange, } from '@/stores/native-shell-store'
 
-function reading(route: NativeAudioRoute): NativeAudioOutputReading {
+type Ports = NativeAudioOutputReading['outputs']
+
+function reading(
+  route: NativeAudioRoute,
+  outputs: Ports = [],
+): NativeAudioOutputReading {
   return {
     volume: 0.5,
     volumeKnown: 'live',
     step: null,
     steps: null,
     route,
-    outputs: [],
+    outputs,
     detail: {},
     reason: null,
   }
 }
 
+/** A change of route as AudioOutputPlugin.swift words one. */
+function iosChange(
+  over: Partial<NativeAudioRouteChange> = {},
+): NativeAudioRouteChange {
+  return {
+    outputs: [],
+    reason: 'route',
+    routeReason: null,
+    previousOutputs: [],
+    ...over,
+  }
+}
+
+const TV: Ports = [{ type: 'AirPlay', name: 'LG C2' }]
+const PHONE: Ports = [{ type: 'Speaker', name: 'Speaker' }]
+
 /** A phone whose reads wait to be answered, and whose route can change. */
 function fakeOutput(options: { watchRoute?: boolean } = {}) {
   const answers: ((value: NativeAudioOutputReading | null) => void)[] = []
-  let heard: ((route: NativeAudioRoute) => void) | null = null
+  let heard:
+    | ((route: NativeAudioRoute, change?: NativeAudioRouteChange) => void)
+    | null = null
   const stopWatching = vi.fn()
   const output: NativeAudioOutput = {
     read: vi.fn(
@@ -39,7 +63,12 @@ function fakeOutput(options: { watchRoute?: boolean } = {}) {
     ...(options.watchRoute === false
       ? {}
       : {
-          watchRoute: (handler: (route: NativeAudioRoute) => void) => {
+          watchRoute: (
+            handler: (
+              route: NativeAudioRoute,
+              change?: NativeAudioRouteChange,
+            ) => void,
+          ) => {
             heard = handler
             return stopWatching
           },
@@ -54,8 +83,8 @@ function fakeOutput(options: { watchRoute?: boolean } = {}) {
       await Promise.resolve()
       await Promise.resolve()
     },
-    change: (route: NativeAudioRoute) => {
-      heard?.(route)
+    change: (route: NativeAudioRoute, change?: NativeAudioRouteChange) => {
+      heard?.(route, change)
     },
   }
 }
@@ -157,5 +186,121 @@ describe('audio route store', () => {
     expect(fake.stopWatching).toHaveBeenCalledTimes(1)
     expect(fake.output.read).toHaveBeenCalledTimes(1)
     expect(audioRoute()).toBeNull()
+  })
+})
+
+describe('what the console is told of the route', () => {
+  let log: MockInstance<(...data: unknown[]) => void>
+
+  beforeEach(() => {
+    log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    log.mockRestore()
+  })
+
+  const lines = (): unknown[] => log.mock.calls.map((call) => call[0])
+
+  it('says the route at launch with its port, as a routine line', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+
+    await fake.answer(reading('airplay', TV))
+
+    expect(lines()).toEqual(['[audio route] airplay "LG C2", at launch'])
+    expect(audioRoutePort()).toBe('LG C2')
+    // Routine: out of a console that leaves routine logs out.
+    expect(info).not.toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+    info.mockRestore()
+    warn.mockRestore()
+  })
+
+  it('says each route iOS moves: its kind, port, reason and what it was', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    await fake.answer(reading('speaker', PHONE))
+
+    fake.change(
+      'airplay',
+      iosChange({
+        outputs: TV,
+        routeReason: 'new device',
+        previousOutputs: ['Speaker'],
+      }),
+    )
+
+    expect(lines().at(-1)).toBe(
+      '[audio route] airplay "LG C2", iOS: new device, was Speaker',
+    )
+    expect(audioRoutePort()).toBe('LG C2')
+  })
+
+  it('says a route iOS moved onto the same port, for its reason', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    await fake.answer(reading('speaker', PHONE))
+
+    fake.change(
+      'speaker',
+      iosChange({
+        outputs: PHONE,
+        routeReason: 'category change',
+        previousOutputs: ['Speaker'],
+      }),
+    )
+
+    expect(lines()).toEqual([
+      '[audio route] speaker "Speaker", at launch',
+      '[audio route] speaker "Speaker", iOS: category change, was Speaker',
+    ])
+  })
+
+  it('says nothing as the app comes back to the route it had, and says a new one', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    await fake.answer(reading('speaker', PHONE))
+
+    fake.change(
+      'speaker',
+      iosChange({ outputs: PHONE, reason: 'app in front' }),
+    )
+    fake.change('airplay', iosChange({ outputs: TV, reason: 'app in front' }))
+
+    expect(lines()).toEqual([
+      '[audio route] speaker "Speaker", at launch',
+      '[audio route] airplay "LG C2", app in front',
+    ])
+  })
+
+  it('says a reading on the way back only where the route moved', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    await fake.answer(reading('airplay', TV))
+
+    setVisibility('visible')
+    await fake.answer(reading('airplay', TV))
+    setVisibility('visible')
+    await fake.answer(reading('speaker', PHONE))
+
+    expect(lines()).toEqual([
+      '[audio route] airplay "LG C2", at launch',
+      '[audio route] speaker "Speaker", read on the way back',
+    ])
+  })
+
+  it('says an Android route, which comes with no reason of iOS’s', () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+
+    fake.change(
+      'headphones',
+      iosChange({ outputs: [{ type: 'wired-headset', name: 'USB-C' }] }),
+    )
+
+    expect(lines()).toEqual(['[audio route] headphones "USB-C"'])
   })
 })

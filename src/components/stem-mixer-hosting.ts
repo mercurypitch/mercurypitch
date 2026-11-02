@@ -34,6 +34,12 @@ export interface HostedMixerControls {
    * until the singer next plays, pauses or stops the song.
    */
   readonly interrupted: Accessor<boolean>
+  /**
+   * Paused because the song's clock stopped while it played and did not
+   * start again when asked (the stem mixer's clock watchdog): the room says
+   * why. Until the singer next plays, pauses or stops the song.
+   */
+  readonly stalled: Accessor<boolean>
   readonly loading: Accessor<boolean>
   readonly loadError: Accessor<string>
   /** Seconds into the song. */
