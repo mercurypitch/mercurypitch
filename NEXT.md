@@ -2911,3 +2911,10 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
 - Drone Intonation run score max 80, level-up EMA 90: never levels up (verified; NOTES.md app note).
 - Calls sent (s2pkg/24-FIXPASS-MSG.md): head title "How to sing in tune with a drone | MercuryPitch"; Move do: higher up to 5 (as L20); quiet check fails on any voiced run; set rules defaults; built page must fit 2,379 (cuts now); drone colours accepted.
 - In flight: W24 (fix pass), W25 (fix pass). Next: their replies -> lead reviews -> commits; then 26 and 27 writers; then 28.
+
+## 2 Nov 08:3x UTC — L25 COMMITTED 9ae0e9162 (pushed); W27 spawned
+- L25 lead review: checks clean (plan-cites 0, 325 cites; whole plan 200; prettier whitespace-only on FACTS/WEB-SPEC, words verified; head 156 chars). Lead edit: Wrap line 2 "and the wide step is gone."; counts 2,160 (Wrap 413).
+- Shared entries: s2pkg/shared-rest/L25-entries.md (hand-back line refs, SEASON-2 § 3 L25 "Closes on" replacement, app notes; the sidebar-library re-key note is the writer's evidence, verify before reporting).
+- BRIEF-writer-common now v8 (head 9ae0e9162; models add L25; four new review lessons: Wrap free play holds, step text as reveal elements, plays worked out, drill cards). Backup .v7. BRIEF-27 notes L25 committed (.v1 backup).
+- W27 spawned 08:3x (BRIEF-27). W24 fix pass still running.
+- Next: W24 reply -> lead review L24 -> commit -> spawn W26 (BRIEF-26 already has L25's bound tease alt). Then R27 when W27 hands back; 28 after 26.

@@ -56,12 +56,12 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The page has one predict.** The plan's Step 2 predict, how far le is from ti, is Step 2's
   Notice: the staircase draws the wider stair the moment te lifts, in the hero's second ending and
   in the steps' toy, so no predict there could be asked unanswered (FACTS 38).
-- **Step 1's chord on so waits for the cold open, in the toy and in words**: the toy's Raise te,
-  its three beads and Play the chord on so, then home until the choice, under the steps' line
-  "Choose an answer at the top to unlock the rest of this figure."; Step 1's two sentences that name
-  the chord's quality until the reveal, as a second part of it, with a held line in their place.
-  The Wrap's free play holds the same controls until the choice, and the first-visit tour waits for
-  it too (FACTS 1a, 36).
+- **Step 1's chord on so waits for the cold open, in the toy and in words**: the toy's Raise te and
+  its three beads until the choice, under the steps' line "Choose an answer at the top to unlock the
+  rest of this figure."; Step 1's two sentences that name the chord's quality, with their play, Play
+  the chord on so, then home, until the reveal, as a second part of it, with a held line in their
+  place. The Wrap's free play holds its Raise te, Raise le, beads and chord play until the choice,
+  and the first-visit tour waits for it too (FACTS 1a, 36).
 - **The header names all three prerequisites**, Lessons 10, 21 and 23, where the plan named Lesson
   23 alone (FACTS 2).
 - **Step 4 shows C minor's three flats once in each clef**, on the learner's staff and on a small
@@ -360,7 +360,7 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 - A minor key is one key, and its sixth and seventh can move: natural minor keeps le and te.
 - Harmonic minor raises te to ti, which leans up to do and turns the chord on so major. Melodic
-  minor raises le too, going up only, and closes the wide step that leaves.
+  minor raises le too, going up only, and the wide step is gone.
 - C major and A minor share a key signature: they're relative keys, the same notes with home moved
   from C to A.
 

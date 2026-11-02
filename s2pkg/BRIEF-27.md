@@ -8,8 +8,8 @@ Read the shared brief first: `.../scratchpad/s2pkg/BRIEF-writer-common.md`.
 
 A theory lesson (T24, T25) with an unscored sing-along. It needs Lessons 12 and 23 (SEASON-2 § 4.3);
 Lesson 15 helps, since inversions are read on the staff. Closest models: Season 2's Lesson 21 and
-Lesson 23 (theory pages with both clefs, the ring and the tritone) and Lesson 25 (committed or being
-written; a theory page with a sing-along), and Season 1's Lesson 12 (the four rooms, chords) and
+Lesson 23 (theory pages with both clefs, the ring and the tritone) and Lesson 25 (committed at
+`9ae0e9162`, the newest; a theory page with a sing-along), and Season 1's Lesson 12 (the four rooms, chords) and
 Lesson 2 (the ring). Lesson 28 builds on yours (V7 to I, the perfect cadence). The plan was verified
 at `b803c7d43`; check every app claim again at `c60f0fdcb`, above all Chord Stacker
 (`src/features/exercises/chord-stacker/`) and Ear Lab's Stack (`src/lib/ear/banks.ts`).

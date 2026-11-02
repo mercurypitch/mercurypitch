@@ -18,8 +18,10 @@ with Lesson 23's, it is Lesson 23's, unchanged unless this spec says otherwise.
 
 One object carries the lesson: Lesson 10's minor staircase, do re me fa so le te do on A, with its
 chord column, beside the learner's staff (FACTS 29). In the hero it stands alone, the house on do;
-the free play's second ending lifts te to ti for a moment, and the chord column draws in only after
-the predict's choice. In Step 1 te lifts to ti and the chord on so's middle bead slides up a row; in
+the tune play's second ending lifts te to ti for a moment, and the chord column draws in only after
+the predict's choice. In Step 1 te lifts to ti and the chord on so's middle bead slides up a row,
+once the cold open's choice is in, and the step's two sentences on that chord show with its reveal;
+in
 Step 2 the le-to-ti stair, now three semitones, is outlined; in Step 3 le lifts too, on the way up
 only; in Step 4 the staircase redraws from C major to A minor on the same white piano keys, the
 house moving from C to A while the staff's key signature stays empty, then C minor's three flats
@@ -96,22 +98,23 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
    (`src/features/lessons/kit/lesson-stage.css:394-437`), so the title and the first play come
    before anything asks for an answer. The five chips wrap to two or three lines at 390 px. The
    head: the title, at most 60 characters, "Harmonic and melodic minor, relative keys |
-   MercuryPitch" (56), proposed, as Lessons 15 to 23 propose theirs; the description, "Why does a
-   minor key often raise one note just before it comes home? A fifteen-minute lesson with sound
-   toys: harmonic and melodic minor, and relative keys." (156), which the head test holds to 80 to
-   160 characters and to the chip's run time in words; og:title and twitter:title "Minor, properly ·
-   Find Your Pitch, Lesson 25" (44), in Lesson 4's form; og:description and twitter:description the
-   hook alone (68); the share card `learn/lesson-25-og.jpg`, 1200 by 630, its alt "The title card:
-   Find Your Pitch, Lesson 25, Minor, properly, above Lesson 10's minor staircase on A, do to do,
-   with the house on do, between Merc and Tavi." (155), with te at rest and no chord (FACTS 1a); the
-   two structured-data blocks from Lesson 1's, the Article's `headline` the lesson's name, its
-   `alternativeHeadline` the hook, its `description` the meta description, so it holds "A
-   fifteen-minute lesson" as the head test asks, `timeRequired` `PT15M`, position 25, and `teaches`
-   "Natural, harmonic and melodic minor", "Raising te to ti before home" and "Relative and parallel
-   keys"; and, on release, the llms.txt line in Season 1's form: "[Lesson 25: Minor,
-   properly](https://mercurypitch.com/learn/25): Why a minor key often raises one note just before
-   it comes home. Natural, harmonic and melodic minor, the raised seventh, and relative and parallel
-   keys." (SEARCH § 3.2 and § 3.4). None of them names a chord's quality (FACTS 1a).
+   MercuryPitch" (56), the lead's choice on 2 November 2026 (Decisions for the owner); the
+   description, "Why does a minor key often raise one note just before it comes home? A
+   fifteen-minute lesson with sound toys: harmonic and melodic minor, and relative keys." (156),
+   which the head test holds to 80 to 160 characters and to the chip's run time in words; og:title
+   and twitter:title "Minor, properly · Find Your Pitch, Lesson 25" (44), in Lesson 4's form;
+   og:description and twitter:description the hook alone (68); the share card
+   `learn/lesson-25-og.jpg`, 1200 by 630, its alt "The title card: Find Your Pitch, Lesson 25,
+   Minor, properly, above Lesson 10's minor staircase on A, do to do, with the house on do, between
+   Merc and Tavi." (155), with te at rest and no chord (FACTS 1a); the two structured-data blocks
+   from Lesson 1's, the Article's `headline` the lesson's name, its `alternativeHeadline` the hook,
+   its `description` the meta description, so it holds "A fifteen-minute lesson" as the head test
+   asks, `timeRequired` `PT15M`, position 25, and `teaches` "Natural, harmonic and melodic minor",
+   "Raising te to ti before home" and "Relative and parallel keys"; and, on release, the llms.txt
+   line in Season 1's form: "[Lesson 25: Minor, properly](https://mercurypitch.com/learn/25): Why a
+   minor key often raises one note just before it comes home. Natural, harmonic and melodic minor,
+   the raised seventh, and relative and parallel keys." (SEARCH § 3.2 and § 3.4). None of them names
+   a chord's quality (FACTS 1a).
 3. **Recall from Lessons 10 and 21**, straight after the hero: Lesson 10's question 4 and Lesson
    21's question 2, shown to everyone (Toys 7; FACTS 7).
 4. **Four words you'll meet**: Natural minor, Harmonic minor, Melodic minor and Relative keys, each
@@ -123,21 +126,22 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 7. **Quick check**: four questions (Toys 7).
 8. **Wrap**: the three lines, the one-sentence challenge, the practice card in the version Sing
    it's ending picks (Practice links; Toys 5), the next-lesson card with its still (Toys 8), and free
-   play, the step toys unlocked.
+   play, the step toys on one card, its chord held until the cold open's choice (Toys 1).
 9. **Explorer**: the season's map, opening on Season 2's tab (Explorer and season data).
 10. **Footer**: LESSON.md's, with the two practice links, the fonts line and "Every sound on this
     page is synthesised in your browser."
 
 ## Length
 
-The learner copy is 2,117 words on `node scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 262 (FACTS 3). The page runs about 15 minutes: 8.89 minutes of reading at
-238 words a minute and about 5.7 of sound, toys and tasks, 14.62 in all, past MASTER-PLAN § 4.2's
+The learner copy is 2,160 words on `node scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 219 (FACTS 3). The page runs about 15 minutes: 9.08 minutes of reading at
+238 words a minute and about 5.7 of sound, toys and tasks, 14.81 in all, past MASTER-PLAN § 4.2's
 "8 to 12 minutes of active time, 500 to 900 words", as Lessons 10, 12, 15, 21 and 23 are. The chip
 is an estimate until the staircase's states and the staff's key signatures are timed in their lab,
 as SEASON-2 § 1.3 asks, and this section says so until then. Each step's own text, with its Try,
-its Notice and any Tavi line, runs 104 to 120 words (Steps 1 to 4: 118, 104, 117 and 120), inside
-50 to 120 a step. Six parts carry more, by the same counter, for these reasons:
+its Notice and any Tavi line, runs 104 to 120 words (Steps 1 to 4: 120, 104, 117 and 120), inside
+50 to 120 a step; Step 1's count includes its paragraph on the chord on so, which shows with the
+cold open's reveal. Six parts carry more, by the same counter, for these reasons:
 
 - **Step 3, 210 words with its mix-up card.** The card sits in the step whose toy refutes it.
 - **Step 4, 175 words with its drawer**, one item, closed by default.
@@ -147,35 +151,36 @@ its Notice and any Tavi line, runs 104 to 120 words (Steps 1 to 4: 118, 104, 117
 - **The quick check, 262 words**, and **the recall, 159**: three answers a question with a line of
   feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lessons 10's and 21's, word for
   word.
-- **The cold open, 168 words**: the predict states the chord before home and the raised note, so a
-  learner can reason it out, and the reveal counts both thirds (FACTS 33, 35).
-- **The Wrap, 387 words**: the practice card says what Gravity does and what the app lacks, and its
-  second drill, Sight-Singing, needs its route through the Singing tab and its care lines, Lesson
-  16's; its rest version is Lesson 12's (FACTS 47 to 53).
+- **The cold open, 183 words**: the predict states that the chords are not yet played, the chord
+  before home and the raised note, so a learner can reason it out, and the reveal counts both thirds
+  (FACTS 33, 35).
+- **The Wrap, 413 words**: the practice card says what Gravity does and what the app lacks, and its
+  second drill, Sight-Singing, needs its route through the Singing tab, Lesson 16's care lines and
+  its two sentences on the octave and the names; its rest version is Lesson 12's (FACTS 47 to 53).
 
 The hints and status lines are stage directions in LESSON.md and are not counted, as in the text
 packages of Lessons 9 to 23: the predict's hints and its two "You said" lines, the names of the
-plays a choice unlocks, the stored voice's line, Sing it's hints, and the toys' labels, readouts and
-hints. A built page writes them in the open and counts them, about 150 words more (Lesson 8 FACTS
-4), so the built page is about 2,270 words, under the cap, with the chip still at 15 minutes. No
-cut is needed. If the lead drops the second drill (Decisions for the owner, 2), the Wrap loses about
-110 words. The article plan budgeted near 1,200 words; its own section estimates add to 1,545
-before the recall and the practice card (FACTS 3).
+plays a choice unlocks, the stored voice's line, the steps' lock line and Step 1's held line, Sing
+it's hints, and the toys' labels, readouts and hints. A built page writes them in the open and
+counts them, about 150 words more (Lesson 8 FACTS 4), so the built page is about 2,310 words, under
+the cap, with the chip still at 15 minutes. No cut is needed. The article plan budgeted near 1,200
+words; its own section estimates add to 1,525, with none for the recall or the practice card (FACTS
+3).
 
 The activities are timed from this spec's lengths (FACTS 3, 58 to 65). Free play is not counted.
 
 ## Toys: what each reuses, and what is new
 
-| Toy                       | Reuses                                                                                                                                                                                                                                | New in Lesson 25                                                                                                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Toy                       | Reuses                                                                                                                                                                                                                                        | New in Lesson 25                                                                                                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. The steps' toy         | Lesson 10's chord beads and their staircase, moved into the kit; the kit's staff toy with both clefs, key signatures and its pitch-line switch (SEASON-2 § 6.2 item 2; Lesson 21 WEB-SPEC, Toys 1); Lesson 6's pair; Lesson 12's chord levels | Raise te and Raise le on the staircase; the widened stair's outline; the chord on so as a column; C major redrawn as A minor; a signature-only staff in the other clef |
-| 2. The hero's staircase   | Toy 1's staircase and chord column                                                                                                                                                                                                    | The tune played twice, its second ending's G♯ lifting te; the chord column drawn in by the answering plays                                                              |
-| 3. Predict widget         | The kit's predict (`kit/predict.ts`), with a free play, `revealAfter: 'all'`, `unlocks` and `onChoice`; the tour's hold (`kit/tour-gate.ts`)                                                                                         | The steps' toy holds back Raise te, the chord column and the chord's play until the choice                                                                             |
-| 4. Four words             | The kit's words strip (`kit/words-strip.ts`), with the page's sound owner; Toy 1's staircase, small                                                                                                                                   | Four small staircase figures                                                                                                                                             |
-| 5. Sing it                | Lesson 23's Sing it, on Lesson 12's sing flow moved into the kit (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`, `kit/move-do.ts`'s count-in); Lesson 12's rest line                                                           | The so, te, do and so, ti, do figures in A minor on the learner's staff; a count-in on so; two lines of its own                                                        |
-| 6. Go deeper drawer       | Lesson 2's `details` drawer                                                                                                                                                                                                           | One item                                                                                                                                                                 |
-| 7. Recall and quick check | The kit's quiz (`kit/quiz.ts`); Lesson 10's questions (`lesson-10/quiz-questions.ts`) and Lesson 21's, imported as Lesson 10 imports Lesson 6's                                                                                       | Ids and keys; quick check 4's play                                                                                                                                       |
-| 8. Tease stills           | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                                          | This page's opening as a still, for Lesson 24's card                                                                                                                     |
+| 2. The hero's staircase   | Toy 1's staircase and chord column                                                                                                                                                                                                            | The tune played twice, its second ending's G♯ lifting te; the chord column drawn in by the answering plays                                                             |
+| 3. Predict widget         | The kit's predict (`kit/predict.ts`), with the tune play as its free example, `revealAfter: 'all'`, `unlocks`, `onChoice` and several reveal elements; the tour's hold (`kit/tour-gate.ts`)                                                   | The steps' toy and the Wrap's free play hold back Raise te, Raise le and the chord until the choice; Step 1's paragraph on the chord on so shows with the reveal       |
+| 4. Four words             | The kit's words strip (`kit/words-strip.ts`), with the page's sound owner; Toy 1's staircase, small                                                                                                                                           | Four small staircase figures                                                                                                                                           |
+| 5. Sing it                | Lesson 23's Sing it, on Lesson 12's sing flow moved into the kit (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`, `kit/move-do.ts`'s count-in); Lesson 12's rest line                                                                   | The so, te, do and so, ti, do figures in A minor on the learner's staff; a count-in on so; two lines of its own                                                        |
+| 6. Go deeper drawer       | Lesson 2's `details` drawer                                                                                                                                                                                                                   | One item                                                                                                                                                               |
+| 7. Recall and quick check | The kit's quiz (`kit/quiz.ts`); Lesson 10's questions (`lesson-10/quiz-questions.ts`) and Lesson 21's, imported as Lesson 10 imports Lesson 6's                                                                                               | Ids and keys; quick check 4's play                                                                                                                                     |
+| 8. Tease stills           | The kit's next-lesson card and its slot (`kit/next-card.ts`)                                                                                                                                                                                  | This page's opening as a still, for Lesson 24's card                                                                                                                   |
 
 ### 1. The steps' toy
 
@@ -188,7 +193,7 @@ A3 in the bass clef for the lower voice and A3 to A4 in the treble for the highe
 (`src/features/lessons/kit/home-glyph.ts:1-13`), with its Clef switch and its "See it on the pitch
 line" switch, which swaps the staircase for the season's pitch line with the same notes lit (FACTS
 8). One instance per step, each in its step's state, and one more in the Wrap's free play with every
-control. Every play lights its stairs, its notes and its beads as they sound, and the staff writes
+control, its chord held until the cold open's choice (Free play, below). Every play lights its stairs, its notes and its beads as they sound, and the staff writes
 each figure as it plays: a bar per figure, so no sign is ever cancelled and the page needs no
 natural sign. Notes are spelled one letter per degree from the kit's spelling (`spellScale`,
 `src/features/lessons/kit/notes.ts:165-177`; FACTS 10).
@@ -197,11 +202,16 @@ natural sign. Notes are spelled one letter per degree from the kit's spelling (`
   right, E, G and B in the learner's octave, named one letter per chord tone, its gaps "3" and "4"
   and its name "E minor"; Raise te, a switch that lifts the te stair a semitone to ti and slides the
   column's middle bead up a row, G to G♯, its gaps becoming "4" and "3" and its name "E major" as it
-  lands. Plays: Play so, te, do and Play so, ti, do (each 2.4 s), and Play the chord on so, then home
-  (2.4 s), which plays the column's chord as Raise te sets it, then A minor. Before the cold open's
-  choice the column is not drawn, and Raise te and the chord's play are disabled with their names
-  kept; the two figure plays work, lighting their stairs, and Play so, ti, do lifts the te stair for
-  as long as it sounds, as the hero's second ending does (FACTS 1a, 36, 61).
+  lands. Plays: Play so, te, do and Play so, ti, do (each 2.4 s), and, in the step's text, Play the
+  chord on so, then home (2.4 s), which plays the column's chord as Raise te sets it, then A minor.
+  Before the cold open's choice the column is not drawn and Raise te is disabled with its name kept,
+  under the steps' line "Choose an answer at the top to unlock the rest of this figure."; the two
+  figure plays work, lighting their stairs, and Play so, ti, do lifts the te stair for as long as it
+  sounds, as the tune play's second ending does. The choice draws the column (0.4 s), enables Raise
+  te and removes the line. The step's paragraph on the chord on so, with Play the chord on so, then
+  home, is the predict's second reveal element: hidden until the reveal, with the held line "Choose
+  an answer at the top, then hear both endings, to unlock this paragraph." in its place, which the
+  predict's `onReveal` hides (Toys 3; FACTS 1a, 36, 61).
 - **Step 2** (What does the raised note do to the scale?): the staircase in harmonic minor, the
   le-to-ti stair outlined with "3" beside it. Plays: Play A harmonic minor, up and down (5.95 s),
   and Play le to te, then le to ti, two of Lesson 6's pairs (3.6 s), each pair's two stairs lit and
@@ -224,8 +234,15 @@ natural sign. Notes are spelled one letter per degree from the kit's spelling (`
   staves, in the signature's order, B♭, E♭, A♭, at the places FACTS 27 gives for each clef, the house
   back on C (FACTS 22 to 27, 64). The staircase never shows a key past three flats (SEASON-2 § 7
   item 13).
-- **Free play**, in the Wrap: Raise te and Raise le, the chord column, every play above, and the
-  Clef switch.
+- **Free play**, in the Wrap: the four states on one card, with Raise te and Raise le, the chord
+  column, every play above and the Clef switch. Season 1's free play locks nothing, because there
+  the guided steps come first on the page (`src/features/lessons/lesson-10/wrap.ts:9-12`); this one
+  keeps Step 1's hold, as Lesson 22's free play keeps its steps' holds, since a learner can scroll to
+  the Wrap before the choice (Lesson 22 WEB-SPEC, Toys 2). Until the cold open's choice Raise te,
+  Raise le and Play the chord on so, then home are disabled with their names kept, and the chord
+  column is not drawn, under the steps' line "Choose an answer at the top to unlock the rest of this
+  figure."; its scale and figure plays work, none of them a chord. The predict's `unlocks` and
+  `onChoice` reach it as they reach Step 1, and a return visit holds it again (FACTS 1a, 36).
 
 Readouts and names: the staircase names each stair with its syllable, the beads with their letters,
 and the staff's notes are spoken with letter and octave. A live region reads each change in words:
@@ -253,18 +270,24 @@ with the house on do", and each play announces what lights.
 
 The kit's predict (`src/features/lessons/kit/predict.ts`), as it is (CURIOSITY-MOMENTS § 1, rule
 2): two `.choice` buttons, "It turns major" and "It stays minor"; the plays `tune` (with
-`data-free`), `end1` and `end2`; `revealOn: ['end1', 'end2']` and `revealAfter: 'all'`, since the
-predict compares two sounds; the hints from LESSON.md, `chosen` "Locked in. Play both endings.",
-`silent` "Sound is off: nothing played. Turn sound on, then play it again." and `again` "Play any of
-them again.", with no `next` hint (FACTS 37); the markup's lock hint, "Choose an answer to unlock the
-two endings with their chords."; `guess` giving "You said: it turns major" or "You said: it stays
-minor"; `unlocks` with Step 1's Raise te and Play the chord on so, then home, which the choice
-enables together; `onChoice`, which tells the steps' toy and the free play that a choice is in, so
-Step 1 draws its chord column (FACTS 36); and on the reveal Tavi's celebration (Merc and Tavi). What
-a play does to the hint is the kit's: a free play heard before a choice puts the lock hint back; a
-play sound off kept silent shows `silent`; a play cut short, by another sound or by leaving the
-hero, counts as not heard and changes nothing. The reveal waits for both endings heard to their end
-with sound on, in either order.
+`data-free`, the tune play), `end1` and `end2`; `revealOn: ['end1', 'end2']` and `revealAfter:
+'all'`, since the predict compares two sounds; the hints from LESSON.md, `chosen` "Locked in. Play
+both endings.", `silent` "Sound is off: nothing played. Turn sound on, then play it again." and
+`again` "Play any of them again.", with no `next` hint (FACTS 37); the markup's lock hint, "Choose
+an answer to unlock the two endings with their chords."; `guess` giving "You said: it turns major"
+or "You said: it stays minor"; `unlocks` with Step 1's Raise te and the free play's Raise te, Raise
+le and Play the chord on so, then home, which the choice enables together; `onChoice`, which tells
+Step 1 and the free play that a choice is in, so each draws its chord column and drops its lock line
+(FACTS 36); `reveal`, two elements, the hero's `.reveal` first, since the kit writes the "You said"
+line into the first, then Step 1's paragraph on the chord on so with its play, which the kit shows
+together and announces in that order ("one or several elements",
+`src/features/lessons/kit/predict.ts:70-71`; `showReveal`,
+`src/features/lessons/kit/predict.ts:133-148`), as Lesson 22's Step 3 reveals four (Lesson 22
+WEB-SPEC, Toys 3); and `onReveal`, which hides Step 1's held line and sets off Tavi's celebration
+(Merc and Tavi). What a play does to the hint is the kit's: the tune play heard before a choice puts
+the lock hint back; a play sound off kept silent shows `silent`; a play cut short, by another sound
+or by leaving the hero, counts as not heard and changes nothing. The reveal waits for both endings
+heard to their end with sound on, in either order.
 
 On a first visit the welcome tour waits for the choice. Its step "One step at a time"
 (`src/features/lessons/kit/tour-copy.ts:44-46`) scrolls to the steps' stage, so the page holds the
@@ -394,15 +417,17 @@ music bed.
   The kit has the helpers: a page-wide "now playing" owner (`NowPlaying`,
   `src/features/lessons/kit/now-playing.ts:39`), which every source here registers with, and a
   predict `play` that can report "not heard" (`src/features/lessons/kit/predict.ts:31-41`).
+
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
   `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
   `src/features/lessons/kit/run.ts:167`), so a chord change falls on its melody note. A chord heard
-  alone, Step 1's chord on so and home, is three voices at 0.075 each (`CHORD_GAIN`,
-  `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start in one timer
-  task (`playNotes`, `src/features/lessons/kit/run.ts:114`), so they share one clock and never flam.
+  alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
+  (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
+  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:114`), so they share one clock
+  and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
-  an interval is Lesson 6's pair, 0.6 s, a 0.15 s glide and 0.8 s
+  an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
   (`PAIR`, `src/features/lessons/lesson-06/examples.ts:34`).
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
   clock (`src/features/lessons/kit/sound.ts:16-21`), so so, te and do join with no click.
@@ -432,17 +457,21 @@ other, paused off screen, and the still images when WebGL fails.
 
 - **Today, Ear Lab's Gravity.** The link is `/ear-lab?lesson=25`, printed "mercurypitch.com/ear-lab",
   with "then tap Gravity" (FACTS 50). Gravity plays I, IV, V and I in a major key, then one note of
-  the twelve inside the octave above do, and the learner taps which, the scale's seven by number,
-  the other five by their leaning, each pad with its syllable; each round picks a new key, its do
-  from C3 to B3; answers are by tap by default (FACTS 48). The card names Te, "♭7", and Ti, "7", and
-  says that a drill on those two alone is not in the app yet (FACTS 49). Ear Lab is free.
+  the twelve inside the octave above do, and the learner taps which: the scale's seven by number and
+  the other five by their leaning, the app's phrase, which the card puts as "a number with ♭ or ♯",
+  each pad with its syllable. Each round picks a new key, its do from C3 to B3; answers are by tap by
+  default (FACTS 48). The card names Te, "♭7", and Ti, "7", and says that a drill on those two alone
+  is not in the app yet (FACTS 49). Ear Lab is free.
 - **Today, second: Sight-Singing in A harmonic minor**, the card's one sung drill. The link is
   `/?lesson=25#/singing`, printed "mercurypitch.com/#/singing": the learner sets the key to A and the
   scale to Harmonic Minor, on a phone from the chip that shows the key, on a wider screen in
-  Playback Setup in the sidebar, then opens Exercises and taps Sight-Singing, which writes six notes
-  of A harmonic minor in the saved range, G♯ with its sharp, in the treble clef only, with nothing
-  played first (FACTS 52, 53). The card carries Lesson 16's care lines. The Singing tab's picker
-  plays nothing itself and its Melodic Minor is the going-up form both ways, so neither is named as
+  Playback Setup in the sidebar, then goes straight to Exercises and taps Sight-Singing. It writes
+  six notes of A harmonic minor in the saved range, G♯ with its sharp, in the treble clef only, with
+  nothing played first; it wants each note in the octave written and prints each one's name under it
+  (FACTS 52, 53). The card says all of that, the octave and the names in Lesson 16's words, with
+  Lesson 16's care lines. Its notes can fall on the preset's floor or top, and in A harmonic minor it
+  can ask for F to G♯, so the coach's list names both (FACTS 53). The Singing tab's picker plays
+  nothing itself and its Melodic Minor is the going-up form both ways, so neither is named as
   practice (FACTS 52). No screen either link opens shows the app's scale descriptions (FACTS 54).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card keeps
   Gravity and shows Lesson 12's rest line naming Sight-Singing in place of the second drill (Toys 5;
@@ -454,8 +483,14 @@ other, paused off screen, and the still images when WebGL fails.
   and Ti alone. When it ships, the card's last sentence goes and the link opens the subset (FACTS
   49).
 - **Needed: Scale Runner's harmonic and melodic minor** (SEASON-2 § 5.2 item 13). When they ship, a
-  Scale Runner card replaces Sight-Singing as the second drill, with its own care lines and the
+  Scale Runner card can replace Sight-Singing as the second drill, with its own care lines and the
   coach's look (FACTS 51).
+- **Needed: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), whose parts each remove a
+  sentence of the second drill, as Lesson 16's card shrinks: (g) a `key` launch field lets the link
+  open Sight-Singing in A harmonic minor directly, in Lesson 16's way, and replaces the route through
+  the Singing tab and its edge cases; (b) a "hear do" start replaces "It plays nothing first"; (c)
+  the bass clef for lower voices and (f) octave-folded scoring replace the clef and octave sentence;
+  (e) letter names off replaces the sentence on the names (FACTS 53).
 - **Not linked**: the app's sheet view, whose minor signatures agree with Step 4 but which has no
   address (SEASON-2 § 5.2 item 20); the walkthrough's "Common Musical Scales" chapter (FACTS 55, 56);
   none of the premium exercises.
@@ -475,8 +510,9 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 10's
 - `pr.link`: `href` `/ear-lab?lesson=25`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear Lab" and
   `note` "then tap Gravity", which the explorer's card prints after the address as "Ear Lab, then tap
   Gravity" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:177-181`). `pr.needs`, "Gravity
-  with only Te and Ti (the ear-drill launch kind); Scale Runner's harmonic and melodic minor", stays
-  until they ship; it is admin only, never drawn on a lesson page
+  with only Te and Ti (the ear-drill launch kind); Scale Runner's harmonic and melodic minor;
+  Sight-Singing with a key launch, a hear-do start, the bass clef, letter names off and
+  octave-folded scoring", stays until they ship; it is admin only, never drawn on a lesson page
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [10, 25], [21, 25] and [23, 25], the first a cross-season edge, as SEASON-2 § 4.3
   gives them (FACTS 2). Lesson 25's prerequisite list is then [10, 21, 23] (`PREREQ`,
@@ -489,8 +525,8 @@ text: 'Do, mi and so made a major chord. Minor keys hide another change.' }]` (F
   semitones higher, played together.", with a mended form of this lesson's planned line as a variant,
   `teaseAlts` `[{ id: 'plan', text: "Lesson 24's other part was a drone. What if it's a tune?" }]`;
   the planned line itself is withdrawn (FACTS 5). Each variant's note goes in the team's notes, which
-  a variant needs (`TEASE_NOTES`, `src/features/lessons/kit/team-notes.ts:71`). The lead binds both
-  pairs at review.
+  a variant needs (`TEASE_NOTES`, `src/features/lessons/kit/team-notes.ts:71`). The lead bound both
+  pairs on 2 November 2026.
 - The signature line for the admin console, from the card (FACTS 29): "Lesson 10's minor staircase:
   te slides up to ti, le to ti opens into a wider stair, then le rises too, going up only." Every
   season entry has one, in the team's notes (`SIGNATURES`, `src/features/lessons/kit/team-notes.ts:31`),
@@ -518,13 +554,21 @@ first; they are listed so this page's needs are in one place.
    entry and its three edges, the masthead's season from the data (today a constant,
    `src/features/lessons/kit/lesson-menu.ts:111`), and the explorer's tab per season.
 4. **Lesson 10's chord beads and staircase in the kit**: `lesson-10/chord-beads.ts`, its drawing and
-   its layout move into the kit, and Lesson 10's page then imports them from there. They gain: a
-   root of A in Minor (they are generic over a white-key root today); Raise te and Raise le, each a
-   stair lifting a semitone, Raise le on the way up only; the widened stair's outline and its "3";
-   a chord column on a degree other than the root, the chord on so; a redraw from one scale to
-   another on the same notes, C major to A minor, with the house gliding and the syllables changing;
-   and pure helpers with their unit tests (a scale's stairs from its steps; which stairs a switch
-   lifts going up and coming down; a chord's gaps and quality from its three notes).
+   its layout move into the kit, and Lesson 10's page then imports them from there. Today they take
+   only the seven white-key roots from C4 to B4 and a window of C4 to F♯5, and refuse any other root
+   (`ROOTS`, `WINDOW` and `rootLetter`, `src/features/lessons/lesson-10/chords.ts:68-82`). They gain:
+   roots and a window set per page, this page's white-key roots from A2 to B4, which take in every
+   root it uses (A2, C3, E3, A3, C4 and E4), and a window from A2 to C5, every note it sounds, with
+   Lesson 10's C4 to B4 and C4 to F♯5 kept for its own page; the scale state and the chord state
+   side by side, a staircase with a chord column beside it, where Lesson 10 shows one or the other;
+   a chord column on a degree other than the root, the chord on so; Raise te and Raise le, each a
+   stair lifting a semitone, Raise le on the way up only, each able to wait for a predict's choice;
+   the widened stair's outline and its "3"; a redraw from one scale to another on the same notes, C
+   major to A minor, with the house gliding and the syllables changing; pure helpers with their unit
+   tests (a scale's stairs from its steps and its root; which stairs a switch lifts going up and
+   coming down; a chord's gaps and quality from its three notes; every white-key root from A2 to B4
+   taken and a black-key root refused; every note of the page inside its window); and a layout test
+   that the two states sit side by side without overlap at 344 to 390 px.
 5. **Key signatures in the staff toy, in both clefs** (SEASON-2 § 6.2 item 2, as Lesson 21's page
    needs them), with three flats placed as FACTS 27 gives; written signs that move into the
    signature (0.6 s); a second, small staff in the other clef that shows the signature only; and a
@@ -563,15 +607,20 @@ first; they are listed so this page's needs are in one place.
     structured-data blocks with `alternativeHeadline`, `description`, `teaches` and `timeRequired`
     `PT15M`, and on release the llms.txt line, each checked against the predict (FACTS 1a).
 15. **The practise links that wait** (Practice links), the app's work: the `ear-drill` launch kind
-    (SEASON-2 § 5.2 item 12) and Scale Runner's harmonic and melodic minor (item 13). When either
-    ships, LESSON.md's card changes as its editorial note says.
+    (SEASON-2 § 5.2 item 12); Scale Runner's harmonic and melodic minor (item 13); and Sight-Singing
+    for the lessons (item 10): (g) a `key` launch field, which lets the card's link open
+    Sight-Singing in A harmonic minor directly, in Lesson 16's way, in place of the route through
+    the Singing tab; (b) a "hear do" start; (c) the bass clef for lower voices; (e) letter names off;
+    and (f) octave-folded scoring, each of which removes a sentence of the card. When any ships,
+    LESSON.md's card changes as its editorial note says.
 16. **The app's scale descriptions**, the app content track's, as the season's risk 16 asks: "Bright
     and happy" (`src/lib/scale-data.ts:83`); "Sad and introspective" (`src/lib/scale-data.ts:88`);
     "exotic tension" (`src/lib/scale-data.ts:93`); "Jazz minor" (`src/lib/scale-data.ts:98`). They
-    are shown on no screen today, so neither of this page's links meets them (FACTS 54). Proposed, before any screen displays them: plain lines with no mood, such as
-    "Do re mi fa so la ti do", "Do re me fa so le te do", "Natural minor with te raised to ti" and
-    "Le and te raised going up". If a screen this page links ever shows "Sad and introspective", the
-    card stops sending learners there until the line changes.
+    are shown on no screen today, so neither of this page's links meets them (FACTS 54). Proposed,
+    before any screen displays them: plain lines with no mood, such as "Do re mi fa so la ti do",
+    "Do re me fa so le te do", "Natural minor with te raised to ti" and "Le and te raised going up".
+    If a screen this page links ever shows "Sad and introspective", the card stops sending learners
+    there until the line changes.
 17. **A going-down melodic minor in the app**, proposed, the app's: the app's Melodic Minor is one
     set, its going-up degrees (`src/lib/scale-data.ts:95-99`), so a run down the Singing tab or
     Sight-Singing in Melodic Minor uses F♯ and G♯ where the textbook falls back to G and F (FACTS
@@ -579,21 +628,12 @@ first; they are listed so this page's needs are in one place.
 
 ## Decisions for the owner
 
-1. **The two teases** (FACTS 5, 5b): the lead's lines are the defaults on both cards, each with an
-   alternative the console can switch to: on Lesson 24's card, Lesson 24's planned line; on this
-   page's, the plan's line mended to "Lesson 24's other part was a drone. What if it's a tune?",
-   since "So far the other part was a drone." is false here. The lead binds both at review.
-2. **The second drill** (FACTS 52, 53): recommended, Sight-Singing in A harmonic minor through the
-   Singing tab, the only drill in the app that has the learner meet harmonic minor's G♯, with
-   Lesson 16's care lines and a rest version. Its route takes two tabs and a menu, and its notes
-   come with no do played first; the alternative is Gravity alone, which saves about 110 words and
-   keeps the card's rest version to Lesson 23's form.
-
-The head title is proposed in Sections, 2, as Lessons 15 to 23 propose theirs: "Harmonic and
-melodic minor, relative keys | MercuryPitch" (56), with "The three minor scales and relative
-keys | MercuryPitch" (55) beside it if the lead prefers; neither names a chord's quality
-(FACTS 1a). The sing-along's figures and their range are the vocal coach's to confirm before
-publishing (LESSON.md, For the vocal coach), not the owner's.
+None open. On 2 November 2026 the lead bound both teases with their alternatives (FACTS 5, 5b), kept
+Sight-Singing in A harmonic minor as the second drill (FACTS 52, 53), and chose the head title,
+"Harmonic and melodic minor, relative keys | MercuryPitch" (56 characters; Sections, 2), which names
+no chord's quality (FACTS 1a). The sing-along's figures and their range, and Sight-Singing's card,
+are the vocal coach's to confirm before publishing (LESSON.md, For the vocal coach), not the
+owner's.
 
 ## Edge cases
 
@@ -605,18 +645,25 @@ publishing (LESSON.md, For the vocal coach), not the owner's.
   reveal hidden; Play the tune, twice still sounds and lights its stairs, lifts te to ti for its
   second ending's G♯, and draws no chord.
 - **One ending heard, not the other**: the hint stays `chosen`, "Locked in. Play both endings.", and
-  the reveal waits; the same after a free play following the choice.
+  the reveal waits; the same after the tune play following the choice.
 - **Sound off before a choice**: Play the tune, twice runs its lights silently and `silent` replaces
   the lock hint; once it is heard with sound on, still before a choice, the lock hint comes back.
 - **An ending cut short** (another sound, a step link, leaving the hero): not heard, no reveal, the
   hint as it was; the column keeps what it last drew.
-- **The steps' toy before a choice**: Step 1's Raise te and Play the chord on so, then home are
-  disabled with their names kept, and the chord column is not drawn; Play so, te, do and Play so,
-  ti, do work, the second lifting te for as long as it sounds. Steps 2 to 4 hold nothing back: their
-  plays sound scales and pairs, no chord. A return visit starts with a new predict, so Step 1 holds
-  them back again until its choice.
-- **The choice made**: Step 1 draws its column in (0.4 s) and enables Raise te and the chord's play
-  together; the Wrap's free play, its own instance, offers everything from the start.
+- **The steps' toy before a choice**: Step 1's Raise te is disabled with its name kept and the chord
+  column is not drawn, under the steps' lock line; its paragraph on the chord on so, with Play the
+  chord on so, then home, is hidden and the held line shows; Play so, te, do and Play so, ti, do
+  work, the second lifting te for as long as it sounds. Steps 2 to 4 hold nothing back: their plays
+  sound scales and pairs, no chord. A return visit starts with a new predict, so Step 1 holds them
+  back again until its choice.
+- **The free play before a choice**, reached by scrolling: Raise te, Raise le and its chord play
+  are disabled and its column is not drawn, under the same lock line; its scale and figure plays
+  work. A return visit holds it again.
+- **The choice made**: Step 1 and the free play draw their columns in (0.4 s), enable Raise te (and,
+  in free play, Raise le and the chord's play) and drop the lock line. Step 1's paragraph still
+  waits for the reveal, and its held line still asks for both endings.
+- **The reveal**: Step 1's paragraph and its play show in place of the held line, and a screen
+  reader hears it after the reveal's own text.
 - **Raise le with Raise te off**, in free play: Raise le implies the raised seventh, so switching it
   on switches Raise te on too, and switching Raise te off switches Raise le off; melodic minor never
   shows a raised sixth under a natural seventh.
@@ -626,7 +673,8 @@ publishing (LESSON.md, For the vocal coach), not the owner's.
 - **Reduced motion**: stairs, beads, the house and the flats land in place; the reveal still waits
   for the sound.
 - **A first visit that never chooses**: the welcome tour waits for the choice, and the next lesson
-  page opened at the top offers it again (Toys 3); Step 1 keeps its chord back.
+  page opened at the top offers it again (Toys 3); Step 1 and the free play keep the chord back,
+  and Step 1's paragraph stays held.
 - **No voice chosen**: the steps' staff is the bass clef from A2 with its Clef switch; nothing in Sing
   it plays until a voice is chosen, and its staff waits with no notes. A stored voice opens on its
   own staff, in the steps and in Sing it.
@@ -642,6 +690,14 @@ publishing (LESSON.md, For the vocal coach), not the owner's.
   Playback Setup in the sidebar on a wider screen; the phone stage's chip still sets the key and
   scale, and on a wider screen the Settings toggle "Playback Setup" brings the section back. A
   learner who reloads the app loses the key and scale, which last only for the visit (FACTS 52).
+  A learner who loads a song between setting the key and opening Sight-Singing gets that song's key
+  and scale on the grid Sight-Singing writes from (`_alignScaleToMelody`,
+  `src/stores/melody-store.ts:950-961`). The library window sets the key menu with it
+  (`src/components/LibraryModal.tsx:259-267`), but the sidebar's library list does not
+  (`src/components/LibraryTab.tsx:220`), and then Sight-Singing still prints "Key: A harmonic-minor"
+  over notes from another key (`src/features/exercises/sight-singing/SightSingingExercise.tsx:276-278`).
+  The card says to go straight to Exercises, and app-check confirms the route on both layouts before
+  publishing.
 
 ## Tests
 
@@ -655,18 +711,23 @@ kit parts it adds:
    A♭ in A minor and no G♯ in C minor.
 2. **The chord on so**: E, G, B gives gaps 3 and 4, "E minor"; E, G♯, B gives 4 and 3, "E major";
    Raise te slides G to G♯ and back (FACTS 17).
-3. **The predict's lock**: at first paint, with no choice, Step 1's Raise te and chord play are
-   disabled and its column is not in the DOM; the hero has no column; the free play sounds no chord;
-   after a choice all are enabled and drawn; the reveal waits for both endings heard with sound on,
-   in either order; a play cut short reveals nothing and leaves the hint; the hints and the guess
-   lines are LESSON.md's (FACTS 1a, 36, 37).
+3. **The predict's lock**: at first paint, with no choice, Step 1's Raise te is disabled and its
+   column is not in the DOM, under the steps' lock line; Step 1's paragraph on the chord on so and
+   its play are hidden and the held line shows; the Wrap's free play has Raise te, Raise le and its
+   chord play disabled, no column in the DOM and the same lock line; the hero has no column; the
+   tune play sounds no chord. After a choice Step 1's and the free play's controls are enabled and
+   their columns drawn, while Step 1's paragraph stays hidden; after the reveal it shows and the
+   held line goes. A new visit holds all of them again. The reveal waits for both endings heard with
+   sound on, in either order; a play cut short reveals nothing and leaves the hint; the hints and the
+   guess lines are LESSON.md's (FACTS 1a, 36, 37).
 4. **The sing-along**: E3, G3, G♯3, A3 and E4, G4, G♯4, A4 against `VOCAL_RANGES`: every note at
    least 2 semitones inside every preset of its voice, the least room 4; Lesson 10's Move do of four
    lower and either octave fail that check, so no Move do and no octave are offered (FACTS 42, 43).
-5. **Sounds**: every fixed sound's frequency equals `hz(m)` for the notes of FACTS 58; the free play
+5. **Sounds**: every fixed sound's frequency equals `hz(m)` for the notes of FACTS 58; the tune play
    lasts 17.0 s, each ending 4.0 s, Step 1's plays 2.4 s, a scale 3.15 s and up and down 5.95 s,
-   two scales 6.8 s, two pairs 3.6 s, Merc's line 9.4 s, the count-in 1.0 s and quick check 4's play
-   3.15 s (FACTS 58 to 65); chords play at 0.075 a voice alone and 0.05 under "ooh".
+   two scales 6.8 s, two pairs 3.6 s with 0.15 s of quiet inside each and no glide, Merc's line 9.4
+   s, the count-in 1.0 s and quick check 4's play 3.15 s (FACTS 58 to 65); chords play at 0.075 a
+   voice alone and 0.05 under "ooh".
 6. **The staff**: each figure is its own bar, so no figure needs a natural sign; C minor's flats land
    in each clef's signature at FACTS 27's places, in the order B♭, E♭, A♭; the small staff shows the
    signature and no notes.
@@ -699,11 +760,13 @@ Page tests, against a local or dev build, never production:
     repeating gradient and the page has no `.mv-staff` (Look).
 17. **The tour's hold**: on a first visit at the top, the welcome tour does not open before the
     predict's choice and opens after it; "Tour this page" opens it at once (Toys 3).
-18. **Nothing answers the predict before the choice**: at first paint, with no choice made, the hero
-    and the steps draw no chord column and no "major" or "minor" beside E, G and B; the lesson
-    menu's headings, the recall and the four words' text and figures name no chord's quality; no
-    play before the choice sounds two notes together; after the choice the column draws and the
-    chord plays (FACTS 1a).
+18. **Nothing answers the predict before the choice**: at first paint, with no choice made, no
+    visible text above the quick check, the predict's own two choices aside, puts "major" beside
+    "E, G and B", "E, G♯ and B", "the chord on so" or "the chord before home"; no chord column is in
+    the DOM in the hero, in Step 1 or in the Wrap's free play; Step 1's paragraph on the chord on so
+    is hidden; the free play's Raise te, Raise le and chord play are disabled; and no play on the
+    page sounds two notes together. After the choice the columns draw and the chord plays; after the
+    reveal Step 1's paragraph shows (FACTS 1a).
 
 ## Contract
 
@@ -734,13 +797,16 @@ The departures from ARTICLE-PLAN.md, each argued in FACTS and listed in LESSON.m
 predict asking what raising G to G♯ does to the chord before home, the lead's, in place of which
 note was raised, with Tavi's and Merc's lines to match (FACTS 1a, 32, 33); the tune as a melody
 alone before the choice, its chords only in the answering plays (31, 34); one predict, the plan's
-Step 2 predict a Try and Notice (38); the steps' toy and the tour holding back the chord on so until
-the choice (36); three prerequisite chips (2); C minor's flats once in each clef with no E♭ major
-(27); no Move do (43); Go deeper's "For instrumentalists" left out (28); the practice card saying
-what Gravity does and that its Te-against-Ti drill waits (48, 49), with Sight-Singing in A harmonic
-minor as its second drill in place of the Singing tab (52, 53); four quick-check lines (66 to 69);
-Tavi's lines without "So" (10); and Lesson 26's tease, the lead's, with the plan's line mended as
-the alternative (5).
+Step 2 predict a Try and Notice (38); the steps' toy, the Wrap's free play and the tour holding back
+the chord on so until the choice, and Step 1's sentences on it until the reveal (1a, 36); the cold
+open in A3 to A4 for everyone, where the plan had A4 to A5 for the higher voice (8); three
+prerequisite chips (2); C minor's flats once in each clef with no E♭ major (27); Step 4's sentence
+on where Lesson 21's reading rule stops, in place of the plan's F♯ minor note (7, 26); no Move do
+(43); Go deeper's "For instrumentalists" left out (28); the practice card saying what Gravity does
+and that its Te-against-Ti drill waits (48, 49), with Sight-Singing in A harmonic minor as its
+second drill in place of the Singing tab (52, 53); four quick-check lines (66 to 69); Tavi's lines
+without "So" (10); and Lesson 26's tease, the lead's, with the plan's line mended as the alternative
+(5).
 
 Page QA before publishing adds, for this page, every check against a local or dev build, never
 production:

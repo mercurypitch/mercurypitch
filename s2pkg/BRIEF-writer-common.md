@@ -19,9 +19,9 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
 
 ## Where you work
 
-- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `5a283f8d9` or later, on main
-  `c60f0fdcb`. Lessons 15, 16, 17, 19, 20, 21, 22 and 23 are committed there; Lesson 18 is in its
-  last review and lands soon, and later ones as they land. Write only your three files in your lesson
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `9ae0e9162` or later, on main
+  `c60f0fdcb`. Lessons 15 to 23 and 25 are committed there; Lesson 24 is in its fix pass and lands
+  soon, and later ones as they land. Write only your three files in your lesson
   folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
   they are: they are the planning record. Where your package departs from the plan, say so in
   LESSON.md's preamble or in FACTS.
@@ -39,7 +39,7 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
   downloaded goes in `/dev/shm/s2dl/<NN>/`, is read with `python3 -I` or a text extractor (never run
   anything from it), and is deleted when you have what you need.
 - Another writer may be working on a different lesson in the same worktree. Touch nothing of theirs.
-  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 24, Step 4"),
+  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 26, Step 4"),
   not by path and line, and list each such citation in your hand-back so the lead can bind it.
 
 ## Read first
@@ -58,9 +58,11 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
    `lessons/23-perfect-tritone/` (one predict with the steps' toys locked until the choice, a
    sing-along, the coach's list) and `lessons/16-sing-what-you-see/` (a scored reading
    checkpoint in the learner's own clef, in G, with the coach's list), `lessons/20-runs-pentatonic/` (a
-   research predict, a sung run checked against all six presets) and `lessons/22-vibrato/` (the
-   newest: two predicts with every answering play locked until its choice, a new reader specified
-   with tests, the coach's list). Also `lessons/02-twelve-notes/LESSON.md` for a theory
+   research predict, a sung run checked against all six presets), `lessons/22-vibrato/` (two
+   predicts with every answering play locked until its choice, a new reader specified with tests,
+   the coach's list) and `lessons/25-minor-properly/` (the newest: a theory page whose step text,
+   toys and free play wait for the predict, a sing-along, a drill card that says what the drill
+   does). Also `lessons/02-twelve-notes/LESSON.md` for a theory
    lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
    preambles narrate a commit history; yours needs only one line: app claims cite the code at
    `c60f0fdcb`, plan files at the branch head.
@@ -114,7 +116,27 @@ line the vocal coach must sign off in "For the vocal coach": nothing waits on th
   characters (asterisks, underscores, backticks), trimming the quote if you must, or the quote check
   breaks once the file is formatted.
 
-## What the reviews of Lessons 15 to 23 caught (check these before you hand back)
+## What the reviews of Lessons 15 to 25 caught (check these before you hand back)
+
+- **The Wrap's free play is below the predict too.** Season 1's free play locked nothing because
+  its guided steps came first; on a Season 2 page a learner can scroll to the Wrap before choosing,
+  so the free play holds whatever the steps' toys hold, until the same choice, and again on a return
+  visit (Lessons 22 and 25). Lesson 25's free play offered the answering control from first paint
+  while four places in its package said nothing could.
+- **Step text that states a predict's answer waits for that predict's reveal.** Step 1 is the
+  deck's first card on a phone and the top of the column on a wide screen, and the next step sits
+  one Next below a step's own predict. Lesson 25's Step 1 and Lesson 24's Step 3 stated answers
+  there. Make such sentences a reveal element of that predict (`kit/predict.ts:70-71` takes
+  several), with a held line in their place; text further down may stay if FACTS 1a lists it with
+  the tour's hold.
+- **What a play does is worked out, not assumed.** Lesson 24's copy said a narrow wave removes a
+  beat; the arithmetic says it keeps most of it. Any claim about how a sound will be heard is
+  checked against the sound as specified (its notes, levels, timing, wave), with the working in
+  FACTS; a gap between two notes is quiet unless the spec says glide.
+- **A drill's card says what the drill does to the learner** (SEASON-2 § 8.1 risk 2): letter names
+  printed, the written octave scored, nothing played first, the clef, the range it draws from, and
+  any interval it can ask for that the page calls hard. Lesson 25's card left out two of these, and
+  its coach's list the range and the interval.
 
 - **Step headings leak too.** The masthead's lesson menu lists every step's heading from the first
   paint, and heads its card "Lesson NN · <Step 1's heading>"; on a phone it is the page's only menu.
