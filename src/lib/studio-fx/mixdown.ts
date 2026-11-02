@@ -12,7 +12,12 @@
 //
 // One OfflineAudioContext renders all tracks together after the usual
 // pre-roll (see render.ts), so a mixdown is one pass, not one per track.
+// Each track starts on its frame of the render, as a Studio Play starts a
+// clip (whole-frame.ts). Plain division lands a hair before the frame for
+// 7 % of frames, which Chromium 148 renders one sample off the buffer (by
+// -235 dBFS); on the frame, the clip is the buffer, sample for sample.
 
+import { frameTime } from '@/lib/studio/playback/whole-frame'
 import { createStudioFxChain } from './chain'
 import type { ChainSpec } from './chain-spec'
 import { normalizeChainSpec } from './chain-spec'
@@ -105,7 +110,7 @@ export async function renderMixdown(
       preRoll +
       offsets[index] +
       Math.round((track.startSeconds ?? 0) * sampleRate)
-    player.start(startFrame / sampleRate)
+    player.start(frameTime(startFrame, sampleRate))
     cleanup.push(() => {
       player.disconnect()
       fader.disconnect()

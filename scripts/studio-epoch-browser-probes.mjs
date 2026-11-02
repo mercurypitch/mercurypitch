@@ -10,6 +10,7 @@
 // later, so every effect sees the same samples on the same quanta.
 import { EMPTY_CHAIN } from '/src/lib/studio-fx/chain-spec.ts'
 import { measureTrackLatencies } from '/src/lib/studio-fx/mixdown.ts'
+import { encodeCanonicalPcm, sha256Bytes, } from '/src/lib/studio/audio/canonical-pcm.ts'
 import { resolveStudioSoundGraph } from '/src/lib/studio/export/sound-graph.ts'
 import { createStudioLaneMeter } from '/src/lib/studio/metering/live-meter.ts'
 import { compileStudioArrangement } from '/src/lib/studio/model/arrangement-plan.ts'
@@ -17,6 +18,7 @@ import { createStudioProject, createStudioTrack, } from '/src/lib/studio/model/d
 import { buildStudioGraph } from '/src/lib/studio/playback/graph.ts'
 import { StudioFrozenBuffers } from '/src/lib/studio/playback/lane-freeze.ts'
 import { renderLaneFreeze } from '/src/lib/studio/playback/lane-freeze-render.ts'
+import { renderStudioArrangement } from '/src/lib/studio/playback/offline-render.ts'
 import { setPlaybackChoice } from '/src/lib/studio/playback/playback-quality.ts'
 import { planLatencySeconds, prepareStudioPlan, } from '/src/lib/studio/playback/prepare-plan.ts'
 import { buildStudioRun, openRunEnvelope, } from '/src/lib/studio/playback/run.ts'
@@ -384,11 +386,128 @@ async function frozenAgainstLive() {
   }
 }
 
+/** The song's assets as an export reads them: canonical PCM under its own digest. */
+async function exportable(made) {
+  const blobs = new Map()
+  const assets = []
+  for (const asset of made.assets) {
+    const data = made.sources.get(asset.id)
+    const blob = await encodeCanonicalPcm({
+      sampleRate: SR,
+      numberOfChannels: 1,
+      length: data.length,
+      getChannelData: () => data,
+    })
+    blobs.set(asset.id, blob)
+    const digest = await sha256Bytes(await blob.arrayBuffer())
+    assets.push({ ...asset, canonicalPcmSha256: digest })
+  }
+  return { assets, read: async (id) => blobs.get(id) }
+}
+
+/** The arrangement an export renders, before the master: its first frame is the song's frame 0. */
+async function renderExport(made) {
+  const { assets, read } = await exportable(made)
+  const rendered = await renderStudioArrangement(made.project, assets, read)
+  const out = {
+    left: rendered.buffer.getChannelData(0),
+    right: rendered.buffer.getChannelData(1),
+    heardFrame: 0,
+    frames: rendered.buffer.length,
+  }
+  rendered.release()
+  return out
+}
+
+/** The loudest `render` gets on the song's frames from `from` to `to`, in dBFS. */
+function peakDbfs(render, from, to) {
+  const offset = Math.round(render.heardFrame)
+  let peak = 0
+  for (const channel of ['left', 'right'])
+    for (let f = from; f < to; f++)
+      peak = Math.max(peak, Math.abs(render[channel][offset + f]))
+  return round(db(peak), 1)
+}
+
+/** Where an export's graph starts: half a second in (offline-render.ts). */
+const EXPORT_EPOCH_FRAMES = 24000
+
+/**
+ * A Play pressed half a frame off a frame whose song lands at the same
+ * place in a render quantum as an export's, `later` frames further after
+ * its build. Chromium's compressors work in 32-frame steps of each quantum,
+ * so two renders that place a song differently in a quantum differ a
+ * little wherever one works, whatever frames their sources start on.
+ */
+async function playLikeExport(made, bus, later = 0) {
+  const first = await renderPlay(made, bus, 2, CALLBACK - 0.5)
+  const epoch = Math.round(first.heardFrame - bus.latency * SR)
+  const shift = (((EXPORT_EPOCH_FRAMES - epoch) % 128) + 128) % 128
+  if (shift === 0 && later === 0) return first
+  return renderPlay(made, bus, 2, CALLBACK - 0.5 + shift + later)
+}
+
+/**
+ * One dry lane exported against the same lane Played from a press asked for
+ * half a frame off a frame: an export places every source on the frames a
+ * Play does, so the two are the same audio to the last bit of a float, and
+ * the Play has nothing left past the export's last frame.
+ */
+async function exportDryLane() {
+  const made = song(['other'], true)
+  const play = await renderPlay(
+    made,
+    await prepare(made, true),
+    2,
+    CALLBACK - 0.5,
+  )
+  const exported = await renderExport(made)
+  const frames = Math.min(SONG_FRAMES, exported.frames)
+  const result = compare(play, exported, frames)
+  const pastEndDbfs = peakDbfs(play, frames, SONG_FRAMES)
+  return {
+    ...result,
+    pastEndDbfs,
+    pass: result.worstDbfs < -140 && pastEndDbfs < -140 && bandsHeld(result),
+  }
+}
+
+/**
+ * Four lanes through their role chains at Best, exported against a Play
+ * with no master, pressed half a frame off a frame: they line up at lag 0,
+ * at the floor of the same Play against one whose song starts 148 quanta
+ * further after its build, as an export's starts further after its own.
+ */
+async function exportFourLanes() {
+  setPlaybackChoice('best')
+  const made = song(['voice', 'acoustic-guitar', 'bass', 'drums'], false)
+  const { plan } = await prepare(made, false)
+  const bus = { plan, master: EMPTY_CHAIN, latency: planLatencySeconds(plan) }
+  const play = await playLikeExport(made, bus)
+  const floor = compare(
+    play,
+    await playLikeExport(made, bus, 148 * 128),
+    SONG_FRAMES,
+  )
+  const exported = await renderExport(made)
+  const result = compare(play, exported, SONG_FRAMES)
+  const { lag } = alignment(play, exported, SONG_FRAMES)
+  return {
+    ...result,
+    lag,
+    floorDbfs: floor.worstDbfs,
+    pass:
+      lag === 0 && result.worstDbfs <= floor.worstDbfs + 6 && bandsHeld(result),
+  }
+}
+
 export async function runStudioEpochProbes() {
   return {
     dryLane: await dryLane(),
     dryLaneDevices: await dryLaneDevices(),
     fourLaneMix: await fourLaneMix(),
     frozenAgainstLive: await frozenAgainstLive(),
+    exportDryLane: await exportDryLane(),
+    exportFourLanes: await exportFourLanes(),
   }
 }

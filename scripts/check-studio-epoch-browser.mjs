@@ -1,4 +1,4 @@
-// Studio epoch browser check: Plays asked for between two frames still start every source on a frame, in real Chromium.
+// Studio epoch browser check: Plays asked for between two frames still start every source on a frame, and an export starts them on the frames a Play does, in real Chromium.
 // Usage: pnpm dev (or any local Vite server), then
 //   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json]
 // Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Renders offline only: nothing plays aloud.
