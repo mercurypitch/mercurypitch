@@ -124,30 +124,58 @@ describe('a public share', () => {
           (await rows(path, reader)).map((row) => [row.userId, row.author]),
         ).toEqual([[ada.userId, 'Ada Singer']])
       }
-      const byId = await (reader === null
-        ? request(`/api/sharedMelodies/${melodyId}`)
-        : as(reader, `/api/sharedMelodies/${melodyId}`))
-      expect(((await byId.json()) as Row).userId).toBe(ada.userId)
+      for (const path of [
+        `/api/sharedMelodies/${melodyId}`,
+        `/api/sharedSessions/${resultId}`,
+      ]) {
+        const byId = await (reader === null ? request(path) : as(reader, path))
+        expect(byId.status).toBe(200)
+        const row = (await byId.json()) as Row
+        expect([row.userId, row.author], path).toEqual([
+          ada.userId,
+          'Ada Singer',
+        ])
+      }
     }
   })
 
   it('carries nothing of its poster beyond the id and the name', async () => {
-    const [melody] = await rows(MELODIES, null)
-    expect(Object.keys(melody ?? {}).sort()).toEqual(
-      [
-        'author',
-        'createdAt',
-        'id',
-        'isPublic',
-        'itemsJson',
-        'melodyId',
-        'melodyName',
-        'tags',
-        'updatedAt',
-        'userId',
-      ].sort(),
-    )
-    expect(JSON.stringify(melody)).not.toContain('@example.com')
+    const melody = [
+      'author',
+      'createdAt',
+      'id',
+      'isPublic',
+      'itemsJson',
+      'melodyId',
+      'melodyName',
+      'tags',
+      'updatedAt',
+      'userId',
+    ]
+    const result = [
+      'accuracy',
+      'author',
+      'createdAt',
+      'id',
+      'isPublic',
+      'resultsJson',
+      'score',
+      'sessionId',
+      'sessionName',
+      'updatedAt',
+      'userId',
+    ]
+    for (const [path, keys] of [
+      [MELODIES, melody],
+      [`/api/sharedMelodies/${melodyId}`, melody],
+      [RESULTS, result],
+      [`/api/sharedSessions/${resultId}`, result],
+    ] as const) {
+      const body = (await (await request(path)).json()) as Row | Row[]
+      const share = Array.isArray(body) ? body[0] : body
+      expect(Object.keys(share ?? {}).sort(), path).toEqual([...keys].sort())
+      expect(JSON.stringify(share), path).not.toContain('@example.com')
+    }
   })
 
   it('is reported by its id, and its poster blocked by the id it carries', async () => {

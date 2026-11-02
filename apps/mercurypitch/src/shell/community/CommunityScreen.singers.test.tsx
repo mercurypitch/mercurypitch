@@ -176,17 +176,31 @@ describe('Community’s shares and their singers', () => {
     await settle()
 
     expect(moreLabels('community-melodies')).toEqual([
-      'More about Ada',
-      'More about Ben',
-      'More about Cleo',
+      "More about Ada's tune, by Ada",
+      "More about Ben's tune, by Ben",
+      "More about Cleo's tune, by Cleo",
     ])
     expect(moreLabels('community-results')).toEqual([
-      'More about Ben',
-      'More about Cleo',
+      "More about Ben's run, by Ben",
+      "More about Cleo's run, by Cleo",
     ])
     expect(
       document.querySelector('[data-community-melody="m2"]')?.textContent,
     ).toContain('You')
+  })
+
+  it('names each share’s "..." for the share, so two of one singer’s are told apart', async () => {
+    melodies.mockResolvedValue([
+      { ...melody('m1', 'ada', 'Ada'), name: 'Moon River' },
+      { ...melody('m5', 'ada', 'Ada'), name: 'Blue Moon' },
+    ])
+    show()
+    await settle()
+
+    expect(moreLabels('community-melodies')).toEqual([
+      'More about Moon River, by Ada',
+      'More about Blue Moon, by Ada',
+    ])
   })
 
   it('names the melody in a report made from its "..."', async () => {

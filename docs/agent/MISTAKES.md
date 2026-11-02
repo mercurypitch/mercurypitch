@@ -1021,6 +1021,13 @@ import handler, issue #813.
 **Rule:** declare a sheet's theme-dependent values as custom properties on an ancestor of its anchor (the shell, the stage), dark and light, and have the panel read them; they then change with the inks, at the next open. `apps/mercurypitch/src/more-sheet-css.test.ts` holds the More sheet to it.
 **See:** `src/components/portal-skin.ts`, the More sheet's tokens in `apps/mercurypitch/src/shell/shell.css`
 
+### Put a list back where it was before Back gives one of its rows the focus
+
+**Symptom:** on the phone, Back from a shared result put the focus on the row that opened it, and the row was under the dock, off screen; every unit test passed, since each asked only where the focus was.
+**Cause:** the shell draws only the top pushed screen (`ShellScreens.tsx`), so the list under a result is drawn anew on Back, its scroller at the top, and `focus({ preventScroll: true })` leaves the row where it fell. A plain `focus()` scrolls it into the scroller's box, which runs under the dock.
+**Rule:** keep where the list was (in memory, per account) when it pushes a screen, put it back on Back, then bring the row clear of the dock; and check in a browser that the row is in view, not only focused. A screen that is only revisited asks the worker nothing.
+**See:** `apps/mercurypitch/src/shell/community/list-place.ts`, `returnToRow` in `CommunityScreen.tsx`.
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

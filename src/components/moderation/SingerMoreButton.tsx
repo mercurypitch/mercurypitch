@@ -8,7 +8,9 @@
 // Leaderboard's singer card) does not open that as well. It hands the sheet
 // its board and its place there, so the focus can come back to that place
 // when the sheet closes, whatever the sheet did to the row (sheet-focus.ts).
-// The phone's screens hand it their own drawing of the dots.
+// The phone's screens hand it their own drawing of the dots. A row that is
+// one of a singer's several shares names the share too (`label`), so two
+// of Ada's melodies are not two buttons with one name.
 
 import type { JSX } from 'solid-js'
 import { MoreHorizontal } from '@/components/icons'
@@ -21,6 +23,8 @@ export interface SingerMoreButtonProps {
   subject: SingerSheetSubject
   /** The dots as the host draws them; the web's own otherwise. */
   icon?: JSX.Element
+  /** Its name, where "More about Ada" would not tell it from its kin. */
+  label?: string
   class?: string
 }
 
@@ -33,7 +37,7 @@ export function SingerMoreButton(props: SingerMoreButtonProps): JSX.Element {
           ? styles.more
           : `${styles.more} ${props.class}`
       }
-      aria-label={`More about ${props.subject.displayName}`}
+      aria-label={props.label ?? `More about ${props.subject.displayName}`}
       aria-haspopup="dialog"
       data-singer-more={props.subject.userId}
       onClick={(event) => {

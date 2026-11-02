@@ -736,7 +736,10 @@ with what moved from the paragraph above:
   `community-store.ts` keeps the two numbers under `mp:community-card`,
   with the account they were counted for, and never a name or a title. Only
   the screen fills it: no read on the return to the front, and none from
-  the sheet.
+  the sheet. When the account signs out or the phone changes hands, they
+  go from the phone with everything else kept for it
+  (`installCommunityWatch`, as the league the Leagues row names goes); a
+  token refreshed for the same account is no change, and reads nothing.
 - **The screen.** The singer's profile, then Melodies, then Results, then
   the contact line. The lists are the web's public reads, one page, newest
   first, everyone's, the singer's own marked You. `readSharedMelodies` and
@@ -744,9 +747,9 @@ with what moved from the paragraph above:
   answer, where the web's `load*` answer an empty list
   ([MISTAKES.md](../agent/MISTAKES.md), "Ask a cloud read to throw before
   calling what it returned empty"); the `load*` are wrappers over them now.
-  A row's line says who shared it, how many notes or runs, and the day,
-  and wraps between those, never inside one, so a singer's name is never
-  cut short.
+  Nothing on a row is cut short: its title wraps, since a melody has no
+  screen of its own to read the rest on, and its line (who shared it, how
+  many notes or runs, and the day) wraps between those, never inside one.
 - **A melody has no Open.** The web opens one in Compose, its piano-roll
   editor, which the phone does not carry. The Sing room is the phone's room
   for a melody, but it sings only the singer's own melodies, picked from its
@@ -761,8 +764,15 @@ with what moved from the paragraph above:
   does not add a run to your practice history." It is the result the list
   read: nothing is asked of the worker for it. No link opens the app, so it
   is opened from the list alone, and `shared-run-link.ts` stays the web's.
-  Back, the bar's or the phone's, leaves it for the list, the focus on the
-  row that opened it; the next Back leaves Community.
+  Back, the bar's or the phone's, leaves it for the list, which is drawn
+  anew: the list is put back where it was scrolled to (kept per account),
+  the focus goes to the row that opened the result, whole between the bar
+  and the dock (`list-place.ts`), and nothing is asked of the worker. The
+  next Back leaves Community. Drawn again later (a screen pushed over it,
+  then Back), the result says what is true of it now
+  (`openedResultState`): still there; its singer blocked, in the sheet's
+  own words; gone from the latest read; or opened for an account no longer
+  signed in.
 - **Your profile.** ProfileView's figures, from the same `run-kinds.ts`:
   the runs (every run the account holds, `loadProgressSessionRecords`, as
   Progress counts them, not ProfileView's last 50), the best, the recent
@@ -777,15 +787,19 @@ with what moved from the paragraph above:
 - **The states.** "Loading what singers shared"; "Nothing shared yet. When
   singers share a melody or a result, it shows here."; "Could not load
   Community. Check the connection and try again." with Try again, which
-  keeps its focus while its read is out; and offline, where the phone asks
+  keeps its focus while its read is out and hands it on once the read
+  lands, unless the singer has put it somewhere else meanwhile; and
+  offline, where the phone asks
   nothing: "You are offline. Community shows what singers shared once this
   phone is online again.", read again when it is. A signed-in singer whose
   runs could not be read is a failed read too: a profile of no runs would
   be a profile that is wrong. What was loaded before stays on screen.
 - **Report and Block.** Every share by another singer ends in a 44 px
   "...": the singer sheet, with the share named in its report,
-  `report: { kind: 'melody' | 'session', id }`. None on the singer's own,
-  none on a share with no `userId`. The worker already sent the poster's
+  `report: { kind: 'melody' | 'session', id }`, and in the button's name,
+  "More about Moon River, by Ada", so two of Ada's shares are two buttons
+  (`SingerMoreButton`'s `label`; the boards keep "More about Ada"). None on
+  the singer's own, none on a share with no `userId`. The worker already sent the poster's
   `userId` on every public share read, so no field was added; REQ-RB-042
   pins it, with a test on the real migrations
   (`community-share-singers-integration.test.ts`). A block takes the
@@ -793,32 +807,39 @@ with what moved from the paragraph above:
   reads them again, a fresh read rather than one already out. Each list is
   a board of its own (`community-melodies`, `community-results`, its title
   the heading), so the focus goes to the "..." now at the blocked share's
-  place on that list; with both lists empty, the empty line takes it. A read that brings
-  a row back unchanged keeps the object the screen drew, so Solid redraws
-  only the rows that changed and the focus stays on the rest. Blocked from
-  a result, the result is hidden ("You blocked this singer, so their result
-  is hidden.") and the focus goes to its heading.
+  place on that list; with both lists empty, the empty line takes it. A
+  read that brings a row back unchanged keeps the object the screen drew,
+  so Solid redraws only the rows that changed and the focus stays on the
+  rest. Blocked from a result, the result is hidden ("Result hidden", and
+  the sheet's "You will not see each other's names or posts...") and the
+  focus goes to its heading.
 - **The contact line** is the foot of both screens: "Something here that
   should not be?" and Contact us, the contact form on its support topic.
 - **Focus.** A pushed screen that asks hands the focus to its title as it
   opens (`PushedScreen`'s `focusTitle`); Community's two ask. The other
   screens keep the focus rules they were built with.
 - **The fold.** STAGE 2 markers: `shell-community`, `shell-shared-result`,
-  the profile's signed-out line, `mp:community-card` and the row's first
-  line. `community-store.ts` is in the native config's side-effect-free
-  list, the More sheet and the shell import it only inside a branch the
-  switch folds, and `community-fold.test.ts` holds the sources to all of
-  it, the never-a-`<Show>` rule included.
+  the profile's signed-out line, `mp:community-card`, the row's first line
+  and the chip's path data. `community-store.ts` is in the native config's
+  side-effect-free list; the More sheet reads it only inside a branch the
+  switch folds, and the shell reaches it through `community-entry.ts`,
+  whose every call into it is behind the switch. `community-fold.test.ts`
+  holds the sources to all of it, the never-a-`<Show>` rule included. What
+  a store build does carry, as it carries Leagues' and the Legend's: the
+  two screens' ids and their titles in `ShellScreens.tsx`'s table
+  ("Community", "Shared result"), which no build can push.
 
 Walked on the native dev build in Chromium at 320 x 640 and 390 x 844,
 light and dark, every request to the worker answered by the walk: no
 sideways scroll and every target 44 px on the list, a result, the
 signed-out card, a failed read and offline; the sheet from a share's "...";
 after a block, the singer's shares gone from both lists and the focus on
-the next "..."; the focus on each screen's title as it opens, and Back from
-a result on its row. assert-bundle passed on a test build (every STAGE 2
-piece, Community's among them) and on a production-target build, which
-carries none of the screens' words, the row or its icon.
+the next "..."; the focus on each screen's title as it opens; and Back from
+a result on its row, the row in view clear of the dock and no request made.
+assert-bundle passed on a test build (every STAGE 2 piece, Community's among
+them) and on a production-target build, which carries neither screen, the
+row, its line, its chip nor the store: of Community, only the two titles
+and ids above.
 
 Left: posting and sharing from the phone, which wait on the Terms (open,
 below); a melody's Open, until the Sing room can be handed a melody;

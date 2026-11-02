@@ -201,6 +201,49 @@ describe('the Community screen', () => {
     expect(document.activeElement?.textContent).toBe('Maya')
   })
 
+  it('leaves the focus where the singer moved it while Try again’s read was out', async () => {
+    // The lists load and the runs do not: a failed read over the lists.
+    history.mockResolvedValueOnce({
+      records: [],
+      available: false,
+      complete: false,
+      totalAvailable: null,
+    })
+    show()
+    await settle()
+    let letGo: () => void = () => {}
+    melodies.mockReturnValueOnce(
+      new Promise((resolve) => {
+        letGo = () => resolve([MELODY])
+      }),
+    )
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="community-retry"]')
+      ?.click()
+    await settle()
+    const more = document.querySelector<HTMLElement>('[data-singer-more="ada"]')
+    more?.focus()
+
+    letGo()
+    await settle()
+
+    expect(document.querySelector('[data-testid="community-problem"]')).toBe(
+      null,
+    )
+    expect(document.activeElement).toBe(more)
+  })
+
+  it('reads nothing again for a token refreshed for the same account', async () => {
+    show()
+    await settle()
+    expect(melodies).toHaveBeenCalledTimes(1)
+
+    held.as('acc-1')
+    await settle()
+
+    expect(melodies).toHaveBeenCalledTimes(1)
+  })
+
   it('asks nothing offline, says so, and reads once the phone is back online', async () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     show()

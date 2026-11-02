@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type { SharedMelodyView, SharedSessionView, } from '@/db/services/share-service'
 import type { ProgressRun } from '@/features/progress/run-kinds'
 import type { MelodyItem } from '@/types'
-import { melodyFacts, memberSince, noteCount, profileFigures, publishedLine, resultAverage, resultFacts, sharedOn, } from './community-lines'
+import { melodyFacts, memberSince, noteCount, profileFigures, publishedLine, resultAccountWords, resultAverage, resultFacts, sharedOn, shareMoreLabel, } from './community-lines'
 
 const NOW = Date.parse('2026-11-02T12:00:00Z')
 
@@ -76,6 +76,17 @@ describe('a share’s row', () => {
     expect(sharedOn(Date.parse('2025-03-04T10:00:00Z'), NOW)).toMatch(/2025/u)
     expect(sharedOn(Date.parse('2026-03-04T10:00:00Z'), NOW)).not.toMatch(
       /2026/u,
+    )
+  })
+
+  it('names a share’s "..." for the share and its singer', () => {
+    expect(shareMoreLabel(melody())).toBe('More about Moon River, by Ada')
+    expect(shareMoreLabel(result())).toBe('More about Morning scales, by Ben')
+  })
+
+  it('says the account changed, on the device in hand', () => {
+    expect(resultAccountWords()).toBe(
+      'The account on this phone changed since you opened this result. Go back to Community to see what is shared now.',
     )
   })
 
