@@ -76,7 +76,7 @@ for n in 16 18 20 22 24 25 26 27 28; do
     [ -f "$S/$f" ] && FILES+=("$f")
   done
 done
-for f in s2pkg/shared-rest/apply_shared.py s2pkg/shared-rest/findings-before.txt s2pkg/shared-rest/COMMIT-MSG.txt; do
+for f in s2pkg/shared-rest/NOTES.md s2pkg/shared-rest/apply_shared.py s2pkg/shared-rest/findings-before.txt s2pkg/shared-rest/COMMIT-MSG.txt; do
   [ -f "$S/$f" ] && FILES+=("$f")
 done
 
