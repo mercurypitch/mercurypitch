@@ -180,6 +180,7 @@ sound on this page is synthesised in your browser."
 ## Practise links (verified at `b803c7d43`)
 
 **Today:**
+
 - Sight-Singing, `mercurypitch.com/pitch-training?lesson=18`, then tap Sight-Singing: pitch only; it
   advances when you hold each note, not on the beat (R18-11), with Lesson 16's limits said (R16-10 to
   R16-15). The card: "It waits for each note: practise the patterns here, and the beat with The Chart."

@@ -31,6 +31,7 @@ and marked so.
 ### Building seventh chords
 
 **R1. A seventh chord stacks one more third on a triad: root, third, fifth and seventh.**
+
 - Source: OMT § 1.17 "Seventh Chords": "Like triads, the notes of a seventh chord can always be
   arranged in thirds, on adjacent lines or spaces of the staff"; "the lowest note of a seventh chord
   stacked in closed spacing is called the root, and the other notes are named for their generic
@@ -39,6 +40,7 @@ and marked so.
 
 **R2. A seventh chord's quality is its triad's quality plus its seventh's. A major triad with a major
 seventh is a major seventh chord; a major triad with a minor seventh is a dominant seventh chord.**
+
 - Source: OMT § 1.17, § Seventh Chord Qualities and Nomenclature: "These qualities are determined by
   two factors: The quality of the triad ... The quality of the seventh from the root to the
   seventh"; "major-major seventh chord = major triad + major seventh"; "major-minor seventh chord =
@@ -64,6 +66,7 @@ full. Strength: Strong.
 
 **R5. In V7 to I, ti tends to rise to do and the seventh, fa, to fall by step to mi; a complete V7
 resolving this way gives a I with no fifth.**
+
 - Sources: Wharton & Shaffer (eds.), Open Music Theory 1st ed., § 2.12 (LibreTexts, last modified
   16 July 2023), read in full for Lesson 23 (its RESEARCH R9): "when ti appears it tends to be
   followed by do in the same voice ... this tendency is strongest when ti occurs in a
@@ -82,6 +85,7 @@ resolving this way gives a I with no fifth.**
 **R6. A triad with its root in the bass is in root position; with its third in the bass, first
 inversion; with its fifth, second inversion. A seventh chord adds third inversion, the seventh in
 the bass. The bass is not the root.**
+
 - Source: OMT § 1.18 "Inversion and Figured Bass", § Triadic Inversion and Figures: "when the third
   appears in the bass, we say the triad is in first inversion, and when the fifth appears in the
   bass we say the triad is in second inversion"; "It is important to note that the bass voice of the

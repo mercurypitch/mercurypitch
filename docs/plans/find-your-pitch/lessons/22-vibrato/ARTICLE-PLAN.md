@@ -188,6 +188,7 @@ Three answers each, shuffled.
      a straight tone. Try Step 4 again."
    - A vibrato puts a note out of tune · "Listeners hear an even vibrato at its centre: it's in tune
      if its centre is."
+
 - Words: 260.
 
 ## Wrap

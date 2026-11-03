@@ -15,11 +15,11 @@ bars 4 and 8. Upper part in the treble clef (Tavi's, orange in diagrams; higher 
 in the bass clef (Merc's, blue; lower voices). Every vertical interval is a tenth, a twelfth or an
 octave (R13).
 
-| Bar | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Upper | B4 A4 | G4 B4 | C5 B4 | A4 (whole) | B4 C5 | D5 B4 | A4 F♯4 | G4 (whole) |
-| Lower | G3 F♯3 | E3 G3 | A3 G3 | D3 (whole) | G3 A3 | B3 G3 | D3 D3 | G3 (whole) |
-| Ending | | | | imperfect: on V, re on top | | | V | perfect: I, do on top |
+| Bar    | 1      | 2     | 3     | 4                          | 5     | 6     | 7      | 8                     |
+| ------ | ------ | ----- | ----- | -------------------------- | ----- | ----- | ------ | --------------------- |
+| Upper  | B4 A4  | G4 B4 | C5 B4 | A4 (whole)                 | B4 C5 | D5 B4 | A4 F♯4 | G4 (whole)            |
+| Lower  | G3 F♯3 | E3 G3 | A3 G3 | D3 (whole)                 | G3 A3 | B3 G3 | D3 D3  | G3 (whole)            |
+| Ending |        |       |       | imperfect: on V, re on top |       |       | V      | perfect: I, do on top |
 
 - Interrupted version (the cold open's): bar 8's lower part is E3 (vi, E G B, under the same G4),
   then two more bars, | A4 F♯4 | G4 (whole) | over | D3 D3 | G3 (whole) |, a perfect cadence.
@@ -185,6 +185,7 @@ For everyone (prerequisites Lessons 18 and 26); Lesson 14's shows once Lesson 14
    - Perfect · "Listen to the low part's last note: it stepped up, not down to the root. Try Step 2
      again."
    - Imperfect · "An imperfect cadence stops on V. This one moved on to vi."
+
 - Words: 230.
 
 ## Wrap

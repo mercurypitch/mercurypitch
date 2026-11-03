@@ -158,6 +158,7 @@ For everyone. One from Lesson 10, one from Lesson 21 (Arc C's plan writes Lesson
    - Melodic minor **[correct]** · "Le and te were both raised on the way up."
    - Natural minor · "Listen to the top: the last two steps are tone, semitone. Try Step 3 again."
    - Major · "Close: going up, melodic minor differs from major by one note, the third."
+
 - Words: 230.
 
 ## Wrap
@@ -174,11 +175,12 @@ For everyone. One from Lesson 10, one from Lesson 21 (Arc C's plan writes Lesson
 - **Linked: Ear Lab's Gravity**, `/ear-lab?lesson=25`, then tap Gravity: all twelve degrees, Te
   and Ti both (`item-bank.ts:58-74`). Card: "Listen for Te and Ti: one is a tone under do, the other
   a semitone." It writes "Sol" (as Lesson 4 noted).
-- **Linked: the Singing tab**, with Harmonic Minor or Melodic Minor picked (`PlaybackSetupPanel.tsx:
-  145-148`); its melodic minor is the ascending form only (`scale-data.ts:95-99`), so the card says
-  "going up". The sheet view shows the relative major's signature (`sheet-music-renderer.ts:
-  157-169`). Sight-Singing reads the scale (`SightSingingExercise.tsx:188-195`) with sharps only:
-  link A harmonic minor (G♯ right), never C minor.
+- **Linked: the Singing tab**, with Harmonic Minor or Melodic Minor picked
+  (`PlaybackSetupPanel.tsx:145-148`); its melodic minor is the ascending form only
+  (`scale-data.ts:95-99`), so the card says "going up". The sheet view shows the relative major's
+  signature (`sheet-music-renderer.ts:157-169`). Sight-Singing reads the scale
+  (`SightSingingExercise.tsx:188-195`) with sharps only: link A harmonic minor (G♯ right), never C
+  minor.
 - **Waits:** harmonic and melodic minor in Scale Runner (SEASON-2 § 5 item 13; its Minor is natural,
   `ScaleRunnerExercise.tsx:26-33`); the Te against Ti subset of Gravity (§ 5 item 12, needs the
   `ear-drill` launch); a Singing tab address (§ 5 item 20); `?lesson=25` (§ 5 item 21).

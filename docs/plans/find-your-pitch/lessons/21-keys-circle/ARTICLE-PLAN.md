@@ -117,8 +117,8 @@ Facts: R21-5, R21-6, Lesson 2 FACTS 22. Words: about 80.
 - Try: Find do: a signature appears; tap where the house goes, then hear it. Six rounds, each signature
   once (a short guided task, playbook rule 17).
 - Toy: staff with a key signature and a draggable house.
-- Facts: R21-5, R21-9 (this season reads up to three, as ABRSM's Grade 2 does for majors). Words: about
-  110.
+- Facts: R21-5, R21-9 (this season reads up to three, as ABRSM's Grade 2 does for majors). Words:
+  about 110.
 
 ## Step 5 of 5: Why does the circle close after twelve? (Go deeper if long)
 
@@ -202,6 +202,7 @@ planner owns Lesson 22's predict; check the tease against it.
 ## Practise links (verified at `b803c7d43`)
 
 **Today:**
+
 - The Singing tab's key and scale pickers, with its sheet view (the toolbar's sheet button,
   `src/App.tsx:4051-4055`): the staff writes the key signature (R21-15). The key picker offers C, G, D,
   A, E, B, F and B♭ only (R21-14), and the staff spells a flat key all in flats and a sharp key all in

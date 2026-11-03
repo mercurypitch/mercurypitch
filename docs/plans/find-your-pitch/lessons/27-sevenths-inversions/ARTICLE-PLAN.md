@@ -151,6 +151,7 @@ nothing plays until you press a play button." 30 words.
    - Dominant seventh **[correct]** · "A major triad with a minor seventh: it wants to move."
    - Major seventh · "A major seventh is a semitone wider at the top. Try Step 1 again."
    - A plain major triad · "Count the notes: four."
+
 - Words: 220.
 
 ## Wrap

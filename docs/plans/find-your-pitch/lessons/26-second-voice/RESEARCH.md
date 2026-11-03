@@ -24,6 +24,7 @@ the article plan makes. App claims were read at `b803c7d43`; web sources on 30 O
 
 **R1. In a major key, each third between scale notes is major or minor by where it falls: C–E, F–A
 and G–B are major; the others are minor.**
+
 - Source: Gotham, M. et al. Open Music Theory, 2nd ed., § 1.15 "Intervals", § Another Method for
   Intervals: The White-Key Method (LibreTexts edition):
   "All of the thirds are minor except for three: C–E, F–A, and G–B, which are major."
@@ -51,6 +52,7 @@ thirds 3, 3, 4, 3, 3. Arithmetic on R1. Strength: Strong.
 
 **R5. A passing note moves by step between two notes, in one direction, and usually does not belong
 to the chord under it.**
+
 - Source: OMT 2e § 4.04 "Embellishing Tones" (LibreTexts edition): "an embellishing tone is the
   middle note of a three-note gesture in which the first and last notes are consonant with the
   bass"; "In almost all cases, however, the embellishing tone is a note that doesn't belong to the

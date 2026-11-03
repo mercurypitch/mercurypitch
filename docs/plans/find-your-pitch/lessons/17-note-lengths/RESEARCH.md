@@ -27,7 +27,7 @@ fetched 30 October 2026. Strength grades as research/pedagogy-research.md.
 
 - **OMT 2e**: Gotham et al., _Open Music Theory_, 2nd ed., LibreTexts edition (pages dated 29 Aug
   2025), 1.8 "Notating Rhythm" and 1.9 "Simple Meter and Time Signatures",
-  human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/.
+  https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/.
   Full text read.
 - **ABRSM 2023**: ABRSM, _Music Theory Grades: Qualification Specification_, Version 1.2 (April 2023),
   § 3 pp. 12 and 16 (as Lesson 15's Sources). Full text read.

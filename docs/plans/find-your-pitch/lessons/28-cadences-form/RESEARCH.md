@@ -37,6 +37,7 @@ carry.
 
 **R1. Four cadences, named in British and American usage: perfect (authentic) V–I; imperfect (half)
 ending on V; plagal IV–I; interrupted (deceptive) V–vi.**
+
 - Source: Wikipedia, "Cadence", revision 1373604555 (6 September 2026, the revision Lesson 14's
   FACTS cites), raw wikitext, § Nomenclature across the world, a table citing Grove Music Online
   (Rockstro 2001): "authentic cadence | perfect cadence | ... | V → I or V7 → I"; "half cadence |
@@ -80,9 +81,9 @@ method). Used for the toy's three-step "find the cadence".
 
 **R6. Lesson 14 named two endings in "Twinkle": V to I on do, a perfect cadence, and an ending on V,
 on re, an imperfect cadence.** lessons/14-phrasing-whole-song/LESSON.md:182-184 and quick check 4
-("Which ending sounds finished? ... "What you are": V to I, landing on do"); Lesson 14 FACTS 44 and
-46. Read: the package. Lesson 27 (V7 to I), Lesson 26 (a part a third away), Lesson 18 (reading a
-line in time, Arc C) and Lesson 21 (key signatures, Arc C) are this lesson's other ground.
+("Which ending sounds finished? ... "What you are": V to I, landing on do"); Lesson 14 FACTS 44
+and 46. Read: the package. Lesson 27 (V7 to I), Lesson 26 (a part a third away), Lesson 18 (reading
+a line in time, Arc C) and Lesson 21 (key signatures, Arc C) are this lesson's other ground.
 
 ### Song form
 

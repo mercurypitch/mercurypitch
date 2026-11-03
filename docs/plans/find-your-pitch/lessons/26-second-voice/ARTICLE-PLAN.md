@@ -153,6 +153,7 @@ sound on: nothing plays until you press a play button." 35 words.
    - The second **[correct]** · "Each third came from the key's own notes."
    - The first · "Listen for the notes that stick out: the first moved everything four semitones."
    - Both · "One of them used a fixed four semitones and left the key. Try the cold open again."
+
 - Words: 230.
 
 ## Wrap
