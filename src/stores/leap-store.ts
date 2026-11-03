@@ -12,8 +12,11 @@
 // it, through here and never through the room's feature (the picker would
 // otherwise load the room to draw its card).
 //
-// On this device only, for now: the `mp_` prefix keeps the key out of the
-// settings sync, as Home note's and First note's are.
+// The bests follow the account, as Long note's and Echo's do: what a best
+// is and which of two is better are the room's rule in
+// src/lib/ear-room-bests.ts, where the settings sync's pull reads it to
+// keep the better best at each level. What this device kept before they
+// synced, under the old `mp_` key, is adopted on the first read and let go.
 //
 // Whether this device has seen the "how it works" demo is a device fact,
 // set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
@@ -24,70 +27,46 @@
 // level touches storage.
 
 import type { Signal } from 'solid-js'
+import type { LeapBest } from '@/lib/ear-room-bests'
+import { LEAP_BEST_RULES, LEAP_BESTS_KEY, LEAP_DEVICE_BESTS_KEY, } from '@/lib/ear-room-bests'
+import type { LevelBestTable } from '@/lib/level-bests'
+import { adoptDeviceBests, isLevelBestTable } from '@/lib/level-bests'
 import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
-export const LEAP_BESTS_KEY = 'mp_leap_bests'
 /** Where the demo's seen flag lives: on this device only. */
 export const LEAP_DEMO_SEEN_KEY = 'mp_leap_demo_seen'
 
-/** A level's best run. */
-export interface LeapBest {
-  /** Leaps landed. */
-  readonly landed: number
-  /** Leaps in the run. */
-  readonly rounds: number
-  /** The landed leaps' mean time from Merc's note to the target, s. */
-  readonly seconds: number
-  readonly at: number
-}
+export type { LeapBest } from '@/lib/ear-room-bests'
+export { LEAP_BESTS_KEY } from '@/lib/ear-room-bests'
 
-export type LeapBestTable = Partial<Record<ExerciseLevel, LeapBest>>
-
-function isBest(value: unknown): value is LeapBest {
-  if (typeof value !== 'object' || value === null) return false
-  const best = value as Record<string, unknown>
-  const count = (n: unknown): n is number =>
-    typeof n === 'number' && Number.isInteger(n) && n >= 0
-  return (
-    count(best.landed) &&
-    count(best.rounds) &&
-    best.landed <= best.rounds &&
-    typeof best.seconds === 'number' &&
-    Number.isFinite(best.seconds) &&
-    best.seconds >= 0 &&
-    typeof best.at === 'number' &&
-    Number.isFinite(best.at)
-  )
-}
+export type LeapBestTable = LevelBestTable<LeapBest>
 
 export function isLeapBestTable(value: unknown): value is LeapBestTable {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  return Object.entries(value).every(
-    ([level, best]) =>
-      EXERCISE_LEVELS.includes(level as ExerciseLevel) && isBest(best),
-  )
+  return isLevelBestTable(value, LEAP_BEST_RULES)
 }
 
-/** `run` beats `previous`: more landed, or as many landed sooner. */
+/** Whether `run` beats `previous`, by the room's rule (ear-room-bests.ts). */
 export function leapBeats(run: LeapBest, previous: LeapBest | null): boolean {
-  if (run.landed === 0) return false
-  if (previous === null) return true
-  if (run.landed !== previous.landed) return run.landed > previous.landed
-  return run.seconds < previous.seconds
+  return LEAP_BEST_RULES.beats(run, previous)
 }
 
 let table: Signal<LeapBestTable> | undefined
 
 function bests(): Signal<LeapBestTable> {
-  table ??= createPersistedSignal<LeapBestTable>(
-    LEAP_BESTS_KEY,
-    {},
-    { validator: isLeapBestTable },
-  )
+  if (table === undefined) {
+    const made = createPersistedSignal<LeapBestTable>(
+      LEAP_BESTS_KEY,
+      {},
+      {
+        validator: isLeapBestTable,
+      },
+    )
+    table = made
+    // What this device kept before the bests followed the account.
+    adoptDeviceBests(LEAP_DEVICE_BESTS_KEY, LEAP_BEST_RULES, made[1])
+  }
   return table
 }
 

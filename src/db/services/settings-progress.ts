@@ -8,6 +8,7 @@ import { currentAccountId, isRegisteredProvider, storedTokenProvider, } from '@/
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
+import { EAR_ROOM_BESTS } from '@/lib/ear-room-bests'
 import { LIP_BESTS_KEY, mergeLipBestsOnPull } from '@/lib/glide/lip-bests'
 import { mergeNgBestsOnPull, NG_BESTS_KEY } from '@/lib/glide/ng-bests'
 import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
@@ -48,17 +49,18 @@ export const MERGE_ON_PULL: Record<
 
 // The premium exercises' bests are records too: a pull keeps the better
 // best on each note (Long note, hold-bests.ts) and at each level (Echo,
-// echo-bests.ts; Ng slides, ng-bests.ts; Lip roll, lip-bests.ts), not the
-// newest device's table. So are the days warmed up (the Warm-up's week
-// dots, warm-up-days.ts): a pull keeps the days from both sides. Named
-// only in a build with the premium exercises; a store build folds the keys
-// and the merges away.
+// echo-bests.ts; Ng slides, ng-bests.ts; Lip roll, lip-bests.ts; the Ear
+// rooms, ear-room-bests.ts), not the newest device's table. So are the days
+// warmed up (the Warm-up's week dots, warm-up-days.ts): a pull keeps the
+// days from both sides. Named only in a build with the premium exercises;
+// a store build folds the keys and the merges away.
 if (PREMIUM_EXERCISES) {
   MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
   MERGE_ON_PULL[ECHO_BESTS_KEY] = mergeEchoBestsOnPull
   MERGE_ON_PULL[NG_BESTS_KEY] = mergeNgBestsOnPull
   MERGE_ON_PULL[LIP_BESTS_KEY] = mergeLipBestsOnPull
   MERGE_ON_PULL[WARM_UP_DAYS_KEY] = mergeWarmUpDaysOnPull
+  for (const { key, merge } of EAR_ROOM_BESTS) MERGE_ON_PULL[key] = merge
 }
 
 /** Legacy owner stamps are read once when migrating each progress key. */
@@ -73,6 +75,7 @@ if (PREMIUM_EXERCISES) {
   MERGE_DEFAULTS[NG_BESTS_KEY] = '{}'
   MERGE_DEFAULTS[LIP_BESTS_KEY] = '{}'
   MERGE_DEFAULTS[WARM_UP_DAYS_KEY] = '[]'
+  for (const { key } of EAR_ROOM_BESTS) MERGE_DEFAULTS[key] = '{}'
 }
 
 interface ResetIntent {

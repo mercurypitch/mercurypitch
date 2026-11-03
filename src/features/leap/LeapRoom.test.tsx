@@ -213,7 +213,7 @@ describe('Leap', () => {
     merc.sung = []
     merc.stopped = 0
     recorded.calls = []
-    localStorage.removeItem('mp_leap_bests')
+    localStorage.removeItem('pitchperfect_leap_bests')
     rafQueue = []
     source = null
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

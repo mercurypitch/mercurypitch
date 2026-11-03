@@ -36,7 +36,7 @@ function round(
 
 beforeEach(() => {
   recorded.calls = []
-  localStorage.removeItem('mp_first_note_bests')
+  localStorage.removeItem('pitchperfect_first_note_bests')
   resetFirstNoteStoreForTests()
 })
 

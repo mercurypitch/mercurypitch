@@ -335,7 +335,7 @@ describe('First note', () => {
     songs.disposed = 0
     merc.sung = []
     recorded.calls = []
-    localStorage.removeItem('mp_first_note_bests')
+    localStorage.removeItem('pitchperfect_first_note_bests')
     resetFirstNoteChoicesForTests()
     resetOwnSongsForTests()
     library.songs = []

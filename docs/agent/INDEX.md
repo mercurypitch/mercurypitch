@@ -248,7 +248,6 @@ These are the rules that break things when ignored.
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 250 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
-| [harmony-store.ts](../../src/stores/harmony-store.ts) | 200 | Harmony's records — the best at each level, and how it is sung A best is the most lines sung in harmony (every note a third from Merc's)... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 150 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
@@ -257,6 +256,7 @@ These are the rules that break things when ignored.
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [first-note-store.ts](../../src/stores/first-note-store.ts) | 150 | First note's records — the best at each level, the demo seen A best is the most entries a run came in on the note, and among runs that ca... |
 | [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |
+| [harmony-store.ts](../../src/stores/harmony-store.ts) | 150 | Harmony's records — the best at each level, and how it is sung A best is the most lines sung in harmony (every note a third from Merc's)... |
 | [home-note-store.ts](../../src/stores/home-note-store.ts) | 150 | Home note's records — the best at each level, the demo seen A best is the most rounds found in a run, and among runs that found as many,... |
 | [leap-store.ts](../../src/stores/leap-store.ts) | 150 | Leap's records — the best at each level, the demo seen A best is the most leaps landed in a run, and among runs that landed as many, the... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
