@@ -1225,6 +1225,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** scale a per-frame rate by the frame's measured time, `1 - (1 - rate) ** (60 * seconds)`, and test it on an uncapped device (`setPerformanceMode('high')`).
 **See:** `ribbonBandEase` in `src/features/stem-mixer/zen-pitch-ribbon.ts`, `src/components/ZenPitchRibbon.test.tsx`.
 
+### Time a canvas frame as drawn and flushed, never call by call
+
+**Symptom:** timing each canvas call of the TV stage at 4K put 14 ms on one `save()`, then on a `stroke()`; turning the sprites into ImageBitmaps changed nothing.
+**Cause:** Chromium records 2D calls and rasterizes them later, and the cost lands on whichever call flushes: a save before a clip, a stroke, a readback. The real costs were large translucent blits and wide strokes.
+**Rule:** time draw plus `getImageData(0, 0, 1, 1)` per frame, and compare variants with a part taken out. Fold what never changes into one opaque sprite (`{ alpha: false }`), which stamps as a copy.
+**See:** `drawStageBackdrop` in `src/lib/tv-stage/lane.ts`; the frame times in `docs/plans/tv-cast-and-google-tv.md`, P2 step 3.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

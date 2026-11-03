@@ -6,16 +6,22 @@
 // context that records what it was asked to draw, since jsdom has no canvas
 // (recording-context.fixture.ts): enough to say the idle screen names the
 // app, a song's title and words are written, a note in view is drawn while
-// one long gone is not, and the lane is cut at its ends. The lyrics' sizes
-// and rows are in renderer.lyrics.test.ts.
+// one long gone is not, and the lane is cut to its panel inside the margin.
+// The lyrics' sizes and rows are in renderer.lyrics.test.ts, the lane's in
+// lane.test.ts.
 
 import { describe, expect, it } from 'vitest'
+import { laneGeometry, timeX } from '@/lib/tv-stage/lane'
+import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState } from '@/lib/tv-stage/model'
 import { EMPTY_TV_STAGE } from '@/lib/tv-stage/model'
-import { recordingContext } from '@/lib/tv-stage/recording-context.fixture'
-import { drawTvStage, LANE_AFTER_SEC, LANE_BEFORE_SEC, laneX, laneY, pitchClass, segmentAt, tvStageLayout, wordFill, } from '@/lib/tv-stage/renderer'
+import { recordingContext, recordingSprites, } from '@/lib/tv-stage/recording-context.fixture'
+import { createTvStageView, drawTvStage, segmentAt, wordFill, } from '@/lib/tv-stage/renderer'
 
 const LAYOUT = tvStageLayout(1920, 1080)
+
+/** The stage's sprites, on canvases that record. */
+const VIEW = createTvStageView(recordingSprites().factory)
 
 const SONG_STATE: TvStageState = {
   song: {
@@ -64,36 +70,6 @@ describe('the layout', () => {
   })
 })
 
-describe('the lane', () => {
-  it('puts the moment being sung on the playhead, and its edges at the window’s ends', () => {
-    expect(laneX(LAYOUT, 10, 10)).toBe(LAYOUT.playheadX)
-    expect(laneX(LAYOUT, 10 - LANE_BEFORE_SEC, 10)).toBeCloseTo(LAYOUT.lane.x)
-    expect(laneX(LAYOUT, 10 + LANE_AFTER_SEC, 10)).toBeCloseTo(
-      LAYOUT.lane.x + LAYOUT.lane.w,
-    )
-  })
-
-  it('folds a note to its pitch class, an octave on the same row', () => {
-    expect(pitchClass(60)).toBe(0)
-    expect(pitchClass(71)).toBe(11)
-    expect(pitchClass(-1)).toBe(11)
-    expect(laneY(LAYOUT, 72)).toBe(laneY(LAYOUT, 60))
-  })
-
-  it('draws a higher pitch class higher up, and C on the bottom row', () => {
-    const rowHeight = LAYOUT.lane.h / 12
-    expect(laneY(LAYOUT, 60)).toBeCloseTo(
-      LAYOUT.lane.y + LAYOUT.lane.h - rowHeight / 2,
-    )
-    expect(laneY(LAYOUT, 67)).toBeLessThan(laneY(LAYOUT, 64))
-  })
-
-  it('moves a sharp reading up within its row, and a flat one down', () => {
-    expect(laneY(LAYOUT, 64.2)).toBeLessThan(laneY(LAYOUT, 64))
-    expect(laneY(LAYOUT, 63.8)).toBeGreaterThan(laneY(LAYOUT, 64))
-  })
-})
-
 describe('the lyrics', () => {
   const lyrics = SONG_STATE.song?.lyrics ?? []
 
@@ -116,7 +92,7 @@ describe('a frame', () => {
   it('names the app while the room has no song', () => {
     const { ctx, texts } = recordingContext()
 
-    drawTvStage(ctx, EMPTY_TV_STAGE, 0, { width: 1920, height: 1080 })
+    drawTvStage(ctx, EMPTY_TV_STAGE, 0, { width: 1920, height: 1080 }, VIEW)
 
     expect(texts.map((written) => written.text)).toContain('Mercury Pitch')
   })
@@ -124,7 +100,7 @@ describe('a frame', () => {
   it('writes the title, the score, the words being sung and the next line', () => {
     const { ctx, texts } = recordingContext()
 
-    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
+    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 }, VIEW)
 
     expect(texts.map((written) => written.text)).toEqual(
       expect.arrayContaining([
@@ -139,36 +115,47 @@ describe('a frame', () => {
   })
 
   it('draws a note in view, and not one long gone', () => {
-    const { ctx, notes } = recordingContext()
+    const { ctx, images } = recordingContext()
 
-    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
+    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 }, VIEW)
 
-    expect(notes).toHaveLength(1)
-    expect(notes[0]?.x).toBeCloseTo(laneX(LAYOUT, 9, 10))
+    // A note is stamped in three slices: its left end, its middle, its right,
+    // as yellow glass ahead of the marker or an empty tube once gone by.
+    const notes = images.filter((image) =>
+      /^note:(glass|past):/u.test(image.key),
+    )
+    expect(notes).toHaveLength(3)
+    const lane = laneGeometry(LAYOUT)
+    expect(notes[1]?.box.x).toBeCloseTo(timeX(lane, 9, 10) + 15, 0)
   })
 
-  it('cuts the lane’s notes and trail at its ends, the 5% margin’s edges', () => {
+  it('cuts the lane to its panel, inside the 5% margin', () => {
     const { ctx, clips } = recordingContext()
 
-    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
+    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 }, VIEW)
 
-    expect(clips[0]).toEqual({
-      x: LAYOUT.safe.x,
-      y: LAYOUT.safe.y,
-      w: LAYOUT.safe.w,
-      h: LAYOUT.safe.h,
-    })
-    expect(LAYOUT.lane.x).toBe(LAYOUT.safe.x)
-    expect(LAYOUT.lane.w).toBe(LAYOUT.safe.w)
+    const panel = clips.find((clip) => clip.y < LAYOUT.lane.y + 10)
+    expect(panel).toBeDefined()
+    expect(panel!.x).toBeGreaterThanOrEqual(LAYOUT.safe.x)
+    expect(panel!.x + panel!.w).toBeLessThanOrEqual(
+      LAYOUT.safe.x + LAYOUT.safe.w,
+    )
+    expect(panel!.y).toBeGreaterThanOrEqual(LAYOUT.lane.y)
+    expect(panel!.y + panel!.h).toBeLessThanOrEqual(
+      LAYOUT.lane.y + LAYOUT.lane.h,
+    )
   })
 
   it('invites singing until there is a score', () => {
     const { ctx, texts } = recordingContext()
 
-    drawTvStage(ctx, { ...SONG_STATE, score: null }, 0, {
-      width: 1920,
-      height: 1080,
-    })
+    drawTvStage(
+      ctx,
+      { ...SONG_STATE, score: null },
+      0,
+      { width: 1920, height: 1080 },
+      VIEW,
+    )
 
     expect(texts.map((written) => written.text)).toContain(
       'Sing along to score',
