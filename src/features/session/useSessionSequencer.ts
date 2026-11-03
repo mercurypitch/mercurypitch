@@ -13,13 +13,14 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
+import { noteWasSung } from '@/lib/domain/note-sung'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody, isSessionItemMelodyMissing, } from '@/lib/session-builder'
-import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
+import { advanceSessionItem, countIn, getCurrentSessionItem, markPracticeSessionResumed, markSessionItemSkipped, markSessionReachedEnd, recordSessionItemResult, sessionCompleteLine, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyItem, NoteResult, PlaybackMode, PracticeResult, SessionResult, } from '@/types'
+import type { MelodyItem, NoteResult, PlaybackMode, SessionResult, } from '@/types'
 
 export interface SessionSequencer {
   sessionMelodyIds: Accessor<string[]>
@@ -42,6 +43,8 @@ export interface SessionSequencer {
   handleRepeatModeComplete: () => void
   handleSessionSkip: () => void
   handleSessionEnd: () => void
+  /** The transport's Stop; one in a session's last rest shows its summary. */
+  handleTransportStop: () => void
   loadAndPlayMelodyForSession: (melodyId: string) => void
   playSessionSequence: (melodyIds: string[]) => void
   startSessionPlayback: () => void
@@ -53,8 +56,8 @@ export interface SessionSequencer {
 interface Deps {
   playbackRuntime: PlaybackRuntime
   practiceEngine: PracticeEngine
-  liveScore: Accessor<number | null>
-  practiceResult: Accessor<PracticeResult | null>
+  /** The current item's graded notes, as the practice engine finalises them. */
+  noteResults: Accessor<NoteResult[]>
   setPitchHistory: Setter<unknown[]>
   setNoteResults: Setter<NoteResult[]>
   setLiveScore: Setter<number | null>
@@ -88,8 +91,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
   const {
     playbackRuntime,
     practiceEngine,
-    liveScore,
-    practiceResult,
+    noteResults,
     setPitchHistory,
     setNoteResults,
     setLiveScore,
@@ -138,24 +140,42 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
   } | null>(null)
 
   /**
-   * v3 decision (documented):
+   * An item played to its end: bank what was sung of it, then move on.
+   *
    *   - Pitch history resets per item (current behavior, see FIXME).
    *   - Count-in fires per item via playbackRuntime.start(countIn()).
-   *   - Skipped items DO record a partial PracticeResult if available.
    *   - Score aggregation lives in practice-session-store.recordSessionItemResult.
+   *
+   * The result is graded here from the item's own notes. It used to be read
+   * from the practice result signal, which only a single run's Stop ever
+   * sets: Play clears it, so through a session it was always empty, no item
+   * was banked, and no session was ever recorded, whole or stopped. A rest,
+   * and an item skipped for a deleted melody, have no notes and bank
+   * nothing.
    */
   const handleSessionItemComplete = (): void => {
-    const currentScore = liveScore()
-    const practiceRes = practiceResult()
-    if (currentScore !== null && practiceRes !== null) {
-      recordSessionItemResult(practiceRes)
+    const notes = noteResults()
+    if (notes.length > 0) {
+      recordSessionItemResult(
+        practiceEngine.calculatePracticeResult(
+          notes,
+          getCurrentSessionItem()?.label ?? 'Session item',
+          PLAYBACK_MODE_SESSION,
+        ),
+      )
     }
+    advanceToNextItem()
+  }
 
+  const advanceToNextItem = (): void => {
     // v3 fix: use advanceSessionItem() return value to check for session end.
     // This correctly handles internal repeats AND the last item's repeats.
     const nextItem = advanceSessionItem()
 
     if (nextItem) {
+      // The next item plays at once, so a Skip pressed while paused
+      // resumes the session's clock with it.
+      markPracticeSessionResumed()
       setNoteResults([])
       setLiveScore(null)
       setCurrentBeat(0)
@@ -165,6 +185,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       practiceEngine.resetSession()
       loadNextSessionItem()
     } else {
+      markSessionReachedEnd()
       // handleStop is async (waits for audio teardown); resolve and apply
       void handleStop().then((summary) => {
         if (summary) {
@@ -174,7 +195,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
             name: summary.sessionName,
           })
           showNotification(
-            `Session complete! Score: ${summary.score}%`,
+            sessionCompleteLine(summary.score),
             summary.score >= 80 ? 'success' : 'info',
           )
         }
@@ -346,15 +367,27 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     }
   }
 
+  /**
+   * The singer skipped the item: it banks nothing, and the session is no
+   * longer whole, so it will not be scored. A part sung before the skip
+   * graded on its first notes, and skipping each item after a good start
+   * averaged to a flawless session. What was sung of it is still practice,
+   * whose time the session credits. A rest has nothing to sing, so
+   * skipping one only shortens the pause.
+   */
   const handleSessionSkip = (): void => {
-    // Skipped items still record any partial PracticeResult
-    const practiceRes = practiceResult()
-    if (practiceRes !== null) {
-      recordSessionItemResult(practiceRes)
+    if (getCurrentSessionItem()?.type !== 'rest') {
+      markSessionItemSkipped(noteResults().some(noteWasSung))
     }
-    handleSessionItemComplete()
+    advanceToNextItem()
   }
 
+  /**
+   * The session's End, and the transport's Stop (`handleTransportStop`). One
+   * in a session's last rest finishes it, so it shows the summary the
+   * session's own end does. Any other Stop ends no whole session, and shows
+   * none (`endPracticeSession`).
+   */
   const handleSessionEnd = (): void => {
     void handleStop().then((summary) => {
       if (summary) {
@@ -449,6 +482,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     handleRepeatModeComplete,
     handleSessionSkip,
     handleSessionEnd,
+    handleTransportStop: handleSessionEnd,
     loadAndPlayMelodyForSession,
     playSessionSequence,
     playNextInSessionSequence,

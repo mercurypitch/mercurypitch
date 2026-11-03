@@ -10,7 +10,7 @@ import * as micStore from './mic-store'
 import * as notifStore from './notifications-store'
 import * as playbackStateStore from './playback-state-store'
 import * as practiceStore from './practice-session-store'
-import { sessionMode as _sessionMode, setPracticeResults as _setPracticeResults, setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionItemIndex as _setSessionItemIndex, setSessionItemRepeat as _setSessionItemRepeat, setSessionMode as _setSessionMode, } from './practice-session-store'
+import { markPracticeSessionStarted as _markPracticeSessionStarted, sessionMode as _sessionMode, setPracticeResults as _setPracticeResults, setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionItemIndex as _setSessionItemIndex, setSessionItemRepeat as _setSessionItemRepeat, setSessionMode as _setSessionMode, } from './practice-session-store'
 import { getSessionHistory, sessionResults } from './practice-session-store'
 import { clearMelodySelection, getSelectedMelodyIds, loadSession, selectAllMelodies, toggleMelodySelection, } from './session-store'
 import * as settingsStore from './settings-store'
@@ -52,6 +52,7 @@ export const startPracticeSession = (session: PlaybackSession): void => {
   _setPracticeResults([])
   _setSessionItemIndex(0)
   _setSessionItemRepeat(0)
+  _markPracticeSessionStarted()
 }
 
 // appStore bundles all stores for backward-compatible access.

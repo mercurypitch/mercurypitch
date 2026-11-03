@@ -27,7 +27,7 @@ const localStorageMock = (() => {
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 
 // Imports must come AFTER localStorage mock (createPersistedSignal reads it).
-import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, getCurrentSessionItemIndex, getSessionHistory, practiceSession, recordSessionItemResult, sessionActive, sessionItemIndex, setPracticeSession, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionResults, } from '@/stores/practice-session-store'
+import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, getCurrentSessionItemIndex, getSessionHistory, markPracticeSessionStarted, markSessionReachedEnd, practiceSession, recordSessionItemResult, sessionActive, sessionItemIndex, setPracticeSession, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionResults, } from '@/stores/practice-session-store'
 import type { PlaybackSession, PracticeResult, SessionItem } from '@/types'
 
 const makeMelodyItem = (): SessionItem => ({
@@ -143,6 +143,7 @@ describe('practice-session-store: recordSessionItemResult', () => {
   it('endPracticeSession produces a SessionResult and clears state', () => {
     setPracticeSession(makeSession())
     setSessionActive(true)
+    markPracticeSessionStarted()
 
     const fakeResult: PracticeResult = {
       score: 88,
@@ -152,6 +153,7 @@ describe('practice-session-store: recordSessionItemResult', () => {
     } as unknown as PracticeResult
     recordSessionItemResult(fakeResult)
 
+    markSessionReachedEnd()
     const summary = endPracticeSession()
     expect(summary).not.toBeNull()
     expect(summary?.sessionId).toBe('test-session')
@@ -166,6 +168,8 @@ describe('practice-session-store: recordSessionItemResult', () => {
 
   it('endPracticeSession appends the SessionResult to history', () => {
     setPracticeSession(makeSession())
+    markPracticeSessionStarted()
+    markSessionReachedEnd()
     endPracticeSession()
     expect(getSessionHistory()).toHaveLength(1)
     expect(getSessionHistory()[0].sessionId).toBe('test-session')
@@ -187,6 +191,8 @@ describe('practice-session-store: recordSessionItemResult', () => {
     expect(getSessionHistory()).toHaveLength(50)
 
     setPracticeSession(makeSession())
+    markPracticeSessionStarted()
+    markSessionReachedEnd()
     endPracticeSession()
 
     const history = getSessionHistory()

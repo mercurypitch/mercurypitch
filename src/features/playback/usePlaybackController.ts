@@ -17,12 +17,14 @@ import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { noteWasSung } from '@/lib/domain/note-sung'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyIndicesAtBeat, melodyTotalBeats, } from '@/lib/scale-data'
 import { buildSessionItemMelody, firstPlayableSessionIndex, } from '@/lib/session-builder'
-import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
+import type { EndPracticeSessionOptions } from '@/stores'
+import { bpm, countIn, keyName, markPracticeSessionLeft, markPracticeSessionPaused, markPracticeSessionResumed, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
 import { playback } from '@/stores/playback-store'
@@ -91,7 +93,9 @@ interface PlaybackControllerDeps {
   isRecording: Accessor<boolean>
   finalizeRecording: (beat: number) => void
   totalBeats: Accessor<number>
-  endPracticeSession: () => SessionResult | null | undefined
+  endPracticeSession: (
+    options?: EndPracticeSessionOptions,
+  ) => SessionResult | null | undefined
   setShouldAutoStartPlayback: Setter<boolean>
   /**
    * A melody Play takes in place of the library's: Merc's, while he sings
@@ -243,6 +247,9 @@ export function usePlaybackController(
     // Reset session playback state so a fresh Play always re-seeds
     setSessionMode(false)
     setSessionActive(false)
+    // A session still running ends here, unfinished and unscored, and the
+    // Stop that clears its object later must not take it for one stopped.
+    markPracticeSessionLeft()
     setPlaybackDisplayMelody(null)
     setPlaybackDisplayBeats(null)
 
@@ -438,6 +445,8 @@ export function usePlaybackController(
 
   const handlePause = () => {
     if (!isPlaying()) return
+    // A pause is not practice: a session's clock stops with the transport.
+    markPracticeSessionPaused()
     playbackRuntime.pause()
     audioEngine.stopAllNotes()
     setIsPlaying(false)
@@ -447,6 +456,7 @@ export function usePlaybackController(
 
   const handleResume = () => {
     if (!isPaused()) return
+    markPracticeSessionResumed()
     void activateAudio()
     playbackRuntime.resume()
     setIsPlaying(true)
@@ -500,7 +510,9 @@ export function usePlaybackController(
     setEditorPlaybackState('stopped')
     // A run nobody keeps (Merc's demo) ends no session and shows no result.
     const keeps = deps.keepsRun?.() ?? true
-    const result = keeps ? endPracticeSession() : null
+    const result = keeps
+      ? endPracticeSession({ inFlightSung: noteResults.some(noteWasSung) })
+      : null
 
     // If we're not running a multi-item session but we just finished a practice run
     // with actual notes, calculate and display the single-run summary.

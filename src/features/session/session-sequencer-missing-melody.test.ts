@@ -35,6 +35,8 @@ vi.mock('@/stores', async (importOriginal) => {
     sessionItemIndex: () => session.index,
     countIn: () => 0,
     recordSessionItemResult: () => {},
+    markSessionItemSkipped: () => {},
+    markSessionReachedEnd: () => {},
     setActiveTab: () => {},
     setBpm: () => {},
     setKeyName: () => {},
@@ -62,8 +64,7 @@ function makeSequencer(): ReturnType<typeof useSessionSequencer> {
   return useSessionSequencer({
     playbackRuntime: runtime as never,
     practiceEngine: { resetSession: () => {} } as never,
-    liveScore: () => null,
-    practiceResult: () => null,
+    noteResults: () => [],
     setPitchHistory: (() => {}) as never,
     setNoteResults: (() => {}) as never,
     setLiveScore: (() => {}) as never,

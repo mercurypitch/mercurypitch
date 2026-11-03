@@ -29,6 +29,22 @@ describe('collectNoteAccuracySamples', () => {
     ])
   })
 
+  it('leaves out a note nobody sang, which reads as 0 cents', () => {
+    // The practice engine writes a note it heard no pitch for as 'off' with
+    // 0 cents. Kept, the heatmap painted a note never sung as perfect.
+    seedSessionWithNotes([
+      { midi: 60, avgCents: 0, rating: 'off' },
+      { midi: 62, avgCents: 0, rating: 'perfect' },
+      { midi: 64, avgCents: 80, rating: 'off' },
+    ])
+    expect(collectNoteAccuracySamples()).toEqual([
+      { midi: 62, avgCents: 0 },
+      { midi: 64, avgCents: 80 },
+    ])
+    expect(getNoteAccuracyMap().has(60)).toBe(false)
+    expect(getNoteAccuracyMap().get(62)).toBe(100)
+  })
+
   it('skips malformed entries instead of throwing or leaking NaN', () => {
     // Persisted history loads via a bare JSON.parse (no schema validator),
     // so a stale/hand-edited entry can be missing item/note or carry a

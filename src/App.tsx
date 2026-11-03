@@ -1802,8 +1802,7 @@ const AppShell: Component<AppProps> = (props) => {
   const sessionSequencer = useSessionSequencer({
     playbackRuntime,
     practiceEngine,
-    liveScore,
-    practiceResult,
+    noteResults,
     setPitchHistory: setPitchHistory as never,
     setNoteResults,
     setLiveScore,
@@ -1842,6 +1841,7 @@ const AppShell: Component<AppProps> = (props) => {
     handleRepeatModeComplete,
     handleSessionSkip,
     handleSessionEnd,
+    handleTransportStop,
     loadAndPlayMelodyForSession,
     playSessionSequence,
     playNextInSessionSequence,
@@ -1949,11 +1949,9 @@ const AppShell: Component<AppProps> = (props) => {
     play: handlePlay,
     pause: handlePause,
     resume: handleResume,
-    // handleStop is async (awaits audio teardown); wrap to satisfy
-    // the keyboard hook's `() => void` stop signature.
-    stop: () => {
-      void handleStop()
-    },
+    // A Stop in a session's last rest finishes it, and shows its summary
+    // (handleTransportStop).
+    stop: handleTransportStop,
     seekToStart: () => {
       playbackRuntime.seekTo(0)
     },
@@ -3930,7 +3928,7 @@ const AppShell: Component<AppProps> = (props) => {
                       onPlay={handlePracticePlay}
                       onPause={handlePause}
                       onResume={handleResume}
-                      onStop={() => void handleStop()}
+                      onStop={handleTransportStop}
                       isCountingIn={() => isCountingIn()}
                       countInBeat={() => countInBeat()}
                       onSessionSkip={handleSessionSkip}
@@ -3995,7 +3993,7 @@ const AppShell: Component<AppProps> = (props) => {
                           onPlay={handlePracticePlay}
                           onPause={handlePause}
                           onResume={handleResume}
-                          onStop={() => void handleStop()}
+                          onStop={handleTransportStop}
                           isCountingIn={() => isCountingIn()}
                           countInBeat={() => countInBeat()}
                           playMode={() => playMode()}
@@ -4116,7 +4114,7 @@ const AppShell: Component<AppProps> = (props) => {
                                 onPlay={handlePracticePlay}
                                 onPause={handlePause}
                                 onResume={handleResume}
-                                onStop={() => void handleStop()}
+                                onStop={handleTransportStop}
                                 volume={savedVol}
                                 onVolumeChange={(vol) => {
                                   setSavedVol(vol)

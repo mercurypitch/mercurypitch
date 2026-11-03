@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
+import { noteWasSung } from '@/lib/domain/note-sung'
 import type { VocalRangeResult } from '@/lib/vocal-analyzer'
 import { detectVocalRange } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores/practice-session-store'
@@ -16,14 +17,19 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
   const [detectedRange, setDetectedRange] =
     createSignal<VocalRangeResult | null>(null)
 
-  // Collect MIDI notes from session history for auto-detection
+  // Collect MIDI notes from session history for auto-detection. A note the
+  // singer never sang says nothing of their range (noteWasSung).
   const midiHistory = createMemo(() => {
     const history = getSessionHistory()
     const midis: number[] = []
     for (const session of history) {
       for (const pr of session.practiceItemResult) {
         for (const nr of pr.noteResult) {
-          if (nr.item?.note?.midi !== undefined && nr.item.note.midi > 0) {
+          if (
+            noteWasSung(nr) &&
+            nr.item?.note?.midi !== undefined &&
+            nr.item.note.midi > 0
+          ) {
             midis.push(nr.item.note.midi)
           }
         }

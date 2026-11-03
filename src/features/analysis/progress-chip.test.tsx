@@ -24,13 +24,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/db/services/session-service', () => ({
   saveSessionRecord: mocks.saveSessionRecord,
+  creditPracticeTime: async () => {},
 }))
 vi.mock('@/db/services/grant-service', () => ({
   checkAndGrantBadges: mocks.checkAndGrantBadges,
 }))
 
 import { loadProgressRuns } from '@/features/progress/progress-runs'
-import { endPracticeSession, getSessionHistory, recordSessionItemResult, setPracticeResults, setPracticeSession, setSessionResults, } from '@/stores/practice-session-store'
+import { endPracticeSession, getSessionHistory, markPracticeSessionStarted, markSessionReachedEnd, recordSessionItemResult, setPracticeResults, setPracticeSession, setSessionResults, } from '@/stores/practice-session-store'
 import { TrendsCard } from './sections'
 
 function aSession(): PlaybackSession {
@@ -115,8 +116,10 @@ afterEach(cleanup)
 describe('what endPracticeSession banks', () => {
   it('banks a session that completed at least one scored item', () => {
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItem(72))
 
+    markSessionReachedEnd()
     expect(endPracticeSession()).not.toBeNull()
     expect(getSessionHistory()).toHaveLength(1)
   })
@@ -129,6 +132,7 @@ describe('what endPracticeSession banks', () => {
     //
     // Correct on its own terms, and still completely unexplained on screen.
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
 
     expect(endPracticeSession()).toBeNull()
     expect(getSessionHistory()).toEqual([])
@@ -154,7 +158,9 @@ describe('the Progress card, reading what was banked', () => {
 
   it('counts a banked session and takes its score', async () => {
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItem(72))
+    markSessionReachedEnd()
     endPracticeSession()
 
     await renderCardFromHistory()
@@ -169,7 +175,9 @@ describe('the Progress card, reading what was banked', () => {
     // filter it out and read zero, because the tile was really counting
     // "sessions with usable per-note pitch data".
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItemWithoutNotes(72))
+    markSessionReachedEnd()
     endPracticeSession()
 
     expect(getSessionHistory()).toHaveLength(1)
@@ -186,10 +194,14 @@ describe('the Progress card, reading what was banked', () => {
 
   it('draws the trend from the second banked session with note detail on', async () => {
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItem(60))
+    markSessionReachedEnd()
     endPracticeSession()
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItem(80))
+    markSessionReachedEnd()
     endPracticeSession()
 
     await renderCardFromHistory()
@@ -202,7 +214,9 @@ describe('the Progress card, reading what was banked', () => {
 
   it('says these runs are this device’s, since nobody is signed in', async () => {
     setPracticeSession(aSession())
+    markPracticeSessionStarted()
     recordSessionItemResult(aScoredItem(50))
+    markSessionReachedEnd()
     endPracticeSession()
 
     await renderCardFromHistory()

@@ -1,28 +1,11 @@
 import { buildMultiOctaveScale, melodyTotalBeats } from '@/lib/scale-data'
 import { keyName } from '@/stores'
-import { melodyStore } from '@/stores/melody-store'
+import { isSessionItemMelodyMissing, melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, MelodyNote, NoteName, PlaybackSession, SessionItem, } from '@/types'
 
-/**
- * Is this item pointing at a melody that no longer exists?
- *
- * Deleting a melody deliberately does NOT rewrite the sessions that reference
- * it: `restoreMelody` sits directly below `deleteMelody` as the undo, and
- * rewriting the sessions would make the undo bring back a melody with every
- * session item that used it already gone. So a session item is allowed to
- * point at nothing, and each reader has to say so.
- *
- * Derived rather than stored for the same reason — restoring the melody makes
- * the item whole again with no second write to keep in step.
- */
-export function isSessionItemMelodyMissing(item: SessionItem): boolean {
-  return (
-    item.type === 'melody' &&
-    item.melodyId !== null &&
-    item.melodyId !== undefined &&
-    melodyStore.getMelody(item.melodyId) === undefined
-  )
-}
+// Defined beside the melodies, where the practice-session store can read it
+// without an import cycle; re-exported for this module's readers.
+export { isSessionItemMelodyMissing }
 
 /**
  * Index of the first item a session can actually start on.

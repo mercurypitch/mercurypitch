@@ -76,9 +76,11 @@ export const APP_FUNNEL_EVENTS = [
   'app_open',
   'signup',
   'session_complete',
-  /** A drill stopped before its end. It writes no record, so it fires no
-   *  session_complete (exercise-history-store.ts): this is the funnel's
-   *  only sight of it. */
+  /** A run that ended unscored: a drill or a Session-mode session stopped
+   *  before its end, a Manual hold too short to score, or a session with
+   *  an item skipped. It writes no record, so it fires no session_complete
+   *  (exercise-history-store.ts, practice-session-store.ts): this is the
+   *  funnel's only sight of it. */
   'session_stopped',
   'challenge_attempt',
   'pricing_view',
