@@ -206,11 +206,14 @@
   }
 }
 
-/* The take as it records, in its lane: a clip-shaped box that grows. */
+/* The take as it records, in its lane: a clip-shaped box that grows. It
+   draws above the lane's clips, a selected one (z-index 2) and its trim
+   handles too, so a take over a clip on the same lane is seen as it grows. */
 .liveTake {
   position: absolute;
   top: 6px;
   bottom: 6px;
+  z-index: 3;
   min-width: 2px;
   border: 1px solid color-mix(in srgb, var(--red, #e5484d) 60%, transparent);
   border-radius: 6px;
