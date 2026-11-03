@@ -2,35 +2,31 @@
 // The room's stage on a connected TV: what the room sends, and when
 // ============================================================
 //
-// The hook stands alone here, with a mixer whose clock, key and length are
-// signals, a microphone published as the mixer publishes it, notes read
-// from a fake store, and a device whose TV is told by the test when it
-// shows the stage and records what it is sent. The rules: the song (or
-// idle) goes each time the TV starts showing the stage and each time the
-// song changes while it does, with its notes in the key being heard;
-// frames go twenty a second, only while it shows the stage, and a frame
-// whose clock reading is not a number still reaches the stage; the score
-// is worked out every half second, not every frame; and a phone without a
-// TV stage sends nothing at all.
+// The hook stands alone here, with a mixer whose clock, length and lane are
+// signals, a microphone published as the mixer publishes it, and a device
+// whose TV is told by the test when it shows the stage and records what it
+// is sent. The rules: the song (or idle) goes each time the TV starts
+// showing the stage and each time the song changes while it does, with the
+// notes the phone's lane draws, as they change; frames go twenty a second,
+// only while it shows the stage, and a frame whose clock reading is not a
+// number still reaches the stage; the score is worked out every half
+// second, not every frame; and a phone without a TV stage sends nothing.
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
-import type { FeedNote, FeedReading } from '@/lib/tv-stage/feed'
+import type { HostedMixerControls, LaneNote, } from '@/components/stem-mixer-hosting'
+import type { FeedReading } from '@/lib/tv-stage/feed'
 import type { TvStageFrame, TvStageMessage, TvStageSong, } from '@/lib/tv-stage/protocol'
 import { readTvStageMessage } from '@/lib/tv-stage/protocol'
 import { publishLiveMic } from '@/stores/live-mic-store'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { setTvStageOffsetMs } from '@/stores/tv-stage-store'
-import type { KaraokeTvStageSong } from './useKaraokeTvStage'
 import { TV_STAGE_FRAME_MS, TV_STAGE_SCORE_EVERY, useKaraokeTvStage, } from './useKaraokeTvStage'
 
-const NOTES: readonly FeedNote[] = [{ midi: 64, startSec: 1, endSec: 2 }]
+/** A note as the phone's lane draws it: seconds, under the editor's names. */
+const LANE: readonly LaneNote[] = [{ startBeat: 1, endBeat: 2, midi: 64 }]
 
-const SONG: KaraokeTvStageSong = {
-  title: 'Goodbye to Spring',
-  sessionId: 'example-goodbye-to-spring',
-}
+const TITLE = 'Goodbye to Spring'
 
 /** An iPhone whose connected TV the test shows and hides. */
 function fakeDevice() {
@@ -62,14 +58,13 @@ function fakeDevice() {
 function fakeMixer() {
   const [elapsed, setElapsed] = createSignal(12)
   const [duration, setDuration] = createSignal(180)
-  const [heard, setHeard] = createSignal(0)
+  const [lane, setLane] = createSignal<readonly LaneNote[]>(LANE)
   const controls = {
     audibleElapsed: elapsed,
     duration,
     playing: () => true,
     speed: () => 1,
-    hasNotes: () => true,
-    key: { heard },
+    laneNotes: lane,
     lyricWindowScript: (title: string) => ({
       title,
       duration: duration(),
@@ -80,7 +75,7 @@ function fakeMixer() {
     controls: controls as unknown as HostedMixerControls,
     setElapsed,
     setDuration,
-    setHeard,
+    setLane,
   }
 }
 
@@ -102,16 +97,11 @@ let mic: ReturnType<typeof fakeMic> | null = null
 function mount(
   device: NativeDeviceApi | null,
   mixer: HostedMixerControls | null,
-  song: KaraokeTvStageSong | null = SONG,
+  title: string | null = TITLE,
 ) {
   createRoot((done) => {
     dispose = done
-    useKaraokeTvStage({
-      device,
-      mixer: () => mixer,
-      song: () => song,
-      loadNotes: async () => Promise.resolve(NOTES),
-    })
+    useKaraokeTvStage({ device, mixer: () => mixer, title: () => title })
   })
 }
 
@@ -146,20 +136,18 @@ describe('the TV stage', () => {
     expect(tv.sent).toEqual([])
   })
 
-  it('sends the song as the TV starts showing the stage, then its notes, then frames twenty a second', async () => {
+  it('sends the song with the lane’s notes as the TV starts showing the stage, then frames twenty a second', async () => {
     const tv = fakeDevice()
     mount(tv.device, fakeMixer().controls)
 
     tv.shows(true)
     await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS * 4)
 
-    expect(songs(tv.sent).map((song) => song.notes)).toEqual([
-      [],
-      [{ t0: 1, t1: 2, midi: 64 }],
-    ])
+    expect(songs(tv.sent)).toHaveLength(1)
     expect(songs(tv.sent)[0]).toMatchObject({
       title: 'Goodbye to Spring',
       duration: 180,
+      notes: [{ t0: 1, t1: 2, midi: 64 }],
     })
     expect(frames(tv.sent)).toHaveLength(5)
     expect(frames(tv.sent)[0]).toMatchObject({
@@ -170,16 +158,23 @@ describe('the TV stage', () => {
     })
   })
 
-  it('moves the notes into the key being heard', async () => {
+  it('sends the song again with the notes the lane draws each time they change on the phone', async () => {
     const tv = fakeDevice()
     const mixer = fakeMixer()
     mount(tv.device, mixer.controls)
     tv.shows(true)
     await vi.advanceTimersByTimeAsync(0)
 
-    mixer.setHeard(-2)
+    // A note edited a step up, and another read from the vocal.
+    mixer.setLane([
+      { startBeat: 1, endBeat: 2, midi: 66 },
+      { startBeat: 3, endBeat: 3.5, midi: 62 },
+    ])
 
-    expect(songs(tv.sent).at(-1)?.notes).toEqual([{ t0: 1, t1: 2, midi: 62 }])
+    expect(songs(tv.sent).at(-1)?.notes).toEqual([
+      { t0: 1, t1: 2, midi: 66 },
+      { t0: 3, t1: 3.5, midi: 62 },
+    ])
   })
 
   it('sends the song again when more of it arrives', async () => {

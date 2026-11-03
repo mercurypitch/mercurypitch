@@ -538,12 +538,7 @@ export const KaraokeRoomStage: Component = () => {
   useKaraokeTvStage({
     device,
     mixer,
-    song: () => {
-      const entry = cue()
-      return entry === null
-        ? null
-        : { title: entry.song.title, sessionId: entry.song.sessionId }
-    },
+    title: () => cue()?.song.title ?? null,
   })
   // The run is the system's business while the song is behind another app,
   // and while it is in the window: that is where the window's play and

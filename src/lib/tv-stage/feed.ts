@@ -3,10 +3,10 @@
 // ============================================================
 //
 // What the Karaoke room hands a TV that draws its stage (protocol.ts),
-// built from what the room's mixer already has: the notes it shows, the
-// lyrics it lights, and the readings its microphone keeps. The room calls
-// these and sends the result (useKaraokeTvStage.ts); nothing here talks to
-// a device, so all of it can be tested without one.
+// built from what the room's mixer already has: the notes its lane draws,
+// the lyrics it lights, and the readings its microphone keeps. The room
+// calls these and sends the result (useKaraokeTvStage.ts); nothing here
+// talks to a device, so all of it can be tested without one.
 //
 // The singer's readings are kept as the microphone took them, when the
 // sound reached it. The voice was answering the song one round trip
@@ -41,7 +41,7 @@ import type { LyricWindowSegment } from '@/lib/lyric-window-script'
 import type { TvStageFrame, TvStageNote, TvStageReading, TvStageScore, TvStageSong, } from './protocol'
 import { TV_STAGE_PROTOCOL } from './protocol'
 
-/** A note as the room's pitch analysis has it (midi-generator.ts, MergedNote). */
+/** A note as the stage's lane draws it: seconds, and its MIDI number. */
 export interface FeedNote {
   readonly midi: number
   readonly startSec: number
