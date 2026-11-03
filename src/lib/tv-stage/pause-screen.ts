@@ -10,7 +10,8 @@
 // time left at its right. Karaoke adds one thing a video player has not:
 // the line to sing next, so a singer coming back knows where they come in.
 // Before the first play, with the song standing at its start, the same
-// screen says the song is ready and to press play on the phone.
+// screen says the song is ready and to press play on the phone, with a play
+// mark beside the time in place of the pause mark.
 //
 // It comes and goes with the `playing` the frames carry, fading over a
 // quarter of a second from the moment the song stopped or started
@@ -170,7 +171,7 @@ export interface PauseLayout {
   }
   /** The knob's radius and the glow's reach beyond it. */
   readonly knob: { readonly radius: number; readonly reach: number }
-  /** The pause mark's centre and radius, and the times' line. */
+  /** The mark's centre and radius (pause, or play when ready), and the times' line. */
   readonly mark: {
     readonly x: number
     readonly y: number
