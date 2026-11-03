@@ -179,6 +179,28 @@ describe('the edges', () => {
     ])
   })
 
+  it('takes a length it cannot walk to as not known yet, and finishes', () => {
+    // A stream whose length the player does not know reports Infinity.
+    for (const duration of [Infinity, -Infinity, Number.NaN]) {
+      const script = lyricWindowScript(timedSong(duration))
+      expect(script.duration).toBe(0)
+      expect(script.segments.map((segment) => segment.at)).toEqual([
+        0, 10, 14, 20,
+      ])
+    }
+  })
+
+  it('walks only to the last time it can use in the lyrics', () => {
+    const lines = new Map<number, GlanceLine>([
+      ...LINES,
+      [3, { words: ['Far', 'out'], time: 24, endTime: Infinity }],
+    ])
+    const script = lyricWindowScript({ ...timedSong(0), lines })
+    expect(script.segments.map((segment) => segment.at)).toEqual([
+      0, 10, 14, 20,
+    ])
+  })
+
   it('is one empty stretch for a song without lyrics', () => {
     expect(
       lyricWindowScript({
