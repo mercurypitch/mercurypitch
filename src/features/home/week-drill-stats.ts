@@ -10,6 +10,8 @@
 // mirror only steps in when the record read lags or fails and this
 // device has seen more than the account read returned.
 
+import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
+
 /** The slice of a session record this module needs. */
 export interface WeekRecord {
   source?: string
@@ -21,6 +23,7 @@ export interface WeekRecord {
 export interface WeekLocalEntry {
   completedAt: number
   score: number
+  metrics?: Readonly<Record<string, number>>
 }
 
 export interface WeekDrillStats {
@@ -55,8 +58,13 @@ export function weekDrillStats(
   synced: readonly WeekRecord[] | undefined,
 ): WeekDrillStats {
   const weekAgo = nowMs - WEEK_MS
+  // A stopped run stays in the mirror but writes no record, and its score
+  // covers only the rounds it reached: it is no drill run of the week.
   const localScores = local
-    .filter((entry) => entry.completedAt >= weekAgo)
+    .filter(
+      (entry) =>
+        entry.completedAt >= weekAgo && !runStoppedEarly(entry.metrics),
+    )
     .map((entry) => entry.score)
   const syncedScores = (synced ?? [])
     .filter(

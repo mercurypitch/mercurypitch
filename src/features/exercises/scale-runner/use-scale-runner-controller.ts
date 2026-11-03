@@ -7,7 +7,7 @@ import { approximateRichness } from '@/lib/vocal-analyzer'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_SCALE_RUNNER } from '../types'
+import { EXERCISE_SCALE_RUNNER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
@@ -50,6 +50,9 @@ export function useScaleRunnerController(
   let notePlayDurationMs = NOTE_PLAY_DURATION_MS
   let gapBetweenNotesMs = GAP_BETWEEN_NOTES_MS
   let matchWindowMs = MATCH_WINDOW_MS
+  // Set by Stop before the last note is graded: the result is then practice,
+  // not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -79,6 +82,7 @@ export function useScaleRunnerController(
     noteIndex = 0
     noteScores = []
     noteDeviations = []
+    stoppedEarly = false
   }
 
   function startScale(): void {
@@ -168,6 +172,7 @@ export function useScaleRunnerController(
           evennessStdDev: 0,
           richnessScore: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -217,6 +222,7 @@ export function useScaleRunnerController(
         evennessStdDev,
         richnessScore: Math.round(richness),
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -225,6 +231,7 @@ export function useScaleRunnerController(
   function stopScale(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = noteScores.length < scaleNotes.length
     base._setRunning(false)
     finish()
   }

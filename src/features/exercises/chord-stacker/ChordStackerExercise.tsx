@@ -12,7 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_CHORD_STACKER } from '../types'
+import { EXERCISE_CHORD_STACKER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useChordStackerController } from './use-chord-stacker-controller'
 
@@ -106,6 +106,7 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

@@ -6,7 +6,7 @@ import piStyles from '@/features/practice-intelligence/components/PracticeIntell
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, runStoppedEarly, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -397,19 +397,30 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
               {(entry) => (
                 <div class="exercise-recent-item">
                   <span class="exercise-recent-type">{entry.type}</span>
-                  <span
-                    class="exercise-recent-score"
-                    style={{
-                      color:
-                        entry.score >= 80
-                          ? 'var(--exercise-score-high)'
-                          : entry.score >= 50
-                            ? 'var(--exercise-score-mid)'
-                            : 'var(--exercise-score-low)',
-                    }}
+                  {/* A stopped run was not scored: its percentage covers
+                      only the rounds it reached. */}
+                  <Show
+                    when={!runStoppedEarly(entry.metrics)}
+                    fallback={
+                      <span class="exercise-recent-score is-stopped">
+                        Stopped
+                      </span>
+                    }
                   >
-                    {entry.score}%
-                  </span>
+                    <span
+                      class="exercise-recent-score"
+                      style={{
+                        color:
+                          entry.score >= 80
+                            ? 'var(--exercise-score-high)'
+                            : entry.score >= 50
+                              ? 'var(--exercise-score-mid)'
+                              : 'var(--exercise-score-low)',
+                      }}
+                    >
+                      {entry.score}%
+                    </span>
+                  </Show>
                   <span class="exercise-recent-time">
                     {formatTime(entry.completedAt)}
                   </span>

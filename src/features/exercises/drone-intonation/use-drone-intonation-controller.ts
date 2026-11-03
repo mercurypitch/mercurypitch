@@ -6,7 +6,7 @@ import { approximateRichness } from '@/lib/vocal-analyzer'
 import { freqToExactMidi, pitchStabilityCents, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import { drawIntervalRounds } from '../interval-rounds'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_DRONE_INTONATION } from '../types'
+import { EXERCISE_DRONE_INTONATION, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const ROUNDS = 6
@@ -106,6 +106,9 @@ export function useDroneIntonationController(
   // Adaptive knobs, resolved per drone setup (default d5 == originals).
   let scoreK = SCORE_K
   let matchWindowMs = MATCH_WINDOW_MS
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -134,6 +137,7 @@ export function useDroneIntonationController(
     roundIndex = 0
     roundScores = []
     roundStabilities = []
+    stoppedEarly = false
   }
 
   async function startRounds(): Promise<void> {
@@ -245,6 +249,7 @@ export function useDroneIntonationController(
           bestRound: 0,
           stabilityCents: 0,
           richnessScore: 0,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -299,6 +304,7 @@ export function useDroneIntonationController(
         bestRound,
         stabilityCents,
         richnessScore: Math.round(richness),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -307,6 +313,7 @@ export function useDroneIntonationController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < rounds.length
     stopDrone()
     base._setRunning(false)
     finish()

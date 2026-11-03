@@ -9,7 +9,7 @@
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { midiToNoteName } from '@/lib/frequency-to-note'
-import { exerciseHistory, exerciseHistoryOnCurrentScoring, } from '@/stores/exercise-history-store'
+import { comparableExerciseHistory } from '@/stores/exercise-history-store'
 import { collectNoteAccuracySamples } from '@/stores/practice-session-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -47,8 +47,8 @@ const RECENT_WINDOW = 10 // consider last N entries
 
 export function findWeakExercises(): WeakExercise[] {
   // Runs scored on a drill's old ruler are left out: a rescored drill is
-  // judged weak or not on its new scores alone.
-  const entries = exerciseHistoryOnCurrentScoring()
+  // judged weak or not on its new scores alone. So are stopped runs.
+  const entries = comparableExerciseHistory()
   if (entries.length === 0) return []
 
   // The history is newest-first, so this collects each type's
@@ -146,7 +146,11 @@ export interface WeakInterval {
 }
 
 export function findWeakIntervals(): WeakInterval[] {
-  const entries = exerciseHistory().filter((e) => e.type === 'interval-trainer')
+  // Whole runs only: a stopped run's averages cover the intervals it
+  // reached.
+  const entries = comparableExerciseHistory().filter(
+    (e) => e.type === 'interval-trainer',
+  )
   if (entries.length === 0) return []
 
   // The interval-trainer groups intervals into size categories.

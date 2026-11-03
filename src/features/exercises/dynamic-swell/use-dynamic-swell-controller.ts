@@ -4,7 +4,7 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_DYNAMIC_SWELL } from '../types'
+import { EXERCISE_DYNAMIC_SWELL, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import { loudnessProfile } from './swell-dynamics'
 
@@ -22,6 +22,9 @@ export function useDynamicSwellController(
   let targetNotes: number[] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -52,6 +55,7 @@ export function useDynamicSwellController(
     targetNotes.sort(() => Math.random() - 0.5)
     roundIndex = 0
     roundScores = []
+    stoppedEarly = false
   }
 
   function startRounds(): void {
@@ -171,6 +175,7 @@ export function useDynamicSwellController(
           dynamicRangeDb: 0,
           avgDb: 0,
           peakDb: 0,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -201,6 +206,7 @@ export function useDynamicSwellController(
         dynamicRangeDb,
         avgDb: Math.round(loudness.avgDb * 10) / 10,
         peakDb: Math.round(loudness.peakDb * 10) / 10,
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -209,6 +215,7 @@ export function useDynamicSwellController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < targetNotes.length
     base._setRunning(false)
     finish()
   }

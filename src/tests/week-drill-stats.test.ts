@@ -68,6 +68,23 @@ describe('weekDrillStats', () => {
   it('shows a dash-worthy null average for an empty week', () => {
     expect(weekDrillStats(NOW, [], [])).toEqual({ runs: 0, avgScore: null })
   })
+
+  it('leaves a stopped run out of the local mirror', () => {
+    // A stopped run stays in the device's history but writes no record, and
+    // its score covers only the rounds it reached. Counted here, it made
+    // the mirror outnumber the account and pulled the average up to it.
+    const stopped = { ...loc(1, 100), metrics: { stoppedEarly: 1 } }
+    const stats = weekDrillStats(
+      NOW,
+      [stopped, loc(2, 60), loc(3, 80)],
+      [rec(2, 60), rec(3, 80)],
+    )
+    expect(stats).toEqual({ runs: 2, avgScore: 70 })
+    expect(weekDrillStats(NOW, [stopped, loc(2, 60)], undefined)).toEqual({
+      runs: 1,
+      avgScore: 60,
+    })
+  })
 })
 
 describe('HomePage routes the strip through the shared source', () => {

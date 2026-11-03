@@ -20,7 +20,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_WARMUP } from '../types'
+import { EXERCISE_WARMUP, stoppedEarlyMark } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { WARMUP_EXERCISES, warmupPatternExercises } from './warmup-exercises'
 import { applyLeadIn, createLeadInTicker, leadInSeconds, } from './warmup-lead-in'
@@ -259,13 +259,17 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
   const finishWarmup = (stepsCompleted: number): void => {
     running = false
     session.finish()
+    const totalSteps = stepExercises().length
     const result: ExerciseResult = {
       type: EXERCISE_WARMUP,
       score: averageScore(),
       metrics: {
         stepsCompleted,
-        totalSteps: stepExercises().length,
+        totalSteps,
         participation: averageScore(),
+        // Averaged over the steps it reached, a stopped warm-up's number is
+        // practice, not a run's (exercise-comparability.ts).
+        ...stoppedEarlyMark(stepsCompleted < totalSteps),
       },
       completedAt: Date.now(),
     }

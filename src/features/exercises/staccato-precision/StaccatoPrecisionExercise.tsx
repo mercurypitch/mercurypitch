@@ -12,7 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_STACCATO } from '../types'
+import { EXERCISE_STACCATO, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useStaccatoPrecisionController } from './use-staccato-precision-controller'
 
@@ -109,6 +109,7 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

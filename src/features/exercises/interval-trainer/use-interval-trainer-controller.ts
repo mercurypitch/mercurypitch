@@ -6,7 +6,7 @@ import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCentsInRange, scoreNoteInRange, } from '../exercise-scoring-utils'
 import { drawIntervalRounds } from '../interval-rounds'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_INTERVAL_TRAINER } from '../types'
+import { EXERCISE_INTERVAL_TRAINER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 /** Span-weighted mean of the per-round scores (larger intervals weigh more),
@@ -112,6 +112,9 @@ export function useIntervalTrainerController(
   let roundIndex = 0
   let roundScores: Array<{ note1: number; note2: number }> = []
   let intervalSpans: Array<{ span: number; score: number }> = []
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -147,6 +150,7 @@ export function useIntervalTrainerController(
     intervalSpans = []
     allNoteScores = []
     noteDeviations = []
+    stoppedEarly = false
     base._setTargetPitch(0)
   }
 
@@ -309,6 +313,7 @@ export function useIntervalTrainerController(
           mediumIntervalAvg: 0,
           largeIntervalAvg: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -353,6 +358,7 @@ export function useIntervalTrainerController(
         mediumIntervalAvg: mediumAvg,
         largeIntervalAvg: largeAvg,
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -361,6 +367,7 @@ export function useIntervalTrainerController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < intervals.length
     base._setRunning(false)
     finish()
   }

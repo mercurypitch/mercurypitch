@@ -6,7 +6,7 @@ import { approximateRichness } from '@/lib/vocal-analyzer'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_MIRROR_MELODY } from '../types'
+import { EXERCISE_MIRROR_MELODY, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 // Baselines below are the difficulty-5 defaults; adaptive scaling in
@@ -49,6 +49,9 @@ export function useMirrorMelodyController(
   // Adaptive params, set per-round in `setMelody`; default to d5 baselines.
   let matchWindowMs = MATCH_WINDOW_MS
   let toneDurationMs = TONE_DURATION_MS
+  // Set by Stop before the last note is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -81,6 +84,7 @@ export function useMirrorMelodyController(
     noteIndex = 0
     noteScores = []
     noteDeviations = []
+    stoppedEarly = false
     base._setTargetPitch(midiToFreq(baseMidi))
   }
 
@@ -171,6 +175,7 @@ export function useMirrorMelodyController(
           consistency: 0,
           richnessScore: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -216,6 +221,7 @@ export function useMirrorMelodyController(
         consistency,
         richnessScore: Math.round(richness),
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -224,6 +230,7 @@ export function useMirrorMelodyController(
   function stopSequence(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = noteScores.length < melody.length
     base._setRunning(false)
     finish()
   }

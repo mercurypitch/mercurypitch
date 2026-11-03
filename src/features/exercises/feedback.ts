@@ -40,6 +40,14 @@ export function gradeForScore(score: number): 'S' | 'A' | 'B' | 'C' | 'D' {
   return 'D'
 }
 
+/**
+ * What a run stopped before its end gets in place of a grade: it was not
+ * scored (exercise-comparability.ts), and no letter, percentage or best
+ * may say otherwise.
+ */
+export const STOPPED_EARLY_LINE =
+  'You stopped before the end, so this run was not scored.'
+
 // ── SFX ──────────────────────────────────────────────────────────────
 
 let sfxCtx: AudioContext | null = null

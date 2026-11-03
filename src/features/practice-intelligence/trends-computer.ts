@@ -7,7 +7,7 @@
 // Shared by all three practice-intelligence features.
 
 import type { ExerciseType } from '@/features/exercises/types'
-import { exerciseHistoryOnCurrentScoring } from '@/stores/exercise-history-store'
+import { comparableExerciseHistory } from '@/stores/exercise-history-store'
 import { getSessionHistory } from '@/stores/practice-session-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -186,8 +186,8 @@ export function computePracticeStats(): PracticeStats {
 // ── Per-Exercise Stats ─────────────────────────────────────────
 
 export function computePerExerciseStats(): PerExerciseStats[] {
-  // A drill's best, average and trend compare runs on one ruler only.
-  const allHistory = exerciseHistoryOnCurrentScoring()
+  // A drill's best, average and trend compare whole runs on one ruler only.
+  const allHistory = comparableExerciseHistory()
   const byType = new Map<ExerciseType, number[]>()
 
   for (const entry of allHistory) {

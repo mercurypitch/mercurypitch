@@ -5,7 +5,7 @@ import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { computeGlideCoverage } from '@/lib/glide-coverage'
 import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_SIREN } from '../types'
+import { EXERCISE_SIREN, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const ROUNDS = 6
@@ -136,6 +136,9 @@ export function useSirenController(
   let glideFromMs = 0
   // Effective difficulty for this run; read fresh at setup (not module load).
   let difficulty = 5
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -156,6 +159,7 @@ export function useSirenController(
     roundScores = []
     glideScores = []
     voicedGlides = 0
+    stoppedEarly = false
   }
 
   function startRounds(): void {
@@ -322,6 +326,7 @@ export function useSirenController(
           bestRound: 0,
           glideQuality: 0,
           voicedGlides: 0,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -353,6 +358,7 @@ export function useSirenController(
         bestRound,
         glideQuality,
         voicedGlides,
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -361,6 +367,7 @@ export function useSirenController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < rounds.length
     base._setRunning(false)
     finish()
   }

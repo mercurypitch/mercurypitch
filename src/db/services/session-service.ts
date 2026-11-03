@@ -22,15 +22,50 @@ export const SESSION_SAVE_FAILURE_MESSAGE =
   'Your run was scored, but it could not be saved to your account. Check your connection and try another run.'
 
 /**
- * Bumped whenever a session record lands. Every producer — session mode,
- * exercises, challenges, the weekly attempt — funnels through
- * saveSessionRecord, so anything keyed on this refreshes for all four
- * without each caller having to remember to say so.
+ * Bumped whenever a run's practice is credited: a session record lands, or
+ * a stopped drill's time is credited without one (creditPracticeTime).
+ * Every producer — session mode, exercises, challenges, the weekly attempt
+ * — funnels through those two, so anything keyed on this refreshes for all
+ * of them without each caller having to remember to say so.
  */
 const [sessionRecordVersion, bumpSessionRecordVersion] = createSignal(0)
 export { sessionRecordVersion }
 
 const MAX_MEASURED_SESSION_MS = 86_400_000
+
+/** A run's length as the record keeps it: whole, measured milliseconds. */
+function measuredDurationOf(
+  durationMs: number | undefined,
+): number | undefined {
+  return durationMs !== undefined &&
+    Number.isFinite(durationMs) &&
+    durationMs > 0 &&
+    durationMs <= MAX_MEASURED_SESSION_MS
+    ? Math.round(durationMs)
+    : undefined
+}
+
+/**
+ * Credit a run's practice time, and through it the streak, without writing
+ * a session record: only the measured time, as saveSessionRecord credits it
+ * once its record exists. A nominal length is a finished run's.
+ *
+ * For a drill stopped before its end (exercise-comparability.ts), which is
+ * practice and no result. Its record would carry a score graded on the
+ * rounds it reached to every goal, board, league award and Progress thread,
+ * and the table has no column to say it was stopped.
+ */
+export async function creditPracticeTime(
+  durationMs: number | undefined,
+  expectedUserId = getUserId(),
+): Promise<void> {
+  const ownerId = expectedUserId
+  const measuredDurationMs = measuredDurationOf(durationMs)
+  if (measuredDurationMs === undefined || getUserId() !== ownerId) return
+  await addScoredMs(measuredDurationMs, ownerId)
+  if (getUserId() !== ownerId) return
+  bumpSessionRecordVersion((v) => v + 1)
+}
 
 export async function saveSessionRecord(
   data: {
@@ -71,13 +106,7 @@ export async function saveSessionRecord(
     const repo = db.getRepository<SessionRecord>('sessionRecords')
     const now = new Date().toISOString()
     const endedAt = validIso(data.endedAt) ?? now
-    const measuredDurationMs =
-      data.durationMs !== undefined &&
-      Number.isFinite(data.durationMs) &&
-      data.durationMs > 0 &&
-      data.durationMs <= MAX_MEASURED_SESSION_MS
-        ? Math.round(data.durationMs)
-        : undefined
+    const measuredDurationMs = measuredDurationOf(data.durationMs)
     const startedAt =
       validIso(data.startedAt) ??
       (measuredDurationMs === undefined

@@ -13,7 +13,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_INTERVAL_TRAINER } from '../types'
+import { EXERCISE_INTERVAL_TRAINER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { intervalRangeLabel, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
 
@@ -119,6 +119,7 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

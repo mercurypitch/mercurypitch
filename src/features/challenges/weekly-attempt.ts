@@ -17,6 +17,7 @@ import { fingerprintOf } from '@/features/community/share-identity'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import type { ExerciseType } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
+import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
 import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import type { ChallengeResultPresenter } from '@/lib/domain/weekly-attempt-context'
 import { activeWeeklyAttempt, clearActiveWeeklyAttempt, setActiveWeeklyAttempt, } from '@/lib/domain/weekly-attempt-context'
@@ -152,6 +153,11 @@ export async function recordWeeklyAttempt(entry: {
     clearWeeklyAttempt()
     return true
   }
+  // A run stopped before its end is no board attempt either
+  // (`stoppedEarlyMark`), and the attempt stays armed for a whole run.
+  // The Legend stage never marks one: it scores an early end itself, with
+  // unsung notes as 0.
+  if (runStoppedEarly(entry.metrics)) return false
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
   const comparabilityKey = weeklyAttemptComparabilityKey(a)

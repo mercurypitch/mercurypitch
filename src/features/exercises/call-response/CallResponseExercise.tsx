@@ -12,7 +12,7 @@ import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_CALL_RESPONSE } from '../types'
+import { EXERCISE_CALL_RESPONSE, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useCallResponseController } from './use-call-response-controller'
 
@@ -113,6 +113,7 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
