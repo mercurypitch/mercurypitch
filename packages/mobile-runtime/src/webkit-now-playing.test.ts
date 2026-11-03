@@ -594,6 +594,26 @@ describe('what the system does to the song', () => {
     expect(deliver.mock.calls).toEqual([['pause', {}]])
   })
 
+  it('hands the system’s pause and play to their own listener, apart from the presses', () => {
+    // The room says who paused the song: a press, or iOS taking the sound.
+    const deliver = vi.fn()
+    const fromSystem = vi.fn()
+    listenOnWebKit(ACTIONS, deliver, fromSystem)
+    showOnWebKit(song())
+    carrier.settle()
+
+    // Another app takes the sound, the room pauses and says so, and a call
+    // that ends with the word to resume gives it back.
+    carrier.interrupt()
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.endInterruption(true)
+    carrier.settle()
+
+    expect(fromSystem.mock.calls).toEqual([['pause'], ['play']])
+    expect(deliver).not.toHaveBeenCalled()
+  })
+
   it('hears nothing from a pause or a play the song asked for', () => {
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)

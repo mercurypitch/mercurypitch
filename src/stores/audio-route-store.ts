@@ -33,6 +33,13 @@
 // removes are said only where the route moved. A change that carries iOS's
 // reason is said even where it did not: the reason is the news.
 //
+// THE ROUTE IS THE APP'S OWN SESSION'S. WebKit plays the page from a session
+// of its own, which goes to AirPlay where the app's never does: on the
+// owner's iPhone every route the app's session reported was the speaker at
+// 48 kHz, before and after a TV took the sound (3 Nov 2026). So the
+// session's sample rate is kept with the route (`audioSessionRate`), and
+// airplay-suspicion.ts sets it against the rate the page's sound runs at.
+//
 // Tests: src/tests/audio-route-store.test.ts.
 
 import { createSignal } from 'solid-js'
@@ -40,6 +47,7 @@ import type { NativeAudioOutput, NativeAudioRoute, NativeAudioRouteChange, } fro
 
 const [route, setRoute] = createSignal<NativeAudioRoute | null>(null)
 const [port, setPort] = createSignal<string | null>(null)
+const [sessionRate, setSessionRate] = createSignal<number | null>(null)
 
 /** Where the sound goes now, or null where nobody can say. */
 export const audioRoute = route
@@ -49,6 +57,18 @@ export const audioRoute = route
  * singer's own screen only, never a log line (see the header).
  */
 export const audioRoutePort = port
+
+/**
+ * The app's own session's sample rate in Hz, as the phone gave it with the
+ * last reading or change of route; null where it gives none (Android, the
+ * web). Not the page's: see the header.
+ */
+export const audioSessionRate = sessionRate
+
+const rateOf = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : null
 
 const firstPort = (
   outputs: readonly { readonly name: string }[] | undefined,
@@ -88,11 +108,13 @@ export function followAudioRoute(
   const take = (
     next: NativeAudioRoute,
     portName: string | null,
+    rate: unknown,
     why: string,
     sayAnyway: boolean,
   ): void => {
     setRoute(next)
     setPort(portName)
+    setSessionRate(rateOf(rate))
     const heard = `${next} ${portName ?? ''}`
     if (!sayAnyway && heard === said) return
     said = heard
@@ -104,7 +126,8 @@ export function followAudioRoute(
     void output.read().then(
       (reading) => {
         if (following && changes === heardBefore && reading !== null) {
-          take(reading.route, firstPort(reading.outputs), why, false)
+          const rate = reading.detail.sampleRate
+          take(reading.route, firstPort(reading.outputs), rate, why, false)
         }
       },
       () => undefined,
@@ -124,7 +147,8 @@ export function followAudioRoute(
       // category change as the mic opens). Android gives none, and reports
       // each device it adds or removes, inputs too, as a change of route.
       const withReason = (change?.routeReason ?? null) !== null
-      take(next, firstPort(change?.outputs), whyOf(change), withReason)
+      const rate = change?.sampleRate
+      take(next, firstPort(change?.outputs), rate, whyOf(change), withReason)
     }) ?? (() => undefined)
 
   return () => {
@@ -138,7 +162,9 @@ export function followAudioRoute(
 export function setAudioRouteForTests(
   next: NativeAudioRoute | null,
   portName: string | null = null,
+  rate: number | null = null,
 ): void {
   setRoute(next)
   setPort(portName)
+  setSessionRate(rate)
 }

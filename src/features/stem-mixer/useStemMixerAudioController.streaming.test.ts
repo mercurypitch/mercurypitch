@@ -479,6 +479,10 @@ describe('a stem whose stream fails mid-song', () => {
       failed: true,
       detail: { stem: 'Vocal' },
     })
+    // And its line says what paused it.
+    expect(recorded('pause').map((entry) => entry.detail.by)).toEqual([
+      'lost-sound',
+    ])
     h.dispose()
   })
 })

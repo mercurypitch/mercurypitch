@@ -89,6 +89,13 @@ export interface AudioRouteChange {
   readonly routeReason: string | null
   /** iOS: the output port types before it ('Speaker'). */
   readonly previousOutputs: readonly string[]
+  /**
+   * iOS: the app's own session's sample rate in Hz, null where the phone
+   * did not say. WebKit plays from a session of its own, which can go to
+   * AirPlay where this one never does; a page's AudioContext made at
+   * another rate is how the app tells (airplay-suspicion.ts in the app).
+   */
+  readonly sampleRate: number | null
 }
 
 /** The plugin's answer, before it is checked. */
@@ -271,6 +278,7 @@ function routeChangeOf(
     previousOutputs: before.filter(
       (type): type is string => typeof type === 'string',
     ),
+    sampleRate: finite(event.sampleRate),
   }
 }
 

@@ -88,10 +88,12 @@ import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { NO_LYRIC_GLANCE } from '@/lib/lyric-glance'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import type { NativeMediaAction, NativeNowPlaying, } from '@/stores/native-shell-store'
+import { asPlaybackCause } from '@/lib/playback-cause'
+import type { NativeNowPlaying } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { arrivalCue, arrivalSong } from './karaoke-arrival'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
+import { createMediaButtons } from './karaoke-media-buttons'
 import { createKaraokeNotesOption } from './karaoke-notes-option'
 import { pinnedRoomToggle } from './karaoke-pinned-toggle'
 import styles from './karaoke-room.module.css'
@@ -100,6 +102,7 @@ import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import { karaokeBackgroundPlay, karaokeLibraryRequest, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeStagedSong, takeKaraokeLibraryRequest, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
+import { KaraokeAirPlayHint } from './KaraokeAirPlayHint'
 import { KaraokeFindSheet } from './KaraokeFindSheet'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
@@ -204,15 +207,18 @@ export const KaraokeRoomStage: Component = () => {
       void cueSong(example, { autoPlay: false, arriving: options.arriving })
       return
     }
-    setMixer(null)
-    setCue({
-      key: token,
-      song,
-      stems,
-      autoPlay: options.autoPlay,
-      seekSec: options.seekSec,
-      guide: options.guide ?? null,
-      arriving: options.arriving === true,
+    // A song still playing stops with its mixer: a change of song.
+    asPlaybackCause('song-change', () => {
+      setMixer(null)
+      setCue({
+        key: token,
+        song,
+        stems,
+        autoPlay: options.autoPlay,
+        seekSec: options.seekSec,
+        guide: options.guide ?? null,
+        arriving: options.arriving === true,
+      })
     })
   }
 
@@ -359,7 +365,8 @@ export const KaraokeRoomStage: Component = () => {
     seeded: whenBundledExamplesSeeded,
     clearStage: () => {
       setLibraryOpen(false)
-      mixer()?.pause()
+      const controls = mixer()
+      asPlaybackCause('find', () => controls?.pause())
     },
     play: (song, seekSec) => {
       void cueSong(song, { autoPlay: true, seekSec })
@@ -369,7 +376,8 @@ export const KaraokeRoomStage: Component = () => {
   // Manage songs (plan S8 §5): the studio, pushed over the room. The song
   // stops first; the studio is a list to work on, not a stage.
   const openStudio = (): void => {
-    mixer()?.pause()
+    const controls = mixer()
+    asPlaybackCause('studio', () => controls?.pause())
     nativeShellApi()?.openKaraokeStudio?.()
   }
 
@@ -441,10 +449,10 @@ export const KaraokeRoomStage: Component = () => {
         optionsLabel: 'Karaoke options',
         isPlaying,
         isPaused,
-        pause,
-        resume,
-        stop,
-        park,
+        pause: () => asPlaybackCause('shell', pause),
+        resume: () => asPlaybackCause('shell', resume),
+        stop: () => asPlaybackCause('shell', stop),
+        park: () => asPlaybackCause('park', park),
         openOptions: () => {
           setOptionsOpen(true)
         },
@@ -562,7 +570,9 @@ export const KaraokeRoomStage: Component = () => {
     find.close() // its listening holds a mic of its own
     const controls = mixer()
     if (controls === null) return
-    if (!backgroundPlay() && controls.playing()) controls.pause()
+    if (!backgroundPlay() && controls.playing()) {
+      asPlaybackCause('page-hidden', () => controls.pause())
+    }
     letMicGo(controls)
   }
   document.addEventListener('visibilitychange', onVisibility)
@@ -643,41 +653,17 @@ export const KaraokeRoomStage: Component = () => {
     announce(null)
   })
 
-  // The system's progress bar: the notification's and the shade's, and the
-  // lock screen's. Wherever it is let go, the song lands inside itself and
-  // keeps playing or stays paused. The mixer moves the lyrics as a tapped
-  // line does, and its jump tells the bar where the song went (above).
-  const seekFromSystem = (seconds: number): void => {
-    const controls = mixer()
-    if (controls === null || controls.loading() || !runOn()) return
-    const length = controls.duration()
-    if (!(length > 0)) return
-    controls.seek(Math.min(length, Math.max(0, seconds)))
-  }
-
-  // The notification's buttons, the lock screen's and a headset's. Each
-  // checks the song first: play on a playing song would start it over from
-  // where it was last paused. A skip (iOS's 10 s back and forward) counts
-  // from where the song is by the audio clock, which behind the app is
-  // ahead of the last tick.
-  const onMediaButton = (action: NativeMediaAction): void => {
-    if (typeof action === 'object') {
-      if ('skipBy' in action) {
-        const controls = mixer()
-        if (controls !== null) {
-          seekFromSystem(controls.positionNow() + action.skipBy)
-        }
-        return
-      }
-      seekFromSystem(action.seekTo)
-    } else if (action === 'play') {
-      if (!isPlaying()) resume()
-    } else if (action === 'pause') {
-      if (isPlaying()) pause()
-    } else if (runOn()) {
-      stop()
-    }
-  }
+  // The notification's buttons, the lock screen's, a headset's, a remote's
+  // and the lyrics window's, and the system's progress bar, each said as
+  // its source's doing (karaoke-media-buttons.ts).
+  const onMediaButton = createMediaButtons({
+    mixer,
+    runOn,
+    isPlaying,
+    resume,
+    pause,
+    stop,
+  })
   createEffect(
     on(systemPlayback, (on) => {
       if (!on || device === null) return
@@ -735,6 +721,7 @@ export const KaraokeRoomStage: Component = () => {
           )}
         </Show>
         <KaraokeSoundStopped mixer={mixer} />
+        <KaraokeAirPlayHint mixer={mixer} />
       </div>
       <Show when={pageInWindow() ? cue() : null} keyed>
         {(entry) => (

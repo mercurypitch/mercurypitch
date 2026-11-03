@@ -10,6 +10,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
+import { airPlaySuspected, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import type { NativeAudioOutput, NativeAudioOutputReading, } from '@/stores/native-shell-store'
 import { censusContexts, censusCounts, censusTracks, installAudioCensus, LEVEL_POLL_MS, OUTPUT_SETTLE_MS, resetAudioCensusForTests, SOUND_GAP_MS, watchRoomLevels, } from './audio-census'
 
@@ -54,7 +56,7 @@ class FakeTrack {
 }
 
 interface FakeWindow {
-  AudioContext: typeof FakeContext
+  AudioContext: new (options?: { sampleRate?: number }) => FakeContext
   navigator: {
     mediaDevices: { getUserMedia: (c: unknown) => Promise<unknown> }
   }
@@ -135,6 +137,30 @@ describe('contexts', () => {
     install()
     void new win.AudioContext()
     expect(censusCounts().contexts).toBe(1)
+  })
+
+  it('hands the AirPlay guess each context made at the output’s rate, and none made at a rate asked for', () => {
+    resetAirPlaySuspicionForTests()
+    setAudioRouteForTests('speaker', 'Speaker', 48_000)
+    // WebKit's session on AirPlay: a context made at its own rate runs at 44.1 kHz.
+    win.AudioContext = class OnAirPlay extends FakeContext {
+      constructor(options?: { sampleRate?: number }) {
+        super()
+        this.sampleRate = options?.sampleRate ?? 44_100
+      }
+    }
+    install()
+
+    void new win.AudioContext({ sampleRate: 48_000 })
+    expect(airPlaySuspected()).toBe(false)
+    void new win.AudioContext()
+    expect(airPlaySuspected()).toBe(true)
+    // A rate asked for says nothing of where the sound goes.
+    void new win.AudioContext({ sampleRate: 48_000 })
+    expect(airPlaySuspected()).toBe(true)
+
+    resetAirPlaySuspicionForTests()
+    setAudioRouteForTests(null)
   })
 })
 

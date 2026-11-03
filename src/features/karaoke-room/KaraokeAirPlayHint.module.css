@@ -1,0 +1,118 @@
+/* Screen Mirroring, for a song started on AirPlay (KaraokeAirPlayHint.tsx). */
+
+/* Always there, empty while there is nothing to say, so a screen reader
+   hears the hint the moment it appears. Under the room header, which takes
+   the 52 px below the safe area (the hosted stage's own padding in
+   KaraokeMobileStage.module.css), over the song's title line; above the
+   stage's pills and bar (z-index 3 to 6) and below the shell's chrome and
+   sheets, which sit over the whole room. The slot takes no taps; the card
+   does. */
+.slot {
+  position: absolute;
+  top: calc(var(--safe-top, 0px) + 56px);
+  left: max(12px, var(--safe-left, 0px));
+  right: max(12px, var(--safe-right, 0px));
+  z-index: 8;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* The rooms' dark glass, as the stopped-song notice's: the stage under it
+   is dark in either app theme, so its ink is the dark stage's. */
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(10, 18, 44, 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #e6edf3;
+  font: 500 13px/1.35 var(--font-body, sans-serif);
+  pointer-events: auto;
+  animation: arrive 220ms ease-out both;
+}
+
+.icon {
+  flex: none;
+  display: flex;
+  margin-top: 1px;
+  color: #ffd166;
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.words p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 44 px, in the card's corner, drawn into its padding so the words keep
+   their width. */
+.close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -12px -10px -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: #e6edf3;
+  cursor: pointer;
+}
+
+.close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.close:focus-visible {
+  outline: 2px solid #e6edf3;
+  outline-offset: -4px;
+}
+
+/* On its side the stage is two columns, the words on the right: the hint
+   keeps to the left one, over the song's line. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .slot {
+    justify-content: flex-start;
+    left: max(16px, var(--safe-left, 0px));
+  }
+
+  .hint {
+    max-width: 286px;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}

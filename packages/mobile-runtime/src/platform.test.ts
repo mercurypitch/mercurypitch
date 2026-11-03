@@ -917,7 +917,7 @@ describe('on a phone', () => {
       if (options.action === 'seekto') continue
       // Android's half resolves the kept call with the action's own name.
       press({ action: options.action })
-      expect(handler).toHaveBeenLastCalledWith(options.action)
+      expect(handler).toHaveBeenLastCalledWith(options.action, 'media-session')
     }
 
     mediaSession.setActionHandler.mockClear()
@@ -952,7 +952,7 @@ describe('on a phone', () => {
       seekCallback()({ action: 'seekto', seekTime: 97.25 })
 
       expect(handler).toHaveBeenCalledTimes(1)
-      expect(handler).toHaveBeenCalledWith({ seekTo: 97.25 })
+      expect(handler).toHaveBeenCalledWith({ seekTo: 97.25 }, 'media-session')
       // The callback is Android's answer; its half fires no event.
       expect(mediaSession.addListener).not.toHaveBeenCalled()
     })
@@ -967,8 +967,8 @@ describe('on a phone', () => {
       seekCallback()({ action: 'seekto', seekTime: -0.5 })
 
       expect(handler.mock.calls).toEqual([
-        [{ seekTo: 312 }],
-        [{ seekTo: -0.5 }],
+        [{ seekTo: 312 }, 'media-session'],
+        [{ seekTo: -0.5 }, 'media-session'],
       ])
     })
 
@@ -1140,13 +1140,14 @@ describe('on a phone', () => {
       // iOS's own buttons say 10 s: a skip with no use of an offset is that.
       press('seekforward', { action: 'seekforward', seekOffset: -5 })
 
+      // Each a press of a system media control, however iOS sent it.
       expect(handler.mock.calls).toEqual([
-        ['pause'],
-        [{ seekTo: 61.5 }],
-        ['play'],
-        [{ skipBy: 15 }],
-        [{ skipBy: -10 }],
-        [{ skipBy: 10 }],
+        ['pause', 'media-session'],
+        [{ seekTo: 61.5 }, 'media-session'],
+        ['play', 'media-session'],
+        [{ skipBy: 15 }, 'media-session'],
+        [{ skipBy: -10 }, 'media-session'],
+        [{ skipBy: 10 }, 'media-session'],
       ])
 
       stop()
@@ -1169,7 +1170,8 @@ describe('on a phone', () => {
       carrier.paused = true
       carrier.dispatchEvent(new Event('pause'))
 
-      expect(handler.mock.calls).toEqual([['pause']])
+      // The system's doing, not a press: the room says which.
+      expect(handler.mock.calls).toEqual([['pause', 'system']])
     })
 
     it('has the carrier take the sound first on a press of play', async () => {
@@ -1200,7 +1202,7 @@ describe('on a phone', () => {
       carrier.dispatchEvent(new Event('play'))
 
       expect(carrier.pause).not.toHaveBeenCalled()
-      expect(handler.mock.calls).toEqual([['play']])
+      expect(handler.mock.calls).toEqual([['play', 'system']])
     })
 
     it('tells the app while the carrier holds the playback session', async () => {
@@ -1266,7 +1268,10 @@ describe('on a phone', () => {
       press({})
       stop()
 
-      expect(handler.mock.calls).toEqual([['pause'], ['play']])
+      expect(handler.mock.calls).toEqual([
+        ['pause', 'lyrics-window'],
+        ['play', 'lyrics-window'],
+      ])
       expect(handle.remove).toHaveBeenCalled()
     })
 
@@ -1280,7 +1285,7 @@ describe('on a phone', () => {
       windowPress()({ action: 'play', at: Date.now() - 60_000 })
       windowPress()({ action: 'pause', at: Date.now() - 1000 })
 
-      expect(handler.mock.calls).toEqual([['pause']])
+      expect(handler.mock.calls).toEqual([['pause', 'lyrics-window']])
       expect(console.info).toHaveBeenCalledWith(
         '[lyrics window] play waited 60 s while the app slept: dropped',
       )
@@ -1303,7 +1308,7 @@ describe('on a phone', () => {
       expect(handler).not.toHaveBeenCalled()
 
       windowPress()({ action: 'play', otherAudio: true })
-      expect(handler.mock.calls).toEqual([['play']])
+      expect(handler.mock.calls).toEqual([['play', 'lyrics-window']])
       expect(carrier.paused).toBe(false)
     })
 
@@ -1355,7 +1360,7 @@ describe('on a phone', () => {
       ([options]) => (options as { action: string }).action === 'pause',
     )?.[1] as () => void
     press()
-    expect(handler).toHaveBeenCalledWith('pause')
+    expect(handler).toHaveBeenCalledWith('pause', 'media-session')
 
     mediaSession.setActionHandler.mockClear()
     stop()

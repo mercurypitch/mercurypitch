@@ -63,6 +63,8 @@ vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
 vi.mock('@/lib/audio-unlock', () => unlock)
 
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io'
+import { airPlaySuspected, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
 // @ts-expect-error -- a plain .mjs manifest with no types, read as is.
 import { globToRegExp, NATIVE_ASSETS } from '../../native-assets.mjs'
 import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './native-device'
@@ -335,6 +337,46 @@ describe('the device a room reaches through the bridge', () => {
 
   it('has no TV to watch on Android', () => {
     expect(createNativeDevice().onTvLyrics).toBeUndefined()
+    expect(createNativeDevice().onExternalScreen).toBeUndefined()
+  })
+
+  it('hears an iOS screen connect, mirroring the phone or showing the lyrics alike', async () => {
+    platform.pictureInPictureNeedsLyrics.mockReturnValue(true)
+    // Mirroring with the switch off: connected, and the TV shows the phone.
+    platform.readTvLyrics.mockResolvedValueOnce({
+      enabled: false,
+      connected: true,
+      showing: false,
+    })
+    const stop = vi.fn()
+    platform.onTvLyrics.mockReturnValueOnce(stop)
+    const device = createNativeDevice()
+    const handler = vi.fn()
+
+    const unsubscribe = device.onExternalScreen?.(handler)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    platform.onTvLyrics.mock.calls[0]?.[0]({ connected: false, showing: false })
+    unsubscribe?.()
+
+    expect(handler.mock.calls).toEqual([[true], [false]])
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('hands the AirPlay guess the shared clock’s rate as the clock is first made', () => {
+    resetAirPlaySuspicionForTests()
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    // Made while WebKit's session was on AirPlay: AirPlay's 44.1 kHz.
+    const context = Object.assign(fakeContext(), { sampleRate: 44100 })
+    resetSharedAudioContext({ createContext: () => context })
+    const lease = createNativeDevice().acquireAudio('karaoke-room')
+    expect(airPlaySuspected()).toBe(false)
+
+    lease.ensure()
+
+    expect(airPlaySuspected()).toBe(true)
+    lease.release()
+    resetAirPlaySuspicionForTests()
+    setAudioRouteForTests(null)
   })
 
   it('gives an iOS room the TV stage: whether it shows, and what to draw', async () => {

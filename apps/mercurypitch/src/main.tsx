@@ -110,6 +110,7 @@ import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { EAR_LAB_WITH_MERC, KARAOKE_IMPORT } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
+import { followAirPlaySuspicion, followExternalScreen, } from '@/stores/airplay-suspicion'
 import { followAudioRoute } from '@/stores/audio-route-store'
 import { nativeDeviceApi, nativeShellApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
@@ -173,6 +174,12 @@ registerNativeDevice(createNativeDevice())
 // plays the song well behind the phone's speaker, so its offset is its own
 // (audio-route-store.ts, mic-latency-store.ts).
 followAudioRoute(nativeDeviceApi()?.audioOutput)
+// Where the route cannot say: WebKit plays from a session of its own, which
+// goes to AirPlay where the app's never does. The page's rate against the
+// session's, unless a screen is connected, says the sound is likely there
+// (airplay-suspicion.ts), and each change is a line in the console.
+followExternalScreen(nativeDeviceApi()?.onExternalScreen)
+followAirPlaySuspicion()
 // The lock screen's song on iOS brings a silent element of its own; the
 // unlock clip stands aside while that element holds the playback session.
 standUnlockClipAsideForNowPlaying()

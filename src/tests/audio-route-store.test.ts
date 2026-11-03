@@ -8,7 +8,7 @@
 
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { audioRoute, audioRoutePort, followAudioRoute, setAudioRouteForTests, } from '@/stores/audio-route-store'
+import { audioRoute, audioRoutePort, audioSessionRate, followAudioRoute, setAudioRouteForTests, } from '@/stores/audio-route-store'
 import type { NativeAudioOutput, NativeAudioOutputReading, NativeAudioRoute, NativeAudioRouteChange, } from '@/stores/native-shell-store'
 
 type Ports = NativeAudioOutputReading['outputs']
@@ -16,6 +16,7 @@ type Ports = NativeAudioOutputReading['outputs']
 function reading(
   route: NativeAudioRoute,
   outputs: Ports = [],
+  detail: Record<string, unknown> = {},
 ): NativeAudioOutputReading {
   return {
     volume: 0.5,
@@ -24,7 +25,7 @@ function reading(
     steps: null,
     route,
     outputs,
-    detail: {},
+    detail,
     reason: null,
   }
 }
@@ -171,6 +172,22 @@ describe('audio route store', () => {
     await fake.answer(reading('airplay'))
 
     expect(audioRoute()).toBe('airplay')
+  })
+
+  it('keeps the app session’s sample rate from each reading and change of route', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+
+    await fake.answer(reading('speaker', PHONE, { sampleRate: 48000 }))
+    expect(audioSessionRate()).toBe(48000)
+    fake.change('speaker', iosChange({ outputs: PHONE, sampleRate: 44100 }))
+    expect(audioSessionRate()).toBe(44100)
+    // Android says no rate, and a reading that says none is not a rate.
+    fake.change('bluetooth', iosChange({ reason: null, sampleRate: null }))
+    expect(audioSessionRate()).toBeNull()
+    setVisibility('visible')
+    await fake.answer(reading('speaker', PHONE, { sampleRate: 'fast' }))
+    expect(audioSessionRate()).toBeNull()
   })
 
   it('stops hearing, and drops what was still on its way, once stopped', async () => {

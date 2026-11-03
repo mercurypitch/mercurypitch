@@ -16,6 +16,7 @@ import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '
 import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
+import { notePageAudioContext } from '@/stores/airplay-suspicion'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { createNativeReminders } from './native-reminders'
 import { createTvStage } from './native-tv-stage'
@@ -28,35 +29,52 @@ import { logClockStates } from './shared-clock-log'
  */
 const NOW_PLAYING_ARTWORK = '/now-playing.webp'
 
+/** What TVLyrics.swift says of a TV: connected, and showing the lyrics. */
+interface TvState {
+  readonly connected: boolean
+  readonly showing: boolean
+}
+
 /**
- * iOS: whether a connected TV shows the room's lyrics, as it stands and then
- * on every change (TVLyrics.swift). The first read is dropped if a change was
- * heard before it came back, or once the room has stopped listening.
+ * iOS: one thing about a connected TV, as it stands and then on every change
+ * (TVLyrics.swift): whether it shows the room's lyrics, or whether a screen
+ * is connected at all, by Screen Mirroring or a cable, whatever it shows.
+ * The first read is dropped if a change was heard before it came back, or
+ * once nobody listens.
  */
-function watchTvLyrics(handler: (showing: boolean) => void): () => void {
-  let heard = false
-  let listening = true
-  const stop = onTvLyrics((state) => {
-    heard = true
-    handler(state.showing)
-  })
-  void readTvLyrics().then((state) => {
-    if (listening && !heard && state !== null) handler(state.showing)
-  })
-  return () => {
-    listening = false
-    stop()
+function watchTv(
+  pick: (state: TvState) => boolean,
+): (handler: (value: boolean) => void) => () => void {
+  return (handler) => {
+    let heard = false
+    let listening = true
+    const stop = onTvLyrics((state) => {
+      heard = true
+      handler(pick(state))
+    })
+    void readTvLyrics().then((state) => {
+      if (listening && !heard && state !== null) handler(pick(state))
+    })
+    return () => {
+      listening = false
+      stop()
+    }
   }
 }
 
 /**
  * A lease whose clock says every state it takes in the console, from the
  * moment the clock exists (shared-clock-log.ts). An unlock makes the clock
- * first, in the same gesture, so it is watched before it is resumed.
+ * first, in the same gesture, so it is watched before it is resumed. The
+ * clock's rate goes to the AirPlay guess as it is first seen: made without
+ * a rate of its own, it runs at the rate of the output WebKit's session had
+ * then, which the app's own session cannot see (airplay-suspicion.ts).
  */
 function sayingClockStates(lease: SharedAudioLease): SharedAudioLease {
   const watch = (context: AudioContext | null): AudioContext | null => {
-    if (context !== null) logClockStates(context, 'shared')
+    if (context === null) return context
+    logClockStates(context, 'shared')
+    notePageAudioContext(context)
     return context
   }
   return {
@@ -88,6 +106,8 @@ export function createNativeDevice(): NativeDeviceApi {
         song === null ? null : { ...song, artwork: NOW_PLAYING_ARTWORK },
       ).catch(() => undefined)
     },
+    // Each with where it came from: a press, iOS taking the sound, the
+    // lyrics window (the room's line of who paused the song says it).
     onMediaAction: (handler) => onMediaAction(handler),
     pictureInPictureAutoEnter: (on) => {
       // A phone without the window leaves the app as it always did.
@@ -101,8 +121,14 @@ export function createNativeDevice(): NativeDeviceApi {
           void setPictureInPictureLyrics(script).catch(() => undefined)
         }
       : null,
-    // A TV showing the same lyrics, on the phone whose window draws them.
-    ...(pictureInPictureNeedsLyrics() ? { onTvLyrics: watchTvLyrics } : {}),
+    // A TV showing the same lyrics, on the phone whose window draws them,
+    // and a screen connected at all: mirroring, which is not AirPlay alone.
+    ...(pictureInPictureNeedsLyrics()
+      ? {
+          onTvLyrics: watchTv((state) => state.showing),
+          onExternalScreen: watchTv((state) => state.connected),
+        }
+      : {}),
     // The volume and the route: read only, and none on a phone without
     // the plugin (both answer null and nothing). The route alone as well,
     // which the latency offset follows for as long as the app runs.

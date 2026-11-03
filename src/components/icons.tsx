@@ -734,6 +734,23 @@ export const VolumeX: Component = () => (
   </svg>
 )
 
+// Tv Icon (a screen with its aerial): singing on a TV
+export const Tv: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+    <polyline points="17 2 12 7 7 2" />
+  </svg>
+)
+
 // SkipBack Icon (restart/previous)
 export const SkipBack: Component = () => (
   <svg

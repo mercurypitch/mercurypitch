@@ -52,6 +52,7 @@ import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { asPlaybackCause } from '@/lib/playback-cause'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
@@ -927,7 +928,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     songSwitches.clear()
   })
   const fadeThenSwitch = (change: () => void): void => {
-    audio.handlePause()
+    asPlaybackCause('playlist', audio.handlePause)
     const fading = audio.releaseLeft()
     if (fading <= 0) {
       change()
@@ -1007,7 +1008,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // The page load takes longer than the fade, so the song fades out
       // under it rather than stopping mid-note when this page goes.
       onLeave: () => {
-        if (audio.playing()) audio.handlePause()
+        if (audio.playing()) asPlaybackCause('leave', audio.handlePause)
       },
     }
   }
@@ -1180,7 +1181,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // entry — applied before play so the sources start at the right gain.
       const vocalPref = playlist.currentSong()?.vocalVolume
       if (vocalPref !== undefined) setTrackVolume('Vocal', vocalPref)
-      audio.handlePlay()
+      asPlaybackCause('playlist', audio.handlePlay)
       // Get the playlist builder out of the way once the song is playing.
       setPlaylistSidebarOpen(false)
     }
@@ -2052,8 +2053,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleSeekToTime: (t: number) => audio.seekTo(t),
     playbackSpeed: audio.speed,
     setPlaybackSpeed: audio.setSpeed,
-    handlePlay: audio.handlePlay,
-    handlePause: audio.handlePause,
+    handlePlay: () => asPlaybackCause('button', audio.handlePlay),
+    handlePause: () => asPlaybackCause('button', audio.handlePause),
     formatTime: canvas.formatTime,
     setCanvasRef: canvas.setCanvasRef,
     // eslint-disable-next-line solid/reactivity
@@ -2214,9 +2215,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       playing: audio.playing,
       elapsed: audio.elapsed,
       duration: audio.duration,
-      play: audio.handlePlay,
-      pause: audio.handlePause,
-      stop: audio.handleStop,
+      play: () => asPlaybackCause('voice', audio.handlePlay),
+      pause: () => asPlaybackCause('voice', audio.handlePause),
+      stop: () => asPlaybackCause('voice', audio.handleStop),
       seekToTime: audio.seekTo,
       tracks,
       toggleMute,
@@ -2491,8 +2492,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: () => {
-          if (audio.playing()) audio.handlePause()
-          else audio.handlePlay()
+          if (audio.playing()) asPlaybackCause('key', audio.handlePause)
+          else asPlaybackCause('key', audio.handlePlay)
         },
         ownsSpace: () => !layerAboveOwnsKeys(document.activeElement),
         enabled: () => !audio.loading() && audio.loadError() === '',
@@ -2605,7 +2606,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         // not start under it. A voice launch was never the prop's to stop.
         if (!voiceLaunch && props.autoPlay !== true) return
         console.log('[StemMixer] Executing auto-play handlePlay()')
-        audio.handlePlay()
+        asPlaybackCause('autoplay', audio.handlePlay)
       }, 150)
     }
   })
@@ -2774,8 +2775,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             elapsed={audio.elapsed}
             lyricsElapsed={audio.audibleElapsed}
             duration={audio.duration}
-            onPlay={audio.handlePlay}
-            onPause={audio.handlePause}
+            onPlay={() => asPlaybackCause('button', audio.handlePlay)}
+            onPause={() => asPlaybackCause('button', audio.handlePause)}
             onSeekToStart={() => audio.seekTo(0)}
             seekTo={audio.seekTo}
             hasPrevItem={hasPrevItem}
@@ -2796,7 +2797,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             playlistOverlayActive={isCurrentPlaylistSong}
             onPlaylistStart={handlePlaylistStart}
             onPlaylistSkip={() => {
-              audio.handlePause()
+              asPlaybackCause('playlist', audio.handlePause)
               playlist.advance()
             }}
             showStageSettings={props.showStageSettings !== false}
@@ -3014,10 +3015,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             playing={audio.playing}
             elapsed={audio.elapsed}
             duration={audio.duration}
-            onStop={audio.handleStop}
-            onRestart={audio.handleRestart}
-            onPlay={audio.handlePlay}
-            onPause={audio.handlePause}
+            onStop={() => asPlaybackCause('button', audio.handleStop)}
+            onRestart={() => asPlaybackCause('button', audio.handleRestart)}
+            onPlay={() => asPlaybackCause('button', audio.handlePlay)}
+            onPause={() => asPlaybackCause('button', audio.handlePause)}
             onSeek={(seconds) => audio.seekTo(seconds)}
             view={layout.viewControls}
             micActive={mic.micActive}
@@ -3262,8 +3263,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onReset={() => pitchAnalysis.resetEdits()}
             onNudgePitch={nudgeSelectedPitch}
             onPlayPause={() => {
-              if (audio.playing()) audio.handlePause()
-              else audio.handlePlay()
+              if (audio.playing()) asPlaybackCause('button', audio.handlePause)
+              else asPlaybackCause('button', audio.handlePlay)
             }}
             onSeekToStart={() => audio.seekTo(0)}
             onZoomIn={() => setPitchStudioWindow(audio.windowDuration() * 0.7)}

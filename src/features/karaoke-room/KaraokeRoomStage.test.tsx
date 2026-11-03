@@ -16,7 +16,7 @@ import type { KeyShiftNotice } from '@/components/key-shift/KeyShiftControl'
 import type { GuideLevel, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { LyricGlance } from '@/lib/lyric-glance'
-import type { NativeDeviceApi, NativeMediaAction, } from '@/stores/native-shell-store'
+import type { NativeDeviceApi, NativeMediaAction, NativeMediaActionSource, } from '@/stores/native-shell-store'
 import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, roomInPictureInPicture, } from '@/stores/native-shell-store'
 
 interface FakeMixer {
@@ -68,6 +68,10 @@ interface FakeMixer {
   setGuide: Mock
   play: Mock
   pause: Mock
+  /** Who each play and pause was by, as the mixer's line would say it. */
+  by: string[]
+  /** Who the mixer went by, as its stop line would say it. */
+  goneBy: string | null
   /** The clock about to stop: a playing song pauses with its fade. */
   prepareToSuspend: Mock
   seek: Mock
@@ -88,6 +92,7 @@ const mixers = vi.hoisted(() => ({ list: [] as FakeMixer[] }))
 
 vi.mock('@/components/StemMixer', async () => {
   const { createSignal, onCleanup, onMount, untrack } = await import('solid-js')
+  const { playbackCause } = await import('@/lib/playback-cause')
   return {
     StemMixer: (props: {
       sessionId: string
@@ -177,8 +182,16 @@ vi.mock('@/components/StemMixer', async () => {
         setMicOn,
         resetMusicLevel: vi.fn(() => setMusicLevel(0.7)),
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
-        play: vi.fn(() => setPlaying(true)),
-        pause: vi.fn(() => setPlaying(false)),
+        play: vi.fn(() => {
+          mixer.by.push(`play by=${playbackCause()}`)
+          setPlaying(true)
+        }),
+        pause: vi.fn(() => {
+          mixer.by.push(`pause by=${playbackCause()}`)
+          setPlaying(false)
+        }),
+        by: [],
+        goneBy: null,
         prepareToSuspend: vi.fn(() => {
           if (!playing()) return 0
           setPlaying(false)
@@ -247,6 +260,7 @@ vi.mock('@/components/StemMixer', async () => {
       })
       onCleanup(() => {
         mixer.alive = false
+        mixer.goneBy = playbackCause('leave')
       })
       return <div data-testid="fake-mixer" data-session={props.sessionId} />
     },
@@ -428,8 +442,8 @@ interface FakeDevice extends NativeDeviceApi {
   }
   /** Background holds taken and not let go yet. */
   holds: () => number
-  /** A press on the system's media controls. */
-  press: (action: NativeMediaAction) => void
+  /** A press on the system's media controls, from where the device says. */
+  press: (action: NativeMediaAction, source?: NativeMediaActionSource) => void
   /** Media-button handlers still subscribed. */
   mediaListeners: () => number
   /** Android opening the small window (true) or closing it (false). */
@@ -443,7 +457,11 @@ function fakeDevice(): FakeDevice {
     release: vi.fn(),
   }
   let holds = 0
-  const handlers = new Set<(action: NativeMediaAction) => void>()
+  type MediaHandler = (
+    action: NativeMediaAction,
+    source?: NativeMediaActionSource,
+  ) => void
+  const handlers = new Set<MediaHandler>()
   const windowHandlers = new Set<(inWindow: boolean) => void>()
   return {
     micStopsOtherApps: false,
@@ -459,7 +477,7 @@ function fakeDevice(): FakeDevice {
       }
     }),
     nowPlaying: vi.fn(),
-    onMediaAction: vi.fn((handler: (action: NativeMediaAction) => void) => {
+    onMediaAction: vi.fn((handler: MediaHandler) => {
       handlers.add(handler)
       return () => {
         handlers.delete(handler)
@@ -475,8 +493,8 @@ function fakeDevice(): FakeDevice {
     pictureInPictureLyrics: null,
     lease,
     holds: () => holds,
-    press: (action) => {
-      for (const handler of [...handlers]) handler(action)
+    press: (action, source) => {
+      for (const handler of [...handlers]) handler(action, source)
     },
     mediaListeners: () => handlers.size,
     windowed: (inWindow) => {
@@ -2495,6 +2513,132 @@ describe('the room picture, on an iPad', () => {
       expect(picker.textContent).not.toMatch(/\bphones?\b/iu)
     } finally {
       restore()
+    }
+  })
+})
+
+describe('who paused or played the song', () => {
+  // Each line the mixer writes names who asked (playback-cause.ts): the owner's
+  // song paused itself on AirPlay and nothing said who (3 Nov 2026).
+  const playingSong = async (): Promise<FakeMixer> => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    return current()
+  }
+
+  it('says the shell paused, played and stopped it, and a park parked it', async () => {
+    const mixer = await playingSong()
+
+    controls().pause()
+    controls().resume()
+    controls().stop()
+    controls().park()
+
+    expect(mixer.by).toEqual([
+      'pause by=shell',
+      'play by=shell',
+      'pause by=shell',
+      'pause by=park',
+    ])
+  })
+
+  it('says each system media control and where it came from', async () => {
+    const mixer = await playingSong()
+
+    device.press('pause', 'media-session')
+    device.press('play', 'system')
+    device.press('pause', 'lyrics-window')
+
+    expect(mixer.by).toEqual([
+      'pause by=media-session(pause)',
+      'play by=system',
+      'pause by=lyrics-window(pause)',
+    ])
+  })
+
+  it('says the page hiding paused it, with background play off', async () => {
+    setKaraokeBackgroundPlay(false)
+    const mixer = await playingSong()
+
+    sendAppAway(true)
+
+    expect(mixer.by).toEqual(['pause by=page-hidden'])
+  })
+
+  it('says Find by singing paused it', async () => {
+    const mixer = await playingSong()
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Find by singing/u }),
+    )
+
+    expect(mixer.by).toEqual(['pause by=find'])
+  })
+
+  it('says Manage songs paused it', async () => {
+    const unregisterShell = registerShellApi({
+      pushSettings: vi.fn(),
+      openKaraokeStudio: vi.fn(),
+    })
+    try {
+      const mixer = await playingSong()
+      controls().openOptions?.()
+      const sheet = await screen.findByTestId('karaoke-options')
+
+      fireEvent.click(
+        within(sheet).getByRole('button', { name: 'Manage songs' }),
+      )
+
+      expect(mixer.by).toEqual(['pause by=studio'])
+    } finally {
+      unregisterShell()
+    }
+  })
+
+  it('says the song changed as the next one takes the stage, and leaving as the room goes', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    const first = current()
+
+    first.hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current()).not.toBe(first)
+    })
+    const second = current()
+    unmount()
+
+    expect(first.goneBy).toBe('song-change')
+    expect(second.goneBy).toBe('leave')
+  })
+})
+
+describe('a song started with its sound on AirPlay alone', () => {
+  it('says Screen Mirroring is the way to the TV, over the stage', async () => {
+    const { resetAirPlayHintForTests } = await import('./KaraokeAirPlayHint')
+    const suspicion = await import('@/stores/airplay-suspicion')
+    const routes = await import('@/stores/audio-route-store')
+    resetAirPlayHintForTests()
+    suspicion.resetAirPlaySuspicionForTests()
+    // The app's session on its speaker at 48 kHz; the page's clock on AirPlay's 44.1.
+    routes.setAudioRouteForTests('speaker', 'Speaker', 48000)
+    suspicion.notePageAudioContext({ sampleRate: 44100 })
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    try {
+      await mountRoom()
+      current().setLoading(false)
+
+      current().setPlaying(true)
+
+      expect(screen.getByTestId('karaoke-airplay-hint')).toHaveTextContent(
+        'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
+      )
+    } finally {
+      suspicion.resetAirPlaySuspicionForTests()
+      routes.setAudioRouteForTests(null)
     }
   })
 })
