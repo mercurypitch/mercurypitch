@@ -1,4 +1,5 @@
 // Studio Compare controls — render first, then explicitly audition the level-matched Before or After.
+import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { runStudioPanelAction } from '../export/action-focus'
 import common from '../StudioPage.module.css'
@@ -8,6 +9,8 @@ import type { StudioComparisonController } from './useStudioComparison'
 export function StudioComparisonControls(props: {
   comparison: StudioComparisonController
   enabled: boolean
+  /** Why Compare waits, while it does. */
+  hold?: JSX.Element
 }) {
   return (
     <section
@@ -113,6 +116,7 @@ export function StudioComparisonControls(props: {
           </p>
         )}
       </Show>
+      {props.hold}
     </section>
   )
 }

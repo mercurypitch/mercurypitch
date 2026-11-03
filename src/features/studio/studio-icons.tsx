@@ -229,3 +229,58 @@ export const MicSmall: Component<{ size?: number }> = (p) => (
     <path d="M12 18v3" />
   </svg>
 )
+
+// Range — two brackets around a stretch of the song: set the ruler's range from a clip.
+export const RangeBrackets: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M7 4H4v16h3" />
+    <path d="M17 4h3v16h-3" />
+    <path d="M9 12h6" />
+  </svg>
+)
+
+// Punch — the record dot between the range's brackets: record only inside it.
+export const PunchRange: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M7 4H4v16h3" />
+    <path d="M17 4h3v16h-3" />
+    <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+// Close — a small cross, to clear the range.
+export const CrossSmall: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M7 7l10 10" />
+    <path d="M17 7L7 17" />
+  </svg>
+)

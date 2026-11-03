@@ -1,0 +1,79 @@
+/* Studio ruler range: a band on the ruler with a grip at each end, and its tint down the lanes. */
+.range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--studio-accent) 18%, transparent);
+  border-top: 3px solid var(--studio-accent);
+  pointer-events: none;
+}
+.draft {
+  border-top-style: dashed;
+}
+/* A grip as wide as a finger, its mark 3px on the range's edge. */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -12px;
+  width: 24px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 10.5px;
+  width: 3px;
+  border-radius: 0 0 2px 2px;
+  background: var(--studio-accent);
+}
+.end {
+  left: auto;
+  right: -12px;
+}
+.handle:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -2px;
+}
+.clear {
+  position: absolute;
+  top: 3px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--studio-text-2);
+  background: var(--studio-bar);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.clear:hover {
+  color: var(--studio-text);
+}
+.clear:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+/* A range too narrow for its cross keeps it just past its end. */
+.narrow .clear {
+  right: -34px;
+}
+.shade {
+  position: absolute;
+  top: var(--studio-ruler-height);
+  bottom: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--studio-accent) 7%, transparent);
+  border-inline: 1px solid
+    color-mix(in srgb, var(--studio-accent) 45%, transparent);
+  pointer-events: none;
+}

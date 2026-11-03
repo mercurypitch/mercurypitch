@@ -1553,3 +1553,51 @@
     transition: none;
   }
 }
+
+/* A loop take's pass picker in the clip bar */
+.toolbarPass {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 4px 0 10px;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+.toolbarPass select {
+  height: 26px;
+  padding: 0 4px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: var(--studio-bar);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 12px;
+}
+.toolbarPass select:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+@media (pointer: coarse) {
+  /* Under 16px, a phone or tablet zooms the page to the list. */
+  .toolbarPass select {
+    height: 40px;
+    font-size: 16px;
+  }
+}
+.toolbarDocked .toolbarPass {
+  padding: 0;
+}
+/* A loop take's clip: its other passes as a card's edge behind it. */
+.stackedClip::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 5px;
+  right: 5px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--track-edge);
+  pointer-events: none;
+}

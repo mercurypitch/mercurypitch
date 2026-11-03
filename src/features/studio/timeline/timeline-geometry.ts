@@ -117,3 +117,21 @@ export function studioRulerTicks(
   }
   return ticks
 }
+
+/**
+ * Where a key on the ruler moves the playhead: a second either way with the
+ * arrows, the song's start or end with Home and End; null for another key.
+ */
+export function studioRulerKeyFrame(
+  key: string,
+  playheadFrame: number,
+  endFrame: number,
+  contentEnd: number,
+): number | null {
+  if (key === 'Home') return 0
+  if (key === 'End') return contentEnd
+  const direction = key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0
+  if (direction === 0) return null
+  const frame = playheadFrame + direction * STUDIO_SAMPLE_RATE
+  return Math.max(0, Math.min(endFrame, frame))
+}

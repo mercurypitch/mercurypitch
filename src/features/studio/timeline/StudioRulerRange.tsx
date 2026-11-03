@@ -1,0 +1,258 @@
+// ============================================================
+// Studio ruler range — the stretch of the song Repeat loops and Punch records in, drawn on the ruler with a handle at each end
+// ============================================================
+//
+// Shift-drag along the ruler draws a range, and a clip's toolbar sets one
+// to the clip (StudioClipToolbar.tsx). Each end has a handle to drag, or to
+// move with the arrow keys a grid step at a time, and the cross clears it.
+// A drag shows its range as it goes and sets it once, on release: a range
+// Repeat plays is followed by the playing song (loop-range.ts), and one
+// change is one re-plan, not one per pointer move. While a take runs the
+// range holds still (take-running.ts): its handles go, and Shift-drag
+// draws nothing. The range is the session's view, like the zoom: it is
+// not saved with the song.
+import type { Accessor } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
+import type { StudioProject } from '@/lib/studio/model/types'
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
+import { STUDIO_MIN_LOOP_FRAMES } from '@/lib/studio/playback/loop-range'
+import { studioTakeRunning } from '../record/take-running'
+import { CrossSmall } from '../studio-icons'
+import styles from './StudioRulerRange.module.css'
+import { formatStudioTime, frameToPixel } from './timeline-geometry'
+import { snapStudioPosition, studioGridInterval } from './timeline-snap'
+
+/** A range from two frames in either order, or null when it is too short to loop. */
+export function studioRangeBetween(
+  a: number,
+  b: number,
+): StudioFrameRange | null {
+  const startFrame = Math.max(0, Math.round(Math.min(a, b)))
+  const endFrame = Math.round(Math.max(a, b))
+  return endFrame - startFrame >= STUDIO_MIN_LOOP_FRAMES
+    ? { startFrame, endFrame }
+    : null
+}
+
+/** One end of `range` moved to `frame`, never past the other end's shortest loop. */
+export function studioRangeEdge(
+  range: StudioFrameRange,
+  edge: 'start' | 'end',
+  frame: number,
+): StudioFrameRange {
+  const at = Math.round(frame)
+  return edge === 'start'
+    ? {
+        startFrame: Math.max(
+          0,
+          Math.min(at, range.endFrame - STUDIO_MIN_LOOP_FRAMES),
+        ),
+        endFrame: range.endFrame,
+      }
+    : {
+        startFrame: range.startFrame,
+        endFrame: Math.max(at, range.startFrame + STUDIO_MIN_LOOP_FRAMES),
+      }
+}
+
+/**
+ * Shift-drag on the ruler draws a range. `press` says whether it took the
+ * pointer; a press without Shift is the ruler's own scrub.
+ */
+export function createStudioRangeDraw(options: {
+  frameAt(event: PointerEvent): number
+  snap(frame: number): number
+  commit(range: StudioFrameRange): void
+  /** A take is running: a Shift-press is taken, and draws nothing. */
+  locked?(): boolean
+}) {
+  const [draft, setDraft] = createSignal<StudioFrameRange | null>(null)
+  let from: number | null = null
+  return {
+    draft: draft as Accessor<StudioFrameRange | null>,
+    press(event: PointerEvent): boolean {
+      if (!event.shiftKey) return false
+      if (options.locked?.() === true) return true
+      from = options.snap(options.frameAt(event))
+      setDraft(null)
+      return true
+    },
+    move(event: PointerEvent): boolean {
+      if (from === null) return false
+      setDraft(studioRangeBetween(from, options.snap(options.frameAt(event))))
+      return true
+    },
+    /** Release sets the range drawn; a cancel or a range too short sets none. */
+    end(commit: boolean): boolean {
+      if (from === null) return false
+      const drawn = draft()
+      from = null
+      setDraft(null)
+      if (commit && drawn !== null) options.commit(drawn)
+      return true
+    },
+  }
+}
+
+/** What the ruler's range needs from the timeline: the frame under a pointer, snapping, and where a drawn range goes. */
+export function createStudioRangeTools(options: {
+  frameAt(event: PointerEvent): number
+  scale(): number
+  project(): StudioProject
+  playheadFrame(): number
+  snapping(): boolean
+  commit(range: StudioFrameRange): void
+}) {
+  const tempoBpm = () => {
+    const project = options.project()
+    return project.ruler === 'bars' ? project.tempoBpm : undefined
+  }
+  const snap = (frame: number) =>
+    snapStudioPosition({
+      value: frame,
+      min: 0,
+      max: Number.MAX_SAFE_INTEGER,
+      pixelsPerSecond: options.scale(),
+      tempoBpm: tempoBpm(),
+      playheadFrame: options.playheadFrame(),
+      clips: options.project().clips,
+      excludeClipId: '',
+      enabled: options.snapping(),
+    }).value
+  return {
+    frameAt: options.frameAt,
+    snap,
+    /** The grid step the arrow keys move an end by. */
+    step: () => studioGridInterval(options.scale(), tempoBpm()),
+    draw: createStudioRangeDraw({
+      frameAt: options.frameAt,
+      snap,
+      commit: options.commit,
+      locked: studioTakeRunning,
+    }),
+  }
+}
+
+export type StudioRangeTools = ReturnType<typeof createStudioRangeTools>
+
+interface StudioRulerRangeProps {
+  tools: StudioRangeTools
+  range: StudioFrameRange | null
+  /** Pixels per second. */
+  scale: number
+  onChange(range: StudioFrameRange | null): void
+}
+
+/** The range on the ruler: its band, a handle at each end, and a cross to clear it. */
+export function StudioRulerRange(props: StudioRulerRangeProps) {
+  const [moving, setMoving] = createSignal<StudioFrameRange | null>(null)
+  const shown = () => moving() ?? props.tools.draw.draft() ?? props.range
+  const handle = (edge: 'start' | 'end') => {
+    const frame = () =>
+      edge === 'start' ? shown()!.startFrame : shown()!.endFrame
+    const move = (to: number) =>
+      props.range && setMoving(studioRangeEdge(props.range, edge, to))
+    return (
+      <span
+        class={styles.handle}
+        classList={{ [styles.end]: edge === 'end' }}
+        role="slider"
+        tabIndex={0}
+        aria-label={edge === 'start' ? 'Range start' : 'Range end'}
+        aria-valuemin={0}
+        aria-valuenow={frame() / STUDIO_SAMPLE_RATE}
+        aria-valuetext={formatStudioTime(frame())}
+        data-studio-range-handle={edge}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          event.stopPropagation()
+          event.preventDefault()
+          event.currentTarget.setPointerCapture(event.pointerId)
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId))
+            move(props.tools.snap(props.tools.frameAt(event)))
+        }}
+        onPointerUp={(event) => {
+          event.stopPropagation()
+          const moved = moving()
+          setMoving(null)
+          if (moved) props.onChange(moved)
+        }}
+        onPointerCancel={() => setMoving(null)}
+        onKeyDown={(event) => {
+          const direction =
+            event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
+          if (direction === 0 || !props.range) return
+          event.preventDefault()
+          event.stopPropagation()
+          props.onChange(
+            studioRangeEdge(
+              props.range,
+              edge,
+              frame() + direction * props.tools.step(),
+            ),
+          )
+        }}
+      />
+    )
+  }
+  return (
+    <Show when={shown()}>
+      {(range) => (
+        <span
+          class={styles.range}
+          classList={{
+            [styles.draft]: props.range === null,
+            [styles.narrow]:
+              frameToPixel(range().endFrame - range().startFrame, props.scale) <
+              64,
+          }}
+          data-studio-range=""
+          style={{
+            left: `${frameToPixel(range().startFrame, props.scale)}px`,
+            width: `${frameToPixel(range().endFrame - range().startFrame, props.scale)}px`,
+          }}
+        >
+          <Show when={props.range && !studioTakeRunning()}>
+            {handle('start')}
+            {handle('end')}
+            <button
+              type="button"
+              class={styles.clear}
+              aria-label="Clear range"
+              title="Clear range"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => props.onChange(null)}
+            >
+              <CrossSmall size={12} />
+            </button>
+          </Show>
+        </span>
+      )}
+    </Show>
+  )
+}
+
+/** The range's tint down the lanes, under the clips' edges and the playhead. */
+export function StudioRangeShade(props: {
+  tools: StudioRangeTools
+  range?: StudioFrameRange | null
+  scale: number
+}) {
+  return (
+    <Show when={props.tools.draw.draft() ?? props.range}>
+      {(range) => (
+        <div
+          class={styles.shade}
+          aria-hidden="true"
+          style={{
+            left: `calc(var(--studio-header-width) + ${frameToPixel(range().startFrame, props.scale)}px)`,
+            width: `${frameToPixel(range().endFrame - range().startFrame, props.scale)}px`,
+          }}
+        />
+      )}
+    </Show>
+  )
+}

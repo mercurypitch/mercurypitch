@@ -109,6 +109,53 @@ describe('Studio timeline', () => {
     readCanonicalAsset: vi.fn(() => Promise.reject(new Error('Missing'))),
   }
 
+  it("names the pass a loop take's clip plays, and picks another from its toolbar", () => {
+    const command = vi.fn(() => true)
+    const passes = ['take-2-pass-1', 'take-2-pass-2', 'take-2-pass-3']
+    const looped = {
+      ...project,
+      clips: [{ ...project.clips[0], assetId: passes[1], passes }],
+    }
+    render(() => (
+      <StudioTimeline
+        {...base}
+        project={looped}
+        selectedClipId="clip"
+        onCommand={command}
+      />
+    ))
+    expect(
+      screen.getByRole('button', { name: /^Lead vocal, Lead vocal of 3, / }),
+    ).toBeInTheDocument()
+    const picker = screen.getByRole('combobox', {
+      name: 'Pass this clip plays',
+    })
+    expect(picker).toHaveValue(passes[1])
+    expect(
+      within(picker)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['1 of 3', '2 of 3', '3 of 3'])
+    fireEvent.change(picker, { target: { value: passes[2] } })
+    expect(command).toHaveBeenCalledWith({
+      type: 'choose-pass',
+      clipId: 'clip',
+      assetId: passes[2],
+    })
+  })
+
+  it('sets the range to the selected clip from its toolbar', () => {
+    const onRange = vi.fn()
+    render(() => (
+      <StudioTimeline {...base} selectedClipId="clip" onRange={onRange} />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Range' }))
+    expect(onRange).toHaveBeenCalledWith({
+      startFrame: 48000,
+      endFrame: 144000,
+    })
+  })
+
   it('keeps a missing-audio clip visible/selectable and seeks without starting playback', async () => {
     const seek = vi.fn()
     const selected = vi.fn()

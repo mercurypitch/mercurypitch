@@ -11,6 +11,7 @@ import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { runStudioPanelAction } from '../export/action-focus'
+import { studioTakeRunning } from '../record/take-running'
 import { studioSoundAdjusted } from '../sound/StudioFlavourChoices'
 import type { StudioBalanceOutcome } from '../sound/useStudioSound'
 import common from '../StudioPage.module.css'
@@ -94,9 +95,15 @@ export function StudioDeskBalance(props: StudioDeskBalanceProps) {
                     class={common.textButton}
                     data-studio-finishing-action
                     disabled={
-                      !props.writable || props.project.clips.length === 0
+                      !props.writable ||
+                      props.project.clips.length === 0 ||
+                      studioTakeRunning()
                     }
-                    title="Even out the audible lanes. Volume and pan stay as they are."
+                    title={
+                      studioTakeRunning()
+                        ? 'A take is recording. Stop it to balance the tracks.'
+                        : 'Even out the audible lanes. Volume and pan stay as they are.'
+                    }
                     onClick={(event) =>
                       void runStudioPanelAction(
                         event.currentTarget,

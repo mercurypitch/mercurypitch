@@ -6,6 +6,7 @@
 // runs off the edge of the view redraws once per 512 px of scrolling, not on
 // every step.
 import { createMemo, Show } from 'solid-js'
+import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioGestureKind } from './gesture-draft'
 import styles from './StudioTimeline.module.css'
@@ -94,6 +95,11 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
       clip().sourceOutFrame - clip().sourceInFrame,
     )
   const title = () => props.asset?.originalName ?? props.trackName
+  // A loop take's clip says which of its passes plays: "Take 3, pass 2 of 4".
+  const passOf = () => {
+    const pass = studioClipPass(props.clip)
+    return pass ? ` of ${pass.count}` : ''
+  }
   const handleSize = () => (props.tablet ? 44 : 28)
   const handles = () =>
     !props.phone &&
@@ -134,6 +140,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
       classList={{
         [styles.draggingClip]: ownDraft() !== null,
         [styles.invalidClip]: ownDraft()?.valid === false,
+        [styles.stackedClip]: props.clip.passes !== undefined,
       }}
       style={{
         left: `${left()}px`,
@@ -153,7 +160,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         }}
         data-studio-clip={props.clip.id}
         data-clip-id={props.clip.id}
-        aria-label={`${props.trackName}, ${title()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
+        aria-label={`${props.trackName}, ${title()}${passOf()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
         aria-pressed={props.selected}
         onPointerDown={(event) => start(event, 'move')}
         onClick={(event) => {
@@ -167,7 +174,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
             'padding-left': `${Math.max(8, visibleLeft() - left() + 8)}px`,
           }}
         >
-          {title().replace(AUDIO_EXTENSION, '')}
+          {title().replace(AUDIO_EXTENSION, '') + passOf()}
         </span>
         <Show when={span()}>
           {(drawn) => (
