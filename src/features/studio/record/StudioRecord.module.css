@@ -101,8 +101,11 @@
   transform-origin: left center;
 }
 
-/* The status floats over the top of the arrangement: arming, the count-in
-   and the take never push the lanes down or pull them back up. */
+/* The status floats over the foot of the lanes, above the timeline's zoom
+   and clip bar: arming, the count-in and the take never push the lanes
+   down, and the ruler and the lanes' names stay in sight. The dock sits on
+   the timeline's bottom edge, and the last row makes room for the card
+   (StudioTimeline.module.css, .armed .filler). */
 .statusDock {
   position: relative;
   z-index: 30;
@@ -111,7 +114,7 @@
 }
 .status {
   position: absolute;
-  top: 6px;
+  bottom: 72px;
   left: 50%;
   display: flex;
   flex-wrap: nowrap;
@@ -157,7 +160,16 @@
   text-align: center;
 }
 .elapsed {
+  flex: none;
+  min-width: 44px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: var(--studio-control);
+  color: var(--studio-text);
+  font-size: 14px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 .statusMic {
   display: inline-flex;

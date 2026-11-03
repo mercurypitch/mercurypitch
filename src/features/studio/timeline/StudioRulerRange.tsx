@@ -13,7 +13,6 @@
 // not saved with the song.
 import type { Accessor } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import type { StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { STUDIO_MIN_LOOP_FRAMES } from '@/lib/studio/playback/loop-range'
@@ -22,6 +21,7 @@ import { CrossSmall } from '../studio-icons'
 import styles from './StudioRulerRange.module.css'
 import { formatStudioTime, frameToPixel } from './timeline-geometry'
 import { snapStudioPosition, studioGridInterval } from './timeline-snap'
+import type { StudioTimelineProps } from './types'
 
 /** A range from two frames in either order, or null when it is too short to loop. */
 export function studioRangeBetween(
@@ -95,19 +95,16 @@ export function createStudioRangeDraw(options: {
   }
 }
 
-/** What the ruler's range needs from the timeline: the frame under a pointer, snapping, and where a drawn range goes. */
+/** What the ruler's range needs from the timeline: the frame under a pointer, snapping, and its props for the song, the playhead and where a drawn range goes. */
 export function createStudioRangeTools(options: {
   frameAt(event: PointerEvent): number
   scale(): number
-  project(): StudioProject
-  playheadFrame(): number
   snapping(): boolean
-  commit(range: StudioFrameRange): void
+  timeline: Pick<StudioTimelineProps, 'project' | 'playheadFrame' | 'onRange'>
 }) {
-  const tempoBpm = () => {
-    const project = options.project()
-    return project.ruler === 'bars' ? project.tempoBpm : undefined
-  }
+  const timeline = options.timeline
+  const tempoBpm = () =>
+    timeline.project.ruler === 'bars' ? timeline.project.tempoBpm : undefined
   const snap = (frame: number) =>
     snapStudioPosition({
       value: frame,
@@ -115,8 +112,8 @@ export function createStudioRangeTools(options: {
       max: Number.MAX_SAFE_INTEGER,
       pixelsPerSecond: options.scale(),
       tempoBpm: tempoBpm(),
-      playheadFrame: options.playheadFrame(),
-      clips: options.project().clips,
+      playheadFrame: timeline.playheadFrame,
+      clips: timeline.project.clips,
       excludeClipId: '',
       enabled: options.snapping(),
     }).value
@@ -128,7 +125,7 @@ export function createStudioRangeTools(options: {
     draw: createStudioRangeDraw({
       frameAt: options.frameAt,
       snap,
-      commit: options.commit,
+      commit: (range) => timeline.onRange?.(range),
       locked: studioTakeRunning,
     }),
   }

@@ -1,4 +1,4 @@
-// Studio record notices — what the recorder is doing, a take the journal still holds, and why the last take did not go the usual way.
+// Studio record notices — what the recorder is doing (a card over the lanes' foot), a take the journal still holds, and why the last take did not go the usual way.
 import { Match, Show, Switch } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { MicSmall } from '../studio-icons'
@@ -68,8 +68,6 @@ function ArmedHint(props: { recorder: StudioRecorderHandle }) {
 
 export function StudioRecordNotices(props: StudioRecordNoticesProps) {
   const recorder = () => props.recorder
-  const lane = () =>
-    recorder().laneName(recorder().view().targetTrackId) ?? 'a new lane'
   const message = () => recorder().view().error ?? recorder().view().notice
   return (
     <>
@@ -110,77 +108,6 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
           </div>
         )}
       </Show>
-      <Show when={recorder().phase() !== 'idle'}>
-        <div class={styles.statusDock}>
-          <div
-            class={styles.status}
-            role="status"
-            data-studio-record-status={recorder().phase()}
-          >
-            <Switch>
-              <Match when={recorder().phase() === 'arming'}>
-                <p class={styles.statusText}>Opening the microphone…</p>
-              </Match>
-              <Match when={recorder().phase() === 'armed'}>
-                <span class={styles.statusMic}>
-                  <MicSmall />
-                </span>
-                <p class={styles.statusText}>
-                  <span>
-                    {recorder().inputMissing()
-                      ? `Armed on ${lane()} with the default input: ${recorder().settings().inputLabel ?? 'the input you chose'} is not connected.`
-                      : `Armed on ${lane()}. Press Record to start.`}
-                  </span>
-                  <ArmedHint recorder={recorder()} />
-                </p>
-                <button
-                  type="button"
-                  class={common.textButton}
-                  onClick={() => recorder().disarm()}
-                >
-                  Disarm
-                </button>
-              </Match>
-              <Match when={recorder().phase() === 'counting'}>
-                <span class={styles.count} aria-hidden="true">
-                  {recorder().view().countBeat ?? ''}
-                </span>
-                <p class={styles.statusText}>Counting in on {lane()}.</p>
-                <button
-                  type="button"
-                  class={common.textButton}
-                  onClick={() => recorder().stop()}
-                >
-                  Cancel
-                </button>
-              </Match>
-              <Match when={recorder().phase() === 'recording'}>
-                <span class={styles.statusMic}>
-                  <MicSmall />
-                </span>
-                <p class={styles.statusText}>
-                  <span>
-                    {recordingWords(recorder(), lane())},{' '}
-                    <span class={styles.elapsed}>
-                      {wholeSeconds(Math.floor(elapsedSeconds(recorder())))}
-                    </span>
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  class={common.button}
-                  onClick={() => recorder().stop()}
-                >
-                  Stop
-                </button>
-              </Match>
-              <Match when={recorder().phase() === 'finishing'}>
-                <p class={styles.statusText}>Keeping the take…</p>
-              </Match>
-            </Switch>
-          </div>
-        </div>
-      </Show>
       <Show when={recorder().phase() === 'idle' && message()}>
         {(text) => (
           <div
@@ -200,5 +127,89 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
         )}
       </Show>
     </>
+  )
+}
+
+/**
+ * The card for an armed or recording lane. It floats over the foot of the
+ * lanes, above the zoom and the clip bar, so it hides neither the ruler nor
+ * a lane's name and never pushes the lanes down. It mounts after the
+ * timeline (StudioWorkspace.tsx), whose last row makes room for it.
+ */
+export function StudioRecordStatus(props: StudioRecordNoticesProps) {
+  const recorder = () => props.recorder
+  const lane = () =>
+    recorder().laneName(recorder().view().targetTrackId) ?? 'a new lane'
+  return (
+    <Show when={recorder().phase() !== 'idle'}>
+      <div class={styles.statusDock}>
+        <div
+          class={styles.status}
+          role="status"
+          data-studio-record-status={recorder().phase()}
+        >
+          <Switch>
+            <Match when={recorder().phase() === 'arming'}>
+              <p class={styles.statusText}>Opening the microphone…</p>
+            </Match>
+            <Match when={recorder().phase() === 'armed'}>
+              <span class={styles.statusMic}>
+                <MicSmall />
+              </span>
+              <p class={styles.statusText}>
+                <span>
+                  {recorder().inputMissing()
+                    ? `Armed on ${lane()} with the default input: ${recorder().settings().inputLabel ?? 'the input you chose'} is not connected.`
+                    : `Armed on ${lane()}. Press Record to start.`}
+                </span>
+                <ArmedHint recorder={recorder()} />
+              </p>
+              <button
+                type="button"
+                class={common.textButton}
+                onClick={() => recorder().disarm()}
+              >
+                Disarm
+              </button>
+            </Match>
+            <Match when={recorder().phase() === 'counting'}>
+              <span class={styles.count} aria-hidden="true">
+                {recorder().view().countBeat ?? ''}
+              </span>
+              <p class={styles.statusText}>Counting in on {lane()}.</p>
+              <button
+                type="button"
+                class={common.textButton}
+                onClick={() => recorder().stop()}
+              >
+                Cancel
+              </button>
+            </Match>
+            <Match when={recorder().phase() === 'recording'}>
+              <span class={styles.statusMic}>
+                <MicSmall />
+              </span>
+              <p class={styles.statusText}>
+                {recordingWords(recorder(), lane())}
+              </p>
+              {/* A timer, not status words: a screen reader is not told every second. */}
+              <span class={styles.elapsed} role="timer" title="Recorded so far">
+                {wholeSeconds(Math.floor(elapsedSeconds(recorder())))}
+              </span>
+              <button
+                type="button"
+                class={common.button}
+                onClick={() => recorder().stop()}
+              >
+                Stop
+              </button>
+            </Match>
+            <Match when={recorder().phase() === 'finishing'}>
+              <p class={styles.statusText}>Keeping the take…</p>
+            </Match>
+          </Switch>
+        </div>
+      </div>
+    </Show>
   )
 }

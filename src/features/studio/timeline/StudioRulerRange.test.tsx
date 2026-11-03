@@ -5,7 +5,7 @@ import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import { STUDIO_MIN_LOOP_FRAMES } from '@/lib/studio/playback/loop-range'
 import { setStudioTakeRunning } from '../record/take-running'
 import type { StudioRangeTools } from './StudioRulerRange'
-import { createStudioRangeDraw, createStudioRangeTools, studioRangeBetween, studioRangeEdge,StudioRulerRange,  } from './StudioRulerRange'
+import { createStudioRangeDraw, createStudioRangeTools, studioRangeBetween, studioRangeEdge, StudioRulerRange, } from './StudioRulerRange'
 
 afterEach(() => {
   cleanup()
@@ -115,10 +115,12 @@ function mount(range = { startFrame: 48000, endFrame: 96000 }) {
     tools = createStudioRangeTools({
       frameAt: (event) => event.clientX * 1000,
       scale: () => 100,
-      project: () => studioFixture().project,
-      playheadFrame: () => 0,
       snapping: () => false,
-      commit: onChange,
+      timeline: {
+        project: studioFixture().project,
+        playheadFrame: 0,
+        onRange: onChange,
+      },
     })
     return (
       <StudioRulerRange

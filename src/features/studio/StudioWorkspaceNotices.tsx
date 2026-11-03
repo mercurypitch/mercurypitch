@@ -1,9 +1,11 @@
-// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, errors, editing elsewhere, an import, and recording.
+// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, errors, editing elsewhere, an import, and recording. The record card floats over the lanes instead, so it mounts after the timeline.
 import { Show } from 'solid-js'
 import { StudioRecordNotices } from './record/StudioRecordNotices'
 import type { StudioRecorderHandle } from './record/useStudioRecorder'
 import { StudioPlaybackNotice } from './sound/StudioPlaybackNotice'
 import styles from './StudioPage.module.css'
+
+export { StudioRecordStatus } from './record/StudioRecordNotices'
 
 export interface StudioWorkspaceNoticesProps {
   /** Export, Compare or auto-balance prepare song audio away from their panel. */
