@@ -48,6 +48,23 @@ export function gradeForScore(score: number): 'S' | 'A' | 'B' | 'C' | 'D' {
 export const STOPPED_EARLY_LINE =
   'You stopped before the end, so this run was not scored.'
 
+/**
+ * What a Manual run that sang too little gets in place of a grade
+ * (`tooShortToScore` in timer-preference.ts). It was not stopped early, so
+ * the stopped line would tell the singer the wrong thing to do next. The
+ * five is `MIN_SCORED_SECONDS`, written out so this module imports nothing;
+ * a test holds the two together.
+ */
+export const TOO_SHORT_LINE =
+  'Sing for at least 5 seconds for a score. This run counts as practice.'
+
+/** The line a run that was not scored shows, for why it was not. */
+export function unscoredRunLine(
+  metrics: Readonly<Record<string, number>> | undefined,
+): string {
+  return (metrics?.tooShort ?? 0) > 0 ? TOO_SHORT_LINE : STOPPED_EARLY_LINE
+}
+
 // ── SFX ──────────────────────────────────────────────────────────────
 
 let sfxCtx: AudioContext | null = null

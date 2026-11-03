@@ -2,11 +2,11 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, voicedSeconds } from '../exercise-scoring-utils'
 import type { RunEnd } from '../timer-preference'
-import { activeTimerSeconds, endedBeforeTimer } from '../timer-preference'
+import { activeTimerSeconds, settleTimedRun } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_PITCH_HOLD, stoppedEarlyMark } from '../types'
+import { EXERCISE_PITCH_HOLD } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const INITIAL_ZONE_CENTS = 50
@@ -168,22 +168,27 @@ export function usePitchHoldController(
 
   /**
    * End the run and grade it. `end` says what ended it: the timer, at the
-   * end of the length the singer chose, or a Stop. A Stop while the timer
-   * still ran is marked (`endedBeforeTimer`). A guided hold is not: its
-   * Stop is the stop rule's, its dose is reviewed, and it records no
-   * progress (shouldRecordOrdinaryPitchHoldProgress).
+   * end of the length the singer chose, or a Stop. The grade is settled for
+   * that end (`settleTimedRun`): a Stop while the timer still ran is
+   * marked, a Manual run that sang under five seconds is too short, and a
+   * Stop in the timer's last second scores at most its share of the length.
+   * A guided hold is not settled: its Stop is the stop rule's, its dose is
+   * reviewed, and it records no progress
+   * (shouldRecordOrdinaryPitchHoldProgress).
    */
   function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (scoreUpdateTimer) clearInterval(scoreUpdateTimer)
     base._setRunning(false)
     const graded = computeResult()
-    const stopped =
-      options.fixedTargetDurationSeconds === undefined &&
-      endedBeforeTimer(end, base._getElapsed())
-    const result: ExerciseResult = {
-      ...graded,
-      metrics: { ...graded.metrics, ...stoppedEarlyMark(stopped) },
-    }
+    const result =
+      options.fixedTargetDurationSeconds === undefined
+        ? settleTimedRun(
+            graded,
+            end,
+            base._getElapsed(),
+            voicedSeconds(base.pitchHistory()),
+          )
+        : graded
     base._completeWithResult(result)
     return result
   }

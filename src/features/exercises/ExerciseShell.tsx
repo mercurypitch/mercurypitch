@@ -12,7 +12,7 @@
 // summary.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, useContext, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
 import type { ExercisePitchTrackerProps } from '@/components/ExercisePitchTracker'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
@@ -37,7 +37,7 @@ import { gradeForScore, STOPPED_EARLY_LINE } from './feedback'
 import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
-import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
+import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, pinTimerForRun, releaseTimerPin, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType, GuidedPracticeLaunchConfig, } from './types'
 import type { ExerciseVoiceCaptureController } from './use-base-exercise'
 
@@ -99,6 +99,11 @@ export interface ExerciseShellProps {
    * the contour still show what was sung.
    */
   resultStoppedEarly?: () => boolean
+  /**
+   * The line such a card leads with, when the drill can say why the run was
+   * not scored (`unscoredRunLine`). STOPPED_EARLY_LINE otherwise.
+   */
+  unscoredLine?: () => string
   /** Temporary local audio for this run; omitted in shell-only tests. */
   voiceCapture?: ExerciseVoiceCaptureController
   error?: () => string | null
@@ -542,16 +547,26 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     timerHandle = undefined
   }
   // Arm only on the 'active' transition so the autoStart path and the
-  // transient 'count-in' state never trigger a premature stop.
+  // transient 'count-in' state never trigger a premature stop. The run's
+  // length is pinned as it turns active (`pinTimerForRun`) and read once:
+  // re-arming on a length a settings sync changed mid-run restarted the
+  // count while the drill judged the end against the new length.
   const effectiveTimerSeconds = createMemo(
     () => guidedDurationSeconds() ?? activeTimerSeconds(),
   )
+  let timerPin: symbol | undefined
+  const releasePin = (): void => {
+    if (timerPin !== undefined) releaseTimerPin(timerPin)
+    timerPin = undefined
+  }
   createEffect(
-    on([status, effectiveTimerSeconds], ([statusValue, seconds]) => {
+    on(status, (statusValue) => {
       clearTimer()
-      if (!props.autoTimer || statusValue !== 'active' || seconds === null) {
-        return
-      }
+      releasePin()
+      if (!props.autoTimer || statusValue !== 'active') return
+      timerPin = pinTimerForRun()
+      const seconds = untrack(effectiveTimerSeconds)
+      if (seconds === null) return
       const end = performance.now() + seconds * 1000
       setRemainingMs(seconds * 1000)
       timerHandle = setInterval(() => {
@@ -571,6 +586,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   )
   onCleanup(() => {
     clearTimer()
+    releasePin()
     clearTimeout(guidedResultFocusTimer)
   })
 
@@ -882,7 +898,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                       when={props.ungraded === undefined && !stoppedEarly()}
                       fallback={
                         <div class="exercise-result-title">
-                          {props.ungraded?.resultTitle() ?? STOPPED_EARLY_LINE}
+                          {props.ungraded?.resultTitle() ??
+                            props.unscoredLine?.() ??
+                            STOPPED_EARLY_LINE}
                         </div>
                       }
                     >

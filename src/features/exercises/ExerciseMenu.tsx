@@ -398,12 +398,15 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
                 <div class="exercise-recent-item">
                   <span class="exercise-recent-type">{entry.type}</span>
                   {/* A stopped run was not scored: its percentage covers
-                      only the rounds it reached. */}
+                      only the rounds it reached. A Manual hold under five
+                      sung seconds was not stopped early, only too short. */}
                   <Show
                     when={!runStoppedEarly(entry.metrics)}
                     fallback={
                       <span class="exercise-recent-score is-stopped">
-                        Stopped
+                        {(entry.metrics.tooShort ?? 0) > 0
+                          ? 'Too short'
+                          : 'Stopped'}
                       </span>
                     }
                   >

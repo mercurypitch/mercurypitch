@@ -12,6 +12,9 @@
 // because `createPersistedSignal` keys its cross-tab listener by storage key —
 // two signals on the same key would fight over it.
 
+import { createSignal } from 'solid-js'
+import type { ExerciseResult } from '@/lib/domain/exercise-contracts'
+import { stoppedEarlyMark } from '@/lib/domain/exercise-contracts'
 import { createPersistedSignal } from '@/lib/storage'
 
 /**
@@ -92,12 +95,48 @@ export function setCustomTimerSeconds(seconds: number): void {
   setPreference((current) => ({ ...current, customSec: clampCustom(seconds) }))
 }
 
-/** The length a run will actually get, or null when the singer stops it. */
-export function activeTimerSeconds(): number | null {
+/** The length the singer has chosen, or null for Manual. */
+function chosenTimerSeconds(): number | null {
   const mode = timerMode()
   if (mode === 'manual') return null
   if (mode === 'custom') return customTimerSeconds()
   return mode
+}
+
+/**
+ * The length of the run in progress, fixed as it starts.
+ *
+ * The timer is chosen between runs, but a settings sync can change it
+ * during one. The shell used to re-arm its countdown on the change,
+ * restarting the count, while the drill judged the run's end against the
+ * new length, so the countdown and the mark could disagree. The pin holds
+ * a run to the length it started with, for the countdown, the mark, the
+ * grade and the Stop's name alike; a change applies from the next run.
+ */
+const [pinnedRun, setPinnedRun] = createSignal<{
+  token: symbol
+  seconds: number | null
+} | null>(null)
+
+/** Fix the length of the run starting now. The token releases it. */
+export function pinTimerForRun(): symbol {
+  const token = Symbol('timed run')
+  setPinnedRun({ token, seconds: chosenTimerSeconds() })
+  return token
+}
+
+/** Release a run's pin. A token a newer run has replaced releases nothing. */
+export function releaseTimerPin(token: symbol): void {
+  if (pinnedRun()?.token === token) setPinnedRun(null)
+}
+
+/**
+ * The length a run will actually get, or null when the singer stops it:
+ * the pinned length while a run is in progress (`pinTimerForRun`).
+ */
+export function activeTimerSeconds(): number | null {
+  const pinned = pinnedRun()
+  return pinned !== null ? pinned.seconds : chosenTimerSeconds()
 }
 
 /** What ended a timed drill's run: the singer's Stop, or its timer. */
@@ -122,13 +161,75 @@ export const TIMER_END_GRACE_MS = 1000
  * practice, not a result (`stoppedEarlyMark`). Which control ended the run
  * is not enough: a Stop once the length has run out ends a whole run. On
  * Manual there is no length to fall short of, and the Stop is the run's
- * end.
+ * end, though a run that sang too little is not scored either
+ * (`tooShortToScore`).
  */
 export function endedBeforeTimer(end: RunEnd, elapsedMs: number): boolean {
   if (end === 'timer') return false
   const seconds = activeTimerSeconds()
   if (seconds === null) return false
   return elapsedMs < seconds * 1000 - TIMER_END_GRACE_MS
+}
+
+/**
+ * The least singing a Manual run needs for a score: the shortest length a
+ * timer offers. On Manual the Stop is the run's end, so nothing else held a
+ * run to any length, and one second of Long Note held in tune scored about
+ * 85, because its grade gives length 15% of its weight. That cleared the
+ * basics challenges. A Manual run is now never a cheaper result than the
+ * shortest timed run.
+ */
+export const MIN_SCORED_SECONDS = CUSTOM_MIN_SEC
+
+/** Whether a Manual run sang too little to be scored (`MIN_SCORED_SECONDS`). */
+export function tooShortToScore(sungSeconds: number): boolean {
+  return activeTimerSeconds() === null && sungSeconds < MIN_SCORED_SECONDS
+}
+
+/**
+ * The most a whole run its timer did not end can score: its share of the
+ * length, in whole points. A Stop in the countdown's last second ends a
+ * whole run (`TIMER_END_GRACE_MS`), and at the five-second preset that
+ * second is a fifth of the run: a steady four-second Long Note scored 97,
+ * over Immaculate's 95 and the level's step-up at 90. Now it scores at most
+ * 80. A run its timer ended, one stopped once its length had run out, and
+ * any Manual run keep their grade.
+ */
+export function scoreCapForEnd(end: RunEnd, elapsedMs: number): number {
+  if (end === 'timer') return 100
+  const seconds = activeTimerSeconds()
+  if (seconds === null) return 100
+  return Math.min(100, Math.floor((elapsedMs / (seconds * 1000)) * 100))
+}
+
+/**
+ * A timed drill's graded run, settled for how it ended. It is marked when
+ * it was stopped short of its timer (`endedBeforeTimer`) or sang too little
+ * on Manual (`tooShortToScore`, which also sets `tooShort` so the card can
+ * say why). A marked run is not scored and keeps the grade of what it sang;
+ * a whole run scores at most its share of the length (`scoreCapForEnd`).
+ * `elapsedMs` is how far into the run the end came; `sungSeconds` is how
+ * much of it had a voice.
+ */
+export function settleTimedRun(
+  graded: ExerciseResult,
+  end: RunEnd,
+  elapsedMs: number,
+  sungSeconds: number,
+): ExerciseResult {
+  const tooShort = tooShortToScore(sungSeconds)
+  const stopped = endedBeforeTimer(end, elapsedMs) || tooShort
+  return {
+    ...graded,
+    score: stopped
+      ? graded.score
+      : Math.min(graded.score, scoreCapForEnd(end, elapsedMs)),
+    metrics: {
+      ...graded.metrics,
+      ...stoppedEarlyMark(stopped),
+      ...(tooShort ? { tooShort: 1 } : {}),
+    },
+  }
 }
 
 /**
@@ -142,4 +243,5 @@ export function stopLabelForTimer(): string {
 /** Reset to the shipped default. Exists for tests, which share module state. */
 export function resetTimerPreference(): void {
   setPreference({ ...DEFAULT_PREFERENCE })
+  setPinnedRun(null)
 }

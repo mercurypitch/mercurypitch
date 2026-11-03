@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionRecord } from '@/db/entities'
 import type * as BadgeGrantEngine from '@/db/services/badge-grant-engine'
 import type { GrantContext } from '@/db/services/grant-context'
+import { STOPPED_EARLY_LINE, TOO_SHORT_LINE, unscoredRunLine, } from '@/features/exercises/feedback'
 import type { RunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseResult } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
@@ -608,7 +609,8 @@ describe('a timed drill stopped before its timer runs out', () => {
   // default. A Stop before it ended the run short of the length the singer
   // chose and was graded as a whole run: one second of Long Note held in
   // tune scored 86, and Vibrato grades only its last four seconds. On
-  // Manual there is no length to fall short of, and the Stop is the end.
+  // Manual there is no length to fall short of, and the Stop is the end,
+  // but a run needs as much singing as the shortest timer asks for.
   const ROCK_SOLID = {
     challengeId: 'rock-solid',
     title: 'Rock Solid',
@@ -657,17 +659,32 @@ describe('a timed drill stopped before its timer runs out', () => {
   })
 
   it.each(timed)(
-    '%s marks a Stop while its timer runs, and neither its timer nor Manual',
+    '%s marks a Stop while its timer runs, and neither its timer nor a sung Manual run',
     (_name, setUp) => {
       setTimerMode(10)
       const stopped = setUp(mockBase())()
       const timedOut = setUp(mockBase())('timer')
       setTimerMode('manual')
-      const manual = setUp(mockBase())()
+      const manual = setUp(inTuneFor(6))()
 
       expect(runStoppedEarly(stopped.metrics)).toBe(true)
+      expect(unscoredRunLine(stopped.metrics)).toBe(STOPPED_EARLY_LINE)
       expect(runStoppedEarly(timedOut.metrics)).toBe(false)
       expect(runStoppedEarly(manual.metrics)).toBe(false)
+    },
+  )
+
+  it.each(timed)(
+    '%s on Manual leaves a run that sang under five seconds unscored, and says why',
+    (_name, setUp) => {
+      setTimerMode('manual')
+      const short = setUp(inTuneFor(4))()
+      const long = setUp(inTuneFor(6))()
+
+      expect(runStoppedEarly(short.metrics)).toBe(true)
+      expect(unscoredRunLine(short.metrics)).toBe(TOO_SHORT_LINE)
+      expect(runStoppedEarly(long.metrics)).toBe(false)
+      expect(long.metrics.tooShort).toBeUndefined()
     },
   )
 
@@ -712,6 +729,50 @@ describe('a timed drill stopped before its timer runs out', () => {
       expect.objectContaining({ completed: true, bestScore: 100 }),
       'singer-1',
     )
+  })
+
+  it('completes no basics challenge with one second of Long Note on Manual, where six seconds do', async () => {
+    setTimerMode('manual')
+    beginChallengeAttempt(ROCK_SOLID)
+    const short = useLongNoteController(inTuneFor(1))
+    short.setTarget(69)
+    const stopped = short.stopAndCompute()
+
+    await record(stopped)
+
+    // On Manual the Stop is the run's end, and the second it sang graded
+    // past the bar. Too short to score, it passed nothing.
+    expect(stopped.score).toBeGreaterThanOrEqual(ROCK_SOLID.targetScore)
+    expect(mocks.saveChallengeProgress).not.toHaveBeenCalled()
+    expect(mocks.saveSessionRecord).not.toHaveBeenCalled()
+    expect(activeChallengeAttempt()?.challengeId).toBe('rock-solid')
+
+    const whole = useLongNoteController(inTuneFor(6))
+    whole.setTarget(69)
+    const held = whole.stopAndCompute()
+    await record(held)
+
+    expect(held.score).toBe(88)
+    expect(mocks.saveChallengeProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ completed: true, bestScore: 88 }),
+      'singer-1',
+    )
+  })
+
+  it('scores a Stop in the last second of a five-second run at most its share of it', () => {
+    setTimerMode(5)
+    // The countdown reads "1s" from four seconds in. Graded on the four it
+    // reached, a steady hold scored 97, past Immaculate's 95.
+    const onOne = useLongNoteController(inTuneFor(4))
+    onOne.setTarget(69)
+    const stopped = onOne.stopAndCompute()
+    const toTheEnd = useLongNoteController(inTuneFor(5))
+    toTheEnd.setTarget(69)
+    const timedOut = toTheEnd.stopAndCompute('timer')
+
+    expect(runStoppedEarly(stopped.metrics)).toBe(false)
+    expect(stopped.score).toBe(80)
+    expect(timedOut.score).toBe(100)
   })
 
   it('leaves a guided Pitch Hold unmarked: its Stop is the stop rule, and it records nothing', () => {
