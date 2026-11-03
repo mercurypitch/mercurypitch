@@ -131,10 +131,10 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,195 words on `node scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 184, and inside the lead's aim for this pass of 2,230 (FACTS 3). The page
-runs about 15 minutes: 9.22 minutes of reading at 238 words a minute and about 5.5 of sound, toys
-and tasks, 14.69 in all, past MASTER-PLAN § 4.2's "8 to 12 minutes of active time, 500 to 900
+The learner copy is 2,177 words on `node scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 202, and inside the lead's aim for this pass of 2,230 (FACTS 3). The page
+runs about 15 minutes: 9.15 minutes of reading at 238 words a minute and about 5.5 of sound, toys
+and tasks, 14.62 in all, past MASTER-PLAN § 4.2's "8 to 12 minutes of active time, 500 to 900
 words", as Lessons 10, 12, 15, 21, 23 and 25 are. The chip is an estimate until the ring's states
 and the staff's chords are timed in their lab, as SEASON-2 § 1.3 asks, and this section says so
 until then. Each step's own text, with its Try and its Notice, runs 57 to 120 words (Steps 1 to 4:
@@ -153,9 +153,9 @@ parts run past a step's 120 words, by the same counter, for these reasons:
   word.
 - **The cold open, 159 words**: the hook's own question, and a reveal that says which note, says the
   pull in one textbook's words, and says why F♯ was fair (FACTS 34 to 38).
-- **The Wrap, 478 words**: the practice card says what Chord Stacker does at every level, its pace
-  and its printed sharps included, what it shows and what it scores, and what the app lacks; its
-  second drill is Stack; its rest version is Lesson 12's (FACTS 62 to 70).
+- **The Wrap, 460 words**: the practice card says what Chord Stacker does at every level, its
+  printed sharps included, what it shows and what it scores, and what the app lacks; its second
+  drill is Stack; its rest version is Lesson 12's (FACTS 62 to 70).
 
 The fix pass after the review added the new reveal, Step 3's sentence on B and F♯, Step 4's clause
 on Lesson 23's intervals and "its seventh in the bass", the letters counted with both ends, and the
@@ -167,12 +167,14 @@ card's account of Chord Stacker's pace, and made room with these cuts:
 - **Step 4**: "stacked in thirds", and the play of C major's three positions, whose work the
   predict's plays and the Try now do (FACTS 49).
 
-The count went from 2,178 to 2,195. The hints and status lines are stage directions in LESSON.md and
-are not counted, as in the text packages of Lessons 9 to 25: the two predicts' hints and their "You
-said" lines, the names of the plays a choice unlocks, the stored voice's line, the steps' lock lines
-and the held lines, Sing it's hints, and the toys' labels, readouts and hints. A built page writes
-them in the open and counts them, about 150 words more (Lesson 8 FACTS 4), so the built page is
-about 2,345 words, under the cap, with the chip still at 15 minutes. The article plan budgeted near
+The count went from 2,178 to 2,195, and to 2,177 when the app's Chord Stacker fixes shipped and the
+card dropped the pace and the top note's tail (FACTS 62, 65). The hints and status lines are stage
+directions in LESSON.md and are not counted, as in the text packages of Lessons 9 to 25: the two
+predicts' hints and their "You said" lines, the names of the plays a choice unlocks, the stored
+voice's line, the steps' lock lines and the held lines, Sing it's hints, and the toys' labels,
+readouts and hints. A built page writes them in the open and counts them, about 150 words more
+(Lesson 8 FACTS 4), so the built page is about 2,327 words, under the cap, with the chip still at
+15 minutes. The article plan budgeted near
 1,250 words.
 
 The activities are timed from this spec's lengths (FACTS 3, 72). Free play is not counted.
@@ -343,19 +345,18 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
 ## Practice links: what exists and what needs engineering
 
 1. **Chord Stacker**, `/pitch-training?lesson=27`, printed mercurypitch.com/pitch-training, then tap
-   Chord Stacker. Today it plays five four-note chords in a shuffled order, root first, a note at a
-   time, the first three about 0.3 s apart, each cut off by the next at every level, then has the
-   learner sing each note back, with nothing sounding but, below level 10, the top note's tail for
-   up to 0.4 s; it scores each note against its own octave, names no chord, prints each note's name
-   with every black piano key as a sharp, shows a tuning dot and no staff, and starts its root on
-   the preset's starting note; its level changes the top note's length and the time to sing, not the
-   pace (FACTS 62 to 65). Needs engineering, none of it blocking this page: a chord-type launch
-   field, triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the dominant
-   seventh and its inversions; each note waited out before the next, as Arpeggio Jumper does
+   Chord Stacker. Today a run is five rounds, one four-note chord each, in a shuffled order; each
+   chord plays root first, a note at a time, each note in full with 0.3 s between, then the learner
+   sings each note back with nothing sounding; it scores each note against its own octave, names no
+   chord, prints each note's name with every black piano key as a sharp, shows a tuning dot and no
+   staff, and starts its root on the preset's starting note; its level changes every note's length
+   and the time to sing (FACTS 62 to 65). Needs engineering, not blocking this page: a chord-type
+   launch field, triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the
+   dominant seventh and its inversions. The two fixes this package found have shipped: each note is
+   waited out before the next, as Arpeggio Jumper's are
    (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:316-319`), so the
-   first three notes sound their full length (FACTS 62; new, hand-back); and its help text
-   corrected, its summary with it, since nothing sounds while the learner sings (FACTS 66; new,
-   hand-back).
+   first three notes sound their full length (FACTS 62); and its help text and its summary say what
+   the drill does (FACTS 66).
 2. **Ear Lab's Stack**, `/ear-lab?lesson=27`, printed mercurypitch.com/ear-lab, then tap Stack. Today
    it plays one block chord on a roved root and asks for its quality from six, the dominant seventh's
    pad marked 7; no major seventh chord (FACTS 67). Needs engineering: the `ear-drill` launch kind
@@ -437,16 +438,18 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
    lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:57-67`), the admin console's
    lesson list (`src/features/admin/lessons/lesson-admin.ts:88`) and the current lesson's reader
    (`src/lib/current-lesson.ts:34-37`).
-10. **Chord Stacker's help text and its note lengths**, app content and an app fix, not blocking.
-    The help (`src/features/exercises/exercise-help.ts:193-200`) says each note is tuned against the
-    notes already sounding, and its summary that the learner builds a chord, and nothing sounds
-    while the learner sings (FACTS 66). Proposed: the summary "Hear a chord one note at a time, then
-    sing each note back in tune." and the body "You hear a chord one note at a time, from the root
-    up, then sing each note back on its own." The play loop waits only a fixed 300 ms after each
-    note (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:144-162`), so notes
-    1 to 3 are cut off 0.3 s in at every level; it should wait each note out before the next, as
-    Arpeggio Jumper does (FACTS 62). The card describes the drill as it is; when the fix lands, its
-    "about a third of a second apart" and the coach's list are looked at again.
+10. **Chord Stacker's help text and its note lengths**, app content and an app fix, both shipped.
+    The help said each note is tuned against the notes already sounding, and its summary that the
+    learner builds a chord, though nothing sounds while the learner sings (FACTS 66). It now takes
+    the summary and the first sentence proposed here, "Hear a chord one note at a time, then sing
+    each note back in tune." and "You hear a chord one note at a time, from the root up, then sing
+    each note back on its own.", and adds the octave and the run's five rounds, one chord each
+    (`src/features/exercises/exercise-help.ts:211-219`). The play loop waited only a fixed 300 ms
+    after each note, so notes 1 to 3 were cut off 0.3 s in at every level; it now waits each note
+    out before the gap, as Arpeggio Jumper does
+    (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:144-168`; FACTS 62). The
+    card no longer gives "about a third of a second apart", and the coach's list has the new
+    lengths.
 
 ## Decisions for the owner
 

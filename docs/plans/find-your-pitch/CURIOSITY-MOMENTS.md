@@ -436,7 +436,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** sourced in Lesson 20's FACTS: the pentatonic's degrees, steps and rotations (Open
   Music Theory 2e, 8.9 and 7.13), the study of 304 recordings (Savage et al. 2015), the pianists'
   practice (Duke, Simmons and Cash 2009, abstract only), agility and staccato (Arneson's guide for
-  beginning singing teachers); the app at `c60f0fdcb`.
+  beginning singing teachers); the app at `c60f0fdcb`, and Scale Runner and Staccato on their fixes.
 
 ### Lesson 21 · Keys and the circle of fifths · theory; written; no page yet · hook kept
 
@@ -574,8 +574,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** sourced in Lesson 24's FACTS: beats (Wolfe, UNSW, both pages), harmonics and pure
   intervals, the piano's fifth and third against a drone and a wave's effect on the throb
   (arithmetic for steady harmonic tones), singers in pairs (Dai & Dixon 2019) and a quintet's thirds
-  (D'Amario et al. 2020), sung vibrato hiding beats (Sundberg 1994, as RESEARCH reads it); the app at
-  `c60f0fdcb`. Kodály's part singing is not verified and not used.
+  (D'Amario et al. 2020), sung vibrato hiding beats (Sundberg 1994, as RESEARCH reads it); the app
+  at `c60f0fdcb` and the run score on its fix. Kodály's part singing is not verified and not used.
 
 ### Lesson 25 · Minor, properly · theory; written; no page yet · hook kept
 
@@ -640,8 +640,8 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
 - **Facts:** sourced in Lesson 26's FACTS: thirds in a key, counted as spans as Lesson 23 counts
   them, and compound intervals (OMT 2e 1.15), passing notes (OMT 2e 4.04; MyMusicTheory; Collins;
   Merriam-Webster; Wikipedia), "part" (Wikipedia), singers in pairs (Dai & Dixon 2019, as Lesson 24
-  reads it); the app at `c60f0fdcb` (Jam's Harmony Stack, its diatonic harmony, its boxes' names and
-  its late joiner, Drone Intonation's thirds, the kit).
+  reads it); the app at `c60f0fdcb` (Jam's Harmony Stack, its diatonic harmony, Drone Intonation's
+  thirds, the kit), with the boxes' names and the late joiner read again on the app's fixes.
 
 ### Lesson 27 · Seventh chords and inversions · theory; written; no page yet · hook kept
 
@@ -676,9 +676,9 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   source says the second sentence (Lesson 27 FACTS 5, 5b).
 - **Facts:** sourced in Lesson 27's FACTS: seventh chords, their names, the dominant seventh's pull,
   inversions and figures (Open Music Theory 2e, 1.17, 1.18 and 4.2), the tendencies of ti and of a
-  chord's seventh (Open Music Theory 1e, 2.12); the app at `c60f0fdcb`. The "happy and jazzy" and
-  "unresolved" sounds, and which of F and F♯ pulls harder, are given as one textbook's account and
-  Lesson 23's convention, not as fact.
+  chord's seventh (Open Music Theory 1e, 2.12); the app at `c60f0fdcb` and Chord Stacker on its
+  fixes. The "happy and jazzy" and "unresolved" sounds, and which of F and F♯ pulls harder, are
+  given as one textbook's account and Lesson 23's convention, not as fact.
 
 ### Lesson 28 · Cadences, form and a song in two parts · voice and theory; written; no page yet · hook kept
 

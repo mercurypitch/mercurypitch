@@ -15,12 +15,12 @@ lesson's module moves into the kit first.
 
 It stands on Season 2's kit work, none of it built yet, and specifies again none of what other
 packages give: the seasons in the kit (SEASON-2 § 6.2 item 1); Lesson 18's in-time reader and its
-sing flow with a take read in time (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:688-704`),
-its woodblock count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:684-685`) and
-its planning-text test codes (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:738-741`),
+sing flow with a take read in time (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:689-705`),
+its woodblock count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:685-686`) and
+its planning-text test codes (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`),
 the lead's answer 2; and Lesson 24's headphones check and quiet check
-(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:747-755`) and its one kept source
-under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:742-746`). This spec
+(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:748-756`) and its one kept source
+under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:743-747`). This spec
 adds only what a part sung against a played part needs: that kept source widened from a drone to a
 sung line, one line for the reader, the tune line's two-part states, and a lab test. The scored runs
 ship only after that lab test, in which silence with Merc's part from the speakers reads as no
@@ -41,7 +41,7 @@ module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1239-1240`). Lesson 28 sings one part of a two-part song with
+`docs/plans/find-your-pitch/SEASON-2.md:1267-1268`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
 headphones and quiet checks as they are specified here.
 
@@ -148,7 +148,7 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
 
 ## Length
 
-The learner copy is 2,052 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+The learner copy is 2,044 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
 under the series' cap of 2,379. Each step's own text, with its Try, its Notice and any Tavi line,
 runs 108, 83, 101 and 83 words, inside 50 to 120 a step.
 
@@ -167,12 +167,12 @@ turn's other part lines, "mi fa so fa mi, a third above the tune" and "do re mi 
 and its bar, "C major chord" (5); the hero's label, "‘Twinkle’ in C major" (4); and free play's
 state switch, 1 to 4 (4). Marks that are a numeral or a single name, the brackets' 4s and 3s, the
 beads' sharps, the lines' tags and the syllables under Sing it's bands, are not counted, as a
-chart's ticks are not. So the built page runs about 2,052 + 150 + 168 = 2,370 words, 9 under the
+chart's ticks are not. So the built page runs about 2,044 + 150 + 168 = 2,362 words, 17 under the
 cap.
 
-The page runs about 16 minutes: 9.96 of reading the built page at 238 words a minute and about 5.9
-of sound, toys and tasks, 15.86 in all, the plan's "about 16 minutes (lab-timed)"; the text's count
-alone gives 14.52. The chip, the head's "A sixteen-minute lesson", `timeRequired` `PT16M` and the
+The page runs about 16 minutes: 9.92 of reading the built page at 238 words a minute and about 5.9
+of sound, toys and tasks, 15.82 in all, the plan's "about 16 minutes (lab-timed)"; the text's count
+alone gives 14.49. The chip, the head's "A sixteen-minute lesson", `timeRequired` `PT16M` and the
 season's `minutes` say 16 until the tune line's states and the runs are timed in their lab (SEASON-2
 § 1.3), which may move them. Two parts carry more, for these reasons:
 
@@ -180,11 +180,10 @@ season's `minutes` say 16 until the tune line's states and the runs are timed in
   24's word for word, which are not cut; the headphones check and the quiet check, which the scored
   path needs; the briefing, one for every set; the "What this does" box; the reading's example
   lines; the feelings' and the swap's lines; and the sing-along (FACTS 49 to 62).
-- **The Wrap, 302 words.** The practice card says what Harmony Stack does to a learner and how to
-  reach it with a friend in the order that works today: the range, the room, the link, and the mode
-  once the friend is in; nothing played; the third's boxes; the octave it scores. Then Drone
-  Intonation for a learner alone, the care lines and the rest version (FACTS 63 to 66), and the
-  next lesson.
+- **The Wrap, 294 words.** The practice card says what Harmony Stack does to a learner and how to
+  reach it with a friend: the range, the room, the mode and the link; nothing played; the boxes'
+  names; the octave it scores. Then Drone Intonation for a learner alone, the care lines and the
+  rest version (FACTS 63 to 66), and the next lesson.
 
 The quick check runs 242 words, four questions with three answers each and a line of feedback for
 every answer (MASTER-PLAN § 4.2 item 8); the recall 152, Lessons 12 and 24's questions word for
@@ -274,7 +273,7 @@ The predict's `onChoice` draws each step's own state and free play's, and remove
 leaves its chord column undrawn
 (`docs/plans/find-your-pitch/lessons/25-minor-properly/WEB-SPEC.md:241-245`) and Lesson 27's draws
 V with three corners until the choice
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:213-214`). Steps 1 and 2's
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:215-216`). Steps 1 and 2's
 text, its plays, Try and Notice stay hidden until the reveal, the held line "Hear the copy
 at the top to unlock this step." in their place (FACTS 41). Every play is the page's one sound
 (Audio). Each state has a spoken summary that says what it draws whenever it changes.
@@ -496,7 +495,7 @@ The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, 
 in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
 of Lesson 27's stage as its cold open opens, as Lesson 27's package draws it: the ring with the V
 room lit and the I room faint, no fourth corner, Merc and Tavi, no bubbles
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:314-317`). It holds no
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:316-319`). It holds no
 button, since the card is a link, does not move and plays no sound. Its styles go under a class of
 its own, not the tease line's `.next-tease` (FACTS 5b).
 
@@ -569,19 +568,17 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Jam's Harmony Stack**, for two or more: the link is `/jam?lesson=26`, printed
-  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it, in the
-  order that works today, and what it does to a learner (FACTS 63, 63a, 63b and 64). The order: set
-  your Singing Voice Range in Settings, since the room's octave is the host's range, which reads
-  tenor until it is set; open a Jam room and share its link; and pick Harmony Stack under More
-  controls once the friend is in, since the mode and the drill reach only a friend already in the
-  room, and a friend who joins after the pick stays in unison, on their own scale in their own
-  octave. What it does: one singer takes the room's tune and the other a third above it, in the key,
-  each scored on their own part; the room plays nothing, not even a first note; on the third, its
-  boxes print the tune's letters; and it scores each note in the octave the host's range sets,
-  unfolded, where this page's reader folds. That sentence on the boxes describes the app as it is,
-  the lead's call; when item 15 of What the kit and the app still need ships, it becomes "It plays
-  nothing; its boxes name their notes.", 4 words fewer; when item 16 ships, a friend who joins late
-  gets the mode and the drill, and the order matters less. The card gives no advice on which voices
+  mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it and
+  what it does to a learner (FACTS 63, 63a, 63b and 64). The steps: set your Singing Voice Range in
+  Settings first, since the room's octave is the host's range, which reads tenor until it is set;
+  then open a Jam room, pick Harmony Stack under More controls and share the room's link, in any
+  order, since a friend who joins late is sent the room's drill and its mode. What it
+  does: one singer takes the room's tune and the other a third above it, in the key, each scored on
+  their own part; the room plays nothing, not even a first note; its boxes name their notes, each
+  part its own; and it scores each note in the octave the host's range sets, unfolded, where this
+  page's reader folds. Until items 15 and 16 of What the kit and the app still need shipped, the
+  card had the friend in before the mode was picked and said "on the third, its boxes print the
+  tune's letters". The card gives no advice on which voices
   to pair: checked against all six presets on the room's first tune, the C major scale on C3 or C4,
   two lower or two higher voices keep the tune and the third inside every preset, but with no room
   at the tenor's floor or the soprano's, on the tune's C, under the series' two semitones, and a
@@ -606,11 +603,12 @@ stills when WebGL fails.
 - **The first visit and the marker.** Nothing reads `?lesson=26` until SEASON-2 § 5.2 item 21
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that, so First Light steps aside and the card has no first-visit line (FACTS 67).
-- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:928-930`),
+- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:933-935`),
   the app's work: a melody played and a third above or below it sung, scored per note, octave-folded,
   with a headphones prompt. When it ships it takes the card's first place, as the drill a learner can
   do alone, with its own care lines and the coach's look, and Harmony Stack moves to second (FACTS
-  68).
+  68). The native app's Harmony room does it there, but no web page can open it, so the card does
+  not name it (SEASON-2 § 7 item 14).
 - No premium exercise is linked: Jam and Drone Intonation are free (FACTS 69).
 
 ## Explorer and season data
@@ -624,9 +622,9 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   which the lab may move (FACTS 3), and `page: '/learn/26'` once the page is built, under the
   drafts' comment, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
 - `pr.link`: `href` `/jam?lesson=26`, `addr` `mercurypitch.com/jam`, `label` "Harmony Stack" and
-  `note` "with a friend: once they join, the host picks Harmony Stack", in the card's order (FACTS
-  64); `pr.needs`, "The harmony-line drill (SEASON-2 § 5.2 item 17)", is the team's only: the field
-  is "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
+  `note` "with a friend: the host picks Harmony Stack", as the card has it (FACTS 64); `pr.needs`,
+  "The harmony-line drill (SEASON-2 § 5.2 item 17)", is the team's only: the field is "Admin only,
+  never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [12, 26] and [24, 26], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 26's
   prerequisite list is then [12, 24].
 - The tease on Lesson 25's card is this lesson's, set on Lesson 26 in the lesson copy: `tease`
@@ -637,7 +635,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   the learner sing over moving chords. It is true of Lesson 24 and answers nothing of the predict;
   the lead's line, the opening in miniature, is the default." (FACTS 5). The tease on this page's
   card is Lesson 27's, set on Lesson 27 by Lesson 27's package
-  (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:385-388`): the lead's "G,
+  (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:386-389`): the lead's "G,
   B and D going home to C, E and G. Now add one note on top." as the default, and the lead's
   alternative, `teaseAlts` id `three-notes`, "Three notes make a chord. Add one more to V, and hear
   where it goes." (FACTS 5b). Each is at most `TEASE_MAX`, 70 characters
@@ -648,7 +646,8 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is proposed.
+Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is proposed, but
+items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
 
 1. **The lesson host**: `learn/26.html` at `/learn/26`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/26` and `/learn/26.html` in
@@ -660,10 +659,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out.
 4. **Lesson 18's pieces**, as its spec gives them and this page cites them, without restating them:
    its item 7, the sing flow in the kit with a take read in time and `kit/read-in-time.ts`
-   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:688-704`); its item 5, the
-   woodblock and the count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:684-685`);
-   and its item 16, the planning-text test's codes, which this page's S20b needs before it is built
-   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:738-741`). Then this page's
+   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:689-705`); its item 5, the
+   woodblock and the count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:685-686`);
+   and its item 16, the planning-text test's codes, which this page's S20b needed, now shipped
+   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`). Then this page's
    additions to the reader, code with tests (Toys 5): the other part's notes as input, with their
    times on the audio clock as booked, and the rule and line for a note sung on the note the other
    part is sounding, each frame compared by its clock time, never by an anchored beat, read before
@@ -671,12 +670,12 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    flow allows three takes a visit; this page's options give three a set, and a model before each
    run.
 5. **Lesson 24's checks**, its item 6, `kit/headphones.ts` and `kit/quiet-check.ts`
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:747-755`), with two options
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:748-756`), with two options
    for this page: the check's line names what plays, "Merc's part" or "Tavi's part", where Lesson
    24's names the drone; and the quiet check plays the first 2.0 s of the set's other part, where
    Lesson 24's plays the drone.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:742-746`): the hush's one kept
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:743-747`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
    contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:39-43`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a
@@ -702,7 +701,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      pass, and with Bluetooth earbuds, whether opening the microphone switches the headset's
      profile or moves the part to the loudspeaker (FACTS 28, 52).
    - **The reader with a part playing**: Lesson 18's lab items on real takes
-     (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:721-737`), here with Merc's
+     (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:722-738`), here with Merc's
      part in the headphones: whether learners come in with it, whether 0.45 s within 60 cents is
      reachable on a one-beat note against a part a third away, how often the new line shows, and
      how far each device's round trip, output and input, shifts a take's frames against the part as
@@ -725,37 +724,36 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     (FACTS 67).
 13. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work (Practice links).
 14. **At release, the room's link back**, optional: SEARCH § 8's row for Jam gains 26.
-15. **Harmony Stack's note names**, the app's work: `harmoniseItems` moves a part's notes and
-    rewrites each one's MIDI number, octave and frequency, but keeps the tune's note name
-    (`src/lib/jam/jam-modes.ts:134-153`), and the canvas prints that name with the new octave on the
-    box (`src/components/jam/JamExerciseCanvas.tsx:68`, `:356-365`). So today the third's boxes over
-    the C major scale in a higher voice's room read C4 to G4, A5 and B5 where they sit at E4 to D5
-    (`verify26.py`, section 13), and the fifth's are wrong the same way. The fix names each moved
-    note from its MIDI number; the test that pins the octave and the frequency
-    (`src/tests/jam-modes.test.ts:126-132`) pins the name too: in C major, the third over C4 is E4
-    and over A4 is C5, the fifth over B4 is F5. The same edit can mend the comment above the call,
-    "a fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:209-210`), since
-    `roleCountFor` caps the parts at three and a fourth singer sings the tune (FACTS 63). The card
-    describes the app as it is, the lead's call, "It plays nothing; on the third, its boxes print
-    the tune's letters.", and switches to "It plays nothing; its boxes name their notes." when this
-    ships (FACTS 63a).
-16. **Harmony Stack for a friend who joins late**, the app's work: the mode travels only with the
-    drill, sent when the host picks it (`selectJamRoomMode`, `src/stores/jam-store.ts:1315-1320`),
-    and only to channels open at that moment (`broadcastData`, `src/lib/jam/service.ts:1141-1148`);
-    a peer who joins is sent a song and nothing else (`onPeerJoined`,
-    `src/stores/jam-store.ts:1970-1983` at `c60f0fdcb`), so a friend who joins after the pick stays
-    in unison on their own default scale (FACTS 64). The host sends the drill and the mode to a peer
-    whose channel opens, as `onPeerJoined` does for a song, with a test that a late joiner gets
-    both. Until it ships the card's order, the friend in first and the mode picked after, is the one
-    that works; after it, that order still works.
+15. **Harmony Stack's note names**, shipped (`fix(jam): Name harmony notes by their own pitch`):
+    `harmoniseItems` names each moved note from its own pitch (`src/lib/jam/jam-modes.ts:141-151`),
+    and the canvas prints that name with its octave on the box
+    (`src/components/jam/JamExerciseCanvas.tsx:68`, `:356-365`), so the third's boxes over the C
+    major scale in a higher voice's room read E4 to D5, where they read C4 to G4, A5 and B5 before
+    (`verify26.py`, section 13). Its tests pin the names: in C major, the third over C4 is E4 and
+    over A4 is C5, the fifth over B4 is F5 (`src/tests/jam-modes.test.ts:134-174`). The comment
+    above the call, "a fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:209-210`), was
+    left, though `roleCountFor` caps the parts at three and a fourth singer sings the tune (FACTS
+    63). The card's sentence is now "It plays nothing; its boxes name their notes." (FACTS 63a).
+16. **Harmony Stack for a friend who joins late**, shipped
+    (`fix(jam): Send a late joiner the room's drill and mode`, and for a song
+    `fix(jam): Send a late joiner the room's song, and nobody else`): once a newcomer's channel
+    opens, the host sends them what the room is on, to them alone, so the room already singing
+    carries on: its drill and the mode it is sung in (`sendRoomDrillTo`,
+    `src/stores/jam-store.ts:1322-1338`; `sendMelody`, `src/lib/jam/service.ts:1043-1057`), or its
+    song (`sendRoomSongTo`, `src/stores/jam-store.ts:665-680`), from `onPeerChannelReady`
+    (`:2301-2315`). Before, the mode travelled only with the drill, sent when the host picked it, to
+    the channels open then (`broadcastData`, `src/lib/jam/service.ts:1141-1148`), and the song went
+    out on the room's announcement, before the newcomer had a channel, so a friend who joined after
+    the pick stayed in unison on their own default scale (FACTS 64). The card's steps now work in
+    any order.
 
 ## Decisions for the owner
 
 None is open. The lead chose the head's title, "How to sing a harmony in thirds | MercuryPitch"
 (46), query-led as SEARCH § 13 item 1 decided, and the chip's 16 minutes (FACTS 3); and the card
-describes Harmony Stack as it is, "It plays nothing; on the third, its boxes print the tune's
-letters.", until item 15 ships (Practice links; FACTS 63a). Items 15 and 16, the app's work on
-Harmony Stack, go to the owner's list (What the kit and the app still need).
+describes Harmony Stack as it is, "It plays nothing; its boxes name their notes.", now that items
+15 and 16, the app's work on Harmony Stack, have shipped (What the kit and the app still need;
+Practice links; FACTS 63a, 64).
 
 ## Edge cases
 
@@ -803,8 +801,8 @@ Harmony Stack, go to the owner's list (What the kit and the app still need).
   part stops and the microphone is released.
 - **The card's drills, off this page.** A learner with no one to sing with gets unison in Harmony
   Stack, so the card offers Drone Intonation for a learner alone. A friend who joins after the host
-  has picked Harmony Stack stays in unison on their own scale until the host picks it again, which
-  is why the card has the friend join first (item 16; FACTS 64). A host who never set a range opens
+  has picked Harmony Stack is sent the room's song, its drill and its mode, so the card's steps
+  work in any order (item 16; FACTS 64). A host who never set a range opens
   on the tenor's octave, which is why the card sets the range first; a lower and a higher voice in
   one room leave a note outside a preset, since the room scores the host's octave, and the card
   advises no pairing, the coach's list carrying the table (FACTS 63b, 65).
@@ -844,7 +842,7 @@ parts it adds:
    under "Choose an answer at the top to try this." until the cold open's choice, and enabled by it
    (FACTS 72).
 7. **The reader's new rule**, on synthetic takes through Voice Mirror's `preprocess`, as Lesson
-   18's tests run (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:865-881`), with the
+   18's tests run (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:866-882`), with the
    cases of Toys 5: on pitch and on time; a whole beat late on its own notes, read in the band; the
    lower part's singer a beat late on Merc's sounding notes, each note read as Merc's by the note he
    is sounding at its frames' clock time, never by the anchored beat; do on Merc's mi; la on Merc's
@@ -870,10 +868,11 @@ parts it adds:
 
 Page tests (the series' own, run on every lesson page): the head test, with the title, the
 description's length and its "A sixteen-minute lesson", the chip and `timeRequired`
-(`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, S20b included
-once the test's pattern takes it (`src/e2e/learn-no-planning-text.spec.ts:39`); the stage fits a 390
-px screen; first paint within the budget; the claims validator; one sound at a time; no background
-staff or clef; the tour's hold.
+(`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, S20b
+included, since the test's pattern takes a lettered code
+(`src/e2e/learn-no-planning-text.spec.ts:40`); the stage fits a 390 px screen; first paint within
+the budget; the claims validator; one sound at a time; no background staff or clef; the tour's
+hold.
 
 ## Contract
 
@@ -911,9 +910,8 @@ production:
   fit their cards, and C3 and E3 are heard through the speaker.
 - The practice card's Harmony Stack lines hold in a local Jam room with two peers, the card's steps
   followed in its order: the host sets a range in Settings and opens the room from the card's link,
-  the room opening on the C major scale in that range's octave; the guest joins by the shared link;
-  then the host picks Harmony Stack under More controls, and the two get the tune and the third.
-  Nothing plays; on the third the boxes print the tune's letters, until item 15 ships, and then
-  their own; a note sung an octave from its box scores nothing. Once, the repo's two-peer check is
-  run with its join and mode steps swapped, the mode picked before the guest joins, to show the
-  late-join case: the guest stays in unison on their own scale (item 16; FACTS 63a, 63b, 64).
+  the room opening on the C major scale in that range's octave; the host picks Harmony Stack under
+  More controls; then the guest joins by the shared link, and the two get the tune and the third.
+  Nothing plays; each part's boxes name its own notes; a note sung an octave from its box scores
+  nothing. Once more with the guest in before the pick, the repo's two-peer check's own order, so
+  both orders are seen to work (items 15 and 16; FACTS 63a, 63b, 64).

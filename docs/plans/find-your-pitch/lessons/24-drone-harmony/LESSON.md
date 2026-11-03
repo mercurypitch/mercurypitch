@@ -96,7 +96,7 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The practice card** says what its link opens, the two thirds only, what it scores against, what
   a pure major third scores in a round, and that headphones help there too, since its drone plays
   while it listens; it leaves out Lesson 10's line on the drill's sharps, which Lesson 10's card has
-  given, and the drill's run score, which tops out at 80, an app fix; Beat Hunt is the second drill
+  given, and the drill's run score, which an app fix let reach 100; Beat Hunt is the second drill
   (FACTS 60 to 64, 66).
 - **The next-lesson tease** is the lead's line, with the plan's as its alternative, which leans
   softly on Lesson 25's predict (FACTS 5b).
@@ -469,14 +469,14 @@ _[Editorial: the first address links `/exercises/thirds-on-a-drone?lesson=24` an
 `/ear-lab?lesson=24`. The page is not built before the lesson marker reads Season 2's numbers
 (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
 has no first-visit line (FACTS 64). "About 79 a round" is a round's score, "Last round: 79%" on the
-drill's screen, not the run's, which tops out at 80 whatever the singing until the app reweights it
-(FACTS 60, 66). When a slug for the fifth, the major third and the octave ships (SEASON-2 § 5.2 item
-15), the link swaps to it, and the text's second sentence becomes "This link opens it on this
-lesson's fifth, major third and octave; do is the drone itself." When a pure-tuning option ships
-(item 15), the sentence on 79 goes. The headphones sentence stays while the drill's drone plays from
-the speakers as it listens; the card says nothing of its drone's timbre, a plain sine by default,
-which the app's item for a drone with harmonics would change (FACTS 51, 60, 66). The rest version is
-Lesson 10's: Beat Hunt asks for no voice, so it stays (FACTS 63).]_
+drill's screen, not the run's, which weighs in the best round and the steadiness and since the
+app's fix reaches 100 (FACTS 60, 66). When a slug for the fifth, the major third and the octave
+ships (SEASON-2 § 5.2 item 15), the link swaps to it, and the text's second sentence becomes "This
+link opens it on this lesson's fifth, major third and octave; do is the drone itself." When a
+pure-tuning option ships (item 15), the sentence on 79 goes. The headphones sentence stays while the
+drill's drone plays from the speakers as it listens; the card says nothing of its drone's timbre, a
+plain sine by default, which the app's item for a drone with harmonics would change (FACTS 51,
+60, 66). The rest version is Lesson 10's: Beat Hunt asks for no voice, so it stays (FACTS 63).]_
 
 **Next lesson:** Lesson 25, Minor, properly. "Why does a minor key often raise one note just before
 it comes home?" One line above it, the tease: "A minor tune, played twice. The second ending changes

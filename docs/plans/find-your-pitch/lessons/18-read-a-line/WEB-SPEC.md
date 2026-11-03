@@ -644,7 +644,8 @@ Lesson 18's entry, proposed for Season 2's data in its own module, in Season 1's
 
 ## What the kit and the app still need
 
-Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is proposed.
+Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is proposed but item
+16, which has shipped.
 
 1. **The lesson host**: `learn/18.html` at `/learn/18`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/18` and `/learn/18.html` in
@@ -735,10 +736,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     - the brackets, marks, names and pitch line at 344 to 390 px, and the figure's height in the bass
       clef with a bracket and its label over D4 (FACTS 84);
     - the page's run time.
-16. **The planning-text test's topic codes**, found here: its pattern takes a T or an S, two digits
-    and a word's end (`src/e2e/learn-no-planning-text.spec.ts:39`), so a letter after the digits
-    hides Season 2's split codes, S11a, S11b, S20a and S20b, from it. It gains an optional `a` or `b`
-    after the digits, with a case for each code, before Lesson 16, 18, 24 or 26 is built.
+16. **The planning-text test's topic codes**, found here, have shipped. Its pattern took a T or an
+    S, two digits and a word's end, so a letter after the digits hid Season 2's split codes, S11a,
+    S11b, S20a and S20b, from it; it now takes one lowercase letter there
+    (`src/e2e/learn-no-planning-text.spec.ts:40`), so it catches each of them.
 
 ## Decisions for the owner
 
@@ -904,9 +905,8 @@ Page tests, against a local or dev build, never production:
     `timeRequired` `PT16M` (`src/tests/lesson-pages.test.ts:154-159`,
     `src/tests/lesson-pages.test.ts:191-210`).
 12. No planning text on the page: no topic code such as "S11b" or "T32", no "planned", "slug" or "for
-    the team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`). Its pattern for a topic's code takes
-    two digits and a word's end, so it misses a lettered code such as S11b; it gains an optional
-    letter before this page is built (What the kit and the app still need, item 16).
+    the team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`). Its pattern for a topic's code now
+    takes a lettered code such as S11b too (What the kit and the app still need, item 16).
 13. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck (`src/e2e/learn-stage-fit.spec.ts:229-235`).
 14. The first-paint budgets for `learn/18.html` (FACTS 86).

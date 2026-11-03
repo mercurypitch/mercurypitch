@@ -526,8 +526,8 @@ exit includes every Lesson 8 to 14 link opening its drill (MASTER-PLAN § 7).
 
 Gaps with no drill today (candidates for new content): straw phonation, register work, vowels,
 keyboard and note-naming drills, sharps and enharmonics, the circle of fifths, sung minor and
-descending intervals, sung triads, rhythm scored while singing, solo harmony lines, major-versus-
-minor scale by ear.
+descending intervals, sung triads, rhythm scored while singing, solo harmony lines (on the web; the
+native app's Harmony room is one), major-versus-minor scale by ear.
 
 ## 5. Seasons 2 and 3
 
