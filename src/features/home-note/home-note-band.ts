@@ -46,6 +46,12 @@ const BASS_LEVEL = 0.075
 const OPEN = 0.06
 /** The house release and the slack after it (preview-player.ts), s. */
 const RELEASE = 0.18
+/**
+ * A chord's tail after its end, s: when the intro's sound has closed (a
+ * BandSound's `endAt` counts it), and the demo's script dates its turn
+ * from it as a run's engine does (demo/demo-script.ts).
+ */
+export const BAND_TAIL_SECONDS = RELEASE
 const STOP_SLACK = 0.06
 const FLOOR = 0.0001
 
@@ -188,7 +194,7 @@ export function playIntro(
 }
 
 /** Merc comes in this long after home's chord, s. */
-const ANSWER_DELAY = 0.12
+export const ANSWER_DELAY = 0.12
 
 /**
  * Home's chord under the singer's landed note, or, after a miss, under

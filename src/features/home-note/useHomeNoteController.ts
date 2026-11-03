@@ -25,8 +25,14 @@
 // that end plus RESPONSE_GATE_SECONDS (the band's tail through the speaker
 // reaches the mic). The engine is ticked once per CAPTURED frame, on the
 // frames' own clock, never once per screen frame.
+//
+// "How it works" (demo/useHomeNoteDemo.ts) sings its takes through the
+// same steps by `script` (scripted-take.ts): frames in place of the mic,
+// the band's intro and Merc's home on the take's clock, the demo's own
+// sound playing them. A scripted take never opens the mic, fires a haptic,
+// says a line or keeps a result, and a run's moves wait while the demo has
+// the room.
 
-import type { Accessor } from 'solid-js'
 import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { createFrameLoop } from '@/components/room-kit/frame-loop'
 import { createLevelPreset } from '@/components/room-kit/level-preset'
@@ -36,8 +42,6 @@ import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
 import { createRoomLife } from '@/components/room-kit/room-life'
 import { openRoomMic } from '@/components/room-kit/room-mic'
-import type { ShellRun } from '@/components/room-kit/RoomShell'
-import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { outputLatency, SYNTH_VOICE } from '@/components/room-kit/round-voice'
 import { useExerciseCapture } from '@/components/room-kit/useExerciseCapture'
 import { levelFromRms, newestLevel } from '@/components/room-kit/voice-level'
@@ -54,11 +58,15 @@ import type { Phrase, SequenceEvent, SequenceState, } from '@/lib/sequence/seque
 import { createSequenceState, RESPONSE_GATE_SECONDS, tickSequence, } from '@/lib/sequence/sequence-engine'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import { homeNoteDemoAutoPlays } from '@/stores/home-note-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { BandSound } from './home-note-band'
-import { playIntro, playKeyAgain, playResolve } from './home-note-band'
+import { playIntro, playResolve } from './home-note-band'
+import type { HomeNoteController, HomeNoteControllerOptions, TrailSink, } from './home-note-controller-contract'
+import { YOUR_TURN } from './home-note-controller-contract'
 import type { HomeNoteEvent, HomeNoteState, RoundOutcome, } from './home-note-machine'
 import { homeNoteReducer, INITIAL_HOME_NOTE_STATE, isRunPhase, liveRound, } from './home-note-machine'
+import { createKeyReplay } from './home-note-replay'
 import type { HomeRound } from './home-note-round'
 import { planRounds, roundWindow } from './home-note-round'
 import type { HomeNoteLevel } from './home-note-rules'
@@ -67,68 +75,15 @@ import type { HomeNoteSummary } from './home-note-run'
 import { isQuick, keepHomeNoteRun, resultMoment, summarizeRun, } from './home-note-run'
 import { createHomeLines } from './merc-lines'
 import { HOME_SPOKEN } from './merc-spoken'
+import type { HomeNoteDemoMark, ScriptedHomeTake } from './scripted-take'
+import { createScriptedRoom } from './scripted-take'
 
-/** The chip while the singer sings. */
-export const YOUR_TURN = 'Your turn'
 /** Merc's voice while he sings home (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
 
 /** Merc's face while he sings `midi`, held and on it. */
 function singing(midi: number): MercVoice {
   return { voiced: true, cents: 0, level: SUNG_LEVEL, steady: 1, midi }
-}
-
-/** Draws the voice's trail: its readings and now, frames' clock; null clears it. */
-export type TrailSink = (
-  trail: {
-    readonly points: readonly TrailPoint[]
-    readonly now: number
-  } | null,
-) => void
-
-export interface HomeNoteControllerOptions {
-  /**
-   * Merc's voice: the native screen's sampled one. Without it the room
-   * sings him with the synth "ooh".
-   */
-  readonly voice?: RoundVoice
-  readonly random?: () => number
-}
-
-export interface HomeNoteController extends ShellRun {
-  readonly state: Accessor<HomeNoteState>
-  /** Merc's line, in his bubble between rounds; '' for none. */
-  readonly line: Accessor<string>
-  /** The chip under the bar; null for none. */
-  readonly chip: Accessor<string | null>
-  /** The run's numbers, at its result; null before. */
-  readonly summary: Accessor<HomeNoteSummary | null>
-  /** The level's name the result was sung at. */
-  readonly resultLevel: Accessor<string>
-  /** The round on screen, or null outside a run. */
-  readonly round: Accessor<HomeRound | null>
-  /** The rules the run is heard by (the band's height on screen). */
-  readonly rules: Accessor<HomeNoteLevel>
-  /** The voice is in home's band now. */
-  readonly inBand: Accessor<boolean>
-  /**
-   * The band's chord count in this intro: the lighthouse pulses on each,
-   * and the chip's lamps light.
-   */
-  readonly beat: Accessor<number>
-  /** The intro's last chord has ended: every lamp has passed. */
-  readonly chordsOver: Accessor<boolean>
-  /** The key of the result heard again now, by its index; null for none. */
-  readonly replaying: Accessor<number | null>
-  /** At the result: key `index` again, its intro and Merc singing home. */
-  readonly replayKey: (index: number) => void
-  readonly mercState: ReturnType<typeof createMercMoves>['state']
-  readonly mercVoice: () => MercVoice
-  /** "Hear it again" can be tapped now. */
-  readonly canHearAgain: Accessor<boolean>
-  readonly hearAgain: () => void
-  /** The room's trail, drawn every frame of the singer's turn. */
-  readonly drawTrail: (sink: TrailSink) => void
 }
 
 export function useHomeNoteController(
@@ -151,7 +106,11 @@ export function useHomeNoteController(
   const [inBand, setInBand] = createSignal(false)
   const [beat, setBeat] = createSignal(0)
   const [chordsOver, setChordsOver] = createSignal(false)
-  const [replaying, setReplaying] = createSignal<number | null>(null)
+  // The demo's: on from its enter to its leave, playing, and its rules.
+  const [scriptActive, setScriptActive] = createSignal(false)
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const [demoRules, setDemoRules] = createSignal<HomeNoteLevel | null>(null)
+  const demoOn = (): boolean => untrack(scriptActive)
   const level = createLevelPreset(HOME_NOTE_LEVELS, () =>
     isRunPhase(state().phase),
   )
@@ -178,7 +137,7 @@ export function useHomeNoteController(
   const merc = createMercMoves({
     later: life.later,
     still: prefersReducedMotion,
-    afterCheer: () => (isRunPhase(phase()) ? 'listen' : 'idle'),
+    afterCheer: () => (isRunPhase(phase()) && !demoOn() ? 'listen' : 'idle'),
   })
 
   // ── The run ────────────────────────────────────────────────
@@ -199,12 +158,20 @@ export function useHomeNoteController(
   let heardAgain = false
   /** Counts intros, so a replayed intro's pending pulses never fire. */
   let introCount = 0
-  /** Counts keys heard again, so an old one's pending moments never fire. */
-  let replayCount = 0
   let sink: TrailSink = () => undefined
+  /** The demo's take singing through the room in place of the mic. */
+  let scripted: ScriptedHomeTake | null = null
 
-  const frameNow = (): number => (performance.now() - windowStartedAt) / 1000
+  /** Seconds on the frames' clock: since the window opened, or the take's. */
+  const frameNow = (): number =>
+    scripted === null
+      ? (performance.now() - windowStartedAt) / 1000
+      : scripted.now()
   const live = (): HomeRound | null => liveRound(untrack(state))
+  /** The demo's moment, to its tooltips; the singer's run has none. */
+  const mark = (moment: HomeNoteDemoMark): void => {
+    scripted?.onEvent(moment)
+  }
   const phraseOf = (round: HomeRound): Phrase => ({
     notes: [{ midi: round.home, at: 0, seconds: MERC_HOME_SECONDS }],
   })
@@ -296,11 +263,56 @@ export function useHomeNoteController(
     playRoundIntro(round)
   }
 
+  /**
+   * One of the demo's takes in place of the mic: its key's intro begun as
+   * a round's is, on the take's clock, its frames flowing. The demo's own
+   * sound plays the band; the chord lamps light with it.
+   */
+  const playScripted = (take: ScriptedHomeTake): void => {
+    scripted = take
+    rules = take.rules
+    engine = createSequenceState(take.responseStart)
+    processed = 0
+    points = []
+    heardAgain = false
+    mercFrom = Number.POSITIVE_INFINITY
+    mercTo = Number.NEGATIVE_INFINITY
+    sink(null)
+    batch(() => {
+      dispatch({ type: 'demo', round: take.round })
+      setDemoRules(take.rules)
+      setInBand(false)
+      setBeat(0)
+      setChordsOver(false)
+    })
+    introCount += 1
+    const intro = introCount
+    const atTake = (t: number, then: () => void): void => {
+      life.later(
+        Math.max(0, take.startsAt + t * 1000 - performance.now()),
+        () => {
+          if (intro === introCount && scripted === take && phase() === 'band') {
+            then()
+          }
+        },
+      )
+    }
+    take.rules.intro.forEach((_, i) => {
+      atTake(take.introAt + i * CHORD_SECONDS, () => setBeat(i + 1))
+    })
+    atTake(take.introAt + take.rules.intro.length * CHORD_SECONDS, () =>
+      setChordsOver(true),
+    )
+    merc.set('listen')
+    startLoop()
+  }
+
   /** The intro has reached its end at the speaker: the singer's turn. */
   const toTurn = (): void => {
     dispatch({ type: 'turn' })
     setChip(YOUR_TURN)
     merc.set('listen')
+    mark('turn')
   }
 
   /** The singer's voice against home: the trail, the band, Merc. */
@@ -324,7 +336,11 @@ export function useHomeNoteController(
   }
 
   const onEvent = (event: SequenceEvent, round: HomeRound): void => {
-    if (event.type === 'phraseEnd') return
+    if (event.type === 'phraseEnd') {
+      mark('phraseEnd')
+      return
+    }
+    mark(`${event.type}:${event.index}`)
     const outcome = engine.outcomes[event.index]
     if (outcome === undefined) return
     if (outcome.landed) {
@@ -369,52 +385,91 @@ export function useHomeNoteController(
     const round = live()
     if (round === null) return
     if (phase() === 'band' && frameNow() >= engine.responseStart) toTurn()
-    const frames = capture.peekFrames()
+    const frames = scripted?.frames() ?? capture.peekFrames()
     follow(frames, round)
     if (!listening) return
     if (phase() === 'sing') {
       const last = frames.length === 0 ? null : frames[frames.length - 1]
+      // The demo's voice is not the singer's: the mic's ring stays still.
       loudness =
-        last === null || last.t < engine.responseStart ? 0 : newestLevel(frames)
+        scripted !== null || last === null || last.t < engine.responseStart
+          ? 0
+          : newestLevel(frames)
       sink({ points, now: frameNow() })
     } else {
       loudness = 0
     }
   }
 
+  /**
+   * The round's outcome on the screen: the chip, the lamp and Merc. A run's
+   * is felt and said too; a demo's take is neither, its tooltip says it.
+   */
+  function showOutcome(outcome: RoundOutcome, inRun: boolean): void {
+    const note = midiToNoteNameOctave(outcome.round.home)
+    setInBand(outcome.landed)
+    if (outcome.landed) {
+      if (inRun) haptics.tapLight()
+      setChip(`Home: ${note}`)
+      if (inRun) say(isQuick(outcome) ? 'landedQuick' : 'landed', { note })
+      merc.cheer()
+      return
+    }
+    setChip(`Home was ${note}`)
+    if (inRun) say(outcome.voiced ? 'missed' : 'missedSilent', { note })
+  }
+
+  /**
+   * After a miss, Merc sings home over the band's chord: his face follows
+   * his note, now, or as the demo's sound sings it on the take's clock.
+   */
+  function answerHome(home: number, take: ScriptedHomeTake | null): void {
+    const answer = take?.answer[0]
+    const from =
+      take === null || answer === undefined
+        ? 0
+        : Math.max(0, take.startsAt + answer.at * 1000 - performance.now())
+    const still = (): boolean => scripted === take && phase() === 'missed'
+    const sings = (): void => {
+      voice = singing(home)
+      merc.set('sing')
+    }
+    if (from === 0) sings()
+    else {
+      life.later(from, () => {
+        if (still()) sings()
+      })
+    }
+    life.later(from + MERC_HOME_SECONDS * 1000 + 150, () => {
+      if (!still()) return
+      voice = SILENT_VOICE
+      merc.set('idle')
+    })
+  }
+
   /** A round is over: home's chord, Merc's line, then the next key. */
   function endRound(outcome: RoundOutcome): void {
     const ctx = audio
+    // A demo's take is felt, said and followed by nothing: its tooltip
+    // explains it, and the demo moves on. Its own sound plays home's chord.
+    const take = scripted
     stopLoop()
-    capture.takeFrames()
+    if (take === null) capture.takeFrames()
     dispatch({ type: 'outcome', outcome })
-    const note = midiToNoteNameOctave(outcome.round.home)
     stopSound()
-    if (ctx !== null) {
+    if (ctx !== null && take === null) {
       sound = playResolve(
         ctx,
         outcome.round,
         outcome.landed ? null : voiceOfMerc,
       )
     }
-    if (outcome.landed) {
-      haptics.tapLight()
-      setChip(`Home: ${note}`)
-      say(isQuick(outcome) ? 'landedQuick' : 'landed', { note })
-      merc.cheer()
-    } else {
-      setChip(`Home was ${note}`)
-      say(outcome.voiced ? 'missed' : 'missedSilent', { note })
-      // He sings home over the band's chord: his face follows his note.
-      voice = singing(outcome.round.home)
-      merc.set('sing')
-      life.later(MERC_HOME_SECONDS * 1000 + 150, () => {
-        if (phase() !== 'missed') return
-        voice = SILENT_VOICE
-        merc.set('idle')
-      })
+    showOutcome(outcome, take === null)
+    if (!outcome.landed) answerHome(outcome.round.home, take)
+    if (take !== null) {
+      mark('outcome')
+      return
     }
-    setInBand(outcome.landed)
     // On to the next key: only for this run and this round, so a run
     // stopped and started again meanwhile is never moved on by the old one.
     const { run } = untrack(state)
@@ -464,60 +519,51 @@ export function useHomeNoteController(
     merc.set('idle')
   }
 
-  /** A key heard again at the result goes quiet, its moments with it. */
-  const endReplay = (): void => {
-    replayCount += 1
-    setReplaying(null)
-  }
-
-  /**
-   * Key `round` again, on a running clock: its intro as the run played it,
-   * then Merc singing home over home's chord, his face with his note.
-   */
-  function playKey(ctx: AudioContext, round: HomeRound, index: number): void {
-    const mine = replayCount
-    stopSound()
-    audio = ctx
-    const played = playKeyAgain(ctx, round, rules, voiceOfMerc)
-    sound = played
-    setReplaying(index)
-    const latency = outputLatency(ctx)
-    const at = (t: number, then: () => void): void => {
-      life.later(Math.max(0, (t - ctx.currentTime + latency) * 1000), () => {
-        if (mine === replayCount && phase() === 'result') then()
-      })
-    }
-    at(played.mercAt, () => {
-      voice = singing(round.home)
+  /** At the result, a key's lamp: that key again (home-note-replay.ts). */
+  const replay = createKeyReplay({
+    audio: () => capture.audio(),
+    voice: voiceOfMerc,
+    rules: () => rules,
+    atResult: () => phase() === 'result',
+    // The key's own sound takes over from Merc's line.
+    hush: () => speech.hush(),
+    play: (ctx, played) => {
+      stopSound()
+      audio = ctx
+      sound = played
+    },
+    sings: (home) => {
+      if (home === null) {
+        voice = SILENT_VOICE
+        merc.set('idle')
+        return
+      }
+      voice = singing(home)
       merc.stopCheering()
       merc.set('sing')
-    })
-    at(played.mercAt + MERC_HOME_SECONDS + 0.15, () => {
-      voice = SILENT_VOICE
-      merc.set('idle')
-    })
-    at(played.endAt, () => setReplaying(null))
+    },
+    later: life.later,
+  })
+  const endReplay = replay.end
+  /** Another tap cuts the key playing. */
+  const replayKey = (index: number): void => {
+    const outcome = untrack(state).outcomes[index]
+    if (outcome !== undefined) replay.play(index, outcome.round)
   }
 
-  /** At the result, a key's lamp: that key again. Another tap cuts it. */
-  const replayKey = (index: number): void => {
-    if (phase() !== 'result') return
-    const outcome = untrack(state).outcomes[index]
-    if (outcome === undefined) return
-    endReplay()
-    // The key's own sound takes over from Merc's line.
-    speech.hush()
-    const mine = replayCount
-    // Asked inside the tap: iOS starts the clock only from a gesture.
-    void capture.audio().then((ctx) => {
-      if (ctx === null || mine !== replayCount || phase() !== 'result') return
-      playKey(ctx, outcome.round, index)
+  /** The keys' window: the singer's, cut to what a phone carries. */
+  const keyWindow = () => {
+    const window = echoWindow({
+      voiceprints: loadLocalVoiceprints(),
+      voicePreset: untrack(vocalRangePreset),
     })
+    return roundWindow({ low: window.low, high: window.high })
   }
 
   // ── What the singer does ───────────────────────────────────
   const start = (): void => {
     const from = phase()
+    if (demoOn()) return
     if (from !== 'intro' && from !== 'result' && from !== 'blocked') return
     // He stops talking before the mic opens.
     speech.hush()
@@ -528,15 +574,7 @@ export function useHomeNoteController(
     level.take()
     runLevel = untrack(exerciseLevel)
     rules = untrack(level.preset)
-    const window = echoWindow({
-      voiceprints: loadLocalVoiceprints(),
-      voicePreset: untrack(vocalRangePreset),
-    })
-    const rounds = planRounds(
-      HOME_NOTE_ROUNDS,
-      roundWindow({ low: window.low, high: window.high }),
-      random,
-    )
+    const rounds = planRounds(HOME_NOTE_ROUNDS, keyWindow(), random)
     batch(() => {
       dispatch({ type: 'start', rounds })
       setSummary(null)
@@ -563,7 +601,7 @@ export function useHomeNoteController(
   }
 
   const stop = (): void => {
-    if (!isRunPhase(phase())) return
+    if (!isRunPhase(phase()) || demoOn()) return
     dropRun()
     sayIntro()
   }
@@ -571,7 +609,7 @@ export function useHomeNoteController(
   /** The intro again, in the singer's turn, as the level allows. */
   const canHearAgain = (): boolean => {
     const now = state()
-    if (now.phase !== 'sing') return false
+    if (now.phase !== 'sing' || scriptActive()) return false
     const allowance = level.preset().hearAgain
     if (allowance === 'never') return false
     return allowance === 'anyTime' || now.replays === 0
@@ -593,16 +631,24 @@ export function useHomeNoteController(
    * run is dropped, as the mic's tap drops it: no result, no best.
    */
   function leave(): void {
-    // Nothing he says is heard behind their back either.
+    // Nothing he says or sings is heard behind their back either: a key
+    // heard again at the result stops too.
     speech.hush()
-    if (!isRunPhase(phase())) return
+    // The demo stops itself on the way out (useExerciseDemo).
+    if (demoOn()) return
+    if (!isRunPhase(phase())) {
+      endReplay()
+      stopSound()
+      return
+    }
     dropRun()
     sayIntro(false)
   }
 
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
-    sayIntro()
+    // A first visit opens on the demo, which says it all: his line waits.
+    sayIntro(!homeNoteDemoAutoPlays())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })
@@ -610,16 +656,59 @@ export function useHomeNoteController(
 
   life.watch({
     leave,
-    listening: () => isRunPhase(state().phase),
-    demo: { on: () => false, playing: () => false },
+    listening: () => isRunPhase(state().phase) && !scriptActive(),
+    demo: { on: scriptActive, playing: demoPlaying },
     holdsFocus: true,
     mic: {
       exercise: EXERCISE_HOME_NOTE_LIGHTHOUSE,
-      on: () => isRunPhase(phase()) && phase() !== 'starting',
+      on: () => isRunPhase(phase()) && phase() !== 'starting' && !demoOn(),
       // A mic that died drops the run as leaving does, Merc silent: a call
       // or another app may have the sound, and his line would take it back.
       died: leave,
     },
+  })
+
+  // ── The demo's way in (scripted-take.ts) ───────────────────
+  const script = createScriptedRoom({
+    voice: voiceOfMerc,
+    active: scriptActive,
+    setActive: setScriptActive,
+    setPlaying: setDemoPlaying,
+    phase,
+    audio: () => capture.audio(),
+    ready: options.ready,
+    // Home for the demo's key: the middle of the singer's window.
+    note: () => {
+      const window = keyWindow()
+      return Math.round((window.low + window.high) / 2)
+    },
+    clear: () => {
+      scripted = null
+      introCount += 1
+      endReplay()
+      hush()
+      merc.stopCheering()
+      batch(() => {
+        dispatch({ type: 'demo', round: null })
+        setDemoRules(null)
+        setSummary(null)
+        setChip(null)
+        setBeat(0)
+        setChordsOver(false)
+      })
+    },
+    load: playScripted,
+    current: () => scripted,
+    // The demo's words take over from his, and its end shows his opening
+    // line without saying it: the demo has just said it all.
+    line: (text) => {
+      speech.hush()
+      setLine(text)
+    },
+    sayIntro: () => sayIntro(false),
+    merc: merc.set,
+    later: life.later,
+    mark,
   })
 
   onCleanup(() => {
@@ -647,11 +736,11 @@ export function useHomeNoteController(
     summary,
     resultLevel,
     round: () => liveRound(state()),
-    rules: level.preset,
+    rules: () => demoRules() ?? level.preset(),
     inBand,
     beat,
     chordsOver,
-    replaying,
+    replaying: replay.playing,
     replayKey,
     mercState: merc.state,
     mercVoice,
@@ -663,6 +752,6 @@ export function useHomeNoteController(
     drawTrail: (next) => {
       sink = next
     },
-    script: { active: () => false },
+    script,
   }
 }

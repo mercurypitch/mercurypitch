@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { HomeNoteBest } from './home-note-store'
-import { HOME_NOTE_BESTS_KEY, homeNoteBeats, homeNoteBest, isHomeNoteBestTable, recordHomeNoteBest, resetHomeNoteStoreForTests, } from './home-note-store'
+import { HOME_NOTE_BESTS_KEY, HOME_NOTE_DEMO_SEEN_KEY, homeNoteBeats, homeNoteBest, homeNoteDemoAutoPlays, homeNoteDemoSeen, isHomeNoteBestTable, markHomeNoteDemoSeen, recordHomeNoteBest, resetHomeNoteStoreForTests, } from './home-note-store'
 
 function best(found: number, seconds: number, at = 1): HomeNoteBest {
   return { found, rounds: 6, seconds, at }
@@ -49,5 +49,31 @@ describe("Home note's bests", () => {
     localStorage.setItem(HOME_NOTE_BESTS_KEY, '{"singer":{"found":"lots"}}')
     resetHomeNoteStoreForTests()
     expect(homeNoteBest('singer')).toBeNull()
+  })
+})
+
+describe("Home note's demo, seen or not", () => {
+  beforeEach(() => {
+    localStorage.removeItem(HOME_NOTE_BESTS_KEY)
+    localStorage.removeItem(HOME_NOTE_DEMO_SEEN_KEY)
+    resetHomeNoteStoreForTests()
+  })
+
+  it('plays by itself on a first visit, the demo unseen and no run kept', () => {
+    expect(homeNoteDemoSeen()).toBe(false)
+    expect(homeNoteDemoAutoPlays()).toBe(true)
+  })
+
+  it('stops playing by itself once seen, on this device', () => {
+    markHomeNoteDemoSeen()
+    expect(homeNoteDemoAutoPlays()).toBe(false)
+    resetHomeNoteStoreForTests()
+    expect(homeNoteDemoSeen()).toBe(true)
+  })
+
+  it('stops playing by itself once a run has kept a best, at any level', () => {
+    recordHomeNoteBest('professional', best(2, 1.2))
+    expect(homeNoteDemoSeen()).toBe(false)
+    expect(homeNoteDemoAutoPlays()).toBe(false)
   })
 })

@@ -14,6 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_COPY as ECHO_DEMO_COPY } from '@/features/echo/demo/demo-cues'
 import { DEMO_COPY as HARMONY_DEMO_COPY } from '@/features/harmony/demo/demo-cues'
+import { DEMO_COPY as HOME_NOTE_DEMO_COPY } from '@/features/home-note/demo/demo-cues'
 import { DEMO_COPY as LEAP_DEMO_COPY } from '@/features/leap/demo/demo-cues'
 import { DEMO_COPY as LIP_DEMO_COPY } from '@/features/lip-roll/demo/demo-cues'
 import { DEMO_COPY } from '@/features/long-note/demo/demo-cues'
@@ -67,6 +68,7 @@ function seed(state: { last?: boolean; best?: boolean; demoSeen?: boolean }) {
     localStorage.setItem('mp_lip_demo_seen', 'true')
     localStorage.setItem('mp_leap_demo_seen', 'true')
     localStorage.setItem('mp_harmony_demo_seen', 'true')
+    localStorage.setItem('mp_home_note_demo_seen', 'true')
   }
 }
 
@@ -193,6 +195,7 @@ describe('the decided words, as they render', () => {
       'Merc sings it first',
       'Merc sings it first',
       'Merc sings it first',
+      'Merc sings it first',
     ])
     expect(DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(ECHO_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
@@ -200,6 +203,9 @@ describe('the decided words, as they render', () => {
     expect(LIP_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(LEAP_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)
     expect(HARMONY_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(
+      true,
+    )
+    expect(HOME_NOTE_DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(
       true,
     )
   })

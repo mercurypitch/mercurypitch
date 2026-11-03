@@ -15,6 +15,12 @@
 // (the level says how often). A run stopped part-way (the mic tapped, the
 // app leaving) goes back to the intro and keeps nothing: an aborted run is
 // not a result.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which sings
+// its one key through the room with no microphone: to the intro as it
+// starts, between its takes and as it ends, and to the key's band as each
+// take starts. The key's own steps (`turn`, `outcome`) move it as they
+// move a run's.
 
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import type { HomeRound } from './home-note-round'
@@ -86,6 +92,8 @@ export type HomeNoteEvent =
   | { readonly type: 'finish' }
   /** The run is given up, or the room goes back to rest. */
   | { readonly type: 'stop' }
+  /** The demo's move: its key's band, or the room at rest (null). */
+  | { readonly type: 'demo'; readonly round: HomeRound | null }
 
 export const INITIAL_HOME_NOTE_STATE: HomeNoteState = {
   phase: 'intro',
@@ -173,5 +181,14 @@ export function homeNoteReducer(
         run: state.run,
         rounds: state.rounds,
       }
+    case 'demo':
+      return event.round === null
+        ? { ...INITIAL_HOME_NOTE_STATE, run: state.run }
+        : {
+            ...INITIAL_HOME_NOTE_STATE,
+            phase: 'band',
+            run: state.run,
+            rounds: [event.round],
+          }
   }
 }

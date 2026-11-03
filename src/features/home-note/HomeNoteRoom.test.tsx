@@ -6,6 +6,7 @@ import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import type * as HomeNoteStoreModule from '@/stores/home-note-store'
 import { LANDSCAPE_PLATE_MEDIA, layoutHarbour } from './harbour-layout'
 import type { HomeRound } from './home-note-round'
 import type { HomeNoteLevel } from './home-note-rules'
@@ -135,6 +136,15 @@ vi.mock('@/stores/exercise-history-store', () => ({
 
 vi.mock('@/db/services/voiceprint-service', () => ({
   loadLocalVoiceprints: () => [],
+}))
+
+// The room on its own: the demo that plays by itself on a first visit has
+// its own tests (demo/HomeNoteDemo.test.tsx).
+vi.mock('@/stores/home-note-store', async () => ({
+  ...(await vi.importActual<typeof HomeNoteStoreModule>(
+    '@/stores/home-note-store',
+  )),
+  homeNoteDemoAutoPlays: () => false,
 }))
 
 // ── Frames the test advances one at a time ─────────────────────
