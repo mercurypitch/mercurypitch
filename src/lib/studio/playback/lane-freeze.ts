@@ -89,6 +89,10 @@ export function frozenChunkBytes(frames: number): number {
   return (frames + 2 * FREEZE_OVERLAP_FRAMES) * 2 * 2
 }
 
+/** What a frozen lane decodes as it plays: the chunk playing and the next, as 32-bit audio (StudioFrozenBuffers). */
+export const FROZEN_LANE_PLAYING_BYTES =
+  2 * (FREEZE_CHUNK_FRAMES + 2 * FREEZE_OVERLAP_FRAMES) * 2 * 4
+
 function peakOf(samples: Float32Array, from: number, to: number): number {
   let peak = 0
   for (let i = from; i < to; i++) {

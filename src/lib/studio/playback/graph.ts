@@ -29,6 +29,7 @@ import type { StudioReverbBuses } from './graph-reverb-bus'
 import { createReverbBuses, retrimLaneSends, sendTrim, } from './graph-reverb-bus'
 import type { StudioChainSwap } from './graph-swap'
 import { finishSwaps, laneCrossing, settleSwaps, swapChains, } from './graph-swap'
+import { FROZEN_LANE_PLAYING_BYTES } from './lane-freeze'
 import { quietLane, settleIdleLanes, wakeLane } from './lane-idle'
 
 export type { StudioReplan } from './graph-replan'
@@ -194,13 +195,20 @@ export function studioGraphWorkingBytes(
   masterSpec?: ChainSpec,
   silentLanes = false,
 ): number {
-  const count = studioGraphLanes(plan, silentLanes).reduce(
+  const lanes = studioGraphLanes(plan, silentLanes)
+  const count = lanes.reduce(
     (sum, lane) => sum + lane.spec.effects.length,
     masterSpec?.effects.length ?? 0,
   )
+  const frozen = lanes.filter((lane) => lane.frozen === true).length
   // Includes the engine's bounded eight-impulse cache, generation copies,
-  // delay lines and node overhead. Browser-private native allocations vary.
-  return Math.ceil(8 * rate * 8 * 4 * 2 * 2 + count * effectBytes(rate))
+  // delay lines and node overhead, and what the frozen lanes decode as they
+  // play. Browser-private native allocations vary.
+  return Math.ceil(
+    8 * rate * 8 * 4 * 2 * 2 +
+      count * effectBytes(rate) +
+      frozen * FROZEN_LANE_PLAYING_BYTES,
+  )
 }
 
 /** What a chain a swap builds beside a graph's needs: its effects, the graph's impulse cache already counted. */

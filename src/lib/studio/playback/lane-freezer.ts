@@ -46,10 +46,14 @@ export interface StudioFreezeHold {
 
 /** What a run asks of the freezer. */
 export interface StudioFreezeLookup {
-  /** The renders that match `project`'s lanes now, held; null when none do. */
+  /**
+   * The renders that match `project`'s lanes now, held; null when none do.
+   * With `keep`, only those it keeps: the rest stay free to take back.
+   */
   hold(
     project: StudioProject,
     assets: readonly StudioAsset[],
+    keep?: (trackId: string, render: StudioFrozenLane) => boolean,
   ): StudioFreezeHold | null
   /** Whether a run built now would play other renders than `frozen`. */
   differs(
@@ -422,8 +426,11 @@ export function createStudioLaneFreezer(options: StudioLaneFreezerOptions) {
     hold(
       project: StudioProject,
       assets: readonly StudioAsset[],
+      keep?: (trackId: string, render: StudioFrozenLane) => boolean,
     ): StudioFreezeHold | null {
       const found = matching(project, assets)
+      for (const [trackId, entry] of found)
+        if (keep && !keep(trackId, entry.lane)) found.delete(trackId)
       if (!found.size) return null
       for (const entry of found.values()) entry.holds++
       let released = false

@@ -9,6 +9,7 @@ import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { rendersWorthHolding } from '@/lib/studio/playback/lane-freeze-reuse'
 import { createStudioLaneFreezer } from '@/lib/studio/playback/lane-freezer'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { isStudioLoopRange } from '@/lib/studio/playback/loop-range'
@@ -485,9 +486,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     primeAudio,
     stopPreview,
     releaseAudio,
-    /** The renders that match the song, held for an export to play (lane-freezer.ts). */
+    /** The renders that match the song, held for a job to play where they cost it no more room than their lanes (lane-freeze-reuse.ts). */
     holdFrozen: (project: StudioProject, assets: readonly StudioAsset[]) =>
-      freezer.hold(project, assets),
+      freezer.hold(project, assets, rendersWorthHolding(project, assets)),
     dispose,
   }
 }
