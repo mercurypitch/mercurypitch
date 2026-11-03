@@ -205,9 +205,10 @@ describe('pitch hold grades the run it asked for', () => {
     ctrl.setTarget(69)
 
     ctrl.startLoop()
-    // 10 seconds of ticking at 10 Hz — a full held run for a 10 s timer.
+    // 10 seconds of ticking at 10 Hz — a full held run for a 10 s timer,
+    // which its timer ends.
     vi.advanceTimersByTime(10_000)
-    const result = ctrl.stopAndCompute()
+    const result = ctrl.stopAndCompute('timer')
     expect(result.metrics.zonePct).toBe(100)
     expect(result.score).toBe(100)
     resetTimerPreference()

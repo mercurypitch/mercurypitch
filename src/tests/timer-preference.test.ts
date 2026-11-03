@@ -13,7 +13,10 @@
 // asking for their 45 back, not for whatever the slider defaults to.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, resetTimerPreference, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, TIMER_STORAGE_KEY, timerMode, } from '@/features/exercises/timer-preference'
+import { TOO_SHORT_LINE } from '@/features/exercises/feedback'
+import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, MIN_SCORED_SECONDS, pinTimerForRun, releaseTimerPin, resetTimerPreference, scoreCapForEnd, setCustomTimerSeconds, setTimerMode, settleTimedRun, TIMER_PRESETS, TIMER_STORAGE_KEY, timerMode, tooShortToScore, } from '@/features/exercises/timer-preference'
+import type { ExerciseResult } from '@/features/exercises/types'
+import { runStoppedEarly } from '@/features/exercises/types'
 
 describe('run-length preference', () => {
   beforeEach(() => {
@@ -75,5 +78,118 @@ describe('run-length preference', () => {
     setCustomTimerSeconds(47)
     expect(customTimerSeconds() % CUSTOM_STEP_SEC).toBe(0)
     expect(customTimerSeconds()).toBe(45)
+  })
+})
+
+describe('the length of a run in progress', () => {
+  // The timer is chosen between runs, but a settings sync can land during
+  // one. The run keeps the length it started with; the change is the next
+  // run's.
+  afterEach(() => {
+    resetTimerPreference()
+  })
+
+  it('holds a run to the length it started with', () => {
+    setTimerMode(10)
+    const pin = pinTimerForRun()
+
+    setTimerMode(30)
+    expect(activeTimerSeconds()).toBe(10)
+    setTimerMode('manual')
+    expect(activeTimerSeconds()).toBe(10)
+
+    releaseTimerPin(pin)
+    expect(activeTimerSeconds()).toBeNull()
+  })
+
+  it('holds a Manual run to Manual', () => {
+    setTimerMode('manual')
+    const pin = pinTimerForRun()
+
+    setTimerMode(5)
+    expect(activeTimerSeconds()).toBeNull()
+
+    releaseTimerPin(pin)
+    expect(activeTimerSeconds()).toBe(5)
+  })
+
+  it('lets a released run leave the next run its own pin', () => {
+    setTimerMode(10)
+    const first = pinTimerForRun()
+    setTimerMode(15)
+    const second = pinTimerForRun()
+
+    // The first run's shell cleans up after the second run has started.
+    releaseTimerPin(first)
+    setTimerMode(30)
+    expect(activeTimerSeconds()).toBe(15)
+
+    releaseTimerPin(second)
+    expect(activeTimerSeconds()).toBe(30)
+  })
+})
+
+describe('what a timed run scores for how it ended', () => {
+  const graded = (score: number): ExerciseResult => ({
+    type: 'long-note',
+    score,
+    metrics: { sungSec: 4 },
+    completedAt: 0,
+  })
+
+  afterEach(() => {
+    resetTimerPreference()
+  })
+
+  it('asks a Manual run for as much singing as the shortest timer', () => {
+    expect(MIN_SCORED_SECONDS).toBe(Math.min(...TIMER_PRESETS))
+    expect(MIN_SCORED_SECONDS).toBe(CUSTOM_MIN_SEC)
+    // The line says the number the rule uses.
+    expect(TOO_SHORT_LINE).toContain(`${MIN_SCORED_SECONDS} seconds`)
+
+    setTimerMode('manual')
+    expect(tooShortToScore(4.9)).toBe(true)
+    expect(tooShortToScore(5)).toBe(false)
+    setTimerMode(10)
+    expect(tooShortToScore(1)).toBe(false)
+  })
+
+  it('caps a Stop in the last second at its share of the length', () => {
+    setTimerMode(5)
+    expect(scoreCapForEnd('stop', 4_000)).toBe(80)
+    expect(scoreCapForEnd('stop', 4_990)).toBe(99)
+    expect(scoreCapForEnd('stop', 5_050)).toBe(100)
+    expect(scoreCapForEnd('timer', 4_000)).toBe(100)
+    setTimerMode(30)
+    expect(scoreCapForEnd('stop', 29_000)).toBe(96)
+    setTimerMode('manual')
+    expect(scoreCapForEnd('stop', 1_000)).toBe(100)
+  })
+
+  it('caps a whole run stopped in its last second, and leaves a marked one its grade', () => {
+    setTimerMode(5)
+    const lastSecond = settleTimedRun(graded(97), 'stop', 4_000, 4)
+    const early = settleTimedRun(graded(97), 'stop', 2_000, 2)
+    const timedOut = settleTimedRun(graded(97), 'timer', 5_000, 5)
+
+    expect(runStoppedEarly(lastSecond.metrics)).toBe(false)
+    expect(lastSecond.score).toBe(80)
+    expect(runStoppedEarly(early.metrics)).toBe(true)
+    expect(early.score).toBe(97)
+    expect(early.metrics.tooShort).toBeUndefined()
+    expect(timedOut.score).toBe(97)
+    expect(runStoppedEarly(timedOut.metrics)).toBe(false)
+  })
+
+  it('marks a Manual run under five sung seconds as too short, whatever its grade', () => {
+    setTimerMode('manual')
+    const short = settleTimedRun(graded(85), 'stop', 9_000, 1)
+    const long = settleTimedRun(graded(88), 'stop', 6_000, 6)
+
+    expect(runStoppedEarly(short.metrics)).toBe(true)
+    expect(short.metrics.tooShort).toBe(1)
+    expect(runStoppedEarly(long.metrics)).toBe(false)
+    expect(long.metrics.tooShort).toBeUndefined()
+    expect(long.score).toBe(88)
   })
 })

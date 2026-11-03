@@ -2,11 +2,11 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { detectVibrato } from '@/lib/vocal-analyzer'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, voicedSeconds } from '../exercise-scoring-utils'
 import type { RunEnd } from '../timer-preference'
-import { endedBeforeTimer } from '../timer-preference'
+import { settleTimedRun } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_VIBRATO, stoppedEarlyMark } from '../types'
+import { EXERCISE_VIBRATO } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { VibratoStyle, VibratoStyleId } from './vibrato-styles'
 import { DEFAULT_VIBRATO_STYLE, VIBRATO_STYLES } from './vibrato-styles'
@@ -228,19 +228,20 @@ export function useVibratoController(base: BaseExerciseController) {
    * End the run and grade it. `end` says what ended it: the timer, at the
    * end of the length the singer chose, or a Stop. A Stop while the timer
    * still ran is marked (`endedBeforeTimer`): the grade reads only the last
-   * four seconds, so four seconds and Stop graded like the whole run.
+   * four seconds, so four seconds and Stop graded like the whole run. The
+   * same reading made a short Manual run a whole one, so a Manual run that
+   * sang under five seconds is too short, and a Stop in the timer's last
+   * second scores at most its share of the length (`settleTimedRun`).
    */
   function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (metricTimer) clearInterval(metricTimer)
     base._setRunning(false)
-    const graded = computeResult()
-    const result: ExerciseResult = {
-      ...graded,
-      metrics: {
-        ...graded.metrics,
-        ...stoppedEarlyMark(endedBeforeTimer(end, base._getElapsed())),
-      },
-    }
+    const result = settleTimedRun(
+      computeResult(),
+      end,
+      base._getElapsed(),
+      voicedSeconds(base.pitchHistory()),
+    )
     base._completeWithResult(result)
     return result
   }

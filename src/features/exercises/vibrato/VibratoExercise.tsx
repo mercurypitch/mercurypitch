@@ -10,6 +10,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { unscoredRunLine } from '../feedback'
 import { stopLabelForTimer } from '../timer-preference'
 import { EXERCISE_VIBRATO, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -122,6 +123,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
       resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
+      unscoredLine={() => unscoredRunLine(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

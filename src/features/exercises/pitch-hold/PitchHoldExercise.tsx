@@ -12,6 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { unscoredRunLine } from '../feedback'
 import { stopLabelForTimer } from '../timer-preference'
 import type { GuidedPracticeLaunchConfig } from '../types'
 import { EXERCISE_PITCH_HOLD, runStoppedEarly } from '../types'
@@ -173,6 +174,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
       resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
+      unscoredLine={() => unscoredRunLine(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

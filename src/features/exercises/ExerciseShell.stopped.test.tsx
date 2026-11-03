@@ -15,7 +15,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clearExerciseHistory, flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { ExerciseShell } from './ExerciseShell'
-import { STOPPED_EARLY_LINE } from './feedback'
+import { STOPPED_EARLY_LINE, TOO_SHORT_LINE } from './feedback'
 import type { ExerciseStatus } from './types'
 import { EXERCISE_DRONE_INTONATION } from './types'
 import type { ExerciseVoiceCaptureController } from './use-base-exercise'
@@ -31,7 +31,7 @@ const discarded: ExerciseVoiceCaptureController = {
 
 /** One Drone Intonation run through the shell, scoring 100 against an
  *  earlier best of 70, stopped after its first round or not. */
-async function finishRun(stoppedEarly: boolean) {
+async function finishRun(stoppedEarly: boolean, unscoredLine?: () => string) {
   const [status, setStatus] = createSignal<ExerciseStatus>('idle')
   const view = render(() => (
     <ExerciseShell
@@ -41,6 +41,7 @@ async function finishRun(stoppedEarly: boolean) {
       currentScore={() => 100}
       resultScore={() => (status() === 'complete' ? 100 : null)}
       resultStoppedEarly={() => stoppedEarly}
+      unscoredLine={unscoredLine}
       voiceCapture={discarded}
       onBack={() => {}}
       onStart={() => {}}
@@ -110,5 +111,14 @@ describe('a finished Drone Intonation run in the shell', () => {
       card.querySelector('.exercise-result-voice-copy [role="status"]')
         ?.textContent,
     ).toBe('Replay discarded.')
+  })
+
+  it('says why, when the drill knows: a Manual run too short to score', async () => {
+    const { card } = await finishRun(true, () => TOO_SHORT_LINE)
+
+    expect(card.querySelector('.exercise-result-title')?.textContent).toBe(
+      TOO_SHORT_LINE,
+    )
+    expect(card.querySelector('.exercise-result-score')).toBeNull()
   })
 })

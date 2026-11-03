@@ -165,12 +165,16 @@ of at least 30 cents from smaller ones.
 ### REQ-PI-028 — Whole runs only
 
 **IF** a run was stopped before its last round or note was graded, or with
-more than a second left of the timer the singer chose, **THEN** it
-**shall not** count toward the EMA, the play count that gates a step, the weak
-exercise and weak interval averages, or the trends. A Stop in the timer's last
-second, while its countdown reads "1s", ends a whole run, and so does a Stop
-on Manual. A run recorded before stopped runs were marked **shall** count as a
-whole run (`src/tests/exercise-stopped-early.test.ts`).
+more than a second left of the timer the singer chose, or on Manual with
+less than five seconds sung, **THEN** it **shall not** count toward the EMA,
+the play count that gates a step, the weak exercise and weak interval
+averages, or the trends. A Stop in the timer's last second, while its
+countdown reads "1s", ends a whole run, which **shall** score at most its
+share of the length. A Stop on Manual ends a whole run once five seconds are
+sung, the shortest timer's length. A run keeps the timer length it started
+with, whatever a settings sync changes during it. A run recorded before
+stopped runs were marked **shall** count as a whole run
+(`src/tests/exercise-stopped-early.test.ts`).
 
 ## Trends overlay
 

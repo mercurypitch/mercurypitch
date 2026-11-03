@@ -11,7 +11,7 @@ import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { applyPersistedValue } from '@/lib/storage'
 import ExerciseMenu from './ExerciseMenu'
-import { EXERCISE_DRONE_INTONATION } from './types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE } from './types'
 
 const HISTORY_KEY = 'mercurypitch_exercise_history'
 
@@ -57,5 +57,25 @@ describe('the recent sessions list', () => {
       'Best: 72%',
     )
     expect(drone?.querySelector('.exercise-card-plays')?.textContent).toBe('1x')
+  })
+
+  it('says a Manual hold under five sung seconds was too short, not stopped', () => {
+    applyPersistedValue(
+      HISTORY_KEY,
+      JSON.stringify([
+        {
+          type: EXERCISE_LONG_NOTE,
+          score: 85,
+          metrics: { stoppedEarly: 1, tooShort: 1 },
+          completedAt: Date.now() - 60_000,
+        },
+      ]),
+    )
+
+    const { container } = render(() => <ExerciseMenu onSelect={() => {}} />)
+
+    expect(container.querySelector('.exercise-recent-score')?.textContent).toBe(
+      'Too short',
+    )
   })
 })

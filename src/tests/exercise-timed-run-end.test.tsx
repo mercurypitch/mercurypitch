@@ -24,7 +24,16 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 
 const { baseRef } = vi.hoisted(() => ({
-  baseRef: { results: [] as ExerciseResult[], startedAt: 0 },
+  baseRef: {
+    results: [] as ExerciseResult[],
+    startedAt: 0,
+    history: [] as Array<{
+      freq: number
+      time: number
+      cents: number
+      clarity: number
+    }>,
+  },
 }))
 
 vi.mock('@/features/exercises/use-base-exercise', async () => {
@@ -52,7 +61,7 @@ vi.mock('@/features/exercises/use-base-exercise', async () => {
         currentPitch: () => null,
         frequencyData: () => null,
         targetPitch: () => null,
-        pitchHistory: () => [],
+        pitchHistory: () => baseRef.history,
         _registerDispose: () => {},
         _setTargetPitch: () => {},
         _getElapsed: () => performance.now() - baseRef.startedAt,
@@ -104,6 +113,16 @@ function countdown(container: HTMLElement): string | null | undefined {
   return container.querySelector('.exercise-timer-countdown')?.textContent
 }
 
+/** A4 held in tune for `seconds`, as the engine records it. */
+function singFor(seconds: number): void {
+  baseRef.history = Array.from({ length: seconds * 20 + 1 }, (_, i) => ({
+    freq: 440,
+    time: i * 0.05,
+    cents: 0,
+    clarity: 0.9,
+  }))
+}
+
 beforeEach(() => {
   vi.useFakeTimers({
     toFake: [
@@ -127,6 +146,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   resetTimerPreference()
   baseRef.results = []
+  baseRef.history = []
 })
 
 describe.each(DRILLS)('%s with a ten-second timer', (_name, Drill) => {
@@ -181,8 +201,9 @@ describe.each(DRILLS)('%s on Manual', (_name, Drill) => {
   })
 
   it('names its Stop "Stop & Score", and scores the run it ends', async () => {
+    singFor(6)
     const page = await startDrill(Drill)
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(6_000)
 
     expect(stopButton(page).getAttribute('aria-label')).toBe('Stop & Score')
     fireEvent.click(stopButton(page))
@@ -190,4 +211,56 @@ describe.each(DRILLS)('%s on Manual', (_name, Drill) => {
     expect(baseRef.results).toHaveLength(1)
     expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(false)
   })
+
+  it('leaves a run that sang two seconds unscored', async () => {
+    singFor(2)
+    const page = await startDrill(Drill)
+    await vi.advanceTimersByTimeAsync(2_000)
+    fireEvent.click(stopButton(page))
+
+    expect(baseRef.results).toHaveLength(1)
+    expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(true)
+    expect(baseRef.results[0]!.metrics.tooShort).toBe(1)
+  })
 })
+
+describe.each(DRILLS)(
+  '%s when a sync changes the timer mid-run',
+  (_name, Drill) => {
+    // The timer is chosen between runs; only a settings sync changes it
+    // during one. The run keeps the length it started with.
+    beforeEach(() => {
+      setTimerMode(10)
+    })
+
+    it('keeps counting down the length it started with', async () => {
+      const page = await startDrill(Drill)
+      await vi.advanceTimersByTimeAsync(3_000)
+
+      setTimerMode(30)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(countdown(page)).toBe('7s')
+      expect(stopButton(page).getAttribute('aria-label')).toBe('Stop')
+
+      await vi.advanceTimersByTimeAsync(7_100)
+      expect(baseRef.results).toHaveLength(1)
+      expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(false)
+    })
+
+    it('judges a Stop against that length too', async () => {
+      const page = await startDrill(Drill)
+      await vi.advanceTimersByTimeAsync(3_000)
+      setTimerMode(30)
+      await vi.advanceTimersByTimeAsync(6_100)
+
+      // Against the thirty seconds the sync chose, this Stop is twenty short
+      // and marked. Against the ten the run started with, it is in the
+      // countdown's last second.
+      expect(countdown(page)).toBe('1s')
+      fireEvent.click(stopButton(page))
+
+      expect(baseRef.results).toHaveLength(1)
+      expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(false)
+    })
+  },
+)

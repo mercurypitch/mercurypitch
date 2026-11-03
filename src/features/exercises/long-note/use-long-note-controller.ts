@@ -4,9 +4,9 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { freqToExactMidi, voicedSeconds } from '../exercise-scoring-utils'
 import type { RunEnd } from '../timer-preference'
-import { activeTimerSeconds, endedBeforeTimer } from '../timer-preference'
+import { activeTimerSeconds, settleTimedRun } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_LONG_NOTE, stoppedEarlyMark } from '../types'
+import { EXERCISE_LONG_NOTE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const STEADY_ZONE_THRESHOLD_CENTS = 15
@@ -222,20 +222,20 @@ export function useLongNoteController(base: BaseExerciseController) {
 
   /**
    * End the run and grade it. `end` says what ended it: the timer, at the
-   * end of the length the singer chose, or a Stop. A Stop while the timer
-   * still ran is marked (`endedBeforeTimer`).
+   * end of the length the singer chose, or a Stop. The grade is settled for
+   * that end (`settleTimedRun`): a Stop while the timer still ran is
+   * marked, a Manual run that sang under five seconds is too short, and a
+   * Stop in the timer's last second scores at most its share of the length.
    */
   function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (metricTimer) clearInterval(metricTimer)
     base._setRunning(false)
-    const graded = computeResult()
-    const result: ExerciseResult = {
-      ...graded,
-      metrics: {
-        ...graded.metrics,
-        ...stoppedEarlyMark(endedBeforeTimer(end, base._getElapsed())),
-      },
-    }
+    const result = settleTimedRun(
+      computeResult(),
+      end,
+      base._getElapsed(),
+      voicedSeconds(base.pitchHistory()),
+    )
     base._completeWithResult(result)
     return result
   }
