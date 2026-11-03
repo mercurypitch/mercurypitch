@@ -178,7 +178,8 @@ export function usePitchHoldController(
     base._setRunning(false)
     const graded = computeResult()
     const stopped =
-      options.fixedTargetDurationSeconds === undefined && endedBeforeTimer(end)
+      options.fixedTargetDurationSeconds === undefined &&
+      endedBeforeTimer(end, base._getElapsed())
     const result: ExerciseResult = {
       ...graded,
       metrics: { ...graded.metrics, ...stoppedEarlyMark(stopped) },

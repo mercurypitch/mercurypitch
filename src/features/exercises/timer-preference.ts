@@ -104,15 +104,28 @@ export function activeTimerSeconds(): number | null {
 export type RunEnd = 'stop' | 'timer'
 
 /**
- * Whether a run ended short of the length the singer chose: stopped while
- * its timer still ran. Graded on the seconds it reached, one second of Long
- * Note held in tune scored 86 against the ten-second default and cleared
- * every basics challenge, so such a run is practice, not a result
- * (`stoppedEarlyMark`). On Manual there is no length to fall short of, and
- * the Stop is the run's end.
+ * How near its length a Stop may land and still end a whole run. The shell
+ * checks the timer every 100 ms, so a Stop can land after the length has
+ * run out but before the shell ends the run, and a Stop pressed as the
+ * countdown reaches zero lands a moment either side of it.
  */
-export function endedBeforeTimer(end: RunEnd): boolean {
-  return end === 'stop' && activeTimerSeconds() !== null
+export const TIMER_END_GRACE_MS = 250
+
+/**
+ * Whether a run ended short of the length the singer chose: stopped
+ * `elapsedMs` into it, while its timer still ran. Graded on the seconds it
+ * reached, one second of Long Note held in tune scored 86 against the
+ * ten-second default and cleared every basics challenge, so such a run is
+ * practice, not a result (`stoppedEarlyMark`). Which control ended the run
+ * is not enough: a Stop once the length has run out ends a whole run. On
+ * Manual there is no length to fall short of, and the Stop is the run's
+ * end.
+ */
+export function endedBeforeTimer(end: RunEnd, elapsedMs: number): boolean {
+  if (end === 'timer') return false
+  const seconds = activeTimerSeconds()
+  if (seconds === null) return false
+  return elapsedMs < seconds * 1000 - TIMER_END_GRACE_MS
 }
 
 /**

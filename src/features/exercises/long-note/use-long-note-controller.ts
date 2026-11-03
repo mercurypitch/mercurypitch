@@ -233,7 +233,7 @@ export function useLongNoteController(base: BaseExerciseController) {
       ...graded,
       metrics: {
         ...graded.metrics,
-        ...stoppedEarlyMark(endedBeforeTimer(end)),
+        ...stoppedEarlyMark(endedBeforeTimer(end, base._getElapsed())),
       },
     }
     base._completeWithResult(result)
