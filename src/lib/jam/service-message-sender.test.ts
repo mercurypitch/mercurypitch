@@ -8,8 +8,9 @@
 // it is handed. The service names the sender by the DataChannel a message
 // came in on, never by anything in the message, which any peer can write.
 //
-// The other way round, a drill the host sends to catch up one late arrival
-// goes out on that peer's channel alone (jam-store.late-join.test.ts).
+// The other way round, the drill or song the host sends to catch up one
+// late arrival goes out on that peer's channel alone
+// (jam-store.late-join.test.ts).
 //
 // This runs the REAL createJamService, as service-local-media.test.ts does.
 // Signaling is a stub that lets the test announce peers, and jsdom has no
@@ -165,7 +166,7 @@ describe('a room message, as the service hands it to the store', () => {
   )
 })
 
-describe('a drill, as the service sends it', () => {
+describe('what the room is on, as the service sends it', () => {
   const melody: MelodyData = {
     id: 'arpeggio',
     name: 'Arpeggio Jumper',
@@ -188,25 +189,50 @@ describe('a drill, as the service sends it', () => {
   const received = (channel: FakeChannel): unknown[] =>
     channel.send.mock.calls.map(([raw]) => JSON.parse(raw as string))
 
+  /** A song manifest, as the store builds one: words, stems, parts. */
+  const manifest = {
+    id: 'demo',
+    title: 'Demo',
+    stems: { instrumental: 'https://example.test/inst.m4a' },
+    lines: [{ text: 'a line', startSec: 0 }],
+    parts: { 0: 'peer-a' },
+  }
+
+  /** Each send, and the message the peer at the other end reads. */
+  const SENDS = [
+    [
+      'drill',
+      (to?: string) => service.sendMelody(melody, 'harmony', to),
+      { type: 'melody', action: 'set', melody, mode: 'harmony' },
+    ],
+    [
+      'song',
+      (to?: string) => service.sendSong(manifest, to),
+      { type: 'song', action: 'set', song: manifest },
+    ],
+  ] as const
+
   beforeEach(() => {
     for (const pc of built) pc.channel.readyState = 'open'
   })
 
-  it('goes to one peer alone, with its mode, when it is sent to them', () => {
-    const [toA, toB] = built.map((pc) => pc.channel)
-    service.sendMelody(melody, 'harmony', 'peer-b')
+  it.each(SENDS)(
+    'sends a %s to one peer alone when it is sent to them',
+    (_kind, send, message) => {
+      const [toA, toB] = built.map((pc) => pc.channel)
+      send('peer-b')
 
-    expect([received(toA), received(toB)]).toEqual([
-      [],
-      [{ type: 'melody', action: 'set', melody, mode: 'harmony' }],
-    ])
-  })
+      expect([received(toA), received(toB)]).toEqual([[], [message]])
+    },
+  )
 
-  it('goes to the whole room when it is sent to nobody in particular', () => {
-    const [toA, toB] = built.map((pc) => pc.channel)
-    service.sendMelody(melody, 'relay')
+  it.each(SENDS)(
+    'sends a %s to the whole room when it is sent to nobody in particular',
+    (_kind, send, message) => {
+      const [toA, toB] = built.map((pc) => pc.channel)
+      send()
 
-    const message = { type: 'melody', action: 'set', melody, mode: 'relay' }
-    expect([received(toA), received(toB)]).toEqual([[message], [message]])
-  })
+      expect([received(toA), received(toB)]).toEqual([[message], [message]])
+    },
+  )
 })
