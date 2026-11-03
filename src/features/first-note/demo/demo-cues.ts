@@ -20,6 +20,7 @@
 import type { DemoCue as KitDemoCue, DemoMark as KitDemoMark, DemoTimeline, } from '@/components/demo-kit/demo-plan'
 import { planDemo } from '@/components/demo-kit/demo-plan'
 import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
+import { entryPitch } from '../first-note-songs'
 import type { FirstNoteDemoMark, FirstNoteDemoTake } from './demo-script'
 import { demoTake } from './demo-script'
 
@@ -115,7 +116,10 @@ export function demoCueText(id: DemoCueId): string {
 }
 
 export type FirstNoteDemoPlan = DemoTimeline<DemoCueId, FirstNoteDemoTake> & {
-  /** The singer's first note: the note both takes come in on, or under. */
+  /**
+   * The singer's first note as the band plays it, in the song's own tuning:
+   * the note both takes come in on, or under, and the voice is sung from.
+   */
   readonly note: number
 }
 
@@ -127,7 +131,7 @@ export function planFirstNoteDemo(): FirstNoteDemoPlan {
   const off = demoTake('off')
   const on = demoTake('on')
   return {
-    note: off.round.entry.midi,
+    note: entryPitch(off.round.entry),
     ...planDemo('First note', { off, on }, DEMO_CUES, DEMO_BEATS),
   }
 }
