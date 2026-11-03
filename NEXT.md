@@ -3120,3 +3120,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - update the PR body;
     - send review round 3 to the same reviewer (new commits only);
     - merge on MERGE plus green CI (the owner already said merge as is).
+- 3 Nov 08:0x: Gates on ea6f2e898: typecheck 0, lint 0 errors, pr:validate 0.
+  - metrics FAILED: tests.presenceOnlyBlocks 332 -> 333. The cause is the Pitch Pursuit counter test (toBeTruthy only).
+  - Fix after the unit suite finishes (do not rebase while it runs):
+    - assert `screen.getByText(/^\d+ \/ \d+ notes$/).textContent` toBe '3 / 17 notes';
+    - fixup into b297cb6e4 with GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash 11abf5014;
+    - re-run metrics:check, pr:validate and the touched tests;
+    - push (fast-forward from 11abf5014).
+  - The 08:04 check-in fired; CI on 11abf5014 was green.
