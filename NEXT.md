@@ -3062,3 +3062,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - Lesson 20's built page is 4 words under its cap.
   - Docs reviewer running (brief s2pkg/DOCS-REVIEW-BRIEF.md, worktree /dev/shm/s2drev).
   - After #1320 merges: rebase the docs onto main (the fix commits drop by patch-id), plan-cites check, then PR, merge --rebase.
+- 3 Nov 04:2x:
+  - #1320 merged by rebase: main 81414ea9b; 8 commits on 74cc1b769; subjects, messages, authors and patch-ids verified; tree = 3-way replay.
+  - Both agents hit the 5-hour limit at about 02:1x (reset 03:10). The container restarted again and wiped /dev/shm.
+  - Docs rebased onto 81414ea9b and pushed as a2945fc96 (re-anchor 701c8bac6, content 1db786367, format a2945fc96); findings 200 = base. Docs reviewer resumed; its report goes to s2pkg/DOCS-REVIEW.md.
+  - Stopped-run agent resumed: worktree /dev/shm/s2stop, branch reset to main; its map goes to s2pkg/STOP-MAP.md.
+  - The 02:21 safety-net check-in fired (one-shot, done). The classifier had denied deleting it earlier.
+  - Next:
+    - Docs PR after the review: body without footer, check after create, merge --rebase.
+    - Stopped-run PR after its review.
+    - Then the report to the owner.
