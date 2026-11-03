@@ -84,8 +84,14 @@ microphone that works on every TV; a USB mic on Android TV is a bonus.
   spatial navigation on devices without a touchscreen, which may carry the
   basics in the Android TV app. The TV browsers vary. Any surface that needs
   more gets a small focus grid, not a library-wide engine.
-- **[next]** Targets a D-pad cannot reach: click-only elements, such as the
-  mixer's transport seek bar ([BUGS.md](../agent/BUGS.md)).
+- **[next]** Targets a D-pad cannot reach: click-only elements, which the
+  D-pad walk (`REQ-TV-010`) is to find. The one first named here is
+  **[shipped]**: the mixer's transport seek bar, a click-only `<div>`, gave
+  way to the playback rail's timeline in #857
+  (`src/components/stem-mixer/rail/MixerTimeline.tsx`), whose seek is a range
+  input, a tab stop that the arrow keys, Page Up and Down, Home and End move
+  ([BUGS.md](../agent/BUGS.md) marks it fixed). Up and Down seek there too,
+  so whether a D-pad can leave it is for the same walk to say.
 - **[open]** Overscan margins, Media Session keys (play and pause on the
   remote), and Titan OS detection (there is no token or test for it yet).
 

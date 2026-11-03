@@ -4,8 +4,15 @@ For phase P0 and the proofs of concept of
 [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md); requirement ids are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md). Tests 1 to 3 need
 no new build: use the current TestFlight build on the iPhone and the current
-app on an Android phone. Tests 4 to 7 need the build named in each. Fill in
+app on an Android phone. Tests 4 to 8 need the build named in each. Fill in
 the tables; that is all that needs to come back.
+
+**Run Tests 4B, 5, 6 and 8 on TestFlight mp-v0.8.52 (3 Nov 2026) or later.**
+It carries the wizard that hears a TV (PR #1189, in TestFlight since
+mp-v0.8.42) and PR #1321, which keeps the app's silent media off AirPlay,
+says each audio route and the clock's state in the console, and stops a
+Karaoke song whose clock stands still, saying why. Test 7 is Beside Cue's,
+which `mp-v*` tags do not build.
 
 ## Before you start
 
@@ -82,7 +89,8 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 2. Open the app first, then start mirroring. You should get the same result.
 3. Repeat steps 3 to 6 of Test 1 (sound, audio report, latency, score).
 
-**B. Lyrics on the TV (the switch).**
+**B. Lyrics on the TV (the switch).** Not reported yet; run it on
+mp-v0.8.52 or later.
 
 1. Settings, Developer, TV: turn on "Lyrics on a connected TV". With
    mirroring on, "TV" should read connected, "It shows" should read the
@@ -110,7 +118,7 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 | LG C2   | Yes, both orientations   |               |                                                      | TV         |                           |                            |                           |                          |                      |
 | Samsung |                          |               |                                                      |            |                           |                            |                           |                          |                      |
 
-## Test 5: per-route latency (PR #1175, TestFlight mp-v0.8.41, build 1321)
+## Test 5: per-route latency (PR #1175, TestFlight mp-v0.8.52 or later)
 
 1. On the phone's speaker: Settings, Microphone. Note the Latency and the
    day under it.
@@ -134,15 +142,15 @@ the wizard found no number: the first click came out of the TV loud and the
 rest quieter, even at TV volume 100, and too few clicks were heard. The
 likely cause is the wizard's detection rather than the route: it holds every
 click to a quarter of the loudest, credits no reply later than 375 ms and
-keeps no number over 500 ms; the fix is merged (PR #1189, `REQ-TV-096`) and
-goes to TestFlight with the next tag. Until it ships, a run may succeed with
+keeps no number over 500 ms; the fix (PR #1189, `REQ-TV-096`) is in
+TestFlight since mp-v0.8.42. On an older build a run may succeed with
 the TV's automatic volume and sound processing off (on the LG, for example
 Auto Volume and AI Sound Pro; names vary by model) and the phone held near
 the TV's speaker. Without a number the TV borrows the speaker's, which is
 probably 100 to 300 ms short of a mirrored round trip (the plan's section
 2.3 figures), so a song may score late.
 
-**Again with the build after PR #1189** (the next `mp-v` tag):
+**Again with PR #1189**, on mp-v0.8.52 or later:
 
 1. Mirror to the LG C2. Settings, Microphone, Measure latency for AirPlay.
    Before the run the wizard should say to hold the phone near the TV's
@@ -162,11 +170,13 @@ probably 100 to 300 ms short of a mirrored round trip (the plan's section
 | LG C2, after #1189   |                                                                                 |                    |                                              |
 | AirPlay to Samsung   |                                                                                 |                    |                                              |
 
-## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.41, build 1321)
+## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.52 or later)
 
 The phone stays the room and the microphone, held upright; the TV draws the
-stage in its own landscape (POC-3). mp-v0.8.41 carries #1175 as well, so
-step 6 can use the TV's own latency number from Test 5.
+stage in its own landscape (POC-3). The stage first shipped in mp-v0.8.41
+(build 1321); run it on mp-v0.8.52 or later, which carries #1175 too, so
+step 6 can use the TV's own latency number from Test 5, and #1321, so a
+song that stops on AirPlay says why (Test 8).
 
 1. Start Screen Mirroring. Settings, Developer, TV: turn on "Stage on a
    connected TV". "It shows" should read the stage, "Lyrics on a connected
@@ -177,7 +187,9 @@ step 6 can use the TV's own latency number from Test 5.
    playhead, and the lyrics, the line being sung filling word by word with
    the next line under it. Turn the mic on and sing: your line should trail
    behind the playhead, and a score should appear top right after a few
-   seconds.
+   seconds. The TV's notes should be the ones the phone's lane shows with
+   the mic on; for a song with no notes yet, they should appear on the TV
+   as the phone finishes reading them.
 3. Where does the sound play, TV or phone? Do the words and notes land on
    the beat you hear? If not, Settings, Developer, TV, "Stage picture":
    press Earlier (picture behind the sound) or Later (picture ahead) until
@@ -200,9 +212,11 @@ step 6 can use the TV's own latency number from Test 5.
 
 ## Test 7: Beside Cue on a TV (PR #1182, TestFlight build 1198 or later)
 
-Beside Cue had Mercury Pitch's second-copy bug, and #1182 ports the fix. Main
-uploads a Beside Cue TestFlight build on every push that touches it; the
-newest of 2026-10-23 is build 1202.
+Beside Cue had Mercury Pitch's second-copy bug, and #1182 ports the fix.
+Until 30 Oct 2026 main uploaded a Beside Cue TestFlight build on every push
+that touched it (build 1202 on 2026-10-23). Since then only a `bc-v*` tag
+uploads one, and none has been pushed yet, so use the newest build main
+uploaded before that: every build from 1198 on carries the fix.
 
 1. Start Screen Mirroring, then open Beside Cue. The TV should show the phone
    and follow it, with no separate copy of the app on its first screen.
@@ -214,6 +228,32 @@ newest of 2026-10-23 is build 1202.
 | ------- | ------------------------ | ---------------------------------- | ---------- |
 | LG C2   |                          |                                    |            |
 | Samsung |                          |                                    |            |
+
+## Test 8: a Karaoke song on AirPlay, and its lines (PR #1321, TestFlight mp-v0.8.52)
+
+The owner's case of 1 and 2 Nov: AirPlay offered as the app opened, taken,
+and the Karaoke song stood still with no error. #1321 keeps the app's silent
+media off AirPlay and says in the console where the sound goes and what the
+song's clock does. How to set the console up, what each line means and how
+to read a run are in
+[DEVICE-DEBUGGING.md](../agent/DEVICE-DEBUGGING.md), "A song that sticks with
+its sound on a TV (AirPlay)"; follow its setup, then:
+
+1. Open the app. Does AirPlay still pop up as it opens?
+2. Take AirPlay to the TV, as the sound alone and then as Screen Mirroring,
+   and play a song in the Karaoke room each way. Does the song play, and is
+   its sound on the TV?
+3. If it stops: what does the room's notice say?
+4. Choose the phone in Control Center: does the notice turn into Play
+   again, and does that play on the phone?
+5. Copy the console into the notes: the `[audio route]`, `[audio clock]` and
+   `karaoke clock-...` lines. After a stop, also Developer, Audio, Copy
+   report.
+
+| TV      | AirPlay offered on opening? | Song plays, sound alone? | Song plays, mirroring? | Stopped? The notice's words | Phone chosen: Play again plays? |
+| ------- | --------------------------- | ------------------------ | ---------------------- | --------------------------- | ------------------------------- |
+| LG C2   |                             |                          |                        |                             |                                 |
+| Samsung |                             |                          |                        |                             |                                 |
 
 ## Aside: a TestFlight Subscribe asks for the password
 

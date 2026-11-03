@@ -23,7 +23,12 @@ plan section 2.10), and `096` (the wizard that hears a TV, from the 0.8.41
 device test; merged in PR #1189). Updated 2026-10-25 with the owner's
 decisions: `066` notes about four singers on a TV, not capped yet; the
 Google TV app (`070`-`084`) waits until after the first official native app
-release (plan decisions 4 and 8).
+release (plan decisions 4 and 8). Updated 2026-11-03, each status checked
+against the code: `091` and `104` shipped; `102` and `103` are built and
+wait only for the device check; `076` shipped, to verify on a TV; `015`,
+`024` and `025` are partly built, and each says which part; `101`'s messages
+are hardened and carry the notes the phone's lane draws; and `005` conflicts
+with `101` on the stage page, an open point under `005`.
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -107,6 +112,17 @@ before first paint from every entry point, including the stage entry
 (`REQ-TV-026`).
 _Tests:_ `src/lib/device-tier.test.ts`; the stage entry adds its own
 _(planned)_.
+_Open point (2026-11-03): this conflicts with `REQ-TV-101`._ The iOS second
+screen's stage page reads no storage of its own (`REQ-TV-101`), and
+`src/lib/device-tier.ts` reads the Graphics Quality override from
+localStorage and a session's demotion from sessionStorage, so the stage
+cannot publish its verdict the way every other entry does. The POC's page
+(`apps/mercurypitch/stage.html`) publishes neither attribute. Settle it
+together with the stage's frame cap (`REQ-TV-023`), which waits on the
+owner's device test ([tv-device-tests.md](../plans/tv-device-tests.md),
+Test 6): whether the stage needs a tier at all on that route, and if so,
+whether the room sends its own or the stage classifies the TV from what it
+can see without storage. Not settled in code yet.
 
 ### REQ-TV-006 — No microphone API is a sentence **[shipped]**
 
@@ -158,12 +174,24 @@ Left or Right is pressed, it shall rewind or fast-forward by a fixed step
 (Play TV-PC). Arrow keys on a focused control keep moving focus.
 _Tests:_ `src/features/tv-stage/stage-keys.test.ts` _(planned)_.
 
-### REQ-TV-015 — Media keys **[next]**
+### REQ-TV-015 — Media keys **[next; partly built]**
 
 **WHEN** a play, pause or play-pause media key arrives during playback, the
 system shall toggle playback accordingly (Play TV-PP).
-_Tests:_ `src/features/tv-stage/stage-keys.test.ts` _(planned)_; a device
-check on the Philips Google TV.
+_Built:_ the native Karaoke room answers the system's play, pause and stop
+(the notification's, the lock screen's and a headset's, through the
+platform's media session) while its song plays behind another app or in
+the small window (`onMediaButton` in
+`src/features/karaoke-room/KaraokeRoomStage.tsx`, `onMediaAction` in
+`packages/mobile-runtime/src/platform.ts`). _Not built:_ media keys with the
+app in front, where nothing handles a remote's `MediaPlayPause` key; any
+room but Karaoke; and the TV stage's own keys.
+_Tests:_ `src/features/karaoke-room/KaraokeRoomStage.test.tsx` ("answers the
+media buttons, and leaves a playing song alone on play"),
+`packages/mobile-runtime/src/platform.test.ts` ("passes each media button to
+the handler, and clears them all on stop"), for the built part;
+`src/features/tv-stage/stage-keys.test.ts` _(planned)_; a device check on the
+Philips Google TV.
 
 ### REQ-TV-016 — Nothing depends on hover **[next]**
 
@@ -232,16 +260,30 @@ tier's presentation rate, and canvases at the tier's render scale.
 _Tests:_ `src/tests/stem-mixer-frame-scheduler.test.ts`; the stage reuses the
 scheduler _(planned)_.
 
-### REQ-TV-024 — A QR a room can scan **[next]**
+### REQ-TV-024 — A QR a room can scan **[next; partly built]**
 
 **WHEN** the stage shows a pairing or sync QR, it shall render dark on light
 with a quiet zone, whatever the theme, at 30-40% of the viewport height.
-_Tests:_ `src/components/__tests__/QrCode.test.tsx` _(planned)_.
+_Built:_ the shared `src/components/QrCode.tsx` draws black modules on white
+with a four-module quiet zone whatever the theme, in the sign-in and Send
+songs dialogs a TV shows. _Not built:_ the size, which is fixed at 168 or
+200 px (30% of a 1080-line screen is 324 px), and any QR on the stage, which
+has none until pairing (`REQ-TV-053`).
+_Tests:_ `src/tests/qr-code.test.tsx` ("encodes what it was given, with a
+quiet zone around it", "keeps camera contrast fixed rather than following
+the theme"), for the built part; the size _(planned)_.
 
-### REQ-TV-025 — The code under the QR **[next]**
+### REQ-TV-025 — The code under the QR **[next; partly built]**
 
 The stage shall print the pairing code as text under the QR, from an alphabet
 without `0`, `O`, `1` or `I`.
+_Built:_ the codes a TV shows beside a QR today are printed as text and use
+that alphabet: the sign-in code (`DEVICE_CODE_ALPHABET`,
+`workers/db-worker/src/auth.ts`; `src/components/account/PhoneSignIn.tsx`)
+and the Send songs room code (`newRoomId`, `workers/jam-worker/src/index.ts`;
+`src/lib/room-code.ts`; `src/components/sync/SyncDevicesModal.tsx`). _Not
+built:_ the stage's own pairing code, which comes with the phone as the
+microphone (`REQ-TV-053`).
 _Tests:_ as `REQ-TV-024`.
 
 ### REQ-TV-026 — Host and view modes **[next; view mode merged, PR #1179]**
@@ -529,12 +571,18 @@ show the TV's media controls, and choosing them shall open a screen that can
 pause (Play TV-NP, TV-PA).
 _Tests:_ a device check on the Philips Google TV.
 
-### REQ-TV-076 — Ambient Mode allowed when idle **[next]**
+### REQ-TV-076 — Ambient Mode allowed when idle **[shipped, verify on TV]**
 
 The app shall hold the keep-awake lock only while a song plays, and shall
 release it on pause, stop and leaving the room (Play TV-BY, TV-BA).
-_Tests:_ `packages/mobile-runtime/src/platform.test.ts` _(planned case)_ and
-the room's own test.
+_Source:_ `src/features/karaoke-room/KaraokeRoomStage.tsx` (the screen stays
+on while a song plays, and only then: released on pause and stop, and as the
+room goes).
+_Tests:_ `src/features/karaoke-room/KaraokeRoomStage.test.tsx` ("keeps the
+screen awake while a song plays, and only then");
+`packages/mobile-runtime/src/platform.test.ts` ("holds the screen awake and
+lets it go again"); a device check that a Google TV's Ambient Mode comes on
+over a paused song.
 
 ### REQ-TV-077 — Back from the root **[shipped, verify on TV]**
 
@@ -607,10 +655,14 @@ to the application role; Simulator check (I/O, External Displays) shows one
 `Loading app at`. Device check passed 2026-10-22 on an LG C2 over AirPlay
 (TestFlight mp-v0.8.40): the TV mirrors the phone in both orientations.
 
-### REQ-TV-091 — One bridge **[next; POC merged, PR #1179]**
+### REQ-TV-091 — One bridge **[shipped]**
 
 The iOS app shall run one Capacitor bridge per process. The second-screen
 stage (`REQ-TV-100`) is not a bridge and registers no plugins.
+_Source:_ the role guard in `apps/mercurypitch/ios/App/App/AppDelegate.swift`
+and `SceneDelegate.swift`, which gives the bridge's scene delegate to the
+application role alone; the stage's plain `WKWebView`, with no Capacitor,
+in `apps/mercurypitch/ios/App/App/LyricsWindow/TVStage.swift`.
 _Tests:_ as `REQ-TV-090`; `apps/mercurypitch/src/ios-tv-stage.test.ts`
 ("shows a plain web view: no bridge of its own, no plugins").
 
@@ -716,36 +768,68 @@ an Apple TV and an AirPlay 2 TV.
 
 The stage web view shall receive state only from the main web view, through a
 native message bridge, and shall read no storage of its own.
+_Hardened (done, P5 step 5.2):_ the room checks every number in a message
+before it goes (`src/lib/tv-stage/feed.ts`), since JSON writes a NaN or an
+Infinity as null and the stage drops a message with a null where a number
+belongs, whole. A note, a reading or a lyric line with a bad number is
+dropped, never moved to 0; a song's length goes as 0 (not known yet), a
+score as none, a rate as 1; and a frame whose clock reading is not a number
+carries the last good one again, or the song's start, standing still,
+before any. The song's notes are the ones the phone's lane draws, the
+singer's edits and the key included, and follow them as they change
+(`laneNotes`, `src/components/stem-mixer-hosting.ts`). The stage page
+publishes no device tier, an open point under `REQ-TV-005`.
 _Tests:_ `src/features/tv-stage/view-mode.test.ts` _(planned)_. The POC:
 `src/lib/tv-stage/protocol.test.ts` (what the stage takes and drops),
+`src/lib/tv-stage/feed.test.ts` (a NaN or an infinity in each field still
+crosses as a message the stage reads),
 `src/features/karaoke-room/useKaraokeTvStage.test.ts` (what the room sends,
-and when), `apps/mercurypitch/src/ios-tv-stage.test.ts` (each message reaches
-the page; the newest song and frame wait for a page still loading).
+and when, the lane's notes as they change),
+`src/components/__tests__/StemMixer.hosted.test.tsx` ("hands the room the
+notes its lane draws, edited in Pitch Studio, for a TV"),
+`apps/mercurypitch/src/ios-tv-stage.test.ts` (each message reaches the page;
+the newest song and frame wait for a page still loading).
 
-### REQ-TV-102 — Released on disconnect **[open; POC merged, PR #1179]**
+### REQ-TV-102 — Released on disconnect **[built, PR #1179; device check pending]**
 
 **WHEN** the external display disconnects, the iOS app shall tear down and
 release the stage web view, leaving one web view running.
+Built: `disconnect` in `TVStage.swift` takes the window down and lets the
+web view go; only the device check is left.
 _Tests:_ device check (Safari, Develop menu lists one page after disconnect);
 `apps/mercurypitch/src/ios-tv-stage.test.ts` pins that a disconnect hides the
 window and drops the web view.
 
-### REQ-TV-103 — The sound's route is known **[open]**
+### REQ-TV-103 — The sound's route is known **[built; device check pending]**
 
 **WHILE** the second-screen stage is shown, the system shall know whether the
 song plays on the TV or the phone, and shall apply the offset for that route
 (`REQ-TV-092`).
-_Tests:_ device check, recorded in the plan.
+Built: the app follows the output route from launch, whatever the TV shows
+(`src/stores/audio-route-store.ts`), and applies the offset stored for it
+(PR #1175, `src/stores/mic-latency-store.ts`); since PR #1321 (TestFlight
+mp-v0.8.52) the console says each route. Only the device check is left:
+that the route reads AirPlay while the stage is up.
+_Tests:_ `src/tests/audio-route-store.test.ts`;
+`src/tests/mic-latency-store.test.ts` ("per output route"); a device check,
+recorded in the plan.
 
-### REQ-TV-104 — No stage page, no window **[open; POC merged, PR #1179]**
+### REQ-TV-104 — No stage page, no window **[shipped]**
 
 **IF** the app's bundle has no stage page, or the stage page fails to load,
 **THEN** the iOS app shall take no window, or take its window down, so the
 TV mirrors the phone. A load cancelled by the next one is not a failure.
+_Source:_ `stagePage()` in `LyricsWindowPlugin.swift` returns nil where the
+bundle has no `stage.html`; `pageFailed()` in `TVStage.swift` takes the
+window down; and a store build carries no stage page, since
+`apps/mercurypitch/vite.config.ts` adds it only with the Developer screen,
+which a store build never has (`portableConsoleFor`).
 _Tests:_ `apps/mercurypitch/src/ios-tv-stage.test.ts` ("finds no page where
 the bundle has none", "gives the TV back to the mirror when the page does not
-load"). A store build installed over a test build that left the switch on is
-the case this covers: TestFlight and the App Store share the app's settings.
+load"); `apps/mercurypitch/src/api-base.test.ts` (the portable console and
+the Developer screen "are out of the store build, whatever the env says"). A
+store build installed over a test build that left the switch on is the case
+this covers: TestFlight and the App Store share the app's settings.
 
 ### REQ-TV-105 — The picture can be moved to meet the sound **[open; POC merged, PR #1179]**
 

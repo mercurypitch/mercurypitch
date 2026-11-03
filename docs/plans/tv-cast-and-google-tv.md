@@ -8,11 +8,13 @@ with section 2.9: the server keeps no songs, so a TV that plays one gets it
 from the phone. Updated again on 2026-10-23 after the merges: PRs #1175,
 #1179, #1181 and #1182 are on main, TestFlight mp-v0.8.41 carries #1175 and
 #1179, and the owner's decisions of that day are in section 9 (decisions 2
-and 8). Nothing here is built
-unless marked
-**[shipped]**. It continues [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md),
-which stays the record for the TV platforms, the issue #489 items and the
-phone-as-microphone design. Requirements are in
+and 8). Updated 2026-11-03: pull requests no longer build the native apps
+(section 7), TestFlight mp-v0.8.52 carries #1189 and #1321, P5's step 5.2
+is done, and P6 waits on a registered Cast test device and a receiver page.
+Nothing here is built unless marked **[shipped]**. It continues
+[tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md), which stays the record
+for the TV platforms, the issue #489 items and the phone-as-microphone
+design. Requirements are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md) (`REQ-TV-*`).
 
 Status keys as in the TV audit: **[shipped]**, **[next]** planned, **[open]**
@@ -609,14 +611,20 @@ then P4.
 | POC-2, lyrics on the TV       | Mirroring on, the TV shows the karaoke lyrics full screen, in the iOS lyrics window's design, while the phone stays the room                              | An external-display scene that draws `LyricsWindowRenderer` at TV size, fed by the lyrics and clock the page already sends the iOS lyrics window; the room also sends lyrics while a TV shows them; a Developer-screen switch | Merged in PR #1157 (main 474986c, 9e72b0d, 50685e8, 3c59c62), green on all CI checks. In mp-v0.8.40; the Developer switch's device test is not reported yet ([tv-device-tests.md](tv-device-tests.md), Test 4). Known limits: the words move only with "Keep playing in the background" on; the switch exists in dev builds alone |
 | POC-3, the full stage         | Phone in portrait as the room and the mic; the TV in landscape shows the pitch lane, the lyrics and the score                                             | A stage page of its own in a plain web view on the external-display scene, fed by messages from the room (slices of 2.6, 5.1, 5.2)                                                                                            | Merged in PR #1179 (main f604b1a), in TestFlight mp-v0.8.41; as built below, "POC-3 in detail". Device test pending ([tv-device-tests.md](tv-device-tests.md), Test 6). Answers the owner's "lock this mode while mirroring" ask (2026-10-22)                                                                                     |
 
-Delivery: CI compiles the iOS code and builds a debug APK on every pull
-request. Neither a pull request nor a push to main uploads to TestFlight:
-the iPhone gets a build from an `mp-v*` tag (annotated, on main by
-convention; the last is mp-v0.8.41 of 2026-10-23, pushed on the owner's
-word, which carries #1175 and #1179) or from Xcode. A tag push builds a dev
-binary, which carries the Developer screen and so the TV switch; a store
-binary (a production dispatch on a tag) carries neither. What to try is in
-[tv-device-tests.md](tv-device-tests.md), Tests 4 to 6.
+Delivery: since 30 Oct 2026 (the owner's decision) no pull request compiles
+the iOS code or builds an APK. PR Gate's Mercury Pitch job checks, tests and
+builds the app's bundle on Linux and asserts it; the native builds
+(`.github/workflows/mercurypitch-mobile.yml`) run only on a push to main,
+which builds Android and archives iOS without uploading, on an `mp-v*` tag,
+and on a dispatch, which is how a branch gets an installable APK. Only a tag
+uploads to TestFlight: the iPhone gets a build from an `mp-v*` tag
+(annotated, on main by convention, pushed on the owner's word) or from
+Xcode. The latest is mp-v0.8.52 of 2026-11-03, which carries #1175 and
+#1179, #1189 (in TestFlight since mp-v0.8.42 of 2026-10-25) and #1321. A tag
+push builds a dev binary, which carries the Developer screen and so the TV
+switch; a store binary (a production dispatch on a tag) carries neither.
+What to try is in [tv-device-tests.md](tv-device-tests.md), Tests 4 to 6
+and 8.
 
 #### Owner ask, 2026-10-22: phone in portrait, TV in landscape
 
@@ -670,8 +678,11 @@ production lifecycle and polish.
   each turns the other off, rather than one three-way control. Where the
   bundle has no stage page (a store build) or the page does not load, the
   TV mirrors.
-- 3d: the notes come from the song's stored pitch analysis, moved into the
-  key being heard; notes edited in Pitch Studio are not on the TV yet. The
+- 3d: the notes came from the song's stored pitch analysis, moved into the
+  key being heard, so notes edited in Pitch Studio were not on the TV.
+  Since P5's step 5.2 (2026-11-03) the mixer hands the room the notes its
+  lane draws (`laneNotes`, `src/components/stem-mixer-hosting.ts`), edits
+  and key included, and the TV follows them as they change. The
   singer's readings come from `src/stores/live-mic-store.ts`, moved back by
   the measured round trip as scoring does. Because the TV's own delay is
   unknown until 3e, the Developer screen can move the picture earlier or
@@ -716,8 +727,9 @@ on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
    and claims no spread; a route-only plugin event keeps the route current
    without the volume polling; the wizard and the Microphone screen say
    which number is in use.
-3. The wizard that hears a TV (1.6): **merged, PR #1189**, for the next
-   TestFlight build (device test: Test 5 again). In the 0.8.41 test it
+3. The wizard that hears a TV (1.6): **merged, PR #1189**, in TestFlight
+   since mp-v0.8.42 (2026-10-25) and so in mp-v0.8.52 (2026-11-03), not
+   tested on a TV yet (device test: Test 5 again). In the 0.8.41 test it
    found no number over AirPlay to the LG C2 (Test 5): the TV played the
    first click loud and the rest quieter, and the wizard holds every click
    to a quarter of the loudest. It also credits no reply later than 375 ms
@@ -733,6 +745,14 @@ on the LG C2 before the fix and gone with mp-v0.8.40, 2026-10-22).
    (1.3), whose tolerance the P0 latency spreads decide.
 4. The landscape layout under mirroring (1.4) and the help page (1.5), which
    says what P0 found works.
+
+Also in TestFlight mp-v0.8.52 (2026-11-03), from the owner's report of a
+Karaoke song that stood still on AirPlay to the LG C2: **PR #1321** keeps
+the app's silent media (the lock screen's carrier, the unlock clip, the
+elements Web Audio plays) off AirPlay, says each audio route and the
+shared clock's state in the console, and stops a Karaoke song whose clock
+stands still, with a notice that says why (device test:
+[tv-device-tests.md](tv-device-tests.md), Test 8).
 
 Exit: `REQ-TV-090..096` pass; on an AirPlay TV a song scores within the same
 tolerance as on the phone's speaker once calibrated; at Chromecast-like
@@ -798,11 +818,29 @@ TV review cannot hold a phone release.
 POC-3 (PR #1179, merged) built a first slice of 5.1 and 5.2 behind a test
 build's switch; P5 makes it the product.
 
-1. External-display scene and bridge (5.1, 5.2). Harden the stage protocol
-   on the way: every number gets a finite-or-zero guard before it is sent,
-   because `JSON.stringify` turns a NaN into `null` and the stage then drops
-   the whole song or frame without a word (reviewed 2026-10-23; no source
-   in the POC produces one, but nothing stops a future one).
+1. External-display scene and bridge (5.1, 5.2). The bridge, 5.2, is
+   **done** as built in POC-3 and hardened on 2026-11-03:
+   - Every number in a stage message is checked before it is sent
+     (`src/lib/tv-stage/feed.ts`), because `JSON.stringify` turns a NaN
+     into `null` and the stage then drops the whole song or frame without a
+     word (reviewed 2026-10-23; no source in the POC produced one, but
+     nothing stopped a future one). Not finite-or-zero as first proposed: a
+     note at 0 is a wrong note, so a note, a reading or a lyric line with a
+     bad number is dropped. A bad length goes as 0, which the protocol reads
+     as not known yet; a bad score as none; a bad rate as 1. A position or
+     an `at` has no "not known" in the protocol, and 0 is not safe for
+     either (the lane jumps to the start and loses the singer's trail, or
+     the song runs on by the wall clock's whole age), so a frame with a bad
+     clock reading carries the last good one again, and the stage runs on
+     as if the frame had brought no clock; before any, the song's start,
+     standing still.
+   - The TV's notes are the ones the phone's lane draws, edits and key
+     included, and follow them as they change (3d above).
+   - Commands from the TV are not needed for this route: the TV's scene
+     takes no input, and the phone keeps every control.
+
+   The scene, 5.1, stays as POC-3 built it, behind the test build's switch.
+
 2. Lifecycle and audio route (5.3, 5.4).
 
 Exit: `REQ-TV-100..105`; with mirroring on, the TV shows the stage while the
@@ -838,6 +876,12 @@ phone shows its controls; disconnecting leaves one web view.
    on a phone. An application ID is not a secret: every sender carries it.
    No test device is registered yet; the LG C2 cannot receive Cast, and the
    owner registers the Philips Google TVs next.
+   **Still needed before the spike (2026-11-03):** the owner's registered
+   Cast test device, without which an unpublished receiver will not load;
+   and a page at the registered URL. `/cast-receiver` has none yet, and
+   the site answers a path it has no page for with a real 404
+   (`not_found_handling: "404-page"`, `wrangler.jsonc`), so a Cast device
+   pointed at either receiver would load a 404.
 1. Spike (6.0). Stop here if the stage cannot hold its frame cap or its memory
    on the older Chromecast with Google TV.
 2. Receiver (6.1), then senders (6.2-6.4), then Cast Connect into G (6.5) and
