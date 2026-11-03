@@ -399,9 +399,19 @@ function drawLane(
   position: number,
 ): void {
   drawRows(ctx, layout)
+  // Notes and the trail run off the lane's ends, and a stroke reaches half
+  // its width past its path: a note's outline and the trail's round end
+  // crossed into the overscan margin by up to 4 px at 1080 lines. Cut at
+  // the lane's ends, which are the margin's (REQ-TV-020); above and below
+  // the lane there is room, so the singer's dot stays round there.
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(layout.lane.x, layout.safe.y, layout.lane.w, layout.safe.h)
+  ctx.clip()
   drawNotes(ctx, layout, state.song?.notes ?? [], position)
   drawPlayhead(ctx, layout)
   drawTrail(ctx, layout, state.trail, position)
+  ctx.restore()
 }
 
 /** The least whole size a lyric may take on this screen (REQ-TV-022). */
