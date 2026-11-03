@@ -6,9 +6,11 @@
 // stage's own background, so the overscan margin stays as it is; the label
 // in the lyrics' gold, the title large and white, the next line under it;
 // a bar of dark glass with the place in gold glass and a glass knob; and a
-// pause mark in a ring of glass beside the time sung. The scrim, the bar,
-// the knob and the mark are sprites painted once per size (sprites.ts);
-// a frame stamps them, writes the text and fades it all together.
+// pause mark in a ring of glass beside the time sung, or a play mark while
+// the song stands ready at its start, since pressing play is what comes
+// next. The scrim, the bar, the knob and the mark are sprites painted once
+// per size (sprites.ts); a frame stamps them, writes the text and fades it
+// all together.
 //
 // Tests: src/lib/tv-stage/pause-screen.test.ts.
 
@@ -175,16 +177,70 @@ function knobSprite(
   )
 }
 
-/** The pause mark: two bars in a ring of glass. */
+/**
+ * The play mark's triangle in a ring of radius `r` centred on `c`: as tall
+ * as the pause mark's bars, pointing right, its centroid on the ring's
+ * centre, so it does not sit to the left of the ring as a box-centred
+ * triangle would.
+ */
+export function playMarkPoints(
+  c: number,
+  r: number,
+): readonly (readonly [number, number])[] {
+  const h = r * 0.72
+  const w = (h * Math.sqrt(3)) / 2
+  return [
+    [c - w / 3, c - h / 2],
+    [c + (w * 2) / 3, c],
+    [c - w / 3, c + h / 2],
+  ]
+}
+
+/** The pause mark's two bars, rounded at their ends. */
+function paintPauseBars(
+  ctx: CanvasRenderingContext2D,
+  at: { readonly c: number; readonly r: number; readonly unit: number },
+): void {
+  const barW = 5 * at.unit
+  const barH = at.r * 0.72
+  for (const x of [at.c - barW * 1.3, at.c + barW * 0.3]) {
+    roundedPath(ctx, { x, y: at.c - barH / 2, w: barW, h: barH }, barW / 2)
+    ctx.fill()
+  }
+}
+
+/** The play mark's triangle, its corners rounded by a stroke of its own colour. */
+function paintPlayTriangle(
+  ctx: CanvasRenderingContext2D,
+  at: { readonly c: number; readonly r: number; readonly unit: number },
+): void {
+  const [first, ...rest] = playMarkPoints(at.c, at.r)
+  ctx.beginPath()
+  ctx.moveTo(first[0], first[1])
+  for (const [x, y] of rest) ctx.lineTo(x, y)
+  ctx.closePath()
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 2 * at.unit
+  ctx.strokeStyle = ctx.fillStyle
+  ctx.fill()
+  ctx.stroke()
+}
+
+/**
+ * The mark beside the time sung, in a ring of glass: two bars while the
+ * song is paused, and a play triangle while it stands ready at its start,
+ * where the next thing to do is press play.
+ */
 function markSprite(
   sprites: SpriteCache,
-  mark: PauseLayout['mark'],
-  unit: number,
+  at: { readonly mark: PauseLayout['mark']; readonly unit: number },
+  kind: PauseScreen['kind'],
 ): Sprite | null {
-  const r = Math.ceil(mark.radius)
+  const { unit } = at
+  const r = Math.ceil(at.mark.radius)
   const side = r * 2 + 2
   return sprites.get(
-    `pause-mark:${String(r)}`,
+    `${kind === 'ready' ? 'play-mark' : 'pause-mark'}:${String(r)}`,
     { width: side, height: side },
     (ctx) => {
       const c = side / 2
@@ -195,13 +251,9 @@ function markSprite(
       ctx.lineWidth = Math.max(1, 2 * unit)
       ctx.strokeStyle = 'rgba(250, 247, 255, 0.78)'
       ctx.stroke()
-      const barW = 5 * unit
-      const barH = r * 0.72
       ctx.fillStyle = 'rgba(250, 247, 255, 0.95)'
-      for (const x of [c - barW * 1.3, c + barW * 0.3]) {
-        roundedPath(ctx, { x, y: c - barH / 2, w: barW, h: barH }, barW / 2)
-        ctx.fill()
-      }
+      if (kind === 'ready') paintPlayTriangle(ctx, { c, r, unit })
+      else paintPauseBars(ctx, { c, r, unit })
     },
   )
 }
@@ -282,7 +334,7 @@ function drawWords(
   )
 }
 
-/** The pause mark, the time sung beside it, and the time left. */
+/** The mark, the time sung beside it, and the time left. */
 function drawTimes(
   ctx: CanvasRenderingContext2D,
   at: { readonly place: PauseLayout; readonly layout: TvStageLayout },
@@ -290,7 +342,7 @@ function drawTimes(
   sprites: SpriteCache,
 ): void {
   const { mark, times } = at.place
-  const ring = markSprite(sprites, mark, at.layout.unit)
+  const ring = markSprite(sprites, { mark, unit: at.layout.unit }, screen.kind)
   if (ring !== null) {
     ctx.drawImage(
       ring.image,

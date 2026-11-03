@@ -341,15 +341,17 @@ own background dims the lane and hides the lyrics' place; over it "Paused"
 or "Ready to sing" in the lyrics' gold, the title at 80 px per 1080 lines,
 then "Next line" and the line, or "Press play on your phone to start"; a bar
 of dark glass with the place in gold glass and a glass knob; a pause mark
-beside the time sung (1:09) and the time left (−19:50), whole seconds that
-add up to the song's length. It follows the frames' `playing`, fading from
-the moment it turned (`turn`, `src/lib/tv-stage/model.ts`); fading out, it
-shows where the song started, not a running bar. With the song's length not
-known yet, the bar and the time left are left out.
+beside the time sung (1:09), or a play mark while the song stands ready at
+its start, since play is what comes next, and the time left (−19:50), whole
+seconds that add up to the song's length. It follows the frames' `playing`,
+fading from the moment it turned (`turn`, `src/lib/tv-stage/model.ts`);
+fading out, it shows where the song started, not a running bar. With the
+song's length not known yet, the bar and the time left are left out.
 _Tests:_ `src/lib/tv-stage/pause-screen.test.ts` (when it shows, the line
-to sing, the times, the knob's place, the inset, the floor, what it says, no
-blur); `src/lib/tv-stage/model.test.ts` ("the turn"); the screen check
-`apps/mercurypitch/scripts/probe-tv-stage.mjs` (paused part way and ready at
+to sing, the times, the knob's place, the inset, the floor, what it says, the
+mark beside the time, no blur); `src/lib/tv-stage/model.test.ts` ("the
+turn"); the screen check `apps/mercurypitch/scripts/probe-tv-stage.mjs`
+(paused part way and ready at
 the start: inside the inset, opaque, every text at 32 px per 1080 lines or
 more, saying "Paused" or "Ready to sing").
 

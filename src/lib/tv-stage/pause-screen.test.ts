@@ -7,15 +7,18 @@
 // the moment the song stopped or started; it is gone while the song plays.
 // The times count whole seconds and add up to the song's length; the knob
 // sits at the place along the bar; and everything lies inside the 5% inset
-// at the lyrics' 32 px floor or above. Drawn on the recording canvas
-// (recording-context.fixture.ts) for the words, the bar and no blur.
+// at the lyrics' 32 px floor or above. The mark beside the time is a play
+// mark while the song stands ready, since play is what comes next, and a
+// pause mark once it is paused part way. Drawn on the recording canvas
+// (recording-context.fixture.ts) for the words, the bar, the mark and no
+// blur.
 
 import { describe, expect, it } from 'vitest'
 import type { LyricWindowSegment } from '@/lib/lyric-window-script'
 import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState, TvStageTurn } from '@/lib/tv-stage/model'
 import { LONG_AGO } from '@/lib/tv-stage/model'
-import { drawPauseScreen, PAUSE_WORDS } from '@/lib/tv-stage/pause-paint'
+import { drawPauseScreen, PAUSE_WORDS, playMarkPoints, } from '@/lib/tv-stage/pause-paint'
 import { formatClock, knobX, lineToSing, PAUSE_FADE_MS, pauseLayout, pauseScreenOf, pauseTimes, } from '@/lib/tv-stage/pause-screen'
 import { recordingContext, recordingSprites, } from '@/lib/tv-stage/recording-context.fixture'
 import { createSpriteCache } from '@/lib/tv-stage/sprites'
@@ -277,5 +280,62 @@ describe('what it says', () => {
     expect(playing.texts).toEqual([])
     expect(playing.images).toEqual([])
     expect(paused.blurs.filter((blur) => blur > 0)).toEqual([])
+  })
+})
+
+describe('the mark beside the time', () => {
+  /** The marks a screen stamps, by kind, and where the first went. */
+  const marks = (at: TvStageState) => {
+    const stamped = drawn(at).images.filter((image) =>
+      /^(?:play|pause)-mark:/u.test(image.key),
+    )
+    return {
+      kinds: stamped.map((image) => image.key.split(':')[0]),
+      first: stamped.at(0),
+    }
+  }
+
+  it('is a play mark at the start, where pressing play comes next', () => {
+    const { mark } = pauseLayout(tvStageLayout(1920, 1080))
+
+    const { kinds, first } = marks(state({ position: 0, playing: false }))
+
+    expect(kinds).toEqual(['play-mark'])
+    const centre = (first?.box.x ?? 0) + (first?.box.w ?? 0) / 2
+    expect(Math.abs(centre - mark.x)).toBeLessThanOrEqual(1)
+  })
+
+  it('is a pause mark once the song is paused part way', () => {
+    expect(marks(state({ position: 4.7, playing: false })).kinds).toEqual([
+      'pause-mark',
+    ])
+  })
+
+  it('keeps the play mark while the ready screen fades out as the song starts', () => {
+    const fadingOut = state(
+      { position: 0.2, playing: true },
+      { at: NOW - 60, position: 0 },
+    )
+
+    expect(marks(fadingOut).kinds).toEqual(['play-mark'])
+  })
+
+  it('points the play triangle right, as tall as the bars, its centroid on the ring', () => {
+    const c = 25
+    const r = 24
+
+    const points = playMarkPoints(c, r)
+    const [top, tip, bottom] = points
+
+    expect(points).toHaveLength(3)
+    expect(top[0]).toBe(bottom[0])
+    expect(tip[0]).toBeGreaterThan(top[0])
+    expect(tip[1]).toBeCloseTo(c, 9)
+    expect(bottom[1] - top[1]).toBeCloseTo(r * 0.72, 9)
+    expect((top[0] + tip[0] + bottom[0]) / 3).toBeCloseTo(c, 9)
+    expect((top[1] + tip[1] + bottom[1]) / 3).toBeCloseTo(c, 9)
+    for (const [x, y] of points) {
+      expect(Math.hypot(x - c, y - c)).toBeLessThan(r * 0.5)
+    }
   })
 })
