@@ -12,12 +12,56 @@
 }
 
 .backdrop,
+.cliffs,
 .overlay {
   position: absolute;
   left: 0;
   top: 0;
   display: block;
   pointer-events: none;
+}
+
+/* The painting (CliffScene.tsx, docs/plans/ear-rooms.md): the valley's
+   plate over the drawn sky once all of it has loaded, and each painted
+   column in place of its drawn cliff, moving as it did. */
+.painted .backdrop,
+.painted .drawn {
+  display: none;
+}
+
+.column {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.painted .column {
+  opacity: 1;
+}
+
+/* Over the painting, the head and the dock keep their dusk dark enough to
+   read on. */
+.paintingShade {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 8, 22, 0.5) 0%,
+    rgba(5, 8, 22, 0) 18%,
+    rgba(5, 8, 22, 0) 76%,
+    rgba(5, 8, 22, 0.6) 100%
+  );
+}
+
+.painted .paintingShade {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column {
+    transition: none;
+  }
 }
 
 .star {
@@ -240,7 +284,8 @@
 .still .target,
 .still .from,
 .still .lanternGlass,
-.still .ledge {
+.still .ledge,
+.still .column {
   transition: none;
 }
 

@@ -11,21 +11,56 @@
 // there, and a landed leap lights it: its beam becomes the line. After a
 // miss, Merc's own line draws as he sings both notes.
 //
-// THE DRAWING. Every shape a stand-in in flat colour, drawn from one
-// measurement (cliff-layout.ts), as Home note's harbour was before its
-// painting. The painting comes after the owner approved the room
-// (docs/plans/ear-rooms.md), and the lines, the band, the trail and the
-// lantern stay drawn over it: they are the exercise.
+// THE PAINTING. The valley at dusk is painted (docs/plans/ear-rooms.md has
+// how): an upright plate and its landscape twin in ./art/, pinned at its
+// moon, and the two cliffs painted apart from it, as columns of rock that
+// move with their ledges. They fold away with the room in a build without
+// it (vite.config.ts, PREMIUM_IMAGES). The painting shows once all three
+// have loaded, and the drawing stays as its stand-in until then: every
+// shape in flat colour, drawn from one measurement (cliff-layout.ts). The
+// lines, the band, the trail and the lantern are drawn over either: they
+// are the exercise.
 //
-// The ledges move with each leap: each cliff is drawn once from its top
-// and moved there, so a new leap slides them to their heights. The trail
-// is drawn every frame of the turn, so it is not a signal: the room hands
-// its path, head and hold ring to the controller's sink, which writes them.
+// The ledges move with each leap: each cliff, drawn or painted, is placed
+// once from its top and moved there, so a new leap slides them to their
+// heights. The trail is drawn every frame of the turn, so it is not a
+// signal: the room hands its path, head and hold ring to the controller's
+// sink, which writes them.
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import type { RoomPlates } from '@/components/room-kit/RoomPainting'
+import { RoomPainting } from '@/components/room-kit/RoomPainting'
+import cliffsFar from './art/cliffs-far.webp'
+import cliffsLandscape from './art/cliffs-landscape.webp'
+import cliffsNear from './art/cliffs-near.webp'
+import cliffsPortrait from './art/cliffs-portrait.webp'
 import type { CliffLayout } from './cliff-layout'
+import { columnBoxes } from './cliff-layout'
 import styles from './CliffScene.module.css'
+
+/** The cliffs' painting: the valley's plates and the two columns. */
+export interface CliffArt {
+  readonly plates: RoomPlates
+  readonly near: string
+  readonly far: string
+}
+
+/** The painting the room ships with. */
+export const CLIFF_ART: CliffArt = {
+  plates: { portrait: cliffsPortrait, landscape: cliffsLandscape },
+  near: cliffsNear,
+  far: cliffsFar,
+}
+
+/** The valley's moon on both plates: the crop keeps it in place. */
+const PLATE_PIN = '76% 21%'
+
+/** Each part of the painting, as a bit: all three loaded paints the room. */
+const PLATE = 1
+const NEAR = 2
+const FAR = 4
+const ALL = PLATE | NEAR | FAR
 
 export interface CliffSceneProps {
   layout: CliffLayout
@@ -55,6 +90,8 @@ export interface CliffSceneProps {
   ) => void
   /** Nothing moves (reduced motion, the fixtures). */
   still?: boolean
+  /** The painting; CLIFF_ART by default, null for the drawing alone. */
+  art?: CliffArt | null
 }
 
 /** A seeded spread of stars over the sky, the same on every visit. */
@@ -83,6 +120,20 @@ export function CliffScene(props: CliffSceneProps): JSX.Element {
       props.trailRef(trailEl, headEl, ringEl)
     }
   })
+  const art = (): CliffArt | null =>
+    props.art === undefined ? CLIFF_ART : props.art
+  /** The parts of the painting loaded so far; a part that failed keeps the drawing. */
+  const [loaded, setLoaded] = createSignal(0)
+  const [failed, setFailed] = createSignal(false)
+  const heard =
+    (part: number) =>
+    (ok: boolean): void => {
+      if (ok) setLoaded((bits) => bits | part)
+      else setFailed(true)
+    }
+  /** The painting is the backdrop, and the drawing rests. */
+  const painted = (): boolean => art() !== null && !failed() && loaded() === ALL
+  const columns = createMemo(() => columnBoxes(props.layout))
   const L = () => props.layout
   const sky = createMemo(() => stars(L().width, L().height))
   /** The moon, sized to the room's shorter side: a phone's, on a tablet too. */
@@ -164,9 +215,10 @@ export function CliffScene(props: CliffSceneProps): JSX.Element {
         [styles.lit]: props.lit,
         [styles.answering]: props.answering,
         [styles.still]: props.still === true,
+        [styles.painted]: painted(),
       }}
       data-testid="leap-scene"
-      data-art="drawing"
+      data-art={painted() ? 'painting' : 'drawing'}
     >
       <svg
         class={styles.backdrop}
@@ -203,16 +255,6 @@ export function CliffScene(props: CliffSceneProps): JSX.Element {
             <stop offset="0.5" stop-color="#c9c3ff" stop-opacity="0.14" />
             <stop offset="1" stop-color="#c9c3ff" stop-opacity="0" />
           </linearGradient>
-          <linearGradient id="leap-rock-near" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#282c5c" />
-            <stop offset="0.5" stop-color="#14163a" />
-            <stop offset="1" stop-color="#07081a" />
-          </linearGradient>
-          <linearGradient id="leap-rock-far" x1="1" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#2c3062" />
-            <stop offset="0.55" stop-color="#16183e" />
-            <stop offset="1" stop-color="#07081a" />
-          </linearGradient>
         </defs>
         <rect width={L().width} height={L().height} fill="url(#leap-sky)" />
         <For each={sky()}>
@@ -242,13 +284,66 @@ export function CliffScene(props: CliffSceneProps): JSX.Element {
           height={L().height * 0.2}
           fill="url(#leap-mist)"
         />
-        <g class={styles.mover} style={moved(L().toY)}>
-          <path d={farCliff()} fill="url(#leap-rock-far)" />
-          <path d={cracks(L().farEdge, 1)} class={styles.crack} />
-          <path
-            d={`M${L().farEdge} 0H${L().width}`}
-            class={`${styles.ledge} ${styles.farLedge}`}
+      </svg>
+
+      <Show when={art()}>
+        {(painting) => (
+          <RoomPainting
+            plates={painting().plates}
+            pin={PLATE_PIN}
+            shown={painted()}
+            onLoad={heard(PLATE)}
+            testId="leap-painting"
           />
+        )}
+      </Show>
+
+      {/* The cliffs, each moved to its ledge: painted once the painting has
+          loaded, drawn until then, the lantern on the far one either way. */}
+      <svg
+        class={styles.cliffs}
+        width={L().width}
+        height={L().height}
+        viewBox={`0 0 ${L().width} ${L().height}`}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="leap-rock-near" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#282c5c" />
+            <stop offset="0.5" stop-color="#14163a" />
+            <stop offset="1" stop-color="#07081a" />
+          </linearGradient>
+          <linearGradient id="leap-rock-far" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2c3062" />
+            <stop offset="0.55" stop-color="#16183e" />
+            <stop offset="1" stop-color="#07081a" />
+          </linearGradient>
+        </defs>
+        <g class={styles.mover} style={moved(L().toY)}>
+          <g class={styles.drawn}>
+            <path d={farCliff()} fill="url(#leap-rock-far)" />
+            <path d={cracks(L().farEdge, 1)} class={styles.crack} />
+            <path
+              d={`M${L().farEdge} 0H${L().width}`}
+              class={`${styles.ledge} ${styles.farLedge}`}
+            />
+          </g>
+          <Show when={art()}>
+            {(painting) => (
+              <image
+                href={painting().far}
+                x={columns().far.x}
+                y={columns().far.y}
+                width={columns().far.width}
+                height={columns().far.height}
+                preserveAspectRatio="none"
+                class={styles.column}
+                onLoad={() => heard(FAR)(true)}
+                onError={() => heard(FAR)(false)}
+                data-testid="leap-column-far"
+              />
+            )}
+          </Show>
           <rect
             x={L().lantern.x - 2}
             y={-32}
@@ -267,11 +362,30 @@ export function CliffScene(props: CliffSceneProps): JSX.Element {
           />
         </g>
         <g class={styles.mover} style={moved(L().fromY)}>
-          <path d={nearCliff()} fill="url(#leap-rock-near)" />
-          <path d={cracks(L().nearEdge, -1)} class={styles.crack} />
-          <path d={`M-4 0H${L().nearEdge}`} class={styles.ledge} />
+          <g class={styles.drawn}>
+            <path d={nearCliff()} fill="url(#leap-rock-near)" />
+            <path d={cracks(L().nearEdge, -1)} class={styles.crack} />
+            <path d={`M-4 0H${L().nearEdge}`} class={styles.ledge} />
+          </g>
+          <Show when={art()}>
+            {(painting) => (
+              <image
+                href={painting().near}
+                x={columns().near.x}
+                y={columns().near.y}
+                width={columns().near.width}
+                height={columns().near.height}
+                preserveAspectRatio="none"
+                class={styles.column}
+                onLoad={() => heard(NEAR)(true)}
+                onError={() => heard(NEAR)(false)}
+                data-testid="leap-column-near"
+              />
+            )}
+          </Show>
         </g>
       </svg>
+      <div class={styles.paintingShade} aria-hidden="true" />
 
       {/* The exercise: both lines, the target's band, the lantern's light,
           the trail and Merc's answer. */}

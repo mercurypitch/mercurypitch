@@ -11,22 +11,57 @@
 // voice holds the note, a grey ring where it missed. After a miss, his note
 // and the third from it are drawn as he sings the pair.
 //
-// THE DRAWING. Every shape a stand-in in flat colour, drawn from one
-// measurement (lake-layout.ts), as the cliffs were before their painting.
-// The painting comes later (docs/plans/ear-rooms.md), and the lines, the
-// lamps and the trail stay drawn over it: they are the exercise.
+// THE PAINTING. The lake at dusk is painted (docs/plans/ear-rooms.md has
+// how): an upright plate and its landscape twin in ./art/, pinned at the
+// shore, so the water under the lamps is the layout's on any screen, and
+// the jetty painted apart from it, so it moves with Merc to the dock at the
+// result. They fold away with the room in a build without it
+// (vite.config.ts, PREMIUM_IMAGES). The painting shows once both have
+// loaded, and the drawing stays as its stand-in until then: every shape in
+// flat colour, drawn from one measurement (lake-layout.ts). The lines, the
+// lamps and the trail are drawn over either: they are the exercise. At the
+// result the painting steps back behind the numbers, as the drawn moon
+// and its light do.
 //
 // The trail is drawn every frame of the turn, so it is not a signal: the
 // room hands its path, head and hold ring to the controller's sink, which
 // writes them.
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, Index, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, Index, onMount, Show } from 'solid-js'
+import type { RoomPlates } from '@/components/room-kit/RoomPainting'
+import { RoomPainting } from '@/components/room-kit/RoomPainting'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import lakeJetty from './art/lake-jetty.webp'
+import lakeLandscape from './art/lake-landscape.webp'
+import lakePortrait from './art/lake-portrait.webp'
 import type { HarmonyLampState } from './harmony-controller-contract'
 import type { LakeLayout } from './lake-layout'
-import { NAME_RISE, stepsPath, yOf } from './lake-layout'
+import { jettyBox, NAME_RISE, stepsPath, yOf } from './lake-layout'
 import styles from './LakeScene.module.css'
+
+/** The lake's painting: its plates and the jetty. */
+export interface LakeArt {
+  readonly plates: RoomPlates
+  readonly jetty: string
+}
+
+/** The painting the room ships with. */
+export const LAKE_ART: LakeArt = {
+  plates: { portrait: lakePortrait, landscape: lakeLandscape },
+  jetty: lakeJetty,
+}
+
+/**
+ * Both plates' shore, 51% down as the layout's is, and their moon over its
+ * light on the water: the crop keeps them in place.
+ */
+const PLATE_PIN = '61% 51%'
+
+/** Each part of the painting, as a bit: both loaded paints the room. */
+const PLATE = 1
+const JETTY = 2
+const ALL = PLATE | JETTY
 
 export interface LakeSceneProps {
   layout: LakeLayout
@@ -58,6 +93,8 @@ export interface LakeSceneProps {
   ) => void
   /** Nothing moves (reduced motion, the fixtures). */
   still?: boolean
+  /** The painting; LAKE_ART by default, null for the drawing alone. */
+  art?: LakeArt | null
 }
 
 /** A seeded spread of stars over the sky, the same on every visit. */
@@ -86,6 +123,20 @@ export function LakeScene(props: LakeSceneProps): JSX.Element {
       props.trailRef(trailEl, headEl, ringEl)
     }
   })
+  const art = (): LakeArt | null =>
+    props.art === undefined ? LAKE_ART : props.art
+  /** The parts of the painting loaded so far; a part that failed keeps the drawing. */
+  const [loaded, setLoaded] = createSignal(0)
+  const [failed, setFailed] = createSignal(false)
+  const heard =
+    (part: number) =>
+    (ok: boolean): void => {
+      if (ok) setLoaded((bits) => bits | part)
+      else setFailed(true)
+    }
+  /** The painting is the backdrop, and the drawing rests. */
+  const painted = (): boolean => art() !== null && !failed() && loaded() === ALL
+  const jetty = createMemo(() => jettyBox(props.layout))
   const L = () => props.layout
   const sky = createMemo(() => stars(L().width, L().shore))
   const moon = () => ({
@@ -129,9 +180,10 @@ export function LakeScene(props: LakeSceneProps): JSX.Element {
         [styles.answering]: props.answering !== null,
         [styles.away]: props.away,
         [styles.still]: props.still === true,
+        [styles.painted]: painted(),
       }}
       data-testid="harmony-scene"
-      data-art="drawing"
+      data-art={painted() ? 'painting' : 'drawing'}
     >
       <svg
         class={styles.backdrop}
@@ -205,29 +257,71 @@ export function LakeScene(props: LakeSceneProps): JSX.Element {
             )
             .join('')}
         />
-        {/* The jetty, moved as Merc is: down to the dock at the result. */}
+      </svg>
+
+      <Show when={art()}>
+        {(painting) => (
+          <RoomPainting
+            plates={painting().plates}
+            pin={PLATE_PIN}
+            shown={painted()}
+            onLoad={heard(PLATE)}
+            class={styles.painting}
+            testId="harmony-painting"
+          />
+        )}
+      </Show>
+
+      {/* The jetty, moved as Merc is: down to the dock at the result. Painted
+          once the painting has loaded, drawn until then. */}
+      <svg
+        class={styles.jettyLayer}
+        width={L().width}
+        height={L().height}
+        viewBox={`0 0 ${L().width} ${L().height}`}
+        aria-hidden="true"
+      >
         <g
           class={styles.jetty}
           style={{ transform: `translateY(${L().jetty.top.toFixed(1)}px)` }}
         >
-          <rect
-            x={0}
-            y={0}
-            width={L().jetty.right}
-            height={10}
-            rx={2}
-            class={styles.deck}
-          />
-          <rect x={18} y={10} width={8} height={64} class={styles.post} />
-          <rect
-            x={L().jetty.right - 28}
-            y={10}
-            width={8}
-            height={64}
-            class={styles.post}
-          />
+          <g class={styles.drawn}>
+            <rect
+              x={0}
+              y={0}
+              width={L().jetty.right}
+              height={10}
+              rx={2}
+              class={styles.deck}
+            />
+            <rect x={18} y={10} width={8} height={64} class={styles.post} />
+            <rect
+              x={L().jetty.right - 28}
+              y={10}
+              width={8}
+              height={64}
+              class={styles.post}
+            />
+          </g>
+          <Show when={art()}>
+            {(painting) => (
+              <image
+                href={painting().jetty}
+                x={jetty().x}
+                y={jetty().y}
+                width={jetty().width}
+                height={jetty().height}
+                preserveAspectRatio="none"
+                class={styles.paintedJetty}
+                onLoad={() => heard(JETTY)(true)}
+                onError={() => heard(JETTY)(false)}
+                data-testid="harmony-jetty"
+              />
+            )}
+          </Show>
         </g>
       </svg>
+      <div class={styles.paintingShade} aria-hidden="true" />
 
       {/* The exercise: both lines of lamps, the missed pair and the trail. */}
       <svg

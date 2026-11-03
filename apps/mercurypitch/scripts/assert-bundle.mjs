@@ -259,11 +259,11 @@ const KARAOKE_STAGE_2 = [
   [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
   // The same for every premium exercise painted after it: each plate and
   // sprite is named for its room (echo-, bridge-, bay-, warm- for the
-  // Warm-up's night and orbs, and harbour- for Home note's painting), and
-  // the folders they sit in fold with Long note's (vite.config.ts,
-  // PREMIUM_IMAGES).
+  // Warm-up's night and orbs, harbour- for Home note's painting, cliffs-
+  // for Leap's and lake- for Harmony's), and the folders they sit in fold
+  // with Long note's (vite.config.ts, PREMIUM_IMAGES).
   [
-    /\/(?:echo|bridge|bay|warm|harbour)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
+    /\/(?:echo|bridge|bay|warm|harbour|cliffs|lake)-[a-z0-9-]+-[\w-]{8}\.webp$/u,
     "the premium exercises' plates",
   ],
   // Merc's voice for Echo's calls, found by file name the same way: the ten

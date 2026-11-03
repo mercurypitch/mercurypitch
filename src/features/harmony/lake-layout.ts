@@ -153,6 +153,39 @@ export function layoutLake(
   }
 }
 
+/**
+ * The painted jetty (./art/, docs/plans/ear-rooms.md): its own size, px,
+ * and its deck's right end, px across it. Its deck's top is its top edge;
+ * its posts fade into the water below.
+ */
+export const JETTY_PLATE = {
+  width: 1200,
+  height: 570,
+  deckRight: 1198.5,
+} as const
+
+/** The painted jetty's box in the jetty's group (the deck's top at y 0), px. */
+export interface JettyBox {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * Where the painted jetty goes, in the group the jetty moves in: its deck
+ * from the room's left edge to the jetty's right end, its top on the deck.
+ */
+export function jettyBox(layout: LakeLayout): JettyBox {
+  const scale = layout.jetty.right / JETTY_PLATE.deckRight
+  return {
+    x: 0,
+    y: 0,
+    width: JETTY_PLATE.width * scale,
+    height: JETTY_PLATE.height * scale,
+  }
+}
+
 /** A pitch's height on the lamps' scale, px down. */
 export function yOf(layout: LakeLayout, midi: number): number {
   return layout.midY - (midi - layout.midMidi) * layout.semitone
