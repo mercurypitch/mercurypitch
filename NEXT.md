@@ -3052,3 +3052,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Stopped-run agent running: /dev/shm/s2stop, feat/stopped-run-grading, from 4383aa690; brief s2pkg/STOP-BRIEF.md.
   - The owner should not tag a release before the stopped-run fix merges. Say so in the report.
   - The docs agent is rebasing onto 27d170279, which has the same tree as 4383aa690. Rebase the docs onto main once #1320 merges.
+- 3 Nov ~01:5x:
+  - Docs agent done. feat/season-2-plan is pushed on 27d170279: f74d362eb re-anchor (147 moved by tool, the rest by hand), fb0c59e97 content, 6e2935795 prettier on 21 never-formatted files.
+  - Findings 200, the same set as the base.
+  - Harmony room 4 meets item 17 in part: native only, random lines, a third below only at Professional, no octave folding. Web cards keep their links; recorded as § 7 item 14.
+  - Agent notes:
+    - jam-modes.ts:209-210 "fourth singer" comment is stale; fold it into the stopped-run PR as a small commit.
+    - pr:prepare's ESLint needs NODE_OPTIONS=--max-old-space-size=6144.
+    - Lesson 20's built page is 4 words under its cap.
+  - Docs reviewer running (brief s2pkg/DOCS-REVIEW-BRIEF.md, worktree /dev/shm/s2drev).
+  - After #1320 merges: rebase the docs onto main (the fix commits drop by patch-id), plan-cites check, then PR, merge --rebase.
