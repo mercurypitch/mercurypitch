@@ -1218,6 +1218,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** own the container fetch, let shared parser dependencies settle, and retire only the cancelled consumer's late scene. Hold global decode admission through parse, profiling and late cleanup; preserve Capacitor status-zero reads and relative dependency paths. These races are separate from completed-navigation retention.
 **See:** `packages/glass-game/src/render/asset-scene-loader.ts`, `packages/glass-game/src/render/asset-load-admission.ts`.
 
+### Ease by the time a frame took, never by a frame cap
+
+**Symptom:** on a capable phone the zen ribbon's band never left G3 to G5: a low voice's notes lay flat along its bottom edge, while a capped device looked right.
+**Cause:** the ease was a tenth per frame times `60 / presentationFps()`, to keep a capped TV gliding as fast; an uncapped tier's cap is `Infinity`, so the ease was 0. A cap is not a frame rate.
+**Rule:** scale a per-frame rate by the frame's measured time, `1 - (1 - rate) ** (60 * seconds)`, and test it on an uncapped device (`setPerformanceMode('high')`).
+**See:** `ribbonBandEase` in `src/features/stem-mixer/zen-pitch-ribbon.ts`, `src/components/ZenPitchRibbon.test.tsx`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

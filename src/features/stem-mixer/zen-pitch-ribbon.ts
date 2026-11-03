@@ -23,6 +23,9 @@ export const RIBBON_NOW_RATIO =
 /** Same tolerance the score uses — the ribbon must judge identically. */
 export const RIBBON_TOLERANCE_CENTS = 50
 
+/** How far the band eases toward the notes in view each sixtieth of a second. */
+export const RIBBON_BAND_EASE = 0.1
+
 /** Minimal note shape the ribbon needs (seconds + MIDI). */
 export interface RibbonNote {
   startBeat: number
@@ -72,6 +75,21 @@ export function ribbonBand(
     max += missing / 2
   }
   return { minMidi: min, maxMidi: max }
+}
+
+/**
+ * The share of the way the band moves toward the notes in view over a frame
+ * `frameSec` long: a tenth for every sixtieth of a second, whatever the frame
+ * rate, so it glides alike on a phone, a laptop and a television. It was a
+ * tenth per frame scaled by the tier's frame cap, and an uncapped device's
+ * cap is Infinity, which made it nothing: the band never left where it
+ * started, 55 to 79, and a low voice's notes sat on its bottom edge.
+ * The first frame, with no frame before it, takes the band whole.
+ */
+export function ribbonBandEase(frameSec: number): number {
+  // A clock that went back moves the band nowhere.
+  if (!(frameSec > 0)) return 0
+  return 1 - (1 - RIBBON_BAND_EASE) ** (frameSec * 60)
 }
 
 export function timeToX(

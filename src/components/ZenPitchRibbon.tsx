@@ -17,7 +17,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup } from 'solid-js'
 import type { RibbonNote, SingerState, } from '@/features/stem-mixer/zen-pitch-ribbon'
-import { judgeSinger, midiToRibbonY, notesInWindow, RIBBON_AHEAD_SEC, RIBBON_BEHIND_SEC, RIBBON_NOW_RATIO, ribbonBand, targetNoteAt, timeToX, } from '@/features/stem-mixer/zen-pitch-ribbon'
+import { judgeSinger, midiToRibbonY, notesInWindow, RIBBON_AHEAD_SEC, RIBBON_BEHIND_SEC, RIBBON_NOW_RATIO, ribbonBand, ribbonBandEase, targetNoteAt, timeToX, } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { presentationFps, recordAnimationFrame, renderScale, } from '@/lib/device-tier'
 import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -61,6 +61,8 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
   // instead of snapping; kept across empty (instrumental) windows.
   let bandMin = 55
   let bandMax = 79
+  // When the last frame was drawn, for the band's ease; none before the first.
+  let lastDrawMs: number | null = null
 
   const reducedMotion =
     typeof window !== 'undefined' &&
@@ -80,7 +82,17 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
     }
   }
 
-  const draw = (): void => {
+  /** Seconds since the last frame drawn, at `nowMs`; none before the first. */
+  const frameSecAt = (nowMs: number): number => {
+    const since =
+      lastDrawMs === null
+        ? Number.POSITIVE_INFINITY
+        : (nowMs - lastDrawMs) / 1000
+    lastDrawMs = nowMs
+    return since
+  }
+
+  const draw = (frameSec: number): void => {
     const canvas = canvasRef
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -99,10 +111,9 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
 
     const band = ribbonBand(visible)
     if (band) {
-      // Ease toward the target band (snap under reduced motion). The rate is
-      // per-frame, so it has to grow when the frame rate is capped — otherwise
-      // the ribbon glides half as fast on a television as on a laptop.
-      const ease = reducedMotion ? 1 : Math.min(1, 0.1 * (60 / frameRate))
+      // Ease toward the target band (snap under reduced motion), by the time
+      // the frame took, so it glides alike at any frame rate.
+      const ease = reducedMotion ? 1 : ribbonBandEase(frameSec)
       bandMin += (band.minMidi - bandMin) * ease
       bandMax += (band.maxMidi - bandMax) * ease
     }
@@ -216,7 +227,9 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
       : null
     const tick = (timestampMs: number): void => {
       recordAnimationFrame(timestampMs)
-      if (!limiter || limiter.shouldRun(timestampMs / 1000)) draw()
+      if (!limiter || limiter.shouldRun(timestampMs / 1000)) {
+        draw(frameSecAt(timestampMs))
+      }
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
