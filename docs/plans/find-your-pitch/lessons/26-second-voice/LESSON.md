@@ -448,8 +448,8 @@ its note, as Lesson 24's FACTS reads it, and its sentence on scoring a pure thir
 neither drill writes a staff. Both drills ask for the voice, so the rest version keeps neither and
 names Harmony Stack, in Lesson 10's form (FACTS 66). When the harmony-line drill ships on the web
 (SEASON-2 § 5.2 item 17), it takes the card's first place, as the drill a learner can do alone, with
-its own care lines and the coach's look. The native app's Harmony room is that drill there, but no
-web page can open it, so the card leaves it for the lessons in the native app (SEASON-2 § 7 item 14;
+its own care lines and the coach's look. The native app's Harmony room is that drill there, but it
+is a premium room that no web page can open, so the card does not name it (SEASON-2 § 7 item 14;
 FACTS 68).]_
 
 **Next lesson:** Lesson 27, Seventh chords and inversions. "Add one note to the V chord and it pulls

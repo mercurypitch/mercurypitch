@@ -41,7 +41,7 @@ module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1267-1268`). Lesson 28 sings one part of a two-part song with
+`docs/plans/find-your-pitch/SEASON-2.md:1272-1273`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
 headphones and quiet checks as they are specified here.
 
@@ -571,8 +571,8 @@ stills when WebGL fails.
   mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it and
   what it does to a learner (FACTS 63, 63a, 63b and 64). The steps: set your Singing Voice Range in
   Settings first, since the room's octave is the host's range, which reads tenor until it is set;
-  then open a Jam room, pick Harmony Stack under More controls and share the room's link, in any
-  order, since a friend who joins late is sent the room's drill and its mode. What it
+  then open a Jam room, then pick Harmony Stack under More controls and share the room's link, in
+  either order, since a friend who joins late is sent the room's drill and its mode. What it
   does: one singer takes the room's tune and the other a third above it, in the key, each scored on
   their own part; the room plays nothing, not even a first note; its boxes name their notes, each
   part its own; and it scores each note in the octave the host's range sets, unfolded, where this
@@ -744,8 +744,8 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
     (`:2301-2315`). Before, the mode travelled only with the drill, sent when the host picked it, to
     the channels open then (`broadcastData`, `src/lib/jam/service.ts:1141-1148`), and the song went
     out on the room's announcement, before the newcomer had a channel, so a friend who joined after
-    the pick stayed in unison on their own default scale (FACTS 64). The card's steps now work in
-    any order.
+    the pick stayed in unison on their own default scale (FACTS 64). The card's last two steps, the
+    pick and the share, now work in either order.
 
 ## Decisions for the owner
 
@@ -801,8 +801,8 @@ Practice links; FACTS 63a, 64).
   part stops and the microphone is released.
 - **The card's drills, off this page.** A learner with no one to sing with gets unison in Harmony
   Stack, so the card offers Drone Intonation for a learner alone. A friend who joins after the host
-  has picked Harmony Stack is sent the room's song, its drill and its mode, so the card's steps
-  work in any order (item 16; FACTS 64). A host who never set a range opens
+  has picked Harmony Stack is sent the room's drill and its mode, so the card's last two steps, the
+  pick and the share, work in either order (item 16; FACTS 64). A host who never set a range opens
   on the tenor's octave, which is why the card sets the range first; a lower and a higher voice in
   one room leave a note outside a preset, since the room scores the host's octave, and the card
   advises no pairing, the coach's list carrying the table (FACTS 63b, 65).

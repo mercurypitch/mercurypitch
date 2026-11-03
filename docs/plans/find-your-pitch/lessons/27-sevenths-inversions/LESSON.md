@@ -14,7 +14,7 @@ November 2026): each learner reads their own clef, the bass for the lower voice 
 the higher, and every chord and inversion is written in either clef (item 2). Roman numerals are
 Lesson 12's (I, V, V7), and the chords keep the names the app uses, "dominant seventh" and "major
 seventh": "major seventh" alone always means the interval, and the chord is always a "major seventh
-chord" (FACTS 10). Its learner copy is 2,195 words on the series' counter (WEB-SPEC, Length).
+chord" (FACTS 10). Its learner copy is 2,177 words on the series' counter (WEB-SPEC, Length).
 
 Sound comes before every symbol (SEASON-2 § 1.4 item 1). Every chord plays and lights on Lesson
 12's ring of rooms before the learner's staff writes it, every staff example plays, and the staff

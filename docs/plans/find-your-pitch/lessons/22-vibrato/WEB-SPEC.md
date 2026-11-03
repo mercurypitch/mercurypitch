@@ -32,7 +32,7 @@ module in `src/features/lessons/lesson-22/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season pairs it with Lesson 20 for the
 coach, and it can go out with Voice Mirror's link alone (SEASON-2 § 8.2 item 5,
-`docs/plans/find-your-pitch/SEASON-2.md:1264-1265`).
+`docs/plans/find-your-pitch/SEASON-2.md:1269-1270`).
 
 ## Look
 
