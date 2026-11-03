@@ -1,6 +1,6 @@
 // Studio lane freezer — renders a heavy song's lanes, lends them to runs, and lets an edited lane wait.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
+import { reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import type { StudioPlannedLane } from '../model/arrangement-plan'
 import { createStudioTrack } from '../model/defaults'
 import { studioFixture } from '../model/model.test-fixtures'
@@ -139,6 +139,36 @@ describe('Studio lane freezer', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('holds only the renders a job keeps, so room running short takes back the rest', async () => {
+    // Arrange
+    const { project, assets } = song()
+    const { freezer, render } = freezerFor({ now: 0 })
+    freezer.update(project, assets)
+    await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(3))
+    await vi.waitFor(() => expect(laneFreezeStatus().ready).toBe(3))
+    const held = freezer.hold(
+      project,
+      assets,
+      (trackId) => trackId !== 'track-1',
+    )!
+
+    // Act: a job asks for less than one render, with no room left.
+    setStudioWorkingBytes(studioReservedMemoryBytes())
+    const release = reserveStudioMemory(1024)
+
+    // Assert
+    const left = freezer.hold(project, assets)
+    expect([...held.lanes.keys()].sort()).toEqual(['track-2', 'track-3'])
+    expect([...(left?.lanes.keys() ?? [])].sort()).toEqual([
+      'track-2',
+      'track-3',
+    ])
+    left?.release()
+    release()
+    held.release()
+    freezer.dispose()
   })
 
   it('stops rendering when the memory budget refuses a render', async () => {

@@ -3,6 +3,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioFrozenLane } from '@/lib/studio/playback/lane-freeze'
 import { useStudioTransport } from './useStudioTransport'
 
 const runtime = vi.hoisted(() => ({
@@ -91,7 +92,7 @@ describe('Studio transport and the lane freezer', () => {
     expect(freezer.dispose).toHaveBeenCalled()
   })
 
-  it("lends an export the freezer's renders that match the song", () => {
+  it("lends a job the freezer's renders that match the song, where they cost it no more room than their lanes", () => {
     // Arrange
     const { transport, dispose, fixture } = mount()
     const held = { lanes: new Map(), release: vi.fn() }
@@ -103,9 +104,18 @@ describe('Studio transport and the lane freezer', () => {
 
     // Assert
     expect(lent).toBe(held)
-    expect(freezer.hold).toHaveBeenCalledExactlyOnceWith(fixture.project, [
-      fixture.asset,
-    ])
+    expect(freezer.hold).toHaveBeenCalledExactlyOnceWith(
+      fixture.project,
+      [fixture.asset],
+      expect.any(Function),
+    )
+    const keep = (freezer.hold.mock.calls[0] as unknown[])[2] as (
+      trackId: string,
+      render: StudioFrozenLane,
+    ) => boolean
+    const render = (bytes: number) => ({ bytes }) as StudioFrozenLane
+    expect(keep('track-1', render(0))).toBe(true)
+    expect(keep('track-1', render(1e12))).toBe(false)
   })
 
   it('builds the graph for Play again once renders stop landing', async () => {
