@@ -1,5 +1,8 @@
 // Studio recorder — arming opens the clock and the microphone in the press, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import type {Mock} from 'vitest';
+import { afterEach, describe, expect, it,  vi } from 'vitest'
+import { releaseMicLock } from '@/lib/mic-lock'
+import { MicManager } from '@/lib/mic-manager'
 import type { StudioCaptureEvents } from './capture-node'
 import type { StudioRecordSettings } from './record-settings'
 import { DEFAULT_STUDIO_RECORD_SETTINGS } from './record-settings'
@@ -124,6 +127,60 @@ function harness(
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+describe('another input picked on an armed lane', () => {
+  afterEach(() => releaseMicLock())
+
+  it("re-arms on the input picked: the capture hears that input, not the one before nor the app's", async () => {
+    const opened: string[] = []
+    ;(
+      globalThis.navigator as unknown as { mediaDevices: unknown }
+    ).mediaDevices = {
+      getUserMedia: vi.fn(async (constraints: MediaStreamConstraints) => {
+        const asked = (constraints.audio as MediaTrackConstraints).deviceId
+        const device = (asked as { exact?: string } | undefined)?.exact
+        const id = device ?? 'default'
+        opened.push(id)
+        const track = {
+          stop: vi.fn(),
+          addEventListener: vi.fn(),
+          getSettings: () => ({ deviceId: id }),
+        }
+        return { getTracks: () => [track], getAudioTracks: () => [track] }
+      }),
+    }
+    const mic = new MicManager()
+    await mic.setPreferredDevice('app-in')
+    let input = 'usb-1'
+    const heard: MediaStream[] = []
+    const h = harness({
+      acquireMic: async () =>
+        (await mic.acquireFrom('studio-record', input)).stream,
+      releaseMic: () => mic.release('studio-record'),
+      createSource: (_context, stream) => {
+        heard.push(stream)
+        return { disconnect: vi.fn() } as unknown as AudioNode
+      },
+    })
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+
+    // As chooseInput does (useStudioRecorder.ts): the setting first, then
+    // disarm and arm in the same task.
+    input = 'usb-2'
+    h.recorder.disarm()
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+    await settle()
+
+    const track = heard.at(-1)!.getAudioTracks()[0] as unknown as {
+      stop: Mock
+      getSettings(): MediaTrackSettings
+    }
+    expect(track.getSettings().deviceId).toBe('usb-2')
+    expect(track.stop).not.toHaveBeenCalled()
+    expect(opened).toEqual(['usb-1', 'usb-2'])
+    expect(h.view().phase).toBe('armed')
+  })
+})
 
 describe('arming', () => {
   it('opens the clock and the microphone inside the press, then meters the lane', async () => {

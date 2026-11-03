@@ -358,8 +358,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     micManager.subscribe((state) => {
       const now = untrack(phase)
       if (now !== 'armed' && !RUNNING.has(now)) return
-      if (!state.active || !state.consumers.includes(STUDIO_RECORD_MIC_ID))
-        recorder.micLost()
+      // The Studio's input is a stream of its own (acquireFrom), apart from
+      // the shared one `active` speaks for.
+      if (state.scoped !== STUDIO_RECORD_MIC_ID) recorder.micLost()
     }),
   )
   onCleanup(

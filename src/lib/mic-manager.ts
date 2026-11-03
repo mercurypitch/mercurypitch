@@ -41,6 +41,12 @@ export interface MicState {
   consumers: readonly string[]
   /** Set when another MercuryPitch tab is holding the mic; null otherwise. */
   blockedBy: MicLockRecord | null
+  /**
+   * The consumer holding an input of its own (acquireFrom) while its stream is
+   * open; null (or absent) otherwise. It is not one of `consumers`, and the
+   * shared stream's `active` says nothing about it.
+   */
+  scoped?: string | null
 }
 
 type Listener = (state: MicState) => void
@@ -125,6 +131,23 @@ function classifyError(err: unknown): MicError {
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+function stopTracks(stream: MediaStream): void {
+  for (const track of stream.getTracks()) track.stop?.()
+}
+
+function heldElsewhere(): MicError {
+  return {
+    kind: 'held-elsewhere',
+    message:
+      'Another MercuryPitch tab is using your microphone. Use it here instead to move it over.',
+  }
+}
+
+/** An input of its own asked for again, or let go, before its open ran. */
+function superseded(): MicError {
+  return { kind: 'unknown', message: 'The input changed before it opened.' }
+}
+
 /** Audio input devices (mics, line/instrument inputs e.g. an audio interface).
  *  Labels are only populated once mic permission has been granted. */
 export async function listAudioInputs(): Promise<MediaDeviceInfo[]> {
@@ -140,20 +163,25 @@ export async function listAudioOutputs(): Promise<MediaDeviceInfo[]> {
   return devices.filter((d) => d.kind === 'audiooutput')
 }
 
+/** A consumer's hold on an input of its own (acquireFrom), on a stream of its own. */
+interface ScopedHold {
+  readonly consumerId: string
+  /** The input asked for; null for the system default, or once it was gone. */
+  deviceId: string | null
+  /** Its input was gone, so its stream is the default's. */
+  missing: boolean
+  stream: MediaStream | null
+}
+
 export class MicManager {
   private stream: MediaStream | null = null
   private readonly consumers = new Set<string>()
   private error: MicError | null = null
   private preferredDeviceId: string | null = null
-  // One consumer can hold the mic on an input of its own (acquireFrom): the
-  // Studio records from the input picked for it without moving the one the
-  // rest of the app uses. `missing` says its input was gone and the open fell
-  // back to the default.
-  private scope: {
-    consumerId: string
-    deviceId: string | null
-    missing: boolean
-  } | null = null
+  // One consumer can hold an input of its own (acquireFrom): the Studio
+  // records from the input picked for it on a stream of its own, so the
+  // shared stream, and every consumer on it, stays on the app's input.
+  private scoped: ScopedHold | null = null
   // The browser-resolved id for the current route. Keep it after teardown so
   // calibration and compensation still address the same physical input while
   // the system-default choice is closed; clear it when the requested route
@@ -182,8 +210,27 @@ export class MicManager {
     return this.stream
   }
 
+  /** True while the shared stream is open and held. An input of its own is {@link isCapturing}. */
   isActive(): boolean {
     return this.stream !== null && this.consumers.size > 0
+  }
+
+  /** True while any capture is open and held: the shared stream, or an input of its own. */
+  isCapturing(): boolean {
+    return this.isActive() || this.scoped?.stream != null
+  }
+
+  /** The consumer on an input of its own and its stream, while that stream is open. */
+  getScopedHold(): { consumerId: string; stream: MediaStream } | null {
+    const hold = this.scoped
+    return hold?.stream != null
+      ? { consumerId: hold.consumerId, stream: hold.stream }
+      : null
+  }
+
+  /** Whether this tab has any device open, and so holds the cross-tab lock. */
+  private holdsDevice(): boolean {
+    return this.stream !== null || this.scoped?.stream != null
   }
 
   getConsumers(): readonly string[] {
@@ -201,11 +248,6 @@ export class MicManager {
     return this.preferredDeviceId
   }
 
-  /** The input the next open asks for: a scoped hold's own, else the app's. */
-  private routeDeviceId(): string | null {
-    return this.scope !== null ? this.scope.deviceId : this.preferredDeviceId
-  }
-
   getResolvedDevice(): string | null {
     return this.resolvedDeviceId
   }
@@ -220,15 +262,7 @@ export class MicManager {
   async setPreferredDevice(deviceId: string | null): Promise<void> {
     const next = deviceId !== null && deviceId !== '' ? deviceId : null
     if (this.preferredDeviceId === next) return
-    const route = this.routeDeviceId()
     this.preferredDeviceId = next
-    // A scoped hold keeps its own input; the app's opens once it lets go.
-    if (this.routeDeviceId() === route) return
-    await this.reroute()
-  }
-
-  /** The requested input changed: drop the handle so the next open uses it. */
-  private async reroute(): Promise<void> {
     this.resolvedDeviceId = null
     await this.enqueue(async () => {
       this.teardown()
@@ -237,34 +271,90 @@ export class MicManager {
 
   /**
    * Acquire for `consumerId` from an input of its own, `deviceId` (null for
-   * the system default), for as long as it holds the mic, without changing
-   * the input the rest of the app asked for (setPreferredDevice): when it
-   * releases, the next open uses the app's again. A device that is gone
-   * opens the default instead, as every route does, and `missing` says so.
-   * One consumer holds a scoped input at a time; another consumer already
-   * holding the mic on a different input is moved over, as a device change
-   * from setPreferredDevice moves it.
+   * the system default), on a stream of its own for as long as it holds it.
+   * The shared stream and every consumer on it stay on the app's input
+   * (setPreferredDevice). A device that is gone opens the default instead,
+   * and `missing` says so. One consumer holds an input of its own at a time:
+   * a later acquireFrom ends the earlier hold, and the state's `scoped` says
+   * so. A browser that keeps one capture at a time ends the shared stream as
+   * this one opens; its consumers hear that through the 'ended' path, as
+   * from an unplugged device, not as silence.
    */
-  async acquireFrom(
+  acquireFrom(
     consumerId: string,
     deviceId: string | null,
   ): Promise<{ stream: MediaStream; missing: boolean }> {
-    const route = this.routeDeviceId()
-    const requested = deviceId !== null && deviceId !== '' ? deviceId : null
-    this.scope = { consumerId, deviceId: requested, missing: false }
-    if (this.routeDeviceId() !== route) await this.reroute()
-    try {
-      const stream = await this.acquire(consumerId)
-      return { stream, missing: this.scope?.missing === true }
-    } catch (error) {
-      if (this.scope?.consumerId === consumerId) this.scope = null
-      throw error
+    const hold: ScopedHold = {
+      consumerId,
+      deviceId: deviceId !== null && deviceId !== '' ? deviceId : null,
+      missing: false,
+      stream: null,
     }
+    // Taken now, not when the open runs: a release called before this call
+    // ends only the hold it saw (release), never this one.
+    const previous = this.scoped
+    this.scoped = hold
+    return this.enqueue(async () => {
+      if (previous !== null && previous !== hold) this.endScoped(previous)
+      if (this.scoped !== hold) throw superseded()
+      if (!this.holdsDevice()) {
+        const claim = claimMicLock()
+        if (claim.outcome === 'held-elsewhere') {
+          this.scoped = null
+          this.blockedBy = claim.holder
+          this.error = heldElsewhere()
+          this.emit()
+          throw this.error
+        }
+        this.blockedBy = null
+      }
+      let stream: MediaStream
+      try {
+        stream = await this.openDevice(hold.deviceId, () => {
+          hold.deviceId = null
+          hold.missing = true
+        })
+      } catch (err) {
+        if (this.scoped === hold) this.scoped = null
+        if (!this.holdsDevice()) releaseMicLock()
+        this.error = classifyError(err)
+        this.emit()
+        throw this.error
+      }
+      if (this.scoped !== hold) {
+        // Released while it opened.
+        stopTracks(stream)
+        if (!this.holdsDevice()) releaseMicLock()
+        throw superseded()
+      }
+      hold.stream = stream
+      for (const track of stream.getTracks()) {
+        track.addEventListener?.('ended', () => {
+          if (hold.stream !== stream) return
+          hold.stream = null
+          if (this.scoped === hold) this.scoped = null
+          if (!this.holdsDevice()) releaseMicLock()
+          this.emit()
+        })
+      }
+      this.error = null
+      this.emit()
+      return { stream, missing: hold.missing }
+    })
   }
 
-  private buildConstraints(): MediaStreamConstraints {
+  /** Close a hold on an input of its own; its consumer sees `scoped` go. */
+  private endScoped(hold: ScopedHold): void {
+    if (this.scoped === hold) this.scoped = null
+    if (hold.stream !== null) {
+      stopTracks(hold.stream)
+      hold.stream = null
+    }
+    if (!this.holdsDevice()) releaseMicLock()
+  }
+
+  private buildConstraints(deviceId: string | null): MediaStreamConstraints {
     const base = ANALYSIS_CONSTRAINTS.audio as MediaTrackConstraints
-    const deviceId = this.routeDeviceId()
     const audio: MediaTrackConstraints =
       deviceId !== null
         ? { ...base, deviceId: { exact: deviceId } }
@@ -282,17 +372,13 @@ export class MicManager {
       this.cancelLinger()
 
       // Arbitrate across tabs before touching the device. Only the first open
-      // needs to ask: once we hold the stream we already hold the lock, and a
+      // needs to ask: once we hold a stream we already hold the lock, and a
       // second consumer in this tab is exactly what the ref count is for.
-      if (this.stream === null) {
+      if (!this.holdsDevice()) {
         const claim = claimMicLock()
         if (claim.outcome === 'held-elsewhere') {
           this.blockedBy = claim.holder
-          const micError: MicError = {
-            kind: 'held-elsewhere',
-            message:
-              'Another MercuryPitch tab is using your microphone. Use it here instead to move it over.',
-          }
+          const micError = heldElsewhere()
           this.error = micError
           this.emit()
           throw micError
@@ -309,7 +395,9 @@ export class MicManager {
       }
 
       try {
-        const stream = await this.openDevice()
+        const stream = await this.openDevice(this.preferredDeviceId, () => {
+          this.preferredDeviceId = null
+        })
         this.stream = stream
         const reportedDeviceId = stream
           .getAudioTracks?.()[0]
@@ -318,7 +406,7 @@ export class MicManager {
         this.resolvedDeviceId =
           reportedDeviceId !== undefined && reportedDeviceId.length > 0
             ? reportedDeviceId
-            : this.routeDeviceId()
+            : this.preferredDeviceId
         this.attachEndedHandlers(stream)
         this.error = null
         this.emit()
@@ -327,7 +415,7 @@ export class MicManager {
         // The open failed, so this consumer doesn't actually hold a device —
         // and neither does this tab, so give the lock straight back.
         this.consumers.delete(consumerId)
-        if (this.consumers.size === 0) releaseMicLock()
+        if (this.consumers.size === 0 && !this.holdsDevice()) releaseMicLock()
         const micError = classifyError(err)
         this.error = micError
         this.emit()
@@ -341,48 +429,52 @@ export class MicManager {
    * torn down after a short linger (so a quick page switch reuses it).
    */
   release(consumerId: string): void {
+    // The input of its own held now, not the one held when the release runs:
+    // an acquireFrom called after this, as a re-arm on another input is, has
+    // a hold of its own that this release must leave open.
+    const hold = this.scoped?.consumerId === consumerId ? this.scoped : null
     void this.enqueue(async () => {
-      // A scoped input ends with its hold. With nobody left on it, the
-      // device closes now: the next open is on the app's input.
-      const route = this.routeDeviceId()
-      if (this.scope?.consumerId === consumerId) this.scope = null
-      const rerouted = this.routeDeviceId() !== route
-      if (!this.consumers.delete(consumerId)) return
-      if (this.consumers.size === 0) {
-        if (rerouted) {
-          this.resolvedDeviceId = null
-          this.teardown()
-        } else this.scheduleLinger()
+      if (hold !== null) {
+        // Not shared, so it closes now, without the linger.
+        this.endScoped(hold)
+        this.emit()
       }
+      if (!this.consumers.delete(consumerId)) return
+      if (this.consumers.size === 0) this.scheduleLinger()
       this.emit()
     })
   }
 
-  private async openDevice(): Promise<MediaStream> {
+  /** Open `deviceId` (null for the default); `gone` hears when it fell back to the default. */
+  private async openDevice(
+    deviceId: string | null,
+    gone: () => void,
+  ): Promise<MediaStream> {
     if (typeof navigator.mediaDevices?.getUserMedia !== 'function') {
       const err = new Error('navigator.mediaDevices.getUserMedia is missing')
       err.name = NO_CAPTURE
       throw err
     }
     try {
-      return await navigator.mediaDevices.getUserMedia(this.buildConstraints())
+      return await navigator.mediaDevices.getUserMedia(
+        this.buildConstraints(deviceId),
+      )
     } catch (err) {
       // A saved device that's no longer present (interface unplugged, or a
       // different machine): the `exact` deviceId can't be satisfied. Drop it
       // and fall back to the system default instead of failing to open.
       const name = (err as { name?: string } | null)?.name
-      if (name === 'OverconstrainedError' && this.routeDeviceId() !== null) {
-        // A scoped input falls back for its hold only, and says it did.
-        if (this.scope !== null)
-          this.scope = { ...this.scope, deviceId: null, missing: true }
-        else this.preferredDeviceId = null
-        return navigator.mediaDevices.getUserMedia(this.buildConstraints())
+      if (name === 'OverconstrainedError' && deviceId !== null) {
+        gone()
+        return navigator.mediaDevices.getUserMedia(this.buildConstraints(null))
       }
       // Retry once when the device is transiently busy (a previous handle that
       // is still releasing); other errors propagate immediately.
       if (classifyError(err).kind === 'device-busy') {
         await delay(BUSY_RETRY_DELAY_MS)
-        return navigator.mediaDevices.getUserMedia(this.buildConstraints())
+        return navigator.mediaDevices.getUserMedia(
+          this.buildConstraints(deviceId),
+        )
       }
       throw err
     }
@@ -415,11 +507,11 @@ export class MicManager {
 
   private teardown(): void {
     if (this.stream !== null) {
-      for (const track of this.stream.getTracks()) track.stop?.()
+      stopTracks(this.stream)
       this.stream = null
     }
-    // The device is closed, so this tab no longer has any claim on it.
-    releaseMicLock()
+    // With no device open, this tab no longer has any claim on one.
+    if (!this.holdsDevice()) releaseMicLock()
     this.emit()
   }
 
@@ -440,6 +532,7 @@ export class MicManager {
     return this.enqueue(async () => {
       this.cancelLinger()
       this.consumers.clear()
+      if (this.scoped !== null) this.endScoped(this.scoped)
       this.teardown()
     })
   }
@@ -467,7 +560,7 @@ export class MicManager {
    */
   releaseTakeoverIfUnused(): Promise<void> {
     return this.enqueue(async () => {
-      if (this.stream !== null || this.consumers.size > 0) return
+      if (this.holdsDevice() || this.consumers.size > 0) return
       releaseMicLock()
       this.emit()
     })
@@ -525,6 +618,7 @@ export class MicManager {
       error: this.error,
       consumers: [...this.consumers],
       blockedBy: micLockStatus() === 'other' ? this.blockedBy : null,
+      scoped: this.getScopedHold()?.consumerId ?? null,
     }
   }
 
@@ -575,7 +669,7 @@ if (typeof document !== 'undefined') {
   // in one place is what stops the re-check ticking in a background tab that
   // has not held a microphone for an hour.
   const nothingLeftToWatch = (): boolean =>
-    !document.hidden || !micManager.isActive()
+    !document.hidden || !micManager.isCapturing()
 
   /** 'settled' when there is nothing more to do; 'waiting' while a run holds
    *  the mic and we should look again shortly. */
