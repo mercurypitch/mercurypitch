@@ -3,9 +3,10 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { freqToExactMidi, voicedSeconds } from '../exercise-scoring-utils'
-import { activeTimerSeconds } from '../timer-preference'
+import type { RunEnd } from '../timer-preference'
+import { activeTimerSeconds, endedBeforeTimer } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_LONG_NOTE } from '../types'
+import { EXERCISE_LONG_NOTE, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const STEADY_ZONE_THRESHOLD_CENTS = 15
@@ -219,10 +220,22 @@ export function useLongNoteController(base: BaseExerciseController) {
     }
   }
 
-  function stopAndCompute(): ExerciseResult {
+  /**
+   * End the run and grade it. `end` says what ended it: the timer, at the
+   * end of the length the singer chose, or a Stop. A Stop while the timer
+   * still ran is marked (`endedBeforeTimer`).
+   */
+  function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (metricTimer) clearInterval(metricTimer)
     base._setRunning(false)
-    const result = computeResult()
+    const graded = computeResult()
+    const result: ExerciseResult = {
+      ...graded,
+      metrics: {
+        ...graded.metrics,
+        ...stoppedEarlyMark(endedBeforeTimer(end)),
+      },
+    }
     base._completeWithResult(result)
     return result
   }

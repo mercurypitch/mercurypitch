@@ -3,8 +3,10 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { detectVibrato } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
+import type { RunEnd } from '../timer-preference'
+import { endedBeforeTimer } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_VIBRATO } from '../types'
+import { EXERCISE_VIBRATO, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { VibratoStyle, VibratoStyleId } from './vibrato-styles'
 import { DEFAULT_VIBRATO_STYLE, VIBRATO_STYLES } from './vibrato-styles'
@@ -222,10 +224,23 @@ export function useVibratoController(base: BaseExerciseController) {
     }
   }
 
-  function stopAndCompute(): ExerciseResult {
+  /**
+   * End the run and grade it. `end` says what ended it: the timer, at the
+   * end of the length the singer chose, or a Stop. A Stop while the timer
+   * still ran is marked (`endedBeforeTimer`): the grade reads only the last
+   * four seconds, so four seconds and Stop graded like the whole run.
+   */
+  function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (metricTimer) clearInterval(metricTimer)
     base._setRunning(false)
-    const result = computeResult()
+    const graded = computeResult()
+    const result: ExerciseResult = {
+      ...graded,
+      metrics: {
+        ...graded.metrics,
+        ...stoppedEarlyMark(endedBeforeTimer(end)),
+      },
+    }
     base._completeWithResult(result)
     return result
   }

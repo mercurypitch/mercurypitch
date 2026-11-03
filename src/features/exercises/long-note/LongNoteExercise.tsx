@@ -11,7 +11,8 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_LONG_NOTE } from '../types'
+import { stopLabelForTimer } from '../timer-preference'
+import { EXERCISE_LONG_NOTE, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useLongNoteController } from './use-long-note-controller'
 
@@ -60,6 +61,10 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const handleStop = () => {
     controller.stopAndCompute()
   }
+  // The timer running out is the run's end; a Stop before it is not.
+  const handleTimerEnd = () => {
+    controller.stopAndCompute('timer')
+  }
 
   onCleanup(() => base.reset())
 
@@ -97,6 +102,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
@@ -118,9 +124,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
         />
       }
       onStart={() => void handleStart()}
-      stopLabel="Stop & Score"
+      stopLabel={stopLabelForTimer()}
       onStop={handleStop}
-      autoTimer={{ onElapse: handleStop }}
+      autoTimer={{ onElapse: handleTimerEnd }}
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: targetMidi,

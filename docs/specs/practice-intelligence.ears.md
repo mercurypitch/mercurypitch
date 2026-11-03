@@ -164,10 +164,11 @@ of at least 30 cents from smaller ones.
 
 ### REQ-PI-028 — Whole runs only
 
-**IF** a run was stopped before its last round or note was graded, **THEN** it
-**shall not** count toward the EMA, the play count that gates a step, the weak
-exercise and weak interval averages, or the trends. A run recorded before
-stopped runs were marked **shall** count as a whole run
+**IF** a run was stopped before its last round or note was graded, or before
+the timer the singer chose ran out, **THEN** it **shall not** count toward the
+EMA, the play count that gates a step, the weak exercise and weak interval
+averages, or the trends. A Stop on Manual ends a whole run. A run recorded
+before stopped runs were marked **shall** count as a whole run
 (`src/tests/exercise-stopped-early.test.ts`).
 
 ## Trends overlay

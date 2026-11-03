@@ -100,6 +100,29 @@ export function activeTimerSeconds(): number | null {
   return mode
 }
 
+/** What ended a timed drill's run: the singer's Stop, or its timer. */
+export type RunEnd = 'stop' | 'timer'
+
+/**
+ * Whether a run ended short of the length the singer chose: stopped while
+ * its timer still ran. Graded on the seconds it reached, one second of Long
+ * Note held in tune scored 86 against the ten-second default and cleared
+ * every basics challenge, so such a run is practice, not a result
+ * (`stoppedEarlyMark`). On Manual there is no length to fall short of, and
+ * the Stop is the run's end.
+ */
+export function endedBeforeTimer(end: RunEnd): boolean {
+  return end === 'stop' && activeTimerSeconds() !== null
+}
+
+/**
+ * The name of a timed drill's Stop. On Manual it ends and scores the run;
+ * with a timer the timer scores it, and a Stop before then ends it unscored.
+ */
+export function stopLabelForTimer(): string {
+  return activeTimerSeconds() === null ? 'Stop & Score' : 'Stop'
+}
+
 /** Reset to the shipped default. Exists for tests, which share module state. */
 export function resetTimerPreference(): void {
   setPreference({ ...DEFAULT_PREFERENCE })

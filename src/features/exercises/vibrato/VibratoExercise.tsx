@@ -10,7 +10,8 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_VIBRATO } from '../types'
+import { stopLabelForTimer } from '../timer-preference'
+import { EXERCISE_VIBRATO, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
 import type { VibratoStyleId } from './vibrato-styles'
@@ -78,6 +79,10 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   const handleStop = () => {
     controller.stopAndCompute()
   }
+  // The timer running out is the run's end; a Stop before it is not.
+  const handleTimerEnd = () => {
+    controller.stopAndCompute('timer')
+  }
 
   onCleanup(() => {
     base.reset()
@@ -116,6 +121,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
@@ -172,9 +178,9 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
         </>
       }
       onStart={() => void handleStart()}
-      stopLabel="Stop & Score"
+      stopLabel={stopLabelForTimer()}
       onStop={handleStop}
-      autoTimer={{ onElapse: handleStop }}
+      autoTimer={{ onElapse: handleTimerEnd }}
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: targetMidi,

@@ -3,9 +3,10 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { freqToExactMidi } from '../exercise-scoring-utils'
-import { activeTimerSeconds } from '../timer-preference'
+import type { RunEnd } from '../timer-preference'
+import { activeTimerSeconds, endedBeforeTimer } from '../timer-preference'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_PITCH_HOLD } from '../types'
+import { EXERCISE_PITCH_HOLD, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const INITIAL_ZONE_CENTS = 50
@@ -165,10 +166,23 @@ export function usePitchHoldController(
     }
   }
 
-  function stopAndCompute(): ExerciseResult {
+  /**
+   * End the run and grade it. `end` says what ended it: the timer, at the
+   * end of the length the singer chose, or a Stop. A Stop while the timer
+   * still ran is marked (`endedBeforeTimer`). A guided hold is not: its
+   * Stop is the stop rule's, its dose is reviewed, and it records no
+   * progress (shouldRecordOrdinaryPitchHoldProgress).
+   */
+  function stopAndCompute(end: RunEnd = 'stop'): ExerciseResult {
     if (scoreUpdateTimer) clearInterval(scoreUpdateTimer)
     base._setRunning(false)
-    const result = computeResult()
+    const graded = computeResult()
+    const stopped =
+      options.fixedTargetDurationSeconds === undefined && endedBeforeTimer(end)
+    const result: ExerciseResult = {
+      ...graded,
+      metrics: { ...graded.metrics, ...stoppedEarlyMark(stopped) },
+    }
     base._completeWithResult(result)
     return result
   }
