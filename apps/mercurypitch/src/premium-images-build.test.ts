@@ -147,6 +147,18 @@ describe("the premium rooms' pictures in a native build", () => {
     }
   })
 
+  it("has First note's demo band to fold", () => {
+    // The clip of Josephine's lead-in its demo plays (demo-band.ts).
+    const band = PICTURES.filter(
+      (file) =>
+        file.room === 'first-note' &&
+        /(?:^|\/)demo\/demo-band-[a-z-]+\.mp3$/u.test(file.name),
+    )
+    expect(band.map((file) => file.name)).toEqual([
+      join('demo', 'demo-band-josephine.mp3'),
+    ])
+  })
+
   it("has the painted Ear rooms' plates to fold", () => {
     // Home note's harbour, upright and on its side; Leap's valley and its
     // two cliffs; Harmony's lake and its jetty.

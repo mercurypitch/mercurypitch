@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { FirstNoteBest } from './first-note-store'
-import { FIRST_NOTE_BESTS_KEY, firstNoteBeats, firstNoteBest, isFirstNoteBestTable, recordFirstNoteBest, resetFirstNoteStoreForTests, } from './first-note-store'
+import { FIRST_NOTE_BESTS_KEY, FIRST_NOTE_DEMO_SEEN_KEY, firstNoteBeats, firstNoteBest, firstNoteDemoAutoPlays, firstNoteDemoSeen, isFirstNoteBestTable, markFirstNoteDemoSeen, recordFirstNoteBest, resetFirstNoteStoreForTests, } from './first-note-store'
 
 function best(
   onNote: number,
@@ -45,5 +45,31 @@ describe("First note's bests", () => {
     expect(isFirstNoteBestTable({ singer: best(7, 4, 30) })).toBe(false)
     expect(isFirstNoteBestTable({ choir: best(2, 4, 30) })).toBe(false)
     expect(isFirstNoteBestTable([])).toBe(false)
+  })
+})
+
+describe("First note's demo, seen or not", () => {
+  beforeEach(() => {
+    localStorage.removeItem(FIRST_NOTE_BESTS_KEY)
+    localStorage.removeItem(FIRST_NOTE_DEMO_SEEN_KEY)
+    resetFirstNoteStoreForTests()
+  })
+
+  it('plays by itself on a first visit, the demo unseen and no run kept', () => {
+    expect(firstNoteDemoSeen()).toBe(false)
+    expect(firstNoteDemoAutoPlays()).toBe(true)
+  })
+
+  it('stops playing by itself once seen, on this device', () => {
+    markFirstNoteDemoSeen()
+    expect(firstNoteDemoAutoPlays()).toBe(false)
+    resetFirstNoteStoreForTests()
+    expect(firstNoteDemoSeen()).toBe(true)
+  })
+
+  it('stops playing by itself once a run has kept a best, at any level', () => {
+    recordFirstNoteBest('professional', best(2, 3, 20))
+    expect(firstNoteDemoSeen()).toBe(false)
+    expect(firstNoteDemoAutoPlays()).toBe(false)
   })
 })

@@ -316,17 +316,24 @@ export interface ShellBarEndProps<C extends string, T extends string> {
    */
   showLevel: boolean
   /**
-   * A room with no demo: "?" opens its own help, while it is given (First
-   * note's sheet). Never in warm-up mode, as the demo's.
+   * The room's own help: "?" opens it while it is given, in a room with no
+   * demo, or one whose help leads to its demo (`helpFirst`). Never in
+   * warm-up mode, as the demo's.
    */
   help?: { readonly label: string; readonly open: () => void }
+  /**
+   * "?" opens the room's help even with a demo, whenever the demo's "?"
+   * would show: the help plays the demo (First note's sheet, "See how it
+   * works").
+   */
+  helpFirst?: boolean
 }
 
 /**
  * The room's side of the bar: its level pill, and "?" while the demo
- * allows, or the room's own help where it has no demo. In warm-up mode
- * "Skip stop" takes the level's place before the take, and "?" goes at the
- * held result.
+ * allows, or the room's own help where it has no demo or its help comes
+ * first. In warm-up mode "Skip stop" takes the level's place before the
+ * take, and "?" goes at the held result.
  */
 export function ShellBarEnd<C extends string, T extends string>(
   props: ShellBarEndProps<C, T>,
@@ -342,6 +349,12 @@ export function ShellBarEnd<C extends string, T extends string>(
   const canAsk = (): boolean =>
     shell.demo?.canAsk() === true &&
     !(routine !== null && shell.phase() === 'result')
+  /** The room's own help in "?"'s place: with no demo, or before it. */
+  const ownHelp = (): ShellBarEndProps<C, T>['help'] => {
+    if (routine !== null) return undefined
+    if (shell.demo === null) return props.help
+    return props.helpFirst === true && canAsk() ? props.help : undefined
+  }
   return (
     <RoomBarEnd>
       <Show when={props.showLevel && routine === null}>{props.level}</Show>
@@ -355,14 +368,14 @@ export function ShellBarEnd<C extends string, T extends string>(
           {ROUTINE_WORDS.skip}
         </button>
       </Show>
-      <Show when={canAsk()}>
+      <Show when={canAsk() && ownHelp() === undefined}>
         <RoomAsk
           onAsk={() => shell.demo?.ask()}
           label={DEMO_WORDS.ask}
           testId={`${shell.ids}-ask`}
         />
       </Show>
-      <Show when={shell.demo === null && routine === null ? props.help : null}>
+      <Show when={ownHelp()}>
         {(help) => (
           <RoomAsk
             onAsk={() => help().open()}

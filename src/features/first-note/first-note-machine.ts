@@ -18,6 +18,12 @@
 // the entry, if there was one: the first try is the one that counts. A run
 // stopped part-way goes back to the intro and keeps nothing: an aborted run
 // is not a result.
+//
+// `demo` moves the room for the "how it works" demo (demo/), which sings
+// its one entry through the room with no microphone: to the intro as it
+// starts, between its takes and as it ends, and to the entry's lead-in as
+// each take starts. The entry's own steps (`turn`, `entry`, `outcome`) move
+// it as they move a run's.
 
 import type { CaptureFailure } from '@/components/room-kit/useExerciseCapture'
 import type { FirstNoteRound } from './first-note-songs'
@@ -98,6 +104,8 @@ export type FirstNoteEvent =
   | { readonly type: 'finish' }
   /** The run is given up, or the room goes back to rest. */
   | { readonly type: 'stop' }
+  /** The demo's move: its entry's lead-in, or the room at rest (null). */
+  | { readonly type: 'demo'; readonly round: FirstNoteRound | null }
 
 export const INITIAL_FIRST_NOTE_STATE: FirstNoteState = {
   phase: 'intro',
@@ -194,5 +202,14 @@ export function firstNoteReducer(
         run: state.run,
         rounds: state.rounds,
       }
+    case 'demo':
+      return event.round === null
+        ? { ...INITIAL_FIRST_NOTE_STATE, run: state.run }
+        : {
+            ...INITIAL_FIRST_NOTE_STATE,
+            phase: 'band',
+            run: state.run,
+            rounds: [event.round],
+          }
   }
 }

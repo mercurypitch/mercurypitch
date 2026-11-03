@@ -1,5 +1,5 @@
 // ============================================================
-// First note's records — the best at each level
+// First note's records — the best at each level, the demo seen
 // ============================================================
 //
 // A best is the most entries a run came in on the note, and among runs
@@ -15,6 +15,11 @@
 // On this device only, for now, as Home note's (home-note-store.ts): the
 // `mp_` prefix keeps the key out of the settings sync.
 //
+// Whether this device has seen the "how it works" demo is a device fact,
+// set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
+// lives here so the ways in (first-entry.ts) can say the demo plays by
+// itself without loading the room.
+//
 // Built on first read, not on import, so nothing at this module's top
 // level touches storage.
 
@@ -24,6 +29,8 @@ import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
 export const FIRST_NOTE_BESTS_KEY = 'mp_first_note_bests'
+/** Where the demo's seen flag lives: on this device only. */
+export const FIRST_NOTE_DEMO_SEEN_KEY = 'mp_first_note_demo_seen'
 
 /** A level's best run. */
 export interface FirstNoteBest {
@@ -117,7 +124,36 @@ export function recordFirstNoteBest(
   return { previous, improved: previous !== null }
 }
 
-/** Drop the signal read so far: the next read takes storage as it is now. */
+let demoSeen: Signal<boolean> | undefined
+
+function demoSeenSignal(): Signal<boolean> {
+  demoSeen ??= createPersistedSignal<boolean>(FIRST_NOTE_DEMO_SEEN_KEY, false, {
+    validator: (value): value is boolean => typeof value === 'boolean',
+  })
+  return demoSeen
+}
+
+/** This device has seen the demo: its end card, Skip or Not now. */
+export function firstNoteDemoSeen(): boolean {
+  return demoSeenSignal()[0]()
+}
+
+export function markFirstNoteDemoSeen(): void {
+  if (!firstNoteDemoSeen()) demoSeenSignal()[1](true)
+}
+
+/**
+ * The demo plays by itself on the way in: a first visit, the demo unseen
+ * and no run kept yet (no best at any level). One rule for the room
+ * (demo/useFirstNoteDemo.ts) and its ways in (first-entry.ts).
+ */
+export function firstNoteDemoAutoPlays(): boolean {
+  if (firstNoteDemoSeen()) return false
+  return EXERCISE_LEVELS.every((level) => firstNoteBest(level) === null)
+}
+
+/** Drop the signals read so far: the next read takes storage as it is now. */
 export function resetFirstNoteStoreForTests(): void {
   table = undefined
+  demoSeen = undefined
 }

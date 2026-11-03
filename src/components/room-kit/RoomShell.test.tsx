@@ -286,6 +286,62 @@ describe('ShellBarEnd', () => {
     fake.setCanAsk(false)
     expect(screen.queryByTestId('room-ask')).toBeNull()
   })
+
+  it("keeps the room's own help for a room with a demo, unless it comes first", () => {
+    const fake = fakeDemo()
+    let opened = 0
+    const help = { label: 'How it goes', open: () => (opened += 1) }
+    render(() => (
+      <ShellBarEnd
+        shell={shellFor(() => 'intro', fake.demo)}
+        showLevel={false}
+        level={<span />}
+        help={help}
+      />
+    ))
+    expect(screen.queryByTestId('room-help')).toBeNull()
+    expect(screen.getByTestId('room-ask')).toBeTruthy()
+    expect(opened).toBe(0)
+  })
+
+  it('opens the help first where it leads to the demo, while the demo allows "?"', () => {
+    const fake = fakeDemo()
+    let opened = 0
+    const help = { label: 'How it goes', open: () => (opened += 1) }
+    render(() => (
+      <ShellBarEnd
+        shell={shellFor(() => 'intro', fake.demo)}
+        showLevel={false}
+        level={<span />}
+        help={help}
+        helpFirst
+      />
+    ))
+    expect(screen.queryByTestId('room-ask')).toBeNull()
+    const ask = screen.getByTestId('room-help')
+    expect(ask.getAttribute('aria-label')).toBe('How it goes')
+    fireEvent.click(ask)
+    expect([opened, fake.calls.ask]).toEqual([1, 0])
+    // Mid-take, neither.
+    fake.setCanAsk(false)
+    expect(screen.queryByTestId('room-help')).toBeNull()
+    expect(screen.queryByTestId('room-ask')).toBeNull()
+  })
+
+  it('opens the help of a room with no demo', () => {
+    let opened = 0
+    render(() => (
+      <ShellBarEnd
+        shell={shellFor(() => 'intro', null)}
+        showLevel={false}
+        level={<span />}
+        help={{ label: 'How it goes', open: () => (opened += 1) }}
+      />
+    ))
+    fireEvent.click(screen.getByTestId('room-help'))
+    expect(opened).toBe(1)
+    expect(screen.queryByTestId('room-ask')).toBeNull()
+  })
 })
 
 describe('ShellSkip', () => {

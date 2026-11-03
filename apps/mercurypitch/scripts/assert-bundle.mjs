@@ -280,6 +280,10 @@ const KARAOKE_STAGE_2 = [
     /\/merc-says-[a-z-]+-[\w-]{8}\.mp3$/u,
     "Merc's spoken lines in the premium rooms",
   ],
+  // And the band First note's demo leads in on: a clip of an example
+  // song's own lead-in, named demo-band- for its song, in the room's demo/
+  // folder, which folds with its voice/ (vite.config.ts, PREMIUM_VOICES).
+  [/\/demo-band-[a-z-]+-[\w-]{8}\.mp3$/u, "First note's demo band"],
   // The Sing room's way in to them: its exercise row, the picker, the
   // options' row and the record of the last one opened. The row and the
   // picker are lazy islands and the options' section a ternary, all on

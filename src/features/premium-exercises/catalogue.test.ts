@@ -56,7 +56,7 @@ describe('the exercise catalogue', () => {
     ])
   })
 
-  it('names First note by its task, with no note of its own to open on', () => {
+  it('names First note by its task, with no note of its own to open on, its demo playing on a first visit', () => {
     const first = catalogueEntry('first-note-stage')
     expect(first?.name).toBe('First note')
     expect(first?.line).toBe(
@@ -64,7 +64,7 @@ describe('the exercise catalogue', () => {
     )
     expect([first?.note(), first?.demoAutoPlays(), first?.bestOnNote]).toEqual([
       null,
-      false,
+      true,
       false,
     ])
   })

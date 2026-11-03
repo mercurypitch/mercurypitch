@@ -22,9 +22,9 @@
 
 import type { JSX } from 'solid-js'
 import { For, onMount, Show } from 'solid-js'
+import type { Countdown } from './first-note-controller-contract'
 import type { StageLayout } from './first-note-layout'
 import styles from './StageScene.module.css'
-import type { Countdown } from './useFirstNoteController'
 
 /** The theatre, as the native app ships it. */
 export const THEATRE_ART = '/karaoke/broadway-theater-portrait.webp'
