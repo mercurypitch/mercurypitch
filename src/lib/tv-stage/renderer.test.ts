@@ -6,8 +6,8 @@
 // context that records what it was asked to draw, since jsdom has no canvas
 // (recording-context.fixture.ts): enough to say the idle screen names the
 // app, a song's title and words are written, a note in view is drawn while
-// one long gone is not. The lyrics' sizes and rows are in
-// renderer.lyrics.test.ts.
+// one long gone is not, and the lane is cut at its ends. The lyrics' sizes
+// and rows are in renderer.lyrics.test.ts.
 
 import { describe, expect, it } from 'vitest'
 import type { TvStageState } from '@/lib/tv-stage/model'
@@ -145,6 +145,21 @@ describe('a frame', () => {
 
     expect(notes).toHaveLength(1)
     expect(notes[0]?.x).toBeCloseTo(laneX(LAYOUT, 9, 10))
+  })
+
+  it('cuts the lane’s notes and trail at its ends, the 5% margin’s edges', () => {
+    const { ctx, clips } = recordingContext()
+
+    drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
+
+    expect(clips[0]).toEqual({
+      x: LAYOUT.safe.x,
+      y: LAYOUT.safe.y,
+      w: LAYOUT.safe.w,
+      h: LAYOUT.safe.h,
+    })
+    expect(LAYOUT.lane.x).toBe(LAYOUT.safe.x)
+    expect(LAYOUT.lane.w).toBe(LAYOUT.safe.w)
   })
 
   it('invites singing until there is a score', () => {
