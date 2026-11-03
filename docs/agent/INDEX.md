@@ -85,8 +85,8 @@ These are the rules that break things when ignored.
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.7k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
+| `karaoke-room` | [karaoke-room-find.ts](../../src/features/karaoke-room/karaoke-room-find.ts) | 7.9k | Find a song by singing it, in the Karaoke room The web's Mercury Sing listens for every separated song and opens Karaoke Night by its add... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.8k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `karaoke-room` | [karaoke-room-find.ts](../../src/features/karaoke-room/karaoke-room-find.ts) | 7.7k | Find a song by singing it, in the Karaoke room The web's Mercury Sing listens for every separated song and opens Karaoke Night by its add... |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.5k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `first-note` | [first-note-own-songs.ts](../../src/features/first-note/first-note-own-songs.ts) | 7.4k | First note's own songs — which the phone has read, and a run's songs A song the singer imported and split in the Karaoke room is a song o... |
 | `onboarding` | [FirstLight.tsx](../../src/features/onboarding/FirstLight.tsx) | 6.8k | First Light — the beat orchestrator Owns the shared frame (sky, progress hairline, escape) and swaps the current beat inside it. |
@@ -247,6 +247,7 @@ These are the rules that break things when ignored.
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 250 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
+| [airplay-suspicion.ts](../../src/stores/airplay-suspicion.ts) | 200 | AirPlay suspected — where the page's sound likely goes, from its rate The route (audio-route-store.ts) is the app's own AVAudioSession's,... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 150 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |

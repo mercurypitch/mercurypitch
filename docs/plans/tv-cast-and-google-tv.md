@@ -11,6 +11,9 @@ from the phone. Updated again on 2026-10-23 after the merges: PRs #1175,
 and 8). Updated 2026-11-03: pull requests no longer build the native apps
 (section 7), TestFlight mp-v0.8.52 carries #1189 and #1321, P5's step 5.2
 is done, and P6 waits on a registered Cast test device and a receiver page.
+Updated again on 2026-11-03 with the owner's device test of that build
+(P1): Screen Mirroring works on the LG C2 with the TV lyrics and the TV
+stage, and AirPlay alone carries none of the room's sound.
 Nothing here is built unless marked **[shipped]**. It continues
 [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md), which stays the record
 for the TV platforms, the issue #489 items and the phone-as-microphone
@@ -753,6 +756,63 @@ elements Web Audio plays) off AirPlay, says each audio route and the
 shared clock's state in the console, and stops a Karaoke song whose clock
 stands still, with a notice that says why (device test:
 [tv-device-tests.md](tv-device-tests.md), Test 8).
+
+**The owner's test of mp-v0.8.52, 3 Nov 2026** (an iPhone 13 Pro and the
+LG C2; Test 8):
+
+- **Screen Mirroring works.** With the TV lyrics switch on, and with the TV
+  stage, it "works great": the TV shows the stage or the lyrics, never a
+  mirror of the phone, and the room's sound plays there.
+- **AirPlay alone carries none of the room's sound.** iOS still offers
+  AirPlay as the app opens: its own suggestion, since the app goes
+  inactive 1.7 s after launch, before anything plays. Taken, the TV shows
+  the song's title, "Unknown artist" (the room's word for a song with no
+  artist) and a timeline: the lock screen's Now Playing. On Play the
+  song's clock runs on the phone, but no sound comes from the phone or the
+  TV, and the TV shows a spinner; stopping the song brings the timeline
+  back. The clock never stood still, so #1321's watch rightly said
+  nothing, and no notice came.
+- **On the iPhone 13 Pro the app's audio session never saw AirPlay.**
+  Every route it reported was the speaker at 48 kHz, before and after the
+  TV was connected, and it
+  heard WebKit's own playback as another app's sound
+  (`otherAudioPlaying`). WebKit plays from its own session, in its GPU
+  process; the app's (AudioSessionKit: playAndRecord with defaultToSpeaker,
+  allowBluetoothA2DP and mixWithOthers, no allowAirPlay) is not it. The
+  page's contexts made after connecting ran at 44.1 kHz, AirPlay's rate
+  (`census context-made n=2 ... rate=44100`), where on the speaker they ran
+  at 48 kHz. So the route never said airplay, and #1321's AirPlay words
+  could never show.
+- **The song paused itself 1 to 2 s after Play** several times, with no
+  reason logged; some of those were the owner's own presses. Pauses by a
+  system media control (the lock screen, Control Center, a headset, a remote
+  such as the TV's) and the room's own pause wrote no line.
+- **The same on an iPhone 11 (iOS 18.7), where the app does see AirPlay.**
+  Its session reported `route=airplay` at 44.1 kHz, and the page's contexts
+  ran at 44.1 kHz too, so there the route says it and the rate cannot. The
+  room played as on the speaker: the song streamed, its clock ran to the
+  end, no watch line, and the TV showed the Now Playing card with its
+  timeline running and no spinner. No sound came from the TV or the phone,
+  at system volumes from 0.08 to 0.23. After the mic opened and closed, the
+  session's rate went from 44.1 to 48 kHz, still on AirPlay.
+
+What follows (branch `feat/airplay-guide`): every pause and play of a
+Karaoke song is a line naming who asked; the room takes the sound to be on
+AirPlay alone where the route says airplay, or where the page's rate
+differs from the app session's on the speaker or receiver, and never while
+a screen is connected (`src/stores/airplay-suspicion.ts`); a song started
+on AirPlay alone says, once a launch, that AirPlay cannot carry the room's
+sound to a TV and Screen Mirroring can, and how (Control Center, Screen
+Mirroring, then the TV), and a test build writes the whole Developer audio
+report into the console then; and the stopped-song notice says the same.
+So for singing on a TV from an iPhone, Screen Mirroring is the route the
+app points to; AirPlay alone is not one.
+
+Which part of the room's sound AirPlay refuses is still open: a media
+element, Web Audio, Web Audio beside the carrier, or Web Audio with the mic
+open. The Developer screen's AirPlay sound check plays each, with its own
+number of beeps ([tv-device-tests.md](tv-device-tests.md), Test 9), and
+decides what, if anything, the room can do about it.
 
 Exit: `REQ-TV-090..096` pass; on an AirPlay TV a song scores within the same
 tolerance as on the phone's speaker once calibrated; at Chromecast-like
