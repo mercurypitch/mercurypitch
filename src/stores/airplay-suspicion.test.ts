@@ -12,7 +12,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import type { AirPlayFacts } from './airplay-suspicion'
-import { airPlayAlone, airPlayLine, airPlaySuspected, followAirPlaySuspicion, followExternalScreen, notePageAudioContext, resetAirPlaySuspicionForTests, suspectsAirPlay, } from './airplay-suspicion'
+import { airPlayAlone, airPlayLine, airPlaySuspected, followAirPlaySuspicion, followExternalScreen, notePageAudioContext, noteSongStart, onSongStartOnAirPlay, resetAirPlaySuspicionForTests, suspectsAirPlay, } from './airplay-suspicion'
 
 /** The phone's speaker at 48 kHz, the page's contexts made on AirPlay. */
 const ON_AIRPLAY: AirPlayFacts = {
@@ -170,6 +170,39 @@ describe('AirPlay alone, which the room’s words turn on', () => {
     screen.connect(true)
 
     expect(airPlayAlone()).toBe(false)
+  })
+})
+
+describe('a song that starts', () => {
+  it('is told to whoever listens, on AirPlay alone and only then', () => {
+    const heard = vi.fn()
+    stops.push(onSongStartOnAirPlay(heard))
+
+    noteSongStart()
+    notePageAudioContext({ sampleRate: 44100 })
+    noteSongStart()
+
+    expect(heard).toHaveBeenCalledTimes(1)
+  })
+
+  it('reaches every listener past one that throws, and none once stopped', () => {
+    const broken = vi.fn(() => {
+      throw new Error('the report broke')
+    })
+    const heard = vi.fn()
+    const stopBroken = onSongStartOnAirPlay(broken)
+    const stop = onSongStartOnAirPlay(heard)
+    setAudioRouteForTests('airplay', 'LG webOS TV', 44100)
+
+    expect(() => {
+      noteSongStart()
+    }).not.toThrow()
+    stop()
+    stopBroken()
+    noteSongStart()
+
+    expect(broken).toHaveBeenCalledTimes(1)
+    expect(heard).toHaveBeenCalledTimes(1)
   })
 })
 

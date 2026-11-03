@@ -299,6 +299,13 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
     census.installAudioCensus({ output: nativeDeviceApi()?.audioOutput })
     record.installAudioRecord({ roomLevels: rooms.roomOutputReadings })
   })
+  // The report the Audio section copies, written into the console as a
+  // Karaoke song first starts on AirPlay alone, once a launch: leaving the
+  // room for this screen stops the song (audio-report.ts). Same gate, same
+  // reason.
+  void import('./shell/audio-report').then((module) => {
+    module.reportOnAirPlay()
+  })
   // And whether the web view was ever turned: a line in the same record at
   // launch and for every change after it, so the copied report says so even
   // when the Developer screen was opened long after the turn.
