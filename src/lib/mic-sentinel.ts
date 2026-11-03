@@ -109,11 +109,20 @@ export function registerMicIndicator(
 }
 
 function snapshotReality(): MicRealitySnapshot {
-  const stream = micManager.getStream()
-  const streamLive =
-    stream !== null && stream.getTracks().some((t) => t.readyState === 'live')
+  // An input of its own (acquireFrom) is a stream apart from the shared one:
+  // its hold and its liveness count as the shared one's do.
+  const scoped = micManager.getScopedHold()
+  const streams = [micManager.getStream(), scoped?.stream ?? null]
+  const streamLive = streams.some(
+    (stream) =>
+      stream !== null &&
+      stream.getTracks().some((t) => t.readyState === 'live'),
+  )
   return {
-    holds: micManager.getConsumers(),
+    holds:
+      scoped === null
+        ? micManager.getConsumers()
+        : [...micManager.getConsumers(), scoped.consumerId],
     streamLive,
     indicators: [...indicators.values()].map((i) => ({
       id: i.id,

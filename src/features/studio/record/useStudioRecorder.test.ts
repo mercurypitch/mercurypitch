@@ -265,7 +265,7 @@ describe('useStudioRecorder', () => {
   it('shows the mic icon while it holds the mic, and a lost mic ends an armed or running take only', () => {
     const { dispose } = mount()
     const recorder = mocks.recorder!
-    const lost = { active: false, consumers: [] }
+    const lost = { active: false, consumers: [], scoped: null }
 
     expect(mocks.indicator!()).toBe(false)
     mocks.micListener!(lost)
@@ -274,13 +274,23 @@ describe('useStudioRecorder', () => {
     mocks.onChange!(view({ phase: 'armed' }))
     expect(mocks.indicator!()).toBe(true)
     expect(mocks.runGuard!()).toBe(false)
-    mocks.micListener!({ active: true, consumers: ['studio-record'] })
+    // The Studio's input is a stream of its own: the shared one closing
+    // under another feature says nothing about it.
+    mocks.micListener!({
+      active: false,
+      consumers: [],
+      scoped: 'studio-record',
+    })
     expect(recorder.micLost).not.toHaveBeenCalled()
 
     mocks.onChange!(view({ phase: 'recording' }))
     expect(mocks.runGuard!()).toBe(true)
     expect(mocks.navigationLock!()).toBe(true)
-    mocks.micListener!({ active: true, consumers: ['voice-control'] })
+    mocks.micListener!({
+      active: true,
+      consumers: ['voice-control'],
+      scoped: null,
+    })
     expect(recorder.micLost).toHaveBeenCalledOnce()
 
     mocks.onChange!(view({ phase: 'idle' }))
@@ -439,12 +449,20 @@ describe('useStudioRecorder input', () => {
     dispose()
   })
 
-  it('opens the input picked at once on an armed lane, and holds it still while a take runs', () => {
+  it('keeps the input picked before it re-arms an armed lane, and holds it still while a take runs', () => {
     const { hook, dispose } = mount()
     mocks.onChange!(view({ phase: 'armed' }))
+    // The re-arm opens whatever the settings say when it asks for the
+    // microphone, right after the disarm; studio-recorder.test.ts checks the
+    // stream it then hears.
+    let asked: string | null | undefined
+    mocks.recorder!.disarm.mockImplementation(() => {
+      asked = hook.settings().inputDeviceId
+    })
     hook.chooseInput('desk-mic', 'Desk mic')
     expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
     expect(mocks.recorder!.arm).toHaveBeenCalledWith('lane-1')
+    expect(asked).toBe('desk-mic')
 
     mocks.onChange!(view({ phase: 'recording' }))
     hook.chooseInput('usb-mic', 'USB Mic')

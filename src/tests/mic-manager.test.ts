@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { micLockStatus, releaseMicLock } from '../lib/mic-lock'
+import type { MicState } from '../lib/mic-manager'
 import { MicManager } from '../lib/mic-manager'
 
 interface MockTrack {
@@ -35,7 +36,7 @@ function domError(name: string): Error {
 
 /** Replace navigator.mediaDevices.getUserMedia with a controllable mock. */
 function mockGetUserMedia(
-  impl: () => Promise<unknown>,
+  impl: (constraints: MediaStreamConstraints) => Promise<unknown>,
 ): ReturnType<typeof vi.fn> {
   const fn = vi.fn(impl)
   ;(
@@ -318,14 +319,26 @@ describe('MicManager input for one hold', () => {
   let mgr: MicManager
   /** The input each getUserMedia call asked for; undefined for the default. */
   const askedFor = (gum: ReturnType<typeof vi.fn>) =>
-    gum.mock.calls.map(
-      ([constraints]) =>
-        (
-          (constraints as MediaStreamConstraints).audio as {
-            deviceId?: { exact: string }
-          }
-        ).deviceId?.exact,
-    )
+    gum.mock.calls.map(([constraints]) => deviceOf(constraints))
+  const deviceOf = (constraints: unknown) =>
+    (
+      (constraints as MediaStreamConstraints).audio as {
+        deviceId?: { exact: string }
+      }
+    ).deviceId?.exact
+  /** A browser that opens a stream on whichever input is asked for. */
+  const openEach = (before?: (device: string | undefined) => void) =>
+    mockGetUserMedia((constraints) => {
+      const device = deviceOf(constraints)
+      before?.(device)
+      return Promise.resolve(makeStream(device ?? 'default'))
+    })
+  const asMock = (stream: MediaStream | null) => stream as unknown as MockStream
+  /** The browser ends a stream's track, as an unplug or a second capture does. */
+  const endTrack = (stream: MockStream) => {
+    for (const [type, listener] of stream.track.addEventListener.mock.calls)
+      if (type === 'ended') (listener as () => void)()
+  }
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -338,24 +351,50 @@ describe('MicManager input for one hold', () => {
     vi.restoreAllMocks()
   })
 
-  it("records from its own input, and the app's input opens again once it lets go", async () => {
-    const gum = mockGetUserMedia(() => Promise.resolve(makeStream()))
-    await mgr.setPreferredDevice('guitar-in')
+  it("opens the input picked on a stream of its own, and leaves the app's input to its consumers", async () => {
+    const gum = openEach()
+    await mgr.setPreferredDevice('app-in')
+    const voice = asMock(await mgr.acquire('voice'))
 
-    const held = await mgr.acquireFrom('studio', 'usb-mic')
+    const held = await mgr.acquireFrom('studio', 'usb-1')
+    const studio = asMock(held.stream)
     expect(held.missing).toBe(false)
-    expect(mgr.getPreferredDevice()).toBe('guitar-in')
+    expect(studio).not.toBe(voice)
+    expect(studio.track.getSettings().deviceId).toBe('usb-1')
+    expect(voice.track.stop).not.toHaveBeenCalled()
+    expect(mgr.getStream()).toBe(voice)
+    expect(mgr.getConsumers()).toEqual(['voice'])
+    expect(mgr.getScopedHold()?.consumerId).toBe('studio')
+
     mgr.release('studio')
     await vi.advanceTimersByTimeAsync(0)
-    // Closed at once: the next open is on another input.
-    expect(mgr.getStream()).toBeNull()
-    await mgr.acquire('guitar')
+    expect(studio.track.stop).toHaveBeenCalled()
+    expect(voice.track.stop).not.toHaveBeenCalled()
+    expect(mgr.getStream()).toBe(voice)
+    expect(mgr.getScopedHold()).toBeNull()
+    expect(askedFor(gum)).toEqual(['app-in', 'usb-1'])
+  })
 
-    expect(askedFor(gum)).toEqual(['usb-mic', 'guitar-in'])
+  it('ends only the hold a release was called for, so a re-arm on another input opens that input', async () => {
+    const gum = openEach()
+    await mgr.setPreferredDevice('app-in')
+    const first = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+
+    // A re-arm: the release is queued, the next open asked for in the same task.
+    mgr.release('studio')
+    const second = await mgr.acquireFrom('studio', 'usb-2')
+    await vi.advanceTimersByTimeAsync(0)
+
+    const stream = asMock(second.stream)
+    expect(stream.track.getSettings().deviceId).toBe('usb-2')
+    expect(stream.track.stop).not.toHaveBeenCalled()
+    expect(first.track.stop).toHaveBeenCalled()
+    expect(mgr.getScopedHold()?.stream).toBe(second.stream)
+    expect(askedFor(gum)).toEqual(['usb-1', 'usb-2'])
   })
 
   it('records from the default input when asked, whatever the app picked', async () => {
-    const gum = mockGetUserMedia(() => Promise.resolve(makeStream()))
+    const gum = openEach()
     await mgr.setPreferredDevice('guitar-in')
 
     await mgr.acquireFrom('studio', null)
@@ -379,43 +418,68 @@ describe('MicManager input for one hold', () => {
     expect(mgr.getPreferredDevice()).toBe('guitar-in')
   })
 
-  it("keeps its input while the app picks another, and the app's choice opens next", async () => {
-    const stream = makeStream()
-    const gum = mockGetUserMedia(() => Promise.resolve(stream))
-    await mgr.acquireFrom('studio', 'usb-mic')
+  it("keeps its input while the app picks another, and the app's consumers open the app's", async () => {
+    const gum = openEach()
+    const held = await mgr.acquireFrom('studio', 'usb-1')
 
     await mgr.setPreferredDevice('guitar-in')
-    expect(stream.track.stop).not.toHaveBeenCalled()
-    expect(mgr.getStream()).toBe(stream)
+    const guitar = asMock(await mgr.acquire('guitar'))
 
-    mgr.release('studio')
-    await vi.advanceTimersByTimeAsync(0)
-    await mgr.acquire('guitar')
-    expect(askedFor(gum)).toEqual(['usb-mic', 'guitar-in'])
+    expect(asMock(held.stream).track.stop).not.toHaveBeenCalled()
+    expect(guitar.track.getSettings().deviceId).toBe('guitar-in')
+    expect(mgr.getScopedHold()?.stream).toBe(held.stream)
+    expect(askedFor(gum)).toEqual(['usb-1', 'guitar-in'])
   })
 
-  it('leaves the stream to a consumer still holding it, and lets go of the input after a failed open', async () => {
-    const stream = makeStream()
-    let refuse = false
-    const gum = mockGetUserMedia(() =>
+  it('tells the consumers of a stream the browser ends as the input of its own opens, rather than leave them deaf', async () => {
+    let voice: MockStream | null = null
+    // A browser that keeps one capture at a time ends the other as this opens.
+    openEach((device) => {
+      if (device === 'usb-1' && voice !== null) endTrack(voice)
+    })
+    voice = asMock(await mgr.acquire('voice'))
+    const states: MicState[] = []
+    mgr.subscribe((state) => states.push(state))
+
+    await mgr.acquireFrom('studio', 'usb-1')
+
+    expect(voice.track.stop).toHaveBeenCalled()
+    expect(mgr.getStream()).toBeNull()
+    // The voice consumer's own lost-microphone path reads this.
+    expect(states.at(-1)).toMatchObject({ active: false, scoped: 'studio' })
+  })
+
+  it('tells its consumer when the input of its own goes, by an unplug or a hand-over to another tab', async () => {
+    openEach()
+    const states: MicState[] = []
+    mgr.subscribe((state) => states.push(state))
+
+    endTrack(asMock((await mgr.acquireFrom('studio', 'usb-1')).stream))
+    expect(states.at(-1)?.scoped).toBeNull()
+    expect(mgr.getScopedHold()).toBeNull()
+
+    const again = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+    expect(states.at(-1)?.scoped).toBe('studio')
+    await mgr.forceReleaseAll()
+    expect(again.track.stop).toHaveBeenCalled()
+    expect(states.at(-1)?.scoped).toBeNull()
+  })
+
+  it('lets go of the input and the lock after a failed open', async () => {
+    let refuse = true
+    const gum = mockGetUserMedia((constraints) =>
       refuse
         ? Promise.reject(domError('NotAllowedError'))
-        : Promise.resolve(stream),
+        : Promise.resolve(makeStream(deviceOf(constraints) ?? 'default')),
     )
-    await mgr.acquireFrom('studio', 'usb-mic')
-    await mgr.acquire('voice')
-    mgr.release('studio')
-    await vi.advanceTimersByTimeAsync(0)
-    expect(mgr.getStream()).toBe(stream)
-
-    mgr.release('voice')
-    await vi.advanceTimersByTimeAsync(2000)
-    refuse = true
-    await expect(mgr.acquireFrom('studio', 'usb-mic')).rejects.toMatchObject({
+    await expect(mgr.acquireFrom('studio', 'usb-1')).rejects.toMatchObject({
       kind: 'permission-denied',
     })
+    expect(mgr.getScopedHold()).toBeNull()
+    expect(micLockStatus()).toBe('free')
+
     refuse = false
     await mgr.acquire('guitar')
-    expect(askedFor(gum)).toEqual(['usb-mic', 'usb-mic', undefined])
+    expect(askedFor(gum)).toEqual(['usb-1', undefined])
   })
 })
