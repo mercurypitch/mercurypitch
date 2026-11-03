@@ -340,6 +340,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       class={styles.zoom}
       role="group"
       aria-label="Timeline zoom"
+      data-studio-zoom=""
       style={place}
     >
       <button

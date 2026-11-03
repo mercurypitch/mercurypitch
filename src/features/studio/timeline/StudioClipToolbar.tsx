@@ -1,8 +1,9 @@
 // Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom,
 // or stacked as icons in the dock beside the arrangement while the desk is open. The dock has room for
 // its seven icons only (dockColumns, StudioTimeline.tsx), so Range and a loop take's pass list stay on
-// the floating bar: with the desk open, a range is drawn on the ruler instead.
-import { For, Show } from 'solid-js'
+// the floating bar: with the desk open, a range is drawn on the ruler instead. The floating bar folds
+// to icons when its names would run into zoom (clip-bar-fold.ts).
+import { createEffect, For, onCleanup, onMount, Show } from 'solid-js'
 import { Copy, Split, Trash2 } from '@/components/icons'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
@@ -10,6 +11,7 @@ import type { StudioClip } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
 import { InfoCircle, RangeBrackets } from '../studio-icons'
+import { fitClipBar, watchClipBarRoom } from './clip-bar-fold'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -77,8 +79,19 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
   const canSplit = () =>
     props.playheadFrame > props.clip.startFrame &&
     props.playheadFrame < clipEndFrame(props.clip)
+  let bar: HTMLDivElement | undefined
+  // Another clip, lane name or pass list changes the bar's width.
+  createEffect(() => {
+    void props.clip
+    void props.label
+    if (bar && props.docked !== true) fitClipBar(bar)
+  })
+  onMount(() => {
+    if (bar && props.docked !== true) onCleanup(watchClipBarRoom(bar))
+  })
   return (
     <div
+      ref={bar}
       class={styles.toolbar}
       classList={{ [styles.toolbarDocked]: props.docked === true }}
       role="toolbar"

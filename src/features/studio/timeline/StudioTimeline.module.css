@@ -1174,6 +1174,18 @@
   height: 44px;
   padding: 0 14px;
 }
+/* A floating clip bar whose names would run into zoom, at the other end of
+   the foot, folds to icons (clip-bar-fold.ts sets data-folded). Each command
+   keeps its name for assistive tech, and its title. */
+.toolbar[data-folded] .toolbarText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 /* New lane, filler and the playhead */
 .newLane {
