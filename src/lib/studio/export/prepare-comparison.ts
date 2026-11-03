@@ -1,4 +1,8 @@
 // Studio comparison — mastered After and dry Before renders, matched only by attenuation.
+//
+// After is an export (render-wav.ts), so it plays the lane renders the
+// caller holds (`frozen`) as an export does. Before turns every effect off,
+// which no render matches, so its lanes run as they are.
 import { reserveStudioMemory } from '../memory-budget'
 import { audioBufferReader, measureStudioPcm } from '../metering/measure-async'
 import type { StudioAsset, StudioProject } from '../model/types'
@@ -30,8 +34,6 @@ export async function prepareStudioComparison(
   read: (id: string) => Promise<Blob>,
   options: StudioExportOptions = {},
 ): Promise<StudioComparison> {
-  const snapshot = validateStudioProject(project, assets)
-  const owned = structuredClone(assets)
   const signal = options.signal ?? new AbortController().signal
   let after: StudioWavExport | undefined
   let dry: StudioRenderedBuffer | undefined
@@ -39,6 +41,8 @@ export async function prepareStudioComparison(
   let releaseBytes: (() => void) | undefined
   let releaseBlob: (() => void) | undefined
   try {
+    const snapshot = validateStudioProject(project, assets)
+    const owned = structuredClone(assets)
     after = await renderStudioWav(snapshot, owned, read, { ...options, signal })
     releaseJob = acquireStudioRenderJob()
     const check = () => {
@@ -125,6 +129,8 @@ export async function prepareStudioComparison(
     releaseBlob = undefined
     return result
   } finally {
+    // renderStudioWav lets the held lane renders go; this covers a refusal before it.
+    options.frozen?.release()
     after?.release()
     dry?.release()
     releaseBytes?.()

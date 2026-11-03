@@ -3,6 +3,7 @@ import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { analyzeStudioBalance } from '@/lib/studio/export/analyze-balance'
 import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioFreezeHold } from '@/lib/studio/playback/lane-freezer'
 import type { StudioRenderJob } from '../export/render-job'
 
 export interface StudioSoundControllerOptions {
@@ -11,6 +12,11 @@ export interface StudioSoundControllerOptions {
   canStart(): boolean
   readCanonicalAsset(id: string): Promise<Blob>
   releaseAudio(): Promise<void>
+  /** The lane renders that match the song (lane-freezer.ts), held for the analysis to play. */
+  holdFrozen?(
+    project: StudioProject,
+    assets: readonly StudioAsset[],
+  ): StudioFreezeHold | null
   onCommand(command: StudioSoundEdit): boolean
   analyze?: typeof analyzeStudioBalance
 }
@@ -89,6 +95,8 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
     setError(null)
     setNotice(null)
     setOutcome(null)
+    // Held before the audio goes: the room the analysis takes back is then never these renders.
+    const held = options.holdFrozen?.(snapshot, assets) ?? null
     try {
       await options.releaseAudio()
       job.abort.signal.throwIfAborted()
@@ -100,6 +108,7 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
         {
           signal: job.abort.signal,
           isCurrent,
+          frozen: held,
           onLane: (completed, total) => {
             if (!disposed && !job.abort.signal.aborted)
               setProgress({ completed, total })
@@ -137,6 +146,7 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
         )
       return false
     } finally {
+      held?.release()
       finishJob(job)
     }
   }

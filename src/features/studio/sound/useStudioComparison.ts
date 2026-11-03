@@ -4,6 +4,7 @@ import type { StudioComparison } from '@/lib/studio/export/prepare-comparison'
 import { prepareStudioComparison } from '@/lib/studio/export/prepare-comparison'
 import type { StudioExportStage } from '@/lib/studio/export/render-wav'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioFreezeHold } from '@/lib/studio/playback/lane-freezer'
 import type { StudioRenderJob } from '../export/render-job'
 import type { StudioComparisonTransport } from './comparison-preview'
 import { createComparisonPreview } from './comparison-preview'
@@ -15,7 +16,13 @@ export interface StudioComparisonControllerOptions {
   assets(): readonly StudioAsset[]
   canStart(): boolean
   readCanonicalAsset(id: string): Promise<Blob>
-  transport: StudioComparisonTransport
+  transport: StudioComparisonTransport & {
+    /** The lane renders that match the song (lane-freezer.ts), held for After to play. */
+    holdFrozen?(
+      project: StudioProject,
+      assets: readonly StudioAsset[],
+    ): StudioFreezeHold | null
+  }
   beforePrepare?(): void
   onPrepared?(comparison: StudioComparison): void
   prepareRender?: typeof prepareStudioComparison
@@ -99,6 +106,8 @@ export function useStudioComparison(
     setError(null)
     setNotice(null)
     clearResult()
+    // Held before the audio goes: the room Compare takes back is then never these renders.
+    const held = options.transport.holdFrozen?.(snapshot, assets) ?? null
     try {
       options.beforePrepare?.()
       await options.transport.releaseAudio()
@@ -111,6 +120,7 @@ export function useStudioComparison(
         {
           signal: job.abort.signal,
           isCurrent,
+          frozen: held,
           onStage: (next) => {
             if (!disposed && !job.abort.signal.aborted) setStage(next)
           },
@@ -135,6 +145,7 @@ export function useStudioComparison(
         )
       return false
     } finally {
+      held?.release()
       finishJob(job)
     }
   }
