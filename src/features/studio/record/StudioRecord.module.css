@@ -197,6 +197,14 @@
     display: none;
   }
 }
+/* A phone has no zoom or clip bar at the foot: the card takes the place of
+   the clip's note, which steps aside while a lane is armed. The query is
+   the workspace's own for its phone layout. */
+@media (max-width: 600px), (pointer: coarse) and (max-height: 500px) {
+  .status {
+    bottom: 12px;
+  }
+}
 
 /* The take as it records, in its lane: a clip-shaped box that grows. */
 .liveTake {

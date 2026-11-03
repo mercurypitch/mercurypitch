@@ -1254,6 +1254,13 @@
 .armed .filler {
   min-height: 140px;
 }
+/* On a phone the card takes the clip note's place at the foot. */
+.phone.armed .filler {
+  min-height: 72px;
+}
+.armed .phoneNote {
+  display: none;
+}
 
 .snapLine {
   position: absolute;
