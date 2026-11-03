@@ -106,12 +106,12 @@ These are the rules that break things when ignored.
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 4.0k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 3.9k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
+| `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 3.7k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
 | `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.6k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in tabGroups(), so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
-| `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 2.6k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.7k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
@@ -255,13 +255,13 @@ These are the rules that break things when ignored.
 | [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |
+| [home-note-store.ts](../../src/stores/home-note-store.ts) | 150 | Home note's records — the best at each level, the demo seen A best is the most rounds found in a run, and among runs that found as many,... |
 | [leap-store.ts](../../src/stores/leap-store.ts) | 150 | Leap's records — the best at each level, the demo seen A best is the most leaps landed in a run, and among runs that landed as many, the... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 150 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [sync-ui-store.ts](../../src/stores/sync-ui-store.ts) | 150 | ── Sync UI state Whether the sync dialog is showing, whether a session is alive behind it, and — in the words the surfaces say out loud —... |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
 | [first-note-store.ts](../../src/stores/first-note-store.ts) | 100 | First note's records — the best at each level A best is the most entries a run came in on the note, and among runs that came in on as man... |
-| [home-note-store.ts](../../src/stores/home-note-store.ts) | 100 | Home note's records — the best at each level A best is the most rounds found in a run, and among runs that found as many, the quickest to... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 100 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |

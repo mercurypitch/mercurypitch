@@ -20,8 +20,10 @@
 // "Hear it again" over the mic in the singer's turn, and the run's keys as
 // lamps at the result, each playing its key again (HomeNoteLamps.tsx).
 //
-// No "How it works" demo yet: the intro line says the task, and Learning's
-// first rounds have Merc sing home before the singer's turn.
+// "How it works" (demo/) plays over the same room: the band plays its
+// intro, then the voice sings the last chord's note once and home once,
+// through the room's own engine, with the demo kit's layer, cards and
+// tooltips over the harbour. A first visit opens on it; "?" plays it again.
 
 import type { JSX } from 'solid-js'
 import { createMemo, onMount, Show } from 'solid-js'
@@ -31,20 +33,23 @@ import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { createMeasure } from '@/components/room-kit/room-measure'
 import { ResultCard } from '@/components/room-kit/RoomHeader'
-import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, } from '@/components/room-kit/RoomShell'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
 import { createReactiveMatch } from '@/lib/use-viewport'
+import type { DemoCueId, DemoTarget } from './demo/demo-cues'
+import { aimHomeNoteTip } from './demo/tip-targets'
+import { useHomeNoteDemo } from './demo/useHomeNoteDemo'
 import { bandHalfHeight, LANDSCAPE_PLATE_MEDIA, layoutHarbour, } from './harbour-layout'
 import { HarbourScene } from './HarbourScene'
+import type { HomeNoteController } from './home-note-controller-contract'
 import type { HomeNotePhase } from './home-note-machine'
 import type { HomeNoteSummary } from './home-note-run'
 import { detailLine } from './home-note-run'
 import { ChordLamps, KeyLamps } from './HomeNoteLamps'
 import { HomeNoteLevel } from './HomeNoteLevel'
 import styles from './HomeNoteRoom.module.css'
-import type { HomeNoteController } from './useHomeNoteController'
 import { useHomeNoteController } from './useHomeNoteController'
 
 export interface HomeNoteRoomProps {
@@ -52,6 +57,8 @@ export interface HomeNoteRoomProps {
   onDone: () => void
   /** Merc's voice: his sampled one on the phone (HomeNoteScreen). */
   voice?: RoundVoice
+  /** What that voice needs loaded before the demo sings (his sampled set). */
+  voiceReady?: () => Promise<unknown>
   /** The run, when it is not the room's own (a test's). Read once. */
   controller?: HomeNoteController
   /** No animation at all (the fixtures). */
@@ -61,8 +68,12 @@ export interface HomeNoteRoomProps {
 /** A stage before its first measure: a phone's size, so nothing is zero. */
 const FALLBACK_SIZE = { width: 390, height: 760 }
 
-/** The mic for each phase: ready, waiting, the singer's turn, or done. */
-export function homeMicState(phase: HomeNotePhase): MicState {
+/**
+ * The mic for each phase: ready, waiting, the singer's turn, or done. The
+ * demo's takes never open it: they wait.
+ */
+export function homeMicState(phase: HomeNotePhase, demo = false): MicState {
+  if (demo) return 'wait'
   switch (phase) {
     case 'intro':
     case 'blocked':
@@ -76,8 +87,12 @@ export function homeMicState(phase: HomeNotePhase): MicState {
   }
 }
 
-/** The mic's name as the phase has it. */
-function micName(phase: HomeNotePhase): string {
+/** The mic's start, as its name says it at rest. */
+const START_LABEL = 'Start: hear the band, then sing home'
+
+/** The mic's name as the phase has it; the demo's start's while it plays. */
+function micName(phase: HomeNotePhase, demo: boolean): string {
+  if (demo) return START_LABEL
   switch (phase) {
     case 'starting':
       return 'Opening the microphone'
@@ -87,21 +102,23 @@ function micName(phase: HomeNotePhase): string {
     case 'missed':
       return 'The next key is coming. Tap to stop'
     default:
-      return labelFor(
-        homeMicState(phase),
-        'Start: hear the band, then sing home',
-      )
+      return labelFor(homeMicState(phase), START_LABEL)
   }
 }
 
 export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
+  // The run and Merc's voice are the room's from the start: read once.
   // eslint-disable-next-line solid/reactivity -- read once, as documented
-  const room = props.controller ?? useHomeNoteController({ voice: props.voice })
-  const shell = createRoomShell<string, string>({
+  const given = props.controller
+  // eslint-disable-next-line solid/reactivity -- read once, as documented
+  const voice = { voice: props.voice, ready: props.voiceReady }
+  const room = given ?? useHomeNoteController(voice)
+  const demo = given === undefined ? useHomeNoteDemo(room) : null
+  const shell = createRoomShell<DemoCueId, DemoTarget>({
     ids: 'home-note',
     styles,
     run: room,
-    demo: null,
+    demo,
   })
   const phase = (): HomeNotePhase => room.state().phase
 
@@ -162,6 +179,8 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
 
   /** What a screen reader hears, from the one polite region. */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (shell.busy() || room.script.active()) return ''
     const round = room.round()
     switch (phase()) {
       case 'band':
@@ -190,7 +209,7 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
       classList={{ [styles.still]: props.still === true }}
       testId="home-note-room"
       said={said()}
-      aim={() => null}
+      aim={(tip, layer) => aimHomeNoteTip(tip.target, layer)}
     >
       <div ref={stageEl} class={styles.stage}>
         <HarbourScene
@@ -257,16 +276,18 @@ export function HomeNoteRoom(props: HomeNoteRoomProps): JSX.Element {
       <ShellBarEnd
         shell={shell}
         showLevel={
-          phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
+          !room.script.active() &&
+          (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
         }
         level={<HomeNoteLevel />}
       />
+      <ShellSkip shell={shell} />
 
       <ShellDock
         shell={shell}
         onDone={() => props.onDone()}
-        mic={homeMicState(phase())}
-        micLabel={micName(phase())}
+        mic={homeMicState(phase(), room.script.active())}
+        micLabel={micName(phase(), room.script.active())}
         still={props.still}
         overMic={
           <Show when={room.canHearAgain()}>

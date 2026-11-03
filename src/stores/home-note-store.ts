@@ -1,5 +1,5 @@
 // ============================================================
-// Home note's records — the best at each level
+// Home note's records — the best at each level, the demo seen
 // ============================================================
 //
 // A best is the most rounds found in a run, and among runs that found as
@@ -16,6 +16,11 @@
 // merge rule of their own (src/lib/hold/hold-bests.ts, echo-bests.ts); Home
 // note gets one when it leaves the test builds.
 //
+// Whether this device has seen the "how it works" demo is a device fact,
+// set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
+// lives here so the ways in (home-entry.ts) can say the demo plays by
+// itself without loading the room.
+//
 // Built on first read, not on import, so nothing at this module's top
 // level touches storage.
 
@@ -25,6 +30,8 @@ import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
 export const HOME_NOTE_BESTS_KEY = 'mp_home_note_bests'
+/** Where the demo's seen flag lives: on this device only. */
+export const HOME_NOTE_DEMO_SEEN_KEY = 'mp_home_note_demo_seen'
 
 /** A level's best run. */
 export interface HomeNoteBest {
@@ -113,7 +120,36 @@ export function recordHomeNoteBest(
   return { previous, improved: previous !== null }
 }
 
-/** Drop the signal read so far: the next read takes storage as it is now. */
+let demoSeen: Signal<boolean> | undefined
+
+function demoSeenSignal(): Signal<boolean> {
+  demoSeen ??= createPersistedSignal<boolean>(HOME_NOTE_DEMO_SEEN_KEY, false, {
+    validator: (value): value is boolean => typeof value === 'boolean',
+  })
+  return demoSeen
+}
+
+/** This device has seen the demo: its end card, Skip or Not now. */
+export function homeNoteDemoSeen(): boolean {
+  return demoSeenSignal()[0]()
+}
+
+export function markHomeNoteDemoSeen(): void {
+  if (!homeNoteDemoSeen()) demoSeenSignal()[1](true)
+}
+
+/**
+ * The demo plays by itself on the way in: a first visit, the demo unseen
+ * and no run kept yet (no best at any level). One rule for the room
+ * (demo/useHomeNoteDemo.ts) and its ways in (home-entry.ts).
+ */
+export function homeNoteDemoAutoPlays(): boolean {
+  if (homeNoteDemoSeen()) return false
+  return EXERCISE_LEVELS.every((level) => homeNoteBest(level) === null)
+}
+
+/** Drop the signals read so far: the next read takes storage as it is now. */
 export function resetHomeNoteStoreForTests(): void {
   table = undefined
+  demoSeen = undefined
 }

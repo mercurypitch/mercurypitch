@@ -43,7 +43,7 @@ describe('the exercise catalogue', () => {
     ])
   })
 
-  it('names Home note by its task, with no note of its own to open on', () => {
+  it('names Home note by its task, with no note of its own to open on, its demo playing on a first visit', () => {
     const home = catalogueEntry('home-note-lighthouse')
     expect(home?.name).toBe('Home note')
     expect(home?.line).toBe(
@@ -51,7 +51,7 @@ describe('the exercise catalogue', () => {
     )
     expect([home?.note(), home?.demoAutoPlays(), home?.bestOnNote]).toEqual([
       null,
-      false,
+      true,
       false,
     ])
   })

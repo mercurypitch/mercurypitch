@@ -5,7 +5,7 @@ on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026
 on 3 Nov 2026 as Home note is. The owner tried the first two on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
 way on to the Karaoke room, and gives Home note its painted harbour. Leap and Harmony have a "How it
-works" demo (2 Nov 2026); Home note and First note have none yet. The owner's design
+works" demo (2 Nov 2026), and Home note has one too (3 Nov 2026); First note has none yet. The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -139,7 +139,21 @@ chord reaches the speaker and keeps a warm outline once it has passed. They go w
 turn opens. At the result, the run's six keys stand under the numbers as lamps, lit for a home
 found and an empty ring for one missed, each named by its home. A tap plays that key again: its
 intro as the run played it, then home's chord with Merc singing home, at every level. Another lamp,
-Again or leaving cuts it short. (`home-note-lamps.ts`, `HomeNoteLamps.tsx`.)
+Again or leaving cuts it short. (`home-note-lamps.ts`, `HomeNoteLamps.tsx`, and the replay in
+`home-note-replay.ts`.)
+
+**How it works** (3 Nov 2026). A first visit opens on a demo, as Leap's and Harmony's do, and "?"
+plays it again at rest or from a result; a singer who has kept a run already finds it under "?".
+The band plays its intro, I IV V in the middle of the singer's window, and the voice sings back
+through the room's own engine, twice, at Singer (the level a first visit starts at, where no one
+sings home first): "Not like this" sings the last chord's note, the fifth under home, held and let
+go, so the lamp stays dark and Merc sings home over home's chord; "Like this" scoops into home and
+holds it in the band of light, and the lamp lights. Singing the last thing heard instead of where
+the chords rest is the first thing the room asks a singer not to do. Four tooltips, each on the
+moment it explains: the band's chords as their lamps light, the turn on the beam, "the last chord's
+note, not home" as Merc sings home, and the lamp lit. Its words are the demo kit's; it never opens
+the mic, fires a haptic or keeps a result, and his opening line waits, unsaid, while it plays
+(`src/features/home-note/demo/`).
 
 ### The harbour's painting
 

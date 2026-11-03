@@ -3,10 +3,10 @@
 // ============================================================
 //
 // The ways in say two things about Home note before the singer opens it:
-// the best at the singer's level ("Best 5 of 6"), and that its demo does
-// not play by itself (it has none yet). The best comes from the store the
-// room records into (home-note-store.ts), so the way in and the room cannot
-// disagree. It lives here, beside the catalogue, and reads no file of the
+// the best at the singer's level ("Best 5 of 6"), and whether its demo
+// plays by itself on the way in (a first visit). Both come from the store
+// the room records into (home-note-store.ts), so the way in and the room
+// cannot disagree. It lives here, beside the catalogue, and reads no file of the
 // room's: the room's own module graph stays out of the Sing screen's and
 // the Ear Lab's.
 //
@@ -14,14 +14,14 @@
 // name before it starts.
 
 import { exerciseLevel } from '@/stores/exercise-level'
-import { homeNoteBest } from '@/stores/home-note-store'
+import { homeNoteBest, homeNoteDemoAutoPlays } from '@/stores/home-note-store'
 
 export interface HomeEntry {
   /** Home note opens on no one note: always null. */
   note: () => string | null
   /** The best at the singer's level ("Best 5 of 6"), or null when none. */
   progress: () => string | null
-  /** The demo plays by itself on the way in: never, with no demo yet. */
+  /** The demo plays by itself on the way in: a first visit. */
   demoAutoPlays: () => boolean
 }
 
@@ -33,6 +33,6 @@ export function homeEntry(): HomeEntry {
       const best = homeNoteBest(exerciseLevel())
       return best === null ? null : `Best ${best.found} of ${best.rounds}`
     },
-    demoAutoPlays: () => false,
+    demoAutoPlays: homeNoteDemoAutoPlays,
   }
 }
