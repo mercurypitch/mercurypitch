@@ -66,10 +66,22 @@ export interface FadeRamp {
   readonly toSourceFrame: Frame
 }
 
+/**
+ * A loop take's passes (clip-passes.ts): `count` stretches of `frames` each,
+ * back to back in the clip's one audio from source frame `firstFrame`, every
+ * one sung over the same range. Which one plays is where the clip's source
+ * frames sit, so it cannot disagree with what is heard.
+ */
+export interface StudioClipPasses {
+  readonly firstFrame: Frame
+  readonly frames: Frame
+  readonly count: number
+}
+
 export interface StudioClip {
   readonly id: string
   readonly trackId: string
-  /** The audio the clip plays: for a loop take, one of its passes. */
+  /** The audio the clip plays: for a loop take, the whole capture, one pass of it heard. */
   readonly assetId: string
   readonly startFrame: Frame
   readonly sourceInFrame: Frame
@@ -80,12 +92,8 @@ export interface StudioClip {
     readonly in?: FadeRamp
     readonly out?: FadeRamp
   }
-  /**
-   * A loop take's passes, oldest first, one asset each and all as long
-   * (clip-passes.ts): `assetId` is the one heard, the others are kept to
-   * choose from. Absent for any other clip.
-   */
-  readonly passes?: readonly string[]
+  /** A loop take's passes, its source frames inside one of them; absent for any other clip. */
+  readonly passes?: StudioClipPasses
 }
 
 export interface StudioAsset {

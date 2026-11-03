@@ -1,6 +1,7 @@
 // Studio commands — atomic non-destructive edits with monotonic save revisions.
 import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
+import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
@@ -85,7 +86,8 @@ export type StudioEdit =
   | {
       readonly type: 'choose-pass'
       readonly clipId: string
-      readonly assetId: string
+      /** A loop take's pass, counted from 0, oldest first (clip-passes.ts). */
+      readonly pass: number
     }
   | {
       readonly type: 'set-project-settings'
@@ -195,11 +197,14 @@ function editClip(
       return replaceClip(project, { ...clip, gainDb: edit.gainDb })
     case 'choose-pass':
       requireValue(
-        clip.passes?.includes(edit.assetId) === true,
+        clip.passes !== undefined &&
+          Number.isSafeInteger(edit.pass) &&
+          edit.pass >= 0 &&
+          edit.pass < clip.passes.count,
         `clip.${clip.id}.passes`,
         "Pass is not one of the clip's",
       )
-      return replaceClip(project, { ...clip, assetId: edit.assetId })
+      return replaceClip(project, studioClipOnPass(clip, edit.pass))
     case 'duplicate-clip':
       return duplicateClip(project, edit)
     case 'split-clip': {

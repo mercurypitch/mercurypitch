@@ -760,20 +760,18 @@ describe('Studio controller', () => {
     })
   })
 
-  it('keeps a loop take as one clip over the range playing the heard pass, and keeps the rest', async () => {
+  it('keeps a loop take as one file, its clip on the newest whole pass and a pass away from the rest', async () => {
     const { controller, service } = mount({ prepareFile: recordedFixture })
     await controller.open('one')
 
     const kept = await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
       title: 'Take 2',
-      passes: [1, 2, 3].map((n) => ({
-        wav: new Blob([`pass ${n}`], { type: 'audio/wav' }),
-        title: `Take 2, pass ${n}`,
-        assetId: `take-2-pass-${n}`,
-      })),
-      heard: 2,
+      assetId: 'take-2',
       startFrame: 48000,
-      frames: 4000,
+      sourceInFrame: 3300,
+      sourceOutFrame: 4800,
+      passes: { firstFrame: 300, frames: 1500, count: 3 },
       trackId: null,
     })
 
@@ -781,27 +779,56 @@ describe('Studio controller', () => {
     const clips = controller.project()!.clips
     expect(clips).toHaveLength(1)
     expect(clips[0]).toMatchObject({
-      assetId: 'take-2-pass-3',
-      passes: ['take-2-pass-1', 'take-2-pass-2', 'take-2-pass-3'],
+      assetId: 'take-2',
+      passes: { firstFrame: 300, frames: 1500, count: 3 },
       startFrame: 48000,
-      sourceInFrame: 0,
-      sourceOutFrame: 4000,
+      sourceInFrame: 3300,
+      sourceOutFrame: 4800,
     })
     expect(controller.project()!.tracks.at(-1)).toMatchObject({
       name: 'Take 2',
     })
-    expect(
-      controller
-        .assets()
-        .filter((asset) => asset.id.startsWith('take-2-pass-'))
-        .map((asset) => asset.originalName),
-    ).toEqual([
-      'Take 2, pass 1.wav',
-      'Take 2, pass 2.wav',
-      'Take 2, pass 3.wav',
+    // One file however many passes: the song's 128 cannot run out on a loop.
+    expect(controller.assets().map((asset) => asset.originalName)).toEqual([
+      'Take 2.wav',
     ])
-    expect(vi.mocked(service.saveProject).mock.lastCall?.[2]).toHaveLength(3)
+    expect(vi.mocked(service.saveProject).mock.lastCall?.[2]).toHaveLength(1)
     expect(controller.undoLabel()).toBe('Undo add take')
+
+    expect(
+      controller.dispatch({
+        type: 'choose-pass',
+        clipId: clips[0].id,
+        pass: 0,
+      }),
+    ).toBe(true)
+    expect(controller.project()!.clips[0]).toMatchObject({
+      sourceInFrame: 300,
+      sourceOutFrame: 1800,
+    })
+    expect(controller.undoLabel()).toBe('Undo choose pass')
+  })
+
+  it('keeps the passes a decoded loop take holds whole when it comes out short', async () => {
+    const { controller } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+
+    // Three passes meant, the audio a frame short of the third: the second plays.
+    await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 3',
+      startFrame: 48000,
+      sourceInFrame: 3301,
+      sourceOutFrame: 4801,
+      passes: { firstFrame: 301, frames: 1500, count: 3 },
+      trackId: null,
+    })
+
+    expect(controller.project()!.clips[0]).toMatchObject({
+      passes: { firstFrame: 301, frames: 1500, count: 2 },
+      sourceInFrame: 1801,
+      sourceOutFrame: 3301,
+    })
   })
 
   it('refuses a take its trim leaves nothing of, keeping the song as it was', async () => {

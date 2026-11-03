@@ -1,7 +1,6 @@
 // Studio project validation — strict versioned snapshots and owned-source references for local saves and backups.
 import { LOUDNESS_PRESETS } from '@/lib/studio-fx/master'
 import { MIX_FLAVOURS } from '@/lib/studio-fx/mix-macros'
-import { studioClipAssetIds } from './clip-passes'
 import type { StudioAsset, StudioProject } from './types'
 import { STUDIO_ENGINE_VERSION, STUDIO_SAMPLE_RATE, STUDIO_SCHEMA_VERSION, } from './types'
 import { validateStudioAsset } from './validation-assets'
@@ -136,17 +135,15 @@ export function validateStudioProject(
       requireValue(!owned.has(asset.id), `asset.${asset.id}`, 'Duplicate asset')
       owned.set(asset.id, asset)
     }
-    // Every pass a loop take keeps covers the clip as the heard one does.
-    for (const clip of clips)
-      for (const id of studioClipAssetIds(clip)) {
-        const asset = owned.get(id)
-        requireValue(
-          asset !== undefined,
-          `clip.${clip.id}.assetId`,
-          'Owned source is missing',
-        )
-        validateClipAsset(clip, asset)
-      }
+    for (const clip of clips) {
+      const asset = owned.get(clip.assetId)
+      requireValue(
+        asset !== undefined,
+        `clip.${clip.id}.assetId`,
+        'Owned source is missing',
+      )
+      validateClipAsset(clip, asset)
+    }
   }
   return structuredClone(raw) as StudioProject
 }

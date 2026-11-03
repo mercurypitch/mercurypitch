@@ -1,44 +1,65 @@
-// Studio clip pass tests — a loop take's clip keeps its passes, plays one, and swaps it as one undoable edit.
+// Studio clip pass tests — a loop take keeps one audio, its clip plays one pass of it, and moves to another as one undoable edit.
 import { describe, expect, it } from 'vitest'
 import { laneFreezeKeys } from '../playback/lane-freeze'
 import { compileStudioArrangement } from './arrangement-plan'
-import { studioClipAssetIds, studioClipPass, studioSongAssetIds, } from './clip-passes'
+import { studioClipOnPass, studioClipPass, studioClipSourceBounds, studioFitPasses, } from './clip-passes'
+import type { StudioCommand } from './commands'
 import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
 import { studioFixture, TEST_NOW } from './model.test-fixtures'
-import type { StudioAsset, StudioProject } from './types'
+import type { StudioAsset, StudioClip, StudioProject } from './types'
 import { validateStudioProject } from './validation'
 
-/** The fixture's take as a loop take of three passes, the newest heard. */
+const PASSES = { firstFrame: 200, frames: 1000, count: 3 }
+
+/** The fixture's take as a loop take: three passes of 1000 frames from frame 200 of one audio, the newest heard. */
 function loopTake() {
   const { project, asset, clip } = studioFixture()
-  const pass = (n: number): StudioAsset => ({
+  const take: StudioAsset = {
     ...asset,
-    id: `take-1-pass-${n}`,
-    canonicalPcmId: `pcm-pass-${n}`,
-  })
-  const assets = [pass(1), pass(2), pass(3)]
-  const passes = assets.map((value) => value.id)
-  const looped = { ...clip, assetId: passes[2], passes }
-  return { project: { ...project, clips: [looped] }, assets, clip: looped }
+    id: 'take-1',
+    normalizedFrameCount: 3500,
+    canonicalPcmByteLength: 32 + 3500 * 4,
+  }
+  const looped: StudioClip = {
+    ...clip,
+    assetId: take.id,
+    sourceInFrame: 2200,
+    sourceOutFrame: 3200,
+    fades: {
+      curve: 'linear-amplitude',
+      in: { fromSourceFrame: 2200, toSourceFrame: 2400 },
+      out: { fromSourceFrame: 3000, toSourceFrame: 3200 },
+    },
+    passes: PASSES,
+  }
+  return {
+    project: { ...project, clips: [looped] },
+    assets: [take],
+    clip: looped,
+  }
 }
 
+const apply = (
+  project: StudioProject,
+  command: StudioCommand,
+  assets: readonly StudioAsset[],
+) => applyStudioCommand(project, command, { assets, now: TEST_NOW })
+
 describe('Studio clip passes', () => {
-  it('keeps every pass of a loop take, and only the heard asset of any other clip', () => {
+  it('plays one pass of the take, the newest when it lands, and trims inside it', () => {
     const { clip } = loopTake()
-    expect(studioClipAssetIds(clip)).toEqual([
-      'take-1-pass-1',
-      'take-1-pass-2',
-      'take-1-pass-3',
-    ])
     expect(studioClipPass(clip)).toEqual({ number: 3, count: 3 })
+    expect(studioClipSourceBounds(clip, 3500)).toEqual({
+      first: 2200,
+      end: 3200,
+    })
     const plain = studioFixture().clip
-    expect(studioClipAssetIds(plain)).toEqual(['asset-1'])
     expect(studioClipPass(plain)).toBeNull()
-    expect(studioSongAssetIds([clip, plain]).size).toBe(4)
+    expect(studioClipSourceBounds(plain, 1000)).toEqual({ first: 0, end: 1000 })
   })
 
-  it('saves a loop take whose passes all cover the clip, and refuses any other', () => {
+  it('saves a loop take whose clip sits inside one of its passes, and refuses any other', () => {
     const { project, assets } = loopTake()
     expect(validateStudioProject(project, assets)).toEqual(project)
     const refuses = (clip: object, owned = assets) =>
@@ -48,81 +69,109 @@ describe('Studio clip passes', () => {
           owned,
         ),
       ).toThrow()
-    // The heard pass must be kept, every pass once, and at least two.
+    // Two to 32 passes of at least a frame, as windows, not a list of files.
+    refuses({ passes: { ...PASSES, count: 1 } })
+    refuses({ passes: { ...PASSES, count: 33 } })
+    refuses({ passes: { ...PASSES, frames: 0 } })
+    refuses({ passes: { ...PASSES, firstFrame: -1 } })
     refuses({ passes: ['take-1-pass-1', 'take-1-pass-2'] })
-    refuses({ passes: ['take-1-pass-3', 'take-1-pass-3'] })
-    refuses({ passes: ['take-1-pass-3'] })
-    refuses({ passes: 'take-1-pass-3' })
-    // A pass the song does not own, or one shorter than the clip, is refused.
-    refuses({}, assets.slice(1))
-    refuses({}, [
-      { ...assets[0], normalizedFrameCount: 999 },
-      ...assets.slice(1),
-    ])
+    refuses({ passes: { ...PASSES, heard: 2 } })
+    // The clip, and its fades, inside one pass.
+    refuses({ sourceInFrame: 2100, fades: { curve: 'linear-amplitude' } })
+    refuses({
+      sourceInFrame: 3200,
+      sourceOutFrame: 3300,
+      fades: { curve: 'linear-amplitude' },
+    })
+    refuses({
+      fades: {
+        curve: 'linear-amplitude',
+        in: { fromSourceFrame: 2100, toSourceFrame: 2400 },
+      },
+    })
+    // Every pass is audio the song owns, not only the one heard.
+    refuses(
+      {
+        sourceInFrame: 200,
+        sourceOutFrame: 1200,
+        fades: { curve: 'linear-amplitude' },
+      },
+      [
+        {
+          ...assets[0],
+          normalizedFrameCount: 3199,
+          canonicalPcmByteLength: 32 + 3199 * 4,
+        },
+      ],
+    )
   })
 
-  it('swaps the heard pass as one edit that Undo takes back, and plays the new one', () => {
+  it('moves the clip to another pass as one edit, fades and all, that Undo takes back', () => {
     const { project, assets } = loopTake()
     const options = { assets, now: TEST_NOW }
-    const history = createStudioHistory(project)
     const chosen = executeStudioCommand(
-      history,
-      { type: 'choose-pass', clipId: 'clip-1', assetId: 'take-1-pass-1' },
+      createStudioHistory(project),
+      { type: 'choose-pass', clipId: 'clip-1', pass: 0 },
       options,
     )
     const [clip] = chosen.present.clips
-    expect(clip).toEqual({ ...project.clips[0], assetId: 'take-1-pass-1' })
+    expect(clip).toEqual({
+      ...project.clips[0],
+      sourceInFrame: 200,
+      sourceOutFrame: 1200,
+      fades: {
+        curve: 'linear-amplitude',
+        in: { fromSourceFrame: 200, toSourceFrame: 400 },
+        out: { fromSourceFrame: 1000, toSourceFrame: 1200 },
+      },
+    })
+    expect(studioClipPass(clip)).toEqual({ number: 1, count: 3 })
+    // Still the take's one audio, its first pass heard where the third was.
     const [lane] = compileStudioArrangement(chosen.present, assets).lanes
-    expect(lane.segments.map((segment) => segment.assetId)).toEqual([
-      'take-1-pass-1',
-    ])
+    expect(
+      lane.segments.map(({ assetId, startFrame, sourceInFrame }) => ({
+        assetId,
+        startFrame,
+        sourceInFrame,
+      })),
+    ).toEqual([{ assetId: 'take-1', startFrame: 100, sourceInFrame: 200 }])
     const undone = undoStudioCommand(chosen, options)
-    expect(undone.present.clips[0].assetId).toBe('take-1-pass-3')
+    expect(undone.present.clips[0]).toEqual(project.clips[0])
   })
 
   it('gives the lane a new freeze key when its clip plays another pass, so a frozen lane renders again', () => {
     const { project, assets } = loopTake()
-    const choose = (from: StudioProject, assetId: string) =>
-      applyStudioCommand(
-        from,
-        { type: 'choose-pass', clipId: 'clip-1', assetId },
-        { assets, now: TEST_NOW },
-      )
+    const choose = (from: StudioProject, pass: number) =>
+      apply(from, { type: 'choose-pass', clipId: 'clip-1', pass }, assets)
     const before = laneFreezeKeys(project, assets)
     const [trackId] = [...before.keys()]
-    const chosen = choose(project, 'take-1-pass-2')
+    const chosen = choose(project, 1)
     expect(laneFreezeKeys(chosen, assets).get(trackId)).not.toBe(
       before.get(trackId),
     )
     // The pass heard before brings its key back, and its render with it.
-    expect(
-      laneFreezeKeys(choose(chosen, 'take-1-pass-3'), assets).get(trackId),
-    ).toBe(before.get(trackId))
+    expect(laneFreezeKeys(choose(chosen, 2), assets).get(trackId)).toBe(
+      before.get(trackId),
+    )
   })
 
   it('refuses a pass the clip does not keep, and a pass for a clip with none', () => {
     const { project, assets } = loopTake()
-    expect(() =>
-      applyStudioCommand(
-        project,
-        { type: 'choose-pass', clipId: 'clip-1', assetId: 'asset-1' },
-        { assets, now: TEST_NOW },
-      ),
-    ).toThrow()
+    for (const pass of [-1, 3, 1.5])
+      expect(() =>
+        apply(project, { type: 'choose-pass', clipId: 'clip-1', pass }, assets),
+      ).toThrow()
     const plain = studioFixture()
     expect(() =>
-      applyStudioCommand(
-        plain.project,
-        { type: 'choose-pass', clipId: 'clip-1', assetId: 'asset-1' },
-        { assets: [plain.asset], now: TEST_NOW },
-      ),
+      apply(plain.project, { type: 'choose-pass', clipId: 'clip-1', pass: 0 }, [
+        plain.asset,
+      ]),
     ).toThrow()
   })
 
-  it('keeps the passes on both halves of a split, each half choosing on its own', () => {
+  it('keeps the passes on both halves of a split, each half playing a pass of its own', () => {
     const { project, assets } = loopTake()
-    const options = { assets, now: TEST_NOW }
-    const split = applyStudioCommand(
+    const split = apply(
       project,
       {
         type: 'split-clip',
@@ -130,20 +179,67 @@ describe('Studio clip passes', () => {
         atFrame: 600,
         newClipId: 'clip-2',
       },
-      options,
+      assets,
     )
-    expect(split.clips.map((clip) => clip.passes)).toEqual([
-      project.clips[0].passes,
-      project.clips[0].passes,
-    ])
-    const chosen = applyStudioCommand(
+    expect(split.clips.map((clip) => clip.passes)).toEqual([PASSES, PASSES])
+    const chosen = apply(
       split,
-      { type: 'choose-pass', clipId: 'clip-2', assetId: 'take-1-pass-2' },
-      options,
+      { type: 'choose-pass', clipId: 'clip-2', pass: 1 },
+      assets,
     )
-    expect(chosen.clips.map((clip) => clip.assetId)).toEqual([
-      'take-1-pass-3',
-      'take-1-pass-2',
+    // The first half sings the third pass, the second half the second.
+    expect(
+      chosen.clips.map((clip) => [clip.sourceInFrame, clip.sourceOutFrame]),
+    ).toEqual([
+      [2200, 2700],
+      [1700, 2200],
     ])
+    expect(chosen.clips.map((clip) => studioClipPass(clip)?.number)).toEqual([
+      3, 2,
+    ])
+  })
+
+  it('trims a loop take only inside its pass', () => {
+    const { project, assets } = loopTake()
+    const trim = (command: StudioCommand) => apply(project, command, assets)
+    expect(
+      trim({ type: 'trim-tail', clipId: 'clip-1', sourceOutFrame: 3100 })
+        .clips[0].sourceOutFrame,
+    ).toBe(3100)
+    expect(() =>
+      trim({ type: 'trim-tail', clipId: 'clip-1', sourceOutFrame: 3201 }),
+    ).toThrow()
+    expect(() =>
+      trim({ type: 'trim-head', clipId: 'clip-1', sourceInFrame: 2199 }),
+    ).toThrow()
+    // Moved to the first pass, its fades move with it.
+    expect(studioClipOnPass(loopTake().clip, 0).fades.out).toEqual({
+      fromSourceFrame: 1000,
+      toSourceFrame: 1200,
+    })
+  })
+
+  it('keeps only the passes a decoded take holds whole, the newest of them heard', () => {
+    const heard = { sourceInFrame: 2200 }
+    expect(studioFitPasses(heard, PASSES, 3500)).toEqual({
+      sourceInFrame: 2200,
+      sourceOutFrame: 3200,
+      passes: PASSES,
+    })
+    // A frame short of the third pass: two are left, the second heard.
+    expect(studioFitPasses(heard, PASSES, 3199)).toEqual({
+      sourceInFrame: 1200,
+      sourceOutFrame: 2200,
+      passes: { ...PASSES, count: 2 },
+    })
+    // One whole pass is an ordinary clip; none, what there is.
+    expect(studioFitPasses(heard, PASSES, 2199)).toEqual({
+      sourceInFrame: 200,
+      sourceOutFrame: 1200,
+    })
+    expect(studioFitPasses(heard, PASSES, 1100)).toEqual({
+      sourceInFrame: 200,
+      sourceOutFrame: 1100,
+    })
   })
 })

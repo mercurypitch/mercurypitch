@@ -13,9 +13,11 @@
 //   the song stops too, as Pro Tools does without post-roll. A range too
 //   near the song's start for the whole pre-roll gets the rest as count-in.
 // - Loop (Repeat on): the song plays the range over and over from its
-//   start, after the usual count-in, and every pass becomes its own take
-//   on one clip (clip-passes.ts). Recording stops by itself after the most
-//   passes a clip keeps, or at the five-minute limit, whichever comes first.
+//   start, after the usual count-in, and every whole pass becomes one its
+//   clip can play (clip-passes.ts). Recording stops by itself a hundredth
+//   of a second after the most passes a clip keeps, so rounding never
+//   leaves the last one a frame short, or at the five-minute limit,
+//   whichever comes first.
 //
 // A song playing when Record is pressed plays on under a plain take; a
 // punch or a loop starts it again where its stretch needs it.
@@ -50,6 +52,9 @@ export interface StudioTakePlan {
   readonly stopAt: number | null
 }
 
+/** Frames a loop records past its last pass: the capture's clock and a resampled import each round by a frame. */
+export const STUDIO_LAST_PASS_SPARE_FRAMES = STUDIO_SAMPLE_RATE / 100
+
 /** A punch's pre-roll in frames: the count-in's bars of song, or one bar without a count-in. */
 export function studioPunchPreroll(tempoBpm: number, countInBars: number) {
   const bars = Math.max(1, countInBars)
@@ -83,7 +88,10 @@ export function planStudioTake(request: StudioTakeRequest): StudioTakePlan {
       songFrom: startFrame,
       fromFrame: startFrame,
       countInSeconds: countIn,
-      stopAt: startFrame + STUDIO_MAX_CLIP_PASSES * (endFrame - startFrame),
+      stopAt:
+        startFrame +
+        STUDIO_MAX_CLIP_PASSES * (endFrame - startFrame) +
+        STUDIO_LAST_PASS_SPARE_FRAMES,
     }
   }
   const from = request.playing ? null : Math.max(0, request.playheadFrame)

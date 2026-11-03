@@ -108,44 +108,46 @@ describe('portable Studio backups', () => {
     expect(await service.listProjects()).toHaveLength(1)
   })
 
-  it('backs up and restores every pass of a loop take, with the heard one still heard', async () => {
+  it("backs up and restores a loop take's one audio with its passes, the heard one still heard", async () => {
     const empty = await service.createProject('Loop song')
     const one = await studioAssetFixture(empty.id)
-    const two = await studioAssetFixture(empty.id, 'asset-two', 0.3)
     const base = studioArrangementFixture(empty)
+    const passes = { firstFrame: 4, frames: 20, count: 3 }
     const project = {
       ...base,
       clips: [
         {
           ...base.clips[0],
-          assetId: 'asset-two',
-          passes: ['asset-one', 'asset-two'],
+          sourceInFrame: 24,
+          sourceOutFrame: 44,
+          fades: { curve: 'linear-amplitude' as const },
+          passes,
         },
       ],
     }
     const lease = await service.acquireLease(empty.id, 'tab-one')
-    await service.saveProject(project, { ...lease, expectedRevision: 0 }, [
-      one,
-      two,
-    ])
+    await service.saveProject(project, { ...lease, expectedRevision: 0 }, [one])
     const archive = await createStudioBackup(
       project,
       (id) => service.readAssetBytes(project.id, id),
-      { assetMetadata: [one.asset, two.asset] },
+      { assetMetadata: [one.asset] },
     )
     await db.destroy()
     db = new DexieAdapter()
     const restored = await restoreStudioBackup(archive, service)
     const [clip] = restored.clips
-    expect(clip.passes).toHaveLength(2)
-    expect(clip.assetId).toBe(clip.passes![1])
+    expect(clip).toMatchObject({
+      sourceInFrame: 24,
+      sourceOutFrame: 44,
+      passes,
+    })
     const heard = await service.readAssetBytes(restored.id, clip.assetId)
     expect(await heard.canonicalPcm.arrayBuffer()).toEqual(
-      await two.canonicalPcm.arrayBuffer(),
+      await one.canonicalPcm.arrayBuffer(),
     )
     expect(
-      (await service.listAssets(restored.id)).map((asset) => asset.id).sort(),
-    ).toEqual([...clip.passes!].sort())
+      (await service.listAssets(restored.id)).map((asset) => asset.id),
+    ).toEqual([clip.assetId])
   })
 
   it('backs up an unsaved revision and staged audio without pretending it was persisted', async () => {

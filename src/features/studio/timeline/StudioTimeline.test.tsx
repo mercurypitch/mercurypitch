@@ -111,10 +111,17 @@ describe('Studio timeline', () => {
 
   it("names the pass a loop take's clip plays, and picks another from its toolbar", () => {
     const command = vi.fn(() => true)
-    const passes = ['take-2-pass-1', 'take-2-pass-2', 'take-2-pass-3']
+    // Three passes of the take's one audio, the second heard.
     const looped = {
       ...project,
-      clips: [{ ...project.clips[0], assetId: passes[1], passes }],
+      clips: [
+        {
+          ...project.clips[0],
+          sourceInFrame: 96000,
+          sourceOutFrame: 192000,
+          passes: { firstFrame: 0, frames: 96000, count: 3 },
+        },
+      ],
     }
     render(() => (
       <StudioTimeline
@@ -125,22 +132,24 @@ describe('Studio timeline', () => {
       />
     ))
     expect(
-      screen.getByRole('button', { name: /^Lead vocal, Lead vocal of 3, / }),
+      screen.getByRole('button', {
+        name: /^Lead vocal, Lead vocal, pass 2 of 3, /,
+      }),
     ).toBeInTheDocument()
     const picker = screen.getByRole('combobox', {
       name: 'Pass this clip plays',
     })
-    expect(picker).toHaveValue(passes[1])
+    expect(picker).toHaveValue('1')
     expect(
       within(picker)
         .getAllByRole('option')
         .map((option) => option.textContent),
     ).toEqual(['1 of 3', '2 of 3', '3 of 3'])
-    fireEvent.change(picker, { target: { value: passes[2] } })
+    fireEvent.change(picker, { target: { value: '2' } })
     expect(command).toHaveBeenCalledWith({
       type: 'choose-pass',
       clipId: 'clip',
-      assetId: passes[2],
+      pass: 2,
     })
   })
 
@@ -425,10 +434,16 @@ describe('Studio timeline', () => {
   })
 
   it('keeps the dock to the seven icon commands it has room for: Range and the pass list stay on the floating bar', () => {
-    const passes = ['take-2-pass-1', 'take-2-pass-2']
     const looped = {
       ...project,
-      clips: [{ ...project.clips[0], assetId: passes[1], passes }],
+      clips: [
+        {
+          ...project.clips[0],
+          sourceInFrame: 96000,
+          sourceOutFrame: 192000,
+          passes: { firstFrame: 0, frames: 96000, count: 2 },
+        },
+      ],
     }
     const [deskOpen, setDeskOpen] = createSignal(true)
     const { container } = render(() => (
@@ -450,7 +465,7 @@ describe('Studio timeline', () => {
     expect(within(bar).getByRole('button', { name: 'Range' })).toBeEnabled()
     expect(
       within(bar).getByRole('combobox', { name: 'Pass this clip plays' }),
-    ).toHaveValue(passes[1])
+    ).toHaveValue('1')
   })
 
   it('says a notice in the status pill, and says it again when it comes again', () => {

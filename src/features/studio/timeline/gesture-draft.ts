@@ -1,4 +1,5 @@
 // Studio gesture drafts — pure move, trim and source-fade previews without project writes.
+import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import { clipEndFrame } from './timeline-geometry'
@@ -108,6 +109,11 @@ export function draftStudioGesture(
     })
   let next = clip
   let snapFrame: number | null = null
+  // A loop take's clip trims inside its pass (clip-passes.ts).
+  const bounds = studioClipSourceBounds(
+    clip,
+    input.asset?.normalizedFrameCount ?? clip.sourceOutFrame,
+  )
   if (input.kind === 'move') {
     const position = snap(
       clip.startFrame + input.deltaFrames,
@@ -120,7 +126,7 @@ export function draftStudioGesture(
   } else if (input.kind === 'trim-head') {
     const position = snap(
       clip.startFrame + input.deltaFrames,
-      Math.max(0, clip.startFrame - clip.sourceInFrame),
+      Math.max(0, clip.startFrame - clip.sourceInFrame + bounds.first),
       clipEndFrame(clip) - 1,
     )
     next = {
@@ -130,12 +136,10 @@ export function draftStudioGesture(
     }
     snapFrame = position.target
   } else if (input.kind === 'trim-tail') {
-    const sourceLength =
-      input.asset?.normalizedFrameCount ?? clip.sourceOutFrame
     const position = snap(
       clipEndFrame(clip) + input.deltaFrames,
       clip.startFrame + 1,
-      clip.startFrame + sourceLength - clip.sourceInFrame,
+      clip.startFrame + bounds.end - clip.sourceInFrame,
     )
     next = {
       ...clip,

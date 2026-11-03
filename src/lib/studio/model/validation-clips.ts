@@ -1,7 +1,7 @@
 // Studio clip validation — source-anchored envelopes and lane occupancy survive non-destructive edits.
 import { TRACK_ROLES } from '@/lib/studio-fx/role-chains'
-import { STUDIO_MAX_CLIP_PASSES } from './clip-passes'
-import type { StudioAsset, StudioClip, StudioTrack } from './types'
+import { STUDIO_MAX_CLIP_PASSES, studioPassAt, studioPassWindow, } from './clip-passes'
+import type { StudioAsset, StudioClip, StudioClipPasses, StudioTrack, } from './types'
 import { validateStudioChain } from './validation-fx'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
 
@@ -56,8 +56,6 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
   )
   for (const key of ['id', 'trackId', 'assetId'])
     idValue(value[key], `${path}.${key}`)
-  if (Object.hasOwn(value, 'passes'))
-    validateClipPasses(value.passes, value.assetId, `${path}.passes`)
   const start = frameValue(value.startFrame, `${path}.startFrame`)
   const sourceIn = frameValue(value.sourceInFrame, `${path}.sourceInFrame`)
   const sourceOut = frameValue(
@@ -99,22 +97,44 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
     `${path}.fades`,
     'Fade ramps overlap',
   )
+  if (Object.hasOwn(value, 'passes'))
+    validateClipPasses(clip, value.passes, `${path}.passes`)
   return structuredClone(clip)
 }
 
-/** A loop take's passes: two or more distinct ids, the heard one among them. */
-function validateClipPasses(raw: unknown, heard: unknown, path: string): void {
+/**
+ * A loop take's passes: two to the most a clip keeps, each at least a frame,
+ * and the clip, fades and all, inside one of them, so it can move to any.
+ */
+function validateClipPasses(
+  clip: StudioClip,
+  raw: unknown,
+  path: string,
+): void {
+  const value = record(raw, path, ['firstFrame', 'frames', 'count'])
+  frameValue(value.firstFrame, `${path}.firstFrame`)
+  frameValue(value.frames, `${path}.frames`, 1)
+  const count = frameValue(value.count, `${path}.count`, 2)
   requireValue(
-    Array.isArray(raw) &&
-      raw.length >= 2 &&
-      raw.length <= STUDIO_MAX_CLIP_PASSES,
-    path,
+    count <= STUDIO_MAX_CLIP_PASSES,
+    `${path}.count`,
     `A clip keeps 2 to ${STUDIO_MAX_CLIP_PASSES} passes`,
   )
-  const passes = raw as unknown[]
-  passes.forEach((id, index) => idValue(id, `${path}.${index}`))
-  requireValue(new Set(passes).size === passes.length, path, 'Duplicate pass')
-  requireValue(passes.includes(heard), path, 'The heard pass is not kept')
+  const passes = raw as StudioClipPasses
+  const heard = studioPassAt(passes, clip.sourceInFrame)
+  const window = studioPassWindow(passes, heard)
+  const inside = (frame: number) => frame >= window.first && frame <= window.end
+  requireValue(
+    heard >= 0 &&
+      heard < count &&
+      clip.sourceOutFrame <= window.end &&
+      [clip.fades.in, clip.fades.out].every(
+        (ramp) =>
+          !ramp || (inside(ramp.fromSourceFrame) && inside(ramp.toSourceFrame)),
+      ),
+    path,
+    'The clip is not inside one of its passes',
+  )
 }
 
 export function validateClipAsset(clip: StudioClip, asset: StudioAsset): void {
@@ -122,6 +142,14 @@ export function validateClipAsset(clip: StudioClip, asset: StudioAsset): void {
     clip.sourceOutFrame <= asset.normalizedFrameCount,
     `clip.${clip.id}`,
     'Source bounds exceed owned audio',
+  )
+  // Every pass a loop take's clip can move to is audio it owns.
+  requireValue(
+    !clip.passes ||
+      clip.passes.firstFrame + clip.passes.count * clip.passes.frames <=
+        asset.normalizedFrameCount,
+    `clip.${clip.id}.passes`,
+    'Passes exceed owned audio',
   )
   for (const ramp of [clip.fades.in, clip.fades.out])
     requireValue(

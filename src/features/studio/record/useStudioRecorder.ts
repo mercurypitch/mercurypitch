@@ -27,7 +27,6 @@ import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { isInsideOverlay, isTypingTarget } from '@/lib/space-playback'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
-import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { openStudioCapture, prepareStudioRecorderWorklet, } from '@/lib/studio/record/capture-node'
 import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
@@ -36,18 +35,18 @@ import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/stud
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
 import { createStudioRecorder } from '@/lib/studio/record/studio-recorder'
 import { pcm16ToFloat } from '@/lib/studio/record/take-audio'
-import { isStudioTakeAsset } from '@/lib/studio/record/take-passes'
+import { studioTakeClip } from '@/lib/studio/record/take-passes'
 import type { StudioTakeCut } from '@/lib/studio/record/take-plan'
 import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
-import { placeHeardTake, studioRoundTrip, } from '@/lib/studio/record/take-timing'
+import { studioRoundTrip } from '@/lib/studio/record/take-timing'
 import { micLatencyPathMs } from '@/stores/mic-latency-path-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { useStudioTransport } from '../audio/useStudioTransport'
-import type { StudioPassesImport, StudioRecordingImport, } from '../controller/imports'
+import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioTimelineRecording } from '../timeline/types'
 import { createStudioInputs } from './studio-inputs'
-import { studioTakeImport } from './take-import'
+import { studioTakeFrames, studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
 
 /** The microphone hold and the mic icon share this id. */
@@ -60,9 +59,7 @@ export interface StudioRecorderOptions {
   readonly assets: Accessor<readonly StudioAsset[]>
   /** The song takes edits here now. */
   readonly canEdit: Accessor<boolean>
-  addRecording(
-    take: StudioRecordingImport | StudioPassesImport,
-  ): Promise<boolean>
+  addRecording(take: StudioRecordingImport): Promise<boolean>
   readonly transport: Pick<
     Transport,
     | 'playing'
@@ -94,18 +91,12 @@ const MIC_ERRORS: Record<MicError['kind'], string> = {
   unknown: "Studio can't open your microphone. Press Record to try again.",
 }
 
-/** What to say when the microphone, the memory or the recorder would not start. */
-/** Whether a journaled take holds anything past its trim to the frame the singer heard. */
-function placesSomething(row: {
-  readonly frames: number
-  readonly sampleRate: number
-  readonly heardFirst: number
-  readonly fromFrame: number | null
-}): boolean {
-  const frames = Math.round((row.frames * STUDIO_SAMPLE_RATE) / row.sampleRate)
-  return placeHeardTake(row.heardFirst, row.fromFrame, frames) !== null
+/** Whether a journaled take keeps anything: past its trim to the frame heard, of a punch's range or of a loop's. */
+function placesSomething(row: StudioTakeJournalRecord): boolean {
+  return studioTakeClip(row, studioTakeFrames(row)) !== null
 }
 
+/** What to say when the microphone, the memory or the recorder would not start. */
 export function describeStudioRecordError(error: unknown): string {
   const kind = (error as Partial<MicError> | null)?.kind
   if (typeof kind === 'string' && kind in MIC_ERRORS)
@@ -391,12 +382,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     try {
       const rows = await journal.list(current.id)
       const stored = untrack(options.assets).map((asset) => asset.id)
-      // A take stored before its rows could go, or one whose tab closed in
-      // its count-in, leaving nothing past the trim: its rows go now.
+      // A take stored before its rows could go, or one that keeps nothing (a
+      // tab closed in its count-in, or before a range held enough of it):
+      // its rows go now.
       const offered = rows.filter(
-        (row) =>
-          !stored.some((id) => isStudioTakeAsset(row.id, id)) &&
-          placesSomething(row),
+        (row) => !stored.includes(row.id) && placesSomething(row),
       )
       for (const row of rows)
         if (!offered.includes(row))
@@ -555,7 +545,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
 
 export type StudioRecorderHandle = ReturnType<typeof useStudioRecorder>
 
-/** The next take's number: one past the highest a recorded take's file carries ("Take 3, pass 2.wav" is take 3). */
+/** The next take's number: one past the highest a recorded take's file carries ("Take 3.wav" is take 3). */
 export function studioNextTakeNumber(assets: readonly StudioAsset[]): number {
   let highest = 0
   for (const asset of assets) {
