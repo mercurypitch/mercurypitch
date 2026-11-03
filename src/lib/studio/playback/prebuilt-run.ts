@@ -32,6 +32,7 @@ import { resolveStudioSoundGraph } from '../export/sound-graph'
 import type { StudioAsset, StudioProject } from '../model/types'
 import type { buildStudioGraph } from './graph'
 import { firstThatFits, studioRunLayouts } from './live-edit'
+import type { StudioFrameRange } from './loop-range'
 import type { StudioAdmitSources } from './prepare-plan'
 import { admitStudioRun, planLatencySeconds, prepareStudioMaster, } from './prepare-plan'
 import type { StudioRun } from './run'
@@ -39,6 +40,8 @@ import { buildParkedStudioRun } from './run'
 
 export interface StudioPrebuildOptions {
   readonly repeat: boolean
+  /** The range Repeat plays, when it plays one: the run is built for it. */
+  readonly loop?: StudioFrameRange | null
   /** The measured master gains a Play from silence would start with. */
   readonly measured: StudioMasterGain
   readonly buildGraph: typeof buildStudioGraph
@@ -70,9 +73,10 @@ export async function prebuildStudioRun(
     signal,
     options.sources.measure,
   )
-  // From the song's start, with the silent lanes or without them.
+  // From the song's start (or the range's), with the silent lanes or without them.
   const request = { project, assets, ctx, master }
-  const admitted = await firstThatFits(studioRunLayouts(0, true), (layout) =>
+  const layouts = studioRunLayouts(0, true, options.loop ?? null)
+  const admitted = await firstThatFits(layouts, (layout) =>
     admitStudioRun(request, layout, signal, options.sources),
   )
   try {

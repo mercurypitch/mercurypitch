@@ -6,6 +6,7 @@ import { StudioMemoryError } from '../memory-budget'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import type { StudioProject, StudioTrack } from '../model/types'
 import type { StudioGraph } from './graph'
+import type { StudioFrameRange } from './loop-range'
 
 /** How a run is built: which lanes, and where its plan starts. */
 export interface StudioRunLayout {
@@ -13,6 +14,8 @@ export interface StudioRunLayout {
   readonly silentLanes: boolean
   /** The plan's first frame: 0 lets a run loop to the song's start when Repeat comes on. */
   readonly start: number
+  /** The plan's end when Repeat plays a range (loop-range.ts); absent for the song's own end. */
+  readonly end?: number
 }
 
 /**
@@ -24,7 +27,15 @@ export interface StudioRunLayout {
 export function studioRunLayouts(
   from: number,
   repeat: boolean,
+  loop: StudioFrameRange | null = null,
 ): StudioRunLayout[] {
+  // A range repeats from its start to its end, whatever the song's length.
+  if (loop !== null)
+    return [true, false].map((silentLanes) => ({
+      silentLanes,
+      start: loop.startFrame,
+      end: loop.endFrame,
+    }))
   const layouts = [
     { silentLanes: true, start: 0 },
     { silentLanes: false, start: 0 },

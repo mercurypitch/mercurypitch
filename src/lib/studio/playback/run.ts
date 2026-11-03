@@ -17,6 +17,7 @@ import type { StudioProject } from '../model/types'
 import type { StudioBufferLease } from './buffer-cache'
 import type { buildStudioGraph, StudioGraph, StudioGraphOptions, StudioGraphQuality, } from './graph'
 import type { StudioFrozenLane } from './lane-freeze'
+import { wrapLoopFrame } from './loop-range'
 import type { StudioPlaybackTier } from './playback-quality'
 import { livePlaybackTier, notePlayout, TIER_PROFILES, } from './playback-quality'
 import type { StudioSongShape } from './song-load'
@@ -138,8 +139,10 @@ export interface StudioRun {
   untilFrame: number
   /** The longest chain tail among the lanes heard now. */
   tailFrames: number
-  /** Its plan starts at the song's start, so it can loop there. */
+  /** Its plan starts at the song's start, or repeats a range, so it can loop there. */
   canLoop: boolean
+  /** The end its plan keeps through edits: the range Repeat plays (loop-range.ts), or null for the song's end. */
+  readonly fixedEnd: number | null
 }
 
 /** The frame a run plays at `time`, before any wrap: fractional, and earlier than its start before it is heard. */
@@ -184,7 +187,9 @@ export function runPosition(
   const frame = Math.floor(
     runTimelineFrame(run, Math.max(time, run.audibleEpoch)),
   )
-  return frame >= run.untilFrame ? run.endFrame : frame % run.endFrame
+  return frame >= run.untilFrame
+    ? run.endFrame
+    : wrapLoopFrame(frame, run.firstFrame, run.endFrame)
 }
 
 /** The song frame at the speakers now: what the playhead shows. */
@@ -240,6 +245,8 @@ export interface StudioRunParts {
   readonly master: ChainSpec
   readonly measured: StudioMasterGain
   readonly repeat: boolean
+  /** The range end its plan keeps when Repeat plays a range (prepare-plan.ts). */
+  readonly fixedEnd?: number | null
   readonly timing: StudioRunTiming
   /** Seconds from a clip's start to the speakers: lane compensation and the master's latency. */
   readonly latency: number
@@ -456,6 +463,7 @@ function runOf(
     latency: parts.latency,
     untilFrame: parts.repeat ? Infinity : plan.endFrame,
     tailFrames: plan.tailFrames,
-    canLoop: plan.startFrame === 0,
+    canLoop: plan.startFrame === 0 || (parts.fixedEnd ?? null) !== null,
+    fixedEnd: parts.fixedEnd ?? null,
   }
 }
