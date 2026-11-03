@@ -33,6 +33,29 @@ describe('the song', () => {
   })
 })
 
+describe('the lane’s notes', () => {
+  it('carries each at its own pitch, as the phone’s lane has it: none rounded, folded or moved', () => {
+    const lane = [
+      { midi: 40, startSec: 1, endSec: 1.5 },
+      { midi: 64.37, startSec: 2, endSec: 2.5 },
+      { midi: 88, startSec: 3, endSec: 4 },
+    ]
+
+    const song = tvStageSong({
+      title: 'River Road',
+      duration: 10,
+      notes: lane,
+      lyrics: [],
+    })
+
+    expect(song.notes).toEqual([
+      { t0: 1, t1: 1.5, midi: 40 },
+      { t0: 2, t1: 2.5, midi: 64.37 },
+      { t0: 3, t1: 4, midi: 88 },
+    ])
+  })
+})
+
 describe('the singer’s readings', () => {
   const history = [
     { time: 10, frequency: 440 },

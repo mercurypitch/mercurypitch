@@ -12,12 +12,16 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LyricWindowSegment } from '@/lib/lyric-window-script'
+import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState } from '@/lib/tv-stage/model'
 import type { Written } from '@/lib/tv-stage/recording-context.fixture'
-import { recordingContext, widthOf, } from '@/lib/tv-stage/recording-context.fixture'
-import { drawTvStage, LYRIC_FLOOR_PX, lyricSpots, SUNG_LINE_PX, TV_STAGE_COLORS, tvStageLayout, } from '@/lib/tv-stage/renderer'
+import { recordingContext, recordingSprites, widthOf, } from '@/lib/tv-stage/recording-context.fixture'
+import { createTvStageView, drawTvStage, LYRIC_FLOOR_PX, lyricSpots, SUNG_LINE_PX, TV_STAGE_COLORS, } from '@/lib/tv-stage/renderer'
 
 const LAYOUT = tvStageLayout(1920, 1080)
+
+/** The stage's sprites, on canvases that record. */
+const VIEW = createTvStageView(recordingSprites().factory)
 
 /** A sung segment from `at`, each word given `perWord` seconds to fill. */
 function sungSegment(
@@ -89,7 +93,7 @@ describe('the line being sung', () => {
       const layout = tvStageLayout(screen.width, screen.height)
       const segment = sungSegment(10, LONG, NEXT)
 
-      drawTvStage(ctx, lyricState([segment], 10), 0, screen)
+      drawTvStage(ctx, lyricState([segment], 10), 0, screen, VIEW)
 
       const written = writtenOf(texts, segment.current)
       expect(written.map((piece) => piece.text)).toEqual(segment.current)
@@ -111,7 +115,7 @@ describe('the line being sung', () => {
       const layout = tvStageLayout(screen.width, screen.height)
       const segment = sungSegment(10, RUN_ON, NEXT)
 
-      drawTvStage(ctx, lyricState([segment], 10), 0, screen)
+      drawTvStage(ctx, lyricState([segment], 10), 0, screen, VIEW)
 
       const written = writtenOf(texts, segment.current)
       expect(written.length).toBeGreaterThan(0)
@@ -125,7 +129,7 @@ describe('the line being sung', () => {
     const { ctx, texts } = recordingContext()
     const segment = sungSegment(10, RUN_ON, NEXT)
 
-    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT, VIEW)
 
     const written = writtenOf(texts, segment.current)
     const rows = rowsOf(written)
@@ -143,7 +147,7 @@ describe('the line being sung', () => {
   it('moves the two rows down when the singer starts the next row', () => {
     const before = recordingContext()
     const segment = sungSegment(10, RUN_ON, NEXT)
-    drawTvStage(before.ctx, lyricState([segment], 10), 0, LAYOUT)
+    drawTvStage(before.ctx, lyricState([segment], 10), 0, LAYOUT, VIEW)
     const shown = writtenOf(before.texts, segment.current)
     const second = shown.find((piece) => piece.y === rowsOf(shown)[1])
     const reached = segment.current.indexOf(second?.text ?? '')
@@ -154,6 +158,7 @@ describe('the line being sung', () => {
       lyricState([segment], 10.1 + reached * 0.4),
       0,
       LAYOUT,
+      VIEW,
     )
 
     const moved = writtenOf(after.texts, segment.current)
@@ -172,7 +177,7 @@ describe('the line being sung', () => {
       words: timed.current.map(() => [10, 10] as const),
     }
 
-    drawTvStage(ctx, lyricState([untimed], 12), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([untimed], 12), 0, LAYOUT, VIEW)
 
     const written = writtenOf(texts, untimed.current)
     expect(written[0]?.text).toBe('la0')
@@ -186,7 +191,7 @@ describe('the line being sung', () => {
 
     // Eight words lit on the first row, and 'back', the first on the second,
     // half way: it fills from 13.2 s to 13.6 s.
-    drawTvStage(ctx, lyricState([segment], 13.4), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([segment], 13.4), 0, LAYOUT, VIEW)
 
     const written = writtenOf(texts, segment.current)
     const rows = rowsOf(written)
@@ -222,7 +227,7 @@ describe('the line being sung', () => {
       const layout = tvStageLayout(screen.width, screen.height)
       const segment = sungSegment(10, LONG, NEXT)
 
-      drawTvStage(ctx, lyricState([segment], 10), 0, screen)
+      drawTvStage(ctx, lyricState([segment], 10), 0, screen, VIEW)
 
       const written = writtenOf(texts, segment.current)
       const [first, second] = rowsOf(written)
@@ -242,9 +247,9 @@ describe('the line being sung', () => {
     const { ctx, measured } = recordingContext()
     const state = lyricState([sungSegment(10, LONG, NEXT)], 11)
 
-    drawTvStage(ctx, state, 0, LAYOUT)
+    drawTvStage(ctx, state, 0, LAYOUT, VIEW)
     const first = measured()
-    drawTvStage(ctx, state, 0, LAYOUT)
+    drawTvStage(ctx, state, 0, LAYOUT, VIEW)
     const second = measured() - first
 
     expect(first - second).toBeGreaterThanOrEqual(LONG.split(' ').length)
@@ -256,7 +261,7 @@ describe('the line waited for in a rest', () => {
     const { ctx, texts } = recordingContext()
     const rest = { at: 0, current: [], next: LONG, words: [] }
 
-    drawTvStage(ctx, lyricState([rest], 1), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([rest], 1), 0, LAYOUT, VIEW)
 
     const written = writtenOf(texts, LONG.split(' '))
     const rows = rowsOf(written)
@@ -280,7 +285,7 @@ describe('the next line', () => {
     const { ctx, texts } = recordingContext()
     const segment = sungSegment(10, 'Sing it slow', SOMEWHAT_LONG)
 
-    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT, VIEW)
 
     const next = texts.find((piece) => piece.text === SOMEWHAT_LONG)
     expect(next?.px).toBe(36)
@@ -290,7 +295,7 @@ describe('the next line', () => {
     const { ctx, texts } = recordingContext()
     const segment = sungSegment(10, RUN_ON, 'Sing it slow')
 
-    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT)
+    drawTvStage(ctx, lyricState([segment], 10), 0, LAYOUT, VIEW)
 
     const next = texts.find((piece) => piece.text === 'Sing it slow')
     expect(next?.px).toBe(LYRIC_FLOOR_PX)
@@ -303,7 +308,7 @@ describe('the next line', () => {
       const layout = tvStageLayout(screen.width, screen.height)
       const segment = sungSegment(10, 'Sing it slow', RUN_ON)
 
-      drawTvStage(ctx, lyricState([segment], 10), 0, screen)
+      drawTvStage(ctx, lyricState([segment], 10), 0, screen, VIEW)
 
       const next = texts.find((piece) => piece.color === TV_STAGE_COLORS.next)
       expect(next?.px).toBe(LYRIC_FLOOR_PX * layout.unit)

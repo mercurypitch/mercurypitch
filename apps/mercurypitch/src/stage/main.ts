@@ -8,6 +8,10 @@
 // message to `window.__mpStage.receive` as JSON, and every frame of the
 // TV's display draws the state those messages built.
 //
+// The stage's glass (the lane's panel, its notes, the singer's dot) is
+// painted once per screen size onto canvases of its own and stamped from
+// then on (src/lib/tv-stage/sprites.ts); the view keeps them across frames.
+//
 // A message this page does not understand is dropped (protocol.ts). Opened
 // in a browser it shows the idle screen and waits, which is how it can be
 // looked at without a TV: call `__mpStage.receive` from the console.
@@ -15,7 +19,7 @@
 import type { TvStageState } from '@/lib/tv-stage/model'
 import { applyTvStageMessage, EMPTY_TV_STAGE } from '@/lib/tv-stage/model'
 import { readTvStageMessage } from '@/lib/tv-stage/protocol'
-import { drawTvStage } from '@/lib/tv-stage/renderer'
+import { createTvStageView, drawTvStage } from '@/lib/tv-stage/renderer'
 
 declare global {
   interface Window {
@@ -25,6 +29,7 @@ declare global {
 }
 
 let state: TvStageState = EMPTY_TV_STAGE
+const view = createTvStageView()
 
 window.__mpStage = {
   receive: (json) => {
@@ -48,7 +53,7 @@ function fit(target: HTMLCanvasElement): { width: number; height: number } {
 
 function frame(): void {
   if (canvas instanceof HTMLCanvasElement && ctx !== null) {
-    drawTvStage(ctx, state, Date.now(), fit(canvas))
+    drawTvStage(ctx, state, Date.now(), fit(canvas), view)
   }
   requestAnimationFrame(frame)
 }

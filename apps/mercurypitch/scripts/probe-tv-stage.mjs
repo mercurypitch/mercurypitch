@@ -28,11 +28,20 @@
 //     edge (REQ-TV-020, Play TV-OV);
 //   - opaque: the canvas fills the viewport at the screen's own pixels, and
 //     every pixel of it is opaque (REQ-TV-021, Play TV-LO);
-//   - floor: no lyric is written under 32 px per 1080 lines (REQ-TV-022).
-//     Other text is reported against the same floor, and not failed: the
-//     requirement is for the lyrics;
+//   - floor: no lyric is written under 32 px per 1080 lines (REQ-TV-022),
+//     and nothing on the lane either: its C names and the name of the note
+//     under the now marker. Other text is reported against the same floor,
+//     and not failed;
 //   - clear: no lyric ink lands on the lane, and no two lyric rows touch,
-//     the next line included (measured from the font's own ink boxes).
+//     the next line included (measured from the font's own ink boxes);
+//   - glass: the lane draws its notes in their yellow glass. They are
+//     sprites painted once on canvases of their own (src/lib/tv-stage/
+//     sprites.ts), and a page that could not make one would draw an empty
+//     lane with no error anywhere.
+//
+// The lane's box is worked out here as tvStageLayout works it out
+// (src/lib/tv-stage/layout.ts): the lane is drawn from sprites, so no fill
+// the renderer makes outlines it.
 //
 // The page draws in the system font. Headless Chromium has no SF Pro, so its
 // shots are close to the TV's, not the same: here the font is whatever
@@ -192,11 +201,13 @@ const SCENES = [
 /**
  * Installed before the stage's own script: records what each frame writes
  * and fills, with each text's ink box as the font measures it. A frame
- * starts where the renderer fills the whole canvas with its background.
+ * starts where the renderer covers the whole canvas: with its background
+ * filled, or with a song on, the stage's backdrop stamped (the background,
+ * the light and the lane's glass, painted once per size).
  */
 function installRecorder() {
   const proto = CanvasRenderingContext2D.prototype
-  const { fillRect, fillText } = proto
+  const { drawImage, fillRect, fillText } = proto
   const probe = { frame: null }
   window.__mpProbe = probe
   proto.fillRect = function (x, y, w, h) {
@@ -205,6 +216,16 @@ function installRecorder() {
     if (whole) probe.frame = { texts: [], rects: [] }
     else probe.frame?.rects.push({ x, y, w, h })
     return fillRect.call(this, x, y, w, h)
+  }
+  proto.drawImage = function (image, ...args) {
+    const whole =
+      args.length === 2 &&
+      args[0] === 0 &&
+      args[1] === 0 &&
+      image.width === this.canvas.width &&
+      image.height === this.canvas.height
+    if (whole) probe.frame = { texts: [], rects: [] }
+    return drawImage.call(this, image, ...args)
   }
   proto.fillText = function (text, x, y, ...rest) {
     const ink = this.measureText(text)
@@ -367,15 +388,35 @@ function without(all, some) {
   })
 }
 
-/** The lane: every fill but the background's, which only the lane draws. */
-function laneOf(rects) {
-  if (rects.length === 0) return null
-  return {
-    x0: Math.min(...rects.map((r) => r.x)),
-    y0: Math.min(...rects.map((r) => r.y)),
-    x1: Math.max(...rects.map((r) => r.x + r.w)),
-    y1: Math.max(...rects.map((r) => r.y + r.h)),
+/**
+ * The lane's box on a canvas this size, as tvStageLayout has it
+ * (src/lib/tv-stage/layout.ts): inside the 5% inset, below the header's 12%
+ * of it and a 3% gap, half the inset's height tall.
+ */
+function laneBox(width, height) {
+  const safe = {
+    x: width * 0.05,
+    y: height * 0.05,
+    w: width * 0.9,
+    h: height * 0.9,
   }
+  const y0 = safe.y + safe.h * 0.12 + safe.h * 0.03
+  return { x0: safe.x, y0, x1: safe.x + safe.w, y1: y0 + safe.h * 0.5 }
+}
+
+/** The lane's notes are yellow glass: this many of its pixels are. */
+function noteGlass({ lane }) {
+  const canvas = document.getElementById('stage')
+  const pixels = window.__mpProbe.pixels
+  let glass = 0
+  for (let y = Math.ceil(lane.y0); y < Math.floor(lane.y1); y++) {
+    for (let x = Math.ceil(lane.x0); x < Math.floor(lane.x1); x++) {
+      const i = (y * canvas.width + x) * 4
+      const [r, g, b] = [pixels[i], pixels[i + 1], pixels[i + 2]]
+      if (r > 220 && g > 150 && g < 235 && b < 110) glass += 1
+    }
+  }
+  return glass
 }
 
 /** Lyric texts in rows by height, each with its ink box, top first. */
@@ -412,7 +453,8 @@ async function runScene(page, view, scene, shots) {
     await page.screenshot({ path: join(shots, `${name}.png`) })
   const result = { name, scene: scene.name, view: view.name, full, errors }
   if (scene.name === 'idle') return result
-  const lane = laneOf(full.record.rects)
+  const lane = laneBox(full.width, full.height)
+  const glass = await page.evaluate(noteGlass, { lane })
   await send(page, song(false))
   const bare = await page.evaluate(readCanvas, { ...READ, against: { lane } })
   const lyricTexts = without(full.record.texts, bare.record.texts)
@@ -426,7 +468,7 @@ async function runScene(page, view, scene, shots) {
     })),
     color: SUNG,
   })
-  return { ...result, lane, bare, lyricTexts, rows, sung }
+  return { ...result, lane, glass, bare, lyricTexts, rows, sung }
 }
 
 // ── The checks ───────────────────────────────────────────────
@@ -456,6 +498,14 @@ function judge(result, view) {
   for (const text of result.lyricTexts) {
     if (text.px < floor - 1e-6) fail(`"${text.text}" at ${text.px} px`)
   }
+  for (const text of onLane(result.bare.record.texts, result.lane)) {
+    if (text.px < floor - 1e-6) {
+      fail(`the lane's "${text.text}" at ${text.px} px`)
+    }
+  }
+  if (result.glass < 200 * unit * unit) {
+    fail(`only ${result.glass} px of the notes' yellow glass on the lane`)
+  }
   if (result.bare.changed.inLane > 0) {
     fail(`${result.bare.changed.inLane} lyric pixels on the lane`)
   }
@@ -472,6 +522,12 @@ function judge(result, view) {
 }
 
 const per1080 = (px, height) => Math.round((px * 1080) / height)
+
+/** The texts written inside the lane's box. */
+const onLane = (texts, lane) =>
+  texts.filter(
+    (t) => t.x >= lane.x0 && t.x <= lane.x1 && t.y >= lane.y0 && t.y <= lane.y1,
+  )
 
 function describe(result) {
   const { full } = result
@@ -490,11 +546,14 @@ function describe(result) {
     ...new Set(
       result.bare.record.texts.map(
         (t) =>
-          `${/^[A-G]#?$/u.test(t.text) ? 'row labels' : t.text} ${per1080(t.px, height)}`,
+          `${/^[A-G]#?\d$/u.test(t.text) ? 'note names' : t.text} ${per1080(t.px, height)}`,
       ),
     ),
   ]
   lines.push(`          other text per 1080: ${other.join(', ')}`)
+  lines.push(
+    `          lane ${Math.round(result.lane.y0)}..${Math.round(result.lane.y1)}: ${result.glass} px of note glass`,
+  )
   result.rows.forEach((row, index) => {
     const sung = result.sung[index]
     const share = sung.ink > 0 ? Math.round((100 * sung.near) / sung.ink) : 0

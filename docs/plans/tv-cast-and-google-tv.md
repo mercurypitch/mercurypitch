@@ -667,8 +667,9 @@ production lifecycle and polish.
   `useStemMixerCanvasController.ts`. A library module cannot import a
   feature, and the stage page must load nothing of the app; the renderer
   restates the lane's colours and folds notes to pitch classes as the
-  phone's lane does during a song. A 5% overscan margin, type sized from the
-  screen's height. The page is `apps/mercurypitch/stage.html`, in test
+  phone's lane does during a song (since 2026-11-03 the lane is the zen
+  ribbon drawn for a TV instead: P2, step 3). A 5% overscan margin, type
+  sized from the screen's height. The page is `apps/mercurypitch/stage.html`, in test
   builds only.
 - 3b: as proposed. Version 1 of the protocol has three messages: `song`
   (title, length, notes, lyrics), `frame` (position read at a wall-clock
@@ -839,6 +840,57 @@ spread the app offers lyrics only and says why.
    type is not SF Pro. Not in it: host mode; a frame cap, which waits on the
    device test; and `device-tier.ts`, which reads storage, and `REQ-TV-101`
    keeps the stage from storage.
+
+   **As built, the lane as the phone's ribbon (branch
+   `feat/tv-stage-ribbon`, 2026-11-03):** the owner, on the LG C2, saw the
+   TV's notes differ from the ribbon over the phone's lyrics. They are the
+   same notes. Since 5.2 the TV draws the mixer's `laneNotes`, the very memo
+   the ribbon reads: the analysis's cleaned notes with Pitch Studio's edits,
+   in the key heard. The build tried (mp-v0.8.52) predates that and read
+   the stored cleaned notes itself, which for the bundled songs, with no
+   edits, is the same set. Held against each bundled vocal stem's own pitch
+   (the repo's MPM and YIN at a 10 ms hop, kept where they agree within 50
+   cents), the cleaned set and the raw merge the analysis also stores, for
+   Goodbye to Spring, Josephine and Nothing in the Dark:
+
+   | Measured on the stem                                | Cleaned (both screens) | Raw merge     |
+   | --------------------------------------------------- | ---------------------- | ------------- |
+   | Notes                                               | 192, 209, 229          | 447, 429, 368 |
+   | Voiced frames within 50 cents of the note then      | 53%, 64%, 54%          | 71%, 74%, 59% |
+   | Voiced frames with no note at all                   | 12%, 10%, 7%           | 5%, 3%, 3%    |
+   | Notes at the right pitch (median within 50 cents)   | 57%, 72%, 73%          | 62%, 64%, 58% |
+   | Note time with voice                                | 90%, 93%, 94%          | 92%, 93%, 95% |
+   | Note onsets within 50 ms of a sung onset            | 35%, 39%, 41%          | 35%, 43%, 43% |
+   | Sung onsets with a note onset within 50 ms          | 21%, 21%, 21%          | 49%, 46%, 36% |
+   | Notes over silence (under a quarter of them voiced) | 1, 1, 0                | 5, 11, 5      |
+
+   The cleaned set stays on both screens: per note it is right more often
+   in two songs of three and sits over silence far less; the raw merge
+   matches more voiced frames by keeping twice as many notes, the short and
+   the stray among them, which a lane would show as stutter. What differed
+   was the drawing. The TV folded every note into one octave's twelve rows,
+   and on a capable phone the ribbon never moved its band off G3 to G5, its
+   ease scaled by a frame cap that is Infinity there (fixed: it follows the
+   frame's time now, `ribbonBandEase`).
+
+   The lane is now that ribbon drawn for a TV (`src/lib/tv-stage/lane.ts`):
+   the ribbon's window (1.5 s behind the now marker, 5.5 s ahead) and its
+   band (the notes in view, two semitones of room, ten at least, eased a
+   tenth per sixtieth of a second, worked out from the position so a
+   paused stage holds still), the notes at their real pitch in yellow glass
+   on a panel of violet glass, the singer as one smoothed centripetal
+   Catmull-Rom curve judged as the ribbon judges (octave-agnostic, 50
+   cents), a note lit where it was sung on pitch, an empty tube where it
+   went by unsung, and names only at the C lines and in a chip naming the
+   note under the marker. The glass is painted once per screen size into
+   sprites (`src/lib/tv-stage/sprites.ts`); the background, the light and
+   the panel are one opaque backdrop a frame starts from, and no frame asks
+   for a blur. Frame time with a busy stretch of Nothing in the Dark, drawn
+   and flushed (a one-pixel readback), in headless Chromium's software
+   canvas: 3.0 ms at 1920x1080 and 8.4 ms at 3840x2160, against 2.1 and
+   5.5 ms for the folded lane (medians; p95 4.6 and 12.2 against 3.9 and
+   7.6). The probe also checks the lane's names against the 32 px floor and
+   that its notes' glass is drawn.
 
 4. The handoff remainder (2.5), and one song streamed from the phone (2.8).
    The waveform cache (2.7) only if P0 asks.

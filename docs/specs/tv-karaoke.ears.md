@@ -213,12 +213,13 @@ _Tests:_ `src/e2e/tv-dpad-walk.spec.ts` _(planned)_.
 The stage shall keep all text and controls inside an overscan-safe inset of
 at least 5% of each edge (Play TV-OV).
 _Tests:_ `src/lib/tv-stage/renderer.test.ts` ("keeps everything inside a 5%
-margin on every side", "cuts the lane’s notes and trail at its ends, the 5%
-margin’s edges", the view-mode stage); the screen check
+margin on every side", "cuts the lane to its panel, inside the 5% margin",
+the view-mode stage); the screen check
 `apps/mercurypitch/scripts/probe-tv-stage.mjs`, which finds every pixel that
 is not the background inside the inset at 1920x1080 and 3840x2160 in
-headless Chromium (it found the lane's note outlines and trail up to 4 px
-past it at 1080 lines, now cut at the lane's ends);
+headless Chromium (it found the folded lane's note outlines and trail up to
+4 px past it at 1080 lines; the lane is now drawn inside its glass panel,
+and the light around the panel fades out before the margin);
 `src/features/tv-stage/layout.test.ts` _(planned)_; app-check at 1920x1080
 for the host-mode stage.
 
@@ -245,13 +246,27 @@ an ellipsis while more follows; a line with no timing shows its first two.
 The line waited for in a rest wraps the same way. The next line is a one-row
 preview: it shrinks down to 32 px and no further, is then cut short, and is
 never bigger than the line being sung.
+_As built, the lane (2026-11-03):_ the phone's zen ribbon drawn for a TV.
+It shows the ribbon's notes in the ribbon's window, 1.5 s behind the now
+marker and 5.5 s ahead, at their real pitch in the ribbon's band (the notes
+in view, two semitones of room, ten at least, eased between phrases), not
+folded into twelve rows. The notes are yellow glass, lit where they were
+sung on pitch and an empty tube where they went by unsung; the singer is one
+smooth curve, judged as the ribbon judges (octave-agnostic, within 50 cents
+is on the note: green; off it, rose; with no note sounding, violet), fading
+behind the marker and ending in a dot. Its only names are the C lines' and
+the note under the marker's, at 32 px per 1080 lines.
 _Tests:_ `src/lib/tv-stage/lyric-wrap.test.ts`,
-`src/lib/tv-stage/renderer.lyrics.test.ts`; the screen check
+`src/lib/tv-stage/renderer.lyrics.test.ts`; the lane:
+`src/lib/tv-stage/lane.test.ts`, `lane-band.test.ts` and `lane-judge.test.ts`
+(the window, the band and the verdicts held to the ribbon's own functions),
+`trail-spline.test.ts`, `sprites.test.ts`; the screen check
 `apps/mercurypitch/scripts/probe-tv-stage.mjs` at 1920x1080 and 3840x2160
-(every lyric at 32 px per 1080 lines or more, no lyric ink on the lane, no
-two rows touching; headless Chromium has no SF Pro, so its type is close to
-the TV's, not the same). The host-mode stage:
-`src/features/tv-stage/layout.test.ts` _(planned)_.
+(every lyric and every name on the lane at 32 px per 1080 lines or more, no
+lyric ink on the lane, no two rows touching, the notes' glass drawn;
+headless Chromium has no SF Pro, so its type is close to the TV's, not the
+same). The host-mode stage: `src/features/tv-stage/layout.test.ts`
+_(planned)_.
 
 ### REQ-TV-023 — Frame caps on a TV **[shipped]**
 
