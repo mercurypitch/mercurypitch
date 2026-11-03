@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { EditableNote } from './pitch-edit-model'
-import { safeBpm, shownNotesToMelody, shownNotesToMidiEvents, } from './vocal-notation'
+import { detectionToShownNotes, panelMelody, safeBpm, shownNotesToMelody, shownNotesToMidiEvents, } from './vocal-notation'
 
 describe('shownNotesToMelody', () => {
   it('turns seconds into beats at the given tempo', () => {
@@ -170,5 +170,79 @@ describe('shownNotesToMidiEvents', () => {
       Number.NaN,
     )
     expect(e).toEqual({ midi: 69, tickOn: 480, tickOff: 960 })
+  })
+})
+
+describe('detectionToShownNotes', () => {
+  it('reads the detector ticks, written at 120 BPM, as seconds', () => {
+    expect(
+      detectionToShownNotes([
+        { midi: 57, tickOn: 0, tickOff: 960 },
+        { midi: 59, tickOn: 1440, tickOff: 1920 },
+      ]),
+    ).toEqual([
+      { id: 'detection-0', startBeat: 0, endBeat: 1, midi: 57 },
+      { id: 'detection-1', startBeat: 1.5, endBeat: 2, midi: 59 },
+    ])
+  })
+
+  it('joins a pitch the detector broke by less than 20 ms, as the roll always drew it', () => {
+    const notes = detectionToShownNotes([
+      { midi: 60, tickOn: 0, tickOff: 480 },
+      { midi: 60, tickOn: 490, tickOff: 960 },
+    ])
+    expect(notes).toEqual([
+      { id: 'detection-0', startBeat: 0, endBeat: 1, midi: 60 },
+    ])
+  })
+
+  it('keeps two attacks of one pitch 20 ms apart, and different pitches that touch', () => {
+    const notes = detectionToShownNotes([
+      { midi: 60, tickOn: 0, tickOff: 480 },
+      { midi: 60, tickOn: 500, tickOff: 960 },
+      { midi: 62, tickOn: 960, tickOff: 1440 },
+    ])
+    expect(notes.map((note) => note.midi)).toEqual([60, 60, 62])
+  })
+
+  it('puts the notes in time order', () => {
+    const notes = detectionToShownNotes([
+      { midi: 64, tickOn: 960, tickOff: 1440 },
+      { midi: 60, tickOn: 0, tickOff: 480 },
+    ])
+    expect(notes.map((note) => note.midi)).toEqual([60, 64])
+  })
+
+  it('returns [] for no detection', () => {
+    expect(detectionToShownNotes([])).toEqual([])
+  })
+})
+
+describe('panelMelody', () => {
+  const DETECTION = [{ midi: 57, tickOn: 0, tickOff: 960 }]
+  const ANALYSED: EditableNote[] = [
+    { id: 'base-0', startBeat: 0, endBeat: 0.4, midi: 60 },
+    { id: 'base-1', startBeat: 0.5, endBeat: 0.9, midi: 65 },
+  ]
+
+  it('is the raw detection until an analysis exists', () => {
+    const melody = panelMelody(null, DETECTION, 92)
+    expect(melody.source).toBe('detection')
+    expect(melody.notes).toEqual(detectionToShownNotes(DETECTION))
+    expect(melody.bpm).toBe(92)
+  })
+
+  it('is the analysis, edits included, once there is one', () => {
+    const melody = panelMelody(ANALYSED, DETECTION, 92)
+    expect(melody.source).toBe('analysis')
+    expect(melody.notes).toBe(ANALYSED)
+  })
+
+  it('writes an unknown tempo at 120', () => {
+    expect(panelMelody(ANALYSED, [], Number.NaN).bpm).toBe(120)
+  })
+
+  it('has no notes only when neither source has any', () => {
+    expect(panelMelody(null, [], 120).notes).toEqual([])
   })
 })

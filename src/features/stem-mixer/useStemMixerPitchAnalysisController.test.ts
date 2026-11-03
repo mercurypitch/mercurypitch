@@ -2,16 +2,42 @@
 // who reports how it went.
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import type * as PitchPipeline from '@/lib/pitch-pipeline'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
+import type * as SongTempo from './song-tempo'
+import type { SongTempoEstimate } from './song-tempo-record'
 
 const fakes = vi.hoisted(() => ({
-  analyze: vi.fn<() => Promise<VocalAnalysis>>(),
+  analyze: vi.fn<(...args: unknown[]) => Promise<VocalAnalysis>>(),
+  estimate:
+    vi.fn<
+      (
+        samples: readonly Float32Array[],
+        sampleRate: number,
+        signal?: AbortSignal,
+      ) => Promise<SongTempoEstimate | null>
+    >(),
+  load: vi.fn<(sessionId: string) => Promise<SessionPitchData | null>>(),
+  segment: vi.fn<(contour: unknown, options: { bpm: number }) => unknown[]>(),
+  save: vi.fn<(sessionId: string, data: SessionPitchData) => Promise<void>>(),
 }))
 
 vi.mock('@/lib/pitch-pipeline', async (importOriginal) => ({
   ...(await importOriginal<typeof PitchPipeline>()),
   analyzeVocalSamples: fakes.analyze,
+  segmentVocalContour: (contour: unknown, options: { bpm: number }) =>
+    fakes.segment(contour, options),
+}))
+
+vi.mock('./song-tempo', async (importOriginal) => ({
+  ...(await importOriginal<typeof SongTempo>()),
+  estimateSongTempo: fakes.estimate,
+}))
+
+vi.mock('@/db/services/session-pitch-analysis-service', () => ({
+  loadPitchAnalysisFromDb: fakes.load,
+  savePitchAnalysisToDb: fakes.save,
 }))
 
 const { useStemMixerPitchAnalysisController } =
@@ -50,6 +76,10 @@ afterEach(() => {
   disposeRoot?.()
   disposeRoot = null
   fakes.analyze.mockReset()
+  fakes.estimate.mockReset()
+  fakes.load.mockReset()
+  fakes.save.mockReset()
+  fakes.segment.mockReset()
 })
 
 describe('runAnalysis', () => {
@@ -336,5 +366,188 @@ describe('canAnalyse', () => {
         durationSeconds: 3600,
       }).canAnalyse(),
     ).toBe(false)
+  })
+})
+
+describe('the song tempo', () => {
+  // A stereo instrumental: the estimate reads both channels.
+  const LEFT = new Float32Array(16)
+  const RIGHT = new Float32Array(16)
+  const INSTRUMENTAL = {
+    numberOfChannels: 2,
+    sampleRate: 44_100,
+    getChannelData: (channel: number) => (channel === 0 ? LEFT : RIGHT),
+  } as unknown as AudioBuffer
+
+  const CACHED_NOTES = [{ midi: 60, noteName: 'C4', startSec: 0, endSec: 0.4 }]
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    const promise = new Promise<T>((done) => {
+      resolve = done
+    })
+    return { promise, resolve }
+  }
+
+  function mountSong(tempoSource: AudioBuffer | null = INSTRUMENTAL) {
+    return createRoot((dispose) => {
+      disposeRoot = dispose
+      return useStemMixerPitchAnalysisController({
+        sessionId: 'song',
+        vocalBuffer: () => VOCAL,
+        tempoSource: () => tempoSource,
+        sampleRate: () => VOCAL.sampleRate,
+        setPitchHistory: () => {},
+        showNotification: () => {},
+      })
+    })
+  }
+
+  /** The song opens: its cached analysis is read, as the mixer does. */
+  async function openSong(tempoSource?: AudioBuffer | null) {
+    const controller = mountSong(tempoSource)
+    await controller.loadCachedAnalysis()
+    return controller
+  }
+
+  it('fills the BPM box from a confident estimate, before any analysis', async () => {
+    fakes.load.mockResolvedValue(null)
+    fakes.estimate.mockResolvedValue({ bpm: 92, confidence: 0.3 })
+
+    const controller = await openSong()
+
+    await vi.waitFor(() => expect(controller.songBpm()).toBe(92))
+    expect(fakes.estimate).toHaveBeenCalledTimes(1)
+    expect(fakes.estimate.mock.calls[0][0]).toEqual([LEFT, RIGHT])
+    expect(fakes.estimate.mock.calls[0][1]).toBe(44_100)
+  })
+
+  it('keeps 120 for an estimate under the confidence gate', async () => {
+    fakes.load.mockResolvedValue(null)
+    fakes.estimate.mockResolvedValue({ bpm: 99, confidence: 0.1 })
+
+    const controller = await openSong()
+
+    await vi.waitFor(() =>
+      expect(controller.tempoEstimate()).toEqual({ bpm: 99, confidence: 0.1 }),
+    )
+    expect(controller.songBpm()).toBe(120)
+  })
+
+  it('never writes over a tempo the singer typed', async () => {
+    fakes.load.mockResolvedValue(null)
+    const estimate = deferred<SongTempoEstimate | null>()
+    fakes.estimate.mockReturnValue(estimate.promise)
+
+    const controller = await openSong()
+    controller.typeSongBpm(100)
+    estimate.resolve({ bpm: 92, confidence: 0.3 })
+
+    await vi.waitFor(() => expect(controller.tempoEstimate()).not.toBeNull())
+    expect(controller.songBpm()).toBe(100)
+  })
+
+  it('starts an analysis at once, and segments it again at a tempo that lands meanwhile', async () => {
+    fakes.load.mockResolvedValue(null)
+    const estimate = deferred<SongTempoEstimate | null>()
+    fakes.estimate.mockReturnValue(estimate.promise)
+    const analysis = deferred<VocalAnalysis>()
+    fakes.analyze.mockReturnValue(analysis.promise)
+    fakes.segment.mockReturnValue([])
+
+    const controller = await openSong()
+    await vi.waitFor(() => expect(fakes.estimate).toHaveBeenCalled())
+    const run = controller.runAnalysis()
+    expect(fakes.analyze).toHaveBeenCalledTimes(1)
+    expect(fakes.analyze.mock.calls[0][2]).toMatchObject({ bpm: 120 })
+
+    estimate.resolve({ bpm: 92, confidence: 0.3 })
+    await vi.waitFor(() => expect(controller.songBpm()).toBe(92))
+    analysis.resolve({
+      ...ANALYSED,
+      contour: [{ timeSec: 0, freq: 220, clarity: 0.9 }],
+    } as unknown as VocalAnalysis)
+
+    expect(await run).toEqual({ ok: true })
+    expect(fakes.segment).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bpm: 92 }),
+    )
+  })
+
+  it('waits for the cached analysis before estimating', () => {
+    fakes.estimate.mockResolvedValue({ bpm: 92, confidence: 0.3 })
+
+    mountSong()
+
+    expect(fakes.estimate).not.toHaveBeenCalled()
+  })
+
+  it('reads the tempo cached with the analysis instead of estimating again', async () => {
+    fakes.load.mockResolvedValue({
+      mergedNotes: CACHED_NOTES,
+      segmentedNotes: CACHED_NOTES,
+      pitchHistory: [],
+      tempo: { estimate: { bpm: 85, confidence: 0.4 } },
+    })
+
+    const controller = await openSong()
+
+    expect(controller.songBpm()).toBe(85)
+    await Promise.resolve()
+    expect(fakes.estimate).not.toHaveBeenCalled()
+  })
+
+  it('brings back a typed tempo when the song is opened again', async () => {
+    fakes.load.mockResolvedValue({
+      mergedNotes: CACHED_NOTES,
+      segmentedNotes: CACHED_NOTES,
+      pitchHistory: [],
+      tempo: { estimate: { bpm: 92, confidence: 0.3 }, typedBpm: 100 },
+    })
+
+    const controller = await openSong()
+
+    expect(controller.songBpm()).toBe(100)
+  })
+
+  it('stores the tempo with the analysis it saves', async () => {
+    fakes.load.mockResolvedValue(null)
+    fakes.estimate.mockResolvedValue({ bpm: 92, confidence: 0.3 })
+    fakes.analyze.mockResolvedValue(ANALYSED)
+
+    const controller = await openSong()
+    await vi.waitFor(() => expect(controller.songBpm()).toBe(92))
+    await controller.runAnalysis()
+
+    expect(fakes.save).toHaveBeenCalledWith(
+      'song',
+      expect.objectContaining({
+        tempo: { estimate: { bpm: 92, confidence: 0.3 } },
+      }),
+    )
+  })
+
+  it('does not estimate a song that streams, and does not hold the analysis for it', async () => {
+    fakes.load.mockResolvedValue(null)
+    fakes.analyze.mockResolvedValue(ANALYSED)
+
+    const controller = await openSong(null)
+
+    expect(await controller.runAnalysis()).toEqual({ ok: true })
+    expect(fakes.estimate).not.toHaveBeenCalled()
+    expect(controller.songBpm()).toBe(120)
+  })
+
+  it('stops the estimate when the song closes', async () => {
+    fakes.load.mockResolvedValue(null)
+    fakes.estimate.mockReturnValue(new Promise(() => {}))
+
+    await openSong()
+    await vi.waitFor(() => expect(fakes.estimate).toHaveBeenCalled())
+    disposeRoot?.()
+    disposeRoot = null
+
+    expect(fakes.estimate.mock.calls[0][2]?.aborted).toBe(true)
   })
 })

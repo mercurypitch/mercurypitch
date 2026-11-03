@@ -1,0 +1,40 @@
+.toggle {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 999px;
+  background: var(--bg-primary, #0d1117);
+  cursor: default;
+}
+
+.option {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #8b949e);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.option:hover {
+  color: var(--text-primary, #e6edf3);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
+.option[aria-pressed='true'] {
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+}

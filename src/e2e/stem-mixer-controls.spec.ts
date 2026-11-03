@@ -1408,3 +1408,114 @@ test('opens the music level without moving the transport @smoke', async ({
     await expect(level).toHaveAttribute('aria-valuetext', '100 percent')
   }
 })
+
+/**
+ * Opens a seeded song from its stems page with the vocal and the vocal's
+ * MIDI track, the only way the mixer draws its MIDI Melody panel.
+ */
+async function openWithMidiTrack(page: Page, sessionId: string): Promise<void> {
+  await page.goto(`/#/karaoke/session/${sessionId}`)
+  await dismissOverlays(page)
+  const viewer = page.locator('.uvr-result-viewer')
+  await expect(viewer).toBeVisible({ timeout: 15_000 })
+  for (const name of ['Vocal', 'Vocal MIDI']) {
+    await viewer
+      .locator('.rv-stem-card', {
+        has: page.getByText(name, { exact: true }),
+      })
+      .click()
+  }
+  await page.getByRole('button', { name: 'Mix these stems' }).click()
+  await expect(page.locator('.stem-mixer')).toBeVisible({ timeout: 15_000 })
+}
+
+const midiView = (page: Page, view: 'Roll' | 'Notes'): Locator =>
+  page
+    .getByRole('group', { name: 'MIDI Melody view' })
+    .getByRole('button', { name: view, exact: true })
+
+test('reads the vocal melody as notes and follows the transport @smoke', async ({
+  page,
+}) => {
+  await openWithMidiTrack(page, SESSION_ID)
+
+  // The song has an analysis (C4, then E4), so the roll draws it.
+  const roll = page.locator('canvas[data-canvas-id="midi"]')
+  await expect(roll).toHaveAttribute('data-note-pitches', '60 64', {
+    timeout: 15_000,
+  })
+
+  await midiView(page, 'Notes').click()
+  await expect(midiView(page, 'Notes')).toHaveAttribute('aria-pressed', 'true')
+  const notes = page.getByTestId('stem-mixer-midi-notes')
+  // The staff is engraved within 3 s: two notes and the rests between them.
+  await expect(notes.locator('.vf-stavenote').first()).toBeVisible({
+    timeout: 3_000,
+  })
+  await expect(roll).toBeHidden()
+  await expect(notes).toHaveAttribute('data-note-pitches', '60 64')
+  await expect(notes.getByText('120 BPM, 4/4')).toBeVisible()
+
+  // The cursor rides the staff while the song plays. The tone lasts a
+  // second, so the page keeps the furthest the cursor reached.
+  const cursor = notes.getByTestId('sheet-play-cursor')
+  await expect(cursor).toBeAttached()
+  const start = await cursor.evaluate((el) => el.getBoundingClientRect().left)
+  await page.evaluate(() => {
+    const track = window as unknown as { __cursorFurthest?: number }
+    track.__cursorFurthest = -Infinity
+    const sample = (): void => {
+      const element = document.querySelector(
+        '[data-testid="sheet-play-cursor"]',
+      )
+      if (element !== null) {
+        track.__cursorFurthest = Math.max(
+          track.__cursorFurthest ?? -Infinity,
+          element.getBoundingClientRect().left,
+        )
+      }
+      requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  await page.getByRole('button', { name: 'Play', exact: true }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __cursorFurthest?: number })
+            .__cursorFurthest ?? -Infinity,
+      ),
+    )
+    .toBeGreaterThan(start + 10)
+
+  await midiView(page, 'Roll').click()
+  await expect(roll).toBeVisible()
+  await expect(notes).toHaveCount(0)
+})
+
+test('shows the raw detection in the roll and the Notes view alike before an analysis @smoke', async ({
+  page,
+}) => {
+  // The second song has no analysis: the panel's melody is the detection
+  // of its 220 Hz tone.
+  await openWithMidiTrack(page, NEXT_SESSION_ID)
+
+  const roll = page.locator('canvas[data-canvas-id="midi"]')
+  await expect
+    .poll(
+      async () => Number((await roll.getAttribute('data-note-count')) ?? 0),
+      {
+        timeout: 20_000,
+      },
+    )
+    .toBeGreaterThan(0)
+  const pitches = await roll.getAttribute('data-note-pitches')
+  expect(pitches?.split(' ')).toContain('57')
+
+  await midiView(page, 'Notes').click()
+  await expect(page.getByTestId('stem-mixer-midi-notes')).toHaveAttribute(
+    'data-note-pitches',
+    pitches ?? '',
+  )
+})

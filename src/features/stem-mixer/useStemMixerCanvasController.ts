@@ -7,8 +7,8 @@ import { createEffect, onCleanup } from 'solid-js'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import { renderScale } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
-import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
-import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
+import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
@@ -45,7 +45,12 @@ export interface StemMixerCanvasDeps {
   getMicPitchHistory: () => PitchNote[]
   micActive: Accessor<boolean>
   currentPitch: Accessor<DetectedPitch | null>
-  midiNotes: Accessor<MidiNoteEvent[]>
+  /**
+   * The "MIDI Melody" panel's one melody, in seconds and in the key being
+   * heard: the analysis once there is one, else the raw detection
+   * (vocal-notation.ts `panelMelody`). The roll draws exactly these notes.
+   */
+  melodyNotes: Accessor<readonly EditableNote[]>
   showNoteLabels: Accessor<boolean>
   showLyricLabels: Accessor<boolean>
   showMicLine: Accessor<boolean>
@@ -1085,9 +1090,29 @@ export const useStemMixerCanvasController = (
     }
   }
 
+  // The roll is pixels; these name what it holds, so an end-to-end test can
+  // hold it against the Notes view and the MIDI file. Written when the notes
+  // or the canvas change, not on every frame.
+  let labelled: {
+    canvas: HTMLCanvasElement
+    notes: readonly EditableNote[]
+  } | null = null
+  const labelMidiCanvas = (
+    canvas: HTMLCanvasElement,
+    notes: readonly EditableNote[],
+  ): void => {
+    if (labelled?.canvas === canvas && labelled.notes === notes) return
+    labelled = { canvas, notes }
+    canvas.dataset.noteCount = String(notes.length)
+    canvas.dataset.notePitches = notes
+      .map((note) => Math.round(note.midi))
+      .join(' ')
+  }
+
   const drawMidiCanvas = () => {
     const canvas = canvasRefs.midi
     if (!canvas) return
+    labelMidiCanvas(canvas, deps.melodyNotes())
     const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
@@ -1100,7 +1125,7 @@ export const useStemMixerCanvasController = (
     // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
 
-    const notes = deps.midiNotes()
+    const notes = deps.melodyNotes()
     if (notes.length === 0) {
       ctx.fillStyle = '#484f58'
       ctx.font = '12px monospace'
@@ -1158,32 +1183,12 @@ export const useStemMixerCanvasController = (
     const winEnd = winStart + deps.windowDuration()
     const winDur = deps.windowDuration()
 
-    type Pill = { midi: number; startSec: number; endSec: number }
-    const pills: Pill[] = []
-    if (notes.length > 0) {
-      const ticksPerSec = TICKS_PER_BEAT * (DEFAULT_BPM / 60)
-      let cur: Pill = {
-        midi: notes[0].midi,
-        startSec: notes[0].tickOn / ticksPerSec,
-        endSec: notes[0].tickOff / ticksPerSec,
-      }
-      for (let i = 1; i < notes.length; i++) {
-        const s = notes[i].tickOn / ticksPerSec
-        const e = notes[i].tickOff / ticksPerSec
-        if (notes[i].midi === cur.midi && s - cur.endSec < 0.02) {
-          cur.endSec = e
-        } else {
-          pills.push({ ...cur })
-          cur = { midi: notes[i].midi, startSec: s, endSec: e }
-        }
-      }
-      pills.push({ ...cur })
-    }
-
-    for (const p of pills) {
-      if (p.endSec < winStart || p.startSec > winEnd) continue
-      const x1 = Math.max(0, ((p.startSec - winStart) / winDur) * w)
-      const x2 = Math.min(w, ((p.endSec - winStart) / winDur) * w)
+    // One pill per note. The detection's broken notes were joined when it
+    // became the panel melody, and an analysis keeps a split note as two.
+    for (const p of notes) {
+      if (p.endBeat < winStart || p.startBeat > winEnd) continue
+      const x1 = Math.max(0, ((p.startBeat - winStart) / winDur) * w)
+      const x2 = Math.min(w, ((p.endBeat - winStart) / winDur) * w)
       const pillW = Math.max(x2 - x1, 3)
       const y = midiToY(p.midi) - rowH * 0.34
       const pillH = rowH * 0.68
@@ -1284,6 +1289,9 @@ export const useStemMixerCanvasController = (
     deps.loopEnd()
     deps.pitchView?.()
     deps.selectedNoteId?.()
+    // An analysis landing, an edit, a key change: the roll shows the new
+    // melody at once, playing or not.
+    deps.melodyNotes()
     queueCanvasRedraw()
   })
 

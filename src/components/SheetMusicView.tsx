@@ -531,6 +531,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
             {cursorX() !== null && (
               <div
                 class={styles.playCursor}
+                data-testid="sheet-play-cursor"
                 classList={{ [styles.playCursorActive]: props.isPlaying?.() }}
                 style={{
                   left: `${cursorX()!}px`,

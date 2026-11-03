@@ -117,3 +117,75 @@ export function shownNotesToMidiEvents(
   }
   return kept.reverse()
 }
+
+/**
+ * Two attacks of one pitch closer than this are one sung note the detector
+ * broke, and the roll has always drawn them as one.
+ */
+const DETECTION_JOIN_SECONDS = 0.02
+
+/**
+ * The raw detection in the shape Pitch Studio keeps notes in. The detector
+ * writes ticks at `DEFAULT_BPM`, so a tick lasts the same at any song tempo.
+ */
+export function detectionToShownNotes(
+  events: readonly MidiNoteEvent[],
+): EditableNote[] {
+  const ticksPerSecond = (DEFAULT_BPM / 60) * TICKS_PER_BEAT
+  const sorted = [...events].sort(
+    (a, b) => a.tickOn - b.tickOn || a.midi - b.midi,
+  )
+  const notes: EditableNote[] = []
+  for (const event of sorted) {
+    const startBeat = event.tickOn / ticksPerSecond
+    const endBeat = event.tickOff / ticksPerSecond
+    const last = notes.at(-1)
+    if (
+      last !== undefined &&
+      last.midi === event.midi &&
+      startBeat - last.endBeat < DETECTION_JOIN_SECONDS
+    ) {
+      last.endBeat = Math.max(last.endBeat, endBeat)
+      continue
+    }
+    notes.push({
+      id: `detection-${notes.length}`,
+      startBeat,
+      endBeat,
+      midi: event.midi,
+    })
+  }
+  return notes
+}
+
+/**
+ * The one melody of the "MIDI Melody" panel, which its roll, its Notes view
+ * and Download MIDI all show or save. Once an analysis exists it is Pitch
+ * Studio's effective notes, edits included; before, the raw detection.
+ */
+export interface PanelMelody {
+  /** Seconds, as Pitch Studio keeps them. */
+  notes: EditableNote[]
+  /** The tempo the notes are written at, never NaN. */
+  bpm: number
+  source: 'analysis' | 'detection'
+}
+
+/**
+ * @param analysis the effective notes once an analysis exists, else null
+ * @param detection the raw detection, in ticks at `DEFAULT_BPM`
+ * @param bpm the song's tempo, as Pitch Studio's BPM box holds it
+ */
+export function panelMelody(
+  analysis: EditableNote[] | null,
+  detection: readonly MidiNoteEvent[],
+  bpm: number,
+): PanelMelody {
+  return analysis !== null
+    ? { notes: analysis, bpm: safeBpm(bpm), source: 'analysis' }
+    : {
+        notes: detectionToShownNotes(detection),
+        bpm: safeBpm(bpm),
+        source: 'detection',
+      }
+}

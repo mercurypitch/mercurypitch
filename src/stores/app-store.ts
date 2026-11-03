@@ -1461,6 +1461,16 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_KARAOKE,
   },
   {
+    title: 'The melody as notes',
+    description:
+      'Switch the MIDI Melody panel from Roll to Notes to read the vocal line on a staff. Download MIDI saves the same notes, edits included.',
+    targetSelector: '[data-tour="mixer.midi-view"]',
+    placement: 'bottom',
+    requiredTab: TAB_KARAOKE,
+    // The panel is drawn only for a song opened with its MIDI track.
+    whenPresent: true,
+  },
+  {
     title: 'Songs and playlists',
     description:
       'Switch straight to another processed song, choose a play-along role, or build a set to sing back-to-back.',

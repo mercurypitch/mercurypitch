@@ -1,0 +1,24 @@
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.empty {
+  margin: auto;
+  padding: 1rem;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.tempo {
+  margin: 0;
+  padding: 4px 13px;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}

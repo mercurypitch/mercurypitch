@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createMemo, createSignal } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import { loadPitchAnalysisFromDb, savePitchAnalysisToDb, } from '@/db/services/session-pitch-analysis-service'
 import type { KeyEstimate, KeyNote, KeyRegion } from '@/lib/key-detection'
 import { detectKeyFromNotes, detectRegionalKeys } from '@/lib/key-detection'
@@ -9,6 +9,8 @@ import { analyzeVocalSamples, pitchHistoryFromNotes, segmentVocalContour, VOCAL_
 import { midiToNote } from '@/lib/scale-data'
 import type { EditableNote, PitchEditLayer } from './pitch-edit-model'
 import { applyEditLayer, deleteNote, editNote, emptyEditLayer, isEditLayerEmpty, mergeNotes, splitNote, } from './pitch-edit-model'
+import { CONFIDENT_TEMPO, estimateSongTempo } from './song-tempo'
+import type { SongTempoEstimate, SongTempoRecord } from './song-tempo-record'
 import type { StreamedVocalSource } from './streamed-vocal-samples'
 import { canGatherStreamedVocal, gatherStreamedVocal, windowForStep, } from './streamed-vocal-samples'
 import type { PitchNote } from './types'
@@ -27,6 +29,12 @@ export interface StemMixerPitchAnalysisDeps {
    * is only `vocalBuffer`.
    */
   vocalStream?: Accessor<StreamedVocalSource | null>
+  /**
+   * The recording the song's tempo is estimated from: the instrumental's
+   * decoded samples when the song has one, else the vocal's. Null while it
+   * decodes, and where it streams. Absent: the tempo is never estimated.
+   */
+  tempoSource?: Accessor<AudioBuffer | null>
   sampleRate: Accessor<number>
   setPitchHistory: (history: PitchNote[]) => void
   showNotification: (
@@ -81,6 +89,13 @@ export interface StemMixerPitchAnalysisController {
   setSongScale: Setter<string>
   songBpm: Accessor<number>
   setSongBpm: Setter<number>
+  /**
+   * The singer typed a tempo into the BPM box: it wins over the estimate,
+   * now and when the song is opened again.
+   */
+  typeSongBpm: (bpm: number) => void
+  /** The song's tempo estimate; null until it has run, or when it found none. */
+  tempoEstimate: Accessor<SongTempoEstimate | null>
   /** True once a contour has been captured this session (enables the slider). */
   contourReady: Accessor<boolean>
 
@@ -246,6 +261,91 @@ export const useStemMixerPitchAnalysisController = (
   // not persisted, so the slider is disabled after reload until re-run.
   let rawContour: OfflineSegmentSecondsFrame[] = []
 
+  // ── Song tempo ────────────────────────────────────────────────
+  // The BPM box starts at the default. Once per song the tempo is estimated
+  // from the recording (song-tempo.ts), and a confident estimate fills the
+  // box unless the singer has typed a tempo for this song, which always wins.
+  // Both are stored with the analysis, so a song opened again is not
+  // estimated again; the estimate waits until that stored analysis is read.
+  const [tempoEstimate, setTempoEstimate] =
+    createSignal<SongTempoEstimate | null>(null)
+  const [typedBpm, setTypedBpm] = createSignal<number | undefined>(undefined)
+  const [tempoStage, setTempoStage] = createSignal<
+    'unread' | 'wanted' | 'estimating' | 'known' | 'failed'
+  >('unread')
+  const tempoAbort = new AbortController()
+  onCleanup(() => tempoAbort.abort())
+
+  /** Write a confident estimate into the box while it holds the default. */
+  const fillTempo = (): void => {
+    const estimate = tempoEstimate()
+    if (estimate === null || estimate.confidence < CONFIDENT_TEMPO) return
+    if (typedBpm() !== undefined) return
+    if (songBpm() !== VOCAL_ANALYSIS_DEFAULTS.bpm) return
+    // A contour analysed this session re-segments when the tempo changes,
+    // under any edits on its notes. The estimate fills the box before an
+    // analysis or while one runs (which then segments at it), never after.
+    if (rawContour.length > 0) return
+    setSongBpm(estimate.bpm)
+  }
+
+  /** What is stored of the tempo: only what is known. */
+  const tempoRecord = (): SongTempoRecord => {
+    const record: SongTempoRecord = {}
+    if (tempoStage() === 'known') record.estimate = tempoEstimate()
+    const typed = typedBpm()
+    if (typed !== undefined) record.typedBpm = typed
+    return record
+  }
+
+  /** The tempo stored with the song's analysis, read once as the song opens. */
+  const readStoredTempo = (record: SongTempoRecord | undefined): void => {
+    if (tempoStage() !== 'unread') return
+    if (record?.typedBpm !== undefined) {
+      setTypedBpm(record.typedBpm)
+      setSongBpm(record.typedBpm)
+    }
+    if (record?.estimate !== undefined) {
+      setTempoEstimate(record.estimate)
+      setTempoStage('known')
+      fillTempo()
+    } else {
+      setTempoStage('wanted')
+    }
+  }
+
+  const estimateTempo = async (source: AudioBuffer): Promise<void> => {
+    setTempoStage('estimating')
+    const channels = Array.from({ length: source.numberOfChannels }, (_, c) =>
+      source.getChannelData(c),
+    )
+    try {
+      const estimate = await estimateSongTempo(
+        channels,
+        source.sampleRate,
+        tempoAbort.signal,
+      )
+      setTempoEstimate(estimate)
+      setTempoStage('known')
+      fillTempo()
+    } catch (error) {
+      if (tempoAbort.signal.aborted) return
+      console.warn('[PitchAnalysis] tempo estimate failed', error)
+      setTempoStage('failed')
+    }
+  }
+
+  createEffect(() => {
+    if (tempoStage() !== 'wanted') return
+    const source = deps.tempoSource?.() ?? null
+    if (source !== null) void untrack(() => estimateTempo(source))
+  })
+
+  const typeSongBpm = (bpm: number): void => {
+    setTypedBpm(bpm)
+    setSongBpm(bpm)
+  }
+
   const baseToEditable = (notes: MergedNote[]): EditableNote[] =>
     notes.map((m, i) => ({
       id: `base-${i}`,
@@ -328,11 +428,16 @@ export const useStemMixerPitchAnalysisController = (
       ),
       editLayer: editLayer(),
       keyRegions: keyRegions(),
+      tempo: tempoRecord(),
     })
   }
   createEffect(() => {
     baseNotes()
     editLayer()
+    // A tempo estimated or typed after the analysis is stored with it too.
+    tempoStage()
+    tempoEstimate()
+    typedBpm()
     if (deps.sessionId == null || deps.sessionId === '') return
     if (saveTimer !== null) clearTimeout(saveTimer)
     saveTimer = setTimeout(persistNow, 600)
@@ -459,6 +564,7 @@ export const useStemMixerPitchAnalysisController = (
                 setProgress(Math.round(fraction * STREAM_WALK_SHARE)),
             })
       const from = buffer !== null ? 0 : STREAM_WALK_SHARE
+      const settings = denoiseOptions()
       const { algo, mergedNotes, contour, segmentedNotes } =
         await analyzeVocalSamples(
           vocal.samples,
@@ -470,7 +576,7 @@ export const useStemMixerPitchAnalysisController = (
             sensitivity: sensitivity(),
             minConfidence: minConfidence(),
             minAmplitude: minAmplitude(),
-            ...denoiseOptions(),
+            ...settings,
           },
           {
             onProgress: (pct) =>
@@ -492,7 +598,11 @@ export const useStemMixerPitchAnalysisController = (
       // at the same settings for the same answer.
       rawContour = contour
       setContourReady(true)
-      setBaseNotes(baseToEditable(segmentedNotes))
+      // The song's tempo estimate can land while the analysis runs, and the
+      // run quantized at the tempo the box held when it started: segment the
+      // contour again at the tempo it holds now.
+      if (songBpm() !== settings.bpm) resegment()
+      else setBaseNotes(baseToEditable(segmentedNotes))
       // Detect the key from the cleaned notes (MergedNote is KeyNote-shaped) and
       // adopt it for the cleanup snapping.
       runKeyDetection(segmentedNotes)
@@ -512,6 +622,7 @@ export const useStemMixerPitchAnalysisController = (
           pitchHistory: pitchHistoryFromNotes(segmentedNotes),
           editLayer: editLayer(),
           keyRegions: keyRegions(),
+          tempo: tempoRecord(),
         })
       }
       return { ok: true }
@@ -572,9 +683,13 @@ export const useStemMixerPitchAnalysisController = (
   }
 
   const loadCachedAnalysis = async (): Promise<boolean> => {
-    if (deps.sessionId == null || deps.sessionId === '') return false
+    if (deps.sessionId == null || deps.sessionId === '') {
+      readStoredTempo(undefined)
+      return false
+    }
 
     const data = await loadPitchAnalysisFromDb(deps.sessionId)
+    readStoredTempo(data?.tempo)
     if (!data) return false
     if (data.mergedNotes.length === 0 && data.segmentedNotes.length === 0) {
       return false
@@ -617,6 +732,8 @@ export const useStemMixerPitchAnalysisController = (
     setSongScale,
     songBpm,
     setSongBpm,
+    typeSongBpm,
+    tempoEstimate,
     contourReady,
     detectedKey,
     keyRegions,
