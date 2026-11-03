@@ -6,18 +6,19 @@
 // the path as one of its states, from a run handed in rather than the
 // singer's own (path-source.ts, pinnedSource): Codex's frames, F1 to F4.
 //
-//   start     the first visit: "3 min", Lip roll next, Start warm-up
+//   start     the first visit: "4 min", Lip roll next, Start warm-up
 //   between   back from Lip roll: its card "Lip roll: 86% lit", Again,
 //             Skip and "Next: Ng slides"
-//   resume    the same day, later: "1 of 4 today", Ng slides skipped,
+//   resume    the same day, later: "1 of 5 today", Ng slides skipped,
 //             "Next: Long note"
-//   end       the run's end: "Warmed up", "4 of 4 today", every result
+//   end       the run's end: "Warmed up", "5 of 5 today", every result
 //   done      opened again that day: "Warmed up today", the week's dots
 //             (Monday and Tuesday warmed up, today the Wednesday), Warm
 //             up again
 //   locked    the free run used: the padlocked "Warm up with Premium"
 //
-// The results are the frames' own lines, from the rooms' result screens.
+// The results are the frames' own lines, from the rooms' result screens,
+// and First note's, which joined the routine after the frames (3 Nov 2026).
 // `&warmUnlocks=1` or `2` adds what the run unlocked: the chip, or the chip
 // that opens a list.
 
@@ -58,13 +59,17 @@ const WAITING: StopMark = { state: 'waiting' }
 const SKIPPED: StopMark = { state: 'skipped' }
 const done = (line: string): StopMark => ({ state: 'done', line })
 
-/** The four rooms' results in the frames: Lip roll, Ng slides, Long note, Echo. */
+/** The rooms' results: Lip roll, Ng slides, Long note, Echo and First note. */
 const RESULTS = [
   done('86% lit'),
   done('92% lit'),
   done('12.6 s'),
   done('8 of 9 on pitch'),
+  done('2 of 2 on the note'),
 ] as const
+
+/** The routine's last room: the stop before the song. */
+const LAST_ROOM = RESULTS.length - 1
 
 function dayWith(marks: readonly StopMark[], warmedUp = false): WarmUpDay {
   return {
@@ -102,20 +107,20 @@ function stateRun(name: WarmFixtureName): PinnedRun {
       }
     case 'between':
       return {
-        day: dayWith([RESULTS[0], WAITING, WAITING, WAITING]),
+        day: dayWith([RESULTS[0], WAITING, WAITING, WAITING, WAITING]),
         last: { index: 0, state: 'done' },
         canStart: true,
       }
     case 'resume':
       return {
-        day: dayWith([RESULTS[0], SKIPPED, WAITING, WAITING]),
+        day: dayWith([RESULTS[0], SKIPPED, WAITING, WAITING, WAITING]),
         last: null,
         canStart: true,
       }
     case 'end':
       return {
         day: dayWith(RESULTS, true),
-        last: { index: 3, state: 'done' },
+        last: { index: LAST_ROOM, state: 'done' },
         canStart: true,
       }
     case 'done':

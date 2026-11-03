@@ -8,9 +8,9 @@
 // screen says where the run stands and opens the next stop.
 //
 //   top      the shell's bar (Back, "Warm-up", the level pill on its right:
-//            pw-level), then the chip ("3 min", "1 of 4 today", "Warmed up
+//            pw-level), then the chip ("4 min", "1 of 5 today", "Warmed up
 //            today" with this week's dots under it) or, at the end, "Warmed
-//            up" and "4 of 4 today"; what the routine unlocked under it
+//            up" and "5 of 5 today"; what the routine unlocked under it
 //            (decision (a), 13a review)
 //   middle   the path (PathColumn.tsx), standing on the floor just above
 //            the buttons, scrolling when a long plan does not fit (pw-stops)

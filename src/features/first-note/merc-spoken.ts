@@ -4,8 +4,9 @@
 //
 // The lines the room says at rest, in Merc's voice, said as his bubble
 // shows them (room-kit merc-speech.ts): its opening lines (merc-lines.ts
-// `intro` and `introLine`), as the room opens and after a run is stopped, and its
-// result lines, as a run ends. Never a line of the run itself.
+// `intro`, `introLine` and the Warm-up's `routine`, the first opening
+// line's words and take), as the room opens and after a run is stopped,
+// and its result lines, as a run ends. Never a line of the run itself.
 // ElevenLabs takes (eleven_v4, the "Merc V1 Gentle Whimsical D2" voice,
 // 1 Nov 2026), heard back word for word, trimmed and levelled to -18 LUFS:
 // placeholders until real recordings come, as his sung set is. Each file
@@ -28,6 +29,7 @@ import someHum from './voice/merc-says-some-hum.mp3'
 /** Each line said at rest, by the line's id. */
 export const FIRST_SPOKEN: SpokenLines = {
   'intro-stop': introStop,
+  'routine-stop': introStop,
   'intro-entry': introEntry,
   'line-slide': lineSlide,
   'all-on': allOn,

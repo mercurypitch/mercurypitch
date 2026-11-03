@@ -13,7 +13,7 @@
 // waits for it to decode, beside what the room's voice needs, before it
 // plays (the kit waits READY_WAIT_MS at most).
 
-import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import type { DemoMode, DemoTip as KitDemoTip, ExerciseDemo, RoomDemoOptions, } from '@/components/demo-kit/useExerciseDemo'
 import { useExerciseDemo } from '@/components/demo-kit/useExerciseDemo'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { firstNoteDemoAutoPlays, markFirstNoteDemoSeen, } from '@/stores/first-note-store'
@@ -44,7 +44,10 @@ function withBand(script: FirstNoteScript): FirstNoteScript {
   }
 }
 
-export function useFirstNoteDemo(room: FirstNoteController): FirstNoteDemo {
+export function useFirstNoteDemo(
+  room: FirstNoteController,
+  options: RoomDemoOptions = {},
+): FirstNoteDemo {
   const script = withBand(room.script)
   return useExerciseDemo({
     room: {
@@ -62,7 +65,7 @@ export function useFirstNoteDemo(room: FirstNoteController): FirstNoteDemo {
     micTarget: 'mic',
     endMark: 'outcome',
     clearTipOn: [],
-    autoPlays: firstNoteDemoAutoPlays,
+    autoPlays: () => options.autoPlay !== false && firstNoteDemoAutoPlays(),
     markSeen: markFirstNoteDemoSeen,
     sound: (ctx, minLead) =>
       createDemoSound(ctx, minLead, room.script.voice, demoBand()),

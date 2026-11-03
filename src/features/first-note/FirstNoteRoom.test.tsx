@@ -1,7 +1,10 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CHEER_MS } from '@/components/room-kit/merc-moves'
 import type * as SpeechModule from '@/components/room-kit/merc-speech'
+import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { ROUTINE_RESULT_HOLD_MS } from '@/components/room-kit/routine-stop'
 import type * as CaptureModule from '@/components/room-kit/useExerciseCapture'
 import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { midiToF0 } from '@/lib/glass/test-frames'
@@ -9,10 +12,12 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import type * as FirstNoteStoreModule from '@/stores/first-note-store'
 import { resetFirstNoteChoicesForTests } from './first-note-choices'
+import { WARM_UP_ENTRIES } from './first-note-controller-contract'
 import { resetOwnSongsForTests, setOwnSongReaderForTests, } from './first-note-own-songs'
 import { BETWEEN_ROUNDS_MS, FIRST_NOTE_ROUNDS, MERC_GAP_SECONDS, MERC_NOTE_SECONDS, } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 import { FIRST_NOTE_SONGS, singOnFrom } from './first-note-songs'
+import { FIRST_LINES } from './merc-lines'
 
 // ── The singer's own songs, as the Karaoke room's library lists them ──
 
@@ -1073,5 +1078,91 @@ describe('First note', () => {
     run(600)
     expect(phase()).toBe('landed')
     expect(line()).toBe('shown')
+  })
+
+  describe('in the Warm-up', () => {
+    /** The stop before the song, counting what the room hands it. */
+    function warmUp() {
+      const handed = { finish: [] as StopResult[], skip: 0 }
+      const stop: RoutineStop = {
+        index: 4,
+        count: 5,
+        settledNote: null,
+        finish: (result) => handed.finish.push(result),
+        skip: () => {
+          handed.skip += 1
+        },
+      }
+      return { stop, handed }
+    }
+
+    it('opens on the stop\'s chip, Merc\'s cue aloud and "Skip stop", with no level', () => {
+      const { stop, handed } = warmUp()
+      render(() => <FirstNoteRoom onDone={() => undefined} routine={stop} />)
+
+      expect(chip()).toBe('Warm-up 5 of 5')
+      expect(screen.getByTestId('first-note-bubble').textContent).toBe(
+        FIRST_LINES.routine[0].text,
+      )
+      expect(spoken.said).toEqual(['routine-stop'])
+      expect(screen.queryByTestId('first-note-level')).toBeNull()
+      fireEvent.click(screen.getByTestId('first-note-skip-stop'))
+      expect(handed.skip).toBe(1)
+    })
+
+    it('sings two entries, keeps them as history and never as a best, then hands "N of 2 on the note" on once', async () => {
+      const { stop, handed } = warmUp()
+      render(() => <FirstNoteRoom onDone={() => undefined} routine={stop} />)
+      await startRun()
+      expect(chip()).toBe(`Entry 1 of ${WARM_UP_ENTRIES}`)
+      for (let round = 0; round < WARM_UP_ENTRIES; round++) {
+        await toTurn()
+        singing(target())
+        run(600)
+        expect(phase()).toBe('landed')
+        await toNextEntry()
+      }
+
+      expect(phase()).toBe('result')
+      expect(songs.leadIns).toHaveLength(WARM_UP_ENTRIES)
+      expect(recorded.calls).toHaveLength(1)
+      expect(recorded.calls[0]).toMatchObject({
+        type: 'first-note-stage',
+        metrics: { rounds: WARM_UP_ENTRIES },
+      })
+      expect(localStorage.getItem('pitchperfect_first_note_bests')).toBeNull()
+      // No way off to the Karaoke room mid-routine, and no Again or Done.
+      expect(screen.queryByTestId('first-note-result-sing-on')).toBeNull()
+      expect(screen.queryByTestId('first-note-again')).toBeNull()
+      expect(handed.finish).toEqual([])
+
+      vi.advanceTimersByTime(CHEER_MS + ROUTINE_RESULT_HOLD_MS)
+      expect(handed.finish).toEqual([
+        {
+          id: 'first-note-stage',
+          line: `${WARM_UP_ENTRIES} of ${WARM_UP_ENTRIES} on the note`,
+          settledNote: null,
+        },
+      ])
+      vi.advanceTimersByTime(60_000)
+      expect(handed.finish).toHaveLength(1)
+    })
+
+    it('offers no "Sing on in Karaoke" after a landing', async () => {
+      const onSingOn = vi.fn()
+      render(() => (
+        <FirstNoteRoom
+          onDone={() => undefined}
+          onSingOn={onSingOn}
+          routine={warmUp().stop}
+        />
+      ))
+      await startRun()
+      await toTurn()
+      singing(target())
+      run(600)
+      expect(phase()).toBe('landed')
+      expect(screen.queryByTestId('first-note-sing-on')).toBeNull()
+    })
   })
 })

@@ -35,6 +35,11 @@
 // over the mic in the singer's turn, and "Sing on in Karaoke" there after
 // a landing.
 //
+// In the Warm-up (`routine`, room-kit routine-stop.ts) a run is two entries
+// (WARM_UP_ENTRIES), kept in the history but never as a best (a best is a
+// whole run's, first-note-run.ts), with no way off to the Karaoke room
+// mid-routine, and the shell holds the result until Merc's cheer is done.
+//
 // "How it works" (demo/) plays over the same room: a song's band leads in,
 // then the voice comes in a step under its singer's first note once and on
 // it once, through the room's own engine, with the demo kit's layer, cards
@@ -46,6 +51,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { SingMic, Volume2 } from '@/components/icons'
+import { CHEER_MS } from '@/components/room-kit/merc-moves'
 import { MERC_FEET, MercView } from '@/components/room-kit/MercView'
 import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
@@ -54,12 +60,15 @@ import { ResultCard } from '@/components/room-kit/RoomHeader'
 import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
+import type { RoutineStop } from '@/components/room-kit/routine-stop'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
+import { EXERCISE_FIRST_NOTE_STAGE } from '@/lib/domain/exercise-contracts'
 import type { DemoCueId, DemoTarget } from './demo/demo-cues'
 import { aimFirstNoteTip } from './demo/tip-targets'
 import { useFirstNoteDemo } from './demo/useFirstNoteDemo'
 import { firstNoteShowsWords, sourceHasOwnSongs } from './first-note-choices'
 import type { FirstNoteController } from './first-note-controller-contract'
+import { WARM_UP_ENTRIES } from './first-note-controller-contract'
 import { bandHalfHeight, layoutStage, RESTING_LINE_SHARE, } from './first-note-layout'
 import type { FirstNotePhase } from './first-note-machine'
 import { isRunPhase } from './first-note-machine'
@@ -82,6 +91,11 @@ export interface FirstNoteRoomProps {
   voice?: RoundVoice
   /** What that voice needs loaded before the demo sings (his sampled set). */
   voiceReady?: () => Promise<unknown>
+  /**
+   * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
+   * mode. Read once.
+   */
+  routine?: RoutineStop
   /** The run, when it is not the room's own (a test's). Read once. */
   controller?: FirstNoteController
   /** The theatre's picture, when not the native app's (a fixture's). */
@@ -150,21 +164,47 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
   const [helpOpen, setHelpOpen] = createSignal(false)
   /* eslint-disable solid/reactivity -- read once, as documented */
   const given = props.controller
+  const stop = props.routine
   const room =
     given ??
     useFirstNoteController({
       voice: props.voice,
       ready: props.voiceReady,
       onNoSongs: () => setSongsOpen(true),
+      ...(stop === undefined ? {} : { routine: true, rounds: WARM_UP_ENTRIES }),
     })
   /* eslint-enable solid/reactivity */
-  const demo = given === undefined ? useFirstNoteDemo(room) : null
+  const demo =
+    given === undefined
+      ? useFirstNoteDemo(room, { autoPlay: stop === undefined })
+      : null
   const shell = createRoomShell<DemoCueId, DemoTarget>({
     ids: 'first-note',
     styles,
     run: room,
     demo,
+    routine:
+      stop === undefined
+        ? null
+        : {
+            stop,
+            // Merc's cheer at a good run has settled by then.
+            settleMs: CHEER_MS,
+            result: () => {
+              const summary = room.summary()
+              return summary === null
+                ? null
+                : {
+                    id: EXERCISE_FIRST_NOTE_STAGE,
+                    line: `${summary.onNote} of ${summary.rounds} on the note`,
+                    settledNote: null,
+                  }
+            },
+          },
   })
+  /** "Sing on in Karaoke", outside the Warm-up only: it leaves the room. */
+  const singOnTo = (): FirstNoteRoomProps['onSingOn'] =>
+    stop === undefined ? props.onSingOn : undefined
   const phase = (): FirstNotePhase => room.state().phase
   /** The demo's takes are singing through the room. */
   const demoOn = (): boolean => room.script.active()
@@ -189,7 +229,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
 
   /** The song, whole, in the Karaoke room, from a breath before `entry`. */
   const singOn = (song: FirstNoteSong, entry: FirstNoteEntry): void => {
-    const go = props.onSingOn
+    const go = singOnTo()
     if (go === undefined) return
     // A run in flight is dropped, as Back drops it: the singer chose to go.
     if (isRunPhase(phase())) room.stop()
@@ -335,7 +375,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
             summary={summary()}
             level={room.resultLevel()}
             songs={resultsBySong(room.state().outcomes)}
-            onSingOn={props.onSingOn === undefined ? undefined : singOn}
+            onSingOn={singOnTo() === undefined ? undefined : singOn}
           />
         )}
       </ShellHead>
@@ -418,9 +458,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
             </Show>
             <Show
               when={
-                props.onSingOn !== undefined &&
-                phase() === 'landed' &&
-                !demoOn()
+                singOnTo() !== undefined && phase() === 'landed' && !demoOn()
                   ? room.round()
                   : null
               }

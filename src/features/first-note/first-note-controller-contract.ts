@@ -22,6 +22,12 @@ import type { SongPlayerFactory } from './song-player'
 /** The chip while the singer sings, before their entry. */
 export const YOUR_TURN = 'Your turn'
 
+/**
+ * Entries in a Warm-up stop's run (room-kit routine-stop.ts): two songs'
+ * first notes, about half a minute, where a run on its own has six.
+ */
+export const WARM_UP_ENTRIES = 2
+
 /** Draws the voice's trail: its readings and now, frames' clock; null clears it. */
 export type TrailSink = (
   trail: {
@@ -62,6 +68,10 @@ export interface FirstNoteControllerOptions {
   /** The song player (a test's); the streamed one by default. */
   readonly player?: SongPlayerFactory
   readonly random?: () => number
+  /** Entries a run plans; FIRST_NOTE_ROUNDS by default, WARM_UP_ENTRIES in the Warm-up. */
+  readonly rounds?: number
+  /** A stop of the Warm-up: Merc opens on its cue, and no demo plays unasked. */
+  readonly routine?: boolean
 }
 
 export interface FirstNoteController extends ShellRun {

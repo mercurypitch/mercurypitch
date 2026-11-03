@@ -4,10 +4,11 @@
 //
 // Traced from the storyboard's stops (DESIGN-warm-up.md §1.2): a wave for
 // Lip roll, an arch for Ng slides, a lantern for Long note, Echo's small
-// constellation, and beamed notes for the song. Drawn in a box 0.2 W
-// across (100 units), with the storyboard's stroke, 0.0126 W (6.3 units),
-// in currentColor: the orb's state sets the colour. The lantern and the
-// constellation follow the picker's glyphs (premium-exercises/glyphs.tsx),
+// constellation, First note's stage microphone in its spotlight, and
+// beamed notes for the song. Drawn in a box 0.2 W across (100 units), with
+// the storyboard's stroke, 0.0126 W (6.3 units), in currentColor: the
+// orb's state sets the colour. The lantern, the constellation and the
+// spotlight follow the picker's glyphs (premium-exercises/glyphs.tsx),
 // redrawn here at the stops' size and stroke.
 
 import type { JSX } from 'solid-js'
@@ -71,6 +72,17 @@ export function PathGlyph(props: PathGlyphProps): JSX.Element {
           <path d={star(27, 64, 11)} fill="currentColor" stroke="none" />
           <path d={star(48, 37, 13)} fill="currentColor" stroke="none" />
           <path d={star(73, 52, 11)} fill="currentColor" stroke="none" />
+        </Match>
+        <Match when={props.glyph === 'spotlight'}>
+          {/* The picker's spotlight glyph at the stops' size. */}
+          <g
+            transform="translate(50 50) scale(3.4) translate(-12 -12)"
+            stroke-width={STROKE / 3.4}
+          >
+            <rect x="10" y="7" width="4" height="6.4" rx="2" />
+            <path d="M12 13.4v6.6M9 20.5h6" />
+            <path d="M10.4 3.5 5.6 9.6M13.6 3.5l4.8 6.1" />
+          </g>
         </Match>
         <Match when={props.glyph === 'notes'}>
           {/* 0.111 x 0.093 W: two beamed notes. */}

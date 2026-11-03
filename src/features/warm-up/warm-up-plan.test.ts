@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { RoomStop, SongStop, WarmUpPlan, WarmUpRoomId, WarmUpStop, } from './warm-up-plan'
 import { isWarmUpPlan, OWNER_ROUTINE, planWarmUp, roomCount, } from './warm-up-plan'
 
@@ -15,20 +15,21 @@ function names(stops: readonly WarmUpStop[]): string[] {
 }
 
 describe("the owner's routine", () => {
-  it('climbs Lip roll, Ng slides, Long note and Echo, then the song', () => {
+  it('climbs Lip roll, Ng slides, Long note, Echo and First note, then the song', () => {
     expect(names(OWNER_ROUTINE.stops)).toEqual([
       EXERCISE_LIP_ROLL_BAY,
       EXERCISE_NG_SLIDES_BRIDGE,
       EXERCISE_LONG_NOTE_LANTERN,
       EXERCISE_ECHO_STARS,
+      EXERCISE_FIRST_NOTE_STAGE,
       'song',
     ])
     expect(OWNER_ROUTINE.stops.at(-1)).toEqual(SONG)
   })
 
-  it("is today's plan, and counts four rooms, not the song", () => {
+  it("is today's plan, and counts five rooms, not the song", () => {
     expect(planWarmUp()).toBe(OWNER_ROUTINE)
-    expect(roomCount(OWNER_ROUTINE)).toBe(4)
+    expect(roomCount(OWNER_ROUTINE)).toBe(5)
     expect(isWarmUpPlan(OWNER_ROUTINE)).toBe(true)
   })
 })

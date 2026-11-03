@@ -26,7 +26,9 @@
 //                        songs, where Import is, the way to Cloud
 //
 // Opening is the choice: the screen records First note as the last
-// exercise the moment it mounts, as LongNoteScreen does for Long note.
+// exercise the moment it mounts, as LongNoteScreen does for Long note, but
+// not as a stop of the Warm-up (warm-up-stop.ts), which opens it in
+// warm-up mode: two entries, its result held, then back to the path.
 
 import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
@@ -38,12 +40,18 @@ import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { EXERCISE_FIRST_NOTE_STAGE } from '@/lib/domain/exercise-contracts'
 import { popScreen } from './run-shell-store'
 import { goToTab } from './shell-navigation'
+import { warmUpStop } from './warm-up-stop'
 
 export function FirstNoteScreen(): JSX.Element {
-  onMount(() => rememberLastExercise(EXERCISE_FIRST_NOTE_STAGE))
+  // A stop of the Warm-up, or the room on its own (warm-up-stop.ts).
+  const stop = warmUpStop(EXERCISE_FIRST_NOTE_STAGE, popScreen)
+  onMount(() => {
+    if (stop === undefined) rememberLastExercise(EXERCISE_FIRST_NOTE_STAGE)
+  })
   return (
     <FirstNoteRoom
       onDone={popScreen}
+      routine={stop}
       voice={MERC_CALL}
       voiceReady={preloadMercVoice}
       onSingOn={(sessionId, seconds) => {

@@ -98,13 +98,12 @@ async function openPicker(seed: Seed = {}) {
       JSON.stringify({
         date: localDayString(),
         plan: OWNER_ROUTINE,
-        marks: [
-          { state: 'done', line: '86% lit' },
-          { state: 'done', line: '92% lit' },
-          { state: 'done', line: '12.6 s' },
-          { state: 'done', line: '8 of 9 on pitch' },
-          { state: 'waiting' },
-        ],
+        // Every room sung, the song still waiting: the end.
+        marks: OWNER_ROUTINE.stops.map((stop) =>
+          stop.kind === 'room'
+            ? { state: 'done', line: '86% lit' }
+            : { state: 'waiting' },
+        ),
         settledNote: null,
         warmedUp: true,
         lastActiveAt: 1,
@@ -172,7 +171,7 @@ describe('the cards', () => {
       'Ng slidesSingerHum five slides up a fifth and back, and light the bridge.',
     )
     expect(card('warm-up-path').textContent).toBe(
-      'Warm-upSingerFour stops, about three minutes, then a song.',
+      'Warm-upSingerFive stops, about four minutes, then a song.',
     )
   })
 

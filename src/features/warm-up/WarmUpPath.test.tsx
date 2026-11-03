@@ -14,19 +14,19 @@ import { createSignal, Show } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HOP_MS } from '@/components/room-kit/merc-moves'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { onUnlockShown, resetNotifications, setNotificationPresenter, showNotification, } from '@/stores/notifications-store'
 import { HOP_DRIFT_MS, hopDriftKeyframes } from './hop-drift'
 import { askPathLanding, resetPathLandingForTests } from './path-landing'
 import type { PathMode } from './path-layout'
-import { columnX, columnY, pathFrame, segmentD, stopPlaces, } from './path-layout'
+import { columnX, columnY, mercFeet, pathFrame, segmentD, stopPlaces, } from './path-layout'
 import { ACTIONS_MS, BETWEEN_HOP_ACROSS_EASE, DRAW_IN_MS, END_HOP_ACROSS_EASE, END_SONG_MS, END_STEP_MS, HOP_AT_MS, HOP_EASE, LIGHT_MS, PACK_AFTER_HOP_MS, PACK_MS, } from './path-motion'
 import { pinnedSource } from './path-source'
 import { freshDay } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
-import { OWNER_ROUTINE } from './warm-up-plan'
+import { isRoomStop, OWNER_ROUTINE } from './warm-up-plan'
 import { enterStop, leavePath, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, warmUpDay, warmUpLastMove, } from './warm-up-store'
 import { PULSE_MS, WarmUpPath } from './WarmUpPath'
 
@@ -45,13 +45,24 @@ vi.mock('@/components/room-kit/MercView', () => ({
   },
 }))
 
-const ROOMS: readonly WarmUpRoomId[] = [
-  EXERCISE_LIP_ROLL_BAY,
-  EXERCISE_NG_SLIDES_BRIDGE,
-  EXERCISE_LONG_NOTE_LANTERN,
-  EXERCISE_ECHO_STARS,
+/** The owner's routine's rooms, in its order: Lip roll up to First note. */
+const ROOMS: readonly WarmUpRoomId[] = OWNER_ROUTINE.stops
+  .filter(isRoomStop)
+  .map((stop) => stop.id)
+const LINES = [
+  '86% lit',
+  '92% lit',
+  '12.6 s',
+  '8 of 9 on pitch',
+  '2 of 2 on the note',
 ]
-const LINES = ['86% lit', '92% lit', '12.6 s', '8 of 9 on pitch']
+/** Its rooms, and every stop with the song on top. */
+const COUNT = ROOMS.length
+const STOPS = COUNT + 1
+/** Each stop's index on the path, bottom first. */
+const EVERY_STOP = Array.from({ length: STOPS }, (_, i) => i)
+/** Each room's index on the path, bottom first. */
+const EVERY_ROOM = Array.from({ length: COUNT }, (_, i) => i)
 
 /** A stop sung in its room: opened, then finished with its line. */
 function sing(index: number): void {
@@ -135,7 +146,7 @@ describe('the first visit', () => {
   it('says the minutes and offers Start, the level pill beside the title', () => {
     mount()
     expect(screen.getByTestId('warm-up-path').dataset.state).toBe('start')
-    expect(text('warm-up-chip')).toBe('3 min')
+    expect(text('warm-up-chip')).toBe('4 min')
     expect(text('warm-up-start')).toBe('Start warm-up')
     expect(screen.queryByTestId('warm-up-level')).not.toBeNull()
   })
@@ -153,6 +164,7 @@ describe('the first visit', () => {
       'Ng slides, waiting',
       'Long note, waiting',
       'Echo, waiting',
+      'First note, waiting',
       'Your song, waiting',
     ])
   })
@@ -183,7 +195,7 @@ describe("the day's first open (§5.2, §10)", () => {
     document.querySelector<HTMLElement>('[data-draw="in"]')
   /** When each stop starts to fade in, ms, bottom stop first. */
   const startsAt = (): number[] =>
-    [0, 1, 2, 3, 4].map((i) =>
+    EVERY_STOP.map((i) =>
       Number.parseFloat(
         screen
           .getByTestId(`warm-up-stop-${i}`)
@@ -402,12 +414,12 @@ describe('back from a stop', () => {
 })
 
 describe('coming back the same day', () => {
-  it('"1 of 4 today", the result under its name, and Next: Long note', () => {
+  it('"1 of 5 today", the result under its name, and Next: Long note', () => {
     sing(0)
     skipNextStop()
     leavePath()
     mount()
-    expect(text('warm-up-chip')).toBe('1 of 4 today')
+    expect(text('warm-up-chip')).toBe(`1 of ${COUNT} today`)
     expect(text('warm-up-stop-0')).toContain('86% lit')
     expect(text('warm-up-stop-1')).toContain('Skipped')
     expect(text('warm-up-next')).toBe('Next: Long note')
@@ -417,14 +429,14 @@ describe('coming back the same day', () => {
 
 describe('the end', () => {
   beforeEach(() => {
-    for (const i of [0, 1, 2, 3]) sing(i)
+    for (const i of EVERY_ROOM) sing(i)
   })
 
-  it('"Warmed up", "4 of 4 today", every result under its stop', () => {
+  it('"Warmed up", "5 of 5 today", every result under its stop', () => {
     mount()
     expect(text('warm-up-title')).toBe('Warmed up')
     expect(screen.queryByTestId('warm-up-week')).toBeNull()
-    expect(screen.getByText('4 of 4 today')).not.toBeNull()
+    expect(screen.getByText(`${COUNT} of ${COUNT} today`)).not.toBeNull()
     for (const [i, line] of LINES.entries()) {
       expect(text(`warm-up-stop-${i}`)).toContain(line)
     }
@@ -434,26 +446,26 @@ describe('the end', () => {
   it('each stop brightens by a crossfade of its sprites, bottom up, the song last', () => {
     mount()
     expect(sprites(0)).toEqual(['done*', 'done'])
-    expect(sprites(4)).toEqual(['waiting*', 'waiting'])
+    expect(sprites(COUNT)).toEqual(['waiting*', 'waiting'])
     vi.advanceTimersByTime(END_STEP_MS)
     expect(sprites(0)).toEqual(['done', 'lit*'])
     expect(sprites(1)).toEqual(['done*', 'done'])
-    vi.advanceTimersByTime(3 * END_STEP_MS + END_SONG_MS)
-    expect([1, 2, 3].map((i) => sprites(i))).toEqual(
-      Array(3).fill(['done', 'lit*']),
+    vi.advanceTimersByTime((COUNT - 1) * END_STEP_MS + END_SONG_MS)
+    expect(EVERY_ROOM.slice(1).map((i) => sprites(i))).toEqual(
+      Array(COUNT - 1).fill(['done', 'lit*']),
     )
-    expect(sprites(4)).toEqual(['waiting', 'lit*'])
+    expect(sprites(COUNT)).toEqual(['waiting', 'lit*'])
   })
 
   describe('the pack (§3: closer under the titles)', () => {
     // jsdom lays nothing out: the path keeps its 390 x 844 phone frame.
     const frame = pathFrame(
       { width: 390, height: 844, top: 56, bottom: 0 },
-      5,
+      STOPS,
       'end',
     )
     const at = (mode: PathMode, i: number): { x: number; y: number } => {
-      const place = stopPlaces(5, mode)[i]!
+      const place = stopPlaces(STOPS, mode)[i]!
       return { x: columnX(place.x, frame), y: columnY(place.y, frame) }
     }
     const stop = (i: number): HTMLElement =>
@@ -466,11 +478,11 @@ describe('the end', () => {
       )
     const segment = (i: number): SVGGElement =>
       screen.getByTestId('warm-up-trail').querySelectorAll('g')[i]!
-    const SONG_AT = 4 * END_STEP_MS + END_SONG_MS
+    const SONG_AT = COUNT * END_STEP_MS + END_SONG_MS
 
     it('the stops brighten where they stood, then pack while Merc hops, the path with them', () => {
       mount()
-      for (const i of [0, 1, 2, 3, 4]) {
+      for (const i of EVERY_STOP) {
         expect(yOf(i)).toBeCloseTo(at('rest', i).y, 3)
       }
       expect(stop(3).style.transition).toBe('')
@@ -478,7 +490,7 @@ describe('the end', () => {
       vi.advanceTimersByTime(SONG_AT + PACK_AFTER_HOP_MS)
       // Packing: each stop moves to its end place by a transition, and each
       // segment, still drawn between the rest places, is carried with them.
-      for (const i of [0, 1, 2, 3, 4]) {
+      for (const i of EVERY_STOP) {
         expect(yOf(i)).toBeCloseTo(at('end', i).y, 3)
       }
       expect(stop(3).style.transition).toContain(`${PACK_MS}ms`)
@@ -510,9 +522,17 @@ describe('the end', () => {
         Number(/translateX\(([-\d.e]+)px\)/u.exec(track.style.transform)?.[1])
       const beside = across()
       expect(track.style.transition).toBe('none')
+      // The names alternate sides, so which way the song lies from beside
+      // the last room turns on how many rooms the routine has.
+      const places = stopPlaces(STOPS, 'end')
+      const way = Math.sign(
+        mercFeet(places, { at: 'on', index: COUNT }).x -
+          mercFeet(places, { at: 'beside', index: COUNT - 1 }).x,
+      )
+      expect(way).not.toBe(0)
       vi.advanceTimersByTime(SONG_AT)
       // On its way to the song's x, at the across pace (path-motion.ts).
-      expect(across()).toBeLessThan(beside)
+      expect(Math.sign(across() - beside)).toBe(way)
       expect(track.style.transition).toContain(`${HOP_MS}ms`)
       expect(track.style.transition).toContain(END_HOP_ACROSS_EASE)
       vi.advanceTimersByTime(HOP_MS)
@@ -528,7 +548,7 @@ describe('the end', () => {
       }))
       try {
         mount()
-        for (const i of [0, 1, 2, 3, 4]) {
+        for (const i of EVERY_STOP) {
           expect(yOf(i)).toBeCloseTo(at('end', i).y, 3)
         }
         for (let t = 0; t < SONG_AT + PACK_MS + HOP_MS; t += 50) {
@@ -547,7 +567,7 @@ describe('the end', () => {
   it('the song lights with its burst, and Merc lands on it with a success', () => {
     mount()
     expect(screen.queryByTestId('warm-up-burst')).toBeNull()
-    vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS)
+    vi.advanceTimersByTime(COUNT * END_STEP_MS + END_SONG_MS)
     expect(screen.queryByTestId('warm-up-burst')).not.toBeNull()
     expect(haptics.success).not.toHaveBeenCalled()
     vi.advanceTimersByTime(HOP_MS)
@@ -633,12 +653,12 @@ describe('leaving the path, and what the routine unlocked', () => {
   })
 
   it('says it over the buttons at the end, under the titles and Merc', () => {
-    for (const i of [0, 1, 2]) sing(i)
-    expect(enterStop(3)).toBe(true)
+    for (const i of EVERY_ROOM.slice(0, -1)) sing(i)
+    expect(enterStop(COUNT - 1)).toBe(true)
     grant(STEADY)
-    routineStopFor(EXERCISE_ECHO_STARS)!.finish({
-      id: EXERCISE_ECHO_STARS,
-      line: LINES[3]!,
+    routineStopFor(EXERCISE_FIRST_NOTE_STAGE)!.finish({
+      id: EXERCISE_FIRST_NOTE_STAGE,
+      line: LINES[COUNT - 1]!,
       settledNote: null,
     })
     mount()
@@ -674,10 +694,10 @@ describe('a new day', () => {
     sing(0)
     leavePath()
     mount()
-    expect(text('warm-up-chip')).toBe('1 of 4 today')
+    expect(text('warm-up-chip')).toBe(`1 of ${COUNT} today`)
     vi.setSystemTime(new Date(2026, 9, 20, 7, 0))
     document.dispatchEvent(new Event('visibilitychange'))
-    expect(text('warm-up-chip')).toBe('3 min')
+    expect(text('warm-up-chip')).toBe('4 min')
     expect(text('warm-up-start')).toBe('Start warm-up')
   })
 })

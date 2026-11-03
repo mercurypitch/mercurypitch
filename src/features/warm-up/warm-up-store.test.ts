@@ -16,14 +16,28 @@ import { notifications, resetNotifications, setNotificationPresenter, showNotifi
 import type { WarmUpDay } from './routine'
 import { nextStop, tally } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
+import { isRoomStop, OWNER_ROUTINE } from './warm-up-plan'
 import { canStartWarmUp, claimPathUnlocks, enterStop, firstPathOpenToday, leavePath, leaveStop, nextWarmUpRoom, openStop, resetWarmUpForTests, routineStopFor, routineUnlocks, skipNextStop, WARM_UP_OPENED_KEY, WARM_UP_TODAY_KEY, warmedUpToday, warmUpAgain, warmUpDay, warmUpDays, warmUpLastMove, warmUpWeek, } from './warm-up-store'
 
-const ROOMS: readonly WarmUpRoomId[] = [
-  EXERCISE_LIP_ROLL_BAY,
-  EXERCISE_NG_SLIDES_BRIDGE,
-  EXERCISE_LONG_NOTE_LANTERN,
-  EXERCISE_ECHO_STARS,
+/** Today's routine's rooms, in its order: Lip roll up to First note. */
+const ROOMS: readonly WarmUpRoomId[] = OWNER_ROUTINE.stops
+  .filter(isRoomStop)
+  .map((stop) => stop.id)
+/** Its rooms, the song (the stop after them), and every stop. */
+const COUNT = ROOMS.length
+const SONG = COUNT
+const STOPS = COUNT + 1
+/** A line for each room, as the frames have them. */
+const LINES = [
+  '86% lit',
+  '92% lit',
+  '12.6 s',
+  '8 of 9 on pitch',
+  '2 of 2 on the note',
 ]
+/** The rooms' indexes from `from` up to the last room. */
+const roomsFrom = (from: number): number[] =>
+  Array.from({ length: COUNT - from }, (_, i) => from + i)
 
 const result = (
   id: WarmUpRoomId,
@@ -68,7 +82,7 @@ afterEach(() => {
 
 describe('today, before a stop opens', () => {
   it('shows a fresh run and keeps nothing until the first stop opens', () => {
-    expect(states(warmUpDay())).toEqual(Array(5).fill('waiting'))
+    expect(states(warmUpDay())).toEqual(Array(STOPS).fill('waiting'))
     expect(warmUpDay().date).toBe('2026-10-18')
     expect(kept()).toBeNull()
     expect(enterStop(0)).toBe(true)
@@ -86,7 +100,7 @@ describe('the open stop', () => {
     enterStop(0)
     expect(openStop()).toBe(0)
     const stop = routineStopFor(EXERCISE_LIP_ROLL_BAY)
-    expect(stop).toMatchObject({ index: 0, count: 4, settledNote: null })
+    expect(stop).toMatchObject({ index: 0, count: COUNT, settledNote: null })
     expect(routineStopFor(EXERCISE_NG_SLIDES_BRIDGE)).toBeUndefined()
   })
 
@@ -95,7 +109,7 @@ describe('the open stop', () => {
     expect(openStop()).toBeNull()
     expect(states(warmUpDay())).toEqual([
       '86% lit',
-      ...Array(4).fill('waiting'),
+      ...Array(COUNT).fill('waiting'),
     ])
     expect(kept()).toEqual(warmUpDay())
   })
@@ -105,7 +119,7 @@ describe('the open stop', () => {
     enterStop(1)
     expect(routineStopFor(EXERCISE_NG_SLIDES_BRIDGE)).toMatchObject({
       index: 1,
-      count: 4,
+      count: COUNT,
       settledNote: 57,
     })
   })
@@ -127,7 +141,7 @@ describe('the open stop', () => {
     left.skip()
     expect(states(warmUpDay())).toEqual([
       '86% lit',
-      ...Array(4).fill('waiting'),
+      ...Array(COUNT).fill('waiting'),
     ])
     expect(openStop()).toBeNull()
   })
@@ -141,7 +155,7 @@ describe('the open stop', () => {
     routineStopFor(EXERCISE_NG_SLIDES_BRIDGE)!.finish(
       result(EXERCISE_ECHO_STARS, '8 of 9 on pitch'),
     )
-    expect(states(warmUpDay())).toEqual(Array(5).fill('waiting'))
+    expect(states(warmUpDay())).toEqual(Array(STOPS).fill('waiting'))
     expect(openStop()).toBe(1)
   })
 
@@ -149,7 +163,7 @@ describe('the open stop', () => {
     enterStop(0)
     routineStopFor(EXERCISE_LIP_ROLL_BAY)!.skip()
     expect(enterStop(0)).toBe(false)
-    expect(enterStop(4)).toBe(false)
+    expect(enterStop(SONG)).toBe(false)
     expect(openStop()).toBeNull()
   })
 })
@@ -166,14 +180,16 @@ describe('the path', () => {
     expect(nextStop(warmUpDay())).toBe(2)
   })
 
-  it('four stops sung: the end, warmed up; Warm up again starts over, still warmed up', () => {
-    ;['86% lit', '92% lit', '12.6 s', '8 of 9 on pitch'].forEach((line, i) =>
-      sing(i, line),
-    )
+  it('every room sung: the end, warmed up; Warm up again starts over, still warmed up', () => {
+    for (const i of roomsFrom(0)) sing(i, LINES[i]!)
     expect(warmUpDay().warmedUp).toBe(true)
-    expect(tally(warmUpDay())).toEqual({ done: 4, skipped: 0, rooms: 4 })
+    expect(tally(warmUpDay())).toEqual({
+      done: COUNT,
+      skipped: 0,
+      rooms: COUNT,
+    })
     warmUpAgain()
-    expect(states(warmUpDay())).toEqual(Array(5).fill('waiting'))
+    expect(states(warmUpDay())).toEqual(Array(STOPS).fill('waiting'))
     expect(warmUpDay().warmedUp).toBe(true)
   })
 })
@@ -185,7 +201,7 @@ describe('coming back', () => {
     resetWarmUpForTests() // the app goes, and comes back
     expect(openStop()).toBeNull()
     expect(routineStopFor(EXERCISE_NG_SLIDES_BRIDGE)).toBeUndefined()
-    expect(tally(warmUpDay())).toEqual({ done: 1, skipped: 0, rooms: 4 })
+    expect(tally(warmUpDay())).toEqual({ done: 1, skipped: 0, rooms: COUNT })
     expect(nextStop(warmUpDay())).toBe(1)
   })
 
@@ -194,7 +210,7 @@ describe('coming back', () => {
     vi.setSystemTime(new Date(2026, 9, 19, 0, 5))
     const day = warmUpDay()
     expect(day.date).toBe('2026-10-19')
-    expect(states(day)).toEqual(Array(5).fill('waiting'))
+    expect(states(day)).toEqual(Array(STOPS).fill('waiting'))
     expect(day.warmedUp).toBe(false)
   })
 
@@ -224,7 +240,7 @@ describe('coming back', () => {
       }),
     )
     resetWarmUpForTests()
-    expect(states(warmUpDay())).toEqual(Array(5).fill('waiting'))
+    expect(states(warmUpDay())).toEqual(Array(STOPS).fill('waiting'))
     expect(warmUpDay().warmedUp).toBe(false)
   })
 })
@@ -257,9 +273,7 @@ describe("the last move, for the path's card", () => {
     leavePath()
     expect(warmUpLastMove()).toBeNull()
 
-    sing(1, '92% lit')
-    sing(2, '12.6 s')
-    sing(3, '8 of 9 on pitch')
+    for (const i of roomsFrom(1)) sing(i, LINES[i]!)
     warmUpAgain()
     expect(warmUpLastMove()).toBeNull()
 
@@ -329,9 +343,9 @@ describe('the picker card and the tap that opens the Warm-up', () => {
   it('counts today once the end is reached with a stop finished', () => {
     sing(0, '86% lit')
     skipNextStop()
-    sing(2, '12.6 s')
+    for (const i of roomsFrom(2).slice(0, -1)) sing(i, LINES[i]!)
     expect(warmedUpToday()).toBe(false)
-    sing(3, '8 of 9 on pitch')
+    sing(COUNT - 1, LINES[COUNT - 1]!)
     expect(warmedUpToday()).toBe(true)
   })
 
@@ -340,19 +354,16 @@ describe('the picker card and the tap that opens the Warm-up', () => {
     sing(0, '86% lit')
     skipNextStop()
     expect(nextWarmUpRoom()).toBe(EXERCISE_LONG_NOTE_LANTERN)
-    sing(2, '12.6 s')
-    sing(3, '8 of 9 on pitch')
+    for (const i of roomsFrom(2)) sing(i, LINES[i]!)
     expect(nextWarmUpRoom()).toBeNull()
   })
 })
 
 describe('the days warmed up (N5)', () => {
   it('joins the synced days once the end counts the day, and once only', () => {
-    sing(0, '86% lit')
-    sing(1, '92% lit')
-    sing(2, '12.6 s')
+    for (const i of roomsFrom(0).slice(0, -1)) sing(i, LINES[i]!)
     expect(keptDays()).toBeNull()
-    sing(3, '8 of 9 on pitch')
+    sing(COUNT - 1, LINES[COUNT - 1]!)
     expect(keptDays()).toEqual(['2026-10-18'])
     const written = localStorage.getItem(WARM_UP_DAYS_KEY)
     warmUpAgain()
@@ -361,10 +372,10 @@ describe('the days warmed up (N5)', () => {
   })
 
   it('counts a day reached by Skip beside Next, and none with every stop skipped', () => {
-    for (let i = 0; i < 4; i += 1) skipNextStop()
+    for (let i = 0; i < COUNT; i += 1) skipNextStop()
     expect(keptDays()).toBeNull()
     sing(0, '86% lit')
-    for (let i = 0; i < 3; i += 1) skipNextStop()
+    for (let i = 1; i < COUNT; i += 1) skipNextStop()
     expect(keptDays()).toEqual(['2026-10-18'])
   })
 
@@ -394,7 +405,7 @@ describe('the days warmed up (N5)', () => {
   })
 
   it("counts today's run before its date has landed in the synced days", () => {
-    for (const i of [0, 1, 2, 3]) sing(i, 'done')
+    for (const i of roomsFrom(0)) sing(i, 'done')
     // The settings sync set the days back (another account's copy, say):
     // this device's run still counts today.
     applyPersistedValue(WARM_UP_DAYS_KEY, '[]')

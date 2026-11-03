@@ -15,8 +15,11 @@
 //
 // One scale, k, for the whole screen: the smallest that fits both the rest
 // layout (start, between, resume) and the end one between the screen's top
-// zone and its floor, clamped to 0.75 to 1 so the path does not jump
-// between states. A path that does not fit even at 0.75 scrolls.
+// zone and its floor, clamped to 0.6 to 1 so the path does not jump
+// between states. A path that does not fit even at 0.6 scrolls. (The floor
+// was 0.75 until First note made the owner's routine six stops, 3 Nov
+// 2026: at 0.75 it scrolled on a 375 x 667 iPhone SE and a 360 x 640
+// phone, its top stop under the chip as it opened.)
 
 /** A waiting orb's rim radius, W (storyboard slots 3 to 5). */
 export const RIM_W = 0.1005
@@ -56,8 +59,13 @@ const MERC_BESIDE_GAP = 0.07
 const MERC_HALF_BODY = 0.145
 /** Half his body's height, W: centred on a stop's height beside it. */
 const MERC_HALF_HEIGHT = 0.175
-/** On the song stop: his feet above its centre, and left of it, W (screen 3). */
-const MERC_ON_SONG = { dx: -0.054, dy: 0.036 } as const
+/**
+ * On the song stop: his feet above its centre, and off it to the side away
+ * from its name, W (screen 3, its name on the right: him left of it). On a
+ * path whose song has its name on the left, toward the name his hop
+ * crossed it as the stops packed (six stops, 3 Nov 2026).
+ */
+const MERC_ON_SONG = { dx: 0.054, dy: 0.036 } as const
 /** On the floor at the start, left of the bottom stop (screen 1). */
 const MERC_ON_FLOOR = { x: 0.2075, y: 0 } as const
 /**
@@ -76,8 +84,8 @@ export const MERC_SONG_SCALE = MERC_SONG_HEIGHT / MERC_CROWN_OVER_FEET
 /** His crown's tip above the song stop's centre at the end, W. */
 const MERC_HEAD_OVER_SONG = MERC_ON_SONG.dy + MERC_SONG_HEIGHT
 
-/** The clamp on the screen's one scale (§3). */
-export const MIN_K = 0.75
+/** The clamp on the screen's one scale (§3; its floor 0.75 before 3 Nov 2026). */
+export const MIN_K = 0.6
 export const MAX_K = 1
 
 export type PathMode = 'rest' | 'end'
@@ -131,7 +139,8 @@ export function mercFeet(
   const stop = places[spot.index]
   if (stop === undefined) return { ...MERC_ON_FLOOR }
   if (spot.at === 'on') {
-    return { x: stop.x + MERC_ON_SONG.dx, y: stop.y + MERC_ON_SONG.dy }
+    const away = stop.side === 'right' ? -MERC_ON_SONG.dx : MERC_ON_SONG.dx
+    return { x: stop.x + away, y: stop.y + MERC_ON_SONG.dy }
   }
   // Beside, on the side away from the stop's name.
   const reach = RIM_W + MERC_BESIDE_GAP + MERC_HALF_BODY

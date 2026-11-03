@@ -21,6 +21,7 @@ import { createRoomLines } from '@/components/room-kit/room-lines'
 export type FirstMoment =
   | 'intro'
   | 'introLine'
+  | 'routine'
   | 'landedOnNote'
   | 'landed'
   | 'missed'
@@ -46,6 +47,14 @@ export const FIRST_LINES: LineTable<FirstMoment> = {
     {
       id: 'intro-entry',
       text: 'When the band stops, come in on the first note, in any octave. The line shows once you do.',
+    },
+  ],
+  // The Warm-up's cue (room-kit routine-stop.ts): the first opening line,
+  // which holds at every level, and its take.
+  routine: [
+    {
+      id: 'routine-stop',
+      text: "I'll play a song and stop the band where the singer comes in. Sing their first note.",
     },
   ],
   // Learning: the note's line is there from the start.

@@ -77,10 +77,10 @@ describe('the exercise catalogue', () => {
     }
   })
 
-  it('heads the Warm-ups with the Warm-up: four stops, then a song', () => {
+  it('heads the Warm-ups with the Warm-up: five stops, then a song', () => {
     const warmUp = catalogueEntry('warm-up-path')
     expect(warmUp?.name).toBe('Warm-up')
-    expect(warmUp?.line).toBe('Four stops, about three minutes, then a song.')
+    expect(warmUp?.line).toBe('Five stops, about four minutes, then a song.')
     expect([
       warmUp?.note(),
       warmUp?.demoAutoPlays(),
