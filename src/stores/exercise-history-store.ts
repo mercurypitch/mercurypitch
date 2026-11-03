@@ -8,18 +8,24 @@
 // (which itself credits practice minutes) all hang off it. Adding a new
 // exercise means calling this once, not wiring each consumer -- and calling
 // it twice double-counts practice credit.
+//
+// A run stopped before its end (`stoppedEarly` in its metrics) is practice,
+// not a result. It is kept here, marked, and credits its practice time and
+// the streak, but it is no challenge or weekly attempt, writes no session
+// record, and none of the bars reading `comparableExerciseHistory` see it.
 
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
-import { saveSessionRecord } from '@/db/services/session-service'
+import { creditPracticeTime, saveSessionRecord, } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
-import { exerciseComparabilityKey, exerciseScoringVersion, onCurrentScoring, } from '@/features/exercises/exercise-comparability'
+import { exerciseComparabilityKey, exerciseScoringVersion, isComparableRun, } from '@/features/exercises/exercise-comparability'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
 import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordCompletion } from './usage-store'
@@ -29,6 +35,8 @@ const STORAGE_KEY = 'mercurypitch_exercise_history'
 export interface ExerciseHistoryEntry {
   type: ExerciseType
   score: number
+  /** The drill's own metrics; `stoppedEarly: 1` marks a run stopped before
+   *  its end (`stoppedEarlyMark`). */
   metrics: Record<string, number>
   completedAt: number
   /** The drill's scoring version when the run was recorded; runs recorded
@@ -59,16 +67,19 @@ export function exerciseHistory(): ExerciseHistoryEntry[] {
 }
 
 /**
- * The runs scored the way their drill scores now, newest first. Everything
- * that averages, compares or counts a drill's scores reads these: the
- * stats below, the difficulty EMA and its play count, the weak-drill list
- * and the per-drill trends. A rescored drill then starts again from its
- * next run instead of blending two rulers -- after Arpeggio Jumper's
- * rescore, its old runs (capped at 75) would otherwise have held the EMA
- * under the step-up line for about ten runs.
+ * The runs that compare, newest first: run to their end, and scored the
+ * way their drill scores now. Everything that averages, compares or counts
+ * a drill's scores reads these: the stats below, the difficulty EMA and its
+ * play count, the weak-drill and weak-interval lists and the per-drill
+ * trends. A rescored drill then starts again from its next run instead of
+ * blending two rulers -- after Arpeggio Jumper's rescore, its old runs
+ * (capped at 75) would otherwise have held the EMA under the step-up line
+ * for about ten runs. And a stopped run, graded on the rounds it reached,
+ * moves none of them: one good round and Stop read as a flawless run, and
+ * five of those lifted the level.
  */
-export function exerciseHistoryOnCurrentScoring(): ExerciseHistoryEntry[] {
-  return history().filter((e) => onCurrentScoring(e.type, e.scoringVersion))
+export function comparableExerciseHistory(): ExerciseHistoryEntry[] {
+  return history().filter(isComparableRun)
 }
 
 /**
@@ -190,6 +201,15 @@ export function recordExerciseResult(
     })
     if (consumedChallenge || consumedWeekly) return
 
+    // A stopped run declined both attempts above, and writes no record: the
+    // record has no column to say it was stopped, and every goal, board,
+    // league award and Progress thread reads its score. Its time still
+    // counts, toward the day's minutes and the streak.
+    if (runStoppedEarly(entry.metrics)) {
+      await creditPracticeTime(durationMs, ownerId)
+      return
+    }
+
     const savedSession = await saveSessionRecord(
       exerciseSessionPayload(entry, durationMs),
       ownerId,
@@ -214,14 +234,12 @@ export function recordExerciseResult(
 }
 
 /**
- * A drill's stats from local history. The stats cover the runs scored the
- * way the drill scores now, so a rescored drill starts again from its next
- * run.
+ * A drill's stats from local history. The stats cover the runs that
+ * compare, so a rescored drill starts again from its next run, and a
+ * stopped run sets no best.
  */
 export function getExerciseStats(type: ExerciseType): ExerciseStats {
-  const entries = exerciseHistoryOnCurrentScoring().filter(
-    (e) => e.type === type,
-  )
+  const entries = comparableExerciseHistory().filter((e) => e.type === type)
   if (entries.length === 0) {
     return {
       bestScore: 0,

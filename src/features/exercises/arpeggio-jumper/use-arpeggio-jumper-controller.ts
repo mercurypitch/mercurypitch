@@ -33,7 +33,7 @@ import { scoreWindow } from '@/lib/score-window'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { averageDeviationCents, scoreSamples } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
+import { EXERCISE_ARPEGGIO_JUMPER, runStoppedEarly, stoppedEarlyMark, } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 type ArpeggioType = 'major' | 'minor' | 'diminished' | 'augmented'
@@ -175,11 +175,12 @@ export function arpeggioRunHeard(
  * Whether the run was stopped before its end. That is no result either:
  * graded on the notes it reached, one good note and Stop would record 100.
  * It is not recorded (REQ-GVC-031: a partial run, never a false result).
+ * The mark is every drill's (`stoppedEarlyMark`).
  */
 export function arpeggioRunStopped(
   metrics: Readonly<Record<string, number>> | undefined,
 ): boolean {
-  return (metrics?.stoppedEarly ?? 0) > 0
+  return runStoppedEarly(metrics)
 }
 
 function buildArpeggioNotes(
@@ -408,9 +409,7 @@ export function useArpeggioJumperController(
   function computeResult(): ExerciseResult {
     const echoMode = mode === 'echo' ? 1 : 0
     // Only a stopped run carries the flag, so a recorded run never does.
-    const stopped: Record<string, number> = stoppedEarly
-      ? { stoppedEarly: 1 }
-      : {}
+    const stopped = stoppedEarlyMark(stoppedEarly)
     if (sungNotes.length === 0) {
       return {
         type: EXERCISE_ARPEGGIO_JUMPER,

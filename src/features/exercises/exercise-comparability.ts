@@ -15,9 +15,18 @@
 // that scoring contract: bump a drill's entry when its score stops meaning
 // what it meant, and its thread starts fresh instead of drawing a false
 // trend across two different rulers.
+//
+// A run compares only if it also ran to its end. The round-based drills
+// grade the rounds a run reached, so one good round and Stop graded like a
+// flawless whole run: it completed the 85-point Subwoofer Sound challenge,
+// earned Perfect Run and, five times over, lifted the level. A stopped run
+// is practice, not a result. Its controller marks it where the result is
+// made (`stoppedEarlyMark`, in the result contract), and every bar reads
+// only runs that compare (`isComparableRun`): the level, the best, the weak
+// list, the averages and the trends.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, runStoppedEarly, } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
@@ -65,6 +74,21 @@ export function onCurrentScoring(
 ): boolean {
   return (
     (recorded ?? UNSTAMPED_VERSION[type] ?? 1) === exerciseScoringVersion(type)
+  )
+}
+
+/**
+ * Whether a recorded run compares with its drill's other runs: run to its
+ * end, and scored the way the drill scores now.
+ */
+export function isComparableRun(run: {
+  readonly type: ExerciseType
+  readonly scoringVersion?: number
+  readonly metrics: Readonly<Record<string, number>>
+}): boolean {
+  return (
+    onCurrentScoring(run.type, run.scoringVersion) &&
+    !runStoppedEarly(run.metrics)
   )
 }
 

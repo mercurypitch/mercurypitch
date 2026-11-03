@@ -12,7 +12,7 @@ import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_SIREN } from '../types'
+import { EXERCISE_SIREN, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { SIREN_PHASE_GLIDE, SIREN_PHASE_LISTEN, SIREN_PHASE_READY, sirenGuideMidi, useSirenController, } from './use-siren-controller'
 
@@ -125,6 +125,7 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

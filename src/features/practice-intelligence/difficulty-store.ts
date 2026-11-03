@@ -8,7 +8,7 @@
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { exerciseHistoryOnCurrentScoring } from '@/stores/exercise-history-store'
+import { comparableExerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { clampDifficulty, getSuggestedDifficulty } from './adaptive-difficulty'
 
@@ -32,9 +32,10 @@ const [difficultyMap, setDifficultyMap] = createPersistedSignal<DifficultyMap>(
 const [lastAdjustCount, setLastAdjustCount] =
   createPersistedSignal<DifficultyMap>(ADJUST_COUNT_KEY, {})
 
-/** Plays of `type` scored the way it scores now, as the EMA counts them. */
+/** Plays of `type` that compare, as the EMA counts them: whole runs,
+ *  scored the way it scores now. A stopped run is no play. */
 function playCount(type: ExerciseType): number {
-  return exerciseHistoryOnCurrentScoring().filter((e) => e.type === type).length
+  return comparableExerciseHistory().filter((e) => e.type === type).length
 }
 
 /**

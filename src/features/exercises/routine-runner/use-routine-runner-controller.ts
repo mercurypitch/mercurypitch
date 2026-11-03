@@ -7,7 +7,7 @@ import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi, noteDeviationCents, scoreNoteAccuracy, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_ROUTINE_RUNNER } from '../types'
+import { EXERCISE_ROUTINE_RUNNER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const PHASES: Array<{ name: string; notes: number[] }> = [
@@ -17,6 +17,9 @@ const PHASES: Array<{ name: string; notes: number[] }> = [
   { name: 'Arpeggio', notes: [0, 4, 7, 12, 7, 4, 0] }, // major triad arpeggio
   { name: 'Cool Down', notes: [5, 4, 2, 0] }, // gentle descent
 ]
+
+/** Notes a whole routine asks for, across all its phases. */
+const ROUTINE_NOTES = PHASES.reduce((n, phase) => n + phase.notes.length, 0)
 
 const NOTE_PLAY_DURATION_MS = 600
 const GAP_BETWEEN_NOTES_MS = 250
@@ -37,6 +40,9 @@ export function useRoutineRunnerController(
   // One entry per note PRESENTED across every phase of the routine.
   let noteDeviations: (number | null)[] = []
   let fatigueCheckpoints: FatigueCheckpoint[] = []
+  // Set by Stop before the last note is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   // Guards against a double-invoked startRoutine() (e.g. a double-click on
@@ -66,6 +72,7 @@ export function useRoutineRunnerController(
     allScores = []
     noteDeviations = []
     fatigueCheckpoints = []
+    stoppedEarly = false
     const difficulty = launchDifficulty(EXERCISE_ROUTINE_RUNNER)
     phaseRestMs = Math.round(PHASE_REST_MS * difficultyFactor(difficulty))
   }
@@ -236,6 +243,7 @@ export function useRoutineRunnerController(
           hnrTrend: 0,
           richnessTrend: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -279,6 +287,7 @@ export function useRoutineRunnerController(
         hnrTrend: fatigueResult.trends.hnrTrend,
         richnessTrend: fatigueResult.trends.richnessTrend,
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -287,6 +296,7 @@ export function useRoutineRunnerController(
   function stopRoutine(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = allScores.length < ROUTINE_NOTES
     base._setRunning(false)
     finish()
   }

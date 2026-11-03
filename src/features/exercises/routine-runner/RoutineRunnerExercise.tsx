@@ -11,7 +11,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_ROUTINE_RUNNER } from '../types'
+import { EXERCISE_ROUTINE_RUNNER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useRoutineRunnerController } from './use-routine-runner-controller'
 
@@ -111,6 +111,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

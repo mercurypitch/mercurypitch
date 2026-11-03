@@ -464,6 +464,12 @@
   font-weight: 700;
 }
 
+/* A stopped run, not scored: a word where a percentage would be. */
+.exercise-recent-score.is-stopped {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 .exercise-recent-time {
   color: var(--text-secondary);
   font-size: 0.66rem;

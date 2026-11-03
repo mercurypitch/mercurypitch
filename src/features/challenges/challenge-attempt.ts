@@ -24,6 +24,7 @@ import { exerciseScoringVersion } from '@/features/exercises/exercise-comparabil
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
+import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
 import { showNotification } from '@/stores/notifications-store'
 import { armScoredAttempt, disarmScoredAttempt } from './attempt-coordinator'
 import { whileFinalizing } from './challenge-result-store'
@@ -160,6 +161,10 @@ export async function recordChallengeAttempt(entry: {
     clearChallengeAttempt()
     return true
   }
+  // A run stopped before its end is no attempt (`stoppedEarlyMark`):
+  // graded on the rounds it reached, one good round and Stop completed the
+  // challenge. The attempt stays armed for a whole run.
+  if (runStoppedEarly(entry.metrics)) return false
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
   const comparabilityKey = challengeAttemptComparabilityKey(attempt)

@@ -199,6 +199,8 @@ export interface ExerciseState {
 export interface ExerciseResult {
   type: ExerciseType
   score: number
+  /** The drill's own metrics; `stoppedEarly: 1` marks a run stopped before
+   *  its end (`stoppedEarlyMark`). */
   metrics: Record<string, number>
   completedAt: number
   /** Best 3-second window data for celebration highlight */
@@ -207,6 +209,32 @@ export interface ExerciseResult {
     endMs: number
     score: number
   }
+}
+
+/**
+ * The metric a run stopped before its end carries, to spread into its
+ * result's metrics: `{ stoppedEarly: 1 }`, or nothing for a whole run.
+ *
+ * A round-based drill grades the rounds a run reached, so one good round
+ * and Stop graded like a flawless whole run. Such a run is practice, not a
+ * result, and its controller marks it where the result is made; no bar
+ * reads a marked run (`isComparableRun` in exercise-comparability.ts).
+ * Arpeggio Jumper carried the mark first. A run stopped after its last
+ * round was graded, in the pause before the drill ends itself, is whole.
+ */
+export function stoppedEarlyMark(stopped: boolean): Record<string, number> {
+  return stopped ? { stoppedEarly: 1 } : {}
+}
+
+/**
+ * Whether a run was stopped before its end. A run recorded without the
+ * mark ran to it: every run recorded before the mark, and every run of a
+ * drill with no planned end to stop short of.
+ */
+export function runStoppedEarly(
+  metrics: Readonly<Record<string, number>> | undefined,
+): boolean {
+  return (metrics?.stoppedEarly ?? 0) > 0
 }
 
 // ── Controller interface ────────────────────────────────────────

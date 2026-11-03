@@ -6,7 +6,7 @@ import { approximateRichness } from '@/lib/vocal-analyzer'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_CALL_RESPONSE } from '../types'
+import { EXERCISE_CALL_RESPONSE, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const BASE_ROUNDS = 5
@@ -71,6 +71,9 @@ export function useCallResponseController(
   // slot average -- the phrase is sung freely -- so the tally uses that same
   // measure instead of inventing a second definition of hitting a note.
   let noteDeviations: (number | null)[] = []
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -115,6 +118,7 @@ export function useCallResponseController(
     roundIndex = 0
     roundScores = []
     noteDeviations = []
+    stoppedEarly = false
   }
 
   function startRounds(): void {
@@ -248,6 +252,7 @@ export function useCallResponseController(
           bestRound: 0,
           richnessScore: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -279,6 +284,7 @@ export function useCallResponseController(
         bestRound,
         richnessScore: Math.round(richness),
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -287,6 +293,7 @@ export function useCallResponseController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < phrases.length
     base._setRunning(false)
     finish()
   }

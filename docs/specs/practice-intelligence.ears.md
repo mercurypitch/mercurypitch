@@ -11,7 +11,7 @@ micro-drill synthesis; `src/features/practice-intelligence/difficulty-store.ts`
 `src/features/practice-intelligence/components/WeaknessPanel.tsx` — the panel;
 `src/stores/exercise-history-store.ts` — the run log the analysis reads
 **Tests:** `src/tests/` — adaptive difficulty and drill generation unit tests
-(`REQ-PI-001..027`)
+(`REQ-PI-001..028`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
@@ -154,13 +154,21 @@ launches the exercise with auto-start.
 Weak-pitch badges **shall** be coloured by severity, distinguishing deviations
 of at least 30 cents from smaller ones.
 
-## Integration — `REQ-PI-027`
+## Integration — `REQ-PI-027..028`
 
 ### REQ-PI-027 — Order and reactivity
 
 **WHEN** an exercise records a result, difficulty **shall** be updated _after_
 `recordExerciseResult` so the EMA includes the new entry, and that update
 **shall** run inside `untrack()` to avoid reactive side effects.
+
+### REQ-PI-028 — Whole runs only
+
+**IF** a run was stopped before its last round or note was graded, **THEN** it
+**shall not** count toward the EMA, the play count that gates a step, the weak
+exercise and weak interval averages, or the trends. A run recorded before
+stopped runs were marked **shall** count as a whole run
+(`src/tests/exercise-stopped-early.test.ts`).
 
 ## Trends overlay
 

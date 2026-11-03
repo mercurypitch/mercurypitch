@@ -14,6 +14,7 @@ import { micLatencyMs } from '@/stores/mic-latency-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
+import { STOPPED_EARLY_LINE } from '../feedback'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import type { ArpeggioMode } from './use-arpeggio-jumper-controller'
@@ -161,7 +162,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
           <Show when={unscoredRun()}>
             <p class="arpeggio-not-scored" role="status">
               {arpeggioRunStopped(base.result()?.metrics)
-                ? 'You stopped before the end, so this run was not scored.'
+                ? STOPPED_EARLY_LINE
                 : "We didn't hear any singing, so this run was not scored. Check the microphone, then try again."}
             </p>
           </Show>

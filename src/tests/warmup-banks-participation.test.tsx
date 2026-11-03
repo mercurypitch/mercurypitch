@@ -15,7 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ZenPitchRun } from '@/features/zen/types'
 
 type SessionOpts = { onLoopLimitReached: () => void }
-const captured: { opts: SessionOpts | null } = { opts: null }
+type ShellProps = { onStop: () => void }
+const captured: { opts: SessionOpts | null; shell: ShellProps | null } = {
+  opts: null,
+  shell: null,
+}
 
 const runsRef: { runs: Array<Partial<ZenPitchRun>> } = { runs: [] }
 
@@ -46,7 +50,11 @@ vi.mock('@/features/zen/ZenPitchCanvas', () => ({
 }))
 
 vi.mock('@/features/exercises/ExerciseShell', () => ({
-  ExerciseShell: () => null,
+  ExerciseShell: (props: ShellProps) => {
+    // eslint-disable-next-line solid/reactivity -- a stand-in shell: the test presses its Stop
+    captured.shell = props
+    return null
+  },
 }))
 
 const updateScore = vi.fn()
@@ -92,6 +100,7 @@ describe('WarmupExercise banking', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     captured.opts = null
+    captured.shell = null
     runsRef.runs = []
     updateScore.mockClear()
     completeWithResult.mockClear()
@@ -155,7 +164,46 @@ describe('WarmupExercise banking', () => {
       expect(result.score).toBe(expected)
       expect(result.metrics.participation).toBe(expected)
       expect(result.metrics.stepsCompleted).toBe(stepCount)
+      expect(result.metrics).not.toHaveProperty('stoppedEarly')
       unmount()
     })
+  })
+
+  it('marks a warm-up stopped before its last step, whose number is no run', async () => {
+    const { unmount } = render(() => (
+      <WarmupExercise
+        audioEngine={
+          {
+            playMetronomeClick: vi.fn(),
+            playTone: vi.fn(async () => undefined),
+          } as never
+        }
+        practiceEngine={{} as never}
+        subscribeFrames={() => () => {}}
+        onBack={() => {}}
+        autoStart
+      />
+    ))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // One step sung in full, then Stop inside the second.
+    runsRef.runs = [runWithScore(40, 95)]
+    captured.opts!.onLoopLimitReached()
+    vi.runAllTimers()
+    captured.shell!.onStop()
+
+    expect(completeWithResult).toHaveBeenCalledTimes(1)
+    const result = completeWithResult.mock.calls[0]![0] as {
+      score: number
+      metrics: Record<string, number>
+    }
+    expect(result.metrics).toMatchObject({
+      stepsCompleted: 1,
+      totalSteps: warmupPatternExercises('full').length,
+      participation: 95,
+      stoppedEarly: 1,
+    })
+    unmount()
   })
 })

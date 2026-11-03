@@ -5,7 +5,7 @@ import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_STACCATO } from '../types'
+import { EXERCISE_STACCATO, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 const ROUNDS = 8
@@ -36,6 +36,9 @@ export function useStaccatoPrecisionController(
   let notePlayDurationMs = NOTE_PLAY_DURATION_MS
   let matchWindowMs = MATCH_WINDOW_MS
   let scoreToleranceK = SCORE_TOLERANCE_K
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -65,6 +68,7 @@ export function useStaccatoPrecisionController(
     roundScores = []
     noteDeviations = []
     attackPrecisionScores = []
+    stoppedEarly = false
   }
 
   function startRounds(): void {
@@ -176,6 +180,7 @@ export function useStaccatoPrecisionController(
           bestRound: 0,
           attackPrecision: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -203,6 +208,7 @@ export function useStaccatoPrecisionController(
         bestRound,
         attackPrecision,
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -211,6 +217,7 @@ export function useStaccatoPrecisionController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = roundScores.length < targetNotes.length
     base._setRunning(false)
     finish()
   }

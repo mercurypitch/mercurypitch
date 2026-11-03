@@ -12,7 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_DRONE_INTONATION } from '../types'
+import { EXERCISE_DRONE_INTONATION, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { droneIntervalLabel, droneIntervalNames, droneLaunchIntervals, plannedRounds, useDroneIntonationController, } from './use-drone-intonation-controller'
 
@@ -123,6 +123,7 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

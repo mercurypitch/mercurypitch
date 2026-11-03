@@ -5,7 +5,7 @@ import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_CHORD_STACKER } from '../types'
+import { EXERCISE_CHORD_STACKER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 type ChordType = 'maj7' | 'min7' | 'dom7' | 'dim7' | 'maj6'
@@ -63,6 +63,9 @@ export function useChordStackerController(
   let noteDeviations: (number | null)[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let baseMidi = 60
+  // Set by Stop before the last round is graded: the result is then
+  // practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
   let _cancelled = false
   // Guards against a double-invoked startRounds() (e.g. a double-click on
   // Start racing base.start()'s own async guard) kicking off a second,
@@ -90,6 +93,7 @@ export function useChordStackerController(
     roundIndex = 0
     allRoundScores = []
     noteDeviations = []
+    stoppedEarly = false
 
     // Scale playback/hold and match window by difficulty (5 == baseline).
     const difficulty = launchDifficulty(EXERCISE_CHORD_STACKER)
@@ -264,6 +268,7 @@ export function useChordStackerController(
           dim7Avg: 0,
           maj6Avg: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -305,6 +310,7 @@ export function useChordStackerController(
         bestRound,
         ...chordAvgs,
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -313,6 +319,7 @@ export function useChordStackerController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
+    stoppedEarly = allRoundScores.length < chordTypes.length
     base._setRunning(false)
     finish()
   }

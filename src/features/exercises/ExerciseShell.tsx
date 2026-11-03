@@ -33,7 +33,7 @@ import { EXERCISE_HELP } from './exercise-help'
 import { exerciseReplayNote } from './exercise-replay-note'
 import { keepExerciseVoiceTake } from './exercise-voice-take'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
-import { gradeForScore } from './feedback'
+import { gradeForScore, STOPPED_EARLY_LINE } from './feedback'
 import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
@@ -91,6 +91,14 @@ export interface ExerciseShellProps {
   currentScore: () => number
   /** Final score 0-100 once complete (drives the result overlay color). */
   resultScore: () => number | null
+  /**
+   * Whether the finished run was stopped before its end (`runStoppedEarly`).
+   * Graded on the rounds it reached, its score would read as a whole run's,
+   * so the card leads with STOPPED_EARLY_LINE where a grade, a percentage,
+   * "New best!" and the change since last time would be. The summary and
+   * the contour still show what was sung.
+   */
+  resultStoppedEarly?: () => boolean
   /** Temporary local audio for this run; omitted in shell-only tests. */
   voiceCapture?: ExerciseVoiceCaptureController
   error?: () => string | null
@@ -217,6 +225,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   /** A guided dose and an ungraded drill both run without a visible score. */
   const showsScore = (): boolean =>
     props.guidedPractice === undefined && props.ungraded === undefined
+  /** A stopped run was not scored: its card shows no grade, percentage or
+   *  best, though the drill is graded and the run's summary still shows. */
+  const stoppedEarly = (): boolean => props.resultStoppedEarly?.() === true
+  const gradesResult = (): boolean => showsScore() && !stoppedEarly()
   const guidedDurationSeconds = createMemo<number | null>(() => {
     const milliseconds = props.guidedPractice?.dose.durationMilliseconds
     return milliseconds !== null &&
@@ -302,7 +314,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         }
         guidedTimerCompletionPending = false
         const score = props.resultScore()
-        if (showsScore() && score !== null && score >= 80) {
+        if (gradesResult() && score !== null && score >= 80) {
           haptics.success()
         } else {
           haptics.tapLight()
@@ -322,14 +334,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     }),
   )
   const isNewBest = () => {
-    if (props.guidedPractice !== undefined) return false
+    if (props.guidedPractice !== undefined || stoppedEarly()) return false
     const score = props.resultScore()
     if (score === null) return false
     const best = prevBest()
     return best !== null && score > best
   }
   const deltaVsLast = () => {
-    if (props.guidedPractice !== undefined) return null
+    if (props.guidedPractice !== undefined || stoppedEarly()) return null
     const score = props.resultScore()
     const last = prevLast()
     if (score === null || last === null) return null
@@ -836,7 +848,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 class="exercise-result-card"
                 classList={{
                   [`grade-${gradeForScore(props.resultScore()!).toLowerCase()}`]:
-                    showsScore(),
+                    gradesResult(),
                   'mid-reps': repRun() !== null,
                   'is-guided': props.guidedPractice !== undefined,
                 }}
@@ -846,7 +858,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 }
                 tabIndex={props.guidedPractice === undefined ? undefined : -1}
               >
-                <Show when={showsScore()}>
+                <Show when={gradesResult()}>
                   <div class="exercise-result-grade">
                     {gradeForScore(props.resultScore()!)}
                   </div>
@@ -867,10 +879,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     }
                   >
                     <Show
-                      when={props.ungraded === undefined}
+                      when={props.ungraded === undefined && !stoppedEarly()}
                       fallback={
                         <div class="exercise-result-title">
-                          {props.ungraded?.resultTitle()}
+                          {props.ungraded?.resultTitle() ?? STOPPED_EARLY_LINE}
                         </div>
                       }
                     >
@@ -947,7 +959,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                         {exerciseReplayNote(
                           voiceKeepState(),
                           props.voiceCapture!.state(),
-                          props.ungraded !== undefined,
+                          // Neither has a score for a replay to leave alone.
+                          props.ungraded !== undefined || stoppedEarly(),
                         )}
                       </span>
                     </div>

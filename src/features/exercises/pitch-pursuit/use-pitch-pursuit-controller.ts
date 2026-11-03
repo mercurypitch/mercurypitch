@@ -4,7 +4,7 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_PITCH_PURSUIT } from '../types'
+import { EXERCISE_PITCH_PURSUIT, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 // Baselines reproduced exactly at difficulty 5 (difficultyFactor(5) === 1.0).
@@ -44,6 +44,9 @@ export function usePitchPursuitController(base: BaseExerciseController) {
   let maxCombo = 0
   let totalAccuracy = 0
   let gameLoopId = 0
+  // Set by Stop before every note the game asks for has reached the line:
+  // the result is then practice, not a run (exercise-comparability.ts).
+  let stoppedEarly = false
 
   // Adaptive params, resolved at round setup. Default to baselines so the
   // controller behaves identically before startGame() runs.
@@ -75,6 +78,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     combo = 0
     maxCombo = 0
     totalAccuracy = 0
+    stoppedEarly = false
 
     // Resolve adaptive difficulty for this round. Each scaled expression
     // reduces to its baseline at d5 because difficultyFactor(5) === 1.0.
@@ -214,6 +218,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
           accuracy: 0,
           maxCombo: 0,
           ...EMPTY_NOTE_TALLY,
+          ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
       }
@@ -241,6 +246,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         maxCombo,
         totalNotes: total,
         ...tallyFromDeviations(noteDeviations),
+        ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),
     }
@@ -248,6 +254,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
   function stopGame(): void {
     cancelAnimationFrame(gameLoopId)
+    stoppedEarly = hits + misses < totalNotes
     base._setRunning(false)
     finish()
   }

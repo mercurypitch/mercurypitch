@@ -11,7 +11,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_DYNAMIC_SWELL } from '../types'
+import { EXERCISE_DYNAMIC_SWELL, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { dynamicRangeDb, levelFraction, rangeVerdict, rmsToDb, targetFraction, } from './swell-dynamics'
 import { useDynamicSwellController } from './use-dynamic-swell-controller'
@@ -135,6 +135,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}

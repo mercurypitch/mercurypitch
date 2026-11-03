@@ -7,7 +7,7 @@ import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_PITCH_PURSUIT } from '../types'
+import { EXERCISE_PITCH_PURSUIT, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
 
@@ -168,6 +168,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
