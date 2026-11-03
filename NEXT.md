@@ -3177,3 +3177,4 @@ Commits planned:
   - Gates running: /dev/shm/fu-gates2 (bg task + monitor). Verification agent (one, read-only, rate limit allowed 16:1x) on the delta 3b84fddd9..9d11c4651.
   - PR body s2pkg/FU-PR-BODY.md updated (review 2 section); FU-TESTING.md has GATE-NUMBERS to fill.
   - Next: gates + verifier -> fold -> push (lease over 3b84fddd9) -> PR -> CI -> merge --rebase -> verify -> dev -> report.
+- 3 Nov 15:59: gates2 on 9d11c4651: CHECK FAIL = tsc only, 4x TS2339/TS2353: `handleTransportStop` missing from the `SessionSequencer` interface (useSessionSequencer.ts:25-46). Fix (type-only, nothing else implements the interface): after `handleSessionEnd: () => void` add `/** The transport's Stop; one in a session's last rest shows its summary. */` + `handleTransportStop: () => void`. Fixup -> fc761acbf (Session mode). Held until gates2 (unit/db still valid: type-only) and the verifier finish, then re-run check + index + metrics + validate on the new head.
