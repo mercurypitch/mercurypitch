@@ -91,8 +91,21 @@ const EFFECT_COSTS: Readonly<Record<Exclude<EffectKind, 'reverb'>, TierCosts>> =
 
 /** A lane's own nodes: its sources, its two gains, pan and faders. */
 const LANE_COST = 0.075
-/** The master and the graph around the lanes, offline. */
-const MASTER_COST = 0.21
+/**
+ * A lane chain's stereo hold (chain.ts): its zero delay, and, behind a mono
+ * take, every effect before the chain's first stereo one running on two
+ * channels instead of one. Measured offline, held and not in turn, on
+ * mono takes as the profiling fixtures play them, 3 Nov 2026: 0.006 to
+ * 0.107 voice chains a lane over the ten role chains, 0.045 their median;
+ * 0.033 to 0.060 a lane over the 12- and 24-lane fixtures at Best and
+ * Light. Behind a stereo take the chain ran on two channels already, and
+ * the hold costs its delay alone, 0.97 us per 128 frames or 0.006 voice
+ * chains, as at the master. The costs above were measured before lanes
+ * were held.
+ */
+export const LANE_HOLD_COST = 0.045
+/** The master and the graph around the lanes, offline, and the master chain's hold. */
+const MASTER_COST = 0.21 + 0.006
 /** What realtime playback adds over an offline render of the same song. */
 const REALTIME_COST = 2.6
 /** A reverb sending to a shared space: its pre-delay, cuts and send. */
@@ -113,7 +126,8 @@ export function songCostInVoiceChains(
   let cost = MASTER_COST + REALTIME_COST
   const spaces = new Set<string>()
   for (const chain of chains) {
-    cost += LANE_COST
+    // An empty chain is wired straight through, with no hold.
+    cost += LANE_COST + (chain.effects.length > 0 ? LANE_HOLD_COST : 0)
     for (const effect of chain.effects) {
       if (effect.kind !== 'reverb') {
         cost += EFFECT_COSTS[effect.kind][tier]
