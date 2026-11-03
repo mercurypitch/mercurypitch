@@ -153,7 +153,8 @@ describe("the First note demo's takes", () => {
 describe("the First note demo's plan", () => {
   it('gives every tooltip its read, in order, before the take moves on', () => {
     const plan = planFirstNoteDemo()
-    expect(plan.note).toBe(demoEntry().midi)
+    // The voice is sung from the note as the band plays it.
+    expect(plan.note).toBe(entryPitch(demoEntry()))
     expect(plan.cues.map((c) => c.id)).toEqual([
       'band',
       'turn',
