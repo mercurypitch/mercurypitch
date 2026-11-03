@@ -22,6 +22,7 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'move-clip': 'move clip',
   'move-clip-to-new-track': 'move clip to new lane',
   'paste-clip': 'paste clip',
+  'punch-clip': 'punch in',
   'trim-head': 'trim start',
   'trim-tail': 'trim end',
   'split-clip': 'split clip',

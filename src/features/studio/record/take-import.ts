@@ -6,9 +6,10 @@
 // (take-plan.ts). Every take keeps the whole capture as its file, so its
 // clip can still be opened out later. A plain take's clip starts on the
 // frame the singer heard (take-timing.ts); a punch's is trimmed to the
-// range, with short fades at both edges; a loop take's plays its newest
-// whole pass, the others windows of the same file it can move to
-// (take-passes.ts, clip-passes.ts).
+// range, with short fades at both edges, and replaces what its lane plays
+// there (punch-commands.ts); a loop take's plays its newest whole pass, the
+// others windows of the same file it can move to (take-passes.ts,
+// clip-passes.ts).
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioCapturedTake } from '@/lib/studio/record/recorder-types'
 import { studioTakeWav } from '@/lib/studio/record/take-audio'
@@ -39,5 +40,7 @@ export function studioTakeImport(
     trackId: take.trackId,
     assetId: take.id,
     ...clip,
+    // A punch replaces what its lane plays under it, as tape does.
+    ...(take.cut?.mode === 'punch' && { punch: true }),
   }
 }

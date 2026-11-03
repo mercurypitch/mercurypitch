@@ -24,6 +24,8 @@ interface ImportItem {
   fadeFrames?: number
   /** A loop take's passes in its audio, the clip on one of them (clip-passes.ts). */
   passes?: StudioClipPasses
+  /** A punch: it replaces what its lane plays under it, as tape does. */
+  punch?: boolean
   prepare(
     id: string,
     projectId: string,
@@ -115,6 +117,8 @@ export interface StudioRecordingImport {
   readonly fadeFrames?: number
   /** A loop take's whole passes, the clip on the newest (clip-passes.ts). */
   readonly passes?: StudioClipPasses
+  /** A punch: it replaces what the armed lane plays under it, as tape does. */
+  readonly punch?: boolean
   /** The armed lane, or null for a new one. */
   readonly trackId: string | null
   /** The take's own id for its audio, so its journal can tell it was stored. */
@@ -193,16 +197,20 @@ function importCommands(
     Math.max(-1, ...project.tracks.map((track) => track.order)) + 1
   const first = items.length > 0 ? clipSource(items[0]) : undefined
   // The first item lands on the chosen lane when it fits; the rest, or an item
-  // that would overlap a clip there, get lanes of their own.
+  // that would overlap a clip there, get lanes of their own. A punch takes
+  // its stretch of the lane over instead (punch-commands.ts).
+  const punch = items[0]?.item.punch === true
   const target =
     targetTrackId !== null &&
     first !== undefined &&
-    laneHasRoom(
-      project,
-      targetTrackId,
-      startFrame,
-      first.sourceOutFrame - first.sourceInFrame,
-    )
+    (punch
+      ? project.tracks.some((track) => track.id === targetTrackId)
+      : laneHasRoom(
+          project,
+          targetTrackId,
+          startFrame,
+          first.sourceOutFrame - first.sourceInFrame,
+        ))
       ? targetTrackId
       : null
   let order = firstOrder
@@ -217,7 +225,14 @@ function importCommands(
       gainDb: 0,
     })
     if (index === 0 && target !== null)
-      return { type: 'add-clip', clip: clip(target) }
+      return punch
+        ? {
+            type: 'punch-clip',
+            clip: clip(target),
+            afterClipId: createId(),
+            fadeFrames: item.fadeFrames ?? 0,
+          }
+        : { type: 'add-clip', clip: clip(target) }
     const track = createStudioTrack({
       id: createId(),
       name: item.title,
@@ -329,7 +344,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
       await options.flush()
       const landed = committed && options.current(epoch)
       const chosen = currentProject.tracks.find((track) => track.id === trackId)
-      if (landed && chosen !== undefined && commands[0].type !== 'add-clip')
+      if (landed && chosen !== undefined && commands[0].type === 'add-audio')
         options.onMissedLane?.({
           trackId: chosen.id,
           trackName: chosen.name,
@@ -432,6 +447,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
           sourceOutFrame: take.sourceOutFrame,
           fadeFrames: take.fadeFrames,
           passes: take.passes,
+          punch: take.punch,
           prepare: async (id, projectId, signal) => {
             const data = await (options.prepareFile ?? prepareStudioAsset)(
               take.wav,

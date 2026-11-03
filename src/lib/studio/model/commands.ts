@@ -5,6 +5,8 @@ import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
+import type { StudioPunchEdit } from './punch-commands'
+import { punchStudioClip } from './punch-commands'
 import type { StudioSoundEdit } from './sound-commands'
 import { applyStudioSoundEdit, isStudioSoundEdit } from './sound-commands'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
@@ -13,6 +15,7 @@ import { requireValue } from './validation-values'
 
 export type StudioEdit =
   | StudioPasteEdit
+  | StudioPunchEdit
   | StudioSoundEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
@@ -241,6 +244,8 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   switch (edit.type) {
     case 'paste-clip':
       return pasteStudioClip(project, edit)
+    case 'punch-clip':
+      return punchStudioClip(project, edit)
     case 'rename-project':
       return { ...project, title: edit.title }
     case 'add-track':
