@@ -99,6 +99,7 @@ export function StudioTransport(props: StudioTransportProps) {
             type="button"
             class={styles.iconButton}
             aria-label="Punch in"
+            data-studio-punch=""
             title={
               studioTakeRunning()
                 ? 'Stop the take to change Punch'
