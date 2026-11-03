@@ -3100,3 +3100,23 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - On a yes and green CI: merge --rebase and verify.
     - Final short report. Include: stopped runs fire no analytics event; Session mode has the same defect (out of scope); Pitch Pursuit's card says 12 at every level.
 - 3 Nov 07:1x: OWNER DECISION on #1323: "Merge as is (Recommended)". Fail-closed; stopped runs stay off the server. A D1 column can follow later if wanted. Merge once CI and the verification review are green. Safety-net check-in trig_01WR5tiMqSia7xisoMzooV7x fires 08:04.
+- 3 Nov 07:4x:
+  - Review 2 (s2pkg/STOP-REVIEW-2.md): MERGE AFTER FIXES.
+    1. The timed Stop rule judged by handler, not clock.
+    2. No test of the timer wiring or the label.
+    3. Nit: Pitch Pursuit budget 60 s.
+    PARTLY carried: Manual Long Note 1 s scores ~85 (grade change, owner's call).
+  - Six local commits on feat/stopped-run-grading (worktree /dev/shm/s2stop), NOT PUSHED yet:
+    - b297cb6e4 Pitch Pursuit card/counter show the plan (pursuitPlan, plannedNotes metric)
+    - 75326b809 Jam comment: a fourth Harmony Stack singer sings the root
+    - 96d5cbeee endedBeforeTimer(end, elapsedMs), 250 ms grace (TIMER_END_GRACE_MS)
+    - 12b017067 src/tests/exercise-timed-run-end.test.tsx (9 wiring mutations caught)
+    - ad9ce5c15 Pitch Pursuit budget 45 s (measured 30.288 s default, 39.328 s level 10)
+    - ea6f2e898 INDEX regen
+  - Gates running in the background (/dev/shm/s2stop-gates.sh, summary at /dev/shm/s2stop-gates/summary.txt).
+  - PR body updated in s2pkg/STOP-PR-BODY.md. Fill the RESULTS placeholder from the gates.
+  - Next:
+    - push (plain push: the branch only gains commits);
+    - update the PR body;
+    - send review round 3 to the same reviewer (new commits only);
+    - merge on MERGE plus green CI (the owner already said merge as is).
