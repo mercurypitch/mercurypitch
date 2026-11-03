@@ -9,7 +9,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_PITCH_PURSUIT, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { usePitchPursuitController } from './use-pitch-pursuit-controller'
+import { launchPursuitPlan, usePitchPursuitController, } from './use-pitch-pursuit-controller'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -73,7 +73,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   createEffect(() => {
     const r = base.result()
     if (r && r.type === 'pitch-pursuit') {
-      // The game can end on its own (all 12 notes played) without going
+      // The game can end on its own (all its notes played) without going
       // through handleStop, so stop the viz interval here too.
       if (vizInterval) clearInterval(vizInterval)
       untrack(() => {
@@ -99,6 +99,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   })
 
   const met = () => base.state().metrics
+  // The run's note count and hit window scale with its level (8 to 17
+  // notes), so the card shows the plan the next run will use.
+  const idlePlan = () => launchPursuitPlan()
 
   const currentNote = () => {
     tick()
@@ -177,7 +180,10 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         <div class="exercise-idle-placeholder">
           <p>Notes fall from above.</p>
           <p>Sing the matching pitch before they reach the target line.</p>
-          <span class="idle-hint">12 notes · Hit within ±50 cents</span>
+          <span class="idle-hint">
+            {idlePlan().notes} notes · Hit within ±
+            {Math.round(idlePlan().hitToleranceCents)} cents
+          </span>
         </div>
       }
       onStart={() => void handleStart()}
@@ -254,7 +260,8 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
           </div>
 
           <div style="text-align:center;padding:4px 8px;font-size:0.75rem;color:var(--text-secondary)">
-            {met().totalNotes ?? 0} / 12 notes
+            {met().totalNotes ?? 0} / {met().plannedNotes ?? idlePlan().notes}{' '}
+            notes
           </div>
         </>
       }
