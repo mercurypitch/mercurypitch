@@ -313,3 +313,109 @@ describe('MicManager', () => {
     expect(stream.track.stop).toHaveBeenCalled()
   })
 })
+
+describe('MicManager input for one hold', () => {
+  let mgr: MicManager
+  /** The input each getUserMedia call asked for; undefined for the default. */
+  const askedFor = (gum: ReturnType<typeof vi.fn>) =>
+    gum.mock.calls.map(
+      ([constraints]) =>
+        (
+          (constraints as MediaStreamConstraints).audio as {
+            deviceId?: { exact: string }
+          }
+        ).deviceId?.exact,
+    )
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    mgr = new MicManager()
+  })
+
+  afterEach(() => {
+    releaseMicLock()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it("records from its own input, and the app's input opens again once it lets go", async () => {
+    const gum = mockGetUserMedia(() => Promise.resolve(makeStream()))
+    await mgr.setPreferredDevice('guitar-in')
+
+    const held = await mgr.acquireFrom('studio', 'usb-mic')
+    expect(held.missing).toBe(false)
+    expect(mgr.getPreferredDevice()).toBe('guitar-in')
+    mgr.release('studio')
+    await vi.advanceTimersByTimeAsync(0)
+    // Closed at once: the next open is on another input.
+    expect(mgr.getStream()).toBeNull()
+    await mgr.acquire('guitar')
+
+    expect(askedFor(gum)).toEqual(['usb-mic', 'guitar-in'])
+  })
+
+  it('records from the default input when asked, whatever the app picked', async () => {
+    const gum = mockGetUserMedia(() => Promise.resolve(makeStream()))
+    await mgr.setPreferredDevice('guitar-in')
+
+    await mgr.acquireFrom('studio', null)
+
+    expect(askedFor(gum)).toEqual([undefined])
+  })
+
+  it("opens the default input and says so when its input is gone, keeping the app's", async () => {
+    let calls = 0
+    const gum = mockGetUserMedia(() =>
+      ++calls === 1
+        ? Promise.reject(domError('OverconstrainedError'))
+        : Promise.resolve(makeStream()),
+    )
+    await mgr.setPreferredDevice('guitar-in')
+
+    const held = await mgr.acquireFrom('studio', 'unplugged-mic')
+
+    expect(held.missing).toBe(true)
+    expect(askedFor(gum)).toEqual(['unplugged-mic', undefined])
+    expect(mgr.getPreferredDevice()).toBe('guitar-in')
+  })
+
+  it("keeps its input while the app picks another, and the app's choice opens next", async () => {
+    const stream = makeStream()
+    const gum = mockGetUserMedia(() => Promise.resolve(stream))
+    await mgr.acquireFrom('studio', 'usb-mic')
+
+    await mgr.setPreferredDevice('guitar-in')
+    expect(stream.track.stop).not.toHaveBeenCalled()
+    expect(mgr.getStream()).toBe(stream)
+
+    mgr.release('studio')
+    await vi.advanceTimersByTimeAsync(0)
+    await mgr.acquire('guitar')
+    expect(askedFor(gum)).toEqual(['usb-mic', 'guitar-in'])
+  })
+
+  it('leaves the stream to a consumer still holding it, and lets go of the input after a failed open', async () => {
+    const stream = makeStream()
+    let refuse = false
+    const gum = mockGetUserMedia(() =>
+      refuse
+        ? Promise.reject(domError('NotAllowedError'))
+        : Promise.resolve(stream),
+    )
+    await mgr.acquireFrom('studio', 'usb-mic')
+    await mgr.acquire('voice')
+    mgr.release('studio')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mgr.getStream()).toBe(stream)
+
+    mgr.release('voice')
+    await vi.advanceTimersByTimeAsync(2000)
+    refuse = true
+    await expect(mgr.acquireFrom('studio', 'usb-mic')).rejects.toMatchObject({
+      kind: 'permission-denied',
+    })
+    refuse = false
+    await mgr.acquire('guitar')
+    expect(askedFor(gum)).toEqual(['usb-mic', 'usb-mic', undefined])
+  })
+})

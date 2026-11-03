@@ -145,6 +145,15 @@ export class MicManager {
   private readonly consumers = new Set<string>()
   private error: MicError | null = null
   private preferredDeviceId: string | null = null
+  // One consumer can hold the mic on an input of its own (acquireFrom): the
+  // Studio records from the input picked for it without moving the one the
+  // rest of the app uses. `missing` says its input was gone and the open fell
+  // back to the default.
+  private scope: {
+    consumerId: string
+    deviceId: string | null
+    missing: boolean
+  } | null = null
   // The browser-resolved id for the current route. Keep it after teardown so
   // calibration and compensation still address the same physical input while
   // the system-default choice is closed; clear it when the requested route
@@ -192,6 +201,11 @@ export class MicManager {
     return this.preferredDeviceId
   }
 
+  /** The input the next open asks for: a scoped hold's own, else the app's. */
+  private routeDeviceId(): string | null {
+    return this.scope !== null ? this.scope.deviceId : this.preferredDeviceId
+  }
+
   getResolvedDevice(): string | null {
     return this.resolvedDeviceId
   }
@@ -206,18 +220,54 @@ export class MicManager {
   async setPreferredDevice(deviceId: string | null): Promise<void> {
     const next = deviceId !== null && deviceId !== '' ? deviceId : null
     if (this.preferredDeviceId === next) return
+    const route = this.routeDeviceId()
     this.preferredDeviceId = next
+    // A scoped hold keeps its own input; the app's opens once it lets go.
+    if (this.routeDeviceId() === route) return
+    await this.reroute()
+  }
+
+  /** The requested input changed: drop the handle so the next open uses it. */
+  private async reroute(): Promise<void> {
     this.resolvedDeviceId = null
     await this.enqueue(async () => {
       this.teardown()
     })
   }
 
+  /**
+   * Acquire for `consumerId` from an input of its own, `deviceId` (null for
+   * the system default), for as long as it holds the mic, without changing
+   * the input the rest of the app asked for (setPreferredDevice): when it
+   * releases, the next open uses the app's again. A device that is gone
+   * opens the default instead, as every route does, and `missing` says so.
+   * One consumer holds a scoped input at a time; another consumer already
+   * holding the mic on a different input is moved over, as a device change
+   * from setPreferredDevice moves it.
+   */
+  async acquireFrom(
+    consumerId: string,
+    deviceId: string | null,
+  ): Promise<{ stream: MediaStream; missing: boolean }> {
+    const route = this.routeDeviceId()
+    const requested = deviceId !== null && deviceId !== '' ? deviceId : null
+    this.scope = { consumerId, deviceId: requested, missing: false }
+    if (this.routeDeviceId() !== route) await this.reroute()
+    try {
+      const stream = await this.acquire(consumerId)
+      return { stream, missing: this.scope?.missing === true }
+    } catch (error) {
+      if (this.scope?.consumerId === consumerId) this.scope = null
+      throw error
+    }
+  }
+
   private buildConstraints(): MediaStreamConstraints {
     const base = ANALYSIS_CONSTRAINTS.audio as MediaTrackConstraints
+    const deviceId = this.routeDeviceId()
     const audio: MediaTrackConstraints =
-      this.preferredDeviceId !== null
-        ? { ...base, deviceId: { exact: this.preferredDeviceId } }
+      deviceId !== null
+        ? { ...base, deviceId: { exact: deviceId } }
         : { ...base }
     return { audio }
   }
@@ -268,7 +318,7 @@ export class MicManager {
         this.resolvedDeviceId =
           reportedDeviceId !== undefined && reportedDeviceId.length > 0
             ? reportedDeviceId
-            : this.preferredDeviceId
+            : this.routeDeviceId()
         this.attachEndedHandlers(stream)
         this.error = null
         this.emit()
@@ -292,8 +342,18 @@ export class MicManager {
    */
   release(consumerId: string): void {
     void this.enqueue(async () => {
+      // A scoped input ends with its hold. With nobody left on it, the
+      // device closes now: the next open is on the app's input.
+      const route = this.routeDeviceId()
+      if (this.scope?.consumerId === consumerId) this.scope = null
+      const rerouted = this.routeDeviceId() !== route
       if (!this.consumers.delete(consumerId)) return
-      if (this.consumers.size === 0) this.scheduleLinger()
+      if (this.consumers.size === 0) {
+        if (rerouted) {
+          this.resolvedDeviceId = null
+          this.teardown()
+        } else this.scheduleLinger()
+      }
       this.emit()
     })
   }
@@ -311,8 +371,11 @@ export class MicManager {
       // different machine): the `exact` deviceId can't be satisfied. Drop it
       // and fall back to the system default instead of failing to open.
       const name = (err as { name?: string } | null)?.name
-      if (name === 'OverconstrainedError' && this.preferredDeviceId !== null) {
-        this.preferredDeviceId = null
+      if (name === 'OverconstrainedError' && this.routeDeviceId() !== null) {
+        // A scoped input falls back for its hold only, and says it did.
+        if (this.scope !== null)
+          this.scope = { ...this.scope, deviceId: null, missing: true }
+        else this.preferredDeviceId = null
         return navigator.mediaDevices.getUserMedia(this.buildConstraints())
       }
       // Retry once when the device is transiently busy (a previous handle that

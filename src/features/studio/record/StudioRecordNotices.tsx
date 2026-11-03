@@ -126,7 +126,11 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
                   <MicSmall />
                 </span>
                 <p class={styles.statusText}>
-                  <span>Armed on {lane()}. Press Record to start.</span>
+                  <span>
+                    {recorder().inputMissing()
+                      ? `Armed on ${lane()} with the default input: ${recorder().settings().inputLabel ?? 'the input you chose'} is not connected.`
+                      : `Armed on ${lane()}. Press Record to start.`}
+                  </span>
                   <ArmedHint recorder={recorder()} />
                 </p>
                 <button

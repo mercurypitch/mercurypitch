@@ -46,6 +46,7 @@ import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioPassesImport, StudioRecordingImport, } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioTimelineRecording } from '../timeline/types'
+import { createStudioInputs } from './studio-inputs'
 import { studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
 
@@ -140,6 +141,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     readonly StudioTakeJournalRecord[]
   >([])
   const [recovering, setRecovering] = createSignal(false)
+  // The input takes record from: picked in Sound, opened for the arm alone.
+  const inputs = createStudioInputs()
+  const [inputMissing, setInputMissing] = createSignal(false)
   const journal = createStudioTakeJournal()
   const writers = new Map<string, StudioTakeJournalWriter>()
   let restoreRepeat = false
@@ -202,7 +206,16 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   const recorder = createStudioRecorder({
     unlock: () => transport.unlock(),
     clock: () => transport.clock(),
-    acquireMic: () => micManager.acquire(STUDIO_RECORD_MIC_ID),
+    acquireMic: async () => {
+      const held = await micManager.acquireFrom(
+        STUDIO_RECORD_MIC_ID,
+        settings().inputDeviceId,
+      )
+      setInputMissing(held.missing)
+      // The page may use the microphone now, so the browser names its inputs.
+      void inputs.refresh()
+      return held.stream
+    },
     releaseMic: () => micManager.release(STUDIO_RECORD_MIC_ID),
     prepareWorklet: prepareStudioRecorderWorklet,
     openCapture: openStudioCapture,
@@ -446,6 +459,21 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     recorder.updateMonitor()
   }
 
+  /** Record from `id` (null: the default) from the next arm; an armed lane opens it now. */
+  function chooseInput(id: string | null, label: string | null): void {
+    if (busy()) return
+    setSettings({
+      ...settings(),
+      inputDeviceId: id,
+      inputLabel: id === null ? null : label,
+    })
+    setInputMissing(false)
+    if (phase() !== 'armed') return
+    const lane = view().targetTrackId
+    recorder.disarm()
+    void recorder.arm(lane)
+  }
+
   // Export, Compare, Auto-balance, Repeat and the range wait for the take.
   const busy = () => running() || phase() === 'finishing'
   createEffect(() => setStudioTakeRunning(busy()))
@@ -486,6 +514,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     clearMessages: () => recorder.clearMessages(),
     settings,
     setSettings,
+    /** The browser's audio inputs, named once the page may use the microphone. */
+    inputs: inputs.devices,
+    /** The chosen input was not connected at the arm: the default records instead. */
+    inputMissing,
+    chooseInput,
     /** Punch, on the transport: Record keeps only the range. */
     punch: {
       on: () => settings().punch,

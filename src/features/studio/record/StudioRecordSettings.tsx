@@ -1,9 +1,10 @@
-// Studio record settings — count-in, click, monitoring and the line-up offset, in the Sound panel; kept on this device.
+// Studio record settings — the input, count-in, click, monitoring and the line-up offset, in the Sound panel; kept on this device.
 import { For, Show } from 'solid-js'
 import type { StudioCountInBars } from '@/lib/studio/record/record-settings'
 import { MAX_RECORD_OFFSET_MS } from '@/lib/studio/record/take-timing'
 import sound from '../sound/StudioSound.module.css'
 import common from '../StudioPage.module.css'
+import { studioInputChoices, studioInputsNamed } from './studio-inputs'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
 
@@ -30,9 +31,57 @@ export function StudioRecordSettings(props: {
         : 'estimated for this device'
     return `Studio already moves each take ${ms} ms earlier for the delay between the song and your voice (${source}). Line-up adds to that: raise it if takes still land late, lower it if they land early.`
   }
+  const choices = () =>
+    studioInputChoices(props.recorder.inputs(), {
+      id: settings().inputDeviceId,
+      label: settings().inputLabel,
+    })
+  const chosen = () =>
+    choices().find((choice) => choice.id === settings().inputDeviceId)
   return (
     <fieldset class={sound.section} data-studio-record-settings="">
       <legend>Recording</legend>
+      <label class={styles.input}>
+        <span>Input</span>
+        <select
+          data-studio-record-input=""
+          disabled={props.recorder.busy()}
+          title={
+            props.recorder.busy()
+              ? 'Stop the take to change the input'
+              : undefined
+          }
+          onChange={(event) => {
+            const choice = choices()[event.currentTarget.selectedIndex]
+            props.recorder.chooseInput(choice.id, choice.label)
+          }}
+        >
+          <For each={choices()}>
+            {(choice) => (
+              <option
+                value={choice.id ?? ''}
+                selected={choice.id === settings().inputDeviceId}
+              >
+                {choice.label}
+              </option>
+            )}
+          </For>
+        </select>
+      </label>
+      <Show
+        when={chosen()?.connected === false || props.recorder.inputMissing()}
+      >
+        <p class={common.help} role="status">
+          {settings().inputLabel ?? 'The input you chose'} is not connected.
+          Takes record from the default input until it is back.
+        </p>
+      </Show>
+      <Show when={!studioInputsNamed(props.recorder.inputs())}>
+        <p class={common.help}>
+          Your inputs are listed by name once Studio may use the microphone. Arm
+          a lane once to see them.
+        </p>
+      </Show>
       <div class={sound.presets} role="radiogroup" aria-label="Count-in">
         <For each={COUNT_INS}>
           {(choice) => (
