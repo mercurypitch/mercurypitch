@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
-import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, DRUM_PREMIUM_BACKGROUND_IDS, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, PIANO_PREMIUM_BACKGROUND_IDS, } from './background-catalog'
+import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, DRUM_PREMIUM_BACKGROUND_IDS, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, PIANO_PREMIUM_BACKGROUND_IDS, SING_ROOMS_BACKGROUND_IDS, } from './background-catalog'
 
 describe('background catalog', () => {
   it('registers every current free performance scene as shipped', () => {
@@ -159,6 +159,7 @@ describe('background catalog', () => {
       'sing-retro-analog-studio',
       'sing-rehearsal-attic',
       'sing-choir-room',
+      ...SING_ROOMS_BACKGROUND_IDS,
     ])
   })
 

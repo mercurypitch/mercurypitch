@@ -800,6 +800,20 @@
     linear-gradient(145deg, #c7a376, #695441 72%);
 }
 
+/* ── Sing Rooms ─────────────────────────────────────────────────────
+   One wash for the three supporter covers, sampled from them: each is a dark
+   room whose one lamp sits low in the middle. */
+
+.edition_sing-rooms {
+  background:
+    radial-gradient(
+      circle at 50% 70%,
+      rgba(236, 168, 95, 0.4),
+      transparent 26%
+    ),
+    linear-gradient(145deg, #29262b, #110a06 72%);
+}
+
 .lockMark {
   position: absolute;
   z-index: 3;
