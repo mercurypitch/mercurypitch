@@ -11,12 +11,12 @@
 // the app.
 //
 // Three kinds. `song` once for each song, and again whenever the stage may
-// have missed it: the title, the length, the notes as the room shows them
-// (the key shift applied) and the lyrics as the lyrics window gets them
-// (lyric-window-script.ts). `frame` about twenty times a second: where the
-// song is, read at `at` on the wall clock so the stage can run on between
-// frames, the singer's pitch since the last frame, and the score so far.
-// `idle` while the room has no song.
+// have missed it: the title, the length, the notes as the phone's lane
+// draws them (the singer's edits and the key shift applied) and the lyrics
+// as the lyrics window gets them (lyric-window-script.ts). `frame` about
+// twenty times a second: where the song is, read at `at` on the wall clock
+// so the stage can run on between frames, the singer's pitch since the last
+// frame, and the score so far. `idle` while the room has no song.
 //
 // Every message carries the protocol's version. A stage drops what it does
 // not understand rather than draw it wrong, so the room checks every number

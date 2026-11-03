@@ -210,6 +210,7 @@ vi.mock('@/components/StemMixer', async () => {
           speed,
           duration,
           hasNotes,
+          laneNotes: () => [],
           canFindNotes,
           findNotes: mixer.findNotes,
           findingNotes,

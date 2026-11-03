@@ -2408,6 +2408,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       hasNotes: () =>
         pitchAnalysis.offlineSegmentedNotes().length > 0 ||
         pitchAnalysis.offlineMergedNotes().length > 0,
+      // What the zen stage's lane draws (`ribbonNotes`), for a TV's stage.
+      laneNotes: displayNotes,
       canFindNotes: () => canFindZenNotes(),
       findNotes: () => ensureZenNotes(),
       findingNotes: pitchAnalysis.isAnalyzing,

@@ -26,6 +26,17 @@ export interface GuideLevel {
   readonly muted: boolean
 }
 
+/**
+ * A note on the stage's lane: seconds into the song, under the names the
+ * pitch editor's notes keep them by (startBeat, endBeat), and its MIDI number
+ * in the key being heard.
+ */
+export interface LaneNote {
+  readonly startBeat: number
+  readonly endBeat: number
+  readonly midi: number
+}
+
 /** What the mixer hands its room once it is set up. */
 export interface HostedMixerControls {
   readonly playing: Accessor<boolean>
@@ -63,6 +74,13 @@ export interface HostedMixerControls {
   readonly duration: Accessor<number>
   /** The song has its notes (a stored analysis), so notes can be shown. */
   readonly hasNotes: Accessor<boolean>
+  /**
+   * The notes the stage's lane draws, as it draws them: the song's notes
+   * with the singer's edits from Pitch Studio, in the key being heard. The
+   * same notes, not a copy, so a TV that shows the stage draws what the
+   * phone does (useKaraokeTvStage.ts). None until the song has its notes.
+   */
+  readonly laneNotes: Accessor<readonly LaneNote[]>
   /**
    * The song has no notes yet and a read can start now: its vocal is in,
    * decoded or streamed. False while the song loads, and once it has notes.

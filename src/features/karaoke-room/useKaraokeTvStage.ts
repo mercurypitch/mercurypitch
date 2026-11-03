@@ -12,9 +12,11 @@
 //
 //   THE SONG, each time the TV starts showing the stage and each time the
 //   song changes or more of it arrives: its length, its lyrics as the
-//   lyrics window gets them, and its notes, read from the song's stored
-//   pitch analysis and moved into the key being heard. Notes edited in Pitch
-//   Studio are not on the TV yet. With no song in the room, idle.
+//   lyrics window gets them, and the notes the phone's lane draws, as the
+//   mixer hands them over (`laneNotes`): the notes edited in Pitch Studio,
+//   in the key being heard. So the TV draws what the phone draws, and a
+//   change to them on the phone (the notes read from the vocal, the key)
+//   goes to the TV as it happens. With no song in the room, idle.
 //
 //   FRAMES, twenty a second while the TV shows the stage and the room has a
 //   song: where the song is as the lyrics follow it, moved by the Developer
@@ -29,8 +31,6 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
-import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
-import type { FeedNote } from '@/lib/tv-stage/feed'
 import { singerSince, tvStageFrame, tvStageScore, tvStageSong, } from '@/lib/tv-stage/feed'
 import type { TvStageFrame, TvStageScore, TvStageSong, } from '@/lib/tv-stage/protocol'
 import { TV_STAGE_IDLE } from '@/lib/tv-stage/protocol'
@@ -47,42 +47,27 @@ export const TV_STAGE_SCORE_EVERY = 10
 /** A jump back further than this, in seconds, starts the readings afresh. */
 const SEEK_BACK_SEC = 0.5
 
-/** The song on the room's stage, as the TV stage needs to know it. */
-export interface KaraokeTvStageSong {
-  readonly title: string
-  readonly sessionId: string
-}
-
 export interface KaraokeTvStageOptions {
   readonly device: NativeDeviceApi | null
   readonly mixer: Accessor<HostedMixerControls | null>
-  /** The song on the stage, or null for none. */
-  readonly song: Accessor<KaraokeTvStageSong | null>
-  /** The song's notes; by default its stored pitch analysis. */
-  readonly loadNotes?: (sessionId: string) => Promise<readonly FeedNote[]>
-}
-
-/** The notes a song's stored pitch analysis keeps, or none. */
-export async function storedSongNotes(
-  sessionId: string,
-): Promise<readonly FeedNote[]> {
-  const data = await loadPitchAnalysisFromDb(sessionId)
-  if (data === null) return []
-  return data.segmentedNotes.length > 0 ? data.segmentedNotes : data.mergedNotes
+  /** The title of the song on the stage, or null for none. */
+  readonly title: Accessor<string | null>
 }
 
 /** The song message for what the room has now, or null without a song. */
 function songOf(
   controls: HostedMixerControls | null,
   title: string | null,
-  notes: readonly FeedNote[],
 ): TvStageSong | null {
   if (controls === null || title === null) return null
-  const shift = controls.key.heard()
   return tvStageSong({
     title,
     duration: controls.duration(),
-    notes: notes.map((note) => ({ ...note, midi: note.midi + shift })),
+    notes: controls.laneNotes().map((note) => ({
+      midi: note.midi,
+      startSec: note.startBeat,
+      endSec: note.endBeat,
+    })),
     lyrics: controls.lyricWindowScript(title).segments,
   })
 }
@@ -136,43 +121,13 @@ function startFrames(
 export function useKaraokeTvStage(options: KaraokeTvStageOptions): void {
   const stage = options.device?.tvStage
   if (stage === undefined) return
-  const load = options.loadNotes ?? storedSongNotes
   const [showing, setShowing] = createSignal(false)
   onCleanup(stage.watch(setShowing))
-
-  // The notes, read while the TV shows the stage: for each song, and again
-  // once the song gets its notes (an analysis run meanwhile).
-  const [notes, setNotes] = createSignal<readonly FeedNote[]>([])
-  createEffect(
-    on(
-      [
-        showing,
-        () => options.song()?.sessionId ?? null,
-        () => options.mixer()?.hasNotes() ?? false,
-      ],
-      ([shown, sessionId]) => {
-        setNotes((previous) => (previous.length === 0 ? previous : []))
-        if (!shown || sessionId === null) return
-        let current = true
-        onCleanup(() => {
-          current = false
-        })
-        void load(sessionId).then(
-          (found) => {
-            if (current) setNotes(found)
-          },
-          () => undefined,
-        )
-      },
-    ),
-  )
 
   // Worked out only while the TV shows the stage: the lyrics' part samples
   // the whole song, which a room with no TV should not pay for.
   const song = createMemo(() =>
-    showing()
-      ? songOf(options.mixer(), options.song()?.title ?? null, notes())
-      : null,
+    showing() ? songOf(options.mixer(), options.title()) : null,
   )
 
   // The song, or idle, whenever the TV starts showing the stage or the song

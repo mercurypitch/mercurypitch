@@ -285,6 +285,26 @@ describe('the mixer the Karaoke room hosts', () => {
     expect(controls()?.canFindNotes()).toBe(false)
   })
 
+  it('hands the room the notes its lane draws, edited in Pitch Studio, for a TV', async () => {
+    const { savePitchAnalysisToDbStrict } =
+      await import('@/db/services/session-pitch-analysis-service')
+    const original = [{ midi: 60, noteName: 'C4', startSec: 1, endSec: 2 }]
+    const edit = { id: 'm-0', startBeat: 1, endBeat: 2, midi: 62 }
+    await savePitchAnalysisToDbStrict('karaoke-night-demo:lane-test', {
+      mergedNotes: original,
+      segmentedNotes: original,
+      pitchHistory: [],
+      editLayer: { manual: [edit], deleted: [], seq: 1 },
+    })
+    const { host, controls } = hosting()
+
+    mountHosted(host, 'karaoke-night-demo:lane-test')
+
+    await waitFor(() => {
+      expect(controls()?.laneNotes()).toEqual([edit])
+    })
+  })
+
   it("hands the key to the room's options, and keeps it off the stage", async () => {
     // The room's landscape column is 236-286 px wide and the key control
     // needs about 324: in the room, the key is a row in Karaoke options.
