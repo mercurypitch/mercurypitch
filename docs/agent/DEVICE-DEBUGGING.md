@@ -146,7 +146,9 @@ looked like:
 | Entry                           | What it says                                                                                                                                                                                                                                                                                         |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                                                                                                                                                               |
-| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                                                                                                                                                                      |
+| `play`                          | A play: who asked (`by`, below), the clock's state before it (`clockWas`) and the song position                                                                                                                                                                                                      |
+| `pause`                         | A playing song paused: who asked (`by`) and the song position. A pause of a song already paused writes nothing                                                                                                                                                                                       |
+| `stop`                          | The song stopped: at its end (`by=end`), by a stop, or as its mixer went while it played (`by=song-change`, `by=leave`)                                                                                                                                                                              |
 | `statechange`                   | The clock changed state while the room watched it, and whether the page was hidden; on iOS `interrupted` means a call, Siri, another app or the trip to the background took the sound, and a playing song pauses with it unless it keeps playing behind the app                                      |
 | `background-resume`             | The interruption that comes with the app going to the background, resumed for a song that keeps playing there; `hiddenForMs` is how long the page had been hidden                                                                                                                                    |
 | `suspend-fade`                  | The shared clock was about to stop (the app leaving with nothing to keep the song playing), so the playing song paused with its fade first                                                                                                                                                           |
@@ -157,6 +159,31 @@ looked like:
 | `clock-stall-stop`              | A warning: the clock still stood 1.5 s after the restart was done (or the restart never finished in 5 s), so the song paused where it was, its clock parked, and the room says why                                                                                                                   |
 | `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                                                                                                                                                                      |
 | `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                                                                                                                                                          |
+
+Every pause and play says who asked (`by=`), so a song that pauses itself
+names the path (owner, 3 Nov 2026: a song paused a second after Play on
+AirPlay and nothing said who). The caller names it
+([`playback-cause.ts`](../../src/lib/playback-cause.ts)):
+
+| `by=`                                     | Who                                                                                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `button`                                  | The song's own play and pause button (the zen bar; on the web also the mixer's transport and Pitch Studio's)                                                    |
+| `key`, `voice`                            | Space, and a voice command                                                                                                                                      |
+| `media-session(pause)`                    | A system media control, with the button: the lock screen, Control Center, a headset, the notification, or a remote such as an AirPlay receiver's                |
+| `lyrics-window(play)`                     | iOS's lyrics window's own buttons                                                                                                                               |
+| `system`                                  | iOS paused the lock screen's carrier as another app or a call took the sound (`[now playing] the system paused the song` before it), or resumed it after a call |
+| `interruption`                            | iOS interrupted the clock (`statechange state=interrupted`)                                                                                                     |
+| `suspend`                                 | The shared clock was about to stop (`suspend-fade`): the app leaving, or the page hiding, with nothing to keep the song playing                                 |
+| `watchdog`, `start-check`, `return-check` | The clock stood still and the watch gave up (`clock-stall-stop`, `clock-stuck`)                                                                                 |
+| `lost-sound`                              | A stem's stream failed for good (`stream-failed`)                                                                                                               |
+| `page-hidden`                             | The room paused the song as the app went away, with "Keep playing in the background" off                                                                        |
+| `find`, `studio`                          | Find by singing, or Manage songs, opened over the song                                                                                                          |
+| `shell`, `park`                           | The app's shell asked (its play, pause or Stop), or parked the run: the tab left mid-song, or a screen pushed over the room                                     |
+| `notice`                                  | The stopped-song notice's Play again                                                                                                                            |
+| `autoplay`                                | A cued song starting by itself: the next song, Next or a pick while playing, a song handed over by the studio, First note or Find by singing                    |
+| `end`, `song-change`, `leave`             | The song's end, another song on the stage, the room closing                                                                                                     |
+| `playlist`                                | The web's Karaoke playlist                                                                                                                                      |
+| `unknown`                                 | A path nobody named: a gap to name, never a guess at another cause                                                                                              |
 
 Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts),
 [`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
@@ -236,11 +263,30 @@ store build carries none of it (`assert-no-portable-console.mjs
 
 ## A song that sticks with its sound on a TV (AirPlay)
 
-The owner's case (1 and 2 Nov 2026, an iPhone 13 Pro and an LG C2): AirPlay
+The owner's case (1 to 3 Nov 2026, an iPhone 13 Pro and an LG C2): AirPlay
 offered as the app opened, taken, and then the Karaoke song stood still with
-no error. For a test, turn on Developer > Debug console > "Keep routine logs"
-(the route and clock lines are routine), Clear log under Developer > Audio,
-take AirPlay, play a song in the Karaoke room, and copy the console.
+no error. On 3 Nov (mp-v0.8.52) the TV showed the song's title, "Unknown
+artist" and a timeline; on Play the song's clock ran on the phone, no sound
+came from the TV or the phone, and the TV showed a spinner. Screen Mirroring
+to the same TV carried the room and its sound. For a test, turn on
+"Keep routine logs" under Developer, Debug console (the route and clock
+lines are routine), Clear log under Developer, Audio, take AirPlay, play a
+song in the Karaoke room, and copy the console.
+
+**The route may not say airplay.** It is the app's own AVAudioSession's,
+and WebKit plays the page from a session of its own. On the iPhone 13 Pro
+every route the app's session reported was the speaker at 48 kHz, before
+and after the TV took the sound, while the page's contexts made after it
+ran at AirPlay's 44.1 kHz (`census context-made ... rate=44100`). On an
+iPhone 11 (iOS 18.7) the app's session did say `route=airplay`, at 44.1
+kHz like the page. So the room takes the sound to be on AirPlay alone
+where the route says airplay, or where it suspects it
+([`airplay-suspicion.ts`](../../src/stores/airplay-suspicion.ts)): the
+page's newest context at a rate other than the app session's, on the
+speaker or the receiver; and never while a screen is connected. Bluetooth,
+headphones and HDMI show in the app's session, and Screen Mirroring
+connects a screen, so none of them is suspected. Either way the room's
+sound reached neither the TV nor the phone, with the clock running.
 
 No line names a port: "Viki's AirPods" names a person, and a console's lines
 are copied off the phone, the crash card's into public bug reports. The
@@ -248,22 +294,47 @@ route's kind is enough to read a test by; the Developer > Audio report still
 names the port in its `output change` lines, and the room's notice names it
 on the singer's own screen.
 
-| Line                                                                                                           | Shown      | What it says                                                                                                                                                       |
-| -------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `[audio route] airplay, iOS: new device, was Speaker`                                                          | routine    | Each route the phone reports: its kind, iOS's reason and the kinds of output before it. One `at launch`; otherwise only when the route moved, or iOS gave a reason |
-| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                    | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                          |
-| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay feeding=yes queued=2.4 ... stoodMs=1500` | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                        |
-| `karaoke clock-moving ... stoodMs=2100`                                                                        | by default | It moved again, and the song plays on                                                                                                                              |
-| `karaoke clock-stall-stop ...`                                                                                 | by default | Still standing after the restart: the song paused where it was, and the room says why                                                                              |
+| Line                                                                                                                   | Shown      | What it says                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[audio route] airplay, iOS: new device, was Speaker`                                                                  | routine    | Each route the phone reports: its kind, iOS's reason and the kinds of output before it. One `at launch`; otherwise only when the route moved, or iOS gave a reason                    |
+| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                            | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                                             |
+| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay feeding=yes queued=2.4 ... stoodMs=1500`         | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                                           |
+| `karaoke clock-moving ... stoodMs=2100`                                                                                | by default | It moved again, and the song plays on                                                                                                                                                 |
+| `karaoke clock-stall-stop ...`                                                                                         | by default | Still standing after the restart: the song paused where it was, and the room says why                                                                                                 |
+| `[audio route] the page plays at 44100 Hz, the phone's session at 48000 Hz on Speaker: the sound is likely on AirPlay` | by default | AirPlay suspected: the page's newest context runs at a rate other than the app session's, on the speaker or receiver, with no screen connected. Once per change                       |
+| `[audio route] a screen is connected (Screen Mirroring or a cable): AirPlay no longer suspected`                       | by default | No longer suspected, and why: a screen, a route the session sees (`the phone's session plays on bluetooth`), or the rates agreeing again (`as the phone's session does`)              |
+| `karaoke play by=button clockWas=suspended position=0`                                                                 | by default | Each play, pause and stop of the song, with who asked (`by=`, the table above) and where it was                                                                                       |
+| `karaoke pause by=media-session(pause) position=2.2`                                                                   | by default | A system media control paused it: the lock screen, Control Center, a headset, or a remote such as the TV's                                                                            |
+| `[audio report 1/9] a song started on AirPlay`                                                                         | by default | A test build, once a launch, as a song starts on AirPlay alone: the Developer screen's whole audio report, in parts a console line keeps (2000 characters)                            |
+| `[airplay check] 3 Web Audio alone: route=airplay sessionRate=44100 contextRate=44100 pageSession=auto state=running`  | by default | Developer > AirPlay sound check, one line a tap: the variant, the route, both rates, the page's session type and the context's state, with `element=` and `mic=` where they take part |
 
-The room's words follow the route. On AirPlay: "The sound went to LG C2 over
-AirPlay and stopped. To hear it here, choose this phone under AirPlay in
-Control Center." (the receiver as the phone names it, "this iPad" on an
-iPad), with a close button. Anywhere else: "The sound stopped." and Play
-again. The same notice follows the start check and the return check when
-they stop a song. Screen Mirroring is not offered: it sends the sound to the
-TV as well, and whether a song plays over it is still to be seen on a
-device.
+**To send the report from the room**: a test build writes it into the
+console as a song first starts on AirPlay alone (`[audio report n/m]`,
+[`audio-report.ts`](../../apps/mercurypitch/src/shell/audio-report.ts)), so
+copy the console there. Leaving the stage for Settings stops the song.
+
+**To find what AirPlay plays at all**: Developer > AirPlay sound check
+([`airplay-check.ts`](../../apps/mercurypitch/src/shell/airplay-check.ts))
+plays five ways of making sound, each with its own number of beeps: a media
+element allowed on AirPlay (1), kept local (2), Web Audio alone (3), Web
+Audio beside a silent element kept local (4), Web Audio with the mic open
+(5). Each is torn down whole a few seconds after its beeps
+([tv-device-tests.md](../plans/tv-device-tests.md), Test 9).
+
+The room's words follow where the sound goes. On AirPlay alone (the route
+says airplay, or AirPlay is suspected, and no screen is connected), a song
+that starts shows once a launch, under the room header, with a close
+button: "AirPlay cannot carry the room's sound to a TV." and "Screen
+Mirroring can: open Control Center, tap Screen Mirroring, then choose your
+TV." ([`KaraokeAirPlayHint.tsx`](../../src/features/karaoke-room/KaraokeAirPlayHint.tsx)).
+It goes the moment a screen connects, and never shows while one is. The
+clock keeps running on AirPlay, so no stall may come to say anything. A song
+that stops by itself there says "The sound went to LG C2 over AirPlay and
+stopped." (no receiver's name where AirPlay is only suspected), the same two
+lines, and "To hear it here, choose this phone under AirPlay in Control
+Center." ("this iPad" on an iPad), with a close button. Anywhere else: "The
+sound stopped." and Play again. The same notice follows the start check and
+the return check when they stop a song.
 
 Reading them:
 
@@ -287,10 +358,23 @@ Reading them:
 - A clock that never moves after play is the 700 ms start check's
   (`clock-stuck`), and one that never moves after the way back is the return
   check's; both now end in the room's notice, as a stall does.
+- `karaoke pause by=media-session(pause)` a moment after Play, with no press
+  of the singer's, is a pause from outside the app: the TV, a headset, the
+  lock screen. A `by=system` pause follows the line
+  `[now playing] the system paused the song`. A
+  `[now playing] bar at ..., paused` with no `karaoke pause` line before it
+  is a pause by a path that writes none: a bug to report.
+- The suspicion's line can be late or stay on: a context keeps its rate for
+  life, so a clock made before AirPlay was taken says nothing of it (on a
+  store build only the shared clock is read), and one made on AirPlay says
+  it until a newer context is made.
 
 A test build's audio record has the long form beside these: `output change
-route=airplay ... routeReason=...` and `census context-state`. Sources:
+route=airplay ... routeReason=...` (with the app session's `sampleRate`) and
+`census context-made ... rate=...`. Sources:
 [`audio-route-store.ts`](../../src/stores/audio-route-store.ts),
+[`airplay-suspicion.ts`](../../src/stores/airplay-suspicion.ts),
+[`karaoke-media-buttons.ts`](../../src/features/karaoke-room/karaoke-media-buttons.ts),
 [`shared-clock-log.ts`](../../apps/mercurypitch/src/infrastructure/shared-clock-log.ts),
 [`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
 [`sound-stopped.ts`](../../src/features/karaoke-room/sound-stopped.ts) and

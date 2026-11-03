@@ -4,7 +4,7 @@ For phase P0 and the proofs of concept of
 [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md); requirement ids are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md). Tests 1 to 3 need
 no new build: use the current TestFlight build on the iPhone and the current
-app on an Android phone. Tests 4 to 8 need the build named in each. Fill in
+app on an Android phone. Tests 4 to 9 need the build named in each. Fill in
 the tables; that is all that needs to come back.
 
 **Run Tests 4B, 5, 6 and 8 on TestFlight mp-v0.8.52 (3 Nov 2026) or later.**
@@ -12,7 +12,9 @@ It carries the wizard that hears a TV (PR #1189, in TestFlight since
 mp-v0.8.42) and PR #1321, which keeps the app's silent media off AirPlay,
 says each audio route and the clock's state in the console, and stops a
 Karaoke song whose clock stands still, saying why. Test 7 is Beside Cue's,
-which `mp-v*` tags do not build.
+which `mp-v*` tags do not build. **Run Test 9, then Test 8 again, on the
+first build with the AirPlay guide** (branch `feat/airplay-guide`): the
+AirPlay sound check, the AirPlay hint and the report the room writes.
 
 ## Before you start
 
@@ -250,10 +252,118 @@ its sound on a TV (AirPlay)"; follow its setup, then:
    `karaoke clock-...` lines. After a stop, also Developer, Audio, Copy
    report.
 
-| TV      | AirPlay offered on opening? | Song plays, sound alone? | Song plays, mirroring? | Stopped? The notice's words | Phone chosen: Play again plays? |
-| ------- | --------------------------- | ------------------------ | ---------------------- | --------------------------- | ------------------------------- |
-| LG C2   |                             |                          |                        |                             |                                 |
-| Samsung |                             |                          |                        |                             |                                 |
+| TV      | AirPlay offered on opening? | Song plays, sound alone?                                              | Song plays, mirroring?               | Stopped? The notice's words | Phone chosen: Play again plays? |
+| ------- | --------------------------- | --------------------------------------------------------------------- | ------------------------------------ | --------------------------- | ------------------------------- |
+| LG C2   | Yes: iOS's own suggestion   | Clock runs, no sound from the phone or the TV; the TV shows a spinner | Yes, "works great", lyrics and stage | No stall, so no notice      | Not run                         |
+| Samsung |                             |                                                                       |                                      |                             |                                 |
+
+**Run on the LG C2, 3 Nov 2026** (mp-v0.8.52, iPhone 13 Pro):
+
+1. AirPlay still pops up as the app opens. The app goes inactive 1.7 s
+   after launch, before anything plays, so it is iOS's AirPlay suggestion,
+   not the app's media.
+2. Sound alone: the TV shows the song's title, "Unknown artist" and a
+   timeline. On Play the song runs on the phone, but no sound comes from
+   the phone or the TV, and the TV shows a spinner; stopping the song
+   brings the timeline back. The song also paused 1 to 2 s after Play
+   several times with no reason logged; some of those were the owner's own
+   presses. Screen Mirroring, with the TV lyrics and with the TV stage,
+   "works great": the TV shows the lyrics or the stage, never a mirror of
+   the phone.
+3. No stall: the clock kept moving, so the watch said nothing and no
+   notice came. Its AirPlay words could not have come either: every
+   `[audio route]` line said the speaker.
+4. Not run.
+5. The audio record: every route the app's session reported was the
+   speaker at 48 kHz, before and after the TV was connected, and the
+   page's contexts made after connecting ran at 44.1 kHz
+   (`census context-made n=2 ... rate=44100`). The app's session hears
+   WebKit's playback as another app's (`otherAudioPlaying=true`): WebKit
+   plays from a session of its own, which the app's cannot see. What
+   follows is in [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md), P1.
+
+**Run again on the LG OLED48C2, 3 Nov 2026** (mp-v0.8.52, iPhone 11 on
+iOS 18.7). Here the app's own session does see AirPlay:
+`output ... route=airplay outputs=AirPlay ... outputLatency=0.07 sampleRate=44100 category=AVAudioSessionCategoryPlayAndRecord options=mixWithOthers,defaultToSpeaker,allowBluetoothA2DP otherAudioPlaying=true silenceHint=true pageSession=auto`,
+and the page's contexts run at 44.1 kHz too
+(`census context-made n=2 state=suspended rate=44100 latency=interactive`).
+The room plays as on the speaker: the song streams (`song-path path=stream
+stems=2`), its clock runs (one song from 0 to its end at 330 s), no watch
+line, and every Play says `[now playing] play pressed: the carrier takes
+the sound first`. The TV shows the Now Playing card ("09 Shadow Of The
+Gods", "Unknown artist", its timeline running, no spinner), but no sound
+comes from the TV or the phone, at system volumes from 0.08 to 0.23. After
+the mic opened and closed (Practice), the session's rate went from 44.1 to
+48 kHz, still on AirPlay. So the room says AirPlay where the route says it,
+or where the page's rate says it, whether or not the clock moves.
+
+**Again with the AirPlay guide** (branch `feat/airplay-guide`, on the next
+build). Run Test 9 first. Then keep routine logs on as above, Clear log,
+take AirPlay as iOS offers it, and:
+
+1. Open Karaoke and press Play. The room should say, under its header:
+   "AirPlay cannot carry the room's sound to a TV." and "Screen Mirroring
+   can: open Control Center, tap Screen Mirroring, then choose your TV."
+   It shows once a launch, and Close takes it away. The console should
+   have, by default,
+   `[audio] ... karaoke play by=button clockWas=... position=0`; on the
+   iPhone 13 Pro, whose route says the speaker, also
+   `[audio route] the page plays at 44100 Hz, the phone's session at 48000 Hz on Speaker: the sound is likely on AirPlay`.
+   Right after, the whole Developer audio report follows in parts,
+   `[audio report 1/n] a song started on AirPlay` and on: copy the console
+   from the room, with no trip to Settings.
+2. Pause and play from the room, then from the lock screen and from the
+   TV's remote if it has play and pause. Each should write a line naming
+   who: `karaoke pause by=button position=...`,
+   `karaoke pause by=media-session(pause) position=...`. A song that pauses
+   by itself should name its cause the same way; copy any
+   `by=unknown`.
+3. Start Screen Mirroring. The hint, if up, should go at once, and the
+   console should say
+   `[audio route] a screen is connected (Screen Mirroring or a cable): AirPlay no longer suspected`.
+   With mirroring on, a song started should show no hint.
+4. On the phone's speaker with no AirPlay, play a song: no hint, and no
+   `the sound is likely on AirPlay` line. If one appears, copy the console:
+   that is a false alarm to fix.
+
+| TV      | Hint on Play, on AirPlay? | Each pause named? Any `by=unknown`? | Hint gone with mirroring? | No hint on the speaker? |
+| ------- | ------------------------- | ----------------------------------- | ------------------------- | ----------------------- |
+| LG C2   |                           |                                     |                           |                         |
+| Samsung |                           |                                     |                           |                         |
+
+## Test 9: the AirPlay sound check (branch `feat/airplay-guide`, next build)
+
+The decisive test: which way of making sound a TV over AirPlay plays at
+all. It needs no Karaoke. Settings, Developer, "AirPlay sound check" has
+five buttons. Each plays a short tone a number of times, its own number,
+so you can tell which one you heard:
+
+| Button  | What plays                                                                                |
+| ------- | ----------------------------------------------------------------------------------------- |
+| 1 beep  | A plain media element (`<audio>`), allowed on AirPlay                                     |
+| 2 beeps | The same element kept off AirPlay, as the lock screen's carrier is                        |
+| 3 beeps | Web Audio alone, on a fresh AudioContext                                                  |
+| 4 beeps | Web Audio while a silent element kept local plays, as the Karaoke room plays              |
+| 5 beeps | Web Audio with the microphone open, as when singing is scored (iOS asks for the mic once) |
+
+1. Ring switch on ring, phone volume up. Choose the TV under AirPlay in
+   Control Center (not Screen Mirroring).
+2. Settings, Developer, "AirPlay sound check". Tap 1 and wait for it to
+   end (about five seconds: the TV plays AirPlay about two seconds late);
+   then 2, 3, 4 and 5 the same way.
+3. For each: did the TV play it? The phone? How many beeps, and how late?
+4. Copy the console's `[airplay check] ...` lines into the notes, one a
+   tap: each says the route, the session's rate, the context's rate, the
+   page's session type and the context's state, and whether the element
+   played (`element=playing`) and the mic opened (`mic=open`).
+5. Do it again with Screen Mirroring instead of AirPlay, and once on the
+   phone's own speaker, as the control.
+
+| Route            | 1 (element) | 2 (kept local) | 3 (Web Audio) | 4 (beside a silent element) | 5 (with the mic) |
+| ---------------- | ----------- | -------------- | ------------- | --------------------------- | ---------------- |
+| AirPlay, LG C2   |             |                |               |                             |                  |
+| Mirroring, LG C2 |             |                |               |                             |                  |
+| Phone speaker    |             |                |               |                             |                  |
 
 ## Aside: a TestFlight Subscribe asks for the password
 
@@ -267,13 +377,14 @@ Face ID as usual.
 
 ## Results
 
-| Route                              | TV      | Sound on the TV? | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes |
-| ---------------------------------- | ------- | ---------------- | ---------------------------------- | -------------------------- | ------------------ | ----- |
-| iPhone, AirPlay mirroring          | LG C2   | Yes              | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    |       |
-| iPhone, AirPlay mirroring          | Samsung |                  |                                    |                            |                    |       |
-| iPhone, phone speaker only         | none    | n/a              | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |       |
-| Android, Screen Cast               | Philips |                  | n/a                                |                            |                    |       |
-| Android, Screen Cast or Smart View | LG      |                  | n/a                                |                            |                    |       |
-| Samsung phone, Smart View          | Samsung |                  | n/a                                |                            |                    |       |
+| Route                              | TV      | Sound on the TV?                                                      | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes                                               |
+| ---------------------------------- | ------- | --------------------------------------------------------------------- | ---------------------------------- | -------------------------- | ------------------ | --------------------------------------------------- |
+| iPhone, AirPlay mirroring          | LG C2   | Yes                                                                   | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    | TV lyrics and TV stage "work great" (3 Nov, Test 8) |
+| iPhone, AirPlay sound alone        | LG C2   | No: the clock runs, no sound from the TV or the phone (3 Nov, Test 8) | n/a                                |                            |                    |                                                     |
+| iPhone, AirPlay mirroring          | Samsung |                                                                       |                                    |                            |                    |                                                     |
+| iPhone, phone speaker only         | none    | n/a                                                                   | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |                                                     |
+| Android, Screen Cast               | Philips |                                                                       | n/a                                |                            |                    |                                                     |
+| Android, Screen Cast or Smart View | LG      |                                                                       | n/a                                |                            |                    |                                                     |
+| Samsung phone, Smart View          | Samsung |                                                                       | n/a                                |                            |                    |                                                     |
 
 Also: LG webOS version: \_\_\_ ; Samsung model year: \_\_\_ ; phones: \_\_\_ .

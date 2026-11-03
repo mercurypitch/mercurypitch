@@ -521,6 +521,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** put a zero DelayNode fixed at two channels (`channelCountMode: 'explicit'`) behind the input of a stereo chain that outlives its sources: it has a tail, stays enabled for its maximum delay, and keeps everything after it at two channels. Studio chains take `stereoHold`; any other stereo path takes `createStereoHold`, given at least the longest delay behind it. The hold is bit-exact while audio passes and costs about 1 µs a render quantum.
 **See:** `src/lib/studio-fx/chain.ts`, `src/lib/audio/stereo-hold.ts`, and `laneEndPlaysOut` in `scripts/studio-epoch-browser-probes.mjs`.
 
+### Do not take the app's AVAudioSession route for WebKit's; read the page's AudioContext rate too (iOS)
+
+**Symptom:** with the sound on an LG C2 over AirPlay (mp-v0.8.52, 3 Nov 2026) the room's sound reached neither the TV nor the phone, and #1321's AirPlay words never showed: on an iPhone 13 Pro every route the app reported was the speaker at 48 kHz, before and after the TV took the sound. An iPhone 11 on iOS 18.7 did report `route=airplay`.
+**Cause:** WebKit plays the page from its own AVAudioSession in its GPU process, and the app's session (playAndRecord, no `.allowAirPlay`) is not it: it may stay on the speaker whatever WebKit's does, and it calls WebKit's playback another app's sound. A context made while WebKit's session is on AirPlay runs at AirPlay's 44.1 kHz.
+**Rule:** take the sound to be on AirPlay where the route says airplay, or where the page's newest AudioContext made without a rate asked for runs at a rate other than the app session's, on the speaker or receiver, with no screen connected. A context keeps its rate for life, so read each new one as it is made.
+**See:** `src/stores/airplay-suspicion.ts`, `notePageAudioContext` in `apps/mercurypitch/src/infrastructure/native-device.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
