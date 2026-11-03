@@ -19,7 +19,9 @@
 //   FRAMES, twenty a second while the TV shows the stage and the room has a
 //   song: where the song is as the lyrics follow it, moved by the Developer
 //   screen's offset (tv-stage-store.ts), the microphone's readings since the
-//   last frame (live-mic-store.ts), and every half second the score.
+//   last frame (live-mic-store.ts), and every half second the score. Each
+//   frame is built on the one before it, whose clock it carries again if
+//   its own reading is not a number (feed.ts).
 //
 // Nothing is sent while the TV shows anything else, and nothing at all on a
 // phone that cannot give a TV the stage.
@@ -30,7 +32,7 @@ import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import type { FeedNote } from '@/lib/tv-stage/feed'
 import { singerSince, tvStageFrame, tvStageScore, tvStageSong, } from '@/lib/tv-stage/feed'
-import type { TvStageScore, TvStageSong } from '@/lib/tv-stage/protocol'
+import type { TvStageFrame, TvStageScore, TvStageSong, } from '@/lib/tv-stage/protocol'
 import { TV_STAGE_IDLE } from '@/lib/tv-stage/protocol'
 import { liveMicFeed } from '@/stores/live-mic-store'
 import type { NativeDeviceApi, NativeTvStage, } from '@/stores/native-shell-store'
@@ -96,6 +98,7 @@ function startFrames(
   let sentUpTo = Number.NEGATIVE_INFINITY
   let frames = 0
   let score: TvStageScore | null = null
+  let last: TvStageFrame | null = null
   const send = (): void => {
     const position = controls.audibleElapsed() + tvStageOffsetMs() / 1000
     if (sentUpTo > position + SEEK_BACK_SEC) sentUpTo = position - SEEK_BACK_SEC
@@ -104,22 +107,24 @@ function startFrames(
       mic === null
         ? []
         : singerSince(mic.readings(), sentUpTo, mic.readingLagSec())
-    const last = singer.at(-1)
-    if (last !== undefined) sentUpTo = last[0]
+    const newest = singer.at(-1)
+    if (newest !== undefined) sentUpTo = newest[0]
     if (mic !== null && frames % TV_STAGE_SCORE_EVERY === 0) {
       score = tvStageScore(mic.score())
     }
     frames += 1
-    stage.send(
-      tvStageFrame({
+    last = tvStageFrame(
+      {
         at: Date.now(),
         position,
         playing: controls.playing(),
         rate: controls.speed(),
         singer,
         score,
-      }),
+      },
+      last,
     )
+    stage.send(last)
   }
   send()
   const timer = setInterval(send, TV_STAGE_FRAME_MS)
