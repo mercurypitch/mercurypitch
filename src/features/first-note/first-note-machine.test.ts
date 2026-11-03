@@ -129,3 +129,27 @@ describe("First note's states", () => {
     ).toBe('blocked')
   })
 })
+
+describe("First note's machine, the demo's moves", () => {
+  it("plays the demo's one entry, and its own steps move it as a run's", () => {
+    const band = play({ type: 'demo', round: ROUNDS[0] })
+    expect(band).toMatchObject({
+      phase: 'band',
+      rounds: [ROUNDS[0]],
+      current: 0,
+    })
+    expect(liveRound(band)).toEqual(ROUNDS[0])
+    const turn = firstNoteReducer(band, { type: 'turn' })
+    expect(turn.phase).toBe('sing')
+    const heard = firstNoteReducer(turn, { type: 'entry', entry: LOW })
+    expect(heard.entry).toEqual(LOW)
+  })
+
+  it('keeps the run number, and goes back to rest on null', () => {
+    const started = play({ type: 'start', rounds: ROUNDS })
+    const band = firstNoteReducer(started, { type: 'demo', round: ROUNDS[1] })
+    expect(band.run).toBe(started.run)
+    const rest = firstNoteReducer(band, { type: 'demo', round: null })
+    expect(rest).toEqual({ ...INITIAL_FIRST_NOTE_STATE, run: started.run })
+  })
+})

@@ -72,6 +72,27 @@
   font: 600 12px/1 var(--font-body, sans-serif);
 }
 
+/* "See how it works": the demo, from the round's steps. */
+.watch {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px 0 14px;
+  border: 1px solid color-mix(in srgb, #f0c75e 60%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, #f0c75e 12%, transparent);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+}
+
+.watch svg {
+  width: 18px;
+  height: 18px;
+  color: #f0c75e;
+}
+
 .section {
   display: flex;
   flex-direction: column;

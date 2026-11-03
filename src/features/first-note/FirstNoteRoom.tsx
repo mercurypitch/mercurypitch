@@ -35,10 +35,13 @@
 // over the mic in the singer's turn, and "Sing on in Karaoke" there after
 // a landing.
 //
-// No "How it works" demo yet: Merc's intro line says the task, Learning
-// shows the line from the start, and "?" in the bar, at rest and at the
-// result, opens the room's help (FirstNoteHelp.tsx): what a round is, and
-// what a song needs for First note to stop it, in plain words.
+// "How it works" (demo/) plays over the same room: a song's band leads in,
+// then the voice comes in a step under its singer's first note once and on
+// it once, through the room's own engine, with the demo kit's layer, cards
+// and tooltips over the theatre. A first visit opens on it. "?" in the bar,
+// at rest and at the result, opens the room's help (FirstNoteHelp.tsx):
+// what a round is, and what a song needs for First note to stop it, in
+// plain words, and the help plays the demo again ("See how it works").
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -48,11 +51,15 @@ import type { MicState } from '@/components/room-kit/mic-state'
 import { micLabel as labelFor } from '@/components/room-kit/mic-state'
 import { createMeasure } from '@/components/room-kit/room-measure'
 import { ResultCard } from '@/components/room-kit/RoomHeader'
-import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, } from '@/components/room-kit/RoomShell'
+import { createRoomShell, RoomShell, ShellBarEnd, ShellBubble, ShellDock, ShellHead, ShellSkip, } from '@/components/room-kit/RoomShell'
 import surface from '@/components/room-kit/RoomSurface.module.css'
 import type { RoundVoice } from '@/components/room-kit/round-voice'
 import { headOf, trailPath, trailY } from '@/components/room-kit/voice-trail'
+import type { DemoCueId, DemoTarget } from './demo/demo-cues'
+import { aimFirstNoteTip } from './demo/tip-targets'
+import { useFirstNoteDemo } from './demo/useFirstNoteDemo'
 import { firstNoteShowsWords, sourceHasOwnSongs } from './first-note-choices'
+import type { FirstNoteController } from './first-note-controller-contract'
 import { bandHalfHeight, layoutStage, RESTING_LINE_SHARE, } from './first-note-layout'
 import type { FirstNotePhase } from './first-note-machine'
 import { isRunPhase } from './first-note-machine'
@@ -66,7 +73,6 @@ import { FirstNoteLevel } from './FirstNoteLevel'
 import styles from './FirstNoteRoom.module.css'
 import { FirstNoteSongsButton, FirstNoteSongsSheet } from './FirstNoteSongs'
 import { StageScene } from './StageScene'
-import type { FirstNoteController } from './useFirstNoteController'
 import { useFirstNoteController } from './useFirstNoteController'
 
 export interface FirstNoteRoomProps {
@@ -74,6 +80,8 @@ export interface FirstNoteRoomProps {
   onDone: () => void
   /** Merc's voice: his sampled one on the phone (FirstNoteScreen). */
   voice?: RoundVoice
+  /** What that voice needs loaded before the demo sings (his sampled set). */
+  voiceReady?: () => Promise<unknown>
   /** The run, when it is not the room's own (a test's). Read once. */
   controller?: FirstNoteController
   /** The theatre's picture, when not the native app's (a fixture's). */
@@ -98,8 +106,12 @@ export interface FirstNoteRoomProps {
 /** A stage before its first measure: a phone's size, so nothing is zero. */
 const FALLBACK_SIZE = { width: 390, height: 760 }
 
-/** The mic for each phase: ready, waiting, the singer's turn, or done. */
-export function firstMicState(phase: FirstNotePhase): MicState {
+/**
+ * The mic for each phase: ready, waiting, the singer's turn, or done. The
+ * demo's takes never open it: they wait.
+ */
+export function firstMicState(phase: FirstNotePhase, demo = false): MicState {
+  if (demo) return 'wait'
   switch (phase) {
     case 'intro':
     case 'blocked':
@@ -113,8 +125,13 @@ export function firstMicState(phase: FirstNotePhase): MicState {
   }
 }
 
-/** The mic's name as the phase has it. */
-function micName(phase: FirstNotePhase): string {
+/** The mic's start, as its name says it at rest. */
+const START_LABEL =
+  "Start: hear the band, then come in on the singer's first note"
+
+/** The mic's name as the phase has it; the demo's start's while it plays. */
+function micName(phase: FirstNotePhase, demo: boolean): string {
+  if (demo) return START_LABEL
   switch (phase) {
     case 'starting':
       return 'Opening the microphone'
@@ -124,10 +141,7 @@ function micName(phase: FirstNotePhase): string {
     case 'missed':
       return 'The next entry is coming. Tap to stop'
     default:
-      return labelFor(
-        firstMicState(phase),
-        "Start: hear the band, then come in on the singer's first note",
-      )
+      return labelFor(firstMicState(phase), START_LABEL)
   }
 }
 
@@ -135,23 +149,29 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
   const [songsOpen, setSongsOpen] = createSignal(false)
   const [helpOpen, setHelpOpen] = createSignal(false)
   /* eslint-disable solid/reactivity -- read once, as documented */
+  const given = props.controller
   const room =
-    props.controller ??
+    given ??
     useFirstNoteController({
       voice: props.voice,
+      ready: props.voiceReady,
       onNoSongs: () => setSongsOpen(true),
     })
   /* eslint-enable solid/reactivity */
-  const shell = createRoomShell<string, string>({
+  const demo = given === undefined ? useFirstNoteDemo(room) : null
+  const shell = createRoomShell<DemoCueId, DemoTarget>({
     ids: 'first-note',
     styles,
     run: room,
-    demo: null,
+    demo,
   })
   const phase = (): FirstNotePhase => room.state().phase
+  /** The demo's takes are singing through the room. */
+  const demoOn = (): boolean => room.script.active()
   /** At rest or at the result: the level, and "?", show. */
   const atRest = (): boolean =>
-    phase() === 'intro' || phase() === 'result' || phase() === 'blocked'
+    !demoOn() &&
+    (phase() === 'intro' || phase() === 'result' || phase() === 'blocked')
 
   // The singer's own songs are read at rest, one at a time, while they are
   // chosen; a run lets go of the read, so it never competes with the mic.
@@ -243,6 +263,8 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
 
   /** What a screen reader hears, from the one polite region. */
   const said = (): string => {
+    // The demo speaks for itself (its layer's region).
+    if (shell.busy() || demoOn()) return ''
     const round = room.round()
     switch (phase()) {
       case 'band': {
@@ -273,7 +295,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
       classList={{ [styles.still]: props.still === true }}
       testId="first-note-room"
       said={said()}
-      aim={() => null}
+      aim={(tip, layer) => aimFirstNoteTip(tip.target, layer)}
     >
       <div ref={stageEl} class={styles.stage}>
         <StageScene
@@ -358,13 +380,15 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
             ? { label: 'How First note works', open: () => setHelpOpen(true) }
             : undefined
         }
+        helpFirst
       />
+      <ShellSkip shell={shell} />
 
       <ShellDock
         shell={shell}
         onDone={() => props.onDone()}
-        mic={firstMicState(phase())}
-        micLabel={micName(phase())}
+        mic={firstMicState(phase(), demoOn())}
+        micLabel={micName(phase(), demoOn())}
         still={props.still}
         besideResult={
           <button
@@ -378,7 +402,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         }
         overMic={
           <>
-            <Show when={phase() === 'intro'}>
+            <Show when={phase() === 'intro' && !demoOn()}>
               <FirstNoteSongsButton onOpen={() => setSongsOpen(true)} />
             </Show>
             <Show when={room.canHearAgain()}>
@@ -394,7 +418,9 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
             </Show>
             <Show
               when={
-                props.onSingOn !== undefined && phase() === 'landed'
+                props.onSingOn !== undefined &&
+                phase() === 'landed' &&
+                !demoOn()
                   ? room.round()
                   : null
               }
@@ -421,7 +447,18 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
         onOwnSongs={props.onOwnSongs}
       />
 
-      <FirstNoteHelp isOpen={helpOpen()} close={() => setHelpOpen(false)} />
+      <FirstNoteHelp
+        isOpen={helpOpen()}
+        close={() => setHelpOpen(false)}
+        onWatch={
+          demo === null
+            ? undefined
+            : () => {
+                setHelpOpen(false)
+                demo.ask()
+              }
+        }
+      />
     </RoomShell>
   )
 }

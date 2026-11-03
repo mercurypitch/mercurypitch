@@ -5,7 +5,7 @@ on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026
 on 3 Nov 2026 as Home note is. The owner tried the first two on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
 way on to the Karaoke room, and gives Home note its painted harbour. Leap and Harmony have a "How it
-works" demo (2 Nov 2026), and Home note has one too (3 Nov 2026); First note has none yet. The owner's design
+works" demo (2 Nov 2026), and Home note and First note have one too (3 Nov 2026). The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
 **The owner's decision and requests of 28 Oct 2026.**
@@ -330,10 +330,28 @@ The log marks a line read that way ("entry C4, after a 0.8 s breath"), and a lin
 note says how much of its look heard a pitch: little for a voice YIN cannot follow (a rasp, a
 growl), most of it for one that never held still (a slide, a wide wobble).
 
-The room's "?" (it has no demo) opens a sheet that says what a round is and what a place to come in
-needs, in plain words (`FirstNoteHelp.tsx`). A song that sits out with too few entries has an "i" on
-its row in the Songs sheet that says why with its own counts (`first-note-left-out.ts`): how many
-lines came straight after the one before, how many started with no clear note, and so on.
+The room's "?" opens a sheet that says what a round is and what a place to come in needs, in plain
+words (`FirstNoteHelp.tsx`), with "See how it works" to play the room's demo again. A song that sits
+out with too few entries has an "i" on its row in the Songs sheet that says why with its own counts
+(`first-note-left-out.ts`): how many lines came straight after the one before, how many started with
+no clear note, and so on.
+
+**How it works** (3 Nov 2026). A first visit opens on a demo, as the other Ear rooms' do; at rest or
+from a result, "?" opens the help sheet first (the shell's `helpFirst`), and its "See how it works"
+plays the demo again. The band is Josephine's own, the first entry's eight seconds of lead-in, which
+ship with the app as a clip (`demo/demo-band-josephine.mp3`, 97 KB, the owner's choice of 3 Nov
+2026), so a first visit plays offline and the demo starts it on the take's clock, where the
+countdown counts its beats. Then the voice comes in through the room's own entry rule and engine,
+twice, at Singer (the line shows once the singer has come in): "Not like this" comes in a whole
+step under the singer's first note, holds it and lets go, so the line stays dark, the silence after
+it decides the round and Merc sings the note; "Like this" scoops into the note and holds it in the
+band of light, and it lands. Five tooltips, each on the moment it explains: the countdown as the
+band plays, the turn at the mic, "a step under" while take 1 still sings it (the chip that names an
+entry in a run is not up in a demo), "Merc sings it" as he does, and the landing on the line. It is
+the longest of the demos, about 28 seconds, since a song leads in twice; it never opens the mic,
+fires a haptic or keeps a result, and his opening line waits, unsaid, while it plays
+(`src/features/first-note/demo/`). The turn's ears (the engine, the entry and the trail) are their
+own module (`first-note-turn.ts`), shared by a run and the demo.
 
 **Show the words.** The owner asked for an optional hint (28 Oct 2026); it ships off by default, our
 choice, so the room stays ear first. It is a switch in the Songs sheet, kept on the phone
@@ -357,9 +375,8 @@ room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the na
 
 **Not yet, said plainly.**
 
-- No "How it works" demo, no Warm-up stop, and no account sync of the best (`mp_first_note_bests`
-  is device-only), nor of the reads of the singer's songs, which belong to the phone that has the
-  songs.
+- No Warm-up stop, and no account sync of the best (`mp_first_note_bests` is device-only), nor of
+  the reads of the singer's songs, which belong to the phone that has the songs.
 - A song of the singer's own is read again only when its stems or the rules change: lyrics synced
   after the read bring their words at the next read, not before.
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1

@@ -2,20 +2,22 @@
 // First note's "?": what the room is, and what a song needs for it
 // ============================================================
 //
-// The room has no guided demo, so its "?" (the bar's, RoomShell.tsx
-// ShellBarEnd `help`) opens this sheet: what a round is, in four steps, and
-// what makes a place in a song where the band can stop and ask for the
-// note (entry-rules.ts), in plain words. The owner's ask (1 Nov 2026): a
-// singer whose song sits out should be able to tell why from here, and the
-// Songs sheet's "i" on that song says it with the song's own counts.
+// The room's "?" (the bar's, RoomShell.tsx ShellBarEnd `help`, before the
+// demo's own) opens this sheet: what a round is, in four steps, with "See
+// how it works" to watch Merc sing one (demo/), and what makes a place in a
+// song where the band can stop and ask for the note (entry-rules.ts), in
+// plain words. The owner's ask (1 Nov 2026): a singer whose song sits out
+// should be able to tell why from here, and the Songs sheet's "i" on that
+// song says it with the song's own counts.
 //
 // The words carry the rules' numbers as plain words, not their constants:
 // the rules load only with a read (own-song-read.ts), never with the room.
 // FirstNoteHelp.test.tsx holds the two together.
 
 import type { JSX } from 'solid-js'
-import { For } from 'solid-js'
-import { X } from '@/components/icons'
+import { For, Show } from 'solid-js'
+import { DEMO_WORDS } from '@/components/demo-kit/demo-words'
+import { Play, X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { OWN_SONG_MIN_ENTRIES } from './first-note-rules'
 import styles from './FirstNoteHelp.module.css'
@@ -47,6 +49,8 @@ const NEEDS: ReadonlyArray<readonly [string, string]> = [
 export interface FirstNoteHelpProps {
   isOpen: boolean
   close: () => void
+  /** "See how it works": the room's demo, from the start; none without one. */
+  onWatch?: () => void
 }
 
 export function FirstNoteHelp(props: FirstNoteHelpProps): JSX.Element {
@@ -86,6 +90,20 @@ export function FirstNoteHelp(props: FirstNoteHelpProps): JSX.Element {
             )}
           </For>
         </ol>
+
+        <Show when={props.onWatch}>
+          {(watch) => (
+            <button
+              type="button"
+              class={styles.watch}
+              onClick={() => watch()()}
+              data-testid="first-note-help-watch"
+            >
+              <Play />
+              <span>{DEMO_WORDS.cardTitle}</span>
+            </button>
+          )}
+        </Show>
 
         <section class={styles.section} aria-labelledby="first-note-help-needs">
           <h3 id="first-note-help-needs" class={styles.sectionHead}>

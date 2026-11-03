@@ -7,6 +7,7 @@ import type { RoomSong } from '@/features/karaoke-room/karaoke-room-library'
 import { midiToF0 } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseLevel } from '@/stores/exercise-level'
+import type * as FirstNoteStoreModule from '@/stores/first-note-store'
 import { resetFirstNoteChoicesForTests } from './first-note-choices'
 import { resetOwnSongsForTests, setOwnSongReaderForTests, } from './first-note-own-songs'
 import { BETWEEN_ROUNDS_MS, FIRST_NOTE_ROUNDS, MERC_GAP_SECONDS, MERC_NOTE_SECONDS, } from './first-note-rules'
@@ -289,6 +290,15 @@ async function toNextEntry(): Promise<void> {
 // ── Merc's spoken lines, as calls the test can read ───────────
 
 const spoken = vi.hoisted(() => ({ said: [] as string[], hushed: 0 }))
+// The room on its own: the demo that plays by itself on a first visit has
+// its own tests (demo/FirstNoteDemo.test.tsx).
+vi.mock('@/stores/first-note-store', async () => ({
+  ...(await vi.importActual<typeof FirstNoteStoreModule>(
+    '@/stores/first-note-store',
+  )),
+  firstNoteDemoAutoPlays: () => false,
+}))
+
 vi.mock('@/components/room-kit/merc-speech', async () => ({
   ...(await vi.importActual<typeof SpeechModule>(
     '@/components/room-kit/merc-speech',
@@ -361,10 +371,15 @@ describe('First note', () => {
     render(() => <FirstNoteRoom onDone={() => undefined} />)
     const ask = screen.getByTestId('first-note-help')
     expect(ask.getAttribute('aria-label')).toBe('How First note works')
+    // The help comes first: the demo plays from inside it.
+    expect(screen.queryByTestId('first-note-ask')).toBeNull()
     fireEvent.click(ask)
     const help = screen.getByTestId('first-note-help-sheet')
     expect(help.textContent).toContain(
       "Come in on the singer's first note, from the band alone.",
+    )
+    expect(within(help).getByTestId('first-note-help-watch').textContent).toBe(
+      'See how it works',
     )
     fireEvent.click(within(help).getByRole('button', { name: 'Close' }))
     await settle()

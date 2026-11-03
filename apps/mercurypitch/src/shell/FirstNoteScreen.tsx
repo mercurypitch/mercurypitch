@@ -14,7 +14,8 @@
 // the phone's store, over the Karaoke room's theatre. The room sings Merc
 // with his sampled voice, Echo's (merc-sampler.ts): the screen hands it in,
 // so the room's feature reaches into no other feature. Until his set has
-// loaded the call goes to the synth "ooh", as Echo's does.
+// loaded the call goes to the synth "ooh", as Echo's does; the demo waits a
+// moment for it (`voiceReady`), as Home note's does.
 //
 // The two ways out to the Karaoke room, both the owner's requests (28 Oct
 // 2026), are the screen's too, since only the shell can change the tab:
@@ -29,7 +30,7 @@
 
 import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
-import { MERC_CALL } from '@/features/echo/merc-sampler'
+import { MERC_CALL, preloadMercVoice } from '@/features/echo/merc-sampler'
 import { FirstNoteRoom } from '@/features/first-note/FirstNoteRoom'
 import { requestKaraokeLibrary, requestKaraokeSong, } from '@/features/karaoke-room/karaoke-room-store'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
@@ -44,6 +45,7 @@ export function FirstNoteScreen(): JSX.Element {
     <FirstNoteRoom
       onDone={popScreen}
       voice={MERC_CALL}
+      voiceReady={preloadMercVoice}
       onSingOn={(sessionId, seconds) => {
         requestKaraokeSong(sessionId, { seekSec: seconds })
         goToTab(TAB_KARAOKE)

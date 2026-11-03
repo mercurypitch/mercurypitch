@@ -43,4 +43,20 @@ describe("First note's help", () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(close).toHaveBeenCalledTimes(1)
   })
+
+  it('plays the demo from "See how it works", where the room has one', () => {
+    const watch = vi.fn()
+    render(() => (
+      <FirstNoteHelp isOpen close={() => undefined} onWatch={watch} />
+    ))
+    const button = screen.getByTestId('first-note-help-watch')
+    expect(button.textContent).toBe('See how it works')
+    fireEvent.click(button)
+    expect(watch).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers no demo where the room has none', () => {
+    render(() => <FirstNoteHelp isOpen close={() => undefined} />)
+    expect(screen.queryByTestId('first-note-help-watch')).toBeNull()
+  })
 })
