@@ -25,6 +25,7 @@ import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import { trackEvent } from '@/lib/analytics'
 import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
 import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import { createPersistedSignal } from '@/lib/storage'
@@ -161,8 +162,8 @@ export function recordExerciseResult(
   // session_complete fires in saveSessionRecord, which every branch below
   // but one reaches exactly once, so firing here too would double the
   // funnel metric. The one is a stopped run: it writes no record, so it
-  // fires no session_complete either, and the funnel counts only runs that
-  // ran to their end.
+  // fires session_stopped instead, and the funnel's completions count only
+  // runs that ran to their end.
   // recordCompletion counts a FINISHED run for the survey gate (and counts
   // as activity too, so recordActivity is folded in).
   recordCompletion()
@@ -210,6 +211,7 @@ export function recordExerciseResult(
     // league award and Progress thread reads its score. Its time still
     // counts, toward the day's minutes and the streak.
     if (runStoppedEarly(entry.metrics)) {
+      trackEvent('session_stopped')
       await creditPracticeTime(durationMs, ownerId)
       return
     }
