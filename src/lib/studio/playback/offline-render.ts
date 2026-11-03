@@ -13,6 +13,7 @@ import type { StudioBufferLease } from './buffer-cache'
 import { createStudioBufferCache } from './buffer-cache'
 import type { StudioGraph } from './graph'
 import { buildStudioGraph, studioGraphWorkingBytes } from './graph'
+import { studioPlanAutomated } from './lane-automation'
 import type { StudioFrozenLane } from './lane-freeze'
 import { freezeStudioPlan, laneFreezeKeys, StudioFrozenBuffers, } from './lane-freeze'
 import type { StudioLatencyReader } from './prepare-plan'
@@ -141,7 +142,8 @@ export async function renderStudioArrangement(
     graph.output.connect(ctx.destination)
     // Native rendering may continue after abort. Keep all reservations until it settles.
     let rendered: AudioBuffer
-    if (frozen.size) {
+    // A lane's line, like a render's chunks, is written as the render nears it.
+    if (frozen.size || studioPlanAutomated(plan)) {
       rendered = await renderAsScheduled(ctx, graph, total / 48000, signal)
     } else {
       graph.scheduleUntil(Infinity)

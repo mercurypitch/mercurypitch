@@ -10,7 +10,8 @@
 // nineteen reverbs runs three.
 //
 // The send follows the lane's faders, pan and mute (post-fader, a pair of
-// gains beside the lane's own), and the gain effects after the reverb in
+// gains beside the lane's own) and its volume and pan lines (a stage beside
+// the lane's, graph-automation.ts), and the gain effects after the reverb in
 // the lane's chain (sendTrim), as its reverb did when it ran through them.
 // What a send skips is the rest of the chain after the reverb: the tilt
 // and, on drums, the limiter. A lane crossing to a new chain (graph-swap.ts)
@@ -22,6 +23,7 @@ import { isRealtimeRunning, writeParam } from '@/lib/studio-fx/effect-shell'
 import type { StudioReverbSpace } from '@/lib/studio-fx/fx-profile'
 import { REVERB_SPACES } from '@/lib/studio-fx/fx-profile'
 import { generateReverbImpulse } from '@/lib/studio-fx/reverb-impulse'
+import { connectAutomationStage } from './automation-line'
 
 /** The shared spaces of one graph, each built when a lane first sends to it. */
 export interface StudioReverbBuses {
@@ -73,6 +75,8 @@ export interface StudioLaneSend {
   readonly split: ChannelSplitterNode
   /** Left and right, moved with the lane's own faders. */
   readonly mixes: readonly GainNode[]
+  /** Left and right after them, on the lane's lines with its own stage (graph-automation.ts). */
+  readonly stages: readonly GainNode[]
   readonly merge: ChannelMergerNode
 }
 
@@ -113,12 +117,12 @@ export function connectLaneSends(
         const gain = ctx.createGain()
         gain.gain.value = value
         split.connect(gain, index)
-        gain.connect(merge, 0, index)
         return gain
       })
+      const stages = connectAutomationStage(ctx, mixes, merge)
       input.connect(split)
       merge.connect(buses.input(send.space))
-      lane = { input, split, mixes, merge }
+      lane = { input, split, mixes, stages, merge }
       bySpace.set(send.space, lane)
     }
     send.output.connect(lane.input)
@@ -131,7 +135,7 @@ export function disconnectLaneSends(sends: readonly StudioLaneSend[]): void {
   for (const send of sends) {
     send.input.disconnect()
     send.split.disconnect()
-    for (const mix of send.mixes) mix.disconnect()
+    for (const mix of [...send.mixes, ...send.stages]) mix.disconnect()
     send.merge.disconnect()
   }
 }

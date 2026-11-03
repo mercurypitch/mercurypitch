@@ -77,6 +77,8 @@ export async function analyzeStudioBalance(
             mute: false,
             solo: false,
             order: 0,
+            // Before its volume and pan lines too, as before its fader.
+            automation: undefined,
           },
         ],
         clips: snapshot.clips.filter((clip) => clip.trackId === track.id),

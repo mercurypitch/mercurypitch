@@ -2,7 +2,8 @@
 // Studio graph lanes — a lane's chain, faders and source sets, kept for as long as its graph plays
 // ============================================================
 //
-// A lane is built once: its chain, the gains for its volume and pan, and the
+// A lane is built once: its chain, the gains for its volume and pan, the
+// stage its volume and pan lines play on (graph-automation.ts), and the
 // merge a lane meter taps. Its sources come and go in sets
 // (seek-crossfade.ts) on a timeline of its own (lane-timeline.ts), so a seek
 // or a clip edit changes what the lane reads and never what it runs
@@ -17,9 +18,12 @@ import type { StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangem
 import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
+import type { StudioLaneAutomation } from './automation-line'
+import { connectAutomationStage, createLaneAutomation } from './automation-line'
 import { scheduleStudioSegmentGain } from './edge-envelope'
 import type { StudioLaneSend, StudioReverbBuses } from './graph-reverb-bus'
 import { connectLaneSends, disconnectLaneSends } from './graph-reverb-bus'
+import { automatedPanBase } from './lane-automation'
 import type { StudioLaneIdle } from './lane-idle'
 import { disposeLaneIdle, LIVE_LANE, quietNewLane } from './lane-idle'
 import type { StudioLaneTimeline, StudioPlanned, StudioScheduled, } from './lane-timeline'
@@ -62,6 +66,10 @@ export interface StudioGraphLane {
   dynamics: string[]
   /** Left and right fader gains, after the chain. */
   readonly mixes: readonly GainNode[]
+  /** Left and right gains after the faders that play the lane's lines (graph-automation.ts); at unity without lines. */
+  readonly stages: readonly GainNode[]
+  /** The lane's volume and pan lines as written to its stages. */
+  readonly automation: StudioLaneAutomation
   readonly split: ChannelSplitterNode
   /** The lane's output after its faders and pan: what a lane meter taps. */
   readonly merge: ChannelMergerNode
@@ -90,9 +98,9 @@ export function dynamicsIds(spec: ChainSpec): string[] {
     .map((effect) => effect.id)
 }
 
-/** Left and right lane gains: pan law times volume and balance. */
+/** Left and right lane gains: pan law times volume and balance, the pan held off a hard side while a pan line moves the lane. */
 export function laneGains(track: StudioTrack): readonly [number, number] {
-  const [left, right] = studioPanGains(track.pan)
+  const [left, right] = studioPanGains(automatedPanBase(track))
   const gain = Math.pow(10, (track.gainDb + track.balanceGainDb) / 20)
   return [left * gain, right * gain]
 }
@@ -110,7 +118,7 @@ export interface StudioLanePlace {
   readonly buses?: StudioReverbBuses
 }
 
-/** A lane's faders after `fade`, into `output`: split, a gain per side, merge. */
+/** A lane's faders after `fade`, into `output`: split, a gain per side, its automation stage, merge. */
 function connectFaders(
   ctx: BaseAudioContext,
   lane: StudioPlannedLane,
@@ -124,12 +132,12 @@ function connectFaders(
     const gain = ctx.createGain()
     gain.gain.value = value
     split.connect(gain, index)
-    gain.connect(merge, 0, index)
     return gain
   })
+  const stages = connectAutomationStage(ctx, mixes, merge)
   fade.connect(split)
   merge.connect(output)
-  return { split, merge, mixes }
+  return { split, merge, mixes, stages }
 }
 
 /**
@@ -189,6 +197,7 @@ export function buildGraphLane(
       idle: LIVE_LANE,
       sends,
       frozen: lane.frozen === true,
+      automation: createLaneAutomation(lane.track),
     }
     if (!lane.audible) quietNewLane(ctx, built)
     return built
@@ -449,7 +458,7 @@ export function disposeGraphLane(lane: StudioGraphLane): void {
   lane.chain.dispose()
   lane.fade.disconnect()
   lane.release?.()
-  for (const gain of lane.mixes) gain.disconnect()
+  for (const gain of [...lane.mixes, ...lane.stages]) gain.disconnect()
   lane.split.disconnect()
   lane.merge.disconnect()
 }

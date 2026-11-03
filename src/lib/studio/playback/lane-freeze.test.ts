@@ -1,6 +1,7 @@
 // Studio lane freeze — chunks round-trip within 16-bit precision, line up on the timeline and play at unity.
 import { describe, expect, it } from 'vitest'
 import { compileStudioArrangement } from '../model/arrangement-plan'
+import { withStudioAutomation } from '../model/automation'
 import { createStudioTrack } from '../model/defaults'
 import { studioFixture } from '../model/model.test-fixtures'
 import { studioSegmentGain } from './edge-envelope'
@@ -247,5 +248,38 @@ describe('Studio frozen plan and audio', () => {
     expect(frozenSoundChanged(frozen, project)).toBe(false)
     expect(frozenSoundChanged(frozen, warmer)).toBe(true)
     expect(freezesOutdated(frozen, warmer, assets)).toBe(true)
+  })
+
+  it('keeps a render when only its lane’s lines change: a render is the lane before its faders, and the lines play after them', () => {
+    // Arrange
+    const { project, assets } = song()
+    const plan = compileStudioArrangement(project, assets)
+    const frozen = new Map([
+      [
+        'track-1',
+        {
+          ...frozenFor('track-1', laneFreezeKey(plan.lanes[0])),
+          spec: JSON.stringify(plan.lanes[0].spec),
+        },
+      ],
+    ])
+    const lined = {
+      ...project,
+      tracks: project.tracks.map((track) =>
+        withStudioAutomation(track, 'volume', [
+          { frame: 0, value: -20 },
+          { frame: 900, value: 6 },
+        ]),
+      ),
+    }
+
+    // Act
+    const outdated = [
+      freezesOutdated(frozen, lined, assets),
+      frozenSoundChanged(frozen, lined),
+    ]
+
+    // Assert
+    expect(outdated).toEqual([false, false])
   })
 })
