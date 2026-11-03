@@ -69,6 +69,31 @@ describe('createStudioPcmCapture', () => {
     ])
   })
 
+  it('sends a level with every chunk of a take and once between, so the page wakes once for both', () => {
+    // Chunks of 4096 frames, as the recorder's pool has them.
+    const h = harness(16, 4096)
+    h.run(5)
+    h.capture.command({ type: 'start', atFrame: 700, maxFrames: 480000 })
+    h.run(200)
+
+    const levels = h.ofType('level').map((message) => message.frame)
+    const chunks = h.ofType('pcm')
+    expect(chunks.length).toBeGreaterThan(4)
+    for (const chunk of chunks) {
+      // The quantum that filled the chunk sends a level as it ends.
+      const ended = 700 + chunk.firstFrame + chunk.frames
+      const quantumEnd = Math.ceil(ended / QUANTUM) * QUANTUM
+      expect(levels).toContain(quantumEnd)
+    }
+    // Levels come no further apart than STUDIO_LEVEL_FRAMES, each chunk
+    // with one, and one halfway between.
+    const gaps = levels.slice(1).map((frame, i) => frame - levels[i])
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(STUDIO_LEVEL_FRAMES)
+    const during = levels.filter((frame) => frame > 4096 + 700)
+    const spanned = during.at(-1)! - during[0]
+    expect(during.length - 1).toBe(Math.round(spanned / (4096 / 2)))
+  })
+
   it('starts and stops on exact clock frames inside a quantum', () => {
     const h = harness()
     h.capture.command({ type: 'start', atFrame: 200, maxFrames: 48000 })

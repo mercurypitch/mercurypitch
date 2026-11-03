@@ -16,7 +16,7 @@
 // Arming takes the focus in the Studio; once armed, R and Escape work
 // wherever the focus is, outside text fields and dialogs.
 import type { Accessor } from 'solid-js'
-import { batch, createEffect, createSignal, on, onCleanup, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { StudioTakeJournalRecord } from '@/db/services/studio-take-journal'
 import { createStudioTakeJournal } from '@/db/services/studio-take-journal'
 import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
@@ -474,6 +474,34 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     void recorder.arm(lane)
   }
 
+  // One object from the arm until the take is kept: the level and the take
+  // are read through it, so a level wakes the meter that draws it and a
+  // chunk the take, not every lane on every level.
+  const timelineRecord = createMemo(
+    (): StudioTimelineRecording | null =>
+      phase() === 'idle'
+        ? null
+        : {
+            trackId: view().targetTrackId,
+            listening: phase() !== 'finishing',
+            get live() {
+              return live()
+            },
+            get level() {
+              return level()
+            },
+          },
+    undefined,
+    {
+      equals: (before, next) =>
+        before === next ||
+        (before !== null &&
+          next !== null &&
+          before.trackId === next.trackId &&
+          before.listening === next.listening),
+    },
+  )
+
   // Export, Compare, Auto-balance, Repeat and the range wait for the take.
   const busy = () => running() || phase() === 'finishing'
   createEffect(() => setStudioTakeRunning(busy()))
@@ -490,15 +518,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     level,
     live,
     /** The armed lane's level and the take growing in it, for the timeline. */
-    timeline: (): StudioTimelineRecording | null =>
-      phase() === 'idle'
-        ? null
-        : {
-            trackId: view().targetTrackId,
-            live: live(),
-            level: level(),
-            listening: phase() !== 'finishing',
-          },
+    timeline: timelineRecord,
     /** A lane's name, or null for one that is not in the song. */
     laneName: (trackId: string | null): string | null =>
       project()?.tracks.find((track) => track.id === trackId)?.name ?? null,

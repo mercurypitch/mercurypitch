@@ -1,17 +1,18 @@
 // Studio lane take — the armed lane's level and the take growing in its lane as it records, drawn only where the lane is in view.
 //
 // Each chunk the recorder hands over (about every 85 ms) adds peaks, and
-// the visible part of the take is drawn again from them: at most one
-// canvas the width of the view, and nothing at all once the take is out
-// of view. No animation frame runs: a redraw follows a chunk, a scroll or
-// a zoom, and nothing else.
-import { createEffect, Show } from 'solid-js'
+// the columns they add are drawn (live-wave.ts): one canvas the width of
+// the view, clipped to the take as it grows, and nothing at all once the
+// take is out of view. No animation frame runs: a draw follows a chunk, a
+// scroll or a zoom, and nothing else.
+import { createEffect, createMemo, Show } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
 import { studioTakeFileName } from '@/lib/studio/record/take-audio'
 import { studioPassTitle } from '@/lib/studio/record/take-passes'
 import { MicSmall } from '../studio-icons'
 import { frameToPixel } from '../timeline/timeline-geometry'
+import { createStudioLiveWave } from './live-wave'
 import { StudioInputMeter } from './StudioInputMeter'
 import styles from './StudioRecord.module.css'
 
@@ -78,58 +79,12 @@ export function liveTakeName(live: StudioLiveTake): string {
   return studioTakeFileName(studioPassTitle(live.title, pass))
 }
 
-function drawLive(
-  canvas: HTMLCanvasElement,
-  live: StudioLiveTake,
-  origin: number,
-  firstFrame: number,
-  framesPerPixel: number,
-  width: number,
-): void {
-  const ratio = globalThis.devicePixelRatio || 1
-  // The laid-out height: the flex column sizes the canvas, not its pixels.
-  const height = canvas.clientHeight > 0 ? canvas.clientHeight : 40
-  // Resizing reallocates the canvas, so it happens only when the size moves.
-  const pixelWidth = Math.max(1, Math.round(width * ratio))
-  const pixelHeight = Math.max(1, Math.round(height * ratio))
-  if (canvas.width !== pixelWidth) canvas.width = pixelWidth
-  if (canvas.height !== pixelHeight) canvas.height = pixelHeight
-  const context = canvas.getContext('2d')
-  if (context === null) return
-  context.setTransform(ratio, 0, 0, ratio, 0, 0)
-  context.clearRect(0, 0, width, height)
-  context.fillStyle = window.getComputedStyle(canvas).color
-  const toBucket =
-    live.sampleRate / STUDIO_SAMPLE_RATE / live.peaks.bucketFrames
-  const middle = height / 2
-  const reach = middle - 2
-  for (let x = 0; x < width; x++) {
-    const frame = firstFrame + x * framesPerPixel - origin
-    const from = Math.max(0, Math.floor(frame * toBucket))
-    const to = Math.min(
-      live.count,
-      Math.ceil((frame + framesPerPixel) * toBucket),
-    )
-    let peak = 0
-    let loud = 0
-    for (let bucket = from; bucket < to; bucket++) {
-      peak = Math.max(peak, live.peaks.peaks[bucket])
-      loud = Math.max(loud, live.peaks.rms[bucket])
-    }
-    // As the saved clip draws it (StudioWaveform.tsx): the peaks pale, the
-    // loudness solid, so the take keeps its shape when it lands.
-    const high = Math.max(0.5, Math.min(1, peak) * reach)
-    const body = Math.max(0.5, Math.min(1, peak, loud) * reach)
-    context.globalAlpha = 0.42
-    context.fillRect(x, middle - high, 1, high * 2)
-    context.globalAlpha = 1
-    context.fillRect(x, middle - body, 1, body * 2)
-  }
-}
-
 export function StudioLaneTake(props: StudioLaneTakeProps) {
   let canvas: HTMLCanvasElement | undefined
-  const box = () => {
+  const wave = createStudioLiveWave()
+  // A memo: the level does not move the take, and only a chunk, a scroll
+  // or a zoom draws it.
+  const box = createMemo(() => {
     const live = props.live
     if (live === null) return null
     const span = liveTakeSpan(live)
@@ -137,23 +92,23 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
     const width = frameToPixel(span.to - span.from, props.scale)
     const shownFrom = Math.max(left, props.scroll)
     const shownTo = Math.min(left + width, props.scroll + props.contentWidth)
-    return { live, left, width, shownFrom, shownTo }
-  }
+    return { live, span, left, width, shownFrom, shownTo }
+  })
   createEffect(() => {
     const shown = box()
     if (canvas === undefined || shown === null) return
     const width = Math.floor(shown.shownTo - shown.shownFrom)
     if (width <= 0) return
     const framesPerPixel = STUDIO_SAMPLE_RATE / props.scale
-    const span = liveTakeSpan(shown.live)
-    drawLive(
-      canvas,
-      shown.live,
-      span.origin,
-      span.from + (shown.shownFrom - shown.left) * framesPerPixel,
+    wave.draw(canvas, {
+      live: shown.live,
+      origin: shown.span.origin,
+      firstFrame:
+        shown.span.from + (shown.shownFrom - shown.left) * framesPerPixel,
       framesPerPixel,
       width,
-    )
+      viewWidth: Math.max(1, Math.ceil(props.contentWidth)),
+    })
   })
   return (
     <>
@@ -175,7 +130,14 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
                 <span class={styles.liveTitle}>
                   {liveTakeName(shown().live)}
                 </span>
-                <canvas ref={canvas} class={styles.liveWave} />
+                <canvas
+                  ref={(element) => {
+                    canvas = element
+                    wave.reset()
+                  }}
+                  class={styles.liveWave}
+                  style={{ width: `${Math.ceil(props.contentWidth)}px` }}
+                />
               </div>
             </Show>
           </div>

@@ -17,7 +17,10 @@
 // with it, so nothing after a hiccup slides early. Input missing for half a
 // second, or a clock jump too long to fill, ends the take with what came
 // before it kept. The level is metered whether or not a take is running, so
-// an armed lane shows the singer's level before Record.
+// an armed lane shows the singer's level before Record. While a take runs,
+// a level goes out with each chunk, from the same quantum, and once halfway
+// between: the page handles both in one wake and draws them in one frame,
+// instead of a frame for each on their own beats.
 //
 // The clock is counted, quantum by quantum, and currentFrame only corrects
 // it forward. Chromium refreshes a worklet's currentFrame only when the
@@ -34,8 +37,8 @@
 export const STUDIO_CAPTURE_CHUNK_FRAMES = 4096
 /** Buffers handed to the worklet up front: about 5.5 s of stall before a take stops. */
 export const STUDIO_CAPTURE_POOL = 64
-/** Frames between two level readings: 12 quanta, about 32 ms at 48 kHz. */
-export const STUDIO_LEVEL_FRAMES = 1536
+/** Frames between two level readings at most: 16 quanta, about 43 ms at 48 kHz, half a chunk. */
+export const STUDIO_LEVEL_FRAMES = 2048
 /** A render quantum: what a quantum with no input stands for. */
 export const STUDIO_RENDER_QUANTUM = 128
 /** Input missing this long, in frames, means the microphone is gone: half a second. */
@@ -111,9 +114,12 @@ export function createStudioPcmCapture(send: Send) {
   let silentFrames = 0
   let levelPeak = 0
   let levelFrames = 0
+  /** A chunk went out in this quantum: its level goes with it. */
+  let flushed = false
 
   function flush(): void {
     if (buffer === undefined || used === 0) return
+    flushed = true
     const bytes = buffer.buffer as ArrayBuffer
     send(
       {
@@ -190,17 +196,23 @@ export function createStudioPcmCapture(send: Send) {
     return false
   }
 
-  function meter(input: Float32Array | null, length: number, at: number) {
+  function meter(input: Float32Array | null, length: number): void {
     if (input !== null)
       for (let i = 0; i < length; i++) {
         const value = Math.abs(input[i])
         if (value > levelPeak) levelPeak = value
       }
     levelFrames += length
-    if (levelFrames < STUDIO_LEVEL_FRAMES) return
-    send({ type: 'level', peak: levelPeak, frame: at + length })
-    levelPeak = 0
-    levelFrames = 0
+  }
+
+  /** The level so far, at the end of this quantum: with a chunk, or when it is due. */
+  function sendLevel(end: number): void {
+    if (flushed || levelFrames >= STUDIO_LEVEL_FRAMES) {
+      send({ type: 'level', peak: levelPeak, frame: end })
+      levelPeak = 0
+      levelFrames = 0
+    }
+    flushed = false
   }
 
   /** This quantum's frames from `from`, up to a stop frame inside it, if any. */
@@ -286,13 +298,14 @@ export function createStudioPcmCapture(send: Send) {
       const samples = present ? input : null
       const length = present ? input.length : STUDIO_RENDER_QUANTUM
       const audioFrame = frameOf(clockFrame)
-      meter(samples, length, audioFrame)
+      meter(samples, length)
       if (!finished) {
         silentFrames = present ? 0 : silentFrames + length
         if (capturing && silentFrames >= STUDIO_SILENT_INPUT_FRAMES)
           stop('input-lost')
         else capture(samples, length, audioFrame)
       }
+      sendLevel(audioFrame + length)
       nextFrame = audioFrame + length
     },
   }
