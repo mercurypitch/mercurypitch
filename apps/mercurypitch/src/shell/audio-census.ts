@@ -36,6 +36,12 @@
 // constructor before this was installed is not counted, which no room does
 // (they build the context on a tap, long after launch).
 //
+// AND WHERE IT LIKELY WENT. A context made without a rate of its own runs
+// at the rate of the output WebKit's session has, and the app's session
+// never sees AirPlay: so each one goes to the AirPlay guess as well
+// (src/stores/airplay-suspicion.ts), which a store build reads off the
+// shared clock alone.
+//
 // AND WHAT THE ROOMS SENT. The Developer screen is a screen of its own, so
 // no room plays while it is open: a live meter there would read silence.
 // Instead every sound the rooms send through their output (room-output.ts)
@@ -52,6 +58,7 @@
 import type { RoomOutputReading } from '@/components/room-kit/room-output'
 import type { AudioReport } from '@/lib/audio-diagnostics'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
+import { notePageAudioContext } from '@/stores/airplay-suspicion'
 import type { NativeAudioOutput, NativeAudioOutputReading, } from '@/stores/native-shell-store'
 
 /** A context the census saw made and has not seen close. */
@@ -145,6 +152,9 @@ function noteContext(context: BaseAudioContext, options: unknown): void {
     rate: context.sampleRate,
     ...(asked.latencyHint === undefined ? {} : { latency: asked.latencyHint }),
   })
+  // Made at the output's own rate, which says where WebKit's session plays:
+  // AirPlay's 44.1 kHz while the app's session says its speaker's 48.
+  if (asked.sampleRate === undefined) notePageAudioContext(context)
   context.addEventListener('statechange', () => {
     census('context-state', { n: entry.n, state: context.state })
     readOutputAround(`context ${String(entry.n)} ${context.state}`)

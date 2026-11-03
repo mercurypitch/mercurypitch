@@ -87,6 +87,17 @@ export type NativeMediaAction =
   | NativeMediaSkip
 
 /**
+ * Where a media action came from, so the room can say who paused or played
+ * the song: a system media control (the notification, the lock screen,
+ * Control Center, a headset, a remote such as an AirPlay receiver's), iOS
+ * taking the sound or giving it back, or iOS's lyrics window.
+ */
+export type NativeMediaActionSource =
+  | 'media-session'
+  | 'system'
+  | 'lyrics-window'
+
+/**
  * Where the phone's sound goes, by kind. AirPlay and HDMI take it to a TV or
  * a receiver, which plays it with a delay of its own.
  */
@@ -137,6 +148,11 @@ export interface NativeAudioRouteChange {
   readonly routeReason: string | null
   /** iOS: the output port types before it. */
   readonly previousOutputs: readonly string[]
+  /**
+   * iOS: the app's own session's sample rate in Hz, null or absent where
+   * the phone did not say (airplay-suspicion.ts reads it).
+   */
+  readonly sampleRate?: number | null
 }
 
 /** The phone's output, read now and heard on every change. */
@@ -212,8 +228,16 @@ export interface NativeDeviceApi {
    * playing or paused here is also what keeps the app from being frozen.
    */
   nowPlaying: (song: NativeNowPlaying | null) => void
-  /** The system's media buttons and progress bar. Returns the unsubscribe. */
-  onMediaAction: (handler: (action: NativeMediaAction) => void) => () => void
+  /**
+   * The system's media buttons and progress bar, each with where it came
+   * from where the app can say. Returns the unsubscribe.
+   */
+  onMediaAction: (
+    handler: (
+      action: NativeMediaAction,
+      source?: NativeMediaActionSource,
+    ) => void,
+  ) => () => void
   /**
    * While on, leaving the app opens a small floating window instead of
    * putting the app behind everything: Android's of the whole app, iOS's of
@@ -242,6 +266,14 @@ export interface NativeDeviceApi {
    * Absent where no TV can show them.
    */
   onTvLyrics?: (handler: (showing: boolean) => void) => () => void
+  /**
+   * iOS: whether a screen is connected to the phone, by Screen Mirroring or
+   * a cable, whatever it shows, now and on every change (TVLyrics.swift).
+   * Mirroring is how a TV gets the room and its sound properly, so the
+   * room does not suspect AirPlay alone while one is (airplay-suspicion.ts).
+   * Returns the unsubscribe. Absent where no screen can connect.
+   */
+  onExternalScreen?: (handler: (connected: boolean) => void) => () => void
   /**
    * iOS: a TV connected to the phone that draws the room's stage, the pitch
    * lane, the lyrics and the score (a test build's "Stage on a connected

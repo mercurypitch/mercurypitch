@@ -263,6 +263,20 @@ export interface MediaSkip {
 export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek | MediaSkip
 
 /**
+ * Where an action came from, for the room's line of who paused and played
+ * (owner, 3 Nov 2026: a song paused itself on AirPlay and nothing said who).
+ *
+ *   media-session  a system media control: the notification, the lock
+ *                  screen, Control Center, a headset, or a remote such as
+ *                  an AirPlay receiver's
+ *   system         iOS pausing the lock screen's carrier as another app or
+ *                  a call takes the sound, or playing it again after a
+ *                  call (webkit-now-playing.ts)
+ *   lyrics-window  iOS's lyrics window's own buttons
+ */
+export type MediaActionSource = 'media-session' | 'system' | 'lyrics-window'
+
+/**
  * What is registered, in the plugin's names, which are the Media Session
  * API's too: the three buttons, and the bar. Registering 'seekto' is what
  * lets the bar be dragged: Android adds ACTION_SEEK_TO to the session's
@@ -469,9 +483,10 @@ async function showThroughWebKit(song: NowPlaying | null): Promise<void> {
  * from the app's own plugin. A play from either takes the sound before the
  * handler hears it, and one that cannot is never heard: the song stays
  * paused rather than play in silence under another app (`takeTheSound`).
+ * Each action comes with where it came from (`MediaActionSource`).
  */
 export function onMediaAction(
-  handler: (action: MediaAction) => void,
+  handler: (action: MediaAction, source: MediaActionSource) => void,
 ): Unsubscribe {
   if (!isNative()) return () => undefined
 
@@ -480,13 +495,15 @@ export function onMediaAction(
     details: ActionDetails | null | undefined,
   ): void => {
     const asked = heard(action, details)
-    if (asked !== null) handler(asked)
+    if (asked !== null) handler(asked, 'media-session')
   }
 
   if (isIos()) {
     const withWebKit = webKitNowPlayingAvailable()
     const fromWebKit = withWebKit
-      ? listenOnWebKit(WEBKIT_ACTIONS, deliver)
+      ? listenOnWebKit(WEBKIT_ACTIONS, deliver, (action) => {
+          handler(action, 'system')
+        })
       : () => undefined
     const fromTheWindow = listenToTheWindow((action, press) => {
       if (
@@ -496,7 +513,7 @@ export function onMediaAction(
       ) {
         return
       }
-      handler(action)
+      handler(action, 'lyrics-window')
     })
     return () => {
       fromWebKit()

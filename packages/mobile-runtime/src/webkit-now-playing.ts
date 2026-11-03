@@ -664,6 +664,11 @@ export function takeTheSound(choice: TakeTheSoundOptions = {}): boolean {
  * does not know is skipped; the others still register. The unsubscribe
  * clears what this call registered, unless a newer listener has taken over.
  *
+ * The system's own pause and play of the carrier (another app taking the
+ * sound, a call, a call that ends with the word to resume) go to
+ * `fromSystem` where one is given, so that the room can say which it was:
+ * a press and the system taking the sound pause the song alike.
+ *
  * A press that may have waited while the app slept goes through
  * the guard first (waited-presses.ts). Play takes the sound before it is heard
  * (`takeTheSound`): pressed while the song plays and the carrier does not
@@ -673,6 +678,7 @@ export function takeTheSound(choice: TakeTheSoundOptions = {}): boolean {
 export function listenOnWebKit(
   actions: readonly WebKitAction[],
   deliver: Deliver,
+  fromSystem?: (action: 'play' | 'pause') => void,
 ): () => void {
   const session = navigator.mediaSession
   const registered: WebKitAction[] = []
@@ -693,9 +699,11 @@ export function listenOnWebKit(
   }
   const self = {}
   listening = self
-  systemHeard = (action) => {
-    deliver(action, {})
-  }
+  systemHeard =
+    fromSystem ??
+    ((action) => {
+      deliver(action, {})
+    })
   return () => {
     if (listening !== self) return
     listening = null

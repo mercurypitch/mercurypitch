@@ -376,7 +376,7 @@ describe('onAudioRoute', () => {
     expect(remove).toHaveBeenCalled()
   })
 
-  it('hands on the port and iOS’s reason with each route', async () => {
+  it('hands on the port, iOS’s reason and the session’s rate with each route', async () => {
     capacitor.isNativePlatform.mockReturnValue(true)
     capacitor.getPlatform.mockReturnValue('ios')
     let send: (event: Record<string, unknown>) => void = () => undefined
@@ -411,6 +411,8 @@ describe('onAudioRoute', () => {
           reason: 'route',
           routeReason: 'new device',
           previousOutputs: ['Speaker'],
+          // The app's own session: 48 kHz on the phone, as AudioSessionKit reads it.
+          sampleRate: 48000,
         },
       ],
       [
@@ -420,6 +422,8 @@ describe('onAudioRoute', () => {
           reason: 'route',
           routeReason: null,
           previousOutputs: [],
+          // Android says no rate.
+          sampleRate: null,
         },
       ],
     ])

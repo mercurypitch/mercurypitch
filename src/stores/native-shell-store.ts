@@ -46,6 +46,7 @@ export type {
   NativeMediaSeek,
   NativeMediaSkip,
   NativeMediaAction,
+  NativeMediaActionSource,
   NativeAudioRoute,
   NativeAudioRouteChange,
   NativeAudioOutputReading,

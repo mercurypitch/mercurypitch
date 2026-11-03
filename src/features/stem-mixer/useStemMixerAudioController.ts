@@ -26,6 +26,7 @@ import { createOctaveCorrector } from '@/lib/pitch-pipeline/octave-corrector'
 import { createRunningMedian } from '@/lib/pitch-pipeline/running-median'
 import { getPitchWindowResumeState } from '@/lib/pitch-window'
 import { platform } from '@/lib/platform'
+import { asPlaybackCause, playbackCause } from '@/lib/playback-cause'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
@@ -814,7 +815,7 @@ export const useStemMixerAudioController = (
     stopLeaveWait()
     // Paused before it is marked: a report that found the song still playing
     // would play the lock screen's carrier into the interruption.
-    handlePause()
+    asPlaybackCause('interruption', handlePause)
     setInterrupted(true)
   }
   const playOnBehindTheApp = (): void => {
@@ -1897,9 +1898,10 @@ export const useStemMixerAudioController = (
   // follow the route (sound-stopped.ts). A toast here once told a singer on
   // AirPlay to press play, which sent the sound back to the same place.
   const [stalled, setStalled] = createSignal(false)
-  const stopForStalledClock = (): void => {
+  /** `watch`: which of the three gave up, for the pause's line. */
+  const stopForStalledClock = (watch: string): void => {
     if (!playing()) return
-    handlePause()
+    asPlaybackCause(watch, handlePause)
     void audioCtx?.suspend().catch(() => undefined)
     setStalled(true)
   }
@@ -1922,7 +1924,7 @@ export const useStemMixerAudioController = (
         report: reportPlayback,
         // A quick answer: the check looks again without waiting on it.
         recover: () => void restartClock(),
-        giveUp: stopForStalledClock,
+        giveUp: () => stopForStalledClock('start-check'),
         checkAfterMs: START_CHECK_MS,
         facts: () => ({
           state: audioCtx === null ? 'none' : String(audioCtx.state),
@@ -1965,7 +1967,7 @@ export const useStemMixerAudioController = (
           report: reportPlayback,
           facts: stallFacts,
           recover: restartClock,
-          giveUp: stopForStalledClock,
+          giveUp: () => stopForStalledClock('watchdog'),
         })
         onCleanup(() => {
           watch.stop()
@@ -1999,6 +2001,7 @@ export const useStemMixerAudioController = (
     startRafLoop()
     deps.onPlaybackStarted?.()
     reportPlayback('play', {
+      by: playbackCause(),
       clockWas,
       position: Math.round(pauseOffset * 1000) / 1000,
     })
@@ -2017,13 +2020,29 @@ export const useStemMixerAudioController = (
     setAudibleElapsed(audibleSongTime(audioCtx, now))
   }
 
+  // ── Who paused, stopped or played it ──────────────────────────
+  // The owner's song paused itself on AirPlay a second after Play, and no
+  // line said who paused it (3 Nov 2026). Each pause of a playing song, each
+  // stop and each play is a line in the audio record and the console, with
+  // who asked (playback-cause.ts): karaoke pause by=media-session(pause)
+  // position=2.2. A song whose mixer goes while it plays (the room changing
+  // the song or closing) says so too, as a stop.
+  const sayTransport = (event: 'pause' | 'stop', fallback?: string): void => {
+    reportPlayback(event, {
+      by: playbackCause(fallback),
+      position: Math.round(elapsed() * 1000) / 1000,
+    })
+  }
+
   const handlePause = () => {
+    const wasPlaying = playing()
     stopStartCheck()
     restartTurn += 1
     setInterrupted(false)
     setStalled(false)
     catchUpClocks()
     pauseOffset = elapsed()
+    if (wasPlaying) sayTransport('pause')
     disconnectSources()
     setPlayingLocal(false)
     cancelAnimationFrame(rafId)
@@ -2050,12 +2069,13 @@ export const useStemMixerAudioController = (
       reportPlayback('suspend-fade', {
         position: Math.round(elapsed() * 1000) / 1000,
       })
-      handlePause()
+      asPlaybackCause('suspend', handlePause)
     }
     return releaseLeft()
   }
 
   const handleStop = () => {
+    sayTransport('stop')
     stopStartCheck()
     restartTurn += 1
     setInterrupted(false)
@@ -2096,6 +2116,11 @@ export const useStemMixerAudioController = (
     canvas.drawMidiCanvas()
     canvas.drawLiveWaveform()
   }
+  // The mixer going with its song playing: the room changed the song
+  // ('song-change') or closed, and its sound stops with the sources.
+  onCleanup(() => {
+    if (playing()) sayTransport('stop', 'leave')
+  })
 
   const handleRestart = () => {
     deps.onPlaybackDiscarded?.()
@@ -2410,7 +2435,7 @@ export const useStemMixerAudioController = (
       if (elapsedTime >= duration()) {
         // Natural end (not a manual stop) — notify the playlist to advance.
         deps.onPlaybackEnded?.()
-        handleStop()
+        asPlaybackCause('end', handleStop)
         return false
       }
     }
@@ -2431,7 +2456,7 @@ export const useStemMixerAudioController = (
     ) {
       return
     }
-    handlePause()
+    asPlaybackCause('lost-sound', handlePause)
     deps.showNotification(LOST_SOUND_NOTICE, 'warning')
   }
 
@@ -2460,7 +2485,7 @@ export const useStemMixerAudioController = (
         position: elapsed,
         report: reportPlayback,
         recover: () => void restartClock(),
-        giveUp: stopForStalledClock,
+        giveUp: () => stopForStalledClock('return-check'),
       }),
     )
   }
