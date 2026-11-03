@@ -3,7 +3,7 @@
 // ============================================================
 //
 // DESIGN-warm-up.md §12, 13c's walk with fixture rooms: the path pushed
-// over the Sing room, Start, four stops (each room pushed over the path
+// over the Sing room, Start, five stops (each room pushed over the path
 // and popped back to it as its stop ends), the countdown taking the singer
 // on once, the end, and Sing a song back to the Sing room for its song
 // list. The path is the real one (WarmUpScreen, WarmUpPath, the store);
@@ -24,7 +24,7 @@ import type { WarmUpRoomId } from '@/features/warm-up/warm-up-plan'
 import { resetWarmUpForTests, warmUpDay, } from '@/features/warm-up/warm-up-store'
 import { PULSE_MS } from '@/features/warm-up/WarmUpPath'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { songListRequested, takeSongListRequest, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { installNativeHaptics } from '../infrastructure/native-haptics'
@@ -63,6 +63,7 @@ const LINES: Record<WarmUpRoomId, string> = {
   [EXERCISE_NG_SLIDES_BRIDGE]: '92% lit',
   [EXERCISE_LONG_NOTE_LANTERN]: '12.6 s',
   [EXERCISE_ECHO_STARS]: '8 of 9 on pitch',
+  [EXERCISE_FIRST_NOTE_STAGE]: '2 of 2 on the note',
 }
 
 /** A room that is a stop, and sings it with the frames' result. */
@@ -132,6 +133,7 @@ beforeEach(() => {
       ngSlides={standIn(EXERCISE_NG_SLIDES_BRIDGE)}
       longNote={standIn(EXERCISE_LONG_NOTE_LANTERN)}
       echo={standIn(EXERCISE_ECHO_STARS)}
+      firstNote={standIn(EXERCISE_FIRST_NOTE_STAGE)}
     />
   ))
 })
@@ -153,33 +155,38 @@ afterEach(async () => {
 })
 
 describe('a Warm-up, start to song', () => {
-  it('walks four stops to the end, then Sing a song opens the song list', () => {
+  it('walks five stops to the end, then Sing a song opens the song list', () => {
     pushScreen('warm-up')
     expect(lastExercise()).toBe('warm-up-path')
 
-    // Start: Lip roll, stop 1 of 4.
+    // Start: Lip roll, stop 1 of 5.
     fireEvent.click(screen.getByTestId('warm-up-start'))
     vi.advanceTimersByTime(PULSE_MS)
     expect(pushed()).toBe('lip-roll')
-    expect(room()).toBe('lip-roll-bay 1 of 4')
+    expect(room()).toBe('lip-roll-bay 1 of 5')
     finishRoom()
 
     // The countdown takes the singer on to Ng slides by itself.
     vi.advanceTimersByTime(ACTIONS_MS + AUTO_CONTINUE_SECONDS * 1000 + PULSE_MS)
-    expect(room()).toBe('ng-slides-bridge 2 of 4')
+    expect(room()).toBe('ng-slides-bridge 2 of 5')
     finishRoom()
 
     next()
-    expect(room()).toBe('long-note-lantern 3 of 4')
+    expect(room()).toBe('long-note-lantern 3 of 5')
     finishRoom()
 
     next()
-    expect(room()).toBe('echo-stars 4 of 4')
+    expect(room()).toBe('echo-stars 4 of 5')
+    finishRoom()
+
+    next()
+    expect(pushed()).toBe('first-note')
+    expect(room()).toBe('first-note-stage 5 of 5')
     finishRoom()
 
     // The end: every result under its stop, the day warmed up.
     expect(screen.getByTestId('warm-up-title').textContent).toBe('Warmed up')
-    expect(screen.getByText('4 of 4 today')).not.toBeNull()
+    expect(screen.getByText('5 of 5 today')).not.toBeNull()
     expect(warmUpDay().warmedUp).toBe(true)
     expect(lastExercise()).toBe('warm-up-path')
 
@@ -194,14 +201,14 @@ describe('a Warm-up, start to song', () => {
     expect(hapticTap).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(PULSE_MS)
     finishRoom()
-    for (let stop = 2; stop <= 4; stop += 1) {
+    for (let stop = 2; stop <= 5; stop += 1) {
       next()
       finishRoom()
     }
     expect(hapticSuccess).not.toHaveBeenCalled()
 
-    // The end: four stops brighten, the song lights, and Merc lands on it.
-    vi.advanceTimersByTime(4 * END_STEP_MS + END_SONG_MS + HOP_MS)
+    // The end: five stops brighten, the song lights, and Merc lands on it.
+    vi.advanceTimersByTime(5 * END_STEP_MS + END_SONG_MS + HOP_MS)
     expect(hapticSuccess).toHaveBeenCalledTimes(1)
     expect(vibrate).not.toHaveBeenCalled()
   })

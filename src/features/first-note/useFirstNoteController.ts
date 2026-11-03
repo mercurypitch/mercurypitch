@@ -132,13 +132,15 @@ export function useFirstNoteController(
   }
   const phase = () => untrack(state).phase
   const say = speakingLines(lines, speech, setLine)
-  /** His opening line, aloud unless the singer has just left the app. */
+  /**
+   * His opening line, aloud unless the singer has just left the app: the
+   * Warm-up's cue in a stop of it.
+   */
   const sayIntro = (aloud = true): void => {
-    say(
-      untrack(level.preset).line === 'always' ? 'introLine' : 'intro',
-      undefined,
-      aloud,
-    )
+    let moment: 'routine' | 'introLine' | 'intro' = 'intro'
+    if (options.routine === true) moment = 'routine'
+    else if (untrack(level.preset).line === 'always') moment = 'introLine'
+    say(moment, undefined, aloud)
   }
 
   // ── Timers that belong to the screen (room-kit room-life.ts) ───
@@ -537,7 +539,7 @@ export function useFirstNoteController(
     level.take()
     runLevel = untrack(exerciseLevel)
     rules = untrack(level.preset)
-    const rounds = planRun(songs, random)
+    const rounds = planRun(songs, random, options.rounds)
     batch(() => {
       dispatch({ type: 'start', rounds })
       setSummary(null)
@@ -632,7 +634,8 @@ export function useFirstNoteController(
   // ── The screen's life ──────────────────────────────────────
   onMount(() => {
     // A first visit opens on the demo, which says it all: his line waits.
-    sayIntro(!firstNoteDemoAutoPlays())
+    // A Warm-up stop never opens on it.
+    sayIntro(options.routine === true || !firstNoteDemoAutoPlays())
     life.later(1100, () => {
       if (untrack(merc.state) === 'drop') merc.set('idle')
     })

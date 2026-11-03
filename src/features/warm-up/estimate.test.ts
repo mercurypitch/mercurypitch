@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { ExerciseLevel } from '@/stores/exercise-level'
 import { stopSeconds, warmUpMinutes, warmUpSeconds } from './estimate'
 import type { WarmUpPlan } from './warm-up-plan'
@@ -43,17 +43,24 @@ describe('a stop at each level', () => {
       expect(stopSeconds(EXERCISE_ECHO_STARS, level)).toBeCloseTo(22.2, 6)
     }
   })
+
+  it("First note's two entries, an example song's each, at every level", () => {
+    for (const level of LEVELS) {
+      expect(stopSeconds(EXERCISE_FIRST_NOTE_STAGE, level)).toBe(30)
+    }
+  })
 })
 
 describe("the owner's routine", () => {
-  it('reads "3 min" at every level', () => {
-    // Each stop's singing and 12 s around it: 105.4 + 48, 96 + 48, 80.6 + 48.
+  it('reads "4 min", and "3 min" at the quicker professional pace', () => {
+    // Each stop's singing and 12 s around it: 135.4 + 60, 126 + 60,
+    // 110.6 + 60.
     const seconds = LEVELS.map((level) => warmUpSeconds(OWNER_ROUTINE, level))
-    expect(seconds[0]).toBeCloseTo(153.4, 6)
-    expect(seconds[1]).toBeCloseTo(144.0, 6)
-    expect(seconds[2]).toBeCloseTo(128.6, 6)
+    expect(seconds[0]).toBeCloseTo(195.4, 6)
+    expect(seconds[1]).toBeCloseTo(186.0, 6)
+    expect(seconds[2]).toBeCloseTo(170.6, 6)
     expect(LEVELS.map((level) => warmUpMinutes(OWNER_ROUTINE, level))).toEqual([
-      3, 3, 3,
+      4, 4, 3,
     ])
   })
 })

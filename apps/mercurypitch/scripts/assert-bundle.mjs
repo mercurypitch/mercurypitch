@@ -358,7 +358,7 @@ const KARAOKE_STAGE_2 = [
   // the warm- files above.
   ['warm-up-path', 'the premium Warm-up and its path'],
   [
-    'Four stops, about three minutes, then a song',
+    'Five stops, about four minutes, then a song',
     "the exercise picker's Warm-up card",
   ],
   [

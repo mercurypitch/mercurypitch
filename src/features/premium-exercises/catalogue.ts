@@ -102,7 +102,7 @@ export const EXERCISE_CATALOGUE: readonly PremiumExercise[] = [
     id: EXERCISE_WARM_UP_PATH,
     name: 'Warm-up',
     group: 'warm-ups',
-    line: 'Four stops, about three minutes, then a song.',
+    line: 'Five stops, about four minutes, then a song.',
     Glyph: WarmUpGlyph,
     bestOnNote: false,
     ...warmEntry(),

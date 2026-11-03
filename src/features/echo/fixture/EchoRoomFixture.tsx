@@ -7,7 +7,7 @@
 // Merc's cue, "Skip stop") and `?echoFixture=warm-result` (a three-phrase
 // run, 8 of 9 notes on pitch, on the result's first, third and fifth
 // places). `&warmUp=<n>` names the stop (room-kit routine-fixture.ts);
-// without it the room is the last of four, where the Warm-up puts Echo.
+// without it the room is the fourth, where the Warm-up puts Echo.
 // The art's own fixtures (EchoFixture.tsx) draw the storyboard's frames.
 //
 // Dev server only, as EchoFixture is. The capture waits for
@@ -17,7 +17,7 @@
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { SILENT_VOICE } from '@/components/room-kit/room-constants'
-import { FIXTURE_STOPS, fixtureStop, } from '@/components/room-kit/routine-fixture'
+import { fixtureStop } from '@/components/room-kit/routine-fixture'
 import type { RoutineStop } from '@/components/room-kit/routine-stop'
 import type { MercState } from '@/lib/merc/constants'
 import { echoWindow, planEchoRun } from '@/lib/sequence/phrase-fit'
@@ -45,6 +45,8 @@ export function isRoomFixtureName(
   return ROOM_FIXTURES.some((each) => each === name)
 }
 
+/** Echo's place in the owner's routine, from 1: the fourth of five. */
+const ECHO_STOP = 4
 /** The run's root: C4, an easy note for most voices. */
 const ROOT = 60
 /** The one note missed: the second phrase's last. */
@@ -163,7 +165,7 @@ export function roomFixtureController(frame: Frame): EchoController {
 
 export interface EchoRoomFixtureProps {
   name: EchoRoomFixtureName
-  /** The stop the room is; the Warm-up's last by default. */
+  /** The stop the room is; Echo's place in the Warm-up by default. */
   stop?: RoutineStop
 }
 
@@ -172,7 +174,7 @@ export function EchoRoomFixture(props: EchoRoomFixtureProps): JSX.Element {
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
   const controller = roomFixtureController(frameOf(props.name))
   // eslint-disable-next-line solid/reactivity -- a fixture is one frame
-  const stop = props.stop ?? fixtureStop(`?warmUp=${FIXTURE_STOPS}`)
+  const stop = props.stop ?? fixtureStop(`?warmUp=${ECHO_STOP}`)
   // Two frames for the compositor to settle the sky's blurred glow.
   const settled = (): void => {
     requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)))

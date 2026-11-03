@@ -11,7 +11,7 @@ describe('fixtureStop', () => {
     expect(fixtureStop('?lipFixture=intro')).toBeUndefined()
   })
 
-  it('names stop n of four, counted from one', () => {
+  it('names stop n of five, counted from one', () => {
     const stop = fixtureStop('?lipFixture=intro&warmUp=3')
     expect([stop?.index, stop?.count, stop?.settledNote]).toEqual([
       2,
@@ -21,7 +21,7 @@ describe('fixtureStop', () => {
   })
 
   it('takes a number outside the routine as its first stop', () => {
-    for (const value of ['0', '5', 'two', '']) {
+    for (const value of ['0', '6', 'two', '']) {
       expect(fixtureStop(`?warmUp=${value}`)?.index).toBe(0)
     }
   })

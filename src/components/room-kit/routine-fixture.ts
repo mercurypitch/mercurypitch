@@ -4,7 +4,7 @@
 //
 // A room's dev fixture (`?lipFixture=intro` and the others) draws the room
 // in warm-up mode when the page also says `&warmUp=<n>`: the room as stop n
-// of four (routine-stop.ts). Nothing listens to the stop: what the room
+// of five (routine-stop.ts). Nothing listens to the stop: what the room
 // hands it goes nowhere, and the fixture keeps its pinned frame.
 //
 // Dev server only: only the fixtures import it, and the native entry
@@ -12,8 +12,12 @@
 
 import type { RoutineStop } from './routine-stop'
 
-/** The fixtures' Warm-up: four stops, as the owner's routine has. */
-export const FIXTURE_STOPS = 4
+/**
+ * The fixtures' Warm-up: five stops, as the owner's routine has since
+ * First note joined it before the song (3 Nov 2026). Here, not read from
+ * the plan: the room kit does not reach into the features.
+ */
+export const FIXTURE_STOPS = 5
 
 /**
  * The stop `?warmUp=<n>` names (from 1); undefined without the parameter.

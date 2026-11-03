@@ -17,10 +17,14 @@ import type { PathView } from './path-view'
 import { pathView } from './path-view'
 import type { WarmUpDay } from './routine'
 import { finishStop, freshDay, skipStop } from './routine'
-import { OWNER_ROUTINE } from './warm-up-plan'
+import { OWNER_ROUTINE, roomCount } from './warm-up-plan'
 import type { LastMove } from './warm-up-store'
 
 const fresh = (): WarmUpDay => freshDay(OWNER_ROUTINE, '2026-10-19', 0)
+/** The routine's rooms; the song is the stop after the last of them. */
+const COUNT = roomCount(OWNER_ROUTINE)
+const LAST = COUNT - 1
+const EVERY_ROOM = Array.from({ length: COUNT }, (_, i) => i)
 const sung = (day: WarmUpDay, index: number): WarmUpDay =>
   finishStop(day, index, { line: '86% lit', settledNote: null }, 0)
 
@@ -180,14 +184,14 @@ describe('back from a stop', () => {
 describe('the end', () => {
   const ended = (): WarmUpDay => {
     let day = fresh()
-    for (const i of [0, 1, 2, 3]) day = sung(day, i)
+    for (const i of EVERY_ROOM) day = sung(day, i)
     return day
   }
-  /** Four rooms brighten, then the song lights. */
-  const SONG_AT = 4 * END_STEP_MS + END_SONG_MS
+  /** The rooms brighten, then the song lights. */
+  const SONG_AT = COUNT * END_STEP_MS + END_SONG_MS
 
   it('is unlit from its first frame: nothing lit to fade down first', () => {
-    current = rig(ended(), { index: 3, state: 'done' })
+    current = rig(ended(), { index: LAST, state: 'done' })
     expect(current.first).toEqual({
       endLit: false,
       brightened: 0,
@@ -196,12 +200,12 @@ describe('the end', () => {
     })
     // A settled end (a fixture, or opened again) is lit from the start.
     current.dispose()
-    current = rig(ended(), { index: 3, state: 'done' }, { still: true })
+    current = rig(ended(), { index: LAST, state: 'done' }, { still: true })
     expect(current.first.endLit).toBe(true)
   })
 
-  it('brightens the four stops bottom up while the path draws on to the song', () => {
-    current = rig(ended(), { index: 3, state: 'done' })
+  it("brightens the rooms' stops bottom up while the path draws on to the song", () => {
+    current = rig(ended(), { index: LAST, state: 'done' })
     const lit = (): readonly unknown[] => [
       current!.motion.brightened(),
       current!.motion.trailIn(),
@@ -211,29 +215,29 @@ describe('the end', () => {
     expect(lit()).toEqual([0, false, false, false])
     vi.advanceTimersByTime(END_STEP_MS)
     expect(lit()).toEqual([1, false, false, false])
-    vi.advanceTimersByTime(3 * END_STEP_MS)
-    expect(lit()).toEqual([4, true, false, false])
-    expect(current.motion.merc()).toEqual({ at: 'beside', index: 3 })
+    vi.advanceTimersByTime(LAST * END_STEP_MS)
+    expect(lit()).toEqual([COUNT, true, false, false])
+    expect(current.motion.merc()).toEqual({ at: 'beside', index: LAST })
   })
 
   it('then the song lights with its burst, and Merc hops onto it', () => {
-    current = rig(ended(), { index: 3, state: 'done' })
+    current = rig(ended(), { index: LAST, state: 'done' })
     vi.advanceTimersByTime(SONG_AT - 1)
-    expect(current.motion.brightened()).toBe(4)
+    expect(current.motion.brightened()).toBe(COUNT)
     vi.advanceTimersByTime(1)
     expect([
       current.motion.brightened(),
       current.motion.endLit(),
       current.motion.burst(),
-    ]).toEqual([5, true, true])
-    expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
+    ]).toEqual([COUNT + 1, true, true])
+    expect(current.motion.merc()).toEqual({ at: 'on', index: COUNT })
     expect(current.motion.mercState()).toBe('hop')
     // The success is felt as he lands, not as he leaves.
     expect(current.end).not.toHaveBeenCalled()
   })
 
   it('he lands, the phone gives its success, he cheers, then rests', () => {
-    current = rig(ended(), { index: 3, state: 'done' })
+    current = rig(ended(), { index: LAST, state: 'done' })
     vi.advanceTimersByTime(SONG_AT + HOP_MS)
     expect(current.end).toHaveBeenCalledTimes(1)
     expect([current.motion.hopping(), current.motion.mercState()]).toEqual([
@@ -246,17 +250,18 @@ describe('the end', () => {
     expect(current.end).toHaveBeenCalledTimes(1)
   })
 
-  it('the stops stand where they were while they brighten, Merc beside Echo', () => {
-    // Packed, Echo's place is closer to Long note's, and Merc beside it
-    // stood on "Long note 12.6 s" until he hopped (13e's finding).
-    current = rig(ended(), { index: 3, state: 'done' })
+  it('the stops stand where they were while they brighten, Merc beside the last room', () => {
+    // Packed, the last room's place is closer to the one below it, and Merc
+    // beside it stood on that one's name until he hopped (13e's finding:
+    // beside Echo, on "Long note 12.6 s").
+    current = rig(ended(), { index: LAST, state: 'done' })
     vi.advanceTimersByTime(SONG_AT - 1)
     expect(current.motion.pack()).toBe('unpacked')
-    expect(current.motion.merc()).toEqual({ at: 'beside', index: 3 })
+    expect(current.motion.merc()).toEqual({ at: 'beside', index: LAST })
   })
 
   it('they pack while Merc hops onto the song, and are packed as he lands', () => {
-    current = rig(ended(), { index: 3, state: 'done' })
+    current = rig(ended(), { index: LAST, state: 'done' })
     vi.advanceTimersByTime(SONG_AT)
     expect(current.motion.hopping()).toBe(true)
     expect(current.motion.hopPace()).toBe('end')
@@ -272,9 +277,9 @@ describe('the end', () => {
   })
 
   it('reduced motion: the settled end, Merc on the song from the start, smiling as it lights', () => {
-    current = rig(ended(), { index: 3, state: 'done' }, { reduced: true })
+    current = rig(ended(), { index: LAST, state: 'done' }, { reduced: true })
     expect(current.first.pack).toBe('settled')
-    expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
+    expect(current.motion.merc()).toEqual({ at: 'on', index: COUNT })
     expect(current.motion.mercFaded()).toBe(false)
     vi.advanceTimersByTime(SONG_AT - 1)
     expect(current.motion.mercState()).toBe('idle')
@@ -286,7 +291,7 @@ describe('the end', () => {
       current.motion.mercFaded(),
       current.motion.mercState(),
     ]).toEqual(['settled', false, false, 'lock'])
-    expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
+    expect(current.motion.merc()).toEqual({ at: 'on', index: COUNT })
     expect(current.end).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(CHEER_MS)
     expect(current.motion.mercState()).toBe('idle')
@@ -334,15 +339,15 @@ describe('reduced motion and fixtures', () => {
 
   it('a fixture of the end is lit, Merc on the song, with no burst', () => {
     let day = fresh()
-    for (const i of [0, 1, 2, 3]) day = sung(day, i)
-    current = rig(day, { index: 3, state: 'done' }, { still: true })
+    for (const i of EVERY_ROOM) day = sung(day, i)
+    current = rig(day, { index: LAST, state: 'done' }, { still: true })
     expect([
       current.motion.endLit(),
       current.motion.burst(),
       current.motion.mercFaded(),
       current.motion.pack(),
     ]).toEqual([true, false, false, 'settled'])
-    expect(current.motion.merc()).toEqual({ at: 'on', index: 4 })
+    expect(current.motion.merc()).toEqual({ at: 'on', index: COUNT })
     vi.advanceTimersByTime(60_000)
     expect(current.end).not.toHaveBeenCalled()
   })

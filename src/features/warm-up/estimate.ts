@@ -19,11 +19,16 @@
 // numbers are the plan's: a hold of 15 to 25 s (PLAN-NEXT §3), taken at
 // its longest, and about 7.4 s a phrase, call and answer (DESIGN-warm-up.md
 // §5.9 and N8: about 22 s for three phrases, 37 s for five).
+//
+// Nor has First note: an entry's lead-in is its song's. Its number is an
+// example entry's (Josephine's first: eight seconds of band), the singer
+// coming in, and four seconds of the song carrying on after a landing.
 
 import { WARM_UP_PHRASES } from '@/features/echo/echo-controller-contract'
+import { WARM_UP_ENTRIES } from '@/features/first-note/first-note-controller-contract'
 import { planLipRun } from '@/features/lip-roll/lip-run'
 import { planNgRun } from '@/features/ng-slides/ng-run'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { LIP_ROLL_LEVELS, NG_SLIDES_LEVELS } from '@/lib/glide/glide-presets'
 import { fitLipRoll, fitNgSlides } from '@/lib/glide/glide-targets'
 import type { ExerciseLevel } from '@/stores/exercise-level'
@@ -38,6 +43,9 @@ export const LONG_NOTE_HOLD_SEC = 25
 
 /** One Echo phrase, Merc's call and the singer's answer, s. */
 export const ECHO_PHRASE_SEC = 7.4
+
+/** One First note entry: its band's lead-in, the entry, the song carrying on, s. */
+export const FIRST_NOTE_ENTRY_SEC = 15
 
 const NO_VOICEPRINT = { voiceprints: [] } as const
 
@@ -59,6 +67,8 @@ export function stopSeconds(id: WarmUpRoomId, level: ExerciseLevel): number {
       return LONG_NOTE_HOLD_SEC
     case EXERCISE_ECHO_STARS:
       return WARM_UP_PHRASES * ECHO_PHRASE_SEC
+    case EXERCISE_FIRST_NOTE_STAGE:
+      return WARM_UP_ENTRIES * FIRST_NOTE_ENTRY_SEC
   }
 }
 

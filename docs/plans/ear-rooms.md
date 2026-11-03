@@ -69,6 +69,11 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   (`src/lib/ear-room-bests.ts`, on `src/lib/level-bests.ts`). A phone that kept its bests before
   (the old `mp_` keys, this device only) brings them along on the room's first read, and the
   account learns them. Harmony's way of singing stays on the phone, which has the headphones.
+- Asked for First note in the Warm-up ("for warmup, we can add first note why not, but we didn't
+  have that already there?"). It was not there: the owner's routine of 18 Oct was Lip roll, Ng
+  slides, Long note and Echo, then the song. Built: First note is the Warm-up's fifth stop, the
+  last before the song, so coming in on a song's first note leads into singing one (see First
+  note, "In the Warm-up").
 
 ## Why
 
@@ -385,10 +390,21 @@ room's audio context (`src/features/first-note/song-player.ts`), on the house en
 whole song for eight seconds of it would cost tens of megabytes a stem. The world is the Karaoke
 room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the native app ships.
 
+**In the Warm-up** (the owner's request, 3 Nov 2026). First note is the stop before the song
+(`src/features/warm-up/warm-up-plan.ts`), in the room kit's warm-up mode as the other stops are:
+"Warm-up 5 of 5" on the chip, Merc's cue (the first opening line: "I'll play a song and stop the
+band where the singer comes in. Sing their first note."), "Skip stop" where the level was, and a
+demo that never plays by itself (its "?" still plays it). A stop is two entries
+(`WARM_UP_ENTRIES`), from the songs chosen as a run's are, at the path's level. Its result goes
+to the path as "2 of 2 on the note" once Merc's cheer is done; the run is kept in the history and
+never as a best, which is a whole run's. "Sing on in Karaoke" waits for First note on its own:
+mid-routine it would leave the Warm-up. With it the routine reads "4 min" on the path's chip
+("3 min" at Professional, from about 15 s an entry: a lead-in, the entry and the song carrying on).
+
 **Not yet, said plainly.**
 
-- No Warm-up stop, and no account sync of the reads of the singer's songs, which belong to the
-  phone that has the songs. The best follows the account (`pitchperfect_first_note_bests`).
+- No account sync of the reads of the singer's songs, which belong to the phone that has the
+  songs. The best follows the account (`pitchperfect_first_note_bests`).
 - A song of the singer's own is read again only when its stems or the rules change: lyrics synced
   after the read bring their words at the next read, not before.
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1

@@ -14,22 +14,25 @@
 // tryout), without a new routine around it.
 //
 // The owner's routine (18 Oct 2026, pw-stops "song"): Lip roll, Ng
-// slides, Long note and Echo, then the song. planWarmUp is where a later
+// slides, Long note and Echo, then the song; and First note before the
+// song (owner, 3 Nov 2026), coming in on a song's first note from its band
+// alone, the last thing before singing one. planWarmUp is where a later
 // planner can vary it by day, level or history, deterministic per day as
 // the web's buildDailySession is; today it returns the owner's routine.
 // A day's plan is stored whole with its run (routine.ts), so a later
 // build that plans differently never reorders a run in progress.
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 
-/** The rooms that can run as a stop: the four with a warm-up mode. */
+/** The rooms that can run as a stop: the five with a warm-up mode. */
 export type WarmUpRoomId = Extract<
   PremiumExerciseId,
   | typeof EXERCISE_LIP_ROLL_BAY
   | typeof EXERCISE_NG_SLIDES_BRIDGE
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
+  | typeof EXERCISE_FIRST_NOTE_STAGE
 >
 
 export const WARM_UP_ROOMS: readonly WarmUpRoomId[] = [
@@ -37,6 +40,7 @@ export const WARM_UP_ROOMS: readonly WarmUpRoomId[] = [
   EXERCISE_NG_SLIDES_BRIDGE,
   EXERCISE_LONG_NOTE_LANTERN,
   EXERCISE_ECHO_STARS,
+  EXERCISE_FIRST_NOTE_STAGE,
 ]
 
 const ROOMS: ReadonlySet<string> = new Set(WARM_UP_ROOMS)
@@ -69,14 +73,15 @@ export interface WarmUpPlan {
   readonly stops: readonly WarmUpStop[]
 }
 
-/** The owner's routine: four rooms, then the song. */
+/** The owner's routine: five rooms, then the song. */
 export const OWNER_ROUTINE: WarmUpPlan = {
-  id: 'four-rooms-and-a-song',
+  id: 'five-rooms-and-a-song',
   stops: [
     { kind: 'room', id: EXERCISE_LIP_ROLL_BAY },
     { kind: 'room', id: EXERCISE_NG_SLIDES_BRIDGE },
     { kind: 'room', id: EXERCISE_LONG_NOTE_LANTERN },
     { kind: 'room', id: EXERCISE_ECHO_STARS },
+    { kind: 'room', id: EXERCISE_FIRST_NOTE_STAGE },
     { kind: 'song', opens: 'song-list' },
   ],
 }

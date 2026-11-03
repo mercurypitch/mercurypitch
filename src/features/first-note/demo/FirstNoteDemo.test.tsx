@@ -477,6 +477,33 @@ describe('the First note demo', () => {
     expect(spoken.said).toEqual([])
   })
 
+  it('never plays by itself in the Warm-up, even on a first visit: his cue aloud, and "?" still plays it', async () => {
+    render(() => (
+      <FirstNoteRoom
+        onDone={() => undefined}
+        routine={{
+          index: 4,
+          count: 5,
+          settledNote: null,
+          finish: () => undefined,
+          skip: () => undefined,
+        }}
+      />
+    ))
+    await run(3000)
+    expect(demoMode()).toBe('idle')
+    expect(spoken.said).toEqual(['routine-stop'])
+    expect(seen.value).toBe(false)
+
+    // The kit's "?" in a stop (RoomShell.tsx): straight to the demo, with
+    // no sheet before it.
+    expect(part('first-note-help')).toBeNull()
+    fireEvent.click(partThere('first-note-ask'))
+    await run(200)
+    expect(demoMode()).toBe('playing')
+    expect(part('first-note-skip-stop')).toBeNull()
+  })
+
   it('leaves a run to the singer once seen: his line aloud, and the help plays it again', async () => {
     seen.value = true
     await open()

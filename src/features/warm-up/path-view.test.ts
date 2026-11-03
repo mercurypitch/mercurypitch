@@ -36,6 +36,7 @@ function allSung(): WarmUpDay {
     '92% lit',
     '12.6 s',
     '8 of 9 on pitch',
+    '2 of 2 on the note',
   ].entries()) {
     day = sung(day, i, line)
   }
@@ -53,12 +54,13 @@ describe('the first visit (F1 screen 2)', () => {
     expect(view.merc).toEqual({ at: 'floor' })
   })
 
-  it('names the four rooms and the song, bottom up, with their glyphs', () => {
+  it('names the five rooms and the song, bottom up, with their glyphs', () => {
     expect(view.stops.map((s) => s.name)).toEqual([
       'Lip roll',
       'Ng slides',
       'Long note',
       'Echo',
+      'First note',
       'Your song',
     ])
     expect(view.stops.map((s) => s.glyph)).toEqual([
@@ -66,10 +68,12 @@ describe('the first visit (F1 screen 2)', () => {
       'arch',
       'lantern',
       'stars',
+      'spotlight',
       'notes',
     ])
     expect(view.stops.map((s) => s.orb)).toEqual([
       'next',
+      'waiting',
       'waiting',
       'waiting',
       'waiting',
@@ -80,6 +84,7 @@ describe('the first visit (F1 screen 2)', () => {
       'Ng slides, waiting',
       'Long note, waiting',
       'Echo, waiting',
+      'First note, waiting',
       'Your song, waiting',
     ])
   })
@@ -116,15 +121,16 @@ describe('back from a stop (F3)', () => {
 })
 
 describe('coming back the same day (F1 screen 3, N4)', () => {
-  it('"1 of 4 today", the results under the names, Merc beside the next', () => {
+  it('"1 of 5 today", the results under the names, Merc beside the next', () => {
     const day = skipStop(sung(fresh(), 0, '86% lit'), 1, 0)
     const view = pathView(input(day))
     expect(view.state).toBe('resume')
-    expect(view.chip).toBe('1 of 4 today')
+    expect(view.chip).toBe('1 of 5 today')
     expect(nextLabel(view.stops[view.next!]!.name)).toBe('Next: Long note')
     expect(view.stops.map((s) => s.line)).toEqual([
       '86% lit',
       'Skipped',
+      null,
       null,
       null,
       null,
@@ -136,38 +142,40 @@ describe('coming back the same day (F1 screen 3, N4)', () => {
 describe('the end (F4 screen 1)', () => {
   it('every stop lit with its result, the song too; Merc on the song', () => {
     const view = pathView(
-      input(allSung(), { last: { index: 3, state: 'done' } }),
+      input(allSung(), { last: { index: 4, state: 'done' } }),
     )
     expect(view.state).toBe('end')
-    expect(view.today).toBe('4 of 4 today')
+    expect(view.today).toBe('5 of 5 today')
     expect(view.next).toBeNull()
     expect(view.card).toBeNull()
-    expect(view.stops.map((s) => s.orb)).toEqual(Array(5).fill('lit'))
+    expect(view.stops.map((s) => s.orb)).toEqual(Array(6).fill('lit'))
     expect(view.stops.map((s) => s.line)).toEqual([
       '86% lit',
       '92% lit',
       '12.6 s',
       '8 of 9 on pitch',
+      '2 of 2 on the note',
       null,
     ])
-    expect(view.merc).toEqual({ at: 'on', index: 4 })
+    expect(view.merc).toEqual({ at: 'on', index: 5 })
   })
 
-  it('"3 of 4 today" with a stop skipped', () => {
+  it('"4 of 5 today" with a stop skipped', () => {
     let day = sung(fresh(), 0, '86% lit')
     day = skipStop(day, 1, 0)
     day = sung(day, 2, '12.6 s')
     day = sung(day, 3, '8 of 9 on pitch')
-    const view = pathView(input(day, { last: { index: 3, state: 'done' } }))
+    day = sung(day, 4, '2 of 2 on the note')
+    const view = pathView(input(day, { last: { index: 4, state: 'done' } }))
     expect(view.state).toBe('end')
-    expect(view.today).toBe('3 of 4 today')
+    expect(view.today).toBe('4 of 5 today')
     expect(view.stops[1]?.orb).toBe('waiting')
   })
 
   it('every stop skipped: back to the first visit', () => {
     let day = fresh()
-    for (const i of [0, 1, 2, 3]) day = skipStop(day, i, 0)
-    const view = pathView(input(day, { last: { index: 3, state: 'skipped' } }))
+    for (const i of [0, 1, 2, 3, 4]) day = skipStop(day, i, 0)
+    const view = pathView(input(day, { last: { index: 4, state: 'skipped' } }))
     expect(view.state).toBe('start')
     expect(view.chip).toBe('3 min')
   })
@@ -179,7 +187,7 @@ describe('opened again that day (F4 screen 2, N5)', () => {
     expect(view.state).toBe('done')
     expect(view.chip).toBe('Warmed up today')
     expect(view.card).toBeNull()
-    expect(view.merc).toEqual({ at: 'on', index: 4 })
+    expect(view.merc).toEqual({ at: 'on', index: 5 })
   })
 
   it("draws this week's dots under it, today filled before its date is synced", () => {
@@ -199,7 +207,7 @@ describe('opened again that day (F4 screen 2, N5)', () => {
       pathView(input(sung(fresh(), 0, '86% lit'), { days })).week,
     ).toBeNull()
     const end = pathView(
-      input(allSung(), { days, last: { index: 3, state: 'done' } }),
+      input(allSung(), { days, last: { index: 4, state: 'done' } }),
     )
     expect(end.state).toBe('end')
     expect(end.week).toBeNull()

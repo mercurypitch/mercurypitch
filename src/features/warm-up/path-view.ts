@@ -7,7 +7,7 @@
 // free run, N3) in; the path's view out. The screen (WarmUpPath.tsx) draws
 // it and runs the motion between views.
 //
-//   start     a fresh run: "3 min", the first stop next, "Start warm-up"
+//   start     a fresh run: "4 min", the first stop next, "Start warm-up"
 //   between   back from a stop: its card ("Lip roll: 86% lit", Again),
 //             then Skip and "Next: Ng slides", which counts down
 //   resume    the same day after leaving halfway, or after a restart: "1
@@ -26,7 +26,7 @@
 // pw-stops): a room's name and glyph come from its id, and the song stop
 // says "Your song".
 
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { WarmUpDays, WeekDot } from '@/lib/warm-up-days'
 import { weekDots, withDay } from '@/lib/warm-up-days'
 import type { ExerciseLevel } from '@/stores/exercise-level'
@@ -49,7 +49,13 @@ export type PathState =
 export type OrbState = 'waiting' | 'next' | 'done' | 'lit'
 
 /** The glyph in the orb: one per room, and the song's notes. */
-export type StopGlyph = 'wave' | 'arch' | 'lantern' | 'stars' | 'notes'
+export type StopGlyph =
+  | 'wave'
+  | 'arch'
+  | 'lantern'
+  | 'stars'
+  | 'spotlight'
+  | 'notes'
 
 /** A room's name on the path, as its card in the picker names it. */
 const ROOM_NAMES: Record<WarmUpRoomId, string> = {
@@ -57,6 +63,7 @@ const ROOM_NAMES: Record<WarmUpRoomId, string> = {
   [EXERCISE_NG_SLIDES_BRIDGE]: 'Ng slides',
   [EXERCISE_LONG_NOTE_LANTERN]: 'Long note',
   [EXERCISE_ECHO_STARS]: 'Echo',
+  [EXERCISE_FIRST_NOTE_STAGE]: 'First note',
 }
 
 const ROOM_GLYPHS: Record<WarmUpRoomId, StopGlyph> = {
@@ -64,6 +71,7 @@ const ROOM_GLYPHS: Record<WarmUpRoomId, StopGlyph> = {
   [EXERCISE_NG_SLIDES_BRIDGE]: 'arch',
   [EXERCISE_LONG_NOTE_LANTERN]: 'lantern',
   [EXERCISE_ECHO_STARS]: 'stars',
+  [EXERCISE_FIRST_NOTE_STAGE]: 'spotlight',
 }
 
 /** The words the path says, outside the stops' names. */
@@ -87,15 +95,15 @@ export const PATH_WORDS = {
 /**
  * The level pill's lines on the path (pw-level: the path carries the
  * level, the rooms hide theirs in the Warm-up): what each level asks across
- * the four stops, from the rooms' own lines.
+ * the stops, from the rooms' own lines.
  */
 export const WARM_UP_LEVEL_LINES: Readonly<Record<ExerciseLevel, string>> = {
   learning:
-    'Slow waves and slides with plenty of room, more room around the long note, and three slow notes a phrase in Echo.',
+    "Slow waves and slides with plenty of room, more room around the long note, three slow notes a phrase in Echo, and the first note's line from the start.",
   singer:
-    'Steady waves and slides, a light vibrato on the long note, and four notes a phrase in Echo.',
+    'Steady waves and slides, a light vibrato on the long note, four notes a phrase in Echo, and the first note by ear.',
   professional:
-    'Quick waves and slides with no notes in the breaths, a near-straight long note, and five quick notes a phrase in Echo.',
+    'Quick waves and slides with no notes in the breaths, a near-straight long note, five quick notes a phrase in Echo, and no line for the first note until you land.',
 }
 
 /** "Next: Ng slides" */

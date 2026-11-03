@@ -1,15 +1,30 @@
 // ============================================================
 // The Warm-up's day: every way through four stops, and the day's rules
 // ============================================================
+//
+// On the owner's first routine, four rooms and a song, as it stood until
+// 3 Nov 2026: the day's rules hold for any plan, and a run kept on that
+// one still reads (a stored day keeps its plan). Today's routine is
+// warm-up-plan.ts's.
 
 import { describe, expect, it } from 'vitest'
-import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { WarmUpDay } from './routine'
 import { atEnd, canEnter, dayFor, finishStop, freshDay, isWarmUpDay, nextStop, restartDay, roomIndex, skipStop, tally, } from './routine'
 import type { WarmUpPlan } from './warm-up-plan'
 import { OWNER_ROUTINE } from './warm-up-plan'
 
 const TODAY = '2026-10-18'
+const FOUR_ROOMS: WarmUpPlan = {
+  id: 'four-rooms-and-a-song',
+  stops: [
+    { kind: 'room', id: EXERCISE_LIP_ROLL_BAY },
+    { kind: 'room', id: EXERCISE_NG_SLIDES_BRIDGE },
+    { kind: 'room', id: EXERCISE_LONG_NOTE_LANTERN },
+    { kind: 'room', id: EXERCISE_ECHO_STARS },
+    { kind: 'song', opens: 'song-list' },
+  ],
+}
 const SONG = 4
 const LINES = ['86% lit', '92% lit', '12.6 s', '8 of 9 on pitch']
 
@@ -18,7 +33,7 @@ const finished = (line: string, settledNote: number | null = null) => ({
   settledNote,
 })
 
-function fresh(plan: WarmUpPlan = OWNER_ROUTINE): WarmUpDay {
+function fresh(plan: WarmUpPlan = FOUR_ROOMS): WarmUpDay {
   return freshDay(plan, TODAY, 1000)
 }
 
@@ -220,8 +235,10 @@ describe('the day the path opens', () => {
     expect(day.settledNote).toBeNull()
   })
 
-  it('no run kept yet: a fresh one', () => {
-    expect(dayFor(null, TODAY, () => OWNER_ROUTINE).marks).toHaveLength(5)
+  it("no run kept yet: a fresh one of today's routine", () => {
+    const day = dayFor(null, TODAY, () => OWNER_ROUTINE)
+    expect(day.plan).toBe(OWNER_ROUTINE)
+    expect(day.marks).toHaveLength(OWNER_ROUTINE.stops.length)
   })
 })
 

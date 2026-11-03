@@ -51,13 +51,13 @@ afterEach(() => {
 })
 
 describe("the Echo room's Warm-up fixtures", () => {
-  it('opens as the last stop: its chip, Merc\'s cue and "Skip stop", no level', async () => {
+  it('opens as the fourth stop: its chip, Merc\'s cue and "Skip stop", no level', async () => {
     render(() => <EchoRoomFixture name="warm-intro" />)
 
     const page = screen.getByTestId('echo-room-fixture')
     await waitFor(() => expect(page.dataset.ready).toBe('true'))
     expect(screen.getByTestId('echo-room').dataset.phase).toBe('intro')
-    expect(screen.getByTestId('echo-chip').textContent).toBe('Warm-up 4 of 4')
+    expect(screen.getByTestId('echo-chip').textContent).toBe('Warm-up 4 of 5')
     expect(screen.getByTestId('echo-bubble').textContent).toBe(
       'I sing it first. Then you sing it back.',
     )

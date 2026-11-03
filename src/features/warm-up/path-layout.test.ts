@@ -101,11 +101,19 @@ describe("Merc's spots", () => {
     expect(longNote.x).toBeLessThan(places[2]!.x - RIM_W)
   })
 
-  it('on the song stop at the end, and on the floor for a stop not there', () => {
+  it('on the song stop at the end, away from its name, and on the floor for a stop not there', () => {
+    // Five stops: the song's name on the right, he stands left of it.
     const end = stopPlaces(5, 'end')
     const on = mercFeet(end, { at: 'on', index: 4 })
+    expect(end[4]!.side).toBe('right')
     expect(round(on.x)).toBe(round(end[4]!.x - 0.054))
     expect(round(on.y)).toBe(round(end[4]!.y + 0.036))
+    // Six: its name on the left, he stands right of it.
+    const six = stopPlaces(6, 'end')
+    expect(six[5]!.side).toBe('left')
+    expect(round(mercFeet(six, { at: 'on', index: 5 }).x)).toBe(
+      round(six[5]!.x + 0.054),
+    )
     expect(mercFeet(places, { at: 'beside', index: 9 })).toEqual({
       x: 0.2075,
       y: 0,
@@ -125,8 +133,8 @@ describe('the scale (§3)', () => {
     expect(fit.scrolls).toBe(false)
   })
 
-  it('stops at 0.75, and the path scrolls', () => {
-    const fit = fitScale({ width: 320, restRoom: 300, endRoom: 260, count: 5 })
+  it('stops at its floor, and the path scrolls', () => {
+    const fit = fitScale({ width: 320, restRoom: 300, endRoom: 230, count: 5 })
     expect(fit).toEqual({ k: MIN_K, scrolls: true })
   })
 })
@@ -155,6 +163,20 @@ describe("the path's frame on a screen", () => {
     expect([rest.scrolls, end.scrolls]).toEqual([false, false])
   })
 
+  it("the owner's six stops on the small phones, under their status bars: no scroll", () => {
+    // A 375 x 667 iPhone SE in every state, the free run used included.
+    const se: ScreenBox = { width: 375, height: 667, top: 76, bottom: 0 }
+    for (const mode of ['rest', 'end'] as const) {
+      expect(pathFrame(se, 6, mode).scrolls, mode).toBe(false)
+    }
+    expect(pathFrame(se, 6, 'rest', true).scrolls).toBe(false)
+    // A 360 x 640 phone's start, run and end.
+    const android: ScreenBox = { width: 360, height: 640, top: 80, bottom: 0 }
+    for (const mode of ['rest', 'end'] as const) {
+      expect(pathFrame(android, 6, mode).scrolls, mode).toBe(false)
+    }
+  })
+
   it("an iPad: the phone's column, centred (option (a))", () => {
     const frame = pathFrame(IPAD, 5, 'rest')
     expect(frame.column).toBe(430)
@@ -162,16 +184,18 @@ describe("the path's frame on a screen", () => {
     expect(columnX(0.5, frame)).toBe(215)
   })
 
-  it('a 320 x 568 phone: the smallest scale, and a taller column to scroll', () => {
-    const frame = pathFrame(SMALL, 5, 'rest')
-    expect(frame.k).toBe(MIN_K)
-    expect(frame.scrolls).toBe(true)
+  it("a 320 x 568 phone: the owner's six stops at the smallest scale, the end in a taller column to scroll", () => {
+    const rest = pathFrame(SMALL, 6, 'rest')
+    const end = pathFrame(SMALL, 6, 'end')
+    expect([rest.k, end.k]).toEqual([MIN_K, MIN_K])
+    expect([rest.scrolls, end.scrolls]).toEqual([false, true])
     // The floor keeps its distance from the column's bottom.
-    expect(frame.height - frame.floor).toBe(568 - 426)
+    expect(end.height - end.floor).toBe(568 - 426)
   })
 
-  it('a long plan scrolls on a phone that fits five', () => {
-    const frame = pathFrame(PHONE, 9, 'rest')
+  it('a long plan scrolls on a phone that fits six', () => {
+    expect(pathFrame(PHONE, 6, 'rest').scrolls).toBe(false)
+    const frame = pathFrame(PHONE, 12, 'rest')
     expect(frame.k).toBe(MIN_K)
     expect(frame.scrolls).toBe(true)
     expect(frame.height).toBeGreaterThan(844)
@@ -205,13 +229,14 @@ describe("the path's frame on a screen", () => {
   })
 
   it('a path taller than its screen opens at its floor, the end at its top', () => {
-    expect(openingScroll(pathFrame(SMALL, 5, 'rest'), 'rest')).toBe('floor')
-    expect(openingScroll(pathFrame(SMALL, 5, 'end'), 'end')).toBe('top')
-    // On a 320 x 568 phone the end is taller than the screen: opened at its
-    // top, Merc's crown on the song is under the titles, not behind them.
-    const end = pathFrame(SMALL, 5, 'end')
+    expect(openingScroll(pathFrame(SMALL, 12, 'rest'), 'rest')).toBe('floor')
+    expect(openingScroll(pathFrame(SMALL, 6, 'end'), 'end')).toBe('top')
+    // On a 320 x 568 phone the owner's end is taller than the screen:
+    // opened at its top, Merc's crown on the song is under the titles, not
+    // behind them.
+    const end = pathFrame(SMALL, 6, 'end')
     expect(end.scrolls).toBe(true)
-    const crown = columnY(layoutTop(stopPlaces(5, 'end'), 'end'), end)
+    const crown = columnY(layoutTop(stopPlaces(6, 'end'), 'end'), end)
     expect(crown).toBeGreaterThanOrEqual(SMALL.top + TOP_END_PX)
   })
 

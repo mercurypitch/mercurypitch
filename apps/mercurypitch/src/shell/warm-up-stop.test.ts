@@ -10,6 +10,7 @@
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoutineStop } from '@/components/room-kit/routine-stop'
+import { OWNER_ROUTINE, roomCount } from '@/features/warm-up/warm-up-plan'
 import { enterStop, openStop, resetWarmUpForTests, routineStopFor, warmUpDay, warmUpLastMove, } from '@/features/warm-up/warm-up-store'
 import { EXERCISE_LIP_ROLL_BAY, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import { warmUpStop } from './warm-up-stop'
@@ -54,7 +55,11 @@ describe("a stop's room", () => {
   it('is handed its place, and its result goes back to the path', () => {
     expect(enterStop(0)).toBe(true)
     const screen = open(EXERCISE_LIP_ROLL_BAY)
-    expect([screen.stop?.index, screen.stop?.count]).toEqual([0, 4])
+    // Its place among the routine's rooms, the song not counted.
+    expect([screen.stop?.index, screen.stop?.count]).toEqual([
+      0,
+      roomCount(OWNER_ROUTINE),
+    ])
 
     screen.stop?.finish({
       id: EXERCISE_LIP_ROLL_BAY,
