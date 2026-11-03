@@ -63,6 +63,18 @@ const CARRIED = [
     'its Karaoke audio section',
     'const t=x("<div class=mp-dev__audio data-testid=dev-karaoke-audio>");',
   ],
+  [
+    'its AirPlay sound check',
+    'const t=x("<div class=mp-dev__audio data-testid=dev-airplay-check>");',
+  ],
+  [
+    "the AirPlay sound check's line",
+    'console.info(`[airplay check] ${n} ${t}: ${w}`);',
+  ],
+  [
+    'the audio report a song on AirPlay writes',
+    'console.info(`[audio report ${i}/${n}] ${why}`);',
+  ],
 ]
 
 for (const [what, text] of CARRIED) {
