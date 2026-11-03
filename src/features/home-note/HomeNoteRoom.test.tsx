@@ -252,7 +252,7 @@ describe('Home note', () => {
     band.replays = []
     band.stopped = 0
     recorded.calls = []
-    localStorage.removeItem('mp_home_note_bests')
+    localStorage.removeItem('pitchperfect_home_note_bests')
     rafQueue = []
     source = null
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

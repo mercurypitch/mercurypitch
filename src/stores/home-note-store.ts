@@ -11,10 +11,11 @@
 // it, through here and never through the room's feature (the picker would
 // otherwise load the room to draw its card).
 //
-// On this device only, for now: the `mp_` prefix keeps the key out of the
-// settings sync. Long note's and Echo's bests follow the account through a
-// merge rule of their own (src/lib/hold/hold-bests.ts, echo-bests.ts); Home
-// note gets one when it leaves the test builds.
+// The bests follow the account, as Long note's and Echo's do: what a best
+// is and which of two is better are the room's rule in
+// src/lib/ear-room-bests.ts, where the settings sync's pull reads it to
+// keep the better best at each level. What this device kept before they
+// synced, under the old `mp_` key, is adopted on the first read and let go.
 //
 // Whether this device has seen the "how it works" demo is a device fact,
 // set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
@@ -25,75 +26,51 @@
 // level touches storage.
 
 import type { Signal } from 'solid-js'
+import type { HomeNoteBest } from '@/lib/ear-room-bests'
+import { HOME_NOTE_BEST_RULES, HOME_NOTE_BESTS_KEY, HOME_NOTE_DEVICE_BESTS_KEY, } from '@/lib/ear-room-bests'
+import type { LevelBestTable } from '@/lib/level-bests'
+import { adoptDeviceBests, isLevelBestTable } from '@/lib/level-bests'
 import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
-export const HOME_NOTE_BESTS_KEY = 'mp_home_note_bests'
 /** Where the demo's seen flag lives: on this device only. */
 export const HOME_NOTE_DEMO_SEEN_KEY = 'mp_home_note_demo_seen'
 
-/** A level's best run. */
-export interface HomeNoteBest {
-  /** Rounds found. */
-  readonly found: number
-  /** Rounds in the run. */
-  readonly rounds: number
-  /** The found rounds' mean time to home, s. */
-  readonly seconds: number
-  readonly at: number
-}
+export type { HomeNoteBest } from '@/lib/ear-room-bests'
+export { HOME_NOTE_BESTS_KEY } from '@/lib/ear-room-bests'
 
-export type HomeNoteBestTable = Partial<Record<ExerciseLevel, HomeNoteBest>>
-
-function isBest(value: unknown): value is HomeNoteBest {
-  if (typeof value !== 'object' || value === null) return false
-  const best = value as Record<string, unknown>
-  const count = (n: unknown): n is number =>
-    typeof n === 'number' && Number.isInteger(n) && n >= 0
-  return (
-    count(best.found) &&
-    count(best.rounds) &&
-    best.found <= best.rounds &&
-    typeof best.seconds === 'number' &&
-    Number.isFinite(best.seconds) &&
-    best.seconds >= 0 &&
-    typeof best.at === 'number' &&
-    Number.isFinite(best.at)
-  )
-}
+export type HomeNoteBestTable = LevelBestTable<HomeNoteBest>
 
 export function isHomeNoteBestTable(
   value: unknown,
 ): value is HomeNoteBestTable {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  return Object.entries(value).every(
-    ([level, best]) =>
-      EXERCISE_LEVELS.includes(level as ExerciseLevel) && isBest(best),
-  )
+  return isLevelBestTable(value, HOME_NOTE_BEST_RULES)
 }
 
-/** `run` beats `previous`: more found, or as many found sooner. */
+/** Whether `run` beats `previous`, by the room's rule (ear-room-bests.ts). */
 export function homeNoteBeats(
   run: HomeNoteBest,
   previous: HomeNoteBest | null,
 ): boolean {
-  if (run.found === 0) return false
-  if (previous === null) return true
-  if (run.found !== previous.found) return run.found > previous.found
-  return run.seconds < previous.seconds
+  return HOME_NOTE_BEST_RULES.beats(run, previous)
 }
 
 let table: Signal<HomeNoteBestTable> | undefined
 
 function bests(): Signal<HomeNoteBestTable> {
-  table ??= createPersistedSignal<HomeNoteBestTable>(
-    HOME_NOTE_BESTS_KEY,
-    {},
-    { validator: isHomeNoteBestTable },
-  )
+  if (table === undefined) {
+    const made = createPersistedSignal<HomeNoteBestTable>(
+      HOME_NOTE_BESTS_KEY,
+      {},
+      {
+        validator: isHomeNoteBestTable,
+      },
+    )
+    table = made
+    // What this device kept before the bests followed the account.
+    adoptDeviceBests(HOME_NOTE_DEVICE_BESTS_KEY, HOME_NOTE_BEST_RULES, made[1])
+  }
   return table
 }
 

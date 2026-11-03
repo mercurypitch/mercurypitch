@@ -22,7 +22,7 @@ describe("Home note's bests", () => {
     expect(homeNoteBeats(best(0, 0), null)).toBe(false)
   })
 
-  it('keeps a best per level, on this device', () => {
+  it('keeps a best per level, under the key that syncs', () => {
     expect(recordHomeNoteBest('singer', best(3, 2))).toEqual({
       previous: null,
       improved: false,

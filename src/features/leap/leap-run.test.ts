@@ -51,7 +51,7 @@ function missed(
 describe('A Leap run', () => {
   beforeEach(() => {
     recorded.calls = []
-    localStorage.removeItem('mp_leap_bests')
+    localStorage.removeItem('pitchperfect_leap_bests')
   })
 
   it('sums its landings and how quickly they came', () => {

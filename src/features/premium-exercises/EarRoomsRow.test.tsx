@@ -20,8 +20,8 @@ function card(id: string): HTMLElement {
 
 describe('the Ear rooms row', () => {
   beforeEach(() => {
-    localStorage.removeItem('mp_leap_bests')
-    localStorage.removeItem('mp_home_note_bests')
+    localStorage.removeItem('pitchperfect_leap_bests')
+    localStorage.removeItem('pitchperfect_home_note_bests')
     resetLeapStoreForTests()
     resetHarmonyStoreForTests()
     resetHomeNoteStoreForTests()

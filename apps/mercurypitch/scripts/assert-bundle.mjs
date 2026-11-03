@@ -369,6 +369,9 @@ const KARAOKE_STAGE_2 = [
   ['mp_warm_up_opened', "the Warm-up path's first open of the day"],
   // Home note, the first Ear room: its room, its card in the picker, its
   // level lines and its bests, built and folded exactly as the rooms are.
+  // Each Ear room's bests sync under a pitchperfect_ key, named in the
+  // settings sync only with the premium exercises (settings-progress.ts),
+  // and are adopted from their old mp_ key: both stay out.
   // Its harbour painting is found by file name with the plates above. The
   // Ear Lab's way in to it (EarMercRow.tsx) is a lazy
   // island on the same switch (EarLabPage.tsx).
@@ -379,6 +382,7 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Two chords only, and less room around home', "Home note's level control"],
   ['mp_home_note_bests', "Home note's bests"],
+  ['pitchperfect_home_note_bests', "Home note's bests, as they sync"],
   ['ear-merc-row', "the Ear Lab's way in to the Ear rooms"],
   // First note, the second Ear room: its room, its card, its level lines,
   // its result and its bests, on the same switch. Its theatre and songs are
@@ -394,6 +398,7 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Came in on the note', "First note's result"],
   ['mp_first_note_bests', "First note's bests"],
+  ['pitchperfect_first_note_bests', "First note's bests, as they sync"],
   // Leap, the third Ear room: its room, its card, its level lines, its
   // result and its bests, on the same switch. Its cliffs are drawn.
   ['leap-room', 'the premium Leap exercise'],
@@ -407,6 +412,7 @@ const KARAOKE_STAGE_2 = [
   ],
   ['Leaps landed at', "Leap's result"],
   ['mp_leap_bests', "Leap's bests"],
+  ['pitchperfect_leap_bests', "Leap's bests, as they sync"],
   // Harmony, the fourth Ear room: its room, its card, its level lines, its
   // result, its bests and the way it is sung, on the same switch. Its lake
   // is drawn.
@@ -418,6 +424,7 @@ const KARAOKE_STAGE_2 = [
   ['Five notes with a leap, some a third below', "Harmony's level control"],
   ['Lines in harmony at', "Harmony's result"],
   ['mp_harmony_bests', "Harmony's bests"],
+  ['pitchperfect_harmony_bests', "Harmony's bests, as they sync"],
   ['mp_harmony_way', "Harmony's way, kept for next time"],
   // Its songs (the singer's own, read on the phone), its words hint and
   // its way on to the Karaoke room (owner, 28 Oct 2026), in the same lazy

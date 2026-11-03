@@ -12,8 +12,11 @@
 // it, through here and never through the room's feature (the picker would
 // otherwise load the room to draw its card).
 //
-// On this device only, for now, as Home note's (home-note-store.ts): the
-// `mp_` prefix keeps the key out of the settings sync.
+// The bests follow the account, as Long note's and Echo's do: what a best
+// is and which of two is better are the room's rule in
+// src/lib/ear-room-bests.ts, where the settings sync's pull reads it to
+// keep the better best at each level. What this device kept before they
+// synced, under the old `mp_` key, is adopted on the first read and let go.
 //
 // Whether this device has seen the "how it works" demo is a device fact,
 // set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
@@ -24,80 +27,55 @@
 // level touches storage.
 
 import type { Signal } from 'solid-js'
+import type { FirstNoteBest } from '@/lib/ear-room-bests'
+import { FIRST_NOTE_BEST_RULES, FIRST_NOTE_BESTS_KEY, FIRST_NOTE_DEVICE_BESTS_KEY, } from '@/lib/ear-room-bests'
+import type { LevelBestTable } from '@/lib/level-bests'
+import { adoptDeviceBests, isLevelBestTable } from '@/lib/level-bests'
 import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
-export const FIRST_NOTE_BESTS_KEY = 'mp_first_note_bests'
 /** Where the demo's seen flag lives: on this device only. */
 export const FIRST_NOTE_DEMO_SEEN_KEY = 'mp_first_note_demo_seen'
 
-/** A level's best run. */
-export interface FirstNoteBest {
-  /** Entries the singer came in on the note. */
-  readonly onNote: number
-  /** Entries whose note they found, first try or not. */
-  readonly found: number
-  /** Entries in the run. */
-  readonly rounds: number
-  /** The entries' mean distance from their notes, cents. */
-  readonly cents: number
-  readonly at: number
-}
+export type { FirstNoteBest } from '@/lib/ear-room-bests'
+export { FIRST_NOTE_BESTS_KEY } from '@/lib/ear-room-bests'
 
-export type FirstNoteBestTable = Partial<Record<ExerciseLevel, FirstNoteBest>>
-
-function isBest(value: unknown): value is FirstNoteBest {
-  if (typeof value !== 'object' || value === null) return false
-  const best = value as Record<string, unknown>
-  const count = (n: unknown): n is number =>
-    typeof n === 'number' && Number.isInteger(n) && n >= 0
-  return (
-    count(best.onNote) &&
-    count(best.found) &&
-    count(best.rounds) &&
-    best.onNote <= best.rounds &&
-    best.found <= best.rounds &&
-    typeof best.cents === 'number' &&
-    Number.isFinite(best.cents) &&
-    best.cents >= 0 &&
-    typeof best.at === 'number' &&
-    Number.isFinite(best.at)
-  )
-}
+export type FirstNoteBestTable = LevelBestTable<FirstNoteBest>
 
 export function isFirstNoteBestTable(
   value: unknown,
 ): value is FirstNoteBestTable {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  return Object.entries(value).every(
-    ([level, best]) =>
-      EXERCISE_LEVELS.includes(level as ExerciseLevel) && isBest(best),
-  )
+  return isLevelBestTable(value, FIRST_NOTE_BEST_RULES)
 }
 
-/** `run` beats `previous`: more on the note, then more found, then closer. */
+/** Whether `run` beats `previous`, by the room's rule (ear-room-bests.ts). */
 export function firstNoteBeats(
   run: FirstNoteBest,
   previous: FirstNoteBest | null,
 ): boolean {
-  if (run.found === 0 && run.onNote === 0) return false
-  if (previous === null) return true
-  if (run.onNote !== previous.onNote) return run.onNote > previous.onNote
-  if (run.found !== previous.found) return run.found > previous.found
-  return run.cents < previous.cents
+  return FIRST_NOTE_BEST_RULES.beats(run, previous)
 }
 
 let table: Signal<FirstNoteBestTable> | undefined
 
 function bests(): Signal<FirstNoteBestTable> {
-  table ??= createPersistedSignal<FirstNoteBestTable>(
-    FIRST_NOTE_BESTS_KEY,
-    {},
-    { validator: isFirstNoteBestTable },
-  )
+  if (table === undefined) {
+    const made = createPersistedSignal<FirstNoteBestTable>(
+      FIRST_NOTE_BESTS_KEY,
+      {},
+      {
+        validator: isFirstNoteBestTable,
+      },
+    )
+    table = made
+    // What this device kept before the bests followed the account.
+    adoptDeviceBests(
+      FIRST_NOTE_DEVICE_BESTS_KEY,
+      FIRST_NOTE_BEST_RULES,
+      made[1],
+    )
+  }
   return table
 }
 

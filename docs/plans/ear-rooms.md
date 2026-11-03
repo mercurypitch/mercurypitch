@@ -58,6 +58,18 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   it opens. If the name should sound as well, a recording per note is the other way, and the
   scene's names stay either way.
 
+**The owner's answers of 3 Nov 2026**, after the last two demos.
+
+- Decided: First note, and the other Ear rooms with it, stay in the native app for now; none goes
+  to the web version yet.
+- Asked to carry on with the smaller follow-ups. Built: each Ear room's bests follow the account,
+  as Long note's and Echo's do. They sync under `pitchperfect_home_note_bests`,
+  `pitchperfect_first_note_bests`, `pitchperfect_leap_bests` and `pitchperfect_harmony_bests`; a
+  pull keeps the better best at each level by the room's own rule, never the newest phone's table
+  (`src/lib/ear-room-bests.ts`, on `src/lib/level-bests.ts`). A phone that kept its bests before
+  (the old `mp_` keys, this device only) brings them along on the room's first read, and the
+  account learns them. Harmony's way of singing stays on the phone, which has the headphones.
+
 ## Why
 
 The native app sells one subscription, Mercury Pitch Cloud. It covers the Karaoke imports and five
@@ -375,8 +387,8 @@ room's painted theatre (`/karaoke/broadway-theater-portrait.webp`), which the na
 
 **Not yet, said plainly.**
 
-- No Warm-up stop, and no account sync of the best (`mp_first_note_bests` is device-only), nor of
-  the reads of the singer's songs, which belong to the phone that has the songs.
+- No Warm-up stop, and no account sync of the reads of the singer's songs, which belong to the
+  phone that has the songs. The best follows the account (`pitchperfect_first_note_bests`).
 - A song of the singer's own is read again only when its stems or the rules change: lyrics synced
   after the read bring their words at the next read, not before.
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1
@@ -412,7 +424,7 @@ Learning, once a leap at Singer, and never at Professional.
 
 **The result.** Leaps landed out of six, and the mean time from Merc's note to the target ("Landed in
 0.6 s on average"). Under them, each leap the run asked for, with its song and a lamp a try; a tap on
-a row plays that leap again. The best is kept per level (`mp_leap_bests`, this device only for now);
+a row plays that leap again. The best is kept per level (`pitchperfect_leap_bests`, which follows the account);
 a run with no voice keeps nothing.
 
 **Built from.** The room kit, the sequence engine as a two-note phrase in free time (Echo's), and
@@ -504,7 +516,7 @@ else the voice type's), each in a key of its own where it can be. "Hear Merc aga
 time at Learning, once a line at Singer, and never at Professional, taking turns only.
 
 **The result.** Lines sung in harmony (every note landed) out of six, and the notes a third above out
-of all; the best per level (`mp_harmony_bests`, this device only for now). Under them, each line by
+of all; the best per level (`pitchperfect_harmony_bests`, which follows the account). Under them, each line by
 its harmony's notes, with a lamp a note; a tap plays it in two voices, his and the harmony. A run with
 no voice keeps nothing.
 
@@ -578,7 +590,6 @@ that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).
 
 ## Open questions for the owner
 
-- First note on the web too, where splitting is free on the device, or native only.
 - Merc's voice is the development sample set (Echo's, `merc-voice-set.ts`) for his singing, and
   ElevenLabs takes for his lines at rest (each room's `voice/` folder). The real recordings
   replace both without a change to the rooms. Which other lines he should say aloud, if any, once

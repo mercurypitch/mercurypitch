@@ -14,8 +14,15 @@
 //
 // The room records them; the Sing screen's picker and the Ear Lab's row
 // read the best through here and never through the room's feature (the
-// picker would otherwise load the room to draw its card). On this device
-// only, for now: the `mp_` prefix keeps the keys out of the settings sync.
+// picker would otherwise load the room to draw its card).
+//
+// The bests follow the account, as Long note's and Echo's do: what a best
+// is and which of two is better are the room's rule in
+// src/lib/ear-room-bests.ts, where the settings sync's pull reads it to
+// keep the better best at each level. What this device kept before they
+// synced, under the old `mp_` key, is adopted on the first read and let go.
+// The way it is sung stays on the device (an `mp_` key, out of the sync):
+// headphones belong to a phone, not to the singer.
 //
 // Whether this device has seen the "how it works" demo is a device fact,
 // set the way the demo kit sets every room's (demo-kit/demo-seen.ts). It
@@ -26,11 +33,14 @@
 // level touches storage.
 
 import type { Signal } from 'solid-js'
+import type { HarmonyBest } from '@/lib/ear-room-bests'
+import { HARMONY_BEST_RULES, HARMONY_BESTS_KEY, HARMONY_DEVICE_BESTS_KEY, } from '@/lib/ear-room-bests'
+import type { LevelBestTable } from '@/lib/level-bests'
+import { adoptDeviceBests, isLevelBestTable } from '@/lib/level-bests'
 import { createPersistedSignal } from '@/lib/storage'
 import type { ExerciseLevel } from './exercise-level'
 import { EXERCISE_LEVELS } from './exercise-level'
 
-export const HARMONY_BESTS_KEY = 'mp_harmony_bests'
 /** Where the way the singer sings is kept. */
 export const HARMONY_WAY_KEY = 'mp_harmony_way'
 /** Where the demo's seen flag lives: on this device only. */
@@ -39,69 +49,39 @@ export const HARMONY_DEMO_SEEN_KEY = 'mp_harmony_demo_seen'
 /** Taking turns with Merc, or singing with him in headphones. */
 export type HarmonyWayId = 'turns' | 'together'
 
-/** A level's best run. */
-export interface HarmonyBest {
-  /** Lines sung in harmony. */
-  readonly inHarmony: number
-  /** Lines in the run. */
-  readonly lines: number
-  /** Notes sung in harmony, and all the run's notes. */
-  readonly notesLanded: number
-  readonly notes: number
-  readonly at: number
-}
+export type { HarmonyBest } from '@/lib/ear-room-bests'
+export { HARMONY_BESTS_KEY } from '@/lib/ear-room-bests'
 
-export type HarmonyBestTable = Partial<Record<ExerciseLevel, HarmonyBest>>
-
-function isBest(value: unknown): value is HarmonyBest {
-  if (typeof value !== 'object' || value === null) return false
-  const best = value as Record<string, unknown>
-  const count = (n: unknown): n is number =>
-    typeof n === 'number' && Number.isInteger(n) && n >= 0
-  return (
-    count(best.inHarmony) &&
-    count(best.lines) &&
-    best.inHarmony <= best.lines &&
-    count(best.notesLanded) &&
-    count(best.notes) &&
-    best.notesLanded <= best.notes &&
-    typeof best.at === 'number' &&
-    Number.isFinite(best.at)
-  )
-}
+export type HarmonyBestTable = LevelBestTable<HarmonyBest>
 
 export function isHarmonyBestTable(value: unknown): value is HarmonyBestTable {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  return Object.entries(value).every(
-    ([level, best]) =>
-      EXERCISE_LEVELS.includes(level as ExerciseLevel) && isBest(best),
-  )
+  return isLevelBestTable(value, HARMONY_BEST_RULES)
 }
 
-/** `run` beats `previous`: more lines in harmony, or as many with more notes. */
+/** Whether `run` beats `previous`, by the room's rule (ear-room-bests.ts). */
 export function harmonyBeats(
   run: HarmonyBest,
   previous: HarmonyBest | null,
 ): boolean {
-  if (run.notesLanded === 0) return false
-  if (previous === null) return true
-  if (run.inHarmony !== previous.inHarmony) {
-    return run.inHarmony > previous.inHarmony
-  }
-  return run.notesLanded > previous.notesLanded
+  return HARMONY_BEST_RULES.beats(run, previous)
 }
 
 let table: Signal<HarmonyBestTable> | undefined
 let way: Signal<HarmonyWayId> | undefined
 
 function bests(): Signal<HarmonyBestTable> {
-  table ??= createPersistedSignal<HarmonyBestTable>(
-    HARMONY_BESTS_KEY,
-    {},
-    { validator: isHarmonyBestTable },
-  )
+  if (table === undefined) {
+    const made = createPersistedSignal<HarmonyBestTable>(
+      HARMONY_BESTS_KEY,
+      {},
+      {
+        validator: isHarmonyBestTable,
+      },
+    )
+    table = made
+    // What this device kept before the bests followed the account.
+    adoptDeviceBests(HARMONY_DEVICE_BESTS_KEY, HARMONY_BEST_RULES, made[1])
+  }
   return table
 }
 
