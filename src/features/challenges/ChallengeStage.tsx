@@ -9,8 +9,9 @@
 // the finished run flows through recordExerciseResult exactly like a drill,
 // so the armed weekly attempt, board write and badges are untouched.
 //
-// One armed take counts. Ending early scores what was sung (the drill's
-// "Stop & Score" semantic), then the canvas freezes under the app-level
+// One armed take counts. Ending early scores what was sung, unsung notes as
+// 0 ("Stop & Score", as the drill's weekly attempt does; an ordinary drill
+// run stopped early is practice), then the canvas freezes under the app-level
 // result card. The singer can review that contour, practice the same line
 // without posting another attempt, or explicitly arm a scored retake.
 

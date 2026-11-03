@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconMusic } from '@/components/exercise-icons'
 import { launchTargetNotes } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -12,11 +12,11 @@ import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { keyName, scaleType } from '@/stores/app-store'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
 import { currentScale } from '@/stores/melody-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
-import { EXERCISE_SIGHT_SINGING } from '../types'
+import { EXERCISE_SIGHT_SINGING, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import type { SightSingingNote } from './use-sight-singing-controller'
 import { useSightSingingController } from './use-sight-singing-controller'
@@ -175,7 +175,23 @@ const SightSingingExercise: Component<Props> = (props) => {
     }),
   })
 
-  const controller = useSightSingingController(base)
+  // A Legend attempt scores its early end itself (unsung notes 0), so only
+  // an ordinary run is marked when stopped before its last note. The attempt
+  // is one run: once it is spent, a run on this screen is a practice round
+  // (weekly-attempt.ts), so each run asks again as it starts. It is spent
+  // when its run ends, though its save clears it only seconds later, and a
+  // Start in between begins a practice round. Once the save settles, the
+  // attempt answers for itself: a save that failed leaves it armed, so the
+  // retry is the attempt again.
+  let legendRunEnded = false
+  const legendAttemptLive = () =>
+    weeklyVoiceHandoff &&
+    !legendRunEnded &&
+    untrack(activeWeeklyAttempt)?.exercise === EXERCISE_SIGHT_SINGING
+  const [legendRun, setLegendRun] = createSignal(legendAttemptLive())
+  const controller = useSightSingingController(base, {
+    marksStoppedRuns: () => !legendRun(),
+  })
 
   const handleStart = async () => {
     // A routine's apply slot arms the phrase it names on the session card;
@@ -185,6 +201,7 @@ const SightSingingExercise: Component<Props> = (props) => {
     const authored = weeklyVoiceHandoff
       ? launchedMidiSequence
       : (launchTargetNotes(EXERCISE_SIGHT_SINGING)?.map(noteToMidi) ?? [])
+    setLegendRun(legendAttemptLive())
     if (authored.length >= 2) {
       controller.setNotes(authored)
     } else {
@@ -218,6 +235,8 @@ const SightSingingExercise: Component<Props> = (props) => {
       r.completedAt !== recordedCompletedAt
     ) {
       recordedCompletedAt = r.completedAt
+      const legendRunEnding = untrack(legendRun)
+      if (legendRunEnding) legendRunEnded = true
       const entry = {
         type: r.type,
         score: r.score,
@@ -230,9 +249,14 @@ const SightSingingExercise: Component<Props> = (props) => {
           return
         }
         const outcomePromise = base.voiceCapture.awaitOutcome()
-        void outcomePromise.then((weeklyVoiceCapture) =>
-          recordExerciseResult(entry, { weeklyVoiceCapture }),
-        )
+        void outcomePromise
+          .then((weeklyVoiceCapture) => {
+            recordExerciseResult(entry, { weeklyVoiceCapture })
+            return flushExerciseHistoryWrites()
+          })
+          .finally(() => {
+            if (legendRunEnding) legendRunEnded = false
+          })
       })
     }
   })
@@ -262,6 +286,7 @@ const SightSingingExercise: Component<Props> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={weeklyVoiceHandoff ? undefined : base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
@@ -282,7 +307,7 @@ const SightSingingExercise: Component<Props> = (props) => {
         </div>
       }
       onStart={() => void handleStart()}
-      stopLabel="Stop & Score"
+      stopLabel={legendRun() ? 'Stop & Score' : 'Stop'}
       onStop={handleStop}
       tracker={{
         pitchHistory: base.pitchHistory,

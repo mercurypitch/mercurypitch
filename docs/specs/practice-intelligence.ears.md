@@ -172,8 +172,12 @@ averages, or the trends. A Stop in the timer's last second, while its
 countdown reads "1s", ends a whole run, which **shall** score at most its
 share of the length. A Stop on Manual ends a whole run once five seconds are
 sung, the shortest timer's length. A run keeps the timer length it started
-with, whatever a settings sync changes during it. A run recorded before
-stopped runs were marked **shall** count as a whole run
+with, whatever a settings sync changes during it. A weekly Legend attempt
+scores an early end itself, with unsung notes as 0, and is not marked; it is
+one run, so the next run on the screen is an ordinary one, though the
+attempt's save may still be in flight, unless that save fails and leaves the
+attempt armed for a retry. A run
+recorded before stopped runs were marked **shall** count as a whole run
 (`src/tests/exercise-stopped-early.test.ts`).
 
 ## Trends overlay

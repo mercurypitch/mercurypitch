@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { finalizeSightSingingScore, useSightSingingController, } from '@/features/exercises/sight-singing/use-sight-singing-controller'
-import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
+import type { ExerciseResult } from '@/features/exercises/types'
+import { EXERCISE_SIGHT_SINGING, runStoppedEarly, } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import type { ScaleDegree } from '@/types'
 
@@ -276,5 +277,62 @@ describe('setNotes sings the launched phrase as written', () => {
     expect(seq.map((n) => n.index)).toEqual([0, 1, 2, 3, 4])
     expect(seq[0]).toMatchObject({ name: 'G', octave: 4 })
     expect(ctrl.getCurrentIndex()).toBe(0)
+  })
+})
+
+// The score already counts an unsung note as 0, so a Stop cannot pass a
+// bar. Unmarked, a stopped run still pulled the trends, the best and the
+// weak list down, and spent an armed challenge's attempt.
+describe('a run stopped before its last note', () => {
+  /** In tune on every note it reaches; stopped after `sungNotes` of four. */
+  function runStoppedAfter(
+    sungNotes: number,
+    options?: Parameters<typeof useSightSingingController>[1],
+  ): ExerciseResult {
+    vi.useFakeTimers()
+    let completed: ExerciseResult | undefined
+    let target = () => 0
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      currentPitch: () => ({ freq: target(), clarity: 1, noteName: '' }),
+      pitchHistory: () => [
+        { freq: target(), time: performance.now() / 1000 - 0.001, cents: 0 },
+        { freq: target(), time: performance.now() / 1000, cents: 0 },
+      ],
+      _completeWithResult: (r) => {
+        completed = r
+      },
+    })
+    const ctrl = useSightSingingController(base, options)
+    target = () => midiToFreq(ctrl.getSequence()[ctrl.getCurrentIndex()]!.midi)
+    ctrl.setNotes([60, 62, 64, 65])
+    ctrl.startRounds()
+    // A note passes after six polls in tune (80 ms each, 450 ms to hold).
+    vi.advanceTimersByTime(sungNotes * 480 + 40)
+    if (completed === undefined) ctrl.stopRounds()
+    vi.useRealTimers()
+    return completed!
+  }
+
+  it('is marked, and keeps the whole-sequence score', () => {
+    const result = runStoppedAfter(2)
+    expect(result.metrics.notesScored).toBe(2)
+    // Two perfect notes of four.
+    expect(result.score).toBe(50)
+    expect(runStoppedEarly(result.metrics)).toBe(true)
+  })
+
+  it('is whole once every note is graded', () => {
+    const result = runStoppedAfter(4)
+    expect(result.metrics.notesScored).toBe(4)
+    expect(result.score).toBe(100)
+    expect(runStoppedEarly(result.metrics)).toBe(false)
+  })
+
+  it('is not marked when the run is a weekly Legend attempt', () => {
+    // The Legend scores an early end itself, unsung notes as 0.
+    const result = runStoppedAfter(2, { marksStoppedRuns: () => false })
+    expect(result.score).toBe(50)
+    expect(runStoppedEarly(result.metrics)).toBe(false)
   })
 })

@@ -128,11 +128,13 @@ export function exerciseSessionPayload(
  * which is right in the app and wrong in a test -- a test that records a run
  * and ends leaves the write running into the next file, where the torn-down
  * jsdom has already taken localStorage with it. `flushExerciseHistoryWrites`
- * is the handle tests need to end where they started.
+ * is the handle tests need to end where they started. Sight-Singing waits on
+ * it too, to learn whether a Legend run's save left its attempt armed.
  */
 const inFlightWrites = new Set<Promise<unknown>>()
 
-/** Settle every background write recordExerciseResult started. For tests.
+/** Settle every background write recordExerciseResult started. For tests,
+ *  and for a Sight-Singing Legend run, which is spent until its save settles.
  *
  *  Drains rather than snapshots: the grant pass at the end of a write can
  *  start another one, and a single Promise.all over today's set would hand
