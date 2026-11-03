@@ -3040,3 +3040,7 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Fix branch rebased locally onto it as 27d170279 (patch-ids identical); pnpm install running in /dev/shm/s2fix. Push --force-with-lease after focused checks.
   - Reviewer and docs agent resumed by SendMessage with recreate commands. The docs agent lost its edits and is redoing them on 27d170279, pushing after each stage.
   - Main also has a2efe6e32 (Harmony How it works), which matters for the room 4 decision.
+- 3 Nov ~01:3x:
+  - PR #1320 opened from feat/season-2-app-fixes at 27d170279, on main 856be56ec; subscribed.
+  - Before the push: typecheck needs NODE_OPTIONS=--max-old-space-size=6144 here (default heap OOM); pr:validate passed; branch tests 79/79.
+  - Merge --rebase once CI is green and the reviewer's findings are handled.
