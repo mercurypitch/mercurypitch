@@ -13,6 +13,7 @@
 // scheduled in the past): a tick due within two render quanta is skipped.
 // Stopping closes the shared level with the house release, setTargetAtTime
 // to zero, and stops every tick only after it, so a tick cut short fades.
+import type { StudioFrameRange } from '../playback/loop-range'
 import { frameTime } from '../playback/whole-frame'
 import type { StudioTakeAnchor } from './take-timing'
 import { STUDIO_BEATS_PER_BAR, studioBeatFrames, takeFrameAt, takeTimeOf, } from './take-timing'
@@ -133,6 +134,8 @@ export interface StudioClickSchedulerOptions {
   /** Ticks written this far ahead: enough to ride out a hidden tab's slow timers. */
   readonly lookaheadSeconds?: number
   readonly intervalMs?: number
+  /** The range Repeat plays: its beats tick again on every pass (loop-range.ts). */
+  readonly loop?: StudioFrameRange | null
 }
 
 /**
@@ -145,19 +148,38 @@ export function createStudioClickScheduler(
 ) {
   const lookahead = options.lookaheadSeconds ?? 1.5
   const beat = studioBeatFrames(options.tempoBpm)
+  const beatAt = (frame: number) => Math.ceil(frame / beat - 1e-9)
   // Counted in beats, not frames, so no beat is written twice or skipped.
-  let next = Math.ceil(options.fromFrame / beat - 1e-9)
+  let next = beatAt(options.fromFrame)
+  // A loop ticks its range's beats pass after pass, on the run's count.
+  const loop = options.loop ?? null
+  const passBeats = loop
+    ? { first: beatAt(loop.startFrame), end: beatAt(loop.endFrame) }
+    : null
+  let pass = 0
+  const countFrame = (k: number) =>
+    loop ? k * beat + pass * (loop.endFrame - loop.startFrame) : k * beat
   let timer: ReturnType<typeof setInterval> | null = null
 
   function fill(): void {
     const anchor = options.anchor()
     const until = takeFrameAt(anchor, options.now() + lookahead)
     const ticks: StudioClickTime[] = []
-    for (; next * beat < until; next++)
+    for (;;) {
+      if (passBeats && next >= passBeats.end) {
+        // A range with no beat in it ticks nothing.
+        if (passBeats.first >= passBeats.end) break
+        pass++
+        next = passBeats.first
+      }
+      const frame = countFrame(next)
+      if (frame >= until) break
       ticks.push({
-        time: takeTimeOf(anchor, next * beat),
+        time: takeTimeOf(anchor, frame),
         accent: next % STUDIO_BEATS_PER_BAR === 0,
       })
+      next++
+    }
     if (ticks.length > 0) options.track.schedule(ticks)
   }
 

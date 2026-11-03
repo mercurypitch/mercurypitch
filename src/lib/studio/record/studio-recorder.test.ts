@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioCaptureEvents } from './capture-node'
 import type { StudioRecordSettings } from './record-settings'
+import { DEFAULT_STUDIO_RECORD_SETTINGS } from './record-settings'
 import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './studio-recorder'
 import { createStudioRecorder, MIC_LOST_ARMED, MIC_LOST_BEFORE_TAKE, MIC_LOST_MID_TAKE, } from './studio-recorder'
 
@@ -71,6 +72,7 @@ function harness(
     monitorLevel: () => ({ on: false, gain: 1, pan: 0 }),
     transport,
     settings: () => ({
+      ...DEFAULT_STUDIO_RECORD_SETTINGS,
       countInBars: 1,
       click: false,
       monitor: false,
@@ -204,7 +206,7 @@ describe('the count-in', () => {
 
     // Pressed at 1 s: capture from 1.1 s, a bar of 120 bpm, song at 3.1 s.
     expect(h.capture.start).toHaveBeenCalledWith(52800, expect.any(Number))
-    expect(h.transport.play).toHaveBeenCalledWith(3.1)
+    expect(h.transport.play).toHaveBeenCalledWith(3.1, 96000)
     const ticks = h.clicks.schedule.mock.calls[0][0] as {
       time: number
       accent: boolean
@@ -236,7 +238,7 @@ describe('the count-in', () => {
     h.recorder.record()
 
     expect(h.view().phase).toBe('recording')
-    expect(h.transport.play).toHaveBeenCalledWith(1.1)
+    expect(h.transport.play).toHaveBeenCalledWith(1.1, 96000)
     expect(h.clicks.schedule).not.toHaveBeenCalled()
   })
 
@@ -517,5 +519,104 @@ describe('losses while armed', () => {
     expect(h.view().phase).toBe('idle')
     expect(h.deps.keep).not.toHaveBeenCalled()
     expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+  })
+})
+
+describe('punch and loop takes', () => {
+  const RANGE = { startFrame: 480000, endFrame: 576000 }
+
+  it('starts a punch a bar before its range, stops the capture at the out point, and keeps the range', async () => {
+    const h = harness(
+      { takeCut: () => ({ mode: 'punch', range: RANGE }) },
+      {
+        countInBars: 0,
+      },
+    )
+    // The song plays on when Record is pressed: a punch starts it over.
+    h.transport.playing.mockReturnValue(true)
+    h.transport.anchor.mockReturnValue({ frame: 1000, time: 0.5 })
+    await h.recorder.arm('lane-1')
+    h.transport.anchor.mockReturnValue(null)
+
+    h.recorder.record()
+    expect(h.transport.pause).toHaveBeenCalled()
+    // One bar at 120 bpm before the in point; no count-in: heard at 1.1 s.
+    expect(h.transport.play).toHaveBeenCalledWith(1.1, 480000 - 96000)
+    expect(h.view().live).toMatchObject({
+      fromFrame: 480000,
+      cut: { mode: 'punch' },
+    })
+    // The song starts where it was asked to.
+    h.transport.anchor.mockReturnValue({ frame: 384000, time: 1.1 })
+    await settle()
+    // The out point leaves the graph 4 s after 1.1 s; the capture runs on for the round trip.
+    expect(h.capture.stop).toHaveBeenCalledWith(
+      Math.round((1.1 + 4 + 0.05) * RATE),
+      'out-point',
+    )
+
+    // Through the out point and the round trip after it: 200704 frames.
+    h.worklet.started(52800)
+    for (let chunk = 0; chunk < 49; chunk++) h.chunk(chunk * 4096, 4096)
+    await h.worklet.stopped(49 * 4096, 'out-point')
+    await settle()
+    expect(h.kept).toHaveLength(1)
+    expect(h.kept[0].cut).toEqual({ mode: 'punch', range: RANGE })
+    expect(h.view()).toMatchObject({ phase: 'idle', notice: null })
+  })
+
+  it('says a punch stopped in its pre-roll kept nothing', async () => {
+    const h = harness({ takeCut: () => ({ mode: 'punch', range: RANGE }) })
+    await h.recorder.arm('lane-1')
+    h.recorder.record()
+    h.transport.anchor.mockReturnValue({ frame: 288000, time: 1.1 })
+    await settle()
+    h.worklet.started(52800)
+    h.chunk(0, 4096)
+    await h.worklet.stopped(4096, 'stopped')
+    await settle()
+    expect(h.kept).toHaveLength(0)
+    expect(h.view().notice).toBe(
+      'Stopped before the range began, so nothing was recorded.',
+    )
+  })
+
+  it('loops from the range start after the count-in, ticking each pass, and stops after the last pass a clip keeps', async () => {
+    vi.useFakeTimers()
+    const h = harness(
+      { takeCut: () => ({ mode: 'loop', range: RANGE }) },
+      { click: true },
+    )
+    await h.recorder.arm('lane-1')
+    h.recorder.record()
+    // A bar of count-in before the range, then the song from its start.
+    expect(h.transport.play).toHaveBeenCalledWith(3.1, 480000)
+    h.transport.anchor.mockReturnValue({ frame: 480000, time: 3.1 })
+    await vi.advanceTimersByTimeAsync(0)
+    h.ctx.currentTime = 4.5
+    await vi.advanceTimersByTimeAsync(250)
+    const passes = 32 * 96000
+    expect(h.capture.stop).toHaveBeenCalledWith(
+      Math.round((3.1 + passes / RATE + 0.05) * RATE),
+      'last-pass',
+    )
+    // The click ticks the range's first beat again on the next pass.
+    const ticked = h.clicks.schedule.mock.calls
+      .flatMap((call) => call[0] as { time: number }[])
+      .map((tick) => +tick.time.toFixed(6))
+    expect(ticked).toContain(5.1)
+    expect(h.view().live?.cut).toEqual({ mode: 'loop', range: RANGE })
+    h.recorder.dispose()
+  })
+
+  it('journals what a take keeps, so a closed tab keeps a punch or a loop as recorded', async () => {
+    const h = harness({ takeCut: () => ({ mode: 'loop', range: RANGE }) })
+    await h.recorder.arm('lane-1')
+    h.recorder.record()
+    await settle()
+    expect(h.journal.begin).toHaveBeenCalledWith(
+      expect.objectContaining({ cut: { mode: 'loop', range: RANGE } }),
+    )
+    h.recorder.dispose()
   })
 })

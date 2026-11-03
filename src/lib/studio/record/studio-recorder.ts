@@ -20,6 +20,7 @@
 // also journaled as it records (studio-take-journal.ts), so a closed tab
 // leaves the take to be kept on the next visit.
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
+import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { frameTime, wholeFrameAtOrAfter } from '../playback/whole-frame'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
@@ -33,8 +34,10 @@ import type { StudioLivePeaks } from './take-audio'
 import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
 import type { StudioTakeJournalFeed } from './take-journal-feed'
 import { createStudioTakeJournalFeed } from './take-journal-feed'
+import type { StudioTakeCut } from './take-plan'
+import { planStudioTake } from './take-plan'
 import type { StudioTakeAnchor } from './take-timing'
-import { placeHeardTake, studioClickBeats, studioCountInSeconds, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
+import { placeHeardTake, studioClickBeats, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
 
 /** The longest take, as the Studio's import allows: five minutes. */
 export const STUDIO_TAKE_MAX_SECONDS = 300
@@ -51,6 +54,7 @@ const STOP_NOTICES: Partial<Record<StudioCaptureStop, string>> = {
     'Studio fell behind keeping this take, so it stopped there. Studio kept what came before.',
   interrupted:
     'Audio stopped for a moment, so the take ends there. Studio kept what came before.',
+  'last-pass': `A loop keeps ${STUDIO_MAX_CLIP_PASSES} passes, so recording stopped after the last one.`,
 }
 
 /** A take that ended before the song reached it keeps nothing, and says so. */
@@ -71,6 +75,8 @@ export const MIC_LOST_ARMED =
   'The microphone went away. Plug it back in, then press Record again.'
 const AUDIO_DID_NOT_START = "Studio's audio didn't start. Press Record again."
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
+const BEFORE_THE_IN_POINT =
+  'Stopped before the range began, so nothing was recorded.'
 
 interface Armed {
   readonly context: AudioContext
@@ -89,6 +95,11 @@ interface Take {
   readonly buffer: ReturnType<typeof createStudioTakeBuffer>
   readonly peaks: StudioLivePeaks
   readonly fromFrame: number | null
+  /** Where Record started the song; null for one that played on. */
+  readonly songFrom: number | null
+  readonly cut: StudioTakeCut | null
+  /** The song frame, on the run's count, where the capture stops by itself. */
+  readonly stopAt: number | null
   readonly countInEnd: number
   /** Taken off the take's start, in seconds; read as the take starts. */
   readonly roundTrip: number
@@ -118,10 +129,13 @@ function endNotice(
   kept: boolean,
   named: string | null,
   reason: StudioCaptureStop,
+  cut: StudioTakeCut | null,
 ): string | null {
   if (kept) return named ?? STOP_NOTICES[reason] ?? null
   if (named === MIC_LOST_MID_TAKE) return MIC_LOST_BEFORE_TAKE
-  return ENDED_BEFORE_THE_TAKE[reason] ?? TAKE_TOO_SHORT
+  const before =
+    cut !== null && reason === 'stopped' ? BEFORE_THE_IN_POINT : null
+  return ENDED_BEFORE_THE_TAKE[reason] ?? before ?? TAKE_TOO_SHORT
 }
 
 export function createStudioRecorder(deps: StudioRecorderDeps) {
@@ -286,18 +300,25 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     }
     const now = context.currentTime
     const startTime = wholeFrameAtOrAfter(now + START_LEAD_SECONDS, rate)
-    const liveAnchor = deps.transport.playing() ? deps.transport.anchor() : null
+    const cut = deps.takeCut?.() ?? null
+    // A punch or a loop starts the song where its range needs it.
+    const playingOn = cut === null && deps.transport.playing()
+    const liveAnchor = playingOn ? deps.transport.anchor() : null
     // A song still starting has no place on the clock yet: start it over.
     if (liveAnchor === null && deps.transport.playing()) deps.transport.pause()
     const playing = liveAnchor !== null
-    const countIn =
-      playing || settings.countInBars === 0
-        ? 0
-        : studioCountInSeconds(deps.tempoBpm(), settings.countInBars)
+    const plan = planStudioTake({
+      cut,
+      playing,
+      playheadFrame: deps.transport.playheadFrame(),
+      countInBars: settings.countInBars,
+      tempoBpm: deps.tempoBpm(),
+    })
+    const countIn = plan.countInSeconds
     const countInEnd = wholeFrameAtOrAfter(startTime + countIn, rate)
-    const fromFrame = playing ? null : deps.transport.playheadFrame()
+    const fromFrame = plan.fromFrame
     const anchor: StudioTakeAnchor = liveAnchor ?? {
-      frame: fromFrame ?? 0,
+      frame: plan.songFrom ?? 0,
       time: countInEnd,
     }
     const id = deps.createId()
@@ -312,6 +333,9 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       buffer: createStudioTakeBuffer(),
       peaks: createStudioLivePeaks(rate, maxFrames),
       fromFrame,
+      songFrom: plan.songFrom,
+      cut,
+      stopAt: plan.stopAt,
       countInEnd,
       roundTrip,
       anchor,
@@ -329,6 +353,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         sampleRate: rate,
         fromFrame,
         heardFirst: studioHeardFirst(anchor, startTime, roundTrip),
+        cut,
       }),
     }
     armed.capture.start(take.startFrame, maxFrames)
@@ -345,14 +370,15 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   /** The count-in: its ticks on the song's grid, and the beats left on screen. */
   function countInClicks(current: Take, countIn: number): void {
-    if (armed === null || current.fromFrame === null) return
+    const from = current.songFrom
+    if (armed === null || from === null) return
     const tempo = deps.tempoBpm()
     const beats = studioClickBeats(
-      current.fromFrame - countIn * STUDIO_SAMPLE_RATE,
-      current.fromFrame,
+      from - countIn * STUDIO_SAMPLE_RATE,
+      from,
       tempo,
     )
-    const virtual = { frame: current.fromFrame, time: current.countInEnd }
+    const virtual = { frame: from, time: current.countInEnd }
     const ticks = beats.map((beat) => ({
       time: takeTimeOf(virtual, beat.frame),
       accent: beat.accent,
@@ -390,17 +416,13 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     playing: boolean,
     settings: StudioRecordSettings,
   ): void {
-    if (playing) {
-      startClick(current, settings)
-      return
-    }
-    const from = current.fromFrame ?? 0
-    if (!deps.transport.canPlay(from)) {
+    if (playing || !deps.transport.canPlay(current.songFrom ?? 0)) {
+      scheduleStop(current)
       startClick(current, settings)
       return
     }
     void deps.transport
-      .play(current.countInEnd)
+      .play(current.countInEnd, current.songFrom ?? 0)
       .catch(() => false)
       .then(() => {
         // Stopped while the song was still starting: it does not start now.
@@ -412,21 +434,31 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         // The song's real place on the clock, if it started; else as planned.
         current.anchor = deps.transport.anchor() ?? current.anchor
         placeLive(current)
+        scheduleStop(current)
         startClick(current, settings)
       })
+  }
+
+  /** A punch stops at its out point, a loop after its last pass: the capture is told once the song's place is known. */
+  function scheduleStop(current: Take): void {
+    if (current.stopAt === null || armed === null || take !== current) return
+    const time = takeTimeOf(current.anchor, current.stopAt) + current.roundTrip
+    const reason = current.cut?.mode === 'punch' ? 'out-point' : 'last-pass'
+    armed.capture.stop(Math.round(time * current.sampleRate), reason)
   }
 
   function startClick(current: Take, settings: StudioRecordSettings): void {
     if (!settings.click || armed === null || take !== current) return
     const context = armed.context
     const from =
-      current.fromFrame ?? takeFrameAt(current.anchor, context.currentTime)
+      current.songFrom ?? takeFrameAt(current.anchor, context.currentTime)
     current.scheduler = createStudioClickScheduler({
       track: armed.clicks,
       tempoBpm: deps.tempoBpm(),
       fromFrame: from,
       anchor: () => current.anchor,
       now: () => context.currentTime,
+      loop: current.cut?.mode === 'loop' ? current.cut.range : null,
     })
     current.scheduler.start()
   }
@@ -447,6 +479,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         peaks: current.peaks,
         sampleRate: current.sampleRate,
         count: current.peaks.count,
+        cut: current.cut,
       },
     })
     if (current.started) current.journal.place(heardFirst)
@@ -541,7 +574,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         current.roundTrip,
       )
       const reached = current.started && reachesSong(current, heardFirst)
-      const notice = endNotice(reached && frames > 0, named, reason)
+      const notice = endNotice(
+        reached && frames > 0,
+        named,
+        reason,
+        current.cut,
+      )
       if (!reached || frames <= 0) {
         current.journal.discard()
         set({ phase: 'idle', live: null, level: 0, notice })
@@ -555,6 +593,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         samples: current.buffer.assemble(),
         heardFirst,
         fromFrame: current.fromFrame,
+        cut: current.cut,
       }
       current.buffer.clear()
       const kept = await deps.keep(captured).catch(() => false)

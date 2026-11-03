@@ -735,6 +735,75 @@ describe('Studio controller', () => {
     })
   })
 
+  it('keeps a punch trimmed to its range, with short fades at both edges', async () => {
+    const { controller } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+
+    await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 4',
+      startFrame: 9600,
+      sourceInFrame: 1000,
+      sourceOutFrame: 3400,
+      fadeFrames: 240,
+      trackId: null,
+    })
+
+    expect(controller.project()!.clips.at(-1)).toMatchObject({
+      startFrame: 9600,
+      sourceInFrame: 1000,
+      sourceOutFrame: 3400,
+      fades: {
+        in: { fromSourceFrame: 1000, toSourceFrame: 1240 },
+        out: { fromSourceFrame: 3160, toSourceFrame: 3400 },
+      },
+    })
+  })
+
+  it('keeps a loop take as one clip over the range playing the heard pass, and keeps the rest', async () => {
+    const { controller, service } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+
+    const kept = await controller.addRecording({
+      title: 'Take 2',
+      passes: [1, 2, 3].map((n) => ({
+        wav: new Blob([`pass ${n}`], { type: 'audio/wav' }),
+        title: `Take 2, pass ${n}`,
+        assetId: `take-2-pass-${n}`,
+      })),
+      heard: 2,
+      startFrame: 48000,
+      frames: 4000,
+      trackId: null,
+    })
+
+    expect(kept).toBe(true)
+    const clips = controller.project()!.clips
+    expect(clips).toHaveLength(1)
+    expect(clips[0]).toMatchObject({
+      assetId: 'take-2-pass-3',
+      passes: ['take-2-pass-1', 'take-2-pass-2', 'take-2-pass-3'],
+      startFrame: 48000,
+      sourceInFrame: 0,
+      sourceOutFrame: 4000,
+    })
+    expect(controller.project()!.tracks.at(-1)).toMatchObject({
+      name: 'Take 2',
+    })
+    expect(
+      controller
+        .assets()
+        .filter((asset) => asset.id.startsWith('take-2-pass-'))
+        .map((asset) => asset.originalName),
+    ).toEqual([
+      'Take 2, pass 1.wav',
+      'Take 2, pass 2.wav',
+      'Take 2, pass 3.wav',
+    ])
+    expect(vi.mocked(service.saveProject).mock.lastCall?.[2]).toHaveLength(3)
+    expect(controller.undoLabel()).toBe('Undo add take')
+  })
+
   it('refuses a take its trim leaves nothing of, keeping the song as it was', async () => {
     const { controller } = mount({ prepareFile: recordedFixture })
     await controller.open('one')

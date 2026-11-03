@@ -16,23 +16,25 @@ describe('Studio record settings', () => {
       click: false,
       monitor: false,
       offsetMs: 0,
+      punch: false,
+      inputDeviceId: null,
+      inputLabel: null,
     })
   })
 
   it('reads back what was kept', () => {
-    writeStudioRecordSettings({
-      countInBars: 2,
+    const kept = {
+      countInBars: 2 as const,
       click: true,
       monitor: true,
       offsetMs: -12,
-    })
+      punch: true,
+      inputDeviceId: 'usb-mic',
+      inputLabel: 'USB Microphone',
+    }
+    writeStudioRecordSettings(kept)
 
-    expect(readStudioRecordSettings()).toEqual({
-      countInBars: 2,
-      click: true,
-      monitor: true,
-      offsetMs: -12,
-    })
+    expect(readStudioRecordSettings()).toEqual(kept)
   })
 
   it('keeps the default for each value that does not fit, and holds the offset to 250 ms whole', () => {
@@ -43,7 +45,21 @@ describe('Studio record settings', () => {
         monitor: true,
         offsetMs: 400.6,
       }),
-    ).toEqual({ countInBars: 1, click: false, monitor: true, offsetMs: 250 })
+    ).toEqual({
+      ...DEFAULT_STUDIO_RECORD_SETTINGS,
+      countInBars: 1,
+      click: false,
+      monitor: true,
+      offsetMs: 250,
+    })
+    // A device id that is not text is none, and a name without one is let go.
+    expect(
+      sanitizeStudioRecordSettings({
+        inputDeviceId: 42,
+        inputLabel: 'Lost mic',
+        punch: 'on',
+      }),
+    ).toMatchObject({ inputDeviceId: null, inputLabel: null, punch: false })
     expect(sanitizeStudioRecordSettings({ offsetMs: -12.4 }).offsetMs).toBe(-12)
     expect(sanitizeStudioRecordSettings(null)).toEqual(
       DEFAULT_STUDIO_RECORD_SETTINGS,

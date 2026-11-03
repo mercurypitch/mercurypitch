@@ -10,6 +10,7 @@ import type { StudioClickTrack } from './click-track'
 import type { StudioInputMonitor, StudioMonitorLevel } from './input-monitor'
 import type { StudioRecordSettings } from './record-settings'
 import type { StudioLivePeaks } from './take-audio'
+import type { StudioTakeCut } from './take-plan'
 import type { StudioTakeAnchor } from './take-timing'
 
 export type StudioRecordPhase =
@@ -33,6 +34,8 @@ export interface StudioLiveTake {
   readonly sampleRate: number
   /** Peaks drawn so far; a new value on every chunk. */
   readonly count: number
+  /** A punch's range, or a loop's: the lane shows only what the take keeps. */
+  readonly cut?: StudioTakeCut | null
 }
 
 export interface StudioRecorderView {
@@ -61,6 +64,8 @@ export interface StudioCapturedTake {
   /** The 48 kHz song frame its first sample lands on. */
   readonly heardFirst: number
   readonly fromFrame: number | null
+  /** A punch keeps its range, a loop every pass of it (take-passes.ts); absent for a plain take. */
+  readonly cut?: StudioTakeCut | null
 }
 
 /** What the journal keeps about a take, so a closed tab can still keep it. */
@@ -71,6 +76,7 @@ export interface StudioTakeJournalHeader {
   readonly sampleRate: number
   readonly fromFrame: number | null
   readonly heardFirst: number
+  readonly cut?: StudioTakeCut | null
 }
 
 export interface StudioTakeJournalWriter {
@@ -91,7 +97,8 @@ export interface StudioRecorderTransport {
   playheadFrame(): number
   /** Whether a Play from `frame` has anything to play. */
   canPlay(frame: number): boolean
-  play(notBefore: number): Promise<boolean>
+  /** Start the song from `fromFrame`, heard no sooner than `notBefore`. */
+  play(notBefore: number, fromFrame: number): Promise<boolean>
   pause(): void
   anchor(): StudioTakeAnchor | null
 }
@@ -118,6 +125,8 @@ export interface StudioRecorderDeps {
   monitorLevel(trackId: string | null): StudioMonitorLevel
   transport: StudioRecorderTransport
   settings(): StudioRecordSettings
+  /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */
+  takeCut?(): StudioTakeCut | null
   tempoBpm(): number
   /** The round trip new takes are trimmed by, in seconds. */
   roundTrip(context: AudioContext, stream: MediaStream): number
