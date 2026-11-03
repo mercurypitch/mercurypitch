@@ -3044,3 +3044,11 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - PR #1320 opened from feat/season-2-app-fixes at 27d170279, on main 856be56ec; subscribed.
   - Before the push: typecheck needs NODE_OPTIONS=--max-old-space-size=6144 here (default heap OOM); pr:validate passed; branch tests 79/79.
   - Merge --rebase once CI is green and the reviewer's findings are handled.
+- 3 Nov ~01:4x:
+  - The #1320 reviewer said MERGE. Its findings:
+    - Partial runs grade 100: a stop after round 1 can pass challenges, goals and the level. Pre-existing in Siren and Arpeggio Jumper; #1320 adds Scale Runner and Drone Intonation. Moved to its own PR.
+    - Nit: the routine planner's Chord Stacker seconds.
+    - Nit: a false claim in a commit message. Fixed by a reword, 4383aa690; tree and patch-ids identical; pushed with a lease; CI restarted.
+  - Stopped-run agent running: /dev/shm/s2stop, feat/stopped-run-grading, from 4383aa690; brief s2pkg/STOP-BRIEF.md.
+  - The owner should not tag a release before the stopped-run fix merges. Say so in the report.
+  - The docs agent is rebasing onto 27d170279, which has the same tree as 4383aa690. Rebase the docs onto main once #1320 merges.
