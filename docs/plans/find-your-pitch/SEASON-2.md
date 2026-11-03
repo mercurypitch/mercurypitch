@@ -1138,8 +1138,10 @@ lines, which a 1080p encode may soften, and no Season 1 film had to show them.
 In MASTER-PLAN § 12's style: each item was proposed with a recommendation and its reason. The owner
 took every recommendation on 1 November 2026 ("as for season 2 yes recommended sounds great"), so each
 item is decided as recommended, here and, where it changes them, in MASTER-PLAN § 12 and CURRICULUM.
-Item 14 came later, on 3 November 2026, once main had built the native app's Harmony room; the
-owner had asked for the recommended choice, and the coach reviews it with Lessons 26 and 28.
+Item 14 came later, on 3 November 2026, once main had built the native app's Harmony room; on 2
+November the owner had asked for the recommended choice ("Yeah continue with the rest, use
+recommended, my and vocal coach review comes later"), so the owner and the coach review it later,
+with Lessons 26 and 28.
 
 1. **Decided (1 November 2026): number on, Lessons 15 to 28 at `/learn/15` to `/learn/28`.** As recommended: global
    numbers, with "Season 2 · Lesson 15" in the masthead. Reason: everything already keys on one
@@ -1217,10 +1219,13 @@ owner had asked for the recommended choice, and the coach reviews it with Lesson
     and it folds no octave at any level, placing each line in the singer's range instead (`:90`,
     `:104`, `:118`; `harmony-line.ts:12-14`). So Lesson 26's card keeps Harmony Stack and
     Drone Intonation, Lesson 28's keeps Karaoke Night and Cadence, and item 17 stays open for the
-    web. When the lessons reach the native app, Lesson 26's card opens Harmony first, as the drill
-    a learner can do alone; its "How it works" demo sings the harmony wrong, with Merc's own note
-    where the third goes, then right (`docs/plans/ear-rooms.md:486-495`), the slip Lesson 26's
-    reader names ("That was Merc's note"). Reason: a card must open where its reader is, and on a
+    web. When the lessons reach the native app, Harmony is the drill a learner can do alone, and its
+    "How it works" demo sings the harmony wrong, with Merc's own note where the third goes, then
+    right (`docs/plans/ear-rooms.md:486-495`), the slip Lesson 26's reader names ("That was Merc's
+    note"). But it is a premium room, a free taste and then the paywall once the V1 flip brings the
+    gate (`docs/plans/ear-rooms.md:13-14`; `src/lib/native-build.ts:59-66`), and the card says
+    "Practise it free", so whether the card opens it first waits on MASTER-PLAN § 12 item 3, whether
+    premium stays the Merc practice rooms. Reason: a card must open where its reader is, and on a
     web page a room the web cannot open is a dead end.
 
 ## 8. Risks and a production order

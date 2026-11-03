@@ -131,8 +131,8 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,224 words on `scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 155 (FACTS 3). The page runs about 15 minutes: 9.34 minutes of reading at
+The learner copy is 2,226 words on `scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 153 (FACTS 3). The page runs about 15 minutes: 9.35 minutes of reading at
 238 words a minute and about 6.1 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words", as every Season 1 page from Lesson 3 is. The
 chip's figure is an estimate until the run toy and the take are timed in their lab, as SEASON-2 §
@@ -165,7 +165,7 @@ The research predict has no lock hints, the beads' names are drawn on canvas, Le
 hidden (Toys 1), "Do is D3" is the chart's summary for a screen reader, never printed, and Sing it
 has one sound-off hint for every button, not one a button as Lesson 9's has, which is what keeps
 this page under Lesson 8's measured 174 to 206 (Lesson 8 FACTS 4). The built page then lands near
-2,375, 4 under the cap.
+2,377, 2 under the cap.
 
 **Cuts.** To make room for the smaller run, Play it smudged and the stairs' printed names, the page
 has taken the first cut the package named, Step 4's last sentence, "On the staff, a dot over or
@@ -491,9 +491,9 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
 - **Scale Runner**, then choose Pentatonic: the major pentatonic, six notes up or down from the
   preset's anchor, one note at a time, each played, then a window to sing it back, 2 s at its
   starting level, shorter if its level rises and longer if it eases, scored in the octave it plays
-  (FACTS 64 to 66). The card says it is an echo, two seconds a note and less as its level rises,
-  good for tuning the pattern, that this page is where the run is sung, and that it starts from the
-  voice range saved in Settings, under Singing Voice Range (FACTS 66).
+  (FACTS 64 to 66). The card says it is an echo, two seconds or more a note and less as its level
+  rises, good for tuning the pattern, that this page is where the run is sung, and that it starts
+  from the voice range saved in Settings, under Singing Voice Range (FACTS 66).
 - **Staccato Precision**, the second drill: short notes from the major scale, shuffled, eight at its
   starting level, fewer and longer if it eases and shorter if its level rises, each sung back in
   the octave it plays (FACTS 67). The rest card drops it, since it asks for the voice (FACTS 72).

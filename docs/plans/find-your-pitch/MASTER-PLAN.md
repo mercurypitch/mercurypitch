@@ -573,9 +573,9 @@ Judge lessons by retrieval, not by "that was so clear": fluency inflates perceiv
   note sung on the note the other part is sounding), on a lab test (silence with Merc's part from
   the speakers) and on the lesson plumbing for Lessons 15 to 28 (SEASON-2 § 5.2 item 21). Until the
   lab test passes, its Sing it ships as the sing-along only. Its practice card describes Jam's
-  Harmony Stack as the app is today; two app items would mend the room (SEASON-2 § 5.2 items 23 and
-  24). It goes live after the coach's sign-off and once `/learn/12` and `/learn/24`, the pages its
-  chips and its recall link to, are live.
+  Harmony Stack as the app runs it now that the two app items that mended the room have shipped
+  (SEASON-2 § 5.2 items 23 and 24). It goes live after the coach's sign-off and once `/learn/12`
+  and `/learn/24`, the pages its chips and its recall link to, are live.
 - Lesson 27: a written lesson, text only, reviewed once and fixed, in
   [`lessons/27-sevenths-inversions/`](lessons/27-sevenths-inversions/) (research, article plan,
   facts, copy and page spec). Its unscored sing-along and its practice card's sung drill wait on the

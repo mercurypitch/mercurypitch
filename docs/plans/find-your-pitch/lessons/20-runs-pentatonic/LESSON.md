@@ -342,11 +342,11 @@ smudging it.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Scale Runner
-- Text: Scale Runner is an echo: it plays a note, then gives you two seconds to sing it back, less
-  as its level rises, in the octave it plays. Good for tuning the pattern; this page is where you
-  run it. Under Scale, choose Pentatonic. It starts from the voice range saved in Settings: set
-  yours there first, under Singing Voice Range. Sore, hoarse or unwell today? Just listen along.
-  Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
+- Text: Scale Runner is an echo: it plays a note, then gives you two seconds or more to sing it
+  back, less as its level rises, in the octave it plays. Good for tuning the pattern; this page is
+  where you run it. Under Scale, choose Pentatonic. It starts from the voice range saved in
+  Settings: set yours there first, under Singing Voice Range. Sore, hoarse or unwell today? Just
+  listen along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner.
 - Second drill: For short notes, Staccato Precision plays short notes from the major scale,
   shuffled; sing each back in the octave it plays. Free: **mercurypitch.com/pitch-training**, then

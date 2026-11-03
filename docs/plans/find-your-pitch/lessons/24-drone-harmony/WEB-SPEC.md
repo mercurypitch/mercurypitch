@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1267-1268`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1272-1273`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look

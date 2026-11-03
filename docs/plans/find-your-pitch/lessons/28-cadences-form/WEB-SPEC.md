@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1267-1268`).
+`docs/plans/find-your-pitch/SEASON-2.md:1272-1273`).
 
 ## Look
 
