@@ -34,10 +34,11 @@ import type { StudioLivePeaks } from './take-audio'
 import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
 import type { StudioTakeJournalFeed } from './take-journal-feed'
 import { createStudioTakeJournalFeed } from './take-journal-feed'
+import { studioTakeClip } from './take-passes'
 import type { StudioTakeCut } from './take-plan'
 import { planStudioTake } from './take-plan'
 import type { StudioTakeAnchor } from './take-timing'
-import { placeHeardTake, studioClickBeats, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
+import { studioClickBeats, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
 
 /** The longest take, as the Studio's import allows: five minutes. */
 export const STUDIO_TAKE_MAX_SECONDS = 300
@@ -77,6 +78,9 @@ const AUDIO_DID_NOT_START = "Studio's audio didn't start. Press Record again."
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
 const BEFORE_THE_IN_POINT =
   'Stopped before the range began, so nothing was recorded.'
+/** A punch keeps a tenth of a second at least, a loop's first pass a second (take-passes.ts). */
+const TOO_SOON_IN_RANGE =
+  'Stopped just after the range began, so the take was too short to keep.'
 
 interface Armed {
   readonly context: AudioContext
@@ -117,11 +121,17 @@ interface Take {
 }
 
 /** Whether any of a take is left once its start is trimmed to the song frame heard. */
-function reachesSong(current: Take, heardFirst: number): boolean {
-  const frames = Math.round(
+/** The take's length in the 48 kHz frames its import keeps. */
+function takeFrames(current: Take): number {
+  return Math.round(
     (current.buffer.frames * STUDIO_SAMPLE_RATE) / current.sampleRate,
   )
-  return placeHeardTake(heardFirst, current.fromFrame, frames) !== null
+}
+
+/** Whether the take keeps anything: past its trim, or enough of a punch's range or a loop's (take-passes.ts). */
+function keepsSomething(current: Take, heardFirst: number): boolean {
+  const take = { heardFirst, fromFrame: current.fromFrame, cut: current.cut }
+  return studioTakeClip(take, takeFrames(current)) !== null
 }
 
 /** What a finished take says: why it ended, and whether anything was kept. */
@@ -130,12 +140,14 @@ function endNotice(
   named: string | null,
   reason: StudioCaptureStop,
   cut: StudioTakeCut | null,
+  /** The capture ran past the range's start. */
+  inRange: boolean,
 ): string | null {
   if (kept) return named ?? STOP_NOTICES[reason] ?? null
   if (named === MIC_LOST_MID_TAKE) return MIC_LOST_BEFORE_TAKE
-  const before =
-    cut !== null && reason === 'stopped' ? BEFORE_THE_IN_POINT : null
-  return ENDED_BEFORE_THE_TAKE[reason] ?? before ?? TAKE_TOO_SHORT
+  const early = inRange ? TOO_SOON_IN_RANGE : BEFORE_THE_IN_POINT
+  const stopped = cut !== null && reason === 'stopped' ? early : null
+  return ENDED_BEFORE_THE_TAKE[reason] ?? stopped ?? TAKE_TOO_SHORT
 }
 
 export function createStudioRecorder(deps: StudioRecorderDeps) {
@@ -573,12 +585,14 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         frameTime(current.startFrame, current.sampleRate),
         current.roundTrip,
       )
-      const reached = current.started && reachesSong(current, heardFirst)
+      const reached = current.started && keepsSomething(current, heardFirst)
       const notice = endNotice(
         reached && frames > 0,
         named,
         reason,
         current.cut,
+        current.cut !== null &&
+          heardFirst + takeFrames(current) > current.cut.range.startFrame,
       )
       if (!reached || frames <= 0) {
         current.journal.discard()

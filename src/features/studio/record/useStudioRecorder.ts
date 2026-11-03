@@ -181,7 +181,8 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   /** Keep a take the way a picked WAV is kept: trimmed to the frame the singer heard, a punch's range, or a loop's passes. */
   async function keepTake(take: StudioCapturedTake): Promise<boolean> {
     const kept = studioTakeImport(take)
-    // A take its trim leaves nothing of has nothing to keep, and nothing to retry.
+    // The recorder hands over, and recovery offers, only takes that keep
+    // something (take-passes.ts); one that keeps nothing has nothing to retry.
     if (kept === null) return true
     return options.addRecording(kept)
   }
