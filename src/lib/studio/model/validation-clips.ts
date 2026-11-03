@@ -1,5 +1,6 @@
 // Studio clip validation — source-anchored envelopes and lane occupancy survive non-destructive edits.
 import { TRACK_ROLES } from '@/lib/studio-fx/role-chains'
+import { STUDIO_MAX_CLIP_PASSES } from './clip-passes'
 import type { StudioAsset, StudioClip, StudioTrack } from './types'
 import { validateStudioChain } from './validation-fx'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
@@ -38,18 +39,25 @@ export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
 }
 
 export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
-  const value = record(raw, path, [
-    'id',
-    'trackId',
-    'assetId',
-    'startFrame',
-    'sourceInFrame',
-    'sourceOutFrame',
-    'gainDb',
-    'fades',
-  ])
+  const value = record(
+    raw,
+    path,
+    [
+      'id',
+      'trackId',
+      'assetId',
+      'startFrame',
+      'sourceInFrame',
+      'sourceOutFrame',
+      'gainDb',
+      'fades',
+    ],
+    ['passes'],
+  )
   for (const key of ['id', 'trackId', 'assetId'])
     idValue(value[key], `${path}.${key}`)
+  if (Object.hasOwn(value, 'passes'))
+    validateClipPasses(value.passes, value.assetId, `${path}.passes`)
   const start = frameValue(value.startFrame, `${path}.startFrame`)
   const sourceIn = frameValue(value.sourceInFrame, `${path}.sourceInFrame`)
   const sourceOut = frameValue(
@@ -92,6 +100,21 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
     'Fade ramps overlap',
   )
   return structuredClone(clip)
+}
+
+/** A loop take's passes: two or more distinct ids, the heard one among them. */
+function validateClipPasses(raw: unknown, heard: unknown, path: string): void {
+  requireValue(
+    Array.isArray(raw) &&
+      raw.length >= 2 &&
+      raw.length <= STUDIO_MAX_CLIP_PASSES,
+    path,
+    `A clip keeps 2 to ${STUDIO_MAX_CLIP_PASSES} passes`,
+  )
+  const passes = raw as unknown[]
+  passes.forEach((id, index) => idValue(id, `${path}.${index}`))
+  requireValue(new Set(passes).size === passes.length, path, 'Duplicate pass')
+  requireValue(passes.includes(heard), path, 'The heard pass is not kept')
 }
 
 export function validateClipAsset(clip: StudioClip, asset: StudioAsset): void {

@@ -69,6 +69,7 @@ export interface FadeRamp {
 export interface StudioClip {
   readonly id: string
   readonly trackId: string
+  /** The audio the clip plays: for a loop take, one of its passes. */
   readonly assetId: string
   readonly startFrame: Frame
   readonly sourceInFrame: Frame
@@ -79,6 +80,12 @@ export interface StudioClip {
     readonly in?: FadeRamp
     readonly out?: FadeRamp
   }
+  /**
+   * A loop take's passes, oldest first, one asset each and all as long
+   * (clip-passes.ts): `assetId` is the one heard, the others are kept to
+   * choose from. Absent for any other clip.
+   */
+  readonly passes?: readonly string[]
 }
 
 export interface StudioAsset {
