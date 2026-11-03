@@ -154,15 +154,16 @@ export const NATIVE_ASSETS = [
       'Home rail: the Drum Night room photo (src/features/home/DestinationGallery.tsx).',
   },
 
-  // ── The Sing room's cover ────────────────────────────────────
+  // ── The Sing room's covers ───────────────────────────────────
   //
-  // One cover since S4 (23 Sep 2026): the owner chose it over the B and mock
-  // takes that shipped for the test period, and those two families are gone
-  // from public/sing/ and the catalogue.
+  // Three free covers, each in all four variants: the Retro Analog Studio the
+  // owner chose (S4, 23 Sep 2026) and two more beside it in the room's picker.
+  // The whole folder ships because nothing else lives there: supporter covers
+  // come from the server and never sit under public/.
   {
-    glob: 'sing/retro-analog-studio*.webp',
+    glob: 'sing/*.webp',
     reason:
-      "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
+      "The Sing room's three free covers in all four variants — the room IS the chosen photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts), picked in the room's picker. Portrait and landscape both ship: a phone held sideways picks the other one.",
   },
 
   // ── The Ear Lab's own room ───────────────────────────────────
