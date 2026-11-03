@@ -2,7 +2,10 @@
 // Practice activity — one source for "did I practice that day"
 // ============================================================
 //
-// Four things count as practice, and all four write a SessionRecord:
+// Four things count as practice, and all four write a SessionRecord, except
+// a drill stopped before its end: that credits its minutes and the streak
+// but writes no record (exercise-history-store), so the calendar leaves it
+// out. The four sources:
 //
 //   source: 'practice'   session mode (practice-session-store)
 //   source: 'exercise'   the drills      (exercise-history-store)

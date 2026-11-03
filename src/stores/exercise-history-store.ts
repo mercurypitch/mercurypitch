@@ -158,8 +158,11 @@ export function recordExerciseResult(
 
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)
-  // session_complete fires in saveSessionRecord — every branch below funnels
-  // into it exactly once, so firing here too would double the funnel metric.
+  // session_complete fires in saveSessionRecord, which every branch below
+  // but one reaches exactly once, so firing here too would double the
+  // funnel metric. The one is a stopped run: it writes no record, so it
+  // fires no session_complete either, and the funnel counts only runs that
+  // ran to their end.
   // recordCompletion counts a FINISHED run for the survey gate (and counts
   // as activity too, so recordActivity is folded in).
   recordCompletion()
@@ -181,8 +184,9 @@ export function recordExerciseResult(
   // 'weekly'), and must NOT also be written as a plain exercise — that would
   // double it on the leaderboard and double-credit practice minutes. So ask
   // those paths first, and only write a 'source: exercise' record when
-  // neither claimed the run. Each path credits practice minutes exactly once
-  // via saveSessionRecord; there is no separate addScoredMs here anymore.
+  // neither claimed the run. Each path credits practice minutes exactly once:
+  // through saveSessionRecord for a run that writes a record, and through
+  // creditPracticeTime for a stopped run, which writes none.
   const write = (async () => {
     // Call both unconditionally (not short-circuited): a mismatched-type run
     // is how each path learns the user moved on and disarms itself.
