@@ -3090,3 +3090,12 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Branch rebased onto 5184a0221: f9a991368 fix, 64d167817 Chord Stacker 90 s, 9420109d6 index; pushed.
   - Reviewer running (s2pkg/STOP-REVIEW-BRIEF.md, report s2pkg/STOP-REVIEW.md, worktree /dev/shm/s2srev). Its brief includes assessing the trade-off against a D1 column plus migration.
   - Next: fix the findings, open the PR, then put the trade-off to the owner (ask) before merging.
+- 3 Nov 07:1x:
+  - Review round 1 (s2pkg/STOP-REVIEW.md) found two gaps: Long Note's timer and the stop-after-last-round test. Both fixed: d2fd6f0aa (timed drills incl. Pitch Hold and Vibrato), 964b7b58b (Pitch Pursuit ends after its planned notes), 18eb3f58a (per-drill stop-after-last-round test), 11abf5014 (docs).
+  - PR #1323 opened: feat/stopped-run-grading 11abf5014 on main 5184a0221; 7 commits, owner-authored, 0 trailers. Footer removed by update, re-read confirmed. Subscribed.
+  - Verification review running; report due at s2pkg/STOP-REVIEW-2.md.
+  - Next:
+    - Fix anything the review flags.
+    - Ask the owner the trade-off (AskUserQuestion): merge fail-closed now (recommended), D1 column first, or hold.
+    - On a yes and green CI: merge --rebase and verify.
+    - Final short report. Include: stopped runs fire no analytics event; Session mode has the same defect (out of scope); Pitch Pursuit's card says 12 at every level.
