@@ -60,17 +60,14 @@ describe('Studio record input', () => {
       inputDeviceId: 'interface-1',
       inputLabel: 'Interface In 1',
     })
-    expect(screen.getByRole('combobox', { name: 'Input' })).toHaveValue(
-      'interface-1',
+    const picker = screen.getByRole('combobox', { name: 'Input' })
+    expect(picker).toHaveValue('interface-1')
+    expect(
+      [...(picker as HTMLSelectElement).options].map((option) => option.text),
+    ).toEqual(['Default input', 'Desk mic', 'Interface In 1 (not connected)'])
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Interface In 1 is not connected. Takes record from the default input until it is back.',
     )
-    expect(
-      screen.getByRole('option', { name: 'Interface In 1 (not connected)' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Interface In 1 is not connected. Takes record from the default input until it is back.',
-      ),
-    ).toBeVisible()
   })
 
   it('asks for one arm before the browser names its inputs, and holds the input while a take runs', () => {

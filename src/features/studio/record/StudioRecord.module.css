@@ -285,14 +285,16 @@
   gap: 10px;
   min-width: 0;
 }
+/* The app's select draws its chevron as a background image: set the colour
+   alone, and leave the chevron its room on the right. */
 .input select {
   flex: 1;
   min-width: 0;
   min-height: 36px;
-  padding: 0 8px;
+  padding: 0 30px 0 10px;
   border: 1px solid var(--studio-line-strong);
   border-radius: 7px;
-  background: var(--studio-card);
+  background-color: var(--studio-card);
   color: var(--studio-text);
   font: inherit;
   font-size: 16px;
