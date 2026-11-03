@@ -12,35 +12,54 @@
 // owner's song did just that with its sound on a TV over AirPlay (2 Nov
 // 2026: "the tv is stuck song is stuck on karaoke ... no errors").
 //
-// While a song should be playing this looks at the clock four times a
-// second. Once it has seen the clock move, a clock that then moves less
-// than MOVED_SECONDS in STALL_MS has stalled: one warning, `clock-stall`,
-// with what the room says was true (`facts`: the clock's state, the route,
-// whether the stream has sound queued), and one try to get it going
-// (`recover`). Still standing STALL_MS later, `clock-stall-stop` and
-// `giveUp`, which stops the song. A clock that moves again is said once
-// more, `clock-moving`, with how long it stood.
+// ONE STARTING POINT, ONE LINE. The watch reads the clock as it starts,
+// where the press of play left it, and again as the page comes back into
+// view, which is where the start and return checks read it too
+// (playback-return-watch.ts). It arms once the clock has moved
+// STUCK_BELOW_SECONDS from there, the line those checks pass a clock on. So
+// a clock they let pass is one it watches: a clock that ran half a second
+// after play and stood was caught by neither once (review, 2 Nov).
+//
+// Armed, a clock that then moves less than that in STALL_MS has stalled:
+// one warning, `clock-stall`, with what the room says was true (`facts`:
+// the clock's state, the route, whether the stream has sound queued), and
+// one try to get it going (`recover`). Still standing STALL_MS after that
+// try is done, `clock-stall-stop` and `giveUp`, which stops the song; a try
+// that never finishes is given RESTART_LIMIT_MS. A clock that moves again
+// is said once more, `clock-moving`, with how long it stood.
+//
+// Its time is the page's own monotonic clock (performance.now): a wall
+// clock set forward (network time, a hand on the settings) is not a stall.
 //
 // What it leaves alone, so it never cries wolf:
 //   - a song paused, ended or at its end, which `watching` says;
-//   - a hidden page, where iOS parks Web Audio and timers are throttled;
+//   - a hidden page, where iOS parks Web Audio: the watch stops looking
+//     until the page is back, and starts again from a fresh reading;
 //   - an 'interrupted' clock: the system's, which the room pauses for and
 //     nothing here may resume (MISTAKES.md, "Never resume an AudioContext
 //     that iOS interrupted");
-//   - a clock not yet seen to move since watching began: a press of play
-//     that never starts, or a way back to the app that does not, is the
-//     start and return checks' (playback-return-watch.ts);
+//   - a clock not yet seen to move since play or the return: the start and
+//     return checks' own;
+//   - a new route (`fresh`): AirPlay picked mid-song takes a moment to set
+//     up, so the window starts over from the change, armed as it was;
 //   - a seek or a loop going round: the clock runs on through both, and
 //     only the song's place jumps.
 
 import type { AudioReport } from '@/lib/audio-diagnostics'
+import { STUCK_BELOW_SECONDS } from './playback-return-watch'
 
 /** How long a clock may stand still while a song plays. */
 export const STALL_MS = 1500
-/** How often the clock is looked at. */
+/** How often the clock is looked at, while the page is in view. */
 export const WATCH_EVERY_MS = 250
 /** Less than this over STALL_MS is a clock that is not running. */
-export const MOVED_SECONDS = 0.25
+export const MOVED_SECONDS = STUCK_BELOW_SECONDS
+/**
+ * A try to get the clock going (a suspend, then a resume) that has not
+ * finished by now is a clock that will not come back: the song stops,
+ * rather than waiting on it for ever.
+ */
+export const RESTART_LIMIT_MS = 5000
 
 export interface ClockWatchdogOptions {
   /** The song's clock, or null before it has one. */
@@ -50,27 +69,35 @@ export interface ClockWatchdogOptions {
   readonly report: AudioReport
   /** What the record says beside a stall: state, route, feed, place. */
   readonly facts: () => Record<string, unknown>
-  /** The clock has stood still: one try to get it going. */
-  readonly recover: () => void
-  /** Still standing after `recover`: stop the song. */
+  /** The clock has stood still: one try to get it going, settled when done. */
+  readonly recover: () => Promise<unknown> | undefined
+  /** Still standing after that try: stop the song. */
   readonly giveUp: () => void
-  /** Wall time in ms; Date.now unless a test says otherwise. */
+  /** Monotonic time in ms; performance.now unless a test says otherwise. */
   readonly now?: () => number
   readonly stallMs?: number
   readonly everyMs?: number
 }
 
-/** Where the clock was last seen to move, by the wall clock and its own. */
+/** A watch under way. */
+export interface SongClockWatch {
+  /** A new route: the window starts over from here, armed as it was. */
+  fresh(): void
+  stop(): void
+}
+
+/** Where the clock was last seen to move: which clock, when, and its time. */
 interface Mark {
   readonly of: BaseAudioContext
-  readonly wall: number
+  readonly at: number
   readonly clock: number
 }
 
-/** A stall under way: since when, when the clock was asked back, and done. */
+/** A stall under way: since when, the try asked and done, and the stop. */
 interface Stall {
   readonly since: number
   readonly asked: number
+  restarted: number | null
   stopped: boolean
 }
 
@@ -95,11 +122,11 @@ export function streamFeed(
 }
 
 /**
- * Watch the clock until the stop it returns is called. A room starts one
- * with each press of play and stops it with each pause.
+ * Watch the clock until the watch is stopped. A room starts one with each
+ * press of play and stops it with each pause.
  */
-export function watchSongClock(options: ClockWatchdogOptions): () => void {
-  const now = options.now ?? Date.now
+export function watchSongClock(options: ClockWatchdogOptions): SongClockWatch {
+  const now = options.now ?? (() => performance.now())
   const stallMs = options.stallMs ?? STALL_MS
   const everyMs = options.everyMs ?? WATCH_EVERY_MS
   let mark: Mark | null = null
@@ -114,29 +141,58 @@ export function watchSongClock(options: ClockWatchdogOptions): () => void {
     stall = null
   }
 
-  const moved = (clock: BaseAudioContext, wall: number): void => {
+  /** Read the clock where it is: the window starts here. */
+  const readFrom = (keepArmed: boolean): void => {
+    const clock = options.clock()
+    const wasArmed = armed
+    forget()
+    if (clock === null) return
+    mark = { of: clock, at: now(), clock: clock.currentTime }
+    armed = keepArmed && wasArmed
+  }
+
+  const moved = (clock: BaseAudioContext, at: number): void => {
     if (stall !== null) {
       options.report('clock-moving', {
         ...options.facts(),
-        stoodMs: Math.round(wall - stall.since),
+        stoodMs: Math.round(at - stall.since),
       })
     }
     stall = null
     armed = true
-    mark = { of: clock, wall, clock: clock.currentTime }
+    mark = { of: clock, at, clock: clock.currentTime }
   }
 
-  const stoodStill = (since: Mark, wall: number): void => {
-    const stoodMs = Math.round(wall - since.wall)
+  /** The try is over: done STALL_MS ago, or never done in the limit. */
+  const tryIsOver = (episode: Stall, at: number): boolean =>
+    episode.restarted === null
+      ? at - episode.asked >= RESTART_LIMIT_MS
+      : at - episode.restarted >= stallMs
+
+  const beginStall = (since: Mark, at: number): void => {
+    const episode: Stall = {
+      since: since.at,
+      asked: at,
+      restarted: null,
+      stopped: false,
+    }
+    stall = episode
+    const stoodMs = Math.round(at - since.at)
+    options.report('clock-stall', { ...options.facts(), stoodMs }, true)
+    const done = (): void => {
+      if (stall === episode) episode.restarted = now()
+    }
+    void Promise.resolve(options.recover()).then(done, done)
+  }
+
+  const stoodStill = (since: Mark, at: number): void => {
     if (stall === null) {
-      if (stoodMs < stallMs) return
-      stall = { since: since.wall, asked: wall, stopped: false }
-      options.report('clock-stall', { ...options.facts(), stoodMs }, true)
-      options.recover()
+      if (at - since.at >= stallMs) beginStall(since, at)
       return
     }
-    if (stall.stopped || wall - stall.asked < stallMs) return
+    if (stall.stopped || !tryIsOver(stall, at)) return
     stall.stopped = true
+    const stoodMs = Math.round(at - since.at)
     options.report('clock-stall-stop', { ...options.facts(), stoodMs }, true)
     options.giveUp()
   }
@@ -150,18 +206,21 @@ export function watchSongClock(options: ClockWatchdogOptions): () => void {
       forget()
       return
     }
-    const wall = now()
+    const at = now()
     if (mark === null || mark.of !== clock || clock.currentTime < mark.clock) {
-      // The first look, or a clock made since: start from here, unarmed.
-      forget()
-      mark = { of: clock, wall, clock: clock.currentTime }
+      // No reading yet, or a clock made since: start from here, unarmed.
+      readFrom(false)
     } else if (clock.currentTime - mark.clock >= MOVED_SECONDS) {
-      moved(clock, wall)
+      moved(clock, at)
     } else if (armed) {
-      stoodStill(mark, wall)
+      stoodStill(mark, at)
     }
   }
 
+  const stopLooking = (): void => {
+    clearTimeout(timer)
+    timer = undefined
+  }
   const next = (): void => {
     timer = setTimeout(() => {
       timer = undefined
@@ -169,15 +228,42 @@ export function watchSongClock(options: ClockWatchdogOptions): () => void {
         look()
       } finally {
         // A give-up stops the song, and with it, this watch.
-        if (!over) next()
+        if (!over && !pageHidden()) next()
       }
     }, everyMs)
   }
-  next()
 
-  return () => {
-    over = true
-    clearTimeout(timer)
-    timer = undefined
+  const onVisibility = (): void => {
+    stopLooking()
+    if (over) return
+    if (pageHidden()) {
+      forget()
+      return
+    }
+    // Back in view: from where the clock is now, as the return check reads it.
+    readFrom(false)
+    next()
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibility)
+  }
+
+  // Where the press of play left the clock, as the start check reads it.
+  if (!pageHidden()) {
+    readFrom(false)
+    next()
+  }
+
+  return {
+    fresh: () => {
+      if (mark !== null) readFrom(true)
+    },
+    stop: () => {
+      over = true
+      stopLooking()
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility)
+      }
+    },
   }
 }

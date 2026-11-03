@@ -27,8 +27,12 @@ import type { AudioReport } from '@/lib/audio-diagnostics'
 export const RETURN_CHECK_MS = 1500
 /** How long after a press of play the clock has to have moved by. */
 export const START_CHECK_MS = 700
-/** Less than this over a check is a clock that is not running. */
-const STUCK_BELOW_SECONDS = 0.25
+/**
+ * Less than this over a check is a clock that is not running. The song's
+ * clock watch (clock-watchdog.ts) arms on the same line, from the same
+ * starting point, so a clock these checks let pass is one it watches.
+ */
+export const STUCK_BELOW_SECONDS = 0.25
 
 /** What a check of the clock needs: `PlaybackReturnWatchOptions`' own. */
 export interface ClockWatchOptions {

@@ -4,12 +4,13 @@
 //
 // The owner's song stuck on a TV over AirPlay with no error (2 Nov 2026).
 // Here the whole controller plays a streamed song on a clock the test
-// moves by hand: a clock that stops is warned of with the route and the
-// stream, asked back once, and a song whose clock still stands is paused,
-// its clock parked and the room told, where it used to sit "playing" at a
-// fixed place. The watchdog's own rules are in clock-watchdog.test.ts.
+// moves by hand (clock-stall.fixture.ts): a clock that stops is warned of
+// with the route and the stream, asked back once, and a song whose clock
+// still stands is paused, its clock parked and the room told, where it
+// used to sit "playing" at a fixed place. Cases marked "review" are the
+// probes of the review of 2 Nov that found a hole. The watchdog's own
+// rules are in clock-watchdog.test.ts.
 
-import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as DeviceTier from '@/lib/device-tier'
 
@@ -68,200 +69,21 @@ vi.mock('./stem-stream-source', () => ({
   readStemShape: vi.fn(async () => null),
 }))
 
-import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
+import { resetAudioDiagnosticsForTests } from '@/lib/audio-diagnostics'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
-import { STALL_MS } from './clock-watchdog'
+import { playingIn, recorded, setVisibility } from './clock-stall.fixture'
+import { RESTART_LIMIT_MS, STALL_MS } from './clock-watchdog'
+import { START_CHECK_MS } from './playback-return-watch'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
 import { useStemMixerAudioController } from './useStemMixerAudioController'
 
-/** The app's one clock, which the test moves as the audio thread would. */
-class Clock extends EventTarget {
-  state = 'running'
-  currentTime = 0
-  sampleRate = RATE
-  destination = {}
-  resume = vi.fn(async () => {
-    this.goes('running')
-    return Promise.resolve()
-  })
-  suspend = vi.fn(async () => {
-    this.goes('suspended')
-    return Promise.resolve()
-  })
-  close = vi.fn(async () => Promise.resolve())
-  createGain = () => node({ gain: param() })
-  createWaveShaper = () => node({ curve: null, oversample: '' })
-  createAnalyser = () =>
-    node({
-      fftSize: 2048,
-      smoothingTimeConstant: 0,
-      getFloatTimeDomainData() {},
-    })
-  createDynamicsCompressor = () =>
-    node({
-      threshold: param(),
-      knee: param(),
-      ratio: param(),
-      attack: param(),
-      release: param(),
-    })
-  createBufferSource = () =>
-    node({ buffer: null, playbackRate: param(), start() {}, stop() {} })
-  createBuffer = (channels: number, frames: number, sampleRate: number) => {
-    const data = Array.from(
-      { length: channels },
-      () => new Float32Array(frames),
-    )
-    return {
-      numberOfChannels: channels,
-      length: frames,
-      sampleRate,
-      duration: frames / sampleRate,
-      getChannelData: (c: number) => data[c],
-      copyToChannel: (src: Float32Array, c: number, offset = 0) => {
-        data[c].set(src, offset)
-      },
-    }
-  }
+const playing = async (
+  inTheRoom = true,
+  over: Partial<StemMixerAudioDeps> = {},
+) => playingIn(useStemMixerAudioController, inTheRoom, over)
 
-  goes(state: string): void {
-    this.state = state
-    this.dispatchEvent(new Event('statechange'))
-  }
-}
-
-function param() {
-  return {
-    value: 1,
-    setValueAtTime() {},
-    linearRampToValueAtTime() {},
-    exponentialRampToValueAtTime() {},
-    setTargetAtTime() {},
-    cancelScheduledValues() {},
-  }
-}
-
-function node<T extends object>(extra: T) {
-  return { connect: (to: unknown) => to, disconnect() {}, ...extra }
-}
-
-function stemTrack(label: string, url: string) {
-  return {
-    label,
-    url,
-    color: '#fff',
-    buffer: null,
-    stream: null,
-    streamVoice: null,
-    gainNode: null,
-    analyserNode: null,
-    sourceNode: null,
-    muted: false,
-    soloed: false,
-    volume: 1,
-  }
-}
-
-function harness(inTheRoom = true) {
-  const clock = new Clock()
-  const [vocal, setVocal] = createSignal(stemTrack('Vocal', '/v.m4a'))
-  const [instrumental, setInstrumental] = createSignal(
-    stemTrack('Instrumental', '/i.m4a'),
-  )
-  const [midi, setMidi] = createSignal(stemTrack('MIDI', ''))
-  const [extras, setExtras] = createSignal([])
-  const [midiNotes, setMidiNotes] = createSignal([])
-  const notifications: string[] = []
-  const noop = (): void => undefined
-  const deps = {
-    vocal,
-    setVocal,
-    instrumental,
-    setInstrumental,
-    midi,
-    setMidi,
-    extras,
-    setExtras,
-    tracks: () => [vocal(), instrumental()],
-    anySoloed: () => false,
-    PITCH_WINDOW_FILL_RATIO: 0.8,
-    midiNotes,
-    setMidiNotes,
-    canvas: {
-      syncCanvasSizes: noop,
-      drawWaveformOverview: noop,
-      drawLiveWaveform: noop,
-      drawPitchCanvas: noop,
-      drawMidiCanvas: noop,
-    },
-    updateCurrentLine: noop,
-    setCurrentLineIdx: noop,
-    setUserScrolled: noop,
-    micActive: () => false,
-    getMicAnalyserNode: () => null,
-    getMicPitchDetector: () => null,
-    getMicPitchHistory: () => [],
-    setMicPitch: noop,
-    comparisonData: () => [],
-    pushComparison: noop,
-    markLoopIteration: noop,
-    clearComparisonData: noop,
-    resetMicPitchHistory: noop,
-    computeScore: () => ({}),
-    setScore: noop,
-    setShowScore: noop,
-    resetScore: noop,
-    stems: { vocal: '/v.m4a', instrumental: '/i.m4a' },
-    songTitle: 'Goodbye to Spring',
-    showNotification: (message: string) => notifications.push(message),
-    forceStream: true,
-    followEndWhileHidden: inTheRoom,
-    audioLease: {
-      ensure: () => clock as unknown as AudioContext,
-      unlock: vi.fn(async () => clock.resume().then(() => true)),
-    },
-  } as unknown as StemMixerAudioDeps
-  let controller!: ReturnType<typeof useStemMixerAudioController>
-  const dispose = createRoot((disposeRoot) => {
-    controller = useStemMixerAudioController(deps)
-    return disposeRoot
-  })
-  return { clock, controller, notifications, dispose }
-}
-
-/** Loads the song, then plays it on fake timers, its streams filled. */
-async function playing(inTheRoom = true) {
-  const h = harness(inTheRoom)
-  await h.controller.loadStems()
-  // Timers and the wall clock only: the frames stay off, as on a page that
-  // is not drawing, so nothing but the watch can notice the song's end.
-  vi.useFakeTimers({
-    toFake: [
-      'setTimeout',
-      'clearTimeout',
-      'setInterval',
-      'clearInterval',
-      'Date',
-    ],
-  })
-  h.controller.handlePlay()
-  await vi.advanceTimersByTimeAsync(0)
-  /** Wall time passes; the clock moves `rate` seconds a second. */
-  const pass = async (ms: number, rate: number): Promise<void> => {
-    for (let elapsed = 0; elapsed < ms; elapsed += 50) {
-      h.clock.currentTime += (rate * 50) / 1000
-      await vi.advanceTimersByTimeAsync(50)
-    }
-  }
-  return {
-    ...h,
-    running: async (ms: number) => pass(ms, 1),
-    standing: async (ms: number) => pass(ms, 0),
-  }
-}
-
-const recorded = (event: string) =>
-  audioDiagnosticEntries().filter((entry) => entry.event === event)
+/** Long enough for a stall's 1.5 s, and the looks either side of it. */
+const PAST_A_STALL = STALL_MS + 250
 
 beforeEach(() => {
   resetAudioDiagnosticsForTests()
@@ -278,6 +100,7 @@ beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => undefined)
   vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   vi.spyOn(console, 'log').mockImplementation(() => undefined)
+  setVisibility('visible')
 })
 
 afterEach(() => {
@@ -285,6 +108,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   setAudioRouteForTests(null)
+  setVisibility('visible')
 })
 
 describe('a clock that stops while the song plays', () => {
@@ -292,19 +116,14 @@ describe('a clock that stops while the song plays', () => {
     const h = await playing()
     await h.running(1000)
 
-    await h.standing(STALL_MS + 250)
+    await h.standing(PAST_A_STALL)
 
     const [stall] = recorded('clock-stall')
     expect(recorded('clock-stall')).toHaveLength(1)
     expect(stall).toMatchObject({
       source: 'karaoke',
       failed: true,
-      detail: {
-        state: 'running',
-        route: 'airplay',
-        port: 'LG C2',
-        feeding: 'yes',
-      },
+      detail: { state: 'running', route: 'airplay', feeding: 'yes' },
     })
     // The stream had its windows ready: the clock stopped on its own.
     expect(stall.detail.queued).toBeGreaterThan(0)
@@ -315,25 +134,30 @@ describe('a clock that stops while the song plays', () => {
     h.dispose()
   })
 
-  it('says so in a warning line the console shows by default', async () => {
+  it('says so in a warning line the console shows by default, naming no port', async () => {
     const h = await playing()
     await h.running(1000)
 
-    await h.standing(STALL_MS + 250)
+    await h.standing(PAST_A_STALL)
 
     const warned = vi.mocked(console.warn).mock.calls.map(([line]) => line)
     expect(warned).toContainEqual(
       expect.stringMatching(
-        /^\[audio\] \d\d:\d\d:\d\d\.\d{3} karaoke clock-stall state=running route=airplay port=LG C2 feeding=yes queued=[\d.]+ position=[\d.]+ clock=[\d.]+ stoodMs=\d+$/,
+        /^\[audio\] \d\d:\d\d:\d\d\.\d{3} karaoke clock-stall state=running route=airplay feeding=yes queued=[\d.]+ position=[\d.]+ clock=[\d.]+ stoodMs=\d+$/,
       ),
     )
+    // The receiver's name ("LG C2", or someone's AirPods) is no log's.
+    const everyLine = [console.warn, console.info, console.log].flatMap(
+      (method) => vi.mocked(method).mock.calls.map((call) => String(call[0])),
+    )
+    expect(everyLine.filter((line) => line.includes('LG C2'))).toEqual([])
     h.dispose()
   })
 
   it('plays on, and says so once more, when the clock moves again', async () => {
     const h = await playing()
     await h.running(1000)
-    await h.standing(STALL_MS + 250)
+    await h.standing(PAST_A_STALL)
 
     await h.running(1000)
 
@@ -341,10 +165,6 @@ describe('a clock that stops while the song plays', () => {
     expect(moving).toHaveLength(1)
     expect(moving[0].failed).toBe(false)
     expect(moving[0].detail.stoodMs).toBeGreaterThanOrEqual(STALL_MS)
-    const said = vi.mocked(console.info).mock.calls.map(([line]) => line)
-    expect(said).toContainEqual(
-      expect.stringMatching(/ karaoke clock-moving .*stoodMs=\d+$/),
-    )
     expect(h.controller.playing()).toBe(true)
     expect(h.controller.stalled()).toBe(false)
     h.dispose()
@@ -353,9 +173,9 @@ describe('a clock that stops while the song plays', () => {
   it('stops the song where it was, parks the clock and marks it, when it still stands', async () => {
     const h = await playing()
     await h.running(1000)
-    await h.standing(STALL_MS + 250)
+    await h.standing(PAST_A_STALL)
 
-    await h.standing(STALL_MS + 250)
+    await h.standing(PAST_A_STALL)
 
     expect(recorded('clock-stall-stop')).toHaveLength(1)
     expect(recorded('clock-stall-stop')[0].failed).toBe(true)
@@ -367,7 +187,6 @@ describe('a clock that stops while the song plays', () => {
     expect(h.clock.state).toBe('suspended')
     // The room says why; no toast over it.
     expect(h.notifications).toEqual([])
-    // Asked back once, and only once.
     expect(recorded('clock-restart')).toHaveLength(1)
     h.dispose()
   })
@@ -375,13 +194,147 @@ describe('a clock that stops while the song plays', () => {
   it('clears the mark on the next press of play', async () => {
     const h = await playing()
     await h.running(1000)
-    await h.standing((STALL_MS + 250) * 2)
+    await h.standing(PAST_A_STALL * 2)
     expect(h.controller.stalled()).toBe(true)
 
     h.controller.handlePlay()
 
     expect(h.controller.stalled()).toBe(false)
     expect(h.controller.playing()).toBe(true)
+    h.dispose()
+  })
+})
+
+describe('every way a song stops for its clock, marked for the room (review)', () => {
+  it('stops a song whose clock ran a moment after play, then stood (probe A)', async () => {
+    const h = await playing()
+
+    await h.running(450)
+    await h.standing(20_000)
+
+    expect(recorded('clock-stall')).toHaveLength(1)
+    expect(h.controller.playing()).toBe(false)
+    expect(h.controller.stalled()).toBe(true)
+    h.dispose()
+  })
+
+  it('stops a song whose clock ran a moment after the way back, then stood (probe B)', async () => {
+    const h = await playing()
+    await h.running(2000)
+    setVisibility('hidden')
+    await h.running(3000)
+    setVisibility('visible')
+    // The way back cycles the clock (installAudioUnlock): let it settle.
+    await vi.advanceTimersByTimeAsync(0)
+    await h.running(300)
+
+    await h.standing(20_000)
+
+    expect(recorded('clock-stall')).toHaveLength(1)
+    expect(h.controller.playing()).toBe(false)
+    expect(h.controller.stalled()).toBe(true)
+    h.dispose()
+  })
+
+  it('marks a song whose clock never moved after the way back, with no toast', async () => {
+    const h = await playing()
+    await h.running(2000)
+    setVisibility('hidden')
+    await h.running(3000)
+    setVisibility('visible')
+    await vi.advanceTimersByTimeAsync(0)
+
+    await h.standing(10_000)
+
+    expect(recorded('clock-stuck').length).toBeGreaterThan(0)
+    expect(h.controller.playing()).toBe(false)
+    expect(h.controller.stalled()).toBe(true)
+    expect(h.notifications).toEqual([])
+    h.dispose()
+  })
+
+  it('marks a press of play that never starts the clock, so the room names AirPlay (probe E)', async () => {
+    const h = await playing()
+    await h.running(1000)
+    await h.standing(PAST_A_STALL * 2)
+    expect(h.controller.stalled()).toBe(true)
+
+    // Play again, from the transport, with the sound still going to the TV.
+    h.controller.handlePlay()
+    await h.standing(START_CHECK_MS * 2 + 200)
+
+    expect(h.controller.playing()).toBe(false)
+    expect(h.controller.stalled()).toBe(true)
+    expect(h.notifications).toEqual([])
+    h.dispose()
+  })
+})
+
+describe('a try to get the clock going that comes late (review)', () => {
+  it('counts the stop from the try done, as a slow suspend finishes it (probe C)', async () => {
+    const h = await playing()
+    await h.running(1000)
+    h.clock.slowSuspendMs = 2000
+    await h.standing(PAST_A_STALL)
+    expect(recorded('clock-stall')).toHaveLength(1)
+
+    // Where the stop used to come, the try is still under way.
+    await h.standing(PAST_A_STALL)
+    expect(recorded('clock-stall-stop')).toHaveLength(0)
+    expect(h.controller.playing()).toBe(true)
+
+    await h.standing(PAST_A_STALL)
+
+    expect(recorded('clock-stall-stop')).toHaveLength(1)
+    expect(h.controller.stalled()).toBe(true)
+    // Parked, and nothing after the stop runs it again.
+    await h.standing(3000)
+    expect(h.clock.state).toBe('suspended')
+    expect(h.clock.log.at(-1)).toBe('suspend done -> suspended')
+  })
+
+  it('never runs a clock the song parked when a try given up on finishes late', async () => {
+    const h = await playing()
+    await h.running(1000)
+    h.clock.slowSuspendMs = RESTART_LIMIT_MS + 1000
+    await h.standing(PAST_A_STALL)
+
+    await h.standing(RESTART_LIMIT_MS + 3000)
+
+    expect(recorded('clock-stall-stop')).toHaveLength(1)
+    expect(h.controller.playing()).toBe(false)
+    // The slow suspend landed after the stop: no resume followed it.
+    expect(h.clock.log.filter((step) => step === 'resume asked')).toEqual([])
+    expect(h.clock.state).toBe('suspended')
+  })
+
+  it('never runs the clock again once the room has let it go (probe D)', async () => {
+    const h = await playing()
+    await h.running(1000)
+    h.clock.slowSuspendMs = 300
+    await h.standing(PAST_A_STALL)
+    expect(recorded('clock-stall')).toHaveLength(1)
+
+    // The singer leaves the room while the restart is under way.
+    h.dispose()
+    await h.standing(10_000)
+
+    expect(h.clock.state).toBe('suspended')
+    expect(h.clock.log.filter((step) => step === 'resume asked')).toEqual([])
+  })
+
+  it('never restarts a clock iOS interrupted, which is the system’s to give back', async () => {
+    const h = await playing(true, { keepsPlayingHidden: () => true })
+    const resumes = h.clock.resume.mock.calls.length
+
+    // Another app takes the sound as the song starts; the room waits a
+    // moment to see whether the app is on its way behind it.
+    h.clock.goes('interrupted')
+    await h.standing(START_CHECK_MS + 200)
+
+    expect(recorded('clock-stuck').length).toBeGreaterThan(0)
+    expect(recorded('clock-restart')).toEqual([])
+    expect(h.clock.resume).toHaveBeenCalledTimes(resumes)
     h.dispose()
   })
 })
@@ -396,6 +349,61 @@ describe('no false alarm', () => {
 
     expect(recorded('clock-stall')).toHaveLength(0)
     expect(h.controller.playing()).toBe(true)
+    h.dispose()
+  })
+
+  it('across a change of speed (review: probe F)', async () => {
+    const h = await playing()
+    await h.running(1000)
+
+    h.controller.setSpeed(0.5)
+    await h.running(5000)
+
+    expect(recorded('clock-stall')).toHaveLength(0)
+    h.dispose()
+  })
+
+  it('across a main thread that stood 4 s while the clock ran (review: probe F)', async () => {
+    const h = await playing()
+    await h.running(1000)
+
+    // No timer runs during a block; the clock and the wall both move on.
+    h.clock.currentTime += 4
+    vi.setSystemTime(Date.now() + 4000)
+    await h.running(2000)
+
+    expect(recorded('clock-stall')).toHaveLength(0)
+    h.dispose()
+  })
+
+  it('across the page hidden with the clock parked, then a slow start back (review: probe F)', async () => {
+    const h = await playing()
+    await h.running(2000)
+    setVisibility('hidden')
+    await h.standing(5000)
+    setVisibility('visible')
+
+    await h.standing(1000)
+    await h.running(4000)
+
+    expect(recorded('clock-stall')).toHaveLength(0)
+    h.dispose()
+  })
+
+  it('while a new route sets up, which starts the window over', async () => {
+    setAudioRouteForTests('speaker', 'Speaker')
+    const h = await playing()
+    await h.running(1000)
+    await h.standing(1000)
+
+    // AirPlay picked mid-song: a moment of silence while it sets up.
+    setAudioRouteForTests('airplay', 'LG C2')
+    await h.standing(1000)
+    expect(recorded('clock-stall')).toHaveLength(0)
+
+    // A route on which the clock never comes back is still said.
+    await h.standing(800)
+    expect(recorded('clock-stall')).toHaveLength(1)
     h.dispose()
   })
 

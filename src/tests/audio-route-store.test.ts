@@ -202,7 +202,7 @@ describe('what the console is told of the route', () => {
 
   const lines = (): unknown[] => log.mock.calls.map((call) => call[0])
 
-  it('says the route at launch with its port, as a routine line', async () => {
+  it('says the route at launch as a routine line, keeping the port for the screen', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const fake = fakeOutput()
@@ -210,7 +210,7 @@ describe('what the console is told of the route', () => {
 
     await fake.answer(reading('airplay', TV))
 
-    expect(lines()).toEqual(['[audio route] airplay "LG C2", at launch'])
+    expect(lines()).toEqual(['[audio route] airplay, at launch'])
     expect(audioRoutePort()).toBe('LG C2')
     // Routine: out of a console that leaves routine logs out.
     expect(info).not.toHaveBeenCalled()
@@ -219,7 +219,7 @@ describe('what the console is told of the route', () => {
     warn.mockRestore()
   })
 
-  it('says each route iOS moves: its kind, port, reason and what it was', async () => {
+  it('says each route iOS moves: its kind, iOS’s reason and what it was', async () => {
     const fake = fakeOutput()
     stop = followAudioRoute(fake.output)
     await fake.answer(reading('speaker', PHONE))
@@ -234,9 +234,32 @@ describe('what the console is told of the route', () => {
     )
 
     expect(lines().at(-1)).toBe(
-      '[audio route] airplay "LG C2", iOS: new device, was Speaker',
+      '[audio route] airplay, iOS: new device, was Speaker',
     )
     expect(audioRoutePort()).toBe('LG C2')
+  })
+
+  it('never writes a port’s own name, which can name its owner', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    const buds: Ports = [
+      { type: 'BluetoothA2DPOutput', name: 'Viki’s AirPods' },
+    ]
+    await fake.answer(reading('bluetooth', buds))
+
+    fake.change(
+      'airplay',
+      iosChange({
+        outputs: TV,
+        routeReason: 'new device',
+        previousOutputs: ['BluetoothA2DPOutput'],
+      }),
+    )
+
+    expect(lines()).toHaveLength(2)
+    for (const line of lines()) {
+      expect(line).not.toMatch(/AirPods|LG C2/)
+    }
   })
 
   it('says a route iOS moved onto the same port, for its reason', async () => {
@@ -254,8 +277,8 @@ describe('what the console is told of the route', () => {
     )
 
     expect(lines()).toEqual([
-      '[audio route] speaker "Speaker", at launch',
-      '[audio route] speaker "Speaker", iOS: category change, was Speaker',
+      '[audio route] speaker, at launch',
+      '[audio route] speaker, iOS: category change, was Speaker',
     ])
   })
 
@@ -271,8 +294,8 @@ describe('what the console is told of the route', () => {
     fake.change('airplay', iosChange({ outputs: TV, reason: 'app in front' }))
 
     expect(lines()).toEqual([
-      '[audio route] speaker "Speaker", at launch',
-      '[audio route] airplay "LG C2", app in front',
+      '[audio route] speaker, at launch',
+      '[audio route] airplay, app in front',
     ])
   })
 
@@ -287,20 +310,23 @@ describe('what the console is told of the route', () => {
     await fake.answer(reading('speaker', PHONE))
 
     expect(lines()).toEqual([
-      '[audio route] airplay "LG C2", at launch',
-      '[audio route] speaker "Speaker", read on the way back',
+      '[audio route] airplay, at launch',
+      '[audio route] speaker, read on the way back',
     ])
   })
 
-  it('says an Android route, which comes with no reason of iOS’s', () => {
+  it('says an Android route once, however many devices it reports with no reason', () => {
     const fake = fakeOutput()
     stop = followAudioRoute(fake.output)
+    const buds = iosChange({
+      outputs: [{ type: 'bluetooth-a2dp', name: 'Pixel Buds' }],
+    })
 
-    fake.change(
-      'headphones',
-      iosChange({ outputs: [{ type: 'wired-headset', name: 'USB-C' }] }),
-    )
+    // Earbuds coming on: A2DP, SCO, BLE and the headset's mic, one callback each.
+    for (let callback = 0; callback < 4; callback += 1) {
+      fake.change('bluetooth', buds)
+    }
 
-    expect(lines()).toEqual(['[audio route] headphones "USB-C"'])
+    expect(lines()).toEqual(['[audio route] bluetooth'])
   })
 })

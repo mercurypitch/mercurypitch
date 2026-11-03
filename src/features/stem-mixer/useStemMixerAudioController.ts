@@ -29,7 +29,7 @@ import { platform } from '@/lib/platform'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
-import { audioRoute, audioRoutePort } from '@/stores/audio-route-store'
+import { audioRoute } from '@/stores/audio-route-store'
 import { streamFeed, watchSongClock } from './clock-watchdog'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { createHiddenClock } from './hidden-clock'
@@ -456,12 +456,13 @@ export function closeStemGain(
 }
 /** Ceiling for pitch detection and scoring. The device tier lowers it. */
 const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
-/** Said when a run stops because its sound did (stopForLostSound). */
+/**
+ * Said when a run stops because a stem's stream gave up (stopForLostSound).
+ * A clock that will not come back is said by the room instead, in words
+ * that follow the route (stopForStalledClock).
+ */
 export const LOST_SOUND_NOTICE =
   'The music stopped playing. Press play to carry on.'
-/** A press of play whose clock never moved, even restarted once. */
-export const SILENT_START_NOTICE =
-  "The song didn't start. Press play to try again."
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
 /** The live-pitch activation milestone uses the same supported range as the
@@ -1850,18 +1851,57 @@ export const useStemMixerAudioController = (
   // A clock that says it runs and does not move: stopping it and starting it
   // again makes WebKit start its output for real, which is what leaving the
   // room and coming back did by hand. One that is not running is resumed.
-  const restartClock = (): void => {
+  // An interrupted one is the system's, and is left alone (MISTAKES.md).
+  //
+  // The resume waits on the suspend, which can be slow on a wedged output,
+  // so it runs only if the restart is still wanted: the newest, on the same
+  // clock, and the clock not interrupted meanwhile. A pause, a stop (every
+  // way a song stops goes through one) or the room going retires it
+  // (`restartTurn`); a late resume once ran a clock the song had parked
+  // (review, 2 Nov). Settles when the restart is done, which is where the
+  // song's watch counts its stop from.
+  let restartTurn = 0
+  onCleanup(() => {
+    restartTurn += 1
+  })
+  const restartClock = (): Promise<void> => {
     const ctx = audioCtx
-    if (ctx === null) return
+    if (ctx === null || String(ctx.state) === 'interrupted') {
+      return Promise.resolve()
+    }
+    const turn = (restartTurn += 1)
     reportPlayback('clock-restart', { state: String(ctx.state) })
     if (ctx.state !== 'running') {
       ensureAudioCtx()
-      return
+      return Promise.resolve()
     }
-    void ctx
+    const stillWanted = (): boolean =>
+      turn === restartTurn &&
+      audioCtx === ctx &&
+      String(ctx.state) !== 'interrupted'
+    return ctx
       .suspend()
-      .then(() => ctx.resume())
+      .then(async () => {
+        if (stillWanted()) await ctx.resume()
+      })
       .catch(() => undefined)
+  }
+
+  // ── A song whose clock stopped ─────────────────────────────────
+  // A clock that stops stops the transport and the stream with it, and
+  // raises nothing (clock-watchdog.ts). In a room that hosts the mixer the
+  // three watches on it (the press of play's, the way back's and the
+  // song's own) end alike when the clock will not come back: the song
+  // paused where it was, its clock parked so the next press of play starts
+  // it for real, and `stalled` set for the room to say why, in words that
+  // follow the route (sound-stopped.ts). A toast here once told a singer on
+  // AirPlay to press play, which sent the sound back to the same place.
+  const [stalled, setStalled] = createSignal(false)
+  const stopForStalledClock = (): void => {
+    if (!playing()) return
+    handlePause()
+    void audioCtx?.suspend().catch(() => undefined)
+    setStalled(true)
   }
 
   // A press of play is checked a moment later in a room that hosts the
@@ -1872,13 +1912,6 @@ export const useStemMixerAudioController = (
   onCleanup(() => {
     stopStartCheck()
   })
-  const stopForSilentStart = (): void => {
-    if (!playing()) return
-    handlePause()
-    // Parked, so the next press of play starts the clock for real.
-    void audioCtx?.suspend().catch(() => undefined)
-    deps.showNotification(SILENT_START_NOTICE, 'warning')
-  }
   const checkTheStart = (): void => {
     stopStartCheck()
     if (deps.followEndWhileHidden !== true || audioCtx === null) return
@@ -1887,8 +1920,9 @@ export const useStemMixerAudioController = (
         clock: () => audioCtx,
         playing,
         report: reportPlayback,
-        recover: restartClock,
-        giveUp: stopForSilentStart,
+        // A quick answer: the check looks again without waiting on it.
+        recover: () => void restartClock(),
+        giveUp: stopForStalledClock,
         checkAfterMs: START_CHECK_MS,
         facts: () => ({
           state: audioCtx === null ? 'none' : String(audioCtx.state),
@@ -1900,12 +1934,10 @@ export const useStemMixerAudioController = (
   }
 
   // ── The song's clock, watched while it plays ──────────────────
-  // A clock that stops mid-song stops the transport and the stream with it,
-  // and raises nothing (clock-watchdog.ts). In a room that hosts the mixer
-  // a stall is warned with the route and the stream's state and asked back
-  // once; a clock that still stands has its song paused and parked, as a
-  // silent start's is, and `stalled` set for the room to say why.
-  const [stalled, setStalled] = createSignal(false)
+  // A stall is warned with the clock's state, the route's kind and the
+  // stream's state (never a port's name, which can name a person), and
+  // asked back once; a new route starts the watch's window over, since
+  // AirPlay picked mid-song takes a moment to set up.
   const songPlace = (ctx: BaseAudioContext): number =>
     bufferPlayStart + (ctx.currentTime - wallPlayStart) * playbackSpeed
   const stallFacts = (): Record<string, unknown> => {
@@ -1913,17 +1945,10 @@ export const useStemMixerAudioController = (
     return {
       state: ctx === null ? 'none' : String(ctx.state),
       route: audioRoute() ?? 'unknown',
-      port: audioRoutePort() ?? 'unknown',
       ...streamFeed(deps.tracks().flatMap((track) => track.streamVoice ?? [])),
       position: ctx === null ? null : Math.round(songPlace(ctx) * 1000) / 1000,
       clock: ctx === null ? null : Math.round(ctx.currentTime * 1000) / 1000,
     }
-  }
-  const stopForStalledClock = (): void => {
-    if (!playing()) return
-    handlePause()
-    void audioCtx?.suspend().catch(() => undefined)
-    setStalled(true)
   }
   const songShouldSound = (): boolean => {
     const ctx = audioCtx
@@ -1934,16 +1959,18 @@ export const useStemMixerAudioController = (
     createEffect(
       on(playing, (isPlaying) => {
         if (!isPlaying) return
-        onCleanup(
-          watchSongClock({
-            clock: () => audioCtx,
-            watching: songShouldSound,
-            report: reportPlayback,
-            facts: stallFacts,
-            recover: restartClock,
-            giveUp: stopForStalledClock,
-          }),
-        )
+        const watch = watchSongClock({
+          clock: () => audioCtx,
+          watching: songShouldSound,
+          report: reportPlayback,
+          facts: stallFacts,
+          recover: restartClock,
+          giveUp: stopForStalledClock,
+        })
+        onCleanup(() => {
+          watch.stop()
+        })
+        createEffect(on(audioRoute, () => watch.fresh(), { defer: true }))
       }),
     )
   }
@@ -1992,6 +2019,7 @@ export const useStemMixerAudioController = (
 
   const handlePause = () => {
     stopStartCheck()
+    restartTurn += 1
     setInterrupted(false)
     setStalled(false)
     catchUpClocks()
@@ -2029,6 +2057,7 @@ export const useStemMixerAudioController = (
 
   const handleStop = () => {
     stopStartCheck()
+    restartTurn += 1
     setInterrupted(false)
     setStalled(false)
     let completedScore: MicScore | null = null
@@ -2430,10 +2459,8 @@ export const useStemMixerAudioController = (
         playing,
         position: elapsed,
         report: reportPlayback,
-        recover: restartClock,
-        giveUp: () => {
-          stopForLostSound()
-        },
+        recover: () => void restartClock(),
+        giveUp: stopForStalledClock,
       }),
     )
   }

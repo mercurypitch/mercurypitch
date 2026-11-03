@@ -143,20 +143,20 @@ Developer screen's Audio section copies the lot. For a Karaoke song kept
 playing behind another app, its `karaoke` entries say what the way back
 looked like:
 
-| Entry                           | What it says                                                                                                                                                                                                                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                                                                                                                          |
-| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                                                                                                                                 |
-| `statechange`                   | The clock changed state while the room watched it, and whether the page was hidden; on iOS `interrupted` means a call, Siri, another app or the trip to the background took the sound, and a playing song pauses with it unless it keeps playing behind the app |
-| `background-resume`             | The interruption that comes with the app going to the background, resumed for a song that keeps playing there; `hiddenForMs` is how long the page had been hidden                                                                                               |
-| `suspend-fade`                  | The shared clock was about to stop (the app leaving with nothing to keep the song playing), so the playing song paused with its fade first                                                                                                                      |
-| `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run with a notice                                                                                                                 |
-| `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back                                                                                                                                                                           |
-| `clock-stall`                   | A warning: the clock stood still 1.5 s while the song played, after it had been moving. With the clock's `state`, the `route` and `port`, whether the stream had sound queued (`feeding`, `queued`), the place and `stoodMs`; one `clock-restart` follows       |
-| `clock-moving`                  | The clock moved again after a stall, and how long it stood (`stoodMs`); the song plays on                                                                                                                                                                       |
-| `clock-stall-stop`              | A warning: the clock still stood 1.5 s after the restart, so the song paused where it was, its clock parked, and the room says why                                                                                                                              |
-| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                                                                                                                                 |
-| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                                                                                                                     |
+| Entry                           | What it says                                                                                                                                                                                                                                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                                                                                                                                                               |
+| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                                                                                                                                                                      |
+| `statechange`                   | The clock changed state while the room watched it, and whether the page was hidden; on iOS `interrupted` means a call, Siri, another app or the trip to the background took the sound, and a playing song pauses with it unless it keeps playing behind the app                                      |
+| `background-resume`             | The interruption that comes with the app going to the background, resumed for a song that keeps playing there; `hiddenForMs` is how long the page had been hidden                                                                                                                                    |
+| `suspend-fade`                  | The shared clock was about to stop (the app leaving with nothing to keep the song playing), so the playing song paused with its fade first                                                                                                                                                           |
+| `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run, and the room says why (as `clock-stall-stop`)                                                                                                                     |
+| `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back; never for a clock iOS interrupted, and the resume is dropped if the song paused or the room went meanwhile                                                                                                    |
+| `clock-stall`                   | A warning: the clock stood still 1.5 s while the song played, after it had moved from where play or the return left it. With the clock's `state`, the route's kind (no port's name), whether the stream had sound queued (`feeding`, `queued`), the place and `stoodMs`; one `clock-restart` follows |
+| `clock-moving`                  | The clock moved again after a stall, and how long it stood (`stoodMs`); the song plays on                                                                                                                                                                                                            |
+| `clock-stall-stop`              | A warning: the clock still stood 1.5 s after the restart was done (or the restart never finished in 5 s), so the song paused where it was, its clock parked, and the room says why                                                                                                                   |
+| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                                                                                                                                                                      |
+| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                                                                                                                                                          |
 
 Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts),
 [`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
@@ -242,38 +242,62 @@ no error. For a test, turn on Developer > Debug console > "Keep routine logs"
 (the route and clock lines are routine), Clear log under Developer > Audio,
 take AirPlay, play a song in the Karaoke room, and copy the console.
 
-| Line                                                                                                                      | Shown      | What it says                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[audio route] airplay "LG C2", iOS: new device, was Speaker`                                                             | routine    | Each route the phone reports: its kind, the port as the phone names it, iOS's reason and the outputs before it. One `at launch`; on the way back only if it moved |
-| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                               | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                         |
-| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay port=LG C2 feeding=yes queued=2.4 ... stoodMs=1500` | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                       |
-| `karaoke clock-moving ... stoodMs=2100`                                                                                   | by default | It moved again, and the song plays on                                                                                                                             |
-| `karaoke clock-stall-stop ...`                                                                                            | by default | Still standing: the song paused where it was, and the room says why (on AirPlay: choose iPhone in Control Center, or use Screen Mirroring)                        |
+No line names a port: "Viki's AirPods" names a person, and a console's lines
+are copied off the phone, the crash card's into public bug reports. The
+route's kind is enough to read a test by; the Developer > Audio report still
+names the port in its `output change` lines, and the room's notice names it
+on the singer's own screen.
+
+| Line                                                                                                           | Shown      | What it says                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `[audio route] airplay, iOS: new device, was Speaker`                                                          | routine    | Each route the phone reports: its kind, iOS's reason and the kinds of output before it. One `at launch`; otherwise only when the route moved, or iOS gave a reason |
+| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                    | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                          |
+| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay feeding=yes queued=2.4 ... stoodMs=1500` | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                        |
+| `karaoke clock-moving ... stoodMs=2100`                                                                        | by default | It moved again, and the song plays on                                                                                                                              |
+| `karaoke clock-stall-stop ...`                                                                                 | by default | Still standing after the restart: the song paused where it was, and the room says why                                                                              |
+
+The room's words follow the route. On AirPlay: "The sound went to LG C2 over
+AirPlay and stopped. To hear it here, choose this phone under AirPlay in
+Control Center." (the receiver as the phone names it, "this iPad" on an
+iPad), with a close button. Anywhere else: "The sound stopped." and Play
+again. The same notice follows the start check and the return check when
+they stop a song. Screen Mirroring is not offered: it sends the sound to the
+TV as well, and whether a song plays over it is still to be seen on a
+device.
 
 Reading them:
 
+- The watch reads the clock where play left it, and again as the page comes
+  back, the same readings the start and return checks take, and it arms on
+  the same line (0.25 s of clock). A clock those checks let pass is one it
+  watches, however briefly it ran before it stopped.
 - `clock-stall` with `state=running` and `feeding=yes` is the clock stopping
   with the song's sound ready: WebKit's output stopped asking for audio on
   that route. `feeding=no` means a stem's stream ran dry as well;
   `feeding=buffered` is a song decoded whole.
 - An `[audio route]` line that moves the sound off AirPlay as the room opens
   its mic (`iOS: category change`, or `no route for the category`) is iOS
-  taking the sound back to the phone, not a stall.
+  taking the sound back to the phone, not a stall. A new route also starts
+  the watch's 1.5 s over, as AirPlay picked mid-song takes a moment to set
+  up.
 - `[audio clock] shared: running -> interrupted` beside a route line is iOS
   interrupting Web Audio for it; the room pauses, and only play resumes it.
 - No `clock-stall` while the time on screen stands still: the clock moves and
   the frames do not, which is another bug.
-- A clock that never starts after play is the 700 ms start check's
-  (`clock-stuck`, "The song didn't start"); the stall watch takes over once
-  the clock has moved.
+- A clock that never moves after play is the 700 ms start check's
+  (`clock-stuck`), and one that never moves after the way back is the return
+  check's; both now end in the room's notice, as a stall does.
 
 A test build's audio record has the long form beside these: `output change
 route=airplay ... routeReason=...` and `census context-state`. Sources:
 [`audio-route-store.ts`](../../src/stores/audio-route-store.ts),
 [`shared-clock-log.ts`](../../apps/mercurypitch/src/infrastructure/shared-clock-log.ts),
-[`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts) and
+[`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
+[`sound-stopped.ts`](../../src/features/karaoke-room/sound-stopped.ts) and
 [`local-media.ts`](../../src/lib/local-media.ts), which keeps the unlock clip and
-the elements that feed Web Audio off AirPlay.
+the elements that feed Web Audio off AirPlay; the lock screen's carrier keeps
+itself off the same way
+([`webkit-now-playing.ts`](../../packages/mobile-runtime/src/webkit-now-playing.ts)).
 
 ## A TestFlight Subscribe that asks for the password
 
