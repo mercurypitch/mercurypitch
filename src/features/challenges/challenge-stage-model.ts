@@ -235,8 +235,8 @@ export interface ChallengeRunSummary {
 /**
  * Summarise a finished run with the drill's exact finalisation. "Scored"
  * notes are the windows the run reached (their end fell within
- * durationSec) — ending mid-window leaves the current note unscored, like
- * the drill's Stop & Score — and finalizeSightSingingScore spans the WHOLE
+ * durationSec) — ending mid-window leaves the current note unscored, as a
+ * Stop does in the drill — and finalizeSightSingingScore spans the WHOLE
  * sequence, so unsung notes count zero and a partial run cannot outscore an
  * honest full pass.
  */

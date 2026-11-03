@@ -8,7 +8,7 @@ import type { ScaleDegree } from '@/types'
 import { tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
-import { EXERCISE_SIGHT_SINGING } from '../types'
+import { EXERCISE_SIGHT_SINGING, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 
 export interface SightSingingNote {
@@ -75,7 +75,22 @@ export function finalizeSightSingingScore(
   }
 }
 
-export function useSightSingingController(base: BaseExerciseController) {
+export interface SightSingingOptions {
+  /**
+   * Whether this run is marked when stopped before its last note was graded
+   * (`stoppedEarlyMark`), so it is practice: no trend, best, weak list or
+   * armed challenge reads it. Read as the run ends; on by default. A weekly
+   * Legend attempt turns it off: like the Legend stage, it scores an early
+   * end itself, with unsung notes as 0, and that is the attempt.
+   */
+  marksStoppedRuns?: () => boolean
+}
+
+export function useSightSingingController(
+  base: BaseExerciseController,
+  options: SightSingingOptions = {},
+) {
+  const marksStoppedRuns = options.marksStoppedRuns ?? (() => true)
   let sequence: SightSingingNote[] = []
   let currentIndex = 0
   let noteStartTime = 0
@@ -286,6 +301,12 @@ export function useSightSingingController(base: BaseExerciseController) {
         notesScored: scored.length,
         avgAccuracy: final.avgAccuracy,
         bestNote: final.bestNote,
+        // The score already counts an unsung note as 0, so a Stop cannot
+        // pass a bar. Unmarked, it still pulled the trends, the best and
+        // the weak list down, and spent an armed challenge's attempt.
+        ...stoppedEarlyMark(
+          marksStoppedRuns() && scored.length < sequence.length,
+        ),
         // Over the WHOLE sequence, not just the notes that captured audio:
         // a run abandoned halfway presented every note it showed.
         ...tallyFromDeviations(

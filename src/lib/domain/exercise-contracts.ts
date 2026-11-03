@@ -224,6 +224,10 @@ export interface ExerciseResult {
  * A timed drill's end is its timer: a Stop with more than its last second
  * to run is marked (`endedBeforeTimer`), and on Manual the Stop is the end
  * once five seconds are sung (`settleTimedRun` in timer-preference.ts).
+ * A weekly Legend attempt is never marked: it scores an early end itself,
+ * with unsung notes as 0. It is one run, so the next run on the screen is
+ * an ordinary run, though the attempt's save may still be in flight, unless
+ * that save fails and leaves the attempt armed for a retry.
  */
 export function stoppedEarlyMark(stopped: boolean): Record<string, number> {
   return stopped ? { stoppedEarly: 1 } : {}
