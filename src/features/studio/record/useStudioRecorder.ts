@@ -47,6 +47,7 @@ import type { StudioPassesImport, StudioRecordingImport, } from '../controller/i
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioTimelineRecording } from '../timeline/types'
 import { studioTakeImport } from './take-import'
+import { setStudioTakeRunning } from './take-running'
 
 /** The microphone hold and the mic icon share this id. */
 export const STUDIO_RECORD_MIC_ID = 'studio-record'
@@ -440,6 +441,16 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     }
   }
 
+  function setSettings(next: StudioRecordSettings): void {
+    setSettingsSignal(writeStudioRecordSettings(next))
+    recorder.updateMonitor()
+  }
+
+  // Export, Compare, Auto-balance, Repeat and the range wait for the take.
+  const busy = () => running() || phase() === 'finishing'
+  createEffect(() => setStudioTakeRunning(busy()))
+  onCleanup(() => setStudioTakeRunning(false))
+
   async function discardRecovered(id: string): Promise<void> {
     await journal.discard(id).catch(() => undefined)
     await refreshRecovery()
@@ -466,7 +477,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     /** A count-in or a take is running: Space and seeks stop it. */
     running,
     /** Lane renders and warm-ups wait while a take counts in, records or is kept. */
-    busy: () => running() || phase() === 'finishing',
+    busy,
     canArm,
     press,
     stop,
@@ -474,9 +485,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     disarm: () => recorder.disarm(),
     clearMessages: () => recorder.clearMessages(),
     settings,
-    setSettings(next: StudioRecordSettings): void {
-      setSettingsSignal(writeStudioRecordSettings(next))
-      recorder.updateMonitor()
+    setSettings,
+    /** Punch, on the transport: Record keeps only the range. */
+    punch: {
+      on: () => settings().punch,
+      toggle: () => setSettings({ ...settings(), punch: !settings().punch }),
     },
     roundTrip,
     recovery,

@@ -394,6 +394,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     ready,
     repeating,
     async setRepeat(enabled: boolean): Promise<void> {
+      // A take keeps what Repeat and the range said when it started.
+      if (options.recording?.() === true) return
       const project = options.project()
       const assets = options.assets()
       setRepeating(enabled)
@@ -403,6 +405,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     range,
     /** Set or clear the range; a song playing it on Repeat follows. */
     async setRange(next: StudioFrameRange | null): Promise<void> {
+      if (options.recording?.() === true) return
       const kept = isStudioLoopRange(next) ? next : null
       setRangeSignal(kept)
       runtime.setLoopRange(kept)

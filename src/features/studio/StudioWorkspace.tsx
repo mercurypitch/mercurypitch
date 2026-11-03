@@ -123,7 +123,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     previewMacro: (name, value) => transport.previewMacro(name, value),
   })
   const project = () => props.studio.project()!
-  const canProcess = () => !props.studio.busy() && !props.studio.importing()
+  const canProcess = () =>
+    !props.studio.busy() && !props.studio.importing() && !recorder.busy()
   // The save queue takes edits while a save runs, so a save never disables
   // a fader mid-drag or unmounts the trim handles.
   const baseWritable = () =>
@@ -411,6 +412,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         hasAudio={project().clips.length > 0}
         repeating={transport.repeating()}
         onRepeat={() => void transport.setRepeat(!transport.repeating())}
+        ranged={transport.range() !== null}
+        punch={recorder.punch}
         onToggle={togglePlayback}
         onStart={() => seek(0)}
         onSeek={seek}
@@ -641,6 +644,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             }
             onSelectClip={setSelectedClipId}
             onSeek={seek}
+            range={transport.range()}
+            onRange={(next) => void transport.setRange(next)}
             onCommand={props.studio.dispatch}
             onClipDetails={(id) => {
               setSelectedClipId(id)

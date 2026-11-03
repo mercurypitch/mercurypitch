@@ -4,6 +4,7 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
+import { liveTakeSpan } from './StudioLaneTake'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
 
@@ -36,6 +37,19 @@ function elapsedSeconds(recorder: StudioRecorderHandle): number {
       ? 0
       : (live.fromFrame - live.heardFirst) / STUDIO_SAMPLE_RATE
   return Math.max(0, recorded - preRoll)
+}
+
+/** A take's words while it records: a loop's pass, a punch's pre-roll, or the lane alone. */
+function recordingWords(recorder: StudioRecorderHandle, lane: string): string {
+  const live = recorder.live()
+  const cut = live?.cut ?? null
+  if (live === null || cut === null) return `Recording on ${lane}`
+  const span = liveTakeSpan(live)
+  if (cut.mode === 'loop') return `Recording pass ${span.pass + 1} on ${lane}`
+  // Before the range the song plays in; inside it, the take ends at its end.
+  return span.to > span.from
+    ? `Recording on ${lane} until ${formatStudioMoment(cut.range.endFrame)}`
+    : `Recording on ${lane} from ${formatStudioMoment(cut.range.startFrame)}`
 }
 
 function ArmedHint(props: { recorder: StudioRecorderHandle }) {
@@ -97,68 +111,70 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
         )}
       </Show>
       <Show when={recorder().phase() !== 'idle'}>
-        <div
-          class={styles.status}
-          role="status"
-          data-studio-record-status={recorder().phase()}
-        >
-          <Switch>
-            <Match when={recorder().phase() === 'arming'}>
-              <p class={styles.statusText}>Opening the microphone…</p>
-            </Match>
-            <Match when={recorder().phase() === 'armed'}>
-              <span class={styles.statusMic}>
-                <MicSmall />
-              </span>
-              <p class={styles.statusText}>
-                <span>Armed on {lane()}. Press Record to start.</span>
-                <ArmedHint recorder={recorder()} />
-              </p>
-              <button
-                type="button"
-                class={common.textButton}
-                onClick={() => recorder().disarm()}
-              >
-                Disarm
-              </button>
-            </Match>
-            <Match when={recorder().phase() === 'counting'}>
-              <span class={styles.count} aria-hidden="true">
-                {recorder().view().countBeat ?? ''}
-              </span>
-              <p class={styles.statusText}>Counting in on {lane()}.</p>
-              <button
-                type="button"
-                class={common.textButton}
-                onClick={() => recorder().stop()}
-              >
-                Cancel
-              </button>
-            </Match>
-            <Match when={recorder().phase() === 'recording'}>
-              <span class={styles.statusMic}>
-                <MicSmall />
-              </span>
-              <p class={styles.statusText}>
-                <span>
-                  Recording on {lane()},{' '}
-                  <span class={styles.elapsed}>
-                    {wholeSeconds(Math.floor(elapsedSeconds(recorder())))}
-                  </span>
+        <div class={styles.statusDock}>
+          <div
+            class={styles.status}
+            role="status"
+            data-studio-record-status={recorder().phase()}
+          >
+            <Switch>
+              <Match when={recorder().phase() === 'arming'}>
+                <p class={styles.statusText}>Opening the microphone…</p>
+              </Match>
+              <Match when={recorder().phase() === 'armed'}>
+                <span class={styles.statusMic}>
+                  <MicSmall />
                 </span>
-              </p>
-              <button
-                type="button"
-                class={common.button}
-                onClick={() => recorder().stop()}
-              >
-                Stop
-              </button>
-            </Match>
-            <Match when={recorder().phase() === 'finishing'}>
-              <p class={styles.statusText}>Keeping the take…</p>
-            </Match>
-          </Switch>
+                <p class={styles.statusText}>
+                  <span>Armed on {lane()}. Press Record to start.</span>
+                  <ArmedHint recorder={recorder()} />
+                </p>
+                <button
+                  type="button"
+                  class={common.textButton}
+                  onClick={() => recorder().disarm()}
+                >
+                  Disarm
+                </button>
+              </Match>
+              <Match when={recorder().phase() === 'counting'}>
+                <span class={styles.count} aria-hidden="true">
+                  {recorder().view().countBeat ?? ''}
+                </span>
+                <p class={styles.statusText}>Counting in on {lane()}.</p>
+                <button
+                  type="button"
+                  class={common.textButton}
+                  onClick={() => recorder().stop()}
+                >
+                  Cancel
+                </button>
+              </Match>
+              <Match when={recorder().phase() === 'recording'}>
+                <span class={styles.statusMic}>
+                  <MicSmall />
+                </span>
+                <p class={styles.statusText}>
+                  <span>
+                    {recordingWords(recorder(), lane())},{' '}
+                    <span class={styles.elapsed}>
+                      {wholeSeconds(Math.floor(elapsedSeconds(recorder())))}
+                    </span>
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  class={common.button}
+                  onClick={() => recorder().stop()}
+                >
+                  Stop
+                </button>
+              </Match>
+              <Match when={recorder().phase() === 'finishing'}>
+                <p class={styles.statusText}>Keeping the take…</p>
+              </Match>
+            </Switch>
+          </div>
         </div>
       </Show>
       <Show when={recorder().phase() === 'idle' && message()}>

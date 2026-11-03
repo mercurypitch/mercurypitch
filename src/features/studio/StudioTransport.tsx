@@ -6,7 +6,8 @@ import { publishFootSpace } from '@/lib/foot-space'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
-import { PauseFilled, PlayFilled, SkipBackFilled } from './studio-icons'
+import { studioTakeRunning } from './record/take-running'
+import { PauseFilled, PlayFilled, PunchRange, SkipBackFilled, } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { formatStudioTime, parseStudioTime } from './timeline/timeline-geometry'
 
@@ -26,6 +27,10 @@ interface StudioTransportProps {
   hasAudio: boolean
   repeating: boolean
   onRepeat(): void
+  /** A range is set on the ruler: Repeat plays it, and Punch can record only it. */
+  ranged?: boolean
+  /** Punch: Record keeps only the range. Shown while there is one. */
+  punch?: { on(): boolean; toggle(): void }
   onToggle(): void
   onStart(): void
   onSeek(frame: number): void
@@ -88,13 +93,38 @@ export function StudioTransport(props: StudioTransportProps) {
         </Show>
       </button>
       {props.record}
+      <Show when={props.ranged === true && props.punch}>
+        {(punch) => (
+          <button
+            type="button"
+            class={styles.iconButton}
+            aria-label="Punch in"
+            title={
+              studioTakeRunning()
+                ? 'Stop the take to change Punch'
+                : 'Punch in: Record keeps only the range'
+            }
+            aria-pressed={punch().on()}
+            disabled={studioTakeRunning()}
+            onClick={() => punch().toggle()}
+          >
+            <PunchRange size={18} />
+          </button>
+        )}
+      </Show>
       <button
         type="button"
         class={styles.iconButton}
-        aria-label="Repeat song"
-        title="Repeat song"
+        aria-label={props.ranged === true ? 'Repeat range' : 'Repeat song'}
+        title={
+          studioTakeRunning()
+            ? 'Stop the take to change Repeat'
+            : props.ranged === true
+              ? 'Repeat the range'
+              : 'Repeat song'
+        }
         aria-pressed={props.repeating}
-        disabled={!props.hasAudio || props.pending}
+        disabled={!props.hasAudio || props.pending || studioTakeRunning()}
         onClick={() => props.onRepeat()}
       >
         <Repeat size={18} />

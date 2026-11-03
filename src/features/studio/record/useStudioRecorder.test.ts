@@ -1,4 +1,4 @@
-// Record in the Studio, the hook — R and Escape drive the recorder, repeat steps aside for a take, the mic icon and a lost mic follow the phase, and a journaled take is offered only while it is not in the song.
+// Record in the Studio, the hook — R and Escape drive the recorder, repeat steps aside for a take, the mic icon and a lost mic follow the phase, a journaled take is offered only while it is not in the song, and the controls that wait for a take hear when it runs.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
@@ -70,6 +70,9 @@ vi.mock('@/lib/local-save-navigation-reason', () => ({
 
 const { describeStudioRecordError, studioNextTakeNumber, useStudioRecorder } =
   await import('./useStudioRecorder')
+const { studioTakeRunning } = await import('./take-running')
+const { readStudioRecordSettings } =
+  await import('@/lib/studio/record/record-settings')
 
 const song = {
   id: 'song-1',
@@ -313,6 +316,30 @@ describe('useStudioRecorder', () => {
 
 describe('useStudioRecorder with a range', () => {
   const RANGE = { startFrame: 96000, endFrame: 144000 }
+
+  it('says a take runs from its count-in until it is kept, and toggles Punch for the next take', () => {
+    const { hook, dispose } = mount({ range: RANGE })
+    const running = () => studioTakeRunning()
+    mocks.onChange!(view({ phase: 'armed' }))
+    expect(running()).toBe(false)
+    mocks.onChange!(view({ phase: 'counting' }))
+    expect(running()).toBe(true)
+    mocks.onChange!(view({ phase: 'recording' }))
+    mocks.onChange!(view({ phase: 'finishing' }))
+    expect(running()).toBe(true)
+    mocks.onChange!(view({ phase: 'idle' }))
+    expect(running()).toBe(false)
+
+    const was = hook.punch.on()
+    hook.punch.toggle()
+    expect(hook.punch.on()).toBe(!was)
+    expect(readStudioRecordSettings().punch).toBe(!was)
+    hook.punch.toggle()
+    mocks.onChange!(view({ phase: 'recording' }))
+    dispose()
+    // A Studio closed mid-take holds nothing up.
+    expect(running()).toBe(false)
+  })
 
   it('keeps Repeat on for a loop take, so the range plays pass after pass', () => {
     const { hook, transport, dispose } = mount({ range: RANGE })

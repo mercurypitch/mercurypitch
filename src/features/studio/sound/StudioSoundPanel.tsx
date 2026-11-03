@@ -6,6 +6,8 @@ import type { StudioProject } from '@/lib/studio/model/types'
 import { LOUDNESS_PRESETS } from '@/lib/studio-fx/master'
 import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
 import { runStudioPanelAction } from '../export/action-focus'
+import { StudioTakeHold } from '../record/StudioTakeHold'
+import { studioTakeRunning } from '../record/take-running'
 import common from '../StudioPage.module.css'
 import { StudioComparisonControls } from './StudioComparisonControls'
 import { StudioFlavourChoices, studioSoundAdjusted, } from './StudioFlavourChoices'
@@ -28,6 +30,8 @@ export interface StudioSoundPanelProps {
 
 export function StudioSoundPanel(props: StudioSoundPanelProps) {
   const enabled = () => props.writable && !props.balance.busy()
+  // Compare and Auto-balance render the song: they wait for a take.
+  const rendering = () => enabled() && !studioTakeRunning()
   return (
     <div class={styles.panel}>
       <Show when={props.meter}>
@@ -116,7 +120,8 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
         {(comparison) => (
           <StudioComparisonControls
             comparison={comparison()}
-            enabled={enabled() && props.project.clips.length > 0}
+            enabled={rendering() && props.project.clips.length > 0}
+            hold={<StudioTakeHold to="compare" />}
           />
         )}
       </Show>
@@ -137,7 +142,7 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
               type="button"
               data-studio-finishing-action
               class={common.button}
-              disabled={!enabled() || props.project.clips.length === 0}
+              disabled={!rendering() || props.project.clips.length === 0}
               onClick={(event) => {
                 const action = props.balance.autoBalance
                 void runStudioPanelAction(event.currentTarget, action)
@@ -178,6 +183,7 @@ export function StudioSoundPanel(props: StudioSoundPanelProps) {
             </p>
           )}
         </Show>
+        <StudioTakeHold to="balance the tracks" />
       </section>
       {props.recording}
       <StudioPlaybackQuality song={props.project} />

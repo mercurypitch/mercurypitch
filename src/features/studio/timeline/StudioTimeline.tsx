@@ -11,11 +11,12 @@ import { StudioViewControls } from '../StudioViewControls'
 import { createStudioPlayheadMotion } from './playhead-motion'
 import { studioSourcePresentation } from './source-presentation'
 import { StudioClipToolbar } from './StudioClipToolbar'
+import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
 import { StudioTrackControls } from './StudioTrackControls'
 import type { StudioRulerTick } from './timeline-geometry'
-import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerTicks, } from './timeline-geometry'
+import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
 import type { StudioTimelineProps } from './types'
 import { useStudioPointer } from './useStudioPointer'
@@ -266,6 +267,16 @@ export function StudioTimeline(props: StudioTimelineProps) {
       ? {}
       : { transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)` }
   let press: { x: number; dragged: boolean } | null = null
+  let ruler!: HTMLDivElement
+  // The range on the ruler (StudioRulerRange.tsx) snaps as a clip's edge does.
+  const range = createStudioRangeTools({
+    frameAt: (event) => rulerFrame(event, ruler),
+    scale,
+    project: () => props.project,
+    playheadFrame: () => props.playheadFrame,
+    snapping: snap,
+    commit: (next) => props.onRange?.(next),
+  })
 
   function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
     const rect = ruler.getBoundingClientRect()
@@ -285,7 +296,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   }
 
   function dragRuler(event: PointerEvent, ruler: HTMLElement): void {
-    if (!press) return
+    if (range.draw.move(event) || !press) return
     // A hand that stays put on a playing song already jumped it on the press.
     const near = Math.abs(event.clientX - press.x) < RULER_DRAG_SLOP_PX
     if (props.playing === true && !press.dragged && near) return
@@ -294,6 +305,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   }
 
   function endScrub(commit: boolean): void {
+    if (range.draw.end(commit)) return
     const frame = scrubFrame()
     press = null
     setScrubFrame(null)
@@ -384,6 +396,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
           frameNow={props.playheadClock?.frameNow}
           writable={props.writable}
           onCommand={props.onCommand}
+          onRange={props.onRange}
           onDetails={() => props.onClipDetails(selected().id)}
           onRemove={() => props.onSelectClip(null)}
         />
@@ -446,45 +459,41 @@ export function StudioTimeline(props: StudioTimelineProps) {
               aria-valuemax={endFrame() / STUDIO_SAMPLE_RATE}
               aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
               aria-valuetext={formatStudioTime(props.playheadFrame)}
+              ref={(element) => (ruler = element)}
               onPointerDown={(event) => {
                 if (event.button !== 0) return
-                const ruler = event.currentTarget
                 event.preventDefault()
                 ruler.focus({ preventScroll: true })
                 ruler.setPointerCapture(event.pointerId)
-                pressRuler(event, ruler)
+                // Shift-drag draws a range instead of scrubbing.
+                if (!(props.onRange && range.draw.press(event)))
+                  pressRuler(event, ruler)
               }}
               onPointerMove={(event) => {
                 if (event.currentTarget.hasPointerCapture(event.pointerId))
-                  dragRuler(event, event.currentTarget)
+                  dragRuler(event, ruler)
               }}
               onPointerUp={() => endScrub(true)}
               onPointerCancel={() => endScrub(false)}
               onLostPointerCapture={() => endScrub(true)}
               onKeyDown={(event) => {
-                const direction =
-                  event.key === 'ArrowLeft'
-                    ? -1
-                    : event.key === 'ArrowRight'
-                      ? 1
-                      : 0
-                if (direction !== 0) {
-                  event.preventDefault()
-                  props.onSeek(
-                    Math.max(
-                      0,
-                      Math.min(
-                        endFrame(),
-                        props.playheadFrame + direction * STUDIO_SAMPLE_RATE,
-                      ),
-                    ),
-                  )
-                } else if (event.key === 'Home' || event.key === 'End') {
-                  event.preventDefault()
-                  props.onSeek(event.key === 'Home' ? 0 : contentEnd())
-                }
+                const frame = studioRulerKeyFrame(
+                  event.key,
+                  props.playheadFrame,
+                  endFrame(),
+                  contentEnd(),
+                )
+                if (frame === null) return
+                event.preventDefault()
+                props.onSeek(frame)
               }}
             >
+              <StudioRulerRange
+                tools={range}
+                range={props.range ?? null}
+                scale={scale()}
+                onChange={(next) => props.onRange?.(next)}
+              />
               {/* By slot: a scroll moves the same labels, it does not make new ones. */}
               <Index each={tickSlots()}>
                 {(slot) => {
@@ -699,6 +708,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
               }}
             />
           </Show>
+          <StudioRangeShade tools={range} range={props.range} scale={scale()} />
           <Show when={props.project.tracks.length > 0}>
             <div
               ref={(element) => onCleanup(motion.attach(element))}

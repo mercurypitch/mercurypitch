@@ -1,9 +1,10 @@
-// Studio export panel tests — final measurements and download never masquerade as a target or a saved file.
+// Studio export panel tests — final measurements and download never masquerade as a target or a saved file; Export waits for a take.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioWavExport } from '@/lib/studio/export/render-wav'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import { setStudioTakeRunning } from '../record/take-running'
 import { deferred, wavResult } from './export.test-fixtures'
 import { StudioExportPanel } from './StudioExportPanel'
 import type { StudioExportController } from './useStudioExport'
@@ -96,5 +97,20 @@ describe('Studio WAV panel', () => {
       ).disabled,
     ).toBe(true)
     expect(screen.queryByRole('button', { name: 'Download WAV' })).toBeNull()
+  })
+})
+
+describe('Export while a take records', () => {
+  afterEach(() => setStudioTakeRunning(false))
+
+  it('says the take holds it until there is a WAV to download', () => {
+    const ui = mount()
+    setStudioTakeRunning(true)
+    expect(
+      screen.getByText('A take is recording. Stop it to export the song.'),
+    ).toHaveAttribute('role', 'status')
+    ui.setResult(wavResult())
+    expect(screen.queryByText(/A take is recording/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Download WAV' })).toBeEnabled()
   })
 })

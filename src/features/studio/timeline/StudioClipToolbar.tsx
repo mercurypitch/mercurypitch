@@ -1,9 +1,13 @@
 // Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom,
 // or stacked as icons in the dock beside the arrangement while the desk is open.
+import { For, Show } from 'solid-js'
 import { Copy, Split, Trash2 } from '@/components/icons'
+import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip } from '@/lib/studio/model/types'
-import { InfoCircle } from '../studio-icons'
+import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
+import { studioTakeRunning } from '../record/take-running'
+import { InfoCircle, RangeBrackets } from '../studio-icons'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -22,8 +26,49 @@ interface StudioClipToolbarProps {
   /** In the dock beside the arrangement: icons only, the name kept for assistive tech. */
   docked?: boolean
   onCommand(command: StudioCommand): boolean
+  /** Set the ruler's range to this clip, for Repeat and Punch. */
+  onRange?(range: StudioFrameRange): void
   onDetails(): void
   onRemove(): void
+}
+
+/** A loop take's passes: which one the clip plays, picked from a list. */
+function PassPicker(props: {
+  clip: StudioClip
+  writable: boolean
+  onCommand(command: StudioCommand): boolean
+}) {
+  const pass = () => studioClipPass(props.clip)
+  return (
+    <Show when={pass()}>
+      {(shown) => (
+        <label class={styles.toolbarPass} title="The pass this clip plays">
+          <span class={styles.toolbarText}>Pass</span>
+          <select
+            aria-label="Pass this clip plays"
+            data-studio-pass-picker=""
+            disabled={!props.writable}
+            value={props.clip.assetId}
+            onChange={(event) =>
+              props.onCommand({
+                type: 'choose-pass',
+                clipId: props.clip.id,
+                assetId: event.currentTarget.value,
+              })
+            }
+          >
+            <For each={props.clip.passes}>
+              {(assetId, index) => (
+                <option value={assetId}>
+                  {`${index() + 1} of ${shown().count}`}
+                </option>
+              )}
+            </For>
+          </select>
+        </label>
+      )}
+    </Show>
+  )
 }
 
 export function StudioClipToolbar(props: StudioClipToolbarProps) {
@@ -87,6 +132,33 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         <Copy size={15} />
         <span class={styles.toolbarText}>Duplicate</span>
       </button>
+      <Show when={props.onRange}>
+        {(setRange) => (
+          <button
+            type="button"
+            title={
+              studioTakeRunning()
+                ? 'Stop the take to change the range'
+                : 'Set the range to this clip, for Repeat and Punch'
+            }
+            disabled={studioTakeRunning()}
+            onClick={() =>
+              setRange()({
+                startFrame: props.clip.startFrame,
+                endFrame: clipEndFrame(props.clip),
+              })
+            }
+          >
+            <RangeBrackets size={15} />
+            <span class={styles.toolbarText}>Range</span>
+          </button>
+        )}
+      </Show>
+      <PassPicker
+        clip={props.clip}
+        writable={props.writable}
+        onCommand={(command) => props.onCommand(command)}
+      />
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
         type="button"

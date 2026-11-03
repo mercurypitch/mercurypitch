@@ -1,6 +1,7 @@
 // Studio timeline contracts — view state and edit callbacks stay outside persistence.
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
 import type { StudioPlayheadClock } from './playhead-motion'
 import type { StudioWaveformPeaksStore } from './waveform-resource'
@@ -63,4 +64,8 @@ export interface StudioTimelineProps {
   assetPeaks?: StudioWaveformPeaksStore
   /** A take being recorded, from arming until it is kept. */
   record?: StudioTimelineRecording | null
+  /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */
+  range?: StudioFrameRange | null
+  /** Set or clear the range: Shift-drag on the ruler, its handles, or a clip's toolbar. */
+  onRange?(range: StudioFrameRange | null): void
 }

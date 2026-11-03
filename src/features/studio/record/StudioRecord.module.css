@@ -101,20 +101,33 @@
   transform-origin: left center;
 }
 
-.status {
-  display: flex;
+/* The status floats over the top of the arrangement: arming, the count-in
+   and the take never push the lanes down or pull them back up. */
+.statusDock {
+  position: relative;
+  z-index: 30;
   flex: none;
+  height: 0;
+}
+.status {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px 14px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--studio-line);
-  background: var(--studio-bar);
-  box-shadow: inset 3px 0 0 var(--red, #e5484d);
+  width: min(680px, calc(100% - 32px));
+  min-height: 48px;
+  padding: 6px 8px 6px 16px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 12px;
+  background: var(--studio-raised, var(--studio-bar));
+  box-shadow:
+    inset 3px 0 0 var(--red, #e5484d),
+    var(--studio-shadow, 0 6px 20px rgb(0 0 0 / 0.25));
   color: var(--studio-text);
-  /* One height from armed through the take: the lanes below hold still as
-     the count-in turns into the take. */
-  min-height: 54px;
+  transform: translateX(-50%);
 }
 .status p {
   margin: 0;
@@ -164,8 +177,9 @@
 @media (max-width: 599px) {
   .status {
     gap: 10px;
-    min-height: 48px;
-    padding: 6px 12px;
+    width: calc(100% - 16px);
+    min-height: 44px;
+    padding: 4px 6px 4px 12px;
   }
   .statusHint {
     display: none;

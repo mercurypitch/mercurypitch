@@ -1,10 +1,11 @@
-// Studio Sound tests — native sliders keep one gesture per command and reset from saved sound.
+// Studio Sound tests — native sliders keep one gesture per command and reset from saved sound; Auto-balance waits for a take.
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
+import { setStudioTakeRunning } from '../record/take-running'
 import { StudioSoundPanel } from './StudioSoundPanel'
 import type { StudioSoundController } from './useStudioSound'
 
@@ -126,3 +127,20 @@ describe('Studio sound controls', () => {
 function fixtureEqHighCut(): number {
   return studioFixture().project.master.masterEq.highCutHz
 }
+
+describe('Auto-balance while a take records', () => {
+  afterEach(() => setStudioTakeRunning(false))
+
+  it('waits for the take, says why, and keeps the sound controls in reach', () => {
+    mount()
+    setStudioTakeRunning(true)
+    expect(screen.getByRole('button', { name: 'Auto-balance' })).toBeDisabled()
+    expect(
+      screen.getByText('A take is recording. Stop it to balance the tracks.'),
+    ).toBeVisible()
+    expect(screen.getByRole('slider', { name: 'Tone' })).toBeEnabled()
+    setStudioTakeRunning(false)
+    expect(screen.getByRole('button', { name: 'Auto-balance' })).toBeEnabled()
+    expect(screen.queryByText(/A take is recording/)).toBeNull()
+  })
+})

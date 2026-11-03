@@ -1,7 +1,8 @@
-// Studio transport tests — the typed clock seeks silently, clamps to the song and refuses non-times.
+// Studio transport tests — the typed clock seeks silently, clamps to the song and refuses non-times; Repeat and Punch follow the range.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setStudioTakeRunning } from './record/take-running'
 import { StudioTransport } from './StudioTransport'
 
 afterEach(cleanup)
@@ -75,4 +76,62 @@ it('holds the focused time while the song plays, so typing replaces it', () => {
   expect(onSeek).toHaveBeenLastCalledWith(50 * 48000)
   fireEvent.blur(clock)
   expect(clock).toHaveValue('1:24.000')
+})
+
+describe('Repeat and Punch with a range', () => {
+  afterEach(() => setStudioTakeRunning(false))
+
+  function renderRanged(ranged: boolean) {
+    const [on, setOn] = createSignal(false)
+    const toggle = vi.fn(() => setOn((now) => !now))
+    render(() => (
+      <StudioTransport
+        playing={false}
+        pending={false}
+        playheadFrame={0}
+        endFrame={60 * 48000}
+        peakL={0}
+        peakR={0}
+        meter={null}
+        meterReady={false}
+        onResetPeakHold={vi.fn()}
+        hasAudio={true}
+        repeating={false}
+        onRepeat={vi.fn()}
+        ranged={ranged}
+        punch={{ on, toggle }}
+        onToggle={vi.fn()}
+        onStart={vi.fn()}
+        onSeek={vi.fn()}
+      />
+    ))
+    return { toggle }
+  }
+
+  it('repeats the song, with no Punch, until a range is set', () => {
+    renderRanged(false)
+    expect(screen.getByRole('button', { name: 'Repeat song' })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Punch in' })).toBeNull()
+  })
+
+  it('names Repeat for the range and toggles Punch beside it', async () => {
+    const { toggle } = renderRanged(true)
+    expect(screen.getByRole('button', { name: 'Repeat range' })).toBeEnabled()
+    const punch = screen.getByRole('button', { name: 'Punch in' })
+    expect(punch).toHaveAttribute('aria-pressed', 'false')
+    await fireEvent.click(punch)
+    expect(toggle).toHaveBeenCalledOnce()
+    expect(punch).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('holds Repeat and Punch while a take runs: the take keeps what they said when it started', () => {
+    renderRanged(true)
+    setStudioTakeRunning(true)
+    expect(screen.getByRole('button', { name: 'Repeat range' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Punch in' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Punch in' })).toHaveAttribute(
+      'title',
+      'Stop the take to change Punch',
+    )
+  })
 })
