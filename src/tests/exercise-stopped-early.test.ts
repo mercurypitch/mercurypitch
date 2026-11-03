@@ -671,6 +671,23 @@ describe('a timed drill stopped before its timer runs out', () => {
     },
   )
 
+  it.each(timed)(
+    '%s counts a Stop once its ten seconds are up as a whole run',
+    (_name, setUp) => {
+      setTimerMode(10)
+      // The shell checks the timer every 100 ms, so a Stop can land after
+      // the length has run out and before the shell ends the run. A Stop
+      // pressed as the countdown reaches zero is the run's end too.
+      const afterTheEnd = setUp(mockBase({ _getElapsed: () => 10_050 }))()
+      const atTheEnd = setUp(mockBase({ _getElapsed: () => 9_900 }))()
+      const short = setUp(mockBase({ _getElapsed: () => 9_000 }))()
+
+      expect(runStoppedEarly(afterTheEnd.metrics)).toBe(false)
+      expect(runStoppedEarly(atTheEnd.metrics)).toBe(false)
+      expect(runStoppedEarly(short.metrics)).toBe(true)
+    },
+  )
+
   it('completes no basics challenge with one second of Long Note, where the run to its timer does', async () => {
     setTimerMode(10)
     beginChallengeAttempt(ROCK_SOLID)
