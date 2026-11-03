@@ -1249,6 +1249,11 @@
 .phone .filler {
   min-height: 0;
 }
+/* A lane is armed or records: the record card floats above the clip bar and
+   zoom (StudioRecord.module.css, .status), so the room grows to clear it. */
+.armed .filler {
+  min-height: 140px;
+}
 
 .snapLine {
   position: absolute;

@@ -33,7 +33,7 @@ import { MixingDesk, RotateCw } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
 import { StudioTransport } from './StudioTransport'
-import { StudioWorkspaceNotices } from './StudioWorkspaceNotices'
+import { StudioRecordStatus, StudioWorkspaceNotices, } from './StudioWorkspaceNotices'
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { studioContentEnd } from './timeline/timeline-geometry'
 import type { StudioController } from './useStudioController'
@@ -659,6 +659,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             assetPeaks={props.studio.assetPeaks}
             record={recorder.timeline()}
           />
+          <StudioRecordStatus recorder={recorder} />
           <Show when={deskOpen()}>
             <StudioMixDesk
               project={project()}

@@ -273,10 +273,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
   const range = createStudioRangeTools({
     frameAt: (event) => rulerFrame(event, ruler),
     scale,
-    project: () => props.project,
-    playheadFrame: () => props.playheadFrame,
     snapping: snap,
-    commit: (next) => props.onRange?.(next),
+    timeline: props,
   })
 
   function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
@@ -413,6 +411,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.tablet]: !props.phone && props.tablet === true,
         [styles.editing]: pointer.active(),
         [styles.docking]: docked(),
+        [styles.armed]: props.record != null,
       }}
       aria-label="Song arrangement"
       data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
