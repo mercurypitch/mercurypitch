@@ -2,22 +2,28 @@
 import { TRACK_ROLES } from '@/lib/studio-fx/role-chains'
 import { STUDIO_MAX_CLIP_PASSES, studioPassAt, studioPassWindow, } from './clip-passes'
 import type { StudioAsset, StudioClip, StudioClipPasses, StudioTrack, } from './types'
+import { validateStudioLaneAutomation } from './validation-automation'
 import { validateStudioChain } from './validation-fx'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
 
 export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
-  const value = record(raw, path, [
-    'id',
-    'name',
-    'order',
-    'role',
-    'gainDb',
-    'balanceGainDb',
-    'pan',
-    'mute',
-    'solo',
-    'fx',
-  ])
+  const value = record(
+    raw,
+    path,
+    [
+      'id',
+      'name',
+      'order',
+      'role',
+      'gainDb',
+      'balanceGainDb',
+      'pan',
+      'mute',
+      'solo',
+      'fx',
+    ],
+    ['automation'],
+  )
   idValue(value.id, `${path}.id`)
   textValue(value.name, `${path}.name`)
   frameValue(value.order, `${path}.order`)
@@ -35,6 +41,8 @@ export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
   enumValue(fx.version, [1], `${path}.fx.version`)
   validateStudioChain(fx.baseSpec, `${path}.fx.baseSpec`)
   numberValue(fx.spaceOffset, `${path}.fx.spaceOffset`, -100, 100)
+  if (value.automation !== undefined)
+    validateStudioLaneAutomation(value.automation, `${path}.automation`)
   return structuredClone(raw) as StudioTrack
 }
 

@@ -1,6 +1,8 @@
 // Studio commands — atomic non-destructive edits with monotonic save revisions.
 import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
+import type { StudioAutomationEdit } from './automation'
+import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
 import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioPasteEdit } from './placement-commands'
@@ -17,6 +19,7 @@ export type StudioEdit =
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
+  | StudioAutomationEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
   | { readonly type: 'add-clip'; readonly clip: StudioClip }
@@ -240,6 +243,8 @@ function editClip(
 
 function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioSoundEdit(edit)) return applyStudioSoundEdit(project, edit)
+  if (isStudioAutomationEdit(edit))
+    return applyStudioAutomationEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':

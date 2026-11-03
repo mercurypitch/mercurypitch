@@ -45,6 +45,22 @@ describe('Studio edit history', () => {
     ])
   })
 
+  it('names a line edit by the line it drew', () => {
+    // Arrange
+    const line = (param: 'volume' | 'pan', value: number): StudioCommand => ({
+      type: 'set-lane-automation',
+      trackId: 'keys',
+      param,
+      points: [{ frame: 0, value }],
+    })
+
+    // Act
+    const labels = labelsFor(line('volume', -6), line('pan', 0.5))
+
+    // Assert
+    expect(labels).toEqual(['volume line', 'pan line'])
+  })
+
   it('keeps the name for Redo after an Undo', () => {
     let history = createStudioEditHistory({
       ...createStudioProject({ id: 'song', title: 'Label song' }),

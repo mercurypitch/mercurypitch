@@ -18,6 +18,7 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'remove-track': 'remove lane',
   'update-track': 'change lane',
   'set-track-role': 'change lane role',
+  'set-lane-automation': 'change line',
   'remove-clip': 'remove clip',
   'move-clip': 'move clip',
   'move-clip-to-new-track': 'move clip to new lane',
@@ -53,6 +54,7 @@ function trackChangeLabel(changes: TrackChanges): string {
 
 function commandLabel(command: StudioCommand): string {
   if (command.type === 'update-track') return trackChangeLabel(command.changes)
+  if (command.type === 'set-lane-automation') return `${command.param} line`
   if (command.type !== 'batch') return EDIT_LABELS[command.type]
   return command.commands.every((edit) => edit.type === 'add-audio')
     ? 'add takes'

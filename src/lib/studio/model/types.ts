@@ -59,6 +59,25 @@ export interface StudioTrack {
     readonly baseSpec: ChainSpec
     readonly spaceOffset: number
   }
+  /** Volume and pan lines over the song (automation.ts); absent, the faders hold still. */
+  readonly automation?: StudioLaneAutomation
+}
+
+/** A point on a lane's line: the control's value at this frame of the song. */
+export interface StudioAutomationPoint {
+  readonly frame: Frame
+  readonly value: number
+}
+
+/**
+ * A lane's volume line, in fader decibels, and its pan line, -1 full left
+ * to 1 full right: each straight between its points, in time order, and
+ * flat beyond its first and last. A line left out leaves its control where
+ * the fader or the knob is.
+ */
+export interface StudioLaneAutomation {
+  readonly volume?: readonly StudioAutomationPoint[]
+  readonly pan?: readonly StudioAutomationPoint[]
 }
 
 export interface FadeRamp {
