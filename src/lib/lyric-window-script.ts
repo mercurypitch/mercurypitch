@@ -58,13 +58,22 @@ const STEP = 0.02
 /** Seconds to the millisecond: the script crosses the bridge as JSON. */
 const ms = (seconds: number): number => Math.round(seconds * 1000) / 1000
 
+/**
+ * A time in seconds the script can walk to, or 0 for one it cannot: not
+ * known yet, or not a finite number. The script samples every STEP up to
+ * the song's end, so an Infinity there (a stream whose length the player
+ * does not know) would never finish, and would hang the page.
+ */
+const usable = (seconds: number): number =>
+  Number.isFinite(seconds) && seconds > 0 ? seconds : 0
+
 /** The last moment the lyrics speak of, for a song with no length yet. */
 function lyricsEnd(source: LyricWindowSource): number {
   let end = 0
   for (const line of source.lines.values()) {
-    end = Math.max(end, line.endTime ?? line.time ?? 0)
+    end = Math.max(end, usable(line.endTime ?? line.time ?? 0))
   }
-  for (const line of source.timed) end = Math.max(end, line.time)
+  for (const line of source.timed) end = Math.max(end, usable(line.time))
   return end
 }
 
@@ -107,7 +116,7 @@ function close(segment: OpenSegment, until: number): LyricWindowSegment {
 export function lyricWindowScript(
   source: LyricWindowSource,
 ): LyricWindowScript {
-  const duration = source.duration > 0 ? source.duration : 0
+  const duration = usable(source.duration)
   const end = duration > 0 ? duration : lyricsEnd(source)
   const segments: OpenSegment[] = []
   let open: OpenSegment | null = null
