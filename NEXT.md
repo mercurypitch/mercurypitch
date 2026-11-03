@@ -3084,3 +3084,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - The stopped-run PR: agent in /dev/shm/s2stop, then a reviewer, PR and merge.
     - The 05:52 safety-net check-in (trig_01XStooDEDs9XK8zF7DVXcnS) covers the agent.
   - Owner report sent 05:0x.
+- 3 Nov 05:3x:
+  - Stopped-run agent done. 12 drills; stopped runs marked stoppedEarly:1; bars read comparableExerciseHistory().
+  - A stopped run sends NO server session record (a mark would need a D1 column). The owner's trade-off: stopped runs are missing from the account calendar, Progress time and board counts.
+  - Branch rebased onto 5184a0221: f9a991368 fix, 64d167817 Chord Stacker 90 s, 9420109d6 index; pushed.
+  - Reviewer running (s2pkg/STOP-REVIEW-BRIEF.md, report s2pkg/STOP-REVIEW.md, worktree /dev/shm/s2srev). Its brief includes assessing the trade-off against a D1 column plus migration.
+  - Next: fix the findings, open the PR, then put the trade-off to the owner (ask) before merging.
