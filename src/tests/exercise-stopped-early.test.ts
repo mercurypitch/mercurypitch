@@ -425,97 +425,137 @@ describe('a run recorded before the mark', () => {
 })
 
 describe('every drill that grades the rounds it reached', () => {
-  // Stopped before a single round is graded: the shortest stop there is,
-  // and one each drill used to record as a low run. Arpeggio Jumper, which
+  // Each drill is held at both ends of what Stop can do: before a single
+  // round is graded, the shortest stop there is and one each drill used to
+  // record as a low run; and after its last round is graded, in the pause
+  // before it ends itself, which is a whole run. Arpeggio Jumper, which
   // marked its stopped runs first, has its own tests.
-  const drills: Array<[string, (base: BaseExerciseController) => () => void]> =
+  type Drill = (base: BaseExerciseController) => {
+    start: () => unknown
+    stop: () => void
+  }
+  const drills: Array<[string, Drill]> = [
     [
-      [
-        'Scale Runner',
-        (base) => {
-          const c = useScaleRunnerController(base, quiet)
-          c.setScale(60, 'major', 'up')
-          return c.stopScale
-        },
+      'Scale Runner',
+      (base) => {
+        const c = useScaleRunnerController(base, quiet)
+        c.setScale(60, 'major', 'up')
+        return { start: c.startScale, stop: c.stopScale }
+      },
+    ],
+    [
+      'Drone Intonation',
+      (base) => {
+        const c = useDroneIntonationController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Siren',
+      (base) => {
+        const c = useSirenController(base, quiet)
+        c.setBase(60, 48, 72)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Chord Stacker',
+      (base) => {
+        const c = useChordStackerController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Interval Trainer',
+      (base) => {
+        const c = useIntervalTrainerController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Call & Response',
+      (base) => {
+        const c = useCallResponseController(base, quiet)
+        c.setBase(60, { min: 48, max: 72 })
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Dynamic Swell',
+      (base) => {
+        const c = useDynamicSwellController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Mirror Melody',
+      (base) => {
+        const c = useMirrorMelodyController(base, quiet)
+        c.setMelody(60, { min: 48, max: 72 })
+        return { start: c.startSequence, stop: c.stopSequence }
+      },
+    ],
+    [
+      'Staccato Precision',
+      (base) => {
+        const c = useStaccatoPrecisionController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRounds, stop: c.stopRounds }
+      },
+    ],
+    [
+      'Routine Runner',
+      (base) => {
+        const c = useRoutineRunnerController(base, quiet)
+        c.setBase(60)
+        return { start: c.startRoutine, stop: c.stopRoutine }
+      },
+    ],
+    [
+      'Pitch Pursuit',
+      (base) => {
+        const c = usePitchPursuitController(base)
+        return { start: c.startGame, stop: c.stopGame }
+      },
+    ],
+  ]
+
+  // Pitch Pursuit runs on animation frames and the performance clock.
+  beforeEach(() => {
+    vi.useRealTimers()
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'performance',
+        'Date',
       ],
-      [
-        'Drone Intonation',
-        (base) => {
-          const c = useDroneIntonationController(base, quiet)
-          c.setBase(60)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Siren',
-        (base) => {
-          const c = useSirenController(base, quiet)
-          c.setBase(60, 48, 72)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Chord Stacker',
-        (base) => {
-          const c = useChordStackerController(base, quiet)
-          c.setBase(60)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Interval Trainer',
-        (base) => {
-          const c = useIntervalTrainerController(base, quiet)
-          c.setBase(60)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Call & Response',
-        (base) => {
-          const c = useCallResponseController(base, quiet)
-          c.setBase(60, { min: 48, max: 72 })
-          return c.stopRounds
-        },
-      ],
-      [
-        'Dynamic Swell',
-        (base) => {
-          const c = useDynamicSwellController(base, quiet)
-          c.setBase(60)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Mirror Melody',
-        (base) => {
-          const c = useMirrorMelodyController(base, quiet)
-          c.setMelody(60, { min: 48, max: 72 })
-          return c.stopSequence
-        },
-      ],
-      [
-        'Staccato Precision',
-        (base) => {
-          const c = useStaccatoPrecisionController(base, quiet)
-          c.setBase(60)
-          return c.stopRounds
-        },
-      ],
-      [
-        'Routine Runner',
-        (base) => {
-          const c = useRoutineRunnerController(base, quiet)
-          c.setBase(60)
-          return c.stopRoutine
-        },
-      ],
-      ['Pitch Pursuit', (base) => usePitchPursuitController(base).stopGame],
-    ]
+    })
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** Math.random from one seed, so a drill run twice is the same run. */
+  const seedRandom = (): void => {
+    let state = 42
+    vi.spyOn(Math, 'random').mockImplementation(() => {
+      state = (state * 16_807) % 2_147_483_647
+      return (state - 1) / 2_147_483_646
+    })
+  }
 
   it.each(drills)('%s marks a run stopped before its end', (_name, setUp) => {
     const results: ExerciseResult[] = []
-    const stop = setUp(
+    const { stop } = setUp(
       mockBase({ _completeWithResult: (r) => results.push(r) }),
     )
 
@@ -524,6 +564,43 @@ describe('every drill that grades the rounds it reached', () => {
     expect(results).toHaveLength(1)
     expect(runStoppedEarly(results[0]!.metrics)).toBe(true)
   })
+
+  it.each(drills)(
+    '%s leaves a run whole when Stop comes after its last round',
+    async (_name, setUp) => {
+      // The run sung to its end, to learn when it ends itself...
+      seedRandom()
+      const t0 = Date.now()
+      let endsAt: number | null = null
+      const first = setUp(
+        mockBase({
+          _completeWithResult: () => {
+            endsAt ??= Date.now() - t0
+          },
+        }),
+      )
+      await first.start()
+      while (endsAt === null && Date.now() - t0 < 600_000) {
+        await vi.advanceTimersByTimeAsync(1_000)
+      }
+      if (endsAt === null) throw new Error('the run never ended by itself')
+
+      // ...then the same run, stopped a moment before that: every round
+      // graded, and the drill not yet ended.
+      seedRandom()
+      const results: ExerciseResult[] = []
+      const again = setUp(
+        mockBase({ _completeWithResult: (r) => results.push(r) }),
+      )
+      await again.start()
+      await vi.advanceTimersByTimeAsync(endsAt - 1)
+      expect(results).toEqual([])
+      again.stop()
+
+      expect(results).toHaveLength(1)
+      expect(runStoppedEarly(results[0]!.metrics)).toBe(false)
+    },
+  )
 })
 
 describe('a timed drill stopped before its timer runs out', () => {

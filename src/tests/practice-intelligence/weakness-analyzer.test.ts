@@ -3,6 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest'
+import { exerciseScoringVersion } from '@/features/exercises/exercise-comparability'
 import { findWeakExercises, findWeakIntervals, findWeakPitches, generateWeaknessReport, hasWeaknesses, } from '@/features/practice-intelligence/weakness-analyzer'
 import { applyPersistedValue } from '@/lib/storage'
 import { clearExerciseHistory, flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
@@ -193,6 +194,45 @@ describe('findWeakIntervals', () => {
     const intervals = findWeakIntervals()
     // Only small has data and it's above 60, so empty
     expect(intervals.length).toBe(0)
+  })
+
+  it('leaves out a stopped run, whose averages cover only the intervals it reached', () => {
+    // Arrange: a run stopped on its first, worst interval, newest, beside
+    // a whole run that sang every category well.
+    clearAll()
+    const scoringVersion = exerciseScoringVersion('interval-trainer')
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify([
+        {
+          type: 'interval-trainer',
+          score: 30,
+          metrics: {
+            smallIntervalAvg: 30,
+            mediumIntervalAvg: 0,
+            largeIntervalAvg: 0,
+            stoppedEarly: 1,
+          },
+          completedAt: 2,
+          scoringVersion,
+        },
+        {
+          type: 'interval-trainer',
+          score: 80,
+          metrics: {
+            smallIntervalAvg: 80,
+            mediumIntervalAvg: 75,
+            largeIntervalAvg: 70,
+          },
+          completedAt: 1,
+          scoringVersion,
+        },
+      ]),
+    )
+
+    // Act / Assert: averaged in, it pulled small intervals to 55, under
+    // the 60 line.
+    expect(findWeakIntervals()).toEqual([])
   })
 })
 
