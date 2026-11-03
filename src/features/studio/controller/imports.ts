@@ -2,6 +2,7 @@
 import { audioUploadValidationError } from '@/lib/audio-upload-contract'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { studioSongAssetIds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
@@ -246,7 +247,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
         const known = [...options.assets(), ...adding]
         // The takes the song plays, and the ones this import is adding.
         const inUse = new Set([
-          ...(options.project()?.clips ?? []).map((clip) => clip.assetId),
+          ...studioSongAssetIds(options.project()?.clips ?? []),
           ...adding.map((asset) => asset.id),
         ])
         selected.push({

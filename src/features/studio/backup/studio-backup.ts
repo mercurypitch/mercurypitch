@@ -6,6 +6,7 @@ import type { StudioService } from '@/db/services/studio-service'
 import { StudioStorageError } from '@/db/services/studio-service'
 import { checkCanonicalStream, checkOriginalStream, } from '@/lib/studio/audio/stream-check'
 import { isStudioMemoryRefusal, releaseStudioResource, reserveStudioMemory, retainStudioResource, StudioMemoryError, } from '@/lib/studio/memory-budget'
+import { studioSongAssetIds } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { readStudioArchive, studioBackupAssetPath, StudioBackupError, } from './archive-codec'
@@ -89,7 +90,7 @@ function manifestFromJson(value: unknown): StudioBackupManifest {
     value.project,
     assets.map((entry) => entry.asset),
   )
-  const referenced = new Set(project.clips.map((clip) => clip.assetId))
+  const referenced = studioSongAssetIds(project.clips)
   if (assets.some(({ asset }) => !referenced.has(asset.id))) {
     throw new StudioBackupError(
       'The project backup contains audio outside its arrangement.',
@@ -114,7 +115,7 @@ function backupSources(
   const staged = new Map(
     (options.preparedAssets ?? []).map((data) => [data.asset.id, data]),
   )
-  return [...new Set(snapshot.clips.map((clip) => clip.assetId))].map((id) => {
+  return [...studioSongAssetIds(snapshot.clips)].map((id) => {
     const asset =
       staged.get(id)?.asset ??
       options.assetMetadata?.find((known) => known.id === id)

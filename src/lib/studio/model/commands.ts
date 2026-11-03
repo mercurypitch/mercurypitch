@@ -83,6 +83,11 @@ export type StudioEdit =
       readonly gainDb: number
     }
   | {
+      readonly type: 'choose-pass'
+      readonly clipId: string
+      readonly assetId: string
+    }
+  | {
       readonly type: 'set-project-settings'
       readonly changes: Partial<
         Pick<StudioProject, 'tempoBpm' | 'ruler' | 'mix' | 'master' | 'export'>
@@ -188,6 +193,13 @@ function editClip(
       return replaceClip(project, { ...clip, fades: edit.fades })
     case 'set-clip-gain':
       return replaceClip(project, { ...clip, gainDb: edit.gainDb })
+    case 'choose-pass':
+      requireValue(
+        clip.passes?.includes(edit.assetId) === true,
+        `clip.${clip.id}.passes`,
+        "Pass is not one of the clip's",
+      )
+      return replaceClip(project, { ...clip, assetId: edit.assetId })
     case 'duplicate-clip':
       return duplicateClip(project, edit)
     case 'split-clip': {
