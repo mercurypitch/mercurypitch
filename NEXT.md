@@ -3099,3 +3099,4 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - Ask the owner the trade-off (AskUserQuestion): merge fail-closed now (recommended), D1 column first, or hold.
     - On a yes and green CI: merge --rebase and verify.
     - Final short report. Include: stopped runs fire no analytics event; Session mode has the same defect (out of scope); Pitch Pursuit's card says 12 at every level.
+- 3 Nov 07:1x: OWNER DECISION on #1323: "Merge as is (Recommended)". Fail-closed; stopped runs stay off the server. A D1 column can follow later if wanted. Merge once CI and the verification review are green. Safety-net check-in trig_01WR5tiMqSia7xisoMzooV7x fires 08:04.
