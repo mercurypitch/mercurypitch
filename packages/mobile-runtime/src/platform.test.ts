@@ -1019,6 +1019,9 @@ describe('on a phone', () => {
       hasAttribute(name: string): boolean {
         return name === 'src' && this.source !== null
       }
+      setAttribute(name: string, value: string): void {
+        if (name === 'src') this.source = value
+      }
       removeAttribute(name: string): void {
         if (name === 'src') this.source = null
       }

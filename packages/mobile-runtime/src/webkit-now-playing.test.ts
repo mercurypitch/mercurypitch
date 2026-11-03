@@ -80,11 +80,20 @@ class FakeCarrier extends EventTarget {
   }
 
   hasAttribute(name: string): boolean {
-    return name === 'src' && this.source !== null
+    return name === 'src' ? this.source !== null : this.attributes.has(name)
+  }
+
+  /** Attributes other than `src`, as the element keeps them. */
+  readonly attributes = new Map<string, string>()
+
+  setAttribute(name: string, value: string): void {
+    if (name === 'src') this.source = value
+    else this.attributes.set(name, value)
   }
 
   removeAttribute(name: string): void {
     if (name === 'src') this.source = null
+    else this.attributes.delete(name)
   }
 
   /** Fire the events queued so far, in order. */
@@ -264,6 +273,8 @@ describe('a song on the lock screen', () => {
     expect(carrier.src).toBe('blob:silence')
     expect(carrier.loop).toBe(true)
     expect(carrier.disableRemotePlayback).toBe(true)
+    // Read by WebKit on iOS whatever its settings, Lockdown Mode included.
+    expect(carrier.attributes.get('x-webkit-airplay')).toBe('deny')
     expect(carrier.play).toHaveBeenCalledTimes(1)
     expect(carrier.paused).toBe(false)
   })

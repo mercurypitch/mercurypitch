@@ -665,7 +665,8 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     try {
       nextRack = createFxRack(context, { safetyLimiter: true })
       nextRack.setSettings(playbackRoomSettings(take))
-      nextSource = context.createMediaElementSource(element)
+      // Local at the hand-over too: whoever made it, its sound is the room's.
+      nextSource = context.createMediaElementSource(keepMediaLocal(element))
       nextSource.connect(nextRack.input)
       listeningRack = nextRack
       listeningSource = nextSource
