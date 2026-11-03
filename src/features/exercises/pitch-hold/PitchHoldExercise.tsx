@@ -12,8 +12,9 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { stopLabelForTimer } from '../timer-preference'
 import type { GuidedPracticeLaunchConfig } from '../types'
-import { EXERCISE_PITCH_HOLD } from '../types'
+import { EXERCISE_PITCH_HOLD, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchHoldController } from './use-pitch-hold-controller'
 
@@ -115,6 +116,10 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const handleStop = () => {
     controller.stopAndCompute()
   }
+  // The timer running out is the run's end; a Stop before it is not.
+  const handleTimerEnd = () => {
+    controller.stopAndCompute('timer')
+  }
 
   onCleanup(() => base.reset())
 
@@ -167,6 +172,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      resultStoppedEarly={() => runStoppedEarly(base.result()?.metrics)}
       voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
@@ -194,9 +200,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       }
       startLabel={guidedPractice === undefined ? undefined : 'Begin first hold'}
       onStart={() => void handleStart()}
-      stopLabel={guidedPractice === undefined ? 'Stop & Score' : 'Stop now'}
+      stopLabel={
+        guidedPractice === undefined ? stopLabelForTimer() : 'Stop now'
+      }
       onStop={handleStop}
-      autoTimer={{ onElapse: handleStop }}
+      autoTimer={{ onElapse: handleTimerEnd }}
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => noteToMidi(targetNote()),

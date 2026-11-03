@@ -76,13 +76,18 @@ import { useDroneIntonationController } from '@/features/exercises/drone-intonat
 import { useDynamicSwellController } from '@/features/exercises/dynamic-swell/use-dynamic-swell-controller'
 import { exerciseScoringVersion } from '@/features/exercises/exercise-comparability'
 import { useIntervalTrainerController } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
+import { useLongNoteController } from '@/features/exercises/long-note/use-long-note-controller'
 import { useMirrorMelodyController } from '@/features/exercises/mirror-melody/use-mirror-melody-controller'
+import { usePitchHoldController } from '@/features/exercises/pitch-hold/use-pitch-hold-controller'
 import { usePitchPursuitController } from '@/features/exercises/pitch-pursuit/use-pitch-pursuit-controller'
 import { useRoutineRunnerController } from '@/features/exercises/routine-runner/use-routine-runner-controller'
 import { useScaleRunnerController } from '@/features/exercises/scale-runner/use-scale-runner-controller'
 import { useSirenController } from '@/features/exercises/siren/use-siren-controller'
 import { useStaccatoPrecisionController } from '@/features/exercises/staccato-precision/use-staccato-precision-controller'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_SIREN, runStoppedEarly, } from '@/features/exercises/types'
+import type { RunEnd } from '@/features/exercises/timer-preference'
+import { resetTimerPreference, setTimerMode, } from '@/features/exercises/timer-preference'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE, EXERCISE_SIREN, runStoppedEarly, } from '@/features/exercises/types'
+import { useVibratoController } from '@/features/exercises/vibrato/use-vibrato-controller'
 import { computeEma } from '@/features/practice-intelligence/adaptive-difficulty'
 import { getDifficulty, updateDifficultyFromEma, } from '@/features/practice-intelligence/difficulty-store'
 import { computePerExerciseStats } from '@/features/practice-intelligence/trends-computer'
@@ -518,5 +523,110 @@ describe('every drill that grades the rounds it reached', () => {
 
     expect(results).toHaveLength(1)
     expect(runStoppedEarly(results[0]!.metrics)).toBe(true)
+  })
+})
+
+describe('a timed drill stopped before its timer runs out', () => {
+  // Long Note, Pitch Hold and Vibrato end on their timer, ten seconds by
+  // default. A Stop before it ended the run short of the length the singer
+  // chose and was graded as a whole run: one second of Long Note held in
+  // tune scored 86, and Vibrato grades only its last four seconds. On
+  // Manual there is no length to fall short of, and the Stop is the end.
+  const ROCK_SOLID = {
+    challengeId: 'rock-solid',
+    title: 'Rock Solid',
+    category: 'basics',
+    exercise: EXERCISE_LONG_NOTE,
+    targetScore: 70,
+  } as const
+
+  const timed: Array<
+    [string, (base: BaseExerciseController) => (end?: RunEnd) => ExerciseResult]
+  > = [
+    [
+      'Long Note',
+      (base) => {
+        const c = useLongNoteController(base)
+        c.setTarget(69)
+        return c.stopAndCompute
+      },
+    ],
+    [
+      'Pitch Hold',
+      (base) => {
+        const c = usePitchHoldController(base)
+        c.setTarget(69)
+        return c.stopAndCompute
+      },
+    ],
+    ['Vibrato', (base) => useVibratoController(base).stopAndCompute],
+  ]
+
+  /** A4 held dead in tune for `seconds`, as the engine records it. */
+  const inTuneFor = (seconds: number): BaseExerciseController =>
+    mockBase({
+      pitchHistory: () =>
+        Array.from({ length: seconds * 20 + 1 }, (_, i) => ({
+          freq: 440,
+          time: i * 0.05,
+          cents: 0,
+          clarity: 0.9,
+        })),
+      _getElapsed: () => seconds * 1000,
+    })
+
+  afterEach(() => {
+    resetTimerPreference()
+  })
+
+  it.each(timed)(
+    '%s marks a Stop while its timer runs, and neither its timer nor Manual',
+    (_name, setUp) => {
+      setTimerMode(10)
+      const stopped = setUp(mockBase())()
+      const timedOut = setUp(mockBase())('timer')
+      setTimerMode('manual')
+      const manual = setUp(mockBase())()
+
+      expect(runStoppedEarly(stopped.metrics)).toBe(true)
+      expect(runStoppedEarly(timedOut.metrics)).toBe(false)
+      expect(runStoppedEarly(manual.metrics)).toBe(false)
+    },
+  )
+
+  it('completes no basics challenge with one second of Long Note, where the run to its timer does', async () => {
+    setTimerMode(10)
+    beginChallengeAttempt(ROCK_SOLID)
+    const short = useLongNoteController(inTuneFor(1))
+    short.setTarget(69)
+    const stopped = short.stopAndCompute()
+
+    await record(stopped)
+
+    // It graded past the bar on the second it reached, and passed nothing.
+    expect(stopped.score).toBeGreaterThanOrEqual(ROCK_SOLID.targetScore)
+    expect(mocks.saveChallengeProgress).not.toHaveBeenCalled()
+    expect(mocks.saveSessionRecord).not.toHaveBeenCalled()
+    expect(activeChallengeAttempt()?.challengeId).toBe('rock-solid')
+
+    const whole = useLongNoteController(inTuneFor(10))
+    whole.setTarget(69)
+    await record(whole.stopAndCompute('timer'))
+
+    expect(mocks.saveChallengeProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ completed: true, bestScore: 100 }),
+      'singer-1',
+    )
+  })
+
+  it('leaves a guided Pitch Hold unmarked: its Stop is the stop rule, and it records nothing', () => {
+    setTimerMode(10)
+    const guided = usePitchHoldController(mockBase(), {
+      fixedZoneCents: 35,
+      fixedTargetDurationSeconds: 5,
+    })
+    guided.setTarget(69)
+
+    expect(runStoppedEarly(guided.stopAndCompute().metrics)).toBe(false)
   })
 })

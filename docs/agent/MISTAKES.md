@@ -1544,7 +1544,7 @@ advanced together; a request between renewal and sweeping can hide the bug.
 
 **Symptom:** one round of Drone Intonation held in tune, then Stop, graded 100: it completed the 85-point Subwoofer Sound challenge, earned Perfect Run, and five such runs lifted the level.
 **Cause:** the round-based drills grade the rounds a run reached, and Stop's result went down the same path as a finished run's.
-**Rule:** a drill with a planned end notes in its Stop whether every round was graded, and its result's metrics carry `stoppedEarlyMark(graded < planned)`. Bars read `comparableExerciseHistory` or `isComparableRun`; `recordExerciseResult` keeps a marked run out of attempts and session records and credits only its measured time (`creditPracticeTime`). A new round-based drill marks its Stop too.
+**Rule:** a drill with a planned end notes in its Stop whether every round was graded, and its result's metrics carry `stoppedEarlyMark(graded < planned)`; a timed drill's end is its timer, so a Stop while it runs is marked (`endedBeforeTimer`). Bars read `comparableExerciseHistory` or `isComparableRun`; `recordExerciseResult` keeps a marked run out of attempts and session records and credits only its measured time (`creditPracticeTime`). A new drill with rounds or a timer marks its Stop too.
 **See:** `src/lib/domain/exercise-contracts.ts`, `src/features/exercises/exercise-comparability.ts`, `src/tests/exercise-stopped-early.test.ts`.
 
 ## Tooling and environment
