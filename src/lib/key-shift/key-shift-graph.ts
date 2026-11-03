@@ -16,6 +16,11 @@
 //                first time it is needed. D failing to load leaves the drums
 //                on the delay, in time and uncorrected, and the key working.
 // At 0 semitones every bus goes straight to the output: no shifter, no delay.
+// The delay is held at two channels ahead of it (src/lib/audio/stereo-hold.ts):
+// Chromium resets a DelayNode when its input drops to one channel, which a
+// stereo stem's does a render quantum after it ends, and the delay then
+// dropped the stem's last L seconds. A stereo burst rendered offline lost
+// its last 50 ms at -6.0 dBFS (Chromium 148); a mono one lost nothing.
 // The karaoke mixer feeds it its stems (see stem-key-control.ts); a Jam room
 // its backing track and guide vocal.
 //
@@ -32,6 +37,7 @@
 // overlap-add already crossfades between frames, and a dip there would drop
 // the whole mix for 150 ms on every key press.
 
+import { createStereoHold } from '@/lib/audio/stereo-hold'
 import type { PitchShifter, PitchShiftPreset } from './pitch-shift-node'
 import { canShiftPitch, createPitchShifter } from './pitch-shift-node'
 
@@ -85,6 +91,8 @@ interface Shifters {
   pitched: PitchShifter
   vocal: PitchShifter
   vocalOut: GainNode
+  /** The unpitched bus's way into `delay`. */
+  hold: DelayNode
   delay: DelayNode
   latencySec: number
 }
@@ -195,7 +203,7 @@ export function createKeyShiftGraph(
     if (next === drumEdges) return
     const own = drumShifter
     if (drumEdges === 'delay') {
-      unpitchedIn.disconnect(set.delay)
+      unpitchedIn.disconnect(set.hold)
       set.delay.disconnect(output)
     } else if (drumEdges === 'shared') {
       unpitchedIn.disconnect(set.pitched.node)
@@ -205,7 +213,7 @@ export function createKeyShiftGraph(
     }
     drumEdges = 'none'
     if (next === 'delay') {
-      unpitchedIn.connect(set.delay)
+      unpitchedIn.connect(set.hold)
       set.delay.connect(output)
     } else if (next === 'shared') {
       unpitchedIn.connect(set.pitched.node)
@@ -347,10 +355,14 @@ export function createKeyShiftGraph(
       const delay = ctx.createDelay(MAX_DELAY_SEC)
       const latencySec = pitched.value.latencySec
       delay.delayTime.value = latencySec
+      // Enabled for as long as the delay can hold anything.
+      const hold = createStereoHold(ctx, MAX_DELAY_SEC)
+      hold.connect(delay)
       return {
         pitched: pitched.value,
         vocal: vocal.value,
         vocalOut,
+        hold,
         delay,
         latencySec,
       }
@@ -369,6 +381,7 @@ export function createKeyShiftGraph(
     set.pitched.dispose()
     set.vocal.dispose()
     set.vocalOut.disconnect()
+    set.hold.disconnect()
     set.delay.disconnect()
   }
 
