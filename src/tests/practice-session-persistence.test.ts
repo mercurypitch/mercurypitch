@@ -20,6 +20,7 @@ vi.mock('@/db/services/user-service', () => ({
 }))
 vi.mock('@/db/services/session-service', () => ({
   saveSessionRecord: mocks.saveSessionRecord,
+  creditPracticeTime: async () => {},
 }))
 vi.mock('@/db/services/badge-grant-engine', () => ({
   checkAndGrantBadges: mocks.checkAndGrantBadges,
@@ -28,7 +29,7 @@ vi.mock('@/stores/usage-store', () => ({
   recordCompletion: mocks.recordCompletion,
 }))
 
-import { endPracticeSession, setPracticeResults, setPracticeSession, setSessionActive, } from '@/stores/practice-session-store'
+import { endPracticeSession, markPracticeSessionStarted, markSessionReachedEnd, setPracticeResults, setPracticeSession, setSessionActive, } from '@/stores/practice-session-store'
 
 const session: PlaybackSession = {
   id: 'guided-1',
@@ -56,6 +57,7 @@ const result = {
 function armSession(): void {
   setPracticeSession(session)
   setSessionActive(true)
+  markPracticeSessionStarted()
   setPracticeResults([result])
 }
 
@@ -76,6 +78,7 @@ describe('endPracticeSession grant routing', () => {
     mocks.saveSessionRecord.mockResolvedValueOnce(null)
     armSession()
 
+    markSessionReachedEnd()
     expect(endPracticeSession()).not.toBeNull()
     await flush()
 
@@ -92,6 +95,7 @@ describe('endPracticeSession grant routing', () => {
     )
     armSession()
 
+    markSessionReachedEnd()
     expect(endPracticeSession()).not.toBeNull()
     mocks.ownerId = 'singer-2'
     finishSave()
@@ -119,8 +123,10 @@ describe('the record endPracticeSession actually posts', () => {
       ],
     })
     setSessionActive(true)
+    markPracticeSessionStarted()
     setPracticeResults(Array.from({ length: 16 }, () => result))
 
+    markSessionReachedEnd()
     expect(endPracticeSession()).not.toBeNull()
     await flush()
 
@@ -140,6 +146,9 @@ describe('the record endPracticeSession actually posts', () => {
     setSessionActive(true)
     setPracticeResults([])
 
+    // Started and run to its end, so only its empty bank keeps it unrecorded.
+    markPracticeSessionStarted()
+    markSessionReachedEnd()
     expect(endPracticeSession()).toBeNull()
     await flush()
 

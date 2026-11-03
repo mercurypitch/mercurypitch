@@ -8,16 +8,18 @@
 // the same decoupling the projection under test provides for the app.
 
 import { setSessionResults } from '@/stores/practice-session-store'
+import type { AccuracyRating } from '@/types'
 
 /**
  * Prepend a session whose single practice item carries the given per-note
- * `(midi, avgCents)` results — the minimal slice the accuracy heatmap and
+ * `(midi, avgCents)` results, rated 'good' unless a note says otherwise
+ * (an unsung note is 'off' with 0 cents) — the minimal slice the accuracy heatmap and
  * weakness analyzer consume. Prepended (newest-first) to match how the
  * store records real sessions, so tests relying on iteration order behave
  * like production.
  */
 export function seedSessionWithNotes(
-  noteResults: { midi: number; avgCents: number }[],
+  noteResults: { midi: number; avgCents: number; rating?: AccuracyRating }[],
 ): void {
   setSessionResults((prev) => [
     {
@@ -45,7 +47,7 @@ export function seedSessionWithNotes(
             pitchFreq: 261,
             pitchCents: n.avgCents,
             time: 100,
-            rating: 'good' as const,
+            rating: n.rating ?? ('good' as const),
             avgCents: n.avgCents,
             targetNote: 'C4',
           })),

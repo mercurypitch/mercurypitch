@@ -11,6 +11,7 @@
 // reachable from takes that carry real audio.
 // ============================================================
 
+import { noteWasSung } from '@/lib/domain/note-sung'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { AccuracyRating, SessionResult } from '@/types'
 
@@ -21,7 +22,8 @@ export interface PracticeMetrics {
   noteCount: number
   score: number
   /**
-   * Mean |cents| from target — how far off, ignoring direction.
+   * Mean |cents| from target over the sung notes — how far off, ignoring
+   * direction.
    *
    * Direction (sharp vs flat) is deliberately absent: the production writer
    * (`practice-engine.finalizeNoteResult`) averages `Math.abs(s.cents)` per
@@ -29,7 +31,7 @@ export interface PracticeMetrics {
    * derived from it would read every imperfect session as sharp.
    */
   avgAbsCents: number
-  /** Share of measurable notes within ±25¢ of target. */
+  /** Share of the sung notes within ±25¢ of target. */
   inTunePercent: number
   lowNote: string
   highNote: string
@@ -70,6 +72,11 @@ export function buildPracticeMetrics(
   const ratings = EMPTY_RATINGS()
 
   for (const note of notes) {
+    if (note.rating in ratings) ratings[note.rating] += 1
+    // A note nobody sang is a miss in its rating, but no reading: its 0
+    // cents counted it in tune, and it widened a range never sung.
+    if (!noteWasSung(note)) continue
+
     const cents = note.avgCents
     if (Number.isFinite(cents)) {
       measurable++
@@ -82,8 +89,6 @@ export function buildPracticeMetrics(
       lowMidi = Math.min(lowMidi, midi)
       highMidi = Math.max(highMidi, midi)
     }
-
-    if (note.rating in ratings) ratings[note.rating] += 1
   }
 
   const hasRange = Number.isFinite(lowMidi) && Number.isFinite(highMidi)

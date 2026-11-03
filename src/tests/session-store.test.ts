@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
-import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, isInSessionMode, recordSessionItemResult, } from '@/stores'
+import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, isInSessionMode, markSessionReachedEnd, recordSessionItemResult, } from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
 import type { PracticeResult, SessionItem } from '@/types'
 
@@ -40,6 +40,7 @@ const mockAudioEngine = {
 // Mock melodyStore - use factory function to avoid hoisting issues
 vi.mock('@/stores/melody-store', () => ({
   STORAGE_KEY_SESSION_HIST: 'pitchperfect_session_history',
+  isSessionItemMelodyMissing: vi.fn(() => false),
   melodyStore: {
     items: vi.fn(() => []),
     setItems: vi.fn(),
@@ -314,6 +315,7 @@ describe('endPracticeSession', () => {
     advanceSessionItem()
     recordSessionItemResult(makePracticeResult(100, session.name))
 
+    markSessionReachedEnd()
     const result = endPracticeSession()
     expect(result).not.toBeNull()
     expect(result!.sessionId).toBe('end-test')
@@ -339,6 +341,7 @@ describe('endPracticeSession', () => {
     const session = makeSession('persist-test', 2)
     appStore.startPracticeSession(session)
     recordSessionItemResult(makePracticeResult(75))
+    markSessionReachedEnd()
     endPracticeSession()
 
     // Find the session_results call that happened after our snapshot

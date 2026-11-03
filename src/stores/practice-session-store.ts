@@ -11,12 +11,15 @@
 
 import { createSignal } from 'solid-js'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
-import { saveSessionRecord } from '@/db/services/session-service'
+import { creditPracticeTime, saveSessionRecord, } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { isNoteHit } from '@/features/exercises/exercise-note-tally'
+import { trackEvent } from '@/lib/analytics'
+import { noteWasSung } from '@/lib/domain/note-sung'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
-import { STORAGE_KEY_SESSION_HIST } from './melody-store'
+import { isSessionItemMelodyMissing, STORAGE_KEY_SESSION_HIST, } from './melody-store'
+import { showNotification } from './notifications-store'
 import { recordCompletion } from './usage-store'
 
 export const [practiceSession, setPracticeSession] =
@@ -105,6 +108,149 @@ export function recordSessionItemResult(result: PracticeResult): void {
   })
 }
 
+// ── Whether the session in progress is a whole one ──────────────────────
+//
+// Each item banks its result as it finishes, and the session's score is the
+// average of what was banked. A session stopped after one good item averaged
+// that one item, as a drill stopped after one good round graded like a
+// flawless run, and its record counted toward every goal that reads a score
+// (Perfect Run, Immaculate). So a session is scored only when it ran to its
+// end with no item skipped; any other is practice: its time counts, its
+// score does not (`endPracticeSession`). The same rule as a stopped drill's
+// (`stoppedEarlyMark`).
+
+let sessionStartedAt: number | null = null
+let sessionPausedAt: number | null = null
+let sessionPausedMs = 0
+let sessionReachedEnd = false
+let sessionItemSkipped = false
+let skippedItemSung = false
+
+function clearSessionClock(): void {
+  sessionStartedAt = null
+  sessionPausedAt = null
+  sessionPausedMs = 0
+  sessionReachedEnd = false
+  sessionItemSkipped = false
+  skippedItemSung = false
+}
+
+/** A session starts: its clock runs from now, and it is whole so far. */
+export function markPracticeSessionStarted(now: number = Date.now()): void {
+  clearSessionClock()
+  sessionStartedAt = now
+}
+
+/** The transport paused. A pause is not practice, so the clock stops. */
+export function markPracticeSessionPaused(now: number = Date.now()): void {
+  if (sessionStartedAt !== null && sessionPausedAt === null) {
+    sessionPausedAt = now
+  }
+}
+
+/** The transport resumed, and the clock with it. */
+export function markPracticeSessionResumed(now: number = Date.now()): void {
+  if (sessionPausedAt === null) return
+  sessionPausedMs += now - sessionPausedAt
+  sessionPausedAt = null
+}
+
+/**
+ * The transport was reset with a session still running: the tab left,
+ * another song loaded, Reset pressed. That session is over without an end,
+ * but its object stays until the next Stop clears it, and every Stop ends
+ * the practice session. Without this, a Stop of anything an hour later
+ * would end it as a session the singer had just stopped: a notice, and the
+ * hour credited as practice.
+ */
+export function markPracticeSessionLeft(): void {
+  clearSessionClock()
+}
+
+/**
+ * The singer skipped an item, so the session can no longer be whole. What
+ * they sang of it banks nothing, but it was practice all the same.
+ */
+export function markSessionItemSkipped(sung: boolean): void {
+  sessionItemSkipped = true
+  if (sung) skippedItemSung = true
+}
+
+/** The session's last item played to its end. */
+export function markSessionReachedEnd(): void {
+  sessionReachedEnd = true
+}
+
+/**
+ * The session's own length so far: from its start, less its pauses, an open
+ * one included. No length is no measurement, so a session never started, or
+ * ended at once, has none: a 0 would fail the record's evidence rule.
+ */
+function sessionLengthMs(now: number): number | undefined {
+  if (sessionStartedAt === null) return undefined
+  const openPauseMs = sessionPausedAt !== null ? now - sessionPausedAt : 0
+  const lengthMs = now - sessionStartedAt - sessionPausedMs - openPauseMs
+  return lengthMs > 0 ? lengthMs : undefined
+}
+
+/** The store lets the session go: no session, position or mode is left. */
+function clearPracticeSession(): void {
+  setSessionActive(false)
+  setPracticeSession(null)
+  setSessionItemIndex(0)
+  setSessionItemRepeat(0)
+  setSessionMode(false)
+}
+
+/** What a whole session says as it ends. */
+export function sessionCompleteLine(score: number): string {
+  return `Session complete! Score: ${score}%`
+}
+
+/** What a session that was not whole says in place of its score. */
+export const SESSION_STOPPED_LINE =
+  'You stopped before the end, so this session was not scored. Its time still counts as practice.'
+export const SESSION_SKIPPED_LINE =
+  'You skipped part of this session, so it was not scored. Its time still counts as practice.'
+
+/**
+ * Whether one banked run landed: its SUNG notes average within the line.
+ * An unsung note's 0 cents is no hit (`noteWasSung`): averaged in, a run
+ * nobody sang landed dead centre. A result that keeps no notes is judged by
+ * its own average.
+ */
+function runLanded(result: PracticeResult): boolean {
+  const notes = result.noteResult ?? []
+  if (notes.length === 0) return isNoteHit(Math.abs(result.avgCents))
+  const sung = notes.filter(noteWasSung)
+  if (sung.length === 0) return false
+  const cents =
+    sung.reduce((sum, note) => sum + Math.abs(note.avgCents), 0) / sung.length
+  return isNoteHit(cents)
+}
+
+/**
+ * Whether the singer sang any of a banked run. A result that keeps no notes
+ * is taken as sung: there is nothing to read otherwise, and its score
+ * stands.
+ */
+function runWasSung(result: PracticeResult): boolean {
+  const notes = result.noteResult ?? []
+  return notes.length === 0 || notes.some(noteWasSung)
+}
+
+/**
+ * Whether the session's singing is done: from the item it stands on, only
+ * rests are left, and items whose melody was deleted, which the sequencer
+ * passes over. A Stop or End there ends a session whose every sung item is
+ * behind it, so it is whole, not stopped.
+ */
+function onlyRestsRemain(session: PlaybackSession): boolean {
+  return session.items
+    .slice(sessionItemIndex())
+    .every((item) => item.type === 'rest' || isSessionItemMelodyMissing(item))
+}
+
 /**
  * The sessionRecords payload for a finished multi-item session.
  *
@@ -122,19 +268,21 @@ export function recordSessionItemResult(result: PracticeResult): void {
 export function practiceSessionPayload(
   session: PlaybackSession,
   results: PracticeResult[],
+  durationMs?: number,
 ): {
   melodyName: string
   score: number
   accuracy: number
   notesHit: number
   notesTotal: number
+  durationMs?: number
   source: 'practice'
 } {
   const avgScore = Math.round(
     results.reduce((sum, r) => sum + r.score, 0) / results.length,
   )
-  // Rests bank no PracticeResult (useSessionSequencer only records one when
-  // a live score exists), so counting them would understate a finished run.
+  // Rests bank no PracticeResult (useSessionSequencer banks an item only
+  // when it has notes), so counting them would understate a finished run.
   const scheduledRuns = session.items.reduce(
     (total, item) => total + (item.type === 'rest' ? 0 : (item.repeat ?? 1)),
     0,
@@ -143,37 +291,81 @@ export function practiceSessionPayload(
     melodyName: session.name,
     score: avgScore,
     accuracy: avgScore,
-    // Notes LANDED, not notes reached. This used to be `results.length`,
+    // Runs LANDED, not runs reached. This used to be `results.length`,
     // which counted every item the singer got to regardless of pitch -- so
     // the column read 100% for a run sung entirely flat, and Practice rows
     // meant something different from every other run kind. The line is the
     // same fixed 25 cents the drills use (exercise-note-tally); the singer's
     // accuracy tier shapes score and accuracy, never the count.
-    notesHit: results.filter((r) => isNoteHit(Math.abs(r.avgCents))).length,
+    notesHit: results.filter(runLanded).length,
     // A walk that somehow outran its own schedule must not resurrect the
     // 400 — the run happened either way, and the evidence is worth more
     // than the tally.
     notesTotal: Math.max(scheduledRuns, results.length),
+    // The session's own clock, start to end, less its pauses. Without it
+    // the record is credited an estimate from its note count, at least
+    // ninety seconds, whatever the session's length.
+    ...(durationMs !== undefined ? { durationMs } : {}),
     source: 'practice',
   }
 }
 
-export function endPracticeSession(): SessionResult | null {
+export interface EndPracticeSessionOptions {
+  /**
+   * Whether the singer sang any of the item the Stop cut short. It banks
+   * nothing, but its singing is practice, as a banked item's is.
+   */
+  inFlightSung?: boolean
+}
+
+export function endPracticeSession(
+  options: EndPracticeSessionOptions = {},
+): SessionResult | null {
   const session = practiceSession()
   if (!session) return null
 
   const results = practiceResults()
+  const live = sessionStartedAt !== null
+  // Without a length the record carries its estimate.
+  const durationMs = sessionLengthMs(Date.now())
+  const reachedItsEnd = sessionReachedEnd
+  const reachedEnd = reachedItsEnd || onlyRestsRemain(session)
+  const skipped = sessionItemSkipped
+  // A session the transport left is over without an end, whatever it
+  // reached (markPracticeSessionLeft).
+  const whole = live && reachedEnd && !skipped
+  const bankedSung = results.some(runWasSung)
+  const sung = options.inFlightSung === true || skippedItemSung || bankedSung
+  clearSessionClock()
+
+  // A session that was not whole is practice, not a result: no score, no
+  // record and no local history, so no goal, Progress thread or profile
+  // average reads it. Its measured time still counts, toward the day's
+  // minutes and the streak, as a stopped drill's does. A session the
+  // transport already left (markPracticeSessionLeft), and one stopped
+  // before a note was sung, are only cleared: nothing was practised.
+  if (!whole) {
+    clearPracticeSession()
+    if (!live || !sung) return null
+    // Run to its end with an item skipped, it was finished, if not scored.
+    if (reachedEnd) recordCompletion()
+    trackEvent('session_stopped')
+    void creditPracticeTime(durationMs, getUserId()).catch(() => {})
+    showNotification(
+      skipped ? SESSION_SKIPPED_LINE : SESSION_STOPPED_LINE,
+      'info',
+    )
+    return null
+  }
 
   // A session with ZERO scored items records nothing: play-then-stop runs
   // used to persist score-0 entries locally AND as cloud sessionRecords,
   // dragging the profile's best/accuracy/recent-average to 0% and polluting
-  // the leaderboard aggregates with sessions that never scored a note.
-  if (results.length === 0) {
-    setSessionActive(false)
-    setPracticeSession(null)
-    setSessionItemIndex(0)
-    setSessionItemRepeat(0)
-    setSessionMode(false)
+  // the leaderboard aggregates with sessions that never scored a note. A
+  // session played to its end with no note sung is the same: its items
+  // banked, but only unsung notes.
+  if (!bankedSung) {
+    clearPracticeSession()
     return null
   }
 
@@ -200,20 +392,28 @@ export function endPracticeSession(): SessionResult | null {
   // badge engine and streaks, but never publicly ranked — the difficulty is
   // whatever the singer picked, so the scores compare nothing.
   const ownerId = getUserId()
-  void saveSessionRecord(practiceSessionPayload(session, results), ownerId)
+  void saveSessionRecord(
+    practiceSessionPayload(session, results, durationMs),
+    ownerId,
+  )
     .then((savedSession) => {
       if (savedSession === null || getUserId() !== ownerId) return
       return checkAndGrantBadges(ownerId)
     })
     .catch(() => {})
 
-  setSessionActive(false)
-  setPracticeSession(null)
-  setSessionItemIndex(0)
-  setSessionItemRepeat(0)
-  setSessionMode(false)
+  clearPracticeSession()
 
   recordCompletion()
+
+  // The sequencer says this when a session runs out; a Stop or End in its
+  // last rest finished it too, and says the same.
+  if (!reachedItsEnd) {
+    showNotification(
+      sessionCompleteLine(avgScore),
+      avgScore >= 80 ? 'success' : 'info',
+    )
+  }
 
   return result
 }
@@ -260,6 +460,9 @@ export function collectNoteAccuracySamples(): NoteAccuracySample[] {
         const midi = nr?.item?.note?.midi
         const avgCents = nr?.avgCents
         if (!Number.isFinite(midi) || !Number.isFinite(avgCents)) continue
+        // An unsung note's 0 cents is no reading: kept, it painted a note
+        // never sung as perfect.
+        if (!noteWasSung(nr)) continue
         samples.push({ midi, avgCents })
       }
     }

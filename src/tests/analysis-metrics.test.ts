@@ -127,6 +127,26 @@ describe('buildPracticeMetrics', () => {
     expect(metrics?.highNote).toBe('C5')
   })
 
+  it('leaves a note nobody sang out of the in-tune share, the average and the range', () => {
+    // The engine writes a note it heard no pitch for as 'off' with 0 cents:
+    // read as a deviation, a dead-centre hit on a note never sung.
+    const metrics = buildPracticeMetrics(
+      makeSession([
+        makeNote(60, 10),
+        makeNote(62, 60, 'off'),
+        makeNote(72, 0, 'off'),
+      ]),
+    )
+
+    expect(metrics?.inTunePercent).toBe(50)
+    expect(metrics?.avgAbsCents).toBe(35)
+    expect(metrics?.highNote).toBe('D4')
+    expect(metrics?.rangeSemitones).toBe(2)
+    // Its rating still says it was missed.
+    expect(metrics?.ratings.off).toBe(2)
+    expect(metrics?.noteCount).toBe(3)
+  })
+
   it('tallies the rating distribution', () => {
     const metrics = buildPracticeMetrics(
       makeSession([

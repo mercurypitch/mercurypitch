@@ -1572,6 +1572,29 @@ export function getMelody(id: string): MelodyData | undefined {
   return melodyLibrarySignal().melodies[id]
 }
 
+/**
+ * Is this item pointing at a melody that no longer exists?
+ *
+ * Deleting a melody deliberately does NOT rewrite the sessions that reference
+ * it: `restoreMelody` sits directly below `deleteMelody` as the undo, and
+ * rewriting the sessions would make the undo bring back a melody with every
+ * session item that used it already gone. So a session item is allowed to
+ * point at nothing, and each reader has to say so.
+ *
+ * Derived rather than stored for the same reason — restoring the melody makes
+ * the item whole again with no second write to keep in step. It lives beside
+ * the melodies, not in session-builder, so the practice-session store can
+ * read it without an import cycle.
+ */
+export function isSessionItemMelodyMissing(item: SessionItem): boolean {
+  return (
+    item.type === 'melody' &&
+    item.melodyId !== null &&
+    item.melodyId !== undefined &&
+    getMelody(item.melodyId) === undefined
+  )
+}
+
 // ============================================================
 // Melody kind (editor preset: pitched melody vs GM drum kit)
 // ============================================================
