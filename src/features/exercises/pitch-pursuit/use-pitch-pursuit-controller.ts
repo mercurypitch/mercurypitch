@@ -110,11 +110,11 @@ export function usePitchPursuitController(base: BaseExerciseController) {
       }
     }
 
-    // Spawn new notes
-    if (
-      now - lastSpawnTime > SPAWN_INTERVAL_MS &&
-      notes.filter((n) => n.active).length < totalNotes
-    ) {
+    // Spawn the next note until the run has spawned every note it plans
+    // (nextId counts them). The cap counted the notes on screen instead,
+    // never more than three at a time, so the notes never ran out and the
+    // game never ended: every run ended on Stop.
+    if (now - lastSpawnTime > SPAWN_INTERVAL_MS && nextId < totalNotes) {
       spawnNote()
       lastSpawnTime = now
     }
