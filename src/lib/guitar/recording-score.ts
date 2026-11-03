@@ -2,6 +2,7 @@
 import type { InstrumentTuning } from './instrument-tuning'
 import { assignStringForMidi, tuningLabels } from './instrument-tuning'
 import type { GuitarPracticeNote, GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, } from './recording-types'
+import { GUITAR_PRACTICE_SCORE_LIMIT_SECONDS } from './recording-types'
 
 export function recordingScoreTuning(
   score: GuitarPracticeScore,
@@ -187,8 +188,8 @@ export function recordingMidiProblem(
       return 'Give each note a valid pitch, start and end.'
     if (note.startBeat < (pitchEnds.get(note.midi) ?? 0) - 0.000001)
       return 'Some notes of the same pitch overlap. Adjust their start/end or merge them before practicing.'
-    if ((note.endBeat * 60) / score.bpm > 301)
-      return 'This melody exceeds the five-minute recording limit.'
+    if ((note.endBeat * 60) / score.bpm > GUITAR_PRACTICE_SCORE_LIMIT_SECONDS)
+      return `This melody runs longer than ${GUITAR_PRACTICE_SCORE_LIMIT_SECONDS / 60} minutes, the most a score can hold.`
     pitchEnds.set(note.midi, note.endBeat)
   }
   return null

@@ -5,6 +5,18 @@ import type { InstrumentTuning } from './instrument-tuning'
 export const GUITAR_RECORDING_VERSION = 1
 export const GUITAR_DETECTOR_VERSION = 'guitar-melody-1.1'
 export const GUITAR_RECORDING_LIMIT_SECONDS = 300
+/**
+ * The longest practice score, in seconds: a take's corrected notes, or a stem
+ * line transcribed in Guitar Night. Separate from the take limit above, which
+ * bounds stored audio. Scores used to come only from takes, so their check
+ * borrowed the take's five minutes, and a transcribed line of a longer song
+ * could not be saved. Twenty minutes fits the Guitar Pro writer's 2,048 bars
+ * for a 4/4 score at the fastest tempo a score allows (300 BPM: 1,500 bars)
+ * and for a measured line (240 BPM: 1,200). Shorter bars at high tempos can
+ * still reach that cap, and the 10,000-note cap applies on its own; both keep
+ * their own messages.
+ */
+export const GUITAR_PRACTICE_SCORE_LIMIT_SECONDS = 1200
 export const GUITAR_RECORDING_CHUNK_FRAMES = 8192
 /** Short analysis delivery, independent of the durable checkpoint size. */
 export const GUITAR_RECORDING_PCM_FRAMES = 2048

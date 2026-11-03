@@ -125,11 +125,27 @@ describe('MeasuredLineExport', () => {
     )
   })
 
-  it('keeps a format the line breaks unavailable, with the reason', () => {
-    // The recorder's limit: no score past five minutes and one second.
+  it('offers a line longer than a five-minute take', () => {
     render(() => (
       <MeasuredLineExport
-        reference={bassLine([note(28, 0, 0.5), note(33, 400, 0.5)])}
+        reference={bassLine([note(28, 0, 0.5), note(33, 515, 0.5)])}
+        songTitle="Song"
+      />
+    ))
+
+    for (const name of [
+      'Save the bass line as MIDI',
+      'Save the bass line as Guitar Pro',
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeEnabled()
+    }
+  })
+
+  it('keeps a format the line breaks unavailable, with the reason', () => {
+    // A score stops at twenty minutes.
+    render(() => (
+      <MeasuredLineExport
+        reference={bassLine([note(28, 0, 0.5), note(33, 1300, 0.5)])}
         songTitle="Song"
       />
     ))
@@ -142,7 +158,7 @@ describe('MeasuredLineExport', () => {
       expect(button).toBeDisabled()
       expect(button).toHaveAttribute(
         'title',
-        'This melody exceeds the five-minute recording limit.',
+        'This melody runs longer than 20 minutes, the most a score can hold.',
       )
     }
   })

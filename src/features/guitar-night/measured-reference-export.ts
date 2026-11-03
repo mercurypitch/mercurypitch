@@ -9,12 +9,22 @@
 //
 // Only the notes placed on the neck go in: a note the neck cannot reach
 // (`outOfRangeNotes`) was never drawn, and has no string or fret to write.
-// The time base is the measured reference's own, one beat a second
-// (`MEASURED_REFERENCE_TEMPO`), so MIDI keeps the played timing exactly and
-// Guitar Pro rounds it to thirty-second notes of that tempo, 125 ms.
 
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import type { GuitarNightReference } from './reference-port'
+
+/**
+ * The tempo a measured line is written at: four beats a second.
+ *
+ * The line was heard in seconds and has no tempo of its own; the stage reads
+ * it at one beat a second (`MEASURED_REFERENCE_TEMPO`). Guitar Pro rounds to
+ * thirty-second notes of the score's tempo, 125 ms at 60 BPM, and real lines
+ * play faster than that: the bass line read from Dance of Death's stem has
+ * 335 attacks closer together, its guitar line 59, and the writer refused
+ * both. At 240 BPM the grid is 31 ms and both write. MIDI keeps the same
+ * seconds at any tempo, so both formats share this score.
+ */
+export const MEASURED_EXPORT_BPM = 240
 
 /**
  * The practice score a measured line exports as; null for a reference that
@@ -30,6 +40,8 @@ export function practiceScoreFromMeasuredReference(
   }
   const id = `measured:${reference.songId}`
   const stamp = now.toISOString()
+  // The reference's beats, at its own tempo, in the export's beats.
+  const scale = MEASURED_EXPORT_BPM / reference.tempoBpm
   return {
     id,
     recordingId: id,
@@ -37,7 +49,7 @@ export function practiceScoreFromMeasuredReference(
     title: `${songTitle} ${reference.trackName} line`,
     createdAt: stamp,
     updatedAt: stamp,
-    bpm: reference.tempoBpm,
+    bpm: MEASURED_EXPORT_BPM,
     timeSignature: [4, 4],
     grid: 'display',
     // The neck the line was placed on: a bass line read on a guitar was
@@ -50,8 +62,8 @@ export function practiceScoreFromMeasuredReference(
       id: note.id,
       evidenceId: note.id,
       midi: note.midi,
-      startBeat: note.startBeat,
-      endBeat: note.startBeat + note.duration,
+      startBeat: note.startBeat * scale,
+      endBeat: (note.startBeat + note.duration) * scale,
       // The stage counts strings from 0, highest first; a score from 1.
       string: note.stringIndex + 1,
       fret: note.fret,

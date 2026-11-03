@@ -64,7 +64,8 @@ describe('practiceScoreFromMeasuredReference', () => {
       title: 'Nothing in the Dark Bass line',
       createdAt: '2026-11-03T12:00:00.000Z',
       updatedAt: '2026-11-03T12:00:00.000Z',
-      bpm: 60,
+      // Four beats a second: Guitar Pro's thirty-second grid is 31 ms.
+      bpm: 240,
       timeSignature: [4, 4],
       grid: 'display',
       instrument: 'bass',
@@ -76,8 +77,8 @@ describe('practiceScoreFromMeasuredReference', () => {
           id: reference.notes[0].id,
           evidenceId: reference.notes[0].id,
           midi: 28,
-          startBeat: 0.25,
-          endBeat: 0.75,
+          startBeat: 1,
+          endBeat: 3,
           string: 4,
           fret: 0,
         },
@@ -85,8 +86,8 @@ describe('practiceScoreFromMeasuredReference', () => {
           id: reference.notes[1].id,
           evidenceId: reference.notes[1].id,
           midi: 33,
-          startBeat: 1,
-          endBeat: 1.25,
+          startBeat: 4,
+          endBeat: 5,
           string: 3,
           fret: 0,
         },
@@ -153,7 +154,7 @@ describe('a measured line, written and opened again', () => {
         note(33, 0.5, 0.5),
         note(35, 1.25, 0.25),
         note(40, 2, 1),
-        // Across the first bar line: written as two tied notes, read as one.
+        // Across a bar line (bar 4 starts at 4 s): two tied notes, read as one.
         note(43, 3.5, 1),
       ]),
       'Song',
@@ -166,10 +167,8 @@ describe('a measured line, written and opened again', () => {
     )
 
     expect(reopened.map((each) => each.midi)).toEqual([28, 33, 35, 40, 43])
-    expect(reopened.map((each) => each.startBeat)).toEqual([
-      0, 0.5, 1.25, 2, 3.5,
-    ])
-    expect(reopened[4].duration).toBeCloseTo(1)
+    expect(reopened.map((each) => each.startBeat)).toEqual([0, 2, 5, 8, 14])
+    expect(reopened[4].duration).toBeCloseTo(4)
   })
 
   it('comes back from MIDI with the same notes', async () => {
@@ -177,5 +176,57 @@ describe('a measured line, written and opened again', () => {
     const notes = song?.tracks.find(isPitchedMidiSongTrack)?.notes ?? []
 
     expect(notes.map((each) => each.midi)).toEqual([28, 33, 35, 40, 43])
+  })
+})
+
+describe('a measured line the recorder could not have held', () => {
+  it('writes attacks 50 ms apart on one string as Guitar Pro', async () => {
+    // A bass's E string takes MIDI 28 and 29 alone. At 60 BPM the grid is
+    // 125 ms and these four attacks fell into two cells; at 240 it is 31 ms.
+    const dense = practiceScoreFromMeasuredReference(
+      bassLine([
+        note(28, 0, 0.05),
+        note(29, 0.05, 0.05),
+        note(28, 0.1, 0.05),
+        note(29, 0.15, 0.05),
+      ]),
+      'Song',
+      NOW,
+    )!
+    expect(dense.notes.map((each) => each.string)).toEqual([4, 4, 4, 4])
+
+    const reopened = await reopenGuitarPro(
+      await exportRecordingGuitarPro(dense),
+    )
+
+    expect(reopened.map((each) => each.midi)).toEqual([28, 29, 28, 29])
+  })
+
+  it('exports a line longer than the five-minute take, in both formats', async () => {
+    const long = practiceScoreFromMeasuredReference(
+      bassLine([note(28, 0, 0.5), note(33, 515, 0.5)]),
+      'Song',
+      NOW,
+    )!
+
+    const reopened = await reopenGuitarPro(await exportRecordingGuitarPro(long))
+    const song = parseMidiSong(await exportRecordingMidi(long))
+
+    expect(reopened.map((each) => each.startBeat)).toEqual([0, 2060])
+    expect(
+      song?.tracks.find(isPitchedMidiSongTrack)?.notes.map((each) => each.midi),
+    ).toEqual([28, 33])
+  })
+
+  it('stops at twenty minutes, and says so', async () => {
+    const tooLong = practiceScoreFromMeasuredReference(
+      bassLine([note(28, 0, 0.5), note(33, 1300, 0.5)]),
+      'Song',
+      NOW,
+    )!
+
+    await expect(exportRecordingMidi(tooLong)).rejects.toThrow(
+      'This melody runs longer than 20 minutes, the most a score can hold.',
+    )
   })
 })
