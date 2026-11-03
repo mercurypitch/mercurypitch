@@ -136,6 +136,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
       baseWritable() && canProcess() && !exporter.busy() && !comparison.busy(),
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     releaseAudio: releaseFinishingAudio,
+    holdFrozen: transport.holdFrozen,
     onCommand: (command) => props.studio.dispatch(command),
   })
   const exporter = useStudioExport({
@@ -165,7 +166,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   async function runSongAction(action: () => unknown): Promise<void> {
     if (finishing()) return
     const id = props.studio.project()?.id
-
     await releaseFinishingAudio()
     if (!disposed && id !== undefined && props.studio.project()?.id === id)
       action()

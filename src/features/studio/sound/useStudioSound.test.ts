@@ -3,6 +3,7 @@ import { createRoot, createSignal, untrack } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { analyzeStudioBalance, StudioBalanceProposal, } from '@/lib/studio/export/analyze-balance'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { deferred } from '../export/export.test-fixtures'
 import { useStudioSound } from './useStudioSound'
 
@@ -23,16 +24,33 @@ function mount() {
       balanceGainDbByTrack: { 'track-1': 4 },
     }))
     const onCommand = vi.fn(() => true)
+    const releaseAudio = vi.fn(async () => undefined)
+    const held = { lanes: new Map(), release: vi.fn() }
+    const holdFrozen = vi.fn(
+      (_project: StudioProject, _assets: readonly StudioAsset[]) => held,
+    )
     const controller = useStudioSound({
       project,
       assets: () => [fixture.asset],
       canStart: allowed,
       readCanonicalAsset: async () => new Blob(),
-      releaseAudio: async () => undefined,
+      releaseAudio,
+      holdFrozen,
       analyze,
       onCommand,
     })
-    return { controller, project, setProject, analyze, onCommand, setAllowed }
+    return {
+      controller,
+      fixture,
+      project,
+      setProject,
+      analyze,
+      onCommand,
+      setAllowed,
+      releaseAudio,
+      held,
+      holdFrozen,
+    }
   })
 }
 const flush = async () => {
@@ -41,6 +59,44 @@ const flush = async () => {
 }
 
 describe('Studio auto-balance lifecycle', () => {
+  it('holds the lane renders that match the song before letting the audio go, measures with them and lets them go after', async () => {
+    // Arrange
+    const ui = mount()
+    const order: string[] = []
+    ui.holdFrozen.mockImplementationOnce(() => {
+      order.push('hold')
+      return ui.held
+    })
+    ui.releaseAudio.mockImplementationOnce(async () => {
+      order.push('release audio')
+    })
+
+    // Act
+    expect(await ui.controller.autoBalance()).toBe(true)
+
+    // Assert
+    expect(order).toEqual(['hold', 'release audio'])
+    expect(ui.holdFrozen).toHaveBeenCalledExactlyOnceWith(ui.fixture.project, [
+      ui.fixture.asset,
+    ])
+    expect(ui.analyze.mock.calls[0][3]?.frozen).toBe(ui.held)
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
+  it('lets the held lane renders go when the analysis fails', async () => {
+    // Arrange
+    const ui = mount()
+    ui.analyze.mockRejectedValueOnce(new Error('No room to render.'))
+
+    // Act
+    const applied = await ui.controller.autoBalance()
+
+    // Assert
+    expect(applied).toBe(false)
+    expect(ui.controller.error()).toBe('No room to render.')
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
   it('reports an empty audible mix when the command accepts a valid no-op', async () => {
     const ui = mount()
     ui.analyze.mockResolvedValueOnce({

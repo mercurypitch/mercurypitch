@@ -3,6 +3,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { prepareStudioComparison, StudioComparison, } from '@/lib/studio/export/prepare-comparison'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { deferred } from '../export/export.test-fixtures'
 import { useStudioComparison } from './useStudioComparison'
 
@@ -42,7 +43,12 @@ function mount() {
     const prepareRender = vi.fn<typeof prepareStudioComparison>(
       async () => result,
     )
+    const held = { lanes: new Map(), release: vi.fn() }
+    const holdFrozen = vi.fn(
+      (_project: StudioProject, _assets: readonly StudioAsset[]) => held,
+    )
     const transport = {
+      holdFrozen,
       primeAudio: vi.fn(async () => true),
       previewSource: vi.fn(
         async (
@@ -78,6 +84,9 @@ function mount() {
     })
     return {
       controller,
+      fixture,
+      held,
+      holdFrozen,
       project,
       setProject,
       result,
@@ -91,6 +100,47 @@ function mount() {
 }
 
 describe('Studio comparison lifecycle', () => {
+  it('holds the lane renders that match the song before letting the audio go, prepares with them and lets them go after', async () => {
+    // Arrange
+    const ui = mount()
+    const order: string[] = []
+    ui.holdFrozen.mockImplementationOnce(() => {
+      order.push('hold')
+      return ui.held
+    })
+    ui.transport.releaseAudio.mockImplementationOnce(async () => {
+      order.push('release audio')
+    })
+
+    // Act
+    expect(await ui.controller.prepare()).toBe(true)
+
+    // Assert
+    expect(order).toEqual(['hold', 'release audio'])
+    expect(ui.holdFrozen).toHaveBeenCalledExactlyOnceWith(ui.fixture.project, [
+      ui.fixture.asset,
+    ])
+    expect(ui.prepareRender.mock.calls[0][3]?.frozen).toBe(ui.held)
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
+  it('lets the held lane renders go when the song moves on before preparing', async () => {
+    // Arrange
+    const ui = mount()
+    const release = deferred<undefined>()
+    ui.transport.releaseAudio.mockReturnValueOnce(release.promise)
+
+    // Act
+    const pending = ui.controller.prepare()
+    ui.setProject((project) => ({ ...project, id: 'other' }))
+    release.resolve(undefined)
+
+    // Assert
+    expect(await pending).toBe(false)
+    expect(ui.prepareRender).not.toHaveBeenCalled()
+    expect(ui.held.release).toHaveBeenCalled()
+  })
+
   it('prepares without autoplay, primes in the play gesture, and switches sides at the captured position', async () => {
     const ui = mount()
     expect(await ui.controller.prepare()).toBe(true)
