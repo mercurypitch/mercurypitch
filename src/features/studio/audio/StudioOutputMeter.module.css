@@ -51,13 +51,33 @@
     var(--studio-meter-over) 90%
   );
 }
-/* The held peak: the trailing edge of a box as large as the rail, moved by
-   its transform, so a new hold repaints but lays nothing out. At the floor
-   it sits just out of sight, like the level. */
+/* The lit colours never move: the travel past the level is covered in the
+   rail's own colour, shrunk toward the far end by the level, so its box
+   never leaves the rail. A tick scales the cover and repaints the held
+   peak's band: it lays nothing out and repaints only the rail. At the floor
+   the colours go: a cover sharing the rail's edge would let a trace of them
+   through where the two edges blend. */
+.unlit {
+  position: absolute;
+  inset: 0;
+  transform-origin: right;
+  background: var(--studio-rail);
+}
+.floor i {
+  visibility: hidden;
+}
+/* The held peak: a 2 px band just under the level it holds, painted at
+   --hold, its share of the travel, on a mark as large as the rail. A
+   percentage places the band within the travel less its own 2 px, hence
+   the 2 px added back. The mark never moves; at the floor the band sits
+   just out of sight, like the level. */
 .rail b {
   position: absolute;
   inset: 0;
-  background: var(--studio-text);
+  background-image: linear-gradient(var(--studio-text), var(--studio-text));
+  background-repeat: no-repeat;
+  background-size: 2px 100%;
+  background-position: calc(var(--hold, 0) * (100% + 2px) - 2px) 0;
 }
 .scale {
   position: relative;
@@ -293,6 +313,13 @@
     var(--studio-meter-hot) 70% 90%,
     var(--studio-meter-over) 90%
   );
+}
+.vertical .unlit {
+  transform-origin: top;
+}
+.vertical .rail b {
+  background-size: 100% 2px;
+  background-position: 0 calc((1 - var(--hold, 0)) * (100% + 2px));
 }
 /* The marks share the rails' travel: from the floor to above the L and R labels. */
 .vertical .scale {

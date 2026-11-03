@@ -80,7 +80,9 @@ export function StudioStripMeter(props: Props) {
     () => reading(),
     (shown, next) => shown.measurement === next.measurement,
   )
-  // Moved, not laid out again: the hold rides a transform over the rail.
+  // Moved, not laid out again: the cover over the unlit travel shrinks
+  // toward the top, inside the rail, and the hold rides a transform.
+  const travel = () => stripTravel(reading()?.db ?? -Infinity)
   const holdPixels = () =>
     ((box()?.height ?? 0) * stripTravel(reading()?.holdDb ?? -Infinity)) / 100
   const decibels = (db: number) =>
@@ -132,11 +134,11 @@ export function StudioStripMeter(props: Props) {
           : { visibility: 'hidden' }
       }
     >
-      <div class={styles.rail}>
-        <i
-          style={{
-            'clip-path': `inset(${100 - stripTravel(reading()?.db ?? -Infinity)}% 0 0 0)`,
-          }}
+      <div class={styles.rail} classList={{ [styles.floor]: travel() === 0 }}>
+        <i />
+        <span
+          class={styles.unlit}
+          style={{ transform: `scaleY(${(100 - travel()) / 100})` }}
         />
         <b
           style={{

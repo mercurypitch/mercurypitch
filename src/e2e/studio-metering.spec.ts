@@ -22,21 +22,20 @@ test('Studio measures audible output and clears measured-master status after an 
   await studio.getByRole('button', { name: 'Play song', exact: true }).click()
   await expect(windows.nth(0)).toHaveText(/^-?\d+\.\d$/, { timeout: 10_000 })
   await expect(windows.nth(1)).toHaveText(/^-?\d+\.\d$/, { timeout: 10_000 })
-  // Where the left hold mark stands on its rail, in percent: the mark is a
-  // band clipped out of a box as large as the rail, and its right inset is
-  // the travel above it.
+  // Where the left hold mark stands on its rail, in percent: the mark is as
+  // large as the rail and never moves, and --hold places the band painted
+  // on it, as a share of the travel.
   const holdAt = () =>
     studio
       .getByRole('meter', { name: 'Output sample peak' })
       .last()
       .locator('b')
       .first()
-      .evaluate((element) => {
-        const inset = /^inset\(\S+ (\S+)%/.exec(
-          (element as HTMLElement).style.clipPath,
-        )
-        return inset ? 100 - Number(inset[1]) : NaN
-      })
+      .evaluate(
+        (element) =>
+          Number((element as HTMLElement).style.getPropertyValue('--hold')) *
+          100,
+      )
   const before = await holdAt()
   expect(before).toBeGreaterThan(0)
   await studio
