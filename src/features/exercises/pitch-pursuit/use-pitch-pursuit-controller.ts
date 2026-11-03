@@ -18,6 +18,29 @@ const SCORE_ACCURACY_WEIGHT = 0.3
 const MAX_COMBO_BONUS = 25
 const COMBO_MULTIPLIER = 3
 
+/**
+ * What a run plans at a difficulty level: how many notes fall, and how
+ * close a hit must be. The idle card and the live counter show these, so
+ * they come from the same sum the run uses.
+ */
+export function pursuitPlan(difficulty: number): {
+  notes: number
+  hitToleranceCents: number
+} {
+  const factor = difficultyFactor(difficulty)
+  return {
+    // Target count: harder = more notes (2 - factor grows as factor shrinks).
+    notes: Math.round(TOTAL_NOTES * (2 - factor)),
+    // Acceptance window: harder = tighter (|cents| <= W * factor).
+    hitToleranceCents: HIT_TOLERANCE_CENTS * factor,
+  }
+}
+
+/** The plan for the next launch: a drill's override, else the stored level. */
+export function launchPursuitPlan(): ReturnType<typeof pursuitPlan> {
+  return pursuitPlan(launchDifficulty(EXERCISE_PITCH_PURSUIT))
+}
+
 interface FallingNote {
   id: number
   midi: number
@@ -84,12 +107,11 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     // reduces to its baseline at d5 because difficultyFactor(5) === 1.0.
     const difficulty = launchDifficulty(EXERCISE_PITCH_PURSUIT)
     const factor = difficultyFactor(difficulty)
-    // Acceptance window: harder = tighter (|cents| <= W * factor).
-    hitToleranceCents = HIT_TOLERANCE_CENTS * factor
+    const plan = pursuitPlan(difficulty)
+    hitToleranceCents = plan.hitToleranceCents
     // Pursuit duration: harder = shorter fall, so the target moves faster.
     fallDurationMs = FALL_DURATION_MS * factor
-    // Target count: harder = more notes (2 - factor grows as factor shrinks).
-    totalNotes = Math.round(TOTAL_NOTES * (2 - factor))
+    totalNotes = plan.notes
 
     lastSpawnTime = performance.now()
     spawnNote()
@@ -188,6 +210,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         combo,
         maxCombo,
         totalNotes: total,
+        plannedNotes: totalNotes,
       })
     })
 

@@ -3,6 +3,7 @@ import { usePitchPursuitController } from '@/features/exercises/pitch-pursuit/us
 import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_PITCH_PURSUIT, runStoppedEarly, } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
+import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},
@@ -115,6 +116,7 @@ describe('a Pitch Pursuit run', () => {
   })
   afterEach(() => {
     vi.useRealTimers()
+    clearLaunchOverride()
   })
 
   it('ends by itself once its 12 notes have reached the line, and is a whole run', async () => {
@@ -140,5 +142,40 @@ describe('a Pitch Pursuit run', () => {
     expect(metrics.hits + metrics.misses).toBe(12)
     expect(runStoppedEarly(metrics)).toBe(false)
     expect(ctrl.getNotes()).toEqual([])
+  })
+
+  it('plays and counts the 17 notes difficulty 10 plans, and is a whole run', async () => {
+    // The counter beside the falling notes reads plannedNotes, so the
+    // number it counts to is the number the run plays.
+    setLaunchOverride(EXERCISE_PITCH_PURSUIT, {
+      type: EXERCISE_PITCH_PURSUIT,
+      difficulty: 10,
+    })
+    const results: ExerciseResult[] = []
+    const planned = new Set<number>()
+    let running = true
+    const ctrl = usePitchPursuitController(
+      createMockBase({
+        _isRunning: () => running,
+        _updateMetrics: (m) => {
+          if (m.plannedNotes !== undefined) planned.add(m.plannedNotes)
+        },
+        _completeWithResult: (r) => {
+          running = false
+          results.push(r)
+        },
+      }),
+    )
+
+    ctrl.startGame()
+    // Seventeen notes, one every 2.2 s, each 3 s to fall at this level and
+    // a second to clear: about forty seconds.
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect([...planned]).toEqual([17])
+    expect(results).toHaveLength(1)
+    const { metrics } = results[0]!
+    expect(metrics.hits + metrics.misses).toBe(17)
+    expect(runStoppedEarly(metrics)).toBe(false)
   })
 })
