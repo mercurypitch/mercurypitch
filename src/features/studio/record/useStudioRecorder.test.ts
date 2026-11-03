@@ -7,6 +7,8 @@ import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
   onChange: null as null | ((view: StudioRecorderView) => void),
+  acquireMic: null as null | (() => Promise<MediaStream>),
+  acquireFrom: vi.fn(),
   micListener: null as null | ((state: unknown) => void),
   indicator: null as null | (() => boolean),
   runGuard: null as null | (() => boolean),
@@ -22,8 +24,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
+    acquireMic: () => Promise<MediaStream>
   }) => {
     mocks.onChange = deps.onChange
+    mocks.acquireMic = deps.acquireMic
     mocks.recorder = {
       arm: vi.fn(() => Promise.resolve()),
       record: vi.fn(),
@@ -43,8 +47,10 @@ vi.mock('@/db/services/studio-take-journal', () => ({
   createStudioTakeJournal: () => mocks.journal,
 }))
 vi.mock('@/lib/mic-manager', () => ({
+  listAudioInputs: () => Promise.resolve([]),
   micManager: {
     acquire: vi.fn(),
+    acquireFrom: mocks.acquireFrom,
     release: vi.fn(),
     subscribe: (listener: (state: unknown) => void) => {
       mocks.micListener = listener
@@ -405,6 +411,45 @@ describe('useStudioRecorder with a range', () => {
       expect(mocks.journal.discard).toHaveBeenCalledWith('take-loop'),
     )
     expect(hook.recovery()).toEqual([])
+    dispose()
+  })
+})
+
+describe('useStudioRecorder input', () => {
+  afterEach(() => localStorage.clear())
+
+  it('arms on the chosen input, and says when it was not connected', async () => {
+    const { hook, dispose } = mount()
+    hook.chooseInput('usb-mic', 'USB Mic')
+    const stream = {} as MediaStream
+    mocks.acquireFrom.mockResolvedValueOnce({ stream, missing: true })
+
+    await expect(mocks.acquireMic!()).resolves.toBe(stream)
+
+    expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'usb-mic')
+    expect(hook.inputMissing()).toBe(true)
+    expect(readStudioRecordSettings()).toMatchObject({
+      inputDeviceId: 'usb-mic',
+      inputLabel: 'USB Mic',
+    })
+    // Another choice clears what the last arm found.
+    hook.chooseInput(null, 'Default input')
+    expect(hook.inputMissing()).toBe(false)
+    expect(readStudioRecordSettings().inputLabel).toBeNull()
+    dispose()
+  })
+
+  it('opens the input picked at once on an armed lane, and holds it still while a take runs', () => {
+    const { hook, dispose } = mount()
+    mocks.onChange!(view({ phase: 'armed' }))
+    hook.chooseInput('desk-mic', 'Desk mic')
+    expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
+    expect(mocks.recorder!.arm).toHaveBeenCalledWith('lane-1')
+
+    mocks.onChange!(view({ phase: 'recording' }))
+    hook.chooseInput('usb-mic', 'USB Mic')
+    expect(hook.settings().inputDeviceId).toBe('desk-mic')
+    expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
     dispose()
   })
 })
