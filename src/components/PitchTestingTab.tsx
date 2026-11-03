@@ -36,6 +36,7 @@ import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import { FileText, FileUpload, Minus, Plus, X } from './icons'
+import { LAB_ANALYSIS_RATE, toLabAnalysisRate } from './pitch-testing-rate'
 import { cancelPitchTestingUvrSession, preservePitchTestingUvrCancellation, settlePitchTestingUvrError, } from './pitch-testing-uvr-cancellation'
 import styles from './PitchTestingTab.module.css'
 
@@ -489,22 +490,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             const audioBuffer = await ctx.decodeAudioData(
               await stemDataBytes(blob.data),
             )
-            const rawData = audioBuffer.getChannelData(0)
-            const sampleRate = audioBuffer.sampleRate
-
-            let samples = rawData
-            if (sampleRate > 44100) {
-              const ratio = 44100 / sampleRate
-              const newLength = Math.floor(rawData.length * ratio)
-              samples = new Float32Array(newLength)
-              for (let i = 0; i < newLength; i++) {
-                // Map the (shorter) output index to the (longer) source
-                // index by dividing by ratio, not multiplying — otherwise
-                // only the first `ratio` fraction of the source is ever
-                // read and the rest of the audio is silently dropped.
-                samples[i] = rawData[Math.floor(i / ratio)]
-              }
-            }
+            const samples = toLabAnalysisRate(
+              audioBuffer.getChannelData(0),
+              audioBuffer.sampleRate,
+            )
 
             setAnalyzedTracks((prev) =>
               prev.map((t) => {
@@ -676,20 +665,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     try {
       const audioBuffer = await ctx.decodeAudioData(audioData)
 
-      // Convert to Float32Array and normalize
-      const rawData = audioBuffer!.getChannelData(0)
-      const sampleRate = audioBuffer!.sampleRate
-
-      // Downsample if necessary for performance
-      let samples = rawData
-      if (sampleRate > 44100) {
-        const ratio = 44100 / sampleRate
-        const newLength = Math.floor(rawData.length * ratio)
-        samples = new Float32Array(newLength)
-        for (let i = 0; i < newLength; i++) {
-          samples[i] = rawData[Math.floor(i / ratio)]
-        }
-      }
+      const samples = toLabAnalysisRate(
+        audioBuffer!.getChannelData(0),
+        audioBuffer!.sampleRate,
+      )
 
       const currentTracks = analyzedTracks()
       const currentActiveId = activeTrackId()
@@ -768,7 +747,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         pitches: [],
       }))
 
-      const sampleRate = audioContext()?.sampleRate ?? 44100
+      // Every waveform here was brought to this rate when it was loaded, so
+      // it is the rate that turns a sample index into seconds. The context's
+      // own rate is the rate the file was decoded at, which it no longer is.
+      const sampleRate = LAB_ANALYSIS_RATE
       const windowSize = 2048 // 2048 samples per chunk
       const stepSize = 1024 // 1024 samples hop size
       const totalSteps = Math.floor((samples.length - windowSize) / stepSize)
@@ -999,7 +981,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       if (t.id === activeId)
                         return {
                           ...t,
-                          waveform: mono,
+                          waveform: toLabAnalysisRate(mono, decoded.sampleRate),
                           analysisResults: [],
                           isVocalStem: true,
                           audioBuffer: decoded,
