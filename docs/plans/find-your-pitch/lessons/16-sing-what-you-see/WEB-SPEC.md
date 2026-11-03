@@ -116,12 +116,12 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,226 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
-under the series' cap of 2,379 by 153. Each step's own text, with its Try, its Notice and any Tavi
-line, runs 78 to 118 words, inside 50 to 120 a step. The page runs about 15 minutes: 9.35 of reading
-at 238 words a minute and about 5.1 of sound, toys and tasks, with six quiz questions, about 14.5 in
-all. The chip is an estimate until the staff toy and the take are timed in their lab (SEASON-2
-§ 1.3), and this section says so until then. Five parts carry more, for these reasons:
+The learner copy is 2,217 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+under the series' cap of 2,379 by 162. Each step's own text, with its Try, its Notice and any Tavi
+line, runs 78 to 118 words, inside 50 to 120 a step. The page runs about 14.4 minutes: 9.32 of
+reading at 238 words a minute and about 5.1 of sound, toys and tasks, with six quiz questions, under
+the chip's 15. The chip is an estimate until the staff toy and the take are timed in their lab
+(SEASON-2 § 1.3), and this section says so until then. Five parts carry more, for these reasons:
 
 - **Step 2, 192 words with its mix-up card.** The card sits in the step whose argument refutes it.
 - **Sing it, 534 words.** It holds the series' singing lines, Lesson 3's and Lesson 15's word for
@@ -130,7 +130,7 @@ all. The chip is an estimate until the staff toy and the take are timed in their
 - **The quick check, 282 words.** Four questions with three answers each and a line of feedback for
   every answer, as MASTER-PLAN § 4.2 item 8 asks.
 - **The recall, 159 words.** Lessons 9 and 15's questions, word for word.
-- **The Wrap, 267 words.** The practice card says what Sight-Singing does today, how to hide its
+- **The Wrap, 258 words.** The practice card says what Sight-Singing does today, how to hide its
   pitch line, its care lines and its rest version (FACTS 52 to 58).
 
 The hints and status lines are stage directions in LESSON.md and are not counted, as in every text

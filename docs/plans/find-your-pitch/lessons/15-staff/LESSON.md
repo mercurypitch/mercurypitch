@@ -72,7 +72,7 @@ Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
   them." sets up Lesson 16's opening in miniature, as the curiosity plan asks of a tease, where the
   plan's line, "Now you can see where any note sits.", sums up this lesson. The plan's line is kept
   as the alternative, for the owner's choice (FACTS 5).
-- **The page is longer than the plan's budget**: 2,337 words of learner copy, not about 1,750, so
+- **The page is longer than the plan's budget**: 2,332 words of learner copy, not about 1,750, so
   the chip's estimate is 15 minutes, not 14. Each step's own text stays near the plan's length; the
   rest is the Go deeper drawers, the mix-up card, the practice card's how-to and rest version, and
   the carried recall, singing lines and quick check, which run longer than the plan estimated. The
