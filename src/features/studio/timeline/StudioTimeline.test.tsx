@@ -144,6 +144,24 @@ describe('Studio timeline', () => {
     })
   })
 
+  it("sets the range to a phone's selected clip from its note, as a phone keeps no toolbar", () => {
+    const onRange = vi.fn()
+    render(() => (
+      <StudioTimeline
+        {...base}
+        phone={true}
+        selectedClipId="clip"
+        onRange={onRange}
+      />
+    ))
+    expect(screen.queryByRole('toolbar', { name: 'Selected clip' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Range' }))
+    expect(onRange).toHaveBeenCalledWith({
+      startFrame: 48000,
+      endFrame: 144000,
+    })
+  })
+
   it('sets the range to the selected clip from its toolbar', () => {
     const onRange = vi.fn()
     render(() => (
