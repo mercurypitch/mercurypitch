@@ -21,6 +21,7 @@ import type { MidiSongNote, MidiSongPercussionHit, MidiTempoChange, } from '@/li
 import { midiToNote } from '@/lib/scale-data'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
+import type { TranscriptionProfileId } from '@/lib/transcription/transcription-profile-id'
 import type { GuitarNightStemKind } from './song-port'
 
 /** The minimal saved-song shape a reference is read from. */
@@ -619,6 +620,11 @@ export function measuredReferenceForBacking(
 export interface GuitarNightTranscriptionPort {
   transcribeStem(
     stemUrl: string,
-    options: { signal: AbortSignal; onProgress(fraction: number): void },
+    options: {
+      signal: AbortSignal
+      onProgress(fraction: number): void
+      /** The instrument range to read the stem in; absent reads it as bass. */
+      profile?: TranscriptionProfileId
+    },
   ): Promise<StemTranscription>
 }

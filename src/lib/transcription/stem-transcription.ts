@@ -15,6 +15,10 @@
 import { createAttackDetector } from '@/lib/guitar/attack-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToNote } from '@/lib/scale-data'
+import type { TranscriptionProfileId } from './transcription-profile-id'
+
+export type { TranscriptionProfileId } from './transcription-profile-id'
+export { transcriptionProfileFor } from './transcription-profile-id'
 
 /**
  * Where the per-frame pitches come from.
@@ -167,6 +171,44 @@ export const BASS_SWIFT_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
    * get a number that is confidently wrong; this one is from the whole track.
    */
   minConfidence: 0.2,
+}
+
+/**
+ * Six-string guitar in standard tuning, from low E (82.4 Hz, MIDI 40) to the
+ * top of a 24-fret neck (E6, MIDI 88).
+ *
+ * The bass profile read a guitar stem through a 400 Hz ceiling and a MIDI 60
+ * top, so everything above middle C, most of a guitar line, was cut or
+ * folded down an octave. The rest follows the bass profile's reasoning:
+ *
+ * - The window holds a little over three cycles of low E. 40 ms is shorter
+ *   than the bass's 60 ms, because a guitar's lowest note is an octave
+ *   higher, and a shorter window blurs fewer fast notes.
+ * - 16 kHz leaves an 8 kHz ceiling, about six times the highest note asked
+ *   for, and a window of 640 samples.
+ * - 78 Hz sits just under low E: room for a flat tuning, none for the
+ *   sub-octave.
+ *
+ * Starting values, not yet tuned against a recorded guitar stem; the octave
+ * check and the onset split are the bass profile's.
+ */
+export const GUITAR_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
+  ...BASS_TRANSCRIPTION_PROFILE,
+  windowSeconds: 0.04,
+  analysisSampleRate: 16000,
+  minFrequency: 78,
+  maxFrequency: 1400,
+  minMidi: 40,
+  maxMidi: 88,
+}
+
+/** The profile an id names. */
+export function transcriptionProfile(
+  id: TranscriptionProfileId,
+): TranscriptionProfile {
+  return id === 'guitar'
+    ? GUITAR_TRANSCRIPTION_PROFILE
+    : BASS_TRANSCRIPTION_PROFILE
 }
 
 /**

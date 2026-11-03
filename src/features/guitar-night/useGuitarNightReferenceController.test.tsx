@@ -614,6 +614,31 @@ describe('useGuitarNightReferenceController', () => {
     expect(window.location.search).toBe('?session=session-room')
   })
 
+  it('reads a guitar stem in the guitar’s range, and every other stem as bass', async () => {
+    const { port } = fakePort()
+    const transcribeStem = vi.fn<
+      GuitarNightTranscriptionPort['transcribeStem']
+    >(async () => ({ coverage: 0, analysedSeconds: 4, notes: [] }))
+    const controller = mountWithTranscription(port, transcribeStem)
+
+    for (const stemKind of ['guitar', 'bass', 'other'] as const) {
+      await controller.followStem({
+        sessionId: 'session-room',
+        stemKind,
+        stemLabel: stemKind,
+        stemUrl: `blob:${stemKind}`,
+      })
+    }
+
+    expect(
+      transcribeStem.mock.calls.map(([url, options]) => [url, options.profile]),
+    ).toEqual([
+      ['blob:guitar', 'guitar'],
+      ['blob:bass', 'bass'],
+      ['blob:other', 'bass'],
+    ])
+  })
+
   it('names the stem it is reading, so two offers cannot share one progress', async () => {
     // With only bass on offer, `transcribeProgress` alone was enough to drive
     // the surface. Guitar is offered alongside it now, and a lone progress

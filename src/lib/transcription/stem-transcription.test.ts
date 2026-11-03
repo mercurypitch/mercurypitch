@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TranscriptionFrame } from './stem-transcription'
-import { BASS_TRANSCRIPTION_PROFILE, harmonicCorrectedMidi, profileWindowSamples, repairOctaveSlips, resolvableMinFrequency, toneMagnitude, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
+import { BASS_TRANSCRIPTION_PROFILE, GUITAR_TRANSCRIPTION_PROFILE, harmonicCorrectedMidi, profileWindowSamples, repairOctaveSlips, resolvableMinFrequency, toneMagnitude, transcribeFrames, transcribeStemSamples, transcriptionProfile, transcriptionProfileFor, } from './stem-transcription'
 
 const PROFILE = BASS_TRANSCRIPTION_PROFILE
 
@@ -390,5 +390,70 @@ describe('the fine window', () => {
     })
     expect(result.notes.length).toBeGreaterThan(0)
     expect(result.notes[0].midi).toBe(45)
+  })
+})
+
+/**
+ * A guitar line in memory, written the way `src/e2e/helpers/tone-wav.ts`
+ * `writeStepsWav` writes one: E4, A4 and E5, a second each, phase-continuous,
+ * a sine with two harmonics, and a short fade at either end.
+ */
+function guitarLine(sampleRate: number): Float32Array {
+  const steps = [329.63, 440, 659.26]
+  const perStep = sampleRate
+  const samples = new Float32Array(steps.length * perStep)
+  const fade = 0.02 * sampleRate
+  let phase = 0
+  for (let index = 0; index < samples.length; index += 1) {
+    phase += (2 * Math.PI * steps[Math.floor(index / perStep)]) / sampleRate
+    const level = Math.min(1, index / fade, (samples.length - index) / fade)
+    samples[index] =
+      level *
+      (0.5 * Math.sin(phase) +
+        0.2 * Math.sin(2 * phase) +
+        0.1 * Math.sin(3 * phase))
+  }
+  return samples
+}
+
+describe('the guitar profile', () => {
+  const rate = GUITAR_TRANSCRIPTION_PROFILE.analysisSampleRate
+
+  it('reads a guitar line in the guitar’s range: E4, A4, E5', async () => {
+    const result = await transcribeStemSamples(guitarLine(rate), rate, {
+      profile: GUITAR_TRANSCRIPTION_PROFILE,
+    })
+
+    expect(result.notes.map((note) => note.midi)).toEqual([64, 69, 76])
+  })
+
+  it('is needed: the bass profile hears nothing of that line above C4', async () => {
+    const result = await transcribeStemSamples(guitarLine(rate), rate, {
+      profile: BASS_TRANSCRIPTION_PROFILE,
+    })
+
+    expect(result.notes.filter((note) => note.midi > 60)).toEqual([])
+  })
+
+  it('stays above the lowest frequency its window can resolve', () => {
+    expect(GUITAR_TRANSCRIPTION_PROFILE.minFrequency).toBeGreaterThanOrEqual(
+      resolvableMinFrequency(GUITAR_TRANSCRIPTION_PROFILE.windowSeconds),
+    )
+  })
+})
+
+describe('transcriptionProfileFor', () => {
+  it.each([
+    ['guitar', 'guitar'],
+    ['bass', 'bass'],
+    ['other', 'bass'],
+    ['piano', 'bass'],
+  ])('reads a %s stem with the %s profile', (stemKind, profile) => {
+    expect(transcriptionProfileFor(stemKind)).toBe(profile)
+  })
+
+  it('names the profile each id stands for', () => {
+    expect(transcriptionProfile('guitar')).toBe(GUITAR_TRANSCRIPTION_PROFILE)
+    expect(transcriptionProfile('bass')).toBe(BASS_TRANSCRIPTION_PROFILE)
   })
 })
