@@ -223,9 +223,10 @@
 }
 .liveWave {
   display: block;
-  /* Sized by the column, never by its own pixels. */
+  /* As tall as the column leaves it; as wide as the view, whatever the
+     take's width, so a chunk draws on it without sizing it again. */
   flex: 1 1 0;
-  width: 100%;
+  flex-shrink: 0;
   min-height: 0;
   color: color-mix(in srgb, var(--red, #e5484d) 75%, var(--studio-text));
 }
