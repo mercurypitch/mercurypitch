@@ -1,4 +1,11 @@
 /* Studio ruler range: a band on the ruler with a grip at each end, and its tint down the lanes. */
+/* The ruler's cell again, beside the ruler's slider rather than inside it. */
+.layer {
+  position: relative;
+  grid-area: 1 / 2;
+  min-width: 0;
+  pointer-events: none;
+}
 .range {
   position: absolute;
   top: 0;

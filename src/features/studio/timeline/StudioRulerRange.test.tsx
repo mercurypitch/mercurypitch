@@ -127,6 +127,7 @@ function mount(range = { startFrame: 48000, endFrame: 96000 }) {
         tools={tools}
         range={range}
         scale={100}
+        endFrame={480000}
         onChange={onChange}
       />
     )
@@ -153,6 +154,23 @@ describe('StudioRulerRange', () => {
     })
     await fireEvent.click(screen.getByRole('button', { name: 'Clear range' }))
     expect(onChange).toHaveBeenLastCalledWith(null)
+  })
+
+  it('gives each handle its bounds, its place and its time, as a slider must', () => {
+    mount()
+    const start = screen.getByRole('slider', { name: 'Range start' })
+    const end = screen.getByRole('slider', { name: 'Range end' })
+    const shortest = STUDIO_MIN_LOOP_FRAMES / 48000
+    // The start stops the shortest loop before the end; the end as far
+    // past the start, and at the song's end at the latest.
+    expect(start).toHaveAttribute('aria-valuemin', '0')
+    expect(start).toHaveAttribute('aria-valuemax', String(2 - shortest))
+    expect(start).toHaveAttribute('aria-valuenow', '1')
+    expect(start).toHaveAttribute('aria-valuetext', '0:01.000')
+    expect(end).toHaveAttribute('aria-valuemin', String(1 + shortest))
+    expect(end).toHaveAttribute('aria-valuemax', '10')
+    expect(end).toHaveAttribute('aria-valuenow', '2')
+    expect(end).toHaveAttribute('aria-valuetext', '0:02.000')
   })
 
   it('hides its handles while a take runs, so the range holds still', () => {

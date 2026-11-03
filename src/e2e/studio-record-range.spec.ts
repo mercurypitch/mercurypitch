@@ -195,6 +195,40 @@ test.describe('Studio recording over a range', () => {
     expect(asset.normalizedFrameCount).toBeGreaterThanOrEqual(
       clip.sourceOutFrame,
     )
+
+    // The range lies over the ruler, beside its slider rather than inside
+    // it: on the Phrase's edges, its handles take the pointer, and a press
+    // on the band between them still moves the playhead.
+    const band = (await studio.locator('[data-studio-range]').boundingBox())!
+    const phrase = (await studioClip(page, 'Phrase').boundingBox())!
+    expect(Math.abs(band.x - phrase.x)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(band.x + band.width - phrase.x - phrase.width),
+    ).toBeLessThanOrEqual(1)
+    // The band shares the ruler's cell: the ruler stays in its row and column.
+    const ruler = (await studio
+      .getByRole('slider', { name: 'Song playhead', exact: true })
+      .boundingBox())!
+    expect(Math.abs(band.y - ruler.y)).toBeLessThanOrEqual(1)
+    expect(Math.abs(band.height - ruler.height)).toBeLessThanOrEqual(1)
+    expect(band.x).toBeGreaterThanOrEqual(ruler.x)
+    expect(band.x + band.width).toBeLessThanOrEqual(ruler.x + ruler.width)
+    const grip = (await studio
+      .locator('[data-studio-range-handle="end"]')
+      .boundingBox())!
+    expect(
+      await page.evaluate(
+        ([x, y]) =>
+          document
+            .elementFromPoint(x, y)
+            ?.getAttribute('data-studio-range-handle') ?? null,
+        [grip.x + grip.width / 2, grip.y + grip.height / 2] as const,
+      ),
+    ).toBe('end')
+    await page.mouse.click(band.x + band.width / 2, band.y + band.height / 2)
+    await expect(
+      studio.getByRole('slider', { name: 'Song playhead', exact: true }),
+    ).toHaveAttribute('aria-valuetext', /^0:0[78]\./)
   })
 
   test('a loop keeps its whole passes as windows of one file, plays the newest, and Play after it starts on time', async ({

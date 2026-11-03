@@ -8,6 +8,30 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioTrack } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
 
+/** The lane's name, and where its audio came from: a button to the lane's details. */
+export function StudioTrackName(props: {
+  id: string
+  name: string
+  source?: string
+  onDetails(id: string): void
+}) {
+  return (
+    <button
+      type="button"
+      class={styles.trackName}
+      data-studio-track-header={props.id}
+      title={`${props.name} details`}
+      aria-label={`${props.name} details`}
+      onClick={() => props.onDetails(props.id)}
+    >
+      <span class={styles.trackNameText}>{props.name}</span>
+      <Show when={props.source}>
+        {(source) => <span class={styles.sourceLabel}>{source()}</span>}
+      </Show>
+    </button>
+  )
+}
+
 export interface StudioTrackControlsProps {
   track: StudioTrack
   writable: boolean
