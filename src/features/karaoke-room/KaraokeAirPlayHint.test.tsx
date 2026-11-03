@@ -73,7 +73,9 @@ describe('KaraokeAirPlayHint', () => {
 
     m.setPlaying(true)
 
-    expect(screen.getByTestId('karaoke-airplay-hint')).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "AirPlay cannot carry the room's sound to a TV.",
+    )
   })
 
   it('takes no focus from the room as it shows', () => {
@@ -136,7 +138,7 @@ describe('KaraokeAirPlayHint', () => {
     const m = mixer()
     render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
     m.setPlaying(true)
-    expect(screen.getByTestId('karaoke-airplay-hint')).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent('Screen Mirroring can')
 
     screenLink.connect(true)
 
@@ -152,7 +154,7 @@ describe('KaraokeAirPlayHint', () => {
 
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
     m.setPlaying(true)
-    expect(screen.getByTestId('karaoke-airplay-hint')).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent('AirPlay cannot')
   })
 
   it('shows nothing between songs, when there is no mixer', () => {
