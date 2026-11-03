@@ -518,8 +518,8 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** a Studio lane's last clip ended differently in every render: two Plays of a voice lane landing 16 frames apart in a render quantum differed by -10 dBFS over its last milliseconds, a frozen guitar lane and the same lane live by -17.3 dBFS, and the end was cut before its own de-click fade.
 **Cause:** Chromium resets a DelayNode, a biquad or IIR filter and an oversampled WaveShaperNode when the channel count of its input changes. When the last source feeding a stereo path ends, its outputs are disabled at the next render quantum down to the first node with a tail, and an input with nothing enabled counts as one channel, so those nodes drop what they hold (a compressor twin's lookahead, an oversampler's delay, a reverb's pre-delay) at a frame set by where the quantum falls. DynamicsCompressorNode, ConvolverNode and an unoversampled WaveShaperNode keep theirs (Chromium 148). A GainNode with an explicit channel count does not help: it has no tail, so it is disabled too.
-**Rule:** put a zero DelayNode fixed at two channels (`channelCountMode: 'explicit'`) behind the input of a stereo chain that outlives its sources: it has a tail, stays enabled for its maximum delay, and keeps everything after it at two channels. Studio chains take `stereoHold`. The hold is bit-exact while audio passes and costs about 1 µs a render quantum.
-**See:** `src/lib/studio-fx/chain.ts`, and `laneEndPlaysOut` in `scripts/studio-epoch-browser-probes.mjs`.
+**Rule:** put a zero DelayNode fixed at two channels (`channelCountMode: 'explicit'`) behind the input of a stereo chain that outlives its sources: it has a tail, stays enabled for its maximum delay, and keeps everything after it at two channels. Studio chains take `stereoHold`; any other stereo path takes `createStereoHold`, given at least the longest delay behind it. The hold is bit-exact while audio passes and costs about 1 µs a render quantum.
+**See:** `src/lib/studio-fx/chain.ts`, `src/lib/audio/stereo-hold.ts`, and `laneEndPlaysOut` in `scripts/studio-epoch-browser-probes.mjs`.
 
 ## Framework
 

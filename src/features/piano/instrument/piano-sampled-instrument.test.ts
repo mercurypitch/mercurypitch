@@ -61,6 +61,11 @@ class FakeBiquadFilterNode extends FakeAudioNode {
 
 class FakeDelayNode extends FakeAudioNode {
   readonly delayTime = new FakeAudioParam()
+  channelCount = 2
+  channelCountMode: ChannelCountMode = 'max'
+  constructor(readonly maxDelayTime = 1) {
+    super()
+  }
 }
 
 class FakeCompressorNode extends FakeAudioNode {
@@ -135,8 +140,8 @@ class FakeAudioContext {
     return filter as unknown as BiquadFilterNode
   }
 
-  createDelay(_maximumDelayTime?: number): DelayNode {
-    const delay = new FakeDelayNode()
+  createDelay(maximumDelayTime?: number): DelayNode {
+    const delay = new FakeDelayNode(maximumDelayTime)
     this.delays.push(delay)
     return delay as unknown as DelayNode
   }
@@ -920,6 +925,27 @@ describe('createPianoSampledInstrument', () => {
     expect(lastTarget(filter!.frequency)).toBe(5_800)
     expect(lastTarget(dry!.gain)).toBe(0.72)
     expect(context?.filters).toHaveLength(1)
+  })
+
+  it('holds the graph at two channels behind its input, so a stereo sample keeps its reflections when it ends', async () => {
+    // Arrange
+    const { context, instrument } = harness()
+
+    // Act
+    await instrument.load()
+
+    // Assert
+    const input = context!.gains[0]
+    const [hold, ...reflections] = context!.delays
+    const tone = context!.filters[0]
+    expect(input.connect.mock.calls).toEqual([[hold]])
+    expect(hold.connect.mock.calls).toEqual([[tone]])
+    expect(hold.delayTime.value).toBe(0)
+    expect([hold.channelCount, hold.channelCountMode]).toEqual([2, 'explicit'])
+    // Enabled until the longest reflection has played out.
+    expect(hold.maxDelayTime).toBeGreaterThanOrEqual(
+      Math.max(...reflections.map((delay) => delay.maxDelayTime)),
+    )
   })
 
   it('combines normalized master volume with character gain without rebuilding', async () => {

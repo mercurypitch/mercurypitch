@@ -93,7 +93,7 @@ These are the rules that break things when ignored.
 | `plan` | [PlanQuestions.tsx](../../src/features/plan/PlanQuestions.tsx) | 6.8k | PlanQuestions — the four question screens What Merc asks after First Light: the instrument (Q1), what the person is working toward (Q2),... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
-| `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
+| `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.8k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.1k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
@@ -178,6 +178,7 @@ These are the rules that break things when ignored.
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 200 | Platform services — web implementations. |
 | `pitch-measurements` | [index.ts](../../src/lib/pitch-measurements/index.ts) | 150 | Pitch measurements — shared neutral F0 primitives |
 | `timing` | [input-latency.ts](../../src/lib/timing/input-latency.ts) | 100 | Drum Night latency calibration — bounded robust estimates, never guesses. |
+| `audio` | [stereo-hold.ts](../../src/lib/audio/stereo-hold.ts) | 50 | Stereo hold — keeps a stereo path at two channels after its sources end Chromium resets a DelayNode, a biquad or IIR filter and an oversa... |
 | `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 50 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |
 
 #### Core library files (`src/lib/*.ts`, 400+ LOC)
