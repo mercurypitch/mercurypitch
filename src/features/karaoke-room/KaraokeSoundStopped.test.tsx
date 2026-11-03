@@ -35,7 +35,7 @@ describe('KaraokeSoundStopped', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('says the sound went to the TV over AirPlay, with no Play again', () => {
+  it('names the receiver the sound went to over AirPlay, with no Play again', () => {
     setAudioRouteForTests('airplay', 'LG C2')
     const m = mixer()
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
@@ -44,12 +44,31 @@ describe('KaraokeSoundStopped', () => {
 
     const status = screen.getByRole('status')
     expect(status).toHaveTextContent(
-      'The sound went to the TV over AirPlay and stopped.',
+      'The sound went to LG C2 over AirPlay and stopped.',
     )
     expect(status).toHaveTextContent(
-      'Choose iPhone under AirPlay in Control Center, or use Screen Mirroring to put the room on the TV.',
+      'To hear it here, choose this phone under AirPlay in Control Center.',
     )
     expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
+  })
+
+  it('closes the AirPlay notice from its button, until the route or the stop changes', () => {
+    setAudioRouteForTests('airplay', 'LG C2')
+    const m = mixer()
+    render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
+    m.setStalled(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    // The phone chosen in Control Center: a notice with something to press.
+    setAudioRouteForTests('speaker', 'Speaker')
+    expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
+    // Back on AirPlay and a new stop: said again.
+    setAudioRouteForTests('airplay', 'LG C2')
+    m.setStalled(false)
+    m.setStalled(true)
+    expect(screen.getByRole('status')).toHaveTextContent('over AirPlay')
   })
 
   it('says the sound stopped on the phone, and plays again from its button', () => {
@@ -57,6 +76,7 @@ describe('KaraokeSoundStopped', () => {
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
     m.setStalled(true)
     expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
 

@@ -2166,8 +2166,8 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 
 **Symptom:** the Karaoke clock watch's test of its guard at the song's end passed with the guard deleted.
 **Cause:** the test stubbed `requestAnimationFrame` to keep the frames off, then called `vi.useFakeTimers()`, which in Vitest 4 fakes every timer it knows, `requestAnimationFrame` included, over the stub. Frames ran on fake time and ended the song at its end, so the guard never acted.
-**Rule:** when a test stubs `requestAnimationFrame`, or fakes the clock around something that draws, pass `toFake` with the timers it drives (`['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date']`). Take a guard out once to see its test go red.
-**See:** `src/features/stem-mixer/useStemMixerAudioController.stall.test.ts` (`playing`).
+**Rule:** when a test stubs `requestAnimationFrame`, or fakes the clock around something that draws, pass `toFake` with the timers it drives (`['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date']`, and `'performance'` where the code reads `performance.now()`). Take a guard out once to see its test go red.
+**See:** `playingIn` in `src/features/stem-mixer/clock-stall.fixture.ts`.
 
 ## Process
 

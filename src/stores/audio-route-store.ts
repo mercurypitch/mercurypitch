@@ -16,16 +16,22 @@
 // what depends on the route treats null as the phone's own output.
 //
 // EACH ROUTE IS SAID in the console, at the routine level (console.log, kept
-// when the console keeps routine logs): its kind, the port as the phone
-// names it and, on iOS, the reason iOS gave with the outputs before it:
+// when the console keeps routine logs): its kind and, on iOS, the reason
+// iOS gave with the kinds of output before it:
 //
-//   [audio route] airplay "LG C2", iOS: new device, was Speaker
+//   [audio route] airplay, iOS: new device, was Speaker
+//
+// Never a port's own name. "Viki's AirPods" names a person, and a console's
+// lines are copied off the phone, the crash card's into public bug reports.
+// The port is kept (`audioRoutePort`) for the Karaoke room's notice, on the
+// singer's own screen, and a test build's audio report names it as it
+// always has (audio-census.ts, `output change`).
 //
 // One at launch, so a log starts from where the sound went. iOS reports the
-// route again each time the app comes to the front, moved or not, so that
-// and a reading on the way back are said only where they differ from the
-// last line. A test build's audio record has the long form of each change
-// (audio-census.ts, `output change`).
+// route again each time the app comes to the front, moved or not, so that,
+// a reading on the way back and Android's report of each device it adds or
+// removes are said only where the route moved. A change that carries iOS's
+// reason is said even where it did not: the reason is the news.
 //
 // Tests: src/tests/audio-route-store.test.ts.
 
@@ -38,7 +44,10 @@ const [port, setPort] = createSignal<string | null>(null)
 /** Where the sound goes now, or null where nobody can say. */
 export const audioRoute = route
 
-/** The port it goes to, as the phone names it ("LG C2"), or null. */
+/**
+ * The port it goes to, as the phone names it ("LG C2"), or null. For the
+ * singer's own screen only, never a log line (see the header).
+ */
 export const audioRoutePort = port
 
 const firstPort = (
@@ -57,14 +66,9 @@ function whyOf(change: NativeAudioRouteChange | undefined): string {
   return words.join(', ')
 }
 
-/** The console's line for a route: its kind, its port, and why. */
-export function routeLine(
-  next: NativeAudioRoute,
-  portName: string | null,
-  why: string,
-): string {
-  const named = portName === null ? '' : ` "${portName}"`
-  return `[audio route] ${next}${named}${why === '' ? '' : `, ${why}`}`
+/** The console's line for a route: its kind, and why. No port's name. */
+export function routeLine(next: NativeAudioRoute, why: string): string {
+  return `[audio route] ${next}${why === '' ? '' : `, ${why}`}`
 }
 
 /**
@@ -78,7 +82,7 @@ export function followAudioRoute(
   if (output === undefined) return () => undefined
   let following = true
   let changes = 0
-  /** The route and port the last line named. */
+  /** The route and port of the last line, though the line names no port. */
   let said: string | null = null
 
   const take = (
@@ -92,7 +96,7 @@ export function followAudioRoute(
     const heard = `${next} ${portName ?? ''}`
     if (!sayAnyway && heard === said) return
     said = heard
-    console.log(routeLine(next, portName, why))
+    console.log(routeLine(next, why))
   }
 
   const readNow = (why: string): void => {
@@ -116,10 +120,11 @@ export function followAudioRoute(
     output.watchRoute?.((next, change) => {
       if (!following) return
       changes += 1
-      // A route iOS moved is said even on the same port: its reason is the
-      // news (a category change as the mic opens).
-      const moved = change?.reason === 'route'
-      take(next, firstPort(change?.outputs), whyOf(change), moved)
+      // iOS's reason is said even on the same port: it is the news (a
+      // category change as the mic opens). Android gives none, and reports
+      // each device it adds or removes, inputs too, as a change of route.
+      const withReason = (change?.routeReason ?? null) !== null
+      take(next, firstPort(change?.outputs), whyOf(change), withReason)
     }) ?? (() => undefined)
 
   return () => {

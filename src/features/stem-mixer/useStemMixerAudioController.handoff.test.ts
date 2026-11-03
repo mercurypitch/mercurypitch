@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import { START_CHECK_MS } from './playback-return-watch'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
-import { ENTERING_BACKGROUND_MS, LEAVE_WAIT_MS, SILENT_START_NOTICE, useStemMixerAudioController, } from './useStemMixerAudioController'
+import { ENTERING_BACKGROUND_MS, LEAVE_WAIT_MS, useStemMixerAudioController, } from './useStemMixerAudioController'
 
 /** An audio context whose state and clock the test moves, as iOS would. */
 class FakeClock extends EventTarget {
@@ -267,14 +267,16 @@ describe('a press of play in the room', () => {
     dispose()
   })
 
-  it('stops a song that still makes no sound, and says so', async () => {
+  it('stops a song that still makes no sound, and marks it for the room to say why', async () => {
     const { clock, controller, notifications, dispose } = harness(inTheRoom)
     controller.handlePlay()
 
     await vi.advanceTimersByTimeAsync(START_CHECK_MS * 2)
 
     expect(controller.playing()).toBe(false)
-    expect(notifications).toEqual([SILENT_START_NOTICE])
+    // The room says it, in words that follow the route; no toast over it.
+    expect(controller.stalled()).toBe(true)
+    expect(notifications).toEqual([])
     // Parked, so the next press starts the clock for real.
     expect(clock.state).toBe('suspended')
     expect(
