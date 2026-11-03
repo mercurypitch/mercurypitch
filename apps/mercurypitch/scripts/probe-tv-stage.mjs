@@ -18,11 +18,15 @@
 // The page is fed a song through `window.__mpStage.receive`, as the iPhone
 // feeds it: an invented song, "River Road", with a short line, a long one, a
 // longer one, a run-on verse and a rest, notes, the singer's readings and a
-// score. Each scene is drawn paused, measured, and drawn again with the
-// same song and no lyrics: what changed is the lyrics' ink, pixel for pixel,
-// and what the renderer wrote in the first frame and not in the second is
-// the lyrics' text. Then, at 1920x1080, at 3840x2160, and at 1920x1080 on a
-// 2x screen (the same pixels as 4K), it asks:
+// score. The page's clock is held still (Playwright's fixed time), so a
+// playing song stands where it was put and every frame is the same. Each
+// scene is drawn playing (the paused screen would cover the lyrics),
+// measured, and drawn again with the same song and no lyrics: what changed
+// is the lyrics' ink, pixel for pixel, and what the renderer wrote in the
+// first frame and not in the second is the lyrics' text. Two scenes are
+// drawn standing still instead, to show the paused screen: part way, and
+// ready at the start. Then, at 1920x1080, at 3840x2160, and at 1920x1080
+// on a 2x screen (the same pixels as 4K), it asks:
 //
 //   - inset: every pixel that is not the background lies inside 5% of each
 //     edge (REQ-TV-020, Play TV-OV);
@@ -37,7 +41,10 @@
 //   - glass: the lane draws its notes in their yellow glass. They are
 //     sprites painted once on canvases of their own (src/lib/tv-stage/
 //     sprites.ts), and a page that could not make one would draw an empty
-//     lane with no error anywhere.
+//     lane with no error anywhere;
+//   - paused: standing still, the paused screen says so ("Paused", or
+//     "Ready to sing" at the start), and every text on the screen, its own
+//     and the stage's behind it, is 32 px per 1080 lines or more.
 //
 // The lane's box is worked out here as tvStageLayout works it out
 // (src/lib/tv-stage/layout.ts): the lane is drawn from sprites, so no fill
@@ -170,16 +177,33 @@ const song = (withLyrics) => ({
   lyrics: withLyrics ? lyrics() : [],
 })
 
-const frame = (position) => ({
+/** The page's wall clock, held still: Playwright's fixed time. */
+const NOW = Date.UTC(2026, 10, 3, 20, 0, 0)
+
+/** A frame read at NOW. */
+const frame = (position, playing) => ({
   v: 1,
   kind: 'frame',
-  at: Date.now(),
+  at: NOW,
   position,
-  playing: false,
+  playing,
   rate: 1,
   singer: readings(position),
   score: { pct: 84, grade: 'B' },
 })
+
+/**
+ * The song playing at `position`, its start long enough ago that the paused
+ * screen has faded: a frame that starts it three seconds before, then one
+ * where it is. The clock is held still, so it stays there.
+ */
+const playingAt = (position) => [
+  { ...frame(position - 3, true), at: NOW - 3000, singer: [] },
+  frame(position, true),
+]
+
+/** The song standing still at `position`: the paused screen, fully in. */
+const standingAt = (position) => [frame(position, false)]
 
 /**
  * The scenes. `line` is a line of LINES; `into` says where in it: `'start'`
@@ -194,6 +218,8 @@ const SCENES = [
   { name: 'longer', line: 2, into: 'second-row' },
   { name: 'run-on', line: 3, into: 'second-row' },
   { name: 'rest', position: 58 },
+  { name: 'paused', position: 20.3, standing: true, says: 'Paused' },
+  { name: 'ready', position: 0, standing: true, says: 'Ready to sing' },
 ]
 
 // ── In the page ──────────────────────────────────────────────
@@ -368,7 +394,7 @@ async function positionOf(page, scene) {
   const line = LINES[scene.line]
   const { current, words } = lineWords(line)
   if (scene.into === 'third-word') return words[2][0] + line.per / 2
-  await send(page, IDLE, song(true), frame(line.at))
+  await send(page, IDLE, song(true), ...playingAt(line.at))
   const { record } = await page.evaluate(readCanvas, READ)
   const pieces = record.texts.filter((text) => current.includes(text.text))
   const firstRow = pieces.filter((piece) => piece.y === pieces[0].y).length
@@ -446,13 +472,15 @@ async function runScene(page, view, scene, shots) {
     await send(page, IDLE)
   } else {
     const position = await positionOf(page, scene)
-    await send(page, IDLE, song(true), frame(position))
+    const frames = scene.standing ? standingAt(position) : playingAt(position)
+    await send(page, IDLE, song(true), ...frames)
   }
   const full = await page.evaluate(readCanvas, READ)
   if (shots !== null)
     await page.screenshot({ path: join(shots, `${name}.png`) })
   const result = { name, scene: scene.name, view: view.name, full, errors }
   if (scene.name === 'idle') return result
+  if (scene.standing) return { ...result, says: scene.says }
   const lane = laneBox(full.width, full.height)
   const glass = await page.evaluate(noteGlass, { lane })
   await send(page, song(false))
@@ -493,8 +521,18 @@ function judge(result, view) {
       `${drawn.outside} px outside the 5% inset, in ${JSON.stringify(drawn)}`,
     )
   }
-  if (result.rows === undefined) return failures
   const floor = FLOOR_PX * unit
+  if (result.says !== undefined) {
+    const texts = full.record.texts
+    if (!texts.some((text) => text.text === result.says)) {
+      fail(`the paused screen does not say "${result.says}"`)
+    }
+    for (const text of texts) {
+      if (text.px < floor - 1e-6) fail(`"${text.text}" at ${text.px} px`)
+    }
+    return failures
+  }
+  if (result.rows === undefined) return failures
   for (const text of result.lyricTexts) {
     if (text.px < floor - 1e-6) fail(`"${text.text}" at ${text.px} px`)
   }
@@ -540,6 +578,12 @@ function describe(result) {
   if (result.rows === undefined) {
     const sizes = full.record.texts.map((t) => `${per1080(t.px, height)}`)
     lines.push(`          text per 1080: ${sizes.join(', ')}`)
+    if (result.says !== undefined) {
+      const said = full.record.texts.map((t) => t.text).join(' | ')
+      lines.push(
+        `          says: ${said.length <= 100 ? said : `${said.slice(0, 100)} [..]`}`,
+      )
+    }
     return lines
   }
   const other = [
@@ -651,6 +695,9 @@ async function probeView(browser, baseUrl, view, shots) {
     }
   })
   await page.addInitScript(installRecorder)
+  // Date.now() held at NOW, the timers still running: a frame that plays
+  // stands where it was put, and the paused screen's fade is done or not.
+  await page.clock.setFixedTime(NOW)
   await page.goto(`${baseUrl}/stage.html`, { waitUntil: 'load' })
   await page.waitForFunction(
     () => window.__mpStage !== undefined && window.__mpProbe.frame !== null,

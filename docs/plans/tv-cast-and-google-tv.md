@@ -475,7 +475,7 @@ Build two things once, and give each route a thin adapter.
  mode and draws snapshots the phone sends.
 ```
 
-- **TV stage** (`REQ-TV-020..027`): a light entry, separate from the main app,
+- **TV stage** (`REQ-TV-020..028`): a light entry, separate from the main app,
   that draws lyrics, the reference lane, singer trails and the score from a
   model. **Host mode** owns playback and scoring (W, G, C). **View mode**
   draws snapshots (S). One entry serves the TV browser, the Google TV app's
@@ -892,10 +892,32 @@ spread the app offers lyrics only and says why.
    7.6). The probe also checks the lane's names against the 32 px floor and
    that its notes' glass is drawn.
 
+   **As built, the paused screen (same branch, `REQ-TV-028`):** asked for
+   after the owner paused YouTube over AirPlay on the LG C2. Looked at
+   first: the TV's own AirPlay player in the owner's photo, the tvOS
+   transport bar (Apple TV app; tvOS 15's redesign puts the title large at
+   the bottom left over the bar, the time left at its right end), and
+   YouTube's TV player (a scrim from the bottom, the title over the bar, the
+   time at each end, a knob at the place). What reads from a sofa in all of
+   them: one bar the width of the screen, a big title close above it, few
+   words, large times, and the picture left in sight above a dark scrim.
+   Taken into the lane's glass (`src/lib/tv-stage/pause-screen.ts`,
+   `pause-paint.ts`): the stage dimmed behind and its lyrics' place covered;
+   "Paused" in the lyrics' gold, the title at 80 px per 1080 lines, and the
+   one thing a video player has not, the line to sing next as the song
+   carries on; a bar of dark glass with the place in gold glass and a glass
+   knob; a pause mark beside the time sung, the time left at the right.
+   Standing at the start before the first play, the same screen says "Ready
+   to sing" and "Press play on your phone to start". It follows the frames'
+   `playing` and fades over 250 ms from the moment the song stopped or
+   started, the scrim ahead of the words, so the lyrics are gone before the
+   words come; no field was missing from the protocol. Its pieces are
+   sprites, as the lane's are, and it draws nothing while the song plays.
+
 4. The handoff remainder (2.5), and one song streamed from the phone (2.8).
    The waveform cache (2.7) only if P0 asks.
 
-Exit: `REQ-TV-010..013`, `016..027`, `030..031`, `034`; the app-check skill passes the stage at
+Exit: `REQ-TV-010..013`, `016..028`, `030..031`, `034`; the app-check skill passes the stage at
 1920x1080 with the D-pad only; every tour step on touched pages still resolves.
 
 ### P3 Phone as the mic (29) **[next]**

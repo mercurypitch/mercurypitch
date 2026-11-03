@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { laneGeometry, timeX } from '@/lib/tv-stage/lane'
 import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState } from '@/lib/tv-stage/model'
-import { EMPTY_TV_STAGE } from '@/lib/tv-stage/model'
+import { EMPTY_TV_STAGE, LONG_AGO } from '@/lib/tv-stage/model'
 import { recordingContext, recordingSprites, } from '@/lib/tv-stage/recording-context.fixture'
 import { createTvStageView, drawTvStage, segmentAt, wordFill, } from '@/lib/tv-stage/renderer'
 
@@ -47,9 +47,10 @@ const SONG_STATE: TvStageState = {
       },
     ],
   },
-  clock: { at: 0, position: 10, playing: false, rate: 1 },
+  clock: { at: 0, position: 10, playing: true, rate: 1 },
   trail: [[9.9, 64.1]],
   score: { pct: 82, grade: 'B' },
+  turn: LONG_AGO,
 }
 
 describe('the layout', () => {
@@ -112,6 +113,27 @@ describe('a frame', () => {
         'and then again',
       ]),
     )
+  })
+
+  it('leaves the title to the paused screen while the song stands, one title on screen', () => {
+    const titleSizes = (at: TvStageState): number[] => {
+      const { ctx, texts } = recordingContext()
+      drawTvStage(ctx, at, 0, { width: 1920, height: 1080 }, VIEW)
+      return texts
+        .filter((written) => written.text === 'Goodbye to Spring')
+        .map((written) => written.px)
+    }
+    const standing: TvStageState = {
+      ...SONG_STATE,
+      clock: { at: 0, position: 10, playing: false, rate: 1 },
+    }
+
+    // Playing: the header's title, at 44 px a 1080-line screen.
+    expect(titleSizes(SONG_STATE)).toEqual([44])
+    // Standing: the paused screen's title alone, larger than the header's.
+    const paused = titleSizes(standing)
+    expect(paused).toHaveLength(1)
+    expect(paused[0]).toBeGreaterThan(44)
   })
 
   it('draws a note in view, and not one long gone', () => {

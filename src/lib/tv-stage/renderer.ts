@@ -6,11 +6,12 @@
 // song's title and the score along the top, the pitch lane across the
 // middle (lane.ts), and the lyrics below it, the line being sung filling
 // word by word with the next line under it, all inside the 5% overscan
-// margin (layout.ts). Type is sized from the screen's height, so a line of
-// lyrics reads the same from the sofa at any resolution. No lyric goes under
-// 32 px at 1080 lines (REQ-TV-022): a long line wraps onto two rows rather
-// than shrink (lyric-wrap.ts), and the next line, a preview, shrinks to
-// that floor and is then cut short.
+// margin (layout.ts); and while the song stands still, the paused screen
+// over it all (pause-screen.ts, pause-paint.ts). Type is sized from the
+// screen's height, so a line of lyrics reads the same from the sofa at any
+// resolution. No lyric goes under 32 px at 1080 lines (REQ-TV-022): a long
+// line wraps onto two rows rather than shrink (lyric-wrap.ts), and the next
+// line, a preview, shrinks to that floor and is then cut short.
 //
 // The lane is the phone's zen ribbon drawn for a TV: the notes at their
 // real pitch in an eased band, in yellow glass, the singer's pitch as one
@@ -22,16 +23,18 @@
 // but itself.
 //
 // Tests: src/lib/tv-stage/renderer.test.ts, renderer.lyrics.test.ts,
-// lane.test.ts.
+// lane.test.ts, pause-screen.test.ts.
 
 import type { LyricWindowSegment } from '@/lib/lyric-window-script'
 import { drawLane, drawStageBackdrop } from './lane'
 import type { TvStageLayout, TvStageSize } from './layout'
-import { stageFont as font, tvStageLayout } from './layout'
+import { fitText, stageFont as font, tvStageLayout } from './layout'
 import type { LyricPiece, LyricRowsInView, LyricWrap, MeasureAt, } from './lyric-wrap'
 import { ELLIPSIS, lyricRowsInView, pieceFill, wrapLyricLine, } from './lyric-wrap'
 import type { TvStageState } from './model'
 import { tvStagePosition } from './model'
+import { drawPauseScreen } from './pause-paint'
+import { pauseScreenOf } from './pause-screen'
 import type { TvStageScore } from './protocol'
 import type { SpriteCache, SpriteCanvasFactory } from './sprites'
 import { createSpriteCache } from './sprites'
@@ -94,20 +97,6 @@ export function wordFill(
   return (time - start) / (lit - start)
 }
 
-/** `text`, cut short with an ellipsis to fit `maxWidth` in the current font. */
-function fitText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-): string {
-  if (ctx.measureText(text).width <= maxWidth) return text
-  let cut = text
-  while (cut.length > 1 && ctx.measureText(`${cut}…`).width > maxWidth) {
-    cut = cut.slice(0, -1)
-  }
-  return `${cut.trimEnd()}…`
-}
-
 function drawIdle(ctx: CanvasRenderingContext2D, layout: TvStageLayout): void {
   const middle = layout.height / 2
   ctx.textAlign = 'center'
@@ -124,23 +113,34 @@ function drawIdle(ctx: CanvasRenderingContext2D, layout: TvStageLayout): void {
   )
 }
 
+/**
+ * The title and the score along the top. `titleShown` (0 to 1) fades the
+ * title out as the paused screen comes, which writes it large itself: one
+ * title on the screen, never two.
+ */
 function drawHeader(
   ctx: CanvasRenderingContext2D,
   layout: TvStageLayout,
   title: string,
   score: TvStageScore | null,
+  titleShown: number,
 ): void {
   const middle = layout.header.y + layout.header.h / 2
   const right = layout.header.x + layout.header.w
   ctx.textBaseline = 'middle'
-  ctx.textAlign = 'left'
-  ctx.fillStyle = TV_STAGE_COLORS.title
-  ctx.font = font(600, 44 * layout.unit)
-  ctx.fillText(
-    fitText(ctx, title, layout.header.w * 0.6),
-    layout.header.x,
-    middle,
-  )
+  if (titleShown > 0) {
+    const alpha = ctx.globalAlpha
+    ctx.globalAlpha = alpha * Math.min(1, titleShown)
+    ctx.textAlign = 'left'
+    ctx.fillStyle = TV_STAGE_COLORS.title
+    ctx.font = font(600, 44 * layout.unit)
+    ctx.fillText(
+      fitText(ctx, title, layout.header.w * 0.6),
+      layout.header.x,
+      middle,
+    )
+    ctx.globalAlpha = alpha
+  }
   ctx.textAlign = 'right'
   if (score === null) {
     ctx.fillStyle = TV_STAGE_COLORS.quiet
@@ -405,7 +405,9 @@ export function drawTvStage(
     return
   }
   const position = tvStagePosition(state, nowMs)
-  drawHeader(ctx, layout, song.title, state.score)
+  const paused = pauseScreenOf(state, nowMs)?.shown ?? 0
+  drawHeader(ctx, layout, song.title, state.score, 1 - paused)
   drawLane(ctx, layout, state, position, view.sprites)
   drawLyrics(ctx, layout, song.lyrics, position)
+  drawPauseScreen(ctx, layout, state, { nowMs, sprites: view.sprites })
 }

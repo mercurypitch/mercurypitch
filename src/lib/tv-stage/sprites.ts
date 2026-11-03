@@ -164,3 +164,74 @@ export function horizontalGradient(
   for (const [at, color] of stops) gradient.addColorStop(at, color)
   return gradient
 }
+
+/**
+ * A capsule painted short, to be stretched to any length in three slices
+ * (`stampCapsule`): its two rounded ends as they are, and its middle, which
+ * is the same all along.
+ */
+export interface CapsuleSprite {
+  readonly sprite: Sprite
+  /** The capsule's height in pixels; its ends are half that wide. */
+  readonly height: number
+  /** The glow's room on every side of the capsule, in pixels. */
+  readonly pad: number
+}
+
+/**
+ * A capsule (a note, a progress bar's fill) from `x0` to `x1`, centred on
+ * `y`: its two rounded ends as painted, and its middle stretched between
+ * them. One shorter than its height is a round bead.
+ */
+export function stampCapsule(
+  ctx: CanvasRenderingContext2D,
+  capsule: CapsuleSprite,
+  at: { readonly x0: number; readonly x1: number; readonly y: number },
+): void {
+  const { sprite, height, pad } = capsule
+  const cap = height / 2
+  let left = Math.round(at.x0)
+  let right = Math.round(at.x1)
+  if (right - left < height) {
+    left = Math.round((at.x0 + at.x1) / 2 - cap)
+    right = left + height
+  }
+  const top = Math.round(at.y - cap - pad)
+  const middle = sprite.width - pad * 2 - height
+  const end = pad + cap
+  ctx.drawImage(
+    sprite.image,
+    0,
+    0,
+    end,
+    sprite.height,
+    left - pad,
+    top,
+    end,
+    sprite.height,
+  )
+  if (right - left > height) {
+    ctx.drawImage(
+      sprite.image,
+      end + 1,
+      0,
+      Math.max(1, middle - 2),
+      sprite.height,
+      left + cap,
+      top,
+      right - left - height,
+      sprite.height,
+    )
+  }
+  ctx.drawImage(
+    sprite.image,
+    end + middle,
+    0,
+    end,
+    sprite.height,
+    right - cap,
+    top,
+    end,
+    sprite.height,
+  )
+}

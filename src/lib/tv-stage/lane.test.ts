@@ -14,6 +14,7 @@ import { drawLane, laneFrame, laneGeometry, noteBoxes, noteName, pitchY, timeX, 
 import { LANE_NOW_RATIO } from '@/lib/tv-stage/lane-band'
 import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState } from '@/lib/tv-stage/model'
+import { LONG_AGO } from '@/lib/tv-stage/model'
 import type { TvStageNote, TvStageReading } from '@/lib/tv-stage/protocol'
 import { recordingContext, recordingSprites, } from '@/lib/tv-stage/recording-context.fixture'
 import { createSpriteCache } from '@/lib/tv-stage/sprites'
@@ -50,6 +51,7 @@ function stateAt(trail: readonly TvStageReading[]): TvStageState {
     clock: { at: 0, position: 10, playing: true, rate: 1 },
     trail,
     score: null,
+    turn: LONG_AGO,
   }
 }
 

@@ -20,7 +20,7 @@
 // context.
 
 import type { Verdict } from './lane-judge'
-import type { Sprite, SpriteCache } from './sprites'
+import type { CapsuleSprite, Sprite, SpriteCache } from './sprites'
 import { horizontalGradient, roundedPath, verticalGradient } from './sprites'
 
 /** The ribbon's colours for the singer: on the note, off it, and free. */
@@ -55,15 +55,6 @@ const NOTE_PAD = 24
 
 /** The width of a note sprite's middle, the slice that stretches, in pixels. */
 const NOTE_MIDDLE = 6
-
-/** A note's sprite: the capsule's height and its ends, and the glow's room. */
-export interface NoteSprite {
-  readonly sprite: Sprite
-  /** The capsule's height in pixels; its ends are half that wide. */
-  readonly height: number
-  /** The glow's room on every side of the capsule, in pixels. */
-  readonly pad: number
-}
 
 /**
  * The looks of a note: yellow glass ahead of the marker; lit, where it was
@@ -222,7 +213,7 @@ export function noteSprite(
   sprites: SpriteCache,
   look: NoteLook,
   unit: number,
-): NoteSprite | null {
+): CapsuleSprite | null {
   // Even, so each rounded end is a whole number of pixels wide.
   const height = 2 * px(NOTE_HEIGHT / 2, unit)
   const pad = px(NOTE_PAD, unit)
