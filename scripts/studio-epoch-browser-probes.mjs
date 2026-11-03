@@ -476,14 +476,19 @@ async function exportDryLane() {
 }
 
 /**
- * Four lanes through their role chains at Best, exported against a Play
- * with no master, pressed half a frame off a frame: they line up at lag 0,
- * at the floor of the same Play against one whose song starts 148 quanta
- * further after its build, as an export's starts further after its own.
+ * Lanes through their role chains at Best, exported against a Play with no
+ * master, pressed half a frame off a frame: they line up at lag 0, at the
+ * floor of the same Play against one whose song starts 148 quanta further
+ * after its build, as an export's starts further after its own. Four lanes
+ * sit at -73 dBFS there, their voice and guitar's floor; bass and drums
+ * alone at -100.5, low enough to show a difference the four would hide
+ * (Chromium 148). Moved within a quantum, the same Play of bass and drums
+ * is -50 dBFS off one or 16 frames on and -100 dBFS 32 frames on: the
+ * compressors' 32-frame steps (playLikeExport).
  */
-async function exportFourLanes() {
+async function exportLanes(roles) {
   setPlaybackChoice('best')
-  const made = song(['voice', 'acoustic-guitar', 'bass', 'drums'], false)
+  const made = song(roles, false)
   const { plan } = await prepare(made, false)
   const bus = { plan, master: EMPTY_CHAIN, latency: planLatencySeconds(plan) }
   const play = await playLikeExport(made, bus)
@@ -552,7 +557,13 @@ export async function runStudioEpochProbes() {
     fourLaneMix: await fourLaneMix(),
     frozenAgainstLive: await frozenAgainstLive(),
     exportDryLane: await exportDryLane(),
-    exportFourLanes: await exportFourLanes(),
+    exportFourLanes: await exportLanes([
+      'voice',
+      'acoustic-guitar',
+      'bass',
+      'drums',
+    ]),
+    exportBassDrums: await exportLanes(['bass', 'drums']),
     laneEndPlaysOut: await laneEndPlaysOut(),
   }
 }
