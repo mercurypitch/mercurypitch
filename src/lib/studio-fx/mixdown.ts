@@ -98,7 +98,12 @@ export async function renderMixdown(
   })
   const cleanup: (() => void)[] = []
   tracks.forEach((track, index) => {
-    const chain = createStudioFxChain(ctx, specs[index])
+    // A stereo track's chain is held at two channels, as a lane's is
+    // (chain.ts): its sources ending would otherwise cut what its effects
+    // still hold.
+    const chain = createStudioFxChain(ctx, specs[index], {
+      stereoHold: track.buffer.numberOfChannels > 1,
+    })
     const fader = ctx.createGain()
     fader.gain.value = dbToGain(track.gainDb ?? 0)
     const player = ctx.createBufferSource()
