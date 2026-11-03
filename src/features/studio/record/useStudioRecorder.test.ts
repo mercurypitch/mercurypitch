@@ -366,7 +366,7 @@ describe('useStudioRecorder with a range', () => {
     dispose()
   })
 
-  it('keeps a loop take left by a closed tab as every finished pass and the one cut short', async () => {
+  it('keeps a loop take left by a closed tab as one file, its clip on the newest whole pass', async () => {
     const header = {
       id: 'take-loop',
       title: 'Take 5',
@@ -387,22 +387,46 @@ describe('useStudioRecorder with a range', () => {
 
     await hook.keepRecovered('take-loop')
 
-    const kept = addRecording.mock.calls[0][0] as {
-      passes: { assetId: string }[]
-      heard: number
-      frames: number
-    }
-    expect(kept.passes.map((pass) => pass.assetId)).toEqual([
-      'take-loop-pass-1',
-      'take-loop-pass-2',
-      'take-loop-pass-3',
-    ])
-    expect(kept).toMatchObject({ heard: 1, frames: 48000 })
+    expect(addRecording).toHaveBeenCalledOnce()
+    expect(addRecording.mock.calls[0][0]).toMatchObject({
+      assetId: 'take-loop',
+      title: 'Take 5',
+      startFrame: 96000,
+      sourceInFrame: 6000 + 48000,
+      sourceOutFrame: 6000 + 2 * 48000,
+      passes: { firstFrame: 6000, frames: 48000, count: 2 },
+    })
     expect(mocks.journal.discard).toHaveBeenCalledWith('take-loop')
     dispose()
   })
 
-  it('counts a loop take stored by its passes, and drops its rows', async () => {
+  it('does not offer a punch or a loop left by a closed tab that keeps nothing, and drops its rows', async () => {
+    const row = (id: string, mode: 'punch' | 'loop', frames: number) => ({
+      id,
+      title: id,
+      frames,
+      sampleRate: 48000,
+      fromFrame: 96000,
+      heardFirst: 90000,
+      cut: { mode, range: RANGE },
+    })
+    mocks.journal.list.mockResolvedValue([
+      // A punch closed a twentieth of a second into its range.
+      row('punch-short', 'punch', 6000 + 2400),
+      // A loop closed a quarter of the way into its one-second first pass.
+      row('loop-short', 'loop', 6000 + 12000),
+      row('loop-kept', 'loop', 6000 + 24000),
+    ])
+    const { hook, dispose } = mount()
+    await vi.waitFor(() =>
+      expect(hook.recovery().map((take) => take.id)).toEqual(['loop-kept']),
+    )
+    expect(mocks.journal.discard).toHaveBeenCalledWith('punch-short')
+    expect(mocks.journal.discard).toHaveBeenCalledWith('loop-short')
+    dispose()
+  })
+
+  it('counts a loop take stored as its one file, and drops its rows', async () => {
     mocks.journal.list.mockResolvedValue([
       {
         id: 'take-loop',
@@ -415,7 +439,7 @@ describe('useStudioRecorder with a range', () => {
       },
     ])
     const { hook, dispose } = mount({
-      assets: [{ id: 'take-loop-pass-2' } as StudioAsset],
+      assets: [{ id: 'take-loop' } as StudioAsset],
     })
     await vi.waitFor(() =>
       expect(mocks.journal.discard).toHaveBeenCalledWith('take-loop'),

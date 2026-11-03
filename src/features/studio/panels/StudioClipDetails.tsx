@@ -1,5 +1,6 @@
 // Studio clip details — numeric alternatives to move, trim and source-anchored fades.
 import styles from '@/features/studio/StudioPage.module.css'
+import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { StudioNumberField } from './StudioNumberField'
@@ -17,6 +18,9 @@ const frames = (value: number) => Math.round(value * 48_000)
 
 export function StudioClipDetails(props: StudioClipDetailsProps) {
   const duration = () => props.clip.sourceOutFrame - props.clip.sourceInFrame
+  // A loop take's clip trims inside its pass (clip-passes.ts).
+  const bounds = () =>
+    studioClipSourceBounds(props.clip, props.asset.normalizedFrameCount)
   const fadeIn = () =>
     Math.max(
       0,
@@ -97,7 +101,10 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
         unit="s"
         value={seconds(props.clip.sourceInFrame)}
         min={seconds(
-          Math.max(0, props.clip.sourceInFrame - props.clip.startFrame),
+          Math.max(
+            bounds().first,
+            props.clip.sourceInFrame - props.clip.startFrame,
+          ),
         )}
         max={seconds(props.clip.sourceOutFrame - 1)}
         disabled={!props.writable}
@@ -114,7 +121,7 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
         unit="s"
         value={seconds(props.clip.sourceOutFrame)}
         min={seconds(props.clip.sourceInFrame + 1)}
-        max={seconds(props.asset.normalizedFrameCount)}
+        max={seconds(bounds().end)}
         disabled={!props.writable}
         onCommit={(value) =>
           props.onCommand({

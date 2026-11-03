@@ -52,19 +52,19 @@ function PassPicker(props: {
             aria-label="Pass this clip plays"
             data-studio-pass-picker=""
             disabled={!props.writable}
-            value={props.clip.assetId}
+            value={shown().number - 1}
             onChange={(event) =>
               props.onCommand({
                 type: 'choose-pass',
                 clipId: props.clip.id,
-                assetId: event.currentTarget.value,
+                pass: Number(event.currentTarget.value),
               })
             }
           >
-            <For each={props.clip.passes}>
-              {(assetId, index) => (
-                <option value={assetId}>
-                  {`${index() + 1} of ${shown().count}`}
+            <For each={Array.from({ length: shown().count }, (_, i) => i)}>
+              {(index) => (
+                <option value={index}>
+                  {`${index + 1} of ${shown().count}`}
                 </option>
               )}
             </For>

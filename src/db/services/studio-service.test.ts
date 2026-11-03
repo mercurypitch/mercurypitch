@@ -365,38 +365,40 @@ describe('local Studio persistence', () => {
     ).resolves.toMatchObject({ asset: { id: 'asset-one' } })
   })
 
-  it('keeps every pass of a loop take, heard or not, through a prune and a copy', async () => {
+  it("keeps a loop take's one audio and its passes through a prune and a copy", async () => {
     const saved = await savedArrangement()
-    const second = await studioAssetFixture(saved.project.id, 'asset-two', 0.3)
     const [clip] = saved.project.clips
+    const passes = { firstFrame: 4, frames: 20, count: 3 }
     const looped = {
       ...saved.project,
       revision: 2,
-      clips: [{ ...clip, passes: ['asset-one', 'asset-two'] }],
+      clips: [
+        {
+          ...clip,
+          sourceInFrame: 44,
+          sourceOutFrame: 64,
+          fades: { curve: 'linear-amplitude' as const },
+          passes,
+        },
+      ],
     }
-    const project = await service.saveProject(
-      looped,
-      { ...saved.lease, expectedRevision: 1 },
-      [second],
-    )
+    const project = await service.saveProject(looped, {
+      ...saved.lease,
+      expectedRevision: 1,
+    })
 
     const kept = await service.pruneUnusedAssets(project.id, {
       ...saved.lease,
       expectedRevision: 2,
     })
-    expect(kept.map((asset) => asset.id).sort()).toEqual([
-      'asset-one',
-      'asset-two',
-    ])
-    expect(await blobsOf('asset-two')).toHaveLength(2)
+    expect(kept.map((asset) => asset.id)).toEqual(['asset-one'])
 
     const copy = await service.forkProject(project)
     const [copied] = copy.clips
-    expect(copied.passes).toHaveLength(2)
-    expect(copied.passes).toContain(copied.assetId)
+    expect(copied).toMatchObject({ sourceInFrame: 44, passes })
     expect(
-      (await service.listAssets(copy.id)).map((asset) => asset.id).sort(),
-    ).toEqual([...copied.passes!].sort())
+      (await service.listAssets(copy.id)).map((asset) => asset.id),
+    ).toEqual([copied.assetId])
   })
 
   it("keeps a take's waveform peaks beside its two files, and lets them go with the take", async () => {

@@ -98,7 +98,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
   // A loop take's clip says which of its passes plays: "Take 3, pass 2 of 4".
   const passOf = () => {
     const pass = studioClipPass(props.clip)
-    return pass ? ` of ${pass.count}` : ''
+    return pass ? `, pass ${pass.number} of ${pass.count}` : ''
   }
   const handleSize = () => (props.tablet ? 44 : 28)
   const handles = () =>

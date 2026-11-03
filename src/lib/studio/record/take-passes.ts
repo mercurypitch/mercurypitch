@@ -1,5 +1,5 @@
 // ============================================================
-// Studio take passes — the frames of a capture a punch keeps, and where every pass of a loop take begins and ends
+// Studio take passes — the clip a finished take makes: a plain take from the frame heard, a punch its range, a loop its whole passes
 // ============================================================
 //
 // A take's first captured sample lands on song frame `heardFirst`
@@ -7,15 +7,20 @@
 // with Repeat on a range, that count runs on through the passes
 // (loop-range.ts). So pass p of a loop from `start` to `end` (L frames) is
 // take frames start + p·L − heardFirst to that plus L, and its first sample
-// lands on `start` again. Every pass is cut on those frames exactly, so no
-// frame is lost between two passes and none is in both.
+// lands on `start` again. The take is kept whole as one audio, and its
+// passes are windows into it (clip-passes.ts) that meet frame to frame:
+// none is lost between two passes, and none is in both.
 //
-// A capture on a clock that is not 48 kHz is cut on the nearest of its own
-// frames, and its import resamples each pass (take-audio.ts), so a pass can
-// come out a frame short; its clip then ends a frame (21 µs) early.
+// Frames here are the take's at 48 kHz, as its import stores it. A capture
+// on another clock is resampled by the import, which can leave it a frame
+// short of this count; the import keeps only the passes the audio holds
+// whole (studioFitPasses).
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
+import type { StudioClipPasses } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import type { StudioFrameRange } from '../playback/loop-range'
+import type { StudioTakeCut } from './take-plan'
+import { placeHeardTake } from './take-timing'
 
 /** The fades at a punch's edges, 5 ms: no click, and the first consonant kept. */
 export const STUDIO_PUNCH_FADE_FRAMES = 240
@@ -56,85 +61,98 @@ export function studioPunchCut(
   }
 }
 
-/** One pass of a loop take, in frames of the capture at its own rate. */
-export interface StudioLoopPass {
-  readonly firstFrame: number
-  /** One past its last frame; a pass cut short ends past the capture, and is padded with silence. */
-  readonly endFrame: number
-  readonly complete: boolean
-}
-
 /**
- * The shortest last pass kept when the take stopped inside it: a second,
- * or half the range for a shorter one. A pass barely begun is let go.
+ * The shortest stretch of its first pass a loop take with no whole pass
+ * keeps: a second, or half the range for a shorter one. A pass barely
+ * begun is let go.
  */
 export function studioMinPartialPass(rangeFrames: number): number {
   return Math.min(STUDIO_SAMPLE_RATE, rangeFrames / 2)
 }
 
+/** The clip a finished take makes, in 48 kHz frames of the song and of the take. */
+export interface StudioTakeClip {
+  readonly startFrame: number
+  readonly sourceInFrame: number
+  /** Where the clip ends in the take; absent, at the take's end. */
+  readonly sourceOutFrame?: number
+  /** Fades this long at both edges: a punch's. */
+  readonly fadeFrames?: number
+  /** A loop take's whole passes, two or more, the clip playing the newest. */
+  readonly passes?: StudioClipPasses
+}
+
 /**
- * Every pass of `range` a capture of `captured` frames at `rate` holds,
- * oldest first: each complete one, and a last one cut short when it holds
- * at least studioMinPartialPass. At most the passes a clip keeps.
+ * A loop take's clip over `range`, its capture `frames` long: its whole
+ * passes, at most the passes a clip keeps, playing the newest. A pass that
+ * began before the capture did, or that the take stopped inside, is not
+ * whole. With one whole pass the clip plays it; with none, what was sung
+ * from the range's start, so a range longer than a take can be keeps an
+ * ordinary take. Null when that is shorter than studioMinPartialPass.
  */
-export function studioLoopPasses(
+export function studioLoopCut(
   heardFirst: number,
   range: StudioFrameRange,
-  captured: number,
-  rate: number,
-): StudioLoopPass[] {
+  frames: number,
+): StudioTakeClip | null {
   const length = range.endFrame - range.startFrame
-  const at = (frame: number) => Math.round((frame * rate) / STUDIO_SAMPLE_RATE)
-  const minPartial = at(studioMinPartialPass(length))
-  const passes: StudioLoopPass[] = []
-  for (let pass = 0; passes.length < STUDIO_MAX_CLIP_PASSES; pass++) {
-    const first = range.startFrame + pass * length - heardFirst
-    const firstFrame = at(first)
-    const endFrame = at(first + length)
-    if (firstFrame >= captured) break
-    // A pass that began before the capture did is not whole: it is skipped.
-    if (firstFrame < 0) continue
-    const complete = endFrame <= captured
-    if (!complete && captured - firstFrame < minPartial) break
-    passes.push({ firstFrame, endFrame, complete })
-    if (!complete) break
-  }
-  return passes
-}
-
-/** The pass a loop take's clip plays: its newest complete one, else the one there is. */
-export function studioHeardPass(passes: readonly StudioLoopPass[]): number {
-  for (let index = passes.length - 1; index >= 0; index--)
-    if (passes[index].complete) return index
-  return passes.length - 1
-}
-
-/** A pass's samples, the capture's own when complete, padded with silence when cut short. */
-export function studioPassSamples<T extends Float32Array | Int16Array>(
-  samples: T,
-  pass: StudioLoopPass,
-): T {
-  const end = Math.min(pass.endFrame, samples.length)
-  const own = samples.subarray(pass.firstFrame, end) as T
-  if (end === pass.endFrame) return own
-  const padded = new (samples.constructor as new (length: number) => T)(
-    pass.endFrame - pass.firstFrame,
+  if (
+    !Number.isSafeInteger(heardFirst) ||
+    !Number.isSafeInteger(frames) ||
+    !(length > 0)
   )
-  padded.set(own)
-  return padded
+    return null
+  // The first pass whose first frame the capture holds.
+  const skipped = Math.max(
+    0,
+    Math.ceil((heardFirst - range.startFrame) / length),
+  )
+  const firstFrame = range.startFrame + skipped * length - heardFirst
+  const whole = Math.min(
+    STUDIO_MAX_CLIP_PASSES,
+    Math.max(0, Math.floor((frames - firstFrame) / length)),
+  )
+  if (whole === 0) {
+    if (frames - firstFrame < studioMinPartialPass(length)) return null
+    return { startFrame: range.startFrame, sourceInFrame: firstFrame }
+  }
+  const sourceInFrame = firstFrame + (whole - 1) * length
+  return {
+    startFrame: range.startFrame,
+    sourceInFrame,
+    sourceOutFrame: sourceInFrame + length,
+    ...(whole >= 2 && { passes: { firstFrame, frames: length, count: whole } }),
+  }
+}
+
+/**
+ * The clip a finished take makes, its capture `frames` long at 48 kHz: a
+ * plain take from the frame the singer heard (take-timing.ts), a punch its
+ * range, a loop its passes. Null when nothing of it reaches the song.
+ */
+export function studioTakeClip(
+  take: {
+    readonly heardFirst: number
+    readonly fromFrame: number | null
+    readonly cut?: StudioTakeCut | null
+  },
+  frames: number,
+): StudioTakeClip | null {
+  const cut = take.cut ?? null
+  if (cut?.mode === 'loop')
+    return studioLoopCut(take.heardFirst, cut.range, frames)
+  if (cut?.mode === 'punch')
+    return studioPunchCut(take.heardFirst, cut.range, frames)
+  const placed = placeHeardTake(take.heardFirst, take.fromFrame, frames)
+  return (
+    placed && {
+      startFrame: placed.startFrame,
+      sourceInFrame: placed.sourceInFrame,
+    }
+  )
 }
 
 /** A loop pass's name: "Take 3, pass 2", counted from 1. */
 export function studioPassTitle(title: string, pass: number): string {
   return `${title}, pass ${pass + 1}`
-}
-
-/** A loop pass's audio id: the take's own, numbered, so its journal can tell it was stored. */
-export function studioPassAssetId(takeId: string, pass: number): string {
-  return `${takeId}-pass-${pass + 1}`
-}
-
-/** Whether `assetId` is the take's audio, or one of its passes'. */
-export function isStudioTakeAsset(takeId: string, assetId: string): boolean {
-  return assetId === takeId || assetId.startsWith(`${takeId}-pass-`)
 }

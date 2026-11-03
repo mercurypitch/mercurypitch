@@ -1,6 +1,6 @@
 // Studio recorder — arming opens the clock and the microphone in the press, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
-import type {Mock} from 'vitest';
-import { afterEach, describe, expect, it,  vi } from 'vitest'
+import type { Mock } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
 import type { StudioCaptureEvents } from './capture-node'
@@ -638,7 +638,7 @@ describe('punch and loop takes', () => {
     )
   })
 
-  it('loops from the range start after the count-in, ticking each pass, and stops after the last pass a clip keeps', async () => {
+  it('loops from the range start after the count-in, ticking each pass, and stops just after the last pass a clip keeps', async () => {
     vi.useFakeTimers()
     const h = harness(
       { takeCut: () => ({ mode: 'loop', range: RANGE }) },
@@ -652,7 +652,8 @@ describe('punch and loop takes', () => {
     await vi.advanceTimersByTimeAsync(0)
     h.ctx.currentTime = 4.5
     await vi.advanceTimersByTimeAsync(250)
-    const passes = 32 * 96000
+    // A hundredth of a second past the last pass, so it is whole however the frames round.
+    const passes = 32 * 96000 + 480
     expect(h.capture.stop).toHaveBeenCalledWith(
       Math.round((3.1 + passes / RATE + 0.05) * RATE),
       'last-pass',

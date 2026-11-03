@@ -14,7 +14,6 @@
 import { untrack } from 'solid-js'
 import type { StudioEditorLease, StudioService, } from '@/db/services/studio-service'
 import { StudioStorageError } from '@/db/services/studio-service'
-import { studioSongAssetIds } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import type { EditorPresence, EditorPresenceSource, ProjectOpenHold, } from './editor-presence'
 import { EDITOR_CLAIM_WAIT_MS } from './editor-presence'
@@ -281,7 +280,7 @@ export function createStudioEditorKeeper(options: StudioEditorKeeperOptions) {
   ): Promise<StudioAsset[]> {
     if (token === null || claimed.editor?.presence.exclusive !== true)
       return metadata
-    const used = studioSongAssetIds(snapshot.clips)
+    const used = new Set(snapshot.clips.map((clip) => clip.assetId))
     if (metadata.every((asset) => used.has(asset.id))) return metadata
     try {
       if (!(await claimed.opened.alone())) return metadata

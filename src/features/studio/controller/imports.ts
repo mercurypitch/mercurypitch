@@ -2,11 +2,11 @@
 import { audioUploadValidationError } from '@/lib/audio-upload-contract'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
-import { studioSongAssetIds } from '@/lib/studio/model/clip-passes'
+import { studioFitPasses } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
-import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioAssetData, StudioClipPasses, StudioProject, } from '@/lib/studio/model/types'
 import { studioTakeFileName } from '@/lib/studio/record/take-audio'
 import { prepareStudioSource } from '../integration/prepare-source'
 import type { StudioSourceEntry } from '../integration/source-catalog'
@@ -22,11 +22,8 @@ interface ImportItem {
   sourceOutFrame?: number
   /** Fades this long at both of the clip's edges: a punch's. */
   fadeFrames?: number
-  /**
-   * One pass of a loop take: the batch's passes become one clip that plays
-   * the heard one and keeps the rest (clip-passes.ts).
-   */
-  pass?: { readonly heard: boolean }
+  /** A loop take's passes in its audio, the clip on one of them (clip-passes.ts). */
+  passes?: StudioClipPasses
   prepare(
     id: string,
     projectId: string,
@@ -116,32 +113,12 @@ export interface StudioRecordingImport {
   readonly sourceOutFrame?: number
   /** Fades this long at both edges: a punch's in and out. */
   readonly fadeFrames?: number
+  /** A loop take's whole passes, the clip on the newest (clip-passes.ts). */
+  readonly passes?: StudioClipPasses
   /** The armed lane, or null for a new one. */
   readonly trackId: string | null
   /** The take's own id for its audio, so its journal can tell it was stored. */
   readonly assetId?: string
-}
-
-/** One pass of a loop take: its own WAV, all of them the range's length. */
-export interface StudioRecordingPass {
-  readonly wav: Blob
-  /** "Take 3, pass 2": its file's name. */
-  readonly title: string
-  readonly assetId: string
-}
-
-/** A loop take: every pass on one clip over the range, the heard one playing. */
-export interface StudioPassesImport {
-  /** "Take 3": the name of a lane made for it. */
-  readonly title: string
-  readonly passes: readonly StudioRecordingPass[]
-  /** The pass the clip plays, counted from 0. */
-  readonly heard: number
-  /** The range's start, where every pass's first sample lands. */
-  readonly startFrame: number
-  /** The range's length: the clip's, whatever its audio holds past it. */
-  readonly frames: number
-  readonly trackId: string | null
 }
 
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
@@ -165,14 +142,20 @@ function laneHasRoom(
 
 type ImportEntry = { item: ImportItem; asset: StudioAsset }
 
-/** A clip's source frames and fades: the item's trim, inside its audio and its passes'. */
-function clipSource(entry: ImportEntry, passes: readonly ImportEntry[]) {
-  const { item } = entry
-  const sourceInFrame = item.sourceInFrame ?? 0
-  const sourceOutFrame = Math.min(
-    item.sourceOutFrame ?? Infinity,
-    ...[entry, ...passes].map(({ asset }) => asset.normalizedFrameCount),
-  )
+/** A clip's source frames, fades and passes: the item's trim, inside its audio. */
+function clipSource({ item, asset }: ImportEntry) {
+  const audio = asset.normalizedFrameCount
+  // A loop take keeps the passes its decoded audio holds whole.
+  const fitted =
+    item.passes &&
+    studioFitPasses(
+      { sourceInFrame: item.sourceInFrame ?? 0 },
+      item.passes,
+      audio,
+    )
+  const sourceInFrame = fitted?.sourceInFrame ?? item.sourceInFrame ?? 0
+  const sourceOutFrame =
+    fitted?.sourceOutFrame ?? Math.min(item.sourceOutFrame ?? Infinity, audio)
   const fade = Math.min(
     item.fadeFrames ?? 0,
     Math.floor((sourceOutFrame - sourceInFrame) / 2),
@@ -191,25 +174,12 @@ function clipSource(entry: ImportEntry, passes: readonly ImportEntry[]) {
           },
         }
       : { curve: 'linear-amplitude' as const }
-  return { sourceInFrame, sourceOutFrame, fades }
-}
-
-/**
- * A loop take's passes as one entry, the heard pass's, keeping every pass's
- * audio once: identical passes (a silent input) share one asset.
- */
-function joinPasses(entries: readonly ImportEntry[]): {
-  entries: readonly ImportEntry[]
-  passes: readonly ImportEntry[]
-} {
-  if (!entries.some((entry) => entry.item.pass !== undefined))
-    return { entries, passes: [] }
-  const heard =
-    entries.find((entry) => entry.item.pass?.heard === true) ?? entries[0]
-  const passes = [
-    ...new Map(entries.map((entry) => [entry.asset.id, entry])).values(),
-  ]
-  return { entries: [heard], passes: passes.length > 1 ? passes : [] }
+  return {
+    sourceInFrame,
+    sourceOutFrame,
+    fades,
+    ...(fitted?.passes && { passes: fitted.passes }),
+  }
 }
 
 function importCommands(
@@ -221,8 +191,7 @@ function importCommands(
 ): StudioEdit[] {
   const firstOrder =
     Math.max(-1, ...project.tracks.map((track) => track.order)) + 1
-  const { entries, passes } = joinPasses(items)
-  const first = entries.length > 0 ? clipSource(entries[0], passes) : undefined
+  const first = items.length > 0 ? clipSource(items[0]) : undefined
   // The first item lands on the chosen lane when it fits; the rest, or an item
   // that would overlap a clip there, get lanes of their own.
   const target =
@@ -237,18 +206,15 @@ function importCommands(
       ? targetTrackId
       : null
   let order = firstOrder
-  return entries.map((entry, index): StudioEdit => {
+  return items.map((entry, index): StudioEdit => {
     const { item, asset } = entry
     const clip = (trackId: string) => ({
       id: createId(),
       trackId,
       assetId: asset.id,
       startFrame,
-      ...clipSource(entry, passes),
+      ...clipSource(entry),
       gainDb: 0,
-      ...(passes.length > 0 && {
-        passes: passes.map((pass) => pass.asset.id),
-      }),
     })
     if (index === 0 && target !== null)
       return { type: 'add-clip', clip: clip(target) }
@@ -335,7 +301,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
         const known = [...options.assets(), ...adding]
         // The takes the song plays, and the ones this import is adding.
         const inUse = new Set([
-          ...studioSongAssetIds(options.project()?.clips ?? []),
+          ...(options.project()?.clips ?? []).map((clip) => clip.assetId),
           ...adding.map((asset) => asset.id),
         ])
         selected.push({
@@ -454,37 +420,8 @@ export function createStudioImporter(options: ImportControllerOptions) {
     )
   }
 
-  /** A loop take's passes, prepared one by one as picked WAVs are, kept as one clip. */
-  function addPasses(take: StudioPassesImport): Promise<boolean> {
-    const importedAt = options.now().toISOString()
-    return importItems(
-      take.passes.map((pass, index) => ({
-        title: take.title,
-        role: 'voice',
-        sourceOutFrame: take.frames,
-        pass: { heard: index === take.heard },
-        prepare: (_id, projectId, signal) =>
-          (options.prepareFile ?? prepareStudioAsset)(
-            pass.wav,
-            {
-              id: pass.assetId,
-              projectId,
-              originalName: studioTakeFileName(pass.title),
-              provenance: { kind: 'recording', importedAt },
-            },
-            { signal },
-          ),
-      })),
-      take.startFrame,
-      take.trackId,
-    )
-  }
-
   /** A take recorded here: prepared as a picked WAV is, trimmed by its count-in and round trip. */
-  function addRecording(
-    take: StudioRecordingImport | StudioPassesImport,
-  ): Promise<boolean> {
-    if ('passes' in take) return addPasses(take)
+  function addRecording(take: StudioRecordingImport): Promise<boolean> {
     const importedAt = options.now().toISOString()
     return importItems(
       [
@@ -494,6 +431,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
           sourceInFrame: take.sourceInFrame,
           sourceOutFrame: take.sourceOutFrame,
           fadeFrames: take.fadeFrames,
+          passes: take.passes,
           prepare: async (id, projectId, signal) => {
             const data = await (options.prepareFile ?? prepareStudioAsset)(
               take.wav,

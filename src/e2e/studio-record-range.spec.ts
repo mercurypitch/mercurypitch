@@ -1,4 +1,4 @@
-// Studio recording over a range — a punch keeps exactly the range, lined up as a plain take is, and stops the song at its out point; a loop keeps every pass exactly the range long on one clip that plays the newest whole pass, any pass is picked back and undone, and the next Play starts as soon as a Play with nothing new to build.
+// Studio recording over a range — a punch keeps exactly the range, lined up as a plain take is, and stops the song at its out point; a loop keeps its whole passes as windows of one file, exactly the range long, on one clip that plays the newest, any pass is picked back and undone, and the next Play starts as soon as a Play with nothing new to build.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import type { StudioAsset, StudioClip } from '../lib/studio/model/types'
 import { openArrangement, readStudioProject, setClipStart, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
@@ -197,7 +197,7 @@ test.describe('Studio recording over a range', () => {
     )
   })
 
-  test('a loop keeps each pass exactly the range long, plays the newest whole one, and Play after it starts on time', async ({
+  test('a loop keeps its whole passes as windows of one file, plays the newest, and Play after it starts on time', async ({
     page,
   }) => {
     test.setTimeout(240_000)
@@ -249,55 +249,51 @@ test.describe('Studio recording over a range', () => {
     ).toBeVisible({ timeout: 30_000 })
 
     const clip = await takeClip(page)
-    const passes = clip.passes ?? []
-    const lengths: number[] = []
-    for (const id of passes)
-      lengths.push((await readAsset(page, id)).normalizedFrameCount)
-    const titles: string[] = []
-    for (const id of passes)
-      titles.push((await readAsset(page, id)).originalName ?? '')
+    const asset = await readAsset(page, clip.assetId)
+    const passes = clip.passes
+    const length = OUT - IN
     console.log(
       `[studio-record-range] ${JSON.stringify({
         mode: 'loop',
-        passes: passes.length,
-        heard: passes.indexOf(clip.assetId) + 1,
-        lengthErrors: lengths.map((frames) => frames - (OUT - IN)),
+        passes,
+        heard: passes
+          ? (clip.sourceInFrame - passes.firstFrame) / passes.frames + 1
+          : null,
         startError: clip.startFrame - IN,
         clipFrames: clip.sourceOutFrame - clip.sourceInFrame,
-        titles,
+        captureFrames: asset.normalizedFrameCount,
+        title: asset.originalName,
       })}`,
     )
-    expect(passes).toHaveLength(3)
-    expect(clip.assetId).toBe(passes[1])
-    expect(lengths).toEqual([OUT - IN, OUT - IN, OUT - IN])
-    expect(titles).toEqual([
-      'Take 1, pass 1.wav',
-      'Take 1, pass 2.wav',
-      'Take 1, pass 3.wav',
-    ])
+    // Two whole passes, exactly the range long, back to back in one file
+    // that keeps the whole capture, the half pass after them included.
+    expect(passes).toMatchObject({ frames: length, count: 2 })
+    const first = passes!.firstFrame
+    expect(asset.originalName).toBe('Take 1.wav')
+    expect(asset.normalizedFrameCount).toBeGreaterThan(first + 2 * length)
     expect(clip.startFrame).toBe(IN)
-    expect(clip.sourceInFrame).toBe(0)
-    expect(clip.sourceOutFrame).toBe(OUT - IN)
+    expect(clip.sourceInFrame).toBe(first + length)
+    expect(clip.sourceOutFrame).toBe(first + 2 * length)
 
     // Another pass from the clip's toolbar, and undo puts the heard one back.
-    const take = studio.getByRole('button', { name: /, Take 1, pass 2 of 3, / })
+    const take = studio.getByRole('button', { name: /, Take 1, pass 2 of 2, / })
     await take.click()
     const picker = studio.getByRole('combobox', {
       name: 'Pass this clip plays',
     })
-    await expect(picker).toHaveValue(passes[1])
-    await picker.selectOption({ label: '3 of 3' })
+    await expect(picker).toHaveValue('1')
+    await picker.selectOption({ label: '1 of 2' })
     await expect
-      .poll(async () => (await takeClip(page)).assetId)
-      .toBe(passes[2])
+      .poll(async () => (await takeClip(page)).sourceInFrame)
+      .toBe(first)
     await expect(
-      studio.getByRole('button', { name: /, Take 1, pass 3 of 3, / }),
+      studio.getByRole('button', { name: /, Take 1, pass 1 of 2, / }),
     ).toHaveCount(1)
     await studio.locator('[data-tour="studio.workspace"]').focus()
     await page.keyboard.press('Control+z')
     await expect
-      .poll(async () => (await takeClip(page)).assetId)
-      .toBe(passes[1])
+      .poll(async () => (await takeClip(page)).sourceInFrame)
+      .toBe(first + length)
 
     // Repeat off: Play from the start, after the take and with nothing new.
     await repeat.click()

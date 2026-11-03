@@ -1,8 +1,8 @@
-// Studio take import tests — a plain take keeps its trim, a punch its range, and a loop take every pass at exactly the range's length.
+// Studio take import tests — every take keeps its whole capture as one file: a plain take trimmed, a punch to its range, a loop take on its newest whole pass.
 import { Blob as NodeBlob } from 'node:buffer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
 import type { StudioCapturedTake } from '@/lib/studio/record/recorder-types'
-import type { StudioPassesImport, StudioRecordingImport, } from '../controller/imports'
 import { studioTakeImport } from './take-import'
 
 const RANGE = { startFrame: 96000, endFrame: 144000 }
@@ -14,7 +14,7 @@ afterEach(() => vi.unstubAllGlobals())
 /** Frames in a mono 16-bit WAV: its data after the 44-byte header. */
 const wavFrames = (wav: Blob) => (wav.size - 44) / 2
 
-/** A take whose sample i holds i, so each pass's first sample says where it was cut. */
+/** A take whose sample i holds i, so a sample says where it was cut. */
 function take(
   frames: number,
   patch: Partial<StudioCapturedTake> = {},
@@ -33,7 +33,7 @@ function take(
 
 describe('studioTakeImport', () => {
   it('trims a plain take to the frame the singer heard, keeping all its audio', () => {
-    const kept = studioTakeImport(take(48000)) as StudioRecordingImport
+    const kept = studioTakeImport(take(48000))!
     expect(kept).toMatchObject({
       title: 'Take 9',
       startFrame: 96000,
@@ -47,7 +47,7 @@ describe('studioTakeImport', () => {
   it('keeps a punch to its range with fades, the whole capture as its file', () => {
     const kept = studioTakeImport(
       take(96000, { cut: { mode: 'punch', range: RANGE } }),
-    ) as StudioRecordingImport
+    )!
     expect(kept).toMatchObject({
       startFrame: 96000,
       sourceInFrame: 6000,
@@ -63,47 +63,57 @@ describe('studioTakeImport', () => {
     ).toBeNull()
   })
 
-  it('cuts a loop take into passes of exactly the range, heard pass the newest whole one', () => {
-    // 6000 frames before the range, three whole passes and a second of the fourth.
+  it('keeps a loop take as one file of the whole capture, its clip on the newest whole pass', () => {
+    // 6000 frames before the range, three whole passes and half of a fourth.
+    const captured = 6000 + 3 * 48000 + 24000
     const kept = studioTakeImport(
-      take(6000 + 3 * 48000 + 48000, { cut: { mode: 'loop', range: RANGE } }),
-    ) as StudioPassesImport
-    expect(kept.passes.map((pass) => pass.title)).toEqual([
-      'Take 9, pass 1',
-      'Take 9, pass 2',
-      'Take 9, pass 3',
-      'Take 9, pass 4',
-    ])
-    expect(kept.passes.map((pass) => pass.assetId)).toEqual([
-      'take-9-pass-1',
-      'take-9-pass-2',
-      'take-9-pass-3',
-      'take-9-pass-4',
-    ])
-    expect(kept.passes.map((pass) => wavFrames(pass.wav))).toEqual([
-      48000, 48000, 48000, 48000,
-    ])
+      take(captured, { cut: { mode: 'loop', range: RANGE } }),
+    )!
     expect(kept).toMatchObject({
-      heard: 3,
+      title: 'Take 9',
+      assetId: 'take-9',
       startFrame: 96000,
-      frames: 48000,
+      sourceInFrame: 6000 + 2 * 48000,
+      sourceOutFrame: 6000 + 3 * 48000,
+      passes: { firstFrame: 6000, frames: 48000, count: 3 },
       trackId: 'lane-1',
     })
+    // Not a frame of silence added, and not a pass copied.
+    expect(wavFrames(kept.wav)).toBe(captured)
   })
 
-  it('keeps every finished pass and the one cut short when a tab closed mid-loop', async () => {
-    // Two whole passes and 30000 frames of the third, read back from the journal.
+  it('finds the passes of a 44.1 kHz capture in the 48 kHz frames its import stores', () => {
+    const at48 = 6000 + 3 * 48000 + 10000
     const kept = studioTakeImport(
-      take(6000 + 2 * 48000 + 30000, { cut: { mode: 'loop', range: RANGE } }),
-    ) as StudioPassesImport
-    expect(kept.passes).toHaveLength(3)
-    expect(kept.heard).toBe(1)
-    // The third pass starts on the frame the second ended, and is padded to the range.
-    const third = new DataView(await kept.passes[2].wav.arrayBuffer())
-    expect(third.byteLength - 44).toBe(2 * 48000)
-    const first = third.getInt16(44, true)
-    expect(first).toBe(Math.round(((6000 + 96000) / 2 ** 20) * 0x7fff))
-    expect(third.getInt16(44 + 2 * 29999, true)).not.toBe(0)
-    expect(third.getInt16(44 + 2 * 30000, true)).toBe(0)
+      take(Math.round((at48 * 44100) / 48000), {
+        sampleRate: 44100,
+        cut: { mode: 'loop', range: RANGE },
+      }),
+    )!
+    expect(kept.passes).toEqual({ firstFrame: 6000, frames: 48000, count: 3 })
+    expect(kept.sourceInFrame).toBe(6000 + 2 * 48000)
+  })
+
+  it('keeps what was sung over a range longer than a take can be, in a file the import takes', () => {
+    const long = { startFrame: 96000, endFrame: 96000 + 6 * 60 * 48000 }
+    const kept = studioTakeImport(
+      take(6000 + 10 * 48000, { cut: { mode: 'loop', range: long } }),
+    )!
+    expect(kept).toMatchObject({ startFrame: 96000, sourceInFrame: 6000 })
+    expect(kept.passes).toBeUndefined()
+    expect(kept.sourceOutFrame).toBeUndefined()
+    expect(wavFrames(kept.wav)).toBe(6000 + 10 * 48000)
+    expect(wavFrames(kept.wav)).toBeLessThanOrEqual(
+      DEFAULT_STUDIO_IMPORT_LIMITS.maxFrames,
+    )
+  })
+
+  it('keeps nothing of a loop stopped before its one-second first pass was half sung', () => {
+    const loop = { cut: { mode: 'loop' as const, range: RANGE } }
+    expect(studioTakeImport(take(6000 + 23999, loop))).toBeNull()
+    expect(studioTakeImport(take(6000 + 24000, loop))).toMatchObject({
+      startFrame: 96000,
+      sourceInFrame: 6000,
+    })
   })
 })

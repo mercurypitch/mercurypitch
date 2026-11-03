@@ -1,8 +1,9 @@
-// Studio take pass tests — a punch keeps exactly its range, and a loop take's passes meet frame to frame with none lost or doubled.
+// Studio take pass tests — a punch keeps exactly its range, and a loop take's whole passes are windows of one capture that meet frame to frame.
 import { describe, expect, it } from 'vitest'
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
-import { STUDIO_PUNCH_FADE_FRAMES, studioHeardPass, studioLoopPasses, studioMinPartialPass, studioPassSamples, studioPunchCut, } from './take-passes'
-import { planStudioTake, studioPunchPreroll } from './take-plan'
+import { STUDIO_TAKE_MAX_SECONDS } from './studio-recorder'
+import { STUDIO_PUNCH_FADE_FRAMES, studioLoopCut, studioMinPartialPass, studioPunchCut, studioTakeClip, } from './take-passes'
+import { planStudioTake, STUDIO_LAST_PASS_SPARE_FRAMES, studioPunchPreroll, } from './take-plan'
 
 const RANGE = { startFrame: 96000, endFrame: 192000 }
 
@@ -38,86 +39,82 @@ describe('Studio punch cut', () => {
 })
 
 describe('Studio loop passes', () => {
-  it('cuts every pass on its own frames: they meet with none lost and none doubled', () => {
+  it('marks every whole pass as a window of the one capture: they meet frame to frame, the newest heard', () => {
     const heardFirst = 96000 - 1234
-    // Three whole passes and two seconds of a fourth.
-    const captured = 1234 + 3 * 96000 + 96000
-    const passes = studioLoopPasses(heardFirst, RANGE, captured, 48000)
-    expect(passes).toEqual([
-      { firstFrame: 1234, endFrame: 97234, complete: true },
-      { firstFrame: 97234, endFrame: 193234, complete: true },
-      { firstFrame: 193234, endFrame: 289234, complete: true },
-      { firstFrame: 289234, endFrame: 385234, complete: true },
-    ])
-    for (let index = 1; index < passes.length; index++)
-      expect(passes[index].firstFrame).toBe(passes[index - 1].endFrame)
-    // Each pass's first sample lands on the range's start.
-    passes.forEach((pass, index) =>
-      expect(heardFirst + pass.firstFrame - index * 96000).toBe(96000),
-    )
-    expect(studioHeardPass(passes)).toBe(3)
+    // Four whole passes and half of a fifth.
+    const cut = studioLoopCut(heardFirst, RANGE, 1234 + 4 * 96000 + 48000)
+    expect(cut).toEqual({
+      startFrame: 96000,
+      sourceInFrame: 1234 + 3 * 96000,
+      sourceOutFrame: 1234 + 4 * 96000,
+      passes: { firstFrame: 1234, frames: 96000, count: 4 },
+    })
+    // The first window's first sample lands on the range's start, and every
+    // later one a whole range on, where the run's count starts it again.
+    expect(heardFirst + cut!.passes!.firstFrame).toBe(RANGE.startFrame)
   })
 
-  it('keeps a pass cut short when it holds a second, padded to the range, and plays the newest whole one', () => {
+  it('leaves a pass the take stopped inside out of the windows, and plays one whole pass as an ordinary clip', () => {
     const heardFirst = 96000 - 1234
-    const captured = 1234 + 96000 + 48000
-    const passes = studioLoopPasses(heardFirst, RANGE, captured, 48000)
-    expect(passes).toEqual([
-      { firstFrame: 1234, endFrame: 97234, complete: true },
-      { firstFrame: 97234, endFrame: 193234, complete: false },
-    ])
-    expect(studioHeardPass(passes)).toBe(0)
-    const samples = Float32Array.from({ length: captured }, (_, i) => i + 1)
-    const last = studioPassSamples(samples, passes[1])
-    expect(last).toHaveLength(96000)
-    expect(last[0]).toBe(97235)
-    expect(last[47999]).toBe(captured)
-    expect(last[48000]).toBe(0)
-    // A complete pass is a view of the capture, not a copy.
-    expect(studioPassSamples(samples, passes[0]).buffer).toBe(samples.buffer)
+    expect(
+      studioLoopCut(heardFirst, RANGE, 1234 + 2 * 96000 + 95999)?.passes,
+    ).toEqual({ firstFrame: 1234, frames: 96000, count: 2 })
+    expect(studioLoopCut(heardFirst, RANGE, 1234 + 96000 + 48000)).toEqual({
+      startFrame: 96000,
+      sourceInFrame: 1234,
+      sourceOutFrame: 1234 + 96000,
+    })
   })
 
-  it('lets a pass barely begun go', () => {
+  it('keeps what was sung of a first pass cut short, from the range start, when it holds a second', () => {
     const heardFirst = 96000 - 1234
     const minimum = studioMinPartialPass(96000)
     expect(minimum).toBe(48000)
-    const short = studioLoopPasses(
-      heardFirst,
-      RANGE,
-      1234 + 96000 + minimum - 1,
-      48000,
-    )
-    expect(short).toHaveLength(1)
+    expect(studioLoopCut(heardFirst, RANGE, 1234 + minimum - 1)).toBeNull()
+    // No out point: the clip runs to the take's end.
+    expect(studioLoopCut(heardFirst, RANGE, 1234 + minimum)).toEqual({
+      startFrame: 96000,
+      sourceInFrame: 1234,
+    })
     // Half the range for a range shorter than two seconds.
     expect(studioMinPartialPass(36000)).toBe(18000)
   })
 
-  it('keeps a first pass cut short as the only one, and plays it', () => {
-    const passes = studioLoopPasses(96000 - 1234, RANGE, 1234 + 60000, 48000)
-    expect(passes).toEqual([
-      { firstFrame: 1234, endFrame: 97234, complete: false },
-    ])
-    expect(studioHeardPass(passes)).toBe(0)
+  it('keeps an ordinary take of what was sung over a range longer than a take can be', () => {
+    const long = { startFrame: 96000, endFrame: 96000 + 6 * 60 * 48000 }
+    const capture = Math.floor((STUDIO_TAKE_MAX_SECONDS - 0.01) * 48000)
+    expect(studioLoopCut(96000 - 1234, long, capture)).toEqual({
+      startFrame: 96000,
+      sourceInFrame: 1234,
+    })
   })
 
-  it('cuts a 44.1 kHz capture on the nearest frames of its own clock, still meeting end to start', () => {
-    const heardFirst = 96000 - 1000
-    const captured = Math.round(((1000 + 3 * 96000) * 44100) / 48000)
-    const passes = studioLoopPasses(heardFirst, RANGE, captured, 44100)
-    expect(passes).toHaveLength(3)
-    expect(passes[0].firstFrame).toBe(Math.round((1000 * 44100) / 48000))
-    for (let index = 1; index < passes.length; index++)
-      expect(passes[index].firstFrame).toBe(passes[index - 1].endFrame)
-    for (const pass of passes)
-      expect(
-        Math.abs(pass.endFrame - pass.firstFrame - 88200),
-      ).toBeLessThanOrEqual(1)
+  it('skips a pass that began before the capture did', () => {
+    const cut = studioLoopCut(96000 + 500, RANGE, 95500 + 2 * 96000)
+    expect(cut?.passes).toEqual({ firstFrame: 95500, frames: 96000, count: 2 })
+    expect(cut?.startFrame).toBe(96000)
   })
 
   it('keeps at most the passes a clip holds', () => {
     const short = { startFrame: 0, endFrame: 12000 }
-    const passes = studioLoopPasses(0, short, 12000 * 40, 48000)
-    expect(passes).toHaveLength(STUDIO_MAX_CLIP_PASSES)
+    expect(studioLoopCut(0, short, 12000 * 40)?.passes?.count).toBe(
+      STUDIO_MAX_CLIP_PASSES,
+    )
+  })
+
+  it('makes a plain take, a punch and a loop the clip each keeps', () => {
+    const take = { heardFirst: 40000, fromFrame: 48000 }
+    expect(studioTakeClip({ ...take, cut: null }, 100000)).toEqual({
+      startFrame: 48000,
+      sourceInFrame: 8000,
+    })
+    expect(
+      studioTakeClip({ ...take, cut: { mode: 'punch', range: RANGE } }, 200000),
+    ).toEqual(studioPunchCut(40000, RANGE, 200000))
+    expect(
+      studioTakeClip({ ...take, cut: { mode: 'loop', range: RANGE } }, 200000),
+    ).toEqual(studioLoopCut(40000, RANGE, 200000))
+    expect(studioTakeClip({ ...take, cut: null }, 8000)).toBeNull()
   })
 })
 
@@ -172,7 +169,7 @@ describe('Studio take plan', () => {
     expect(plan.countInSeconds).toBe(1.5)
   })
 
-  it('loops from the range start after the count-in, stopping after the last pass a clip keeps', () => {
+  it('loops from the range start after the count-in, stopping just after the last pass a clip keeps', () => {
     const cut = { mode: 'loop' as const, range: RANGE }
     expect(
       planStudioTake({
@@ -187,8 +184,9 @@ describe('Studio take plan', () => {
       songFrom: 96000,
       fromFrame: 96000,
       countInSeconds: 2,
-      stopAt: 96000 + STUDIO_MAX_CLIP_PASSES * 96000,
+      stopAt: 96000 + STUDIO_MAX_CLIP_PASSES * 96000 + 480,
     })
+    expect(STUDIO_LAST_PASS_SPARE_FRAMES).toBe(480)
   })
 
   it('records a plain take from the playhead, or along with a song that plays', () => {
