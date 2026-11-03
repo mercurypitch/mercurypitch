@@ -176,8 +176,8 @@ const HarmonyScreen: Component = PREMIUM_EXERCISES
 
 /**
  * Leagues (slice 2 of docs/plans/native-more-and-community.md), on a build
- * with them (`NATIVE_LEAGUES`) and no other: the same ternary as Long
- * note's, so the store build keeps no chunk.
+ * with them (`NATIVE_LEAGUES`, every build since 3 Nov 2026): the same
+ * ternary as Long note's, so a build with the switch off keeps no chunk.
  */
 const LeaguesScreen: Component = NATIVE_LEAGUES
   ? lazy(async () =>
@@ -189,8 +189,8 @@ const LeaguesScreen: Component = NATIVE_LEAGUES
 
 /**
  * The Legend room (slice 3 of docs/plans/native-more-and-community.md), on
- * the same switch as Leagues and the same ternary, so the store build keeps
- * no chunk.
+ * the same switch as Leagues and the same ternary, so a build with it off
+ * keeps no chunk.
  */
 const LegendScreen: Component = NATIVE_LEAGUES
   ? lazy(async () =>

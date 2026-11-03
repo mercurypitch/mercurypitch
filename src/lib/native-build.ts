@@ -95,15 +95,16 @@ export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT
 /**
  * Whether this build carries Leagues and the weekly challenge on the phone
  * (docs/plans/native-more-and-community.md, slices 2 and 3): the More
- * sheet's Together group, the Leagues screen and the league the group's row
- * names. On in a native test build, TestFlight among them, so the owner can
- * try it before it ships, and off in the store build until the owner flips
- * it. Folded like `KARAOKE_IMPORT`, so the store build carries none of it
- * (assert-bundle.mjs STAGE 2): the screen is a lazy chunk behind this
- * constant (NativeShell.tsx), and the store the row reads is free of side
- * effects in the native config, so nothing reaches it there.
+ * sheet's Together group, the Leagues screen, the Legend room and the
+ * league and Legend the group's rows name. On in every build, the store
+ * build among them, since the owner's go (3 Nov 2026: "as for leagues sure
+ * if we have things ready it can go in"); before that it rode
+ * `KARAOKE_IMPORT`, on in test builds alone. The constant stays so the
+ * owner can take Leagues back out of a store build with one line: the
+ * screens are still lazy chunks behind it (NativeShell.tsx), so a build
+ * that never opens them never loads them.
  */
-export const NATIVE_LEAGUES: boolean = KARAOKE_IMPORT
+export const NATIVE_LEAGUES: boolean = true
 
 /**
  * Whether this build carries Community on the phone

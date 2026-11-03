@@ -1,8 +1,20 @@
 // ============================================================
 // The More sheet: its groups, its rows, and where each row goes
 // ============================================================
+//
+// Here both of Together's switches are off, as a build that took Leagues
+// back out would have them: NATIVE_LEAGUES is on in every build since the
+// owner's go (3 Nov 2026), so the default build draws the group, and
+// MoreSheet.together.test.tsx holds it with the switch on.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  NATIVE_LEAGUES: false,
+  NATIVE_COMMUNITY: false,
+}))
+
 import { MoreSheet } from './MoreSheet'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
@@ -50,7 +62,7 @@ describe('the More sheet', () => {
     ])
   })
 
-  // Together's rows each wait on a build switch that does not exist yet
+  // Together's rows each wait on a build switch
   // (docs/plans/native-more-and-community.md), and an empty group is no group.
   it('draws no Together group while none of its switches is on', () => {
     openSheet()

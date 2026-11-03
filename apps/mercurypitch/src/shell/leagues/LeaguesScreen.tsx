@@ -28,8 +28,8 @@
 // the league's name. A sign-in from the card below hands it to the league
 // too, once it is read: the card's Sign in has gone with the sign-in.
 //
-// Behind NATIVE_LEAGUES, as a lazy chunk (NativeShell.tsx): a store build
-// carries none of it.
+// Behind NATIVE_LEAGUES, as a lazy chunk (NativeShell.tsx): a build that
+// never opens it never loads it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'

@@ -60,7 +60,17 @@ export const NATIVE_COMMUNITY: boolean = KARAOKE_IMPORT
 
 Slices 2 and 3 share one switch, as the brief asks ("behind the same
 switch"); Community has its own, because its store gate is the moderation
-work, not a product call. Each switch:
+work, not a product call.
+
+**Leagues in the store build (owner, 3 Nov 2026).** "As for leagues sure
+if we have things ready it can go in": `NATIVE_LEAGUES` is `true` in every
+build, so the store build carries Leagues and the Legend room as a test
+build does. The constant stays, and the screens stay lazy chunks behind it,
+so setting it back to `KARAOKE_IMPORT` takes them out of a store build
+again. Their markers left `assert-bundle.mjs` STAGE 2; `leagues-fold.test.ts`
+and `legend-fold.test.ts` hold the switch on and the markers gone. The
+boards a store build shows read the production worker: its name filter
+(4a) reaches users with the next release tag, which deploys it. Each switch:
 
 1. is read only in a ternary or behind `lazy(import())`, never a `<Show>`;
 2. gets STAGE 2 markers in `apps/mercurypitch/scripts/assert-bundle.mjs`
@@ -904,14 +914,14 @@ Each is applied as written unless the owner says otherwise.
 
 ## Order
 
-| PR  | What                                            | Switch             |
-| --- | ----------------------------------------------- | ------------------ |
-| 1   | This plan, and the More sheet as a list (#1267) | none               |
-| 2   | Leagues, read-only (#1272)                      | `NATIVE_LEAGUES`   |
-| 3   | The Legend as a room                            | `NATIVE_LEAGUES`   |
-| 3b  | The Legend in the native rooms' light           | `NATIVE_LEAGUES`   |
-| 4a  | Reports, blocks, the name filter (worker)       | none (worker)      |
-| 4b  | Report and Block on the phone, contact line     | none               |
-| 4c  | Community                                       | `NATIVE_COMMUNITY` |
+| PR  | What                                            | Switch                                    |
+| --- | ----------------------------------------------- | ----------------------------------------- |
+| 1   | This plan, and the More sheet as a list (#1267) | none                                      |
+| 2   | Leagues, read-only (#1272)                      | `NATIVE_LEAGUES`, every build since 3 Nov |
+| 3   | The Legend as a room                            | `NATIVE_LEAGUES`                          |
+| 3b  | The Legend in the native rooms' light           | `NATIVE_LEAGUES`                          |
+| 4a  | Reports, blocks, the name filter (worker)       | none (worker)                             |
+| 4b  | Report and Block on the phone, contact line     | none                                      |
+| 4c  | Community                                       | `NATIVE_COMMUNITY`                        |
 
 4a does not wait for 2 and 3: it can start beside them.

@@ -17,10 +17,10 @@
 // week must include it next time"). Nothing about other singers is kept: the
 // board's names stay with the room that showed them.
 //
-// Behind NATIVE_LEAGUES (src/lib/native-build.ts). The native config lists
-// this module as free of side effects, so a store build, where nothing
-// reaches it, carries none of it, its key included (assert-bundle.mjs
-// STAGE 2, `mp:legend-card`).
+// Behind NATIVE_LEAGUES (src/lib/native-build.ts), on in every build since
+// 3 Nov 2026. The native config lists this module as free of side effects,
+// so a build with the switch off, where nothing reaches it, carries none of
+// it, its key included.
 
 import { batch, createEffect, createRoot, createSignal, on, untrack, } from 'solid-js'
 import { accountHeld, currentAccountId } from '@/db/services/auth-service'

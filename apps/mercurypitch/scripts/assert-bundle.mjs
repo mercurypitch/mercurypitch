@@ -530,27 +530,9 @@ const KARAOKE_STAGE_2 = [
     /\/(?:merc-(?:point|listen|celebrate)|glasshouse-night)-[\w-]{8}\.webp$/u,
     "Merc's stills and the Wild's glasshouse in the Ear Lab with Merc",
   ],
-  // Leagues on the phone, on the same switch until the owner flips it
-  // (NATIVE_LEAGUES, src/lib/native-build.ts): the screen is a lazy chunk
-  // behind it (NativeShell.tsx), the league the More sheet's row names is
-  // free of side effects in the native config, and the row's line is
-  // worked out inside the More sheet's folded Together group. A row is
-  // found by its words, never by `data-more-item`: the sheet sets that
-  // from a prop, so no bundle spells it out.
-  ['shell-leagues', 'the Leagues screen'],
-  ['Climb a rung every week', "the Leagues screen's way in, signed out"],
-  ['mp:league-card', "the league the More sheet's row names"],
-  ['A rung higher every week', "the More sheet's Leagues row"],
-  // The Legend room (slice 3), on the same switch: its screen is a lazy
-  // chunk behind it, the store its More row reads is free of side effects,
-  // and the row's line is worked out inside the same folded group.
-  ['shell-legend', 'the Legend room'],
-  ['Practice without ranking', "the Legend room's ask before a ranked take"],
-  ['mp:legend-card', "the Legend the More sheet's row names"],
-  ['The line everyone sings', "the More sheet's Legend row"],
-  // The Sing room's card over its exercises is worded by the shell
-  // (legend-card-wiring.ts), so a store build carries none of its words.
-  ['Everyone sings the same notes', "the Sing room's Legend card"],
+  // Leagues and the Legend room (NATIVE_LEAGUES, slices 2 and 3) are not
+  // here: the owner put them in every build, the store build among them
+  // (3 Nov 2026), so a store build carries them as a test build does.
   // Community (slice 4c), on a switch of its own until the owner flips it
   // (NATIVE_COMMUNITY): its two screens are lazy chunks behind it, the
   // counts its More row says are free of side effects in the native config,
