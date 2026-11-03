@@ -14,7 +14,7 @@ November 2026): both clefs, each learner reading their own (item 2), so the step
 sing-along follow the voice choice and every key signature is drawn at its own clef's heights; and
 reading stops at three sharps and three flats, while the circle shows all twelve keys (item 13).
 Every scale is spelled one letter per degree (FACTS 12). Step 5, why twelve, stays in the page: with
-it the page is 2,139 words, which leaves room under the series' cap of 2,379 for the built page's
+it the page is 2,142 words, which leaves room under the series' cap of 2,379 for the built page's
 hint and status lines, about 175 words on this page's own count (FACTS 3).
 
 Sound comes before every symbol (SEASON-2 § 1.4 item 1). Each scale plays and lights on Lesson 2's

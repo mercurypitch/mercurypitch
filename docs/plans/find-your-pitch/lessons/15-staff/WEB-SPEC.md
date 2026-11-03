@@ -143,9 +143,9 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,337 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
-under the series' cap of 2,379 by 42. The page runs about 15 minutes: 9.82 of reading at 238 words a
-minute and about 5.5 of sound, toys and tasks, 15.32 in all, past MASTER-PLAN § 4.2's 8 to 12
+The learner copy is 2,332 words on `node scripts/lesson-words.mjs`, every branch counted (FACTS 3),
+under the series' cap of 2,379 by 47. The page runs about 15 minutes: 9.80 of reading at 238 words a
+minute and about 5.5 of sound, toys and tasks, 15.30 in all, past MASTER-PLAN § 4.2's 8 to 12
 minutes of active time, as Lessons 3, 5, 6, 7, 10 and 12 are. The chip is an estimate until the
 staff toy is timed in its lab (SEASON-2 § 1.3), and this section says so until then. Each step's
 text, with its Try, its Notice and any Tavi line, runs 103 to 119 words (Steps 1 to 5: 118, 118,

@@ -110,8 +110,8 @@ in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,139 words on `scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 240 (FACTS 3). The page runs about 15 minutes: 8.99 minutes of reading at
+The learner copy is 2,142 words on `scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 237 (FACTS 3). The page runs about 15 minutes: 9.00 minutes of reading at
 238 words a minute and about 6.4 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words", as every Season 1 page from Lesson 3 is. The
 chip's figure is an estimate until the staff toy and the circle are timed in their labs, as SEASON-2
