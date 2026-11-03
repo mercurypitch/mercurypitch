@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePitchPursuitController } from '@/features/exercises/pitch-pursuit/use-pitch-pursuit-controller'
-import { EXERCISE_PITCH_PURSUIT } from '@/features/exercises/types'
+import type { ExerciseResult } from '@/features/exercises/types'
+import { EXERCISE_PITCH_PURSUIT, runStoppedEarly, } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
 function createMockBase(
@@ -90,5 +91,54 @@ describe('usePitchPursuitController', () => {
     ctrl.stopGame()
 
     expect(committed.length).toBe(1)
+  })
+})
+
+describe('a Pitch Pursuit run', () => {
+  // Its card promises 12 notes, and the game is meant to end once they
+  // have all reached the line. The spawn cap counted the notes on screen
+  // instead of the notes spawned, so the notes never ran out: three
+  // minutes in, eighty had fallen and the game was still going.
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'performance',
+        'Date',
+      ],
+    })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('ends by itself once its 12 notes have reached the line, and is a whole run', async () => {
+    const results: ExerciseResult[] = []
+    let running = true
+    const ctrl = usePitchPursuitController(
+      createMockBase({
+        _isRunning: () => running,
+        _completeWithResult: (r) => {
+          running = false
+          results.push(r)
+        },
+      }),
+    )
+
+    ctrl.startGame()
+    // Twelve notes, one every 2.2 s, each 5 s to fall and a second to
+    // clear: about half a minute.
+    await vi.advanceTimersByTimeAsync(40_000)
+
+    expect(results).toHaveLength(1)
+    const { metrics } = results[0]!
+    expect(metrics.hits + metrics.misses).toBe(12)
+    expect(runStoppedEarly(metrics)).toBe(false)
+    expect(ctrl.getNotes()).toEqual([])
   })
 })
