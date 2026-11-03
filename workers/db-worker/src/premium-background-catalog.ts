@@ -88,6 +88,9 @@ const SURFACE_BY_ID: Record<PremiumBackgroundId, BackgroundSurface> = {
   'drum-rain-glass-studio': 'drum',
   'drum-walnut-live-room': 'drum',
   'drum-sunrise-pavilion': 'drum',
+  'sing-echo-cistern': 'sing',
+  'sing-snowfall-pavilion': 'sing',
+  'sing-ghost-light-stage': 'sing',
 }
 
 function includes<const T extends readonly string[]>(

@@ -127,6 +127,7 @@
   "src/lib/backgrounds/mercury-rooms.test.ts",
   "src/lib/backgrounds/premium-background-surface-check.test.ts",
   "src/lib/backgrounds/room-library.test.ts",
+  "src/lib/backgrounds/sing-rooms.test.ts",
   "src/lib/css-color-token.test.ts",
   "src/lib/decode-audio-to-mono.test.ts",
   "src/lib/ear/banks.test.ts",

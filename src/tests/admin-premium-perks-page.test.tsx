@@ -10,16 +10,21 @@ const BACKGROUND_SURFACES = [
   ...new Set(BACKGROUND_CATALOG.map((background) => background.surface)),
 ]
 
+// A Record, not a chain of ternaries: the chain ended in `: 'Jam'`, so the Ear
+// Lab and the Sing room both looked for the Jam button, found it, and passed
+// while the Sing room had no filter at all. A Record has to name every surface.
+const SURFACE_BUTTON_NAMES: Record<BackgroundSurface, string> = {
+  karaoke: 'Karaoke',
+  jam: 'Jam',
+  piano: 'Piano Night',
+  guitar: 'Guitar Night',
+  ear: 'Ear Lab',
+  drum: 'Drum Night',
+  sing: 'Sing',
+}
+
 const surfaceButtonName = (surface: BackgroundSurface): string =>
-  surface === 'piano'
-    ? 'Piano Night'
-    : surface === 'guitar'
-      ? 'Guitar Night'
-      : surface === 'drum'
-        ? 'Drum Night'
-        : surface === 'karaoke'
-          ? 'Karaoke'
-          : 'Jam'
+  SURFACE_BUTTON_NAMES[surface]
 
 const serviceMocks = vi.hoisted(() => ({
   loadPremiumPerks: vi.fn(),

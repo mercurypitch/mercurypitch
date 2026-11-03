@@ -75,6 +75,7 @@ const BACKGROUND_SURFACE_FILTERS = [
   { id: 'guitar', label: 'Guitar Night' },
   { id: 'ear', label: 'Ear Lab' },
   { id: 'drum', label: 'Drum Night' },
+  { id: 'sing', label: 'Sing' },
 ] as const satisfies readonly BackgroundSurfaceFilterOption[]
 
 /**

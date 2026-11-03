@@ -197,6 +197,15 @@ export const EAR_ROOMS_BACKGROUND_IDS = [
   'ear-anechoic-booth',
 ] as const
 
+/** The Sing room's supporter covers: three more places to sing, delivered
+ *  from R2 like every other supporter identity. The free covers ship from
+ *  `public/sing/`. */
+export const SING_ROOMS_BACKGROUND_IDS = [
+  'sing-echo-cistern',
+  'sing-snowfall-pavilion',
+  'sing-ghost-light-stage',
+] as const
+
 /** Every supporter background may also be granted permanently by this id. */
 export const BACKGROUND_PERK_IDS = [
   ...EXISTING_PREMIUM_BACKGROUND_IDS,
@@ -204,6 +213,7 @@ export const BACKGROUND_PERK_IDS = [
   ...MERCURY_ROOMS_BACKGROUND_IDS,
   ...ROOM_LIBRARY_BACKGROUND_IDS,
   ...EAR_ROOMS_BACKGROUND_IDS,
+  ...SING_ROOMS_BACKGROUND_IDS,
 ] as const
 
 export type FreeBackgroundId = (typeof CURRENT_FREE_BACKGROUND_IDS)[number]
@@ -263,6 +273,7 @@ export type BackgroundEdition =
   | 'grand-hall'
   | 'moonlit-conservatory'
   | 'ear-rooms'
+  | 'sing-rooms'
   | 'blue-hour-live-room'
   | 'bronze-soundstage'
   | 'rain-glass-studio'
@@ -1457,6 +1468,39 @@ export const BACKGROUND_CATALOG = [
     // The band is the dark teal back wall; the risers, the stand and its
     // lamp sit below it, and the dusk window stays at the far right edge.
     focalPoint: { x: 0.57, y: 0.62 },
+  },
+  {
+    id: 'sing-echo-cistern',
+    surface: 'sing',
+    label: 'Echo Cistern',
+    description: 'Brick vaults over still water, one lantern on the walk',
+    edition: 'sing-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('sing-echo-cistern'),
+    assetSource: protectedSource('sing', 'sing-echo-cistern'),
+    focalPoint: { x: 0.49, y: 0.68 },
+  },
+  {
+    id: 'sing-snowfall-pavilion',
+    surface: 'sing',
+    label: 'Snowfall Pavilion',
+    description: 'A glass room in snowy pines at blue hour, a lantern lit',
+    edition: 'sing-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('sing-snowfall-pavilion'),
+    assetSource: protectedSource('sing', 'sing-snowfall-pavilion'),
+    focalPoint: { x: 0.5, y: 0.7 },
+  },
+  {
+    id: 'sing-ghost-light-stage',
+    surface: 'sing',
+    label: 'Ghost Light Stage',
+    description: 'An empty stage after the show, one bare bulb burning',
+    edition: 'sing-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('sing-ghost-light-stage'),
+    assetSource: protectedSource('sing', 'sing-ghost-light-stage'),
+    focalPoint: { x: 0.5, y: 0.62 },
   },
 ] as const satisfies readonly BackgroundDefinition[]
 
