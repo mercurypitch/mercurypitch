@@ -33,7 +33,9 @@ import type { RoutineSegment } from './types'
  * of held note and a Sight Singing run forty-two, and against the drill's own
  * timers, where a Chord Stacker run at the default level takes eighty-one and
  * a half: five chords, each played and then sung back a note at a time
- * (use-chord-stacker-controller.test.ts).
+ * (use-chord-stacker-controller.test.ts). A Pitch Pursuit run ends after its
+ * notes, about thirty seconds at the default level and forty at the hardest
+ * (exercise-pitch-pursuit.test.ts).
  */
 const TYPICAL_RUN_SEC: Partial<Record<ExerciseType, number>> = {
   [EXERCISE_LONG_NOTE]: 30,
@@ -48,7 +50,7 @@ const TYPICAL_RUN_SEC: Partial<Record<ExerciseType, number>> = {
   [EXERCISE_SCALE_RUNNER]: 45,
   [EXERCISE_DRONE_INTONATION]: 45,
   [EXERCISE_MIRROR_MELODY]: 45,
-  [EXERCISE_PITCH_PURSUIT]: 60,
+  [EXERCISE_PITCH_PURSUIT]: 45,
   [EXERCISE_CALL_RESPONSE]: 60,
   [EXERCISE_SIGHT_SINGING]: 60,
   [EXERCISE_ROUTINE_RUNNER]: 60,
