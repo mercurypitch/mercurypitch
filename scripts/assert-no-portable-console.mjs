@@ -58,13 +58,16 @@ const storeBinary = args.includes(STORE_BINARY_FLAG)
  * (apps/mercurypitch/src/shell/DeveloperScreen.tsx), native sign-in
  * (src/features/account/NativeSignInPanel.tsx), the audio record
  * (AudioDiagnosticsPanel.tsx), the Karaoke audio switches
- * (KaraokeAudioPanel.tsx) and the Cloud subscription's timings
- * (SubscriptionTimingPanel.tsx). Nothing the web imports reaches any of
- * them. And the audio census the native entry installs beside them
+ * (KaraokeAudioPanel.tsx), the Cloud subscription's timings
+ * (SubscriptionTimingPanel.tsx) and the AirPlay sound check
+ * (AirPlayCheckPanel.tsx, and airplay-check.ts by the line each tap
+ * writes). Nothing the web imports reaches any of them. And the audio census the native entry installs beside them
  * (apps/mercurypitch/src/shell/audio-census.ts), by the event it records
  * for each mic track, and the subscription's timer
  * (apps/mercurypitch/src/shell/subscription-timing.ts), by the line it
- * writes to the console for each flow. And the More sheet's Developer row,
+ * writes to the console for each flow, and the audio report a song on
+ * AirPlay writes into the console (apps/mercurypitch/src/shell/
+ * audio-report.ts), by its line. And the More sheet's Developer row,
  * by the words of its line (developerLine, apps/mercurypitch/src/shell/
  * more-lines.ts): its ternary folds away, and the line goes with it.
  */
@@ -85,6 +88,9 @@ const FINGERPRINTS = [
   'dev-karaoke-audio',
   'mic-opened',
   'dev-cloud-timings',
+  'dev-airplay-check',
+  '[airplay check] ',
+  '[audio report ',
   '[subscription] ',
   'production server',
 ]

@@ -244,6 +244,18 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // Five ways of making sound, each with its own number of beeps, so a
+  // tester can say which ones a TV on AirPlay plays: the Karaoke room's
+  // sound reached neither the TV nor the phone there (airplay-check.ts).
+  // Same gate, same reason.
+  void import('./shell/AirPlayCheckPanel').then((module) => {
+    const Panel = module.AirPlayCheckPanel
+    registerDeveloperSection({
+      id: 'airplay-check',
+      title: 'AirPlay sound check',
+      render: () => <Panel />,
+    })
+  })
   // How long each step of a Subscribe, a Restore purchase and a sign-in's
   // carry took, and the wait for the songs after the store's yes: Subscribe
   // took close to a minute on TestFlight build 919, and nothing said where.
