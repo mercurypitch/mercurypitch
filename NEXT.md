@@ -3029,3 +3029,9 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Gates: pr:prepare no change, typecheck, lint 0 errors, metrics:check, test:run 30,790 passed; the spec passed 12/12 on the dev server.
   - Docs agent must also fix Season 1: Lesson 10 FACTS 49 "tops out at 80" is stale. Grep all of docs/plans/find-your-pitch, not just Season 2.
   - Agent B (s2jam): 0ba92ad01 names, 9680f1c68 late joiner, pushed; final checks running.
+- 3 Nov 00:5x:
+  - Fix branch complete at 64b7972e4: 8 commits, pushed.
+    - The Jam agent's third fix: the late joiner gets the song. The old onPeerJoined send never reached them and reset existing guests' line scores; removed.
+  - Reviewer running on 64b7972e4 (brief s2pkg/FIX-REVIEW-BRIEF.md).
+  - Docs agent running in /dev/shm/s2plan on 2996909d1 (brief s2pkg/DOCS-BRIEF.md). After it: reanchor --base <its commit> for 64b7972e4 and any review fixes.
+  - PR body drafted: s2pkg/FIX-PR-BODY.md.
