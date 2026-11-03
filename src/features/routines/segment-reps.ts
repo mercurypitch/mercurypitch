@@ -30,7 +30,10 @@ import type { RoutineSegment } from './types'
  * shorter session than planned, which is the direction that annoys nobody;
  * under-estimating turns a five-minute routine into a chore. Measured against
  * the seven-day audit's own numbers, where a Long Note run took five seconds
- * of held note and a Sight Singing run forty-two.
+ * of held note and a Sight Singing run forty-two, and against the drill's own
+ * timers, where a Chord Stacker run at the default level takes eighty-one and
+ * a half: five chords, each played and then sung back a note at a time
+ * (use-chord-stacker-controller.test.ts).
  */
 const TYPICAL_RUN_SEC: Partial<Record<ExerciseType, number>> = {
   [EXERCISE_LONG_NOTE]: 30,
@@ -43,13 +46,13 @@ const TYPICAL_RUN_SEC: Partial<Record<ExerciseType, number>> = {
   [EXERCISE_INTERVAL_TRAINER]: 45,
   [EXERCISE_ARPEGGIO_JUMPER]: 45,
   [EXERCISE_SCALE_RUNNER]: 45,
-  [EXERCISE_CHORD_STACKER]: 45,
   [EXERCISE_DRONE_INTONATION]: 45,
   [EXERCISE_MIRROR_MELODY]: 45,
   [EXERCISE_PITCH_PURSUIT]: 60,
   [EXERCISE_CALL_RESPONSE]: 60,
   [EXERCISE_SIGHT_SINGING]: 60,
   [EXERCISE_ROUTINE_RUNNER]: 60,
+  [EXERCISE_CHORD_STACKER]: 90,
 }
 
 /** For a drill with no measured shape yet. Long enough to ask for few reps. */
