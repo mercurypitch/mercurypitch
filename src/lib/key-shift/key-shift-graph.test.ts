@@ -60,6 +60,8 @@ class FakeGain extends FakeNode {
 
 class FakeDelay extends FakeNode {
   readonly delayTime = new FakeParam(0)
+  channelCount = 2
+  channelCountMode: ChannelCountMode = 'max'
   constructor(readonly maxDelayTime: number) {
     super('delay')
   }
@@ -210,10 +212,29 @@ describe('stem key graph', () => {
     expect(bus('pitched').outputs.has(output())).toBe(false)
     expect(pitched.semitones.at(-1)).toBe(2)
     expect(reaches(bus('vocal'), output())).toBe(false)
-    expect(ctx.delays).toHaveLength(1)
     expect(ctx.delays[0].delayTime.value).toBe(LATENCY)
     expect(passesThrough(bus('unpitched'), ctx.delays[0], output())).toBe(true)
     expect(graph.latencySec()).toBe(LATENCY)
+  })
+
+  it('holds the drums at two channels ahead of their delay, so a stereo stem plays its last milliseconds when the song ends', async () => {
+    // Arrange
+    await graph.apply(still(2))
+    const [delay, hold] = ctx.delays
+
+    // Act: back to the bypass and shifted again, which re-routes the drums.
+    await graph.apply(still(0))
+    await graph.apply(still(3))
+
+    // Assert
+    expect(ctx.delays).toHaveLength(2)
+    expect(bus('unpitched').outputs).toEqual(new Set([hold]))
+    expect(hold.outputs).toEqual(new Set([delay]))
+    expect(delay.outputs).toEqual(new Set([output()]))
+    expect(hold.delayTime.value).toBe(0)
+    expect([hold.channelCount, hold.channelCountMode]).toEqual([2, 'explicit'])
+    // Enabled for as long as the delay can hold anything.
+    expect(hold.maxDelayTime).toBeGreaterThanOrEqual(delay.maxDelayTime)
   })
 
   it('makes the guide vocal shifter with formant compensation', async () => {
