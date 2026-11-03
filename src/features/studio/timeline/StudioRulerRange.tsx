@@ -11,6 +11,11 @@
 // range holds still (take-running.ts): its handles go, and Shift-drag
 // draws nothing. The range is the session's view, like the zoom: it is
 // not saved with the song.
+//
+// The range lies over the ruler but beside it in the page, not inside it:
+// the ruler is the playhead's slider, and a slider's children are
+// presentational, so handles and a button inside one would be lost to
+// assistive tech. Each handle is a slider of its own, with its bounds.
 import type { Accessor } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -138,16 +143,33 @@ interface StudioRulerRangeProps {
   range: StudioFrameRange | null
   /** Pixels per second. */
   scale: number
+  /** The ruler's end: the furthest an end handle says it goes. */
+  endFrame: number
   onChange(range: StudioFrameRange | null): void
 }
 
-/** The range on the ruler: its band, a handle at each end, and a cross to clear it. */
+/** Where each end of `range` can go, in seconds: past the other end by the shortest loop at least. */
+function edgeBounds(
+  range: StudioFrameRange,
+  edge: 'start' | 'end',
+  endFrame: number,
+): { min: number; max: number } {
+  return edge === 'start'
+    ? { min: 0, max: range.endFrame - STUDIO_MIN_LOOP_FRAMES }
+    : {
+        min: range.startFrame + STUDIO_MIN_LOOP_FRAMES,
+        max: Math.max(endFrame, range.endFrame),
+      }
+}
+
+/** The range over the ruler: its band, a handle at each end, and a cross to clear it. */
 export function StudioRulerRange(props: StudioRulerRangeProps) {
   const [moving, setMoving] = createSignal<StudioFrameRange | null>(null)
   const shown = () => moving() ?? props.tools.draw.draft() ?? props.range
   const handle = (edge: 'start' | 'end') => {
     const frame = () =>
       edge === 'start' ? shown()!.startFrame : shown()!.endFrame
+    const bounds = () => edgeBounds(shown()!, edge, props.endFrame)
     const move = (to: number) =>
       props.range && setMoving(studioRangeEdge(props.range, edge, to))
     return (
@@ -157,7 +179,8 @@ export function StudioRulerRange(props: StudioRulerRangeProps) {
         role="slider"
         tabIndex={0}
         aria-label={edge === 'start' ? 'Range start' : 'Range end'}
-        aria-valuemin={0}
+        aria-valuemin={bounds().min / STUDIO_SAMPLE_RATE}
+        aria-valuemax={bounds().max / STUDIO_SAMPLE_RATE}
         aria-valuenow={frame() / STUDIO_SAMPLE_RATE}
         aria-valuetext={formatStudioTime(frame())}
         data-studio-range-handle={edge}
@@ -196,39 +219,43 @@ export function StudioRulerRange(props: StudioRulerRangeProps) {
     )
   }
   return (
-    <Show when={shown()}>
-      {(range) => (
-        <span
-          class={styles.range}
-          classList={{
-            [styles.draft]: props.range === null,
-            [styles.narrow]:
-              frameToPixel(range().endFrame - range().startFrame, props.scale) <
-              64,
-          }}
-          data-studio-range=""
-          style={{
-            left: `${frameToPixel(range().startFrame, props.scale)}px`,
-            width: `${frameToPixel(range().endFrame - range().startFrame, props.scale)}px`,
-          }}
-        >
-          <Show when={props.range && !studioTakeRunning()}>
-            {handle('start')}
-            {handle('end')}
-            <button
-              type="button"
-              class={styles.clear}
-              aria-label="Clear range"
-              title="Clear range"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => props.onChange(null)}
-            >
-              <CrossSmall size={12} />
-            </button>
-          </Show>
-        </span>
-      )}
-    </Show>
+    <div class={styles.layer}>
+      <Show when={shown()}>
+        {(range) => (
+          <span
+            class={styles.range}
+            classList={{
+              [styles.draft]: props.range === null,
+              [styles.narrow]:
+                frameToPixel(
+                  range().endFrame - range().startFrame,
+                  props.scale,
+                ) < 64,
+            }}
+            data-studio-range=""
+            style={{
+              left: `${frameToPixel(range().startFrame, props.scale)}px`,
+              width: `${frameToPixel(range().endFrame - range().startFrame, props.scale)}px`,
+            }}
+          >
+            <Show when={props.range && !studioTakeRunning()}>
+              {handle('start')}
+              {handle('end')}
+              <button
+                type="button"
+                class={styles.clear}
+                aria-label="Clear range"
+                title="Clear range"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => props.onChange(null)}
+              >
+                <CrossSmall size={12} />
+              </button>
+            </Show>
+          </span>
+        )}
+      </Show>
+    </div>
   )
 }
 

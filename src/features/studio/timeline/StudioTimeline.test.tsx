@@ -153,6 +153,24 @@ describe('Studio timeline', () => {
     })
   })
 
+  it("keeps the range's handles and its cross beside the ruler's slider, not inside it", () => {
+    render(() => (
+      <StudioTimeline
+        {...base}
+        range={{ startFrame: 48000, endFrame: 96000 }}
+        onRange={vi.fn()}
+      />
+    ))
+    // A slider's children are presentational: controls inside one are lost to assistive tech.
+    const ruler = screen.getByRole('slider', { name: 'Song playhead' })
+    for (const control of [
+      screen.getByRole('slider', { name: 'Range start' }),
+      screen.getByRole('slider', { name: 'Range end' }),
+      screen.getByRole('button', { name: 'Clear range' }),
+    ])
+      expect(ruler.contains(control)).toBe(false)
+  })
+
   it("sets the range to a phone's selected clip from its note, as a phone keeps no toolbar", () => {
     const onRange = vi.fn()
     render(() => (

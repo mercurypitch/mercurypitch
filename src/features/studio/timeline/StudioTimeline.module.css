@@ -68,6 +68,9 @@
   border-right: 1px solid var(--studio-line);
 }
 .ruler {
+  /* Placed, not left to order: the range's layer (StudioRulerRange.module.css)
+     claims this cell too, and grid places a claimed cell first. */
+  grid-area: 1 / 2;
   position: relative;
   cursor: pointer;
   /* Drag scrubs the playhead; the labels are not text to select. */

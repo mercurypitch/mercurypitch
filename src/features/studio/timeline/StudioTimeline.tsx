@@ -15,7 +15,7 @@ import { StudioPhoneClipNote } from './StudioPhoneClipNote'
 import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
-import { StudioTrackControls } from './StudioTrackControls'
+import { StudioTrackControls, StudioTrackName } from './StudioTrackControls'
 import type { StudioRulerTick } from './timeline-geometry'
 import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
@@ -24,29 +24,6 @@ import { useStudioPointer } from './useStudioPointer'
 import { createStudioWaveformResource } from './waveform-resource'
 
 export type { StudioTimelineNotice, StudioTimelineProps } from './types'
-
-function TrackName(props: {
-  id: string
-  name: string
-  source?: string
-  onDetails(id: string): void
-}) {
-  return (
-    <button
-      type="button"
-      class={styles.trackName}
-      data-studio-track-header={props.id}
-      title={`${props.name} details`}
-      aria-label={`${props.name} details`}
-      onClick={() => props.onDetails(props.id)}
-    >
-      <span class={styles.trackNameText}>{props.name}</span>
-      <Show when={props.source}>
-        {(source) => <span class={styles.sourceLabel}>{source()}</span>}
-      </Show>
-    </button>
-  )
-}
 
 /** Zoom stops in pixels per second; Fit may land between them. */
 export const STUDIO_ZOOM_STOPS = [10, 15, 20, 30, 40, 60, 80, 120, 160, 200]
@@ -489,12 +466,6 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 props.onSeek(frame)
               }}
             >
-              <StudioRulerRange
-                tools={range}
-                range={props.range ?? null}
-                scale={scale()}
-                onChange={(next) => props.onRange?.(next)}
-              />
               {/* By slot: a scroll moves the same labels, it does not make new ones. */}
               <Index each={tickSlots()}>
                 {(slot) => {
@@ -523,6 +494,13 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 style={playheadStyle()}
               />
             </div>
+            <StudioRulerRange
+              tools={range}
+              range={props.range ?? null}
+              scale={scale()}
+              endFrame={endFrame()}
+              onChange={(next) => props.onRange?.(next)}
+            />
           </div>
           <For each={trackIds()}>
             {(id, index) => {
@@ -559,7 +537,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                     <Show
                       when={!props.phone}
                       fallback={
-                        <TrackName
+                        <StudioTrackName
                           id={id}
                           name={track().name}
                           onDetails={props.onTrackDetails}
@@ -573,7 +551,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                         soloedOut={anySolo() && !track().solo}
                         onCommand={props.onCommand}
                         identity={
-                          <TrackName
+                          <StudioTrackName
                             id={id}
                             name={track().name}
                             source={source().label}
