@@ -188,8 +188,12 @@ export function recordingMidiProblem(
       return 'Give each note a valid pitch, start and end.'
     if (note.startBeat < (pitchEnds.get(note.midi) ?? 0) - 0.000001)
       return 'Some notes of the same pitch overlap. Adjust their start/end or merge them before practicing.'
-    if ((note.endBeat * 60) / score.bpm > GUITAR_PRACTICE_SCORE_LIMIT_SECONDS)
-      return `This melody runs longer than ${GUITAR_PRACTICE_SCORE_LIMIT_SECONDS / 60} minutes, the most a score can hold.`
+    const endSeconds = (note.endBeat * 60) / score.bpm
+    if (score.origin === 'measured-line') {
+      if (endSeconds > GUITAR_PRACTICE_SCORE_LIMIT_SECONDS)
+        return `This melody runs longer than ${GUITAR_PRACTICE_SCORE_LIMIT_SECONDS / 60} minutes, the most a score can hold.`
+    } else if (endSeconds > 301)
+      return 'This melody exceeds the five-minute recording limit.'
     pitchEnds.set(note.midi, note.endBeat)
   }
   return null

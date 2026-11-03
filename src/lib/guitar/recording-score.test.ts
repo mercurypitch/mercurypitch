@@ -133,34 +133,45 @@ describe('recorded practice score', () => {
     expect(
       recordingScoreProblem(changeRecordingNote(initial, 'a', { fret: 25 })),
     ).toContain('tuning')
-    // 120 BPM: beat 2401 ends 1200.5 s in, just past twenty minutes.
-    expect(
-      recordingScoreProblem(
-        changeRecordingNote(initial, 'b', { endBeat: 2401 }),
-      ),
-    ).toBe(
-      'This melody runs longer than 20 minutes, the most a score can hold.',
-    )
-    expect(() =>
-      acceptRecordingScoreRevision({ ...initial, notes: [] }, 1),
-    ).toThrow('No stable')
-  })
-  it('holds a score to twenty minutes, not to the five-minute take', () => {
-    // Scores used to borrow the take's limit. A take still stops at five
-    // minutes; a score, such as a transcribed line of a longer song, runs on.
-    expect(GUITAR_RECORDING_LIMIT_SECONDS).toBe(300)
-    expect(GUITAR_PRACTICE_SCORE_LIMIT_SECONDS).toBe(1200)
-    const initial = score()
     expect(
       recordingScoreProblem(
         changeRecordingNote(initial, 'b', { endBeat: 605 }),
       ),
-    ).toBeNull()
+    ).toContain('five-minute')
+    expect(() =>
+      acceptRecordingScoreRevision({ ...initial, notes: [] }, 1),
+    ).toThrow('No stable')
+  })
+  it("keeps a take's score within the five-minute take", () => {
+    // 120 BPM: beat 601 ends 300.5 s in, beat 603 at 301.5 s.
+    expect(GUITAR_RECORDING_LIMIT_SECONDS).toBe(300)
+    const initial = score()
     expect(
-      recordingMidiProblem(
-        changeRecordingNote(initial, 'b', { endBeat: 2400 }),
+      recordingScoreProblem(
+        changeRecordingNote(initial, 'b', { endBeat: 601 }),
       ),
     ).toBeNull()
+    expect(
+      recordingScoreProblem(
+        changeRecordingNote(initial, 'b', { endBeat: 603 }),
+      ),
+    ).toBe('This melody exceeds the five-minute recording limit.')
+  })
+  it('lets a score built from a measured line run twenty minutes', () => {
+    // The same notes, as a stem line transcribed in Guitar Night.
+    expect(GUITAR_PRACTICE_SCORE_LIMIT_SECONDS).toBe(1200)
+    const line = { ...score(), origin: 'measured-line' as const }
+    expect(
+      recordingScoreProblem(changeRecordingNote(line, 'b', { endBeat: 603 })),
+    ).toBeNull()
+    expect(
+      recordingScoreProblem(changeRecordingNote(line, 'b', { endBeat: 2399 })),
+    ).toBeNull()
+    expect(
+      recordingMidiProblem(changeRecordingNote(line, 'b', { endBeat: 2401 })),
+    ).toBe(
+      'This melody runs longer than 20 minutes, the most a score can hold.',
+    )
   })
   it('allows independent chord voices, but not same-pitch or same-string collisions', () => {
     const initial = score()

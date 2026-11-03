@@ -72,6 +72,8 @@ describe('practiceScoreFromMeasuredReference', () => {
       tuning: [43, 38, 33, 28],
       capo: 0,
       attachment: null,
+      // Held to the score limit, not to a take's five minutes.
+      origin: 'measured-line',
       notes: [
         {
           id: reference.notes[0].id,

@@ -58,6 +58,8 @@ export function practiceScoreFromMeasuredReference(
     tuning: [...reference.tuning.openMidi],
     capo: reference.tuning.capo ?? 0,
     attachment: null,
+    // Held to the score limit, not to a take's five minutes.
+    origin: 'measured-line',
     notes: reference.notes.map((note) => ({
       id: note.id,
       evidenceId: note.id,
