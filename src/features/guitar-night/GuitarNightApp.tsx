@@ -65,6 +65,7 @@ import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightScoreLibrary } from './GuitarNightScoreLibrary'
 import { StoppedPreparationActions } from './GuitarNightStoppedPreparation'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
+import { MeasuredLineExport } from './MeasuredLineExport'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking } from './reference-port'
@@ -824,6 +825,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       ]
     })
   })
+  /** The measured line on the stage, when this stem's reading produced it. */
+  const measuredLineOf = (stem: {
+    sessionId: string
+    kind: GuitarNightStemKind
+  }) => {
+    const line = measuredReference()
+    return line?.songId === `${stem.sessionId}:${stem.kind}` ? line : null
+  }
 
   // The catalog is two libraries in one list. Only the device half is
   // "on this device", only the device half is worth paginating, and the
@@ -2264,60 +2273,72 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   <div class={styles.referenceActions}>
                     <For each={transcribableStems()}>
                       {(stem) => (
-                        <Switch>
-                          <Match
-                            when={
-                              referenceController.transcribingStem()
-                                ?.stemKind === stem.kind
-                            }
-                          >
-                            <button
-                              type="button"
-                              class={styles.songListMore}
-                              onClick={referenceController.cancelFollowStem}
+                        <>
+                          <Switch>
+                            <Match
+                              when={
+                                referenceController.transcribingStem()
+                                  ?.stemKind === stem.kind
+                              }
                             >
-                              Reading the {stem.label.toLowerCase()} notes…{' '}
-                              {Math.round(
-                                (referenceController.transcribeProgress() ??
-                                  0) * 100,
-                              )}
-                              % · Stop
-                            </button>
-                          </Match>
-                          <Match
-                            when={
-                              referenceController.transcribeProgress() !== null
-                            }
-                          >
-                            {/* One reader, one stem at a time — `followStem`
+                              <button
+                                type="button"
+                                class={styles.songListMore}
+                                onClick={referenceController.cancelFollowStem}
+                              >
+                                Reading the {stem.label.toLowerCase()} notes…{' '}
+                                {Math.round(
+                                  (referenceController.transcribeProgress() ??
+                                    0) * 100,
+                                )}
+                                % · Stop
+                              </button>
+                            </Match>
+                            <Match
+                              when={
+                                referenceController.transcribeProgress() !==
+                                null
+                              }
+                            >
+                              {/* One reader, one stem at a time — `followStem`
                                 returns early on a second call, and a button
                                 that silently does nothing is worse than one
                                 that says it cannot. */}
-                            <button
-                              type="button"
-                              class={styles.songListMore}
-                              disabled
-                            >
-                              Transcribe the {stem.label.toLowerCase()} line
-                            </button>
-                          </Match>
-                          <Match when={true}>
-                            <button
-                              type="button"
-                              class={styles.songListMore}
-                              onClick={() =>
-                                void referenceController.followStem({
-                                  sessionId: stem.sessionId,
-                                  stemKind: stem.kind,
-                                  stemLabel: stem.label,
-                                  stemUrl: stem.url,
-                                })
-                              }
-                            >
-                              Transcribe the {stem.label.toLowerCase()} line
-                            </button>
-                          </Match>
-                        </Switch>
+                              <button
+                                type="button"
+                                class={styles.songListMore}
+                                disabled
+                              >
+                                Transcribe the {stem.label.toLowerCase()} line
+                              </button>
+                            </Match>
+                            <Match when={true}>
+                              <button
+                                type="button"
+                                class={styles.songListMore}
+                                onClick={() =>
+                                  void referenceController.followStem({
+                                    sessionId: stem.sessionId,
+                                    stemKind: stem.kind,
+                                    stemLabel: stem.label,
+                                    stemUrl: stem.url,
+                                  })
+                                }
+                              >
+                                Transcribe the {stem.label.toLowerCase()} line
+                              </button>
+                            </Match>
+                          </Switch>
+                          {/* The line this stem put on the stage, as a file. */}
+                          <Show when={measuredLineOf(stem)}>
+                            {(line) => (
+                              <MeasuredLineExport
+                                reference={line()}
+                                songTitle={activeBacking()?.title ?? ''}
+                              />
+                            )}
+                          </Show>
+                        </>
                       )}
                     </For>
                   </div>

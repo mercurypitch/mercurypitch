@@ -590,6 +590,10 @@ describe('GuitarNightApp prepared songs', () => {
       'blob:session-a:bass',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
+    // The line on the stage can leave as a file, from its own stem's row.
+    expect(
+      screen.getByRole('group', { name: 'Save the bass line as' }),
+    ).toHaveAttribute('data-note-count', '1')
 
     fireEvent.click(screen.getByRole('button', { name: /Session B\.wav/ }))
 
@@ -601,6 +605,9 @@ describe('GuitarNightApp prepared songs', () => {
         screen.queryByText('Bass line transcribed from this recording'),
       ).not.toBeInTheDocument(),
     )
+    expect(
+      screen.queryByRole('group', { name: 'Save the bass line as' }),
+    ).toBeNull()
     expect(
       screen.getByText(
         'No scores on this device yet. Use Choose a file above to open Guitar Pro or MIDI — without one the stage stays in honest free play.',
@@ -730,6 +737,15 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       await screen.findByText('Guitar line transcribed from this recording'),
     ).toBeInTheDocument()
+    // Only the stem that produced the line offers it as a file.
+    expect(
+      screen.getByRole('button', {
+        name: 'Save the guitar line as Guitar Pro',
+      }),
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('group', { name: 'Save the bass line as' }),
+    ).toBeNull()
     // And the offer comes back for both once the reader is free.
     expect(
       screen.getByRole('button', { name: 'Transcribe the bass line' }),
