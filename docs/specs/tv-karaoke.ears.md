@@ -185,26 +185,45 @@ _Tests:_ `src/e2e/tv-dpad-walk.spec.ts` _(planned)_.
 The stage shall keep all text and controls inside an overscan-safe inset of
 at least 5% of each edge (Play TV-OV).
 _Tests:_ `src/lib/tv-stage/renderer.test.ts` ("keeps everything inside a 5%
-margin on every side", the POC stage); `src/features/tv-stage/layout.test.ts`
-_(planned)_; app-check at 1920x1080.
+margin on every side", "cuts the lane’s notes and trail at its ends, the 5%
+margin’s edges", the view-mode stage); the screen check
+`apps/mercurypitch/scripts/probe-tv-stage.mjs`, which finds every pixel that
+is not the background inside the inset at 1920x1080 and 3840x2160 in
+headless Chromium (it found the lane's note outlines and trail up to 4 px
+past it at 1080 lines, now cut at the lane's ends);
+`src/features/tv-stage/layout.test.ts` _(planned)_; app-check at 1920x1080
+for the host-mode stage.
 
 ### REQ-TV-021 — Landscape, full screen, opaque **[next; POC merged, PR #1179]**
 
 The stage shall fill a landscape screen with an opaque background and no
 letterboxing (Play TV-LO, TV-TR).
-_Tests:_ app-check at 1920x1080 and 3840x2160 _(planned)_. The POC stage
-draws an opaque canvas at the screen's own pixels; headless renders at
-1920x1080 checked by hand.
+_Tests:_ the screen check `apps/mercurypitch/scripts/probe-tv-stage.mjs` at
+1920x1080, 3840x2160 and 1920x1080 at 2x: the view-mode stage's canvas fills
+the viewport at the screen's own pixels and every one of them is opaque;
+app-check at 1920x1080 and 3840x2160 for the host-mode stage _(planned)_.
 
-### REQ-TV-022 — Legible from the sofa **[next]**
+### REQ-TV-022 — Legible from the sofa **[next; view mode built on feat/tv-stage-legible]**
 
 The current lyric line shall render at no less than 32 CSS px at a 1080-line
 viewport, scaling with viewport height. _Assumption:_ legible from 3 m; to
 confirm on hardware in phase P0.
-_Tests:_ `src/features/tv-stage/layout.test.ts` _(planned)_. The POC stage
-draws the line at 72 px at 1080 lines, but shrinks a very long line to fit
-the width, which can take it under 32 px; the production stage wraps it
-instead.
+_As built, view mode:_ the line is drawn at 72 px at 1080 lines, and a long
+one wraps onto two rows rather than shrink, its fill running on across the
+break. Where two rows at 72 px do not hold it, it takes the largest size
+that fits two, and never goes under 32 px. A line too long for two rows even
+at 32 px shows two at a time, the row being sung and the one after it, with
+an ellipsis while more follows; a line with no timing shows its first two.
+The line waited for in a rest wraps the same way. The next line is a one-row
+preview: it shrinks down to 32 px and no further, is then cut short, and is
+never bigger than the line being sung.
+_Tests:_ `src/lib/tv-stage/lyric-wrap.test.ts`,
+`src/lib/tv-stage/renderer.lyrics.test.ts`; the screen check
+`apps/mercurypitch/scripts/probe-tv-stage.mjs` at 1920x1080 and 3840x2160
+(every lyric at 32 px per 1080 lines or more, no lyric ink on the lane, no
+two rows touching; headless Chromium has no SF Pro, so its type is close to
+the TV's, not the same). The host-mode stage:
+`src/features/tv-stage/layout.test.ts` _(planned)_.
 
 ### REQ-TV-023 — Frame caps on a TV **[shipped]**
 

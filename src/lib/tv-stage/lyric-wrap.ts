@@ -87,6 +87,12 @@ type Measure = (text: string) => number
 /** A run of a word that is placed as one: the word, or a part of it. */
 type Part = Omit<LyricPiece, 'x'>
 
+/**
+ * The characters a reader sees. The app splits words the same way
+ * (splitGraphemes, word-letters.ts), but the stage keeps its own: a module
+ * both import would go to a chunk the stage shares with the app, and load
+ * at the stage's first paint (REQ-TV-027).
+ */
 function graphemes(text: string): string[] {
   if (typeof Intl.Segmenter !== 'function') return Array.from(text)
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })

@@ -744,6 +744,22 @@ spread the app offers lyrics only and says why.
 2. The mixer stylesheet and tier-capped art (2.3, 2.4).
 3. The TV stage entry in both modes (2.6). Keep it free of Capacitor plugins,
    and give any new dependency its own chunk (MISTAKES.md on `manualChunks`).
+
+   **As built, view mode, the stage read from the sofa (branch
+   `feat/tv-stage-legible`):** a long sung line wraps onto two rows rather
+   than shrink (`src/lib/tv-stage/lyric-wrap.ts`, `REQ-TV-022`): 72 px at
+   1080 lines where two rows hold it, else the largest size that fits two,
+   never under 32 px; past that, two rows at a time that follow the singing,
+   with an ellipsis while more follows. The fill runs on across the break,
+   and the next line is a one-row preview. A pixel scan found the lane's note
+   outlines and trail up to 4 px into the overscan margin; they are cut at
+   the lane's ends now. `apps/mercurypitch/scripts/probe-tv-stage.mjs` checks
+   the inset, the opaque full-screen canvas, the floor, and that the lyrics
+   keep off the lane, at 1920x1080 and 3840x2160 in headless Chromium, whose
+   type is not SF Pro. Not in it: host mode; a frame cap, which waits on the
+   device test; and `device-tier.ts`, which reads storage, and `REQ-TV-101`
+   keeps the stage from storage.
+
 4. The handoff remainder (2.5), and one song streamed from the phone (2.8).
    The waveform cache (2.7) only if P0 asks.
 
