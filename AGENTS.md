@@ -69,7 +69,8 @@ in [docs/plans/skills-handoff-2026-09-30.md](docs/plans/skills-handoff-2026-09-3
 5. **No Claude attribution anywhere** — no `Co-Authored-By`, no "Generated
    with", in commits, PR bodies, or any other artifact. The user is the sole
    author. Verify `git log --format='%an|%ae'` before merging; cloud sessions
-   have authored as Claude before.
+   have authored as Claude before. The owner's own cloud sessions set the
+   owner's identity at start (`.claude/hooks/session-start.sh`).
 6. **No emojis** in code, UI, logs, commits, or PR text. Use an SVG icon
    component from `src/components/icons`.
 7. **Keep local gates proportional.** Run focused tests while developing. Once
