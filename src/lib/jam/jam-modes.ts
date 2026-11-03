@@ -207,7 +207,9 @@ export function targetForRole(
   const role = roleIndex % roleCount
   if (mode === 'harmony') {
     // Role 0 sings it as written, then thirds and fifths above: two scale
-    // steps per stacked voice, so a fourth singer lands on the seventh.
+    // steps per stacked voice. The mode has three parts (roleNames), so
+    // roleCountFor caps the room at three and a fourth singer wraps round
+    // to the root.
     const items = harmoniseItems(
       melody.items,
       melody.key,
