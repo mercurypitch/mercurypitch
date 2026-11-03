@@ -3,57 +3,19 @@
 // ============================================================
 //
 // The geometry is checked as numbers. The drawing is checked against a
-// context that records the text it was asked to write and the shapes it
-// filled, since jsdom has no canvas: enough to say the idle screen names
-// the app, a song's title and words are written, and a note in view is
-// drawn while one long gone is not.
+// context that records what it was asked to draw, since jsdom has no canvas
+// (recording-context.fixture.ts): enough to say the idle screen names the
+// app, a song's title and words are written, a note in view is drawn while
+// one long gone is not. The lyrics' sizes and rows are in
+// renderer.lyrics.test.ts.
 
 import { describe, expect, it } from 'vitest'
 import type { TvStageState } from '@/lib/tv-stage/model'
 import { EMPTY_TV_STAGE } from '@/lib/tv-stage/model'
+import { recordingContext } from '@/lib/tv-stage/recording-context.fixture'
 import { drawTvStage, LANE_AFTER_SEC, LANE_BEFORE_SEC, laneX, laneY, pitchClass, segmentAt, tvStageLayout, wordFill, } from '@/lib/tv-stage/renderer'
 
 const LAYOUT = tvStageLayout(1920, 1080)
-
-/** The calls the renderer makes, recorded; text is measured at 10 px a letter. */
-function recordingContext() {
-  const texts: string[] = []
-  const rects: { x: number; y: number; w: number; h: number }[] = []
-  const noop = (): void => undefined
-  const context = {
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    lineCap: 'butt',
-    lineJoin: 'miter',
-    font: '',
-    textAlign: 'start',
-    textBaseline: 'alphabetic',
-    fillRect: noop,
-    fillText: (text: string) => {
-      texts.push(text)
-    },
-    measureText: (text: string) => ({ width: text.length * 10 }),
-    beginPath: noop,
-    moveTo: noop,
-    lineTo: noop,
-    arc: noop,
-    rect: noop,
-    roundRect: (x: number, y: number, w: number, h: number) => {
-      rects.push({ x, y, w, h })
-    },
-    fill: noop,
-    stroke: noop,
-    save: noop,
-    restore: noop,
-    clip: noop,
-  }
-  return {
-    ctx: context as unknown as CanvasRenderingContext2D,
-    texts,
-    rects,
-  }
-}
 
 const SONG_STATE: TvStageState = {
   song: {
@@ -156,7 +118,7 @@ describe('a frame', () => {
 
     drawTvStage(ctx, EMPTY_TV_STAGE, 0, { width: 1920, height: 1080 })
 
-    expect(texts).toContain('Mercury Pitch')
+    expect(texts.map((written) => written.text)).toContain('Mercury Pitch')
   })
 
   it('writes the title, the score, the words being sung and the next line', () => {
@@ -164,7 +126,7 @@ describe('a frame', () => {
 
     drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
 
-    expect(texts).toEqual(
+    expect(texts.map((written) => written.text)).toEqual(
       expect.arrayContaining([
         'Goodbye to Spring',
         '82%  B',
@@ -177,12 +139,12 @@ describe('a frame', () => {
   })
 
   it('draws a note in view, and not one long gone', () => {
-    const { ctx, rects } = recordingContext()
+    const { ctx, notes } = recordingContext()
 
     drawTvStage(ctx, SONG_STATE, 0, { width: 1920, height: 1080 })
 
-    expect(rects).toHaveLength(1)
-    expect(rects[0]?.x).toBeCloseTo(laneX(LAYOUT, 9, 10))
+    expect(notes).toHaveLength(1)
+    expect(notes[0]?.x).toBeCloseTo(laneX(LAYOUT, 9, 10))
   })
 
   it('invites singing until there is a score', () => {
@@ -193,6 +155,8 @@ describe('a frame', () => {
       height: 1080,
     })
 
-    expect(texts).toContain('Sing along to score')
+    expect(texts.map((written) => written.text)).toContain(
+      'Sing along to score',
+    )
   })
 })

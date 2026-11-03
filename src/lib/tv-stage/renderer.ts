@@ -9,7 +9,10 @@
 // 5% margin on every side, because a TV may crop its edges (Google's TV app
 // quality guidelines ask for the same overscan margin).
 // Type is sized from the screen's height, so a line of lyrics reads the
-// same from the sofa at any resolution.
+// same from the sofa at any resolution. No lyric goes under 32 px at 1080
+// lines (REQ-TV-022): a long line wraps onto two rows rather than shrink
+// (lyric-wrap.ts), and the next line, a preview, shrinks to that floor and
+// is then cut short.
 //
 // The lane folds every note to its pitch class, as the phone's lane does
 // during a song (stem-mixer/pitch-canvas-visuals.ts): twelve rows, C at the
@@ -20,9 +23,11 @@
 // Plain canvas calls and no fonts of its own: the stage page loads nothing
 // but itself.
 //
-// Tests: src/lib/tv-stage/renderer.test.ts.
+// Tests: src/lib/tv-stage/renderer.test.ts, renderer.lyrics.test.ts.
 
 import type { LyricWindowSegment } from '@/lib/lyric-window-script'
+import type { LyricPiece, LyricRowsInView, LyricWrap, MeasureAt, } from './lyric-wrap'
+import { ELLIPSIS, lyricRowsInView, pieceFill, wrapLyricLine, } from './lyric-wrap'
 import type { TvStageState } from './model'
 import { tvStagePosition } from './model'
 import type { TvStageNote, TvStageReading, TvStageScore } from './protocol'
@@ -55,6 +60,20 @@ export const LANE_AFTER_SEC = 6
 
 /** Readings further apart than this, in seconds, are not joined by a line. */
 const TRAIL_GAP_SEC = 0.15
+
+/**
+ * The lyrics' sizes at 1080 lines: the line being sung, the line waited for
+ * in a rest, and the next line under the one being sung.
+ */
+export const SUNG_LINE_PX = 72
+const WAITING_LINE_PX = 60
+const NEXT_LINE_PX = 46
+
+/** No lyric is drawn smaller than this at 1080 lines (REQ-TV-022). */
+export const LYRIC_FLOOR_PX = 32
+
+/** A wrapped line's rows sit this many times its size apart. */
+export const LYRIC_ROW_PITCH = 1.2
 
 const FONT = '-apple-system, "SF Pro Display", system-ui, sans-serif'
 
@@ -385,68 +404,205 @@ function drawLane(
   drawTrail(ctx, layout, state.trail, position)
 }
 
-/** One line in one colour, centred, shrunk to fit the lyrics' width. */
-function drawPlainLine(
-  ctx: CanvasRenderingContext2D,
-  layout: TvStageLayout,
-  line: { readonly text: string; readonly y: number; readonly px: number },
-  color: string,
-): void {
-  ctx.font = font(600, line.px)
-  const width = ctx.measureText(line.text).width
-  const scale = width > layout.lyrics.w ? layout.lyrics.w / width : 1
-  ctx.font = font(600, line.px * scale)
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = color
-  ctx.fillText(line.text, layout.width / 2, line.y)
+/** The least whole size a lyric may take on this screen (REQ-TV-022). */
+export function lyricFloorPx(layout: TvStageLayout): number {
+  // A hair under first, so a floor that is a whole number stays itself.
+  return Math.ceil(LYRIC_FLOOR_PX * layout.unit - 1e-9)
 }
 
-/** One word, lit from the left up to `fill` of its width. */
-function drawWord(
+/** Where the lyrics' lines are centred: the one sung, and the next under it. */
+export function lyricSpots(layout: TvStageLayout): {
+  readonly current: number
+  readonly next: number
+} {
+  const box = layout.lyrics
+  return { current: box.y + box.h * 0.32, next: box.y + box.h * 0.78 }
+}
+
+function measureAt(ctx: CanvasRenderingContext2D, weight: number): MeasureAt {
+  return (px) => {
+    ctx.font = font(weight, px)
+    return (text) => ctx.measureText(text).width
+  }
+}
+
+/**
+ * How a block of lyrics is painted: its weight, its colour, and how far each
+ * of its words is lit.
+ */
+interface LyricPaint {
+  readonly weight: number
+  readonly color: string
+  readonly fill: (word: number) => number
+}
+
+/** The line being sung is bold; the line waited for and the next one less. */
+const SUNG_WEIGHT = 700
+const PLAIN_WEIGHT = 600
+
+/** A line's wrap and the screen it was worked out for. */
+interface KeptWrap {
+  readonly screen: string
+  readonly wrap: LyricWrap
+}
+
+// Worked out once per line and screen, not every frame: finding a long
+// line's size measures it at several sizes, and a TV draws sixty frames a
+// second. Keyed by the segment, which the song message holds for as long as
+// the song is on; a new message brings new segments, and the old ones go.
+const WRAPS = new WeakMap<LyricWindowSegment, KeptWrap>()
+
+/**
+ * The segment's line wrapped for this screen: the words being sung, or in a
+ * rest the line waited for.
+ */
+function wrapOf(
   ctx: CanvasRenderingContext2D,
-  word: { readonly text: string; readonly x: number; readonly y: number },
-  size: { readonly width: number; readonly px: number },
+  layout: TvStageLayout,
+  segment: LyricWindowSegment,
+): LyricWrap {
+  const screen = `${String(layout.width)}x${String(layout.height)}`
+  const kept = WRAPS.get(segment)
+  if (kept?.screen === screen) return kept.wrap
+  const waiting = segment.current.length === 0
+  const words = waiting
+    ? (segment.next ?? '').split(/\s+/u).filter((word) => word !== '')
+    : segment.current
+  const wrap = wrapLyricLine(
+    words,
+    measureAt(ctx, waiting ? PLAIN_WEIGHT : SUNG_WEIGHT),
+    {
+      width: layout.lyrics.w,
+      largest: Math.round(
+        (waiting ? WAITING_LINE_PX : SUNG_LINE_PX) * layout.unit,
+      ),
+      floor: lyricFloorPx(layout),
+    },
+  )
+  WRAPS.set(segment, { screen, wrap })
+  return wrap
+}
+
+/** A piece of a word, lit from the left up to `fill` of its width. */
+function drawPiece(
+  ctx: CanvasRenderingContext2D,
+  piece: LyricPiece,
+  at: { readonly x: number; readonly y: number; readonly px: number },
   fill: number,
+  color: string,
 ): void {
-  ctx.fillStyle = TV_STAGE_COLORS.unsung
-  ctx.fillText(word.text, word.x, word.y)
-  if (fill <= 0) return
+  ctx.fillStyle = fill >= 1 ? TV_STAGE_COLORS.sung : color
+  ctx.fillText(piece.text, at.x, at.y)
+  if (fill <= 0 || fill >= 1) return
   ctx.save()
   ctx.beginPath()
-  ctx.rect(word.x, word.y - size.px, size.width * fill, size.px * 2)
+  ctx.rect(at.x, at.y - at.px, piece.width * fill, at.px * 2)
   ctx.clip()
   ctx.fillStyle = TV_STAGE_COLORS.sung
-  ctx.fillText(word.text, word.x, word.y)
+  ctx.fillText(piece.text, at.x, at.y)
   ctx.restore()
 }
 
-/** The line being sung, centred, each word filling as it is sung. */
+/**
+ * A wrapped line's rows in view, each centred, the block centred on `y`; an
+ * ellipsis ends the last row while more of the line follows.
+ */
+function drawWrapped(
+  ctx: CanvasRenderingContext2D,
+  layout: TvStageLayout,
+  block: { readonly wrap: LyricWrap; readonly view: LyricRowsInView },
+  at: { readonly y: number; readonly paint: LyricPaint },
+): void {
+  const { wrap, view } = block
+  ctx.font = font(at.paint.weight, wrap.px)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  const last = view.rows.length - 1
+  view.rows.forEach((row, index) => {
+    const ellipsis = view.more && index === last
+    const width = row.width + (ellipsis ? wrap.space + wrap.ellipsis : 0)
+    const left = layout.width / 2 - width / 2
+    const y = at.y + (index - last / 2) * wrap.px * LYRIC_ROW_PITCH
+    for (const piece of row.pieces) {
+      const fill = pieceFill(piece, at.paint.fill(piece.word))
+      const place = { x: left + piece.x, y, px: wrap.px }
+      drawPiece(ctx, piece, place, fill, at.paint.color)
+    }
+    if (!ellipsis) return
+    ctx.fillStyle = at.paint.color
+    ctx.fillText(ELLIPSIS, left + row.width + wrap.space, y)
+  })
+}
+
+/**
+ * The line being sung, each word filling as it is sung, the fill running on
+ * from one row into the next. Says the size it was drawn at.
+ */
 function drawSungLine(
   ctx: CanvasRenderingContext2D,
   layout: TvStageLayout,
   segment: LyricWindowSegment,
   at: { readonly position: number; readonly y: number },
+): number {
+  const fill = (word: number): number => {
+    const timing = segment.words[word]
+    return timing === undefined ? 0 : wordFill(timing, at.position)
+  }
+  // The rows on screen follow the words that fill over time. A line with no
+  // timing arrives with every word lit from its first moment (lyric-glance),
+  // which would open a long one on its last rows; it opens on its first.
+  const sweeping = (word: number): number => {
+    const timing = segment.words[word]
+    return timing === undefined || timing[1] <= timing[0] ? 0 : fill(word)
+  }
+  const wrap = wrapOf(ctx, layout, segment)
+  const paint = { weight: SUNG_WEIGHT, color: TV_STAGE_COLORS.unsung, fill }
+  const view = lyricRowsInView(wrap, sweeping)
+  drawWrapped(ctx, layout, { wrap, view }, { y: at.y, paint })
+  return wrap.px
+}
+
+/** In a rest, the line coming next, quiet, waiting where it will be sung. */
+function drawWaitingLine(
+  ctx: CanvasRenderingContext2D,
+  layout: TvStageLayout,
+  segment: LyricWindowSegment,
+  y: number,
 ): void {
-  const base = 72 * layout.unit
-  ctx.font = font(700, base)
-  const space = ctx.measureText(' ').width
-  const widths = segment.current.map((text) => ctx.measureText(text).width)
-  const natural =
-    widths.reduce((sum, width) => sum + width, 0) + space * (widths.length - 1)
-  const scale = natural > layout.lyrics.w ? layout.lyrics.w / natural : 1
-  const px = base * scale
-  ctx.font = font(700, px)
-  ctx.textAlign = 'left'
+  const unlit = (): number => 0
+  const wrap = wrapOf(ctx, layout, segment)
+  const paint = {
+    weight: PLAIN_WEIGHT,
+    color: TV_STAGE_COLORS.quiet,
+    fill: unlit,
+  }
+  const view = lyricRowsInView(wrap, unlit)
+  drawWrapped(ctx, layout, { wrap, view }, { y, paint })
+}
+
+/**
+ * The next line, dim, on one row: shrunk to fit the width, but not under the
+ * floor, and past that cut short. It is a preview; it is shown whole once
+ * it is the line being sung. Never bigger than the line being sung, drawn
+ * at `sungPx`, which may have shrunk to fit its two rows.
+ */
+function drawNextLine(
+  ctx: CanvasRenderingContext2D,
+  layout: TvStageLayout,
+  text: string,
+  at: { readonly y: number; readonly sungPx: number },
+): void {
+  const width = layout.lyrics.w
+  const largest = Math.min(NEXT_LINE_PX * layout.unit, at.sungPx)
+  ctx.font = font(PLAIN_WEIGHT, largest)
+  const natural = ctx.measureText(text).width
+  const fitting =
+    natural > width ? Math.floor((largest * width) / natural) : largest
+  ctx.font = font(PLAIN_WEIGHT, Math.max(lyricFloorPx(layout), fitting))
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  let x = layout.width / 2 - (natural * scale) / 2
-  segment.current.forEach((text, index) => {
-    const timing = segment.words[index]
-    const fill = timing === undefined ? 0 : wordFill(timing, at.position)
-    const width = widths[index] * scale
-    drawWord(ctx, { text, x, y: at.y }, { width, px }, fill)
-    x += width + space * scale
-  })
+  ctx.fillStyle = TV_STAGE_COLORS.next
+  ctx.fillText(fitText(ctx, text, width), layout.width / 2, at.y)
 }
 
 function drawLyrics(
@@ -459,21 +615,20 @@ function drawLyrics(
     | LyricWindowSegment
     | undefined
   if (segment === undefined) return
-  const box = layout.lyrics
-  const currentY = box.y + box.h * 0.32
-  const nextY = box.y + box.h * 0.78
+  const spots = lyricSpots(layout)
   if (segment.current.length === 0) {
     // A rest or the intro: what comes next, waiting where it will be sung.
     if (segment.next !== null) {
-      const line = { text: segment.next, y: currentY, px: 60 * layout.unit }
-      drawPlainLine(ctx, layout, line, TV_STAGE_COLORS.quiet)
+      drawWaitingLine(ctx, layout, segment, spots.current)
     }
     return
   }
-  drawSungLine(ctx, layout, segment, { position, y: currentY })
+  const sungPx = drawSungLine(ctx, layout, segment, {
+    position,
+    y: spots.current,
+  })
   if (segment.next !== null) {
-    const line = { text: segment.next, y: nextY, px: 46 * layout.unit }
-    drawPlainLine(ctx, layout, line, TV_STAGE_COLORS.next)
+    drawNextLine(ctx, layout, segment.next, { y: spots.next, sungPx })
   }
 }
 
