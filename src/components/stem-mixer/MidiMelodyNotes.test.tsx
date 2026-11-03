@@ -10,8 +10,8 @@ import { cleanup, render, screen } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
-import { shownNotesToMelody } from '@/features/stem-mixer/vocal-notation'
+import type { ShownNote } from '@/lib/vocal-notation'
+import { shownNotesToMelody } from '@/lib/vocal-notation'
 import type { MelodyItem } from '@/types'
 import { MidiMelodyNotes } from './MidiMelodyNotes'
 
@@ -43,20 +43,20 @@ vi.mock('@/components/SheetMusicView', () => ({
   },
 }))
 
-const NOTES: EditableNote[] = [
+const NOTES: ShownNote[] = [
   { id: 'base-0', startBeat: 0.5, endBeat: 1.0, midi: 69 },
   { id: 'base-1', startBeat: 1.0, endBeat: 1.6, midi: 71 },
 ]
 
 function mount(
   overrides: Partial<{
-    notes: readonly EditableNote[]
+    notes: readonly ShownNote[]
     bpm: number
     elapsed: number
     onSeek: (seconds: number) => void
   }> = {},
 ) {
-  const [notes, setNotes] = createSignal<readonly EditableNote[]>(
+  const [notes, setNotes] = createSignal<readonly ShownNote[]>(
     overrides.notes ?? NOTES,
   )
   const onSeek = overrides.onSeek ?? vi.fn()
@@ -107,7 +107,8 @@ describe('MidiMelodyNotes', () => {
   it('names the tempo and metre the bar lines assume', async () => {
     mount()
 
-    expect(await screen.findByText('92 BPM, 4/4')).toBeInTheDocument()
+    const caption = await screen.findByText(/BPM, 4\/4$/)
+    expect(caption).toHaveTextContent(/^92 BPM, 4\/4$/)
   })
 
   it('writes an unknown tempo at 120', async () => {

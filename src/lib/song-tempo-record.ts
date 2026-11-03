@@ -2,9 +2,9 @@
 // Song tempo record — a song's tempo as it is kept with its notes
 // ============================================================
 //
-// The estimate (song-tempo.ts) runs once per song; this is what is stored of
-// it, beside what the singer typed. A leaf module, so the storage layer that
-// reads it back does not load the estimator.
+// The estimate (features/stem-mixer/song-tempo.ts) runs once per song; this
+// is what is stored of it, beside what the singer typed. A leaf module, so
+// the storage layer that reads it back does not load the estimator.
 
 export interface SongTempoEstimate {
   /** Whole beats per minute, in `TEMPO_RANGE`. */

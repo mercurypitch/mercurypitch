@@ -23,7 +23,7 @@
 // about 40 MB for a four-minute song even after downsampling.
 
 import { computeFluxCurve, detectOnsets, detectTempo, } from '@/lib/onset-detector'
-import type { SongTempoEstimate } from './song-tempo-record'
+import type { SongTempoEstimate } from '@/lib/song-tempo-record'
 
 /** Every estimate lands in this range: half and double time are common. */
 export const TEMPO_RANGE = { min: 60, max: 180 } as const

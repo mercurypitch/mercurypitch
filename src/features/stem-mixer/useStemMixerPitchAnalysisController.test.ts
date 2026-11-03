@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import type * as PitchPipeline from '@/lib/pitch-pipeline'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
+import type { SongTempoEstimate } from '@/lib/song-tempo-record'
 import type * as SongTempo from './song-tempo'
-import type { SongTempoEstimate } from './song-tempo-record'
 
 const fakes = vi.hoisted(() => ({
   analyze: vi.fn<(...args: unknown[]) => Promise<VocalAnalysis>>(),

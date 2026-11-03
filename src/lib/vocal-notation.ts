@@ -16,7 +16,18 @@ import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { DEFAULT_BPM, TICKS_PER_BEAT } from '@/lib/midi-generator'
 import { midiToNote } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
-import type { EditableNote } from './pitch-edit-model'
+
+/**
+ * A note the mixer shows, by shape: Pitch Studio's `EditableNote`, whose
+ * `startBeat`/`endBeat` hold seconds. Declared here rather than imported, so
+ * the conversions sit below the mixer UI and the feature that use them.
+ */
+export interface ShownNote {
+  id: string
+  startBeat: number
+  endBeat: number
+  midi: number
+}
 
 /** A sixteenth note: the finest step the score writes. */
 export const NOTATION_GRID_BEATS = 0.25
@@ -28,7 +39,7 @@ export function safeBpm(bpm: number | null | undefined): number {
     : DEFAULT_BPM
 }
 
-const isTimed = (note: EditableNote): boolean =>
+const isTimed = (note: ShownNote): boolean =>
   Number.isFinite(note.startBeat) &&
   Number.isFinite(note.endBeat) &&
   Number.isFinite(note.midi)
@@ -42,7 +53,7 @@ const snapToGrid = (beats: number): number =>
  * a note whose neighbour starts on the same step gives way to it.
  */
 export function shownNotesToMelody(
-  notes: readonly EditableNote[],
+  notes: readonly ShownNote[],
   bpm: number,
 ): MelodyItem[] {
   const beatsPerSecond = safeBpm(bpm) / 60
@@ -86,7 +97,7 @@ export function shownNotesToMelody(
  * its own pitch, so no player is asked to restart a key that is still down.
  */
 export function shownNotesToMidiEvents(
-  notes: readonly EditableNote[],
+  notes: readonly ShownNote[],
   bpm: number,
 ): MidiNoteEvent[] {
   const ticksPerSecond = (safeBpm(bpm) / 60) * TICKS_PER_BEAT
@@ -130,12 +141,12 @@ const DETECTION_JOIN_SECONDS = 0.02
  */
 export function detectionToShownNotes(
   events: readonly MidiNoteEvent[],
-): EditableNote[] {
+): ShownNote[] {
   const ticksPerSecond = (DEFAULT_BPM / 60) * TICKS_PER_BEAT
   const sorted = [...events].sort(
     (a, b) => a.tickOn - b.tickOn || a.midi - b.midi,
   )
-  const notes: EditableNote[] = []
+  const notes: ShownNote[] = []
   for (const event of sorted) {
     const startBeat = event.tickOn / ticksPerSecond
     const endBeat = event.tickOff / ticksPerSecond
@@ -165,7 +176,7 @@ export function detectionToShownNotes(
  */
 export interface PanelMelody {
   /** Seconds, as Pitch Studio keeps them. */
-  notes: EditableNote[]
+  notes: ShownNote[]
   /** The tempo the notes are written at, never NaN. */
   bpm: number
   source: 'analysis' | 'detection'
@@ -177,7 +188,7 @@ export interface PanelMelody {
  * @param bpm the song's tempo, as Pitch Studio's BPM box holds it
  */
 export function panelMelody(
-  analysis: EditableNote[] | null,
+  analysis: ShownNote[] | null,
   detection: readonly MidiNoteEvent[],
   bpm: number,
 ): PanelMelody {

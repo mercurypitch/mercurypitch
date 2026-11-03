@@ -29,6 +29,7 @@ import { platform } from '@/lib/platform'
 import { asPlaybackCause, playbackCause } from '@/lib/playback-cause'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
+import { safeBpm, shownNotesToMidiEvents } from '@/lib/vocal-notation'
 import { sliderToGain } from '@/lib/volume-curve'
 import { audioRoute } from '@/stores/audio-route-store'
 import { streamFeed, watchSongClock } from './clock-watchdog'
@@ -57,7 +58,6 @@ import { decodePastGuard, noStreamForced } from './stream-switches'
 import type { StreamingStemVoice } from './streaming-stem-voice'
 import { createStreamingStemVoice } from './streaming-stem-voice'
 import type { PitchNote } from './types'
-import { safeBpm, shownNotesToMidiEvents } from './vocal-notation'
 
 // ── Types ──────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { EditableNote } from './pitch-edit-model'
+import type { ShownNote } from './vocal-notation'
 import { detectionToShownNotes, panelMelody, safeBpm, shownNotesToMelody, shownNotesToMidiEvents, } from './vocal-notation'
 
 describe('shownNotesToMelody', () => {
@@ -88,7 +88,7 @@ describe('shownNotesToMelody', () => {
   })
 
   it('leaves out a note whose times are not numbers', () => {
-    const notes: EditableNote[] = [
+    const notes: ShownNote[] = [
       { id: 'a', startBeat: Number.NaN, endBeat: 1, midi: 60 },
       { id: 'b', startBeat: 1, endBeat: 1.5, midi: 62 },
     ]
@@ -220,7 +220,7 @@ describe('detectionToShownNotes', () => {
 
 describe('panelMelody', () => {
   const DETECTION = [{ midi: 57, tickOn: 0, tickOff: 960 }]
-  const ANALYSED: EditableNote[] = [
+  const ANALYSED: ShownNote[] = [
     { id: 'base-0', startBeat: 0, endBeat: 0.4, midi: 60 },
     { id: 'base-1', startBeat: 0.5, endBeat: 0.9, midi: 65 },
   ]

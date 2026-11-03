@@ -11,8 +11,8 @@
 // boundary of its own would suspend whichever ancestor boundary it found.
 
 import { createMemo, lazy, Show, Suspense } from 'solid-js'
-import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
-import { safeBpm, shownNotesToMelody, } from '@/features/stem-mixer/vocal-notation'
+import type { ShownNote } from '@/lib/vocal-notation'
+import { safeBpm, shownNotesToMelody } from '@/lib/vocal-notation'
 import styles from './MidiMelodyNotes.module.css'
 
 const SheetMusicView = lazy(async () =>
@@ -23,7 +23,7 @@ const SheetMusicView = lazy(async () =>
 
 export interface MidiMelodyNotesProps {
   /** The panel's melody in seconds, as the singer hears it. */
-  notes: () => readonly EditableNote[]
+  notes: () => readonly ShownNote[]
   /** The song's tempo; anything but a positive number reads as 120. */
   bpm: () => number
   musicKey: () => string

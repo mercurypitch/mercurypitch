@@ -8,12 +8,12 @@
 import { getDb } from '@/db'
 import type { OfflinePitchAnalysisRecord } from '@/db/entities'
 import type { PitchEditLayer } from '@/features/stem-mixer/pitch-edit-model'
-import type { SongTempoRecord } from '@/features/stem-mixer/song-tempo-record'
-import { parseSongTempoRecord } from '@/features/stem-mixer/song-tempo-record'
 import type { PitchNote } from '@/features/stem-mixer/types'
 import { IS_DEV } from '@/lib/defaults'
 import type { KeyRegion } from '@/lib/key-detection'
 import type { MergedNote } from '@/lib/midi-generator'
+import type { SongTempoRecord } from '@/lib/song-tempo-record'
+import { parseSongTempoRecord } from '@/lib/song-tempo-record'
 
 export interface SessionPitchData {
   /** The original (algorithm) cleaned notes, before user edits. */
