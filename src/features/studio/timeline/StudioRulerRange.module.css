@@ -32,6 +32,20 @@
   border-radius: 0 0 2px 2px;
   background: var(--studio-accent);
 }
+/* The grip: a knob on the mark, so the end reads as something to drag. */
+.handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  width: 10px;
+  height: 18px;
+  border: 2px solid var(--studio-bar);
+  border-radius: 5px;
+  box-sizing: border-box;
+  background: var(--studio-accent);
+  transform: translateY(-50%);
+}
 .end {
   left: auto;
   right: -12px;
@@ -42,12 +56,13 @@
 }
 .clear {
   position: absolute;
-  top: 3px;
+  /* Centred under the band's top line, on any ruler height. */
+  top: max(0px, calc((var(--studio-ruler-height, 36px) - 27px) / 2));
   right: 14px;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -65,7 +80,7 @@
 }
 /* A range too narrow for its cross keeps it just past its end. */
 .narrow .clear {
-  right: -34px;
+  right: -38px;
 }
 .shade {
   position: absolute;
