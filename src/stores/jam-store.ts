@@ -663,6 +663,24 @@ function broadcastSongWithParts(): void {
 }
 
 /**
+ * Catch one peer up on the loaded song and who sings which line.
+ *
+ * Sent when their channel opens, to them alone. When they are announced
+ * there is no channel to them yet, so the manifest used to reach only the
+ * guests who already had it -- and an unchanged manifest still starts a
+ * guest's take over (onlyKeyChanged), so every arrival wiped the line
+ * scores of everyone already singing. A key change still waiting to go
+ * out is left to its own timer: this manifest carries the key as it
+ * stands, but only to the newcomer.
+ */
+function sendRoomSongTo(peerId: string): void {
+  if (!jamIsHost()) return
+  const song = jamSong()
+  if (song === null) return
+  jamService?.sendSong(songManifest(song, jamSongParts()), peerId)
+}
+
+/**
  * How long the host's key presses settle before the room is told.
  *
  * Each key change goes out as the whole manifest, so stepping from 0 to +4
@@ -1990,15 +2008,8 @@ export function initJam() {
       console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
       noteJamPeerJoined(peer.displayName)
-      // Tell them what the room is on. The DataChannel's onopen only sends
-      // video-state, so somebody arriving mid-song saw an empty room and
-      // no way to ask what everyone else was singing.
-      //
-      // Safe to re-send to everyone now that a manifest for the song
-      // already loaded no longer resets the transport (see onSongMessage) --
-      // before that, one person joining would have stopped the music for
-      // the whole room.
-      if (jamIsHost() && jamSong() !== null) broadcastSongWithParts()
+      // What the room is on goes to them from onPeerChannelReady. Nothing
+      // sent from here can reach them: there is no channel to them yet.
     },
     onPeerLeft: (peerId) => {
       const gone = jamPeers().find((p) => p.id === peerId)
@@ -2288,8 +2299,10 @@ export function initJam() {
       }
     },
     onPeerChannelReady: (peerId) => {
+      // Tell them what the room is on: a song or a drill, never both.
       // Ahead of the background, which returns early whenever the room has
       // no capability to hand out, as most rooms have not.
+      sendRoomSongTo(peerId)
       sendRoomDrillTo(peerId)
       if (
         jamIsHost() &&
