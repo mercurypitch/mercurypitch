@@ -28,6 +28,7 @@ import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useS
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { useStemMixerVocalLyricsController } from '@/features/stem-mixer/useStemMixerVocalLyricsController'
+import type { PanelMelody } from '@/features/stem-mixer/vocal-notation'
 import { panelMelody } from '@/features/stem-mixer/vocal-notation'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
@@ -585,6 +586,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let setCurrentLineIdxForAudio = (_idx: number) => {}
   let setUserScrolledForAudio = (_v: boolean) => {}
   let lyricsMappingActiveForAudio = false
+  // Download MIDI saves the MIDI Melody panel's melody, built once Pitch
+  // Studio's notes exist further down.
+  let shownMelodyForAudio = (): PanelMelody | null => null
 
   // ── Key controller ───────────────────────────────────────────
   // The singer's key: this playlist entry's, else the song's own remembered
@@ -632,6 +636,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     PITCH_WINDOW_FILL_RATIO,
     midiNotes,
     setMidiNotes,
+    shownMelody: () => shownMelodyForAudio(),
     canvas: canvasForAudio,
     updateCurrentLine: () => updateCurrentLineForAudio(),
     setCurrentLineIdx: setCurrentLineIdxForAudio,
@@ -1610,6 +1615,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     ),
   )
   const shownMelodyNotes = keyView.createShownNotes(() => melody().notes)
+  // In the song's own key, as the stems download.
+  shownMelodyForAudio = melody
   const [midiView, setMidiView] = createPersistedSignal<MidiMelodyView>(
     'mp_mixer_midi_view',
     'roll',

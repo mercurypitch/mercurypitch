@@ -5,6 +5,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
+import { createPitchCanvasScale, midiToPitchCanvasRow, } from '@/features/stem-mixer/pitch-canvas-visuals'
+import { isPitchedMidiSongTrack, parseMidiSong } from '@/lib/midi-song'
 import { writeToneWav } from './helpers/tone-wav'
 import { dismissOverlays } from './helpers/ui'
 
@@ -1518,4 +1520,103 @@ test('shows the raw detection in the roll and the Notes view alike before an ana
     'data-note-pitches',
     pitches ?? '',
   )
+
+  // Download MIDI saves the same notes.
+  const saved = await downloadVocalMidi(page)
+  expect(saved.notes.map((note) => note.midi).join(' ')).toBe(pitches)
+})
+
+/** Download MIDI, read back: the file's name, tempo and pitched notes. */
+async function downloadVocalMidi(page: Page) {
+  const downloaded = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download MIDI' }).click()
+  const download = await downloaded
+  const path = await download.path()
+  const song = parseMidiSong(new Uint8Array(fs.readFileSync(path)))
+  if (song === null) throw new Error('Download MIDI saved no readable file')
+  return {
+    name: download.suggestedFilename(),
+    bpm: song.bpm,
+    notes: song.tracks.find(isPitchedMidiSongTrack)?.notes ?? [],
+  }
+}
+
+/**
+ * Selects one of Pitch Studio's notes by clicking it. The lane is a canvas:
+ * the note's row comes from the editor's own scale over `midis`, and its
+ * span from the orange of the reference notes drawn along that row.
+ */
+async function selectPitchStudioNote(
+  page: Page,
+  midi: number,
+  midis: readonly number[],
+): Promise<void> {
+  const scale = createPitchCanvasScale(true, midis)
+  const row = midiToPitchCanvasRow(midi, scale)
+  const lane = page.locator('canvas[data-canvas-id="pitch"]')
+  const point = await lane.evaluate(
+    (element, { row, rowCount }) => {
+      const canvas = element as HTMLCanvasElement
+      const rect = canvas.getBoundingClientRect()
+      const y = Math.round(((row + 0.5) / rowCount) * canvas.height)
+      const pixels = canvas
+        .getContext('2d')
+        ?.getImageData(0, y, canvas.width, 1).data
+      if (pixels === undefined) return null
+      const orange: number[] = []
+      for (let x = 0; x < canvas.width; x += 1) {
+        const [r, g, b] = [pixels[x * 4], pixels[x * 4 + 1], pixels[x * 4 + 2]]
+        if (r > 100 && g > 50 && b < 70 && r > g && g > b) orange.push(x)
+      }
+      if (orange.length === 0) return null
+      const middle = orange[Math.floor(orange.length / 2)]
+      return {
+        x: rect.left + (middle / canvas.width) * rect.width,
+        y: rect.top + ((row + 0.5) / rowCount) * rect.height,
+      }
+    },
+    { row, rowCount: scale.rowCount },
+  )
+  if (point === null) throw new Error(`Pitch Studio drew no note at ${midi}`)
+  await page.mouse.click(point.x, point.y)
+  await expect(
+    page.getByRole('button', { name: 'Raise selected note one semitone' }),
+  ).toBeVisible()
+}
+
+test('saves the notes it shows, an edit included, with Download MIDI @smoke', async ({
+  page,
+}) => {
+  await openWithMidiTrack(page, SESSION_ID)
+  const roll = page.locator('canvas[data-canvas-id="midi"]')
+  await expect(roll).toHaveAttribute('data-note-pitches', '60 64', {
+    timeout: 15_000,
+  })
+
+  // Pitch Studio: raise the C4 a semitone.
+  await page.getByRole('button', { name: 'Pitch', exact: true }).click()
+  const editNotes = page.getByRole('button', { name: 'Edit notes' })
+  await expect(editNotes).toBeEnabled({ timeout: 15_000 })
+  await editNotes.click()
+  await selectPitchStudioNote(page, 60, [60, 64])
+  await page
+    .getByRole('button', { name: 'Raise selected note one semitone' })
+    .click()
+  await page.getByRole('button', { name: 'Done editing' }).click()
+
+  // The roll, the Notes view and the file all hold the edited melody.
+  await expect(roll).toHaveAttribute('data-note-pitches', '61 64')
+  await midiView(page, 'Notes').click()
+  const notes = page.getByTestId('stem-mixer-midi-notes')
+  await expect(notes).toHaveAttribute('data-note-pitches', '61 64')
+
+  const saved = await downloadVocalMidi(page)
+  expect(saved.name).toBe('Stem_control_regression_vocal_midi.mid')
+  expect(saved.bpm).toBeCloseTo(120, 3)
+  expect(saved.notes.map((note) => note.midi)).toEqual([61, 64])
+  expect(String(saved.notes.length)).toBe(
+    await notes.getAttribute('data-note-count'),
+  )
+  // C#4 where the C4 was sung, at 0 s; E4 at 0.5 s, beat 1 at 120 BPM.
+  expect(saved.notes.map((note) => note.startBeat)).toEqual([0, 1])
 })
