@@ -638,6 +638,47 @@ describe('punch and loop takes', () => {
     )
   })
 
+  it('says a punch stopped too soon into its range kept nothing, rather than nothing at all', async () => {
+    const h = harness({ takeCut: () => ({ mode: 'punch', range: RANGE }) })
+    await h.recorder.arm('lane-1')
+    h.recorder.record()
+    // A bar of pre-roll from 384000, heard at 1.1 s: the first sample lands on 381600.
+    h.transport.anchor.mockReturnValue({ frame: 384000, time: 1.1 })
+    await settle()
+    h.worklet.started(52800)
+    // Stop 0.04 s into the range, short of the tenth of a second a punch keeps.
+    for (let chunk = 0; chunk < 24; chunk++) h.chunk(chunk * 4096, 4096)
+    h.chunk(24 * 4096, 2016)
+    await h.worklet.stopped(98400 + 1920, 'stopped')
+    await settle()
+    expect(h.kept).toHaveLength(0)
+    expect(h.journal.discard).toHaveBeenCalled()
+    expect(h.view()).toMatchObject({
+      phase: 'idle',
+      notice:
+        'Stopped just after the range began, so the take was too short to keep.',
+    })
+  })
+
+  it('says a loop stopped before its first pass held a second kept nothing', async () => {
+    const h = harness({ takeCut: () => ({ mode: 'loop', range: RANGE }) })
+    await h.recorder.arm('lane-1')
+    h.recorder.record()
+    // A bar of count-in, the range from 3.1 s: the first sample lands on 381600.
+    h.transport.anchor.mockReturnValue({ frame: 480000, time: 3.1 })
+    await settle()
+    h.worklet.started(52800)
+    // Half a second into the two-second range.
+    for (let chunk = 0; chunk < 29; chunk++) h.chunk(chunk * 4096, 4096)
+    h.chunk(29 * 4096, 3616)
+    await h.worklet.stopped(98400 + 24000, 'stopped')
+    await settle()
+    expect(h.kept).toHaveLength(0)
+    expect(h.view().notice).toBe(
+      'Stopped just after the range began, so the take was too short to keep.',
+    )
+  })
+
   it('loops from the range start after the count-in, ticking each pass, and stops just after the last pass a clip keeps', async () => {
     vi.useFakeTimers()
     const h = harness(
