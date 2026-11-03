@@ -170,6 +170,7 @@ Lesson 6, Step N again". Lesson 10 asked the same two; spacing them again is del
    - A tritone **[correct]** · "Six semitones: it leans, and wants to move."
    - A perfect fifth · "A perfect fifth is seven semitones. This is one fewer. Try Step 4 again."
    - An octave · "An octave's two notes share a letter; these are B and F."
+
 - Words: 230.
 
 ## Wrap

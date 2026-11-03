@@ -184,6 +184,7 @@ one?" The tease names no sharp's place, Lesson 21's predict answer.
 ## Practise links (verified at `b803c7d43`)
 
 **Today:**
+
 - **Scale Runner**, `mercurypitch.com/pitch-training?lesson=20`, then tap Scale Runner and choose
   Pentatonic: the major pentatonic, up or down one octave, one note at a time: it plays each note, then
   waits up to 2 s for yours, and wants the octave it plays (R20-11). The card says so: "It's an echo,

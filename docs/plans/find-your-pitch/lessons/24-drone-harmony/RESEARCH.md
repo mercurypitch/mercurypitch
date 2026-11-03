@@ -35,6 +35,7 @@ Frequencies are equal-tempered from A4 = 440 Hz; every number below was run with
 
 **R1. Two tones close in frequency beat, and the beats a second equal the difference between the
 two frequencies.**
+
 - Source: Wolfe, J. (UNSW Physclips). "Interference beats and Tartini tones".
   https://animations.physics.unsw.edu.au/jw/beats.htm. Lesson 3 FACTS 49 read it.
 - Says: "The beat frequency equals the difference between frequencies of the beating signals";
@@ -45,6 +46,7 @@ two frequencies.**
 
 **R2. Notes that are not the same can beat through their harmonics: tuners make two harmonics stop
 beating.**
+
 - Source: Wolfe, beats page (R1), guitar-tuning section: "The A string plays A2, so its third
   harmonic is also E4, a (just) twelfth above"; tune the A string "so its third 'harmonic' stops
   beating with the fourth 'harmonic' of the E string."
@@ -52,6 +54,7 @@ beating.**
 
 **R3. In a pure interval harmonics coincide; in equal temperament the fifth is very slightly narrow
 and the major third 0.8 % wide.**
+
 - Source: Wolfe, J. (UNSW Physclips). "Tartini tones, consonance, temperament, harmony and scales".
   https://animations.physics.unsw.edu.au/jw/Tartini-tones-temperament.html.
 - Says: "3:2 = 1.500"; "major and minor thirds (5:4 and 6:5 in just intonation)"; "every second
@@ -67,14 +70,14 @@ and the major third 0.8 % wide.**
 pure ratio m:n (upper to lower), the nearly coinciding harmonics are the upper note's n-th and the
 drone's m-th, so beats a second = |n × f_upper − m × f_drone|. On A3 (220.000 Hz):
 
-| Interval (pure ratio) | Upper note, ET | Harmonics compared | Beats a second |
-| --- | --- | --- | --- |
-| Unison (1:1) | A3 220.000 | 220.000 against 220.000 | 0 |
-| Octave (2:1) | A4 440.000 | 440.000 against 440.000 | 0 |
-| Fifth (3:2) | E4 329.628 | 2 × 329.628 = 659.255 against 3 × 220 = 660.000 | 0.745 |
-| Fourth (4:3) | D4 293.665 | 3 × 293.665 = 880.994 against 880.000 | 0.994 |
-| Major third (5:4) | C♯4 277.183 | 4 × 277.183 = 1,108.731 against 1,100.000 | 8.731 |
-| Minor third (6:5) | C4 261.626 | 5 × 261.626 = 1,308.128 against 1,320.000 | 11.872 |
+| Interval (pure ratio) | Upper note, ET | Harmonics compared                              | Beats a second |
+| --------------------- | -------------- | ----------------------------------------------- | -------------- |
+| Unison (1:1)          | A3 220.000     | 220.000 against 220.000                         | 0              |
+| Octave (2:1)          | A4 440.000     | 440.000 against 440.000                         | 0              |
+| Fifth (3:2)           | E4 329.628     | 2 × 329.628 = 659.255 against 3 × 220 = 660.000 | 0.745          |
+| Fourth (4:3)          | D4 293.665     | 3 × 293.665 = 880.994 against 880.000           | 0.994          |
+| Major third (5:4)     | C♯4 277.183    | 4 × 277.183 = 1,108.731 against 1,100.000       | 8.731          |
+| Minor third (6:5)     | C4 261.626     | 5 × 261.626 = 1,308.128 against 1,320.000       | 11.872         |
 
 At the pure intervals (E4 at 330.000, C♯4 at 275.000) the compared harmonics are equal and the
 beats stop. On the checkpoint's drones: over D3 (146.832) the ET fifth beats 0.497 and the major
@@ -88,6 +91,7 @@ useful "for tuning musical instruments"). Read there. Strength: Strong.
 
 **R6. Sung with vibrato, a mistuned consonance does not beat; pure tuning is not what most music
 uses.**
+
 - Source: Sundberg, J. (1994). Acoustic and psychoacoustic aspects of vocal vibrato. STL-QPSR
   35(2-3), 45-68, p. 64 (read in full for Lesson 22).
 - Says: "If such intervals are sung slightly out of pitch, beats occur. The greater the pitch error,
@@ -102,6 +106,7 @@ uses.**
 
 **R7. Singing a different part from your partner is less accurate than singing the same part, and
 singing alone gives less pitch error, but singers who hear each other adjust to keep the harmony.**
+
 - Source: Dai, J. & Dixon, S. (2019). Singing together: pitch accuracy and interaction in
   unaccompanied unison and duet singing. JASA 145(2), 663-675. https://doi.org/10.1121/1.5087817.
 - Says: p. 663 (abstract): "Eight pairs of singers sang two excerpts either in unison or two-part
@@ -119,6 +124,7 @@ singing alone gives less pitch error, but singers who hear each other adjust to 
 
 **R8. An a cappella quintet tuned closer to equal temperament than to pure tuning, with major thirds
 a little nearer pure, and its rehearsal strategies included listening more closely.**
+
 - Source: D'Amario, S., Howard, D. M., Daffern, H. & Pennill, N. (2020). A longitudinal study of
   intonation in an a cappella singing quintet. J Voice 34(1), 159.e13-159.e27, online 2018,
   https://doi.org/10.1016/j.jvoice.2018.07.015. CC BY, at
@@ -153,20 +159,22 @@ piano's note; so does the pure fifth, 1.96 above.
 
 **R11. Drone Intonation holds a drone and scores a sung interval above it against the piano's
 equal-tempered note.**
+
 - Pool: unison, minor third, major third, fourth, fifth, octave
   (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:18-25`); a launch's
   intervals are kept to that pool (:33-46).
 - Target: `const targetMidi = droneMidi + interval.semitones` (:152, :183), so equal-tempered; the
-  drone sounds during the match window, `audioEngine.playTone(midiToFreq(droneMidi), matchWindowMs
-  + 2000)` (:155), a window of 4 s (:13).
-- Score: "(100 - avgDeviation * SCORE_K)", `SCORE_K = 1.5` (:14-16, :198), divided by a difficulty
+  drone sounds during the match window,
+  `audioEngine.playTone(midiToFreq(droneMidi), matchWindowMs + 2000)` (:155), a window of 4 s (:13).
+- Score: `(100 - avgDeviation * SCORE_K)`, `SCORE_K = 1.5` (:14-16, :198), divided by a difficulty
   factor (:127). At the default, a pure major third 13.69 cents under the target scores 100 − 20.5,
   about 79; a pure fifth about 97.
 - The drone's timbre follows the app's instrument setting (`src/lib/audio-engine.ts:1147-1150`:
   "sine/piano/organ/strings/synth"), so whether it has harmonics to beat with depends on that
   setting.
-- `/exercises/thirds-on-a-drone` opens it on the minor and major thirds (`src/features/exercises/
-  slug-map.ts:75-81`). No slug asks for the fifth, third and octave (SEASON-2 § 5 item 15).
+- `/exercises/thirds-on-a-drone` opens it on the minor and major thirds
+  (`src/features/exercises/slug-map.ts:75-81`). No slug asks for the fifth, third and octave
+  (SEASON-2 § 5 item 15).
 - Read: code.
 
 **R12. Ear Lab's Beat Hunt asks which of two pairs beats.** `src/features/ear-lab/BeatHuntDrill.tsx:

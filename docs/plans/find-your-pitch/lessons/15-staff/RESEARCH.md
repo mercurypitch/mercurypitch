@@ -30,12 +30,12 @@ research/pedagogy-research.md: Strong, Moderate, Weak, Practitioner.
 
 - **OMT 2e**: Mark Gotham, Kyle Gullings, Chelsey Hamm, Bryn Hughes, Brian Jarvis, Megan Lavengood and
   John Peterson, _Open Music Theory_, 2nd ed., LibreTexts edition (pages dated 29 Aug 2025),
-  human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/,
+  https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/,
   sections 1.2 "Notation of Notes, Clefs, and Ledger Lines", 1.3 "Reading Clefs", 1.4 "The Keyboard
   and the Grand Staff", 1.5 "Half Steps, Whole Steps, and Accidentals", 1.6 "American Standard Pitch
   Notation (ASPN)". Full text of each read. Its examples are images; no claim rests on an image.
 - **E&SJ**: Terry B. Ewell and Catherine Schmidt-Jones, _Music Fundamentals_, LibreTexts, 1.2 "Clef"
-  (last modified 16 Jul 2023), human.libretexts.org/Bookshelves/Music/Music_Theory/Music_Fundamentals_(Ewell_and_Schmidt-Jones)/01%3A_Pitch_and_Major_Scales_and_Keys/1.02%3A_Clef.
+  (last modified 16 Jul 2023), https://human.libretexts.org/Bookshelves/Music/Music_Theory/Music_Fundamentals_(Ewell_and_Schmidt-Jones)/01%3A_Pitch_and_Major_Scales_and_Keys/1.02%3A_Clef.
   Full text read.
 - **Yamaha 2017**: Yamaha Corporation of America, "Why Aren't There More Than 88 Keys on a Piano?",
   16 October 2017, hub.yamaha.com/?p=4830 (excerpted from Yamaha's Musical Instrument Guide). Full

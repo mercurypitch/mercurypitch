@@ -30,7 +30,7 @@ fetched 30 October 2026. Strength grades as research/pedagogy-research.md.
 
 - **OMT 2e**: Gotham et al., _Open Music Theory_, 2nd ed., LibreTexts edition: 8.9 "Collections"
   (part 8, 20th- and 21st-Century Techniques) and 7.13 "Pentatonic Harmony" (part 7, Popular Music),
-  human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/. Full text
+  https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/. Full text
   read; their examples are images.
 - **Savage 2015**: Patrick E. Savage, Steven Brown, Emi Sakai and Thomas E. Currie (2015), "Statistical
   universals reveal the structures and functions of human music", _PNAS_ 112(29), 8987-8992,

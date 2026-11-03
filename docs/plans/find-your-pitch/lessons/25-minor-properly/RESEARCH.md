@@ -28,6 +28,7 @@ OMT's music examples and tables are images; no fact rests on them unless the tex
 ### The three forms
 
 **R1. Natural, harmonic and melodic minor, step by step.**
+
 - Source: Gotham, M. et al. Open Music Theory, 2nd ed. (VIVA, CC BY-SA), § 1.13 "Minor Scales,
   Scale Degrees, and Key Signatures", LibreTexts edition,
   https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/1.13%3A_Minor_Scales_Scale_Degrees_and_Key_Signatures.
@@ -40,6 +41,7 @@ OMT's music examples and tables are images; no fact rests on them unless the tex
   tone, tone, semitone, tone, tone.
 
 **R2. A minor key is one key; the three forms are ways its sixth and seventh change.**
+
 - Source: OMT 2e § 1.13, § The Minor Scale: the three forms "should be thought of like flavors of
   ice cream"; "a work is simply “minor” or “in minor”; musicians do not consider music to be “in” a
   specific type of minor scale"; "minor keys and minor key signatures are always identified as
@@ -50,6 +52,7 @@ OMT's music examples and tables are images; no fact rests on them unless the tex
 
 **R3. In do-based solfège, natural minor sings me, le and te; harmonic minor raises te to ti; the
 raised ti gives the closure natural minor lacks.**
+
 - Source: OMT 2e § 1.13, § Minor Scale Degrees, Solfège, and Scale-Degree Names: "In natural minor
   ... mi becomes me (pronounced “may”), la becomes le (pronounced “lay”), and ti becomes te
   (pronounced “tay”)"; "the ending lacks the same sense of closure you heard in the major scale. In
@@ -68,6 +71,7 @@ semitones: minor); so-ti-re is E, G♯, B (4: major).
 
 **R5. Raising te to ti leaves three semitones between le and ti, an augmented second, awkward to
 sing; melodic minor raises le too on the way up to smooth it.**
+
 - Sources: OMT 2e § 1.13 (R1): the harmonic form's "3Hs" step, "a distance of three half steps (or a
   whole step plus a half step)". Sharkey, L. C. Equipping the Musical Ear (Sierra College, CC BY-NC
   4.0), § 5.2.3 "Melodic Minor", LibreTexts, last modified 16 July 2025,
@@ -86,6 +90,7 @@ sing; melodic minor raises le too on the way up to smooth it.**
 
 **R6. A major and a minor key with the same key signature are relative; the minor's tonic is three
 semitones below the major's. A major and a minor key with the same tonic are parallel.**
+
 - Source: OMT 2e § 1.13, § The Parallel and Relative Relationships: "The relative relationship is
   when a major key shares a key signature with a minor key. For example, C major does not have any
   sharps or flats in its key signature, and neither does A minor"; "The tonic of a minor key is

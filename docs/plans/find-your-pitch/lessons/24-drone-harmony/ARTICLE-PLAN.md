@@ -180,6 +180,7 @@ For everyone (S20a needs T14, Lesson 10, and T13, Lesson 23).
    - Beating slowly · "Listen for a breathing in the loudness; this pair has none. Try Step 2
      again."
    - Beating fast · "A fast beat is the piano's third. This is a pure fifth."
+
 - Words: 260.
 
 ## Wrap

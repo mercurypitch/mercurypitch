@@ -65,14 +65,14 @@ so the plan says "researchers think"). No prevalence figure: **not verified**, n
 
 **R16-2. Sight-singing exams give the singer the key and the first note before they read.**
 RCM 2019 p. 14 (Preparatory), Singing: "Students will be asked to sing a two-measure, unaccompanied
-melody that moves by step. The examiner will play the broken tonic triad and the beginning note once.
-The student will be given a short time to silently review the music. The examiner will then repeat
-the broken tonic triad and the beginning note before the student sings." The table: beginning note
-"tonic", key "C major", range "five notes (tonic to dominant)". Level 1 (p. 17) the same; Level 2 (p.
-22) "a four-measure, unaccompanied melody that moves by step or skip"; Level 3 (p. 27) one that "may
-include seconds, thirds, or fifths"; Level 4 (p. 32) "seconds, thirds, fourths, or fifths". Full text.
-Strong for what the exam does (Practitioner as pedagogy). The page's checkpoint copies Preparatory's
-shape: C major, do to so, by step, after do-mi-so and do.
+melody that moves by step. The examiner will play the broken tonic triad and the beginning note
+once. The student will be given a short time to silently review the music. The examiner will then
+repeat the broken tonic triad and the beginning note before the student sings." The table: beginning
+note "tonic", key "C major", range "five notes (tonic to dominant)". Level 1 (p. 17) the same; Level
+2 (p. 22) "a four-measure, unaccompanied melody that moves by step or skip"; Level 3 (p. 27) one
+that "may include seconds, thirds, or fifths"; Level 4 (p. 32) "seconds, thirds, fourths, or
+fifths". Full text. Strong for what the exam does (Practitioner as pedagogy). The page's checkpoint
+copies Preparatory's shape: C major, do to so, by step, after do-mi-so and do.
 
 **R16-3. Exams accept any naming system for sight-singing.**
 RCM 2019 p. 11: "students may use any system that enables them to produce the correct pitches; for

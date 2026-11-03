@@ -1,9 +1,9 @@
 # Research: Lesson 22, Vibrato
 
 Every "Facts to check" item on the Lesson 22 card (SEASON-2 § 3), resolved, and every other claim
-the article plan makes. App claims were read at `b803c7d43`. Web sources were read on 30 October
-2026. "Read in full" means the whole text was read; a scanned report was read through its text
-layer, so a quote may carry a scanning slip, marked [sic] where it matters. Strength follows
+the article plan makes. App claims were read at `b803c7d43`. Web sources were read on 30
+October 2026. "Read in full" means the whole text was read; a scanned report was read through its
+text layer, so a quote may carry a scanning slip, marked [sic] where it matters. Strength follows
 pedagogy-research.md: Strong, Moderate, Weak, Practitioner.
 
 ## Where the sources and the card disagree (read first)
@@ -44,6 +44,7 @@ pedagogy-research.md: Strong, Moderate, Weak, Practitioner.
 
 **R1. A vibrato is a regular, roughly sinusoidal wave in a held note's pitch, described by its rate
 (waves a second) and its extent (how far the pitch moves up and down from its average).**
+
 - Source: Sundberg, J. (1994). Acoustic and psychoacoustic aspects of vocal vibrato. STL-QPSR
   35(2-3), 45-68, KTH Stockholm. https://www.speech.kth.se/qpsr/1994/1994_35_2-3_045-068.pdf.
   Reprinted in Dejonckere, Hirano & Sundberg (eds.), Vibrato (1995), pp. 35-62 (the book not read).
@@ -56,6 +57,7 @@ pedagogy-research.md: Strong, Moderate, Weak, Practitioner.
 
 **R2. Timmers & Desain give singers' rate as 5.5 to 8 Hz and extent as 0.6 to 2 semitones, without
 saying how extent is measured.**
+
 - Source: Timmers, R. & Desain, P. (2000). Vibrato: questions and answers from musicians and
   science. Proceedings of the Sixth ICMPC, Keele University (CD-ROM).
   https://www.mcg.uva.nl/mmm-2003/papers/mmm-35/mmm-35.html.
@@ -68,6 +70,7 @@ saying how extent is measured.**
 
 **R3. Typical singers' vibratos run at about 5 to 8 waves a second, with an extent of less than a
 semitone either side of the centre.**
+
 - Source: Sundberg 1994 (R1).
 - Says: p. 57, "the main acoustic characteristic of the vibrato is an undulation of the fundamental
   frequency ranging from 5 to 8 Hz in rate and less than ±1 semitone in extent" (the scan prints
@@ -78,6 +81,7 @@ semitone either side of the centre.**
 
 **R4. Measured mean rates sit near 5.5 to 7 Hz: 5.4 Hz (men) and 5.9 Hz (women) for sustained
 vowels in the lab, 6.6 Hz across 29 recorded artists, 6.1 Hz across ten singers on record.**
+
 - Sources: Sundberg 1994, p. 50 (Shipp, Leanderson & Sundberg 1980: "The average vibrato rate found
   was 5.4 Hz for the male singers and 5.9 Hz for the female singers"; "Seashore (1938), analysing
   recordings of 29 artists, arrived at an overall average of 6.6 Hz"). Prame, E. (1992).
@@ -92,6 +96,7 @@ vowels in the lab, 6.6 Hz across 29 recorded artists, 6.1 Hz across ten singers 
 
 **R5. A long vibrato tone is heard as one pitch near the middle of its swing: close to the
 geometric mean of its two extreme frequencies.**
+
 - Source: Shonle, J. I. & Horan, K. E. (1980). The pitch of vibrato tones. JASA 67(1), 246-252.
   https://doi.org/10.1121/1.383733.
 - Says: abstract (publisher's page, pubs.aip.org): test tones at 220, 440, 880 and 1500 Hz, vibrato
@@ -112,6 +117,7 @@ geometric mean of its two extreme frequencies.**
 
 **R6. The vibrato does not make the pitch harder to judge: listeners matched vibrato tones as
 accurately as straight ones.**
+
 - Source: Sundberg 1994, p. 58-59: "The subjects' matchings of the pitch of the same stimulus tones
   were almost entirely equally accurate, regardless of the presence of the vibrato."
 - Read: in full (a review reporting the author's 1977 experiment). Strength: Weak to Moderate (one
@@ -120,6 +126,7 @@ accurately as straight ones.**
 
 **R7. Slow the wave down and it stops being one note: near 4 waves a second and below, the pitch
 is heard to move.**
+
 - Sources: Sundberg 1994, p. 59: "the pitch of a vibrato tone remains constant only if the vibrato
   rate is not too slow; for rates near 4 Hz and lower, the pitch is clearly undulating."
   d'Alessandro & Castellengo 1994, p. 1626 (citing Miller & Heise 1950 and Shonle & Horan 1976):
@@ -132,6 +139,7 @@ is heard to move.**
 
 **R8. In recordings, the rate speeds up towards the end of a held note, and the extent can grow
 over it.**
+
 - Sources: Prame 1992, p. 73 (R4): "the vibrato rate typically increased at the end of each tone".
   Bretos, J. & Sundberg, J. (2002). Measurements of vibrato parameters in long sustained crescendo
   notes as sung by ten sopranos. TMH-QPSR 43(1), 37-44,
@@ -146,6 +154,7 @@ over it.**
 
 **R9. Mitchell & Kenny (2010) followed 15 conservatorium singers over two years; extent rose and rate
 variability fell.**
+
 - Source: Mitchell, H. F. & Kenny, D. T. (2010). Change in vibrato rate and extent during tertiary
   training in classical singing students. J Voice 24(4), 427-434,
   https://doi.org/10.1016/j.jvoice.2008.12.003.
@@ -159,6 +168,7 @@ variability fell.**
 
 **R10. Nix (2014) offers studio and choir exercises for moving between vibrato and straight
 singing.**
+
 - Source: Nix, J. (2014). Shaken, not stirred: practical ideas for addressing vibrato and nonvibrato
   singing in the studio and the choral rehearsal. Journal of Singing 70(4), 411-418.
 - Says: the NATS summary page only (members' text not reached): airflow "about 10% greater" with
@@ -168,6 +178,7 @@ singing.**
 
 **R11. Singing uses both: choral and ensemble styles often ask for less vibrato or a straight tone,
 and singers can change their vibrato to fit the group.**
+
 - Source: Acosta Martínez, G. & Daffern, H. (2025). The role of vibrato in choral singing: a
   systematic review. J Voice 39(3), 847.e21-847.e39. https://doi.org/10.1016/j.jvoice.2022.11.004.
   Open access (CC BY-NC-ND) at https://eprints.whiterose.ac.uk/id/eprint/228375/.
@@ -183,6 +194,7 @@ and singers can change their vibrato to fit the group.**
   the evidence is thin. The page says "styles differ", not which is better.
 
 **R12. Choir singers' vibratos have been measured as small, about 0.1 semitone.**
+
 - Source: Sundberg 1994, p. 51: "Choir singers show rather irregular vibratos with very small
   extents averaging to no more than 0.1 semitone."
 - Read: in full. Strength: Weak (no study named on the page). Go deeper at most; not planned.
@@ -203,6 +215,7 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
 ### The app (read at `b803c7d43`)
 
 **R15. Three app voices on vibrato.**
+
 - Voice Mirror's hold reports a vibrato as a feature: it shows the rate in hertz and the extent in
   cents, then "That's a feature, not scored against you" (`src/features/mirror/MirrorApp.tsx:2194-2199`).
   It counts a vibrato only between 3.5 and 8.5 Hz (`src/lib/mirror/metrics.ts:72-74`) and only when the fitted
@@ -217,10 +230,10 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
   cents (`:739`). So the analyser's depth and Voice Mirror's extent are different measures; the
   page quotes only Voice Mirror's.
 - The Vibrato exercise: help says "teachers build vibrato by oscillating about a semitone slowly"
-  and "A healthy natural vibrato is about 5-7 pulses per second" (`src/features/exercises/
-  exercise-help.ts:114-115`); its default style is "Fine & Fast", "the polished sound"
-  (`src/features/exercises/vibrato/vibrato-styles.ts:56-57`, default `:71`); styles span 3 to 7 Hz
-  (`:31-64`); it scores rate, depth and consistency at 0.4, 0.3 and 0.3
+  and "A healthy natural vibrato is about 5-7 pulses per second"
+  (`src/features/exercises/exercise-help.ts:114-115`); its default style is "Fine & Fast", "the
+  polished sound" (`src/features/exercises/vibrato/vibrato-styles.ts:56-57`, default `:71`); styles
+  span 3 to 7 Hz (`:31-64`); it scores rate, depth and consistency at 0.4, 0.3 and 0.3
   (`use-vibrato-controller.ts:12-14`). Not linked (card; SEASON-2 § 5 item 14).
 - Long Note Lantern's help: "a vibrato counts as a wobble, so a straight tone scores highest"
   (`exercise-help.ts:43`, in the `EXERCISE_LONG_NOTE_LANTERN` entry at :37-45). Long Note's help

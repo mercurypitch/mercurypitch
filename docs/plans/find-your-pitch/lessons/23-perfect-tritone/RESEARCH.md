@@ -39,6 +39,7 @@ more standard texts agree.
 
 **R1. An interval has a number (its size) and a quality. The number counts letter names, both
 ends included: C up to E is a third, whatever accidentals the notes carry.**
+
 - Source: Gotham, M., Gullings, K., Hamm, C., Hughes, B., Jarvis, B., Lavengood, M. & Peterson, J.
   Open Music Theory, 2nd ed. (VIVA, CC BY-SA), § 1.15 "Intervals", LibreTexts edition,
   https://human.libretexts.org/Bookshelves/Music/Music_Theory/Open_Music_Theory_2e_(Gotham_et_al.)/01%3A_Fundamentals/1.15%3A_Intervals.
@@ -52,6 +53,7 @@ ends included: C up to E is a third, whatever accidentals the notes carry.**
 
 **R2. Unisons, fourths, fifths and octaves are perfect; seconds, thirds, sixths and sevenths are
 major or minor.**
+
 - Source: OMT 2e § 1.15, § Perfect, Major, and Minor Qualities: "Unisons, fourths, fifths, and
   octaves form perfect intervals, while seconds, thirds, sixths, and sevenths form major and minor
   intervals." It adds that "Different theorists (in different locations and time periods) have
@@ -61,6 +63,7 @@ major or minor.**
 
 **R3. A perfect or major interval made a semitone wider is augmented; a perfect or minor interval
 made a semitone narrower is diminished.**
+
 - Source: OMT 2e § 1.15: "Augmented intervals are one half step larger than a perfect or major
   interval. Diminished intervals are one half step smaller than a perfect or minor interval." And:
   "the perfect fifth F–C is made a half step smaller by lowering the top note to C♭, forming a
@@ -78,6 +81,7 @@ Go deeper (the white-key fourths) and as contradiction 4.
 
 **R5. Turn an interval upside down and the two numbers add to 9; major turns to minor and minor to
 major, perfect stays perfect, augmented and diminished swap.**
+
 - Source: OMT 2e § 1.15, § Intervallic Inversion: "the size of inverted pairs always adds up to 9";
   "Fourths invert to fifths (4 + 5 = 9)"; "Perfect intervals invert to perfect intervals. Major
   intervals invert to minor intervals (and minor intervals to major intervals). Augmented intervals
@@ -94,6 +98,7 @@ Strength: Strong (arithmetic on R5).
 
 **R7. Pure octave, fifth and fourth are the frequency ratios 2:1, 3:2 and 4:3; in equal temperament
 the fifth is very slightly narrow.**
+
 - Source: Wolfe, J. (UNSW Physclips). "Tartini tones, consonance, temperament, harmony and scales".
   https://animations.physics.unsw.edu.au/jw/Tartini-tones-temperament.html.
 - Says: octave "has a frequency ratio of 2:1 exactly"; "3:2 = 1.500"; "4:3 = 1.333"; "every second
@@ -109,6 +114,7 @@ the fifth is very slightly narrow.**
 **R8. In counterpoint, unisons, fifths and octaves are perfect consonances, thirds and sixths
 imperfect consonances, and all seconds, sevenths, augmented and diminished intervals dissonances;
 the fourth depends on where it sits.**
+
 - Source: OMT 2e § 2.01 "Introduction to Species Counterpoint", § Consonance and dissonance:
   "Perfect consonances (perfect unisons, fifths, and octaves)"; "Imperfect consonances (major and
   minor thirds and sixths)"; "Dissonances (all seconds, sevenths, and diminished and augmented
@@ -122,6 +128,7 @@ the fourth depends on where it sits.**
 
 **R9. Ti is the most prominent tendency tone, pulling to do; a chord's seventh tends to resolve down
 by step.**
+
 - Source: Wharton, R. & Shaffer, K. (eds.). Open Music Theory, 1st ed. (Hybrid Pedagogy, CC
   BY-SA), § 2.12 "Strict Four-Voice Composition - Tendency Tones and Functional Harmonic
   Dissonances", LibreTexts, last modified 16 July 2023.
@@ -135,6 +142,7 @@ by step.**
 
 **R10. Adding fa to the V chord makes a dominant seventh, whose dissonance strengthens its pull to
 I.**
+
 - Source: OMT 2e § 4.02 "Strengthening Endings with V7": "the V chord contains an extra note, fa,
   that transforms it from a major triad into a dominant seventh chord. Since the seventh adds
   dissonance (and therefore instability) to the chord, it strengthens the pull of the V chord
@@ -151,6 +159,7 @@ tritone between white keys is F–B (R4), fa and ti. Strength: Strong.
 
 **R12. Fux (1725) calls "mi contra fa est diabolus in musica" a well-worn proverb, and forbids the
 tritone leap in counterpoint because it is hard to sing and sounds bad.**
+
 - Source: Fux, J. J. (1725). Gradus ad Parnassum, sive Manuductio ad compositionem musicae
   regularem. Vienna. p. 52 (Exercise 1, Lesson 2, note against note, the dialogue of Aloysius and
   Josephus). Scan with OCR at https://archive.org/details/gradusadparnassu00fuxj_0.
@@ -168,6 +177,7 @@ tritone leap in counterpoint because it is hard to sing and sounds bad.**
 
 **R13. Secondary accounts: the phrase is found from the early 18th century; no medieval use and no
 church ban are documented.**
+
 - Sources: Wikipedia, "Tritone", read 30 October 2026: the term "has been applied to the interval
   from at least the early 18th century"; "stories that singers were excommunicated or otherwise
   punished by the Church" are "likely fanciful"; it cites Werckmeister 1702 (Harmonologia musica, p.
