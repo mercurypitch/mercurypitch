@@ -672,18 +672,19 @@ describe('a timed drill stopped before its timer runs out', () => {
   )
 
   it.each(timed)(
-    '%s counts a Stop once its ten seconds are up as a whole run',
+    '%s counts a Stop in its last second, or once its ten are up, as a whole run',
     (_name, setUp) => {
       setTimerMode(10)
-      // The shell checks the timer every 100 ms, so a Stop can land after
-      // the length has run out and before the shell ends the run. A Stop
-      // pressed as the countdown reaches zero is the run's end too.
+      // The countdown rounds up, so from nine seconds in it reads "1s", the
+      // last number it shows. The shell checks the timer every 100 ms, so a
+      // Stop can also land after the length has run out and before the
+      // shell ends the run.
       const afterTheEnd = setUp(mockBase({ _getElapsed: () => 10_050 }))()
-      const atTheEnd = setUp(mockBase({ _getElapsed: () => 9_900 }))()
-      const short = setUp(mockBase({ _getElapsed: () => 9_000 }))()
+      const lastSecond = setUp(mockBase({ _getElapsed: () => 9_000 }))()
+      const short = setUp(mockBase({ _getElapsed: () => 8_999 }))()
 
       expect(runStoppedEarly(afterTheEnd.metrics)).toBe(false)
-      expect(runStoppedEarly(atTheEnd.metrics)).toBe(false)
+      expect(runStoppedEarly(lastSecond.metrics)).toBe(false)
       expect(runStoppedEarly(short.metrics)).toBe(true)
     },
   )

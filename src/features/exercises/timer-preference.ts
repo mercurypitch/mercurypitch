@@ -104,12 +104,15 @@ export function activeTimerSeconds(): number | null {
 export type RunEnd = 'stop' | 'timer'
 
 /**
- * How near its length a Stop may land and still end a whole run. The shell
- * checks the timer every 100 ms, so a Stop can land after the length has
- * run out but before the shell ends the run, and a Stop pressed as the
- * countdown reaches zero lands a moment either side of it.
+ * How near its length a Stop may land and still end a whole run: within
+ * the countdown's last second. The countdown rounds up, so the last number
+ * it shows is "1s", and it shows it for that whole second. A Stop while it
+ * reads "1s" is pressed at what the singer sees as the end, and with a
+ * quarter second's grace three in four such Stops marked the run. The
+ * shell also checks the timer only every 100 ms, so a Stop can land after
+ * the length has run out but before the shell ends the run.
  */
-export const TIMER_END_GRACE_MS = 250
+export const TIMER_END_GRACE_MS = 1000
 
 /**
  * Whether a run ended short of the length the singer chose: stopped
