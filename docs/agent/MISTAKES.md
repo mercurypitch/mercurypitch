@@ -1232,6 +1232,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** time draw plus `getImageData(0, 0, 1, 1)` per frame, and compare variants with a part taken out. Fold what never changes into one opaque sprite (`{ alpha: false }`), which stamps as a copy.
 **See:** `drawStageBackdrop` in `src/lib/tv-stage/lane.ts`; the frame times in `docs/plans/tv-cast-and-google-tv.md`, P2 step 3.
 
+### Read a fast signal through one stable object, not a new object per value
+
+**Symptom:** while a Studio take recorded, its lane drew the whole take's canvas again, and every lane checked the record again, on every input level (31 a second), though only the meter shows the level.
+**Cause:** the recorder handed the timeline `{ trackId, live: live(), level: level(), listening }`, a new object each time any field changed. Every reader of the object re-ran, and the take's draw effect read `getComputedStyle` and `clientHeight` each time, which made the browser restyle and lay out the page there and then.
+**Rule:** give a consumer one object for as long as its slow fields hold (`createMemo` with an `equals` on them) and read the fast fields through getters on it; JSX spread keeps the getters live. Read layout and computed style on a full redraw only, never per chunk.
+**See:** `timelineRecord` in `src/features/studio/record/useStudioRecorder.ts`, `src/features/studio/record/live-wave.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
@@ -2217,6 +2224,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Cause:** the fake context measured 10 px a letter whatever its font, and recorded the text but not its size. A line's width never depended on the size it was drawn at, so no test could see a shrink, a wrap or a floor.
 **Rule:** a fake's widths scale with the size in the font it is set to, and it records the size each text is drawn at; assert on that size.
 **See:** `src/lib/tv-stage/recording-context.fixture.ts`.
+
+### Build an old commit with vite itself, not `pnpm run`, when its node_modules is a link
+
+**Symptom:** `pnpm run build:e2e` in a `git archive` copy of the base commit, with `node_modules` symlinked to the worktree's, started `pnpm install` and tried to remove the modules directory. It stopped only because there was no TTY to confirm.
+**Cause:** pnpm checks the workspace before a script (`verify-deps-before-run`); the copy left out workspace projects, so the state looked stale, and the install it starts purges `node_modules`, here the worktree's own through the link.
+**Rule:** for a baseline build, run the binary directly with the script's environment (`env VITE_...=... ./node_modules/.bin/vite build`), or make a real worktree and `pnpm install --offline --frozen-lockfile` in it. Never `pnpm run` in a tree whose `node_modules` points at another checkout's.
+**See:** the `build:e2e` script in `package.json`.
 
 ## Process
 
