@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1239-1240`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1267-1268`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look
@@ -655,12 +655,13 @@ stills when WebGL fails.
   help there too, since the drill plays its drone from the speakers while it listens
   (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:152-155`) on the same
   raw microphone chain as this page (`src/lib/mic-manager.ts:47-56`; FACTS 51). It says nothing of
-  the drill's drone's timbre, a plain sine by default (FACTS 60), nor of its run score, which tops
-  out at 80 (below); its editorial note says "about 79 a round" is a round's score, not the run's.
+  the drill's drone's timbre, a plain sine by default (FACTS 60), nor of its run score, which an app
+  fix let reach 100 (below); its editorial note says "about 79 a round" is a round's score, not the
+  run's.
   It is the season plan's link for this lesson (SEASON-2 § 5.1, row 24,
   `docs/plans/find-your-pitch/SEASON-2.md:861`).
 - **The link to swap.** When the slug for the fifth, the major third and the octave ships (SEASON-2
-  § 5.2 item 15, `docs/plans/find-your-pitch/SEASON-2.md:917-926`), the card's link becomes that
+  § 5.2 item 15, `docs/plans/find-your-pitch/SEASON-2.md:917-929`), the card's link becomes that
   slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
   lesson's fifth, major third and octave; do is the drone itself." When the pure-tuning option ships
   (the same item), the sentence on 79 goes. Both are lines in LESSON.md's editorial note.
@@ -677,13 +678,13 @@ stills when WebGL fails.
   for the drill's drone with harmonics up to at least the sixth, whatever the app's instrument, so
   its fifths and thirds can beat as this page's do (FACTS 66). The card says nothing of the drone,
   so none of its lines changes when it ships.
-- **Needed: Drone Intonation's run score reweighted**, the app's fix: the run scores
-  round(accuracy × 0.4 + best round × 0.15 + stability × 0.25), at most 80 since richness left the
-  grade on 25 October
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:284-292`), and its
-  level rises only at an average of 90
-  (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so it can never level up.
-  Reweight it so a full score reads 100 (FACTS 60, 66). The card is not the place for it.
+- **Shipped: Drone Intonation's run score reweighted**, the app's fix this package asked for. The
+  run scored round(accuracy × 0.4 + best round × 0.15 + stability × 0.25), at most 80 once richness
+  left the grade on 25 October, and its level rises only at an average of 90
+  (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so it could never level up.
+  Each weight is now divided by their sum, so a full score reads 100 and the level can rise
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:285-295`; FACTS 60,
+  66). The card never named the run score, so none of its lines changes.
 - No premium exercise is linked: Drone Intonation and Ear Lab are free (FACTS 62).
 
 ## Explorer and season data
@@ -698,7 +699,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:346-364`):
 - `pr.link`: `href` `/exercises/thirds-on-a-drone?lesson=24`, `addr`
   `mercurypitch.com/exercises/thirds-on-a-drone`, `label` "Drone Intonation" and `note` "the two
   thirds"; `pr.needs`, "The fifth, third and octave slug and a pure-tuning option (SEASON-2 § 5.2
-  item 15); a drone with harmonics; the run score reweighted", is the team's only: the field is
+  item 15); a drone with harmonics", is the team's only: the field is
   "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [5, 24], [10, 24] and [23, 24], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 24's
   prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:452-457`).
@@ -804,9 +805,8 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 13. **Lesson 23's questions as a module** (`lesson-23/quiz-questions.ts`), so this page imports its
     question 3 (Toys 5).
 14. **Drone Intonation, the app's work** (Practice links): the fifth, third and octave slug and the
-    pure-tuning option (SEASON-2 § 5.2 item 15); a drone with harmonics (proposed here); and its run
-    score reweighted so a full score reads 100, an app fix, since it tops out at 80 and the drill
-    can never level up.
+    pure-tuning option (SEASON-2 § 5.2 item 15); and a drone with harmonics (proposed here). Its run
+    score, reweighted so a full score reads 100 and the drill can level up, has shipped.
 15. **At release, the room's link back**, optional: SEARCH § 8's rows for the exercises and Ear Lab
     gain 24.
 

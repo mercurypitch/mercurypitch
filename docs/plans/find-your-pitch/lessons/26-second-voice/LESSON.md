@@ -79,12 +79,11 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   on do re mi re do in C major, are new; question 2, the predict's question asked again, and
   question 4's play wait for the cold open's choice (FACTS 71 to 74).
 - **The practice card** puts Harmony Stack first, with what the room does to a learner, where the
-  plan's card named only the parts: set the range, open the room, and pick the mode once the friend
-  is in, since a friend who joins late gets neither the mode nor the drill; one sings the tune, not
-  the plan's root, and one a third above; the room plays nothing; on the third its boxes print the
-  tune's letters, until an app fix; and it scores in the octave the host's range sets. The fifth,
-  and any advice on which voices to pair, are left out. Drone Intonation is second, in Lesson 24's
-  words, cut (FACTS 63 to 68).
+  plan's card named only the parts: set the range, open the room, pick the mode and share the link;
+  one sings the tune, not the plan's root, and one a third above; the room plays nothing; its boxes
+  name their notes; and it scores in the octave the host's range sets. The fifth, and any advice on
+  which voices to pair, are left out. Drone Intonation is second, in Lesson 24's words, cut (FACTS
+  63 to 68).
 - **The chips** name both prerequisites, with "Microphone optional" and "Headphones optional" as
   Lesson 24's, and read 16 minutes, the plan's figure, from the built page's estimate; the sound
   gate is Lesson 5's line with this lesson's subject; and the promise says what the learner does,
@@ -93,9 +92,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 The page is published only after Lessons 12 and 24 are live, because its prerequisite chips link
 there and its recall imports their questions. It also waits on the Season 2 kit work, on Lesson
 18's in-time reader, on Lesson 24's headphones and quiet checks and a part that sounds under a take,
-and on this page's own kit work (WEB-SPEC, What the kit and the app still need). It does not wait on
-the app's two Harmony Stack items, the boxes' note names and a friend who joins late (items 15 and
-16): the card describes the room as it is, and its line on the boxes changes when item 15 ships.
+and on this page's own kit work (WEB-SPEC, What the kit and the app still need). The app's two
+Harmony Stack items, the boxes' note names and a friend who joins late (items 15 and 16), have
+shipped, and the card describes the room as it is now.
 
 ---
 
@@ -415,12 +414,12 @@ four semitones doesn't give a harmony in its key.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Harmony Stack, in Jam
-- Text: With a friend: set your Singing Voice Range in Settings, open a Jam room and share its link;
-  once your friend is in, pick Harmony Stack under More controls. One of you sings the room's tune,
-  the other a third above it, in the key, each scored on their own part. It plays nothing; on the
-  third, its boxes print the tune's letters. It scores each note in the octave your range sets, not
-  an octave away. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume,
-  and stop immediately if anything feels uncomfortable.
+- Text: With a friend: set your Singing Voice Range in Settings, open a Jam room, pick Harmony Stack
+  under More controls and share the room's link. One of you sings the room's tune, the other a third
+  above it, in the key, each scored on their own part. It plays nothing; its boxes name their notes.
+  It scores each note in the octave your range sets, not an octave away. Sore, hoarse or unwell
+  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
+  uncomfortable.
 - Address: Practise it free: **mercurypitch.com/jam**
 - Second drill: Alone, Drone Intonation holds a drone and names a third to sing above it, without
   playing it. Headphones help: its drone plays while it listens. It too wants each note in the
@@ -431,26 +430,27 @@ four semitones doesn't give a harmony in its key.
 _[Editorial: the addresses link `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. The
 page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
 First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
-(FACTS 67). Harmony Stack's lines say what the room does to a learner, in the order that works
-today: the room's octave is the host's range, which reads tenor until it is set; the mode and the
-drill reach only a friend already in the room, so the host picks Harmony Stack once the friend is
-in; the room plays nothing, not even a first note; on the third, its boxes print the tune's letters;
-and it scores every note unfolded, in the host's octave (FACTS 63, 63a, 63b and 64). When the app
-sends the drill and the mode to a friend who joins late (WEB-SPEC, What the kit and the app still
-need, item 16), the order matters less; when the boxes name each part's own notes (item 15), "on the
-third, its boxes print the tune's letters" becomes "its boxes name their notes". This page's own
-reader counts any octave, so the card says "not an octave away". The card names the tune, not the
-plan's root, and leaves out the fifth a third singer takes, which runs a semitone past the bass
-preset's top. It gives no advice on which voices to pair: two lower or two higher voices keep every
-note of the tune and the third inside their presets, but with no room at the tenor's floor or the
-soprano's, under the two semitones the series' range rule asks, so the table stays on the coach's
-list. Drone Intonation's lines are Lesson 24's card's, cut to what this page needs: it names its
-note, as Lesson 24's FACTS reads it, and its sentence on scoring a pure third stays on Lesson 24's
-card, since this page teaches no tuning (FACTS 65). The page calls no interval hard, and neither
-drill writes a staff. Both drills ask for the voice, so the rest version keeps neither and names
-Harmony Stack, in Lesson 10's form (FACTS 66). When the harmony-line drill ships (SEASON-2 § 5.2
-item 17), it takes the card's first place, as the drill a learner can do alone, with its own care
-lines and the coach's look (FACTS 68).]_
+(FACTS 67). Harmony Stack's lines say what the room does to a learner: the room's octave is the
+host's range, which reads tenor until it is set; the host picks Harmony Stack before or after the
+friend joins, since a friend who joins late is sent the room's drill and its mode; the
+room plays nothing, not even a first note; its boxes name each part's own notes; and it scores
+every note unfolded, in the host's octave (FACTS 63, 63a, 63b and 64). Until the app's two fixes
+(WEB-SPEC, What the kit and the app still need, items 15 and 16), the card had the host pick the
+mode once the friend was in and said "on the third, its boxes print the tune's letters". This
+page's own reader counts any octave, so the card says "not an octave away". The card names the tune,
+not the plan's root, and leaves out the fifth a third singer takes, which runs a semitone past the
+bass preset's top. It gives no advice on which voices to pair: two lower or two higher voices keep
+every note of the tune and the third inside their presets, but with no room at the tenor's floor or
+the soprano's, under the two semitones the series' range rule asks, so the table stays on the
+coach's list. Drone Intonation's lines are Lesson 24's card's, cut to what this page needs: it names
+its note, as Lesson 24's FACTS reads it, and its sentence on scoring a pure third stays on Lesson
+24's card, since this page teaches no tuning (FACTS 65). The page calls no interval hard, and
+neither drill writes a staff. Both drills ask for the voice, so the rest version keeps neither and
+names Harmony Stack, in Lesson 10's form (FACTS 66). When the harmony-line drill ships on the web
+(SEASON-2 § 5.2 item 17), it takes the card's first place, as the drill a learner can do alone, with
+its own care lines and the coach's look. The native app's Harmony room is that drill there, but no
+web page can open it, so the card leaves it for the lessons in the native app (SEASON-2 § 7 item 14;
+FACTS 68).]_
 
 **Next lesson:** Lesson 27, Seventh chords and inversions. "Add one note to the V chord and it pulls
 towards home. Which note, and why?" One line above it, the tease: "G, B and D going home to C, E and
@@ -458,19 +458,19 @@ G. Now add one note on top."
 
 _[Editorial: the tease is the lead's line and the default, Lesson 27's opening in miniature; Lesson
 27's package owns it and sets it on Lesson 27, as its FACTS 5b says
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/FACTS.md:45`), and the lead binds it.
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/FACTS.md:47`), and the lead binds it.
 The alternative the console can switch to is the lead's too, `three-notes`, "Three notes make a
 chord. Add one more to V, and hear where it goes." This lesson's planned line, "Stack thirds and you
 get a chord. Stack one more on V, and it pulls.", is dropped: it says the added note pulls, which
 leans on Lesson 27's predict, which note makes V pull harder towards home
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/LESSON.md:140-142`). Neither line names
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/LESSON.md:139-141`). Neither line names
 a note to add or says how it pulls, and neither leans on anything this page does not teach (FACTS
 5b).]_
 
 (The kit's next-lesson card, drawn from the season and its lesson copy: the tease sits above the
 hook. Its slot holds Lesson 27's still, its stage as its cold open opens: the ring with the V room
 lit and the I room faint, Merc and Tavi, no bubbles
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:314-317`). It is a picture
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:316-319`). It is a picture
 and plays nothing, and the card stays one link. Until Lesson 27's page is live, the card says
 "Coming later" and "See it on the map": FACTS 5b.)
 

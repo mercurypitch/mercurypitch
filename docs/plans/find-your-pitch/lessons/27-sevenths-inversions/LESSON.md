@@ -82,9 +82,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The quick check** keeps the plan's questions and answers, and rewords question 2 and question
   4's stems and most feedback lines: G7 and "usually" go, question 1 counts letters as Lesson 23
   does, and a wrong answer's line no longer gives the answer (FACTS 75 to 78).
-- **The practice card** says what Chord Stacker does at every level, its pace and its printed
-  sharps included, which its own help does not, and what waits; Stack's line says its six choices
-  hold no major seventh chord (FACTS 62 to 69).
+- **The practice card** says what Chord Stacker does at every level, its printed sharps included,
+  and what waits; Stack's line says its six choices hold no major seventh chord (FACTS 62 to 69).
 - **The teases.** This lesson's, on Lesson 26's card, is the lead's, "G, B and D going home to C,
   E and G. Now add one note on top.", with "Three notes make a chord. Add one more to V, and hear
   where it goes." as the alternative; Lesson 26's planned line is withdrawn, since it leans on the
@@ -377,17 +376,16 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Chord Stacker
-- Text: Chord Stacker plays a chord of four notes one at a time, from the bottom up, about a third
-  of a second apart, then you sing each note back in turn; once the top note fades, nothing sounds
-  under you. Its five chords are the major seventh, minor seventh, dominant seventh, diminished
-  seventh and major sixth chords, in a shuffled order, each on the root note you pick, and it
-  doesn't say which one is playing. Every chord starts on its root: it has no triads or inversions
-  yet. It shows each note's name as you sing it, every black piano key as a sharp, and a dot that
-  sits on a line when you're in tune, but no staff. It wants each note in the octave it plays, not
-  an octave away. Its root starts low in the voice range saved in Settings, and a chord climbs up to
-  11 semitones above it: set your range there first, under Singing Voice Range. A higher level
-  shortens the top note and gives you less time to sing each one; the five chords, and the pace of
-  the notes, stay the same at every level.
+- Text: Chord Stacker plays a chord of four notes one at a time, from the bottom up, then you sing
+  each note back in turn, with nothing sounding under you. Its five chords are the major seventh,
+  minor seventh, dominant seventh, diminished seventh and major sixth chords, in a shuffled order,
+  each on the root note you pick, and it doesn't say which one is playing. Every chord starts on its
+  root: it has no triads or inversions yet. It shows each note's name as you sing it, every black
+  piano key as a sharp, and a dot that sits on a line when you're in tune, but no staff. It wants
+  each note in the octave it plays, not an octave away. Its root starts low in the voice range saved
+  in Settings, and a chord climbs up to 11 semitones above it: set your range there first, under
+  Singing Voice Range. A higher level plays each note shorter and gives you less time to sing it;
+  the five chords stay the same at every level.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Chord Stacker.
@@ -406,11 +404,11 @@ first visit and the card has no first-visit line (FACTS 69). When Chord Stacker'
 field, triads and inversions ship (§ 5.2 item 18), the card can open it on the dominant seventh and
 its inversions, and "it has no triads or inversions yet" and "it doesn't say which one is playing"
 are looked at again; when the `ear-drill` launch kind ships (item 12), Stack's link can open the
-major chord against the dominant seventh alone, and its last sentence goes (FACTS 68). Chord
-Stacker's own help says each note is "tuned against the notes already sounding"; nothing sounds
-while the learner sings, so the card says so, and the help is the app's to change. Its first three
-notes are cut off about 0.3 s apart at every level: the card describes the drill as it is, and the
-fix is the app's (FACTS 62, 66; hand-back).]_
+major chord against the dominant seventh alone, and its last sentence goes (FACTS 68). Since the
+app's two Chord Stacker fixes, each note sounds its full length before the next, and the top note
+ends before the singing starts, so the card no longer gives a pace or the top note's tail; and the
+drill's own help says what it does, a chord heard a note at a time and each note sung back on its
+own (FACTS 62, 65, 66).]_
 
 **Next lesson:** Lesson 28, Cadences, form and a song in two parts. "How can a song sound as if
 it's ending, then keep going?" One line above it, the tease: "A song in two parts. At bar 8 it
@@ -526,13 +524,12 @@ as Lesson 25 asks for two three-note ones, and its practice card names a sung dr
   after "Effortful" and after "Uncomfortable" the guide is put away for the visit, as Lessons 10,
   12, 15, 23 and 25 do. The Easy and Workable line, the plan's, names the task, not the voice: "So,
   ti, re, fa, then mi, then do: the dominant seventh, going home." (FACTS 61).
-- The practice card's Chord Stacker, the card's one sung drill (FACTS 62 to 65): five four-note
-  chords in a shuffled order, each played a note at a time from its root and then sung back a note
-  at a time, each note's name printed, every black piano key as a sharp; it scores each note against
-  the octave it plays. The first three notes sound about 0.3 s each at every level, each cut off by
-  the next; the top note sounds 0.79 s at level 1, 0.6 s at level 5 and 0.36 s at level 10, and the
-  singer has 3.3, 2.5 and 1.5 s for each note. Below level 10 the top note is still sounding for up
-  to 0.4 s as the first note's time to sing begins; after that nothing sounds under the singer. Its
+- The practice card's Chord Stacker, the card's one sung drill (FACTS 62 to 65): five rounds, one
+  four-note chord each, in a shuffled order, each chord played a note at a time from its root and
+  then sung back a note at a time, each note's name printed, every black piano key as a sharp; it
+  scores each note against the octave it plays. Each note sounds 0.79 s at level 1, 0.6 s at level
+  5 and 0.36 s at level 10, with 0.3 s between two, and the singer has 3.3, 2.5 and 1.5 s for each
+  note; the top note ends 0.4 s before the singing starts, so nothing sounds under the singer. Its
   sung steps are thirds, and the major sixth chord's last a tone; each chord spans up to 11
   semitones, a major seventh, from the root, and the diminished seventh chord holds two tritones,
   never sung as a leap. Its root starts on the saved preset's starting note, from which no chord's

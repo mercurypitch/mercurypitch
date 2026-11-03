@@ -131,8 +131,8 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
 
 ## Length
 
-The learner copy is 2,221 words on `scripts/lesson-words.mjs`, every branch counted, under the
-series' cap of 2,379 by 158 (FACTS 3). The page runs about 15 minutes: 9.33 minutes of reading at
+The learner copy is 2,224 words on `scripts/lesson-words.mjs`, every branch counted, under the
+series' cap of 2,379 by 155 (FACTS 3). The page runs about 15 minutes: 9.34 minutes of reading at
 238 words a minute and about 6.1 of sound, toys and tasks. That is past MASTER-PLAN § 4.2's budget,
 "8 to 12 minutes of active time, 500 to 900 words", as every Season 1 page from Lesson 3 is. The
 chip's figure is an estimate until the run toy and the take are timed in their lab, as SEASON-2 §
@@ -165,7 +165,7 @@ The research predict has no lock hints, the beads' names are drawn on canvas, Le
 hidden (Toys 1), "Do is D3" is the chart's summary for a screen reader, never printed, and Sing it
 has one sound-off hint for every button, not one a button as Lesson 9's has, which is what keeps
 this page under Lesson 8's measured 174 to 206 (Lesson 8 FACTS 4). The built page then lands near
-2,372, 7 under the cap.
+2,375, 4 under the cap.
 
 **Cuts.** To make room for the smaller run, Play it smudged and the stairs' printed names, the page
 has taken the first cut the package named, Step 4's last sentence, "On the staff, a dot over or
@@ -490,9 +490,10 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
 
 - **Scale Runner**, then choose Pentatonic: the major pentatonic, six notes up or down from the
   preset's anchor, one note at a time, each played, then a window to sing it back, 2 s at its
-  starting level and longer if it eases, scored in the octave it plays (FACTS 64 to 66). The card
-  says it is an echo, good for tuning the pattern, that this page is where the run is sung, and
-  that it starts from the voice range saved in Settings, under Singing Voice Range (FACTS 66).
+  starting level, shorter if its level rises and longer if it eases, scored in the octave it plays
+  (FACTS 64 to 66). The card says it is an echo, two seconds a note and less as its level rises,
+  good for tuning the pattern, that this page is where the run is sung, and that it starts from the
+  voice range saved in Settings, under Singing Voice Range (FACTS 66).
 - **Staccato Precision**, the second drill: short notes from the major scale, shuffled, eight at its
   starting level, fewer and longer if it eases and shorter if its level rises, each sung back in
   the octave it plays (FACTS 67). The rest card drops it, since it asks for the voice (FACTS 72).
@@ -606,10 +607,11 @@ are listed so this page's needs are in one place.
     `alternativeHeadline`, `teaches` and `timeRequired` `PT15M`, and on release the llms.txt line,
     each checked against the predict (FACTS 1a).
 12. **The practise links that wait** (Practice links), the app's work: Scale Runner's scale types
-    and launch field (SEASON-2 § 5.2 item 13). Two app notes found on the way, for the app's own
-    list: Staccato Precision's help says it scores "timing", which it does not
-    (`src/features/exercises/exercise-help.ts:206`); and Scale Runner's grade is at most 80, so its
-    level can ease but never rise (FACTS 64, 67).
+    and launch field (SEASON-2 § 5.2 item 13). The two app notes found on the way have shipped:
+    Staccato Precision's help says what it scores, pitch and not timing
+    (`src/features/exercises/exercise-help.ts:225`); and Scale Runner's grade reaches 100, so its
+    level can rise as well as ease, and the card says its window shortens as the level rises (FACTS
+    64, 67).
 
 ## Decisions for the owner
 

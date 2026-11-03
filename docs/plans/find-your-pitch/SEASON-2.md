@@ -917,26 +917,34 @@ and First Light does not step aside. Item 21 fixes it.
 15. **Drone Intonation for Lesson 24**: a slug with intervals 7, 4 and 12 (data, one registry line;
     its pool, use-drone-intonation-controller.ts:18-25, and launch intervals, :41-46). A "pure"
     scoring option, just fifths and thirds as targets, is code with tests; until it ships, Lesson 24
-    says the drill scores to the piano's equal-tempered notes (:15-16). Two more fixes, code with
+    says the drill scores to the piano's equal-tempered notes (:15-16). One more fix, code with
     tests: a drone with harmonics up to at least the sixth, whatever the app's instrument, so its
-    fifths and thirds can beat; and the run score reweighted so that a full score reads 100. Today
-    `round(accuracy × 0.4 + best round × 0.15 + stability × 0.25)` tops out at 80, since richness
-    left the grade on 25 October (use-drone-intonation-controller.ts:284-292), and the level rises
-    only at an average of 90 (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so
-    the drill can never level up (Lesson 24 FACTS 60, 66).
-16. **Interval Trainer's `perfect-intervals`** slug, intervals 5, 7 and 12 (data). Lesson 23.
+    fifths and thirds can beat. The run score's reweighting has shipped. Once richness left the
+    grade on 25 October, `round(accuracy × 0.4 + best round × 0.15 + stability × 0.25)` topped
+    out at 80, under the level's rise at an average of 90
+    (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`); each weight is now divided
+    by their sum, so a full score reads 100 and the drill can level up
+    (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:285-295`, scoring
+    version 2 at `src/features/exercises/exercise-comparability.ts:35-39`). Scale Runner had the
+    same cap and the same fix (Lesson 20 FACTS 64; Lesson 24 FACTS 60, 66).
+16. **Interval Trainer's `perfect-intervals`** slug, intervals 5, 7 and 12 (data). Lesson 23. The
+    native app's Leap, the third Ear room, has the singer sing fourths and fifths up at its first
+    level (`src/features/leap/leap-rules.ts:11-13`), but no lesson page can open it (§ 7 item 14).
 17. **A harmony-line drill** (code with tests): the app plays a melody and the learner sings a
     diatonic third above or below it, scored per note, octave-folded, against the line computed with
     `diatonicStepUp` (`src/lib/jam/jam-modes.ts:108`), with a headphones prompt. Lessons 26 and 28.
+    Met in part, in the native app only: its Harmony room sings a line and has the singer sing a
+    third above it, but no lesson page can open it (§ 7 item 14). The web still needs the drill;
+    that room's line, its third and its judge are there to build on (`src/features/harmony/`).
 18. **Chord Stacker's chord types and inversions** (code with tests): a chord-type launch field and
-    triads (CURRICULUM § 4 item 4), and inversions; today it shuffles five four-note chords
-    (`use-chord-stacker-controller.ts:13-19`, :86-99). Two fixes beside it, not blocking: its play
-    loop waits only a fixed 300 ms after each note (`use-chord-stacker-controller.ts:144-162`), so
-    notes 1 to 3 are cut off 0.3 s in at every level, and it should wait each note out, as Arpeggio
-    Jumper does; and its help (`src/features/exercises/exercise-help.ts:193-200`) says each note is
-    tuned against the notes already sounding, though nothing sounds while the learner sings, so it
-    takes the text Lesson 27 proposes (Lesson 27 WEB-SPEC, What the kit and the app still need, item
-    10). Lesson 27.
+    triads (CURRICULUM § 4 item 4), and inversions; today a run is five rounds, one four-note chord
+    each, shuffled (`use-chord-stacker-controller.ts:13-19`, :86-99). The two fixes beside it have
+    shipped. Each note now sounds its full length before the 300 ms gap, as Arpeggio Jumper's do,
+    where notes 1 to 3 were cut off 0.3 s in at every level, and the top note ends before the
+    singing starts (`use-chord-stacker-controller.ts:144-168`). The help says what the drill does, a
+    chord heard a note at a time and each note sung back on its own
+    (`src/features/exercises/exercise-help.ts:211-219`), with the summary and first sentence Lesson
+    27 proposed (Lesson 27 WEB-SPEC, What the kit and the app still need, item 10). Lesson 27.
 19. **A cadence-type ear drill** (a bank of perfect, imperfect, plagal and interrupted cadences is
     data; a new drill, or a mode of Cadence, which names progressions today,
     `src/lib/ear/progressions.ts:57-59`, is code with tests). Lesson 28.
@@ -971,22 +979,21 @@ and First Light does not step aside. Item 21 fixes it.
     the analysis buffer trim its peaks. The hold summary takes its subject as an option. Lesson 22's
     page ships only with it (Lesson 22 WEB-SPEC, What the kit and the app still need, item 6, with
     Tests 8 to 10). Lessons 22 and 24.
-23. **Harmony Stack's note names** (code with a test, small): `harmoniseItems` moves a part's notes
-    but keeps the tune's note name (`src/lib/jam/jam-modes.ts:134-153`), so the third's boxes over
-    the C major scale on C4 read C4 to G4, A5 and B5 where they sit at E4 to D5. The fix names each
-    moved note from its MIDI number, and the test that pins the octave and frequency
-    (`src/tests/jam-modes.test.ts:126-132`) pins the name too. The same edit can mend the comment "a
-    fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:209-210`): `roleCountFor` caps
-    the parts at three, and a fourth singer sings the tune. Until it ships, Lesson 26's practice
-    card describes the boxes as they are (Lesson 26 WEB-SPEC item 15). Lesson 26.
-24. **Harmony Stack for a friend who joins late** (code with a test, small): the mode and the drill
-    go only to the channels open when the host picks the mode (`selectJamRoomMode`,
-    `src/stores/jam-store.ts:1315-1320`; `broadcastData`, `src/lib/jam/service.ts:1141-1148`), and a
-    joining peer is sent only a song (`onPeerJoined`, `src/stores/jam-store.ts:1971-1983` at
-    `c60f0fdcb`), so a friend who joins after the pick stays in unison on their own scale. The host
-    sends the drill and the mode to a peer whose channel opens, as it does a song, with a test that
-    a late joiner gets both. Until it ships, Lesson 26's card has the friend join first (Lesson 26
-    WEB-SPEC item 16). Lesson 26.
+23. **Harmony Stack's note names**, shipped: `harmoniseItems` names each moved note from its own
+    pitch (`src/lib/jam/jam-modes.ts:141-151`), so the third's boxes over the C major scale on C4
+    read E4 to D5, where they read the tune's C4 to G4, A5 and B5, and a test pins the names
+    (`src/tests/jam-modes.test.ts:134-174`). The comment "a fourth singer lands on the seventh"
+    stays (`src/lib/jam/jam-modes.ts:209-210`), though `roleCountFor` caps the parts at three and a
+    fourth singer sings the tune: a one-line fix for the next change there. Lesson 26's practice
+    card says the boxes name their notes (Lesson 26 WEB-SPEC item 15). Lesson 26.
+24. **Harmony Stack for a friend who joins late**, shipped: once a newcomer's channel opens, the
+    host sends them what the room is on, to them alone, so the room already singing carries on:
+    its drill and the mode it is sung in (`sendRoomDrillTo`, `src/stores/jam-store.ts:1322-1338`),
+    or its song (`sendRoomSongTo`, `:665-680`), from `onPeerChannelReady` (`:2301-2315`). Before,
+    the mode and the drill went only to the channels open when the host picked them, and the song
+    went out on the room's announcement, before the newcomer had a channel, so a friend who joined
+    after the pick stayed in unison on their own scale. Lesson 26's card no longer has the friend
+    join first (Lesson 26 WEB-SPEC item 16). Lesson 26.
 
 The kit's own work (the staff, rhythm on the staff, the circle, two voices, the vibrato view,
 headphones) is in § 6.2.
@@ -1131,6 +1138,8 @@ lines, which a 1080p encode may soften, and no Season 1 film had to show them.
 In MASTER-PLAN § 12's style: each item was proposed with a recommendation and its reason. The owner
 took every recommendation on 1 November 2026 ("as for season 2 yes recommended sounds great"), so each
 item is decided as recommended, here and, where it changes them, in MASTER-PLAN § 12 and CURRICULUM.
+Item 14 came later, on 3 November 2026, once main had built the native app's Harmony room; the
+owner had asked for the recommended choice, and the coach reviews it with Lessons 26 and 28.
 
 1. **Decided (1 November 2026): number on, Lessons 15 to 28 at `/learn/15` to `/learn/28`.** As recommended: global
    numbers, with "Season 2 · Lesson 15" in the masthead. Reason: everything already keys on one
@@ -1194,6 +1203,25 @@ item is decided as recommended, here and, where it changes them, in MASTER-PLAN 
     matching § 5. Reason: Season 2 has no room for it, and diction sits with style.
 13. **Decided (1 November 2026): reading stops at three sharps and three flats.** As recommended in § 1.1. Reason: a
     beginner meets each signature several times; the circle still shows all twelve.
+14. **Decided (3 November 2026): the native app's Harmony room meets § 5 item 17 in part, and the
+    web cards keep their links.** As recommended. Harmony, the fourth Ear room (2 November 2026;
+    `docs/plans/ear-rooms.md`, Room 4), is item 17's drill: Merc sings a short line and the singer
+    sings it a third above, in the key, each note heard until it holds in a band, taking turns on
+    the speaker or together in headphones (`src/features/harmony/harmony-rules.ts:5-7`, `:17-21`).
+    But it is the native app's, as the owner decided on 29 October 2026
+    (`docs/plans/ear-rooms.md:27-28`): it rides `PREMIUM_EXERCISES`, which is false on the web
+    (`src/lib/native-build.ts:53-56`, `:68`), so no lesson page can open it. And it differs from
+    item 17 in three ways: its lines are three to five notes of a major key, drawn at random, not a
+    tune the lesson chooses (`src/features/harmony/harmony-rules.ts:10-15`; `harmony-line.ts:5-8`,
+    `:17`); a third below comes only at Professional, two lines in six (`harmony-rules.ts:111`);
+    and it folds no octave at any level, placing each line in the singer's range instead (`:90`,
+    `:104`, `:118`; `harmony-line.ts:12-14`). So Lesson 26's card keeps Harmony Stack and
+    Drone Intonation, Lesson 28's keeps Karaoke Night and Cadence, and item 17 stays open for the
+    web. When the lessons reach the native app, Lesson 26's card opens Harmony first, as the drill
+    a learner can do alone; its "How it works" demo sings the harmony wrong, with Merc's own note
+    where the third goes, then right (`docs/plans/ear-rooms.md:486-495`), the slip Lesson 26's
+    reader names ("That was Merc's note"). Reason: a card must open where its reader is, and on a
+    web page a room the web cannot open is a dead end.
 
 ## 8. Risks and a production order
 

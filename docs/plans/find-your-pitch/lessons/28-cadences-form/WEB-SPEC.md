@@ -23,10 +23,10 @@ signatures (Lesson 21's item 4,
 `docs/plans/find-your-pitch/lessons/21-keys-circle/WEB-SPEC.md:459-463`) and rhythm on the staff (§
 6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing flow with a take read in
 time and its marks (its items 4, 5, 7 and 8,
-`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:657-708`); Lesson 24's headphones
-check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:747-755`);
+`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:658-709`); Lesson 24's headphones
+check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:748-756`);
 Lesson 26's options for them, its part under a take and its reader's rule for a note sung on the
-other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:661-687`); and
+other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:660-686`); and
 Lesson 14's recorder
 (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:564-591`) and its rest-aware
 close (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:877-886`). This spec
@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1239-1240`).
+`docs/plans/find-your-pitch/SEASON-2.md:1267-1268`).
 
 ## Look
 
@@ -441,7 +441,7 @@ notes in the band.
 **The reader** is Lesson 18's in-time reader as its spec gives it
 (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:449-505`), with Lesson 26's input
 of the other part's notes and its rule for a note sung on the other part's note
-(`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:451-479`): this page restates
+(`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:450-478`): this page restates
 neither. It reads fourteen notes, twelve half notes and two whole notes, at 72 BPM, from the
 learner's part; with headphones the other part's fourteen notes come with their onsets as booked,
 named "Tavi's" or "Merc's". What this page adds is a case, not a rule: at bar 8 both parts sing G,
@@ -619,8 +619,8 @@ stills when WebGL fails.
   stays on offer under the rest card.
 - **Left out: Jam's Harmony Stack**, which the plan links, as SEASON-2 § 5.1's row did until the
   shared entries: it needs two singers in a room, its parts are the room's tune moved up a third or
-  a fifth in the key, not a written part, and its card is Lesson 26's, with its two app items still
-  open (FACTS 74; SEASON-2 § 5.1, row 28,
+  a fifth in the key, not a written part, and its card is Lesson 26's, whose two app items have
+  shipped (FACTS 74; SEASON-2 § 5.1, row 28,
   `docs/plans/find-your-pitch/SEASON-2.md:844` at `85ccd03dd`).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Karaoke Night; the
@@ -629,12 +629,14 @@ stills when WebGL fails.
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Needed: a cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:940-942`), the app's work: a bank of perfect, imperfect,
+  `docs/plans/find-your-pitch/SEASON-2.md:948-950`), the app's work: a bank of perfect, imperfect,
   plagal and interrupted cadences, as a new drill or a mode of Cadence. When it ships, it takes the
   second drill's place, with a card that says what it plays and asks.
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
-  `docs/plans/find-your-pitch/SEASON-2.md:928-930`), the app's work, which Lesson 26's card takes
-  first when it ships; this page's card can add it then, as a drill for singing a part alone.
+  `docs/plans/find-your-pitch/SEASON-2.md:933-935`), the app's work, which Lesson 26's card takes
+  first when it ships; this page's card can add it then, as a drill for singing a part alone. The
+  native app's Harmony room is not linked: it sings short lines a third apart, not a written part,
+  and no web page can open it (SEASON-2 § 7 item 14; FACTS 74).
 - No premium exercise is linked: Karaoke Night's example song and Ear Lab are free (FACTS 76).
 
 ## Explorer and season data
@@ -697,26 +699,26 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 4. **Lesson 18's pieces**, as its spec gives them and this page cites them, without restating them:
    its items 4, 5, 7 and 8, the reading staff, the woodblock and the count-in, the sing flow with a
    take read in time and `kit/read-in-time.ts`, and the marks in the kit's runs
-   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:657-708`), and its item 16, the
-   planning-text test's codes, which this page's T22 and T31 need before it is built
-   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:738-741`). This page's additions
-   to the staff toy, code with tests: two staffs in one figure, treble over bass with a brace and
-   the system's bar lines, a part on each with its label; the bar numbers; tags over a bar; numerals
-   under chosen bars; words under notes, "A-" and "men"; the house on do on both staffs; the lock
-   that draws ten empty bars, as the hero's strip, until the page's `onChoice`, in the steps'
-   figure, free play and Sing it's staffs; and the pitch-line
-   view of two parts in two colours. The song's notes need no ledger line: D3 is the bass staff's
+   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:658-709`); its item 16, the
+   planning-text test's lettered codes, has shipped, and this page's T22 and T31, with no letter,
+   were read before it (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`).
+   This page's additions to the staff toy, code with tests: two staffs in one figure, treble over
+   bass with a brace and the system's bar lines, a part on each with its label; the bar numbers;
+   tags over a bar; numerals under chosen bars; words under notes, "A-" and "men"; the house on do
+   on both staffs; the lock that draws ten empty bars, as the hero's strip, until the page's
+   `onChoice`, in the steps' figure, free play and Sing it's staffs; and the pitch-line view of two
+   parts in two colours. The song's notes need no ledger line: D3 is the bass staff's
    middle line and B3 the space above it, F♯4 the treble's bottom space and D5 its fourth line.
 5. **Lesson 24's checks**, its item 6, with Lesson 26's options, its item 5
-   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:673-677`): the check's line
+   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:672-676`): the check's line
    names "Tavi's part" or "Merc's part", and the quiet check plays the first 2.0 s of the run's
    other part; and one for this page: the fail line ends "or choose No headphones to sing alone".
 6. **Lesson 26's part under a take**, its item 6
-   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:678-687`), with its
+   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:677-686`), with its
    repeated-note dip, and this page's breath dip: a breath mark's half beat taken from the note
    before, its level to a quarter; tests: the dips at their times on the audio clock.
 7. **Lesson 26's reader rule**, its item 4's additions
-   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:661-672`), here for fourteen
+   (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:660-671`), here for fourteen
    notes of two and four beats at 72 BPM; tests: this spec's synthetic takes (Tests 7). On the alone
    path the reader is called with no other part.
 8. **Lesson 14's recorder and a playback with a part**: `kit/record.ts` as Lesson 14's spec proposes
@@ -737,7 +739,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 9. **The lab test, on a phone**, before the scored runs ship and before the chip is set, on the
    lab's phones (one iPhone, one Android) and laptops, with the coach where a run is sung:
    - **Silence over the other part from the speakers**, as Lesson 26's item 8 runs it
-     (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:696-713`), here for 26.7 s
+     (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:695-712`), here for 26.7 s
      of a part with a repeated note and three breaths.
    - **The reader**: Lesson 18's lab items on real takes of fourteen notes, here at 72 BPM with
      whole notes, with and without the other part in the headphones: whether learners come in on bar
@@ -882,7 +884,7 @@ parts it adds:
    answers disabled under "Choose an answer at the top to try this." until the cold open's choice,
    and enabled by it (FACTS 80).
 7. **The reader on synthetic takes**, through Voice Mirror's `preprocess`, as Lesson 18's tests run
-   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:865-881`), with the cases of Toys
+   (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:866-882`), with the cases of Toys
    6: on pitch and on time; a beat late; bar 7's two D3s as one held note; bar 8's G in either
    octave read in the band; ti on Tavi's re; mi on Merc's do; the alone path with no other part;
    the other part alone with no voice. No line reads "That was Tavi's note" for a note sung on the
@@ -917,9 +919,9 @@ parts it adds:
 Page tests (the series' own, run on every lesson page): the head test, with the title, the
 description's length and its "A nineteen-minute lesson", the chip and `timeRequired`
 (`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, T22 and T31
-included once the test's pattern takes them (`src/e2e/learn-no-planning-text.spec.ts:39`); the stage
-fits a 390 px screen; first paint within the budget; the claims validator; one sound at a time; no
-background staff or clef; the tour's hold.
+included (`src/e2e/learn-no-planning-text.spec.ts:40`); the stage fits a 390 px screen; first
+paint within the budget; the claims validator; one sound at a time; no background staff or clef;
+the tour's hold.
 
 ## Contract
 

@@ -32,7 +32,7 @@ module in `src/features/lessons/lesson-22/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season pairs it with Lesson 20 for the
 coach, and it can go out with Voice Mirror's link alone (SEASON-2 § 8.2 item 5,
-`docs/plans/find-your-pitch/SEASON-2.md:1236-1237`).
+`docs/plans/find-your-pitch/SEASON-2.md:1264-1265`).
 
 ## Look
 
@@ -710,7 +710,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - **No live band state** for a take: the lit edge, the glow and the band words off until the take
      ends.
    - With these the page meets the season's vibrato view for its own needs (SEASON-2 § 6.2 item 6,
-     `docs/plans/find-your-pitch/SEASON-2.md:1072`): Sing it draws the learner's line and its
+     `docs/plans/find-your-pitch/SEASON-2.md:1079`): Sing it draws the learner's line and its
      middle, and gives its rate and extent in words. SEASON-2 § 6.1 item 6 calls the trace beside the
      ribbon "the measured wave"; on this page it is Merc's synthesised wave, labelled "sung" (FACTS
      68).
