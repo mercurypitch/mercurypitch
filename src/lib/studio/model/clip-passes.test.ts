@@ -1,11 +1,12 @@
 // Studio clip pass tests — a loop take's clip keeps its passes, plays one, and swaps it as one undoable edit.
 import { describe, expect, it } from 'vitest'
+import { laneFreezeKeys } from '../playback/lane-freeze'
 import { compileStudioArrangement } from './arrangement-plan'
 import { studioClipAssetIds, studioClipPass, studioSongAssetIds, } from './clip-passes'
 import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
 import { studioFixture, TEST_NOW } from './model.test-fixtures'
-import type { StudioAsset } from './types'
+import type { StudioAsset, StudioProject } from './types'
 import { validateStudioProject } from './validation'
 
 /** The fixture's take as a loop take of three passes, the newest heard. */
@@ -77,6 +78,26 @@ describe('Studio clip passes', () => {
     ])
     const undone = undoStudioCommand(chosen, options)
     expect(undone.present.clips[0].assetId).toBe('take-1-pass-3')
+  })
+
+  it('gives the lane a new freeze key when its clip plays another pass, so a frozen lane renders again', () => {
+    const { project, assets } = loopTake()
+    const choose = (from: StudioProject, assetId: string) =>
+      applyStudioCommand(
+        from,
+        { type: 'choose-pass', clipId: 'clip-1', assetId },
+        { assets, now: TEST_NOW },
+      )
+    const before = laneFreezeKeys(project, assets)
+    const [trackId] = [...before.keys()]
+    const chosen = choose(project, 'take-1-pass-2')
+    expect(laneFreezeKeys(chosen, assets).get(trackId)).not.toBe(
+      before.get(trackId),
+    )
+    // The pass heard before brings its key back, and its render with it.
+    expect(
+      laneFreezeKeys(choose(chosen, 'take-1-pass-3'), assets).get(trackId),
+    ).toBe(before.get(trackId))
   })
 
   it('refuses a pass the clip does not keep, and a pass for a clip with none', () => {
