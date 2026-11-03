@@ -13,8 +13,9 @@
 // then hands over to a run built at the target instead (handoff.ts).
 import type { StudioHandoff } from './handoff'
 import { crossSameFrames } from './handoff'
+import { smoothHeardTime } from './heard-clock'
 import type { StudioRun, StudioRunTiming } from './run'
-import { RUN_LOOKAHEAD_SECONDS, runHeardPosition, seekEarliest } from './run'
+import { RUN_LOOKAHEAD_SECONDS, runHeardPosition, runPosition, seekEarliest, } from './run'
 import { wholeFrameAtOrAfter } from './whole-frame'
 
 export { seekEarliest }
@@ -133,4 +134,19 @@ export function seekShownFrame(
   const now = heard.ctx.currentTime
   const seeking = handoffs.some(({ seek, at }) => seek && now < at)
   return position(seeking ? newest : heard)
+}
+
+/**
+ * The frame heard now, read from the output clock between the transport's
+ * ticks (heard-clock.ts), for a playhead that moves every display frame.
+ */
+export function seekFrameNow(
+  heard: StudioRun,
+  newest: StudioRun,
+  handoffs: readonly StudioHandoff[],
+  target: number | null,
+): number {
+  return seekShownFrame(heard, newest, handoffs, target, (shown) =>
+    runPosition(shown, smoothHeardTime(shown.ctx)),
+  )
 }

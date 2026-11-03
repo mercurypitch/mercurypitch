@@ -48,6 +48,8 @@ export function replanLanes(
     plan = freezeStudioPlan(
       compileStudioArrangement(project, assets, {
         startFrame: run.firstFrame,
+        // A range Repeat plays keeps its end whatever the song's length.
+        endFrame: run.fixedEnd ?? undefined,
       }),
       run.frozen,
     )

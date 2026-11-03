@@ -52,6 +52,7 @@ import type { StudioLiveSettings } from './in-place'
 import { fitsInPlace, followInPlace, withDrafts } from './in-place'
 import { freezesOutdated } from './lane-freeze'
 import { replanLanes } from './lane-replan'
+import { playsLoop } from './loop-range'
 import { livePlaybackProfile } from './playback-quality'
 import type { StudioRun } from './run'
 import { frozenSong, openRunEnvelope, releaseRun, RUN_LOOKAHEAD_SECONDS, } from './run'
@@ -164,9 +165,11 @@ export function createStudioKeptRun(options: StudioKeptRunOptions) {
           assets,
         )
     if (outdated) return false
-    // ...and at another playback quality (playback-quality.ts).
+    // ...and at another playback quality (playback-quality.ts), or for
+    // another loop: a range Repeat plays, or the song (loop-range.ts).
     const song = frozenSong(project, run.frozen)
     if (run.graph.profile() !== livePlaybackProfile(song)) return false
+    if (!playsLoop(run, settings.loop ?? null)) return false
     return (
       fitsInPlace(run, project, settings.drafts) ||
       replanLanes(run, project, assets)

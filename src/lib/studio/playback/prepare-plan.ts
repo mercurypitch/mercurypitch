@@ -12,6 +12,8 @@ import type { StudioFrozenLane } from './lane-freeze'
 import { freezeStudioPlan, StudioFrozenBuffers } from './lane-freeze'
 import type { StudioFreezeHold, StudioFreezeLookup } from './lane-freezer'
 import type { StudioRunLayout } from './live-edit'
+import type { StudioFrameRange } from './loop-range'
+import { startInLoop } from './loop-range'
 
 /** A run with no lane frozen. */
 export const NO_FREEZES: ReadonlyMap<string, StudioFrozenLane> = new Map()
@@ -68,8 +70,13 @@ export async function prepareStudioPlan(
   measure: StudioLatencyReader = measureTrackLatencies,
   silentLanes = false,
   frozen: ReadonlyMap<string, StudioFrozenLane> = NO_FREEZES,
+  /** A range's end when Repeat plays one (loop-range.ts); else the song's. */
+  endFrame?: number,
 ): Promise<StudioArrangementPlan> {
-  const base = compileStudioArrangement(project, assets, { startFrame })
+  const base = compileStudioArrangement(project, assets, {
+    startFrame,
+    endFrame,
+  })
   const lanes = base.lanes.filter(
     (lane) => lane.audible || (silentLanes && lane.segments.length > 0),
   )
@@ -93,6 +100,7 @@ export async function prepareStudioPlan(
   }
   const plan = compileStudioArrangement(project, assets, {
     startFrame,
+    endFrame,
     latencies: {
       sampleRate,
       framesByTrack: Object.fromEntries(
@@ -130,6 +138,8 @@ export interface StudioAdmission {
   readonly releaseMemory: () => void
   /** The lanes it plays from a render, held with its buffers. */
   readonly frozen: ReadonlyMap<string, StudioFrozenLane>
+  /** The range end its plan keeps, when Repeat plays a range; else null. */
+  readonly fixedEnd: number | null
 }
 
 /** Where a run's audio and memory come from. */
@@ -157,7 +167,7 @@ export interface StudioRunRequest {
  */
 export async function admitStudioRun(
   { project, assets, ctx, master }: StudioRunRequest,
-  { silentLanes, start }: StudioRunLayout,
+  { silentLanes, start, end }: StudioRunLayout,
   signal: AbortSignal,
   sources: StudioAdmitSources,
 ): Promise<StudioAdmission> {
@@ -177,6 +187,7 @@ export async function admitStudioRun(
       sources.measure,
       silentLanes,
       frozen,
+      end,
     )
     const releaseMemory = await sources.reserve(
       studioGraphWorkingBytes(plan, ctx.sampleRate, master, silentLanes),
@@ -190,7 +201,8 @@ export async function admitStudioRun(
         signal,
       )
       const buffers = held ? frozenLease(ctx, lease, held) : lease
-      return { plan, silentLanes, buffers, releaseMemory, frozen }
+      const fixedEnd = end ?? null
+      return { plan, silentLanes, buffers, releaseMemory, frozen, fixedEnd }
     } catch (error) {
       releaseMemory()
       throw error
@@ -240,18 +252,22 @@ export function studioFirstFrame(endFrame: number, frame: number): number {
 }
 
 /**
- * Where a run asked to start at `startFrame` begins. Throws when nothing
- * would sound, or when a song too short to loop is set to repeat.
+ * Where a run asked to start at `startFrame` begins: inside `loop` when
+ * Repeat plays a range, at its start when the frame is outside it. Throws
+ * when nothing would sound, or when a song too short to loop is set to
+ * repeat.
  */
 export function playableStudioFrom(
   project: StudioProject,
   assets: readonly StudioAsset[],
   startFrame: number,
   repeat: boolean,
+  loop: StudioFrameRange | null = null,
 ): number {
   const content = compileStudioArrangement(project, assets)
   if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
     throw new Error('Add an audible take before playing.')
+  if (loop !== null) return startInLoop(startFrame, loop)
   if (repeat && content.endFrame < 12000)
     throw new Error('A song needs at least a quarter second to repeat.')
   return studioFirstFrame(content.endFrame, startFrame)

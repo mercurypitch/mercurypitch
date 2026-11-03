@@ -20,19 +20,20 @@ import { createStudioBufferCache } from './buffer-cache'
 import { buildStudioGraph } from './graph'
 import type { StudioHandoff } from './handoff'
 import { handoffTiming, heardRun, liveRunsOf, scheduleHandoff } from './handoff'
-import { smoothHeardTime } from './heard-clock'
 import type { StudioDrafts, StudioLaneDraft } from './in-place'
-import { applyDrafts, applyMix, applySound, draftedFreezes, followEdit, followMaster, followRepeat, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
+import { applyDrafts, applyMix, applySound, draftedFreezes, followEdit, followLoop, followMaster, heldMix, previewLaneDraft, previewMacroDraft, withDrafts, } from './in-place'
 import { createStudioKeptRun } from './kept-run'
 import { measureNewChains } from './lane-swap'
 import { firstThatFits, studioRunLayouts } from './live-edit'
+import type { StudioFrameRange } from './loop-range'
+import { isStudioLoopRange, seekInLoop } from './loop-range'
 import { createStudioMasterLevel } from './master-level'
 import { prebuildStudioRun } from './prebuilt-run'
 import type { StudioAdmission, StudioAdmitSources } from './prepare-plan'
 import { admitStudioRun, createLatencyCache, planLatencySeconds, playableStudioFrom, prepareStudioMaster, studioFirstFrame, } from './prepare-plan'
 import type { StudioRun, StudioRunParts, StudioRunTiming } from './run'
 import { buildStudioRun, openRunEnvelope, readLaneLevels, releaseRun, RUN_LOOKAHEAD_SECONDS, runEndsAt, runPosition, runWarmupSeconds, } from './run'
-import { seekInPlace, seekShownFrame, seekTiming } from './seek'
+import { seekFrameNow, seekInPlace, seekShownFrame, seekTiming } from './seek'
 import type { StudioRetirement } from './transport-retire'
 import { cancelHandover, releaseWhenSilent } from './transport-retire'
 import type { StudioTransportAnchor, StudioTransportOptions, StudioTransportState, } from './transport-types'
@@ -82,6 +83,9 @@ export function createStudioTransport(options: StudioTransportOptions) {
   let generation = 0
   let wantsPlayback = false
   let repeat = false
+  // The range Repeat plays instead of the song, while Repeat is on (loop-range.ts).
+  let loop: StudioFrameRange | null = null
+  const looping = () => (repeat ? loop : null)
   const master = createStudioMasterLevel()
   let restartGeneration = 0
   // A seek the heard run could not follow: the next run starts here.
@@ -92,6 +96,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
   const liveSettings = () => ({
     drafts,
     repeat,
+    loop: looping(),
     masterGain: master.fresh(),
     chainLatency: measureLatencies.known,
     freezes: sources.freezes,
@@ -264,12 +269,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
     if (held && seekTarget !== null)
       return seekTiming(held, plan.endFrame, seekTarget, earliest)
     if (held) {
-      const timing = handoffTiming(held, earliest, plan.endFrame)
+      const { startFrame, endFrame } = plan
+      const timing = handoffTiming(held, earliest, endFrame, startFrame)
       if (timing || !repeat) return timing
       // Repeat came on after the held run's loop point: start again from the top.
       retire(held)
       held = null
-      return { fromFrame: 0, audibleEpoch: earliest }
+      return { fromFrame: plan.startFrame, audibleEpoch: earliest }
     }
     return {
       fromFrame: studioFirstFrame(plan.endFrame, restartFrom),
@@ -334,7 +340,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
       // Called immediately by an explicit UI action, before asset reads.
       const ctx = await unlockContext(attempt.signal)
       observeSnapshot(project)
-      const from = playableStudioFrom(project, assets, startFrame, repeat)
+      const from = playableStudioFrom(
+        project,
+        assets,
+        startFrame,
+        repeat,
+        looping(),
+      )
       // A background warm-up does the same work, and a graph it builds
       // ahead is kept: wait for it, not around it.
       await warming
@@ -358,7 +370,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
         measureLatencies,
       )
       const request = { project, assets, ctx, master: sound.full }
-      admitted = await firstThatFits(studioRunLayouts(from, repeat), (layout) =>
+      const layouts = studioRunLayouts(from, repeat, looping())
+      admitted = await firstThatFits(layouts, (layout) =>
         admitStudioRun(request, layout, attempt.signal, sources),
       )
       attempt.signal.throwIfAborted()
@@ -578,7 +591,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     const run = warming.then(async () => {
       if (busy() || abort.signal.aborted) return
       try {
-        playableStudioFrom(project, assets, 0, repeat)
+        playableStudioFrom(project, assets, 0, repeat, looping())
         await warmStudioPlayback(project, assets, abort.signal, {
           lease: options.lease,
           cache,
@@ -610,7 +623,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     if (ctx?.state !== 'running' || !idle()) return
     if (!kept.wants(project, assets, liveSettings())) return
     const measured = master.startingGain(project, null)
-    const ahead = { repeat, measured, buildGraph, sources }
+    const ahead = { repeat, loop: looping(), measured, buildGraph, sources }
     const built = await prebuildStudioRun(project, assets, ctx, signal, ahead)
     if (idle()) kept.adopt(built.run, built.settledAt)
     else releaseRun(built.run)
@@ -661,7 +674,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
      */
     setRepeat(enabled: boolean) {
       repeat = enabled
-      for (const run of [active, held]) if (run) followRepeat(run, enabled)
+      // A run laid out for another loop plays on until setSnapshot hands it over.
+      const settings = { repeat, loop: looping() }
+      for (const run of [active, held]) if (run) followLoop(run, settings)
+    },
+    /** The range Repeat plays, or null for the song: setSnapshot follows it. */
+    setLoopRange(range: StudioFrameRange | null) {
+      loop = isStudioLoopRange(range) ? { ...range } : null
     },
     /** A playing song glides to a newly measured master gain. */
     setMasterGain(value: StudioMasterGainToken | null) {
@@ -721,8 +740,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
       assets: readonly StudioAsset[],
     ): Promise<void> {
       if (!Number.isSafeInteger(frame) || frame < 0) return
-      const end = compileStudioArrangement(project, assets).endFrame
-      const target = Math.min(frame, end)
+      const songEnd = () => compileStudioArrangement(project, assets).endFrame
+      const { target, end } = seekInLoop(frame, looping(), songEnd)
       const token = ++restartGeneration
       if (!wantsPlayback || disposed || target >= end) {
         pause(false, true)
@@ -760,13 +779,7 @@ export function createStudioTransport(options: StudioTransportOptions) {
     frameNow(): number {
       const run = active ?? held
       if (!run || !state.playing) return state.playheadFrame
-      return seekShownFrame(
-        heard() ?? run,
-        run,
-        handoffs,
-        seekTarget,
-        (shown) => runPosition(shown, smoothHeardTime(shown.ctx)),
-      )
+      return seekFrameNow(heard() ?? run, run, handoffs, seekTarget)
     },
     dispose() {
       if (disposed) return

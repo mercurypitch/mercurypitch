@@ -10,6 +10,8 @@ import { keepsChains, replanLanes } from './lane-replan'
 import type { StudioKnownLatency } from './lane-swap'
 import { swapLanes } from './lane-swap'
 import { audibility, graphShape, laneTailFrames, soundKey } from './live-edit'
+import type { StudioFrameRange } from './loop-range'
+import { loopPassEnd, playsLoop } from './loop-range'
 import type { StudioRun } from './run'
 import { RUN_LOOKAHEAD_SECONDS } from './run'
 
@@ -26,6 +28,8 @@ export interface StudioDrafts {
 export interface StudioLiveSettings {
   readonly drafts: StudioDrafts
   readonly repeat: boolean
+  /** The range Repeat plays, with Repeat on and a range set; a run laid out for another needs a new run. */
+  readonly loop?: StudioFrameRange | null
   /** The newest measured master gain, or null to keep the run's own. */
   readonly masterGain: StudioMasterGain | null
   /** What a new chain's latency was measured as: a lane swaps to one only once it is known. */
@@ -134,13 +138,28 @@ export function followMaster(
 export function followRepeat(run: StudioRun, repeat: boolean): boolean {
   if (repeat === (run.untilFrame === Infinity)) return true
   if (!repeat) {
-    run.untilFrame = (run.graph.stopRepeating() + 1) * run.endFrame
+    const last = run.graph.stopRepeating()
+    run.untilFrame = loopPassEnd(run.firstFrame, run.endFrame, last)
     return true
   }
   if (!run.canLoop || !run.graph.repeat()) return false
   run.untilFrame = Infinity
   run.graph.scheduleUntil(run.ctx.currentTime + RUN_LOOKAHEAD_SECONDS)
   return true
+}
+
+/**
+ * Follow Repeat, when the run is laid out for the loop wanted now: a range
+ * plan for the range Repeat plays, a song plan for none (loop-range.ts).
+ * False when only a new run can: a range set, moved or cleared.
+ */
+export function followLoop(
+  run: StudioRun,
+  settings: Pick<StudioLiveSettings, 'repeat' | 'loop'>,
+): boolean {
+  return (
+    playsLoop(run, settings.loop ?? null) && followRepeat(run, settings.repeat)
+  )
 }
 
 /**
@@ -210,7 +229,7 @@ export function playInPlace(
   const profile = run.graph.profile()
   if (graphShape(run.project, profile) !== graphShape(project, profile))
     return false
-  if (!followRepeat(run, settings.repeat)) return false
+  if (!followLoop(run, settings)) return false
   if (missingLane(run, project, settings.drafts)) return false
   followInPlace(run, project, settings)
   return true
@@ -233,7 +252,7 @@ export function followEdit(
   if (freezesOutdated(run.frozen, withDrafts(project, settings.drafts), assets))
     return false
   if (playInPlace(run, project, settings)) return true
-  if (!followRepeat(run, settings.repeat)) return false
+  if (!followLoop(run, settings)) return false
   const followed = keepsChains(run, project)
     ? replanLanes(run, project, assets)
     : swapLanes(run, project, settings.chainLatency)

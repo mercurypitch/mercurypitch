@@ -11,7 +11,9 @@ function heldRun(overrides: Partial<StudioRun> = {}): StudioRun {
     startFrame: 1000,
     audibleEpoch: 2,
     openAt: 2.09,
+    firstFrame: 0,
     endFrame: 96000,
+    fixedEnd: null,
     untilFrame: 96000,
     ...overrides,
   } as StudioRun
@@ -47,6 +49,26 @@ describe('Studio handoff timing', () => {
       fromFrame: 121000 - 96000,
       audibleEpoch: 4.5,
     })
+  })
+
+  it('counts a range loop in passes of the range, and a plan outside it starts at its own start', () => {
+    // Repeat on 48000 to 72000: frame 48000 heard at 2 s, 0.6 s ago.
+    const looping = heldRun({
+      startFrame: 48000,
+      firstFrame: 48000,
+      endFrame: 72000,
+      fixedEnd: 72000,
+      untilFrame: Infinity,
+    })
+    // 28800 frames on: the second pass, 4800 frames in.
+    expect(handoffTiming(looping, 2.6, 96000)).toEqual({
+      fromFrame: 52800,
+      audibleEpoch: 2.6,
+    })
+    // A plan of a later range does not hold that frame: it starts at its own.
+    const timing = handoffTiming(looping, 2.6, 72000, 60000)
+    expect(timing?.fromFrame).toBe(60000)
+    expect(timing!.audibleEpoch * 48000).toBeCloseTo(2.6 * 48000, 6)
   })
 
   it('has no handover once the held run has played its last pass', () => {

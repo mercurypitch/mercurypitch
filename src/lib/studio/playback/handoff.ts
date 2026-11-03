@@ -20,6 +20,7 @@
 // run built at the target, so the two sides are different places in the
 // song, unrelated, and their powers add. That crossfade is equal-power, as a
 // seek in place is (seek-crossfade.ts): a linear pair sags 3 dB halfway.
+import { wrapLoopFrame } from './loop-range'
 import type { StudioRun, StudioRunTiming } from './run'
 import { runTimelineFrame, STUDIO_RUN_RATE } from './run'
 import { wholeFrameAtOrAfter } from './whole-frame'
@@ -47,22 +48,26 @@ export interface StudioHandoff {
  * held run plays no sooner than `earliest`, and no sooner than its own
  * envelope is fully open, so the two runs agree on every frame they share.
  * A song that now ends before that frame starts again from the top, as Play
- * would, on a whole frame of the clock (whole-frame.ts). Null when the held
- * run has played its last pass by then: the song ends there.
+ * would, on a whole frame of the clock (whole-frame.ts), and so does a plan
+ * from `startFrame` (a range Repeat now plays) that does not hold it. Null
+ * when the held run has played its last pass by then: the song ends there.
  */
 export function handoffTiming(
   held: StudioRun,
   earliest: number,
   endFrame: number,
+  startFrame = 0,
 ): StudioRunTiming | null {
   const start = Math.max(earliest, held.openAt)
   // A hair under a whole frame rounds down, so float noise never costs one.
   const frame = Math.ceil(runTimelineFrame(held, start) - 1e-6)
   if (frame >= held.untilFrame) return null
-  const fromFrame = frame % held.endFrame
-  if (fromFrame >= endFrame)
+  const fromFrame = wrapLoopFrame(frame, held.firstFrame, held.endFrame)
+  // Outside the new plan (a range Repeat now plays, or a song now shorter):
+  // it starts again from the plan's start.
+  if (fromFrame >= endFrame || fromFrame < startFrame)
     return {
-      fromFrame: 0,
+      fromFrame: startFrame,
       audibleEpoch: wholeFrameAtOrAfter(start, held.ctx.sampleRate),
     }
   return {

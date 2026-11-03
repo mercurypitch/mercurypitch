@@ -10,6 +10,8 @@ import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { createStudioLaneFreezer } from '@/lib/studio/playback/lane-freezer'
+import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
+import { isStudioLoopRange } from '@/lib/studio/playback/loop-range'
 import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
@@ -111,6 +113,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   const readout = createStudioReadoutFrame(STUDIO_SAMPLE_RATE)
   const ticks = new Set<() => void>()
   const [repeating, setRepeating] = createSignal(false)
+  // The range on the ruler: Repeat plays it, Punch records in it (loop-range.ts).
+  const [range, setRangeSignal] = createSignal<StudioFrameRange | null>(null)
   const [previewPending, setPreviewPending] = createSignal(false)
   const [previewError, setPreviewError] = createSignal<string | null>(null)
   const [previewing, setPreviewing] = createSignal(false)
@@ -187,8 +191,11 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     return primedPreview
   }
 
-  /** `notBefore`: the clock time the playhead's frame is heard no sooner than, for a count-in. */
-  async function play(notBefore = 0): Promise<boolean> {
+  /**
+   * `notBefore`: the clock time the first frame is heard no sooner than, for
+   * a count-in. `fromFrame`: where to start instead of the playhead.
+   */
+  async function play(notBefore = 0, fromFrame?: number): Promise<boolean> {
     const project = options.project()
     const assets = options.assets()
     if (!project || disposed) return false
@@ -196,7 +203,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     stopPreview()
     setPreviewError(null)
     if (options.recording?.() !== true) freezer.resume()
-    return runtime.play(project, assets, undefined, notBefore)
+    return runtime.play(project, assets, fromFrame, notBefore)
   }
 
   function previewContext(blob: Blob, prepared = false): AudioContext {
@@ -392,6 +399,16 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       setRepeating(enabled)
       runtime.setRepeat(enabled)
       if (project) await runtime.setSnapshot(project, assets)
+    },
+    range,
+    /** Set or clear the range; a song playing it on Repeat follows. */
+    async setRange(next: StudioFrameRange | null): Promise<void> {
+      const kept = isStudioLoopRange(next) ? next : null
+      setRangeSignal(kept)
+      runtime.setLoopRange(kept)
+      const project = options.project()
+      if (project && repeating())
+        await runtime.setSnapshot(project, options.assets())
     },
     playing: isPlaying,
     /** The playhead for readouts: ten times a second while the song plays. */
