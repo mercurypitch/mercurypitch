@@ -61,3 +61,17 @@ const FONT = '-apple-system, "SF Pro Display", system-ui, sans-serif'
 /** A canvas font of the stage's face, at `px` pixels. */
 export const stageFont = (weight: number, px: number): string =>
   `${String(weight)} ${String(Math.round(px))}px ${FONT}`
+
+/** `text`, cut short with an ellipsis to fit `maxWidth` in the current font. */
+export function fitText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string {
+  if (ctx.measureText(text).width <= maxWidth) return text
+  let cut = text
+  while (cut.length > 1 && ctx.measureText(`${cut}…`).width > maxWidth) {
+    cut = cut.slice(0, -1)
+  }
+  return `${cut.trimEnd()}…`
+}

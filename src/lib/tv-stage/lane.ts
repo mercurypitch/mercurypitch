@@ -32,14 +32,13 @@ import type { LaneBand, SortedNotes } from './lane-band'
 import { BAND_MIN_SPAN, LANE_AHEAD_SEC, LANE_BEHIND_SEC, LANE_NOW_RATIO, laneBand, noteAt, noteBand, notesInView, sortedNotes, } from './lane-band'
 import type { TrailPoint, Verdict } from './lane-judge'
 import { litSpans, strokesOf, trailPoints } from './lane-judge'
-import type { NoteSprite } from './lane-paint'
 import { chipSprite, dotSprite, flareSprite, fogSprite, glowSprite, markerSprite, noteSprite, panelSprite, VERDICT_COLORS, } from './lane-paint'
 import type { TvStageBox, TvStageLayout } from './layout'
 import { stageFont } from './layout'
 import type { TvStageState } from './model'
 import type { TvStageNote, TvStageReading } from './protocol'
 import type { SpriteCache } from './sprites'
-import { horizontalGradient } from './sprites'
+import { horizontalGradient, stampCapsule } from './sprites'
 import type { Knot } from './trail-spline'
 import { catmullRom, smoothStroke } from './trail-spline'
 
@@ -301,64 +300,6 @@ function drawGuideNames(
   }
 }
 
-/**
- * A note's capsule from `x0` to `x1`, centred on `y`: its two rounded ends
- * as painted, and its middle stretched between them. A note shorter than
- * its height is a round bead.
- */
-function stampNote(
-  ctx: CanvasRenderingContext2D,
-  note: NoteSprite,
-  at: { readonly x0: number; readonly x1: number; readonly y: number },
-): void {
-  const { sprite, height, pad } = note
-  const cap = height / 2
-  let left = Math.round(at.x0)
-  let right = Math.round(at.x1)
-  if (right - left < height) {
-    left = Math.round((at.x0 + at.x1) / 2 - cap)
-    right = left + height
-  }
-  const top = Math.round(at.y - cap - pad)
-  const middle = sprite.width - pad * 2 - height
-  const end = pad + cap
-  ctx.drawImage(
-    sprite.image,
-    0,
-    0,
-    end,
-    sprite.height,
-    left - pad,
-    top,
-    end,
-    sprite.height,
-  )
-  if (right - left > height) {
-    ctx.drawImage(
-      sprite.image,
-      end + 1,
-      0,
-      Math.max(1, middle - 2),
-      sprite.height,
-      left + cap,
-      top,
-      right - left - height,
-      sprite.height,
-    )
-  }
-  ctx.drawImage(
-    sprite.image,
-    end + middle,
-    0,
-    end,
-    sprite.height,
-    right - cap,
-    top,
-    end,
-    sprite.height,
-  )
-}
-
 /** Where a note goes on the lane, how it looks, and where it is lit. */
 export interface NoteBox {
   readonly note: TvStageNote
@@ -400,9 +341,9 @@ function drawNotes(
   const lit = noteSprite(sprites, 'lit', lane.unit)
   if (glass === null || past === null || lit === null) return
   for (const box of noteBoxes(lane, frame)) {
-    stampNote(ctx, box.past ? past : glass, box)
+    stampCapsule(ctx, box.past ? past : glass, box)
     // Where it was sung on pitch, it lights up.
-    for (const [x0, x1] of box.lit) stampNote(ctx, lit, { x0, x1, y: box.y })
+    for (const [x0, x1] of box.lit) stampCapsule(ctx, lit, { x0, x1, y: box.y })
   }
 }
 

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TvStageState } from '@/lib/tv-stage/model'
-import { applyTvStageMessage, EMPTY_TV_STAGE, TRAIL_LIMIT, TRAIL_SECONDS, tvStagePosition, } from '@/lib/tv-stage/model'
+import { applyTvStageMessage, EMPTY_TV_STAGE, LONG_AGO, TRAIL_LIMIT, TRAIL_SECONDS, tvStagePosition, } from '@/lib/tv-stage/model'
 import type { TvStageFrame, TvStageReading, TvStageSong, } from '@/lib/tv-stage/protocol'
 import { TV_STAGE_IDLE } from '@/lib/tv-stage/protocol'
 
@@ -90,6 +90,46 @@ describe('the clock', () => {
 
   it('is at the start before any frame', () => {
     expect(tvStagePosition(fold(song('S')), 1_000)).toBe(0)
+  })
+})
+
+describe('the turn', () => {
+  it('keeps when the song stopped and where, and when it started again', () => {
+    const stopped = fold(
+      song('S'),
+      frame(10, [], { at: 1_000 }),
+      frame(10.05, [], { at: 1_050, playing: false }),
+      frame(10.05, [], { at: 1_100, playing: false }),
+    )
+    const started = applyTvStageMessage(
+      stopped,
+      frame(10.05, [], { at: 4_000 }),
+    )
+
+    expect(stopped.turn).toEqual({ at: 1_050, position: 10.05 })
+    expect(started.turn).toEqual({ at: 4_000, position: 10.05 })
+  })
+
+  it('takes a song’s first frame for no turn, standing still or playing', () => {
+    const standing = fold(
+      song('S'),
+      frame(0, [], { at: 1_000, playing: false }),
+    )
+    // A TV that starts showing the stage in the middle of a song.
+    const playing = fold(song('S'), frame(61, [], { at: 1_000 }))
+
+    expect(standing.turn).toBe(LONG_AGO)
+    expect(playing.turn).toBe(LONG_AGO)
+  })
+
+  it('starts a new song with no turn to fade from', () => {
+    const state = fold(
+      song('First'),
+      frame(10, [], { at: 1_000 }),
+      song('Second'),
+    )
+
+    expect(state.turn).toBe(LONG_AGO)
   })
 })
 

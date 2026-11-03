@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TvStageState } from '@/lib/tv-stage/model'
+import { LONG_AGO } from '@/lib/tv-stage/model'
 import { recordingContext, recordingSprites, } from '@/lib/tv-stage/recording-context.fixture'
 import { createTvStageView, drawTvStage } from '@/lib/tv-stage/renderer'
 import { createSpriteCache } from '@/lib/tv-stage/sprites'
@@ -98,6 +99,7 @@ describe('a frame of the stage', () => {
       [9.8, 64.2],
     ],
     score: null,
+    turn: LONG_AGO,
   }
 
   it('paints its sprites on the first frame and only stamps them on the next', () => {

@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest'
 import type { LyricWindowSegment } from '@/lib/lyric-window-script'
 import { tvStageLayout } from '@/lib/tv-stage/layout'
 import type { TvStageState } from '@/lib/tv-stage/model'
+import { LONG_AGO } from '@/lib/tv-stage/model'
 import type { Written } from '@/lib/tv-stage/recording-context.fixture'
 import { recordingContext, recordingSprites, widthOf, } from '@/lib/tv-stage/recording-context.fixture'
 import { createTvStageView, drawTvStage, LYRIC_FLOOR_PX, lyricSpots, SUNG_LINE_PX, TV_STAGE_COLORS, } from '@/lib/tv-stage/renderer'
@@ -55,9 +56,10 @@ function lyricState(
       notes: [],
       lyrics,
     },
-    clock: { at: 0, position, playing: false, rate: 1 },
+    clock: { at: 0, position, playing: true, rate: 1 },
     trail: [],
     score: null,
+    turn: LONG_AGO,
   }
 }
 

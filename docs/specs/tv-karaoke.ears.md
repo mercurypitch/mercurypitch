@@ -28,7 +28,9 @@ against the code: `091` and `104` shipped; `102` and `103` are built and
 wait only for the device check; `076` shipped, to verify on a TV; `015`,
 `024` and `025` are partly built, and each says which part; `101`'s messages
 are hardened and carry the notes the phone's lane draws; and `005` conflicts
-with `101` on the stage page, an open point under `005`.
+with `101` on the stage page, an open point under `005`. Later that day:
+the view-mode lane is the phone's zen ribbon drawn for a TV (`022`), and
+`028` is added, the paused screen, built in view mode.
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -206,7 +208,7 @@ _Tests:_ `src/e2e/tv-dpad-walk.spec.ts` _(planned)_.
 
 ---
 
-## The TV stage — `REQ-TV-020..027`
+## The TV stage — `REQ-TV-020..028`
 
 ### REQ-TV-020 — Inside the safe area **[next; POC merged, PR #1179]**
 
@@ -319,6 +321,34 @@ The POC entry: `apps/mercurypitch/src/ios-tv-stage.test.ts` ("loads its own
 script and nothing of the app", "reaches only the stage's own modules"). It
 does not meet the last clause yet: Rollup puts the protocol module, which the
 room imports too, in a small chunk the two entries share.
+
+### REQ-TV-028 — A paused screen **[next; view mode built on feat/tv-stage-ribbon]**
+
+**WHILE** the song stands still, the stage shall show over itself a paused
+screen, kept inside the inset of `REQ-TV-020`, with no text under the floor
+of `REQ-TV-022`: the stage dimmed behind it, the song's title, its place on a
+bar across the screen with the time sung and the time left, and the line to
+sing next; **WHILE** the song stands at its start before its first play, the
+same screen shall say the song is ready and to press play on the phone.
+It shall fade in and out over about a quarter of a second, and shall need no
+field the stage protocol does not already carry.
+_As built, view mode:_ after the TV players' paused screens (the tvOS
+transport bar, YouTube on a TV), in the lane's glass. A scrim of the stage's
+own background dims the lane and hides the lyrics' place; over it "Paused"
+or "Ready to sing" in the lyrics' gold, the title at 80 px per 1080 lines,
+then "Next line" and the line, or "Press play on your phone to start"; a bar
+of dark glass with the place in gold glass and a glass knob; a pause mark
+beside the time sung (1:09) and the time left (−19:50), whole seconds that
+add up to the song's length. It follows the frames' `playing`, fading from
+the moment it turned (`turn`, `src/lib/tv-stage/model.ts`); fading out, it
+shows where the song started, not a running bar. With the song's length not
+known yet, the bar and the time left are left out.
+_Tests:_ `src/lib/tv-stage/pause-screen.test.ts` (when it shows, the line
+to sing, the times, the knob's place, the inset, the floor, what it says, no
+blur); `src/lib/tv-stage/model.test.ts` ("the turn"); the screen check
+`apps/mercurypitch/scripts/probe-tv-stage.mjs` (paused part way and ready at
+the start: inside the inset, opaque, every text at 32 px per 1080 lines or
+more, saying "Paused" or "Ready to sing").
 
 ---
 

@@ -8,6 +8,12 @@
 // last reading by the wall clock, so the lane moves at the display's rate
 // while the room sends twenty frames a second.
 //
+// The state also keeps when the song last started or stopped, and where it
+// was then (`turn`): the paused screen fades in and out from that moment
+// (pause-screen.ts). A song's first frame is no turn, playing or not: a TV
+// that starts showing the stage in the middle of a song must not see a
+// paused screen fade out that it never saw come in.
+//
 // The singer's trail keeps a few seconds behind the song's position and no
 // more. A jump back (a seek, a line tapped) drops what was sung after the
 // new position, so the lane does not show a take from a moment that has not
@@ -26,12 +32,26 @@ export interface TvStageClock {
   readonly rate: number
 }
 
+/** When the song last started or stopped, and where it was then. */
+export interface TvStageTurn {
+  /** The wall clock in ms, as a frame's `at`; minus infinity for never. */
+  readonly at: number
+  readonly position: number
+}
+
 export interface TvStageState {
   readonly song: TvStageSong | null
   readonly clock: TvStageClock | null
   /** The singer's recent pitch, oldest first. */
   readonly trail: readonly TvStageReading[]
   readonly score: TvStageScore | null
+  readonly turn: TvStageTurn
+}
+
+/** No turn to fade from: the stage has stood as it is for as long as it has been. */
+export const LONG_AGO: TvStageTurn = {
+  at: Number.NEGATIVE_INFINITY,
+  position: 0,
 }
 
 export const EMPTY_TV_STAGE: TvStageState = {
@@ -39,6 +59,7 @@ export const EMPTY_TV_STAGE: TvStageState = {
   clock: null,
   trail: [],
   score: null,
+  turn: LONG_AGO,
 }
 
 /** How much of the singer's pitch the trail keeps behind the position, in seconds. */
@@ -74,6 +95,7 @@ function trailAfterFrame(
 }
 
 function applyFrame(state: TvStageState, frame: TvStageFrame): TvStageState {
+  const turned = state.clock !== null && state.clock.playing !== frame.playing
   return {
     song: state.song,
     clock: {
@@ -84,6 +106,7 @@ function applyFrame(state: TvStageState, frame: TvStageFrame): TvStageState {
     },
     trail: trailAfterFrame(state, frame),
     score: frame.score,
+    turn: turned ? { at: frame.at, position: frame.position } : state.turn,
   }
 }
 
@@ -100,7 +123,7 @@ export function applyTvStageMessage(
     case 'song':
       return state.song?.title === message.title
         ? { ...state, song: message }
-        : { song: message, clock: null, trail: [], score: null }
+        : { song: message, clock: null, trail: [], score: null, turn: LONG_AGO }
     case 'frame':
       return applyFrame(state, message)
     case 'idle':
