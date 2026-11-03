@@ -553,6 +553,16 @@
   min-height: 59px;
   padding: 0 16px;
 }
+/* Punch, shown while a range is set, widens the transport by a button. The
+   bar's queries below then see the bar that much narrower, so each fold
+   comes as much sooner and the actions keep clear of the transport; the
+   row keeps the bar's full width. */
+.topBar:has([data-studio-punch]) {
+  padding-inline: 19px;
+}
+.topBar:has([data-studio-punch]) > .topBarRow {
+  margin-inline: -19px;
+}
 .songIdentity {
   display: flex;
   flex-direction: column;
@@ -1263,6 +1273,12 @@
   }
   .topBarRow {
     min-height: 67px;
+  }
+  .topBar:has([data-studio-punch]) {
+    padding-inline: 25px;
+  }
+  .topBar:has([data-studio-punch]) > .topBarRow {
+    margin-inline: -25px;
   }
   /* Finger-sized actions are wider, so each fold comes sooner. */
   @container (max-width: 1479px) {

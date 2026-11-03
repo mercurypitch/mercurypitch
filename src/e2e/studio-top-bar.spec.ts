@@ -1,12 +1,14 @@
-// Studio top bar — the transport stays centred at every width, the song title keeps its words, the save status never runs into the transport, and a phone sheet draws no handle it cannot use.
+// Studio top bar — the transport stays centred at every width, the song title keeps its words, the save status never runs into the transport, the actions keep clear of it while Punch shows, and a phone sheet draws no handle it cannot use.
 import { expect, type Page, test } from '@playwright/test'
-import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
 interface BarLayout {
   offCentre: number
   titleClipped: boolean
   statusIntoTransport: number
   smallestTarget: number
+  /** From the transport's right edge to the actions, or null on rows of their own. */
+  actionsGap: number | null
 }
 
 async function barLayout(page: Page): Promise<BarLayout> {
@@ -18,6 +20,11 @@ async function barLayout(page: Page): Promise<BarLayout> {
       const own = box(bar)
       const title = bar.querySelector('[aria-label="Song options"] span')!
       const status = box(bar.querySelector('[role="status"]'))
+      const actions = box(
+        bar.querySelector('[data-tour="studio.history"]')!.parentElement,
+      )
+      const sameRow =
+        actions.top < transport.bottom && actions.bottom > transport.top
       const overlapsTransport =
         status.right > transport.left &&
         status.left < transport.right &&
@@ -37,6 +44,7 @@ async function barLayout(page: Page): Promise<BarLayout> {
             .filter((rect) => rect.width > 0)
             .map((rect) => Math.min(rect.width, rect.height)),
         ),
+        actionsGap: sameRow ? Math.round(actions.left - transport.right) : null,
       }
     })
 }
@@ -57,6 +65,37 @@ test('Studio top bar keeps the transport centred and the song title whole from 1
     const layout = await barLayout(page)
     expect(layout.titleClipped, `${width} px wide`).toBe(false)
     expect(layout.statusIntoTransport, `${width} px wide`).toBe(0)
+  }
+})
+
+test('Studio top bar keeps its actions clear of the transport while Punch shows', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openArrangement(page)
+  const studio = studioRegion(page)
+  await studioClip(page, 'Phrase').click()
+  await studio
+    .getByRole('toolbar', { name: 'Selected clip' })
+    .getByRole('button', { name: 'Range', exact: true })
+    .click()
+  await expect(
+    studio.getByRole('button', { name: 'Punch in', exact: true }),
+  ).toBeVisible()
+  // Punch widens the transport; just past each fold is where it met the actions.
+  for (const width of [1440, 1366, 1280, 1152, 1024, 992, 900]) {
+    await page.setViewportSize({ width, height: 900 })
+    await expect
+      .poll(async () => Math.abs((await barLayout(page)).offCentre), {
+        message: `${width} px wide`,
+      })
+      .toBeLessThanOrEqual(3)
+    // The bar's own 16 px gap, or the transport on a row of its own.
+    expect(
+      (await barLayout(page)).actionsGap ?? 16,
+      `${width} px wide`,
+    ).toBeGreaterThanOrEqual(16)
   }
 })
 
