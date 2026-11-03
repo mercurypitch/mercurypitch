@@ -23,6 +23,12 @@
     transparent 3px 4px
   );
 }
+/* The lit colours never move: the travel above the level is covered in the
+   rail's own colour, shrunk toward the top by the level, so its box never
+   leaves the rail. A reading scales the cover and moves the hold by
+   transform: it lays nothing out and repaints only the rail. Neither gets
+   a layer of its own: compositing one per moving part cost more on every
+   reading than the repaint it saves. */
 .rail i {
   position: absolute;
   inset: 0;
@@ -33,8 +39,18 @@
     var(--studio-meter-over) 90%
   );
 }
-/* The peak hold; at the floor it sits just out of sight, like the level.
-   It moves by transform, so a new reading lays nothing out. */
+/* At the floor the colours go: a cover sharing the rail's edge would let a
+   trace of green through where the two edges blend. */
+.floor i {
+  visibility: hidden;
+}
+.unlit {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  background: var(--studio-rail);
+}
+/* The peak hold; at the floor it sits just out of sight, like the level. */
 .rail b {
   position: absolute;
   right: 0;

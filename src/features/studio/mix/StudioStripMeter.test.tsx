@@ -65,14 +65,15 @@ describe('Studio strip meter', () => {
 
   it('draws the level after the fader and the gain reduction while the song plays, and the floor once it stops', () => {
     const { meter, setLevel } = mount()
-    const level = () => meter.querySelector<HTMLElement>('i')!
+    // The cover over the unlit travel, shrunk toward the top by the level.
+    const cover = () => meter.querySelector<HTMLElement>('span')!
     expect(meter).toHaveAttribute('title', 'Bass: press Play to see its level')
-    expect(level().style.clipPath).toBe('inset(100% 0 0 0)')
+    expect(cover().style.transform).toBe('scaleY(1)')
 
     setLevel({ trackId: 'bass', peak: 0.125, reductionDb: -6, measurement: 1 })
     expect(meter).toHaveAttribute('data-level-db', '-18.1')
     expect(meter).toHaveAttribute('data-reduction-db', '-6.0')
-    expect(level().style.clipPath).toMatch(/^inset\(30\.\d+% 0 0 0\)$/)
+    expect(cover().style.transform).toMatch(/^scaleY\(0\.30\d*\)$/)
     const reduction = meter.querySelectorAll<HTMLElement>('i')[1]
     expect(reduction.style.transform).toBe('scaleY(0.25)')
     expect(meter.title).toBe(
@@ -81,7 +82,7 @@ describe('Studio strip meter', () => {
 
     setLevel(undefined)
     expect(meter).not.toHaveAttribute('data-level-db')
-    expect(level().style.clipPath).toBe('inset(100% 0 0 0)')
+    expect(cover().style.transform).toBe('scaleY(1)')
     expect(meter.querySelectorAll('i')).toHaveLength(1)
   })
 
@@ -90,7 +91,7 @@ describe('Studio strip meter', () => {
     let now = 1000
     vi.spyOn(performance, 'now').mockImplementation(() => now)
     const { meter, setLevel } = mount()
-    const bar = () => meter.querySelector<HTMLElement>('i')!.style.clipPath
+    const bar = () => meter.querySelector<HTMLElement>('span')!.style.transform
     setLevel({ trackId: 'bass', peak: 0.5, reductionDb: null, measurement: 1 })
     const quieter = bar()
 

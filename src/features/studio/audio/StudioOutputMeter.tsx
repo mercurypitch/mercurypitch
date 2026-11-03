@@ -2,9 +2,11 @@
 //
 // It redraws on every meter tick, so a tick changes only styles and the
 // text of the readings: the rails and their labels stay the same elements,
-// and the held peak is a band clipped out of its rail, so a tick lays
-// nothing out again. The readings follow eight times a second, the rails
-// every tick (meter-text.ts); CLIP shows at once.
+// the cover over a rail's unlit travel shrinks by a transform, and the held
+// peak is a band painted on a mark as large as the rail. A tick lays nothing
+// out and repaints only the rails, and no box leaves its rail. The readings
+// follow eight times a second, the rails every tick (meter-text.ts); CLIP
+// shows at once.
 import { For, Index, Show } from 'solid-js'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import { createMeterText } from './meter-text'
@@ -33,27 +35,25 @@ const VERTICAL_SCALE = [-48, -24, -12, 0]
 const markAt = (mark: number) => `${((mark + 60) / 60) * 100}%`
 
 function Rail(props: { peak: number; hold: number; vertical: boolean }) {
-  const unlit = () => 100 - level(props.peak)
-  // The held peak is a 2 px band, just under the level it holds, clipped out
-  // of a mark as large as the rail: it moves without a layout, and its box
-  // never leaves the rail. A hold at the floor sits just out of sight.
-  const hold = () => level(props.hold)
+  // The lit colours stay put: the travel past the level is covered in the
+  // rail's colour, shrunk toward the far end by the level.
+  const lit = () => level(props.peak)
+  // The held peak is a 2 px band, just under the level it holds, painted on
+  // a mark as large as the rail: the band moves, the mark never does. A hold
+  // at the floor sits just out of sight.
+  const hold = () => String(level(props.hold) / 100)
   return (
-    <div class={styles.rail}>
-      <i
+    <div class={styles.rail} classList={{ [styles.floor]: lit() === 0 }}>
+      <i />
+      <span
+        class={styles.unlit}
         style={{
-          'clip-path': props.vertical
-            ? `inset(${unlit()}% 0 0 0)`
-            : `inset(0 ${unlit()}% 0 0)`,
+          transform: props.vertical
+            ? `scaleY(${(100 - lit()) / 100})`
+            : `scaleX(${(100 - lit()) / 100})`,
         }}
       />
-      <b
-        style={{
-          'clip-path': props.vertical
-            ? `inset(${100 - hold()}% 0 calc(${hold()}% - 2px) 0)`
-            : `inset(0 ${100 - hold()}% 0 calc(${hold()}% - 2px))`,
-        }}
-      />
+      <b style={{ '--hold': hold() }} />
     </div>
   )
 }

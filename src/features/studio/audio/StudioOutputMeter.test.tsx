@@ -80,7 +80,8 @@ it('follows the level with its rails every tick and with its numbers eight times
     <StudioOutputMeter snapshot={snapshot()} ready onReset={() => {}} />
   ))
   const meter = screen.getByRole('meter')
-  const rail = () => meter.querySelector<HTMLElement>('i')!.style.clipPath
+  const rail = () =>
+    meter.querySelector<HTMLElement>('i + span')!.style.transform
   const before = rail()
 
   // Act: the next tick, 40 ms on, is louder and clips.
@@ -115,7 +116,7 @@ it('makes the upright peak reading the reset, outside the meter it reads', () =>
   expect(reset).toHaveBeenCalledTimes(1)
 })
 
-it('draws each held peak as a 2 px band clipped out of a mark as large as its rail, out of sight at the floor', () => {
+it('covers the travel past each level, shrunk toward its far end, and paints each held peak on a mark as large as its rail that never moves, out of sight at the floor', () => {
   const snapshot: StudioMeterSnapshot = {
     frames: 48000,
     momentaryLufs: null,
@@ -141,16 +142,21 @@ it('draws each held peak as a 2 px band clipped out of a mark as large as its ra
   const [sidewaysL, sidewaysR, uprightL, uprightR] = [
     ...document.querySelectorAll<HTMLElement>('b'),
   ]
-  // -20 dBFS holds two thirds of the way up the -60 to 0 travel.
-  expect(sidewaysL.style.clipPath).toMatch(
-    /^inset\(0 33\.33\d*% 0 calc\(66\.66\d*% - 2px\)\)$/,
-  )
-  expect(uprightL.style.clipPath).toMatch(
-    /^inset\(33\.33\d*% 0 calc\(66\.66\d*% - 2px\) 0\)$/,
-  )
-  // Nothing held: the band sits just past the floor's edge.
-  expect(sidewaysR.style.clipPath).toBe('inset(0 100% 0 calc(0% - 2px))')
-  expect(uprightR.style.clipPath).toBe('inset(100% 0 calc(0% - 2px) 0)')
+  const [sidewaysCoverL, sidewaysCoverR, uprightCoverL, uprightCoverR] = [
+    ...document.querySelectorAll<HTMLElement>('i + span'),
+  ]
+  // -20 dBFS stands two thirds of the way up the -60 to 0 travel: the cover
+  // keeps the last third, and the band is painted two thirds along.
+  expect(sidewaysCoverL.style.transform).toMatch(/^scaleX\(0\.33\d*\)$/)
+  expect(uprightCoverL.style.transform).toMatch(/^scaleY\(0\.33\d*\)$/)
+  for (const mark of [sidewaysL, uprightL])
+    expect(Number(mark.style.getPropertyValue('--hold'))).toBeCloseTo(2 / 3)
+  // Nothing played or held: the cover hides the whole rail, and the band
+  // sits just past the floor's edge.
+  expect(sidewaysCoverR.style.transform).toBe('scaleX(1)')
+  expect(uprightCoverR.style.transform).toBe('scaleY(1)')
+  for (const mark of [sidewaysR, uprightR])
+    expect(mark.style.getPropertyValue('--hold')).toBe('0')
   // The marks stay where their rails are.
   for (const mark of [sidewaysL, sidewaysR, uprightL, uprightR])
     expect(mark.style.transform).toBe('')
