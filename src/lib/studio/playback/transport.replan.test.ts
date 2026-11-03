@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
+import { withStudioAutomation } from '../model/automation'
 import type { StudioProject } from '../model/types'
 import { RUN_SETTLE_SECONDS } from './run'
 import { crossfadeRamps, envelopeOf, FIRST_HEARD, freshGraphs, LEAD, transportFixture, } from './transport.test-fixtures'
@@ -176,6 +177,28 @@ describe('Studio transport re-plan', () => {
     await f.transport.setSnapshot(quieter, [f.asset])
     expect(f.graph.replan).not.toHaveBeenCalled()
     expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(quieter.tracks[0], true)
+    await finish(f)
+  })
+
+  it('follows a line drawn while the song plays on the running graph, with no re-plan and no new run', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    const f = transportFixture()
+    await f.transport.play(f.project, [f.asset], 0)
+    f.ctx.currentTime = 1
+    const [track] = f.project.tracks
+    const lined = withStudioAutomation(track, 'volume', [
+      { frame: 0, value: -12 },
+      { frame: 48000, value: 0 },
+    ])
+
+    // Act
+    await f.transport.setSnapshot({ ...f.project, tracks: [lined] }, [f.asset])
+
+    // Assert
+    expect(f.graph.replan).not.toHaveBeenCalled()
+    expect(f.graph.setLaneMix).toHaveBeenLastCalledWith(lined, true)
+    expect(f.buildGraph).toHaveBeenCalledOnce()
     await finish(f)
   })
 

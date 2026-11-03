@@ -9,8 +9,10 @@
 // clip edit crosses only the lanes it changes (graph-replan.ts), and neither
 // touches a chain, a fader or a meter. A new effect list builds only its
 // lane's new chain, beside the old one, and crosses the lane to it
-// (graph-swap.ts). An offline render builds the same graph and schedules it
-// once, so a render and Play agree on every lane.
+// (graph-swap.ts). Each lane's volume and pan lines play on a stage after
+// its faders, timed from the same anchor (graph-automation.ts). An offline
+// render builds the same graph and schedules it once, so a render and Play
+// agree on every lane.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -19,6 +21,7 @@ import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import type { StudioArrangementPlan, StudioPlannedLane, } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
+import { adoptSwappedSends, crossAutomation, followAutomation, PASS_GLIDE_SECONDS, scheduleAutomation, setLaneAutomation, startAutomation, } from './graph-automation'
 import type { StudioGraphLane } from './graph-lanes'
 import { buildGraphLane, disposeGraphLane, dynamicsIds, mixLane, scheduleLane, silenceLane, } from './graph-lanes'
 import type { StudioGraphState } from './graph-passes'
@@ -328,11 +331,22 @@ export function buildStudioGraph(
     profile: options.profile ?? FULL_FX_PROFILE,
     buses: parts.buses,
   }
+  startAutomation(state)
   const peakSamples = new Float32Array(PEAK_SAMPLES)
   const playing = () => !state.disposed && !state.parked
   /** Whether the plan holds `fromFrame`: it starts no later and ends after it. */
   const reaches = (fromFrame: number) =>
     fromFrame >= state.planStart && fromFrame < state.endFrame
+  /** Where the lanes' lines are timed from: the anchor, the loop's end and whether it loops. */
+  const linePlace = () =>
+    `${state.epoch} ${state.fromFrame} ${state.endFrame} ${state.looping}`
+  /** Run `change`, then write the lines again from the soonest time if it moved what they are timed from. */
+  const followLines = <T>(change: () => T): T => {
+    const before = linePlace()
+    const result = change()
+    if (playing() && linePlace() !== before) followAutomation(state)
+    return result
+  }
 
   return {
     output,
@@ -343,16 +357,27 @@ export function buildStudioGraph(
       options.quality?.tick(ctx)
       const run = laneRun(state)
       for (const lane of lanes) scheduleLane(ctx, lane, time, run)
+      scheduleAutomation(state, time)
     },
     seekTime: (earliest) => seekTime(state, earliest),
     seek(fromFrame, at) {
       if (!playing() || !reaches(fromFrame) || swapping(state)) return null
       const time = seekTime(state, at)
       restartLanes(state, fromFrame, time, true)
+      crossAutomation(state, time + state.slowest, PASS_GLIDE_SECONDS)
       return time
     },
-    replan: (next, earliest) => replanGraph(state, next, earliest),
-    swapChains: (swaps, earliest) => swapChains(state, swaps, earliest),
+    replan: (next, earliest) =>
+      followLines(() => replanGraph(state, next, earliest)),
+    swapChains(swaps, earliest) {
+      const at = swapChains(state, swaps, earliest)
+      if (at !== null)
+        adoptSwappedSends(
+          state,
+          swaps.map((swap) => swap.trackId),
+        )
+      return at
+    },
     swapping: () => swapping(state),
     park() {
       if (!playing()) return
@@ -373,12 +398,14 @@ export function buildStudioGraph(
       state.parked = false
       if (peaks) output.connect(peaks.tap)
       restartLanes(state, fromFrame, at, false)
+      startAutomation(state)
       return true
     },
     retime(epoch) {
       if (!playing()) return
       for (const lane of lanes) silenceLane(lane)
       restartLanes(state, state.fromFrame, epoch, false)
+      startAutomation(state)
     },
     profile: () => state.profile,
     settle(at) {
@@ -391,6 +418,7 @@ export function buildStudioGraph(
       const lane = byId.get(track.id)
       if (!lane || state.disposed) return
       mixLane(ctx, lane, track, audible)
+      setLaneAutomation(state, lane, track)
       if (audible) wakeLane(ctx, lane)
       else quietLane(ctx, lane)
     },
@@ -415,8 +443,8 @@ export function buildStudioGraph(
         reduction += Math.min(0, lane.chain.readReductionDb(id))
       return reduction
     },
-    repeat: () => repeatLanes(state),
-    stopRepeating: () => stopRepeatingLanes(state),
+    repeat: () => followLines(() => repeatLanes(state)),
+    stopRepeating: () => followLines(() => stopRepeatingLanes(state)),
     readPeaks() {
       return [0, 1].map((channel) => {
         const analyser = peaks?.analysers[channel]

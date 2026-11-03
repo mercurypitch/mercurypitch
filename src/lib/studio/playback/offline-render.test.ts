@@ -4,10 +4,11 @@ import { toneAudio } from '../audio/audio.fixture'
 import { encodeCanonicalPcm, sha256Bytes } from '../audio/canonical-pcm'
 import { studioReservedMemoryBytes } from '../memory-budget'
 import { compileStudioArrangement } from '../model/arrangement-plan'
+import { withStudioAutomation } from '../model/automation'
 import { studioFixture } from '../model/model.test-fixtures'
 import { encodeFrozenLane, laneFreezeKey } from './lane-freeze'
 import { renderStudioArrangement } from './offline-render'
-import type { PlaybackSource } from './playback.test-fixtures'
+import type { PlaybackParam, PlaybackSource } from './playback.test-fixtures'
 import { PlaybackContext } from './playback.test-fixtures'
 
 async function fixture() {
@@ -157,6 +158,76 @@ describe('Studio offline arrangement ownership', () => {
     expect(read).not.toHaveBeenCalled()
     expect(steps.map((step) => step.at)).toEqual([2, 4, 6, 8, 10, 12])
     expect(counts).toEqual([1, 2, 2, 3, 3, 3, 3])
+  })
+
+  it("writes a lane's line as the render nears it, a few seconds ahead, as Play writes it", async () => {
+    // Arrange: twelve seconds, the lane's volume line falling a decibel every 200 ms.
+    const f = await fixture()
+    const frames = 12 * 48000
+    const blob = await encodeCanonicalPcm(toneAudio(frames))
+    const asset = {
+      ...f.asset,
+      normalizedFrameCount: frames,
+      canonicalPcmByteLength: blob.size,
+      canonicalPcmSha256: await sha256Bytes(await blob.arrayBuffer()),
+    }
+    const project = {
+      ...f.project,
+      tracks: [
+        withStudioAutomation(f.project.tracks[0], 'volume', [
+          { frame: 0, value: 0 },
+          { frame: frames, value: -60 },
+        ]),
+      ],
+      clips: f.project.clips.map((clip) => ({
+        ...clip,
+        startFrame: 0,
+        sourceInFrame: 0,
+        sourceOutFrame: frames,
+        fades: { curve: 'linear-amplitude' as const },
+      })),
+    }
+    const steps: { at: number; resume: () => void }[] = []
+    Object.assign(f.ctx, {
+      suspend: (at: number) =>
+        new Promise<void>((resume) => steps.push({ at, resume })),
+      resume: () => Promise.resolve(),
+    })
+    type Gain = ReturnType<PlaybackContext['createGain']>
+    /** How far the stage's line is written: the gain told the most ramps is a stage. */
+    const written = () => {
+      const params = f.ctx
+        .ofType<Gain>('gain')
+        .map((gain) => gain.gain as PlaybackParam)
+      const stage = params.reduce((most, param) =>
+        param.linearRamps.length > most.linearRamps.length ? param : most,
+      )
+      return Math.max(...stage.linearRamps.map((ramp) => ramp.time))
+    }
+
+    // Act: the render stops every two seconds and writes on to four past it.
+    const rendering = renderStudioArrangement(
+      project,
+      [asset],
+      () => Promise.resolve(blob),
+      { createContext: f.createContext, measureLatencies: async () => [0] },
+    )
+    await vi.waitFor(() => expect(f.startRendering).toHaveBeenCalledOnce())
+    const ends = [written()]
+    for (const step of steps) {
+      f.ctx.currentTime = step.at
+      step.resume()
+      await flush()
+      ends.push(written())
+    }
+    f.finish()
+    ;(await rendering).release()
+
+    // Assert: knots every 200 ms from 0.5 s, written to the first past each horizon.
+    expect(steps.map((step) => step.at)).toEqual([2, 4, 6, 8, 10, 12])
+    expect(ends.map((end) => Number(end.toFixed(6)))).toEqual([
+      4.1, 6.1, 8.1, 10.1, 12.1, 12.5, 12.5,
+    ])
   })
 
   it('renders a lane live when its render no longer matches it', async () => {
