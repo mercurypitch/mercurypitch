@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { PLAYBACK_TIERS } from './playback-quality'
 import { LARGE_SONG, MEDIUM_SONG, roleSong, SMALL_SONG, THIS_DESKTOP_US, } from './song.test-fixtures'
-import { songCostInVoiceChains, studioSongChains } from './song-load'
+import { LANE_HOLD_COST, songCostInVoiceChains, studioSongChains, } from './song-load'
 
 const cost = (
   song: ReturnType<typeof roleSong>,
@@ -63,7 +63,8 @@ describe('what a song costs', () => {
   it("adds up to the profiling fixtures' measured offline cost within 10 %", () => {
     // Lanes only (each fixture less the same song with every lane muted), in
     // us per 128 frames: headless Chromium 148 on the desktop whose voice
-    // chain read THIS_DESKTOP_US (evidence: auto-song-kind-costs.json).
+    // chain read THIS_DESKTOP_US (evidence: auto-song-kind-costs.json). Read
+    // before lanes were held at two channels, so their holds are left out.
     const measured = {
       small: {
         roles: SMALL_SONG,
@@ -81,7 +82,9 @@ describe('what a song costs', () => {
     for (const { roles, us } of Object.values(measured))
       for (const tier of PLAYBACK_TIERS) {
         const lanes =
-          cost(roleSong(roles), tier) - songCostInVoiceChains([], tier)
+          cost(roleSong(roles), tier) -
+          songCostInVoiceChains([], tier) -
+          roles.length * LANE_HOLD_COST
         expect(Math.abs((lanes * THIS_DESKTOP_US) / us[tier] - 1)).toBeLessThan(
           0.1,
         )
