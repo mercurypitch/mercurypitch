@@ -1,5 +1,7 @@
 // Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom,
-// or stacked as icons in the dock beside the arrangement while the desk is open.
+// or stacked as icons in the dock beside the arrangement while the desk is open. The dock has room for
+// its seven icons only (dockColumns, StudioTimeline.tsx), so Range and a loop take's pass list stay on
+// the floating bar: with the desk open, a range is drawn on the ruler instead.
 import { For, Show } from 'solid-js'
 import { Copy, Split, Trash2 } from '@/components/icons'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
@@ -132,7 +134,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
         <Copy size={15} />
         <span class={styles.toolbarText}>Duplicate</span>
       </button>
-      <Show when={props.onRange}>
+      <Show when={props.docked !== true && props.onRange}>
         {(setRange) => (
           <button
             type="button"
@@ -154,11 +156,13 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
           </button>
         )}
       </Show>
-      <PassPicker
-        clip={props.clip}
-        writable={props.writable}
-        onCommand={(command) => props.onCommand(command)}
-      />
+      <Show when={props.docked !== true}>
+        <PassPicker
+          clip={props.clip}
+          writable={props.writable}
+          onCommand={(command) => props.onCommand(command)}
+        />
+      </Show>
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
         type="button"

@@ -424,6 +424,35 @@ describe('Studio timeline', () => {
     ).not.toHaveAttribute('aria-orientation')
   })
 
+  it('keeps the dock to the seven icon commands it has room for: Range and the pass list stay on the floating bar', () => {
+    const passes = ['take-2-pass-1', 'take-2-pass-2']
+    const looped = {
+      ...project,
+      clips: [{ ...project.clips[0], assetId: passes[1], passes }],
+    }
+    const [deskOpen, setDeskOpen] = createSignal(true)
+    const { container } = render(() => (
+      <StudioTimeline
+        {...base}
+        project={looped}
+        selectedClipId="clip"
+        onRange={vi.fn()}
+        deskOpen={deskOpen()}
+      />
+    ))
+    const dock = container.querySelector<HTMLElement>('[data-studio-dock]')!
+    // Zoom out, Zoom in, Fit song to width, Split, Duplicate, Delete, Details.
+    expect(within(dock).getAllByRole('button')).toHaveLength(7)
+    expect(within(dock).queryByRole('button', { name: 'Range' })).toBeNull()
+    expect(within(dock).queryByRole('combobox')).toBeNull()
+    setDeskOpen(false)
+    const bar = screen.getByRole('toolbar', { name: 'Selected clip' })
+    expect(within(bar).getByRole('button', { name: 'Range' })).toBeEnabled()
+    expect(
+      within(bar).getByRole('combobox', { name: 'Pass this clip plays' }),
+    ).toHaveValue(passes[1])
+  })
+
   it('says a notice in the status pill, and says it again when it comes again', () => {
     const missed = 'No room on Harmony at 0:05. Added on a new lane.'
     const [notice, setNotice] = createSignal<{ text: string } | null>(null)
