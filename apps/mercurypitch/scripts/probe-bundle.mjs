@@ -2163,14 +2163,30 @@ async function walkRound2(page, ctx, steps) {
     'the room picker',
   )
   await shoot(page, ctx, 'r2-room-picker')
-  // One cover since S4: the B and mock takes are gone from the catalogue and
-  // the binary. The picker and its veil slider stay, with the one entry in
-  // them — asserted as a list, because "B is not offered" and "nothing is
-  // offered" read the same to a check that only looks for B.
+  // Three free covers, in catalogue order with the default first: the Retro
+  // Analog Studio, then the attic and the choir room beside it. The B and mock
+  // takes of the test period are gone from the catalogue and the binary.
+  // Supporter covers follow the free ones once Studio publishes one, so
+  // anything after the third card has to be a supporter card. Asserted as a
+  // list, because "B is not offered" and "nothing is offered" read the same
+  // to a check that only looks for B.
+  const FREE_SING_COVERS = [
+    'Retro Analog Studio',
+    'Rehearsal Attic',
+    'Choir Room',
+  ]
   const covers = await page
     .locator('[data-testid="sing-room-picker"] button[aria-pressed]')
     .allTextContents()
-  if (covers.length !== 1 || !covers[0].includes('Retro Analog Studio')) {
+  const freeInOrder = FREE_SING_COVERS.every(
+    (label, index) =>
+      covers[index]?.includes(label) === true &&
+      covers[index].includes('Included'),
+  )
+  const restSupporter = covers
+    .slice(FREE_SING_COVERS.length)
+    .every((text) => /Supporter edition|Unlocked/u.test(text))
+  if (!freeInOrder || !restSupporter) {
     throw new Error(
       `the picker offers ${covers.length} cover(s): ${covers.map((text) => text.trim().slice(0, 40)).join(' / ')}`,
     )
@@ -2192,7 +2208,7 @@ async function walkRound2(page, ctx, steps) {
     throw new Error(`the room's cover is ${coverNow}`)
   }
   steps.push(
-    'room: the header chip opens the picker, which offers the one Retro Analog Studio cover',
+    'room: the header chip opens the picker, which offers the three free covers with the Retro Analog Studio still the one drawn',
   )
 
   // …and the veil slider moves the scrim it is for.

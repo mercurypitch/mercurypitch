@@ -36,18 +36,16 @@ const COVERS: RuntimeBackgroundOption[] = [
     publicUrl: '/sing/retro-analog-studio.webp',
     premiumAsset: null,
   },
-  // A second cover that does not exist anywhere but here. The surface ships
-  // one today; the picker is still a picker, and choosing needs two.
   {
-    id: 'sing-fixture-second-cover' as RuntimeBackgroundOption['id'],
+    id: 'sing-rehearsal-attic',
     surface: 'sing',
-    label: 'Fixture Second Cover',
-    description: 'A cover this test invents',
+    label: 'Rehearsal Attic',
+    description: 'Oak rafters, an upright piano, one brass lamp at night',
     edition: 'core',
-    focalPoint: { x: 0.5, y: 0.68 },
+    focalPoint: { x: 0.4, y: 0.62 },
     treatment: 'dark',
     access: 'free',
-    publicUrl: '/sing/fixture-second-cover.webp',
+    publicUrl: '/sing/rehearsal-attic.webp',
     premiumAsset: null,
   },
 ]
@@ -98,7 +96,7 @@ function mount(background = controller()) {
 describe('the sing room picker', () => {
   it('offers every cover the surface has', () => {
     mount()
-    for (const label of ['Retro Analog Studio', 'Fixture Second Cover']) {
+    for (const label of ['Retro Analog Studio', 'Rehearsal Attic']) {
       expect(screen.getByText(label)).not.toBeNull()
     }
   })
@@ -106,8 +104,8 @@ describe('the sing room picker', () => {
   it('chooses through the surface controller, so the choice persists', () => {
     const select = vi.fn(() => true)
     mount(controller(select))
-    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
-    expect(select).toHaveBeenCalledWith('sing-fixture-second-cover')
+    fireEvent.click(screen.getByText('Rehearsal Attic').closest('button')!)
+    expect(select).toHaveBeenCalledWith('sing-rehearsal-attic')
   })
 
   it('says which cover was chosen, because nothing else does', () => {
@@ -115,10 +113,10 @@ describe('the sing room picker', () => {
     // reader was told nothing at all. Piano Night's picker has announced its
     // covers since it shipped; this is the same sentence (review F11).
     mount()
-    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
+    fireEvent.click(screen.getByText('Rehearsal Attic').closest('button')!)
     const live = screen.getByTestId('sing-room-picker-live')
     expect(live.getAttribute('aria-live')).toBe('polite')
-    expect(live.textContent).toBe('Fixture Second Cover selected.')
+    expect(live.textContent).toBe('Rehearsal Attic selected.')
   })
 
   it('says nothing when the choice was refused', () => {
@@ -126,7 +124,7 @@ describe('the sing room picker', () => {
     // does not change; announcing one that was not applied is worse than
     // announcing nothing.
     mount(controller(vi.fn(() => false)))
-    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
+    fireEvent.click(screen.getByText('Rehearsal Attic').closest('button')!)
     expect(screen.getByTestId('sing-room-picker-live').textContent).toBe('')
   })
 

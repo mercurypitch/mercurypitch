@@ -146,6 +146,20 @@ describe('background catalog', () => {
       'drum-after-hours-booth',
       ...DRUM_PREMIUM_BACKGROUND_IDS,
     ])
+    expect(listBackgrounds('sing').map((background) => background.id)).toEqual([
+      'sing-retro-analog-studio',
+      'sing-rehearsal-attic',
+      'sing-choir-room',
+    ])
+    expect(
+      listBackgrounds('sing', { includeUnshipped: true }).map(
+        (background) => background.id,
+      ),
+    ).toEqual([
+      'sing-retro-analog-studio',
+      'sing-rehearsal-attic',
+      'sing-choir-room',
+    ])
   })
 
   it('defines a shipped free fallback for every surface', () => {
@@ -154,7 +168,9 @@ describe('background catalog', () => {
       'jam',
       'piano',
       'guitar',
+      'ear',
       'drum',
+      'sing',
     ] as const) {
       const fallback = defaultBackground(surface)
       expect(fallback.surface).toBe(surface)
@@ -251,6 +267,44 @@ describe('background catalog', () => {
             orientation === 'landscape' ? [2048, 1152] : [1440, 2560],
           )
         }
+      }
+    }
+  })
+
+  it('ships all four real, bounded files for every free Sing cover', async () => {
+    // The Sing room IS its cover, so a free one is the shipped Retro Analog
+    // Studio's four files at its four sizes: the room picks the 2x pair on a
+    // phone and the 1x pair elsewhere, upright or on its side.
+    const free = listBackgrounds('sing').filter(
+      (background) => background.access.kind === 'free',
+    )
+    expect(free.map((background) => background.id)).toEqual([
+      'sing-retro-analog-studio',
+      'sing-rehearsal-attic',
+      'sing-choir-room',
+    ])
+    for (const background of free) {
+      const source = background.assetSource
+      expect(source.kind).toBe('public')
+      if (source.kind !== 'public') continue
+
+      for (const [path, size] of [
+        [source.landscape, [2048, 1152]],
+        [source.landscape2x, [3840, 2160]],
+        [source.portrait, [1440, 2560]],
+        [source.portrait2x, [2160, 3840]],
+      ] as const) {
+        expect(path, background.id).toBeDefined()
+        if (path === undefined) continue
+        const publicPath = `public${path}`
+        const bytes = readFileSync(publicPath)
+        expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF')
+        expect(bytes.subarray(8, 12).toString('ascii')).toBe('WEBP')
+        expect(bytes.byteLength).toBeGreaterThan(20_000)
+        expect(bytes.byteLength).toBeLessThanOrEqual(600 * 1024)
+
+        const metadata = await sharp(publicPath).metadata()
+        expect([metadata.width, metadata.height], path).toEqual(size)
       }
     }
   })

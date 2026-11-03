@@ -72,12 +72,14 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   // Phase 6). A ~1K stand-in pair, not a master.
   'ear-regulator-room',
   'ear-glasshouse-bench',
-  // The Sing room's cover. Free and public, because the native Sing tab IS
-  // this room — there is no version of it without a photograph behind the
-  // trace, so it can never sit behind a supporter check. The two other takes
-  // shipped for the test period (device round 2, R5) are gone: the owner
-  // chose this one (S4, 23 Sep 2026).
+  // The Sing room's covers. Free and public, because the native Sing tab IS
+  // a room — there is no version of it without a photograph behind the
+  // trace, so its default can never sit behind a supporter check. The Retro
+  // Analog Studio stays that default (the owner chose it, S4, 23 Sep 2026);
+  // the attic and the choir room are choices beside it in the room's picker.
   'sing-retro-analog-studio',
+  'sing-rehearsal-attic',
+  'sing-choir-room',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -1416,6 +1418,45 @@ export const BACKGROUND_CATALOG = [
     // middle 60%, so the focus is low: the calm band the pitch trace lives in
     // (landscape y 0.13-0.58, portrait y 0.08-0.56) stays an empty slat wall.
     focalPoint: { x: 0.5, y: 0.68 },
+  },
+  // The Sing room's other covers keep the same rule: nothing bright in that
+  // calm band, the one lamp below it. Each focal point is where its lamp
+  // sits, averaged over the portrait and the landscape file.
+  {
+    id: 'sing-rehearsal-attic',
+    surface: 'sing',
+    label: 'Rehearsal Attic',
+    description: 'Oak rafters, an upright piano, one brass lamp at night',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/sing/rehearsal-attic.webp',
+      '/sing/rehearsal-attic-4k.webp',
+      '/sing/rehearsal-attic-portrait.webp',
+      '/sing/rehearsal-attic-portrait-2x.webp',
+    ),
+    // The band is plain limewashed plaster between the rafters; the lamp and
+    // the piano stand below it, left of centre.
+    focalPoint: { x: 0.4, y: 0.62 },
+  },
+  {
+    id: 'sing-choir-room',
+    surface: 'sing',
+    label: 'Choir Room',
+    description: 'Empty risers after hours, one lamp by the music stand',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/sing/choir-room.webp',
+      '/sing/choir-room-4k.webp',
+      '/sing/choir-room-portrait.webp',
+      '/sing/choir-room-portrait-2x.webp',
+    ),
+    // The band is the dark teal back wall; the risers, the stand and its
+    // lamp sit below it, and the dusk window stays at the far right edge.
+    focalPoint: { x: 0.57, y: 0.62 },
   },
 ] as const satisfies readonly BackgroundDefinition[]
 
