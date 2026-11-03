@@ -8,9 +8,12 @@
 // URL it cannot fetch, or one stem without the rest of the song) and the
 // graph goes silent, with no error anywhere. The silent unlock clip
 // (audio-unlock.ts) is the same kind of thing: a tool for the page's audio
-// session, never content for a TV, and the likeliest thing iOS offers a TV
-// as the app opens (owner, 1 Nov 2026: "AirPlay ... pop up on opening the
-// app").
+// session, never content for a TV. It is a tenth of a second, under the
+// length WebKit wants before it puts an element on the lock screen, so the
+// lock screen's carrier (packages/mobile-runtime webkit-now-playing.ts),
+// which keeps itself local the same way, is the likelier thing iOS offered
+// the owner's TV as the app opened (1 Nov 2026: "AirPlay ... pop up on
+// opening the app"; review, 2 Nov).
 //
 // So each of them is kept local. WebKit asks two things before it lets an
 // element play to AirPlay (MediaElementSession::wirelessVideoPlaybackDisabled):

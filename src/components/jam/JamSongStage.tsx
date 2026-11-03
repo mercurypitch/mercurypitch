@@ -633,12 +633,17 @@ export const JamSongStage: Component = () => {
           <JamTransferDialog />
           {/* The ONLY media element on the stage, deliberately: the guide
               vocal goes through Web Audio (jam-guide-player.ts) because a
-              second element's play() pauses this one on TV browsers. */}
+              second element's play() pauses this one on TV browsers. Kept
+              off AirPlay from the start, as keepMediaLocal keeps it at its
+              first play (local-media.ts): its sound goes into the room's
+              graph, which AirPlay would leave silent. */}
           <audio
             ref={audioRef}
             src={song().stems.instrumental}
             preload="auto"
             crossorigin="anonymous"
+            disableremoteplayback
+            x-webkit-airplay="deny"
             // The timeline lives outside this stage and cannot ask the
             // element, so the element tells the room. `durationchange`
             // covers the metadata arriving AND a stream whose length grows.

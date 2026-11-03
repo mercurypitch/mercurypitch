@@ -116,6 +116,7 @@ export type Carrier = Pick<
   | 'load'
   | 'canPlayType'
   | 'hasAttribute'
+  | 'setAttribute'
   | 'removeAttribute'
   | 'addEventListener'
 >
@@ -355,8 +356,14 @@ function theCarrier(): Carrier {
   const made = options.createCarrier?.() ?? document.createElement('audio')
   made.loop = true
   made.preload = 'auto'
-  // Silence is of no use to an AirPlay speaker on its own.
+  // Silence is of no use to an AirPlay speaker on its own. WebKit reads the
+  // Remote Playback attribute only while that API is on, which Lockdown Mode
+  // turns off; on iOS it reads its own `x-webkit-airplay` whatever the
+  // settings (MediaElementSession::wirelessVideoPlaybackDisabled). The
+  // carrier is what WebKit can put on the lock screen and offer a TV, an
+  // hour of silence where the unlock clip is a tenth of a second.
   made.disableRemotePlayback = true
+  made.setAttribute('x-webkit-airplay', 'deny')
   made.addEventListener('pause', onCarrierPause)
   made.addEventListener('play', onCarrierPlay)
   made.addEventListener('playing', onCarrierPlaying)

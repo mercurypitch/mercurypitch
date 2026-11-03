@@ -83,8 +83,7 @@ function playClip(): void {
   try {
     if (silentEl === null) {
       // Kept local: a tool for this page's audio session, never a TV's to
-      // play, and the likeliest thing iOS offers one as the app opens
-      // (local-media.ts).
+      // play (local-media.ts).
       silentEl = keepMediaLocal(new Audio(silentWavUrl()))
       silentEl.setAttribute('playsinline', '')
       silentEl.preload = 'auto'
