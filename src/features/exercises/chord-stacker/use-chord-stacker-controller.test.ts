@@ -9,8 +9,13 @@
 // controller runs on fake timers here, and each tone and phase is logged
 // at the moment it starts. The scoring keeps its tests in
 // src/tests/exercise-chord-stacker.test.ts.
+//
+// The same timers measure a whole run, which a daily routine budgets for
+// (TYPICAL_RUN_SEC in segment-reps.ts).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { typicalRunSec } from '@/features/routines/segment-reps'
+import { EXERCISE_CHORD_STACKER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import { useChordStackerController } from './use-chord-stacker-controller'
 
@@ -124,5 +129,41 @@ describe('Chord Stacker plays its chord one whole note at a time', () => {
     await vi.advanceTimersByTimeAsync(10_000)
     expect(tones).toHaveLength(1)
     expect(singing).toEqual([])
+  })
+})
+
+describe('a whole Chord Stacker run, as a routine budgets for it', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // A routine that budgeted 45 s for a run asked for three in a segment of
+  // two and a half minutes, and they took four.
+  it('takes 81.5 s at the default level, and a routine budgets that much', async () => {
+    // Arrange
+    let completedAtMs: number | null = null
+    const t0 = Date.now()
+    const base = createMockBase({
+      _completeWithResult: () => {
+        completedAtMs = Date.now() - t0
+      },
+    })
+    const ctrl = useChordStackerController(base, { playTone: async () => {} })
+    ctrl.setBase(60)
+
+    // Act
+    ctrl.startRounds()
+    await vi.advanceTimersByTimeAsync(200_000)
+
+    // Assert: five chords, each 4 x 600 ms played with 3 x 300 ms between,
+    // 400 ms, 4 x (2500 ms sung + 500 ms), and 600 ms before the next.
+    expect(completedAtMs).toBe(81_500)
+    const runSec = 81.5
+    expect(typicalRunSec(EXERCISE_CHORD_STACKER)).toBeGreaterThanOrEqual(runSec)
+    // In line with it, too: no more than one of the table's 15 s steps over.
+    expect(typicalRunSec(EXERCISE_CHORD_STACKER)).toBeLessThan(runSec + 15)
   })
 })
