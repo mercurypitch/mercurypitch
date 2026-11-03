@@ -6,11 +6,12 @@ import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { StudioLaneTake } from '../record/StudioLaneTake'
 import { StudioRecordLane } from '../record/StudioRecordLane'
-import { FitWidth, InfoCircle, ZoomIn, ZoomOut } from '../studio-icons'
+import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
 import { createStudioPlayheadMotion } from './playhead-motion'
 import { studioSourcePresentation } from './source-presentation'
 import { StudioClipToolbar } from './StudioClipToolbar'
+import { StudioPhoneClipNote } from './StudioPhoneClipNote'
 import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
@@ -786,11 +787,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
       </p>
       <Show when={props.phone && selectedName()}>
         {(name) => (
-          <p class={styles.phoneNote}>
-            <InfoCircle size={16} />
-            <strong>{name()}</strong>
-            <span>Edit clips on a tablet or computer.</span>
-          </p>
+          <StudioPhoneClipNote
+            name={name()}
+            clip={selectedClip() ?? null}
+            onRange={props.onRange}
+          />
         )}
       </Show>
     </div>
