@@ -26,7 +26,17 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..')
 // keeps console.log/info/debug quiet. It is a 471-byte chunk; with its import
 // the room's first paint measured 520,682 bytes against 520,000, from about
 // 519,950 before it. The ceiling moves by that cost plus a little slack.
-const MAX_STATIC_JAVASCRIPT_BYTES = 521_000
+//
+// 2026-11-03: 523k. The Sing room's five new covers are entries in the shared
+// background catalog (src/lib/backgrounds/background-catalog.ts), and this
+// room's first paint carries the catalog for its own backdrop: DrumNightApp
+// reads getBackgroundDefinition from it. With the entries, and their
+// edition's one-line description in background-surface.ts, the room's first
+// paint measured 522,388 bytes against 521,000, from 520,680 on main before
+// them. The ceiling moves by that cost plus a little slack. Splitting the
+// catalog by surface would let each room carry only its own covers; that is
+// a change of its own.
+const MAX_STATIC_JAVASCRIPT_BYTES = 523_000
 
 const FORBIDDEN_CHUNKS = [
   /(?:^|\/)(?:index|advanced|library|pitch-core)-[^/]+\.js$/,
