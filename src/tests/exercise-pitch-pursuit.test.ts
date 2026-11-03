@@ -4,6 +4,7 @@ import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_PITCH_PURSUIT, runStoppedEarly, } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
+import { typicalRunSec } from '@/features/routines/segment-reps'
 
 function createMockBase(
   overrides: Partial<BaseExerciseController> = {},
@@ -122,11 +123,14 @@ describe('a Pitch Pursuit run', () => {
   it('ends by itself once its 12 notes have reached the line, and is a whole run', async () => {
     const results: ExerciseResult[] = []
     let running = true
+    let runSec = 0
+    const t0 = performance.now()
     const ctrl = usePitchPursuitController(
       createMockBase({
         _isRunning: () => running,
         _completeWithResult: (r) => {
           running = false
+          runSec = (performance.now() - t0) / 1000
           results.push(r)
         },
       }),
@@ -142,6 +146,12 @@ describe('a Pitch Pursuit run', () => {
     expect(metrics.hits + metrics.misses).toBe(12)
     expect(runStoppedEarly(metrics)).toBe(false)
     expect(ctrl.getNotes()).toEqual([])
+    // A routine budgets for the run: no less than it takes, and no more
+    // than one of the budget table's 15 s steps over (segment-reps.ts).
+    expect(runSec).toBeGreaterThan(29)
+    expect(runSec).toBeLessThan(32)
+    expect(typicalRunSec(EXERCISE_PITCH_PURSUIT)).toBeGreaterThanOrEqual(runSec)
+    expect(typicalRunSec(EXERCISE_PITCH_PURSUIT)).toBeLessThan(runSec + 15)
   })
 
   it('plays and counts the 17 notes difficulty 10 plans, and is a whole run', async () => {
@@ -154,6 +164,8 @@ describe('a Pitch Pursuit run', () => {
     const results: ExerciseResult[] = []
     const planned = new Set<number>()
     let running = true
+    let runSec = 0
+    const t0 = performance.now()
     const ctrl = usePitchPursuitController(
       createMockBase({
         _isRunning: () => running,
@@ -162,6 +174,7 @@ describe('a Pitch Pursuit run', () => {
         },
         _completeWithResult: (r) => {
           running = false
+          runSec = (performance.now() - t0) / 1000
           results.push(r)
         },
       }),
@@ -177,5 +190,7 @@ describe('a Pitch Pursuit run', () => {
     const { metrics } = results[0]!
     expect(metrics.hits + metrics.misses).toBe(17)
     expect(runStoppedEarly(metrics)).toBe(false)
+    // The hardest level's run still fits what a routine budgets for one.
+    expect(typicalRunSec(EXERCISE_PITCH_PURSUIT)).toBeGreaterThanOrEqual(runSec)
   })
 })
