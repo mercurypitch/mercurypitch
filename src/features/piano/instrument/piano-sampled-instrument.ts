@@ -5,7 +5,16 @@
 // Construction is deliberately inert. An owning interaction must call load
 // or prewarm after audio activation; synchronous note events then either use a
 // cached sample or return false so the instrument router can use its fallback.
+//
+// The graph is held at two channels behind its input (src/lib/audio/stereo-hold.ts).
+// Without the hold, a stereo sample that ended took its reflections with it:
+// Chromium resets the tone filter and both reflection delays when the input
+// drops to one channel, one render quantum after the last voice ends. A
+// stereo burst rendered offline lost -18.5 dBFS of what followed it in the
+// hall, -27.0 in the studio and -32.8 close (Chromium 148); mono samples
+// never change count and lost nothing.
 
+import { createStereoHold } from '@/lib/audio/stereo-hold'
 import type { PianoInstrumentDescriptor, PianoInstrumentNoteOff, PianoInstrumentNoteOn, PianoInstrumentPedalEvent, PianoInstrumentPort, } from './piano-instrument-port'
 import type { PianoSampleResource, SalamanderAttackVelocityLayer, } from './piano-sample-manifest'
 import { isAllowedSalamanderSampleUrl, resolveSalamanderRootMidi, resolveSalamanderVelocityLayer, SALAMANDER_ATTACK_VELOCITY_LAYERS, SALAMANDER_COMPACT_PIANO_MANIFEST, SALAMANDER_PEDAL_RESOURCES, salamanderAttackResource, salamanderReleaseResource, } from './piano-sample-manifest'
@@ -59,6 +68,7 @@ export interface PianoSampledInstrumentOptions {
 interface SampleGraph {
   context: AudioContext
   input: GainNode
+  hold: DelayNode
   tone: BiquadFilterNode
   dry: GainNode
   earlyDelay: DelayNode
@@ -109,6 +119,8 @@ const MAX_AUXILIARY_VOICES = 24
 const ATTACK_RESERVATION_NUMERATOR = 9
 const ATTACK_RESERVATION_DENOMINATOR = 8
 const RELEASE_RESERVATION_DIVISOR = 16
+const EARLY_DELAY_MAX_SECONDS = 0.25
+const LATE_DELAY_MAX_SECONDS = 0.35
 const PEDAL_DOWN_RESERVATION_NUMERATOR = 3
 const PEDAL_DOWN_RESERVATION_DENOMINATOR = 8
 const MINIMUM_GAIN = 0.0001
@@ -462,6 +474,7 @@ export function createPianoSampledInstrument(
   const disconnectGraph = (activeGraph: SampleGraph | null): void => {
     if (activeGraph === null) return
     safeDisconnect(activeGraph.input)
+    safeDisconnect(activeGraph.hold)
     safeDisconnect(activeGraph.tone)
     safeDisconnect(activeGraph.dry)
     safeDisconnect(activeGraph.earlyDelay)
@@ -535,11 +548,13 @@ export function createPianoSampledInstrument(
 
   const createGraph = (context: AudioContext): SampleGraph => {
     const input = context.createGain()
+    // Enabled for the longest reflection, so it plays out when a voice ends.
+    const hold = createStereoHold(context, LATE_DELAY_MAX_SECONDS)
     const tone = context.createBiquadFilter()
     const dry = context.createGain()
-    const earlyDelay = context.createDelay(0.25)
+    const earlyDelay = context.createDelay(EARLY_DELAY_MAX_SECONDS)
     const early = context.createGain()
-    const lateDelay = context.createDelay(0.35)
+    const lateDelay = context.createDelay(LATE_DELAY_MAX_SECONDS)
     const late = context.createGain()
     const limiter = context.createDynamicsCompressor()
 
@@ -550,7 +565,8 @@ export function createPianoSampledInstrument(
     limiter.attack.value = 0.003
     limiter.release.value = 0.18
 
-    input.connect(tone)
+    input.connect(hold)
+    hold.connect(tone)
     tone.connect(dry)
     dry.connect(limiter)
     tone.connect(earlyDelay)
@@ -564,6 +580,7 @@ export function createPianoSampledInstrument(
     const nextGraph = {
       context,
       input,
+      hold,
       tone,
       dry,
       earlyDelay,
