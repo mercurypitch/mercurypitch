@@ -19,7 +19,9 @@
 // `idle` while the room has no song.
 //
 // Every message carries the protocol's version. A stage drops what it does
-// not understand rather than draw it wrong.
+// not understand rather than draw it wrong, so the room checks every number
+// before a message goes (feed.ts): JSON writes a NaN or an Infinity as null,
+// and a null where a number belongs would cost the stage the whole message.
 //
 // Tests: src/lib/tv-stage/protocol.test.ts.
 

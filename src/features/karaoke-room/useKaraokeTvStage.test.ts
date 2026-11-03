@@ -8,15 +8,17 @@
 // shows the stage and records what it is sent. The rules: the song (or
 // idle) goes each time the TV starts showing the stage and each time the
 // song changes while it does, with its notes in the key being heard;
-// frames go twenty a second, only while it shows the stage; the score is
-// worked out every half second, not every frame; and a phone without a TV
-// stage sends nothing at all.
+// frames go twenty a second, only while it shows the stage, and a frame
+// whose clock reading is not a number still reaches the stage; the score
+// is worked out every half second, not every frame; and a phone without a
+// TV stage sends nothing at all.
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import type { FeedNote, FeedReading } from '@/lib/tv-stage/feed'
 import type { TvStageFrame, TvStageMessage, TvStageSong, } from '@/lib/tv-stage/protocol'
+import { readTvStageMessage } from '@/lib/tv-stage/protocol'
 import { publishLiveMic } from '@/stores/live-mic-store'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { setTvStageOffsetMs } from '@/stores/tv-stage-store'
@@ -230,6 +232,21 @@ describe('the TV stage', () => {
       [11.8, 69],
       [11.85, 81],
     ])
+  })
+
+  it('keeps the stage running on its last clock through a reading of the song that is not a number', async () => {
+    const tv = fakeDevice()
+    const mixer = fakeMixer()
+    mount(tv.device, mixer.controls)
+    tv.shows(true)
+    await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS)
+
+    mixer.setElapsed(Number.NaN)
+    await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS)
+
+    const [good, bad] = frames(tv.sent).slice(-2)
+    expect(readTvStageMessage(JSON.stringify(bad))).toEqual(bad)
+    expect(bad).toMatchObject({ at: good.at, position: 12, playing: true })
   })
 
   it('works the score out every half second, not every frame', async () => {
