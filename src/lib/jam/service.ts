@@ -1000,14 +1000,7 @@ export function createJamService(callbacks: JamCallbacks) {
     message: JamBackgroundCapabilityMessage,
     targetPeerId?: string,
   ): void {
-    if (targetPeerId === undefined) {
-      broadcastData(message)
-      return
-    }
-    const channel = dataChannels.get(targetPeerId)
-    if (channel?.readyState === 'open') {
-      channel.send(JSON.stringify(message))
-    }
+    sendData(message, targetPeerId)
   }
 
   function setRoomBackground(backgroundId: string): void {
@@ -1057,18 +1050,12 @@ export function createJamService(callbacks: JamCallbacks) {
     mode?: string,
     targetPeerId?: string,
   ): void {
-    const message = { type: 'melody' as const, action: 'set', melody, mode }
-    if (targetPeerId === undefined) {
-      broadcastData(message)
-      return
-    }
-    const channel = dataChannels.get(targetPeerId)
-    if (channel?.readyState === 'open') {
-      channel.send(JSON.stringify(message))
-    }
+    sendData(
+      { type: 'melody' as const, action: 'set', melody, mode },
+      targetPeerId,
+    )
   }
 
-  /** A song manifest -- URLs and lyrics, never audio. */
   /**
    * The channel to one peer, for a transfer to drive directly.
    *
@@ -1098,11 +1085,17 @@ export function createJamService(callbacks: JamCallbacks) {
     if (dc?.readyState === 'open') dc.send(JSON.stringify(msg))
   }
 
-  function sendSong(song: object | null): void {
-    broadcastData(
+  /**
+   * A song manifest -- URLs and lyrics, never audio. To one peer is how a
+   * late arrival is caught up: a guest that already has the song takes
+   * even an unchanged manifest as a change, and starts its take over.
+   */
+  function sendSong(song: object | null, targetPeerId?: string): void {
+    sendData(
       song === null
         ? { type: 'song' as const, action: 'clear' }
         : { type: 'song' as const, action: 'set', song },
+      targetPeerId,
     )
   }
 
@@ -1152,6 +1145,16 @@ export function createJamService(callbacks: JamCallbacks) {
         dc.send(raw)
       }
     }
+  }
+
+  /** To one peer's channel when one is named, or else to the whole room. */
+  function sendData(msg: object, targetPeerId?: string): void {
+    if (targetPeerId === undefined) {
+      broadcastData(msg)
+      return
+    }
+    const channel = dataChannels.get(targetPeerId)
+    if (channel?.readyState === 'open') channel.send(JSON.stringify(msg))
   }
 
   // ── ICE recovery ────────────────────────────────────────────────

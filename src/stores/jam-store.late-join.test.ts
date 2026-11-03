@@ -5,20 +5,21 @@
 // The room's drill and its mode reached a peer only when the host changed
 // one of them, so somebody who joined after the host had set the room up
 // sat on a drill of their own, in unison, until the host touched
-// something. The host now sends both to that peer once their channel is
-// open. Not when they are announced (onPeerJoined runs before there is a
-// channel to them), and not to the room: taking a drill rewinds a guest's
-// transport, so an arrival must not stop everyone already singing.
+// something. The song never reached them at all: it was sent when they
+// were announced, before there was a channel to them, so only the guests
+// who already had it got it -- and an unchanged manifest starts a guest's
+// take over. The host now sends what the room is on to that peer alone,
+// once their channel is open.
 //
 // Driven through a mocked @/lib/jam/service with the store's own callbacks
 // kept, as jam-room-host-messages.test.ts does: what a peer receives is
-// whatever the service's sendMelody is given. What that puts on the wire
-// is service-message-sender.test.ts's.
+// whatever the service's sendMelody or sendSong is given. What those put on
+// the wire is service-message-sender.test.ts's.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamCallbacks, JamPeer } from '@/lib/jam/types'
-import { disposeJam, initJam, jamExerciseMelody, jamRoomMode, selectJamExercise, selectJamRoomMode, selectJamSong, setJamHostPeerId, setJamIsHost, setJamPeerId, } from '@/stores/jam-store'
+import { assignJamSongLines, disposeJam, initJam, jamExerciseMelody, jamRoomMode, selectJamExercise, selectJamRoomMode, selectJamSong, setJamHostPeerId, setJamIsHost, setJamPeerId, } from '@/stores/jam-store'
 import type { MelodyData, NoteName } from '@/types'
 
 function createServiceDouble() {
@@ -42,6 +43,7 @@ vi.mock('@/lib/jam/service', () => ({
 }))
 
 const HOST = 'host-peer'
+const EARLY = 'early-peer'
 const LATE = 'late-peer'
 
 type Arrival = 'onPeerJoined' | 'onPeerChannelReady' | 'onMelodyMessage'
@@ -135,6 +137,24 @@ describe('a peer who arrives after the host has set the room up', () => {
     handler('onPeerChannelReady')(LATE)
     // To them alone, so the room already singing keeps its place.
     expect(service.sendMelody.mock.calls).toEqual([[arpeggio, 'harmony', LATE]])
+    expect(service.sendSong).not.toHaveBeenCalled()
+  })
+
+  it('is sent the song and its parts on their own channel, and the guests already in it nothing', () => {
+    selectJamSong(song('demo'))
+    arrive(EARLY)
+    assignJamSongLines(0, 0, EARLY)
+    service.sendSong.mockClear()
+
+    handler('onPeerJoined')(peer(LATE))
+    // Sent now, it could only reach the guests who already have it, and an
+    // unchanged manifest starts their take over.
+    expect(service.sendSong).not.toHaveBeenCalled()
+
+    handler('onPeerChannelReady')(LATE)
+    expect(service.sendSong.mock.calls).toEqual([
+      [expect.objectContaining({ id: 'demo', parts: { 0: EARLY } }), LATE],
+    ])
   })
 
   it('is sent no drill when the room has moved on to a song', () => {
