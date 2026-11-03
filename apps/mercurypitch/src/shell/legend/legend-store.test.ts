@@ -108,6 +108,9 @@ const settle = (): Promise<void> =>
 let stop: (() => void) | null = null
 
 beforeEach(() => {
+  // The fixture Legend ends three days after NOW. Pin the clock to NOW, or
+  // every test that relies on it still running fails once that day passes.
+  vi.spyOn(Date, 'now').mockReturnValue(NOW)
   auth.as('acc-1')
   resetLegendStoreForTests()
   active.mockReset().mockResolvedValue(ok(legend()))
