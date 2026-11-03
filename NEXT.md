@@ -3072,3 +3072,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
     - Docs PR after the review: body without footer, check after create, merge --rebase.
     - Stopped-run PR after its review.
     - Then the report to the owner.
+- 3 Nov 05:0x:
+  - The docs review said MERGE AFTER FIXES (s2pkg/DOCS-REVIEW.md). All 9 fixed in 01308790f; word counts for L15, L16 and L21 in ba1e3d695.
+  - PR #1322 opened (feat/season-2-plan at ba1e3d695 on 81414ea9b, 25 commits). Subscribed; footer removed by update.
+  - Merge --rebase on green, then verify subjects, messages, authors, patch-ids and tree.
+  - L16's chip left at 15 min (total 14.4).
