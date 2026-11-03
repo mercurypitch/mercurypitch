@@ -1157,8 +1157,8 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
     card (`:130-147`) and this one's (`:211-254`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
-    this one included (`lessonPages`, `:45-47`), for the team's words (`:22-40`), and the
-    alternative hook's note never reaches the page (`:77-79`).
+    this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
+    alternative hook's note never reaches the page (`:78-80`).
 13. With reduced motion emulated, no bead travels, the stack and the spread land in their end
     states, Merc and Tavi hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's

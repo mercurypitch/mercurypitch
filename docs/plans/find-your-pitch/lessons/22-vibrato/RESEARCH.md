@@ -218,7 +218,7 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
   page quotes only Voice Mirror's.
 - The Vibrato exercise: help says "teachers build vibrato by oscillating about a semitone slowly"
   and "A healthy natural vibrato is about 5-7 pulses per second" (`src/features/exercises/
-  exercise-help.ts:96-97`); its default style is "Fine & Fast", "the polished sound"
+  exercise-help.ts:114-115`); its default style is "Fine & Fast", "the polished sound"
   (`src/features/exercises/vibrato/vibrato-styles.ts:56-57`, default `:71`); styles span 3 to 7 Hz
   (`:31-64`); it scores rate, depth and consistency at 0.4, 0.3 and 0.3
   (`use-vibrato-controller.ts:12-14`). Not linked (card; SEASON-2 § 5 item 14).

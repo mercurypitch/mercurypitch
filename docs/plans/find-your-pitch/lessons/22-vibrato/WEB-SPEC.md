@@ -628,7 +628,7 @@ stills when WebGL fails.
   and until then the quiz's answers are refused whole (FACTS 35).
 - **Not linked**: the Vibrato exercise, whose help uses a health word and gives a method for
   building a vibrato, whose default is "the polished sound" and which scores the vibrato itself
-  (`src/features/exercises/exercise-help.ts:91-98`; FACTS 31); Long Note Lantern, whose help counts a
+  (`src/features/exercises/exercise-help.ts:109-116`; FACTS 31); Long Note Lantern, whose help counts a
   vibrato as wobble so a straight tone scores highest (FACTS 32); and Long Note, which scores the
   spread of every cent, a vibrato's included, and still asks for a note held as long as you can
   (FACTS 33).
@@ -907,7 +907,7 @@ Page tests, against a local or dev build, never production:
     description 80 to 160 with "A fifteen-minute lesson", the chip "15 minutes" and `timeRequired`
     `PT15M`.
 14. No planning text on the page: no topic code such as "S19", no "planned", "slug" or "for the
-    team" (`src/e2e/learn-no-planning-text.spec.ts:22-40`).
+    team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`).
 15. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck (`src/e2e/learn-stage-fit.spec.ts:229-235`).
 16. The first-paint budgets for `learn/22.html`.

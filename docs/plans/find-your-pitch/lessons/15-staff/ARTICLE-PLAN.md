@@ -221,7 +221,7 @@ sound on this page is synthesised in your browser." The page carries no decorati
 - **Compose, Sheet Music view.** Address `mercurypitch.com/?lesson=15#/compose`; the `#/compose` route
   exists (`src/features/tabs/constants.ts:16`; `src/features/routing/useHashRouter.test.tsx:452`).
   Compose opens on the Piano Roll (`editorView` defaults to `'piano-roll'`, `src/stores/ui-store.ts:142-143`),
-  and Sheet Music and the split view are two of its four views (`src/App.tsx:2321-2345`), so the card
+  and Sheet Music and the split view are two of its four views (`src/App.tsx:2322-2346`), so the card
   says "then choose Sheet Music, or the split view". Notes written in the piano roll appear on the
   staff, in the bass clef when the melody's middle note is below middle C (R15-15). A sandbox, not a
   drill: the card gives it a goal ("write do re mi fa so in your clef, then play it"), as playbook

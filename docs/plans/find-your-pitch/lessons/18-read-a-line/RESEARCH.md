@@ -113,8 +113,8 @@ click. Code read. Strong. Lesson 16's R16-10 to R16-15 hold here too (random not
 the pitch tracker shown).
 
 **R18-12. The Singing tab's sheet view moves a cursor with the playing melody; no address opens it.**
-`src/App.tsx:4050-4098` (the `PracticeViewToolbar` toggles `singingSheetView`; with it on, the pitch
-canvas is replaced by `SheetMusicView` with `currentBeat` and `isPlaying`, :4077-4098);
+`src/App.tsx:4051-4099` (the `PracticeViewToolbar` toggles `singingSheetView`; with it on, the pitch
+canvas is replaced by `SheetMusicView` with `currentBeat` and `isPlaying`, :4078-4099);
 `src/stores/ui-store.ts:146` (`singingSheetView`, a store signal, no route). Its staff writes only
 `n/4` time signatures (`src/lib/sheet-music-renderer.ts:573`). Whether the Singing tab still scores
 the take while the sheet replaces the pitch canvas was **not verified**. Code read.

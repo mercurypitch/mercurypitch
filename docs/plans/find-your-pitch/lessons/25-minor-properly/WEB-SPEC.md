@@ -748,7 +748,7 @@ Page tests, against a local or dev build, never production:
     the chip "15 minutes" and `timeRequired` `PT15M` (`src/tests/lesson-pages.test.ts:154-159`,
     `src/tests/lesson-pages.test.ts:198-209`).
 11. No planning text on the page: no topic code such as "T15b", no "planned", "deep link" or "for the
-    team" (`src/e2e/learn-no-planning-text.spec.ts:22-40`).
+    team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`).
 12. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck (`src/e2e/learn-stage-fit.spec.ts:33-54`).
 13. The first-paint budgets for `learn/25.html`.
