@@ -1,19 +1,19 @@
 // ============================================================
-// The Legend room folds out of a store build: a source guard
+// The Legend room, in every build and one line from leaving: a source guard
 // ============================================================
 //
-// As leagues-fold.test.ts holds Leagues, on the same switch. The built
-// bundle is asked by assert-bundle.mjs (KARAOKE_STAGE_2) when a store build
-// is made; this file asks the sources on every run.
+// As leagues-fold.test.ts holds Leagues, on the same switch, which the owner
+// put on in every build, the store build among them (3 Nov 2026). This file
+// asks the sources on every run.
 //
 //   - The room is reached only through a lazy import behind NATIVE_LEAGUES:
-//     a static import would put the room, its words and its stylesheet in
-//     every build.
+//     a build that never opens it never loads it, and setting the switch
+//     back to KARAOKE_IMPORT folds it out of a store build again.
 //   - The store the More row reads is free of side effects in the native
 //     config, so a build that never reaches it drops it whole.
-//   - The More sheet reads that store only inside its folded Together group.
+//   - The More sheet reads that store only inside its Together group.
 //   - pushScreen refuses the room on a build without the switch.
-//   - assert-bundle names what a store build must not carry.
+//   - assert-bundle no longer names it as what a store build must not carry.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -82,7 +82,7 @@ describe('the Legend room, in the sources', () => {
     )
   })
 
-  it('names in assert-bundle what a store build must not carry', () => {
+  it('is no longer named in assert-bundle as what a store build must not carry', () => {
     const assert = read('../scripts/assert-bundle.mjs')
     for (const marker of [
       'shell-legend',
@@ -91,7 +91,7 @@ describe('the Legend room, in the sources', () => {
       'The line everyone sings',
       'Everyone sings the same notes',
     ]) {
-      expect(assert).toContain(`['${marker}',`)
+      expect(assert).not.toContain(`['${marker}',`)
     }
   })
 })

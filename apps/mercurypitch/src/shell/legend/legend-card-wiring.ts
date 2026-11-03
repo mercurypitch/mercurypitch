@@ -9,8 +9,8 @@
 // through its API (`legend`, native-shell-store.ts), as it hands it
 // `openExercise` (premium-exercise-wiring.ts). The words come from the
 // Legend the phone kept (legend-store.ts), so the card asks the network
-// nothing. Behind NATIVE_LEAGUES: a store build registers none, and the
-// picker draws no card.
+// nothing. Behind NATIVE_LEAGUES, on in every build since 3 Nov 2026: a
+// build with it off registers none, and the picker draws no card.
 
 import { NATIVE_LEAGUES } from '@/lib/native-build'
 import type { LegendCardWords, NativeShellApi, } from '@/stores/native-shell-store'

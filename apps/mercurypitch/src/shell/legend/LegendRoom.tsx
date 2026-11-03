@@ -23,7 +23,7 @@
 //
 // Never a period in the copy: a Legend runs one to eight weeks
 // (challenge-period-neutral.test.ts). Behind NATIVE_LEAGUES, as a lazy
-// chunk (NativeShell.tsx): a store build carries none of it.
+// chunk (NativeShell.tsx): a build that never opens it never loads it.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createResource, createSignal, on, onCleanup, Show, } from 'solid-js'

@@ -1,20 +1,20 @@
 // ============================================================
-// Leagues fold out of a store build: a source guard
+// Leagues in every build, and still one line from leaving: a source guard
 // ============================================================
 //
-// The PR gate builds only the dev target, which carries Leagues, so nothing
-// there would notice a store build that carried them too. The built bundle
-// is asked by assert-bundle.mjs (KARAOKE_STAGE_2) when a store build is
-// made; this file asks the sources on every run.
+// Leagues and the Legend room rode KARAOKE_IMPORT, on in test builds alone,
+// until the owner put them in the store build too (3 Nov 2026). The PR gate
+// builds only the dev target, so this file asks the sources on every run:
 //
-//   - The switch is its own constant, folded from KARAOKE_IMPORT.
-//   - The screen is reached only through a lazy import behind it: a static
-//     import would put the screen, its words and its stylesheet in every
-//     build.
+//   - The switch is its own constant, on in every build.
+//   - The screen is reached only through a lazy import behind it: a build
+//     that never opens it never loads it, and setting the switch back to
+//     KARAOKE_IMPORT folds it out of a store build again.
 //   - The store the More row reads is free of side effects in the native
 //     config, so a build that never reaches it drops it whole.
-//   - The More sheet reads that store only inside its folded Together group.
-//   - assert-bundle names what a store build must not carry.
+//   - The More sheet reads that store only inside its Together group.
+//   - assert-bundle no longer names them as what a store build must not
+//     carry, or every store build would fail its check.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -35,9 +35,9 @@ function sources(dir: string): string[] {
 }
 
 describe('Leagues, in the sources', () => {
-  it('have a switch of their own, on exactly where the Karaoke import is', () => {
+  it('have a switch of their own, on in every build', () => {
     expect(read('../../../src/lib/native-build.ts')).toMatch(
-      /export const NATIVE_LEAGUES: boolean = KARAOKE_IMPORT\n/u,
+      /export const NATIVE_LEAGUES: boolean = true\n/u,
     )
   })
 
@@ -78,15 +78,20 @@ describe('Leagues, in the sources', () => {
     }
   })
 
-  it('name in assert-bundle what a store build must not carry', () => {
+  it('are no longer named in assert-bundle as what a store build must not carry', () => {
     const assert = read('../scripts/assert-bundle.mjs')
     for (const marker of [
       'shell-leagues',
       'Climb a rung every week',
       'mp:league-card',
       'A rung higher every week',
+      'shell-legend',
+      'Practice without ranking',
+      'mp:legend-card',
+      'The line everyone sings',
+      'Everyone sings the same notes',
     ]) {
-      expect(assert).toContain(`['${marker}',`)
+      expect(assert).not.toContain(`['${marker}',`)
     }
   })
 })
