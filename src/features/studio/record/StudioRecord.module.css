@@ -159,8 +159,12 @@
   line-height: 1;
   text-align: center;
 }
+/* A recorder's counter: a red dot, then the time the take has run. */
 .elapsed {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  gap: 6px;
   min-width: 44px;
   padding: 3px 8px;
   border-radius: 7px;
@@ -169,7 +173,14 @@
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: center;
+}
+.elapsed::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red, #e5484d);
 }
 .statusMic {
   display: inline-flex;

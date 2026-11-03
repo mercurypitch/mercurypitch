@@ -68,6 +68,8 @@
   border-radius: 50%;
   color: var(--studio-text-2);
   background: var(--studio-bar);
+  /* A ring, so the disc stands off the band in both themes. */
+  box-shadow: 0 0 0 1px var(--studio-line-strong);
   cursor: pointer;
   pointer-events: auto;
 }
