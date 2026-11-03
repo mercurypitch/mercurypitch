@@ -100,6 +100,10 @@ function stopButton(container: HTMLElement): HTMLButtonElement {
   return container.querySelector<HTMLButtonElement>('.exercise-btn-stop')!
 }
 
+function countdown(container: HTMLElement): string | null | undefined {
+  return container.querySelector('.exercise-timer-countdown')?.textContent
+}
+
 beforeEach(() => {
   vi.useFakeTimers({
     toFake: [
@@ -149,6 +153,26 @@ describe.each(DRILLS)('%s with a ten-second timer', (_name, Drill) => {
     expect(baseRef.results).toHaveLength(1)
     expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(true)
   })
+
+  // The countdown is all the singer sees of the run's length. Its last
+  // number is "1s", so a Stop while it shows is the run's end, and a Stop
+  // while it still reads "2s" is not.
+  it.each([
+    [9_100, '1s', false],
+    [8_900, '2s', true],
+  ])(
+    'agrees with its countdown: %i ms in it reads %s, and a Stop there is marked: %s',
+    async (atMs, reads, marked) => {
+      const page = await startDrill(Drill)
+      await vi.advanceTimersByTimeAsync(atMs)
+
+      expect(countdown(page)).toBe(reads)
+      fireEvent.click(stopButton(page))
+
+      expect(baseRef.results).toHaveLength(1)
+      expect(runStoppedEarly(baseRef.results[0]!.metrics)).toBe(marked)
+    },
+  )
 })
 
 describe.each(DRILLS)('%s on Manual', (_name, Drill) => {

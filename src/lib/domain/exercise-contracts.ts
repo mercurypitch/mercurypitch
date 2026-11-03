@@ -221,8 +221,8 @@ export interface ExerciseResult {
  * reads a marked run (`isComparableRun` in exercise-comparability.ts).
  * Arpeggio Jumper carried the mark first. A run stopped after its last
  * round was graded, in the pause before the drill ends itself, is whole.
- * A timed drill's end is its timer: a Stop while it still runs is marked
- * (`endedBeforeTimer`), and on Manual the Stop is the end.
+ * A timed drill's end is its timer: a Stop with more than its last second
+ * to run is marked (`endedBeforeTimer`), and on Manual the Stop is the end.
  */
 export function stoppedEarlyMark(stopped: boolean): Record<string, number> {
   return stopped ? { stoppedEarly: 1 } : {}
