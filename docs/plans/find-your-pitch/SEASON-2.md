@@ -201,7 +201,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (unscored sing-along, a theory lesson): after the comfort check, sing do re mi fa so in
   C as the notes light on the staff, in your own clef and octave; nothing listens.
 - Practise: `/?lesson=15#/compose`, then choose Sheet Music or the split view (Compose's views,
-  `src/App.tsx:2321-2345`): notes written in the piano roll appear on the staff, in the bass clef
+  `src/App.tsx:2322-2346`): notes written in the piano roll appear on the staff, in the bass clef
   when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:175-183`). A
   sandbox, not a drill. Needs building: a note-reading drill (§ 5 item 9); the app's only
   note-locating quiz is the guitar's (`src/features/guitar-practice/NoteLocatorQuiz.tsx`).
@@ -307,7 +307,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   (Mishra 2014, Psychology of Music 42(2), 131-156, doi:10.1177/0305735612463770; abstract and
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
-  the Singing tab's sheet view moves one, `src/App.tsx:4050-4098`); patterns bracket themselves
+  the Singing tab's sheet view moves one, `src/App.tsx:4051-4099`); patterns bracket themselves
   as the cursor reaches them (a run of steps, a repeated note, do-mi-so); the marks of T32 appear
   one by one over the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
@@ -318,7 +318,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Practise: Sight-Singing (`/pitch-training?lesson=18`, then tap Sight-Singing), which still
   advances on a held note, not on the beat (use-sight-singing-controller.ts:26); The Chart for the
   rhythm (`/ear-lab?lesson=18`, then tap The Chart). The Singing tab's sheet view plays a melody
-  with a cursor (`src/App.tsx:4050-4098`), but no address opens it (`singingSheetView`,
+  with a cursor (`src/App.tsx:4051-4099`), but no address opens it (`singingSheetView`,
   `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**. Needs
   building: sight-singing in time (§ 5 item 11).
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
@@ -479,7 +479,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   inside a 3.5 to 8.5 Hz band (`src/lib/mirror/metrics.ts:72-74`). Not linked: the Vibrato
   exercise, until its copy and default change (§ 5 item 14): its help says "A healthy natural
   vibrato is about 5-7 pulses per second" and "teachers build vibrato by oscillating about a
-  semitone slowly" (`src/features/exercises/exercise-help.ts:96-97`), a health word and an unsourced
+  semitone slowly" (`src/features/exercises/exercise-help.ts:114-115`), a health word and an unsourced
   method; its default style, "Fine & Fast", is "the polished sound"
   (`src/features/exercises/vibrato/vibrato-styles.ts:56-57`, :71); and it scores the vibrato itself,
   its rate, depth and evenness (`src/features/exercises/vibrato/use-vibrato-controller.ts:12-14`),
@@ -683,7 +683,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Practise: Chord Stacker (`/pitch-training?lesson=27`, then tap Chord Stacker), which plays its
   five chords, maj7, min7, dom7, dim7 and maj6, in shuffled order, each note by note, and has the
   learner sing each note back (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:13-19`, :86-99,
-  :145-185); Ear Lab's Stack (`/ear-lab?lesson=27`, then tap Stack), which names major, minor,
+  :145-191); Ear Lab's Stack (`/ear-lab?lesson=27`, then tap Stack), which names major, minor,
   diminished, augmented, sus4 and dominant seventh chords (`src/lib/ear/banks.ts:115-157`). Needs
   building: a chord-type field and inversions for Chord Stacker (§ 5 item 18), and the `ear-drill`
   subset of major against dominant seventh (§ 5 item 12).
@@ -885,7 +885,7 @@ and First Light does not step aside. Item 21 fixes it.
     item 7); (g) a `key` launch field (key and scale come from the Singing tab,
     SightSingingExercise.tsx:276-279). Lessons 16, 18, 21, 25. Two details from Lesson 16: (a)'s
     link also skips the octave fit, so each voice reads its own octave (today `fitPhraseToRange`,
-    `src/App.tsx:794-798`, moves a bass preset's phrase to G2 to D3, an octave under the page's
+    `src/App.tsx:795-799`, moves a bass preset's phrase to G2 to D3, an octave under the page's
     lower line: Lesson 16 FACTS 59, 63); and (e) hides two displays, the letter and octave under
     each note and the hold bar's name, since the pitch tracker's names have their own hide (Lesson
     16 FACTS 58, 63).
@@ -908,7 +908,7 @@ and First Light does not step aside. Item 21 fixes it.
     20 and 25.
 14. **The Vibrato exercise's copy and default** (app content, with a one-line default change and
     the claims and coach review): the help's health word and method claim
-    (`src/features/exercises/exercise-help.ts:96-97`), the default "Fine & Fast", "the polished
+    (`src/features/exercises/exercise-help.ts:114-115`), the default "Fine & Fast", "the polished
     sound" (`src/features/exercises/vibrato/vibrato-styles.ts:56-57`, :71), and Long Note's help,
     "a vibrato counts as a wobble" (exercise-help.ts:43), made consistent with Voice Mirror's "That's
     a feature" (`src/features/mirror/MirrorApp.tsx:2194-2199`). Then `durationSec` (CURRICULUM § 4
@@ -975,18 +975,18 @@ and First Light does not step aside. Item 21 fixes it.
     but keeps the tune's note name (`src/lib/jam/jam-modes.ts:134-153`), so the third's boxes over
     the C major scale on C4 read C4 to G4, A5 and B5 where they sit at E4 to D5. The fix names each
     moved note from its MIDI number, and the test that pins the octave and frequency
-    (`src/tests/jam-modes.test.ts:108-114`) pins the name too. The same edit can mend the comment "a
-    fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:210-211`): `roleCountFor` caps
+    (`src/tests/jam-modes.test.ts:126-132`) pins the name too. The same edit can mend the comment "a
+    fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:209-210`): `roleCountFor` caps
     the parts at three, and a fourth singer sings the tune. Until it ships, Lesson 26's practice
     card describes the boxes as they are (Lesson 26 WEB-SPEC item 15). Lesson 26.
 24. **Harmony Stack for a friend who joins late** (code with a test, small): the mode and the drill
     go only to the channels open when the host picks the mode (`selectJamRoomMode`,
-    `src/stores/jam-store.ts:1297-1302`; `broadcastData`, `src/lib/jam/service.ts:1131-1138`), and a
-    joining peer is sent only a song (`onPeerJoined`, `src/stores/jam-store.ts:1971-1983`), so a
-    friend who joins after the pick stays in unison on their own scale. The host sends the drill and
-    the mode to a peer whose channel opens, as it does a song, with a test that a late joiner gets
-    both. Until it ships, Lesson 26's card has the friend join first (Lesson 26 WEB-SPEC item 16).
-    Lesson 26.
+    `src/stores/jam-store.ts:1315-1320`; `broadcastData`, `src/lib/jam/service.ts:1141-1148`), and a
+    joining peer is sent only a song (`onPeerJoined`, `src/stores/jam-store.ts:1971-1983` at
+    `c60f0fdcb`), so a friend who joins after the pick stays in unison on their own scale. The host
+    sends the drill and the mode to a peer whose channel opens, as it does a song, with a test that
+    a late joiner gets both. Until it ships, Lesson 26's card has the friend join first (Lesson 26
+    WEB-SPEC item 16). Lesson 26.
 
 The kit's own work (the staff, rhythm on the staff, the circle, two voices, the vibrato view,
 headphones) is in § 6.2.

@@ -448,7 +448,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
      target is the preset's anchor, and a line in `src/tests/slug-map.test.ts`. It opens at ten
      seconds, as the owner decided on 19 October 2026 (LESSON.md; FACTS 63).
   2. The `durationSec` launch field: on `ExerciseLaunch` and the launch override (beside
-     `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:594-638`); read by `ExerciseShell`
+     `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:595-639`); read by `ExerciseShell`
      as guided length, then launch length, then saved timer (`effectiveTimerSeconds`,
      `ExerciseShell.tsx:534-536`); shown selected on the timer toggle without writing the saved
      preference, and dropped if the viewer picks another length. Pitch Hold shares the field
@@ -456,7 +456,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
   3. Long Note's duration score reads that same effective length, not `activeTimerSeconds()`
      (`use-long-note-controller.ts:163`). Without this, a ten-second launch on a device that saved
      30 s scores ten seconds of coverage out of thirty.
-  4. App content: the card's two sentences and its "Breath Control" tag (`ExerciseMenu.tsx:85-92`;
+  4. App content: the card's two sentences and its "Breath Control" tag (`ExerciseMenu.tsx:87-94`;
      FACTS 62), the help's summary and its "and how long you hold it" (`exercise-help.ts:28-36`),
      and the setup screen's "The longer and steadier, the better." (`LongNoteExercise.tsx:106`)
      invite the longest hold, and the card's second sentence promises what the claims rules forbid

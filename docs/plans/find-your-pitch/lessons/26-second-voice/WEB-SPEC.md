@@ -732,22 +732,22 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     the C major scale in a higher voice's room read C4 to G4, A5 and B5 where they sit at E4 to D5
     (`verify26.py`, section 13), and the fifth's are wrong the same way. The fix names each moved
     note from its MIDI number; the test that pins the octave and the frequency
-    (`src/tests/jam-modes.test.ts:108-114`) pins the name too: in C major, the third over C4 is E4
+    (`src/tests/jam-modes.test.ts:126-132`) pins the name too: in C major, the third over C4 is E4
     and over A4 is C5, the fifth over B4 is F5. The same edit can mend the comment above the call,
-    "a fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:210-211`), since
+    "a fourth singer lands on the seventh" (`src/lib/jam/jam-modes.ts:209-210`), since
     `roleCountFor` caps the parts at three and a fourth singer sings the tune (FACTS 63). The card
     describes the app as it is, the lead's call, "It plays nothing; on the third, its boxes print
     the tune's letters.", and switches to "It plays nothing; its boxes name their notes." when this
     ships (FACTS 63a).
 16. **Harmony Stack for a friend who joins late**, the app's work: the mode travels only with the
-    drill, sent when the host picks it (`selectJamRoomMode`, `src/stores/jam-store.ts:1297-1302`),
-    and only to channels open at that moment (`broadcastData`, `src/lib/jam/service.ts:1131-1138`);
+    drill, sent when the host picks it (`selectJamRoomMode`, `src/stores/jam-store.ts:1315-1320`),
+    and only to channels open at that moment (`broadcastData`, `src/lib/jam/service.ts:1141-1148`);
     a peer who joins is sent a song and nothing else (`onPeerJoined`,
-    `src/stores/jam-store.ts:1970-1983`), so a friend who joins after the pick stays in unison on
-    their own default scale (FACTS 64). The host sends the drill and the mode to a peer whose
-    channel opens, as `onPeerJoined` does for a song, with a test that a late joiner gets both.
-    Until it ships the card's order, the friend in first and the mode picked after, is the one that
-    works; after it, that order still works.
+    `src/stores/jam-store.ts:1970-1983` at `c60f0fdcb`), so a friend who joins after the pick stays
+    in unison on their own default scale (FACTS 64). The host sends the drill and the mode to a peer
+    whose channel opens, as `onPeerJoined` does for a song, with a test that a late joiner gets
+    both. Until it ships the card's order, the friend in first and the mode picked after, is the one
+    that works; after it, that order still works.
 
 ## Decisions for the owner
 

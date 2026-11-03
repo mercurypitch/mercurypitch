@@ -1184,7 +1184,7 @@ on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,
-    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:23-40`),
+    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:24`),
     so the page's "time signature" stays lower case wherever it appears, as LESSON.md writes it.
 13. The first screen: the kit's `src/e2e/learn-cold-open-fold.spec.ts` loads every lesson the e2e
     bundle carries (`:32`), so this page joins it on its first build, at its seven sizes from 390 x

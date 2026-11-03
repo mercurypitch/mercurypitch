@@ -904,7 +904,7 @@ Page tests, against a local or dev build, never production:
     `timeRequired` `PT16M` (`src/tests/lesson-pages.test.ts:154-159`,
     `src/tests/lesson-pages.test.ts:191-210`).
 12. No planning text on the page: no topic code such as "S11b" or "T32", no "planned", "slug" or "for
-    the team" (`src/e2e/learn-no-planning-text.spec.ts:22-40`). Its pattern for a topic's code takes
+    the team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`). Its pattern for a topic's code takes
     two digits and a word's end, so it misses a lettered code such as S11b; it gains an optional
     letter before this page is built (What the kit and the app still need, item 16).
 13. The stage-fit test at the four short landscape sizes, every step's controls on screen with the

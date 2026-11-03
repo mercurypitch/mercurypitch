@@ -162,7 +162,7 @@ equal-tempered note.**
 - Score: "(100 - avgDeviation * SCORE_K)", `SCORE_K = 1.5` (:14-16, :198), divided by a difficulty
   factor (:127). At the default, a pure major third 13.69 cents under the target scores 100 − 20.5,
   about 79; a pure fifth about 97.
-- The drone's timbre follows the app's instrument setting (`src/lib/audio-engine.ts:1145-1148`:
+- The drone's timbre follows the app's instrument setting (`src/lib/audio-engine.ts:1147-1150`:
   "sine/piano/organ/strings/synth"), so whether it has harmonics to beat with depends on that
   setting.
 - `/exercises/thirds-on-a-drone` opens it on the minor and major thirds (`src/features/exercises/

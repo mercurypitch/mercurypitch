@@ -210,7 +210,7 @@ Three answers each, shuffled.
 - **Missing:** `?lesson=22` is not read (`lesson-marker.ts:11-19`; SEASON-2 § 5 item 21), so First
   Light does not step aside until item 21 ships; the card then needs Lesson 1's first-visit line.
 - **Not linked:** the Vibrato exercise (health word, method claim, "the polished sound" default,
-  scores the vibrato itself; `exercise-help.ts:96-97`, `vibrato-styles.ts:56-57`, :71,
+  scores the vibrato itself; `exercise-help.ts:114-115`, `vibrato-styles.ts:56-57`, :71,
   `use-vibrato-controller.ts:12-14`) until SEASON-2 § 5 item 14 and the coach's call; Long Note
   Lantern ("a vibrato counts as a wobble", `exercise-help.ts:43`) and Long Note (stability counts the
   spread of all cents, vibrato included, Lesson 5 FACTS 64).
