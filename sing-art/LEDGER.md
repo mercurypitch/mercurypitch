@@ -52,6 +52,7 @@ is not part of this budget.
 | 3 Nov 20:0x | 935.5 | 85 | after round 2 (10 landscapes, portrait as reference): 4.25 each |
 | 3 Nov 20:1x | 918.5 | 102 | after round 3 (4 landscape retakes) |
 | 3 Nov 20:1x | 914.5 | 106 | after 2 outpaints at 2 credits each |
+| 3 Nov 21:08 | 914.5 | 106 | re-read before the hand-off; unchanged, nothing generated since |
 
 ## Kept covers and how each master was made (no credits)
 

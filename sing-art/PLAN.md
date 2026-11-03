@@ -2,7 +2,8 @@
 
 Status, 3 Nov 2026: **DONE.** Generated with the full Higgsfield connector (`mcp__Higgsfield__*`),
 106 of the 200 credits spent (LEDGER.md), branch `feat/sing-room-covers` built from origin/main
-2f2d915ac in the `presses` worktree. Two free covers and three supporter covers, all five with a
+2f2d915ac in the `presses` worktree, then rebased onto origin/main 4293c8979 before the push (main
+had gained six commits, none touching these files but the generated index). Two free covers and three supporter covers, all five with a
 portrait and a landscape. The sections below keep the 30 Oct plan and say, under "3 Nov", where
 the run or current main differed.
 
@@ -452,6 +453,21 @@ From each kept master:
   the migration carries each description, and each Sing label is unique in the catalog. It is
   listed in `vitest.node-tests.json` beside `ear-rooms.test.ts`. `SingRoomPicker.test.tsx` drops
   its `as RuntimeBackgroundOption['id']` cast with the invented fixture.
+- **Gates on the pushed head** (`e37cb157c` on origin/main 4293c8979, pushed 3 Nov 21:3x UTC with
+  `git push -u`): `pnpm check` exit 0 and the tree unchanged (0 errors, main's 11 warnings);
+  `typecheck:db` and `mercurypitch:typecheck` exit 0; the focused root suites 214 files / 2,605
+  tests; the native app 14 / 317; `test:db` 115 / 2,387; `metrics:check` no regressions; the index
+  check and `pr:validate` clean. The same set passed before the rebase (2,598 root tests then; main
+  added seven). Browser: `tools/sing-check.mjs` against the built native bundle (dev worker compiled
+  in, every request to it refused) at 390 x 844 x3 and 844 x 390: the picker offers the three free
+  covers in order, each "Included", and each draws `-portrait-2x` upright and `-4k` sideways at its
+  focal point; screenshots in `review/browser/`. The full `probe-bundle.mjs` was not run: its
+  Playwright (1.60) wants Chromium 1223 and only 1194 is installed, and it names no executable.
+- **Found by the final typecheck:** `descriptionFor` in `src/lib/backgrounds/background-surface.ts`
+  is an exhaustive switch over the edition, so `sing-rooms` gets its own fallback line ("A quiet
+  place to sing, one lamp lit low"; the three rooms carry their own descriptions, so it is never
+  shown for them). `sing-rooms.test.ts` types its Sing list as `readonly BackgroundDefinition[]`,
+  because the catalog's `as const` union has no `treatment` on most members.
 - **Spec:** BG-CAT-1, BG-CAT-2, BG-CAT-7 and the header now name the Ear Lab and the Sing room;
   BG-STUDIO-15 said "all five surfaces" while the Studio filter already had six, now seven. The
   source list named `0033_drum_background_surface.sql` and `0034_drum_background_pack.sql`, files
@@ -691,6 +707,13 @@ pnpm docs:index:check
    constant, the worker map, the migration, the CSS wash, the Studio filter, sing-rooms.test.ts
    and the spec).
 
+**3 Nov, as committed** (author Komediruzecki, the repo's configured identity, no trailers):
+`202a31cff` (16 files: the eight WebPs, the catalog's free entries, its test, the picker test,
+native-assets, the workflow regex, probe-bundle, the index and the metrics baseline) and
+`e37cb157c` (12 files: the supporter entries, `descriptionFor`, the worker map, 0073, the wash,
+the Studio filter and its test, sing-rooms.test.ts, vitest.node-tests.json, the spec and the
+index), on origin/main 4293c8979.
+
 ## 9. The PR (against main, no template in the repo)
 
 **Title:** `feat(sing-room): More covers for the Sing room, two free and three for supporters`
@@ -708,7 +731,7 @@ pnpm docs:index:check
 - **Credits:** the total spent, from the ledger.
 - **For the owner:** publish each supporter room in Premium Studio (filter: Sing) by uploading
   landscape-2k, landscape-4k and portrait-2k, then publishing the revision. Until then the rooms
-  are invisible. Apply migration 0072 through the normal deploy.
+  are invisible. Apply migration 0073 (3 Nov: 0072 was taken on main) through the normal deploy.
 - **Check on a phone:** each free cover in the picker, upright and on its side. The trace stays
   readable over each band at the default glass and at both ends of the slider. The cards of the
   exercise picker over each cover. The Sing door's open from the alley ends on the chosen cover,
@@ -734,6 +757,15 @@ pnpm docs:index:check
   saved id is a supporter id).
 - Still open from 30 Oct: the room's name does not follow the cover (`ROOM_NAMES.sing`), and the
   alley door's loop is the Retro Analog Studio's.
+- **Seen in the browser check:** both new covers are darker on screen than the Retro Analog Studio,
+  the Choir Room most (sideways at rest, the upper screen averages 15.6 against the shipped 29.3, the
+  attic 22.9). In the PR body as a phone check; a stronger landscape lift needs no generation.
+- **New on main, 3 Nov 19:49:** b9177baff adds a SessionStart hook that sets the git identity to
+  aetheris007 in the owner's cloud sessions. The lead's correction names the configured identity,
+  Komediruzecki (47 of main's last 60 commits are authored so), and both commits use it. If the
+  owner wants the hook's identity, re-author before merging.
+
+**30 Oct** (superseded where the 3 Nov notes above say so).
 
 - **The generate tool.** The Higgsfield connector in this session reads only. A connector or
   session with Higgsfield generation is needed to run section 2 onwards.
