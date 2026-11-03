@@ -2627,6 +2627,9 @@ describe('a song started with its sound on AirPlay alone', () => {
     routes.setAudioRouteForTests('speaker', 'Speaker', 48000)
     suspicion.notePageAudioContext({ sampleRate: 44100 })
     vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    // What a test build's audio report listens for (audio-report.ts).
+    const started = vi.fn()
+    const stopListening = suspicion.onSongStartOnAirPlay(started)
     try {
       await mountRoom()
       current().setLoading(false)
@@ -2636,7 +2639,9 @@ describe('a song started with its sound on AirPlay alone', () => {
       expect(screen.getByTestId('karaoke-airplay-hint')).toHaveTextContent(
         'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
       )
+      expect(started).toHaveBeenCalledTimes(1)
     } finally {
+      stopListening()
       suspicion.resetAirPlaySuspicionForTests()
       routes.setAudioRouteForTests(null)
     }

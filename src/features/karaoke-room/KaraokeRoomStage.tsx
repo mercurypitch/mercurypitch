@@ -89,6 +89,7 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { NO_LYRIC_GLANCE } from '@/lib/lyric-glance'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { asPlaybackCause } from '@/lib/playback-cause'
+import { noteSongStart } from '@/stores/airplay-suspicion'
 import type { NativeNowPlaying } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { arrivalCue, arrivalSong } from './karaoke-arrival'
@@ -280,6 +281,8 @@ export const KaraokeRoomStage: Component = () => {
     on(isPlaying, (playing) => {
       if (!playing) return
       setRunOn(true)
+      // On AirPlay alone, a test build writes its audio report then.
+      noteSongStart()
       const entry = untrack(cue)
       if (entry === null) return
       rememberSungSong(entry.song.sessionId)

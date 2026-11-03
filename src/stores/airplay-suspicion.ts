@@ -41,7 +41,14 @@
 // room's sound to a TV and Screen Mirroring can (KaraokeAirPlayHint.tsx),
 // and the stopped-song notice says the same (sound-stopped.ts). On the
 // owner's LG C2 the TV showed the song's name and a spinner, and no sound
-// came from the TV or the phone, while the song's clock ran on.
+// came from the TV or the phone, while the song's clock ran on. An iPhone
+// 11's own session did say airplay, at 44.1 kHz like the page, where the
+// rate alone could not have told: so the route counts as well.
+//
+// The room says each song it starts (`noteSongStart`); on AirPlay alone,
+// whoever listens hears it (`onSongStartOnAirPlay`): a test build writes
+// its audio report into the console then (audio-report.ts in the app),
+// since leaving the room for the Developer screen stops the song.
 
 import { createEffect, createRoot, createSignal } from 'solid-js'
 import { audioRoute, audioSessionRate } from '@/stores/audio-route-store'
@@ -62,6 +69,7 @@ export interface AirPlayFacts {
 const [pageRate, setPageRate] = createSignal<number | null>(null)
 const [screen, setScreen] = createSignal(false)
 let seen = new WeakSet<object>()
+const startListeners = new Set<() => void>()
 
 /** The two routes the app's session reports while WebKit's is on AirPlay. */
 const BUILT_IN: Partial<Record<NativeAudioRoute, string>> = {
@@ -100,6 +108,26 @@ export const airPlaySuspected = (): boolean => suspectsAirPlay(airPlayFacts())
  */
 export const airPlayAlone = (): boolean =>
   !screen() && (audioRoute() === 'airplay' || airPlaySuspected())
+
+/** Hear each Karaoke song that starts on AirPlay alone. Returns the stop. */
+export function onSongStartOnAirPlay(listener: () => void): () => void {
+  startListeners.add(listener)
+  return () => {
+    startListeners.delete(listener)
+  }
+}
+
+/** A Karaoke song started: told to whoever listens, on AirPlay alone. */
+export function noteSongStart(): void {
+  if (!airPlayAlone()) return
+  for (const listener of [...startListeners]) {
+    try {
+      listener()
+    } catch {
+      // A report that broke must not stop the song.
+    }
+  }
+}
 
 /**
  * A context the page made at the rate its output runs at: no rate was asked
@@ -173,9 +201,10 @@ export function followAirPlaySuspicion(): () => void {
   })
 }
 
-/** Tests only: no page rate, no screen, and no context seen. */
+/** Tests only: no page rate, no screen, no context seen, no listener. */
 export function resetAirPlaySuspicionForTests(): void {
   setPageRate(null)
   setScreen(false)
   seen = new WeakSet<object>()
+  startListeners.clear()
 }

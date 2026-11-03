@@ -32,7 +32,9 @@
 // sends the sound and how loud (AudioOutput, live on every change), the
 // session it plays through, the mic tracks and contexts the page holds
 // open (audio-census.ts), who holds the shared clock, and the rooms' one
-// output (room-output.ts). audio-readout.ts words each of them.
+// output (room-output.ts). audio-readout.ts words each of them, and
+// audio-report.ts builds the rows and the report, which a test build also
+// writes into the console as a Karaoke song starts on AirPlay.
 //
 // On top, "One volume in rooms" (room-volume-switch.ts): a premium room
 // keeps one iOS session, and so one volume, for its whole visit
@@ -41,96 +43,26 @@
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
-import { sharedAudioContextOwners } from '@irchiinnuss/audio-io'
-import { pageAudioSessionHolders, pageAudioSessionType, } from '@irchiinnuss/mobile-runtime/page-audio-session'
 import { sharePayload } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { createSignal, Index, onCleanup, Show } from 'solid-js'
-import { roomOutputIfMade, roomOutputReadings, } from '@/components/room-kit/room-output'
-import type { AudioDiagnosticEntry } from '@/lib/audio-diagnostics'
-import { clearAudioDiagnostics, describeAudioError, formatAudioDiagnostics, lastAudioDiagnostic, onAudioDiagnostic, recordAudioDiagnostic, } from '@/lib/audio-diagnostics'
-import { micManager } from '@/lib/mic-manager'
+import { clearAudioDiagnostics, onAudioDiagnostic, recordAudioDiagnostic, } from '@/lib/audio-diagnostics'
 import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { ambient } from '../alley/RoomsAlley'
-import { censusContexts, censusCounts, censusTracks } from './audio-census'
-import { contextsLine, hardwareLine, leasesLine, outputLine, roomOutputLine, sessionLine, tracksLine, volumeLine, } from './audio-readout'
+import type { ReportFacts, ReportRow } from './audio-report'
+import { reportRows, reportText as textOf } from './audio-report'
 import { oneVolumeInRooms, setOneVolumeInRooms } from './room-volume-switch'
 import type { DeviceFacts } from './settings/device-facts'
 import { loadDeviceFacts } from './settings/device-facts'
 import { SettingsGroup, SettingsRow } from './settings/SettingsList'
 import { SettingsSwitch } from './settings/SettingsSwitch'
 import { playTestTone } from './test-tone'
-import { orientationRow, safeInsetsRow } from './viewport-diagnostics'
 
 /** How often the rows are read while the screen is open. */
 export const POLL_MS = 250
 /** The alley's own fade in (RoomsAlley FADE_IN_MS). */
 const FADE_MS = 600
-
-interface Row {
-  label: string
-  value: string
-}
-
-/** The newest of a step's two outcomes: `fetched` or `fetch-failed`. */
-const lastStep = (done: string, failed: string): AudioDiagnosticEntry | null =>
-  lastAudioDiagnostic((e) => e.event === done || e.event === failed)
-
-function fetchRow(): string {
-  const entry = lastStep('fetched', 'fetch-failed')
-  if (entry === null) return 'none yet'
-  const d = entry.detail
-  if (entry.failed) return `failed · ${describeAudioError(d.error)}`
-  return `status ${String(d.status)} · ok ${String(d.ok)} · ${String(d.bytes)} B · ${String(d.ms)} ms`
-}
-
-function decodeRow(): string {
-  const entry = lastStep('decoded', 'decode-failed')
-  if (entry === null) return 'none yet'
-  const d = entry.detail
-  if (entry.failed) return `failed · ${describeAudioError(d.error)}`
-  const seconds = Number(d.duration).toFixed(2)
-  return `${seconds} s · ${String(d.channels)} ch · ${String(d.sampleRate)} Hz · ${String(d.ms)} ms`
-}
-
-/** The newest failure of any source, with the step it failed at. */
-function errorRow(): string {
-  const entry = lastAudioDiagnostic((e) => e.failed)
-  if (entry === null) return 'none'
-  const stage = entry.event.replace(/-failed$/u, '')
-  const d = entry.detail
-  const why = describeAudioError(d.error ?? d.reason ?? d.state)
-  const age = Math.max(
-    0,
-    Math.round((Date.now() - Date.parse(entry.wall)) / 1000),
-  )
-  return `${stage} · ${entry.source} · ${why} · ${String(age)} s ago`
-}
-
-/** Whose a context is, where the panel can tell: the alley's or the rooms'. */
-function whose(context: BaseAudioContext): string | null {
-  if (context === ambient().context()) return 'alley'
-  if (roomOutputIfMade(context) !== null) return 'rooms'
-  return null
-}
-
-/** The page's session type, and who asked for it (page-audio-session.ts). */
-function audioSessionType(): string {
-  const type = pageAudioSessionType()
-  if (type === null) return 'not available'
-  const holders = pageAudioSessionHolders()
-  return holders.length === 0 ? type : `${type}, held by ${holders.join(', ')}`
-}
-
-/** The app's version and build, the phone and its system, as far as read. */
-function appLine(facts: DeviceFacts | null): string {
-  return [
-    facts?.version ?? 'version not read',
-    facts?.model ?? 'model not read',
-    facts?.system ?? 'system not read',
-  ].join(' · ')
-}
 
 export const AudioDiagnosticsPanel: Component = () => {
   const [tick, setTick] = createSignal(0)
@@ -180,52 +112,17 @@ export const AudioDiagnosticsPanel: Component = () => {
     return ambient().sounding() !== null
   }
 
-  const rows = (): Row[] => {
+  /** What the report and the rows are read from, as the screen has it. */
+  const at = (): ReportFacts => ({
+    facts: facts(),
+    output: output(),
+    native: phone !== null,
+    clockMoving: moving,
+  })
+
+  const rows = (): ReportRow[] => {
     tick()
-    const alley = ambient()
-    const view = alley.context()
-    const clock =
-      view === null
-        ? 'none yet'
-        : `${view.currentTime.toFixed(3)} s · ${moving ? 'moving' : 'stalled'}`
-    return [
-      {
-        label: 'Context',
-        value:
-          view === null
-            ? 'none yet: tap a door, or Play below'
-            : `${view.state} · ${String(view.sampleRate)} Hz`,
-      },
-      { label: 'Clock', value: clock },
-      {
-        label: 'Ambient',
-        value: `${alley.sounding() ?? 'silent'} · level ${alley.level().toFixed(2)} · ${String(alley.sourcesStarted())} started`,
-      },
-      { label: 'Last fetch', value: fetchRow() },
-      { label: 'Last decode', value: decodeRow() },
-      { label: 'Last error', value: errorRow() },
-      { label: 'Audio session', value: audioSessionType() },
-      { label: 'Page', value: document.visibilityState },
-      { label: 'Orientation', value: orientationRow() },
-      { label: 'Safe insets', value: safeInsetsRow() },
-      { label: 'Output', value: outputLine(output(), phone !== null) },
-      { label: 'Volume', value: volumeLine(output()) },
-      { label: 'Phone session', value: sessionLine(output()) },
-      { label: 'Phone audio', value: hardwareLine(output()) },
-      {
-        label: 'Mic tracks',
-        value: tracksLine(censusTracks(), censusCounts(), {
-          stream: micManager.getStream() !== null,
-          consumers: micManager.getConsumers(),
-        }),
-      },
-      {
-        label: 'Contexts',
-        value: contextsLine(censusContexts(), censusCounts(), whose),
-      },
-      { label: 'Shared clock', value: leasesLine(sharedAudioContextOwners()) },
-      { label: 'Room output', value: roomOutputLine(roomOutputReadings()) },
-    ]
+    return reportRows(at())
   }
 
   const tone = (): void => {
@@ -245,24 +142,10 @@ export const AudioDiagnosticsPanel: Component = () => {
     redraw()
   }
 
-  /** The report's head: what a reader needs before the first entry. */
-  const head = (): string[] => {
-    const reading = output()
-    const types = reading?.outputs.map((port) => port.type).join(', ') ?? ''
-    return [
-      `App: ${appLine(facts())}`,
-      `App session: ${sessionLine(reading)}`,
-      `Outputs: ${outputLine(reading, phone !== null)}${types === '' ? '' : ` (${types})`}`,
-      `Page session type: ${audioSessionType()}`,
-      `One volume in rooms: ${oneVolumeInRooms() ? 'on' : 'off'}`,
-    ]
+  const reportText = (): string => {
+    tick()
+    return textOf(at())
   }
-
-  const reportText = (): string =>
-    formatAudioDiagnostics(
-      head(),
-      rows().map((r) => `${r.label}: ${r.value}`),
-    )
 
   const share = async (): Promise<void> => {
     const text = reportText()
