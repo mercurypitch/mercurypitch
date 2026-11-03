@@ -5,8 +5,10 @@ import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/l
 import { localSaveNavigationReason } from '@/lib/local-save-navigation-reason'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
+import { compileStudioArrangement } from '@/lib/studio/model/arrangement-plan'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
-import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
+import { studioSegmentGain } from '@/lib/studio/playback/edge-envelope'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { controllerServiceFixture, preparedFixture, presenceFixture, } from './controller/controller.fixture'
 import type { StudioSourceEntry } from './integration/source-catalog'
@@ -59,6 +61,31 @@ function mount(options: StudioControllerOptions = {}): {
     })
   })
   return { controller, service }
+}
+
+/**
+ * What a song plays over its first `frames` frames: each segment's samples
+ * through the gain the live and offline graphs give it (edge-envelope.ts).
+ */
+function mixdown(
+  project: StudioProject,
+  assets: readonly StudioAsset[],
+  sample: (assetId: string, sourceFrame: number) => number,
+  frames: number,
+): number[] {
+  const out = new Array<number>(frames).fill(0)
+  for (const lane of compileStudioArrangement(project, assets).lanes)
+    for (const segment of lane.segments) {
+      const end =
+        segment.startFrame + segment.sourceOutFrame - segment.sourceInFrame
+      for (let t = segment.startFrame; t < Math.min(end, frames); t++)
+        out[t] +=
+          sample(
+            segment.assetId,
+            segment.sourceInFrame + t - segment.startFrame,
+          ) * studioSegmentGain(segment, t)
+    }
+  return out
 }
 
 describe('Studio controller', () => {
@@ -758,6 +785,86 @@ describe('Studio controller', () => {
         out: { fromSourceFrame: 3160, toSourceFrame: 3400 },
       },
     })
+  })
+
+  it('punches a take over the clip on its lane: the range plays only the take, the rest as it did', async () => {
+    const { controller } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+    await controller.addFile(
+      new File(['abc'], 'Beat.wav', { type: 'audio/wav' }),
+    )
+    const lane = controller.project()!.tracks[0].id
+    const beat = controller.project()!.clips[0]
+    // The beat's samples sit above zero and the take's below, so each says whose it is.
+    const sample = (assetId: string, frame: number) =>
+      assetId === beat.assetId
+        ? 1 + (frame % 101) / 101
+        : -1 - (frame % 89) / 89
+    const play = (heard = sample) =>
+      mixdown(controller.project()!, controller.assets(), heard, 4800)
+    const before = play()
+
+    // A take over song frames 1200 to 3600, with 5 ms fades at its edges.
+    const kept = await controller.addRecording({
+      wav: new Blob(['take'], { type: 'audio/wav' }),
+      title: 'Take 2',
+      startFrame: 1200,
+      sourceInFrame: 600,
+      sourceOutFrame: 3000,
+      fadeFrames: 240,
+      punch: true,
+      trackId: lane,
+    })
+
+    expect(kept).toBe(true)
+    expect(controller.project()!.tracks).toHaveLength(1)
+    expect(controller.laneNotice()).toBeNull()
+    expect(controller.undoLabel()).toBe('Undo punch in')
+    const clips = [...controller.project()!.clips].sort(
+      (a, b) => a.startFrame - b.startFrame,
+    )
+    expect(
+      clips.map((clip) => [
+        clip.trackId,
+        clip.assetId === beat.assetId,
+        clip.startFrame,
+        clip.sourceInFrame,
+        clip.sourceOutFrame,
+      ]),
+    ).toEqual([
+      [lane, true, 0, 0, 1200],
+      [lane, false, 1200, 600, 3000],
+      [lane, true, 3600, 3600, 4800],
+    ])
+    // The beat fades out over the 5 ms before the in point, and back in over the 5 ms after the out point.
+    expect(clips[0].fades.out).toEqual({
+      fromSourceFrame: 960,
+      toSourceFrame: 1200,
+    })
+    expect(clips[2].fades.in).toEqual({
+      fromSourceFrame: 3600,
+      toSourceFrame: 3840,
+    })
+
+    const after = play()
+    // Outside the range and those two fades, every sample is the one it was.
+    expect(after.slice(0, 960)).toEqual(before.slice(0, 960))
+    expect(after.slice(3840)).toEqual(before.slice(3840))
+    // In the range only the take plays: silence it and the range is silent.
+    const take = clips[1].assetId
+    const withoutTake = play((assetId, frame) =>
+      assetId === take ? 0 : sample(assetId, frame),
+    )
+    expect(withoutTake.slice(1200, 3600)).toEqual(new Array(2400).fill(0))
+    // Past its own fades, the take plays as it was sung.
+    expect(after.slice(1440, 3360)).toEqual(
+      Array.from({ length: 1920 }, (_, i) => sample(take, 840 + i)),
+    )
+
+    // One Undo puts the beat back whole.
+    expect(controller.undo()).toBe(true)
+    expect(controller.project()!.clips).toEqual([beat])
+    expect(play()).toEqual(before)
   })
 
   it('keeps a loop take as one file, its clip on the newest whole pass and a pass away from the rest', async () => {

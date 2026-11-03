@@ -41,10 +41,11 @@ describe('studioTakeImport', () => {
       assetId: 'take-9',
     })
     expect(kept.sourceOutFrame).toBeUndefined()
+    expect(kept.punch).toBeUndefined()
     expect(wavFrames(kept.wav)).toBe(48000)
   })
 
-  it('keeps a punch to its range with fades, the whole capture as its file', () => {
+  it('keeps a punch to its range with fades, the whole capture as its file, to replace what its lane plays there', () => {
     const kept = studioTakeImport(
       take(96000, { cut: { mode: 'punch', range: RANGE } }),
     )!
@@ -53,6 +54,7 @@ describe('studioTakeImport', () => {
       sourceInFrame: 6000,
       sourceOutFrame: 54000,
       fadeFrames: 240,
+      punch: true,
     })
     expect(wavFrames(kept.wav)).toBe(96000)
   })
@@ -78,6 +80,8 @@ describe('studioTakeImport', () => {
       passes: { firstFrame: 6000, frames: 48000, count: 3 },
       trackId: 'lane-1',
     })
+    // A loop take keeps today's placement: it replaces nothing.
+    expect(kept.punch).toBeUndefined()
     // Not a frame of silence added, and not a pass copied.
     expect(wavFrames(kept.wav)).toBe(captured)
   })
