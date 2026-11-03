@@ -1,8 +1,12 @@
 # Sing room covers: plan
 
-Status, 30 Oct 2026: **BLOCKED at generation.** Nothing was generated, no credits were spent, no
-branch was made and nothing in the repo changed. Everything below is ready to run once a
-Higgsfield generate tool is attached to the session.
+Status, 3 Nov 2026: **DONE.** Generated with the full Higgsfield connector (`mcp__Higgsfield__*`),
+106 of the 200 credits spent (LEDGER.md), branch `feat/sing-room-covers` built from origin/main
+2f2d915ac in the `presses` worktree. Two free covers and three supporter covers, all five with a
+portrait and a landscape. The sections below keep the 30 Oct plan and say, under "3 Nov", where
+the run or current main differed.
+
+Status, 30 Oct 2026 (superseded): blocked at generation, nothing generated.
 
 ## 0. What was checked
 
@@ -45,7 +49,20 @@ Higgsfield generate tool is attached to the session.
   upscale goes into the ledger as a finding. Do not run a paid upscaler unless the output is under
   3840 on its long side.
 
+**3 Nov.** `gpt_image_2_5` (flare, high, 4k) was still listed and was used for every image;
+`models_explore` also recommended FLUX 3 Image (4k, ten references), passed over for the same
+reason as the others (no house track record, and one picker would mix two generators). Output
+sizes were exact: 2160 x 3840 at 9:16 and 3840 x 2160 at 16:9, so no crop was needed for the
+ratio. `outpaint_image` (2 credits) was tried to lower two landscapes; it returns 2528 x 1696
+whatever size is asked, so only its new top strip was usable once (section 7).
+
 ## 2. Budget (200 credits, hard stop)
+
+**3 Nov.** The cost was preflighted with `get_cost` instead of a paid probe: 4.25 credits per
+image at 9:16 and at 16:9, with or without a reference, so `c <= 14` and all ten finals plus
+retakes fit. Opening balance 1,020.5 (stop at 820.5). Spent: 10 portraits (two takes per room)
+42.5, 10 landscapes (two takes per room) 42.5, 4 landscape retakes 17, 2 outpaints 4; total
+**106**, closing balance **914.5**. Every balance read is in LEDGER.md.
 
 - Read `balance` before the first generation and after every one. Log each in LEDGER.md as
   before / after / delta.
@@ -90,6 +107,14 @@ middle 60% of the width. Calm-band luminance at 2K is a mean of 49 (sd 31) in la
 (sd 25) in portrait. The room lays a 50% black dim scrim over it (`.scrimDim` in
 sing-room.module.css), so the covers must be dark rooms, and `treatment` stays the default (dark).
 
+**3 Nov, re-measured and changed on main.** The calm band at 2K reads 49.3 / 33.5 (landscape) and
+33.7 / 26.6 (portrait); frame means 42.2 and 29.8. The room's scrim is no longer a flat 50%:
+`.scrimDim` is black 50% portrait / 70% landscape at opacity `1 - --mp-sing-glass`, and the
+glass defaults to 0.5, so a first visit sees 25% portrait / 35% landscape, plus the top (55% to
+0 at 32%) and bottom (60% up to 30%, 35% at 52%, 0 at 72%) gradients. `tools/review.py` paints
+exactly those. The shipped cover's own brightest light starts at y 0.632 (landscape) and 0.761
+(portrait): that is the "focus low" the new covers were held to.
+
 Calm bands (catalog comment): landscape y 0.13 to 0.58, portrait y 0.08 to 0.56. The focal point
 is `{ x: 0.5, y: 0.68 }` and the room positions the cover with `background-position: x% y%` and
 `background-size: cover`. One focal point serves both files, so each orientation has to put its
@@ -108,6 +133,13 @@ warm practical light.
 | P1   | premium | `sing-echo-cistern`       | Echo Cistern      | Brick vaults over still water, one lantern on the walk |
 | P2   | premium | `sing-snowfall-pavilion`  | Snowfall Pavilion | A glass room in snowy pines at blue hour, a lamp lit   |
 | P3   | premium | `sing-ghost-light-stage`  | Ghost Light Stage | An empty stage after the show, one bare bulb burning   |
+
+**3 Nov.** All five were made, P3 included. Three descriptions changed to say what the kept
+images show: F1 "Oak rafters, an upright piano, one brass lamp at night", F2 "Empty risers after
+hours, one lamp by the music stand", P2 "A glass room in snowy pines at blue hour, a lantern lit".
+Ids and labels are as above. Label check on current main: no new label repeats one in the
+catalog (the catalog itself already holds one duplicate, "Midnight Rain Room", so the new test
+checks the Sing labels only).
 
 P3 is optional and depends on the budget (section 2). No new id or label collides with the catalog
 (checked against main ccf341148: two piano salons and a jam attic exist, which is why there is no
@@ -201,6 +233,101 @@ The landscape layout sentence (LAYOUT-L). It goes with the kept portrait as `ima
 - **P3-L:** "The same stage, wider: the back wall spans the width, the ghost light at the centre of the
   boards, the chair and the stand nearby, the curtain at the far left edge." + LAYOUT-L + STYLE
 
+### 5.1 As submitted, 3 Nov (every prompt in the ledger)
+
+Every prompt ended with the same two blocks:
+
+- **LAYOUT-P (portraits):** "Portrait, 9:16. Composition: from the top tenth of the frame down
+  to just past the middle (from 8% to 56% down), across the whole width, the frame is plain,
+  evenly and dimly lit, with no lamps, windows, frames, shelves or objects in it. Everything else
+  sits in the lower third. The brightest light in the image sits low, about 68% down and near the
+  centre. The top tenth and the bottom sixth fall into shadow."
+- **LAYOUT-L (landscapes, rounds 2):** as section 5's LAYOUT-L, word for word.
+- **STYLE:** "Photorealistic interior photograph, shot at eye level on a 35 mm lens, natural
+  perspective with straight verticals. Warm tungsten practical light against deep brown-black
+  shadow, low-key exposure, fine film grain, rich but muted colour. Quiet and empty, as if a
+  singer has just stepped out. No people, no figures, no animals, no characters, no text, no
+  lettering, no numbers, no signage, no logos, no brand names or badges on any object, no
+  posters, no screens, no recognisable real place."
+
+Round 1, portraits (jobs 1 to 10), the room sentence before LAYOUT-P + STYLE:
+
+- **F1 P-A (job 1):** section 5's F1-P, with "its lid and fallboard closed and completely plain"
+  and "its shade no higher than the top of the piano".
+- **F1 P-B (job 2, kept):** "An attic rehearsal room under a pitched oak roof at night, seen
+  straight on. Most of the frame is the far gable wall of soft warm-grey limewashed plaster, plain
+  and even, framed by dark oak rafters at the far left and far right edges and a dark ridge beam
+  along the very top. Low down near the centre, a small brass table lamp with a cream linen shade
+  glows amber on a low side table beside an old dark-walnut upright piano whose lid and fallboard
+  are closed and completely plain; an empty wooden music stand, a low stool with a folded wool
+  throw, and a faded rug on dark wide floorboards. The lamp's warm pool lights the piano and the
+  rug; the plaster above fades evenly into shadow."
+- **F2 P-A (job 3):** section 5's F2-P as written.
+- **F2 P-B (job 4, kept):** "An empty choir rehearsal room in an old school building after hours,
+  seen from where the conductor stands. The upper half of the frame is the plain back wall of
+  matte deep-teal painted wood panelling, dim and even, with nothing on it. Across the lower
+  third, three low tiers of pale ash timber risers with a row of empty bentwood chairs on the
+  lowest tier; at the front centre an empty black music stand and, beside it, a small brass floor
+  lamp with a parchment shade set low, glowing amber, the brightest light in the room, its warm
+  pool on the parquet floor. A tall window at the far right edge shows the last deep blue of
+  dusk."
+- **P1 P-A (job 5, kept):** section 5's P1-P as written.
+- **P1 P-B (job 6):** the same room as P-A, reworded ("a vast old underground brick reservoir",
+  "brick barrel vaults on low brick piers", "a plain iron handrail").
+- **P2 P-A (job 7, kept):** section 5's P2-P with "deep blue hour, close to night", "a paper
+  lantern floor lamp standing low at the centre" and "an empty wooden music stand" in place of
+  the microphone (a vintage chrome microphone invites a badge).
+- **P2 P-B (job 8):** "A small timber-framed glass room at the edge of a snowy pine forest at
+  nightfall ..." with "a brass floor lamp with a linen shade set low beside a low oak bench".
+- **P3 P-A (job 9):** section 5's P3-P with "on a short plain stand, the bulb at about waist
+  height".
+- **P3 P-B (job 10, kept):** "A small old theatre stage late at night after the last performance,
+  seen standing on the stage looking upstage. The upper half of the frame is the bare back wall of
+  the stage, painted matte black-brown, plain and even, with no rigging, lamps, ladders, cables or
+  markings. On the worn dark stage boards near the centre, low in the frame, stands the ghost
+  light, a single bare tungsten bulb in a simple wire cage on a short iron stand at about waist
+  height, the brightest point in the image, its soft warm pool spreading across the boards; a
+  wooden stool and an empty microphone stand wait at the edge of the light. Folds of dark red
+  velvet curtain at the far left and far right edges."
+
+Round 2, landscapes (jobs 11 to 20, two takes each, the kept portrait's job id as
+`image_references`), the room sentence before LAYOUT-L + STYLE:
+
+- **F1:** "The same attic rehearsal room as the reference image, wider: the plain warm-grey
+  limewashed plaster wall spans the width between dark oak rafters at the far left and far right
+  edges, the old dark-walnut upright piano right of centre with its lid and fallboard closed and
+  completely plain, the small brass table lamp with its cream linen shade glowing amber on its low
+  side table left of centre, the wooden music stand further left, the piano stool with its folded
+  wool throw, and the faded rug on dark wide floorboards."
+- **F2:** "The same choir rehearsal room as the reference image, wider: the plain matte deep-teal
+  panelled back wall spans the width, the low tiers of pale ash risers with their row of empty
+  bentwood chairs cross the lower part of the frame, the empty black music stand and the brass arc
+  floor lamp glowing amber near the centre with its warm pool on the herringbone parquet, the tall
+  window onto deep blue dusk at the far right edge."
+- **P1:** "The same underground brick cistern as the reference image, wider: more brick barrel
+  vaults and piers to either side fading into black, the narrow stone walkway with its plain iron
+  railing crossing the lower part of the frame above perfectly still black water, the one
+  hurricane lantern at the centre of the walkway with its long golden reflection on the water
+  below, faint warm bounce on the nearest piers at the left and right edges."
+- **P2:** "The same oak-and-glass pavilion in the snowy pine forest as the reference image, wider:
+  the tall glass wall spans the whole width onto softly falling snow and faint pines in deep
+  blue-grey mist, the low oak bench with its folded wool blanket at the left, the glowing paper
+  lantern standing low at the centre, the wooden music stand at the right, snow banked along the
+  foot of the glass, the pale oak floor in front."
+- **P3:** "The same small theatre stage as the reference image, wider: the plain dark back wall
+  spans the width, the ghost light, one bare bulb in a wire cage on a short iron stand, at the
+  centre of the worn black boards with its soft warm pool, the wooden stool to its left and the
+  microphone stand to its right, dark red velvet curtains at the far left and far right edges."
+
+Round 3, retakes (jobs 21 to 24, two each for F1 and P3, none kept): the round 2 sentence with
+"seen from a little further back and a little higher, with a shift lens keeping every vertical
+straight", "the plain wall fills the frame from the top down to about 60% down ... every piece of
+furniture stands below that line", the lamp's or bulb's height given as 62 to 64% down, and the
+layout block's band widened to 13% to 60%. The model held its furniture heights regardless, which
+is why two landscapes were lowered in post (section 7).
+
+Outpaints (jobs 25, 26): `outpaint_image`, 3:2 at 3840 x 2560 asked, from jobs 19 and 11.
+
 ## 6. The bar each kept image must pass
 
 The script lives in the scratchpad, Pillow under `python3 -I`, and takes paths as arguments:
@@ -217,7 +344,57 @@ The script lives in the scratchpad, Pillow under `python3 -I`, and takes paths a
 5. A side-by-side with the shipped cover under a simulated 50% black scrim (a preview JPEG in
    `sing-art/review/`), for realism and light.
 
+**3 Nov, bar 3 recalibrated.** The shipped cover fails bar 3 as written: its brightest 1% sits
+at x 0.30, y 0.85 in portrait (the console's lamps) and at y 0.51 in landscape (the edge pendant
+pulls it up). So bar 3 became two measurable things the shipped cover passes: the brightest light
+inside the middle 60% of the width starts below the band (`tools/hottop.py`: the topmost row with
+at least 0.05% of its pixels over L 200; shipped 0.632 / 0.761), and the focal point recorded is
+the lamp's own position (`tools/focal.py`, the brightest 0.1%), not its pool on the floor. Bars 1,
+2, 4 and 5 stood as written (sd bound 36 against the shipped 33.5). Every kept file's numbers are
+in LEDGER.md and below.
+
 ## 7. Crop and encode (free covers)
+
+**3 Nov, what was done.** No ratio crop was needed. Three kinds of finishing, each recorded per
+file in LEDGER.md:
+
+- **Lowered, so the lamp sits below the band** (the model would not frame it lower, round 3):
+  F1 landscape, 213 px: the top strip of outpaint job 26 (new ceiling and ridge beam, scaled
+  1.52x, tone-matched to the source's top rows, feathered over 48 px) above the untouched job 11,
+  the same rows dropped from the bottom (floorboards). F2 landscape, 130 px, and P3 portrait and
+  landscape, 170 px each: the top rows mirrored upward (a near-black wall with vertical curtain
+  folds or plain panelling, where a mirror is seamless) and the same rows dropped from the bottom
+  (floor, or the black stage front); in F2 the window's top 30 rows were then copied from the 30
+  below, so a slanted mullion does not mirror into a chevron. Every source pixel kept is
+  unchanged; only the added rows are new, all in the top tenth under the top scrim.
+- **Lifted, to the shipped cover's exposure:** `tools/lift.py`, `f(x) = x + k x (1 - x)^3` on
+  luminance with RGB scaled by f(L)/L, so black stays black, highlights move under 1% and hue and
+  saturation hold. k = 1.0 for P1 and P3 (frame means 15 to 16 and 12 to 16 became 26 to 28 and
+  22 to 27, against the shipped 30 / 42); k = 0.6 for the F2 landscape (20.6 to 28.4, matching
+  its own portrait's 27.7). F1, P2 and the F2 portrait are as generated.
+- **Encoded** with `tools/encode.py` (Pillow WebP, method 6, RGB, no EXIF / ICC / XMP). Re-encoding
+  the decoded shipped files at q90 / q85 lands 4 to 6% under their sizes, the "reads slightly low"
+  of section 3, so these settings match. Byte counts (shipped 316 / 586 / 270 / 321 KB):
+
+| File | Rehearsal Attic | Choir Room |
+| --- | --- | --- |
+| `<room>.webp` 2048 x 1152 q90 | 116,810 | 199,600 |
+| `<room>-4k.webp` 3840 x 2160 q85 | 233,672 | 372,142 |
+| `<room>-portrait.webp` 1440 x 2560 q90 | 232,674 | 231,762 |
+| `<room>-portrait-2x.webp` 2160 x 3840 q85 | 303,820 | 306,946 |
+
+  The binary grows by 2.0 MB (estimate was 3). Studio variants in `masters/`:
+  `<id>-landscape-2k.webp` 2048 x 1152 q90, `<id>-landscape-4k.webp` 3840 x 2160 q85 (q82 for
+  the cistern, whose lifted brick went over 600 KB at q85), `<id>-portrait-2k.webp` 1440 x 2560
+  q90. Studio checks only orientation, 8192 px and 16 MB (`premium-background-admin.ts`).
+- **Measured on the encoded 2K files** (band mean / sd, middle-band pixels over L 200, light
+  start): attic L 35.3 / 19.8, 0%, 0.646; attic P 50.7 / 22.6, 0.002%, 0.562; choir L 22.7 / 9.9,
+  0%, 0.601; choir P 20.4 / 10.7, 0.003%, 0.569; cistern L 27.7 / 19.6, 0%, 0.684; cistern P
+  30.4 / 13.1, 0%, 0.683; pavilion L 33.8 / 11.6, 0%, 0.684; pavilion P 44.0 / 10.8, 0%, 0.680;
+  stage L 18.4 / 11.3, 0.001%, 0.597; stage P 23.2 / 11.8, 0.003%, 0.595.
+- **Focal points**, the lamp averaged over the two files, x held to 0.4 to 0.6 so the crop never
+  strays from the centred groups: attic {0.4, 0.62}, choir {0.57, 0.62}, cistern {0.49, 0.68}
+  (the lantern, not its brighter reflection), pavilion {0.5, 0.7}, stage {0.5, 0.62}.
 
 From each kept master:
 
@@ -243,6 +420,47 @@ From each kept master:
   never in git.
 
 ## 8. Code changes (branch `feat/sing-room-covers` from origin/main, worktree `presses`)
+
+**3 Nov: where current main (2f2d915ac) differs from the 30 Oct plan, and what was built.**
+
+- **Migration number:** main already has `0072_reports_and_blocks.sql`, so the pack is
+  **`0073_sing_rooms_background_pack.sql`**. No open PR and no other worktree's branch adds a 0073
+  (checked: open PRs 1117 to 1334, and rel23, l10-page, rd, polish23, the main checkout). It
+  follows 0037's shape, including `AND a.surface = 'sing'` in the assignment. Replayed: all 75
+  migration files apply on a fresh SQLite, the three identities are `active` with no revision,
+  each is assigned to `active-supporters`, `foreign_key_check` is clean, and a second run of 0073
+  changes nothing.
+- **8.1 catalog:** as planned, with the three descriptions of section 4 and the focal points of
+  section 7. Catalog order keeps both order assertions true.
+- **8.2 worker map, 8.4 CSS wash, 8.5 Studio filter:** as planned. The wash is
+  `radial-gradient(circle at 50% 70%, rgba(236, 168, 95, 0.4), transparent 26%)` on
+  `linear-gradient(145deg, #29262b, #110a06 72%)`, sampled from the three masters.
+- **8.5, new:** `src/tests/admin-premium-perks-page.test.tsx` asserts every catalog surface has a
+  filter button, but its name helper was a chain of ternaries ending in `: 'Jam'`, so `ear` and
+  `sing` both looked for the Jam button and passed while Sing had no filter at all. It is now a
+  `Record<BackgroundSurface, string>`; without the new Sing filter the case fails (checked).
+- **8.6 native packaging:** the workflow has **no `paths:` list any more** (pull requests stopped
+  running it, 30 Oct), only `changed-paths-regex`, which was widened as planned.
+  `apps/mercurypitch/src/native-assets.test.ts` now guards both halves: every free room of the
+  `sing` surface must be shipped by a glob (with the old glob it fails, listing the eight new
+  files) and every shipped file must match the regex. The probe now asserts the first three cards
+  are the three free covers in catalog order (each "Included"), that any card after them is a
+  supporter card (so a cover Studio publishes later does not break it), that no retired take is
+  offered, and that the drawn cover is still the Retro Analog Studio.
+- **8.7 tests:** as planned, plus `src/lib/backgrounds/sing-rooms.test.ts` also asserts the
+  default stays the Retro Analog Studio, every Sing cover is dark with its focal y in 0.6 to 0.75,
+  the migration carries each description, and each Sing label is unique in the catalog. It is
+  listed in `vitest.node-tests.json` beside `ear-rooms.test.ts`. `SingRoomPicker.test.tsx` drops
+  its `as RuntimeBackgroundOption['id']` cast with the invented fixture.
+- **Spec:** BG-CAT-1, BG-CAT-2, BG-CAT-7 and the header now name the Ear Lab and the Sing room;
+  BG-STUDIO-15 said "all five surfaces" while the Studio filter already had six, now seven. The
+  source list named `0033_drum_background_surface.sql` and `0034_drum_background_pack.sql`, files
+  that do not exist (they are 0036 and 0037); corrected, with 0034/0035 (ear) and 0044/0073
+  (sing) added.
+- **Unchanged and still right:** `SingRoomStage.tsx` already says "the room itself is three free
+  public covers" (it was stale with one cover and is true again). `DEFAULT_BACKGROUND_IDS.sing`
+  stays the Retro Analog Studio. The web precache lists no public images, so the web build is
+  untouched.
 
 Setup, after the film reads "done":
 
@@ -499,6 +717,23 @@ pnpm docs:index:check
 - **Tests:** what passed.
 
 ## 10. Open items (for the owner, whatever happens)
+
+**3 Nov.**
+
+- **The generate tool:** resolved (the full connector).
+- **The wording clash:** settled by the lead's correction, "no model names in commits or the PR
+  body". The PR body gives each premium generation's job ids and settings without naming a
+  model; Higgsfield records the model with each job, and LEDGER.md (not committed) names it.
+- **New: a supporter's saved Sing cover waits for the picker.** The room retains the premium
+  catalogue only while its picker is open (`useBackgroundSurfaceController('sing', pickerOpen)`,
+  the silent-first contract). In a session, a supporter cover picked there keeps drawing after the
+  sheet closes (the store keeps its assets), but after a relaunch the room draws the Retro Analog
+  Studio until the picker is opened once. The Karaoke room has the same contract with its
+  supporter stages, and Drum Night latches the catalogue on at the first Room action. Not changed
+  here: it is a request-at-room-start decision for the owner (for example, also retain when the
+  saved id is a supporter id).
+- Still open from 30 Oct: the room's name does not follow the cover (`ROOM_NAMES.sing`), and the
+  alley door's loop is the Retro Analog Studio's.
 
 - **The generate tool.** The Higgsfield connector in this session reads only. A connector or
   session with Higgsfield generation is needed to run section 2 onwards.

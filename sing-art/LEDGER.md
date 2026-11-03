@@ -53,6 +53,26 @@ is not part of this budget.
 | 3 Nov 20:1x | 918.5 | 102 | after round 3 (4 landscape retakes) |
 | 3 Nov 20:1x | 914.5 | 106 | after 2 outpaints at 2 credits each |
 
+## Kept covers and how each master was made (no credits)
+
+Masters are in `masters/` as `<id>-portrait-master.png` and `<id>-landscape-master.png`, 2160 x
+3840 and 3840 x 2160. Finishing is described in PLAN.md section 7.
+
+| Cover | Access | Portrait master | Landscape master |
+| --- | --- | --- | --- |
+| `sing-rehearsal-attic` | free | job 2, as generated | job 11, lowered 213 px with job 26's top strip |
+| `sing-choir-room` | free | job 4, as generated | job 13, lowered 130 px (mirrored top, window patched), lift 0.6 |
+| `sing-echo-cistern` | supporter | job 5, lift 1.0 | job 15, lift 1.0 |
+| `sing-snowfall-pavilion` | supporter | job 7, as generated | job 17, as generated |
+| `sing-ghost-light-stage` | supporter | job 10, lowered 170 px (mirrored top), lift 1.0 | job 19, lowered 170 px (mirrored top), lift 1.0 |
+
+Free covers: the four WebPs per room are committed in `public/sing/`. Supporter covers: the three
+Studio variants per room are in `masters/` (`<id>-landscape-2k.webp`, `-landscape-4k.webp`,
+`-portrait-2k.webp`), never in git.
+
+Closing balance 914.5, read 3 Nov 20:1x UTC after the last generation; nothing was generated
+after it.
+
 ## Prompts
 
 Recorded in full in PLAN.md section 5 (the versions actually submitted); each row above names its
