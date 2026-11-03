@@ -3035,3 +3035,8 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Reviewer running on 64b7972e4 (brief s2pkg/FIX-REVIEW-BRIEF.md).
   - Docs agent running in /dev/shm/s2plan on 2996909d1 (brief s2pkg/DOCS-BRIEF.md). After it: reanchor --base <its commit> for 64b7972e4 and any review fixes.
   - PR body drafted: s2pkg/FIX-PR-BODY.md.
+- 3 Nov ~01:1x, after restart #9 (/dev/shm wiped, pnpm store too):
+  - Main moved to 856be56ec (5 commits, no overlap).
+  - Fix branch rebased locally onto it as 27d170279 (patch-ids identical); pnpm install running in /dev/shm/s2fix. Push --force-with-lease after focused checks.
+  - Reviewer and docs agent resumed by SendMessage with recreate commands. The docs agent lost its edits and is redoing them on 27d170279, pushing after each stage.
+  - Main also has a2efe6e32 (Harmony How it works), which matters for the room 4 decision.
