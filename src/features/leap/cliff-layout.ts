@@ -123,6 +123,55 @@ export function layoutCliffs(
   }
 }
 
+/**
+ * A painted column of the cliffs (./art/, docs/plans/ear-rooms.md): its own
+ * size, px, and its flat top, px down it. The near column's ledge corner is
+ * its top right; the far one's, its top left. Each runs on below its rock
+ * into the dark, so it reaches the room's floor from the highest ledge.
+ */
+export interface ColumnPlate {
+  readonly width: number
+  readonly height: number
+  readonly top: number
+}
+
+/** The two columns as painted. */
+export const COLUMN_PLATES: {
+  readonly near: ColumnPlate
+  readonly far: ColumnPlate
+} = {
+  near: { width: 570, height: 2743, top: 1 },
+  far: { width: 573, height: 2743, top: 1 },
+}
+
+/** A painted column's box in its cliff's group (its ledge at y 0), px. */
+export interface ColumnBox {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * Where each painted column stands, in the group its cliff moves in: the
+ * near one from the room's left edge to the near cliff's edge, the far one
+ * from the far cliff's edge to the room's right, each scaled to that width
+ * with its flat top on the ledge.
+ */
+export function columnBoxes(layout: CliffLayout): {
+  near: ColumnBox
+  far: ColumnBox
+} {
+  const box = (plate: ColumnPlate, x: number, width: number): ColumnBox => {
+    const scale = width / plate.width
+    return { x, y: -plate.top * scale, width, height: plate.height * scale }
+  }
+  return {
+    near: box(COLUMN_PLATES.near, 0, layout.nearEdge),
+    far: box(COLUMN_PLATES.far, layout.farEdge, layout.width - layout.farEdge),
+  }
+}
+
 /** The tolerance band's half-height around the target's line, px. */
 export function bandHalfHeight(tolCents: number, layout: CliffLayout): number {
   return (tolCents / 100) * layout.semitone

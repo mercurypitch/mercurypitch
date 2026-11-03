@@ -147,6 +147,19 @@ describe("the premium rooms' pictures in a native build", () => {
     }
   })
 
+  it("has the painted Ear rooms' plates to fold", () => {
+    // Home note's harbour, upright and on its side; Leap's valley and its
+    // two cliffs; Harmony's lake and its jetty.
+    const plates = { 'home-note': 2, leap: 4, harmony: 3 }
+    for (const [room, count] of Object.entries(plates)) {
+      const art = PICTURES.filter(
+        (file) =>
+          file.room === room && /(?:^|\/)art\/[^/]+\.webp$/u.test(file.name),
+      )
+      expect(art.length, room).toBe(count)
+    }
+  })
+
   it('resolves every one of them to nothing in the store build', async () => {
     const fold = await foldFor('production')
     for (const { name, importer } of PICTURES) {

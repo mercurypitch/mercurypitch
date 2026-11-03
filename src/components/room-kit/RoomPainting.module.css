@@ -1,0 +1,30 @@
+/* A room's painted backdrop (RoomPainting.tsx): it covers the room, pinned
+   at the point the room names, and fades in over the drawing once shown. */
+
+.painting {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 400ms ease;
+  user-select: none;
+}
+
+.shown .image {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    transition: none;
+  }
+}

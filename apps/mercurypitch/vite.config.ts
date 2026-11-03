@@ -155,8 +155,9 @@ function isLaunchOffer(id: string): boolean {
  * The premium exercises' pictures (the Long note lantern's plates in
  * src/features/long-note/, Echo's sky and stars in src/features/echo/art/,
  * the folders Ng slides and Lip roll paint in, the Warm-up path's night and
- * orbs in src/features/warm-up/art/, and Home note's harbour in
- * src/features/home-note/art/), which only a build
+ * orbs in src/features/warm-up/art/, Home note's harbour in
+ * src/features/home-note/art/, and Leap's cliffs and Harmony's lake in
+ * src/features/leap/art/ and src/features/harmony/art/), which only a build
  * with the premium exercises shows (PREMIUM_EXERCISES,
  * src/lib/native-build.ts). The rooms fold away in the store build, but
  * their pictures would not: Vite emits an image the moment Rollup loads the
@@ -176,7 +177,7 @@ function isLaunchOffer(id: string): boolean {
  * src/premium-images-build.test.ts checks this switch on every PR.
  */
 const PREMIUM_IMAGES =
-  /(?:\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|ear-lab\/merc)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)|\/apps\/mercurypitch\/src\/shell\/legend\/stills\/[^/]+)\.webp$/u
+  /(?:\/src\/features\/(?:(?:long-note|echo|ng-slides|lip-roll|warm-up|home-note|leap|harmony|ear-lab\/merc)\/(?:[^/]+\/)*[^/]+|karaoke-room\/assets\/[^/]+)|\/apps\/mercurypitch\/src\/shell\/legend\/stills\/[^/]+)\.webp$/u
 
 /**
  * The premium exercises' voices (Merc's sung "ooh" set for Echo's calls in

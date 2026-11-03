@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { layoutLake, nameTop, restingLines, stepsPath, xOf, yOf, } from './lake-layout'
+import { JETTY_PLATE, jettyBox, layoutLake, nameTop, restingLines, stepsPath, xOf, yOf, } from './lake-layout'
 
 const FEET = 0.81
 
@@ -90,5 +90,35 @@ describe("the lake's layout", () => {
     const path = stepsPath(layout, [55, 57, 59])
     expect(path.match(/[ML]/g)).toEqual(['M', 'L', 'L'])
     expect(path.match(/H/g)).toHaveLength(3)
+  })
+  it("lays the painted jetty's deck from the room's edge to the jetty's end, on the deck", () => {
+    for (const [width, height] of [
+      [320, 480],
+      [390, 844],
+      [430, 932],
+      [820, 1180],
+      [1180, 760],
+    ]) {
+      for (const atResult of [false, true]) {
+        const layout = layoutLake(
+          width,
+          height,
+          restingLines(4),
+          FEET,
+          atResult,
+        )
+        const box = jettyBox(layout)
+        const scale = box.width / JETTY_PLATE.width
+        expect(box.x).toBe(0)
+        expect(box.y).toBe(0)
+        expect(JETTY_PLATE.deckRight * scale).toBeCloseTo(layout.jetty.right)
+        // Merc's feet on the planks, wherever the deck stands.
+        const feet = layout.merc.top + layout.merc.size * FEET
+        expect(feet).toBeCloseTo(layout.jetty.top)
+        expect(layout.merc.left + layout.merc.size / 2).toBeLessThan(
+          layout.jetty.right,
+        )
+      }
+    }
   })
 })

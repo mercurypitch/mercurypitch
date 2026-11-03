@@ -1,8 +1,8 @@
 # Ear rooms — Merc-led ear training in the native app
 
 **Status:** in progress. Four rooms are built: **Home note** (Room 1) and **First note** (Room 2),
-on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026), both drawn in
-vector until their paintings come. The owner tried both on 28 Oct 2026 ("fun and work well"). The second round, on
+on TestFlight, **Leap** (Room 3, 1 Nov 2026) and **Harmony** (Room 4, 2 Nov 2026), both painted
+on 3 Nov 2026 as Home note is. The owner tried the first two on 28 Oct 2026 ("fun and work well"). The second round, on
 `feat/ear-rooms-own-songs`, brings First note the singer's own songs, an optional words hint and a
 way on to the Karaoke room, and gives Home note its painted harbour. Leap and Harmony have a "How it
 works" demo (2 Nov 2026); Home note and First note have none yet. The owner's design
@@ -396,8 +396,44 @@ lantern lights. Four tooltips, each on the moment it explains: his note first, s
 leap, short, and landed. Its words are the demo kit's; it never opens the mic, fires a haptic or
 keeps a result, and his opening line waits, unsaid, while it plays (`src/features/leap/demo/`).
 
-**Next.** The painting (two cliffs at night, the lantern on the far ledge), as the harbour's was. Lesson
-9's Practise card opening the room, once the lessons reach the native app.
+### The cliffs' painting
+
+The room paints its valley (`src/features/leap/CliffScene.tsx`): `cliffs-portrait.webp`, and
+`cliffs-landscape.webp` on a screen held on its side, both in `src/features/leap/art/`, pinned at
+their moon (76% across, 21% down). The ledges move with every leap, so the two cliffs cannot be
+part of the plate: each is a painted column of its own (`cliffs-near.webp`, `cliffs-far.webp`),
+placed in the group its drawn cliff moved in, from the room's edge to the cliff's edge with its flat
+top on the ledge (`columnBoxes` in `cliff-layout.ts`). Each runs on below its rock into the dark, so
+it reaches the floor from the highest ledge on any screen. The room shows the painting once the
+plate and both columns have loaded, and keeps the drawing until then, or for good if a part fails.
+The lines, the band, the trail and the lantern are drawn over it: they are the exercise.
+
+**Made** on 3 Nov 2026 on Higgsfield with GPT Image 2.5 (high), from the prompts below: two upright
+valleys at 4K with Home note's harbour as the style reference, and one landscape from the chosen
+upright. The columns were made apart, two at 2K on a flat chroma green with the chosen valley as
+reference, keyed off it, trimmed, and lengthened downward by their own lowest rock, darkening.
+Their tops are level to within a few pixels, so Merc's feet and the lantern stand on them anywhere.
+
+> A deep mountain valley at night seen from high up, a cinematic digital matte painting with soft
+> film-like light and fine painterly texture, like a hand-painted background from an animated
+> feature. Deep indigo and navy night sky with a few faint first stars, calm and darker toward the
+> top. A thin pale gold crescent moon with a soft round glow, centred 77% across and 19% down the
+> frame. Two ranges of distant mountain ridges cross the whole frame between 45% and 60% down: the
+> far range pale blue-violet in the moonlight with a faint silver rim, the nearer range darker
+> indigo. A soft river of pale mist lies in the valley below the ridges, between 55% and 70% down.
+> Below the mist the frame falls away into deep dark shadow and is nearly black across the bottom
+> quarter. Nothing in the foreground: no cliffs, no rocks, no trees and no ground near the viewer,
+> only open air in front of the distant ridges. No people, no buildings, no lights, no birds, no
+> text, no logos, no frame. Portrait, 9:16.
+
+The harbour reference brought its dusk with it, the last amber and rose along the horizon; it is
+kept, as the house style has it. The columns' prompt asked for two tall columns of dark weathered
+stone facing each other across an empty gap, from the left edge to 38% across and from 60% to the
+right edge, each with "a flat, level, bare stone top like a ledge wide enough to stand on", the
+left one's inner face rim-lit silver-blue by the moon at the upper right and the right one's in
+indigo shadow with a faint amber glow, bare stone only, on one flat chroma-key green (#00FF00).
+
+**Next.** Lesson 9's Practise card opening the room, once the lessons reach the native app.
 
 ## Room 4: Harmony
 
@@ -458,8 +494,43 @@ moment it explains: his line first, yours a third above, my note not yours, and 
 words are the demo kit's; it never opens the mic, fires a haptic or keeps a result, and his opening
 line waits, unsaid, while it plays (`src/features/harmony/demo/`).
 
+### The lake's painting
+
+The room paints its lake (`src/features/harmony/LakeScene.tsx`): `lake-portrait.webp`, and
+`lake-landscape.webp` on a screen held on its side, both in `src/features/harmony/art/`. The lamps
+must stand on the water on every screen, so both plates put the far shore exactly 51% down, where
+the layout's is, and the room pins them there (61% across, 51% down: their moon stands over its
+light on the water at 61%). The jetty moves to the dock at the result, so it is painted apart
+(`lake-jetty.webp`) and placed in the group the drawn deck moved in, its deck from the room's edge
+to the jetty's end (`jettyBox` in `lake-layout.ts`), its posts fading into the water. The room
+shows the painting once the plate and the jetty have loaded, keeps the drawing until then, and
+dims the painting behind the numbers at the result, as the drawn moon and its light step back.
+
+**Made** on 3 Nov 2026 on Higgsfield with GPT Image 2.5 (high), as the cliffs were: two upright
+lakes at 4K with Home note's harbour as the style reference, one landscape from the chosen upright,
+and two jetties at 2K on chroma green with the lake as reference. Each plate was cropped from the
+top so its shore sits at 51%. The model hung each moon away from its own light on the water, so it
+was moved by hand over its reflection, and lowered under the room's chips.
+
+> A still mountain lake at night, a cinematic digital matte painting with soft film-like light and
+> fine painterly texture, like a hand-painted background from an animated feature. Deep indigo and
+> navy night sky with a few faint first stars, calm and darker toward the top. A thin pale gold
+> crescent moon with a soft round glow, centred 77% across and 18% down the frame. Along the far
+> shore, low dark rounded hills and a soft line of pine silhouettes; the far shore meets the water in
+> one level line exactly 51% down the frame, with two or three very faint warm cabin lights tiny and
+> low at the left. Below that line the lake is calm and glassy, a deep blue-black, with a soft, faint
+> path of moonlight on the water under the moon, fading downward, and faint violet and gold
+> reflections of the hills. The water darkens toward the bottom of the frame and is nearly black
+> across the bottom quarter. The water between 52% and 76% down is calm and quiet, with no bright
+> highlights except the soft moon path. No jetty, no pier, no dock, no boats, no lanterns, no
+> people, no birds, no text, no logos, no frame. Portrait, 9:16.
+
+The jetty's prompt asked for a short weathered wooden jetty seen straight from the side, its level
+plank deck running in from the left edge to 62% across, its top a straight level line, four rough
+posts ending in a straight line, old dark wood only, on one flat chroma-key green (#00FF00).
+
 **Next.** Prove Together on phones: Bluetooth headphones' delay (the windows allow 0.35 to 0.45 s
-late), and a wired pair's leak into the mic. The painting (lamps on two lines over a lake at night).
+late), and a wired pair's leak into the mic.
 
 ## How they earn
 

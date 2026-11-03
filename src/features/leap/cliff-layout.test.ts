@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { trailY } from '@/components/room-kit/voice-trail'
-import { bandHalfHeight, layoutCliffs, trailNote } from './cliff-layout'
+import { bandHalfHeight, columnBoxes, layoutCliffs, trailNote, } from './cliff-layout'
 
 const FEET = 0.81
 
@@ -69,5 +69,47 @@ describe("The cliffs' layout", () => {
   it("sizes the target's band to the level tolerance", () => {
     const layout = layoutCliffs(390, 844, { from: 55, to: 62 }, FEET)
     expect(bandHalfHeight(50, layout)).toBeCloseTo(layout.semitone / 2)
+  })
+  it('stands the painted columns on their ledges, edge to edge, down to the floor', () => {
+    const sizes = [
+      [320, 480],
+      [360, 640],
+      [390, 700],
+      [430, 800],
+      [820, 1060],
+      [1180, 760],
+      [844, 300],
+    ]
+    const leaps = [-12, -7, -5, -3, 3, 5, 7, 12]
+    for (const [width, height] of sizes) {
+      const rounds = [
+        null,
+        ...leaps.map((leap) => ({ from: 60, to: 60 + leap })),
+      ]
+      for (const round of rounds) {
+        for (const low of [false, true]) {
+          const layout = layoutCliffs(width, height, round, FEET, low)
+          const { near, far } = columnBoxes(layout)
+          const at = `${width}x${height} ${JSON.stringify(round)} ${low}`
+          // From the room's edges to the cliffs' own.
+          expect(near.x, at).toBe(0)
+          expect(near.x + near.width, at).toBeCloseTo(layout.nearEdge)
+          expect(far.x, at).toBeCloseTo(layout.farEdge)
+          expect(far.x + far.width, at).toBeCloseTo(width)
+          // Each flat top on its ledge, within a pixel.
+          expect(near.y, at).toBeLessThanOrEqual(0)
+          expect(near.y, at).toBeGreaterThan(-1)
+          expect(far.y, at).toBeGreaterThan(-1)
+          // And on below it to the floor, however high the ledge.
+          expect(
+            layout.fromY + near.y + near.height,
+            at,
+          ).toBeGreaterThanOrEqual(height)
+          expect(layout.toY + far.y + far.height, at).toBeGreaterThanOrEqual(
+            height,
+          )
+        }
+      }
+    }
   })
 })

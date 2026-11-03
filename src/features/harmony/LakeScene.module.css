@@ -1,7 +1,8 @@
-/* Harmony's world: the lake at night (LakeScene.tsx). Every colour of the
-   drawing is a stand-in's flat colour until the painting comes; the lines,
-   the lamps and the trail are the exercise and keep their look over
-   either. Teal is Merc's, gold the harmony's, as in the room's mock-ups. */
+/* Harmony's world: the lake at dusk (LakeScene.tsx). Every colour of the
+   drawing is a stand-in's flat colour until the painting loads over it;
+   the lines, the lamps and the trail are the exercise and keep their look
+   over either. Teal is Merc's, gold the harmony's, as in the room's
+   mock-ups. */
 
 .scene {
   position: absolute;
@@ -12,12 +13,59 @@
 }
 
 .backdrop,
+.jettyLayer,
 .overlay {
   position: absolute;
   left: 0;
   top: 0;
   display: block;
   pointer-events: none;
+}
+
+/* The painting (LakeScene.tsx, docs/plans/ear-rooms.md): the lake's plate
+   over the drawn one once all of it has loaded, and the painted jetty in
+   place of the drawn deck, moving as it did. */
+.painted .backdrop,
+.painted .drawn {
+  display: none;
+}
+
+.paintedJetty {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.painted .paintedJetty {
+  opacity: 1;
+}
+
+/* At the result the painting steps back behind the numbers. */
+.painting {
+  transition: opacity 420ms ease;
+}
+
+.away .painting {
+  opacity: 0.55;
+}
+
+/* Over the painting, the head and the dock keep their dusk dark enough to
+   read on. */
+.paintingShade {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 8, 22, 0.5) 0%,
+    rgba(5, 8, 22, 0) 18%,
+    rgba(5, 8, 22, 0) 76%,
+    rgba(5, 8, 22, 0.6) 100%
+  );
+}
+
+.painted .paintingShade {
+  opacity: 1;
 }
 
 .star {
@@ -223,7 +271,9 @@
 .still .harmonyLamp,
 .still .moonlight,
 .still .overlay,
-.still .jetty {
+.still .jetty,
+.still .painting,
+.still .paintedJetty {
   transition: none;
 }
 
@@ -239,7 +289,9 @@
   .harmonyLamp,
   .moonlight,
   .overlay,
-  .jetty {
+  .jetty,
+  .painting,
+  .paintedJetty {
     transition: none;
   }
 
