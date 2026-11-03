@@ -22,5 +22,17 @@
       "mcp__Claude_Docs__batch",
       "mcp__Claude_Docs__create"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
   }
 }
