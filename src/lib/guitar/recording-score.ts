@@ -124,6 +124,23 @@ export function changeRecordingNote(
   }
 }
 
+/**
+ * A take's score ends within its take, five minutes and a second. A score
+ * built from a measured line may run to `GUITAR_PRACTICE_SCORE_LIMIT_SECONDS`.
+ */
+function scoreLengthProblem(
+  score: GuitarPracticeScore,
+  endSeconds: number,
+): string | null {
+  if (score.origin !== 'measured-line')
+    return endSeconds > 301
+      ? 'This melody exceeds the five-minute recording limit.'
+      : null
+  return endSeconds > GUITAR_PRACTICE_SCORE_LIMIT_SECONDS
+    ? `This melody runs longer than ${GUITAR_PRACTICE_SCORE_LIMIT_SECONDS / 60} minutes, the most a score can hold.`
+    : null
+}
+
 /** Musical validity is independent of whether a pitch fits the recorded neck. */
 export function recordingMidiProblem(
   score: GuitarPracticeScore,
@@ -188,12 +205,8 @@ export function recordingMidiProblem(
       return 'Give each note a valid pitch, start and end.'
     if (note.startBeat < (pitchEnds.get(note.midi) ?? 0) - 0.000001)
       return 'Some notes of the same pitch overlap. Adjust their start/end or merge them before practicing.'
-    const endSeconds = (note.endBeat * 60) / score.bpm
-    if (score.origin === 'measured-line') {
-      if (endSeconds > GUITAR_PRACTICE_SCORE_LIMIT_SECONDS)
-        return `This melody runs longer than ${GUITAR_PRACTICE_SCORE_LIMIT_SECONDS / 60} minutes, the most a score can hold.`
-    } else if (endSeconds > 301)
-      return 'This melody exceeds the five-minute recording limit.'
+    const tooLong = scoreLengthProblem(score, (note.endBeat * 60) / score.bpm)
+    if (tooLong !== null) return tooLong
     pitchEnds.set(note.midi, note.endBeat)
   }
   return null
