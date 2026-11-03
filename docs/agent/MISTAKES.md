@@ -1028,6 +1028,13 @@ import handler, issue #813.
 **Rule:** keep where the list was (in memory, per account) when it pushes a screen, put it back on Back, then bring the row clear of the dock; and check in a browser that the row is in view, not only focused. A screen that is only revisited asks the worker nothing.
 **See:** `apps/mercurypitch/src/shell/community/list-place.ts`, `returnToRow` in `CommunityScreen.tsx`.
 
+### Scan a canvas's pixels for its margin; its layout boxes do not hold its strokes
+
+**Symptom:** the TV stage's renderer test said everything lay inside the 5% overscan margin, and a pixel scan at 1920x1080 found the singer's trail and the notes' outlines up to 4 px past it, at the lane's ends.
+**Cause:** the boxes were right. A stroke reaches half its line width past its path, and a round cap further, so a note's path clamped to the lane still drew its outline outside it.
+**Rule:** clip what runs off an edge to that edge, and check a margin by scanning the drawn pixels against the background, not by comparing layout numbers.
+**See:** `drawLane` in `src/lib/tv-stage/renderer.ts`, `apps/mercurypitch/scripts/probe-tv-stage.mjs`.
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
@@ -2175,6 +2182,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Cause:** the test stubbed `requestAnimationFrame` to keep the frames off, then called `vi.useFakeTimers()`, which in Vitest 4 fakes every timer it knows, `requestAnimationFrame` included, over the stub. Frames ran on fake time and ended the song at its end, so the guard never acted.
 **Rule:** when a test stubs `requestAnimationFrame`, or fakes the clock around something that draws, pass `toFake` with the timers it drives (`['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date']`, and `'performance'` where the code reads `performance.now()`). Take a guard out once to see its test go red.
 **See:** `playingIn` in `src/features/stem-mixer/clock-stall.fixture.ts`.
+
+### Give a fake canvas a `measureText` that follows the font size
+
+**Symptom:** the TV stage shrank a long lyric line under `REQ-TV-022`'s 32 px floor, and its renderer tests passed.
+**Cause:** the fake context measured 10 px a letter whatever its font, and recorded the text but not its size. A line's width never depended on the size it was drawn at, so no test could see a shrink, a wrap or a floor.
+**Rule:** a fake's widths scale with the size in the font it is set to, and it records the size each text is drawn at; assert on that size.
+**See:** `src/lib/tv-stage/recording-context.fixture.ts`.
 
 ## Process
 
