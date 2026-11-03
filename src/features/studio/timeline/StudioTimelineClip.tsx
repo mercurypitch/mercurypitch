@@ -160,7 +160,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         }}
         data-studio-clip={props.clip.id}
         data-clip-id={props.clip.id}
-        aria-label={`${props.trackName}, ${title()}${passOf()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
+        aria-label={`${props.trackName}, ${passOf() === '' ? title() : title().replace(AUDIO_EXTENSION, '') + passOf()}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`}
         aria-pressed={props.selected}
         onPointerDown={(event) => start(event, 'move')}
         onClick={(event) => {
