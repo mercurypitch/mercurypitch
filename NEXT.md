@@ -3019,3 +3019,13 @@ Note: the lanes' memory gate read a stale cgroup path after the 21:00 restart (f
   - Citation check at 52c294af0: 210 findings (base 200). Reanchor from c60f0fdcb: 73 moved, 194 edited. Do it once, after the fix merge.
   - Then a docs agent: reanchor, update the text for the fixes (L26 Harmony Stack names, L27 Chord Stacker, L20/L24 level-up, SEASON-2 § 5.2) and main's Harmony room 4 (402c0af12) / Leap room 3. Then a reviewer, PR, merge.
 - Report to the owner at the end: Season 2 is text only (no pages built); the two Singing-tab items are by design; the optional HANDOFF § 4.2 extras.
+- 3 Nov 00:1x:
+  - Agent A done on feat/season-2-app-fixes (pushed):
+    - 75b95b9c7 scoring to 100 plus v2
+    - 21d56374d Staccato help
+    - b78f8d828 Chord Stacker wait-out (the last note too)
+    - 6139a34f7 Chord Stacker help (a run is five rounds of ONE chord each, not rounds of five chords)
+    - 18f04ff4d planning-text guard
+  - Gates: pr:prepare no change, typecheck, lint 0 errors, metrics:check, test:run 30,790 passed; the spec passed 12/12 on the dev server.
+  - Docs agent must also fix Season 1: Lesson 10 FACTS 49 "tops out at 80" is stale. Grep all of docs/plans/find-your-pitch, not just Season 2.
+  - Agent B (s2jam): 0ba92ad01 names, 9680f1c68 late joiner, pushed; final checks running.
