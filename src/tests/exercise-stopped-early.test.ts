@@ -17,6 +17,7 @@ import { STOPPED_EARLY_LINE, TOO_SHORT_LINE, unscoredRunLine, } from '@/features
 import type { RunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseResult } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
+import { trackEvent } from '@/lib/analytics'
 
 const mocks = vi.hoisted(() => ({
   ownerId: 'singer-1',
@@ -373,6 +374,22 @@ describe('a Drone Intonation run stopped after one round', () => {
       bestScore: 100,
       totalPlays: 5,
     })
+  })
+})
+
+describe('the funnel, for a stopped run', () => {
+  // A stopped run writes no record, and session_complete fires only where a
+  // record is written. Without its own event the funnel never saw it.
+  it('sends session_stopped for a stopped run, and not for a whole one', async () => {
+    await record(await droneRun(1))
+    expect(vi.mocked(trackEvent).mock.calls).toEqual([['session_stopped']])
+    // session_complete fires in saveSessionRecord, which it never reaches.
+    expect(mocks.saveSessionRecord).not.toHaveBeenCalled()
+
+    vi.mocked(trackEvent).mockClear()
+    await record(await droneRun('all'))
+    expect(mocks.saveSessionRecord).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(trackEvent)).not.toHaveBeenCalledWith('session_stopped')
   })
 })
 
