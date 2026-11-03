@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
-import { judgeSinger, midiToRibbonY, notesInWindow, RIBBON_NOW_RATIO, RIBBON_TOLERANCE_CENTS, ribbonBand, targetNoteAt, timeToX, } from '@/features/stem-mixer/zen-pitch-ribbon'
+import { judgeSinger, midiToRibbonY, notesInWindow, RIBBON_NOW_RATIO, RIBBON_TOLERANCE_CENTS, ribbonBand, ribbonBandEase, targetNoteAt, timeToX, } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { midiToFreq } from '@/lib/scale-data'
 
 const note = (
@@ -91,5 +91,24 @@ describe('zen pitch ribbon — singer judgement', () => {
     expect(octaveDown.state).toBe('hit')
     expect(octaveDown.displayMidi).toBeCloseTo(60, 5)
     expect(octaveDown.centsOff).toBeCloseTo(0, 5)
+  })
+})
+
+describe('zen pitch ribbon — the band’s ease', () => {
+  it('moves a tenth of the way each sixtieth of a second, at any frame rate', () => {
+    expect(ribbonBandEase(1 / 60)).toBeCloseTo(0.1, 9)
+    // Two frames at 120 Hz go as far as one at 60, and a TV's 30 Hz frame
+    // goes as far as two.
+    expect(1 - (1 - ribbonBandEase(1 / 120)) ** 2).toBeCloseTo(0.1, 9)
+    expect(ribbonBandEase(1 / 30)).toBeCloseTo(0.19, 9)
+  })
+
+  it('takes the band whole on the first frame, with no frame before it', () => {
+    expect(ribbonBandEase(Number.POSITIVE_INFINITY)).toBe(1)
+  })
+
+  it('moves the band nowhere when the clock goes back', () => {
+    expect(ribbonBandEase(-0.05)).toBe(0)
+    expect(ribbonBandEase(0)).toBe(0)
   })
 })
