@@ -51,6 +51,10 @@ export type StudioCaptureStop =
   | 'interrupted'
   | 'limit'
   | 'fell-behind'
+  /** A punch reached its out point (take-plan.ts). */
+  | 'out-point'
+  /** A loop recorded the most passes a clip keeps. */
+  | 'last-pass'
 
 export type StudioCaptureCommand =
   | { readonly type: 'buffer'; readonly buffer: ArrayBuffer }

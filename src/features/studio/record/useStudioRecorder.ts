@@ -35,15 +35,18 @@ import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
 import { createStudioRecorder } from '@/lib/studio/record/studio-recorder'
-import { pcm16ToFloat, studioTakeWav } from '@/lib/studio/record/take-audio'
+import { pcm16ToFloat } from '@/lib/studio/record/take-audio'
+import { isStudioTakeAsset } from '@/lib/studio/record/take-passes'
+import type { StudioTakeCut } from '@/lib/studio/record/take-plan'
 import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
 import { placeHeardTake, studioRoundTrip, } from '@/lib/studio/record/take-timing'
 import { micLatencyPathMs } from '@/stores/mic-latency-path-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { useStudioTransport } from '../audio/useStudioTransport'
-import type { StudioRecordingImport } from '../controller/imports'
+import type { StudioPassesImport, StudioRecordingImport, } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioTimelineRecording } from '../timeline/types'
+import { studioTakeImport } from './take-import'
 
 /** The microphone hold and the mic icon share this id. */
 export const STUDIO_RECORD_MIC_ID = 'studio-record'
@@ -55,7 +58,9 @@ export interface StudioRecorderOptions {
   readonly assets: Accessor<readonly StudioAsset[]>
   /** The song takes edits here now. */
   readonly canEdit: Accessor<boolean>
-  addRecording(take: StudioRecordingImport): Promise<boolean>
+  addRecording(
+    take: StudioRecordingImport | StudioPassesImport,
+  ): Promise<boolean>
   readonly transport: Pick<
     Transport,
     | 'playing'
@@ -67,6 +72,7 @@ export interface StudioRecorderOptions {
     | 'unlock'
     | 'repeating'
     | 'setRepeat'
+    | 'range'
   >
   /** The lane a new take goes to. */
   readonly selectedTrackId: Accessor<string | null>
@@ -176,23 +182,20 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     return trip.seconds
   }
 
-  /** Keep a take the way a picked WAV is kept, trimmed to the frame the singer heard. */
+  /** Keep a take the way a picked WAV is kept: trimmed to the frame the singer heard, a punch's range, or a loop's passes. */
   async function keepTake(take: StudioCapturedTake): Promise<boolean> {
-    const frames = Math.round(
-      (take.samples.length * STUDIO_SAMPLE_RATE) / take.sampleRate,
-    )
-    const placement = placeHeardTake(take.heardFirst, take.fromFrame, frames)
+    const kept = studioTakeImport(take)
     // A take its trim leaves nothing of has nothing to keep, and nothing to retry.
-    if (placement === null) return true
-    const wav = studioTakeWav(take.samples, take.sampleRate)
-    return options.addRecording({
-      wav,
-      title: take.title,
-      startFrame: placement.startFrame,
-      sourceInFrame: placement.sourceInFrame,
-      trackId: take.trackId,
-      assetId: take.id,
-    })
+    if (kept === null) return true
+    return options.addRecording(kept)
+  }
+
+  /** What Record keeps: the range's passes with Repeat on, the range alone with Punch on, else a plain take. */
+  function takeCut(): StudioTakeCut | null {
+    const range = transport.range()
+    if (range === null) return null
+    if (transport.repeating()) return { mode: 'loop', range }
+    return settings().punch ? { mode: 'punch', range } : null
   }
 
   const recorder = createStudioRecorder({
@@ -213,11 +216,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
         const clips = project()?.clips ?? []
         return clips.length > 0 && frame < studioContentEnd(clips)
       },
-      play: (notBefore) => transport.play(notBefore),
+      play: (notBefore, fromFrame) => transport.play(notBefore, fromFrame),
       pause: () => transport.pause(),
       anchor: () => transport.anchor(),
     },
     settings,
+    takeCut,
     tempoBpm: () => project()?.tempoBpm ?? 120,
     roundTrip: measureRoundTrip,
     reserveMemory: reserveStudioMemory,
@@ -229,12 +233,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       discard: (id) => journalWriter().discard(id),
     },
     keep: keepTake,
-    title: () => {
-      const recorded = options
-        .assets()
-        .filter((asset) => asset.provenance.kind === 'recording').length
-      return `Take ${recorded + 1}`
-    },
+    title: () => `Take ${studioNextTakeNumber(options.assets())}`,
     createId: () => globalThis.crypto.randomUUID(),
     describeError: describeStudioRecordError,
     onChange: (next) =>
@@ -266,8 +265,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       if (!canArm()) return
       void recorder.arm(options.selectedTrackId())
     } else if (now === 'armed') {
-      // A take runs straight through: the song does not loop under it.
-      restoreRepeat = transport.repeating()
+      // A take runs straight through: the song does not loop under it,
+      // unless it loops a range to record pass after pass.
+      restoreRepeat = takeCut()?.mode !== 'loop' && transport.repeating()
       if (restoreRepeat) void transport.setRepeat(false)
       recorder.record()
     } else if (RUNNING.has(now)) recorder.stop()
@@ -375,11 +375,13 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     if (current === null) return
     try {
       const rows = await journal.list(current.id)
-      const stored = new Set(untrack(options.assets).map((asset) => asset.id))
+      const stored = untrack(options.assets).map((asset) => asset.id)
       // A take stored before its rows could go, or one whose tab closed in
       // its count-in, leaving nothing past the trim: its rows go now.
       const offered = rows.filter(
-        (row) => !stored.has(row.id) && placesSomething(row),
+        (row) =>
+          !stored.some((id) => isStudioTakeAsset(row.id, id)) &&
+          placesSomething(row),
       )
       for (const row of rows)
         if (!offered.includes(row))
@@ -421,6 +423,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
           samples: pcm16ToFloat(read.pcm),
           heardFirst: read.header.heardFirst,
           fromFrame: read.header.fromFrame,
+          cut: read.header.cut ?? null,
         })
         if (kept) await journal.discard(id)
       } finally {
@@ -484,3 +487,14 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
 }
 
 export type StudioRecorderHandle = ReturnType<typeof useStudioRecorder>
+
+/** The next take's number: one past the highest a recorded take's file carries ("Take 3, pass 2.wav" is take 3). */
+export function studioNextTakeNumber(assets: readonly StudioAsset[]): number {
+  let highest = 0
+  for (const asset of assets) {
+    if (asset.provenance.kind !== 'recording') continue
+    const number = /^Take (\d+)\b/.exec(asset.originalName ?? '')
+    highest = Math.max(highest, number ? Number(number[1]) : 0)
+  }
+  return highest + 1
+}

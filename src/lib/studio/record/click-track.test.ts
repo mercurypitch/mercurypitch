@@ -134,6 +134,47 @@ describe('createStudioClickTrack', () => {
 })
 
 describe('createStudioClickScheduler', () => {
+  it("ticks a looping range's beats again on every pass, on the run's count", () => {
+    vi.useFakeTimers()
+    const scheduled: { time: number; accent: boolean }[] = []
+    // A one-second range from bar 2 at 120 bpm: beats on 96000 and 120000.
+    const scheduler = createStudioClickScheduler({
+      track: { schedule: (ticks) => scheduled.push(...ticks) },
+      tempoBpm: 120,
+      fromFrame: 96000,
+      anchor: () => ({ frame: 96000, time: 10 }),
+      now: () => 10,
+      lookaheadSeconds: 2.75,
+      loop: { startFrame: 96000, endFrame: 144000 },
+    })
+    scheduler.start()
+    scheduler.stop()
+    // Three passes and a half: each pass ticks the bar's first beat, accented, then the next.
+    expect(scheduled).toEqual([
+      { time: 10, accent: true },
+      { time: 10.5, accent: false },
+      { time: 11, accent: true },
+      { time: 11.5, accent: false },
+      { time: 12, accent: true },
+      { time: 12.5, accent: false },
+    ])
+  })
+
+  it('ticks nothing for a range with no beat in it', () => {
+    const scheduled: unknown[] = []
+    const scheduler = createStudioClickScheduler({
+      track: { schedule: (ticks) => scheduled.push(...ticks) },
+      tempoBpm: 120,
+      fromFrame: 1000,
+      anchor: () => ({ frame: 1000, time: 10 }),
+      now: () => 10,
+      loop: { startFrame: 1000, endFrame: 13000 },
+    })
+    scheduler.start()
+    scheduler.stop()
+    expect(scheduled).toEqual([])
+  })
+
   it('ticks the beats from the playhead on, a little ahead, each once', () => {
     vi.useFakeTimers()
     const scheduled: { time: number; accent: boolean }[] = []

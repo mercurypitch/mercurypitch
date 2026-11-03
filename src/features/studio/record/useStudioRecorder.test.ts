@@ -68,7 +68,7 @@ vi.mock('@/lib/local-save-navigation-reason', () => ({
   },
 }))
 
-const { describeStudioRecordError, useStudioRecorder } =
+const { describeStudioRecordError, studioNextTakeNumber, useStudioRecorder } =
   await import('./useStudioRecorder')
 
 const song = {
@@ -96,6 +96,7 @@ function mount(
     canEdit?: boolean
     audioBusy?: boolean
     assets?: readonly StudioAsset[]
+    range?: { startFrame: number; endFrame: number } | null
   } = {},
 ) {
   const [selected, setSelected] = createSignal<string | null>('lane-1')
@@ -109,25 +110,27 @@ function mount(
     clock: () => null,
     unlock: () => Promise.resolve(false),
     repeating,
+    range: () => options.range ?? null,
     setRepeat: vi.fn((on: boolean) => {
       setRepeating(on)
       return Promise.resolve()
     }),
   }
   let hook!: ReturnType<typeof useStudioRecorder>
+  const addRecording = vi.fn((_take: unknown) => Promise.resolve(true))
   const dispose = createRoot((done) => {
     hook = useStudioRecorder({
       project: () => song,
       assets: () => options.assets ?? [],
       canEdit: () => options.canEdit ?? true,
-      addRecording: vi.fn(() => Promise.resolve(true)),
+      addRecording,
       transport: transport as never,
       selectedTrackId: selected,
       audioBusy: () => options.audioBusy ?? false,
     })
     return done
   })
-  return { hook, dispose, transport, setSelected }
+  return { hook, dispose, transport, setSelected, addRecording }
 }
 
 const key = (name: string, extra: Partial<KeyboardEvent> = {}) =>
@@ -305,6 +308,97 @@ describe('useStudioRecorder', () => {
     expect(mocks.journal.discard).toHaveBeenCalledWith('take-count-in')
     expect(hook.canArm()).toBe(true)
     dispose()
+  })
+})
+
+describe('useStudioRecorder with a range', () => {
+  const RANGE = { startFrame: 96000, endFrame: 144000 }
+
+  it('keeps Repeat on for a loop take, so the range plays pass after pass', () => {
+    const { hook, transport, dispose } = mount({ range: RANGE })
+    mocks.onChange!(view({ phase: 'armed' }))
+    hook.press()
+    expect(transport.setRepeat).not.toHaveBeenCalled()
+    expect(mocks.recorder!.record).toHaveBeenCalledOnce()
+    dispose()
+  })
+
+  it('keeps a loop take left by a closed tab as every finished pass and the one cut short', async () => {
+    const header = {
+      id: 'take-loop',
+      title: 'Take 5',
+      trackId: 'lane-1',
+      sampleRate: 48000,
+      fromFrame: 96000,
+      heardFirst: 90000,
+      cut: { mode: 'loop', range: RANGE },
+      frames: 6000 + 2 * 48000 + 30000,
+    }
+    mocks.journal.list.mockResolvedValue([header])
+    mocks.journal.read.mockResolvedValue({
+      header,
+      pcm: new Int16Array(header.frames).fill(1000),
+    })
+    const { hook, addRecording, dispose } = mount()
+    await vi.waitFor(() => expect(hook.recovery()).toHaveLength(1))
+
+    await hook.keepRecovered('take-loop')
+
+    const kept = addRecording.mock.calls[0][0] as {
+      passes: { assetId: string }[]
+      heard: number
+      frames: number
+    }
+    expect(kept.passes.map((pass) => pass.assetId)).toEqual([
+      'take-loop-pass-1',
+      'take-loop-pass-2',
+      'take-loop-pass-3',
+    ])
+    expect(kept).toMatchObject({ heard: 1, frames: 48000 })
+    expect(mocks.journal.discard).toHaveBeenCalledWith('take-loop')
+    dispose()
+  })
+
+  it('counts a loop take stored by its passes, and drops its rows', async () => {
+    mocks.journal.list.mockResolvedValue([
+      {
+        id: 'take-loop',
+        title: 'Take 5',
+        frames: 200000,
+        sampleRate: 48000,
+        fromFrame: 96000,
+        heardFirst: 90000,
+        cut: { mode: 'loop', range: RANGE },
+      },
+    ])
+    const { hook, dispose } = mount({
+      assets: [{ id: 'take-loop-pass-2' } as StudioAsset],
+    })
+    await vi.waitFor(() =>
+      expect(mocks.journal.discard).toHaveBeenCalledWith('take-loop'),
+    )
+    expect(hook.recovery()).toEqual([])
+    dispose()
+  })
+})
+
+describe('studioNextTakeNumber', () => {
+  it('numbers a take one past the highest recorded, a loop take counting once', () => {
+    const recorded = (originalName: string) =>
+      ({ originalName, provenance: { kind: 'recording' } }) as StudioAsset
+    expect(studioNextTakeNumber([])).toBe(1)
+    expect(
+      studioNextTakeNumber([
+        recorded('Take 1.wav'),
+        recorded('Take 3, pass 1.wav'),
+        recorded('Take 3, pass 2.wav'),
+        recorded('Take 3, pass 3.wav'),
+        {
+          originalName: 'Take 9.wav',
+          provenance: { kind: 'file' },
+        } as StudioAsset,
+      ]),
+    ).toBe(4)
   })
 })
 

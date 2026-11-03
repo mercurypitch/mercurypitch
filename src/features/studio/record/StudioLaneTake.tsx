@@ -9,6 +9,7 @@ import { createEffect, Show } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
 import { studioTakeFileName } from '@/lib/studio/record/take-audio'
+import { studioPassTitle } from '@/lib/studio/record/take-passes'
 import { MicSmall } from '../studio-icons'
 import { frameToPixel } from '../timeline/timeline-geometry'
 import { StudioInputMeter } from './StudioInputMeter'
@@ -26,21 +27,61 @@ export interface StudioLaneTakeProps {
   contentWidth: number
 }
 
-/** The take's span on the timeline: from where its clip will start to what has arrived. */
+/**
+ * The take's span on the timeline: from where its clip will start to what
+ * has arrived, inside a punch's range. A loop shows the pass it records
+ * now, over the range again each pass. `origin` is the song frame the
+ * take's first sample is drawn on, and `pass` the pass shown, from 0.
+ */
 export function liveTakeSpan(live: StudioLiveTake): {
   from: number
   to: number
+  origin: number
+  pass: number
 } {
   const from = Math.max(0, live.fromFrame ?? live.heardFirst)
   const arrived =
     (live.count * live.peaks.bucketFrames * STUDIO_SAMPLE_RATE) /
     live.sampleRate
-  return { from, to: Math.max(from, live.heardFirst + arrived) }
+  const reached = live.heardFirst + arrived
+  const cut = live.cut ?? null
+  if (cut === null)
+    return {
+      from,
+      to: Math.max(from, reached),
+      origin: live.heardFirst,
+      pass: 0,
+    }
+  const { startFrame, endFrame } = cut.range
+  if (cut.mode === 'punch')
+    return {
+      from,
+      to: Math.max(from, Math.min(endFrame, reached)),
+      origin: live.heardFirst,
+      pass: 0,
+    }
+  const length = endFrame - startFrame
+  const pass = Math.max(0, Math.floor((reached - startFrame) / length))
+  const shift = pass * length
+  return {
+    from,
+    to: Math.max(from, Math.min(endFrame, reached - shift)),
+    origin: live.heardFirst - shift,
+    pass,
+  }
+}
+
+/** The live take's name as its clip will show it: a loop's with the pass it records. */
+export function liveTakeName(live: StudioLiveTake): string {
+  if (live.cut?.mode !== 'loop') return studioTakeFileName(live.title)
+  const { pass } = liveTakeSpan(live)
+  return studioTakeFileName(studioPassTitle(live.title, pass))
 }
 
 function drawLive(
   canvas: HTMLCanvasElement,
   live: StudioLiveTake,
+  origin: number,
   firstFrame: number,
   framesPerPixel: number,
   width: number,
@@ -63,7 +104,7 @@ function drawLive(
   const middle = height / 2
   const reach = middle - 2
   for (let x = 0; x < width; x++) {
-    const frame = firstFrame + x * framesPerPixel - live.heardFirst
+    const frame = firstFrame + x * framesPerPixel - origin
     const from = Math.max(0, Math.floor(frame * toBucket))
     const to = Math.min(
       live.count,
@@ -104,11 +145,12 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
     const width = Math.floor(shown.shownTo - shown.shownFrom)
     if (width <= 0) return
     const framesPerPixel = STUDIO_SAMPLE_RATE / props.scale
+    const span = liveTakeSpan(shown.live)
     drawLive(
       canvas,
       shown.live,
-      liveTakeSpan(shown.live).from +
-        (shown.shownFrom - shown.left) * framesPerPixel,
+      span.origin,
+      span.from + (shown.shownFrom - shown.left) * framesPerPixel,
       framesPerPixel,
       width,
     )
@@ -131,7 +173,7 @@ export function StudioLaneTake(props: StudioLaneTakeProps) {
                 }}
               >
                 <span class={styles.liveTitle}>
-                  {studioTakeFileName(shown().live.title)}
+                  {liveTakeName(shown().live)}
                 </span>
                 <canvas ref={canvas} class={styles.liveWave} />
               </div>

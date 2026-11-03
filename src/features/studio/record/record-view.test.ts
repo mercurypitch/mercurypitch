@@ -40,7 +40,7 @@ describe('liveTakeSpan', () => {
           count: 100,
         }),
       ),
-    ).toEqual({ from: 96000, to: 138000 })
+    ).toMatchObject({ from: 96000, to: 138000 })
   })
 
   it('counts a 44.1 kHz capture in song frames, and never starts before zero', () => {
@@ -53,7 +53,7 @@ describe('liveTakeSpan', () => {
           count: 50,
         }),
       ),
-    ).toEqual({ from: 0, to: 22000 })
+    ).toMatchObject({ from: 0, to: 22000 })
   })
 
   it('is empty, not negative, before the first sample reaches the clip', () => {
@@ -61,6 +61,48 @@ describe('liveTakeSpan', () => {
       liveTakeSpan(
         live({ heardFirst: 0, fromFrame: 48000, sampleRate: 48000, count: 10 }),
       ),
-    ).toEqual({ from: 48000, to: 48000 })
+    ).toMatchObject({ from: 48000, to: 48000 })
+  })
+
+  it('shows a punch only inside its range', () => {
+    const cut = {
+      mode: 'punch' as const,
+      range: { startFrame: 96000, endFrame: 120000 },
+    }
+    // Three seconds arrived from 90000: past the out point at 120000.
+    expect(
+      liveTakeSpan({
+        ...live({
+          heardFirst: 90000,
+          fromFrame: 96000,
+          sampleRate: 48000,
+          count: 300,
+        }),
+        cut,
+      }),
+    ).toMatchObject({ from: 96000, to: 120000, origin: 90000, pass: 0 })
+  })
+
+  it('shows the pass a loop records now, over the range again', () => {
+    const cut = {
+      mode: 'loop' as const,
+      range: { startFrame: 96000, endFrame: 144000 },
+    }
+    // 2.5 s arrived from 90000: 210000 on the run's count, pass 3 (from 0: 2), 18000 in.
+    const span = liveTakeSpan({
+      ...live({
+        heardFirst: 90000,
+        fromFrame: 96000,
+        sampleRate: 48000,
+        count: 250,
+      }),
+      cut,
+    })
+    expect(span).toEqual({
+      from: 96000,
+      to: 114000,
+      origin: 90000 - 96000,
+      pass: 2,
+    })
   })
 })
