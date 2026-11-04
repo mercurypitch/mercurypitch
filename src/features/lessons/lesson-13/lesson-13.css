@@ -162,6 +162,13 @@
 }
 
 /* ---------------------------------------------------------------- Sing it's chart, with the strip under it */
+/* While the note is found, the chart shows under the briefing; Start hides
+   the briefing, and the browser's scroll anchoring would keep the chart
+   where it stood by scrolling the card up off the screen, which the take
+   reads as leaving. Nothing in the card is an anchor, so the card stays. */
+.l13-sing {
+  overflow-anchor: none;
+}
 .vowel-chart {
   position: relative;
   height: 340px;
