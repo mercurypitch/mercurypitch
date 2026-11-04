@@ -37,7 +37,7 @@
 // makes it a slider.
 
 import type { Arc } from './band-chart-arcs'
-import type { BandSpec, CentsTick, ChartFrame, ChartMark, TracePoint, } from './band-chart-draw'
+import type { BandSpec, CentsTick, ChartFrame, ChartMark, SpectrumScene, TracePoint, } from './band-chart-draw'
 import { BAND_COLOR, centsAt, drawBand, drawCentsGrid, drawHandle, drawHead, drawLineLabel, drawLitEdge, drawMark, drawNotesGrid, drawOctaveBracket, drawPlayhead, drawTrace, xOf, yOf, } from './band-chart-draw'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
@@ -46,7 +46,6 @@ import type { Rung } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
-import type { SpectrumScene } from './spectrum-strip'
 
 export type { CentsTick, ChartMark, TracePoint } from './band-chart-draw'
 export type { LevelPoint } from './band-chart-hold'

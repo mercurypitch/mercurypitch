@@ -25,27 +25,13 @@
 // fault or as "the fit". The layout is pure (`stripLayout`), for its tests.
 
 import type { BandScene, Under } from './band-chart'
-import type { ChartFrame } from './band-chart-draw'
+import type { ChartFrame, SpectrumScene } from './band-chart-draw'
 import { TICKS_ROOM } from './band-chart-hold'
 import { COLOR, rgba } from './notes'
 
-/** What the strip shows this frame. */
-export interface SpectrumScene {
-  /** The note's frequency, Hz: the columns' spacing. */
-  readonly f0: number
-  /** Lit segments, 0 to 12, for each harmonic in turn: the k-th at index k - 1. */
-  readonly columns: readonly number[]
-  /** The capped bars, by number (1 for the first). */
-  readonly peaks: readonly number[]
-  /** 'all': the numbers as the spacing allows; 'peaks': the labelled peaks' alone (the compact figure). */
-  readonly numbers: 'all' | 'peaks'
-  /** Curves over the strip, each a list of points: Hz, and dB from its peak, 0 down to -36. */
-  readonly curves: readonly (readonly { hz: number; db: number }[])[]
-  /** The strip's caption, "Merc's model". */
-  readonly caption: string
-  /** The curves' own caption, beside it while they show: "Merc's model too". */
-  readonly curveCaption?: string
-}
+// the strip's scene lives with the chart's drawing types, which the chart
+// reads too: the strip imports the chart, and never the other way round
+export type { SpectrumScene } from './band-chart-draw'
 
 /** The axis's top, Hz. */
 export const STRIP_TOP_HZ = 4000
