@@ -13,7 +13,8 @@
 // The switches, the cold open (cold-open.ts), the recall and the four
 // words, the steps' deck with the range chart in each step's state
 // (steps.ts, registers-toy.ts), Sing it (sing.ts), the quick check, the
-// next lesson's card, the season map, the masthead and Merc and Tavi.
+// Wrap's practice card and free play (wrap.ts), the next lesson's card, the
+// season map, the masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -46,6 +47,7 @@ import { initRecall } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 initSoundSwitch()
 initMotionSwitch()
@@ -76,6 +78,9 @@ createQuiz({
   keys: QUIZ_KEYS,
   deck,
 })
+
+// the practice card Sing it picks, and free play: every state of the chart
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(11)
