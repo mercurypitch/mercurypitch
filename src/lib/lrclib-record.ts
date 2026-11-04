@@ -28,7 +28,13 @@ export interface LyricsSearchMatch {
   id: number
 }
 
-/** A signal that aborts after `ms`, or when `externalSignal` does. */
+/**
+ * A signal that aborts after `ms`, or when `externalSignal` does.
+ *
+ * `clear` ends both: the timer, and the listener on the caller's signal,
+ * which otherwise stays on that signal until it aborts. Call it however the
+ * request ends; a fetch that rejects needs it as much as one that answers.
+ */
 export function createTimeoutSignal(
   ms: number,
   externalSignal?: AbortSignal,
@@ -46,6 +52,13 @@ export function createTimeoutSignal(
     }
     const onAbort = () => ctrl.abort(externalSignal.reason)
     externalSignal.addEventListener('abort', onAbort, { once: true })
+    return {
+      signal: ctrl.signal,
+      clear: () => {
+        clearTimeout(id)
+        externalSignal.removeEventListener('abort', onAbort)
+      },
+    }
   }
 
   return { signal: ctrl.signal, clear: () => clearTimeout(id) }
