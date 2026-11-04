@@ -10,7 +10,7 @@
 // starts (`note(i)`), so a figure that draws as a note sounds can be checked
 // note by note. `allOf` stays the kit's own: it joins any runs. Lesson 8's
 // beat clock has its own recorder (lesson-08/page-dom.test-fixtures.ts);
-// these serve the pages on kit/run.ts, Lessons 9, 10 and 12 among them.
+// these serve the pages on kit/run.ts, Lessons 9 to 12 among them.
 //
 // The test file names the swap itself, since a mock is the test file's own:
 //
