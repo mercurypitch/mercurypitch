@@ -145,13 +145,15 @@ async function fetchLyricsLrclib(
   if (artist) params.set('artist_name', artist)
 
   const { signal, clear } = createTimeoutSignal(25000, externalSignal)
+  // Cleared however the request ends: a fetch that rejected (offline, a
+  // refused connection) used to skip the clear and leave the 25 s timer, and
+  // a listener on the caller's signal, behind.
   const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
     signal,
     headers: {
       'LrcLib-Client': 'MercuryPitch/1.0.0',
     },
-  })
-  clear()
+  }).finally(clear)
   if (!resp.ok) return null
 
   const data = await resp.json()
@@ -240,6 +242,8 @@ async function fetchSearchLrclib(
   const { signal, clear } = createTimeoutSignal(25000, externalSignal)
 
   try {
+    // Cleared however the request ends, as in fetchLyricsLrclib: the catch
+    // below used to return without it.
     const resp = await fetch(
       `https://lrclib.net/api/search?${params.toString()}`,
       {
@@ -248,8 +252,7 @@ async function fetchSearchLrclib(
           'LrcLib-Client': 'MercuryPitch/1.0.0',
         },
       },
-    )
-    clear()
+    ).finally(clear)
 
     if (IS_DEV) {
       console.log(
