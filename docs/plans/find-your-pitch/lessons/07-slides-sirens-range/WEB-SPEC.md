@@ -406,7 +406,7 @@ The retry rules, all in the flow rule below (FACTS 58):
 - "Try again at about speaking volume." shows only beside an offered Again. So a visit holds at most
   three takes and two sung sirens.
 
-The flow is a pure rule (`lesson-07/siren-flow.ts`), as Lesson 6's sing-along is: from the comfort
+The flow is a pure rule (`kit/siren-flow.ts` since Lesson 11's page, which shares it, with the reading as an option this page turns on), as Lesson 6's sing-along is: from the comfort
 answer, the voice, whether sound and Web Audio are on, whether Merc's siren has sounded, the takes
 so far (how many, and for each whether it had voice, whether it lit a band and whether it was
 abandoned), whether the visit's one Again has been used, and the answers so far (the latest, and
@@ -744,7 +744,7 @@ parts:
    names neither end from three up; the attack trim works on the raw frames, which `computeRange`
    then receives; `middleHalf` gives `pickMatchTargets` the same window it computed before the
    change (FACTS 35, 59, 81).
-7. The Sing it flow (`lesson-07/siren-flow.ts`, Toys 4): with no stored voice the voice choice
+7. The Sing it flow (`kit/siren-flow.ts`, Toys 4): with no stored voice the voice choice
    comes before either path, and a stored voice starts pressed and can be changed; "Just listen
    today" shows no Start and picks the rest card; Start waits for Merc's siren, and with sound off
    it stays unavailable after Play, with the sound-off hint; without Web Audio, Sing it is

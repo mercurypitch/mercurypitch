@@ -498,8 +498,8 @@ The retry rules, all in the flow rule below (FACTS 63):
   Start appear for the rest of the visit.
 - No line after a take invites another try, so no retry wording can show without an Again.
 
-The flow is a pure rule, shared with Lesson 7's page: `kit/siren-flow.ts`. Lesson 7's page has it
-in `lesson-07/siren-flow.ts` (its Toys 4); this page, the second to need it, promotes it to the
+The flow is a pure rule, shared with Lesson 7's page: `kit/siren-flow.ts`. Lesson 7's page had it
+in `lesson-07/siren-flow.ts` (its Toys 4); this page, the second to need it, promoted it to the
 kit, with Lesson 7's reading as an option this page leaves off (What the kit and the app still
 need, 7). From the comfort answer, the voice, whether sound and Web Audio are on, whether Merc's
 siren has sounded, the takes so far (how many, and for each whether it had voice and whether it was
@@ -811,10 +811,10 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:337-340`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:620-626`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:341-344`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:623-629`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:293-303`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
@@ -838,7 +838,8 @@ the others take it.
    is as today, so Lessons 1 to 7 see no change; a unit test proves it.
 7. `kit/siren-flow.ts`, the Sing it flow as a pure rule shared with Lesson 7's page (Toys 4), with
    Lesson 7's reading as an option, so that a flow with no reading never shows a band, a reading or
-   "Try again". Lesson 7's page has the rule in `lesson-07/siren-flow.ts`; this page promotes it.
+   "Try again". Lesson 7's page had the rule in `lesson-07/siren-flow.ts`; this page promoted it
+   (done: `reading` in `FlowOptions`, Lesson 7's lines in `lesson-07/siren-lines.ts`).
 8. `kit/listen.ts`: a `quietAfter` option on `TakeOptions` (`:89-110`), built with Lesson 7's page,
    whose take needs it ("quiet for 1.0 s after at least 2.0 s of voice", its Toys 4): `quiet` ends a
    take only once the take has heard `quietAfter` seconds of voice (`:100-105`), so a breath in the
@@ -936,6 +937,41 @@ With the recommendation first:
 8. **The CURRICULUM card** (FACTS 6): done in this package. Its checkpoint and its Practise line
    match the page: "one slow, quiet siren on "ng", up only as far as is easy" and the Siren exercise
    alone.
+
+## As built
+
+The page as first built, where it differs from the text above or settles what the text left open.
+Each is the build's call, to be read with the owner's review:
+
+- **The chart's plot** is the kit's: 12 px above and below (`PAD_Y`, `kit/range-chart-layout.ts`)
+  and one row a note from C3 to E5 inclusive, 29 rows, so the cold open's seam at a 310 px figure
+  stands about 19.7 px, not 20.6, and Step 4's seams scale with it.
+- **The gear model's sound**: the lower gear is Merc's "ooh" at the kit's level, 0.2; the upper is
+  Merc's voice with the soft tone's partials (`wave: 'soft'`, `kit/sound.ts`), trimmed to 0.75 of
+  that, since after the 900 Hz lowpass the soft wave carries more energy than the "ooh" at the same
+  peak; to be tuned by ear (Decisions 3). The "ng" is the kit's `NG` timbre (`kit/timbre.ts`), so no
+  `lowpass` option was added to the kit's sound. The two gears are two runs started in one task, as
+  one run to the page's sound owner (`lesson-11/gear-sound.ts`).
+- **Seams and their words**: Step 2's and Step 5's seams across the plot read "the switch"; Steps 3
+  and 4's slot seams carry no words and come with their slides. The cold open's two seams carry
+  their words under them at the siren's turn (`labelAt`, `labelBelow` in `kit/range-chart-draw.ts`),
+  where the line rides well above, so they clear it on a phone's narrow chart. Every state carries
+  the caption "Merc's model" at the plot's top right but the compact one, whose seams name it.
+- **The scrub bar's words** name the switch for any moment within a twentieth of a second of the
+  jump, so the tenth of a second it shows and its words agree.
+- **Play Tavi's siren and Play Merc's siren** sit under the stage, outside the predict card, as
+  Lessons 10 and 12's plays do; the predict takes them as its plays.
+- **The recall's prefix** is `recall-`, as Lessons 10 and 12's are, not `rc-`.
+- **Figure 4's label** is "A seam that narrows", one line at a phone's width.
+- **Sing it**: an answer to "How did that feel?" locks once given, and the next take frees the
+  four; after "Effortful" or "Uncomfortable" Merc's slow siren stays to listen to. The ring's label
+  is Lesson 7's, "One siren on “ng”", which fits the small ring. The singer's line is the kit's live
+  line, 2.6 px over its glow, not 3 px.
+- **The range chart's rows, scrub bar and live frame** moved from Lesson 7's sheet to
+  `kit/lesson-range.css`, which both pages take by `@import`.
+- **The Siren's help** changed with the page (Practice links); its menu card and the
+  `/exercises/siren` slug are not built.
+- **The share card** is 65 KB, against 44 to 50 KB for the other lessons' cards.
 
 ## Edge cases
 
