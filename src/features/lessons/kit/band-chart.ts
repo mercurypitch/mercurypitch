@@ -46,6 +46,7 @@ import type { Rung } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
+import type { SpectrumScene } from './spectrum-strip'
 
 export type { CentsTick, ChartMark, TracePoint } from './band-chart-draw'
 export type { LevelPoint } from './band-chart-hold'
@@ -90,6 +91,19 @@ export interface BandChartOptions {
    * with none, which keeps the band.
    */
   readonly paintRungs?: (f: ChartFrame, scene: BandScene) => boolean
+  /**
+   * A painter that takes the room under the plot and lays the plot out
+   * for it: Lesson 13's spectrum strip (spectrum-strip.ts's `spectrumUnder`),
+   * passed in by the page that draws one.
+   */
+  readonly under?: Under
+}
+
+/** A painter under the plot: where the plot's top and bottom sit in a figure `h` high, and what it paints. */
+export interface Under {
+  top(h: number): number
+  bottom(h: number): number
+  paint(f: ChartFrame, scene: BandScene): void
 }
 
 /** What the chart shows this frame; a figure's controller writes it. */
@@ -123,6 +137,8 @@ export interface BandScene {
   rungs?: Rung[]
   /** Merc's leaps as arcs between his rungs, drawn while the scene has rungs (band-chart-arcs.ts). */
   arcs?: Arc[]
+  /** The spectrum strip under the plot, on a chart given its `under` (spectrum-strip.ts). */
+  spectrum?: SpectrumScene
 }
 
 export interface BandChart {
@@ -201,8 +217,8 @@ export function mountBandChart(
     h,
     x0: notesAxis ? Math.max(40, names?.gutter(ctx) ?? 0) : 12,
     x1: w - 12,
-    top: PAD,
-    bottom: h - PAD - below(h),
+    top: opts.under?.top(h) ?? PAD,
+    bottom: opts.under?.bottom(h) ?? h - PAD - below(h),
     lo,
     hi,
     window,
@@ -217,6 +233,7 @@ export function mountBandChart(
       y += STRIP_GAP + height
     }
     if (opts.timeTicks === true) drawTimeTicks(f, y + 4)
+    opts.under?.paint(f, scene)
   }
 
   /** Merc's band, its echo and its lit edge; or the scene's rungs in their place. */
