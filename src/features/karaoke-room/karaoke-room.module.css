@@ -191,6 +191,11 @@
   color: var(--text-tertiary, #8b949e);
 }
 
+/* On the current song's tint the muted ink read 4.3:1 in either theme. */
+.songRowCurrent .songLength {
+  color: var(--text-secondary, #a8b3bf);
+}
+
 /* ── Find by singing (KaraokeFindSheet.tsx) ────────────────────
    Its row heads the Songs sheet; its own sheet says what it hears, draws
    the sung line, and lists the closest songs with how close each is. */
@@ -235,8 +240,10 @@
   right: 8px;
   padding: 0 6px;
   border-radius: 9px;
-  /* Over the newest stretch of the line: its own backing keeps it read. */
-  background: rgb(13 17 23 / 80%);
+  /* Over the newest stretch of the line: its own backing keeps it read.
+     The backing follows the theme as its ink does: fixed dark under the
+     light theme's grey ink, the clock read 1.8:1 on the light sheet. */
+  background: color-mix(in srgb, var(--bg-primary, #0d1117) 80%, transparent);
   font: 400 13px/18px var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
   color: var(--text-tertiary, #8b949e);
