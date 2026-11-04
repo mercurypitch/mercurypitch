@@ -147,6 +147,9 @@ export class MicManager {
   // is not the app's, so the shared stream, and every consumer on it, stays
   // on the app's input.
   private scoped: ScopedHold | null = null
+  // Holds a later acquireFrom replaced, until its queued open ends them:
+  // their streams still hold the device until then.
+  private readonly replaced = new Set<ScopedHold>()
   // The input the open shared stream was opened for, null for the default.
   // Not preferredDeviceId, which changes before the stream on the old one
   // closes (setPreferredDevice).
@@ -199,7 +202,9 @@ export class MicManager {
 
   /** Whether this tab has any device open, and so holds the cross-tab lock. */
   private holdsDevice(): boolean {
-    return this.stream !== null || this.scoped?.stream != null
+    if (this.stream !== null || this.scoped?.stream != null) return true
+    for (const hold of this.replaced) if (hold.stream !== null) return true
+    return false
   }
 
   getConsumers(): readonly string[] {
@@ -286,8 +291,12 @@ export class MicManager {
     // call finds its hold replaced and leaves this one be (releaseHold).
     const previous = this.scoped
     this.scoped = hold
+    if (previous !== null) this.replaced.add(previous)
     return this.enqueue(async () => {
-      if (previous !== null && previous !== hold) this.endScoped(previous)
+      if (previous !== null) {
+        this.replaced.delete(previous)
+        this.endScoped(previous)
+      }
       if (this.scoped !== hold) throw superseded()
       if (!this.holdsDevice()) {
         const claim = claimMicLock()
@@ -581,13 +590,17 @@ export class MicManager {
    * Resolves once the device is actually closed, not once the close is queued.
    * The cross-tab handoff waits on this before releasing the lock: an open
    * that is still in flight sits ahead of us on the queue, and releasing the
-   * lock first would let the other tab open a second handle behind it.
+   * lock first would let the other tab open a second handle behind it. An
+   * input of its own a re-arm replaced closes here too, not in the re-arm's
+   * open queued behind this.
    */
   forceReleaseAll(): Promise<void> {
     return this.enqueue(async () => {
       this.cancelLinger()
       this.consumers.clear()
-      if (this.scoped !== null) this.endScoped(this.scoped)
+      const holds = [...this.replaced, this.scoped]
+      this.replaced.clear()
+      for (const hold of holds) if (hold !== null) this.endScoped(hold)
       this.teardown()
     })
   }
