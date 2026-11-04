@@ -165,6 +165,8 @@ export interface StripNow {
   readonly columns: readonly number[]
   readonly peaks: Peaks | null
   readonly vowel: Vowel | null
+  /** The resonances the sound has at that moment, for the curves; none for the source. */
+  readonly res: readonly Resonator[]
 }
 
 /**
@@ -179,6 +181,7 @@ export function stripAt(line: Line, t: number, reduced = false): StripNow {
       columns: sourceSegments(line.n, harmonicCount(hz(line.midi))),
       peaks: null,
       vowel: null,
+      res: [],
     }
   const { voice, midi, stretches } = line
   let i = 0
@@ -187,7 +190,12 @@ export function stripAt(line: Line, t: number, reduced = false): StripNow {
   const u = s.glide > 0 && !reduced ? Math.min(1, (t - s.at) / s.glide) : 1
   if (i === 0 || u >= 1) {
     const strip = vowelStrip(voice, midi, s.vowel)
-    return { columns: strip.segments, peaks: strip.peaks, vowel: s.vowel }
+    return {
+      columns: strip.segments,
+      peaks: strip.peaks,
+      vowel: s.vowel,
+      res: resonatorsOf(voice, s.vowel),
+    }
   }
   const from = stretches[i - 1].vowel
   const f0 = hz(midi)
@@ -206,6 +214,7 @@ export function stripAt(line: Line, t: number, reduced = false): StripNow {
     columns: levelsAt(f0, res, factor).map((a) => segmentsFor(a, ref)),
     peaks: vowelStrip(voice, midi, from).peaks,
     vowel: s.vowel,
+    res,
   }
 }
 
