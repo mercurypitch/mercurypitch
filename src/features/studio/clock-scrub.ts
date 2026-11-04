@@ -9,8 +9,14 @@
 // click: the field still takes a typed time, and its arrow keys step as the
 // wheel does (StudioTransport.tsx). A step is a line of the timeline's grid
 // while Snap is on, else a second; Shift steps finer (scrub-step.ts). Each
-// step is a seek, so it works stopped and playing, and like any seek it ends
-// a running take (StudioWorkspace.tsx).
+// step is a seek, so it works stopped and playing.
+//
+// A seek ends a running take (StudioWorkspace.tsx), and a hand passing over
+// the clock on its way to the mouse's rest must not. So while a take runs
+// the clock holds still, as the ruler holds its range (take-running.ts): the
+// wheel turns nothing, a drag moves nothing, and one under way stops. A time
+// typed and entered still seeks: that is meant.
+import { studioTakeRunning } from './record/take-running'
 import { studioRulerSlop } from './timeline/ruler-gesture'
 import type { StudioScrubGrid } from './timeline/scrub-step'
 import { studioScrubFrame, studioScrubGrid } from './timeline/scrub-step'
@@ -69,9 +75,12 @@ export function attachStudioClockScrub(
     endFrame(): number
     seek(frame: number): void
     grid?(): StudioScrubGrid | null
+    /** True while the clock holds still: a take runs. */
+    locked?(): boolean
   },
 ): () => void {
   const grid = () => (options.grid ?? studioScrubGrid)()
+  const locked = () => (options.locked ?? studioTakeRunning)()
   let carry = 0
   // A fast turn outruns the playhead: count from the seek still on its way.
   let sent: { target: number; from: number; at: number } | null = null
@@ -101,6 +110,10 @@ export function attachStudioClockScrub(
 
   const onWheel = (event: WheelEvent) => {
     if (event.cancelable) event.preventDefault()
+    if (locked()) {
+      carry = 0
+      return
+    }
     const turn = studioClockWheelTurn(event, carry)
     carry = turn.carry
     if (turn.steps === 0) return
@@ -119,6 +132,10 @@ export function attachStudioClockScrub(
 
   const onMove = (event: PointerEvent) => {
     if (drag === null || event.pointerId !== drag.pointerId) return
+    if (locked()) {
+      endDrag()
+      return
+    }
     const travel = event.clientX - drag.startX
     if (!drag.scrubbing) {
       if (Math.abs(travel) < drag.slop) return
@@ -152,6 +169,7 @@ export function attachStudioClockScrub(
 
   const onDown = (event: PointerEvent) => {
     if (event.button !== 0 || event.isPrimary === false || drag !== null) return
+    if (locked()) return
     drag = {
       pointerId: event.pointerId,
       startX: event.clientX,

@@ -82,6 +82,23 @@ it("steps along the timeline's grid with the arrows while Snap is on", () => {
   }
 })
 
+it('leaves the playhead alone with the arrows, and says why, while a take runs', () => {
+  const { onSeek, clock } = renderTransport()
+  setStudioTakeRunning(true)
+  try {
+    fireEvent.keyDown(clock, { key: 'ArrowUp' })
+    fireEvent.wheel(clock, { deltaY: -100 })
+    expect(onSeek).not.toHaveBeenCalled()
+    expect(clock).toHaveAttribute(
+      'title',
+      'Stop the take to scrub the playhead',
+    )
+  } finally {
+    setStudioTakeRunning(false)
+  }
+  expect(clock.getAttribute('title')).toMatch(/^Type a time/)
+})
+
 it('holds the focused time while the song plays, so typing replaces it', () => {
   const [frame, setFrame] = createSignal(83.456 * 48000)
   // The accessor is read inside renderTransport's JSX, a tracked scope.

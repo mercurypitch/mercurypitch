@@ -682,6 +682,10 @@
   border-color: var(--studio-line-strong);
   user-select: none;
 }
+/* A take holds the clock still (clock-scrub.ts): no scrub to offer. */
+.clock[data-take-running]:not(:focus) {
+  cursor: default;
+}
 .topActions {
   display: flex;
   align-items: center;
