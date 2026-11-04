@@ -12,8 +12,8 @@
 //
 // The switches, the cold open (cold-open.ts), the recall and the four
 // words, the steps' deck with the range chart in each step's state
-// (steps.ts, registers-toy.ts), the quick check, the next lesson's card,
-// the season map, the masthead and Merc and Tavi.
+// (steps.ts, registers-toy.ts), Sing it (sing.ts), the quick check, the
+// next lesson's card, the season map, the masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -22,8 +22,10 @@ import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-voice.css comes in by lesson-11.css's @import until the modules
-// it shares a chunk with are loaded here (lesson-11.css says why)
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them, and
+// Lessons 3 and 5 to 10 still link it before their own sheets
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-11.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -36,9 +38,12 @@ import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -59,6 +64,9 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+// Sing it: one slow siren, drawn as a line and read by nothing
+initSing({ blue: mercBlue, orange: mercOrange })
 
 // the quick check: answering all four marks Lesson 11 done; its step links
 // move the deck
