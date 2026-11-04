@@ -6,8 +6,8 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every lesson page, Lessons 1 to 10, 12 and 13, each figure that uses one of
-// the three is scrolled into view and left to settle, and then it changes
+// On every lesson page, Lessons 1 to 13, each figure that uses one of the
+// three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
 // version, Merc's siren, Lesson 13's plate in the explorer) brings its
@@ -16,8 +16,8 @@
 // phone, where the explorer is a list, Lesson 8's whole page rests again
 // once a second tap on Lesson 13's row folds its card away.
 //
-// On Lessons 6 to 10, 12 and 13 every figure now says when it has nothing to
-// draw, so there the whole page asks for no frame at all at rest. Lesson 9's
+// On Lessons 6 to 13 every figure now says when it has nothing to draw,
+// so there the whole page asks for no frame at all at rest. Lesson 9's
 // checks here are the explorer, the cold open's chart, at rest and through
 // Merc's leap, and the steps' ladder chart with Step 1's folds strip, at
 // rest and through Step's two notes, while the strip's folds open and close,
@@ -35,6 +35,9 @@
 // the ring once, and through Step 4's Play the roots, whose beads pulse
 // only while each root sounds; then the explorer and the page at rest. The
 // hero's ring, Sing it's guide and ring join them once they are wired.
+// Lesson 11's are its page shell's, the explorer and the page at rest; its
+// range chart in the hero, the steps, Sing it and free play join them once
+// they are wired.
 // Lesson 13's are the steps' vowel figure, at rest and through Step 2's
 // ‘ah’, whose strip draws only while it sounds, then the explorer, which
 // opens on its own card's shaking plate, and the page at rest once the
@@ -414,6 +417,14 @@ test("Lesson 10: the cold open's spiral, the chord beads, Sing it's ring and gui
     page.locator('#freePlay .chord-hit-gap').first().click(),
   )
   await explorerRests(page, 10, true)
+})
+
+test('Lesson 11: the explorer rests, and so does the whole page', async ({
+  page,
+}) => {
+  await open(page, 11)
+
+  await explorerRests(page, 11, true)
 })
 
 test('Lesson 12: the ring of rooms and the explorer rest, and so does the whole page', async ({

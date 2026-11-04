@@ -44,7 +44,7 @@ its cold open before its recall, a recall shown to everyone, a names switch, a s
 do, and free play in the Wrap. It is published only after Lesson 10's page, `/learn/10`, is, because
 its recall check asks Lesson 10's questions and its prerequisite chip names Lesson 10 (FACTS 2, 7),
 and after the vocal coach has looked at its voice lines (LESSON.md, For the vocal coach). Until both
-are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-41`). Every build carries
+are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`, `:30-42`). Every build carries
 `learn/12.html`, as it carries every lesson page (`tools/draft-lessons.ts:8-14`), and its line in
 `drafts.ts` holds it back on mercurypitch.com: the site worker answers `/learn/12` with the 404
 page, and every page's explorer shows Lesson 12 with no link, as a lesson not written yet
@@ -56,7 +56,7 @@ when both hold (`src/features/admin/AdminLessonsPage.tsx:186-241`); but "Publish
 ahead, so "publish after Lesson 10" stays a rule for whoever uses it (Decisions for the owner).
 Releasing it is deleting its `drafts.ts` line (What the kit and the app still need,
 items 2 and 15). The curiosity plan's kit work is on main: Lesson 12's hook is the season's
-(`src/features/lessons/kit/season.ts:383`), its tease is in the kit's lesson copy
+(`src/features/lessons/kit/season.ts:394`), its tease is in the kit's lesson copy
 (`src/features/lessons/kit/lesson-copy.ts:117`), as its alternative was until #1186 (`:133-141` at
 `b7093a0a4`), Lesson 13's tease is there too (`:118`), and the next-lesson card draws a tease above
 the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page writes only its own
@@ -431,7 +431,7 @@ further:
   `kit/predict.ts:179`): a tap on another of the hero's three does nothing until the first ends, so
   the predict's own plays never cut each other short, and they carry no Stop, unlike the steps' tune
   toy (Toys 5). Only a stop (the page hidden, or sound turned off: the kit then stops every voice,
-  `sound.ts:475-477`, `:507`), a bead tap on the hero's ring or leaving the hero for a step ends a
+  `sound.ts:481-483`, `:513`), a bead tap on the hero's ring or leaving the hero for a step ends a
   tune early. Two more kit parts, from Lesson 6's page (PR #1149), make that safe, and this page
   uses both. A page's `play` may resolve `false` for a play cut short, and the predict then skips
   its hint and its reveal, so that play reveals nothing and the hint stays as it was
@@ -701,24 +701,24 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), through `playTone`
-  (`src/features/lessons/kit/sound.ts:560-569`), whose visuals run even when sound is off.
+  (`src/features/lessons/kit/sound.ts:566-575`), whose visuals run even when sound is off.
 - **A loop or a tune** is timed from one start, as Lessons 2 and 4 time their examples (`schedule`,
   `src/features/lessons/lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`): every chord
   and every sung note starts on its own timer, counted from the play's start, and a chord and the
   tune's note that begins with it start in the same callback, so they share one start on the audio
   clock and never drift apart, and the drawing hears the same callback. A voice's `dur` counts from
-  the moment it starts (`sound.ts:262-267`). The play decides once, at its press, whether it sounds
-  (`audible`, `ToneOptions`, `sound.ts:555-558`), so it is all sound or all silent. Those two
+  the moment it starts (`sound.ts:268-273`). The play decides once, at its press, whether it sounds
+  (`audible`, `ToneOptions`, `sound.ts:561-564`), so it is all sound or all silent. Those two
   pages' `schedule` keeps no handle on its timers; this page's must, so that stopping a play clears
   every timer not yet fired and stops every voice still sounding: the kit's `playNotes`
-  (`kit/run.ts:114-155`) does both (What the kit and the app still need, item 8).
+  (`kit/run.ts:117-158`) does both (What the kit and the app still need, item 8).
 - **Levels**: a tapped note and Step 4's roots at the soft tone's 0.13; a chord's voices at 0.075
-  each, or 0.05 under Merc; Merc's "ooh" at the kit's 0.2 (`sound.ts:181`); the count-in at 0.065
+  each, or 0.05 under Merc; Merc's "ooh" at the kit's 0.2 (`sound.ts:187`); the count-in at 0.065
   (FACTS 73, 74).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:510-522`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:516-528`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:475-477`).
+  hidden (`sound.ts:481-483`).
 
 ## Merc and Tavi
 
@@ -784,7 +784,7 @@ still images when WebGL fails or would run on the CPU.
 
 ## Explorer and season data
 
-Lesson 12's entry (`src/features/lessons/kit/season.ts:375-394`), proposed for when this page is
+Lesson 12's entry (`src/features/lessons/kit/season.ts:386-405`), proposed for when this page is
 built:
 
 - `minutes: 15` and `page: '/learn/12'`, written plainly, as Lesson 3's entry is
@@ -816,7 +816,7 @@ built:
   triads ship: it is "Admin only, never drawn on a lesson page" (`season.ts:102-103`, and the fields
   the team keeps, `:27-31`).
 - The signature stays as it is (`kit/team-notes.ts:44`). The entry has no `fig`, so the card draws no figure.
-- The hook stays word for word (`season.ts:383`; FACTS 1). The tease Lesson 11's card shows for this
+- The hook stays word for word (`season.ts:394`; FACTS 1). The tease Lesson 11's card shows for this
   lesson, and Lesson 13's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:117`, `:118`; FACTS 5, 5b).
 - The card reads "Ready · read", with "15 min", once the page is live (`explorer.ts:153-160`).
@@ -881,7 +881,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
    for a play cut short (`kit/predict.ts:31-41`, `:187-188`). A `schedule` that can be stopped is
    built too: the kit's runs (`kit/run.ts`, Lesson 7's, moved into the kit), whose `playNotes`
-   (`:114-155`) starts every note on its own timer from the play's start, the notes that share an
+   (`:117-158`) starts every note on its own timer from the play's start, the notes that share an
    onset in one timer task, so a chord and the tune's note that begins with it share one start, and
    whose `stop` clears every timer not yet fired and stops every voice still sounding, for the owner
    to call (`Run`, `:45-48`). Lessons 2 and 4 keep their own, which cannot be stopped
@@ -950,10 +950,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:294`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:304`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:103-105`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:642-646`, and for CSS `:672-678`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:658-662`, and for CSS `:688-694`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
@@ -1054,7 +1054,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    and soprano presets keep one at the bottom.
 9. **The chords under the voice.** At 0.05 a voice under Merc's "ooh" and under the guide (FACTS
    74), the page's own choice, for the owner's ear on a real phone (Contract). The review: fine,
-   since the chord's three voices sum to 0.15, less than Merc's 0.2 (`sound.ts:181`). Listen for
+   since the chord's three voices sum to 0.15, less than Merc's 0.2 (`sound.ts:187`). Listen for
    testers singing louder over them.
 10. **The coach's volume line.** "Sing at about speaking volume." stays, the series' line; "or a
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the
@@ -1270,10 +1270,10 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=12` before any hash: `/pitch-training?lesson=12` and
     `/ear-lab?lesson=12`.
 11. The next-lesson card: a row for `/learn/12` in `src/e2e/learn-next-card.spec.ts`'s cards
-    (`:37-104`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
+    (`:37-110`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
     `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 7's row reads for
     Lesson 8; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:136-153`); its still inside the card holds no button.
+    Lesson 1's card (`:142-159`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
     alternative hook's note never reaches the page (`:78-80`).

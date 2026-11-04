@@ -1,0 +1,291 @@
+/* ============================================================
+   Lesson 11 — Registers and the break: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice), and the range chart's rows, scrub bar and
+   live frame are kit/lesson-range.css's, taken in by the @import below,
+   which the build inlines. lesson-voice.css comes in the same way until
+   Sing it loads the comfort check and the voice choice, the modules it
+   shares a chunk with: imported here alone it would leave that chunk for a
+   sheet of its own, which the voice lessons link after their own sheet, so
+   its rules would win over theirs (docs/agent/MISTAKES.md, "Take the
+   lessons' base stylesheet into another page by @import").
+
+   Here: the compact range chart between Merc and Tavi, with the two sirens
+   under it; the chart's floor for the stage budget, its key, the stretch
+   gauge, Step 3's row of three slides and Step 4's slide picker (WEB-SPEC,
+   Toys 1, "Layout and targets": every target 44 px, 8 px apart, from 344 px
+   up); Sing it's live chart beside its ring; and the Wrap's cards, the next
+   card's still and free play. */
+@import '../kit/lesson-range.css';
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: the chart between Merc and Tavi */
+.l11-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(190px, 17vw, 240px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the chart's foot, where Merc and Tavi stand */
+.l11-duo .floor {
+  top: var(--line-h);
+}
+.l11-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l11-duo .merc-blue {
+  grid-column: 1;
+}
+.l11-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-range {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--line-h);
+  margin: 0;
+}
+.hero-range canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.l11-hero .hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.hero-key {
+  margin: 6px 0 10px;
+}
+@media (max-width: 1080px) {
+  .l11-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --line-h: clamp(200px, 28vw, 260px);
+  }
+  /* the two sirens sit right under the stage, before the sound gate, so
+     Play Tavi's siren is on a phone's first screen */
+  .l11-hero .hero-key {
+    order: 4;
+  }
+  .l11-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone Merc and Tavi stand smaller either side of the chart */
+@media (max-width: 560px) {
+  .l11-duo {
+    --merc: min(20vw, 80px);
+    --line-h: 190px;
+    margin-top: 2px;
+  }
+}
+/* the two plays' words wrap, two balanced lines, before they would run past
+   the card at 320 px */
+@media (max-width: 359px) {
+  .l11-hero .hero-plays .btn {
+    white-space: normal;
+    line-height: 1.25;
+    padding-block: 8px;
+    text-align: center;
+    text-wrap: balance;
+  }
+}
+
+/* ---------------------------------------------------------------- the range chart's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The kit's tall figure (380 px beside the text, 340 in the deck, 310 at
+   420 px and under), giving way to the stage's controls no lower than
+   210 px: the chart names a row every three to nine semitones, and Step 4's
+   narrowest seams need the height (WEB-SPEC, Toys 1; FACTS 83). */
+.l11-toy .range-viz {
+  --viz-min: 210px;
+}
+/* a phone held sideways: the chart at its least, so it and a row of controls share the screen */
+@media (orientation: landscape) and (max-height: 500px) {
+  .l11-toy .range-viz {
+    --viz-min: 180px;
+  }
+}
+/* the key in words, wherever the gears are drawn */
+.range-key {
+  margin: 8px 0 0;
+  font: 500 var(--fs-13, 13px) / 1.35 var(--f-mono);
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+}
+.range-key[hidden] {
+  display: none;
+}
+.range-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Step 2's stretch gauge: a bar on a row of its own, 44 px tall and no target */
+.stretch-gauge {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 44px;
+  margin-top: 10px;
+}
+.stretch-gauge[hidden] {
+  display: none;
+}
+.sg-label,
+.sg-ends {
+  margin: 0;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.sg-label {
+  grid-row: 1 / 3;
+}
+.sg-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--hair);
+  overflow: hidden;
+}
+.sg-bar i {
+  display: block;
+  height: 100%;
+  width: 10%;
+  border-radius: 5px;
+  background: var(--amber);
+}
+.sg-ends {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-3);
+}
+
+/* Step 4's picker: five 52 px segments in 260 px, centred, on a row of their own */
+.slide-pick {
+  margin-top: 10px;
+  text-align: center;
+}
+.slide-pick[hidden] {
+  display: none;
+}
+.pick-label {
+  margin: 0 0 6px;
+  font: 500 var(--fs-13, 13px) / 1.3 var(--f-mono);
+  color: var(--ink-2);
+}
+.pick-row {
+  display: inline-grid;
+  grid-template-columns: repeat(5, 44px);
+  gap: 8px;
+  width: 252px;
+  max-width: 100%;
+}
+.pick-row .btn {
+  padding-inline: 0;
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l11-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l11-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l11-sing .sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l11-meter {
+  align-items: stretch;
+}
+.l11-meter .ring {
+  align-self: center;
+}
+.no-voice {
+  margin-top: 14px;
+}
+.no-voice[hidden] {
+  display: none;
+}
+.no-voice-line {
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+@media (max-width: 560px) {
+  .l11-meter {
+    flex-direction: column;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l11-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l11-app .dose {
+  margin: 10px 0 0;
+  color: var(--ink);
+}
+.l11-next {
+  margin-top: 18px;
+}
+/* the next card's still: four chords as four faint rooms on the ring of
+   twelve, no tune note on it, in chrome, never red, and nothing moving */
+.l11-tease {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin-top: 12px;
+}
+.l11-tease .ring,
+.l11-tease .ticks {
+  fill: none;
+  stroke: rgba(195, 204, 214, 0.35);
+  stroke-width: 1.5;
+}
+.l11-tease .room {
+  fill: rgba(195, 204, 214, 0.06);
+  stroke: rgba(195, 204, 214, 0.55);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+/* free play: the steps' chart with every state, on its own card */
+.l11-free.range-toy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.l11-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l11-free .free-states {
+  margin: 0;
+}
+.l11-free .range-voice {
+  margin: 8px 0 12px;
+}

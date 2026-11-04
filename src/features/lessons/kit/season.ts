@@ -368,8 +368,19 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Registers and the break',
     short: 'Registers',
     topics: ['S12'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 16,
+    page: '/learn/11',
     hook: 'Why does your voice sometimes flip as you slide up?',
-    pr: { needs: 'siren and slide drills' },
+    pr: {
+      needs: 'siren and slide drills',
+      link: {
+        href: '/pitch-training?lesson=11',
+        addr: 'mercurypitch.com/pitch-training',
+        label: 'Exercises',
+        note: 'then tap Siren / Range Explorer',
+      },
+    },
   },
   {
     n: 12,

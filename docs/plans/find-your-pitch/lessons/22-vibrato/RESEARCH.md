@@ -253,7 +253,7 @@ line, for instance by removing the fitted wave as Voice Mirror's steadiness alre
 (`src/lib/mirror/metrics.ts:499-509`). Read: code. This is engineering, not yet planned in SEASON-2 § 5.
 
 **R18. Merc has sung with a small vibrato all season.** The kit's Merc "ooh" adds a 5.5 Hz vibrato
-of ±14 cents, grown in over 0.35 s (`src/features/lessons/kit/sound.ts:188-198`, comment at :189;
+of ±14 cents, grown in over 0.35 s (`src/features/lessons/kit/sound.ts:194-204`, comment at :189;
 Lesson 5 FACTS 42). The demo voice takes a vibrato as `{ hz, cents, rampSec }`, "`cents` either
 side at `hz`" (`src/lib/demo-voice.ts:33-37`), so the lesson's examples can set rate and extent.
 Read: code.

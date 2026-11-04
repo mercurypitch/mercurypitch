@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3, 5 to 10, 12 and 13 are live here; a page that holds them
+// does, so Lessons 3 and 5 to 13 are live here; a page that holds them
 // back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -90,10 +90,16 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
     'Start lesson',
   ],
   [
-    `/learn/${pad(LATER.n - 1)}`,
-    `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
-    '#explorer',
-    'See it on the map',
+    '/learn/10',
+    'Next lesson 11 · Registers and the break Ready · 16 min',
+    '/learn/11',
+    'Start lesson',
+  ],
+  [
+    '/learn/11',
+    'Next lesson 12 · Chords and the four-chord song Ready · 15 min',
+    '/learn/12',
+    'Start lesson',
   ],
   [
     '/learn/12',
@@ -102,8 +108,8 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
     'Start lesson',
   ],
   [
-    '/learn/13',
-    'Next lesson 14 · Phrasing: sing a whole song Coming later',
+    `/learn/${pad(LATER.n - 1)}`,
+    `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
     '#explorer',
     'See it on the map',
   ],
@@ -259,6 +265,54 @@ test("Lesson 10's card sets up Lesson 11 with its tease, one line above its hook
   ).toEqual({ words: '', red: [], moving: 0 })
 })
 
+test("Lesson 11's card sets up Lesson 12 with its tease, one line above its hook, and its still of four rooms holds no tune note, no button, no words and no red", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/11')
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[12]?.tease ?? 'Lesson 12 has a tease',
+  )
+  await expect(c.locator('.next-tease')).toBeVisible()
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  // the page's tease still, kept after the words
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l11-tease'])
+  await expect(c.locator('button')).toHaveCount(0)
+  const still = c.locator('svg.l11-tease')
+  await expect(still).toBeVisible()
+  await expect(still).toHaveAttribute('aria-hidden', 'true')
+  // four rooms on the ring, and no tune on it: no bead, no lit corner, no
+  // path from bead to bead (Lesson 12's WEB-SPEC, Decisions, item 13)
+  expect(
+    await still.evaluate((svg) => ({
+      rooms: svg.querySelectorAll('.room').length,
+      beads: svg.querySelectorAll('circle:not(.ring)').length,
+      words: (svg.textContent ?? '').trim(),
+      red: Array.from(svg.querySelectorAll('*')).flatMap((el) => {
+        const s = getComputedStyle(el)
+        return [s.fill, s.stroke].filter((paint) => {
+          const m = /^rgba?\((\d+), (\d+), (\d+)/.exec(paint)
+          if (m === null) return false
+          const [r, g, b] = m.slice(1).map(Number)
+          return r > 150 && g < 110 && b < 110
+        })
+      }),
+      moving: svg.getAnimations({ subtree: true }).length,
+    })),
+  ).toEqual({ rooms: 4, beads: 0, words: '', red: [], moving: 0 })
+})
+
 test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook, and holds no button", async ({
   page,
 }) => {
@@ -408,7 +462,7 @@ const chipTargets = (
  * Every lesson page whose prerequisite chips hold a link, read from the
  * season: one of its direct prerequisites has a page too. A prerequisite
  * with no page is a plain chip (kit/page-state.ts), so Lesson 13's chip,
- * "After Lesson 11", joins once Lesson 11's page does.
+ * "After Lesson 11", joined with Lesson 11's page.
  */
 const CHIP_PAGES = LESSONS.filter(
   (l) =>

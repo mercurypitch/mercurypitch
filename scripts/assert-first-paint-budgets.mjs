@@ -167,6 +167,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 135,251 with it, against 135,168 at 132. The 263 are Lesson 13's season
   // entry, with its page, minutes and Voice Mirror link, and its drafts
   // line, on every lesson page, in the chunks Lesson 3 loads them in.
+  // Lesson 11's page shell adds its own entry, with its page, minutes and
+  // practice link, and its drafts line: 235 bytes more, which 133 holds.
   'learn/03.html': 133,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
@@ -252,6 +254,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // tour, the quizzes' answers sent anonymously and the way back to the
   // plan (kit/tour.ts, telemetry.ts and plan-back.ts).
   'learn/10.html': 211,
+  // Lesson 11, "Registers and the break", a draft too, built in every mode
+  // as Lesson 3 is. Its page shell, the kit's deck, switches, masthead,
+  // next-lesson card, explorer and Merc and Tavi, measured 74,137 bytes in
+  // build:e2e. The ceiling is the smallest whole KB above the measure,
+  // raised with each toy that joins until the page is whole and takes a
+  // quarter over, as Lesson 12's was.
+  'learn/11.html': 73,
   // Lesson 12, "Chords and the four-chord song", a draft too, built in
   // every mode as Lesson 3 is. Its page shell, the kit's deck, switches,
   // masthead, next-lesson card, explorer and Merc and Tavi, measured 73,364
@@ -265,7 +274,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // toy that joins until the page is whole and takes a quarter over.
   // Raised to 111 for Lesson 13's page shell: 112,558 bytes before it,
   // 112,729 with it, against 112,640 at 110. The 171 are Lesson 13's season
-  // entry and drafts line, on every lesson page.
+  // entry and drafts line, on every lesson page. Lesson 11's page shell adds
+  // its own entry and drafts line: 242 bytes more, which 111 holds.
   'learn/12.html': 111,
   // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
   // Lesson 3 is: its own module on the kit, with the vowel model, the
@@ -375,6 +385,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // the ear game's and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/10.html': 111,
+  // Lesson 11 (a draft, as above). Measured 90,188 bytes in build:e2e for
+  // its page shell: the kit's sheets (with the range chart's and the voice
+  // lessons', inlined into its own by @import, and the shared parts), its
+  // own, and the shared Inter and Outfit @font-face rules. The smallest
+  // whole KB above that, as for its script.
+  'learn/11.html': 89,
   // Lesson 12 (a draft, as above). Measured 88,243 bytes in build:e2e for
   // its page shell: the kit's sheets (with the guide's and the voice
   // lessons', inlined into its own by @import, and the shared parts), its

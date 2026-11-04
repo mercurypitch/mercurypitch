@@ -472,14 +472,16 @@ test('every lesson page offers the same five steps', async ({ page }) => {
     await page.evaluate((k) => localStorage.removeItem(k), TOUR_KEY)
   }
 
-  // Assert: Lesson 12's among them, built before Lesson 11's
-  expect(LESSONS).toContain(12)
+  // Assert: Lessons 11 and 12 among them
+  expect(LESSONS).toEqual(expect.arrayContaining([11, 12]))
   expect(counts).toEqual(LESSONS.map(() => '1 of 5'))
 })
 
 for (const [n, name, size] of [
   [10, 'phone', PHONE],
   [10, 'desktop', DESKTOP],
+  [11, 'phone', PHONE],
+  [11, 'desktop', DESKTOP],
   [12, 'phone', PHONE],
   [12, 'desktop', DESKTOP],
   [13, 'phone', PHONE],

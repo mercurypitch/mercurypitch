@@ -333,7 +333,7 @@ the guide drawn on the staff and no Move do. In order:
    buttons. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as two contours a breath
    apart, each one voice: so held 1.15 s and a 0.05 s glide, te the same, do held 1.8 s; 1.0 s of
    quiet; then so, ti and do the same way; 9.4 s in all (FACTS 45, 65; `contourOf`,
-   `src/features/lessons/kit/sound.ts:290`; `playContour`, `src/features/lessons/kit/sound.ts:575`),
+   `src/features/lessons/kit/sound.ts:296`; `playContour`, `src/features/lessons/kit/sound.ts:581`),
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
    sound on, with Lesson 12's two hints (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
@@ -421,10 +421,10 @@ music bed.
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
   `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
-  `src/features/lessons/kit/run.ts:167`), so a chord change falls on its melody note. A chord heard
+  `src/features/lessons/kit/run.ts:170`), so a chord change falls on its melody note. A chord heard
   alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
   (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
-  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:114`), so they share one clock
+  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:117`), so they share one clock
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
   an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
@@ -516,7 +516,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 10's
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [10, 25], [21, 25] and [23, 25], the first a cross-season edge, as SEASON-2 § 4.3
   gives them (FACTS 2). Lesson 25's prerequisite list is then [10, 21, 23] (`PREREQ`,
-  `src/features/lessons/kit/season.ts:463-469`).
+  `src/features/lessons/kit/season.ts:474-480`).
 - The tease on Lesson 24's card is this lesson's, set on Lesson 25 in the lesson copy (`LESSON_COPY`,
   `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "A minor tune, played twice. The second
   ending changes one note.", with Lesson 24's planned line as a variant, `teaseAlts` `[{ id: 'plan',

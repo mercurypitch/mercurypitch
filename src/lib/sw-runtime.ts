@@ -170,6 +170,10 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // Lesson 10, a draft as Lessons 3, 5, 6, 7, 8 and 9 are, for the same reason.
   '/learn/10',
   '/learn/10.html',
+  // Lesson 11, a draft as Lessons 3, 5, 6, 7, 8, 9 and 10 are, for the same
+  // reason.
+  '/learn/11',
+  '/learn/11.html',
   // Lesson 12, a draft as Lessons 3, 5, 6, 7, 8, 9 and 10 are, for the same
   // reason.
   '/learn/12',

@@ -510,7 +510,7 @@ Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's
   (SEASON-2 § 5.2 item 10)", which is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [9, 16], a cross-season edge, and [15, 16], as SEASON-2 § 4.3 gives them (FACTS 2);
-  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
+  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
 - The tease on Lesson 15's card is this lesson's, set on Lesson 16 in the lesson copy: `tease` "Five
   notes on the staff. Tavi has never heard them.", `teaseAlts`
   `[{ id: 'any-note', text: 'Now you can see where any note sits.' }]`, with the variant's team note

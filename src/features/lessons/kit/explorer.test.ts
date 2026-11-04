@@ -19,7 +19,7 @@ import type { Motion } from './motion-switch'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
-import type { Lesson } from './season'
+import type { Lesson, Practise } from './season'
 import { LESSONS, TOPICS } from './season'
 import { lessonWithNoPage } from './season.test-fixtures'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
@@ -310,20 +310,27 @@ describe('createExplorer', () => {
   })
 
   it('draws a lesson with no drill to link without a Practise row', () => {
-    // Arrange: any lesson with no drill to link yet
-    const bare = LESSONS.find((L) => L.n > 0 && L.pr.link === undefined)
-    if (bare === undefined)
-      throw new Error('Every lesson links a drill now: retire this test')
-    explorerPage()
-    const explorer = createExplorer({ current: 1 })
+    // Arrange: every lesson links a drill today, so one is given, while this
+    // test runs, the entry a lesson with no drill has: what it needs, no link
+    const lesson = LESSONS.find((L) => L.n > 1 && L.pr.link !== undefined)
+    if (lesson === undefined) throw new Error('No lesson links a drill')
+    const entry = lesson as { pr: Practise }
+    const linked = entry.pr
+    entry.pr = { needs: 'a drill of its own' }
+    try {
+      explorerPage()
+      const explorer = createExplorer({ current: 1 })
 
-    // Act
-    explorer.select(bare.n, false)
+      // Act
+      explorer.select(lesson.n, false)
 
-    // Assert
-    const rows = Object.keys(cardRows())
-    expect(rows).toContain('Builds on')
-    expect(rows).not.toContain('Practise')
+      // Assert
+      const rows = Object.keys(cardRows())
+      expect(rows).toContain('Builds on')
+      expect(rows).not.toContain('Practise')
+    } finally {
+      entry.pr = linked
+    }
   })
 
   it('follows the viewer: a step reached on its page continues it, and marking it done offers it again', () => {
@@ -537,6 +544,38 @@ describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.t
     expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
     expect(hidden?.innerHTML).not.toContain('/learn/10')
     expect(hidden?.innerHTML).toContain('/ear-lab?lesson=10')
+  })
+
+  it('treats Lesson 11, a draft too, the same way either side of the switch, its Siren link kept', async () => {
+    // Arrange
+    const lessonEleven = async (drafts: '1' | '0'): Promise<Element | null> => {
+      vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+      vi.resetModules()
+      const { createExplorer: explorerBuilt } = await import('./explorer')
+      explorerPage()
+      explorerBuilt({ current: 1 }).select(11, false)
+      return document.querySelector('#exCardHost .ex-card')
+    }
+
+    // Act
+    const shown = await lessonEleven('1')
+    const shownLinks = cardLinks()
+    const hidden = await lessonEleven('0')
+
+    // Assert: to read where drafts show; coming later, and nothing to the page, where they do not (WEB-SPEC, Tests 12)
+    expect(shown?.querySelector('h3')?.textContent).toBe(
+      'Registers and the break',
+    )
+    expect(shownLinks).toEqual(['/learn/11'])
+    expect(hidden?.querySelector('.chip')?.textContent).toBe('Coming later')
+    expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(hidden?.innerHTML).not.toContain('/learn/11')
+    expect(
+      hidden?.querySelector('a.addr[href="/pitch-training?lesson=11"]'),
+    ).not.toBeNull()
+    expect(hidden?.textContent).toContain(
+      'Exercises, then tap Siren / Range Explorer',
+    )
   })
 
   it('treats Lesson 12, a draft too, the same way either side of the switch, its ear drill kept', async () => {

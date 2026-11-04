@@ -558,9 +558,9 @@ bed (FACTS 81 to 83).
   cold open says Merc and Tavi sing; the tag's chords are in the soft tone; do in Sing it is the
   chosen voice's "ooh"; the count-in is the woodblock.
 - **A part under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:533-541`). The other part is the one exception, as Lesson
+  (`src/features/lessons/kit/sound.ts:539-547`). The other part is the one exception, as Lesson
   26's item 6 has it for this page: one voice along a contour (`contourVoice`,
-  `src/features/lessons/kit/sound.ts:315-347`), each note a held point at its pitch, joined to the
+  `src/features/lessons/kit/sound.ts:321-353`), each note a held point at its pitch, joined to the
   next by a glide of 0.05 s, built before the take opens and booked on the audio clock to start on
   bar 1's first beat through the voice's `at` (`src/features/lessons/kit/sound.ts:39-43`). Its two
   D3s in bar 7, for the higher voice, are struck again by a dip in the contour's level, to a quarter
@@ -571,8 +571,8 @@ bed (FACTS 81 to 83).
   audio clock so that the take's first voiced onset plays as far after the part's bar 1 as it came
   in the run, through the page's owner as one sound (Toys 6).
 - **Levels.** A note at the kit's 0.13 and Merc's "ooh" at 0.2
-  (`src/features/lessons/kit/sound.ts:181`); in a two-part play each part at 0.2, the master bus's
-  compressor holding the two (`src/features/lessons/kit/sound.ts:109-118`); the tag's chords at 0.13
+  (`src/features/lessons/kit/sound.ts:187`); in a two-part play each part at 0.2, the master bus's
+  compressor holding the two (`src/features/lessons/kit/sound.ts:115-124`); the tag's chords at 0.13
   a voice. In a run the other part sits at a level the lab sets, so the singer's own voice stays
   clear in the headphones; the playback sets the take's peak to one level, the same for every take,
   and the part under it at the run's level.
@@ -642,7 +642,7 @@ stills when WebGL fails.
 ## Explorer and season data
 
 Lesson 28's entry, proposed for Season 2's data in its own module, in Season 1's entry form, as
-Lesson 14's is (`src/features/lessons/kit/season.ts:416-430`):
+Lesson 14's is (`src/features/lessons/kit/season.ts:427-441`):
 
 - `n: 28`, `lane: 'both'`, `title: 'Cadences, form and a song in two parts'`, `short: 'Cadences'`,
   `topics: ['T22', 'T31']`, with their names as SEASON-2 § 4.1 gives them, "Phrases and cadences"
@@ -653,7 +653,7 @@ Lesson 14's is (`src/features/lessons/kit/season.ts:416-430`):
   drill (item 17)", is the team's only: the field is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [18, 28] and [26, 28], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 28's
-  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:464-468`).
+  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:475-479`).
 - The tease on Lesson 27's card is this lesson's, set on Lesson 28 in the lesson copy
   (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "A song in two parts. At
   bar 8 it seems to end, then keeps going.", 64 characters, inside `TEASE_MAX`
