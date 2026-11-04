@@ -95,10 +95,11 @@ function sceneOf(
   compact: boolean,
   curves: boolean,
 ): SpectrumScene {
+  const peaks: readonly (number | null)[] = now.peaks ?? []
   return {
     f0: hz(line.midi),
     columns: now.columns,
-    peaks: (now.peaks ?? []).filter((p): p is number => p !== null),
+    peaks: peaks.filter((p): p is number => p !== null),
     numbers: compact ? 'peaks' : 'all',
     curves: curves ? curvesOf(now.res) : [],
     caption: CAPTION,
