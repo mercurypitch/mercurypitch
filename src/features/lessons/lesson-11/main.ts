@@ -10,11 +10,9 @@
 // renderer loads last, as its own chunk, so the page reads before it
 // arrives. A draft until the vocal coach has signed it off (kit/drafts.ts).
 //
-// The page shell: the switches, the steps' deck with each step's controls,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// Each toy does nothing until it is wired: the range chart on the stage and
-// in free play, the cold open on the hero's chart, the recall and the quick
-// check, the four words and Sing it.
+// The switches, the steps' deck with the range chart in each step's state
+// (steps.ts, registers-toy.ts), the next lesson's card, the season map, the
+// masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -47,7 +45,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps()
+initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

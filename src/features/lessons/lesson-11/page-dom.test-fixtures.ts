@@ -18,6 +18,7 @@ import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { RegistersToy } from './registers-toy'
 import { initSteps } from './steps'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/11.html'), 'utf8')
@@ -47,6 +48,14 @@ export const settle = async (): Promise<void> => {
   for (let i = 0; i < 5; i++) await Promise.resolve()
 }
 
+let toy: RegistersToy | null = null
+
+/** The steps' range chart that `mountSteps` mounted. */
+export function stepsToy(): RegistersToy {
+  if (toy === null) throw new Error('mountSteps first')
+  return toy
+}
+
 /** The page's deck with its steps mounted, opened on step 1 as the page opens it. */
 export function mountSteps(): StepDeck {
   loadPage()
@@ -55,7 +64,7 @@ export function mountSteps(): StepDeck {
     toyFor: () => 1,
     after: { label: 'Sing it', selector: '#sing' },
   })
-  initSteps()
+  toy = initSteps(deck)
   deck.start()
   return deck
 }
