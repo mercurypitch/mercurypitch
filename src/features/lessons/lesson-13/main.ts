@@ -17,10 +17,10 @@
 // but pitch frames.
 //
 // The switches, the cold open on the hero's figure, the steps' deck with
-// the vowel figure in each step's state, the next lesson's card, the season
-// map, the masthead and Merc and Tavi. The rest does nothing until it is
-// wired: the recall and the quick check, the four words, Sing it and free
-// play.
+// the vowel figure in each step's state, the quick check and the recall,
+// the next lesson's card, the season map, the masthead and Merc and Tavi.
+// The rest does nothing until it is wired: the four words, Sing it and
+// free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -40,9 +40,12 @@ import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
@@ -62,6 +65,8 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+createQuiz({ questions: QUIZ_QUESTIONS, lesson: 13, keys: QUIZ_KEYS, deck })
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(13)
@@ -86,6 +91,7 @@ initMasthead(
   },
   { lesson: 13, deck },
 )
+initRecall()
 initReveals()
 startFrameLoop()
 // Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
