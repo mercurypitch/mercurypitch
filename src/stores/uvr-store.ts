@@ -1301,6 +1301,26 @@ export function setUvrSessionProvider(
   }
 }
 
+/**
+ * Record how many chunks a local separation runs in, for the processing view.
+ *
+ * A new object, and only this session's row, as every setter here does. The
+ * pipeline used to set the count on the cached object in place and save the
+ * whole library, which changed a snapshot others held under them, and deleted
+ * the row of any session this page had not loaded (another tab's song).
+ */
+export function setUvrSessionChunkCount(
+  sessionId: string,
+  numChunks: number,
+): void {
+  const session = getUvrSession(sessionId)
+  if (session) {
+    const updated = { ...session, numChunks }
+    upsertSessionInCache(updated)
+    setCurrentSessionIfActive(updated)
+  }
+}
+
 /** Flip a server session back into the processing state when re-attaching to
  *  an in-flight RunPod job on load / foreground. No new job is submitted and no
  *  credit is charged — the existing apiSessionId is re-polled. Starts
