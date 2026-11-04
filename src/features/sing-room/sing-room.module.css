@@ -114,6 +114,12 @@
   padding: calc(var(--safe-top, 0px) + 52px + 8px)
     max(16px, var(--safe-right, 0px)) calc(var(--tabbar-total, 64px) + 12px)
     max(16px, var(--safe-left, 0px));
+  /* The column is on the dark stage (SingRoomStage.tsx), and its chips'
+     glass is mixed again here from the stage's own surface: the document's
+     --glass-bg was mixed at the root from the theme's, so in light it stayed
+     a light glass under the stage's light ink. */
+  --glass-bg: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  --glass-border: color-mix(in srgb, var(--text-primary) 12%, transparent);
 }
 
 /* The shell holds the room's words (roomWordsHeld): only its picture shows,
@@ -249,7 +255,11 @@
   border: 0;
   border-radius: 999px;
   background: var(--accent-primary, #58a6ff);
-  color: var(--bg-primary, #0d1117);
+  /* The fill is the same blue in every theme (no app theme defines
+     --accent-primary; the dark stage sets it to that blue), so its ink is the
+     same too. Read from --bg-primary it was the light theme's near-white on
+     the priming screen and the room's sheets: 2.3:1. */
+  color: #0d1117;
   font: 600 17px/1 var(--font-body, sans-serif);
   letter-spacing: -0.005em;
   cursor: pointer;

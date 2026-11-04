@@ -916,10 +916,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
       {/* Out of sight while the shell holds the room's words: the native
           onboarding is opening over it, and its words flashed under the
-          onboarding's first frames (room-words-store.ts). */}
+          onboarding's first frames (room-words-store.ts).
+
+          The column is drawn over the photograph, which is dark in either
+          app theme, so it takes the dark stage's palette (dark-stage.css):
+          in light its words were the light theme's dark inks on a dark
+          room, 1.3:1. The column, not the room: the room's sheets anchor
+          beside it, and a sheet takes the palette at its anchor, so they
+          stay in the app's theme as every other sheet does. */}
       <div
-        class={styles.ui}
+        class={`${styles.ui} mp-dark-stage`}
         classList={{ [styles.wordsHeld]: roomWordsHeld() }}
+        data-testid="sing-column"
       >
         <SingRoomHud
           note={() => noteChipSignal(props.currentPitch())}
