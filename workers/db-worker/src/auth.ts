@@ -3811,7 +3811,10 @@ async function handleDeviceLinkPoll(
   if (!row || deviceLinkExpired(row)) {
     return respond({ status: 'expired' })
   }
-  if ((await sha256b64url(pollToken)) !== row.pollTokenHash) {
+  // In constant time, like every other secret here: `!==` stops at the first
+  // byte that differs, and how long it took was the one answer this branch
+  // must not give.
+  if (!timingSafeEqual(await sha256b64url(pollToken), row.pollTokenHash)) {
     // Someone polling with a code they read off a screen. Answered the
     // same way an expired code is, so the response cannot be used to
     // discover that a code is real.
