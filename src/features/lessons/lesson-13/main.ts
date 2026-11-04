@@ -16,10 +16,11 @@
 // viewer's voice: nothing on the page reads anything from the microphone
 // but pitch frames.
 //
-// The switches, the cold open on the hero's figure, the four words, the
-// steps' deck with the vowel figure in each step's state, the quick check,
-// Sing it, the recall, the next lesson's card, the season map, the masthead
-// and Merc and Tavi. The rest does nothing until it is wired: free play.
+// In reading order: the switches, the cold open on the hero's figure, the
+// four words, the steps' deck with the vowel figure in each step's state,
+// the quick check, Sing it, the Wrap's practise card and free play, the
+// next lesson's card, the season map, the masthead, the recall, and Merc
+// and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -49,6 +50,7 @@ import { initRecall } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
@@ -73,6 +75,9 @@ createQuiz({ questions: QUIZ_QUESTIONS, lesson: 13, keys: QUIZ_KEYS, deck })
 
 // Sing it: the comfort check, the voice, the note, Merc's ten seconds, the hold
 initSing({ blue: mercBlue, orange: mercOrange })
+
+// the Wrap: the practise card the checkpoint picks, and free play on the vowel figure
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(13)
