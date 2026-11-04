@@ -91,6 +91,16 @@
   border-bottom: 0;
 }
 
+/* The ring inside the row, as the More sheet's rows draw theirs. Drawn
+   outside it, the list's clip took the ring's sides off every row and all
+   of it off a row alone in its card: focused, the Account card showed no
+   ring at all. Rounded inside the card's own corners, so they cut none. */
+.mp-set-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
 .mp-set-row--button {
   cursor: pointer;
   touch-action: manipulation;
