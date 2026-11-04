@@ -599,7 +599,7 @@ its "Merc's line" and "it" (`lesson-08/sing-flow.ts:159-167`), "Just listening t
 Merc's notes to hear them.", "Play Merc's notes first: Merc sings them, then the guide is yours."
 and "Start the guide when you're ready, or play Merc's notes again."; and while a sweep runs,
 Lesson 8's "Your turn: sing with the guide." The ring's state words are Lesson 6's for the same
-guide (`RING_WORDS`, `lesson-10/sing.ts:84-89`; `lesson-06/sing.ts:75-79`, `:196`; Lesson 6's
+guide (`RING_WORDS`, `lesson-10/sing.ts:85-90`; `lesson-06/sing.ts:75-79`, `:196`; Lesson 6's
 LESSON.md, `lessons/06-intervals/LESSON.md:248-250`): "Ready when you are" before anything plays,
 "Listen" while Merc sings, "Get ready" through the count-in, "Sing with the line · n" through the
 sweep, and "Rest" after. Both sets wait on the copy pass.
