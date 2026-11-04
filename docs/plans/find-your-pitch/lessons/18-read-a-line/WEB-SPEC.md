@@ -650,7 +650,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/18.html` at `/learn/18`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/18` and `/learn/18.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets (FACTS 86). The
-   lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `18: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 9's
    (`src/features/lessons/kit/drafts.ts:31-42`).

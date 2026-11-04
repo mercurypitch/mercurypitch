@@ -370,7 +370,7 @@ The lead writes these entries; this spec gives them:
 ways: why does one feel like two beats and the other like three?'`, `pr.link` with `href:
 '/ear-lab?lesson=19'`, `addr: 'mercurypitch.com/ear-lab'`, `label: 'Ear Lab'` and `note: 'then tap
 Subdivide'`, since the explorer prints the label, a comma and the note (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:177-181`), and `pr.needs: 'Subdivide with only 3/4 and 6/8
+  `src/features/lessons/kit/explorer.ts:191-195`), and `pr.needs: 'Subdivide with only 3/4 and 6/8
 (an ear-drill link)'`, which no page draws (`src/features/lessons/kit/season.ts:90-106`). The edge
   `[17, 19]` (SEASON-2 § 4.3). The topic T08, "Simple and compound metre; triplets; syncopation"
   (SEASON-2 § 4.1).

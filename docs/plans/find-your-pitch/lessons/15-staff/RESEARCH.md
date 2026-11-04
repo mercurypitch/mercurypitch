@@ -168,7 +168,7 @@ class and counts fretboard positions found in a 30 s round (`ROUND_TIME = 30`, :
 `MAX_FRET` and `OPEN_MIDI` from the guitar constants (:3). No staff. A search of `src` for "note-reading"
 finds only an end-to-end test file name. Code read. Strong.
 
-**R15-19. `?lesson=15` is not a lesson link today.** `src/lib/lesson-marker.ts:11-19`: "Strict on
+**R15-19. `?lesson=15` is not a lesson link today.** `src/lib/lesson-marker.ts:11-19` at `ad0a099f7`: "Strict on
 purpose: `lesson=` and two digits, 01 to 14, Season 1's lessons"; `SEASON_1_LESSON =
 /^(?:0[1-9]|1[0-4])$/` (:19). Code read. Strong.
 

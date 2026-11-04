@@ -92,8 +92,8 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
-   the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as seven chips
+   (`:327-336`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; 1), and the element
+   the site worker writes a picked hook into (`src/lesson-gate.ts:591-592`); the meta as seven chips
    ("18 minutes", 8; "After Lesson 5: Steady note", "After Lesson 8: Beat and tempo", "After Lesson
    9: Landing a leap" and "After Lesson 12: Chords", each a link to that lesson's page and wholly
    the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so that it stays as a
@@ -135,17 +135,17 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, and the kit's card that closes the season (`createNextCard(14)`,
-   `kit/next-card.ts:176-193`, drawn before `createExplorer`, `:27-30`). After the season's last
+   `kit/next-card.ts:176-193`, drawn before `createExplorer`, `:32-35`). After the season's last
    lesson the kit draws the season's close in place of a next-lesson card: the eyebrow "End of
    Season 1", the line "You've seen every note you sing. Now sing a whole song.", Karaoke Night,
    which links `/karaoke-night?lesson=14` in a tab of its own, and "See the season map", which links
-   `#explorer` (`seasonEnd`, `:77-89`; `endCard`, `:148-174`; 9). The card holds two links, so it is
+   `#explorer` (`seasonEnd`, `:77-89`; `endCard`, `:148-174` at `ad0a099f7`; 9). The card holds two links, so it is
    no link itself. Its figure, the song line's still (Toys 1, Still), sits in the page's
    `[data-next-card]` mark, whose children the kit keeps in the card after its words, in the form
    the kit's own test gives,
    `<div class="next-card card l14-next" data-next-card hidden><figure class="end-still">`
-   (`src/features/lessons/kit/next-card.test.ts:348-379`). The kit draws the close once and never
-   redraws it (`next-card.ts:190-193`), so today it says "Now sing a whole song." whatever Sing it's
+   (`src/features/lessons/kit/next-card.test.ts:442-473`). The kit draws the close once and never
+   redraws it (`next-card.ts:224-227`), so today it says "Now sing a whole song." whatever Sing it's
    ending. This page needs a close that knows the ending, and is not built before it (What the kit
    and the app still need, 12; 78): after "Effortful", "Uncomfortable" or "Just listen today" the
    card keeps "You've seen every note you sing." and "See the season map", and shows neither "Now
@@ -769,17 +769,17 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
 2. The page's head, written in full from its first commit, since both tests read it while the page
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
-   included (`lesson-copy.test.ts:323-358`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   included (`lesson-copy.test.ts:327-362`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
    its legal links (`:139-275`). So Lesson 14 meets all of the checks below as a draft; its release
    adds only the listings and links of item 1 (`:277-305`). The hook's copies are the ones the site
-   worker rewrites when the console picks another hook (`src/lesson-gate.ts:452-459`, `:573-602`);
+   worker rewrites when the console picks another hook (`src/lesson-gate.ts:453-460`, `:573-602`);
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
    form (`learn/04.html:9-136`), with the default hook (13):
    - the title, "Phrasing in singing: breath, swell and shape | MercuryPitch" (59 characters, under
      the test's 60, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:245`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:156-159`, and 153 with `compelling`, since dropped);
@@ -787,8 +787,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      hold the headline, as the title did until #1187 (`lesson-pages.test.ts:184-188`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
-     `compelling`, since dropped; `lesson-copy.test.ts:349-352`), and `twitter:description`, the
-     hook exactly (`:353-355`);
+     `compelling`, since dropped; `lesson-copy.test.ts:353-356`), and `twitter:description`, the
+     hook exactly (`:357-359`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -800,7 +800,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      the file (`lesson-pages.test.ts:227-246`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`), and the other test asks for the Article first
+     (`lesson-copy.test.ts:342-350`, `:360`), and the other test asks for the Article first
      (`lesson-pages.test.ts:169-171`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
      `https://mercurypitch.com/learn/14` (`:173-174`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
@@ -831,7 +831,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-151`,
    `:209-217`; `:341-344`, `:354-358`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:624-628`), so without them the Browser jobs fail before any spec
+   document with no ceiling (`:638-642`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
    quarter, the tables' rule (`:47-58`, `:297-307`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
@@ -879,7 +879,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     "Effortful", "Uncomfortable" or "Just listen today", the card keeps "You've seen every note you
     sing." and "See the season map", and drops "Now sing a whole song." and its Karaoke Night
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
-    78). The kit draws the close once (`next-card.ts:190-193`), so either `createNextCard` redraws
+    78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
     would gain the shorter line beside its own (`lesson-copy.ts:135-141`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:249-257`). Its unit test and End to end 11 check it
@@ -987,7 +987,7 @@ What the page does where nothing above says:
   asks first, but the publish order is a rule for whoever uses it (the intro), so the page follows
   the state it is served with. The site worker, and then the masthead's `followPageState`, make
   every link to a
-  lesson that is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`;
+  lesson that is not live no link (`src/lesson-gate.ts:524-534`, `:548-568`;
   `kit/page-state.ts:64-108`, called by `initMasthead`, `kit/page-chrome.ts:131`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
@@ -1112,7 +1112,7 @@ parts:
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
-    checks the kit (`:348-379`); and after each of the three rest endings, "Effortful",
+    checks the kit (`:442-473`); and after each of the three rest endings, "Effortful",
     "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.

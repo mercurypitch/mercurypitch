@@ -79,8 +79,8 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
+   (`:327-336`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:591-592`); the meta as
    five chips ("16 minutes", FACTS 5; "After Lesson 3: Match a note", a link to `/learn/03`; "After
    Lesson 6: Intervals: the distance between notes", a link to `/learn/06`, each chip wholly the
    link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so that it stays as a plain
@@ -113,15 +113,15 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, the kit's next-lesson card (`createNextCard(9)`, `kit/next-card.ts:181-210`, drawn before
-   `createExplorer`, `:27-30`), then free play, as Lessons 6 to 8 have it. The card is Lesson 10's,
+   `createExplorer`, `:32-35`), then free play, as Lessons 6 to 8 have it. The card is Lesson 10's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Three
    notes, one chord. Move one by a semitone.", one line above the hook as `.next-tease`, the hook as
-   `.q2` and the way on (`:130-146`; FACTS 7), "Coming later" and "See it on the map" until Lesson
+   `.q2` and the way on (`:144-160`; FACTS 7), "Coming later" and "See it on the map" until Lesson
    10's page is live. Its hook and tease are the ones the admin console picked, the defaults until
    it picks (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The
    tease's figure, a still of the pitch spiral with do, mi and so lit and one "?" over all three,
    not over mi, sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card
-   after its words (`:27-29`, `:184`, `:205`), as Lesson 2's figures are (`learn/02.html:1823`). The
+   after its words (`:32-34`, `:217`, `:239`), as Lesson 2's figures are (`learn/02.html:1823`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
    "Uncomfortable" or "Just listen today" it is the rest card instead, without that line or a link
@@ -619,7 +619,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `href: '/pitch-training?lesson=09'`, `addr: 'mercurypitch.com/pitch-training'`,
   `label: 'Exercises'` and `note: 'then tap Arpeggio Jumper'`, so the card reads "Exercises, then
   tap Arpeggio Jumper", as Lesson 4's reads "Exercises, then tap Scale Runner" (`season.ts:236-241`,
-  `explorer.ts:181`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
+  `explorer.ts:195`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "Interval Trainer (sing) and Arpeggio Jumper" for the team, and no card draws it. Its topics
   stay. Its hook is the entry's, the default (`season.ts:334`); its tease, which Lesson 8's card
   draws, is `kit/lesson-copy.ts`'s (`:114`), whose entry held the alternative `'harder'` (`:106-114`
@@ -658,12 +658,12 @@ table):
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
    structured data, a draft's included (`:139-275`), and a released lesson's listings (`:277-305`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
-   hook (`src/lesson-gate.ts:17-19`, `:453-468`); only the meta description and the Article's
+   hook (`src/lesson-gate.ts:17-19`, `:454-469`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-136`):
    - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:240`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`; Hero);
    - the meta description, "How do you land a note you have to leap to? A sixteen-minute lesson on
      big leaps: hear the landing note first, aim at its band, then sing a ladder." (147 characters,
      inside the test's 80 to 160, `lesson-pages.test.ts:156-159`, with the run time in words that
@@ -672,9 +672,9 @@ table):
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9", hold the headline,
      as the title did until #1187 (`lesson-pages.test.ts:184-188`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
-     the landing note first, then aim at it." (`lesson-copy.test.ts:349-352`;
+     the landing note first, then aim at it." (`lesson-copy.test.ts:353-356`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:353-355`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:357-359`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/09`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -685,7 +685,7 @@ table):
      Tavi." (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`): `@id` `https://mercurypitch.com/learn/09#lesson` and
+     (`lesson-copy.test.ts:342-350`, `:360`): `@id` `https://mercurypitch.com/learn/09#lesson` and
      `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:173-174`); the headline
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:182-183`); `position: 9`,
@@ -708,7 +708,7 @@ table):
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:341-344`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:624-628`),
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:638-642`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
@@ -823,7 +823,7 @@ What the page does where nothing above says:
   but the publish order is a rule for whoever uses it (the intro), so the page follows the state it
   is served with. The site worker, and then the masthead's `followPageState`, make every link to a
   lesson that
-  is not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called
+  is not live no link (`src/lesson-gate.ts:524-534`, `:548-568`; `kit/page-state.ts:64-108`, called
   by `initMasthead`, `kit/page-chrome.ts:131`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link

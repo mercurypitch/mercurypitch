@@ -492,7 +492,7 @@ test comes first (What the kit and the app still need, item 8).
 ### 6. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
 of Lesson 27's stage as its cold open opens, as Lesson 27's package draws it: the ring with the V
 room lit and the I room faint, no fourth corner, Merc and Tavi, no bubbles
 (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:316-319`). It holds no
@@ -630,7 +630,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
 - The tease on Lesson 25's card is this lesson's, set on Lesson 26 in the lesson copy: `tease`
   "‘Twinkle’, and the same tune four semitones higher, played together.", with `teaseAlts`
   `[{ id: 'plan', text: "Lesson 24's other part was a drone. What if it's a tune?" }]`, and its team
-  note in `TEASE_NOTES` (`src/features/lessons/kit/team-notes.ts:70-71`) proposed as "The plan's
+  note in `TEASE_NOTES` (`src/features/lessons/kit/team-notes.ts:84-85`) proposed as "The plan's
   line, mended: its ‘So far the other part was a drone’ was false, since Lesson 12's sing-along had
   the learner sing over moving chords. It is true of Lesson 24 and answers nothing of the predict;
   the lead's line, the opening in miniature, is the default." (FACTS 5). The tease on this page's
@@ -652,7 +652,7 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
 1. **The lesson host**: `learn/26.html` at `/learn/26`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/26` and `/learn/26.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets. The lesson
-   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `26: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
    (`src/features/lessons/kit/drafts.ts:31-42`).

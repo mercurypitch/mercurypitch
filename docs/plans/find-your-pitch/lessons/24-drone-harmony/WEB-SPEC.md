@@ -565,7 +565,7 @@ here at five seconds (Tests 10).
 ### 7. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
 of Lesson 25's opening as Lesson 25's package draws it. It holds no button, since the card is a
 link, does not move and plays no sound. Its styles go under a class of its own, not the tease line's
 `.next-tease` (FACTS 5b).
@@ -702,7 +702,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:346-364`):
   item 15); a drone with harmonics", is the team's only: the field is
   "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [5, 24], [10, 24] and [23, 24], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 24's
-  prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:474-479`).
+  prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:474-479` at `ad0a099f7`).
 - The tease on Lesson 23's card is this lesson's, set on Lesson 24 in the lesson copy: `tease` "A
   drone, and a second note just above it, almost in tune.", with `teaseAlts`
   `[{ id: 'fifths', text: 'Fifths count as settled, tritones lean. Next, a note against a drone.' }]`
@@ -723,7 +723,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/24.html` at `/learn/24`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/24` and `/learn/24.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); and the first-paint budgets. The lesson
-   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `24: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
    (`src/features/lessons/kit/drafts.ts:31-42`).

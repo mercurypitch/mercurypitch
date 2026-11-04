@@ -50,7 +50,7 @@ line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
 lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until #1186
 (`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
-draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:142-143`). So the page
+draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:156-157`). So the page
 writes only its own title into its markup, and nothing of Lesson 11's (FACTS 1, 5).
 
 ## Look
@@ -156,11 +156,11 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    chord-bead control on one card (Toys 1; playbook rule 17), keeping the card's place after the
    challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 9. **Lesson explorer**: the kit's, `createExplorer({ current: 10 })`
-   (`src/features/lessons/kit/explorer.ts:256`), with Lesson 10 as the current node. Under its
+   (`src/features/lessons/kit/explorer.ts:275`), with Lesson 10 as the current node. Under its
    heading is Lesson 1's line, which names no lesson's state: the legend and the cards say it, from
    the season data. Its cards show only learner information: "Ready", "Coming later" or "Done", and
    "Ready · read" for a lesson with no film, with no signature, no backlog and no topic codes
-   (`explorer.ts:135-160`; FACTS 6; Explorer and season data).
+   (`explorer.ts:149-174`; FACTS 6; Explorer and season data).
 10. **Footer**: Lesson 1's, with "Season 1 · Lesson 10 · Major and minor"; the two practice links,
     printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with "Drone Intonation
     and Stack are free." and no first-visit line (FACTS 45, 46, 47); Lesson 1's fonts line and
@@ -661,7 +661,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
 ### 9. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`kit/next-card.ts:27-30`, as Lesson 2's figures sit there): an SVG,
+in the card after its words (`kit/next-card.ts:32-35`, as Lesson 2's figures sit there): an SVG,
 `aria-hidden`, of a siren's line climbing Lesson 7's range chart and crossing a shaded grey seam,
 never red, with no words or notes on it (CURIOSITY-MOMENTS § 2, Lesson 10, Tease; FACTS,
 Illustrations without claims). The seam's place and width are drawn, not measured. It holds no
@@ -792,7 +792,7 @@ Lesson 10's entry (`src/features/lessons/kit/season.ts:345-364`), built with thi
 
 - `pr.link`: `href` `/ear-lab?lesson=10`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab" and `note` "then tap Stack", which `practiseMarkup` joins with a comma after the address
-  (`kit/explorer.ts:177-182`), so the card reads "Ear Lab, then tap Stack". Stack is the lesson's ear drill and needs no voice,
+  (`kit/explorer.ts:191-196`), so the card reads "Ear Lab, then tap Stack". Stack is the lesson's ear drill and needs no voice,
   so the card stays right whatever Sing it's ending, as Lesson 6's card links Leap
   (`season.ts:278-281`). For the owner (Decisions for the owner), the other choice: Drone
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
@@ -803,7 +803,7 @@ Lesson 10's entry (`src/features/lessons/kit/season.ts:345-364`), built with thi
 - The hook stays word for word (`season.ts:354`; FACTS 1). The tease Lesson 9's card shows for this
   lesson, and Lesson 11's tease on this page's card, are the kit's lesson copy
   (`kit/lesson-copy.ts:115`, `:116`; FACTS 5, 5b).
-- The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:153-160`).
+- The card reads "Ready · read", with "17 min", once the page is live (`explorer.ts:167-174`).
 
 ## What the kit and the app still need
 
@@ -873,7 +873,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     where Lesson 6's page passes the new `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-145`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` and
+    `src/features/lessons/kit/lesson-copy.test.ts:327-362` and
     `src/tests/lesson-pages.test.ts:139-275` on every page, a draft's included, from its first
     commit:
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:154-155`):
@@ -1027,13 +1027,13 @@ CURIOSITY-MOMENTS § 5 item 2.
   (`src/features/admin/lessons/LessonControls.tsx:447-451`, at `d59c00ad6`). The page's markup keeps
   the default; picked, the alternative goes wherever the hook goes. The site worker writes it into
   the page's h1, into every head copy that quotes the hook, the description and the og and twitter
-  descriptions, and into the structured data (`src/lesson-gate.ts:14-21`, `:452-468`, `:484-495`,
+  descriptions, and into the structured data (`src/lesson-gate.ts:14-21`, `:453-469`, `:485-496`,
   `:569-602`). Its list takes in the og and twitter titles too, but they carry the lesson's name,
   not the hook (What the kit and the app still need, item 12), and it never touches `<title>`. The
   page state gives it to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
   `src/features/lessons/kit/publish.ts:108-124`): Lesson 10's card in every lesson page's explorer
-  prints it (`src/features/lessons/kit/explorer.ts:247`), even while Lesson 10 is coming later, and
-  so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:114-115`). So "bright"
+  prints it (`src/features/lessons/kit/explorer.ts:266`), even while Lesson 10 is coming later, and
+  so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:128-129`). So "bright"
   and "dark", mood labels, would stand on every surface the lesson's own rule covers, the rule it
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
   `src/tests/lesson-pages.test.ts:156-159` checks only on the page as written. Neither hook names a
