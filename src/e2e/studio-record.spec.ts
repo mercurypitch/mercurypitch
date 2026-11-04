@@ -1,4 +1,4 @@
-// Studio recording — a take sung into the fake microphone lands at the playhead on the selected lane, or on a new lane when a clip is in the way, as long as it ran and trimmed at its start by the count-in and the round trip Studio applied; the microphone is given back, undo takes the take out, a take keeps its length while the page holds the audio graph, and the next Play starts it as soon as it starts an imported take.
+// Studio recording — a take sung into the fake microphone lands at the playhead on the lane armed from its header, or on a new lane when a clip is in the way, as long as it ran and trimmed at its start by the count-in and the round trip Studio applied; the lane stays armed for the next take until it is disarmed, which gives the microphone back, undo takes the take out, a take keeps its length while the page holds the audio graph, and the next Play starts it as soon as it starts an imported take.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import type { StudioAsset, StudioClip } from '../lib/studio/model/types'
 import { openArrangement, readStudioProject, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
@@ -133,16 +133,31 @@ function recordButton(page: Page): Locator {
   return studioRegion(page).locator('[data-studio-record]')
 }
 
-/** Arm the selected lane with R; resolves once the microphone is open. */
-async function arm(page: Page): Promise<void> {
-  await expect(recordButton(page)).toHaveAccessibleName('Record')
-  await page.keyboard.press('r')
-  await expect(recordButton(page)).toHaveAccessibleName('Start recording', {
+function armButton(page: Page, lane: string): Locator {
+  return studioRegion(page).getByRole('button', {
+    name: `Arm ${lane} for recording`,
+    exact: true,
+  })
+}
+
+/** Arm `lane` from its header's arm button; resolves once the microphone is open. */
+async function arm(page: Page, lane: string): Promise<void> {
+  await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
+  await armButton(page, lane).click()
+  await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
     timeout: 15_000,
   })
+  await expect(armButton(page, lane)).toHaveAttribute('aria-pressed', 'true')
   await expect(
     studioRegion(page).locator('[data-studio-lane-meter]'),
   ).toBeVisible()
+}
+
+/** The lane stays armed after a take, its microphone open, until it is disarmed. */
+async function expectStillArmed(page: Page, lane: string): Promise<void> {
+  await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed')
+  await expect(armButton(page, lane)).toHaveAttribute('aria-pressed', 'true')
+  expect(await liveMicTracks(page)).toBeGreaterThan(0)
 }
 
 /**
@@ -292,11 +307,15 @@ test.describe('Studio recording', () => {
 
     // An empty lane, selected: the take lands on it at the playhead.
     await studio.getByRole('button', { name: 'New lane', exact: true }).click()
-    await arm(page)
+    await arm(page, 'Lane 2')
     await expect(
       studio.getByText('Armed on Lane 2. Press Record to start.'),
     ).toBeVisible()
     const firstRan = await recordArmed(page, 'Take 1', 3)
+    // Disarmed from its own arm button, the lane gives the microphone back.
+    await expectStillArmed(page, 'Lane 2')
+    await armButton(page, 'Lane 2').click()
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
     await expect.poll(() => liveMicTracks(page)).toBe(0)
 
     const first = await clipOf(page, 'Take 1')
@@ -337,11 +356,15 @@ test.describe('Studio recording', () => {
     await closeSound(page)
     await studioClip(page, 'Phrase').click()
     await page.keyboard.press('Home')
-    await arm(page)
+    await arm(page, 'Phrase')
     await expect(
       studio.getByText('Armed on Phrase. Press Record to start.'),
     ).toBeVisible()
     await recordArmed(page, 'Take 2', 2)
+    // Escape disarms too.
+    await expectStillArmed(page, 'Phrase')
+    await page.keyboard.press('Escape')
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
     await expect.poll(() => liveMicTracks(page)).toBe(0)
 
     const second = await clipOf(page, 'Take 2')
@@ -378,7 +401,7 @@ test.describe('Studio recording', () => {
     await openArrangement(page)
     const studio = studioRegion(page)
     await studio.getByRole('button', { name: 'New lane', exact: true }).click()
-    await arm(page)
+    await arm(page, 'Lane 2')
 
     let countIn: number[] = []
     let during: number[] = []
@@ -459,7 +482,7 @@ test.describe('Studio recording', () => {
     await press(page, toggle)
     await expect(toggle).toHaveAccessibleName('Play song')
     await page.keyboard.press('Home')
-    await arm(page)
+    await arm(page, 'Phrase')
     frames = await frameRequests(page)
     const armed = await phase('armed')
     const armedFrames = framesBetween(frames, await frameRequests(page))
@@ -470,6 +493,9 @@ test.describe('Studio recording', () => {
       recording = await phase('recording')
       recordingFrames = framesBetween(before, await frameRequests(page))
     })
+    // Disarmed, as the Studio was after a take before lanes stayed armed.
+    await armButton(page, 'Phrase').click()
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
     const afterTake = await playFromStart()
     const noEdit = await playFromStart()
 

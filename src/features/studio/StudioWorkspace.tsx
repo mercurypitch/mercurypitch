@@ -417,13 +417,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         onToggle={togglePlayback}
         onStart={() => seek(0)}
         onSeek={seek}
-        record={
-          <StudioRecordButton
-            phase={recorder.phase()}
-            canArm={recorder.canArm()}
-            onPress={recorder.press}
-          />
-        }
+        record={<StudioRecordButton recorder={recorder} />}
       />
     )
   }
@@ -658,6 +652,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
             record={recorder.timeline()}
+            arming={recorder.arming}
           />
           <StudioRecordStatus recorder={recorder} />
           <Show when={deskOpen()}>
@@ -775,6 +770,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               <StudioPhoneMix
                 project={project()}
                 writable={writable()}
+                arming={recorder.arming}
                 onCommand={props.studio.dispatch}
                 onTrackDetails={(id) => {
                   setSelectedTrackId(id)

@@ -93,14 +93,6 @@ async function rangeOverPhrase(page: Page): Promise<void> {
   await studio.getByRole('button', { name: 'New lane', exact: true }).click()
 }
 
-async function arm(page: Page): Promise<void> {
-  await expect(recordButton(page)).toHaveAccessibleName('Record')
-  await page.keyboard.press('r')
-  await expect(recordButton(page)).toHaveAccessibleName('Start recording', {
-    timeout: 15_000,
-  })
-}
-
 async function press(page: Page, target: Locator): Promise<number> {
   const box = (await target.boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
@@ -122,7 +114,8 @@ test.describe('Studio recording over a range', () => {
     await punch.click()
     await expect(punch).toHaveAttribute('aria-pressed', 'true')
 
-    await arm(page)
+    // One press arms the selected lane and starts the take.
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
     await page.keyboard.press('r')
     // The pre-roll fits before the range: no count-in, the song plays in.
     await expect(recordButton(page)).toHaveAccessibleName('Stop recording')
@@ -259,9 +252,12 @@ test.describe('Studio recording over a range', () => {
     await repeat.click()
     await expect(repeat).toHaveAttribute('aria-pressed', 'true')
 
-    await arm(page)
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
     await page.keyboard.press('r')
-    await expect(recordButton(page)).toHaveAccessibleName('Cancel the count-in')
+    await expect(recordButton(page)).toHaveAccessibleName(
+      'Cancel the count-in',
+      { timeout: 15_000 },
+    )
     await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
       timeout: 10_000,
     })
@@ -281,6 +277,15 @@ test.describe('Studio recording over a range', () => {
     await expect(
       studio.getByText('Saved in this browser', { exact: true }),
     ).toBeVisible({ timeout: 30_000 })
+    // The lane stays armed for the next take; disarmed, the readings below
+    // compare Plays with the microphone closed, as before a take.
+    const armed = studio.getByRole('button', {
+      name: 'Arm Lane 3 for recording',
+      exact: true,
+    })
+    await expect(armed).toHaveAttribute('aria-pressed', 'true')
+    await armed.click()
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
 
     const clip = await takeClip(page)
     const asset = await readAsset(page, clip.assetId)

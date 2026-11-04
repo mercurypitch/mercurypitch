@@ -40,8 +40,10 @@ export function StudioTimeline(props: StudioTimelineProps) {
   const [scroll, setScroll] = createSignal(0)
   const [snap, setSnap] = createSignal(true)
   let lastFillerTap = -Infinity
+  // A header holds its role plate, then the name, the arm, Mute and Solo
+  // over the lines, the fader and the knob; a phone's, the name and lines.
   const headerWidth = () =>
-    props.phone ? 104 : props.tablet === true ? 232 : 240
+    props.phone ? 104 : props.tablet === true ? 320 : 328
   // With the desk open, zoom and the clip bar leave the lanes for a dock.
   const docked = () => !props.phone && props.deskOpen === true
   const contentWidth = createMemo(() => Math.max(1, width() - headerWidth()))

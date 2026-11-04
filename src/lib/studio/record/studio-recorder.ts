@@ -2,17 +2,19 @@
 // Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept
 // ============================================================
 //
-// One press arms: the clock and the microphone open inside it (WebKit lets
-// neither start outside a press), the recorder worklet starts metering, and
-// the armed lane shows the singer's level. The next press records: the
-// count-in is written on the song's beat grid before the playhead, the song
-// is asked to start on the count-in's last frame (transport.play's
+// Arming a lane opens the clock and the microphone inside the press (WebKit
+// lets neither start outside one), the recorder worklet starts metering, and
+// the armed lane shows the singer's level. Recording starts from the armed
+// lane: the count-in is written on the song's beat grid before the playhead,
+// the song is asked to start on the count-in's last frame (transport.play's
 // notBefore), and the capture starts on the count-in's first frame, so a
 // pickup sung into the count-in is kept in the take's trim. Stop pauses the
 // song, keeps capturing for one round trip so the last sung note is not
 // cut, and the take is handed over (`keep`) to be stored like an imported
-// file. After a take, or when the microphone goes away, the microphone is
-// released and the mic icon goes off.
+// file. The lane stays armed after a take, as a DAW's armed track does, so
+// the next Record starts the next take; the microphone is released when the
+// lane is disarmed, when the microphone or the clock goes away, or when the
+// Studio closes, and the mic icon goes off with it.
 //
 // Nothing here knows Solid or the Studio's storage: the hook
 // (useStudioRecorder.ts) supplies the clock, the microphone, the transport
@@ -196,7 +198,8 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         throw new Error(AUDIO_DID_NOT_START)
       await deps.prepareWorklet(context)
       if (token !== armToken || disposed) throw new Error('disarmed')
-      armed = open(context, held, trackId)
+      // The lane pressed last while the microphone opened.
+      armed = open(context, held, view.targetTrackId)
       set({ phase: 'armed', level: 0 })
       return true
     } catch (error) {
@@ -552,13 +555,34 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     clearTimeout(current.watchdog ?? undefined)
     current.releaseMemory()
     current.journal.discard()
-    // A capture takes one start; the armed lane listens on through a fresh one.
+    listenAgain()
+    set({ phase: 'armed', countBeat: null, live: null })
+  }
+
+  /** A capture takes one start; the armed lane listens on through a fresh one. */
+  function listenAgain(): void {
+    if (armed === null) return
     armed.capture.dispose()
     armed = {
       ...armed,
       capture: deps.openCapture(armed.context, armed.source, captureEvents()),
     }
-    set({ phase: 'armed', countBeat: null, live: null })
+  }
+
+  /**
+   * Whether the lane stays armed after a take that ended for `reason`: not
+   * when the microphone or the clock went with it, or the Studio closed.
+   */
+  function staysArmed(reason: StudioCaptureStop): boolean {
+    if (disposed || armed === null) return false
+    if (reason === 'input-lost' || reason === 'interrupted') return false
+    if (armed.context.state !== 'running') return false
+    const tracks = armed.stream.getAudioTracks?.()
+    return (
+      tracks === undefined ||
+      tracks.length === 0 ||
+      tracks.some((track) => track.readyState === 'live')
+    )
   }
 
   /** The worklet stopped: by Stop, or on its own (a limit, the input gone). */
@@ -582,7 +606,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     reason: StudioCaptureStop,
     named: string | null,
   ): Promise<void> {
-    closeArmed()
+    // The armed lane listens on for the next take, or lets the microphone go.
+    const after: Partial<StudioRecorderView> = staysArmed(reason)
+      ? { phase: 'armed' }
+      : { phase: 'idle', targetTrackId: null }
+    if (after.phase === 'armed') listenAgain()
+    else closeArmed()
     try {
       const heardFirst = studioHeardFirst(
         current.anchor,
@@ -600,7 +629,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       )
       if (!reached || frames <= 0) {
         current.journal.discard()
-        set({ phase: 'idle', live: null, level: 0, notice })
+        set({ ...after, live: null, level: 0, notice })
         return
       }
       const captured: StudioCapturedTake = {
@@ -618,7 +647,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       // Kept: the journal goes. Not kept: it holds the take for the next try.
       if (kept) current.journal.discard()
       else current.journal.flush()
-      set({ phase: 'idle', live: null, level: 0, notice })
+      set({ ...after, live: null, level: 0, notice })
     } finally {
       current.releaseMemory()
     }
@@ -692,9 +721,10 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     stop,
     micLost,
     clockStopped,
-    /** An armed lane follows the selection until the take starts. */
+    /** Move the arm to another lane before the take starts; the microphone stays open. */
     retarget(trackId: string | null): void {
-      if (view.phase !== 'armed' || trackId === view.targetTrackId) return
+      if (view.phase !== 'armed' && view.phase !== 'arming') return
+      if (trackId === view.targetTrackId) return
       set({ targetTrackId: trackId })
       armed?.monitor.set(deps.monitorLevel(trackId))
     },

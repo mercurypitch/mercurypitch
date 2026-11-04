@@ -3,6 +3,9 @@
   --studio-row-height: 96px;
   --studio-clip-inset: 6px;
   --studio-ruler-height: 36px;
+  /* The role plate down a lane header's left edge (StudioLaneHeader.tsx). */
+  --studio-plate-width: 64px;
+  --studio-plate-picture: 56px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -294,6 +297,26 @@
   width: 3px;
   background: var(--studio-track);
 }
+/* A header with a role plate (StudioLaneHeader.tsx): the plate carries the
+   hue down the left edge, and the controls start past it. A selected lane
+   keeps its accent edge, drawn over the plate. */
+.withPlate {
+  padding-left: calc(var(--studio-plate-width) + 10px);
+}
+.withPlate::before {
+  z-index: 1;
+  width: 0;
+}
+/* The armed lane: a red ring round its header, over the plate, beside the
+   lit arm button and the level in its lane. */
+.lane[data-armed] .trackHeader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 2px solid var(--red, #e5484d);
+  pointer-events: none;
+}
 /* The selected lane: an accent edge and a tint on its header (at least 1.5:1
    against an unselected one, dark and light), and a wash over its body. */
 .lane {
@@ -379,7 +402,8 @@
   text-overflow: ellipsis;
 }
 
-/* Track controls: the name beside mute and solo, then the fader and the pan knob */
+/* Track controls: Mute, Solo, the fader and the pan knob; in a lane header
+   the name, the arm, Mute and Solo, then the lines, the fader and the knob */
 .controls {
   display: grid;
   grid-template-columns: 26px 26px minmax(0, 1fr) auto;
@@ -389,12 +413,29 @@
   min-width: 0;
 }
 .withIdentity {
-  grid-template-columns: minmax(0, 1fr) 26px 26px;
-  grid-template-areas:
-    'identity mute solo'
-    'volume knob knob';
-  row-gap: 8px;
-  column-gap: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.headerRow + .headerRow {
+  gap: 6px;
+}
+/* The name and the fader take what the buttons leave; a long name ends in
+   an ellipsis and never squeezes a button. */
+.headerRow > .identityCell,
+.headerRow > .volume {
+  flex: 1 1 0;
+}
+.headerRow > button,
+.headerRow > .knob {
+  flex: none;
 }
 .identityCell {
   grid-area: identity;
@@ -627,12 +668,7 @@
   column-gap: 8px;
 }
 .touchControls.withIdentity {
-  grid-template-columns: minmax(0, 1fr) 20px 20px 44px;
-  grid-template-areas:
-    'identity mute mute solo'
-    'volume volume knob knob';
-  row-gap: 6px;
-  column-gap: 4px;
+  gap: 6px;
 }
 .touchControls button.mixButton {
   width: 44px;

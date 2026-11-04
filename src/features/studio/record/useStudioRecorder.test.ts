@@ -1,4 +1,4 @@
-// Record in the Studio, the hook — R and Escape drive the recorder, repeat steps aside for a take, the mic icon and a lost mic follow the phase, a journaled take is offered only while it is not in the song, and the controls that wait for a take hear when it runs.
+// Record in the Studio, the hook — one press of Record or R starts a take on the armed lane (arming one first when none is), each lane's arm button moves or drops the arm, repeat steps aside for a take, the mic icon and a lost mic follow the phase, a journaled take is offered only while it is not in the song, and the controls that wait for a take hear when it runs.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
@@ -34,7 +34,11 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
     mocks.acquireMic = deps.acquireMic
     mocks.roundTrip = deps.roundTrip
     mocks.recorder = {
-      arm: vi.fn(() => Promise.resolve()),
+      // Opens at once: the lane is armed by the time the promise settles.
+      arm: vi.fn(async (trackId: string | null) => {
+        mocks.onChange!(view({ phase: 'armed', targetTrackId: trackId }))
+        return true
+      }),
       record: vi.fn(),
       stop: vi.fn(),
       disarm: vi.fn(),
@@ -98,6 +102,17 @@ const song = {
   clips: [],
 } as unknown as StudioProject
 
+/** Three lanes in this order: Drums holds a clip, Bass and Keys are empty. */
+const band = {
+  ...song,
+  tracks: [
+    { id: 'keys', name: 'Keys', order: 2 },
+    { id: 'drums', name: 'Drums', order: 0 },
+    { id: 'bass', name: 'Bass', order: 1 },
+  ],
+  clips: [{ id: 'clip-1', trackId: 'drums' }],
+} as unknown as StudioProject
+
 function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
   return {
     phase: 'idle',
@@ -117,9 +132,14 @@ function mount(
     audioBusy?: boolean
     assets?: readonly StudioAsset[]
     range?: { startFrame: number; endFrame: number } | null
+    project?: StudioProject
+    selected?: string | null
   } = {},
 ) {
-  const [selected, setSelected] = createSignal<string | null>('lane-1')
+  const [selected, setSelected] = createSignal<string | null>(
+    options.selected === undefined ? 'lane-1' : options.selected,
+  )
+  const [project, setProject] = createSignal(options.project ?? song)
   const [repeating, setRepeating] = createSignal(true)
   const transport = {
     playing: () => false,
@@ -140,7 +160,7 @@ function mount(
   const addRecording = vi.fn((_take: unknown) => Promise.resolve(true))
   const dispose = createRoot((done) => {
     hook = useStudioRecorder({
-      project: () => song,
+      project,
       assets: () => options.assets ?? [],
       canEdit: () => options.canEdit ?? true,
       addRecording,
@@ -150,7 +170,7 @@ function mount(
     })
     return done
   })
-  return { hook, dispose, transport, setSelected, addRecording }
+  return { hook, dispose, transport, setSelected, setProject, addRecording }
 }
 
 const key = (name: string, extra: Partial<KeyboardEvent> = {}) =>
@@ -171,26 +191,67 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks())
 
 describe('useStudioRecorder', () => {
-  it('arms the selected lane on R, records with repeat off, and stops on the next R', () => {
+  it('arms the selected lane on R and starts the take in the same press, with repeat off, then stops on the next R', async () => {
     const { hook, dispose, transport } = mount()
     const recorder = mocks.recorder!
 
     expect(hook.keyDown(key('r'))).toBe(true)
-    expect(recorder.arm).toHaveBeenCalledWith('lane-1')
 
-    mocks.onChange!(view({ phase: 'armed' }))
-    hook.keyDown(key('R'))
-    expect(recorder.record).toHaveBeenCalledOnce()
+    expect(recorder.arm).toHaveBeenCalledWith('lane-1')
+    await vi.waitFor(() => expect(recorder.record).toHaveBeenCalledOnce())
     expect(transport.setRepeat).toHaveBeenCalledWith(false)
 
     mocks.onChange!(view({ phase: 'recording' }))
     hook.keyDown(key('r'))
     expect(recorder.stop).toHaveBeenCalledOnce()
 
-    // The take is over: repeat comes back.
+    // The take is over and the lane stays armed: repeat comes back.
     mocks.onChange!(view({ phase: 'finishing' }))
-    mocks.onChange!(view({ phase: 'idle' }))
+    mocks.onChange!(view({ phase: 'armed' }))
     expect(transport.setRepeat).toHaveBeenLastCalledWith(true)
+    dispose()
+  })
+
+  it('starts the take at once on an armed lane, without arming the selected one', () => {
+    const { hook, dispose, setSelected } = mount()
+    const recorder = mocks.recorder!
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
+    setSelected('lane-2')
+
+    hook.press()
+
+    expect(recorder.record).toHaveBeenCalledOnce()
+    expect(recorder.arm).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('arms the first lane with no clips when none is selected, and a new lane when every lane has one', async () => {
+    const empty = mount({ project: band, selected: null })
+    empty.hook.press()
+    expect(mocks.recorder!.arm).toHaveBeenCalledWith('bass')
+    await vi.waitFor(() => expect(mocks.recorder!.record).toHaveBeenCalled())
+    empty.dispose()
+
+    const full = mount({
+      project: { ...band, tracks: band.tracks.slice(1, 2) } as StudioProject,
+      selected: null,
+    })
+    full.hook.press()
+    expect(mocks.recorder!.arm).toHaveBeenLastCalledWith(null)
+    full.dispose()
+  })
+
+  it('does not start a take when the arm was dropped before the microphone opened', async () => {
+    const { hook, dispose } = mount()
+    const recorder = mocks.recorder!
+    // Disarmed or failed while the microphone opened: the lane never armed.
+    recorder.arm.mockResolvedValueOnce(false)
+
+    hook.press()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(recorder.record).not.toHaveBeenCalled()
     dispose()
   })
 
@@ -259,17 +320,63 @@ describe('useStudioRecorder', () => {
       const { hook, dispose } = mount(blocked)
       expect(hook.canArm()).toBe(false)
       hook.press()
+      hook.arming.toggle('lane-1')
       expect(mocks.recorder!.arm).not.toHaveBeenCalled()
       dispose()
     }
   })
 
-  it('follows the selection with the armed lane', () => {
-    const { dispose, setSelected } = mount()
+  it("arms a lane from its own button, moves the arm to another lane's, and disarms on the armed lane's", () => {
+    const { hook, dispose } = mount({ project: band })
+    const recorder = mocks.recorder!
+
+    hook.arming.toggle('bass')
+    expect(recorder.arm).toHaveBeenCalledWith('bass')
+    expect(hook.arming.armedTrackId()).toBe('bass')
+
+    hook.arming.toggle('keys')
+    expect(recorder.retarget).toHaveBeenCalledWith('keys')
+    expect(recorder.record).not.toHaveBeenCalled()
+
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'keys' }))
+    hook.arming.toggle('keys')
+    expect(recorder.disarm).toHaveBeenCalledOnce()
+    dispose()
+  })
+
+  it('leaves the arm buttons alone while a take counts in, records or is kept', () => {
+    const { hook, dispose } = mount({ project: band })
+    for (const phase of ['counting', 'recording', 'finishing'] as const) {
+      mocks.onChange!(view({ phase, targetTrackId: 'bass' }))
+      hook.arming.toggle('bass')
+      hook.arming.toggle('keys')
+    }
+    expect(mocks.recorder!.disarm).not.toHaveBeenCalled()
+    expect(mocks.recorder!.retarget).not.toHaveBeenCalled()
+    dispose()
+  })
+
+  it('keeps the arm on its lane when another lane is selected', () => {
+    const { hook, dispose, setSelected } = mount()
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
 
     setSelected('lane-2')
 
-    expect(mocks.recorder!.retarget).toHaveBeenCalledWith('lane-2')
+    expect(mocks.recorder!.retarget).not.toHaveBeenCalled()
+    expect(hook.arming.armedTrackId()).toBe('lane-1')
+    dispose()
+  })
+
+  it('disarms when the armed lane leaves the song', () => {
+    const { dispose, setProject } = mount({ project: band })
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'bass' }))
+
+    setProject({
+      ...band,
+      tracks: band.tracks.filter((track) => track.id !== 'bass'),
+    } as StudioProject)
+
+    expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
     dispose()
   })
 

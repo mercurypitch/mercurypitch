@@ -2,7 +2,7 @@
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
-import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
+import type { StudioLiveTake, StudioRecordPhase, } from '@/lib/studio/record/studio-recorder'
 import type { StudioPlayheadClock } from './playhead-motion'
 import type { StudioWaveformPeaksStore } from './waveform-resource'
 
@@ -14,6 +14,17 @@ export interface StudioTimelineRecording {
   readonly level: number
   /** Armed, counting in or recording: the lane shows its level. */
   readonly listening: boolean
+}
+
+/** Each lane's arm button: the lane the next take records on, and the press that arms, moves or disarms it. */
+export interface StudioLaneArming {
+  /** The armed lane, from the arm until its take is kept; null when none is, or a new lane is. */
+  armedTrackId(): string | null
+  /** How the armed lane's button shows: opening, armed, counting in, recording or keeping. */
+  phase(): StudioRecordPhase
+  /** Whether a press can arm a lane now: the song takes edits and its audio is free. */
+  canArm(): boolean
+  toggle(trackId: string): void
 }
 
 /** A sentence for the timeline's status pill; a new object shows it again. */
@@ -64,6 +75,8 @@ export interface StudioTimelineProps {
   assetPeaks?: StudioWaveformPeaksStore
   /** A take being recorded, from arming until it is kept. */
   record?: StudioTimelineRecording | null
+  /** The lanes' arm buttons; absent, the headers show none. */
+  arming?: StudioLaneArming
   /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */
   range?: StudioFrameRange | null
   /** Set or clear the range: Shift-drag on the ruler, its handles, or a clip's toolbar. */

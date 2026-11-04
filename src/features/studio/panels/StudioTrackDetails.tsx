@@ -1,9 +1,10 @@
-// Studio track details — name and musical role stay separate from audio provenance.
+// Studio track details — name and musical role stay separate from audio provenance; role pictures are this device's choice for every lane.
 import { For } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
+import { setStudioRolePictures, studioRolePictures, } from '../timeline/role-pictures'
 
 interface StudioTrackDetailsProps {
   track: StudioTrack
@@ -55,6 +56,20 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
         </select>
       </label>
       <p class={styles.help}>Choose the part this track plays in your song.</p>
+      <label class={styles.checkField}>
+        <input
+          type="checkbox"
+          checked={studioRolePictures()}
+          onChange={(event) =>
+            setStudioRolePictures(event.currentTarget.checked)
+          }
+        />
+        <span>Role pictures</span>
+      </label>
+      <p class={styles.help}>
+        Each lane header shows its instrument as a picture, or as a line icon
+        when this is off. Saved on this device.
+      </p>
       <div class={styles.fieldDivider} />
       <h3>Audio in this track</h3>
       <ul class={styles.assetList}>
