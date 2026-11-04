@@ -10,9 +10,9 @@
 // renderer loads last, as its own chunk, so the page reads before it
 // arrives. A draft until the vocal coach has signed it off (kit/drafts.ts).
 //
-// The switches, the steps' deck with the range chart in each step's state
-// (steps.ts, registers-toy.ts), the next lesson's card, the season map, the
-// masthead and Merc and Tavi.
+// The switches, the cold open (cold-open.ts), the steps' deck with the
+// range chart in each step's state (steps.ts, registers-toy.ts), the next
+// lesson's card, the season map, the masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -34,11 +34,15 @@ import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 initSoundSwitch()
 initMotionSwitch()
 Motion.init()
+
+// the cold open: two sirens on the hero's range chart, and the predict
+initColdOpen()
 
 // five steps, one range chart
 const deck = createStepDeck({
