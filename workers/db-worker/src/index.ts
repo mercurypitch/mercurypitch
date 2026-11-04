@@ -41,6 +41,7 @@ import { handleLessonStateRequest, isLessonStatePath, } from './lesson-state-rou
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { cleanMirrorMetrics, lessonAnswerInBounds } from './mirror-metrics'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
+import { decodePathSegment, MalformedPathSegmentError } from './path-segment'
 import { getPerksForUser } from './perks'
 import { handleModerationAdmin, handleReport } from './reports'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
@@ -263,6 +264,18 @@ function listLimitDefault(def: TableDef): number {
   return def.access === 'user' ? MAX_LIST_LIMIT : DEFAULT_LIST_LIMIT
 }
 
+/**
+ * A page offset: absent, or a whole number of rows. Anything else is null,
+ * which refuses the query: bound as it was, `Number('abc')` put NaN into
+ * `OFFSET ?` and the database answered 500, and a negative offset was read
+ * as 0, so a client paging on a bad cursor read page one forever.
+ */
+function parseOffset(raw: string | null): number | undefined | null {
+  if (raw === null || raw === '') return undefined
+  const offset = Number(raw)
+  return Number.isInteger(offset) && offset >= 0 ? offset : null
+}
+
 function parseListQuery(url: URL, defaultLimit: number): ListQuery | null {
   const filters: Array<[string, SqlValue]> = []
   for (const [k, v] of url.searchParams) {
@@ -275,7 +288,8 @@ function parseListQuery(url: URL, defaultLimit: number): ListQuery | null {
   const orderBy = url.searchParams.get('orderBy') ?? undefined
   if (orderBy !== undefined && !IDENT.test(orderBy)) return null
   const limitRaw = url.searchParams.get('limit')
-  const offsetRaw = url.searchParams.get('offset')
+  const offset = parseOffset(url.searchParams.get('offset'))
+  if (offset === null) return null
   const requested = limitRaw ? Number(limitRaw) : NaN
   const limit =
     Number.isFinite(requested) && requested > 0
@@ -286,7 +300,7 @@ function parseListQuery(url: URL, defaultLimit: number): ListQuery | null {
     orderBy,
     orderDir: url.searchParams.get('orderDir') === 'desc' ? 'DESC' : 'ASC',
     limit,
-    offset: offsetRaw ? Number(offsetRaw) : undefined,
+    offset,
   }
 }
 
@@ -2740,6 +2754,11 @@ export default {
       if (err instanceof ManagedTestAccountInactiveError) {
         return managedTestAccountErrorResponse(respond, err)
       }
+      // A broken percent-escape in an id the URL carried (path-segment.ts):
+      // the request is wrong, and no retry makes it right.
+      if (err instanceof MalformedPathSegmentError) {
+        return respond({ error: 'Malformed path' }, { status: 400 })
+      }
       // Without this boundary an unhandled throw returns Cloudflare's error
       // page with no CORS headers, which the browser surfaces to the app as
       // an opaque "Failed to fetch". Log it (visible via `wrangler tail`) and
@@ -3273,7 +3292,7 @@ async function handleRequest(
   if (!def)
     return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
 
-  const sub = match[2] ? decodeURIComponent(match[2]) : undefined
+  const sub = match[2] ? decodePathSegment(match[2]) : undefined
 
   // A table whose rows only make sense in sets the generic handlers cannot
   // see. Answer before the rate limiter so the refusal is cheap and constant.
