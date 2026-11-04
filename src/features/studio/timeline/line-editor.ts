@@ -4,7 +4,14 @@
 // (StudioLaneLine.tsx), with its commands in a bar at the arrangement's
 // foot (StudioLineBar.tsx). A point that moves, by pointer or by keys, is
 // a draft until the gesture ends and saves as one undoable edit.
-import { createSignal } from 'solid-js'
+//
+// A take holds the open line out of the way, as it holds Repeat, Punch and
+// the range (take-running.ts): the line and its bar would cover the take
+// as it records, and a stray press would add a point. The line stays open
+// underneath and shows again once the take is kept; a gesture under way
+// when the take starts is dropped, unsaved.
+import type { Accessor } from 'solid-js'
+import { createEffect, createSignal, on } from 'solid-js'
 import type { StudioAutomationParam } from '@/lib/studio/model/automation'
 import { hasStudioAutomation, studioAutomationLine, } from '@/lib/studio/model/automation'
 import type { StudioCommand } from '@/lib/studio/model/commands'
@@ -18,7 +25,10 @@ export interface StudioLineView {
 }
 
 export interface StudioLineEditor {
+  /** The open line, or null while none is open or a take holds it. */
   view(): StudioLineView | null
+  /** Whether a take holds the lines: the toggles wait and nothing opens. */
+  held(): boolean
   /** The chosen point's place on the line shown. */
   selected(): number | null
   /** The line while a hand moves a point, before it saves. */
@@ -31,8 +41,11 @@ export interface StudioLineEditor {
   setDraft(points: readonly StudioAutomationPoint[] | null): void
 }
 
-export function createStudioLineEditor(): StudioLineEditor {
-  const [view, setView] = createSignal<StudioLineView | null>(null)
+export function createStudioLineEditor(
+  held: Accessor<boolean> = () => false,
+): StudioLineEditor {
+  const [open, setView] = createSignal<StudioLineView | null>(null)
+  const view = () => (held() ? null : open())
   const [selected, setSelected] = createSignal<number | null>(null)
   const [draft, setDraft] = createSignal<
     readonly StudioAutomationPoint[] | null
@@ -41,11 +54,18 @@ export function createStudioLineEditor(): StudioLineEditor {
     setSelected(null)
     setDraft(null)
   }
+  createEffect(
+    on(held, (holding) => {
+      if (holding) setDraft(null)
+    }),
+  )
   return {
     view,
+    held,
     selected,
     draft,
     open(track) {
+      if (held()) return
       const panOnly =
         hasStudioAutomation(track, 'pan') &&
         !hasStudioAutomation(track, 'volume')
@@ -57,9 +77,9 @@ export function createStudioLineEditor(): StudioLineEditor {
       reset()
     },
     show(param) {
-      const open = view()
-      if (!open || open.param === param) return
-      setView({ trackId: open.trackId, param })
+      const shown = view()
+      if (!shown || shown.param === param) return
+      setView({ trackId: shown.trackId, param })
       reset()
     },
     select: setSelected,

@@ -5,6 +5,7 @@ import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { StudioRecordLane } from '../record/StudioRecordLane'
+import { studioTakeRunning } from '../record/take-running'
 import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
 import { createStudioLineEditor } from './line-editor'
@@ -193,8 +194,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
   )
   onCleanup(() => clearTimeout(statusTimer))
   // One lane's volume or pan line is open at a time (line-editor.ts). A
-  // chosen clip, the lane going or another song closes it.
-  const lines = createStudioLineEditor()
+  // chosen clip, the lane going or another song closes it. A take holds it,
+  // and so does a phone's record card, which takes the foot it stands in.
+  const lines = createStudioLineEditor(
+    () => studioTakeRunning() || (props.phone && props.record != null),
+  )
   const lineTrack = () => {
     const open = lines.view()
     return open ? tracks().get(open.trackId) : undefined

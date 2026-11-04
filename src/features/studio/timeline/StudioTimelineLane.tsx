@@ -4,6 +4,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
 import type { StudioAsset, StudioClip, StudioTrack, } from '@/lib/studio/model/types'
 import { StudioLaneTake } from '../record/StudioLaneTake'
+import { studioTakeRunning } from '../record/take-running'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
@@ -103,12 +104,17 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         data-has-lines={hasStudioAutomation(props.track) ? '' : undefined}
         aria-pressed={line() !== null}
         aria-label={`${props.track.name} volume and pan lines`}
+        disabled={props.view.lines.held()}
         title={
-          line() !== null
-            ? 'Close the lines'
-            : hasStudioAutomation(props.track)
-              ? 'Volume and pan lines. This lane follows a line.'
-              : 'Draw volume and pan lines'
+          props.view.lines.held()
+            ? studioTakeRunning()
+              ? 'Stop the take to draw lines'
+              : 'Disarm the lane to draw lines'
+            : line() !== null
+              ? 'Close the lines'
+              : hasStudioAutomation(props.track)
+                ? 'Volume and pan lines. This lane follows a line.'
+                : 'Draw volume and pan lines'
         }
         onClick={toggleLines}
       >

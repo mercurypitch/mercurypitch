@@ -222,7 +222,7 @@
   background: var(--studio-track);
 }
 @media (hover: hover) {
-  .identity button.toggle:hover:not([aria-pressed='true']) {
+  .identity button.toggle:hover:not([aria-pressed='true'], :disabled) {
     background: var(--studio-hover);
     color: var(--studio-text);
   }
@@ -231,6 +231,11 @@
   border-color: transparent;
   background: var(--studio-accent);
   color: var(--studio-on-accent);
+}
+/* A take holds the lines (line-editor.ts). */
+.identity button.toggle:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .identity button.toggle:focus-visible {
   outline: 2px solid var(--studio-accent);
