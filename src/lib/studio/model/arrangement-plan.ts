@@ -4,6 +4,8 @@ import type { MixMacros } from '@/lib/studio-fx/mix-macros'
 import { applyMixMacros, trackMacros } from '@/lib/studio-fx/mix-macros'
 import { estimateTailSeconds } from '@/lib/studio-fx/render'
 import { withoutSafetyLimiter } from '@/lib/studio-fx/role-chains'
+import type { StudioPlannedCrossfades } from './comp-plan'
+import { crossStudioCompJoins, studioCompSegments } from './comp-plan'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { frameValue, numberValue, requireValue } from './validation-values'
@@ -20,6 +22,8 @@ export interface StudioPlannedSegment {
   readonly gainDb: number
   readonly preparationGainDb: number
   readonly fades: StudioClip['fades']
+  /** Equal-power crossfades at a comp's joins, in its source frames (comp-plan.ts); absent with no comp. */
+  readonly crossfades?: StudioPlannedCrossfades
 }
 
 export interface StudioPlannedLane {
@@ -78,6 +82,9 @@ function coalesce(
     const previous = result.at(-1)
     if (
       previous &&
+      // A comp join is crossed, never coalesced (comp-plan.ts).
+      !previous.crossfades?.out &&
+      !segment.crossfades?.in &&
       previous.assetId === segment.assetId &&
       previous.gainDb === segment.gainDb &&
       previous.preparationGainDb === segment.preparationGainDb &&
@@ -91,6 +98,9 @@ function coalesce(
         sourceOutFrame: segment.sourceOutFrame,
         groupEndFrame: segment.groupEndFrame,
         clipIds: [...previous.clipIds, ...segment.clipIds],
+        ...(segment.crossfades?.out && {
+          crossfades: { ...previous.crossfades, out: segment.crossfades.out },
+        }),
       }
     } else result.push(segment)
   }
@@ -114,22 +124,29 @@ function laneSegments(
       `clip.${clip.id}`,
       'Owned audio is missing',
     )
-    segments.push({
-      clipIds: [clip.id],
-      assetId: clip.assetId,
-      startFrame: clip.startFrame,
-      groupStartFrame: clip.startFrame,
-      groupEndFrame: clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
-      sourceInFrame: clip.sourceInFrame,
-      sourceOutFrame: clip.sourceOutFrame,
-      gainDb: clip.gainDb,
-      preparationGainDb: asset.preparation.gainDb,
-      fades: clip.fades,
-    })
+    // A comped clip plays a segment per stretch (comp-plan.ts).
+    segments.push(
+      ...studioCompSegments(clip, {
+        clipIds: [clip.id],
+        assetId: clip.assetId,
+        startFrame: clip.startFrame,
+        groupStartFrame: clip.startFrame,
+        groupEndFrame:
+          clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
+        sourceInFrame: clip.sourceInFrame,
+        sourceOutFrame: clip.sourceOutFrame,
+        gainDb: clip.gainDb,
+        preparationGainDb: asset.preparation.gainDb,
+        fades: clip.fades,
+      }),
+    )
   }
-  return coalesce(segments).flatMap((segment) => {
+  return crossStudioCompJoins(coalesce(segments)).flatMap((segment) => {
     const from = Math.max(start, segment.startFrame)
-    const to = Math.min(end, segment.groupEndFrame)
+    const to = Math.min(
+      end,
+      segment.startFrame + segment.sourceOutFrame - segment.sourceInFrame,
+    )
     if (to <= from) return []
     return [
       {
