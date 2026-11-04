@@ -318,7 +318,7 @@ test.describe('Tablet arrangement touch', () => {
   })
 })
 
-test('Studio scrubs the playhead by dragging along the ruler, without selecting its labels @smoke', async ({
+test("Studio scrubs the playhead by dragging its handle on the ruler, without selecting the ruler's labels @smoke", async ({
   page,
 }) => {
   await openArrangement(page)
@@ -329,9 +329,10 @@ test('Studio scrubs the playhead by dragging along the ruler, without selecting 
   const clock = studioRegion(page).getByLabel('Playhead in seconds')
   const box = (await ruler.boundingBox())!
   const y = box.y + box.height / 2
-  await page.mouse.move(box.x + 60, y)
+  // The handle stands on the playhead, at the start of the song.
+  await page.mouse.move(box.x + 2, y)
   await page.mouse.down()
-  // A stopped song follows the pointer while the button is held.
+  // A stopped song follows the handle while the button is held.
   await page.mouse.move(box.x + 180, y, { steps: 6 })
   await expect(clock).toHaveValue(/^0:01\.[45]/)
   await page.mouse.move(box.x + 300, y, { steps: 6 })
@@ -339,4 +340,6 @@ test('Studio scrubs the playhead by dragging along the ruler, without selecting 
   await page.mouse.up()
   await expect(clock).toHaveValue(/^0:02\.[45]/)
   expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('')
+  // The handle's drag scrubs only: it draws no range.
+  await expect(studioRegion(page).locator('[data-studio-range]')).toHaveCount(0)
 })

@@ -1,4 +1,4 @@
-// Studio ruler range tests — a range is drawn with Shift, its ends move by the grid and never cross, and it holds still while a take runs.
+// Studio ruler range tests — a range is drawn from where a drag along the ruler started, its ends move by the grid and never cross, and it holds still while a take runs.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
@@ -12,9 +12,8 @@ afterEach(() => {
   setStudioTakeRunning(false)
 })
 
-/** A pointer event whose frame is its clientX, in thousands. */
-const at = (thousands: number, shiftKey = true) =>
-  ({ clientX: thousands, shiftKey }) as PointerEvent
+/** A pointer whose frame is its clientX, in thousands. */
+const at = (thousands: number) => ({ clientX: thousands })
 
 function draw(locked = false) {
   const commit = vi.fn()
@@ -65,45 +64,44 @@ describe('studioRangeEdge', () => {
 })
 
 describe('createStudioRangeDraw', () => {
-  it('leaves a press without Shift to the scrub', () => {
-    const { tool } = draw()
-    expect(tool.press(at(10, false))).toBe(false)
-    expect(tool.move(at(20))).toBe(false)
-    expect(tool.end(true)).toBe(false)
+  it('draws nothing until it is started', () => {
+    const { tool, commit } = draw()
+    tool.move(at(20))
+    expect(tool.draft()).toBeNull()
+    expect(tool.end(true)).toBeNull()
+    expect(commit).not.toHaveBeenCalled()
   })
 
-  it('shows a snapped range while it is drawn and sets it once, on release', () => {
+  it('shows a snapped range from where it started and sets it once, on release', () => {
     const { tool, commit } = draw()
-    expect(tool.press(at(49))).toBe(true)
+    expect(tool.start(49_000)).toBe(true)
     tool.move(at(70))
     expect(tool.draft()).toEqual({ startFrame: 48000, endFrame: 72000 })
     tool.move(at(97))
     expect(commit).not.toHaveBeenCalled()
-    expect(tool.end(true)).toBe(true)
-    expect(commit).toHaveBeenCalledExactlyOnceWith({
-      startFrame: 48000,
-      endFrame: 96000,
-    })
+    const range = { startFrame: 48000, endFrame: 96000 }
+    expect(tool.end(true)).toEqual(range)
+    expect(commit).toHaveBeenCalledExactlyOnceWith(range)
     expect(tool.draft()).toBeNull()
   })
 
   it('sets nothing for a cancelled draw or one too short to loop', () => {
     const { tool, commit } = draw()
-    tool.press(at(48))
+    tool.start(48_000)
     tool.move(at(96))
-    tool.end(false)
-    tool.press(at(48))
+    expect(tool.end(false)).toBeNull()
+    tool.start(48_000)
     tool.move(at(50))
-    tool.end(true)
+    expect(tool.end(true)).toBeNull()
     expect(commit).not.toHaveBeenCalled()
   })
 
-  it('takes a Shift-press during a take and draws nothing', () => {
+  it('will not start while a take runs, and draws nothing', () => {
     const { tool, commit } = draw(true)
-    expect(tool.press(at(48))).toBe(true)
-    expect(tool.move(at(96))).toBe(false)
+    expect(tool.start(48_000)).toBe(false)
+    tool.move(at(96))
     expect(tool.draft()).toBeNull()
-    tool.end(true)
+    expect(tool.end(true)).toBeNull()
     expect(commit).not.toHaveBeenCalled()
   })
 })

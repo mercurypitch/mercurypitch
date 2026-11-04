@@ -334,40 +334,92 @@ describe('Studio timeline', () => {
     return ruler
   }
 
-  it('scrubs a stopped song under the pointer along the ruler', () => {
+  it('seeks where a click on the ruler comes up, stopped or playing', () => {
     const seek = vi.fn()
-    render(() => <StudioTimeline {...base} onSeek={seek} />)
+    const [playing, setPlaying] = createSignal(false)
+    render(() => <StudioTimeline {...base} playing={playing()} onSeek={seek} />)
     const ruler = scrubbable()
     fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
-    expect(seek).toHaveBeenLastCalledWith(96000)
-    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
-    expect(seek).toHaveBeenLastCalledWith(144000)
-    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
-    expect(seek).toHaveBeenLastCalledWith(144000)
-  })
-
-  it('jumps a playing song where the press lands, at once, and not again while the hand stays put', () => {
-    const seek = vi.fn()
-    render(() => <StudioTimeline {...base} playing={true} onSeek={seek} />)
-    const ruler = scrubbable()
-    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
-    expect(seek).toHaveBeenCalledExactlyOnceWith(96000)
+    expect(seek).not.toHaveBeenCalled()
     fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 42 })
     fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 42 })
-    expect(seek).toHaveBeenCalledOnce()
-  })
-
-  it('moves a playing song only once more for a drag, when it ends', () => {
-    const seek = vi.fn()
-    render(() => <StudioTimeline {...base} playing={true} onSeek={seek} />)
-    const ruler = scrubbable()
-    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
-    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 50 })
-    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
     expect(seek).toHaveBeenCalledExactlyOnceWith(96000)
+
+    setPlaying(true)
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 60 })
     fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
     expect(seek).toHaveBeenCalledTimes(2)
     expect(seek).toHaveBeenLastCalledWith(144000)
+  })
+
+  it('draws the range with a drag along the ruler, as REAPER does, and seeks nowhere', () => {
+    const seek = vi.fn()
+    const range = vi.fn()
+    render(() => <StudioTimeline {...base} onSeek={seek} onRange={range} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 50 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 80 })
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 80 })
+    expect(range).toHaveBeenCalledExactlyOnceWith({
+      startFrame: 96000,
+      endFrame: 192000,
+    })
+    expect(seek).not.toHaveBeenCalled()
+  })
+
+  it('takes a drag too short for a range as a click', () => {
+    const seek = vi.fn()
+    const range = vi.fn()
+    render(() => <StudioTimeline {...base} onSeek={seek} onRange={range} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 46 })
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 46 })
+    expect(range).not.toHaveBeenCalled()
+    expect(seek).toHaveBeenCalledExactlyOnceWith(96000)
+  })
+
+  it("scrubs with the playhead's handle: a stopped song follows it, a playing one moves when it is let go", () => {
+    const seek = vi.fn()
+    const [playing, setPlaying] = createSignal(false)
+    const { container } = render(() => (
+      <StudioTimeline
+        {...base}
+        playing={playing()}
+        onSeek={seek}
+        onRange={vi.fn()}
+      />
+    ))
+    const ruler = scrubbable()
+    const handle = container.querySelector('[data-studio-playhead-handle]')!
+    // Grabbed 2 px right of the playhead at 0: no jump to where it was grabbed.
+    fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientX: 2 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 42 })
+    expect(seek).toHaveBeenLastCalledWith(96000)
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 42 })
+    expect(seek).toHaveBeenLastCalledWith(96000)
+
+    seek.mockClear()
+    setPlaying(true)
+    fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientX: 2 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 62 })
+    expect(seek).not.toHaveBeenCalled()
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 62 })
+    expect(seek).toHaveBeenCalledExactlyOnceWith(144000)
+  })
+
+  it('lets go of the ruler when a second finger lands, and seeks nothing', () => {
+    const seek = vi.fn()
+    const range = vi.fn()
+    render(() => <StudioTimeline {...base} onSeek={seek} onRange={range} />)
+    const ruler = scrubbable()
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 1, clientX: 40 })
+    fireEvent.pointerMove(ruler, { pointerId: 1, clientX: 60 })
+    fireEvent.pointerDown(ruler, { button: 0, pointerId: 2, clientX: 120 })
+    fireEvent.pointerUp(ruler, { pointerId: 1, clientX: 60 })
+    expect(range).not.toHaveBeenCalled()
+    expect(seek).not.toHaveBeenCalled()
   })
 
   it('makes a new lane from its button or a double tap under the headers', () => {
@@ -424,6 +476,47 @@ describe('Studio timeline', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fit song to width' }))
 
     expect(zoom).toHaveBeenCalledWith(3.1)
+  })
+
+  it('reads the zoom level between its steps, and zooms with = and - from the Studio', () => {
+    const zoom = vi.fn()
+    render(() => <StudioTimeline {...base} onZoom={zoom} />)
+    const group = screen.getByRole('group', { name: 'Timeline zoom' })
+    // 20 px/s against the 40 px/s a song opens at.
+    expect(within(group).getByText('50%')).toBeInTheDocument()
+    fireEvent.click(within(group).getByRole('button', { name: 'Zoom in' }))
+    expect(zoom).toHaveBeenLastCalledWith(30)
+    fireEvent.keyDown(document.body, { key: '-' })
+    expect(zoom).toHaveBeenLastCalledWith(15)
+    fireEvent.keyDown(document.body, { key: '=' })
+    expect(zoom).toHaveBeenLastCalledWith(30)
+    expect(
+      within(group).getByRole('button', { name: 'Fit song to width' }),
+    ).toHaveAttribute('aria-keyshortcuts', 'Z')
+  })
+
+  it('gives a phone zoom out and in above the lane names, opening on the whole song', () => {
+    const zoom = vi.fn()
+    const long = {
+      ...project,
+      clips: [{ ...project.clips[0], sourceOutFrame: 140 * 48000 }],
+    }
+    const { container } = render(() => (
+      <StudioTimeline {...base} phone={true} project={long} onZoom={zoom} />
+    ))
+    const group = screen.getByRole('group', { name: 'Timeline zoom' })
+    expect(within(group).getAllByRole('button')).toHaveLength(2)
+    expect(
+      within(group).getByRole('button', { name: 'Zoom out' }),
+    ).toBeDisabled()
+    const fitted = Number(
+      container
+        .querySelector('[data-studio-scale]')!
+        .getAttribute('data-studio-scale'),
+    )
+    expect(fitted).toBeLessThan(10)
+    fireEvent.click(within(group).getByRole('button', { name: 'Zoom in' }))
+    expect(zoom).toHaveBeenCalledExactlyOnceWith(10)
   })
 
   it('moves zoom and the selected clip commands into a dock beside the lanes while the desk is open', () => {
