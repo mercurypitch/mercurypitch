@@ -16,11 +16,11 @@
 // viewer's voice: nothing on the page reads anything from the microphone
 // but pitch frames.
 //
-// The switches, the cold open on the hero's figure, the steps' deck with
-// the vowel figure in each step's state, the quick check and the recall,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// The rest does nothing until it is wired: the four words, Sing it and
-// free play.
+// The switches, the cold open on the hero's figure, the four words, the
+// steps' deck with the vowel figure in each step's state, the quick check
+// and the recall, the next lesson's card, the season map, the masthead and
+// Merc and Tavi. The rest does nothing until it is wired: Sing it and free
+// play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -47,6 +47,7 @@ import { initColdOpen } from './cold-open'
 import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
@@ -57,6 +58,7 @@ initMotionSwitch()
 Motion.init()
 
 initColdOpen()
+initWords()
 
 // five steps, one vowel figure
 const deck = createStepDeck({

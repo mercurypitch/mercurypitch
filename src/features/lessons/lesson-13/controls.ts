@@ -14,15 +14,20 @@
 // the voice it picks, for the visit, storing nothing.
 //
 // Each play goes through the figure, so it claims the page's one sound and
-// its button is lit while it plays (kit/play-lights.ts). A play pressed
+// its button is lit while it plays (kit/play-lights.ts); the Merc of the
+// figure's voice sings while it sounds, Merc for the lower voice and Tavi
+// for the higher (kit/voice-choice.ts `mercOf`). A play pressed
 // again while it runs stops it, but Add a harmonic, whose every press adds
 // the next. The live region gets a play's line when the
 // play ends, and only when the line is new, so a screen reader does not
 // hear the same words twice.
 
 import { q, qa } from '@/features/lessons/kit/dom'
+import type { Which } from '@/features/lessons/kit/merc-duo'
+import { mercSing } from '@/features/lessons/kit/merc-duo'
 import { hz } from '@/features/lessons/kit/notes'
 import type { PlayLight } from '@/features/lessons/kit/play-lights'
+import { mercOf } from '@/features/lessons/kit/voice-choice'
 import type { VowelFigure } from './figure'
 import { addName, allLine, countReadout, fiveLine, harmonicsLine, harmonicsReadout, voiceLine, vowelLine, } from './lines'
 import type { Line } from './plays'
@@ -70,6 +75,11 @@ export function bindControls(
   const f0 = (): number => hz(midi())
   const count = (): number => harmonicCount(f0())
   let current: HTMLButtonElement | null = null
+  let sung: { readonly which: Which; readonly midi: number } | null = null
+  const quiet = (): void => {
+    if (sung !== null) mercSing(sung.which, sung.midi, false)
+    sung = null
+  }
 
   function say(text: string): void {
     if (said.textContent !== text) said.textContent = text
@@ -107,11 +117,16 @@ export function bindControls(
       return
     }
     current = btn
+    quiet()
+    const mine = { which: mercOf(state.voice), midi: midi() }
     const done = figure.play(line, {
       onVowel: (v) => lightName(names, v),
     })
+    sung = mine
+    mercSing(mine.which, mine.midi, true)
     light(btn, done)
     void done.then(() => {
+      if (sung === mine) quiet()
       if (current === btn) current = null
       say(after())
     })
@@ -185,6 +200,7 @@ export function bindControls(
     say,
     reset(voice, n, curves) {
       current = null
+      quiet()
       state.voice = voice
       state.n = n
       figure.curves = curves

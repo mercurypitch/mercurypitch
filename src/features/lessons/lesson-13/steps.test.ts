@@ -9,13 +9,15 @@
 // 18; Resonances turns the curves on and off by `aria-pressed`; a vowel
 // button plays its vowel on A3 and says its peaks once it ends; Play the
 // five vowels lights the names row in turn; the voice switch plays 'ah' in
-// the voice it picks. One sound at a time: a new play stops the last, and
+// the voice it picks, and the Merc of the voice sings while a play
+// sounds. One sound at a time: a new play stops the last, and
 // leaving a step by every route stops its play; the step shown again, as a
 // layout switch shows it, stops nothing (Tests 15).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createLessonMenu } from '@/features/lessons/kit/lesson-menu'
+import type * as MercDuo from '@/features/lessons/kit/merc-duo'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import type * as RunModule from '@/features/lessons/kit/run'
@@ -29,6 +31,13 @@ vi.mock('@/features/lessons/kit/run', async (actual) => ({
   ...(await actual<typeof RunModule>()),
   ...(await import('@/features/lessons/kit/run-recorder.test-fixtures'))
     .recordedRuns,
+}))
+
+const duo = vi.hoisted(() => ({ sing: vi.fn() }))
+
+vi.mock('@/features/lessons/kit/merc-duo', async (actual) => ({
+  ...(await actual<typeof MercDuo>()),
+  mercSing: duo.sing,
 }))
 
 const { showModal, close } = HTMLDialogElement.prototype
@@ -48,6 +57,7 @@ afterEach(() => {
   HTMLDialogElement.prototype.showModal = showModal
   HTMLDialogElement.prototype.close = close
   Element.prototype.scrollIntoView = scrollIntoView
+  duo.sing.mockReset()
   window.location.hash = ''
   document.body.textContent = ''
   document.getElementById('lessonMenu')?.remove()
@@ -213,6 +223,26 @@ describe("the steps' states (WEB-SPEC, Toys 1)", () => {
     expect(said()).toBe(
       'Higher voice, ‘ah’ on A 4: 9 bars, 440 hertz apart. The tallest is the 2nd.',
     )
+  })
+
+  it('has the Merc of the voice sing while it sounds: Merc for the lower, Tavi for the higher, each quiet once it ends', async () => {
+    // Arrange
+    const deck = mountSteps()
+    goTo(deck, 5)
+
+    // Act: the higher voice cut short by the lower, which plays to its end
+    shown('[data-voice-pick="higher"]').click()
+    shown('[data-voice-pick="lower"]').click()
+    runs[1].end(true)
+    await settle()
+
+    // Assert
+    expect(duo.sing.mock.calls).toEqual([
+      ['orange', 69, true],
+      ['orange', 69, false],
+      ['blue', 57, true],
+      ['blue', 57, false],
+    ])
   })
 
   it('stops the last play when a new one starts, and a second press of a play stops it', () => {
