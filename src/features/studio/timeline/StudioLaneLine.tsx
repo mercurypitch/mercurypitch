@@ -17,6 +17,9 @@ const NAMES: Readonly<Record<StudioAutomationParam, string>> = {
   pan: 'Pan',
 }
 
+/** How far across a neighbouring point can sit and still be under the readout: half its width and a point's. */
+const READOUT_REACH = 64
+
 /** The labels at a lane's top, at its 0 dB or centre line, and at its foot. */
 const SCALE: Readonly<Record<StudioAutomationParam, readonly string[]>> = {
   volume: ['+12 dB', '0 dB', '\u221260 dB'],
@@ -272,13 +275,26 @@ export function StudioLaneLine(props: StudioLaneLineProps) {
     }
   }
 
+  // The chosen point's value and time go on the side of it that no
+  // neighbouring point is under. With neighbours on both sides or on
+  // neither, above it, or below it near the lane's top.
   const readout = () => {
     const index = selected()
     if (index === null) return null
-    const point = points()[index]
+    const all = points()
+    const point = all[index]
+    const at = depth(point.value)
+    const near = all.filter(
+      (other, i) =>
+        i !== index &&
+        Math.abs(x(other.frame) - x(point.frame)) < READOUT_REACH,
+    )
+    const over = near.some((other) => depth(other.value) < at)
+    const under = near.some((other) => depth(other.value) > at)
     return {
       left: x(point.frame),
-      depth: depth(point.value),
+      depth: at,
+      below: over === under ? at < 0.4 : over,
       text: `${label(point.value)} at ${formatStudioMoment(point.frame)}`,
     }
   }
@@ -300,6 +316,22 @@ export function StudioLaneLine(props: StudioLaneLineProps) {
       onPointerCancel={cancelHand}
       onLostPointerCapture={release}
     >
+      {/* Under the line, which passes over its chips. */}
+      <span
+        class={styles.scale}
+        style={{ left: `${props.scroll + 6}px` }}
+        aria-hidden="true"
+      >
+        <span class={styles.scaleTop}>{SCALE[props.param][0]}</span>
+        <span
+          class={styles.scaleGuide}
+          // Under its guide, and never over the top label in a short lane.
+          style={{ top: `max(calc(${guide() * 100}% + 2px), 13px)` }}
+        >
+          {SCALE[props.param][1]}
+        </span>
+        <span class={styles.scaleFoot}>{SCALE[props.param][2]}</span>
+      </span>
       <svg
         class={styles.drawing}
         viewBox={`0 0 ${span()} 1000`}
@@ -336,17 +368,6 @@ export function StudioLaneLine(props: StudioLaneLineProps) {
           )}
         </Show>
       </svg>
-      <span
-        class={styles.scale}
-        style={{ left: `${props.scroll + 6}px` }}
-        aria-hidden="true"
-      >
-        <span class={styles.scaleTop}>{SCALE[props.param][0]}</span>
-        <span class={styles.scaleGuide} style={{ top: `${guide() * 100}%` }}>
-          {SCALE[props.param][1]}
-        </span>
-        <span class={styles.scaleFoot}>{SCALE[props.param][2]}</span>
-      </span>
       <Show when={snapAt() !== null}>
         <span
           class={styles.snapMark}
@@ -392,7 +413,7 @@ export function StudioLaneLine(props: StudioLaneLineProps) {
         {(shown) => (
           <span
             class={styles.readout}
-            classList={{ [styles.readoutBelow]: shown().depth < 0.4 }}
+            data-side={shown().below ? 'below' : 'above'}
             style={{
               left: `${shown().left}px`,
               top: `${shown().depth * 100}%`,

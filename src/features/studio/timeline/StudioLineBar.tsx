@@ -23,9 +23,13 @@ interface StudioLineBarProps {
   writable: boolean
   /** Across the foot of a phone's lanes, with icons for the commands. */
   phone: boolean
+  /** Finger-sized: the point and line commands as icons. */
+  touch?: boolean
   /** Offsets inside the timeline: past the lane headers, above the scrollbar. */
   left: number
   bottom: number
+  /** Room kept at the foot's right for the zoom buttons. */
+  reserve?: number
   /** In the dock beside the arrangement: icons only, the names kept for assistive tech. */
   docked?: boolean
   onCommand(command: StudioCommand): boolean
@@ -50,6 +54,11 @@ export function StudioLineBar(props: StudioLineBarProps) {
     return {
       left: `${props.phone ? 12 : props.left}px`,
       right: props.phone ? '12px' : undefined,
+      // Short of the zoom buttons: a narrow arrangement wraps the bar.
+      'max-width': props.phone
+        ? undefined
+        : `calc(100% - ${props.left + (props.reserve ?? 0)}px)`,
+      'flex-wrap': props.phone ? undefined : 'wrap',
       bottom: `${props.bottom}px`,
       '--studio-track': props.color,
     }
@@ -89,6 +98,7 @@ export function StudioLineBar(props: StudioLineBarProps) {
       classList={{
         [styles.toolbarDocked]: props.docked === true,
         [lineStyles.phoneBar]: props.phone,
+        [lineStyles.compactBar]: props.touch === true && props.docked !== true,
       }}
       role="toolbar"
       aria-label={`${props.track.name} lines`}
