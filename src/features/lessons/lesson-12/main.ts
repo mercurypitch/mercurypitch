@@ -23,8 +23,10 @@
 // switch, Step 4's loop and roots, Step 5's tunes and their Slow, the next
 // lesson's card, the season map, the masthead and Merc and Tavi; the cold
 // open on the hero's ring, with its predict; the recall from Lesson 10,
-// the four words and the quick check. The rest does nothing until it is
-// wired: Sing it and free play.
+// the four words, Sing it whole (its comfort check, voice choice, Merc's
+// notes, Move do, the guide and "How did that feel?") with the Wrap's
+// card its ending picks, and the quick check. Free play does nothing
+// until it is wired.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -32,10 +34,16 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
+// Sing it's guide; and Lesson 10's questions bring Lesson 2's quiz modules
+// onto this page, so taking this sheet here keeps it in their chunk, and
+// Lessons 2, 4, 6, 8, 9 and 10 still link it before their own sheets
+// (MISTAKES.md, on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-guide.css and lesson-voice.css come in by lesson-12.css's @import
-// until the modules they share a chunk with are loaded here (lesson-12.css
-// says why)
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them, and
+// Lessons 3 and 5 to 11 and 13 still link it before their own sheets
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-12.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -51,9 +59,12 @@ import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -82,6 +93,10 @@ initWords()
 
 initSteps(deck, ringNames)
 deck.start()
+
+// Sing it: nothing listens, and only the voice is stored; it mounts the
+// Wrap's practise card, in the version the visit's ending picks
+initSing({ blue: mercBlue, orange: mercOrange })
 
 // the quick check: answering all four marks Lesson 12 done; its step links
 // open the deck at their step
