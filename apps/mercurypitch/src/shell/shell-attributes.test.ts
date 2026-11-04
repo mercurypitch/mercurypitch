@@ -16,7 +16,7 @@ import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, setRoomInPictureInPicture, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { parkRun, popScreen, pushScreen, resetRunShell, } from './run-shell-store'
-import { mirrorShellChrome } from './shell-attributes'
+import { COVERED_BY_SCREENS, mirrorShellChrome } from './shell-attributes'
 
 let dispose: (() => void) | null = null
 let unregister: (() => void) | null = null
@@ -194,5 +194,52 @@ describe('the small window, as an attribute', () => {
     expect(
       document.documentElement.hasAttribute('data-picture-in-picture'),
     ).toBe(false)
+  })
+})
+
+describe('what a pushed screen covers', () => {
+  // Tabbing past a pushed screen's last control went on into the page's
+  // skip link and the alley's doors under it, out of sight under the
+  // screen's ground; a screen reader read on there too.
+  beforeEach(() => {
+    document.body.innerHTML =
+      '<div id="app"><a class="skip-link" href="#main-content">Skip to main content</a>' +
+      '<div id="main-layout"><button>Under the screen</button></div></div>' +
+      '<div id="rooms-alley"><button>A door</button></div>'
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const inert = (): (boolean | undefined)[] =>
+    COVERED_BY_SCREENS.map((selector) =>
+      document.querySelector(selector)?.hasAttribute('inert'),
+    )
+
+  it('is inert while a screen is pushed, and back in reach once it pops', () => {
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    expect(inert()).toEqual([false, false, false])
+
+    pushScreen('settings')
+    expect(inert()).toEqual([true, true, true])
+
+    popScreen()
+    expect(inert()).toEqual([false, false, false])
+  })
+
+  it('is let go with the shell', () => {
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    pushScreen('settings')
+
+    dispose?.()
+    dispose = null
+    expect(inert()).toEqual([false, false, false])
   })
 })

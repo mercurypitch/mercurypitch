@@ -24,10 +24,36 @@
 // And a premium room drawn full-bleed (premium-rooms.ts, decision D1): the
 // rail is out by `railVisible`, and the dock's session pill steps aside with
 // it (`data-shell-bleed`).
+//
+// And what a pushed screen covers. A pushed screen is a navigation level,
+// not a modal: the rail stays reachable over it. But the tab under it, out
+// of sight under its opaque ground, stayed in the focus order: tabbing past
+// a pushed screen's last control (Account's Sign out, the Leagues board, the
+// Community list) went on into the page's skip link and the alley's doors
+// under it, and a screen reader reads on there too. While a screen is
+// pushed, those are `inert`. Not hidden: a pushed screen may slide in over
+// the tab, which shows until it is covered. The room header takes itself
+// out (`roomHeaderVisible`).
 
 import { createEffect, onCleanup } from 'solid-js'
 import { roomInPictureInPicture } from '@/stores/native-shell-store'
-import { fullBleedOnTop, parked, railVisible } from './run-shell-store'
+import { currentTab, fullBleedOnTop, parked, pushed, railVisible, } from './run-shell-store'
+
+/**
+ * What a pushed screen covers: the web app's page and its skip link, and
+ * the alley, which the shell draws beside the page.
+ */
+export const COVERED_BY_SCREENS = [
+  '#main-layout',
+  '#app > .skip-link',
+  '#rooms-alley',
+] as const
+
+function markCovered(covered: boolean): void {
+  for (const selector of COVERED_BY_SCREENS) {
+    document.querySelector(selector)?.toggleAttribute('inert', covered)
+  }
+}
 
 /**
  * Mirror the rail onto `data-shell-rail`, the pill onto `data-shell-pill`,
@@ -54,10 +80,16 @@ export function mirrorShellChrome(
     if (fullBleedOnTop()) root.setAttribute('data-shell-bleed', 'on')
     else root.removeAttribute('data-shell-bleed')
   })
+  // Read again when the tab changes: its alley comes and goes with it.
+  createEffect(() => {
+    currentTab()
+    markCovered(pushed() !== null)
+  })
   onCleanup(() => {
     root.removeAttribute('data-shell-rail')
     root.removeAttribute('data-shell-pill')
     root.removeAttribute('data-picture-in-picture')
     root.removeAttribute('data-shell-bleed')
+    markCovered(false)
   })
 }
