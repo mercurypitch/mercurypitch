@@ -2,21 +2,12 @@
    Lesson 13 — Resonance and vowels: the page's own figures and rows
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
-   @import below, which the build inlines, and not as main.ts's import: it
-   shares a chunk with the kit's comfort check and voice choice, which this
-   page does not load until Sing it is wired. Imported here alone, it would
-   leave that chunk for a sheet of its own, which Lessons 3 and 5 to 10 link
-   after their own sheet, so its rules would win over theirs
-   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
-   page by @import"). Once Sing it loads those modules, the import moves
-   back to main.ts. Here: the hero's vowel figure between
+   lesson-parts and lesson-voice). Here: the hero's vowel figure between
    Merc and Tavi, with the two plays and the strip's gloss under it; the
    vowel figure's floor and its rows of controls (WEB-SPEC, Toys 1, Layout
    and targets); the vowel names row; Sing it's chart with its strip; free
    play; and the next card's still. The strip's colours are the canvas's
    (kit/spectrum-strip.ts); nothing here is violet, mint or gold. */
-@import '../kit/lesson-voice.css';
 
 /* ---------------------------------------------------------------- hero: the vowel figure between Merc and Tavi */
 .l13-duo {
