@@ -17,10 +17,9 @@
 // but pitch frames.
 //
 // The switches, the cold open on the hero's figure, the four words, the
-// steps' deck with the vowel figure in each step's state, the quick check
-// and the recall, the next lesson's card, the season map, the masthead and
-// Merc and Tavi. The rest does nothing until it is wired: Sing it and free
-// play.
+// steps' deck with the vowel figure in each step's state, the quick check,
+// Sing it, the recall, the next lesson's card, the season map, the masthead
+// and Merc and Tavi. The rest does nothing until it is wired: free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -29,8 +28,7 @@ import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-voice.css comes in by lesson-13.css's @import until Sing it loads
-// the modules it shares a chunk with (lesson-13.css says why)
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-13.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -43,9 +41,12 @@ import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -69,6 +70,9 @@ initSteps(deck)
 deck.start()
 
 createQuiz({ questions: QUIZ_QUESTIONS, lesson: 13, keys: QUIZ_KEYS, deck })
+
+// Sing it: the comfort check, the voice, the note, Merc's ten seconds, the hold
+initSing({ blue: mercBlue, orange: mercOrange })
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(13)
