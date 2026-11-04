@@ -1,9 +1,10 @@
-// Studio transport tests — the typed clock seeks silently, clamps to the song and refuses non-times; Repeat and Punch follow the range.
+// Studio transport tests — the typed clock seeks silently, clamps to the song and refuses non-times, the wheel and the arrows scrub it; Repeat and Punch follow the range.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setStudioTakeRunning } from './record/take-running'
 import { StudioTransport } from './StudioTransport'
+import { publishStudioScrubGrid } from './timeline/scrub-step'
 
 afterEach(cleanup)
 
@@ -60,6 +61,25 @@ it('keeps the playhead for text that is not a time and steps a second with the a
   expect(onSeek).toHaveBeenLastCalledWith(96000)
   fireEvent.keyDown(clock, { key: 'ArrowDown', shiftKey: true })
   expect(onSeek).toHaveBeenLastCalledWith(43200)
+})
+
+it('scrubs a second a notch with the wheel over the clock, no click needed', () => {
+  const { onSeek, clock } = renderTransport()
+  fireEvent.wheel(clock, { deltaY: -100 })
+  expect(onSeek).toHaveBeenLastCalledWith(96000)
+  expect(clock).not.toHaveFocus()
+})
+
+it("steps along the timeline's grid with the arrows while Snap is on", () => {
+  // At 80 px/s and 120 bpm the timeline draws a line every half second.
+  publishStudioScrubGrid({ snap: true, pixelsPerSecond: 80, tempoBpm: 120 })
+  try {
+    const { onSeek, clock } = renderTransport()
+    fireEvent.keyDown(clock, { key: 'ArrowUp' })
+    expect(onSeek).toHaveBeenLastCalledWith(72000)
+  } finally {
+    publishStudioScrubGrid(null)
+  }
 })
 
 it('holds the focused time while the song plays, so typing replaces it', () => {
