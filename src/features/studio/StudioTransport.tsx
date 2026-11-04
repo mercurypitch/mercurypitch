@@ -162,7 +162,12 @@ export function StudioTransport(props: StudioTransportProps) {
           aria-valuemax={props.endFrame / STUDIO_SAMPLE_RATE}
           aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
           aria-valuetext={formatStudioTime(props.playheadFrame)}
-          title="Type a time, such as 1:05.5, or scroll over the clock to move the playhead (Shift: finer)"
+          data-take-running={studioTakeRunning() ? '' : undefined}
+          title={
+            studioTakeRunning()
+              ? 'Stop the take to scrub the playhead'
+              : 'Type a time, such as 1:05.5, or scroll over the clock to move the playhead (Shift: finer)'
+          }
           value={draft() ?? formatStudioTime(props.playheadFrame)}
           onFocus={(event) => {
             focusedText = formatStudioTime(props.playheadFrame)
@@ -189,8 +194,10 @@ export function StudioTransport(props: StudioTransportProps) {
               input.value = focusedText
               input.select()
             } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-              // A step as the wheel takes it: a grid line with Snap, else a second.
+              // A step as the wheel takes it: a grid line with Snap, else a
+              // second. Never under a take, as the wheel (clock-scrub.ts).
               event.preventDefault()
+              if (studioTakeRunning()) return
               const target = studioClockScrubTarget(
                 props.playheadFrame,
                 event.key === 'ArrowUp' ? 1 : -1,

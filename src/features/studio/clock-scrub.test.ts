@@ -1,6 +1,7 @@
 // Studio clock scrub tests — a wheel notch, a trackpad swipe and a sideways drag over the clock move the playhead a grid step at a time.
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { attachStudioClockScrub, studioClockWheelTurn } from './clock-scrub'
+import { setStudioTakeRunning } from './record/take-running'
 import { publishStudioScrubGrid } from './timeline/scrub-step'
 
 const RATE = 48_000
@@ -21,6 +22,7 @@ beforeAll(() => {
 
 afterEach(() => {
   publishStudioScrubGrid(null)
+  setStudioTakeRunning(false)
   document.body.replaceChildren()
 })
 
@@ -180,6 +182,33 @@ describe('attachStudioClockScrub', () => {
     pointer(input, 'pointerdown', 100)
     pointer(input, 'pointerup', 102)
     expect(seek).not.toHaveBeenCalled()
+  })
+
+  it('holds still while a take runs, as the ruler does: a stray turn or drag never ends the take', () => {
+    const { input, seek } = clock(10 * RATE)
+    setStudioTakeRunning(true)
+
+    // The wheel still belongs to the clock: the page does not scroll under it.
+    const notch = wheel(input, { deltaY: -100 })
+    pointer(input, 'pointerdown', 100)
+    pointer(input, 'pointermove', 160)
+    pointer(input, 'pointerup', 160)
+
+    expect(seek).not.toHaveBeenCalled()
+    expect(notch.defaultPrevented).toBe(true)
+    setStudioTakeRunning(false)
+    wheel(input, { deltaY: -100 })
+    expect(seek).toHaveBeenCalledExactlyOnceWith(11 * RATE)
+  })
+
+  it('stops a drag that a take starts under', () => {
+    const { input, seek } = clock(10 * RATE)
+    pointer(input, 'pointerdown', 100)
+    pointer(input, 'pointermove', 125)
+    setStudioTakeRunning(true)
+    pointer(input, 'pointermove', 160)
+    pointer(input, 'pointerup', 160)
+    expect(seek.mock.calls).toEqual([[12 * RATE]])
   })
 
   it('stops listening once detached', () => {
