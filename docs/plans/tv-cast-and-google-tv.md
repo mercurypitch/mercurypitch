@@ -626,6 +626,8 @@ Xcode. The latest is mp-v0.8.52 of 2026-11-03, which carries #1175 and
 #1179, #1189 (in TestFlight since mp-v0.8.42 of 2026-10-25) and #1321. A tag
 push builds a dev binary, which carries the Developer screen and so the TV
 switch; a store binary (a production dispatch on a tag) carries neither.
+Since the TV chooser (P5, `REQ-TV-106`) every binary, the store's included,
+asks what a TV shows as it connects and carries the stage page.
 What to try is in [tv-device-tests.md](tv-device-tests.md), Tests 4 to 6
 and 8.
 
@@ -670,7 +672,7 @@ production lifecycle and polish.
   phone's lane does during a song (since 2026-11-03 the lane is the zen
   ribbon drawn for a TV instead: P2, step 3). A 5% overscan margin, type
   sized from the screen's height. The page is `apps/mercurypitch/stage.html`, in test
-  builds only.
+  builds only until the TV chooser, and in every build since (P5).
 - 3b: as proposed. Version 1 of the protocol has three messages: `song`
   (title, length, notes, lyrics), `frame` (position read at a wall-clock
   time, playing, rate, the singer's readings since the last frame, the
@@ -680,8 +682,8 @@ production lifecycle and polish.
   answers the first "to verify" item below. The Developer screen has two
   switches, "Lyrics on a connected TV" and "Stage on a connected TV", and
   each turns the other off, rather than one three-way control. Where the
-  bundle has no stage page (a store build) or the page does not load, the
-  TV mirrors.
+  bundle has no stage page (a store build, before the TV chooser) or the
+  page does not load, the TV mirrors.
 - 3d: the notes came from the song's stored pitch analysis, moved into the
   key being heard, so notes edited in Pitch Studio were not on the TV.
   Since P5's step 5.2 (2026-11-03) the mixer hands the room the notes its
@@ -973,7 +975,18 @@ build's switch; P5 makes it the product.
    - Commands from the TV are not needed for this route: the TV's scene
      takes no input, and the phone keeps every control.
 
-   The scene, 5.1, stays as POC-3 built it, behind the test build's switch.
+   The scene, 5.1, stays as POC-3 built it.
+
+   **The TV chooser (branch `feat/tv-choice`, 2026-11-04, `REQ-TV-106`).**
+   Store builds now carry the stage page, and every build asks, the first
+   time a TV connects by Screen Mirroring or a cable, what it shows: the
+   stage (recommended) or the lyrics, or the plain mirror, with a box to
+   remember the answer for that TV, kept by the name of the sound's AirPlay
+   or HDMI port (one key for a TV whose name never comes). Settings,
+   Karaoke, TV changes or forgets what is kept. The owner's call of 3 Nov,
+   after both views "worked great" on the LG C2. The Developer switches
+   stay a test build's. No Swift change: the plugin's TV calls were in
+   every build already.
 
 2. Lifecycle and audio route (5.3, 5.4).
 

@@ -249,8 +249,8 @@ These are the rules that break things when ignored.
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
 | [airplay-suspicion.ts](../../src/stores/airplay-suspicion.ts) | 200 | AirPlay suspected — where the page's sound likely goes, from its rate The route (audio-route-store.ts) is the app's own AVAudioSession's,... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
+| [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 200 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
-| [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 150 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
 | [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |

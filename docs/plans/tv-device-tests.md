@@ -11,8 +11,10 @@ the tables; that is all that needs to come back.
 It carries the wizard that hears a TV (PR #1189, in TestFlight since
 mp-v0.8.42) and PR #1321, which keeps the app's silent media off AirPlay,
 says each audio route and the clock's state in the console, and stops a
-Karaoke song whose clock stands still, saying why. Test 7 is Beside Cue's,
-which `mp-v*` tags do not build. **Run Test 9, then Test 8 again, on the
+Karaoke song whose clock stands still, saying why. **Test 6 needs the first
+build with the TV chooser** (branch `feat/tv-choice`): the phone asks what a
+TV shows as it connects. Test 7 is Beside Cue's, which `mp-v*` tags do not
+build. **Run Test 9, then Test 8 again, on the
 first build with the AirPlay guide** (branch `feat/airplay-guide`): the
 AirPlay sound check, the AirPlay hint and the report the room writes.
 
@@ -92,7 +94,9 @@ picture-in-picture lyrics work. Still to run on the Samsung.
 3. Repeat steps 3 to 6 of Test 1 (sound, audio report, latency, score).
 
 **B. Lyrics on the TV (the switch).** Not reported yet; run it on
-mp-v0.8.52 or later.
+mp-v0.8.52 or later. On a build with the TV chooser (Test 6) the phone asks
+first as the TV connects: pick Lyrics there, and keep the switch for trying
+a view by hand.
 
 1. Settings, Developer, TV: turn on "Lyrics on a connected TV". With
    mirroring on, "TV" should read connected, "It shows" should read the
@@ -172,18 +176,24 @@ probably 100 to 300 ms short of a mirrored round trip (the plan's section
 | LG C2, after #1189   |                                                                                 |                    |                                              |
 | AirPlay to Samsung   |                                                                                 |                    |                                              |
 
-## Test 6: the stage on the TV (PR #1179, TestFlight mp-v0.8.52 or later)
+## Test 6: the TV chooser and the stage on the TV (PR #1179; the chooser on `feat/tv-choice`)
 
 The phone stays the room and the microphone, held upright; the TV draws the
 stage in its own landscape (POC-3). The stage first shipped in mp-v0.8.41
-(build 1321); run it on mp-v0.8.52 or later, which carries #1175 too, so
-step 6 can use the TV's own latency number from Test 5, and #1321, so a
-song that stops on AirPlay says why (Test 8).
+(build 1321), behind the Developer switch. Run this on the first build with
+the TV chooser (`REQ-TV-106`), which asks what a TV shows as it connects, in
+every build, and carries #1175 too, so step 6 can use the TV's own latency
+number from Test 5, and #1321, so a song that stops on AirPlay says why
+(Test 8). The chooser's `[tv]` lines show in the console by default.
 
-1. Start Screen Mirroring. Settings, Developer, TV: turn on "Stage on a
-   connected TV". "It shows" should read the stage, "Lyrics on a connected
-   TV" should turn itself off, and the TV should show "Mercury Pitch" and
-   "Choose a song on your phone".
+1. With the app open, start Screen Mirroring. Within about two seconds the
+   phone should ask "Show on the TV": Stage, marked Recommended, and Lyrics,
+   a ticked box "Remember for" and the TV's name ("this TV" where the phone
+   hears no name), and "Keep mirroring my phone". The TV should mirror the
+   phone, question and all. Write down how the box names the TV, then leave
+   it ticked and tap Stage. The TV should show "Mercury Pitch" and "Choose a
+   song on your phone", and Settings, Developer, TV, "It shows" should read
+   the stage.
 2. Open Karaoke and play a song, phone upright. The TV should show the
    title, the lane with the song's notes running right to left past the
    playhead, and the lyrics, the line being sung filling word by word with
@@ -202,15 +212,28 @@ song that stops on AirPlay says why (Test 8).
    Does the lane move smoothly? Is the phone warm after a whole song?
 6. With the TV measured (Test 5): does the score feel the same as on the
    phone's speaker?
-7. Turn the switch off: the TV should mirror the phone again at once. Turn it
-   on, stop mirroring and start again: the stage should come back. Close and
-   reopen the app while mirroring: the stage should come back too.
-8. Copy the console's `[lyrics window] TV stage: ...` lines into the notes.
+7. Stop mirroring and start again: the stage should come back with no
+   question. Close and reopen the app while mirroring: the stage should come
+   back too, with no question.
+8. To see the question again: Settings, Karaoke, TV should list the TV with
+   Stage checked. Tap Lyrics: the TV should switch to the lyrics at once.
+   Tap Forget, then stop mirroring and start again: the question should come
+   back. This time untick the box and tap Lyrics: the TV shows the lyrics,
+   and the next time it connects the question comes back. Tap Not now: the
+   TV should mirror the phone, and the question comes back the next time
+   too. With a second TV (the Samsung), the question should come with its
+   own name, whatever the first TV keeps.
+9. Settings, Developer, TV: turning a switch should change what the TV shows
+   now, and "What each TV shows when it connects" should count the TVs kept
+   and not change with the switches.
+10. Copy the console's `[tv] ...` lines (each says how long the TV's name
+    took, or that none came) and `[lyrics window] TV stage: ...` lines into
+    the notes.
 
-| TV      | Stage shown? | Sound from | In step? (Stage picture setting) | Pause, seek, Next, key follow? | Readable, nothing cut off? | Smooth? Phone warm? | Switch off mirrors again? | Back after reconnecting? |
-| ------- | ------------ | ---------- | -------------------------------- | ------------------------------ | -------------------------- | ------------------- | ------------------------- | ------------------------ |
-| LG C2   |              |            |                                  |                                |                            |                     |                           |                          |
-| Samsung |              |            |                                  |                                |                            |                     |                           |                          |
+| TV      | Asked? How the box named it | Stage shown? | Sound from | In step? (Stage picture setting) | Pause, seek, Next, key follow? | Readable, nothing cut off? | Smooth? Phone warm? | Back after reconnecting, unasked? | Asked again after Forget, untick, Not now? |
+| ------- | --------------------------- | ------------ | ---------- | -------------------------------- | ------------------------------ | -------------------------- | ------------------- | --------------------------------- | ------------------------------------------ |
+| LG C2   |                             |              |            |                                  |                                |                            |                     |                                   |                                            |
+| Samsung |                             |              |            |                                  |                                |                            |                     |                                   |                                            |
 
 ## Test 7: Beside Cue on a TV (PR #1182, TestFlight build 1198 or later)
 
