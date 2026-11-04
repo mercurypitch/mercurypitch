@@ -497,7 +497,7 @@ not have yet (What the kit and the app still need, item 3): the eyebrow "End of 
 map**, `#explorer`. After "Effortful", "Uncomfortable" or "Just listen today" it reads "You've read
 a song in two parts." with See the season map alone. The card holds two links, so it is no link
 itself. Its slot, which the kit keeps after its words
-(`src/features/lessons/kit/next-card.ts:32-35`), holds the figure: an SVG, `aria-hidden`, of the
+(`src/features/lessons/kit/next-card.ts:34-37`), holds the figure: an SVG, `aria-hidden`, of the
 four section blocks, A A B A, and along them a staff, a beat grid, Lesson 12's ring and Lesson 6's
 beads, drawn in light, with no note; it does not move and plays no sound (FACTS 5, 85). No tease and
 no next lesson appear anywhere on the page (SEASON-2 § 7 item 8).
@@ -505,8 +505,8 @@ no next lesson appear anywhere on the page (SEASON-2 § 7 item 8).
 What the kit's card does on this page today, at `c60f0fdcb`: `createNextCard(28)` reads the page's
 season, which holds Lessons 0 to 14; `nextCard` finds no Lesson 29 and no Lesson 28, and returns
 null; the card is not drawn, and the mark stays as the page wrote it, its figure with no words
-(`nextCard`, `src/features/lessons/kit/next-card.ts:91-121`; `createNextCard`,
-`src/features/lessons/kit/next-card.ts:176-210`). With Season 2's lessons in the same list it would
+(`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`; `createNextCard`,
+`src/features/lessons/kit/next-card.ts:176-210` at `ad0a099f7`). With Season 2's lessons in the same list it would
 draw the close in Season 1's words, "End of Season 1" and "You've seen every note you sing. Now sing
 a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:130-141`), and Lesson 14's
 page would draw Lesson 15's card instead of its own close. Either way it draws once and never
@@ -682,7 +682,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 3. **Seasons in the kit, and a close per season** (SEASON-2 § 6.2 item 1), required before this page
    is built:
    - a season that knows its last lesson, so `nextCard` stops at it: today it looks for lesson n + 1
-     in one list (`src/features/lessons/kit/next-card.ts:91-121`), so with Season 2 in that list
+     in one list (`src/features/lessons/kit/next-card.ts:92-122`), so with Season 2 in that list
      Lesson 14's page would draw Lesson 15's card, and Lesson 28's draws nothing until it is in the
      list;
    - a close per season: `SEASON_END` is one, "End of Season 1"

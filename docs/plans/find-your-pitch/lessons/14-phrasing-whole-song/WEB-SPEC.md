@@ -135,11 +135,11 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, and the kit's card that closes the season (`createNextCard(14)`,
-   `kit/next-card.ts:176-193`, drawn before `createExplorer`, `:32-35`). After the season's last
+   `kit/next-card.ts:176-193`, drawn before `createExplorer`, `:34-37`). After the season's last
    lesson the kit draws the season's close in place of a next-lesson card: the eyebrow "End of
    Season 1", the line "You've seen every note you sing. Now sing a whole song.", Karaoke Night,
    which links `/karaoke-night?lesson=14` in a tab of its own, and "See the season map", which links
-   `#explorer` (`seasonEnd`, `:77-89`; `endCard`, `:148-174` at `ad0a099f7`; 9). The card holds two links, so it is
+   `#explorer` (`seasonEnd`, `:78-90`; `endCard`, `:148-174` at `ad0a099f7`; 9). The card holds two links, so it is
    no link itself. Its figure, the song line's still (Toys 1, Still), sits in the page's
    `[data-next-card]` mark, whose children the kit keeps in the card after its words, in the form
    the kit's own test gives,
@@ -829,15 +829,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:103-151`,
-   `:209-217`; `:341-344`, `:354-358`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:638-642`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:110-158`,
+   `:209-217`; `:376-379`, `:389-393`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:673-677`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:297-307`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:332-342`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
    (`assert-first-paint-budgets.mjs:214-216`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:107-111`), and the record module and the app's recorder
+   (`scripts/assert-first-paint-budgets.mjs:114-118`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by

@@ -134,15 +134,15 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, free play (Toys 7), and the kit's next-lesson card (`createNextCard(13)`,
-   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:32-35`). The card is Lesson 14's,
+   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:34-37`). The card is Lesson 14's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease,
    "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", one line above the hook as
-   `.next-tease`, the hook as `.q2` and the way on (`:144-160`; FACTS 7), "Coming later" and "See it
+   `.next-tease`, the hook as `.q2` and the way on (`:145-161`; FACTS 7), "Coming later" and "See it
    on the map" until Lesson 14's page is live. Its hook and tease are the ones the admin console
    picked, the defaults until it picks (`:14-20`), since the card reads the season as the page's
    state shows it (`pageLessons`, `kit/page-state.ts:54-57`). The tease's figure (Toys 8) sits in
    the page's `[data-next-card]` mark, whose children the kit keeps in the card after its words
-   (`kit/next-card.ts:32-34`), as Lesson 2's figures are (`learn/02.html:1823`). The card is a link,
+   (`kit/next-card.ts:34-36`), as Lesson 2's figures are (`learn/02.html:1823`). The card is a link,
    so the figure holds no button. The practice card is the Voice Mirror card, with "Ten minutes,
    gently, most days" under it; after "Effortful", "Uncomfortable" or "Just listen today" it is the
    rest card instead, without that line or link (Toys 6). It links `/mirror?lesson=13` in a new tab.
@@ -181,7 +181,7 @@ by their precedent. Each step's text, with its Try and its Notice, runs 96 to 11
 | 5. Recall and quick check | The kit's quiz as it stands (`kit/quiz.ts`: an id `prefix`, question ids, an optional `lesson` and links away)                                                                                                                                     | Ids and keys                                                                                                            |
 | 6. Sing it                | Lesson 3's checkpoint (`kit/comfort.ts`, `kit/listen.ts`, `kit/voice-choice.ts` on `fyp-voice`, `kit/warm-up.ts`, the feeling question, the rest card); Lesson 5's hold (its Move, its Listen · Breathe · Sing ring, `kit/hold-take.ts`, its flow) | Merc's ten seconds through five vowels; the vowel names that light; one hold of three takes; the rest card after effort |
 | 7. Free play              | Toy 1's states                                                                                                                                                                                                                                     | One stage with every control                                                                                            |
-| 8. The next card's figure | The kit's next card, which keeps a page's figure after its words (`kit/next-card.ts:32-34`)                                                                                                                                                        | A still: Twinkle's first phrase drawn twice, seven amber bands, the second "star" a "?"                                 |
+| 8. The next card's figure | The kit's next card, which keeps a page's figure after its words (`kit/next-card.ts:34-36`)                                                                                                                                                        | A still: Twinkle's first phrase drawn twice, seven amber bands, the second "star" a "?"                                 |
 
 ### 1. The vowel figure
 
@@ -873,15 +873,15 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:180`, `:217`;
-   `:348`, `:358`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:679`, `:712`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:194`, `:245`;
+   `:383`, `:393`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:714`, `:747`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:332-342`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:214-216`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:176-179`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:190-193`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`: no new option. The two options first proposed here, `partials` and
    `resonators`, and a `res` on `ContourPoint`, are built instead as the page's own timbre on the
    `timbre` option Lesson 7's page added (`:44-45`, `:184`), as its "ng" and lip trill are

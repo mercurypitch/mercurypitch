@@ -492,7 +492,7 @@ test comes first (What the kit and the app still need, item 8).
 ### 6. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:34-37`): an SVG, `aria-hidden`,
 of Lesson 27's stage as its cold open opens, as Lesson 27's package draws it: the ring with the V
 room lit and the I room faint, no fourth corner, Merc and Tavi, no bubbles
 (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:316-319`). It holds no

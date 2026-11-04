@@ -432,7 +432,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 ### 8. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:34-37`): an SVG, `aria-hidden`,
 of a treble staff with five plain noteheads stepping up two places and back down, no syllables, no
 house and nothing lit, and a "?" beside it (FACTS, Illustrations without claims). It says nothing of what Tavi sings with no note to start from, so it does not answer Lesson
 16's predict (FACTS 5). It holds no button, since the
@@ -570,7 +570,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    and edges, the masthead's season from the data (`src/features/lessons/kit/lesson-menu.ts:111`),
    the explorer's tab per season, and a season's end per season. The last matters on day one: the
    next-lesson card draws the lesson after the page's own wherever the data holds one, and the
-   season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:91-121`),
+   season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`),
    so once Lesson 15 is in the data, Lesson 14's page would draw Lesson 15's card in place of
    Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:129-141`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card

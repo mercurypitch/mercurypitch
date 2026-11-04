@@ -113,15 +113,15 @@ heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, the kit's next-lesson card (`createNextCard(9)`, `kit/next-card.ts:181-210`, drawn before
-   `createExplorer`, `:32-35`), then free play, as Lessons 6 to 8 have it. The card is Lesson 10's,
+   `createExplorer`, `:34-37`), then free play, as Lessons 6 to 8 have it. The card is Lesson 10's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Three
    notes, one chord. Move one by a semitone.", one line above the hook as `.next-tease`, the hook as
-   `.q2` and the way on (`:144-160`; FACTS 7), "Coming later" and "See it on the map" until Lesson
+   `.q2` and the way on (`:145-161`; FACTS 7), "Coming later" and "See it on the map" until Lesson
    10's page is live. Its hook and tease are the ones the admin console picked, the defaults until
-   it picks (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The
+   it picks (`:14-20`), since the card reads the season as the page's state shows it (`:186`). The
    tease's figure, a still of the pitch spiral with do, mi and so lit and one "?" over all three,
    not over mi, sits in the page's `[data-next-card]` mark, whose children the kit keeps in the card
-   after its words (`:32-34`, `:217`, `:239`), as Lesson 2's figures are (`learn/02.html:1823`). The
+   after its words (`:34-36`, `:231`, `:253`), as Lesson 2's figures are (`learn/02.html:1823`). The
    card is a link, so the figure holds no button. The practice card is the Arpeggio Jumper and
    Interval Trainer card, with "Ten minutes, gently, most days" under it; after "Effortful",
    "Uncomfortable" or "Just listen today" it is the rest card instead, without that line or a link
@@ -707,14 +707,14 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:341-344`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:638-642`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:110-158`, `:376-379`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:673-677`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:332-342`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:108-111`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:115-118`), and the ceiling holds only while that
    boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`: rungs in the scene, each a band at its cents
    from do, over a time slot or across the plot, each with its glow and its lit edge; Merc's arcs,
