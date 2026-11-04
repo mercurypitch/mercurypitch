@@ -7,9 +7,14 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAutomationPoint, StudioProject, } from '@/lib/studio/model/types'
+import { setStudioTakeRunning } from '../record/take-running'
 import { StudioTimeline } from './StudioTimeline'
+import type { StudioTimelineRecording } from './types'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  setStudioTakeRunning(false)
+})
 
 /** The lane's line box: 60 s across at 20 px a second, 84 px high. */
 const BOX = { width: 1200, height: 84 }
@@ -20,6 +25,7 @@ function mount(
     phone?: boolean
     writable?: boolean
     deskOpen?: boolean
+    record?: StudioTimelineRecording
   } = {},
 ) {
   const { project: song, asset } = studioFixture()
@@ -51,6 +57,7 @@ function mount(
       writable={options.writable ?? true}
       phone={options.phone ?? false}
       deskOpen={options.deskOpen}
+      record={options.record}
       onSeek={vi.fn()}
       onCommand={onCommand}
       onClipDetails={vi.fn()}
@@ -373,6 +380,49 @@ describe('Studio lane line', () => {
     expect(roomy).toBe('Lines')
     expect(toggle.textContent).toBe('')
     expect(toggle).toHaveAccessibleName('Guitar volume and pan lines')
+  })
+
+  it('holds an open line while a take runs and shows it again once the take is kept', () => {
+    // Arrange
+    const { toggle } = mount({ volume: [{ frame: 96000, value: -6 }] })
+    openLine(toggle)
+
+    // Act
+    setStudioTakeRunning(true)
+    const during = {
+      line: document.querySelector('[data-studio-line]'),
+      bar: screen.queryByRole('toolbar', { name: 'Guitar lines' }),
+      disabled: (toggle as HTMLButtonElement).disabled,
+      title: toggle.title,
+    }
+    setStudioTakeRunning(false)
+
+    // Assert
+    expect(during).toEqual({
+      line: null,
+      bar: null,
+      disabled: true,
+      title: 'Stop the take to draw lines',
+    })
+    expect(document.querySelector('[data-studio-line]')).not.toBeNull()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(toggle).toBeEnabled()
+  })
+
+  it('leaves a phone’s foot to the record card while a lane is armed', () => {
+    // Arrange
+    const { toggle } = mount({
+      phone: true,
+      record: { trackId: 'track-1', live: null, level: 0, listening: true },
+    })
+
+    // Act
+    fireEvent.click(toggle)
+
+    // Assert
+    expect(toggle).toBeDisabled()
+    expect(toggle).toHaveAttribute('title', 'Disarm the lane to draw lines')
+    expect(document.querySelector('[data-studio-line]')).toBeNull()
   })
 
   it('stands the line bar in the dock beside the lanes while the desk is open', () => {
