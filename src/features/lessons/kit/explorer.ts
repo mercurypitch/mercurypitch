@@ -1,6 +1,14 @@
 // ============================================================
-// Lesson explorer — Season 1 as a map, with a card per lesson
+// Lesson explorer — the seasons as maps, a tab each, with a card per lesson
 // ============================================================
+//
+// A tab per season, Season 1's and Season 2's, a pair of pressed buttons
+// beside the lane filter; the page opens on its own lesson's season. A
+// Season 1 page carries no Season 2 data (page-state.ts): its Season 2 tab
+// loads season-2.ts the first time it opens. A later season's map starts
+// with a column for the earlier season, the lessons its edges start from,
+// each drawn small with its number and its line in; its card's "Builds on"
+// names them, and a tap there opens that season's tab on the lesson.
 //
 // Wide screens get a graph: theory above, voice below, the trailer and the
 // finale between them, every prerequisite an edge. Below 860 px the same
@@ -41,11 +49,17 @@ import { addDrawer, wake, watch, watchPixelRatio } from './frame-loop'
 import type { LessonView } from './lesson-state'
 import { lessonViews } from './lesson-state'
 import { Motion, reducedMotion } from './motion-switch'
-import { pageLessons } from './page-state'
+import { pageLessons, pageSeason, pageSeasons } from './page-state'
 import { Positions } from './position'
 import { Done } from './progress'
-import type { Lane, Lesson, Practise } from './season'
-import { EDGES, lessonPath, LESSONS, PREREQ, TOPICS, unlocks } from './season'
+import type { Lane, Lesson, Practise, Prereqs, Season } from './season'
+import { lessonPath, unlocks } from './season'
+
+/** The seasons after Season 1, each loaded the first time its tab opens on a page that does not carry it. */
+const LATER_SEASONS: readonly {
+  readonly n: number
+  readonly load: () => Promise<Season>
+}[] = [{ n: 2, load: () => import('./season-2').then((m) => m.SEASON_2) }]
 
 export interface ExplorerOptions {
   /** This page's lesson: selected when the page opens, its card's actions within the page. Default 1. */
@@ -164,8 +178,8 @@ const icon = (id: string): string =>
   `<svg class="ico" aria-hidden="true"><use href="#${id}"/></svg>`
 
 /** A phone list row's second line: "Coming later · after 2, 3". */
-function rowText(L: Lesson, a: Availability): string {
-  const pre = PREREQ[L.n] ?? []
+function rowText(L: Lesson, a: Availability, prereq: Prereqs): string {
+  const pre = prereq[L.n] ?? []
   return `${AVAILABLE[a].row}${pre.length > 0 ? ` · after ${pre.join(', ')}` : ''}`
 }
 
@@ -209,19 +223,24 @@ function cardMarkup(
   v: LessonView,
   film: string | undefined,
   current: number,
+  season: Season,
+  short: (n: number) => string,
 ): string {
   const L = v.lesson
-  const pre = PREREQ[L.n] ?? []
-  const un = unlocks(L.n)
+  const pre = season.prereq[L.n] ?? []
+  const un = unlocks(L.n, season.prereq)
   const links = (ns: readonly number[]): string =>
     ns
       .map(
         (p) =>
-          `<button class="lk" type="button" data-go="${p}">${pad(p)} · ${LESSONS[p].short}</button>`,
+          `<button class="lk" type="button" data-go="${p}">${pad(p)} · ${short(p)}</button>`,
       )
       .join('')
   const topics = L.topics
-    .map((t) => `<span class="topic" data-topic="${t}">${TOPICS[t]}</span>`)
+    .map(
+      (t) =>
+        `<span class="topic" data-topic="${t}">${season.topics[t] ?? t}</span>`,
+    )
     .join('')
   const practise = practiseMarkup(L.pr)
   const length = lengthText(L, film)
@@ -260,25 +279,51 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   const narrow = window.matchMedia('(max-width: 860px)')
   const lengths = new Map<number, string>()
   const current = opts.current ?? 1
-  // the season as this page's state shows it, read once: a page keeps the
-  // state it was served with (page-state.ts)
-  const lessons = pageLessons()
+  // every season this page carries, and each later one once its tab has
+  // loaded it, by number
+  const known = new Map(pageSeasons().map((s) => [s.n, s] as const))
+  // the season shown, its lessons as this page's state shows them, read
+  // once per season: a page keeps the state it was served with
+  // (page-state.ts), and the earlier seasons' lessons its edges start from
+  let season = pageSeason(current)
+  let lessons: Lesson[] = []
+  let byN = new Map<number, Lesson>()
+  let prior: number[] = []
+  // the lesson last selected on each season's tab
+  const picked = new Map<number, number>()
   let sel = current
   let lane: LaneFilter = 'all'
   let nodes = new Map<number, HTMLButtonElement>()
   let labels = new Map<number, HTMLDivElement>()
+  let priorEls = new Map<number, HTMLDivElement>()
   let edgeEls: SVGPathElement[] = []
   let plate: PlateFigure | null = null
 
-  /** Every lesson as this viewer stands with it, read fresh from storage. */
-  const views = (): LessonView[] =>
-    lessonViews(lessons, {
-      done: new Set(Done.list()),
-      steps: Positions.all(),
-      current,
-    })
-  const matches = (L: Lesson): boolean =>
-    lane === 'all' || L.lane === lane || L.lane === 'both'
+  /** A lesson of any season this explorer holds. */
+  const anyLesson = (n: number): Lesson | undefined => {
+    for (const s of known.values()) {
+      const L = s.lessons.find((x) => x.n === n)
+      if (L !== undefined) return L
+    }
+    return undefined
+  }
+  const short = (n: number): string => anyLesson(n)?.short ?? ''
+  /** Every season's prerequisites this explorer holds, so a path runs back into an earlier season. */
+  const allPrereq = (): Prereqs =>
+    Object.assign({}, ...[...known.values()].map((s) => s.prereq)) as Prereqs
+  /** Every lesson of the season shown as this viewer stands with it, read fresh from storage. */
+  const views = (): Map<number, LessonView> =>
+    new Map(
+      lessonViews(
+        lessons,
+        { done: new Set(Done.list()), steps: Positions.all(), current },
+        allPrereq(),
+      ).map((v) => [v.lesson.n, v] as const),
+    )
+  const viewOf = (n: number): LessonView => views().get(n)!
+  const laneMatches = (k: Lane): boolean =>
+    lane === 'all' || k === lane || k === 'both'
+  const matches = (L: Lesson): boolean => laneMatches(L.lane)
   const behavior = (): ScrollBehavior => (reducedMotion() ? 'auto' : 'smooth')
   // the card changes below the map or the row with nothing said: say so
   const status = document.createElement('p')
@@ -292,7 +337,13 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const el = document.createElement('article')
     el.className = 'card ex-card'
     el.dataset.card = String(L.n)
-    el.innerHTML = cardMarkup(views()[L.n], lengths.get(L.n), current)
+    el.innerHTML = cardMarkup(
+      viewOf(L.n),
+      lengths.get(L.n),
+      current,
+      season,
+      short,
+    )
     const fig = cardFigure(L, opts.posters?.[L.n])
     if (fig !== null) el.appendChild(fig)
     el.addEventListener('click', (e) => {
@@ -370,7 +421,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     // the card is rebuilt whole, and the focused button goes with it: the
     // keyboard would drop to the page
     const slot = focusedSlot()
-    const el = card(lessons[sel])
+    const el = card(byN.get(sel)!)
     if (narrow.matches) {
       qa('.ex-detail', list).forEach((d) => d.remove())
       const row = list.querySelector(`[data-n="${sel}"]`)
@@ -424,12 +475,30 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
       if (d === 0) return
       e.preventDefault()
-      const next = clamp(L.n + d, 0, lessons.length - 1)
+      const at = lessons.indexOf(L)
+      const next = lessons[clamp(at + d, 0, lessons.length - 1)].n
       nodes.get(next)?.focus()
       select(next, false)
     })
     graph.appendChild(b)
     nodes.set(L.n, b)
+  }
+
+  /**
+   * An earlier season's lesson this season's edges start from: drawn small,
+   * with its number, in the column before the season, from the top down in
+   * lesson order. It is no button: its card is on its own season's tab,
+   * which this card's "Builds on" opens.
+   */
+  function addPrior(n: number, p: Pos): void {
+    const d = document.createElement('div')
+    d.className = 'node prior'
+    d.setAttribute('aria-hidden', 'true')
+    d.style.left = `${p.x}px`
+    d.style.top = `${p.y}px`
+    d.textContent = String(n)
+    graph.appendChild(d)
+    priorEls.set(n, d)
   }
 
   function layoutGraph(): void {
@@ -438,21 +507,43 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     const W = graph.clientWidth
     const GH = graph.clientHeight || 400
     const gut = 112
-    const colW = (W - gut - 14) / 15
-    const X = (n: number): number => gut + (n + 0.5) * colW
+    // a later season's map gives its first column to the season before
+    const before = prior.length > 0 ? 1 : 0
+    const colW = (W - gut - 14) / (lessons.length + before)
+    const first = lessons[0].n
+    const X = (n: number): number => gut + (n - first + before + 0.5) * colW
     const edgesSvg = svg(
       'svg',
       { class: 'edges', viewBox: `0 0 ${W} ${GH}` },
       graph,
     )
-    addLaneBands(graph)
-    addArcs(graph, X, colW)
-    const pos = (n: number): Pos => ({ x: X(n), y: LANE_Y[lessons[n].lane] })
-    edgeEls = addEdges(edgesSvg, pos, colW)
+    addLaneBands(graph, lessons)
+    addArcs(graph, X, colW, season.arcs)
+    const step = (GH - 100) / Math.max(1, prior.length - 1)
+    const pos = (n: number): Pos => {
+      const L = byN.get(n)
+      if (L !== undefined) return { x: X(n), y: LANE_Y[L.lane] }
+      return { x: gut + colW / 2, y: 70 + prior.indexOf(n) * step }
+    }
+    const laneOf = (n: number): Lane => anyLesson(n)?.lane ?? 'both'
+    edgeEls = addEdges(edgesSvg, pos, colW, season.edges, laneOf, (n) =>
+      prior.includes(n),
+    )
     nodes = new Map()
     labels = new Map()
-    const lean = labelLeans()
-    const widths = labelWidths(W, colW, lean)
+    priorEls = new Map()
+    if (before > 0) {
+      const cap = document.createElement('div')
+      cap.className = 'lane-lbl prior-lbl'
+      cap.style.left = `${gut}px`
+      cap.style.top = '40px'
+      cap.style.width = `${colW}px`
+      cap.textContent = `Season ${season.n - 1}`
+      graph.appendChild(cap)
+    }
+    for (const n of prior) addPrior(n, pos(n))
+    const lean = labelLeans(lessons)
+    const widths = labelWidths(W, colW, lean, lessons)
     for (const L of lessons) {
       const p = pos(L.n)
       addNode(L, p)
@@ -471,19 +562,17 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     head.innerHTML = '<span>Theory</span><span>Voice</span>'
     list.appendChild(head)
     for (const L of lessons) {
-      if (L.n === 1 || L.n === 8) {
+      const opens = season.arcs.find(([, , from]) => from === L.n)
+      if (opens !== undefined) {
         const arc = document.createElement('li')
         arc.className = 'ex-arc'
-        arc.innerHTML =
-          L.n === 1
-            ? 'Hear it <small>Lessons 1 to 7</small>'
-            : 'Shape it <small>Lessons 8 to 14</small>'
+        arc.innerHTML = `${opens[0]} <small>${opens[1]}</small>`
         list.appendChild(arc)
       }
       const li = document.createElement('li')
       li.className = `ex-row lane-${L.lane}`
       li.dataset.n = String(L.n)
-      li.innerHTML = `<button type="button" class="it" aria-expanded="false"><span class="nb">${L.n}</span><span>${L.short}</span><small>${rowText(L, availability(all[L.n]))}</small></button>`
+      li.innerHTML = `<button type="button" class="it" aria-expanded="false"><span class="nb">${L.n}</span><span>${L.short}</span><small>${rowText(L, availability(all.get(L.n)!), season.prereq)}</small></button>`
       const row = q('button', li)
       row.addEventListener('click', () => {
         // a second tap on the open row folds its card away
@@ -501,11 +590,11 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   }
 
   function paint(): void {
-    const { ancestors, roles } = lessonPath(sel)
+    const { ancestors, roles } = lessonPath(sel, season.edges, allPrereq())
     const open = list.querySelector('.ex-detail') !== null
     const all = views()
     for (const L of lessons) {
-      const a = availability(all[L.n])
+      const a = availability(all.get(L.n)!)
       const look: Look = {
         done: a === 'done',
         // every live lesson shows as ready on the map: it can be read now
@@ -517,11 +606,15 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       paintLabel(labels.get(L.n), look)
       paintRow(list.querySelector(`[data-n="${L.n}"] .it`), L.n, look, open)
       const says = list.querySelector(`[data-n="${L.n}"] .it small`)
-      if (says !== null) says.textContent = rowText(L, a)
+      if (says !== null) says.textContent = rowText(L, a, season.prereq)
+    }
+    const laneOf = (n: number): Lane => anyLesson(n)?.lane ?? 'both'
+    for (const [n, d] of priorEls) {
+      d.className = `node prior${Done.has(n) ? ' done' : ''}${ancestors.has(n) ? ' anc' : ''}${laneMatches(laneOf(n)) ? '' : ' dim'}`
     }
     edgeEls.forEach((el, i) => {
-      const [a, b] = EDGES[i]
-      const on = matches(lessons[a]) && matches(lessons[b])
+      const [a, b] = season.edges[i]
+      const on = laneMatches(laneOf(a)) && laneMatches(laneOf(b))
       const role = roles[i]
       el.setAttribute(
         'class',
@@ -561,9 +654,18 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
   }
 
   function select(n: number, scrollCard: boolean): void {
+    if (!byN.has(n)) {
+      // a lesson of another season: its tab, then the lesson on it
+      const other = [...known.values()].find((s) =>
+        s.lessons.some((x) => x.n === n),
+      )
+      if (other === undefined) return
+      show(other, n)
+    }
     sel = n
+    picked.set(season.n, n)
     refresh()
-    const L = lessons[n]
+    const L = byN.get(n)!
     // a Builds on or Opens link puts focus on the new card's title, which
     // says the lesson itself, and the card is no longer below; the line
     // empties so an earlier card's words are not left in it
@@ -589,7 +691,64 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     renderList()
     refresh()
   }
-  rebuild()
+
+  // a tab per season, beside the lane filter: pressed buttons, as the
+  // filter's are
+  const tabs = document.createElement('div')
+  tabs.className = 'filters ex-seasons'
+  tabs.setAttribute('role', 'group')
+  tabs.setAttribute('aria-label', 'Season')
+  const tabFor = new Map<number, HTMLButtonElement>()
+  for (const n of [1, ...LATER_SEASONS.map((x) => x.n)]) {
+    const b = document.createElement('button')
+    b.className = 'btn sm'
+    b.type = 'button'
+    b.dataset.season = String(n)
+    b.textContent = `Season ${n}`
+    b.addEventListener('click', () => void openSeason(n, b))
+    tabs.appendChild(b)
+    tabFor.set(n, b)
+  }
+  const bar = document.querySelector('.ex-bar')
+  if (bar === null) graph.before(tabs)
+  else bar.prepend(tabs)
+
+  /** Season `s` on the map, on lesson `n`, the one last picked there, or its first. */
+  function show(s: Season, n?: number): void {
+    season = s
+    lessons = pageLessons(document, s.lessons)
+    byN = new Map(lessons.map((L) => [L.n, L] as const))
+    prior = [
+      ...new Set(s.edges.map(([a]) => a).filter((a) => !byN.has(a))),
+    ].sort((a, b) => a - b)
+    const own = byN.has(current) ? current : (lessons[0]?.n ?? current)
+    sel = n ?? picked.get(s.n) ?? own
+    for (const [k, b] of tabFor)
+      b.setAttribute('aria-pressed', String(k === s.n))
+    rebuild()
+  }
+
+  /** A tab's season on the map, loaded first where this page does not carry it. */
+  async function openSeason(n: number, b: HTMLButtonElement): Promise<void> {
+    if (n === season.n) return
+    let s = known.get(n)
+    if (s === undefined) {
+      b.setAttribute('aria-busy', 'true')
+      try {
+        s = await LATER_SEASONS.find((x) => x.n === n)!.load()
+        known.set(n, s)
+      } catch {
+        status.textContent = `Season ${n} did not load. Try again.`
+        return
+      } finally {
+        b.removeAttribute('aria-busy')
+      }
+    }
+    show(s)
+    select(sel, false)
+  }
+
+  show(season, current)
   narrow.addEventListener('change', rebuild)
   let width = graph.clientWidth
   new ResizeObserver(() => {
