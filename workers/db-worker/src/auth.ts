@@ -40,6 +40,7 @@ import { adoptSignUpCodes, claimLoginCode, generateLoginCode, hashLoginCode, LOG
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { DISPLAY_NAME_MAX, nameProblem, providerName } from './name-filter'
 import { setNewsletterConsent } from './newsletter-consent'
+import { decodePathSegment } from './path-segment'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
@@ -4525,7 +4526,7 @@ export async function handleAuth(
     return handleRevokeSession(
       request,
       env,
-      decodeURIComponent(route.slice('sessions/'.length)),
+      decodePathSegment(route.slice('sessions/'.length)),
       respond,
     )
   }

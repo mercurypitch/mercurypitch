@@ -7,6 +7,7 @@
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '../../../src/features/zen/types'
 import { parseZenExerciseStructure, parseZenExerciseVersion, ZEN_EXERCISE_SCHEMA_VERSION, } from '../../../src/features/zen/validate-exercise'
 import type { Env } from './auth'
+import { decodePathSegment } from './path-segment'
 
 type JsonResponder = (body: object | null, init?: ResponseInit) => Response
 
@@ -1502,7 +1503,7 @@ export async function handleGuidedExerciseRequest(
     return getPublished(
       env,
       context.respond,
-      decodeURIComponent(publicExercise[1]!),
+      decodePathSegment(publicExercise[1]!),
       publicExercise[2] === undefined ? null : Number(publicExercise[2]),
     )
   }
@@ -1510,7 +1511,7 @@ export async function handleGuidedExerciseRequest(
   const publicMediaMatch = pathname.match(/^\/api\/guided-media\/([^/]+)$/)
   if (publicMediaMatch !== null && (method === 'GET' || method === 'HEAD')) {
     return getPublicMedia(
-      decodeURIComponent(publicMediaMatch[1]!),
+      decodePathSegment(publicMediaMatch[1]!),
       request,
       env,
       context,
@@ -1522,7 +1523,7 @@ export async function handleGuidedExerciseRequest(
   )
   if (publicPath !== null && method === 'GET') {
     return listPathAssignments(
-      decodeURIComponent(publicPath[1]!),
+      decodePathSegment(publicPath[1]!),
       env,
       context.respond,
     )
@@ -1548,7 +1549,7 @@ export async function handleGuidedExerciseRequest(
     /^\/api\/admin\/guided-exercises\/([^/]+)(?:\/(draft|validate|publish|archive))?$/,
   )
   if (adminExercise !== null) {
-    const exerciseId = decodeURIComponent(adminExercise[1]!)
+    const exerciseId = decodePathSegment(adminExercise[1]!)
     const action = adminExercise[2]
     if (action === 'draft' && method === 'POST') {
       return cloneDraft(exerciseId, env, context.respond)
@@ -1574,7 +1575,7 @@ export async function handleGuidedExerciseRequest(
     /^\/api\/admin\/guided-media\/([^/]+)(?:\/content)?$/,
   )
   if (adminMedia !== null) {
-    const mediaId = decodeURIComponent(adminMedia[1]!)
+    const mediaId = decodePathSegment(adminMedia[1]!)
     if (pathname.endsWith('/content') && method === 'PUT') {
       return uploadMedia(mediaId, request, env, context.respond)
     }
@@ -1590,7 +1591,7 @@ export async function handleGuidedExerciseRequest(
     /^\/api\/admin\/guided-paths\/([^/]+)\/assignments$/,
   )
   if (adminPath !== null) {
-    const pathId = decodeURIComponent(adminPath[1]!)
+    const pathId = decodePathSegment(adminPath[1]!)
     if (method === 'GET') {
       return listPathAssignments(pathId, env, context.respond)
     }
@@ -1603,7 +1604,7 @@ export async function handleGuidedExerciseRequest(
   )
   if (deleteAssignment !== null && method === 'DELETE') {
     return deletePathAssignment(
-      decodeURIComponent(deleteAssignment[1]!),
+      decodePathSegment(deleteAssignment[1]!),
       env,
       context.respond,
     )
