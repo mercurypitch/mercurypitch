@@ -267,7 +267,17 @@ async function writeLocal(
 
   if (badges.length > 0) {
     const repo = db.getRepository<UserBadge>('userBadges')
-    for (const [badgeId, earnedAt] of badges) {
+    // A batch that failed part-way goes back on the queue whole, so its retry
+    // carries the badges that landed before the failure too. Writing only the
+    // ones not held makes the retry safe, as the cloud's upsert is; creating
+    // them all again showed the badge twice and counted it twice. The read
+    // throws rather than answering "none held", which would mean the same.
+    const held = new Set(
+      (await repo.findAll({ where: { userId }, throwOnError: true })).map(
+        (row) => row.badgeId,
+      ),
+    )
+    for (const [badgeId, earnedAt] of badges.filter(([id]) => !held.has(id))) {
       await repo.create({ userId, badgeId, earnedAt })
     }
   }
