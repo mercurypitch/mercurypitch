@@ -15,7 +15,7 @@
 // Keyed the way the measurement is (currentLatencyKey): per input, and per
 // output route with a delay of its own.
 import { createPersistedSignal } from '@/lib/storage'
-import { currentLatencyKey, currentMicDeviceKey, latencyKeyForDevice, } from './mic-latency-store'
+import { currentLatencyKey, currentMicDeviceKey, latencyKeysForDevice, } from './mic-latency-store'
 
 type PathByKey = Record<string, number>
 
@@ -53,9 +53,19 @@ export function micLatencyPathMs(): number | null {
   return micLatencyPathMsForDevice(currentMicDeviceKey())
 }
 
-/** The output path `deviceId`'s measurement was made on (null for the default), in ms, or null when not kept. */
+/**
+ * The output path `deviceId`'s measurement was made on (null for the
+ * default), in ms, or null when not kept. Read by the keys the measurement
+ * is (micLatencyMsForDevice): a resolved system default falls back to the
+ * alias older releases kept it under.
+ */
 export function micLatencyPathMsForDevice(
   deviceId: string | null,
 ): number | null {
-  return micLatencyPathByKey()[latencyKeyForDevice(deviceId)] ?? null
+  const paths = micLatencyPathByKey()
+  for (const key of latencyKeysForDevice(deviceId)) {
+    const path = paths[key]
+    if (path !== undefined) return path
+  }
+  return null
 }
