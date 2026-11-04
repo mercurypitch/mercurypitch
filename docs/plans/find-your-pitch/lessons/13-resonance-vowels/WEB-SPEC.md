@@ -316,9 +316,11 @@ that file's unless it says otherwise.
   44 px tall. The choice locks: the pressed one shows pressed and both are disabled (`:113-120`).
   It opens the play `data-play` "ee-ah", labelled "Play ‘ee’, then ‘ah’", which starts disabled in
   the markup, and moves the focus to it (`:121-128`).
-- **Play Merc's ‘ee’** is a `data-free` play inside the predict's root: it works before the
-  choice, so the sound comes first (playbook rule 5), and it never reveals, since ‘ee’ alone
-  answers nothing (`:14-16`, `:92-96`).
+- **Play Merc's ‘ee’** is a `data-free` play: it works before the choice, so the sound comes
+  first (playbook rule 5), and it never reveals, since ‘ee’ alone answers nothing (`:14-16`,
+  `:92-96`). Both plays sit under the hero's figure, between Merc and Tavi, outside the predict's
+  card, and the page hands them to the kit by its `plays` option, as Lesson 12's cold open does
+  (`lesson-13/cold-open.ts`).
 - `revealOn: ['ee-ah']`, with the default `revealAfter: 'any'` (`:52-58`): the reveal waits until
   ‘ee’, then ‘ah’ has been heard to its end with sound on (`heard`, `:146-160`). The page's `play`
   claims the page's sound owner before it sounds and resolves `false` when another sound, or a
@@ -394,14 +396,16 @@ an optional `lesson`, and links that leave this page for a question from another
 `:186-216`), which keep their words and drop the link where that lesson is not live (`:206-209`).
 
 - **Recall**: Lesson 11's questions 1 and 2, word for word with their feedback (LESSON.md; FACTS 4),
-  under their Lesson 11 ids, `l11-q1` and `l11-q2`, with the prefix `rc-`, as Lessons 3 and 5's
-  recalls have (`lesson-05/recall.ts:14-21`), shown to everyone (Lesson 11 is a prerequisite).
+  under their Lesson 11 ids, `l11-q1` and `l11-q2`, with the prefix `recall-`, as Lesson 10's
+  recall has (`lesson-10/recall.ts`), shown to everyone (Lesson 11 is a prerequisite).
   Reshuffled from a seed of its own (keys `fyp-l13-recall-seed` and `fyp-l13-recall-v1`); earlier
   answers are never shown, so the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no
   `lesson`, so it marks nothing done. Neither question plays a sound. The two questions come from
   Lesson 11's own module, `lesson-11/quiz-questions.ts`, once its page is built, filtered by id, so
   the recall cannot drift from Lesson 11's quiz, as Lesson 5's recall is held to Lesson 3's
-  (`lesson-05/quiz-questions.test.ts`). The kit (`quiz.ts:203-205`) turns "Try Step 2 again" and
+  (`lesson-05/quiz-questions.test.ts`). Until then this page's module writes them from LESSON.md's
+  recall, Lesson 11's words, and a test holds them to it word for word
+  (`lesson-13/quiz-questions.test.ts`). The kit (`quiz.ts:203-205`) turns "Try Step 2 again" and
   "Try Step 3 again" into "Try Lesson 11, Step 2 again" and "Try Lesson 11, Step 3 again", links
   that open Lesson 11's page at that step, `/learn/11#step-2` and `/learn/11#step-3`, in a new tab
   so the viewer keeps their place here (`:210-214`), never `data-goto-step`, which would move this
@@ -450,7 +454,9 @@ States:
    voice you chose before, or change it:" with one (FACTS 48). It reads and writes `fyp-voice`
    through `VoiceChoice` (`kit/voice-choice.ts:20-47`). A stored choice shows pressed and can be
    changed; with none stored, neither is pressed and the next state waits for a choice, before
-   "Just listen today" plays anything too, because the voice picks the Merc who sings.
+   "Just listen today" plays anything too, because the voice picks the Merc who sings. So the
+   voice choice shows above the listening line or the warm-up after either answer, its line as a
+   voice was stored when the page loaded (`lesson-13/sing-view.ts`, `VOICE_LINE`).
 3. **Just listen today** (listen-only mode): LESSON.md's line with the doctor lines (FACTS 47);
    **Play Merc's ten seconds**, which sings the five vowels on a tap in the chosen voice on its A,
    the strip lighting and the names row with it; nothing listens, the warm-up, the note and Start
@@ -463,7 +469,10 @@ States:
 5. **Note**: LESSON.md's "Your note is Merc's A: move it Lower or Higher until it sits easily.",
    with Lesson 5's **Lower** and **Higher** (a semitone a tap, up to four either way, F3 to C♯4 or
    F4 to C♯5: FACTS 52; `MAX_MOVE` and `holdNote`, `lesson-05/sing.ts:55-56`, `:84-86`): each tap
-   plays Merc's ‘ah’ on the new note for 1.0 s, the strip lighting it (FACTS 66). Their accessible
+   plays Merc's ‘ah’ on the new note for 1.0 s, the strip lighting it (FACTS 66): the chart, its
+   strip and the names row show under the briefing while the note is found, and the card is no
+   scroll anchor (`overflow-anchor: none`, `lesson-13/lesson-13.css`), so Start, which hides the
+   briefing, never carries the card off the screen, which the take would read as leaving. Their accessible
    names are "Lower: move the note down a semitone" and "Higher: move the note up a semitone", and
    the status line names the note in words ("Your note: G sharp 3"). The move lasts for the visit
    and is not stored. It comes before Start: finding the note needs no microphone.
@@ -530,7 +539,8 @@ States:
     practice card, since singing along with nothing listening is no report of effort (Lesson 3's
     rule). Without Web Audio (no `AudioContext` in the browser), nothing can play and the listener
     cannot run, so Sing it offers this listen-only path at once, with no Start: Play Merc's ten
-    seconds draws the strip in silence, with the hint "This browser can't play sound here."
+    seconds draws the strip in silence, with the hint "This browser can't play sound here." after
+    the "No microphone?" line on the status line.
 
 The dose and the retries, all in the flow rule below (FACTS 53, 54):
 
@@ -543,7 +553,8 @@ The dose and the retries, all in the flow rule below (FACTS 53, 54):
   "Effortful" or "Uncomfortable": once either has been answered, no Again and no Start appear for
   the rest of the visit.
 - A take abandoned when the page was hidden asks no feeling question, and Start comes back while
-  takes remain.
+  takes remain, with the warm-up and the note above it. A take counts once Merc's demonstration
+  has run to its end, so one left in the 0.4 s before it opens counts too.
 - Merc's demonstration cut short, by a tap on any other sound on the page or by leaving the section,
   cancels that hold before the take opens: the microphone is released, the hold counts as no take,
   and Start comes back.
@@ -619,13 +630,15 @@ The vowel model (FACTS 40), Merc's model, labelled so on the figure:
 
 - Each sung line is one of the kit's contour voices (`contourVoice`, `kit/sound.ts:321-347`) in
   Merc's kind (`kind: 'merc'`), so it keeps his vibrato, 5.5 Hz and ±14 cents grown in over 0.35 s,
-  his attack and release, and his gain, 0.2 (`:181-204`; FACTS 43). Two proposed options change
-  what it is made of (needs 5): `partials`, the source, every harmonic of the note up to 4,000 Hz at
-  1/k of the first, in place of the "ooh"'s eight; and `resonators`, three lowpass biquads in
-  series, in place of the 2,600 Hz lowpass, each at one of the vowel's three resonance frequencies
-  from FACTS 37 (the men's means for the lower voice, the women's for the higher), with its Q set
-  to the frequency over the bandwidth, 80, 80 and 120 Hz, given to the Web Audio filter in decibels,
-  20 log10 of that ratio. A voice that passes neither is built as today.
+  his attack and release, and his gain, 0.2 (`:181-204`; FACTS 43). The page's own timbre
+  (`kit/sound.ts`'s `timbre` option; `lesson-13/vowel-voice.ts`, `vowelTimbre`) changes what it is
+  made of, as built in place of the two options needs 5 proposed: the voice's oscillator, which the
+  kit hands a timbre as `parts[0]`, takes a periodic wave of the source, every harmonic of the
+  note up to 4,000 Hz at 1/k of the first, in place of the "ooh"'s eight; and its lowpass and two
+  more lowpass biquads in series make the three resonances, each at one of the vowel's three
+  resonance frequencies from FACTS 37 (the men's means for the lower voice, the women's for the
+  higher), with its Q set to the frequency over the bandwidth, 80, 80 and 120 Hz, given to the Web
+  Audio filter in decibels, 20 log10 of that ratio. Every other voice is built as before.
 - A change of vowel within a line is a contour point that carries the next vowel's resonances: the
   filters' frequencies glide to it exponentially, as the pitch does, and their Q in decibels
   linearly, over the change (0.5 s in the cold open, 0.25 s in Step 4 and Sing it). The pitch does
@@ -640,10 +653,12 @@ The vowel model (FACTS 40), Merc's model, labelled so on the figure:
   with the resonances. The master gain and compressor stay as they are (`:109-118`). The voice's
   overall loudness is matched by ear to Merc's "ooh" on Lessons 3 and 5 before publishing, on a
   phone's speaker and on headphones (Decisions 2; Contract).
-- The source alone (Step 1, free play's All harmonics) is the same voice with `partials` and no
-  `resonators`, at the same power.
-- The four words' Harmonic plays two of the kit's soft tones made pure (`partials: [1]`), 220 and
-  440 Hz, at the soft tone's gain.
+- The source alone (Step 1, free play's All harmonics) is the same voice with the source's wave
+  and its lowpass made an allpass, no resonance, at the same power.
+- The four words' Harmonic plays the kit's soft tone made pure by a timbre that turns its
+  oscillator to a sine (`PURE`, `lesson-13/vowel-voice.ts`), 220 Hz, then 440 Hz, at the soft
+  tone's gain: one line whose level falls to nothing for the 0.3 s between them
+  (`lesson-13/words.ts`, `HARMONIC_LINE`).
 - The strip draws the model's levels from the same pure helper that gives the voice its resonances
   and factors (`lesson-13/vowels.ts`), so the figure and the sound cannot drift apart; the strip
   is never an analysis of the sound, and no `AnalyserNode` exists on the page (Tests, 2 and 8).
@@ -805,9 +820,11 @@ and the four-words strip in the kit.
      only what the hook says, that the two differ, and nothing of what the peaks do. The worker
      never rewrites a title. The h1 is `h1.hook#hook`, the hook in its default wording
      (`lesson-copy.test.ts:323-332`; Hero);
-   - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A free
-     lesson with sound toys: harmonics, resonance, and one note held through five vowels." (149
-     characters, inside the test's 80 to 160, `lesson-pages.test.ts:156-159`). It does not quote
+   - the meta description, "Same note, ‘ee’ or ‘ah’: what makes them sound different? A
+     sixteen-minute lesson with sound toys: harmonics, resonance, and one note held through five
+     vowels." (159 characters, inside the test's 80 to 160, `lesson-pages.test.ts:156-159`): the
+     pages' test asks every lesson's description to name its length as the season entry's
+     `minutes` gives it, so "A free lesson" became "A sixteen-minute lesson". It does not quote
      the hook, so the worker leaves it as it is;
    - `og:title` and `twitter:title`, "Resonance and vowels: Find Your Pitch, Lesson 13" (48;
      `learn/02.html:26-29`, `:45-48`);
@@ -856,28 +873,24 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:178`, `:211`;
-   `:327`, `:337`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:640`, `:672`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:276-286`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:178`, `:215`;
+   `:334`, `:344`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:646`, `:678`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:283-293`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:208-210`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:212-214`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
    (`assert-first-paint-budgets.mjs:174-177`), and the ceiling holds only while that boundary does.
-5. `kit/sound.ts`, proposed: two options on `VoiceOptions` (`:30-46`), `partials` and
-   `resonators` (Audio). `partials` gives a voice's source amplitudes whatever its `kind` (today
-   `build` picks the wave from the kind, `:172-173`); `resonators`, a list of `{ hz, q }` built as
-   lowpass biquads in series in place of the one lowpass (today 2,600 Hz for Merc and 3,400 for the
-   soft tone, Q 0.5, `:175-178`), with `q` the linear ratio, set on the filter in decibels. And an
-   optional `res` on `ContourPoint` (`:271-278`): the resonators' values the voice reaches at that
-   point, their frequencies gliding exponentially and their Q in decibels linearly, as the pitch and
-   level do (`:321-347`). Without them every voice is built as today, so Lessons 1 to 7 see no
-   change; a unit test proves it. Lesson 11's spec proposes a `wave` and a `lowpass` option for its
-   gears (its needs 6): whichever page is built first lands one design, and the other uses it.
-   Lesson 7's page has since added a `timbre` option (`:44-45`, `:184`): a function that takes the
-   voice's one lowpass, may retune it, and routes the tone to the envelope itself, as its "ng" and
-   lip trill do (`kit/timbre.ts`).
+5. `kit/sound.ts`: no new option. The two options first proposed here, `partials` and
+   `resonators`, and a `res` on `ContourPoint`, are built instead as the page's own timbre on the
+   `timbre` option Lesson 7's page added (`:44-45`, `:184`), as its "ng" and lip trill are
+   (`kit/timbre.ts`): the kit hands a timbre the voice's parts, `parts[0]` its oscillator, which
+   the page's timbre gives the source's wave (`lesson-13/vowel-voice.ts`, `vowelTimbre`); the
+   resonators' values ride on the page's own contour points (`lesson-13/plays.ts`, `VowelPoint`),
+   their frequencies gliding exponentially and their Q in decibels linearly, as the pitch and level
+   do. Every other voice is built as before, so Lessons 1 to 12 see no change. Lesson 11's spec
+   proposes a `wave` and a `lowpass` option for its gears (its needs 6); a timbre carries both.
 6. `kit/spectrum-strip.ts`, new: the LED strip as a painter under the band chart's plot, as
    `kit/band-chart-hold.ts`'s level strip is (`:1-13`, `:37-42`), behind a `spectrum` option on
    `BandChartOptions` (`kit/band-chart.ts:71-100`), off by default, with a scene field holding the
@@ -1067,7 +1080,8 @@ parts:
    singing for the visit and pick the rest card, and a later "Easy" brings back neither Again, Start
    nor the practice card; Merc's demonstration cut short counts as no take; the feelings lock once
    answered and free again only for the next take; nothing is written to storage but `fyp-voice`
-   and `fyp-l13-warmup`. Lesson 5's flow tests, moved with it, pass unchanged with its two lengths.
+   and `fyp-l13-warmup`. Lesson 5's flow tests pass unchanged with its two lengths, beside its
+   plan, through the kit (needs 8).
 7. The vowel cues: on synthetic frames at the detector's 16 ms hop, ‘ee’ is lit from the take's
    opening and ‘eh’, ‘ah’, ‘oh’ and ‘oo’ from 2, 4, 6 and 8 s after the first voiced frame; with no
    voiced frame ‘ee’ stays lit; nothing in the cue code reads anything but the frames' times.
