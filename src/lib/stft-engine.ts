@@ -2,7 +2,7 @@
 // STFT Engine — PyTorch-compatible STFT/iSTFT
 // Uses Bluestein's algorithm (chirp Z-transform) to handle
 // arbitrary n_fft values (not just powers of 2).
-// Exports: stftForward, stftInverse, periodicHannWindow
+// Exports: stftForward, stftInverse, frameSpectrum, periodicHannWindow
 // ============================================================
 
 /** Result of forward STFT computation. */
@@ -233,6 +233,35 @@ function periodicBlackmanHarrisWindow(nFft: number): Float32Array {
       0.01168 * Math.cos(3 * a)
   }
   return win
+}
+
+/**
+ * The spectrum of one analysis frame: its newest `nFft` samples under one
+ * window, with no centre padding. For a caller that holds exactly one frame,
+ * an analyser's buffer, and wants that frame's spectrum. stftForward pads the
+ * signal's start, so its frame 0 is half zeros and is not that.
+ *
+ * Interleaved real/imag for nFft/2 + 1 bins, the layout of one stftForward
+ * frame. A frame shorter than `nFft` is zero-padded at its end.
+ */
+export function frameSpectrum(
+  frame: Float32Array,
+  nFft: number,
+  windowType: WindowType = 'hann',
+): Float32Array {
+  const window = makeWindow(nFft, windowType)
+  const newest = frame.subarray(Math.max(0, frame.length - nFft))
+  const real = new Float64Array(nFft)
+  const imag = new Float64Array(nFft)
+  for (let i = 0; i < newest.length; i++) real[i] = newest[i] * window[i]
+  bluesteinDFT(real, imag, nFft, false)
+  const nFreq = Math.floor(nFft / 2) + 1
+  const out = new Float32Array(nFreq * 2)
+  for (let f = 0; f < nFreq; f++) {
+    out[f * 2] = real[f]
+    out[f * 2 + 1] = imag[f]
+  }
+  return out
 }
 
 /**

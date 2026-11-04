@@ -1,5 +1,5 @@
 import type { WindowType } from '../lib/stft-engine'
-import { stftForward } from '../lib/stft-engine'
+import { frameSpectrum } from '../lib/stft-engine'
 import type { BreathinessResult, HarmonicRichnessResult, ResonanceResult, } from '../lib/vocal-analyzer'
 import { computeHarmonicRichness, computeHNR, detectResonance, } from '../lib/vocal-analyzer'
 
@@ -37,13 +37,18 @@ self.onmessage = (event: MessageEvent<SpectralWorkerMessage>) => {
     try {
       const { audio, sampleRate, fundamentalFreq, windowType } = event.data
       const nFft = 2048
-      const stft = stftForward(audio, nFft, nFft, windowType ?? 'hann')
+      // The buffer's own spectrum. This read frame 0 of a centre-padded STFT:
+      // half zeros, then the first half of the audio under the falling half
+      // of the window, starting at full height. That edge spread energy into
+      // every bin, and a clean held note read as breathy.
+      const spectrum = frameSpectrum(audio, nFft, windowType ?? 'hann')
+      const nFreq = spectrum.length / 2
 
-      const magnitudeSpectrum = new Float32Array(stft.nFreq)
-      const phaseSpectrum = new Float32Array(stft.nFreq)
-      for (let f = 0; f < stft.nFreq; f++) {
-        const real = stft.data[f * 2]
-        const imag = stft.data[f * 2 + 1]
+      const magnitudeSpectrum = new Float32Array(nFreq)
+      const phaseSpectrum = new Float32Array(nFreq)
+      for (let f = 0; f < nFreq; f++) {
+        const real = spectrum[f * 2]
+        const imag = spectrum[f * 2 + 1]
         magnitudeSpectrum[f] = Math.sqrt(real * real + imag * imag)
         phaseSpectrum[f] = Math.atan2(imag, real)
       }
