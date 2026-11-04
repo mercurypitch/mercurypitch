@@ -6,6 +6,7 @@
 // route listener it was handed, so each case says exactly what the phone
 // reported, and in which order.
 
+import { createEffect, createRoot } from 'solid-js'
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { audioRoute, audioRoutePort, audioSessionRate, followAudioRoute, setAudioRouteForTests, } from '@/stores/audio-route-store'
@@ -188,6 +189,26 @@ describe('audio route store', () => {
     setVisibility('visible')
     await fake.answer(reading('speaker', PHONE, { sampleRate: 'fast' }))
     expect(audioSessionRate()).toBeNull()
+  })
+
+  it('moves a route and its port together, so no reader sees the old port on the new route', async () => {
+    const fake = fakeOutput()
+    stop = followAudioRoute(fake.output)
+    await fake.answer(reading('speaker', PHONE))
+    const seen: string[] = []
+    const dispose = createRoot((done) => {
+      createEffect(() => {
+        seen.push(`${audioRoute() ?? '-'} ${audioRoutePort() ?? '-'}`)
+      })
+      return done
+    })
+
+    fake.change('airplay', iosChange({ outputs: TV }))
+    dispose()
+
+    // The TV chooser names a TV by the port of an AirPlay route: a reader
+    // that saw "airplay Speaker" would call the TV "Speaker".
+    expect(seen).toEqual(['speaker Speaker', 'airplay LG C2'])
   })
 
   it('stops hearing, and drops what was still on its way, once stopped', async () => {
