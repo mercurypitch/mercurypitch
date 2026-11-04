@@ -12,6 +12,7 @@ import { menuMarkup, menuModel } from './lesson-menu'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
 import { lessonWithNoPage } from './season.test-fixtures'
+import { LESSONS_2, SEASON_2 } from './season-2'
 import type { StepDeck } from './step-deck'
 import { TOUR_KEY, TOUR_VERSION } from './tour-gate'
 
@@ -176,6 +177,24 @@ describe('menuModel', () => {
       ['Hear it', 'Lessons 1 to 7', [1, 2, 3, 4, 5, 6, 7]],
       ['Shape it', 'Lessons 8 to 14', [8, 9, 10, 11, 12, 13, 14]],
     ])
+  })
+
+  it('names Season 2 and lists its lessons in its own arcs on a Season 2 page', () => {
+    // Act: on Lesson 15's page
+    const m = menuModel(LESSONS_2, [], {}, 15, DECK, SEASON_2)
+
+    // Assert
+    expect(m.season).toBe('Season 2 · 14 lessons')
+    expect(m.count).toBe('0 of 14 done')
+    expect(m.arcs.map((a) => [a.name, a.span, a.rows.map((r) => r.n)])).toEqual(
+      [
+        ['Read it', 'Lessons 15 to 21', [15, 16, 17, 18, 19, 20, 21]],
+        ['Harmonise it', 'Lessons 22 to 28', [22, 23, 24, 25, 26, 27, 28]],
+      ],
+    )
+    expect(menuMarkup(m, [], { map: null, practise: null })).toContain(
+      'aria-label="Season 2 lessons"',
+    )
   })
 })
 
@@ -343,6 +362,70 @@ describe('createLessonMenu on a page the worker served (page-state.ts)', () => {
       'Season 1 · Lesson 01, What is a note? All 14 lessons',
     )
     vi.restoreAllMocks()
+  })
+
+  it("takes the masthead's season from the page's lesson: Season 2 · Lesson 15 on a Season 2 page", async () => {
+    // Arrange: a screen wide enough for the season, a page carrying Season 2
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(min-width: 1021px)',
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    )
+    const page = await import('./page-state')
+    const season2 = await import('./season-2')
+    page.carrySeason(season2.SEASON_2)
+    const built: typeof Menu = await import('./lesson-menu')
+    document.body.innerHTML = '<span class="mast-ep">Lesson 15</span>'
+
+    // Act
+    built.createLessonMenu({
+      lesson: 15,
+      deck,
+      label: document.querySelector('.mast-ep') as HTMLElement,
+      sections: [],
+    })
+
+    // Assert
+    const button = document.querySelector('.lm-btn')
+    expect(button?.textContent).toBe('Season 2 · Lesson 15')
+    expect(button?.getAttribute('aria-label')).toBe(
+      'Season 2 · Lesson 15, The staff: where notes sit. All 14 lessons',
+    )
+  })
+
+  it("keeps Season 1 · Lesson 14 on Lesson 14's page of a build that carries Season 2", async () => {
+    // Arrange
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(min-width: 1021px)',
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    )
+    const page = await import('./page-state')
+    const season2 = await import('./season-2')
+    page.carrySeason(season2.SEASON_2)
+    const built: typeof Menu = await import('./lesson-menu')
+    document.body.innerHTML = '<span class="mast-ep">Lesson 14</span>'
+
+    // Act
+    built.createLessonMenu({
+      lesson: 14,
+      deck,
+      label: document.querySelector('.mast-ep') as HTMLElement,
+      sections: [],
+    })
+
+    // Assert
+    expect(document.querySelector('.lm-btn')?.textContent).toBe(
+      'Season 1 · Lesson 14',
+    )
   })
 
   it('lists the lessons as the state has them: a draft it publishes linked, a lesson it holds back coming later', async () => {
