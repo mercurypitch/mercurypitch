@@ -13,7 +13,8 @@
 // control that asks for the microphone, and waits until Merc's siren has
 // been heard with the sound on (playbook rule 16).
 //
-// What the card offers is the pure rule in siren-flow.ts, and the take is
+// What the card offers is the kit's pure rule (kit/siren-flow.ts), read
+// with its band, and the take is
 // sing-take.ts's, so this file draws what the rule says. "How did that
 // feel?" follows every take that heard a voice (REQ-GVC-022), an answer can
 // change until the next take or Done for today, which locks it, and nothing
@@ -38,6 +39,8 @@ import type { Run } from '@/features/lessons/kit/run'
 import { playLine } from '@/features/lessons/kit/run'
 import type { RingStills } from '@/features/lessons/kit/sing'
 import { mountRing } from '@/features/lessons/kit/sing'
+import type { SirenEvent, SirenOffers, SirenVisit, } from '@/features/lessons/kit/siren-flow'
+import { freshVisit, next, offers as flowOffers, } from '@/features/lessons/kit/siren-flow'
 import { Sound } from '@/features/lessons/kit/sound'
 import { TIMBRES } from '@/features/lessons/kit/timbre'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
@@ -47,8 +50,7 @@ import { SIREN_SEC, sirenContour, sirenEnds } from './range-data'
 import { sirenSaid } from './range-words'
 import type { TakeEnd } from './sing-take'
 import { CONSUMER, mountLiveChart, RING_LABEL, takeOne, takeSaid, } from './sing-take'
-import type { SirenEvent, SirenOffers, SirenVisit } from './siren-flow'
-import { freshVisit, next, offers, SIREN_LINES } from './siren-flow'
+import { SIREN_LINES } from './siren-lines'
 
 /** The warm-up's Skip, remembered so a return visit opens it folded. */
 export const WARMUP_KEY = 'fyp-l07-warmup'
@@ -83,6 +85,10 @@ function focusText(el: HTMLElement): void {
   el.tabIndex = -1
   el.focus({ preventScroll: true })
 }
+
+/** What the card offers: the kit's flow, on a page that reads each take. */
+export const offers = (v: SirenVisit): SirenOffers =>
+  flowOffers(v, { reading: true })
 
 /** The status line for the visit as the card stands after a take or an answer. */
 export function afterStatus(o: SirenOffers, readingSaid: string): string {
@@ -183,7 +189,7 @@ export function initSing(stills: RingStills): void {
       o.startHint === 'off' ? SIREN_LINES.startOff : SIREN_LINES.startFirst
     // after a take: its line, and what comes next
     readingEl.hidden =
-      phase !== 'read' || (!o.keepBand && o.closing === 'enough')
+      phase !== 'read' || (!o.keepLine && o.closing === 'enough')
     const noVoice = phase === 'read' && !o.ask
     const actions = q('[data-take-actions]', card)
     actions.hidden = !(noVoice || spent) || visit.finished
@@ -379,7 +385,7 @@ export function initSing(stills: RingStills): void {
     dispatch({ type: 'feel', feeling: f })
     const o = offers(visit)
     // the singer's answer outranks the reading: "Uncomfortable" takes the band and the line away
-    if (!o.keepBand) {
+    if (!o.keepLine) {
       live.band(null, false)
       live.chart.describe(sirenSaid(voiceNow(), 'ng'))
     }

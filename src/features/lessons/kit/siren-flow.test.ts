@@ -1,25 +1,30 @@
 // ============================================================
-// Lesson 7 siren flow tests — every branch of Sing it, with no microphone
+// Siren flow tests — every branch of a sung siren, with no microphone
 // ============================================================
 //
-// The WEB-SPEC's Tests 7: Start waits for Merc's siren and says why; a take
-// with no voice asks nothing and leaves the visit's one Again; "Easy" and
-// "Workable" offer Again once a visit; "Try again" never shows without
-// Again; an abandoned take counts, uses the one Again if it had voice, and
-// leaves Done for today when it was the visit's last;
-// "Effortful" and "Uncomfortable" end the singing and pick the rest card,
-// and a later "Easy" brings none of it back. Done for today ends the takes,
-// keeps the question, its answer and its lines, and locks the answer, so a
-// later one changes nothing. A walk over every sequence of takes, answers
-// and Done for today never reaches a fourth take or a third sung siren,
-// never loses the question after Done for today, and never lets an answer
-// change after it.
+// Lesson 7's WEB-SPEC, Tests 7, on the page that reads its takes: Start
+// waits for Merc's siren and says why; a take with no voice asks nothing
+// and leaves the visit's one Again; "Easy" and "Workable" offer Again once
+// a visit; "Try again" never shows without Again; an abandoned take counts,
+// uses the one Again if it had voice, and leaves Done for today when it was
+// the visit's last; "Effortful" and "Uncomfortable" end the singing and
+// pick the rest card, and a later "Easy" brings none of it back. Done for
+// today ends the takes, keeps the question, its answer and its lines, and
+// locks the answer, so a later one changes nothing. A walk over every
+// sequence of takes, answers and Done for today never reaches a fourth take
+// or a third sung siren, never loses the question after Done for today,
+// and never lets an answer change after it. Lesson 11's WEB-SPEC, Tests 7,
+// on the page that reads nothing: no state closes on a band or says "Try
+// again", whatever its takes, and every other rule holds the same.
 
 import { describe, expect, it } from 'vitest'
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { FEELINGS } from '@/features/lessons/kit/comfort'
-import type { SirenEvent, SirenVisit, TakeMark } from './siren-flow'
-import { freshVisit, MAX_SUNG, MAX_TAKES, next, offers, SIREN_LINES, sungCount, } from './siren-flow'
+import type { SirenEvent, SirenOffers, SirenVisit, TakeMark, } from './siren-flow'
+import { freshVisit, MAX_SUNG, MAX_TAKES, next, offers as flowOffers, sungCount, } from './siren-flow'
+
+/** Lesson 7's flow: each take read, its band lit. */
+const offers = (v: SirenVisit): SirenOffers => flowOffers(v, { reading: true })
 
 const run = (events: readonly SirenEvent[], from = freshVisit()): SirenVisit =>
   events.reduce(next, from)
@@ -57,9 +62,6 @@ describe('the briefing', () => {
 
     // Assert
     expect([o.start, o.startReady, o.startHint]).toEqual([true, false, 'off'])
-    expect(SIREN_LINES.startOff).toBe(
-      "Sound is off, so nothing played. Turn sound on to hear Merc's siren, then press Start.",
-    )
   })
 
   it('readies Start once Merc’s siren has sounded with the sound on', () => {
@@ -116,7 +118,7 @@ describe('after a take', () => {
         done: true,
         closing: 'band',
         tryAgain: false,
-        keepBand: true,
+        keepLine: true,
         restCard: false,
       })
       expect(offers(second)).toMatchObject({ again: false, closing: 'band' })
@@ -180,7 +182,7 @@ describe('after a take', () => {
       start: false,
       closing: 'gentle',
       doctor: false,
-      keepBand: true,
+      keepLine: true,
       restCard: true,
     })
   })
@@ -195,7 +197,7 @@ describe('after a take', () => {
       start: false,
       closing: 'enough',
       doctor: true,
-      keepBand: false,
+      keepLine: false,
       restCard: true,
     })
   })
@@ -237,7 +239,7 @@ describe('after Done for today', () => {
       ask: true,
       locked: true,
       closing: 'band',
-      keepBand: true,
+      keepLine: true,
       doctor: false,
       restCard: false,
     })
@@ -261,7 +263,7 @@ describe('after Done for today', () => {
       locked: true,
       closing: 'band',
       doctor: false,
-      keepBand: true,
+      keepLine: true,
       restCard: false,
       start: false,
       again: false,
@@ -277,7 +279,7 @@ describe('after Done for today', () => {
       locked: true,
       closing: 'plain',
       tryAgain: false,
-      keepBand: true,
+      keepLine: true,
       restCard: false,
       again: false,
       done: false,
@@ -350,18 +352,131 @@ describe('every visit', () => {
     expect(visits).toBeGreaterThan(1000)
     expect(problems).toEqual([])
   })
+})
 
-  it("speaks LESSON.md's lines, word for word", () => {
-    expect(SIREN_LINES.band).toBe(
-      "That's it: one gentle siren, done. The lit band shows where its middle notes sat today.",
-    )
-    expect(SIREN_LINES.plain).toBe("That's it: one gentle siren, done.")
-    expect(SIREN_LINES.tryAgain).toBe('Try again at about speaking volume.')
-    expect(SIREN_LINES.gentle).toBe(
-      'Keep it gentle: rest before you sing again.',
-    )
-    expect(SIREN_LINES.enough).toBe(
-      "Thanks for saying so. That's enough singing for today: rest your voice.",
-    )
+describe('without a reading (Lesson 11)', () => {
+  /** Lesson 11's takes: each heard a voice or none, and nothing read. */
+  const SUNG: TakeMark = { abandoned: false, voiced: true }
+  const SILENT: TakeMark = { abandoned: false, voiced: false }
+  const plain = (events: readonly SirenEvent[]): SirenOffers =>
+    flowOffers(run(events))
+
+  it('closes every sung siren on the plain line, with Again once a visit and no "Try again"', () => {
+    for (const f of ['easy', 'workable'] as const) {
+      // Act
+      const first = plain([SING, HEARD, { type: 'took', take: SUNG }, feel(f)])
+      const second = plain([
+        SING,
+        HEARD,
+        { type: 'took', take: SUNG },
+        feel(f),
+        AGAIN,
+        { type: 'took', take: SUNG },
+        feel(f),
+      ])
+
+      // Assert
+      expect(first).toMatchObject({
+        closing: 'plain',
+        again: true,
+        tryAgain: false,
+        keepLine: true,
+        restCard: false,
+      })
+      expect(second).toMatchObject({ closing: 'plain', again: false })
+    }
+  })
+
+  it('reads a band or an unsteady take as plain too: a page with no reading never shows one', () => {
+    for (const t of ['band', 'unsteady'] as const) {
+      // Act
+      const o = plain([SING, HEARD, took(t), feel('easy')])
+
+      // Assert
+      expect([o.closing, o.tryAgain]).toEqual(['plain', false])
+    }
+  })
+
+  it('asks nothing after a take with no voice, and leaves the one Again for a fresh start', () => {
+    // Act
+    const v = run([SING, HEARD, { type: 'took', take: SILENT }])
+
+    // Assert
+    expect(flowOffers(v)).toMatchObject({ ask: false, again: true, done: true })
+    expect(v.againUsed).toBe(false)
+  })
+
+  it('takes the line away after "Uncomfortable", keeps it after "Effortful", and picks the rest card after either', () => {
+    // Act
+    const hard = plain([
+      SING,
+      HEARD,
+      { type: 'took', take: SUNG },
+      feel('uncomfortable'),
+    ])
+    const effort = plain([
+      SING,
+      HEARD,
+      { type: 'took', take: SUNG },
+      feel('effortful'),
+    ])
+
+    // Assert
+    expect(hard).toMatchObject({
+      closing: 'enough',
+      doctor: true,
+      keepLine: false,
+      again: false,
+      restCard: true,
+    })
+    expect(effort).toMatchObject({
+      closing: 'gentle',
+      keepLine: true,
+      again: false,
+      start: false,
+      restCard: true,
+    })
+  })
+
+  it('never closes on a band or says "Try again" on any route, and never passes the limits', () => {
+    // Arrange: every route of takes (sung, silent or abandoned) and answers
+    const takes: TakeMark[] = [
+      SUNG,
+      SILENT,
+      { abandoned: true, voiced: true },
+      { abandoned: true, voiced: false },
+    ]
+    const problems: string[] = []
+    let visits = 0
+    const walk = (v: SirenVisit, depth: number): void => {
+      visits++
+      const o = flowOffers(v)
+      if (o.closing === 'band') problems.push('a band')
+      if (o.tryAgain) problems.push('"Try again"')
+      if (v.takes.length > MAX_TAKES) problems.push('a fourth take')
+      if (sungCount(v) > MAX_SUNG) problems.push('a third sung siren')
+      if (v.effort && (o.again || o.start))
+        problems.push('a retry after effort')
+      if (depth === 0) return
+      const moves: SirenEvent[][] = []
+      if (o.startReady || o.again)
+        for (const take of takes)
+          moves.push(
+            o.again
+              ? [AGAIN, { type: 'took', take }]
+              : [{ type: 'took', take }],
+          )
+      if (o.ask && !o.locked && v.feeling === null)
+        for (const f of FEELINGS) moves.push([feel(f)])
+      if (o.done) moves.push([DONE])
+      for (const m of moves) walk(run(m, v), depth - 1)
+    }
+
+    // Act
+    walk(run([SING, HEARD]), 9)
+
+    // Assert
+    expect(visits).toBeGreaterThan(200)
+    expect(problems).toEqual([])
   })
 })
