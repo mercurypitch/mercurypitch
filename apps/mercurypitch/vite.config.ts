@@ -455,27 +455,26 @@ export default defineConfig(({ mode, command }) => {
       // whatever the JS target implies: NATIVE_CSS_TARGET, above.
       cssTarget: NATIVE_CSS_TARGET,
       rollupOptions: {
-        // The app's one document, and in a test build the TV stage's. The
-        // web build emits an entry page per SEO route; none of them belong
-        // in a bundle that ships inside an app, and a second document of the
-        // app is also a second AudioContext waiting to happen. The stage is
-        // not that: a page with no audio, no plugins and no storage, which a
-        // web view of its own shows on a connected TV while a test build's
-        // switch is on (stage.html, ios/App/App/LyricsWindow/TVStage.swift).
-        // A store build has no switch to show it, so it carries none of it.
+        // The app's one document, and the TV stage's. The web build emits
+        // an entry page per SEO route; none of them belong in a bundle that
+        // ships inside an app, and a second document of the app is also a
+        // second AudioContext waiting to happen. The stage is not that: a
+        // page with no audio, no plugins and no storage, which a web view of
+        // its own shows on a connected TV once the singer picks the stage
+        // for it (stage.html, src/stage/main.ts, ios/App/App/LyricsWindow/
+        // TVStage.swift). Every build asks what a connected TV shows, the
+        // store build included (src/shell/tv/tv-choice.ts), so every build
+        // carries the page; without it the stage could be picked and the TV
+        // would only mirror. assert-bundle.mjs checks it is there.
         input: {
           index: resolve(
             fileURLToPath(new URL('.', import.meta.url)),
             'index.html',
           ),
-          ...(portableConsole
-            ? {
-                stage: resolve(
-                  fileURLToPath(new URL('.', import.meta.url)),
-                  'stage.html',
-                ),
-              }
-            : {}),
+          stage: resolve(
+            fileURLToPath(new URL('.', import.meta.url)),
+            'stage.html',
+          ),
         },
         treeshake: {
           // A Karaoke Stage 2, floating console or launch offer module that

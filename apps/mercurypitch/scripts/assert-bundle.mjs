@@ -100,6 +100,14 @@
 //            "See every room" is not one of them, First Light's Map says it
 //            too.
 //
+//   TV STAGE The TV stage's page is in the bundle, with the script it loads.
+//            Every build asks what a connected TV shows as it connects, the
+//            store build included (src/shell/tv/tv-choice.ts), and a stage
+//            picked in a bundle with no page leaves the TV mirroring the
+//            phone, with nothing said: LyricsWindowPlugin.swift's stagePage()
+//            finds no page and TVStage.swift puts no window up. The page was
+//            built for a test build alone until the chooser (vite.config.ts).
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -686,6 +694,21 @@ function main(argv) {
       assets.some((file) => contains(file, WASM_BASE)),
       `${label}: a built chunk names ${WASM_BASE}`,
       `No chunk references ${WASM_BASE}, so the engine will resolve its wasm base to the CDN fallback at runtime. Check that VITE_ONNX_WASM_BASE_URL is set in apps/mercurypitch/.env and that the build read it.`,
+    )
+
+    // TV STAGE -- the page, and the module script it names, under this root.
+    const stagePage = join(root, 'stage.html')
+    const stageMarkup = existsSync(stagePage)
+      ? readFileSync(stagePage, 'utf8')
+      : ''
+    const stageScript =
+      /<script\b[^>]*\bsrc="\.?\/?(assets\/[^"]+\.js)"/u.exec(
+        stageMarkup,
+      )?.[1] ?? null
+    record(
+      stageScript !== null && existsSync(join(root, stageScript)),
+      `${label}: stage.html is present, with the script it loads`,
+      `${stageMarkup === '' ? 'There is no stage.html' : `stage.html names no script that is there${stageScript === null ? '' : ` (${stageScript})`}`}. vite.config.ts builds it as the "stage" input in every build${synced ? ', and cap sync copies it' : ''}; without it a TV whose singer picks the stage only mirrors the phone.`,
     )
 
     // MANIFEST -- resolve the same globs against this bundle root that

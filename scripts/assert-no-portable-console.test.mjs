@@ -5,10 +5,14 @@
 // A store binary is held to more: the floating developer console is a test
 // build's too there, while the web ships it on purpose. `--store-binary`
 // adds its fingerprints, and only that flag does.
+//
+// And a store binary carries the TV chooser and the TV stage's page, as
+// every build does, while the Developer screen's TV section stays out: the
+// chooser's and the page's real sources pass, the section's ids fail.
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -33,6 +37,32 @@ function assertOver(text, flags = []) {
   } finally {
     rmSync(dist, { recursive: true, force: true })
   }
+}
+
+/**
+ * Runs the assert over a dist holding these files, each path relative to
+ * the dist, with `flags` after the directory.
+ */
+function assertOverFiles(files, flags = []) {
+  const dist = mkdtempSync(join(tmpdir(), 'no-portable-console-'))
+  try {
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(dist, path, '..'), { recursive: true })
+      writeFileSync(join(dist, path), text)
+    }
+    return spawnSync(process.execPath, [SCRIPT, dist, ...flags], {
+      encoding: 'utf8',
+    })
+  } finally {
+    rmSync(dist, { recursive: true, force: true })
+  }
+}
+
+/** A source file as a built chunk keeps it: its code, without comments. */
+function code(relative) {
+  return readFileSync(new URL(relative, import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//gu, '')
+    .replace(/(^|[^:'"`])\/\/.*$/gmu, '$1')
 }
 
 test('passes a dist that carries none of them', () => {
@@ -70,6 +100,18 @@ const CARRIED = [
   [
     "the AirPlay sound check's line",
     'console.info(`[airplay check] ${n} ${t}: ${w}`);',
+  ],
+  [
+    'its TV section',
+    'const t=x("<div class=mp-dev__audio data-testid=dev-tv-lyrics>");',
+  ],
+  [
+    "its TV stage's switch",
+    'const t=x("<button role=switch data-testid=dev-tv-stage-switch>");',
+  ],
+  [
+    "the TV stage picture's Earlier",
+    'const t=x("<button data-testid=dev-tv-stage-earlier>Earlier");',
   ],
   [
     'the audio report a song on AirPlay writes',
@@ -151,4 +193,35 @@ test('refuses a flag it does not know, rather than running the weaker check', ()
   )
   assert.equal(result.status, 2, `exited ${result.status}`)
   assert.match(result.stderr, /--store-binray/u)
+})
+
+test('passes a store binary that carries the TV chooser and the TV stage', () => {
+  // Every build asks what a connected TV shows, and carries the page the
+  // stage is drawn on: their real sources, as a chunk and a page carry them.
+  const chooser = [
+    '../apps/mercurypitch/src/shell/tv/tv-choice.ts',
+    '../apps/mercurypitch/src/shell/tv/tv-copy.ts',
+    '../apps/mercurypitch/src/shell/tv/tv-memory.ts',
+    '../apps/mercurypitch/src/shell/tv/tv-name.ts',
+    '../apps/mercurypitch/src/shell/tv/TvChoiceSheet.tsx',
+    '../apps/mercurypitch/src/shell/tv/TvSettingsGroup.tsx',
+  ]
+    .map(code)
+    .join('\n')
+  const result = assertOverFiles(
+    {
+      'assets/index-Ab12Cd34.js': chooser,
+      'assets/stage-Ef56Gh78.js': code(
+        '../apps/mercurypitch/src/stage/main.ts',
+      ),
+      'stage.html': readFileSync(
+        new URL('../apps/mercurypitch/stage.html', import.meta.url),
+        'utf8',
+      ),
+    },
+    ['--store-binary'],
+  )
+
+  assert.ok(chooser.includes('tv-choice'), 'the chooser’s sources were read')
+  assert.equal(result.status, 0, result.stderr)
 })
