@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { romanOf } from '@/lib/ear/progressions'
-import { numberWord, numeralHtml, spokenNumeral } from './numerals'
+import { numberWord, numeralHtml, plainNumeral, plainNumeralHtml, spokenNumeral, } from './numerals'
 
 /** The app's seven numerals, I to vii°. */
 const SEVEN = [1, 2, 3, 4, 5, 6, 7].map(romanOf)
@@ -112,5 +112,27 @@ describe('numeralHtml', () => {
       'In C major, what are the roots of one, five, six minor, four?',
     )
     expect(heard(line)).not.toMatch(BARE)
+  })
+})
+
+describe('plainNumeral', () => {
+  it('reads a numeral as its plain number for a line that names its quality: "vii°" is "seven"', () => {
+    // Act
+    const plain = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'].map(plainNumeral)
+
+    // Assert: the Wrap's recap (WEB-SPEC, Toys 8)
+    expect(plain).toEqual([
+      'one',
+      'two',
+      'three',
+      'four',
+      'five',
+      'six',
+      'seven',
+    ])
+    expect(plainNumeralHtml('vii°')).toBe(
+      '<span aria-hidden="true">vii°</span><span class="sr">seven</span>',
+    )
+    expect(() => plainNumeral('VII°')).toThrow()
   })
 })

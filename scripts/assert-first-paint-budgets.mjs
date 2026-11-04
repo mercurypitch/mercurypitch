@@ -314,8 +314,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
-  // lesson page.
-  'learn/12.html': 114,
+  // lesson page. The rest of the page, from 116,489 bytes: Step 5's tunes,
+  // the cold open on the hero's ring with the kit's predict, the recall with
+  // Lesson 10's questions and quiz plays, the four words, Sing it on the
+  // kit's comfort check, voice choice, slide guide and breathing ring, and
+  // free play, 166,064 in all: 163.
+  'learn/12.html': 163,
   // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
   // Lesson 3 is: its own module on the kit, with the vowel model, the
   // spectrum strip under the band chart, the vowel voice, the cold open's
@@ -433,8 +437,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // its page shell: the kit's sheets (with the guide's and the voice
   // lessons', inlined into its own by @import, and the shared parts), its
   // own, and the shared Inter and Outfit @font-face rules. The smallest
-  // whole KB above that, as for its script.
-  'learn/12.html': 87,
+  // whole KB above that, as for its script. With Sing it loading the
+  // comfort check, the voice choice and the slide guide, the guide's and
+  // the voice lessons' sheets come in their shared chunks, as Lesson 10's
+  // do, and free play and the tease still add their rules: 89,362, 88.
+  'learn/12.html': 88,
   // Lesson 13 (a draft, as above). Measured 86 in build:e2e (87,615
   // bytes): the kit's sheets (with the voice lessons' and the shared
   // parts), its own, and the shared Inter and Outfit @font-face rules; a

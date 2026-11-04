@@ -8,7 +8,7 @@
    it; the ring of rooms' figure, its chord strip of seven chips and each
    step's row of controls (WEB-SPEC, Toys 1, "Layout and targets" and "The
    stuck stage"); Tavi's line in Step 5; Sing it's guide beside its ring;
-   and the Wrap's cards. */
+   and the Wrap's cards, with the next card's tease still and free play. */
 
 /* ---------------------------------------------------------------- hero: the ring between Merc and Tavi */
 .l12-duo {
@@ -241,6 +241,32 @@
 }
 .l12-next {
   margin-top: 18px;
+}
+/* the tease still in the next-lesson card: a level pitch line in the app's
+   target amber over a strip of chrome bars, its peaks carrying only "?"
+   (WEB-SPEC, Toys 9); a class of its own, apart from Lesson 2's .tease */
+.l12-tease {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin-top: 12px;
+}
+.l12-tease .bars {
+  fill: var(--chrome);
+  fill-opacity: 0.22;
+}
+.l12-tease .q {
+  fill: var(--chrome);
+  font:
+    600 12px Outfit,
+    sans-serif;
+  text-anchor: middle;
+}
+.l12-tease .pitch {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 2.5;
+  stroke-linecap: round;
 }
 .l12-free > .eyebrow {
   margin: 0 0 10px;

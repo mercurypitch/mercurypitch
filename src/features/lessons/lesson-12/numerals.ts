@@ -52,6 +52,20 @@ function spokenOne(numeral: string): string {
   return lower ? `${numberWord(n)} minor` : numberWord(n)
 }
 
+/**
+ * One numeral as its plain number, for a line whose own words name its
+ * quality: the Wrap's recap reads "two, three and six minor", never "two
+ * minor, three minor and six minor minor" (WEB-SPEC, Toys 8).
+ */
+export function plainNumeral(numeral: string): string {
+  // read as spokenOne reads it, so a string that is not a numeral throws here too
+  spokenOne(numeral)
+  const roman = NUMERAL.exec(numeral)?.[1] ?? ''
+  return numberWord(
+    ROMAN.indexOf(roman.toUpperCase() as (typeof ROMAN)[number]) + 1,
+  )
+}
+
 /** A numeral, or a progression joined by en dashes, in words: "I–V–vi–IV" is "one, five, six minor, four". */
 export const spokenNumeral = (numerals: string): string =>
   numerals.split('–').map(spokenOne).join(', ')
@@ -64,3 +78,7 @@ export const spokenNumeral = (numerals: string): string =>
  */
 export const numeralHtml = (numerals: string): string =>
   `<span aria-hidden="true">${numerals}</span><span class="sr">${spokenNumeral(numerals)}</span>`
+
+/** As markup that shows "vii°" and is read as its plain number, "seven": the recap's form. */
+export const plainNumeralHtml = (numeral: string): string =>
+  `<span aria-hidden="true">${numeral}</span><span class="sr">${plainNumeral(numeral)}</span>`
