@@ -428,7 +428,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 ### 8. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG,
+in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG,
 `aria-hidden`, of Lesson 24's stage as its plan draws it, a wide drone band on A3 and a thin chrome
 line just above it, nothing moving, no glow and no "beats" label (FACTS, Illustrations without
 claims). It names no beat, so it does not answer Lesson 24's predict (FACTS 5). It holds no button,
@@ -524,11 +524,11 @@ quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, 
   do.
 - `pr.link`: `href` `/ear-lab?lesson=23`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear Lab" and
   `note` "then tap Leap", which the explorer's card prints after the address as "Ear Lab, then tap
-  Leap" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:177-181`). `pr.needs`, "Leap with
+  Leap" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`). `pr.needs`, "Leap with
   only the perfect intervals and the tritone (the ear-drill launch kind)", stays until it ships; it
   is admin only, never drawn on a lesson page (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [6, 23], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 23's
-  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
+  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on Lesson 22's card is this lesson's, set on Lesson 23 in the lesson copy (`LESSON_COPY`,
   `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "One note, swinging. Now two notes
   together: one pair wants to move.", with Lesson 22's planned line as a variant, `teaseAlts` `[{
@@ -538,7 +538,7 @@ id: 'hold', text: 'One note, swinging. Now hold two together: one pair wants to 
   variant, `teaseAlts` `[{ id: 'fifths', text: 'Fifths count as settled, tritones lean. Next, a note
 against a drone.' }]`; the planned line itself is withdrawn (FACTS 5). Each variant's note goes in
   the team's notes, which a variant needs (`TEASE_NOTES`,
-  `src/features/lessons/kit/team-notes.ts:71`). Both pairs were settled at the lead's review on 1
+  `src/features/lessons/kit/team-notes.ts:85`). Both pairs were settled at the lead's review on 1
   November 2026, as the owner asked; if Lesson 24's writer changes its opening, its tease follows.
 - The signature line for the admin console, from the card (FACTS 4): "An interval and its upside
   down fill the octave on the pitch line; curled into Lesson 2's ring, the tritone is its diameter."
@@ -557,7 +557,7 @@ are listed so this page's needs are in one place.
    draft's included (`lessonPages`, `tools/draft-lessons.ts:82-90`); `/learn/23` and
    `/learn/23.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint
    budgets. The lesson pages' route already takes any two digits (`LESSON_PAGE`,
-   `src/lesson-gate.ts:134`).
+   `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form, as Lesson 10's names its prerequisite's page
    (`src/features/lessons/kit/drafts.ts:39`): `23: "Lesson 6's page at /learn/06, and the vocal
 coach's look at Sing it"`. Releasing it is deleting that line, then listing the page in the

@@ -510,7 +510,7 @@ Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's
   (SEASON-2 § 5.2 item 10)", which is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [9, 16], a cross-season edge, and [15, 16], as SEASON-2 § 4.3 gives them (FACTS 2);
-  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
+  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on Lesson 15's card is this lesson's, set on Lesson 16 in the lesson copy: `tease` "Five
   notes on the staff. Tavi has never heard them.", `teaseAlts`
   `[{ id: 'any-note', text: 'Now you can see where any note sits.' }]`, with the variant's team note
@@ -529,7 +529,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/16.html` at `/learn/16`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/16` and `/learn/16.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets (FACTS 73). The
-   lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `16: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 9's
    (`src/features/lessons/kit/drafts.ts:31-42`).

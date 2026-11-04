@@ -402,7 +402,7 @@ A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides 
   be read as a keyboard's keys.
 - `pr.link`: `href` `/?lesson=21#/compose`, `addr` `mercurypitch.com/#/compose`, `label` "Compose"
   and `note` "then choose Sheet Music", which the explorer's card prints after the address as
-  "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:177-181`).
+  "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`).
   Ear Lab's Home is the page card's second drill only, as Lesson 8's entry links one of its two.
   `pr.needs`, "A note-reading drill that reads key signatures, and Sight-Singing that spells by
   key", stays until one ships; it is "Admin only, never drawn on a lesson page"

@@ -958,7 +958,7 @@ and First Light does not step aside. Item 21 fixes it.
     would be dropped whole; the admin console's one row per Season 1 lesson
     (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
     (`src/lib/current-lesson.ts:34-37`). The lesson pages' own route already takes any two digits
-    (`src/lesson-gate.ts:128`), and the done list stores any lesson number
+    (`src/lesson-gate.ts:129`), and the done list stores any lesson number
     (`src/lib/lesson-done.ts:17-24`). At each lesson's release, SEARCH § 8's table and the entry
     pages' `lessonsPractised` change together, since a test holds them equal room by room
     (`src/tests/entry-page-model.test.ts:497-529`); Lesson 28's links split the shared Karaoke
@@ -1052,7 +1052,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    indexed by number (`LESSONS[n].n === n`, :109); the masthead's season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`); the season's end card says "End of Season 1"
    (`src/features/lessons/kit/lesson-copy.ts:135-141`); the explorer is "Season 1 as a map"
-   (`src/features/lessons/kit/explorer.ts:2`); the hub says Season 1 (`learn/index.html:264`). The kit
+   (`src/features/lessons/kit/explorer.ts:2` at `ad0a099f7`); the hub says Season 1 (`learn/index.html:265`). The kit
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page
    carries the season's data today, so the first paint grows with every lesson (HANDOFF § 5); Season
@@ -1146,7 +1146,7 @@ with Lessons 26 and 28.
 1. **Decided (1 November 2026): number on, Lessons 15 to 28 at `/learn/15` to `/learn/28`.** As recommended: global
    numbers, with "Season 2 · Lesson 15" in the masthead. Reason: everything already keys on one
    number: the done list (`src/lib/lesson-done.ts:17-24`), the `?lesson=NN` marker, the lesson-answer
-   events, the page route, which takes any two digits (`src/lesson-gate.ts:128`), and the kit's
+   events, the page route, which takes any two digits (`src/lesson-gate.ts:129`), and the kit's
    lessons, indexed by number (`season.ts:109`). Cross-season prerequisites (Lesson 16 needs Lesson 9)
    are then plain edges. Numbering each season from 1 would need a season key in every one of those,
    and two lessons called "Lesson 1". The cost of numbering on is small and listed (§ 5 item 21).

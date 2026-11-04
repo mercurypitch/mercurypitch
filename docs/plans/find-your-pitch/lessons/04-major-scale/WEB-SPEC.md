@@ -352,18 +352,18 @@ main's.
   `Lesson` serves both lessons, added by whichever page ships first; the card's status line,
   "Ready · watch and read" on 18 October, then reads "Ready · read", and the phone list and the
   graph read the same field. On main the chip reads "Ready · read" unless the lesson's film is
-  published (`kit/explorer.ts:153-160`).
+  published (`kit/explorer.ts:167-174`).
 - `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
-  Lesson 2's page added the option, `current` (`kit/explorer.ts:51-52`, `:262-266`), and this page
+  Lesson 2's page added the option, `current` (`kit/explorer.ts:65-66`, `:262-266`), and this page
   passes 4 (`lesson-04/main.ts:96`).
 - `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
   `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson
   links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap). On main it does
-  (`cardActions`, `kit/explorer.ts:190-206`).
+  (`cardActions`, `kit/explorer.ts:204-220`).
 - `kit/season.ts`, Lesson 4's entry: the practice link, `href` `/pitch-training?lesson=04`,
   `addr` `mercurypitch.com/pitch-training`, `label` "Exercises" and `note` "then tap Scale
   Runner", which the card prints as "Exercises, then tap Scale Runner" after the address
-  (`practiseMarkup`, `kit/explorer.ts:177-182`). It keeps its `needs` until the slug ships. Its
+  (`practiseMarkup`, `kit/explorer.ts:191-196`). It keeps its `needs` until the slug ships. Its
   `sig` becomes "A staircase with two short steps that slides to start on any note.", since "two
   uneven steps" did not say which. On main the entry reads so (`kit/season.ts:224-243`), and the
   signature is the team's (`kit/team-notes.ts:36`).

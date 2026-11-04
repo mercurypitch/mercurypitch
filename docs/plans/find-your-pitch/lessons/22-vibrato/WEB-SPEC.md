@@ -654,7 +654,7 @@ Lesson 5's is (`src/features/lessons/kit/season.ts:245-263`):
   team's only: the field is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [14, 22], as SEASON-2 § 4.3 gives it (FACTS 2); Lesson 22's prerequisite list is
-  then [14] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
+  then [14] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on Lesson 21's card is this lesson's, set on Lesson 22 in the lesson copy: `tease`
   "Merc holds one note, and its line swings past both edges of the band.", with `teaseAlts`
   `[{ id: 'nudged', text: 'Each fifth is nudged two cents. A held note can move far more.' }]` and
@@ -674,7 +674,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/22.html` at `/learn/22`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:82`); `/learn/22` and `/learn/22.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); and the first-paint budgets. The lesson
-   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `22: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
    (`src/features/lessons/kit/drafts.ts:31-42`).

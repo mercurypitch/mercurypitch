@@ -407,7 +407,7 @@ first; they are listed so this page's needs are in one place.
    draft's included (`lessonPages`, `tools/draft-lessons.ts:82-90`); `/learn/27` and
    `/learn/27.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint
    budgets. The lesson pages' route already takes any two digits (`LESSON_PAGE`,
-   `src/lesson-gate.ts:134`).
+   `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:31-42`):
    `27: "Lessons 12 and 23's pages at /learn/12 and /learn/23, and the vocal coach's look at the sung
 checkpoint and the sung drill"`. Releasing it is deleting that line, then listing the page in the

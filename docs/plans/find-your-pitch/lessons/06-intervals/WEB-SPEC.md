@@ -550,7 +550,7 @@ and the line references are main's.
 - `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 17` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
   Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
-  them" by `practiseMarkup` (`kit/explorer.ts:177-182`): the `?lesson=` step-aside has shipped
+  them" by `practiseMarkup` (`kit/explorer.ts:191-196`): the `?lesson=` step-aside has shipped
   (FACTS 44a), so the note needs no first-visit form. Its `needs` stays until the slug ships. A
   second proposal only, for the director: link Interval Trainer instead, the Wrap's lead drill
   (`href` `/pitch-training?lesson=06`, `label` "Exercises", `note` "then tap Interval Trainer").

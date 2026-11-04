@@ -520,7 +520,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
 - `pr.link`: `href` `/pitch-training?lesson=20`, `addr` `mercurypitch.com/pitch-training`, `label`
   "Exercises" and `note` "then tap Scale Runner", which the explorer's card prints after the address
   as "Exercises, then tap Scale Runner" (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:177-181`), as Lesson 9's entry links one of its two drills.
+  `src/features/lessons/kit/explorer.ts:191-195`), as Lesson 9's entry links one of its two drills.
   `pr.needs`, "Scale Runner's Pentatonic by launch, and a drill that sings a run continuously",
   stays until one ships; it is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
@@ -541,7 +541,7 @@ sharp, and to D, with two.' }]` (FACTS 5). This lesson's own, set on Lesson 20 a
 - No `fig`: the card shows no figure, as Lesson 14's does (`cardFigure`,
   `src/features/lessons/kit/explorer-figures.ts:188-194`). The explorer opens on Season 2's tab,
   and its card reads "Ready · read" with "15 min" once the page is live, as every lesson's card
-  without a film does (`chipText`, `src/features/lessons/kit/explorer.ts:153-160`).
+  without a film does (`chipText`, `src/features/lessons/kit/explorer.ts:167-174`).
 
 ## What the kit and the app still need
 
@@ -553,7 +553,7 @@ are listed so this page's needs are in one place.
    draft's included (`lessonPages`, `tools/draft-lessons.ts:82-90`); `/learn/20` and
    `/learn/20.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint
    budgets. The lesson pages' route already takes any two digits (`LESSON_PAGE`,
-   `src/lesson-gate.ts:134`). The draft line, in the draft list's form for a voice lesson with a
+   `src/lesson-gate.ts:135`). The draft line, in the draft list's form for a voice lesson with a
    scored checkpoint, as Lesson 9's (`src/features/lessons/kit/drafts.ts:38`):
    `20: "Lessons 5, 9 and 10's pages, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`.
    Releasing it is deleting that line, then listing the page in the sitemap and llms.txt (SEARCH.md § 12 item 3).

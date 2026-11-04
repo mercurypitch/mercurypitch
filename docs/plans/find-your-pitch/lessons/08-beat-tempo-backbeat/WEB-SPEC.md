@@ -37,7 +37,7 @@ check asks Lesson 6's questions and links there (FACTS 3), and once the kit part
 the kit and the app still need" are in. Lesson 8 builds on Lesson 1, not Lesson 6 (`kit/season.ts`,
 `EDGES`), but the console asks before it publishes this page while Lesson 6's is not published
 there, since its own list of the recalls that ask a lesson off that map names Lesson 6 for it
-(`RECALLS`, `src/features/admin/lessons/lesson-admin.ts:493-511`). "Publish anyway" still publishes
+(`RECALLS`, `src/features/admin/lessons/lesson-admin.ts:499-517`). "Publish anyway" still publishes
 it, so the order is the owner's to keep; as a backstop the recall sits in a wrapper that leaves it
 out while Lesson 6 is not live (Toys 7). The curiosity plan's kit work is on main: the next-lesson
 card draws Lesson 9's tease above its new hook, and Lesson 7's card draws this lesson's tease, "Same
@@ -139,7 +139,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    steps the viewer reaches, and first settles the page's own links to other lessons by the state
    the page was served with (`followPageState`, `kit/page-chrome.ts:131`).
 2. **The hook**, the hero's copy: the kicker, the hook question as the title (`h1.hook#hook`, as
-   `kit/lesson-copy.test.ts:323-332` requires of every page from its first commit), the meta as
+   `kit/lesson-copy.test.ts:327-336` requires of every page from its first commit), the meta as
    four chips ("16 minutes", FACTS 4; "After Lesson 1", a link; "Also useful: Lesson 6, Intervals",
    a plain chip as Lesson 3's is, `learn/03.html:366-369`, FACTS 2; Sound on) and the promise, from
    LESSON.md. The title is the season's hook (`kit/season.ts:312`, FACTS 1); it says the song feels
@@ -187,11 +187,11 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     you land a note you have to leap to?", or the wordings the admin console picked; and "See it on
     the map" while Lesson 9 has no published page, then "Start lesson" to `/learn/09` (FACTS 6). Its
     slot, the page's mark, `<div class="next-card card l08-next" data-next-card hidden>` in `#wrap`,
-    holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:184`,
-    `:205`), as Lesson 2's mark keeps its figures (`learn/02.html:1823`). Free play unlocks after
+    holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:217`,
+    `:239`), as Lesson 2's mark keeps its figures (`learn/02.html:1823`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
-12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:256`), with
+12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:275`), with
     Lesson 8 as the current node. Under its heading is Lesson 1's line, which names no lesson's
     state: the legend and the cards say it, from the season data. Its cards show only learner
     information: "Ready", "Coming later" or "Done", no signature, no backlog and no topic codes
@@ -261,7 +261,7 @@ its patterns with it.
   and right in turn, and crosses the middle halfway between (FACTS 12, 59). The click sounds as the
   arm reaches a side, and the lamp lights for 120 ms. The arm's motion is drawn from the audio clock
   on the kit's frame loop, never from the CSS swing the explorer card uses
-  (`lesson-sections.css:984-995`). The kit's drawing had one fixed gradient id, so one copy a page,
+  (`lesson-sections.css:999-1010`). The kit's drawing had one fixed gradient id, so one copy a page,
   and this page shows up to four metronomes (the stage, the hero, the guide and free play, beside
   the explorer card's), so `metronomeSVG(id)` takes an id per copy (`kit/explorer-figures.ts:20-32`;
   What the kit and the app still need, item 6).
@@ -369,7 +369,7 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
   toy the new step and the one before (`kit/step-deck.ts:172`): Next and Previous (`:218-228`), a
   swipe (`:230-256`), scrolling another step into view on the wide page (`:201-216`), the lesson
-  menu's jump (`:287-291`, called at `kit/lesson-menu.ts:530`), a `#step-N` address
+  menu's jump (`:287-291`, called at `kit/lesson-menu.ts:542`), a `#step-N` address
   (`kit/step-deck.ts:268-276`, `:298-305`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
   page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
@@ -728,11 +728,11 @@ or four?".
 ### 9. Tease figure
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`kit/next-card.ts:184`, `:205`, as Lesson 2's figures sit there): an
+in the card after its words (`kit/next-card.ts:217`, `:239`, as Lesson 2's figures sit there): an
 SVG, `aria-hidden`, of two lines rising from one note into Lesson 9's amber band, one in steps and
 one a dashed arc with a "?" over its landing (CURIOSITY-MOMENTS § 2, Lesson 8, Tease; FACTS 6). It
 sits under the words the kit draws, the eyebrow, the tease line, the hook and the way on
-(`kit/next-card.ts:131-146`). It holds no button, since the card is a link, and it plays no sound.
+(`kit/next-card.ts:145-160`). It holds no button, since the card is a link, and it plays no sound.
 Its styles go in this page's stylesheet, under a class of its own, `.l08-tease`: never Lesson 2's
 `.tease` (`lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts` tests, nor the kit's
 `.next-tease`, which sets the tease line (`lesson-sections.css:296-302`). It does not move.
@@ -855,11 +855,11 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   a phone too (FACTS 49); `addr` `mercurypitch.com/drum-night?drawer=learn`, the address the page
   prints, so a learner who types it lands on the panel too; `label` stays "Drum Night"; and a
   learner `note`, "then press Play First Pocket", printed "Drum Night, then press Play First
-  Pocket" by `practiseMarkup` (`kit/explorer.ts:177-182`). `pr.needs`, "Ear Lab Time (an ear-drill
+  Pocket" by `practiseMarkup` (`kit/explorer.ts:191-196`). `pr.needs`, "Ear Lab Time (an ear-drill
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
 - The signature (`kit/team-notes.ts:40`) and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
   beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
-  CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:984-995`), and the
+  CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:999-1010`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays
   as `kit/lesson-copy.ts:113` has it: "Same song, same speed. Only the claps move.", which Lesson
@@ -914,7 +914,7 @@ was built on.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:142`;
+   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:156`;
    `lesson-sections.css:296-302`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
@@ -939,11 +939,11 @@ was built on.
     `vite.config.ts:319`, `:493`).
 14. The head, from `docs/plans/find-your-pitch/SEARCH.md` § 3 and Lesson 2's document
     (`learn/02.html:3-145`), whole in the page's first commit. Two tests hold it: the kit's
-    `src/features/lessons/kit/lesson-copy.test.ts:323-358` reads every `learn/NN.html`, drafts
+    `src/features/lessons/kit/lesson-copy.test.ts:327-362` reads every `learn/NN.html`, drafts
     included, from its first commit, and `src/tests/lesson-pages.test.ts:139-275` holds every lesson
     document's head too. The copies of the hook that the first test reads are the ones the site
     worker rewrites when the console picks another hook (`src/lesson-gate.ts:17-19`).
-    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:323-332`).
+    - The title, `h1.hook#hook`, the hook word for word (`lesson-copy.test.ts:327-336`).
     - The document title, at most 60 characters, ending in " | MercuryPitch"
       (`lesson-pages.test.ts:154-155`): SEARCH.md § 4's draft, "Beat, tempo and the backbeat,
       explained | MercuryPitch" (54 characters), which the owner chose on 22 October 2026 with the
@@ -959,16 +959,16 @@ was built on.
     - `og:title` and `twitter:title`, "Beat, tempo and the backbeat: Find Your Pitch, Lesson 8", in
       the form of Lesson 2's (`learn/02.html:26-29`, `:45-48`).
     - `og:description`, the full hook and then one line, as Lesson 2's (`learn/02.html:30-33`),
-      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:349-352`): "Why
+      since the kit's test wants it to start with the hook (`lesson-copy.test.ts:353-356`): "Why
       does the same song feel different when you clap on 2 and 4 instead of 1 and 3? Hear the claps
       move, then tap the backbeat."
     - `twitter:description`, the hook exactly (`learn/02.html:49-52`;
-      `lesson-copy.test.ts:353-355`).
+      `lesson-copy.test.ts:357-359`).
     - `og:image` and `twitter:image`, `https://mercurypitch.com/learn/lesson-08-og.jpg`, with
       `og:image:width` 1200 and `og:image:height` 630, and `og:image:alt` and `twitter:image:alt`
       naming the card (item 15; `learn/02.html:34-43`, `:53-60`).
     - The Article block: `@id` `https://mercurypitch.com/learn/08#lesson`, headline "Beat, tempo and
-      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:356`), the same
+      the backbeat", `alternativeHeadline` the hook exactly (`lesson-copy.test.ts:360`), the same
       description as the meta, `url` and `mainEntityOfPage` the canonical address, `image` the
       og:image (`lesson-pages.test.ts:173-174`, `:182-183`), `inLanguage` `en-GB`,
       `learningResourceType` "Lesson", `educationalLevel` "Beginner", `timeRequired` `PT16M`,

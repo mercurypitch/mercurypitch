@@ -614,7 +614,7 @@ The lead writes these entries; this spec gives them:
   `pr.link` with `href: '/ear-lab?lesson=17'`, `addr: 'mercurypitch.com/ear-lab'`, `label: 'Ear
 Lab'` and `note: 'then tap The Chart'`, since the explorer prints the label, a comma and the note,
   as Season 1's Ear Lab entries read (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:177-181`), and `pr.needs: 'The Chart without triplets or
+  `src/features/lessons/kit/explorer.ts:191-195`), and `pr.needs: 'The Chart without triplets or
 sixteenths (an ear-drill link)'`, which no page draws
   (`src/features/lessons/kit/season.ts:90-106`). The edge `[8, 17]`; Lesson 15 only helps, so it is
   no edge (SEASON-2 § 4.3). The topic T07, "Note values, rests, dots, ties, subdivision"

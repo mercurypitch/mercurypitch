@@ -490,14 +490,14 @@ and the lab test comes first.
 ### 7. The season's close
 
 The Wrap's last card, in the page's `[data-next-card]` mark, drawn by the kit's close
-(`endCard`, `src/features/lessons/kit/next-card.ts:148-174`) in Season 2's words, which the kit does
+(`endCard`, `src/features/lessons/kit/next-card.ts:148-174` at `ad0a099f7`) in Season 2's words, which the kit does
 not have yet (What the kit and the app still need, item 3): the eyebrow "End of Season 2", the line
 "You've read a song in two parts. Now sing a whole song.", **Karaoke Night**, a link to
 `/karaoke-night?lesson=28` in a tab of its own, marked with the out icon, and **See the season
 map**, `#explorer`. After "Effortful", "Uncomfortable" or "Just listen today" it reads "You've read
 a song in two parts." with See the season map alone. The card holds two links, so it is no link
 itself. Its slot, which the kit keeps after its words
-(`src/features/lessons/kit/next-card.ts:27-30`), holds the figure: an SVG, `aria-hidden`, of the
+(`src/features/lessons/kit/next-card.ts:32-35`), holds the figure: an SVG, `aria-hidden`, of the
 four section blocks, A A B A, and along them a staff, a beat grid, Lesson 12's ring and Lesson 6's
 beads, drawn in light, with no note; it does not move and plays no sound (FACTS 5, 85). No tease and
 no next lesson appear anywhere on the page (SEASON-2 § 7 item 8).
@@ -511,7 +511,7 @@ draw the close in Season 1's words, "End of Season 1" and "You've seen every not
 a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:130-141`), and Lesson 14's
 page would draw Lesson 15's card instead of its own close. Either way it draws once and never
 redraws
-(`src/features/lessons/kit/next-card.ts:190-193`), so it cannot follow Sing it's ending (FACTS 5).
+(`src/features/lessons/kit/next-card.ts:224-227`), so it cannot follow Sing it's ending (FACTS 5).
 
 ### 8. Tease still
 
@@ -653,7 +653,7 @@ Lesson 14's is (`src/features/lessons/kit/season.ts:427-441`):
   drill (item 17)", is the team's only: the field is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [18, 28] and [26, 28], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 28's
-  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:475-479`).
+  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:475-479` at `ad0a099f7`).
 - The tease on Lesson 27's card is this lesson's, set on Lesson 28 in the lesson copy
   (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "A song in two parts. At
   bar 8 it seems to end, then keeps going.", 64 characters, inside `TEASE_MAX`
@@ -675,7 +675,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/28.html` at `/learn/28`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:81-89`); `/learn/28` and `/learn/28.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets. The lesson
-   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form:
    `28: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
    (`src/features/lessons/kit/drafts.ts:31-42`).
@@ -692,7 +692,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - the rest-aware close Lesson 14's item 12 requires, for both seasons: after "Effortful",
      "Uncomfortable" or "Just listen today" the close keeps the rest line and the map and drops the
      invitation and its Karaoke Night button; since the kit draws the close once
-     (`src/features/lessons/kit/next-card.ts:190-193`), either `createNextCard` redraws it when the
+     (`src/features/lessons/kit/next-card.ts:224-227`), either `createNextCard` redraws it when the
      visit's ending changes or the page draws it once Sing it has ended;
    - the masthead's season from the page's lesson, where it is a constant today
      (`src/features/lessons/kit/lesson-menu.ts:111`).

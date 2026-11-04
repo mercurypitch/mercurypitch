@@ -99,7 +99,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    Sound toggle off by default and Pause animations, through `initMasthead`
    (`src/features/lessons/kit/page-chrome.ts:127-159`) with `{ lesson: 15, deck }`. On a first visit
    its welcome tour waits for the predict's choice (Toys 3). The masthead's
-   season is a constant today, "Season 1" (`src/features/lessons/kit/lesson-menu.ts:111`); it takes
+   season is a constant today, "Season 1" (`src/features/lessons/kit/lesson-menu.ts:111` at `ad0a099f7`); it takes
    the lesson's season from the kit's seasons (What the kit and the app still need, item 3).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:334-519`): the kicker, the
    hook question as the title (`<h1 class="hook" id="hook">`), the meta as three chips, the promise
@@ -432,7 +432,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 ### 8. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:27-30`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
 of a treble staff with five plain noteheads stepping up two places and back down, no syllables, no
 house and nothing lit, and a "?" beside it (FACTS, Illustrations without claims). It says nothing of what Tavi sings with no note to start from, so it does not answer Lesson
 16's predict (FACTS 5). It holds no button, since the
@@ -535,12 +535,12 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
 Sing it (drafts.ts).` The entry decides nothing about being live: the draft list and the console do.
 - `pr.link`: `href` `/?lesson=15#/compose`, `addr` `mercurypitch.com/#/compose`, `label` "Compose"
   and `note` "then choose Sheet Music", which the explorer's card prints after the address as
-  "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:177-181`).
+  "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`).
   `pr.needs`, "A note-reading drill: a note on the treble or bass staff, up to two ledger lines,
   answered on a keyboard or by letter", stays until it ships; it is "Admin only, never drawn on a
   lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [2, 15], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 15's
-  prerequisite list is then [2] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
+  prerequisite list is then [2] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on this page's next-lesson card is Lesson 16's, set on Lesson 16 in the lesson copy
   (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): settled, `tease` "Five notes on the
   staff. Tavi has never heard them.", with the plan's line as a variant, `teaseAlts` `[{ id:
@@ -562,7 +562,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    a draft's included (`lessonPages`, `tools/draft-lessons.ts:82-90`); `/learn/15` and
    `/learn/15.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts'
    entries; the first-paint budgets (FACTS 73). The lesson pages' route already takes any two
-   digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
+   digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
 2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:29-42`):
    `15: "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)"`. Releasing it is deleting
    that line, then listing the page in the sitemap and llms.txt (SEARCH.md § 12 item 3).

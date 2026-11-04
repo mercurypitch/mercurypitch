@@ -85,8 +85,8 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
    the hook question as the title, `<h1 class="hook" id="hook">` in its default wording, the
    season's, which `src/features/lessons/kit/lesson-copy.test.ts` holds every page's title to
-   (`:323-332`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
-   element the site worker writes a picked hook into (`src/lesson-gate.ts:590-591`); the meta as
+   (`:327-336`), with no variant's team note anywhere in the markup (`src/features/lessons/kit/team-notes.test.ts:85-101`; FACTS 1), and the
+   element the site worker writes a picked hook into (`src/lesson-gate.ts:591-592`); the meta as
    four chips ("16 minutes", FACTS 5; "After Lesson 7: Slides, sirens and your range", a link to
    `/learn/07`, wholly the link, as Lesson 2's `a.chip.chip-link` is, `learn/02.html:351-356`, so
    that it stays as a plain chip where Lesson 7 is not live; Sound on; Microphone optional); the
@@ -123,10 +123,10 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, free play, and the kit's next-lesson card (`createNextCard(11)`,
-   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:27-30`). The card is Lesson 12's,
+   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:32-35`). The card is Lesson 12's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Four
    chords, round and round.", one line above the hook as `.next-tease`, the hook as `.q2` and the
-   way on (`:130-146`; FACTS 7), "Coming later" and "See it on the map" until Lesson 12's page is
+   way on (`:144-160`; FACTS 7), "Coming later" and "See it on the map" until Lesson 12's page is
    live. Its hook and tease are the ones the admin console picked, the defaults until it picks
    (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The tease's
    figure is a still of the four chords as four rooms on the spiral, and it puts no tune note on
@@ -135,7 +135,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    is Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring. That
    is Lesson 12's rule for this still (Lesson 12's WEB-SPEC, Decisions for the owner, item 13;
    Lesson 12's FACTS 5b; FACTS 7). The still sits in the page's `[data-next-card]` mark, whose
-   children the kit keeps in the card after its words (`:27-29`, `:184`, `:205`), as Lesson 2's
+   children the kit keeps in the card after its words (`:32-34`, `:217`, `:239`), as Lesson 2's
    figures are (`learn/02.html:1823`). The card is a link, so the figure holds no button. The
    practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
@@ -704,7 +704,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `addr: 'mercurypitch.com/pitch-training'`, `label: 'Exercises'` and
   `note: 'then tap Siren / Range Explorer'`, so the card reads "Exercises, then tap Siren / Range
   Explorer", as Lesson 9's reads "Exercises, then tap Arpeggio Jumper" (`season.ts:337-342`,
-  `explorer.ts:177-182`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
+  `explorer.ts:191-196`). The note is in the learner's words (`season.ts:34-37`); `needs` keeps
   "siren and slide drills" for the team, and no card draws it. The link lands with the page, not
   before it as Lesson 9's did: every lesson page's explorer prints it, and only this page says what
   the drill's help asks and why a flip may come anyway (Decisions). Its hook is the entry's
@@ -749,7 +749,7 @@ the others take it.
    card and structured data, a draft's included, since a draft the console publishes goes live
    with the head it was built with (`:13-18`, `:139-275`). The hook's copies are the ones the site
    worker rewrites when the console picks the alternative hook (`src/lesson-gate.ts:17-19`,
-   `:453-468`); only the meta description and the Article's description, which repeat each other,
+   `:454-469`); only the meta description and the Article's description, which repeat each other,
    may shorten the hook, and every other copy carries it whole. As Lesson 2's head has them
    (`learn/02.html:9-136`):
    - the title, "Registers and the break: chest and head voice | MercuryPitch" (60 characters, at
@@ -759,7 +759,7 @@ the others take it.
      owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:242`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:323-332`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -768,9 +768,9 @@ the others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:349-352`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:353-356`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:353-355`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:357-359`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -781,7 +781,7 @@ the others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:338-346`, `:356`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:342-350`, `:360`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:173-174`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:182-183`); `position: 11`,
@@ -812,7 +812,7 @@ the others take it.
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:341-344`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:623-629`),
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:637-643`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
@@ -1023,14 +1023,14 @@ What the page does where nothing above says:
   the publish order is a rule for whoever uses it (the intro), so the page follows the state it is
   served with.
   The site worker, and then the masthead's `followPageState`, make every link to a lesson that is
-  not live no link (`src/lesson-gate.ts:523-533`, `:547-567`; `kit/page-state.ts:64-108`, called by
+  not live no link (`src/lesson-gate.ts:524-534`, `:548-568`; `kit/page-state.ts:64-108`, called by
   `initMasthead`, `kit/page-chrome.ts:131`): the "After Lesson 7" chip stays as a plain chip, and
   any other link keeps its words. The kit's quiz does the same for the recall's step links, which
   keep their words, "Try Lesson 7, Step 1 again", with no link (`kit/quiz.ts:186-216`). The recall
   still shows, and the explorer and the lesson menu draw the lesson held back as coming later. End
   to end 13 holds it.
 - **The admin console's hook**: picking `same-note` wrote it into the h1, the head's copies of the
-  hook, every explorer card and Lesson 10's next card (`src/lesson-gate.ts:17-19`, `:453-468`); the
+  hook, every explorer card and Lesson 10's next card (`src/lesson-gate.ts:17-19`, `:454-469`); the
   meta description still fit, at 156 characters; and the page then claimed what FACTS 1 cannot
   support, which is why the owner dropped it (Decisions, 1).
 - **Reduced motion**: Look, Toys 1 and Toys 4 give the end states; nothing moves on its own.
