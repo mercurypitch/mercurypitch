@@ -42,6 +42,26 @@
   width: var(--studio-plate-icon, 36px);
   height: var(--studio-plate-icon, 36px);
 }
+/* Dark theme: a soft light in the lane's hue behind the picture, so its dark
+   parts (a black handle, a navy body) stand off the deep plate. It reaches
+   the picture's corners, where the diagonal instruments end, and keeps the
+   hue, so the lanes stay apart by colour. A light plate needs none.
+   Measured in docs/studio-role-art.md. */
+.plate[data-picture],
+.listPlate[data-picture] {
+  --plate-light: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--studio-track) 50%, var(--studio-text)) 45%,
+    var(--plate-ground)
+  );
+}
+.plate[data-picture] {
+  background-image: radial-gradient(
+    circle,
+    var(--plate-light) 30px,
+    var(--plate-ground) 60px
+  );
+}
 
 /* The phone's Mix sheet: the same plate as a rounded tile beside the name. */
 .listPlate {
@@ -72,6 +92,18 @@
 .listPlate svg {
   width: 28px;
   height: 28px;
+}
+/* The same light, scaled to the 36 px picture. */
+.listPlate[data-picture] {
+  background-image: radial-gradient(
+    circle,
+    var(--plate-light) 19px,
+    var(--plate-ground) 39px
+  );
+}
+:global(html[data-theme='light']) .plate[data-picture],
+:global(html[data-theme='light']) .listPlate[data-picture] {
+  background-image: none;
 }
 
 /* The arm button: a red dot in a square like Mute and Solo; armed, a red

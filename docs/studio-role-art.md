@@ -97,3 +97,39 @@ risky details (drum heads, record labels, pickguards, headstocks, synth panels),
 and in the slot at 56 px and 28 px on each role's dark and light plate. None of
 the twenty first pictures had text, logos, people, hands, extra objects, floors
 or cast shadows.
+
+## The dark plate's light
+
+On the dark theme's deep plates, the pictures' darkest parts sank: the
+microphones' black handles, the bass's navy body, the acoustic's headstock. A
+light in the lane's hue now sits behind each picture: 45% of a mix of the hue
+and the text colour over the plate ground, flat to 30 px from the centre and
+gone by 60 px, so it reaches the corners of the 56 px picture, where the
+diagonal instruments end (`StudioLaneHeader.module.css`). The phone Mix sheet's
+36 px tile has the same light scaled to 19 and 39 px. The light theme has none.
+
+Measured on the browser's own pixels at 2x, in the dark theme, all ten roles.
+Four shots of each plate (as shown, the plate alone, the picture on black and
+on white) give every pixel's exact alpha. At each outline point (alpha at
+least 0.5 beside a pixel under 0.5) the score is the WCAG contrast between the
+picture's opaque pixels within 2 px and the bare plate within 3 px. Dark parts
+are outline points where the picture's luminance is under 0.04, light parts
+over 0.35. Each cell is the median of the ten roles' medians, or the mean of
+their shares under 1.5:1:
+
+| Plate                       | Outline    | Dark parts | Light parts |
+| --------------------------- | ---------- | ---------- | ----------- |
+| Flat (before)               | 1.30 (66%) | 1.24 (89%) | 5.85 (0%)   |
+| Hue light 45%, 30 to 60 px  | 1.85 (18%) | 1.87 (9%)  | 2.28 (0%)   |
+| Hue light 55%, 30 to 60 px  | 1.98 (15%) | 2.03 (5%)  | 1.90 (26%)  |
+| Grey light 45%, 30 to 60 px | 2.02 (15%) | 2.06 (4%)  | 1.81 (31%)  |
+| Grey light 35%, 16 to 38 px | 1.33 (53%) | 1.27 (70%) | 3.11 (0%)   |
+
+Shipped: the 45% hue light. Every role's dark parts improve (the voice
+picture's from 98% under 1.5:1 to 17%), and no light part drops under 1.5:1.
+At 55% the dark parts gain a little more, but the light parts (white keys,
+silver grilles and hinges, drum heads) lose their edge against the paler
+plate: 26% of them fall under 1.5:1. A grey light of the same reach greyed the
+lane colours (OKLab chroma within 28 px of the centre down 36 to 69%, where
+the hue light raises it 20 to 50%), and the small one left the ends of the
+diagonal instruments dark.
