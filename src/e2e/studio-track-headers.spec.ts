@@ -356,3 +356,56 @@ test.describe('Studio lane arming', () => {
     await expect(reloaded.locator('img')).toHaveCount(0)
   })
 })
+
+test.describe('Studio lane lines on a phone', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('open while a lane is armed, in the record card’s place, and Record closes them and starts the take', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await captureStudioOutput(page)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    await importStudioAudio(page, 'Bass', 2)
+    const record = recordButton(page)
+    await armButton(page, 'Bass').click()
+    await expect(record).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
+    const card = studio.locator('[data-studio-record-status]')
+    await expect(card).toHaveAttribute('data-studio-record-status', 'armed')
+
+    const lines = studio.getByRole('button', {
+      name: 'Bass volume and pan lines',
+      exact: true,
+    })
+    const bar = studio.getByRole('toolbar', { name: 'Bass lines' })
+    await expect(lines).toBeEnabled()
+    await lines.click()
+    await expect(bar).toBeVisible()
+    await expect(card).toHaveCount(0)
+
+    await record.click()
+    await expect(record).toHaveAttribute('data-phase', 'recording', {
+      timeout: 15_000,
+    })
+    await expect(bar).toHaveCount(0)
+    await expect(card).toHaveAttribute('data-studio-record-status', 'recording')
+    await expect(lines).toBeDisabled()
+    await untilAudioClock(page, (await audioClock(page)) + 1)
+    await record.click()
+
+    // The take is kept and the lane stays armed; its lines stay closed.
+    await expect(record).toHaveAttribute('data-phase', 'armed', {
+      timeout: 30_000,
+    })
+    await expect(card).toHaveAttribute('data-studio-record-status', 'armed')
+    await expect(lines).toHaveAttribute('aria-pressed', 'false')
+    await expect(lines).toBeEnabled()
+  })
+})

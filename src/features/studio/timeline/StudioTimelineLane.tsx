@@ -4,7 +4,6 @@ import { createMemo, For, Show } from 'solid-js'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
 import type { StudioAsset, StudioClip, StudioTrack, } from '@/lib/studio/model/types'
 import { StudioLaneTake } from '../record/StudioLaneTake'
-import { studioTakeRunning } from '../record/take-running'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
@@ -113,9 +112,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       disabled={props.view.lines.held()}
       title={
         props.view.lines.held()
-          ? studioTakeRunning()
-            ? 'Stop the take to draw lines'
-            : 'Disarm the lane to draw lines'
+          ? 'Stop the take to draw lines'
           : line() !== null
             ? 'Close the lines'
             : hasStudioAutomation(props.track)
