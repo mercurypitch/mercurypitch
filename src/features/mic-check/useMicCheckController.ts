@@ -324,7 +324,13 @@ export function useMicCheckController(): MicCheckController {
     // should track, so it deliberately runs outside any tracked scope.
     // eslint-disable-next-line solid/reactivity
     (state) => {
-      const others = state.consumers.filter((id) => id !== MIC_CHECK_ID)
+      // An input of its own (the Studio's take) holds the microphone too,
+      // apart from the shared stream's consumers.
+      const holding =
+        state.scoped != null
+          ? [...state.consumers, state.scoped]
+          : state.consumers
+      const others = holding.filter((id) => id !== MIC_CHECK_ID)
       const before = holders()
       if (holdersKnown) {
         for (const id of others) {

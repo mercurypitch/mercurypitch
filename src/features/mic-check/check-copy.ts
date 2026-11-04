@@ -46,10 +46,12 @@ export const INPUT_KIND_HINT: Partial<Record<InputKind, string>> = {
 }
 
 /**
- * Surfaces in this tab that hold the shared microphone, by consumer id. A
- * prefix match, because several surfaces add a suffix of their own per run.
+ * Surfaces in this tab that hold the microphone, by consumer id: the shared
+ * stream's consumers, and the Studio on an input of its own. A prefix match,
+ * because several surfaces add a suffix of their own per run.
  */
 const HOLDER_NAMES: ReadonlyArray<readonly [prefix: string, name: string]> = [
+  ['studio-record', 'Studio'],
   ['practice-engine', 'Singing practice'],
   ['audio-engine', 'The singing stage'],
   ['stem-mixer', 'Karaoke'],

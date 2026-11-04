@@ -49,8 +49,11 @@ let devices: FakeMediaDevices
 let track: MediaStreamTrack
 let queued: Map<number, FrameRequestCallback>
 let nextId: number
-/** The manager's listener, to tell the check who else holds the mic. */
-let tellConsumers: (consumers: readonly string[]) => void
+/** The manager's listener, to tell the check who else holds the mic, and who holds an input of its own. */
+let tellConsumers: (
+  consumers: readonly string[],
+  scoped?: string | null,
+) => void
 
 beforeEach(() => {
   voice.opened = { ok: true }
@@ -67,12 +70,13 @@ beforeEach(() => {
   })
   vi.spyOn(micManager, 'getStream').mockReturnValue(fakeStream(track))
   vi.spyOn(micManager, 'subscribe').mockImplementation((listener) => {
-    tellConsumers = (consumers) =>
+    tellConsumers = (consumers, scoped = null) =>
       listener({
         active: true,
         error: null,
         consumers,
         blockedBy: null,
+        scoped,
       } satisfies MicState)
     tellConsumers([])
     return () => {}
@@ -221,6 +225,25 @@ describe('useMicCheckController', () => {
     expect(voice.picked).toEqual([])
     expect(check.canSwitch()).toBe(false)
     expect(lines(check)).toContain('Karaoke started using the microphone')
+    check.dispose()
+  })
+
+  it("counts the Studio's input of its own among those holding the microphone", async () => {
+    // Arrange
+    const check = await listening()
+
+    // Act
+    tellConsumers([MIC_CHECK_ID], 'studio-record')
+    await check.listenTo('built-in')
+
+    // Assert
+    expect(voice.picked).toEqual([])
+    expect(check.canSwitch()).toBe(false)
+    expect(lines(check)).toContain('Studio started using the microphone')
+
+    tellConsumers([MIC_CHECK_ID])
+    expect(check.canSwitch()).toBe(true)
+    expect(lines(check)).toContain('Studio let go of the microphone')
     check.dispose()
   })
 
