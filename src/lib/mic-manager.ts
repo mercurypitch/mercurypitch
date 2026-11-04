@@ -163,6 +163,19 @@ export async function listAudioOutputs(): Promise<MediaDeviceInfo[]> {
   return devices.filter((d) => d.kind === 'audiooutput')
 }
 
+/**
+ * A hold on an input of its own (acquireFrom), and the one way to end it:
+ * a release names the hold it ends, so a late one from a hold a later
+ * acquireFrom replaced cannot end the newer hold.
+ */
+export interface MicInputHold {
+  readonly stream: MediaStream
+  /** Its input was gone, so its stream is the default's. */
+  readonly missing: boolean
+  /** Let the input go; nothing once a later acquireFrom or a loss ended it. */
+  release(): void
+}
+
 /** A consumer's hold on an input of its own (acquireFrom), on a stream of its own. */
 interface ScopedHold {
   readonly consumerId: string
@@ -278,20 +291,21 @@ export class MicManager {
    * a later acquireFrom ends the earlier hold, and the state's `scoped` says
    * so. A browser that keeps one capture at a time ends the shared stream as
    * this one opens; its consumers hear that through the 'ended' path, as
-   * from an unplugged device, not as silence.
+   * from an unplugged device, not as silence. The hold ends through its own
+   * release, never through release(consumerId).
    */
   acquireFrom(
     consumerId: string,
     deviceId: string | null,
-  ): Promise<{ stream: MediaStream; missing: boolean }> {
+  ): Promise<MicInputHold> {
     const hold: ScopedHold = {
       consumerId,
       deviceId: deviceId !== null && deviceId !== '' ? deviceId : null,
       missing: false,
       stream: null,
     }
-    // Taken now, not when the open runs: a release called before this call
-    // ends only the hold it saw (release), never this one.
+    // Taken now, not when the open runs, so a release queued before this
+    // call finds its hold replaced and leaves this one be (releaseHold).
     const previous = this.scoped
     this.scoped = hold
     return this.enqueue(async () => {
@@ -339,7 +353,21 @@ export class MicManager {
       }
       this.error = null
       this.emit()
-      return { stream, missing: hold.missing }
+      return {
+        stream,
+        missing: hold.missing,
+        release: () => this.releaseHold(hold),
+      }
+    })
+  }
+
+  /** End `hold` while it is the input of its own; a later acquireFrom or a loss ended it otherwise. */
+  private releaseHold(hold: ScopedHold): void {
+    void this.enqueue(async () => {
+      if (this.scoped !== hold) return
+      // Not shared, so it closes now, without the linger.
+      this.endScoped(hold)
+      this.emit()
     })
   }
 
@@ -425,20 +453,12 @@ export class MicManager {
   }
 
   /**
-   * Release `consumerId`'s hold. When the last consumer leaves, the device is
-   * torn down after a short linger (so a quick page switch reuses it).
+   * Release `consumerId`'s hold on the shared stream. When the last consumer
+   * leaves, the device is torn down after a short linger (so a quick page
+   * switch reuses it). An input of its own ends through its hold's release.
    */
   release(consumerId: string): void {
-    // The input of its own held now, not the one held when the release runs:
-    // an acquireFrom called after this, as a re-arm on another input is, has
-    // a hold of its own that this release must leave open.
-    const hold = this.scoped?.consumerId === consumerId ? this.scoped : null
     void this.enqueue(async () => {
-      if (hold !== null) {
-        // Not shared, so it closes now, without the linger.
-        this.endScoped(hold)
-        this.emit()
-      }
       if (!this.consumers.delete(consumerId)) return
       if (this.consumers.size === 0) this.scheduleLinger()
       this.emit()

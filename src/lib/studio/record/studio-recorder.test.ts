@@ -57,11 +57,15 @@ function harness(
   const kept: StudioCapturedTake[] = []
   const releaseMemory = vi.fn()
   const source = { disconnect: vi.fn() }
+  /** The hold's own release: the one way the recorder gives the microphone back. */
+  const releaseMic = vi.fn()
   const deps: StudioRecorderDeps = {
     unlock: vi.fn(async () => true),
     clock: () => ctx as unknown as AudioContext,
-    acquireMic: vi.fn(async () => ({}) as MediaStream),
-    releaseMic: vi.fn(),
+    acquireMic: vi.fn(async () => ({
+      stream: {} as MediaStream,
+      release: releaseMic,
+    })),
     prepareWorklet: vi.fn(async () => undefined),
     openCapture: vi.fn((_context, _input, handlers) => {
       events.push(handlers)
@@ -108,6 +112,7 @@ function harness(
     journal,
     kept,
     releaseMemory,
+    releaseMic,
     captures,
     /** The newest capture's worklet messages. */
     get worklet() {
@@ -131,7 +136,8 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 describe('another input picked on an armed lane', () => {
   afterEach(() => releaseMicLock())
 
-  it("re-arms on the input picked: the capture hears that input, not the one before nor the app's", async () => {
+  /** A browser that opens a stream on whichever input is asked for; the inputs it opened. */
+  function fakeInputs(): string[] {
     const opened: string[] = []
     ;(
       globalThis.navigator as unknown as { mediaDevices: unknown }
@@ -149,14 +155,17 @@ describe('another input picked on an armed lane', () => {
         return { getTracks: () => [track], getAudioTracks: () => [track] }
       }),
     }
+    return opened
+  }
+
+  it("re-arms on the input picked: the capture hears that input, not the one before nor the app's", async () => {
+    const opened = fakeInputs()
     const mic = new MicManager()
     await mic.setPreferredDevice('app-in')
     let input = 'usb-1'
     const heard: MediaStream[] = []
     const h = harness({
-      acquireMic: async () =>
-        (await mic.acquireFrom('studio-record', input)).stream,
-      releaseMic: () => mic.release('studio-record'),
+      acquireMic: () => mic.acquireFrom('studio-record', input),
       createSource: (_context, stream) => {
         heard.push(stream)
         return { disconnect: vi.fn() } as unknown as AudioNode
@@ -177,6 +186,51 @@ describe('another input picked on an armed lane', () => {
     }
     expect(track.getSettings().deviceId).toBe('usb-2')
     expect(track.stop).not.toHaveBeenCalled()
+    expect(opened).toEqual(['usb-1', 'usb-2'])
+    expect(h.view().phase).toBe('armed')
+  })
+
+  it("keeps the newer arm's input open when an arm Escape left lets go late", async () => {
+    const opened = fakeInputs()
+    const mic = new MicManager()
+    await mic.setPreferredDevice('app-in')
+    let input = 'usb-1'
+    let worklets = 0
+    let firstWorklet!: () => void
+    const heard: MediaStream[] = []
+    const h = harness({
+      acquireMic: () => mic.acquireFrom('studio-record', input),
+      // The first arm's worklet is slow; the next arm's is ready at once.
+      prepareWorklet: vi.fn(() =>
+        ++worklets === 1
+          ? new Promise<void>((resolve) => (firstWorklet = resolve))
+          : Promise.resolve(),
+      ),
+      createSource: (_context, stream) => {
+        heard.push(stream)
+        return { disconnect: vi.fn() } as unknown as AudioNode
+      },
+    })
+
+    // R: its input opens while it waits for its worklet. Escape, then R
+    // again on another input, before that wait ends.
+    const first = h.recorder.arm('lane-1')
+    await settle()
+    h.recorder.disarm()
+    input = 'usb-2'
+    const second = h.recorder.arm('lane-1')
+    firstWorklet()
+    expect(await first).toBe(false)
+    expect(await second).toBe(true)
+    await settle()
+
+    const track = heard.at(-1)!.getAudioTracks()[0] as unknown as {
+      stop: Mock
+      getSettings(): MediaTrackSettings
+    }
+    expect(track.getSettings().deviceId).toBe('usb-2')
+    expect(track.stop).not.toHaveBeenCalled()
+    expect(mic.getScopedHold()?.stream).toBe(heard.at(-1))
     expect(opened).toEqual(['usb-1', 'usb-2'])
     expect(h.view().phase).toBe('armed')
   })
@@ -215,7 +269,7 @@ describe('arming', () => {
       error: 'described permission-denied',
     })
     expect(h.deps.openCapture).not.toHaveBeenCalled()
-    expect(h.deps.releaseMic).not.toHaveBeenCalled()
+    expect(h.releaseMic).not.toHaveBeenCalled()
   })
 
   it('gives the microphone back when the clock does not start', async () => {
@@ -225,7 +279,7 @@ describe('arming', () => {
 
     expect(h.view().phase).toBe('idle')
     expect(h.view().error).toMatch(/audio didn't start/)
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
   it('lets go of an arm disarmed before it finished opening', async () => {
@@ -236,7 +290,7 @@ describe('arming', () => {
 
     expect(await arming).toBe(false)
     expect(h.view()).toMatchObject({ phase: 'idle', error: null })
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
     expect(h.deps.openCapture).not.toHaveBeenCalled()
   })
 
@@ -248,7 +302,7 @@ describe('arming', () => {
 
     expect(h.capture.dispose).toHaveBeenCalled()
     expect(h.monitor.dispose).toHaveBeenCalled()
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
     expect(h.view().phase).toBe('idle')
   })
 })
@@ -334,7 +388,7 @@ describe('the count-in', () => {
     expect(h.deps.keep).not.toHaveBeenCalled()
     expect(h.journal.discard).toHaveBeenCalledWith('take-1')
     expect(h.releaseMemory).toHaveBeenCalled()
-    expect(h.deps.releaseMic).not.toHaveBeenCalled()
+    expect(h.releaseMic).not.toHaveBeenCalled()
   })
 
   it('stays armed when the memory for a take is refused', async () => {
@@ -397,7 +451,7 @@ describe('a take', () => {
     expect(take.samples).toHaveLength(5096)
     expect(take.samples[5095]).toBe(0.25)
     expect(h.view()).toMatchObject({ phase: 'idle', live: null, notice: null })
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
     expect(h.releaseMemory).toHaveBeenCalled()
     await settle()
     expect(h.journal.discard).toHaveBeenCalledWith('take-1')
@@ -437,7 +491,7 @@ describe('a take', () => {
       phase: 'idle',
       notice: MIC_LOST_MID_TAKE,
     })
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
   it('keeps a take the worklet ended on its own, naming why', async () => {
@@ -539,7 +593,7 @@ describe('a take', () => {
     expect(h.journal.append).toHaveBeenCalledOnce()
     expect(h.journal.discard).not.toHaveBeenCalled()
     expect(h.deps.keep).not.toHaveBeenCalled()
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
   it('reports a take stopped before its first sample as too short', async () => {
@@ -563,7 +617,7 @@ describe('losses while armed', () => {
     h.recorder.micLost()
 
     expect(h.view()).toMatchObject({ phase: 'idle', error: MIC_LOST_ARMED })
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
   it('drops a count-in and disarms when the clock stops', async () => {
@@ -575,7 +629,7 @@ describe('losses while armed', () => {
 
     expect(h.view().phase).toBe('idle')
     expect(h.deps.keep).not.toHaveBeenCalled()
-    expect(h.deps.releaseMic).toHaveBeenCalledOnce()
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 })
 
