@@ -316,8 +316,13 @@ export function computeHNR(
   }
 
   const noisePower = Math.max(0, totalPower - harmonicPower)
+  // Held to [-40, 40] dB at both ends, as the quality bands assume. With no
+  // harmonic energy at all (a wrong f0 over breath noise) the ratio's log was
+  // -Infinity, which reached the readouts as it was.
   const hnrDb =
-    noisePower > 0 ? 10 * Math.log10(harmonicPower / noisePower) : 40
+    noisePower > 0
+      ? Math.max(-40, 10 * Math.log10(harmonicPower / noisePower))
+      : 40
 
   let quality: BreathinessResult['quality']
   if (hnrDb < 10) quality = 'breathy'

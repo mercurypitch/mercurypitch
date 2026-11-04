@@ -234,6 +234,22 @@ describe('computeHNR', () => {
     expect(result.hnrDb).toBeLessThan(20)
     expect(result.efficiency).toBeLessThan(70)
   })
+
+  it('reads the floor, not -Infinity, when no harmonic bin carries energy', () => {
+    // A wrong f0 for the frame (an octave error, or the last reading held
+    // over breath) puts every harmonic window on an empty bin while noise
+    // fills the rest: log10(0) was -Infinity, and reached the readouts.
+    const sampleRate = 44100
+    const fftSize = 2048
+    const f0 = 440
+    const f0Bin = Math.round(f0 / (sampleRate / fftSize))
+    const spectrum = new Float32Array(1024)
+    for (let i = 1; i < f0Bin - 2; i++) spectrum[i] = 0.1
+
+    const result = computeHNR(spectrum, sampleRate, f0, fftSize)
+
+    expect(result).toEqual({ hnrDb: -40, quality: 'breathy', efficiency: 0 })
+  })
 })
 
 // ── approximateBreathiness ─────────────────────────────────────
