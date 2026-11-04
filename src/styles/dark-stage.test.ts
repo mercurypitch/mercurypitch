@@ -115,6 +115,9 @@ const DARK_SURFACE_ROOTS = [
   ['Path', 'src/pages/PathPage.tsx'],
   ['Long note', 'src/features/long-note/LongNoteRoom.tsx'],
   ['Warm-up path', 'src/features/warm-up/WarmUpPath.tsx'],
+  // At its column over the photograph, not its root: the room's sheets
+  // anchor beside the column and keep the app's theme.
+  ['Sing room column', 'src/features/sing-room/SingRoomStage.tsx'],
 ] as const
 
 describe('dark stage theme contract', () => {
