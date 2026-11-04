@@ -477,3 +477,40 @@ describe('timbres (Lesson 7, kit/timbre.ts)', () => {
       expect(o.stops.at(-1)).toBeCloseTo(early, 9)
   })
 })
+
+describe("a voice's partials (Lesson 11's gears, `wave`)", () => {
+  const MERC = [1, 0.62, 0.38, 0.24, 0.14, 0.08, 0.045, 0.025]
+  const SOFT = [1, 0.3, 0.11, 0.05, 0.024, 0.012]
+
+  it('lets the kind pick the partials when no wave is given, as it always has', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), { kind: 'merc' })
+    kit.contourVoice(kit.contourOf(A3, SLIDE), { kind: 'soft' })
+
+    // Assert: Merc's tone and its vibrato, then the soft tone alone
+    expect(ctx.oscillators.map((o) => o.wave?.partials ?? null)).toEqual([
+      MERC,
+      null,
+      SOFT,
+    ])
+    expect(ctx.filters.map((f) => f.frequency.value)).toEqual([2600, 3400])
+  })
+
+  it('gives a Merc voice the soft partials, keeping its vibrato, its filter and its level', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), { kind: 'merc', wave: 'soft' })
+
+    // Assert: the soft tone on Merc's oscillator, and Merc's vibrato beside it
+    expect(ctx.oscillators).toHaveLength(2)
+    expect(ctx.oscillators[0].wave?.partials).toEqual(SOFT)
+    expect(ctx.oscillators[1].frequency.value).toBe(5.5)
+    expect(ctx.filters.map((f) => f.frequency.value)).toEqual([2600])
+    expect(ctx.gains.map((g) => g.gain.value)).toContain(0.2)
+  })
+})

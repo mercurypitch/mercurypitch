@@ -56,6 +56,8 @@ export interface RunOptions {
   readonly gain?: number
   /** Shapes a sung line (kit/timbre.ts): `playLine` honours it, `playNotes` and `playNote` ignore it. */
   readonly timbre?: VoiceOptions['timbre']
+  /** A sung line's partials, whatever its kind (kit/sound.ts): `playLine` honours it, as it does `timbre`. */
+  readonly wave?: VoiceOptions['wave']
 }
 
 // The audible runs in flight, each stopped when every sound stops. One
@@ -105,6 +107,7 @@ export function playLine(points: readonly ContourPoint[], o: RunOptions): Run {
         kind: o.kind ?? 'merc',
         gain: o.gain,
         timbre: o.timbre,
+        wave: o.wave,
       })
     : null
   return timed(contourLength(points), o.audible, () => v?.stop(0.08))

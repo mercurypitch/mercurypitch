@@ -43,6 +43,12 @@ export interface VoiceOptions {
   at?: number
   /** Shapes the voice as it is built: Lesson 7's "ng" and lip trill (kit/timbre.ts). */
   timbre?: Timbre
+  /**
+   * The partials, whatever the kind: a Merc voice that takes the soft
+   * tone's keeps its vibrato, its envelope and its level (Lesson 11's upper
+   * gear). Without it, the kind picks them, as it always has.
+   */
+  wave?: 'soft' | 'merc'
 }
 
 /**
@@ -169,7 +175,7 @@ function build(freq: number, o: VoiceOptions): Graph | null {
   const t = context.currentTime + Math.max(0, o.at ?? 0)
   const merc = o.kind === 'merc'
   const osc = context.createOscillator()
-  const wave = merc ? waves.merc : waves.soft
+  const wave = waves[o.wave ?? (merc ? 'merc' : 'soft')]
   if (wave !== undefined) osc.setPeriodicWave(wave)
   osc.frequency.setValueAtTime(freq, t)
   const lp = context.createBiquadFilter()
