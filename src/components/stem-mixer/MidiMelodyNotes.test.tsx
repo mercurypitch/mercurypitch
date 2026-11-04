@@ -23,6 +23,8 @@ interface SheetProps {
   beatsPerBar?: number
   currentBeat?: () => number
   isPlaying?: () => boolean
+  jumps?: () => number
+  followScroller?: () => HTMLElement | undefined
   onSeek?: (beat: number) => void
   onMelodyChange?: unknown
   toolbar?: () => JSX.Element
@@ -59,6 +61,7 @@ function mount(
   const [notes, setNotes] = createSignal<readonly ShownNote[]>(
     overrides.notes ?? NOTES,
   )
+  const [jumps, setJumps] = createSignal(0)
   const onSeek = overrides.onSeek ?? vi.fn()
   render(() => (
     <MidiMelodyNotes
@@ -69,10 +72,11 @@ function mount(
       title={() => 'Nothing in the Dark'}
       elapsed={() => overrides.elapsed ?? 0}
       playing={() => false}
+      jumps={jumps}
       onSeek={onSeek}
     />
   ))
-  return { setNotes, onSeek }
+  return { setNotes, setJumps, onSeek }
 }
 
 afterEach(() => {
@@ -134,6 +138,20 @@ describe('MidiMelodyNotes', () => {
     sheet.props?.onSeek?.(2)
 
     expect(onSeek).toHaveBeenCalledWith((2 * 60) / 92)
+  })
+
+  it('lets the staff scroll the panel to the cursor, and hear each jump', async () => {
+    const { setJumps } = mount()
+    await screen.findByTestId('sheet-stub')
+
+    // The score is taller than a short panel: the follow may move the
+    // panel's body to show the cursor's system, and nothing beyond it.
+    expect(sheet.props?.followScroller?.()).toBe(
+      screen.getByTestId('stem-mixer-midi-notes'),
+    )
+    expect(sheet.props?.jumps?.()).toBe(0)
+    setJumps(3)
+    expect(sheet.props?.jumps?.()).toBe(3)
   })
 
   it('follows an edit without remounting the staff', async () => {

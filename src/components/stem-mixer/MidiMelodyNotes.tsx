@@ -32,6 +32,8 @@ export interface MidiMelodyNotesProps {
   /** Transport position in seconds. */
   elapsed: () => number
   playing: () => boolean
+  /** Goes up by one each time the transport jumps: a seek, a loop, a stop. */
+  jumps: () => number
   onSeek: (seconds: number) => void
 }
 
@@ -45,9 +47,13 @@ export function tempoCaption(bpm: number): string {
 export function MidiMelodyNotes(props: MidiMelodyNotesProps) {
   const bpm = (): number => safeBpm(props.bpm())
   const melody = createMemo(() => shownNotesToMelody(props.notes(), bpm()))
+  // The staff scrolls inside the score, and the score inside this body
+  // when the panel is shorter than it: the follow may move both.
+  let body: HTMLDivElement | undefined
 
   return (
     <div
+      ref={body}
       class={styles.body}
       data-testid="stem-mixer-midi-notes"
       data-note-count={melody().length}
@@ -72,6 +78,8 @@ export function MidiMelodyNotes(props: MidiMelodyNotesProps) {
             beatsPerBar={4}
             currentBeat={() => (props.elapsed() * bpm()) / 60}
             isPlaying={props.playing}
+            jumps={props.jumps}
+            followScroller={() => body}
             onSeek={(beat) => props.onSeek((beat * 60) / bpm())}
             toolbar={() => <p class={styles.tempo}>{tempoCaption(bpm())}</p>}
           />

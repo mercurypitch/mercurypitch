@@ -1641,6 +1641,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       title={() => stripAudioExtension(props.songTitle ?? '').trim()}
       elapsed={audio.elapsed}
       playing={audio.playing}
+      jumps={audio.jumps}
       onSeek={(seconds) => audio.seekTo(seconds)}
     />
   )
