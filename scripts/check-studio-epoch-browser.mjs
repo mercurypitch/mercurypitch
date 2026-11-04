@@ -1,6 +1,7 @@
 // Studio epoch browser check: Plays asked for between two frames still start every source on a frame, and an export starts them on the frames a Play does, in real Chromium.
 // Usage: pnpm dev (or any local Vite server), then
-//   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json]
+//   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json] [--suite automation]
+// --suite automation runs the lane line probes (studio-automation-browser-probes.mjs) instead.
 // Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Renders offline only: nothing plays aloud.
 import { chromium } from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -14,8 +15,21 @@ const { values } = parseArgs({
   options: {
     origin: { type: 'string', default: 'https://127.0.0.1:5173' },
     out: { type: 'string' },
+    suite: { type: 'string', default: 'epoch' },
   },
 })
+const SUITES = {
+  epoch: {
+    module: '/scripts/studio-epoch-browser-probes.mjs',
+    run: 'runStudioEpochProbes',
+  },
+  automation: {
+    module: '/scripts/studio-automation-browser-probes.mjs',
+    run: 'runStudioAutomationProbes',
+  },
+}
+const suite = SUITES[values.suite]
+assert.ok(suite, `Unknown suite ${values.suite}`)
 const origin = new URL(values.origin).origin
 assert.ok(
   ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname),
@@ -48,11 +62,17 @@ try {
     return route.continue()
   })
   await page.goto(`${origin}/__studio_epoch_check`, { timeout: 30000 })
-  const results = await page.evaluate(async () => {
-    const probes = await import('/scripts/studio-epoch-browser-probes.mjs')
-    return probes.runStudioEpochProbes()
-  })
-  const report = { browser: browser.version(), origin, errors, results }
+  const results = await page.evaluate(async ({ module, run }) => {
+    const probes = await import(module)
+    return probes[run]()
+  }, suite)
+  const report = {
+    browser: browser.version(),
+    origin,
+    suite: values.suite,
+    errors,
+    results,
+  }
   if (out !== null)
     writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx' })
   for (const [name, result] of Object.entries(results))
@@ -64,9 +84,11 @@ try {
   assert.deepEqual(
     failed.map(([name]) => name),
     [],
-    'Studio epoch probes failed',
+    `Studio ${values.suite} probes failed`,
   )
-  console.log(`Studio epoch browser check passed on ${report.browser}`)
+  console.log(
+    `Studio ${values.suite} browser check passed on ${report.browser}`,
+  )
 } finally {
   await browser.close()
 }
