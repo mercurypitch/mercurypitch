@@ -1046,7 +1046,20 @@ export function updateMelody(
   return undefined
 }
 
-export function deleteMelody(key: string): void {
+/** A place a deleted melody held in a playlist, so an undo can put it back. */
+export interface MelodyPlaylistPlace {
+  playlistId: string
+  index: number
+}
+
+/**
+ * Delete a melody, and take it out of every playlist.
+ *
+ * Returns the places it held in those playlists. restoreMelody needs them to
+ * be an undo: without them the melody came back to the library and to none
+ * of its playlists, silently.
+ */
+export function deleteMelody(key: string): MelodyPlaylistPlace[] {
   const _library = melodyLibrarySignal()
   const { melodies, playlists } = _library
   const { [key]: _removed, ...newMelodies } = melodies
@@ -1059,6 +1072,7 @@ export function deleteMelody(key: string): void {
       created: number
     }
   > = {}
+  const places: MelodyPlaylistPlace[] = []
 
   // Filter each playlist to remove references to the deleted melody
   for (const playlistId in playlists) {
@@ -1068,6 +1082,9 @@ export function deleteMelody(key: string): void {
       sessionKeys?: string[]
       created: number
     }
+    playlist.melodyKeys.forEach((k2, index) => {
+      if (k2 === key) places.push({ playlistId, index })
+    })
     newPlaylists[playlistId] = {
       name: playlist.name,
       melodyKeys: playlist.melodyKeys.filter((k2: string) => k2 !== key),
@@ -1086,13 +1103,39 @@ export function deleteMelody(key: string): void {
   if (currentMelody()?.id === key) {
     setCurrentMelody(null)
   }
+  return places
 }
 
-/** Restore a previously deleted melody (undo support). */
-export function restoreMelody(melody: MelodyData): void {
+/** `playlists` with `key` put back at each of `places`, lowest index first. */
+function withMelodyBack(
+  playlists: UnifiedLibrary['playlists'],
+  key: string,
+  places: readonly MelodyPlaylistPlace[],
+): UnifiedLibrary['playlists'] {
+  const next = { ...playlists }
+  for (const { playlistId, index } of places) {
+    const playlist = next[playlistId]
+    // A playlist deleted since keeps nothing to put the melody back into.
+    if (playlist === undefined) continue
+    const melodyKeys = [...playlist.melodyKeys]
+    melodyKeys.splice(Math.min(index, melodyKeys.length), 0, key)
+    next[playlistId] = { ...playlist, melodyKeys }
+  }
+  return next
+}
+
+/**
+ * Restore a previously deleted melody (undo support). `places` is what
+ * deleteMelody returned, so the melody goes back into its playlists too.
+ */
+export function restoreMelody(
+  melody: MelodyData,
+  places: readonly MelodyPlaylistPlace[] = [],
+): void {
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: { ...prev.melodies, [melody.id]: melody },
+    playlists: withMelodyBack(prev.playlists, melody.id, places),
     meta: { ...prev.meta, lastUpdated: Date.now() },
   }))
   _saveLibraryToStorage()
