@@ -154,7 +154,11 @@ export function mountFigure(
   const chart = mountBandChart(root, {
     target: HOME.lower,
     axis: { range: 100 },
-    ticks: VOWEL_TICKS,
+    // the compact figure's band is too short for both edges' names, which
+    // would overlap on a phone: there the band stands unnamed
+    ticks: compact
+      ? VOWEL_TICKS.map((t) => ({ ...t, label: '' }))
+      : VOWEL_TICKS,
     window: 2,
     active: opts.active,
     timeTicks: opts.ticks,
