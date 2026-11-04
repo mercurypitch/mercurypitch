@@ -150,7 +150,7 @@ describe("the steps' states (WEB-SPEC, Toys 1)", () => {
     expect(el('[data-readout-sub]').textContent).toBe('harmonics: 18 of 18')
   })
 
-  it("turns the curves on with Resonances and plays 'ah' under them, saying each peak sits under one", async () => {
+  it("turns the curves on and off with Resonances and plays 'ah' under them, saying each peak sits under one", async () => {
     // Arrange
     const deck = mountSteps()
     goTo(deck, 2)
@@ -161,8 +161,13 @@ describe("the steps' states (WEB-SPEC, Toys 1)", () => {
     shown('[data-vowel="ah"]').click()
     runs[0].end(true)
     await settle()
+    // pressed again it turns them off, and once more on
+    res.click()
+    const off = [res.getAttribute('aria-pressed'), deck.figure.curves]
+    res.click()
 
     // Assert
+    expect(off).toEqual(['false', false])
     expect(res.getAttribute('aria-pressed')).toBe('true')
     expect(deck.figure.curves).toBe(true)
     expect(firstHz(0)).toBe(645.4)
