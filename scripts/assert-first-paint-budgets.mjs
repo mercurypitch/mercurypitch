@@ -98,7 +98,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 2, "Twelve notes": its own module on the same kit. Measured 146
   // with the lesson menu and the next-lesson card (131 before them); the
   // renderer is the same dynamic import as Lesson 1's.
-  'learn/02.html': 165,
+  // Raised to 168 for the seasons: 168,139 bytes on main before them,
+  // 171,675 with them, against 171,008 at 167. None of it is Season 2's data, which
+  // loads only when the explorer's Season 2 tab opens (the forbidden list
+  // below): it is the kit's code for seasons, the explorer's tabs and its
+  // column of the season before, a close per season that follows the
+  // visit's ending, and the masthead's season from the lesson, on every
+  // lesson page.
+  'learn/02.html': 168,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
   // every mode like the rest: the site worker decides where it is live
@@ -169,7 +176,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // line, on every lesson page, in the chunks Lesson 3 loads them in.
   // Lesson 11's page shell adds its own entry, with its page, minutes and
   // practice link, and its drafts line: 235 bytes more, which 133 holds.
-  'learn/03.html': 133,
+  // Raised to 137 for the seasons: 135,744 bytes on main before them,
+  // 139,280 with them, against 139,264 at 136. None of it is Season 2's data, which
+  // loads only when the explorer's Season 2 tab opens (the forbidden list
+  // below): it is the kit's code for seasons, the explorer's tabs and its
+  // column of the season before, a close per season that follows the
+  // visit's ending, and the masthead's season from the lesson, on every
+  // lesson page.
+  'learn/03.html': 137,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -186,7 +200,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 13: 139,547 bytes before, 140,785 after, against 140,288 at 137.
   // The 1,238 are the kit's plan for the holds' lengths, the Listen phase a
   // page passes in, and Lesson 5's plan over them.
-  'learn/05.html': 138,
+  // Raised to 142 for the seasons: 141,020 bytes on main before them,
+  // 144,556 with them, against 144,384 at 141. None of it is Season 2's data, which
+  // loads only when the explorer's Season 2 tab opens (the forbidden list
+  // below): it is the kit's code for seasons, the explorer's tabs and its
+  // column of the season before, a close per season that follows the
+  // visit's ending, and the masthead's season from the lesson, on every
+  // lesson page.
+  'learn/05.html': 142,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -213,7 +234,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 131 for the films' watch pages: 133,056 bytes on main before
   // them, 133,496 with them, against 133,120 at 130. The 440 are the
   // episode, toast and films modules in chunks of their own, as on Lesson 5.
-  'learn/04.html': 131,
+  // Raised to 135 for the seasons: 134,054 bytes on main before them,
+  // 137,590 with them, against 137,216 at 134. None of it is Season 2's data, which
+  // loads only when the explorer's Season 2 tab opens (the forbidden list
+  // below): it is the kit's code for seasons, the explorer's tabs and its
+  // column of the season before, a close per season that follows the
+  // visit's ending, and the masthead's season from the lesson, on every
+  // lesson page.
+  'learn/04.html': 135,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -280,7 +308,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 112,729 with it, against 112,640 at 110. The 171 are Lesson 13's season
   // entry and drafts line, on every lesson page. Lesson 11's page shell adds
   // its own entry and drafts line: 242 bytes more, which 111 holds.
-  'learn/12.html': 111,
+  // Raised to 114 for the seasons: 112,971 bytes on main before them,
+  // 116,507 with them, against 115,712 at 113. None of it is Season 2's data, which
+  // loads only when the explorer's Season 2 tab opens (the forbidden list
+  // below): it is the kit's code for seasons, the explorer's tabs and its
+  // column of the season before, a close per season that follows the
+  // visit's ending, and the masthead's season from the lesson, on every
+  // lesson page.
+  'learn/12.html': 114,
   // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
   // Lesson 3 is: its own module on the kit, with the vowel model, the
   // spectrum strip under the band chart, the vowel voice, the cold open's
