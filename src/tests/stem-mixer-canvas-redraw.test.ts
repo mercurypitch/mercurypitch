@@ -14,7 +14,8 @@
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WordMarker } from '@/features/stem-mixer/overview-mapping'
-import type { StemMixerCanvasDeps } from '@/features/stem-mixer/useStemMixerCanvasController'
+import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
+import type { StemMixerCanvasController, StemMixerCanvasDeps, } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 
 /** rAF callbacks, run on demand so a queued redraw is observable. */
@@ -49,6 +50,8 @@ function flushFrames(): number {
 
 interface Harness {
   deps: StemMixerCanvasDeps
+  controller: StemMixerCanvasController
+  setMelodyNotes: (v: readonly EditableNote[]) => void
   setShowNoteLabels: (v: boolean) => void
   setShowWordMarkers: (v: boolean) => void
   setLoopStart: (v: number) => void
@@ -63,6 +66,9 @@ function harness(): Harness {
   const [loopStart, setLoopStart] = createSignal<number | null>(null)
   const [elapsed, setElapsed] = createSignal(0)
   const [wordMarkers, setWordMarkers] = createSignal<WordMarker[]>([])
+  const [melodyNotes, setMelodyNotes] = createSignal<readonly EditableNote[]>(
+    [],
+  )
 
   const deps: StemMixerCanvasDeps = {
     duration: () => 200,
@@ -75,7 +81,7 @@ function harness(): Harness {
     getMicPitchHistory: () => [],
     micActive: () => false,
     currentPitch: () => null,
-    midiNotes: () => [],
+    melodyNotes,
     showNoteLabels,
     showLyricLabels: () => false,
     showMicLine: () => false,
@@ -97,15 +103,17 @@ function harness(): Harness {
   }
 
   let dispose = () => {}
-  createRoot((d) => {
+  const controller = createRoot((d) => {
     dispose = d
-    useStemMixerCanvasController(deps)
+    return useStemMixerCanvasController(deps)
   })
   // The effect's first run queues one; drop it so each case counts its own.
   flushFrames()
 
   return {
     deps,
+    controller,
+    setMelodyNotes,
     setShowNoteLabels,
     setShowWordMarkers,
     setLoopStart,
@@ -139,6 +147,13 @@ describe('useStemMixerCanvasController display repaints', () => {
     h.dispose()
   })
 
+  it('repaints the MIDI Melody roll when its melody changes, as an edit does', () => {
+    const h = harness()
+    h.setMelodyNotes([{ id: 'base-0', startBeat: 0, endBeat: 0.4, midi: 61 }])
+    expect(flushFrames()).toBe(1)
+    h.dispose()
+  })
+
   it('repaints when a loop marker moves', () => {
     const h = harness()
     h.setLoopStart(4)
@@ -160,6 +175,28 @@ describe('useStemMixerCanvasController display repaints', () => {
     // Tracking it would mean queueing a redraw from inside one.
     h.setElapsed(12)
     expect(flushFrames()).toBe(0)
+    h.dispose()
+  })
+})
+
+describe('the MIDI Melody roll', () => {
+  it('names the notes it holds, so a reader that cannot see pixels can count them', () => {
+    // jsdom has no 2D context: the labels are written before any drawing.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    const h = harness()
+    const roll = document.createElement('canvas')
+    h.controller.setCanvasRef('midi')(roll)
+
+    h.setMelodyNotes([
+      { id: 'base-0', startBeat: 0, endBeat: 0.4, midi: 60 },
+      { id: 'base-1', startBeat: 0.4, endBeat: 0.9, midi: 60 },
+      { id: 'base-2', startBeat: 1, endBeat: 1.4, midi: 64 },
+    ])
+    h.controller.drawMidiCanvas()
+
+    // A split note stays two notes: the roll draws what the file will hold.
+    expect(roll.dataset.noteCount).toBe('3')
+    expect(roll.dataset.notePitches).toBe('60 60 64')
     h.dispose()
   })
 })

@@ -14,10 +14,11 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Music } from '@/components/icons'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import { ensureSheetMusicFonts } from '@/lib/sheet-music-fonts'
-import type { SheetLayout, SheetSystemBox } from '@/lib/sheet-music-renderer'
+import type { CursorPos, SheetLayout, SheetSystemBox, } from '@/lib/sheet-music-renderer'
 import { beatToCursor, midiToStaffY, noteBoxAt, renderSheetMusic, staffYToMidi, systemAtY, xToBeat, } from '@/lib/sheet-music-renderer'
 import { setSheetInteractionMode, sheetInteractionMode, } from '@/stores/settings-store'
 import type { MelodyItem, NoteName, ScaleDegree } from '@/types'
+import { createSheetFollow } from './sheet-follow-controller'
 import styles from './SheetMusicView.module.css'
 
 interface SheetMusicViewProps {
@@ -34,6 +35,16 @@ interface SheetMusicViewProps {
   isPlaying?: () => boolean
   /** seek playback to a beat when a note is clicked */
   onSeek?: (beat: number) => void
+  /**
+   * A scrolling ancestor the staff sits in, which the follow may scroll too
+   * so the cursor's system shows (the MIDI Melody panel's Notes body).
+   */
+  followScroller?: () => HTMLElement | undefined
+  /**
+   * Goes up by one with each jump of the transport (a seek, a loop, a
+   * stop): the cursor's system is shown after each, playing or not.
+   */
+  jumps?: () => number
   /** scale degrees for pitch snapping when placing notes */
   scale?: () => ScaleDegree[]
   /** enables note entry/deletion when provided */
@@ -166,10 +177,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     })
   })
 
-  // Playback cursor + current-note highlight + auto-scroll.
-  // Last smooth-scroll target, so the follow logic issues one scrollTo per
-  // system hop instead of restarting the animation every animation frame.
-  let lastFollowTarget = -1
+  // Playback cursor + current-note highlight.
   const [cursorX, setCursorX] = createSignal<number | null>(null)
   const [cursorTop, setCursorTop] = createSignal(0)
   const [cursorH, setCursorH] = createSignal(0)
@@ -214,31 +222,20 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     } else {
       setHl(null)
     }
+  })
 
-    // Follow playback: nudge horizontally near the edges; vertically, once
-    // the cursor's system sinks past the middle of the visible sheet (or
-    // jumps above it on a loop wrap / backwards seek), glide that system up
-    // to the top quarter of the view.
-    if (props.isPlaying?.() === true && scrollRef) {
-      const c = scrollRef
-      const m = 80
-      if (pos.x < c.scrollLeft + m) c.scrollLeft = Math.max(0, pos.x - m)
-      else if (pos.x > c.scrollLeft + c.clientWidth - m)
-        c.scrollLeft = pos.x - c.clientWidth + m
-      const midY = c.scrollTop + c.clientHeight / 2
-      if (pos.bottom > midY || pos.top < c.scrollTop) {
-        const target = Math.max(
-          0,
-          Math.round(pos.top - Math.max(16, c.clientHeight * 0.25)),
-        )
-        if (target !== lastFollowTarget) {
-          lastFollowTarget = target
-          c.scrollTo({ top: target, behavior: 'smooth' })
-        }
-      }
-    } else {
-      lastFollowTarget = -1
-    }
+  // Keep the cursor's system in view (sheet-follow-controller.ts).
+  const follow = createSheetFollow({
+    scroller: () => scrollRef,
+    content: () => innerRef,
+    outer: () => props.followScroller?.(),
+    cursor: (): CursorPos | null => {
+      const l = layout()
+      const beatFn = props.currentBeat
+      return l && beatFn ? beatToCursor(l, beatFn()) : null
+    },
+    playing: () => props.isPlaying?.() === true,
+    jumps: () => props.jumps?.() ?? 0,
   })
 
   const localCoords = (e: MouseEvent): { px: number; py: number } | null => {
@@ -313,12 +310,14 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     if (!l || !props.onSeek) return
     const hit = noteBoxAt(l, px, py)
     if (hit) {
+      follow.seeked()
       props.onSeek(hit.startBeat)
       return
     }
     const sys = systemAtY(l, py)
     if (!sys) return
     const beat = Math.round(xToBeat(l, sys, px))
+    follow.seeked()
     props.onSeek(Math.max(0, Math.min(beat, l.totalBeats)))
   }
 
@@ -384,6 +383,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
     // Editing: a click landing on a notehead seeks; empty staff places a note.
     const onNote = noteBoxAt(l, c.px, c.py, NOTE_Y_TOL)
     if (onNote && props.onSeek) {
+      follow.seeked()
       props.onSeek(onNote.startBeat)
       return
     }
@@ -531,6 +531,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
             {cursorX() !== null && (
               <div
                 class={styles.playCursor}
+                data-testid="sheet-play-cursor"
                 classList={{ [styles.playCursorActive]: props.isPlaying?.() }}
                 style={{
                   left: `${cursorX()!}px`,

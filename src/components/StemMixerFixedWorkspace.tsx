@@ -2,7 +2,7 @@
 // StemMixerFixedWorkspace — fixed 2-column layout
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { MicInsight } from '@/features/mic-feedback/useMicInsights'
@@ -15,6 +15,8 @@ import { LyricsAlignSelect } from './LyricsAlignSelect'
 import { LyricsVersionMenu } from './LyricsVersionMenu'
 import { MicInsightHint } from './MicInsightHint'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
+import type { MidiMelodyView } from './stem-mixer/MidiMelodyViewToggle'
+import { MidiMelodyViewToggle } from './stem-mixer/MidiMelodyViewToggle'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
@@ -72,6 +74,11 @@ interface StemMixerFixedWorkspaceProps {
 
   // Conditional MIDI
   showMidi: Accessor<boolean>
+  /** The MIDI Melody panel shows its roll, or the same notes on a staff. */
+  midiView: Accessor<MidiMelodyView>
+  setMidiView: (view: MidiMelodyView) => void
+  /** The Notes view's body; StemMixer builds it, the layout places it. */
+  midiNotes: () => JSX.Element
 
   // Note labels toggle
   showNoteLabels: Accessor<boolean>
@@ -706,16 +713,27 @@ export const StemMixerFixedWorkspace: Component<
                 style={{ height: `${props.fixedPanelHeights().midi}px` }}
                 data-fixed-panel="midi"
               >
-                <div class="sm-panel-header">MIDI Melody</div>
+                <div class="sm-panel-header">
+                  MIDI Melody
+                  <MidiMelodyViewToggle
+                    view={props.midiView()}
+                    onChange={props.setMidiView}
+                  />
+                </div>
+                {/* Hidden, never unmounted: the frame loop holds its ref. */}
                 <canvas
                   ref={props.setCanvasRef('midi')}
                   class="sm-canvas sm-canvas-midi"
                   data-canvas-id="midi"
+                  hidden={props.midiView() === 'notes'}
                   onPointerDown={(e) => props.handleCanvasPointerDown(e)}
                   onPointerMove={(e) => props.handleCanvasPointerMove(e)}
                   onPointerUp={(e) => props.handleCanvasPointerUp(e)}
                   onWheel={(e) => props.handleCanvasWheel(e)}
                 />
+                <Show when={props.midiView() === 'notes'}>
+                  {props.midiNotes()}
+                </Show>
                 <div
                   class="sm-resize-handle"
                   onPointerDown={(e) => props.handleFixedResizeStart('midi', e)}

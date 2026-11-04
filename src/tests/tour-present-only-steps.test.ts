@@ -60,6 +60,15 @@ describe('a step only some hosts can show', () => {
     expect(night?.whenPresent).toBe(true)
   })
 
+  it('is how the mixer tour treats the MIDI Melody panel’s Roll and Notes', () => {
+    // The panel is drawn only for a song opened with its MIDI track.
+    const midiView = STEM_MIXER_TOUR_STEPS.find(
+      (step) => step.targetSelector === '[data-tour="mixer.midi-view"]',
+    )
+
+    expect(midiView?.whenPresent).toBe(true)
+  })
+
   it('is how the mixer tour treats the lyrics panel’s own buttons', () => {
     // Sync and export show once a song has lyrics; without them the two
     // steps would talk about buttons that are not there.

@@ -12,6 +12,8 @@ import type { PitchNote } from '@/features/stem-mixer/types'
 import { IS_DEV } from '@/lib/defaults'
 import type { KeyRegion } from '@/lib/key-detection'
 import type { MergedNote } from '@/lib/midi-generator'
+import type { SongTempoRecord } from '@/lib/song-tempo-record'
+import { parseSongTempoRecord } from '@/lib/song-tempo-record'
 
 export interface SessionPitchData {
   /** The original (algorithm) cleaned notes, before user edits. */
@@ -22,6 +24,8 @@ export interface SessionPitchData {
   editLayer?: PitchEditLayer
   /** Detected per-region keys for the vocal. */
   keyRegions?: KeyRegion[]
+  /** The song's tempo: the estimate and what the singer typed. */
+  tempo?: SongTempoRecord
 }
 
 /**
@@ -56,6 +60,8 @@ export async function savePitchAnalysisToDbStrict(
       data.keyRegions !== undefined
         ? JSON.stringify(data.keyRegions)
         : undefined,
+    tempoJson:
+      data.tempo !== undefined ? JSON.stringify(data.tempo) : undefined,
   })
 
   if (IS_DEV)
@@ -73,6 +79,19 @@ export async function savePitchAnalysisToDb(
     await savePitchAnalysisToDbStrict(sessionId, data)
   } catch (err) {
     if (IS_DEV) console.warn('[PitchDB] savePitchAnalysisToDb failed:', err)
+  }
+}
+
+/**
+ * The stored tempo. A tempo that does not read is dropped rather than thrown:
+ * the notes matter more, and the song can estimate its tempo again.
+ */
+function readTempo(json: string | undefined): SongTempoRecord | undefined {
+  if (json === undefined || json === '') return undefined
+  try {
+    return parseSongTempoRecord(JSON.parse(json))
+  } catch {
+    return undefined
   }
 }
 
@@ -108,12 +127,21 @@ export async function loadPitchAnalysisFromDbStrict(
       ? (JSON.parse(entry.keyRegionsJson) as KeyRegion[])
       : undefined
 
+  const tempo = readTempo(entry.tempoJson)
+
   if (IS_DEV)
     console.log(
       `[PitchDB] Loaded pitch analysis for session ${sessionId}: ${mergedNotes.length} merged, ${segmentedNotes.length} segmented`,
     )
 
-  return { mergedNotes, segmentedNotes, pitchHistory, editLayer, keyRegions }
+  return {
+    mergedNotes,
+    segmentedNotes,
+    pitchHistory,
+    editLayer,
+    keyRegions,
+    tempo,
+  }
 }
 
 /**

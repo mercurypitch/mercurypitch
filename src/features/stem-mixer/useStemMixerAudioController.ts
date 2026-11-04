@@ -29,6 +29,7 @@ import { platform } from '@/lib/platform'
 import { asPlaybackCause, playbackCause } from '@/lib/playback-cause'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
+import { safeBpm, shownNotesToMidiEvents } from '@/lib/vocal-notation'
 import { sliderToGain } from '@/lib/volume-curve'
 import { audioRoute } from '@/stores/audio-route-store'
 import { streamFeed, watchSongClock } from './clock-watchdog'
@@ -39,6 +40,7 @@ import { LOOP_MIN_GAP, loopSpan, placeLoopPoint as placeLoop, } from './loop-poi
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
+import type { EditableNote } from './pitch-edit-model'
 import { START_CHECK_MS, watchClockMoves, watchPlaybackReturn, } from './playback-return-watch'
 import { createStemKeyControl } from './stem-key-control'
 import { audibleSongTime as songTimeHeard, shiftDetectedPitch, } from './stem-key-timing'
@@ -141,6 +143,12 @@ export interface StemMixerAudioDeps {
   // MIDI state setters
   midiNotes: Accessor<MidiNoteEvent[]>
   setMidiNotes: Setter<MidiNoteEvent[]>
+  /**
+   * The MIDI Melody panel's melody (vocal-notation.ts `panelMelody`), which
+   * Download MIDI saves: notes in seconds, written at `bpm`. Absent, or
+   * null: the raw detection is saved at 120, as before the panel had one.
+   */
+  shownMelody?: () => { notes: readonly EditableNote[]; bpm: number } | null
 
   // Canvas (for RAF tick)
   canvas: CanvasView
@@ -2491,6 +2499,19 @@ export const useStemMixerAudioController = (
   }
 
   // ── Download ─────────────────────────────────────────────────
+  /** What Download MIDI saves; null when there is no note to save. */
+  const vocalMidiFile = (): Uint8Array | null => {
+    const shown = deps.shownMelody?.() ?? null
+    if (shown !== null) {
+      return buildMidiFile(
+        shownNotesToMidiEvents(shown.notes, shown.bpm),
+        safeBpm(shown.bpm),
+      )
+    }
+    const notes = deps.midiNotes()
+    return notes.length === 0 ? null : buildMidiFile(notes, DEFAULT_BPM)
+  }
+
   const handleDownload = async (track: StemTrack) => {
     if (!track.url && track.label !== 'MIDI') return
     try {
@@ -2498,9 +2519,7 @@ export const useStemMixerAudioController = (
       let ext: string
 
       if (track.label === 'MIDI') {
-        const notes = deps.midiNotes()
-        if (notes.length === 0) return
-        const midiData = buildMidiFile(notes, DEFAULT_BPM)
+        const midiData = vocalMidiFile()
         if (!midiData) return
         blob = new Blob([midiData.buffer as ArrayBuffer], {
           type: 'audio/midi',

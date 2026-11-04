@@ -787,6 +787,9 @@ export interface OfflinePitchAnalysisRecord extends DbEntity {
   editLayerJson?: string
   /** JSON-serialized KeyRegion[] — detected per-region keys for the vocal. */
   keyRegionsJson?: string
+  /** JSON-serialized SongTempoRecord: the song's estimated and typed tempo.
+   *  Non-indexed payload, absent on rows written before it. */
+  tempoJson?: string
 }
 
 export interface WhisperTranscriptionRecord extends DbEntity {

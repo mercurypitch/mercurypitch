@@ -8,6 +8,7 @@ import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { acquireStandaloneRouteHistory } from '@/lib/standalone-route-history'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
+import { transcriptionProfileFor } from '@/lib/transcription/transcription-profile-id'
 import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
@@ -89,6 +90,7 @@ export async function loadDefaultGuitarNightTranscriptionPort(): Promise<GuitarN
   return {
     transcribeStem: (stemUrl, options) =>
       module.transcribeStem(stemUrl, {
+        profile: module.transcriptionProfile(options.profile ?? 'bass'),
         signal: options.signal,
         onProgress: options.onProgress,
       }),
@@ -1218,6 +1220,9 @@ export function useGuitarNightReferenceController(
 
     try {
       const transcription = await loaded.transcribeStem(input.stemUrl, {
+        // A guitar stem is read in the guitar's range; the bass profile's
+        // MIDI 60 top cut off most of a guitar line.
+        profile: transcriptionProfileFor(input.stemKind),
         signal: abort.signal,
         onProgress: (fraction) => {
           if (!disposed && generation === attachGeneration) {

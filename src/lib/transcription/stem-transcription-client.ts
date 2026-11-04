@@ -6,6 +6,9 @@ import type { StemTranscriptionRequest, StemTranscriptionResponse, } from '@/wor
 import type { StemTranscription, TranscriptionProfile, } from './stem-transcription'
 import { BASS_TRANSCRIPTION_PROFILE, decodeStemForAnalysis, transcribeStemSamples, } from './stem-transcription'
 
+// The port names a profile by id; this is where the id becomes the profile.
+export { transcriptionProfile } from './stem-transcription'
+
 export interface TranscribeStemOptions {
   profile?: TranscriptionProfile
   signal?: AbortSignal

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_GUITAR_TUNING } from './instrument-tuning'
 import { acceptRecordingScoreRevision, changeRecordingNote, changeRecordingScoreTempo, createRecordingScore, mergeRecordingNote, quantizeRecordingScore, recordingMergeTarget, recordingMidiProblem, recordingScoreProblem, splitRecordingNote, } from './recording-score'
 import type { GuitarRecordedNote, GuitarRecording } from './recording-types'
+import { GUITAR_PRACTICE_SCORE_LIMIT_SECONDS, GUITAR_RECORDING_LIMIT_SECONDS, } from './recording-types'
 
 const recording: GuitarRecording = {
   id: 'idea',
@@ -140,6 +141,37 @@ describe('recorded practice score', () => {
     expect(() =>
       acceptRecordingScoreRevision({ ...initial, notes: [] }, 1),
     ).toThrow('No stable')
+  })
+  it("keeps a take's score within the five-minute take", () => {
+    // 120 BPM: beat 601 ends 300.5 s in, beat 603 at 301.5 s.
+    expect(GUITAR_RECORDING_LIMIT_SECONDS).toBe(300)
+    const initial = score()
+    expect(
+      recordingScoreProblem(
+        changeRecordingNote(initial, 'b', { endBeat: 601 }),
+      ),
+    ).toBeNull()
+    expect(
+      recordingScoreProblem(
+        changeRecordingNote(initial, 'b', { endBeat: 603 }),
+      ),
+    ).toBe('This melody exceeds the five-minute recording limit.')
+  })
+  it('lets a score built from a measured line run twenty minutes', () => {
+    // The same notes, as a stem line transcribed in Guitar Night.
+    expect(GUITAR_PRACTICE_SCORE_LIMIT_SECONDS).toBe(1200)
+    const line = { ...score(), origin: 'measured-line' as const }
+    expect(
+      recordingScoreProblem(changeRecordingNote(line, 'b', { endBeat: 603 })),
+    ).toBeNull()
+    expect(
+      recordingScoreProblem(changeRecordingNote(line, 'b', { endBeat: 2399 })),
+    ).toBeNull()
+    expect(
+      recordingMidiProblem(changeRecordingNote(line, 'b', { endBeat: 2401 })),
+    ).toBe(
+      'This melody runs longer than 20 minutes, the most a score can hold.',
+    )
   })
   it('allows independent chord voices, but not same-pitch or same-string collisions', () => {
     const initial = score()

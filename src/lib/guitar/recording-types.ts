@@ -5,6 +5,15 @@ import type { InstrumentTuning } from './instrument-tuning'
 export const GUITAR_RECORDING_VERSION = 1
 export const GUITAR_DETECTOR_VERSION = 'guitar-melody-1.1'
 export const GUITAR_RECORDING_LIMIT_SECONDS = 300
+/**
+ * The longest score built from a measured line (`origin: 'measured-line'`, a
+ * stem line transcribed in Guitar Night), in seconds. A take's own score is
+ * still held to the take: five minutes and a second. Scores used to come only
+ * from takes, so a transcribed line of a longer song could not be exported.
+ * Twenty minutes fits the Guitar Pro writer's 2,048 bars for a measured line
+ * (220 BPM in 4/4: 1,100 bars); the 10,000-note cap applies on its own.
+ */
+export const GUITAR_PRACTICE_SCORE_LIMIT_SECONDS = 1200
 export const GUITAR_RECORDING_CHUNK_FRAMES = 8192
 /** Short analysis delivery, independent of the durable checkpoint size. */
 export const GUITAR_RECORDING_PCM_FRAMES = 2048
@@ -168,6 +177,12 @@ export interface GuitarPracticeScore {
   } | null
   /** Model evidence is not the live detector's pitch clarity or a score grade. */
   refinement?: GuitarScoreRefinement
+  /**
+   * Absent for a take's score. `'measured-line'`: built from a stem line
+   * transcribed in Guitar Night for export, and held to
+   * `GUITAR_PRACTICE_SCORE_LIMIT_SECONDS` instead of the take's five minutes.
+   */
+  origin?: 'measured-line'
 }
 
 export interface GuitarScoreRefinement {

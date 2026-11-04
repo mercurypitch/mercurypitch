@@ -2,7 +2,7 @@
 // StemMixer — Play separated stems with volume control & pitch viz
 // ============================================================
 
-import type { Accessor, Component } from 'solid-js'
+import type { Accessor, Component, JSX } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { UvrStemType } from '@/db/entities'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
@@ -40,7 +40,7 @@ import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
 import { mixerKaraokeNightUrl } from '@/lib/karaoke-night-link'
-import { transposePitchReadings } from '@/lib/key-shift/key-shift'
+import { transposeKeyName, transposePitchReadings, } from '@/lib/key-shift/key-shift'
 import { isLocalSaveNavigationLocked, useLocalSaveNavigationLock, } from '@/lib/local-save-navigation-lock'
 import { hasPlayableLoop } from '@/lib/loop-gap'
 import { lyricGlance } from '@/lib/lyric-glance'
@@ -62,6 +62,8 @@ import { isPhoneStage } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
+import type { PanelMelody } from '@/lib/vocal-notation'
+import { panelMelody } from '@/lib/vocal-notation'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
@@ -86,6 +88,8 @@ import type { MixerHeaderKaraokeNight, MixerHeaderPlaylist, MixerHeaderStage, } 
 import { MixerHeader } from './stem-mixer/header/MixerHeader'
 import type { LoopPoint } from './stem-mixer/LoopPointMenu'
 import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
+import { MidiMelodyNotes } from './stem-mixer/MidiMelodyNotes'
+import type { MidiMelodyView } from './stem-mixer/MidiMelodyViewToggle'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -582,6 +586,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let setCurrentLineIdxForAudio = (_idx: number) => {}
   let setUserScrolledForAudio = (_v: boolean) => {}
   let lyricsMappingActiveForAudio = false
+  // Download MIDI saves the MIDI Melody panel's melody, built once Pitch
+  // Studio's notes exist further down.
+  let shownMelodyForAudio = (): PanelMelody | null => null
 
   // ── Key controller ───────────────────────────────────────────
   // The singer's key: this playlist entry's, else the song's own remembered
@@ -629,6 +636,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     PITCH_WINDOW_FILL_RATIO,
     midiNotes,
     setMidiNotes,
+    shownMelody: () => shownMelodyForAudio(),
     canvas: canvasForAudio,
     updateCurrentLine: () => updateCurrentLineForAudio(),
     setCurrentLineIdx: setCurrentLineIdxForAudio,
@@ -1554,6 +1562,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // stream instead (streamed-vocal-samples.ts). The other analyses (onsets,
     // Whisper) still need `analysableVocal`.
     vocalStream: () => vocal().stream ?? null,
+    // The tempo reads best from the band: the instrumental when the song has
+    // one (null until it decodes), else the vocal. A streamed stem has no
+    // samples to read, and its song keeps the BPM box as it is.
+    tempoSource: () =>
+      (instrumental().url ?? '') !== ''
+        ? analysableBuffer(instrumental())
+        : analysableVocal(),
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
     // The realtime history is kept as heard, so this joins it in that key.
     // Untracked: a key change must not re-send it over a running history.
@@ -1586,7 +1601,50 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
   const displayNotes = keyView.createShownNotes(pitchAnalysis.editableNotes)
   const displayBaseNotes = keyView.createShownNotes(pitchAnalysis.baseNotes)
-  const displayMidiNotes = keyView.createShownNotes(midiNotes)
+  // ── The MIDI Melody panel's one melody ────────────────────────
+  // Its roll, its Notes view and Download MIDI hold the same notes: Pitch
+  // Studio's effective notes once an analysis exists, the raw detection
+  // before (vocal-notation.ts). The roll and the staff show them as heard.
+  const melody = createMemo(() =>
+    panelMelody(
+      pitchAnalysis.baseNotes().length > 0
+        ? pitchAnalysis.editableNotes()
+        : null,
+      midiNotes(),
+      pitchAnalysis.songBpm(),
+    ),
+  )
+  const shownMelodyNotes = keyView.createShownNotes(() => melody().notes)
+  // In the song's own key, as the stems download.
+  shownMelodyForAudio = melody
+  const [midiView, setMidiView] = createPersistedSignal<MidiMelodyView>(
+    'mp_mixer_midi_view',
+    'roll',
+    {
+      validator: (value): value is MidiMelodyView =>
+        value === 'roll' || value === 'notes',
+    },
+  )
+  /** The Notes view, in the key being heard, following the transport. */
+  const midiNotesBody = (): JSX.Element => (
+    <MidiMelodyNotes
+      notes={shownMelodyNotes}
+      bpm={() => melody().bpm}
+      musicKey={() =>
+        transposeKeyName(
+          pitchAnalysis.songKey(),
+          audio.effectiveShift(),
+          pitchAnalysis.songScale().includes('minor') ? 'minor' : 'major',
+        )
+      }
+      scaleType={pitchAnalysis.songScale}
+      title={() => stripAudioExtension(props.songTitle ?? '').trim()}
+      elapsed={audio.elapsed}
+      playing={audio.playing}
+      jumps={audio.jumps}
+      onSeek={(seconds) => audio.seekTo(seconds)}
+    />
+  )
   const displaySegmentedNotes = keyView.createShownNotes(
     pitchAnalysis.offlineSegmentedNotes,
   )
@@ -1758,7 +1816,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getMicPitchHistory: mic.getMicPitchHistory,
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
-    midiNotes: displayMidiNotes,
+    melodyNotes: shownMelodyNotes,
     showNoteLabels,
     showLyricLabels,
     showMicLine,
@@ -3115,6 +3173,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
             handleRemoveLyrics={lyricsPanel.handleRemoveLyrics}
             showMidi={showMidi}
+            midiView={midiView}
+            setMidiView={setMidiView}
+            midiNotes={midiNotesBody}
             showNoteLabels={showNoteLabels}
             setShowNoteLabels={setShowNoteLabels}
             showLyricLabels={showLyricLabels}
@@ -3181,6 +3242,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handlePasteLyricsHeader={lyricsPanel.handlePasteLyricsHeader}
             handleRemoveLyrics={lyricsPanel.handleRemoveLyrics}
             showMidi={showMidi}
+            midiView={midiView}
+            setMidiView={setMidiView}
+            midiNotes={midiNotesBody}
             showNoteLabels={showNoteLabels}
             setShowNoteLabels={setShowNoteLabels}
             showLyricLabels={showLyricLabels}
@@ -3326,7 +3390,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               }}
               songBpm={pitchAnalysis.songBpm()}
               setSongBpm={(b) => {
-                pitchAnalysis.setSongBpm(b)
+                pitchAnalysis.typeSongBpm(b)
                 canvas.queueCanvasRedraw()
               }}
               contourReady={pitchAnalysis.contourReady()}
@@ -4014,6 +4078,10 @@ export const StemMixerStyles: string = `
   flex-shrink: 0;
   opacity: 0.5;
   color: var(--fg-tertiary, #484f58);
+}
+
+.sm-canvas[hidden] {
+  display: none;
 }
 
 .sm-canvas {
