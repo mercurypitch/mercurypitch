@@ -126,7 +126,7 @@ export function currentLatencyKey(): string {
 }
 
 /** The key `deviceId`'s measurement is kept under on the route the sound takes now (null for the default). */
-export function latencyKeyForDevice(deviceId: string | null): string {
+function latencyKeyForDevice(deviceId: string | null): string {
   const route = currentLatencyRoute()
   const deviceKey = deviceId ?? DEFAULT_DEVICE_KEY
   return route === null ? deviceKey : routeKey(route, deviceKey)
@@ -148,6 +148,14 @@ function keysFor(deviceId: string | null): string[] {
     return [key, DEFAULT_DEVICE_KEY]
   }
   return [key]
+}
+
+/** The keys `deviceId`'s values are read by on the route the sound takes now, in order: latencyKeyForDevice's, then keysFor's alias. */
+export function latencyKeysForDevice(deviceId: string | null): string[] {
+  const route = currentLatencyRoute()
+  return keysFor(deviceId).map((key) =>
+    route === null ? key : routeKey(route, key),
+  )
 }
 
 function valueForDevice(

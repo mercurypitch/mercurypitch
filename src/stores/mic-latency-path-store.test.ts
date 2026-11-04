@@ -35,6 +35,22 @@ describe('mic latency path store', () => {
     expect(micLatencyPathMsForDevice('desk-mic')).toBe(190)
   })
 
+  it('reads a resolved system default by the alias its measurement is read by, an exact path first', () => {
+    vi.mocked(micManager.getPreferredDevice).mockReturnValue(null)
+    vi.mocked(micManager.getResolvedDevice).mockReturnValue('built-in-input')
+
+    setMicLatencyPathByKey({ default: 48 })
+    expect(micLatencyPathMsForDevice('built-in-input')).toBe(48)
+    expect(micLatencyPathMs()).toBe(48)
+
+    setMicLatencyPathByKey({ default: 48, 'built-in-input': 44 })
+    expect(micLatencyPathMsForDevice('built-in-input')).toBe(44)
+
+    setAudioRouteForTests('bluetooth')
+    setMicLatencyPathByKey({ default: 48, 'bluetooth:default': 190 })
+    expect(micLatencyPathMsForDevice('built-in-input')).toBe(190)
+  })
+
   it('forgets the path when a measurement comes without one', () => {
     setMicLatencyPathMs(40)
     setMicLatencyPathMs(null)
