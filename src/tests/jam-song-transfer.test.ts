@@ -174,6 +174,56 @@ describe('sendInChunks', () => {
     await sendInChunks(ch, bytesOf(4), { chunkSize: 4 })
     expect(ch.bufferedAmountLowThreshold).toBeGreaterThan(0)
   })
+
+  describe('while it waits on a full buffer', () => {
+    // A channel that closes with its buffer full never fires
+    // bufferedamountlow. Waiting on that event alone left the share at
+    // "sending" for good: nothing settled, and Stop had nothing to stop.
+    async function parkedOnAFullBuffer(signal?: { aborted: boolean }) {
+      vi.useFakeTimers()
+      const ch = fakeChannel({ bufferedAmount: 99_999_999 })
+      const run = sendInChunks(ch, bytesOf(8), { chunkSize: 4, signal })
+      const outcome = run.then(
+        () => 'sent',
+        (err: Error) => err.message,
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      return { ch, outcome }
+    }
+
+    it('gives up when the peer goes and the channel closes', async () => {
+      try {
+        const { ch, outcome } = await parkedOnAFullBuffer()
+
+        ch.readyState = 'closed'
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(await Promise.race([outcome, 'still waiting'])).toMatch(
+          /connection closed/i,
+        )
+        expect(ch.sent).toHaveLength(0)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('stops when Stop is pressed', async () => {
+      try {
+        const signal = { aborted: false }
+        const { ch, outcome } = await parkedOnAFullBuffer(signal)
+
+        signal.aborted = true
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(await Promise.race([outcome, 'still waiting'])).toMatch(
+          /cancelled/i,
+        )
+        expect(ch.sent).toHaveLength(0)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
 })
 
 describe('isRelayedConnection', () => {
