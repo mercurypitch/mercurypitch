@@ -565,7 +565,7 @@ here at five seconds (Tests 10).
 ### 7. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG, `aria-hidden`,
+in the card after its words (`src/features/lessons/kit/next-card.ts:34-37`): an SVG, `aria-hidden`,
 of Lesson 25's opening as Lesson 25's package draws it. It holds no button, since the card is a
 link, does not move and plays no sound. Its styles go under a class of its own, not the tease line's
 `.next-tease` (FACTS 5b).

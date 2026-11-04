@@ -428,7 +428,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 ### 8. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`): an SVG,
+in the card after its words (`src/features/lessons/kit/next-card.ts:34-37`): an SVG,
 `aria-hidden`, of Lesson 24's stage as its plan draws it, a wide drone band on A3 and a thin chrome
 line just above it, nothing moving, no glow and no "beats" label (FACTS, Illustrations without
 claims). It names no beat, so it does not answer Lesson 24's predict (FACTS 5). It holds no button,

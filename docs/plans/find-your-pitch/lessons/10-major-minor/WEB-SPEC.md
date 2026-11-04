@@ -50,7 +50,7 @@ line (What the kit and the app still need, items 2
 and 15). The curiosity plan's kit work is on main at `85e23a1af`: Lesson 10's tease is in the kit's
 lesson copy (`src/features/lessons/kit/lesson-copy.ts:115`), as its alternative hook was until #1186
 (`:115-123` at `b7093a0a4`), Lesson 11's tease is there too (`:116`), and the next-lesson card
-draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:156-157`). So the page
+draws a tease above the next hook (`src/features/lessons/kit/next-card.ts:157-158`). So the page
 writes only its own title into its markup, and nothing of Lesson 11's (FACTS 1, 5).
 
 ## Look
@@ -661,7 +661,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
 ### 9. Tease still
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`kit/next-card.ts:32-35`, as Lesson 2's figures sit there): an SVG,
+in the card after its words (`kit/next-card.ts:34-37`, as Lesson 2's figures sit there): an SVG,
 `aria-hidden`, of a siren's line climbing Lesson 7's range chart and crossing a shaded grey seam,
 never red, with no words or notes on it (CURIOSITY-MOMENTS § 2, Lesson 10, Tease; FACTS,
 Illustrations without claims). The seam's place and width are drawn, not measured. It holds no
@@ -917,7 +917,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
     measured, with the lessons' headroom, a quarter over. Every build emits every lesson page, a
-    draft's included (`scripts/assert-first-paint-budgets.mjs:103-105`); `build:e2e` runs the check
+    draft's included (`scripts/assert-first-paint-budgets.mjs:110-112`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one line each. Until then the draft's rules hold
@@ -1033,7 +1033,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   page state gives it to every list (`src/features/lessons/kit/publish.ts:22-25`; `seasonFor`,
   `src/features/lessons/kit/publish.ts:108-124`): Lesson 10's card in every lesson page's explorer
   prints it (`src/features/lessons/kit/explorer.ts:266`), even while Lesson 10 is coming later, and
-  so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:128-129`). So "bright"
+  so does Lesson 9's next-lesson card (`src/features/lessons/kit/next-card.ts:129-130`). So "bright"
   and "dark", mood labels, would stand on every surface the lesson's own rule covers, the rule it
   teaches (FACTS 1, 40). The description would run to 171 characters, over the 160 cap, which
   `src/tests/lesson-pages.test.ts:156-159` checks only on the page as written. Neither hook names a

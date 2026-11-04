@@ -182,13 +182,13 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
     next lesson's card is the kit's, drawn by `createNextCard(8)` before
     `createExplorer({ current: 8 })`, as Lesson 3's page draws its own (`lesson-03/main.ts:99-101`;
     `kit/next-card.ts:181-210`), from the season as the page's state shows it (`pageLessons`,
-    `:185`): the eyebrow "Next lesson 09 · Landing a leap" with "Coming later"; Lesson 9's tease,
+    `:186`): the eyebrow "Next lesson 09 · Landing a leap" with "Coming later"; Lesson 9's tease,
     "One note, two ways up: step by step, or one leap.", in `.next-tease` above its hook, "How do
     you land a note you have to leap to?", or the wordings the admin console picked; and "See it on
     the map" while Lesson 9 has no published page, then "Start lesson" to `/learn/09` (FACTS 6). Its
     slot, the page's mark, `<div class="next-card card l08-next" data-next-card hidden>` in `#wrap`,
-    holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:217`,
-    `:239`), as Lesson 2's mark keeps its figures (`learn/02.html:1823`). Free play unlocks after
+    holds the tease figure (Toys 9), which the card keeps after its words (`kit/next-card.ts:231`,
+    `:253`), as Lesson 2's mark keeps its figures (`learn/02.html:1823`). Free play unlocks after
     the card: every beat-machine control on one card (Toys 1; playbook rule 17), keeping the card's
     place after the challenge and the practice card (CURIOSITY-MOMENTS § 3.1).
 12. **Lesson explorer**: the kit's, `createExplorer({ current: 8 })` (`kit/explorer.ts:275`), with
@@ -728,11 +728,11 @@ or four?".
 ### 9. Tease figure
 
 The drawing in the next-lesson card's slot, the page's `[data-next-card]` mark, which the kit keeps
-in the card after its words (`kit/next-card.ts:217`, `:239`, as Lesson 2's figures sit there): an
+in the card after its words (`kit/next-card.ts:231`, `:253`, as Lesson 2's figures sit there): an
 SVG, `aria-hidden`, of two lines rising from one note into Lesson 9's amber band, one in steps and
 one a dashed arc with a "?" over its landing (CURIOSITY-MOMENTS § 2, Lesson 8, Tease; FACTS 6). It
 sits under the words the kit draws, the eyebrow, the tease line, the hook and the way on
-(`kit/next-card.ts:145-160`). It holds no button, since the card is a link, and it plays no sound.
+(`kit/next-card.ts:146-161`). It holds no button, since the card is a link, and it plays no sound.
 Its styles go in this page's stylesheet, under a class of its own, `.l08-tease`: never Lesson 2's
 `.tease` (`lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts` tests, nor the kit's
 `.next-tease`, which sets the tease line (`lesson-sections.css:296-302`). It does not move.
@@ -914,7 +914,7 @@ was built on.
 9. The next card's tease and Lesson 9's hook need nothing: the curiosity plan's kit work is on main
    (`8cba5c3d9`, `e364eeaa6`). The card draws Lesson 9's tease, "One note, two ways up: step by
    step, or one leap." (`kit/lesson-copy.ts:114`), above its new hook, "How do you land a note you
-   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:156`;
+   have to leap to?" (`season.ts:334`), under `.next-tease` (`kit/next-card.ts:157`;
    `lesson-sections.css:296-302`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:307-344`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-169`, Lessons 3 and 5),
-    at `:225-231`, and its CSS ceiling at `:363-366`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:110-176`, Lessons 3 and 5),
+    at `:253-259`, and its CSS ceiling at `:398-401`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1049,7 +1049,7 @@ was built on.
   (`src/lib/lesson-state.ts:13-16`, `:45-53`). The site worker writes the picked hook into a page's
   `h1` and the head's copies of it (`src/lesson-gate.ts:13-21`). Lesson 8 holds no other hook, so
   its title stays as written; if the console picks a hook for Lesson 9, the card shows it, since the
-  card takes the season as the page's state shows it (`kit/next-card.ts:185`), and nothing in this
+  card takes the season as the page's state shows it (`kit/next-card.ts:186`), and nothing in this
   page's markup changes.
 
 ## Tests

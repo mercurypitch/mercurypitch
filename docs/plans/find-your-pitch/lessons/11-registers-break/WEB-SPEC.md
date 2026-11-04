@@ -123,19 +123,19 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 7. **Quick check**: LESSON.md's four questions (Toys 5).
 8. **Wrap**: the three recap lines, the challenge, the practice card in the version Sing it's ending
    picks, free play, and the kit's next-lesson card (`createNextCard(11)`,
-   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:32-35`). The card is Lesson 12's,
+   `kit/next-card.ts:181-210`, drawn before `createExplorer`, `:34-37`). The card is Lesson 12's,
    its words the kit's: the eyebrow with the number, the title and the state, then the tease, "Four
    chords, round and round.", one line above the hook as `.next-tease`, the hook as `.q2` and the
-   way on (`:144-160`; FACTS 7), "Coming later" and "See it on the map" until Lesson 12's page is
+   way on (`:145-161`; FACTS 7), "Coming later" and "See it on the map" until Lesson 12's page is
    live. Its hook and tease are the ones the admin console picked, the defaults until it picks
-   (`:14-20`), since the card reads the season as the page's state shows it (`:185`). The tease's
+   (`:14-20`), since the card reads the season as the page's state shows it (`:186`). The tease's
    figure is a still of the four chords as four rooms on the spiral, and it puts no tune note on
    the ring at all: it lights no corner, draws no bead on a room and draws no path from bead to
    bead, since a tune drawn bead to bead shows which of its notes sit on a chord's corners, which
    is Lesson 12's predict. It may show the four rooms; any tune it shows stays off the ring. That
    is Lesson 12's rule for this still (Lesson 12's WEB-SPEC, Decisions for the owner, item 13;
    Lesson 12's FACTS 5b; FACTS 7). The still sits in the page's `[data-next-card]` mark, whose
-   children the kit keeps in the card after its words (`:32-34`, `:217`, `:239`), as Lesson 2's
+   children the kit keeps in the card after its words (`:34-36`, `:231`, `:253`), as Lesson 2's
    figures are (`learn/02.html:1823`). The card is a link, so the figure holds no button. The
    practice card is the Siren card, with "Ten minutes, gently, most days" under it; after
    "Effortful", "Uncomfortable" or "Just listen today" it is the rest card instead, without that
@@ -811,14 +811,14 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:103-151`, `:341-344`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:637-643`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:110-158`, `:376-379`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:672-678`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:297-307`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:332-342`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:108-111`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:115-118`), and the ceiling holds only while that
    boundary does.
 5. `kit/range-chart.ts`, new with Lesson 7's page (its Toys 1 and needs 3: "generic over a window,
    a column and its lit band, lines, bands and range bars, so Lesson 11 ... and Lesson 14 can use

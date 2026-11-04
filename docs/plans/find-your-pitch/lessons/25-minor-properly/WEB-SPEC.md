@@ -388,7 +388,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 ### 8. Tease stills
 
 - **This page's card** holds Lesson 26's still in its slot, the page's `[data-next-card]` mark,
-  which the kit keeps in the card after its words (`src/features/lessons/kit/next-card.ts:32-35`):
+  which the kit keeps in the card after its words (`src/features/lessons/kit/next-card.ts:34-37`):
   Lesson 26's opening as Lesson 26's package draws it, an SVG, `aria-hidden`, that holds no button,
   does not move and plays no sound (FACTS 5).
 - **This page's opening as a still**, for Lesson 24's card: an SVG of the hero's stage at rest,
