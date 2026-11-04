@@ -21,10 +21,10 @@
 // The switches, the steps' deck with the ring of rooms in each step's
 // state, its chord strip, Step 2's key switch, Step 3's slide and names
 // switch, Step 4's loop and roots, Step 5's tunes and their Slow, the next
-// lesson's card, the season map, the masthead and Merc and Tavi; and the
-// cold open on the hero's ring, with its predict. The rest does nothing
-// until it is wired: the recall and the quick check, the four words, Sing
-// it and free play.
+// lesson's card, the season map, the masthead and Merc and Tavi; the cold
+// open on the hero's ring, with its predict; the recall from Lesson 10,
+// the four words and the quick check. The rest does nothing until it is
+// wired: Sing it and free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -48,10 +48,14 @@ import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { LETTERS_SOLFEGE_MODES } from '@/features/lessons/kit/names-modes'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 initSoundSwitch()
 initMotionSwitch()
@@ -70,11 +74,18 @@ const deck = createStepDeck({
   after: { label: 'Sing it', selector: '#sing' },
 })
 
-// the cold open on the hero's ring, which a step change of the deck ends
+// the cold open on the hero's ring, which a step change of the deck ends;
+// the recall follows it, asked of everyone; then the four words
 initColdOpen(deck)
+initRecall()
+initWords()
 
 initSteps(deck, ringNames)
 deck.start()
+
+// the quick check: answering all four marks Lesson 12 done; its step links
+// open the deck at their step
+createQuiz({ questions: QUIZ_QUESTIONS, lesson: 12, keys: QUIZ_KEYS, deck })
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(12)

@@ -333,7 +333,7 @@ moved four semitones or names a third's size, so none waits for the choice (FACT
 ### 4. Recall and quick check
 
 The kit's quiz, as on Lesson 24's page. The recall imports Lesson 12's `l12-q3`
-(`src/features/lessons/lesson-12/quiz-questions.ts:73-91`) and Lesson 24's question 1, `l24-q1`,
+(`src/features/lessons/lesson-12/quiz-questions.ts:89-107`) and Lesson 24's question 1, `l24-q1`,
 once Lesson 24's questions are a module, each with its away links, "Try Lesson 12, Step 4 again"
 becoming plain words where Lesson 12 is not live (`linkAway`,
 `src/features/lessons/kit/quiz.ts:191-205`); its keys are `fyp-l26-recall-seed` and

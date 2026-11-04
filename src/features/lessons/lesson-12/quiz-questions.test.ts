@@ -7,12 +7,16 @@
 // fyp-l12-seed and fyp-l12-quiz-v1; no feedback starts "Right", "Yes" or
 // "Correct", since the kit prints "Right." or "Not quite." first; every
 // line is LESSON.md's, passes the claims check and speaks its signs and
-// numerals in words (Toys 8). The recall's half joins once the page is
-// built.
+// numerals in words (Toys 8). The recall's half: its two questions are
+// Lesson 10's `l10-q1` and `l10-q2`, the very objects, under keys of its
+// own, and its step links open Lesson 10's page at the step.
 
 import { describe, expect, it } from 'vitest'
+import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { recallStepHref } from '@/features/lessons/kit/quiz'
+import { QUIZ_QUESTIONS as LESSON_10_QUESTIONS } from '@/features/lessons/lesson-10/quiz-questions'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
+import { QUIZ_KEYS, QUIZ_QUESTIONS, RECALL_KEYS, RECALL_QUESTIONS, } from './quiz-questions'
 
 /** Markup as the eye reads it: the signs and numerals shown, the spoken words dropped. */
 const seen = (html: string): string =>
@@ -156,5 +160,32 @@ describe('the copy (Tests 10)', () => {
       // Assert
       expect(violations, line).toEqual([])
     }
+  })
+})
+
+describe("Lesson 12's recall questions (Tests 11)", () => {
+  it("asks Lesson 10's questions 1 and 2, the very objects Lesson 10's page asks", () => {
+    // Act
+    const at = RECALL_QUESTIONS.map((q) => LESSON_10_QUESTIONS.indexOf(q))
+
+    // Assert: FACTS 7
+    expect(at).toEqual([0, 1])
+    expect(RECALL_QUESTIONS.map((q) => q.id)).toEqual(['l10-q1', 'l10-q2'])
+  })
+
+  it('stores its seed and record under keys of its own', () => {
+    // Assert: WEB-SPEC, Toys 8
+    expect(RECALL_KEYS).toEqual({
+      seed: 'fyp-l12-recall-seed',
+      record: 'fyp-l12-recall-v1',
+    })
+  })
+
+  it("opens Lesson 10's page at the step a wrong answer names", () => {
+    // Act
+    const hrefs = [recallStepHref(10, 1), recallStepHref(10, 3)]
+
+    // Assert
+    expect(hrefs).toEqual(['/learn/10#step-1', '/learn/10#step-3'])
   })
 })

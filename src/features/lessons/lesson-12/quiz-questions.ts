@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 12 questions — the quick check
+// Lesson 12 questions — the quick check, and the recall from Lesson 10
 // ============================================================
 //
 // Word for word from LESSON.md, in authored order: the stored seed shuffles
@@ -12,12 +12,18 @@
 // plays a sound. The kit prints "Right." or "Not quite." before each line,
 // so none starts with "Right", "Yes" or "Correct".
 //
-// The recall's two questions, Lesson 10's `l10-q1` and `l10-q2`, join this
-// file once the page is built, imported from Lesson 10's page so nothing is
-// copied.
+// The recall asks Lesson 10's questions 1 and 2, the very objects Lesson
+// 10's page asks, under their ids `l10-q1` and `l10-q2` (FACTS 7), taken
+// from its quiz by id, as Lesson 4's come from Lesson 2's. The kit's quiz
+// turns their "Try Step 1 again" and "Try Step 3 again" into "Try Lesson
+// 10, Step 1 again" and "Try Lesson 10, Step 3 again", links to Lesson
+// 10's page at that step in a new tab, and where Lesson 10 is not live
+// keeps the words with no link. The second plays Lesson 10's D minor, its
+// button named "Play the question's chord".
 
 import { signsHtml } from '@/features/lessons/kit/notes'
 import type { QuizOptions, QuizQuestion } from '@/features/lessons/kit/quiz'
+import { QUIZ_QUESTIONS as LESSON_10_QUESTIONS } from '@/features/lessons/lesson-10/quiz-questions'
 import { numeralHtml } from './numerals'
 
 /** "Try Step N again", as a link the quiz turns into a jump to that step. */
@@ -29,6 +35,16 @@ export const QUIZ_KEYS: QuizOptions['keys'] = {
   seed: 'fyp-l12-seed',
   record: 'fyp-l12-quiz-v1',
 }
+
+/** The recall's storage keys, its seed and its record (WEB-SPEC, Toys 8). */
+export const RECALL_KEYS: QuizOptions['keys'] = {
+  seed: 'fyp-l12-recall-seed',
+  record: 'fyp-l12-recall-v1',
+}
+
+/** The recall's two questions, Lesson 10's own. */
+export const RECALL_QUESTIONS: readonly QuizQuestion[] =
+  LESSON_10_QUESTIONS.filter((q) => q.id === 'l10-q1' || q.id === 'l10-q2')
 
 export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
   {
