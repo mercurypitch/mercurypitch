@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { LESSONS } from '@/features/lessons/kit/season'
+import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { lessonFromSearch } from './lesson-marker'
 
 describe('lessonFromSearch', () => {
@@ -13,6 +13,10 @@ describe('lessonFromSearch', () => {
     ['?lesson=09', 9],
     ['?lesson=10', 10],
     ['?lesson=14', 14],
+    ['?lesson=15', 15],
+    ['?lesson=19', 19],
+    ['?lesson=20', 20],
+    ['?lesson=28', 28],
   ])('reads %s as lesson %i', (search, lesson) => {
     expect(lessonFromSearch(search)).toBe(lesson)
   })
@@ -30,8 +34,8 @@ describe('lessonFromSearch', () => {
     ['one digit', '?lesson=2'],
     ['three digits', '?lesson=002'],
     ['lesson 00', '?lesson=00'],
-    ['past Season 1', '?lesson=15'],
-    ['far past Season 1', '?lesson=99'],
+    ['past Season 2', '?lesson=29'],
+    ['far past Season 2', '?lesson=99'],
     ['trailing junk', '?lesson=02x'],
     ['a trailing space', '?lesson=02%20'],
     ['a sign', '?lesson=+2'],
@@ -58,14 +62,14 @@ describe('lessonFromSearch', () => {
 })
 
 describe('the links the lessons print', () => {
-  // A contract with the lesson kit: change how season.ts writes its marker
+  // A contract with the lesson kit: change how a season writes its marker
   // and this goes red before a lesson link stops working in the app.
-  const linked = LESSONS.filter((lesson) => lesson.pr.link !== undefined)
+  const linked = ALL_LESSONS.filter((lesson) => lesson.pr.link !== undefined)
 
   it('has the links to read', () => {
     // A guard: with no links, every case below would pass by not running.
-    // Eight lessons link a drill today.
-    expect(linked.length).toBeGreaterThanOrEqual(8)
+    // Every Season 2 lesson links a drill, and most of Season 1's.
+    expect(linked.length).toBeGreaterThanOrEqual(22)
   })
 
   it.each(linked.map((lesson) => [lesson.n, lesson.pr.link?.href ?? '']))(
@@ -77,8 +81,8 @@ describe('the links the lessons print', () => {
     },
   )
 
-  it("accepts every Season 1 lesson's number and none beyond the season", () => {
-    const numbered = LESSONS.filter((lesson) => lesson.n > 0).map(
+  it("accepts every lesson's number, Season 2's included, and none beyond the last season", () => {
+    const numbered = ALL_LESSONS.filter((lesson) => lesson.n > 0).map(
       (lesson) => lesson.n,
     )
     const marker = (n: number): string =>

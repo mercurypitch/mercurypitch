@@ -119,6 +119,17 @@ describe('aheadOf', () => {
     expect(ahead).toEqual([NONE, NONE])
   })
 
+  it('names the Season 1 lessons a Season 2 lesson builds on while they are not published', () => {
+    // Arrange: everything published but Lesson 9
+    const allBut9 = (n: number): boolean => n !== 9
+
+    // Act: Lesson 16 builds on Lessons 9 and 15, Lesson 20 on 5, 9 and 10
+    const ahead = [aheadOf(16, allBut9), aheadOf(20, allBut9)]
+
+    // Assert
+    expect(ahead.map((a) => a.buildsOn)).toEqual([[9], [9]])
+  })
+
   it('covers every lesson that names another, from Lesson 2 to Lesson 14', () => {
     // Arrange: nothing is published.
 

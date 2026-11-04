@@ -6,8 +6,8 @@
 // released as built that the visitor has not marked done, and the hub,
 // /learn/, once every one of them is done.
 //
-// Released as built: a lesson with a page (kit/season.ts) that is not a
-// draft (kit/drafts.ts). The app shell does not know the admin console's
+// Released as built: a lesson of any season with a page (kit/season.ts,
+// kit/season-2.ts) that is not a draft (kit/drafts.ts). The app shell does not know the admin console's
 // publish state, so it offers only what every environment serves: never a
 // draft, not even one this site has published.
 //
@@ -30,7 +30,7 @@ export interface ReleasedLesson {
   readonly page: string
 }
 
-/** Every lesson with a page that is not a draft, in lesson order. */
+/** Every lesson of every season with a page that is not a draft, in lesson order. */
 export const RELEASED_LESSONS: readonly ReleasedLesson[] = [
   { n: 1, title: 'What is a note?', page: '/learn/01' },
   { n: 2, title: 'Twelve notes', page: '/learn/02' },

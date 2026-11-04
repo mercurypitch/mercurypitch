@@ -14,6 +14,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/t
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import { LESSONS, TOPICS } from '@/features/lessons/kit/season'
+import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import { BEAT_SHEET, FILES, planFileUrl } from './lessons/blueprint-data'
@@ -44,16 +45,16 @@ afterEach(() => {
 })
 
 describe('AdminLessonsPage', () => {
-  it('draws one row for each Season 1 lesson, the trailer first', async () => {
+  it('draws one row for each lesson of every season, the trailer first', async () => {
     stubLessonSite({})
     render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
 
     const rows = seasonRows()
-    expect(rows).toHaveLength(15)
+    expect(rows).toHaveLength(ALL_LESSONS.length)
     rows.forEach((row, i) => {
       expect(within(row).getByRole('rowheader')).toHaveTextContent(
-        LESSONS[i].title,
+        ALL_LESSONS[i].title,
       )
     })
     expect(within(rows[0]).getByRole('rowheader')).toHaveTextContent(/^Trailer/)
@@ -100,7 +101,7 @@ describe('AdminLessonsPage', () => {
       'Unreachable',
       // From Lesson 6 on, a lesson with a page in this build is one this
       // site does not know, and the rest have no page yet
-      ...LESSONS.slice(6).map((L) =>
+      ...ALL_LESSONS.slice(6).map((L) =>
         L.page === undefined ? 'No page yet' : '404 Not found',
       ),
     ])
@@ -108,11 +109,13 @@ describe('AdminLessonsPage', () => {
       'Not listed',
       'Listed',
       'Listed',
-      ...Array<string>(12).fill('Not listed'),
+      ...Array<string>(ALL_LESSONS.length - 3).fill('Not listed'),
     ])
-    expect(column(4)).toEqual(Array<string>(15).fill('Could not read'))
+    expect(column(4)).toEqual(
+      Array<string>(ALL_LESSONS.length).fill('Could not read'),
+    )
     expect(sitePathsAsked(fetchMock)).toEqual([
-      ...LESSONS.flatMap((L) => L.page ?? []),
+      ...ALL_LESSONS.flatMap((L) => L.page ?? []),
       '/llms.txt',
       '/sitemap.xml',
     ])

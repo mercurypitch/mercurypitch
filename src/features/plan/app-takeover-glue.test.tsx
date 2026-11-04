@@ -227,7 +227,7 @@ describe('the visits the takeover stays away from', () => {
     },
     {
       given: 'a returning visitor behind a marker the app does not read',
-      url: '/ear-lab?lesson=15#/ear-lab',
+      url: '/ear-lab?lesson=29#/ear-lab',
       returning: true,
       away: false,
     },

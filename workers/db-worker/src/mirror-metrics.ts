@@ -49,7 +49,8 @@ export const TOUR_METRIC_KEYS: ReadonlySet<string> = new Set([
  * was sent under (1 granted, 2 never asked). Each with its range, both ends
  * included.
  *
- * The pages are Lessons 1 to 14. Every quiz asks questions `q1` to `q4` (the
+ * The pages are Lessons 1 to 28, Seasons 1 and 2, numbered on from one
+ * season to the next. Every quiz asks questions `q1` to `q4` (the
  * 19 createQuiz sites in src/features/lessons, October 2026), so a fifth
  * question widens `q` here first. A question has 2 to 6 options, and `visit`
  * is the first, the second or a later one (telemetry.ts caps it at 3).
@@ -58,8 +59,8 @@ export const LESSON_ANSWER_BOUNDS: ReadonlyMap<
   string,
   readonly [min: number, max: number]
 > = new Map<string, readonly [number, number]>([
-  ['page', [1, 14]],
-  ['qLesson', [1, 14]],
+  ['page', [1, 28]],
+  ['qLesson', [1, 28]],
   ['q', [1, 4]],
   ['firstTry', [0, 1]],
   ['k', [2, 6]],
