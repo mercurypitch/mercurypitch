@@ -180,7 +180,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // on the page: the watch pages share the kit's episode, toast and films
   // modules with the lessons, so Rollup gives those chunks of their own,
   // each with its imports, on every lesson page.
-  'learn/05.html': 137,
+  // Raised to 138 when its hold flow and hold run moved into the kit for
+  // Lesson 13: 139,547 bytes before, 140,785 after, against 140,288 at 137.
+  // The 1,238 are the kit's plan for the holds' lengths, the Listen phase a
+  // page passes in, and Lesson 5's plan over them.
+  'learn/05.html': 138,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -264,12 +268,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // entry and drafts line, on every lesson page.
   'learn/12.html': 111,
   // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
-  // Lesson 3 is. Measured 73,377 bytes in build:e2e for its page shell:
-  // the kit's deck, switches, masthead, next-lesson card, explorer and
-  // Merc and Tavi, with none of its toys wired yet. The ceiling is the
-  // smallest whole KB above that, so each toy that joins raises it, with
-  // its measure, until the page is whole and takes a quarter over.
-  'learn/13.html': 72,
+  // Lesson 3 is: its own module on the kit, with the vowel model, the
+  // spectrum strip under the band chart, the vowel voice, the cold open's
+  // predict, the four words, the steps, the quizzes, Sing it on the kit's
+  // hold run, and free play. Measured 128 in build:e2e (130,916 bytes); the
+  // budget is a quarter over that. The listener, the pitch detector and the
+  // hold reader arrive through a dynamic import when Sing it's Start is
+  // pressed, as on Lessons 3, 5 and 9, so the page stays this light only
+  // while that boundary holds.
+  'learn/13.html': 160,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -374,12 +381,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own, and the shared Inter and Outfit @font-face rules. The smallest
   // whole KB above that, as for its script.
   'learn/12.html': 87,
-  // Lesson 13 (a draft, as above). Measured 87,584 bytes in build:e2e for
-  // its page shell: the kit's sheets (with the voice lessons', inlined into
-  // its own by @import, and the shared parts), its own, and the shared
-  // Inter and Outfit @font-face rules. The smallest whole KB above that, as
-  // for its script.
-  'learn/13.html': 86,
+  // Lesson 13 (a draft, as above). Measured 86 in build:e2e (87,615
+  // bytes): the kit's sheets (with the voice lessons' and the shared
+  // parts), its own, and the shared Inter and Outfit @font-face rules; a
+  // quarter over.
+  'learn/13.html': 107,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter
