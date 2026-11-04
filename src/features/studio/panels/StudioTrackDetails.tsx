@@ -1,9 +1,9 @@
-// Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument, mix role and the input it records from, apart from where its audio came from.
-import { For, Show } from 'solid-js'
+// Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument, mix role and the input it records from, apart from where its audio came from; on a phone its loop takes are comped here too.
+import { createMemo, For, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioProject, StudioTrack, } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
 import { StudioInstrumentPicker } from '../instruments/StudioInstrumentPicker'
 import type { StudioLaneInputRecorder } from '../record/StudioLaneInputField'
@@ -13,9 +13,12 @@ import { requestStudioLaneLines } from '../timeline/lane-lines-request'
 import { LaneLine } from '../timeline/line-icons'
 import { StudioArmButton } from '../timeline/StudioLaneHeader'
 import type { StudioLaneArming } from '../timeline/types'
+import { StudioCompSheet } from './StudioCompSheet'
 
 interface StudioTrackDetailsProps {
   track: StudioTrack
+  project: StudioProject
+  /** The song's audio: the lane lists what its clips play. */
   assets: readonly StudioAsset[]
   writable: boolean
   /** A phone's lane headers have no arm: its details have, as its Mix sheet does. */
@@ -34,6 +37,14 @@ interface StudioTrackDetailsProps {
 }
 
 export function StudioTrackDetails(props: StudioTrackDetailsProps) {
+  const laneAssets = createMemo(() => {
+    const ids = new Set(
+      props.project.clips
+        .filter((clip) => clip.trackId === props.track.id)
+        .map((clip) => clip.assetId),
+    )
+    return props.assets.filter((asset) => ids.has(asset.id))
+  })
   return (
     <div class={styles.detailsFields}>
       <div class={styles.laneActions}>
@@ -129,7 +140,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
       <div class={styles.fieldDivider} />
       <h3>Audio in this track</h3>
       <ul class={styles.assetList}>
-        <For each={props.assets}>
+        <For each={laneAssets()}>
           {(asset) => (
             <li>
               {asset.originalName ?? 'Kept take'}
@@ -141,6 +152,14 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           )}
         </For>
       </ul>
+      <StudioCompSheet
+        trackId={props.track.id}
+        clips={props.project.clips}
+        assets={laneAssets()}
+        tempoBpm={props.project.tempoBpm}
+        writable={props.writable}
+        onCommand={props.onCommand}
+      />
       <button
         type="button"
         class={styles.dangerButton}

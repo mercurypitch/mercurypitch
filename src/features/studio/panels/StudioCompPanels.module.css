@@ -1,0 +1,89 @@
+/* Studio comp panels — a loop take's passes in Clip details (StudioClipPasses.tsx)
+   and its bars in the lane sheet (StudioCompSheet.tsx). */
+
+.pass {
+  align-items: center;
+}
+.pass strong {
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+.pass strong span {
+  margin-left: 6px;
+}
+
+/* The lane sheet: pass names stay put while the bars scroll beside them. */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.take {
+  margin: 0;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.barRow {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+}
+.barName {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 72px;
+  min-height: 44px;
+  padding-right: 8px;
+  background: var(--studio-panel);
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+.barName small {
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.cell {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-muted);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.cell[aria-pressed='true'] {
+  border-color: var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 26%, transparent);
+  color: var(--studio-text);
+  font-weight: 600;
+}
+.cell:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.cell:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
