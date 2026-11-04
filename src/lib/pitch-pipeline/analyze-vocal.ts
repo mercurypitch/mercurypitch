@@ -25,7 +25,7 @@ import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import type { OfflineSegmentSecondsFrame } from '@/lib/pitch-pipeline/offline-segment'
 import { segmentSecondsContourToMelody } from '@/lib/pitch-pipeline/offline-segment'
-import { freqToMidi } from '@/lib/scale-data'
+import { freqToMidi, midiToNote } from '@/lib/scale-data'
 
 /**
  * Offline analysis algorithm choice: a concrete detector, or 'auto' which
@@ -185,12 +185,16 @@ export function pitchHistoryFromNotes(
       Math.floor((note.endSec - note.startSec) / WINDOW_STEP_SEC),
     )
     const frequency = 440 * Math.pow(2, (note.midi - 69) / 12)
+    // From the MIDI number, not the name: reading the name's last character
+    // made octave 0 falsy (and so 4, four octaves up) and turned C#-1 into
+    // octave 1.
+    const { octave } = midiToNote(note.midi)
     for (let j = 0; j < points; j++) {
       history.push({
         time: note.startSec + j * WINDOW_STEP_SEC,
         noteName: note.noteName,
         frequency,
-        octave: parseInt(note.noteName.slice(-1)) || 4,
+        octave,
       })
     }
   }
