@@ -24,6 +24,12 @@ import { QUIZ_QUESTIONS as LESSON_7_QUESTIONS } from '@/features/lessons/lesson-
 const tryStep = (n: number): string =>
   ` <a href="#step-${n}" data-goto-step="${n}">Try Step ${n} again</a>.`
 
+/** The quick check's storage keys: the answer-order seed and the record. */
+export const QUIZ_KEYS = {
+  seed: 'fyp-l11-seed',
+  record: 'fyp-l11-quiz-v1',
+} as const
+
 /** The recall's two questions, Lesson 7's own. */
 export const RECALL_QUESTIONS: readonly QuizQuestion[] =
   LESSON_7_QUESTIONS.filter((q) => q.id === 'l07-q1' || q.id === 'l07-q4')
