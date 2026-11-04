@@ -304,6 +304,21 @@ async function recordLoop(page: Page): Promise<StudioClip> {
 }
 
 /** The take's clip on the timeline, by what its label says it plays. */
+/** The theme as the app's theme store sets it, once its colour transitions have run. */
+async function showTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
+  await page.evaluate(async (value) => {
+    const root = document.documentElement
+    root.setAttribute('data-theme', value)
+    root.style.colorScheme = value
+    await Promise.allSettled(
+      document
+        .getAnimations()
+        .filter((animation) => animation instanceof CSSTransition)
+        .map((animation) => animation.finished),
+    )
+  }, theme)
+}
+
 function takeButton(page: Page, plays: RegExp): Locator {
   return studioRegion(page).getByRole('button', { name: plays })
 }
@@ -428,11 +443,8 @@ test.describe('Studio comping', () => {
       1,
     )
     await expect(passRow(page, 1)).toHaveAccessibleName(/plays 1 stretch/)
-    for (const theme of ['dark', 'light']) {
-      await page.evaluate(
-        (value) => document.documentElement.setAttribute('data-theme', value),
-        theme,
-      )
+    for (const theme of ['dark', 'light'] as const) {
+      await showTheme(page, theme)
       await page.screenshot({
         path: test.info().outputPath(`studio-comp-rows-${theme}.png`),
       })

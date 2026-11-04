@@ -48,6 +48,21 @@ export function studioCompLit(
     .map((part) => ({ from: part.fromSourceFrame, to: part.toSourceFrame }))
 }
 
+/** The stretches where another pass plays, side by side as one: the pass dims there. */
+export function studioCompUnlit(
+  clip: StudioClip,
+  pass: number,
+): StudioCompSpan[] {
+  const spans: { from: number; to: number }[] = []
+  for (const part of studioClipComp(clip) ?? []) {
+    if (part.pass === pass) continue
+    const last = spans.at(-1)
+    if (last?.to === part.fromSourceFrame) last.to = part.toSourceFrame
+    else spans.push({ from: part.fromSourceFrame, to: part.toSourceFrame })
+  }
+  return spans
+}
+
 /** One of the clip's source frames on the song's timeline. */
 export function studioCompTimelineFrame(
   clip: StudioClip,
