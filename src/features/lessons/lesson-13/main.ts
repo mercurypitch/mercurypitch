@@ -16,10 +16,10 @@
 // viewer's voice: nothing on the page reads anything from the microphone
 // but pitch frames.
 //
-// The switches, the steps' deck with the vowel figure in each step's state,
-// the next lesson's card, the season map, the masthead and Merc and Tavi.
-// The rest does nothing until it is wired: the cold open on the hero's
-// figure, the recall and the quick check, the four words, Sing it and free
+// The switches, the cold open on the hero's figure, the steps' deck with
+// the vowel figure in each step's state, the next lesson's card, the season
+// map, the masthead and Merc and Tavi. The rest does nothing until it is
+// wired: the recall and the quick check, the four words, Sing it and free
 // play.
 
 import '@fontsource-variable/inter'
@@ -42,6 +42,7 @@ import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
@@ -51,6 +52,8 @@ initSoundSwitch({
 })
 initMotionSwitch()
 Motion.init()
+
+initColdOpen()
 
 // five steps, one vowel figure
 const deck = createStepDeck({
