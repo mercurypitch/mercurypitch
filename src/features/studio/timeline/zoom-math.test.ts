@@ -1,6 +1,6 @@
 // Studio zoom math tests — stops, the floor a long song or a phone sets, wheel and pinch factors, and the scroll that keeps a moment in place.
 import { describe, expect, it } from 'vitest'
-import { STUDIO_ZOOM_HOME, STUDIO_ZOOM_MAX, STUDIO_ZOOM_STOPS, studioAnchoredScroll, studioFitZoom, studioWheelZoomFactor, studioZoomFloor, studioZoomPercent, studioZoomStep, } from './zoom-math'
+import { clampStudioZoom, STUDIO_ZOOM_HOME, STUDIO_ZOOM_MAX, STUDIO_ZOOM_STOPS, studioAnchoredScroll, studioFitZoom, studioWheelZoomFactor, studioZoomFloor, studioZoomPercent, studioZoomStep, } from './zoom-math'
 
 const RATE = 48_000
 
@@ -86,5 +86,19 @@ describe('studioZoomPercent', () => {
     expect(studioZoomPercent(STUDIO_ZOOM_HOME)).toBe(100)
     expect(studioZoomPercent(60)).toBe(150)
     expect(studioZoomPercent(3.6)).toBe(9)
+  })
+})
+
+describe('clampStudioZoom', () => {
+  it('keeps a zoom to a hundredth of a pixel per second, so a pinch reads 53.24 and not 53.24000000000001', () => {
+    expect(40 * 1.1 * 1.1 * 1.1).not.toBe(53.24)
+    expect(clampStudioZoom(40 * 1.1 * 1.1 * 1.1, 10)).toBe(53.24)
+    expect(clampStudioZoom(40 * 1.25 * 1.25 * 1.25, 10)).toBe(78.13)
+  })
+
+  it('holds a zoom between the floor and the closest stop', () => {
+    expect(clampStudioZoom(2, 10)).toBe(10)
+    expect(clampStudioZoom(900, 10)).toBe(STUDIO_ZOOM_MAX)
+    expect(clampStudioZoom(Number.NaN, 3.7)).toBe(3.7)
   })
 })

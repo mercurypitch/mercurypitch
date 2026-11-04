@@ -11,7 +11,7 @@ import { studioTakeRunning } from './record/take-running'
 import { PauseFilled, PlayFilled, PunchRange, SkipBackFilled, } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { studioScrubGrid } from './timeline/scrub-step'
-import { formatStudioTime, parseStudioTime } from './timeline/timeline-geometry'
+import { formatStudioTime, parseStudioTime, studioAriaSeconds, } from './timeline/timeline-geometry'
 
 interface StudioTransportProps {
   /** Publish this bar's height under that name, when it is docked at the foot. */
@@ -159,8 +159,8 @@ export function StudioTransport(props: StudioTransportProps) {
           spellcheck={false}
           aria-label="Playhead in seconds"
           aria-valuemin={0}
-          aria-valuemax={props.endFrame / STUDIO_SAMPLE_RATE}
-          aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
+          aria-valuemax={studioAriaSeconds(props.endFrame)}
+          aria-valuenow={studioAriaSeconds(props.playheadFrame)}
           aria-valuetext={formatStudioTime(props.playheadFrame)}
           data-take-running={studioTakeRunning() ? '' : undefined}
           title={

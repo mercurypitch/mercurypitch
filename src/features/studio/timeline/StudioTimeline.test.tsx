@@ -519,6 +519,23 @@ describe('Studio timeline', () => {
     expect(zoom).toHaveBeenCalledExactlyOnceWith(10)
   })
 
+  it('shows its zoom and the playhead to a sensible precision, not a float error', () => {
+    const { container } = render(() => (
+      <StudioTimeline
+        {...base}
+        pixelsPerSecond={40 * 1.1 * 1.1 * 1.1}
+        playheadFrame={16000}
+      />
+    ))
+    expect(container.querySelector('[data-studio-scale]')).toHaveAttribute(
+      'data-studio-scale',
+      '53.24',
+    )
+    expect(
+      screen.getByRole('slider', { name: 'Song playhead' }),
+    ).toHaveAttribute('aria-valuenow', '0.333')
+  })
+
   it('moves zoom and the selected clip commands into a dock beside the lanes while the desk is open', () => {
     const [deskOpen, setDeskOpen] = createSignal(false)
     const { container } = render(() => (
