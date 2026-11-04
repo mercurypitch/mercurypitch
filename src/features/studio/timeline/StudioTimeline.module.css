@@ -388,9 +388,11 @@
     background: var(--studio-hover);
   }
 }
+/* The ring is drawn inside the name, so it stands clear of the arm button
+   beside it and of the controls under it. */
 .timeline button.trackName:focus-visible {
   outline: 2px solid var(--studio-accent);
-  outline-offset: 0;
+  outline-offset: -2px;
 }
 .sourceLabel {
   max-width: 100%;

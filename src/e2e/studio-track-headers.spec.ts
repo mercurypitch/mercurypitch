@@ -64,6 +64,38 @@ async function setTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
   }, theme)
 }
 
+/** The px between the lane name's keyboard focus ring and its arm button. */
+async function focusRingClearance(page: Page, lane: string): Promise<number> {
+  // Shift+Tab from the arm button: focus arrives by keyboard, so the ring shows.
+  await armButton(page, lane).focus()
+  await page.keyboard.press('Shift+Tab')
+  const name = studioRegion(page).getByRole('button', {
+    name: `${lane} details`,
+    exact: true,
+  })
+  await expect(name).toBeFocused()
+  const arm = (await armButton(page, lane).boundingBox())!
+  return name.evaluate((element, armBox) => {
+    const style = getComputedStyle(element)
+    const reach =
+      Number.parseFloat(style.outlineOffset) +
+      Number.parseFloat(style.outlineWidth)
+    const box = element.getBoundingClientRect()
+    const ring = {
+      left: box.left - reach,
+      right: box.right + reach,
+      top: box.top - reach,
+      bottom: box.bottom + reach,
+    }
+    return Math.max(
+      armBox.x - ring.right,
+      ring.left - (armBox.x + armBox.width),
+      armBox.y - ring.bottom,
+      ring.top - (armBox.y + armBox.height),
+    )
+  }, arm)
+}
+
 interface HeaderReading {
   readonly lane: string
   readonly outside: readonly string[]
@@ -211,6 +243,9 @@ for (const layout of LAYOUTS) {
             )
             .toBe(true)
       }
+
+      // A keyboard focus ring on the name stays clear of the arm beside it.
+      expect(await focusRingClearance(page, 'Phrase')).toBeGreaterThanOrEqual(4)
 
       const record = recordButton(page)
       await expect(record).toHaveAttribute('data-phase', 'idle')
