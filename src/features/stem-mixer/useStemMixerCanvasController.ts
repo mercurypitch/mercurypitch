@@ -149,17 +149,25 @@ export const useStemMixerCanvasController = (
   // swaps them in and out of the DOM. Created by initObserver on mount.
   let observer: ResizeObserver | null = null
 
+  /** Let go of a canvas: its gesture listeners and its place in the observer. */
+  const releaseCanvas = (canvas: HTMLCanvasElement) => {
+    canvas.removeEventListener('wheel', handleCanvasWheel)
+    canvas.removeEventListener('touchstart', handleCanvasTouchStart)
+    canvas.removeEventListener('touchmove', handleCanvasTouchMove)
+    canvas.removeEventListener('touchend', handleCanvasTouchEnd)
+    observer?.unobserve(canvas)
+  }
+
   const setCanvasRef = (id: string) => (el: HTMLCanvasElement | null) => {
-    // Clean up previous listener when SolidJS calls ref(null) on unmount/change
+    // Solid never calls a ref with null when its canvas goes, so only a host
+    // that asks for it reaches the null branch (LrcMapperStage, from an
+    // onCleanup). The workspaces simply register the id again when a Show
+    // block draws a new canvas, and that is the moment to let the old one go:
+    // left alone it kept its listeners and stayed observed, one more detached
+    // canvas for every karaoke-focus toggle.
+    const prev = canvasRefs[id]
+    if (prev !== undefined && prev !== el) releaseCanvas(prev)
     if (el === null) {
-      const prev = canvasRefs[id]
-      if (prev) {
-        prev.removeEventListener('wheel', handleCanvasWheel)
-        prev.removeEventListener('touchstart', handleCanvasTouchStart)
-        prev.removeEventListener('touchmove', handleCanvasTouchMove)
-        prev.removeEventListener('touchend', handleCanvasTouchEnd)
-        observer?.unobserve(prev)
-      }
       canvasRefs[id] = undefined
       return
     }
