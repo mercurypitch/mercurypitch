@@ -309,7 +309,9 @@
   );
   --track-edge: color-mix(in srgb, var(--studio-track) 46%, transparent);
   --track-wave: color-mix(in srgb, var(--studio-track) 74%, var(--studio-text));
-  height: var(--studio-row-height);
+  /* One row of the lane's height, border included; comp rows add their own
+     below it (StudioCompLanes.module.css). */
+  grid-template-rows: calc(var(--studio-row-height) - 1px);
   border-bottom: 1px solid var(--studio-line);
 }
 /* Light clips tint into white and draw the pure hue, so amber reads as gold, not mud. */

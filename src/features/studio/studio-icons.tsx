@@ -284,3 +284,21 @@ export const CrossSmall: Component<{ size?: number }> = (p) => (
     <path d="M17 7L7 17" />
   </svg>
 )
+
+// Comp — a path stepping across three passes, keeping a stretch of each.
+export const CompPasses: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M3 6h18M3 12h18M3 18h18" stroke-width="1.5" opacity="0.4" />
+    <path d="M3 6h6v12h6v-6h6" stroke-width="2.5" />
+  </svg>
+)

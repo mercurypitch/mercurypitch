@@ -1,13 +1,16 @@
-// Studio track details — name and musical role stay separate from audio provenance; role pictures are this device's choice for every lane.
-import { For } from 'solid-js'
+// Studio track details — name and musical role stay separate from audio provenance; role pictures are this device's choice for every lane, and a loop take's passes are comped here on a phone.
+import { createMemo, For } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioProject, StudioTrack, } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
 import { setStudioRolePictures, studioRolePictures, } from '../timeline/role-pictures'
+import { StudioCompSheet } from './StudioCompSheet'
 
 interface StudioTrackDetailsProps {
   track: StudioTrack
+  project: StudioProject
+  /** The song's audio: the lane lists what its clips play. */
   assets: readonly StudioAsset[]
   writable: boolean
   onCommand(command: StudioCommand): boolean
@@ -15,6 +18,14 @@ interface StudioTrackDetailsProps {
 }
 
 export function StudioTrackDetails(props: StudioTrackDetailsProps) {
+  const laneAssets = createMemo(() => {
+    const ids = new Set(
+      props.project.clips
+        .filter((clip) => clip.trackId === props.track.id)
+        .map((clip) => clip.assetId),
+    )
+    return props.assets.filter((asset) => ids.has(asset.id))
+  })
   return (
     <div class={styles.detailsFields}>
       <label class={styles.stackedField}>
@@ -73,7 +84,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
       <div class={styles.fieldDivider} />
       <h3>Audio in this track</h3>
       <ul class={styles.assetList}>
-        <For each={props.assets}>
+        <For each={laneAssets()}>
           {(asset) => (
             <li>
               {asset.originalName ?? 'Kept take'}
@@ -85,6 +96,14 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           )}
         </For>
       </ul>
+      <StudioCompSheet
+        trackId={props.track.id}
+        clips={props.project.clips}
+        assets={laneAssets()}
+        tempoBpm={props.project.tempoBpm}
+        writable={props.writable}
+        onCommand={props.onCommand}
+      />
       <button
         type="button"
         class={styles.dangerButton}

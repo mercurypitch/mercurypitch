@@ -95,10 +95,14 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
       clip().sourceOutFrame - clip().sourceInFrame,
     )
   const title = () => props.asset?.originalName ?? props.trackName
-  // A loop take's clip says which of its passes plays: "Take 3, pass 2 of 4".
+  // A loop take's clip says which of its passes plays: "Take 3, pass 2 of 4",
+  // or "Take 3, comp of 4 passes" when it plays stretches of several.
   const passOf = () => {
     const pass = studioClipPass(props.clip)
-    return pass ? `, pass ${pass.number} of ${pass.count}` : ''
+    if (!pass) return ''
+    return props.clip.comp
+      ? `, comp of ${pass.count} passes`
+      : `, pass ${pass.number} of ${pass.count}`
   }
   const handleSize = () => (props.tablet ? 44 : 28)
   const handles = () =>
