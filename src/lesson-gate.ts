@@ -60,7 +60,8 @@ import { hookFor, hookMarkup, isHookMarkup, LESSON_COPY, } from './features/less
 import type { PageState, Reading } from './features/lessons/kit/publish'
 import { isLive, isPublished, linkedLessonOfHref, PAGE_STATE_ID, pageStateJson, readingHolds, readingLesson, } from './features/lessons/kit/publish'
 import type { Lesson } from './features/lessons/kit/season'
-import { LESSONS, minutesSpan } from './features/lessons/kit/season'
+import { minutesSpan } from './features/lessons/kit/season'
+import { ALL_LESSONS } from './features/lessons/kit/seasons'
 import { editLlms, editSitemap, liveLessons, SITE_ORIGIN, } from './lesson-listings'
 import type { LessonState } from './lib/lesson-state'
 import { parseLessonState } from './lib/lesson-state'
@@ -575,7 +576,7 @@ function reading(kind: Reading, state: PageState): Handlers {
       if (el.removed) return
       const n = readingLesson(el.getAttribute(`data-if-${kind}`))
       if (n === null) return
-      if (readingHolds(kind, n, LESSONS, state)) el.removeAndKeepContent()
+      if (readingHolds(kind, n, ALL_LESSONS, state)) el.removeAndKeepContent()
       else el.remove()
     },
   }
@@ -591,7 +592,7 @@ function reading(kind: Reading, state: PageState): Handlers {
 export function followState(rewriter: Rewriter, state: PageState): Rewriter {
   const dead = (a: RewriterElement): boolean => {
     const n = linkedLessonOfHref(decodeHtml(a.getAttribute('href') ?? ''))
-    return n !== null && !isLive(n, LESSONS, state)
+    return n !== null && !isLive(n, ALL_LESSONS, state)
   }
   return rewriter
     .on('nav a[href]', {
@@ -618,7 +619,7 @@ export function lessonRewriter(
     .on('head', {
       element: (head) => head.append(stateTag(state), { html: true }),
     })
-  const lesson = LESSONS.find((L) => L.n === n)
+  const lesson = ALL_LESSONS.find((L) => L.n === n)
   const picked = state.lessons[String(n)]?.hook
   const markup = hookMarkup(n, picked, copy)
   if (lesson !== undefined && markup !== null && isHookMarkup(markup)) {
@@ -709,7 +710,7 @@ export function hubRewriter(
     .on('.hub-hook[data-lesson]', {
       element: (p) => {
         const n = Number(p.getAttribute('data-lesson'))
-        const lesson = LESSONS.find((L) => L.n === n)
+        const lesson = ALL_LESSONS.find((L) => L.n === n)
         if (lesson === undefined) return
         const picked = state.lessons[String(n)]?.hook
         const hook = hookFor({ ...lesson, ...copy[n] }, picked).text
