@@ -516,6 +516,27 @@ describe('MicManager input for one hold', () => {
     expect(askedFor(gum)).toEqual(['usb-1', undefined])
   })
 
+  it('closes an input a re-arm replaced before a release of everything resolves, and only then lets the lock go', async () => {
+    openEach()
+    const first = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+    let lockWhenStopped: string | null = null
+    first.track.stop.mockImplementation(() => {
+      lockWhenStopped = micLockStatus()
+    })
+
+    // Another tab asks for the mic just as the Studio re-arms on another input.
+    const releasing = mgr.forceReleaseAll()
+    const rearming = mgr.acquireFrom('studio', 'usb-2')
+    await releasing
+
+    expect(first.track.stop).toHaveBeenCalled()
+    expect(lockWhenStopped).toBe('mine')
+    expect(micLockStatus()).toBe('free')
+    await expect(rearming).rejects.toMatchObject({
+      message: 'The input changed before it opened.',
+    })
+  })
+
   describe("on the app's own input", () => {
     it('records from the shared stream when both ask for the default, opening no second capture', async () => {
       const gum = openEach()
