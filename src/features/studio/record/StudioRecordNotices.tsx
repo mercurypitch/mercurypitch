@@ -108,7 +108,13 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
           </div>
         )}
       </Show>
-      <Show when={recorder().phase() === 'idle' && message()}>
+      {/* The last take's note stays up while its lane stays armed for the next. */}
+      <Show
+        when={
+          (recorder().phase() === 'idle' || recorder().phase() === 'armed') &&
+          message()
+        }
+      >
         {(text) => (
           <div
             class={common.notice}

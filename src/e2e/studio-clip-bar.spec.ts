@@ -48,8 +48,8 @@ test('Studio clip bar folds to icons rather than run into zoom, and takes its na
   await expectBar(page, false, 'a laptop window with Sound open')
   await studio.getByRole('button', { name: 'Close Sound', exact: true }).click()
   await expectBar(page, true, 'the same window with Sound closed')
-  await page.setViewportSize({ width: 980, height: 800 })
-  await expectBar(page, true, 'a 980 px window')
+  await page.setViewportSize({ width: 1068, height: 800 })
+  await expectBar(page, true, 'a 1068 px window')
 
   // A long lane name fills the bar's label: the bar folds sooner.
   await studio
@@ -61,10 +61,10 @@ test('Studio clip bar folds to icons rather than run into zoom, and takes its na
   await studio
     .getByRole('button', { name: 'Close Track details', exact: true })
     .click()
-  // At 980 px the lane's first name left the bar 68 px clear of zoom.
-  await page.setViewportSize({ width: 980, height: 800 })
+  // At 1068 px the lane's first name left the bar 68 px clear of zoom.
+  await page.setViewportSize({ width: 1068, height: 800 })
   await studioClip(page, LONG_NAME).click()
-  await expectBar(page, false, 'a long lane name in a 980 px window')
+  await expectBar(page, false, 'a long lane name in a 1068 px window')
   await page.setViewportSize({ width: 1440, height: 900 })
   await expectBar(page, true, 'a long lane name in a wide window')
 })

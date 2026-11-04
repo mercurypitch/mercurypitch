@@ -956,6 +956,26 @@
   color: var(--studio-text);
   font: inherit;
 }
+/* A setting that is on or off: its box, then its name. */
+.checkField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.checkField input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--studio-accent);
+}
+@media (pointer: coarse) {
+  .checkField {
+    min-height: 44px;
+  }
+}
 .fieldDivider {
   height: 1px;
   margin: 4px 0;
@@ -1223,28 +1243,40 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px 10px 18px;
+  gap: 8px;
+  padding: 8px 12px 10px;
   border: 1px solid var(--studio-line);
   border-radius: 10px;
   background: var(--studio-bg);
 }
-.phoneTrack::before {
-  content: '';
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 7px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--studio-track);
+/* The armed lane: a red ring, as its header has in the arrangement. */
+.phoneTrack[data-armed] {
+  border-color: var(--red, #e5484d);
+  box-shadow: inset 0 0 0 1px var(--red, #e5484d);
 }
-.phoneTrack > .textButton {
-  align-self: flex-start;
-  margin-left: -6px;
+/* The lane's role plate in its hue, its name, then its arm button. */
+.phoneTrackHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.phoneTrackHead > .textButton {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
   color: var(--studio-text);
   font-size: 14px;
   font-weight: 600;
+  text-align: left;
+}
+/* The button lays its text out as a flex item: the ellipsis goes on the
+   name itself. */
+.phoneTrackName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Touch: finger-sized targets */

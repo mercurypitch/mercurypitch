@@ -1,0 +1,154 @@
+/* Studio lane header pieces — the role plate in the lane's hue, and the arm button in the record red. */
+
+/* The plate: the lane's instrument on its own hue, down the header's left
+   edge, where the 3 px hue edge was. A picture, or with pictures off the
+   role's line icon in a deeper shade of the hue. */
+.plate {
+  --plate-ground: color-mix(
+    in srgb,
+    var(--studio-track) 24%,
+    var(--studio-bar)
+  );
+  --plate-ink: color-mix(in srgb, var(--studio-track) 62%, var(--studio-text));
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: grid;
+  place-items: center;
+  width: var(--studio-plate-width, 64px);
+  overflow: hidden;
+  background: var(--plate-ground);
+  color: var(--plate-ink);
+  /* The plate is decoration with a name: a press on it goes to the header. */
+  pointer-events: none;
+}
+:global(html[data-theme='light']) .plate {
+  --plate-ground: color-mix(
+    in srgb,
+    var(--studio-track) 16%,
+    var(--studio-bar)
+  );
+  --plate-ink: color-mix(in srgb, var(--studio-track) 78%, var(--studio-text));
+}
+.plate img,
+.listPlate img {
+  display: block;
+  width: var(--studio-plate-picture, 56px);
+  height: var(--studio-plate-picture, 56px);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.plate svg {
+  width: var(--studio-plate-icon, 36px);
+  height: var(--studio-plate-icon, 36px);
+}
+
+/* The phone's Mix sheet: the same plate as a rounded tile beside the name. */
+.listPlate {
+  --plate-ground: color-mix(
+    in srgb,
+    var(--studio-track) 24%,
+    var(--studio-bar)
+  );
+  --plate-ink: color-mix(in srgb, var(--studio-track) 62%, var(--studio-text));
+  --studio-plate-picture: 36px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--plate-ground);
+  color: var(--plate-ink);
+}
+:global(html[data-theme='light']) .listPlate {
+  --plate-ground: color-mix(
+    in srgb,
+    var(--studio-track) 16%,
+    var(--studio-bar)
+  );
+  --plate-ink: color-mix(in srgb, var(--studio-track) 78%, var(--studio-text));
+}
+.listPlate svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* The arm button: a red dot in a square like Mute and Solo; armed, a red
+   ring and a red wash, as the transport's Record shows an armed lane; while
+   the lane's take counts in or records, solid red, as Record does. */
+button.arm {
+  --record: var(--red, #e5484d);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--record) 85%, var(--studio-text-2));
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    border-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+.arm svg {
+  width: 16px;
+  height: 16px;
+}
+@media (hover: hover) {
+  /* Hover lights the dot on the controls' own hover, so a red ring and
+     wash only ever mean armed. */
+  button.arm:hover:not(:disabled, [aria-pressed='true']) {
+    background: var(--studio-hover);
+    color: var(--record);
+  }
+  button.arm[aria-pressed='true']:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--record) 26%, transparent);
+  }
+}
+button.arm[aria-pressed='true'] {
+  border: 2px solid var(--record);
+  background: color-mix(in srgb, var(--record) 16%, transparent);
+  color: var(--record);
+}
+button.arm[data-phase='counting'],
+button.arm[data-phase='recording'],
+button.arm[data-phase='finishing'] {
+  border-color: var(--record);
+  background: var(--record);
+  color: #ffffff;
+}
+/* A take holds every arm button, but the lit one stays lit. */
+button.arm.arm[aria-pressed='true']:disabled {
+  opacity: 1;
+}
+button.arm:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button.arm[data-phase='arming'] svg,
+  button.arm[data-phase='recording'] svg {
+    animation: armPulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes armPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+/* Touch: a finger-sized target, as Mute and Solo are there. */
+button.touchArm {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+.touchArm svg {
+  width: 20px;
+  height: 20px;
+}

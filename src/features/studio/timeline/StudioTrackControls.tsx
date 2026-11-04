@@ -1,4 +1,4 @@
-// Studio track controls — the lane's name beside mute and solo, then a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
+// Studio track controls — the lane's name beside its arm, mute and solo, then its lines, a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
 // A lane that follows a volume or pan line (lib/studio/model/automation.ts) holds that control still and says so.
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
@@ -41,8 +41,12 @@ export interface StudioTrackControlsProps {
   tablet?: boolean
   /** A mixing desk channel strip: a vertical fader between the knob and the buttons. */
   strip?: boolean
-  /** The lane's name and source, laid out in the same grid as the controls. */
+  /** The lane's name and source: a lane header puts it first, then the arm, Mute and Solo. */
   identity?: JSX.Element
+  /** A lane header's arm button, between the name and Mute. */
+  arm?: JSX.Element
+  /** A lane header's lines toggle, before the fader it draws for. */
+  lines?: JSX.Element
   /**
    * A desk strip's level meter, drawn inside the fader's drag area: a press
    * on it drags the fader, while a pointer resting there reads its title.
@@ -502,21 +506,39 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         }
       }}
     >
-      <Show when={props.identity}>
-        <div class={styles.identityCell}>{props.identity}</div>
-      </Show>
-      {/* A desk strip reads top to bottom: pan, the fader, then mute and solo. */}
+      {/* A desk strip reads top to bottom: its name, pan, the fader, then mute and solo. */}
       <Show
         when={props.strip === true}
         fallback={
-          <>
-            {muteButton()}
-            {soloButton()}
-            {volume()}
-            {knob()}
-          </>
+          <Show
+            when={props.identity !== undefined}
+            fallback={
+              <>
+                {muteButton()}
+                {soloButton()}
+                {volume()}
+                {knob()}
+              </>
+            }
+          >
+            {/* A lane header: who it is and its switches, then how it sounds. */}
+            <div class={styles.headerRow}>
+              <div class={styles.identityCell}>{props.identity}</div>
+              {props.arm}
+              {muteButton()}
+              {soloButton()}
+            </div>
+            <div class={styles.headerRow}>
+              {props.lines}
+              {volume()}
+              {knob()}
+            </div>
+          </Show>
         }
       >
+        <Show when={props.identity}>
+          <div class={styles.identityCell}>{props.identity}</div>
+        </Show>
         {knob()}
         {volume()}
         <div class={styles.stripButtons}>

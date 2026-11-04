@@ -277,10 +277,12 @@ test.describe('Tablet arrangement touch', () => {
   }) => {
     await openArrangement(page)
     await setStudioZoom(page, 120)
-    await setClipStart(page, 4)
-    // Numeric editing selected this clip. A blank lane click clears selection.
+    // At 3 s the clip's middle, where the drags start, is inside the window.
+    await setClipStart(page, 3)
+    // Numeric editing selected this clip. A blank lane click clears selection:
+    // past the tablet's 320 px lane header, short of the clip.
     const viewport = timelineViewport(page)
-    await viewport.tap({ position: { x: 300, y: 100 } })
+    await viewport.tap({ position: { x: 400, y: 100 } })
     await expect(studioClip(page)).toHaveAttribute('aria-pressed', 'false')
     const before = await readStudioProject(page)
     await dragTouch(page, studioClip(page), -120)
@@ -308,7 +310,7 @@ test.describe('Tablet arrangement touch', () => {
     await dragTouch(page, studioClip(page), 120)
     await expect
       .poll(async () => (await readStudioProject(page)).clips[0].startFrame)
-      .toBe(5 * STUDIO_RATE)
+      .toBe(4 * STUDIO_RATE)
     expect((await readStudioProject(page)).revision).toBe(before.revision + 1)
     expect(await viewport.evaluate((element) => element.scrollLeft)).toBe(
       scrollBefore,

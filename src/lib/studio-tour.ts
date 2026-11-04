@@ -89,10 +89,26 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     whenPresent: true,
   },
   {
+    title: 'Each track’s part',
+    targetSelector: '[data-tour="studio.role"]',
+    description:
+      'The picture shows the part a track plays, from lead vocal to drums. Click the track’s name to change its part, or to switch the pictures to line icons.',
+    placement: 'bottom',
+    whenPresent: true,
+  },
+  {
     title: 'Balance each track',
     targetSelector: '[data-tour="studio.track-controls"]',
     description:
       'Set the volume and left-right balance for a track. Mute leaves it out; Solo lets you hear it on its own.',
+    placement: 'bottom',
+    whenPresent: true,
+  },
+  {
+    title: 'Arm a track to record',
+    targetSelector: '[data-tour="studio.arm"]',
+    description:
+      'The red dot arms a track: the microphone opens and the track gets a red ring. Record then starts a take there in one press. Press the dot again to disarm.',
     placement: 'bottom',
     whenPresent: true,
   },

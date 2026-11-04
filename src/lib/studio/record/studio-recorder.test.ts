@@ -1,4 +1,4 @@
-// Studio recorder — arming opens the clock and the microphone in the press, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
+// Studio recorder — arming opens the clock and the microphone in the press, the arm moves between lanes and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
@@ -294,6 +294,28 @@ describe('arming', () => {
     expect(h.deps.openCapture).not.toHaveBeenCalled()
   })
 
+  it('moves the arm to the lane pressed while the microphone opens, metering that lane', async () => {
+    const h = harness({
+      monitorLevel: (trackId) => ({
+        on: true,
+        gain: trackId === 'lane-2' ? 0.5 : 1,
+        pan: 0,
+      }),
+    })
+    const arming = h.recorder.arm('lane-1')
+
+    h.recorder.retarget('lane-2')
+
+    expect(h.view()).toMatchObject({ phase: 'arming', targetTrackId: 'lane-2' })
+    expect(await arming).toBe(true)
+    expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-2' })
+    expect(h.monitor.set).toHaveBeenLastCalledWith({
+      on: true,
+      gain: 0.5,
+      pan: 0,
+    })
+  })
+
   it('closes the capture and gives the microphone back on disarm', async () => {
     const h = harness()
     await h.recorder.arm(null)
@@ -450,11 +472,51 @@ describe('a take', () => {
     })
     expect(take.samples).toHaveLength(5096)
     expect(take.samples[5095]).toBe(0.25)
-    expect(h.view()).toMatchObject({ phase: 'idle', live: null, notice: null })
-    expect(h.releaseMic).toHaveBeenCalledOnce()
+    expect(h.view()).toMatchObject({ phase: 'armed', live: null, notice: null })
     expect(h.releaseMemory).toHaveBeenCalled()
     await settle()
     expect(h.journal.discard).toHaveBeenCalledWith('take-1')
+  })
+
+  it('stays armed on its lane after a take, the microphone open, so the next Record starts the next take', async () => {
+    const h = await recording()
+    const first = h.capture
+    h.chunk(0, 4096)
+    h.recorder.stop()
+
+    h.worklet.stopped(4096, 'stopped')
+    await settle()
+
+    expect(h.view()).toMatchObject({
+      phase: 'armed',
+      targetTrackId: 'lane-1',
+      level: 0,
+    })
+    expect(h.releaseMic).not.toHaveBeenCalled()
+    expect(h.monitor.dispose).not.toHaveBeenCalled()
+    // A capture takes one start: the armed lane listens through a fresh one.
+    expect(first.dispose).toHaveBeenCalled()
+    expect(h.captures).toHaveLength(2)
+    h.worklet.level(0.3, 1536)
+    expect(h.view().level).toBe(0.3)
+
+    expect(h.recorder.record()).toBe(true)
+    expect(h.capture.start).toHaveBeenCalledOnce()
+    expect(h.view().phase).toBe('recording')
+  })
+
+  it('disarms after a take when the clock stopped before it was kept', async () => {
+    const h = await recording()
+    h.chunk(0, 4096)
+    h.recorder.stop()
+    h.ctx.state = 'suspended'
+
+    h.worklet.stopped(4096, 'stopped')
+    await settle()
+
+    expect(h.kept).toHaveLength(1)
+    expect(h.view()).toMatchObject({ phase: 'idle', targetTrackId: null })
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
   it('journals about a second at a time, in order, once the take is placed', async () => {
@@ -547,7 +609,7 @@ describe('a take', () => {
 
     expect(h.journal.append).toHaveBeenCalledOnce()
     expect(h.journal.discard).not.toHaveBeenCalled()
-    expect(h.view().phase).toBe('idle')
+    expect(h.view().phase).toBe('armed')
   })
 
   it('finishes with what arrived when the worklet never reports its stop', async () => {
@@ -673,7 +735,8 @@ describe('punch and loop takes', () => {
     await settle()
     expect(h.kept).toHaveLength(1)
     expect(h.kept[0].cut).toEqual({ mode: 'punch', range: RANGE })
-    expect(h.view()).toMatchObject({ phase: 'idle', notice: null })
+    // The lane stays armed for the next pass at the range.
+    expect(h.view()).toMatchObject({ phase: 'armed', notice: null })
   })
 
   it('says a punch stopped in its pre-roll kept nothing', async () => {
@@ -708,7 +771,7 @@ describe('punch and loop takes', () => {
     expect(h.kept).toHaveLength(0)
     expect(h.journal.discard).toHaveBeenCalled()
     expect(h.view()).toMatchObject({
-      phase: 'idle',
+      phase: 'armed',
       notice:
         'Stopped just after the range began, so the take was too short to keep.',
     })

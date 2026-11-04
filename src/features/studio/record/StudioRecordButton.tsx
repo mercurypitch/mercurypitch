@@ -1,46 +1,54 @@
-// Studio record button — one press arms the selected lane, the next records, the next stops; armed and recording look different.
+// Studio record button — one press records: on the armed lane, or with none armed it arms the selected lane (else the first empty one, else a new lane) and starts in the same press; the next press stops.
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
 import { RecordDot } from '../studio-icons'
 import styles from './StudioRecord.module.css'
+import type { StudioRecorderHandle } from './useStudioRecorder'
 
 /** What a press does now, for a screen reader. */
 const LABELS: Readonly<Record<StudioRecordPhase, string>> = {
   idle: 'Record',
   arming: 'Opening the microphone',
-  armed: 'Start recording',
+  armed: 'Record',
   counting: 'Cancel the count-in',
   recording: 'Stop recording',
   finishing: 'Keeping the take',
 }
 
-const TITLES: Readonly<Record<StudioRecordPhase, string>> = {
+const TITLES: Readonly<Record<Exclude<StudioRecordPhase, 'armed'>, string>> = {
   idle: 'Record (R)',
   arming: 'Opening the microphone',
-  armed: 'Start recording (R)',
   counting: 'Cancel the count-in (R)',
   recording: 'Stop recording (R or Space)',
   finishing: 'Keeping the take',
 }
 
 export function StudioRecordButton(props: {
-  phase: StudioRecordPhase
-  canArm: boolean
-  onPress(): void
+  recorder: Pick<
+    StudioRecorderHandle,
+    'phase' | 'canArm' | 'press' | 'view' | 'laneName'
+  >
 }) {
+  const phase = () => props.recorder.phase()
+  const title = () => {
+    const now = phase()
+    if (now !== 'armed') return TITLES[now]
+    const lane = props.recorder.laneName(props.recorder.view().targetTrackId)
+    return `Record on ${lane ?? 'a new lane'} (R)`
+  }
   return (
     <button
       type="button"
       class={styles.record}
-      data-phase={props.phase}
+      data-phase={phase()}
       data-studio-record=""
-      aria-label={LABELS[props.phase]}
-      title={TITLES[props.phase]}
+      aria-label={LABELS[phase()]}
+      title={title()}
       disabled={
-        props.phase === 'arming' ||
-        props.phase === 'finishing' ||
-        (props.phase === 'idle' && !props.canArm)
+        phase() === 'arming' ||
+        phase() === 'finishing' ||
+        (phase() === 'idle' && !props.recorder.canArm())
       }
-      onClick={() => props.onPress()}
+      onClick={() => props.recorder.press()}
     >
       <RecordDot />
     </button>

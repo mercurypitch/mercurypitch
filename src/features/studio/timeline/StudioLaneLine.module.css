@@ -176,7 +176,8 @@
   transform: translate(-50%, 26px);
 }
 
-/* The lane header's name beside the toggle that opens its lines. */
+/* The lines toggle: in a lane header's second row, before the fader; on a
+   phone, beside the lane's name, the only control its header has room for. */
 .identity {
   display: flex;
   align-items: center;
@@ -187,7 +188,7 @@
 .identity > button:first-child {
   flex: 1 1 auto;
 }
-.identity button.toggle {
+button.toggle {
   position: relative;
   display: grid;
   flex: none;
@@ -210,7 +211,7 @@
   height: 15px;
 }
 /* A lane that follows a line says so with a dot in its hue. */
-.identity button.toggle[data-has-lines]::after {
+button.toggle[data-has-lines]::after {
   content: '';
   position: absolute;
   top: -3px;
@@ -222,37 +223,37 @@
   background: var(--studio-track);
 }
 @media (hover: hover) {
-  .identity button.toggle:hover:not([aria-pressed='true'], :disabled) {
+  button.toggle:hover:not([aria-pressed='true'], :disabled) {
     background: var(--studio-hover);
     color: var(--studio-text);
   }
 }
-.identity button.toggle[aria-pressed='true'] {
+button.toggle[aria-pressed='true'] {
   border-color: transparent;
   background: var(--studio-accent);
   color: var(--studio-on-accent);
 }
 /* A take holds the lines (line-editor.ts). */
-.identity button.toggle:disabled {
+button.toggle:disabled {
   opacity: 0.45;
   cursor: default;
 }
-.identity button.toggle:focus-visible {
+button.toggle:focus-visible {
   outline: 2px solid var(--studio-accent);
   outline-offset: 1px;
 }
-/* Touch: a full-height target beside the name. */
-.touchIdentity button.toggle {
+/* Touch: a full-height target. */
+button.touchToggle {
   width: 32px;
   height: 44px;
   border-radius: 8px;
 }
-.touchIdentity .toggle svg {
+.touchToggle svg {
   width: 18px;
   height: 18px;
 }
-/* Beside the toggle on a touch screen, a long name with no source line
-   under it takes a second line. */
+/* Beside the toggle on a phone, a long name with no source line under it
+   takes a second line. */
 .touchIdentity > button:first-child > span:only-child {
   display: -webkit-box;
   overflow-wrap: anywhere;
@@ -260,17 +261,31 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-/* A phone lane with room stands the toggle under the name, as wide as the
-   header, so the name keeps the header's width for its two lines. */
+/* A phone lane with room stands its arm and its toggle under the name, as
+   wide as the header, so the name keeps the header's width for its two
+   lines. */
 .stackedIdentity {
   flex-direction: column;
   align-items: stretch;
 }
+/* The arm and the toggle: inline beside the name, a row of their own under it. */
+.phoneControls {
+  display: contents;
+}
+/* Under the name, the row reaches into the header's side padding, as the
+   name's button does, so the arm and the toggle are 44 px each. */
+.stackedIdentity .phoneControls {
+  display: flex;
+  gap: 4px;
+  margin: 0 -3px 0 -6px;
+}
 .stackedIdentity button.toggle {
   display: flex;
+  flex: 1 1 auto;
   justify-content: center;
+  align-items: center;
   gap: 6px;
-  width: 100%;
+  width: auto;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -310,7 +325,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .identity button.toggle {
+  button.toggle {
     transition: none;
   }
 }

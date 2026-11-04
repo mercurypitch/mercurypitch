@@ -1,14 +1,18 @@
-// Studio phone mix — the Mix sheet's lane list: each lane's name, then its compact mix controls.
-import { createMemo, For } from 'solid-js'
+// Studio phone mix — the Mix sheet's lane list: each lane's role plate, name and arm button, then its compact mix controls.
+import { createMemo, For, Show } from 'solid-js'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import styles from '../StudioPage.module.css'
+import { StudioArmButton, StudioRolePlate } from '../timeline/StudioLaneHeader'
 import { StudioTrackControls } from '../timeline/StudioTrackControls'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
+import type { StudioLaneArming } from '../timeline/types'
 
 interface StudioPhoneMixProps {
   project: StudioProject
   writable: boolean
+  /** The lanes' arm buttons: a phone's lane headers have room for them only when few. */
+  arming?: StudioLaneArming
   onCommand(command: StudioCommand): boolean
   onTrackDetails(id: string): void
 }
@@ -28,19 +32,34 @@ export function StudioPhoneMix(props: StudioPhoneMixProps) {
           return (
             <div
               class={styles.phoneTrack}
+              data-studio-phone-track={id}
+              data-armed={props.arming?.armedTrackId() === id ? '' : undefined}
               style={{
                 '--studio-track': studioTrackColor(
                   studioTrackHue(track(), index()),
                 ),
               }}
             >
-              <button
-                type="button"
-                class={styles.textButton}
-                onClick={() => props.onTrackDetails(id)}
-              >
-                {track().name}
-              </button>
+              <div class={styles.phoneTrackHead}>
+                <StudioRolePlate role={track().role} list />
+                <button
+                  type="button"
+                  class={styles.textButton}
+                  onClick={() => props.onTrackDetails(id)}
+                >
+                  <span class={styles.phoneTrackName}>{track().name}</span>
+                </button>
+                <Show when={props.arming}>
+                  {(arming) => (
+                    <StudioArmButton
+                      trackId={id}
+                      name={track().name}
+                      arming={arming()}
+                      touch
+                    />
+                  )}
+                </Show>
+              </div>
               <StudioTrackControls
                 track={track()}
                 writable={props.writable}

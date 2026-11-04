@@ -11,10 +11,18 @@
 // progress holds the mic against a hidden-tab release, navigation waits for
 // a take, and the mic is given back when a take ends or the Studio closes.
 //
-// Keys: R arms, then records, then stops; Escape disarms, cancels a
-// count-in or stops a take; Space stops a take (StudioWorkspace's toggle).
-// Arming takes the focus in the Studio; once armed, R and Escape work
-// wherever the focus is, outside text fields and dialogs.
+// Arming: each lane's arm button arms that lane (the microphone opens and
+// the lane shows its level), moves the arm from another lane, or disarms
+// it. One lane is armed at a time, as one take records at a time, and the
+// arm stays put when another lane is selected and after a take.
+//
+// Keys: Record and R start a take on the armed lane in one press; with no
+// lane armed they arm the selected lane, else the first lane with no clips,
+// else a new lane, and start in the same press. R or Stop ends the take;
+// Escape disarms, cancels a count-in or stops a take; Space stops a take
+// (StudioWorkspace's toggle). Arming takes the focus in the Studio; once
+// armed, R and Escape work wherever the focus is, outside text fields and
+// dialogs.
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { StudioTakeJournalRecord } from '@/db/services/studio-take-journal'
@@ -44,7 +52,7 @@ import { micLatencyMsForDevice } from '@/stores/mic-latency-store'
 import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
-import type { StudioTimelineRecording } from '../timeline/types'
+import type { StudioLaneArming, StudioTimelineRecording, } from '../timeline/types'
 import { createStudioInputs } from './studio-inputs'
 import { studioTakeFrames, studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
@@ -274,19 +282,58 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     !options.audioBusy() &&
     !recovering()
 
-  /** The Record button and R: arm, then record, then stop. */
+  /** The lane Record arms when none is: the selected one, else the first with no clips, else a new lane (null). */
+  function defaultLane(): string | null {
+    const song = project()
+    if (song === null) return null
+    const selected = options.selectedTrackId()
+    if (song.tracks.some((track) => track.id === selected)) return selected
+    const used = new Set(song.clips.map((clip) => clip.trackId))
+    const empty = [...song.tracks]
+      .sort((a, b) => a.order - b.order)
+      .find((track) => !used.has(track.id))
+    return empty?.id ?? null
+  }
+
+  /** Start the take on the armed lane. */
+  function startTake(): void {
+    // A take runs straight through: the song does not loop under it,
+    // unless it loops a range to record pass after pass.
+    restoreRepeat = takeCut()?.mode !== 'loop' && transport.repeating()
+    if (restoreRepeat) void transport.setRepeat(false)
+    recorder.record()
+  }
+
+  // Bumped by every press: a Record that armed a lane starts the take only
+  // if nothing was pressed since, and the lane it armed is still armed.
+  let pressToken = 0
+
+  /** Arm `lane` inside the press (the microphone and the clock need one), then record there. */
+  async function armAndRecord(lane: string | null, token: number) {
+    const armed = await recorder.arm(lane)
+    if (armed && token === pressToken && phase() === 'armed') startTake()
+  }
+
+  /** The Record button and R: start a take on the armed lane, arming one first if none is; stop a take. */
   function press(): void {
     const now = phase()
+    const token = ++pressToken
     if (now === 'idle') {
-      if (!canArm()) return
-      void recorder.arm(options.selectedTrackId())
-    } else if (now === 'armed') {
-      // A take runs straight through: the song does not loop under it,
-      // unless it loops a range to record pass after pass.
-      restoreRepeat = takeCut()?.mode !== 'loop' && transport.repeating()
-      if (restoreRepeat) void transport.setRepeat(false)
-      recorder.record()
-    } else if (RUNNING.has(now)) recorder.stop()
+      if (canArm()) void armAndRecord(defaultLane(), token)
+    } else if (now === 'armed') startTake()
+    else if (RUNNING.has(now)) recorder.stop()
+  }
+
+  /** A lane's arm button: arm it, move the arm to it, or disarm it. */
+  function toggleArm(trackId: string): void {
+    const now = phase()
+    pressToken++
+    if (now === 'idle') {
+      if (canArm()) void recorder.arm(trackId)
+    } else if (now === 'armed' || now === 'arming') {
+      if (view().targetTrackId === trackId) recorder.disarm()
+      else recorder.retarget(trackId)
+    }
   }
 
   function stop(): void {
@@ -322,12 +369,14 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   window.addEventListener('keydown', onWindowKey)
   onCleanup(() => window.removeEventListener('keydown', onWindowKey))
 
-  // The armed lane follows the selection until the take starts.
-  createEffect(
-    on(options.selectedTrackId, (trackId) => recorder.retarget(trackId), {
-      defer: true,
-    }),
-  )
+  // An armed lane that leaves the song (removed, or undone) disarms.
+  createEffect(() => {
+    const now = phase()
+    const lane = view().targetTrackId
+    if ((now !== 'armed' && now !== 'arming') || lane === null) return
+    if (project()?.tracks.some((track) => track.id === lane) !== true)
+      untrack(() => recorder.disarm())
+  })
   // Monitoring follows its setting and the lane's volume and pan.
   createEffect(() => {
     laneLevel(view().targetTrackId)
@@ -416,7 +465,8 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   // A take that could not be kept stays offered.
   createEffect(
     on(phase, (now, before) => {
-      if (now === 'idle' && before === 'finishing') void refreshRecovery()
+      if ((now === 'idle' || now === 'armed') && before === 'finishing')
+        void refreshRecovery()
     }),
   )
 
@@ -532,6 +582,13 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     press,
     stop,
     keyDown,
+    /** Each lane's arm button reads and presses through this. */
+    arming: {
+      armedTrackId: () => (phase() === 'idle' ? null : view().targetTrackId),
+      phase,
+      canArm,
+      toggle: toggleArm,
+    } satisfies StudioLaneArming,
     disarm: () => recorder.disarm(),
     clearMessages: () => recorder.clearMessages(),
     settings,

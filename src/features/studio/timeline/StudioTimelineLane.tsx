@@ -1,4 +1,4 @@
-// Studio timeline lane — one track's header and clips, and its volume or pan line while that is open.
+// Studio timeline lane — one track's header (its role plate, name, arm, mix and lines) and clips, and its volume or pan line while that is open.
 import type { Accessor } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
@@ -9,6 +9,7 @@ import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
 import { studioSourcePresentation } from './source-presentation'
+import { StudioArmButton, StudioRolePlate } from './StudioLaneHeader'
 import { StudioLaneLine } from './StudioLaneLine'
 import lineStyles from './StudioLaneLine.module.css'
 import styles from './StudioTimeline.module.css'
@@ -81,48 +82,85 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
     props.view.lines.open(props.track)
   }
 
-  const identity = (sourceLabel?: string) => (
+  const touch = () => props.timeline.phone || props.timeline.tablet === true
+  const armed = () =>
+    props.timeline.arming?.armedTrackId() === props.id ? '' : undefined
+
+  const armButton = () => (
+    <Show when={props.timeline.arming}>
+      {(arming) => (
+        <StudioArmButton
+          trackId={props.id}
+          name={props.track.name}
+          arming={arming()}
+          touch={touch()}
+        />
+      )}
+    </Show>
+  )
+
+  /** The toggle that opens the lane's volume and pan lines; `label` names it beside its icon. */
+  const linesToggle = (label: () => boolean = () => false) => (
+    <button
+      type="button"
+      class={lineStyles.toggle}
+      classList={{ [lineStyles.touchToggle]: touch() }}
+      data-tour="studio.lines"
+      data-studio-lines-toggle={props.id}
+      data-has-lines={hasStudioAutomation(props.track) ? '' : undefined}
+      aria-pressed={line() !== null}
+      aria-label={`${props.track.name} volume and pan lines`}
+      disabled={props.view.lines.held()}
+      title={
+        props.view.lines.held()
+          ? studioTakeRunning()
+            ? 'Stop the take to draw lines'
+            : 'Disarm the lane to draw lines'
+          : line() !== null
+            ? 'Close the lines'
+            : hasStudioAutomation(props.track)
+              ? 'Volume and pan lines. This lane follows a line.'
+              : 'Draw volume and pan lines'
+      }
+      onClick={toggleLines}
+    >
+      <LaneLine />
+      <Show when={label()}>
+        <span>Lines</span>
+      </Show>
+    </button>
+  )
+
+  const name = (sourceLabel?: string) => (
+    <StudioTrackName
+      id={props.id}
+      name={props.track.name}
+      source={sourceLabel}
+      onDetails={props.timeline.onTrackDetails}
+    />
+  )
+
+  /**
+   * A phone header holds the name and the lines toggle; with room, the arm
+   * and the toggle stand under the name. A short phone lane arms from the
+   * Mix sheet, or from Record with the lane selected. The toggle stays one
+   * element as the lanes grow or shrink, so it keeps the focus.
+   */
+  const phoneIdentity = () => (
     <div
       class={lineStyles.identity}
       classList={{
-        [lineStyles.touchIdentity]:
-          props.timeline.phone || props.timeline.tablet === true,
+        [lineStyles.touchIdentity]: true,
         [lineStyles.stackedIdentity]: props.view.stackHeader(),
       }}
     >
-      <StudioTrackName
-        id={props.id}
-        name={props.track.name}
-        source={sourceLabel}
-        onDetails={props.timeline.onTrackDetails}
-      />
-      <button
-        type="button"
-        class={lineStyles.toggle}
-        data-tour="studio.lines"
-        data-studio-lines-toggle={props.id}
-        data-has-lines={hasStudioAutomation(props.track) ? '' : undefined}
-        aria-pressed={line() !== null}
-        aria-label={`${props.track.name} volume and pan lines`}
-        disabled={props.view.lines.held()}
-        title={
-          props.view.lines.held()
-            ? studioTakeRunning()
-              ? 'Stop the take to draw lines'
-              : 'Disarm the lane to draw lines'
-            : line() !== null
-              ? 'Close the lines'
-              : hasStudioAutomation(props.track)
-                ? 'Volume and pan lines. This lane follows a line.'
-                : 'Draw volume and pan lines'
-        }
-        onClick={toggleLines}
-      >
-        <LaneLine />
-        <Show when={props.view.stackHeader()}>
-          <span>Lines</span>
-        </Show>
-      </button>
+      {name()}
+      <div class={lineStyles.phoneControls}>
+        <Show when={props.view.stackHeader()}>{armButton()}</Show>
+        {linesToggle(
+          () => props.view.stackHeader() && props.timeline.arming === undefined,
+        )}
+      </div>
     </div>
   )
 
@@ -139,17 +177,24 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
           ? ''
           : undefined
       }
+      data-armed={armed()}
       style={{ '--studio-track': color() }}
     >
-      <div class={styles.trackHeader}>
-        <Show when={!props.timeline.phone} fallback={identity()}>
+      <div
+        class={styles.trackHeader}
+        classList={{ [styles.withPlate]: !props.timeline.phone }}
+      >
+        <Show when={!props.timeline.phone} fallback={phoneIdentity()}>
+          <StudioRolePlate role={props.track.role} />
           <StudioTrackControls
             track={props.track}
             writable={props.timeline.writable}
             tablet={props.timeline.tablet === true}
             soloedOut={props.view.anySolo() && !props.track.solo}
             onCommand={props.timeline.onCommand}
-            identity={identity(source().label)}
+            identity={name(source().label)}
+            arm={armButton()}
+            lines={linesToggle()}
           />
         </Show>
       </div>
