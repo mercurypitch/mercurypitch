@@ -131,8 +131,14 @@
   color: var(--text-muted);
 }
 
+/* A value keeps its own width, up to half the row, and the label wraps
+   first. Shrinking in step with the label, a short value was cut before
+   the label had wrapped at all: on a 320 px phone the Account card's "Sign
+   in" read "Sig…" beside "Practicing on this phone only". A long value still
+   ellipsizes at half the row. */
 .mp-set-row__value {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  max-width: 50%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
