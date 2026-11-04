@@ -5,8 +5,12 @@
    lesson-parts and lesson-voice). Here: the compact range chart between Merc
    and Tavi, the range chart's heights for the stage budget, its rows of
    controls (WEB-SPEC, Toys 1, "Layout and targets": every target 44 px, 8 px
-   apart, from 344 px up), the scrub bar, the push gauge and its handle,
-   Sing it's live chart beside its ring, and the Wrap's cards and free play. */
+   apart, from 344 px up), the push gauge and its handle, Sing it's live
+   chart beside its ring, and the Wrap's cards and free play. The rows, the
+   scrub bar and the live chart's frame are the kit's range chart's
+   (lesson-range.css), taken in by the @import below, which the build
+   inlines, so Lesson 11's page shares them without a chunk of their own. */
+@import '../kit/lesson-range.css';
 
 /* ---------------------------------------------------------------- hero: the column between Merc and Tavi */
 .l7-duo {
@@ -126,47 +130,19 @@
   display: none;
 }
 
-/* the rows under the chart: two buttons a row, the sounds three, each 44 px and 8 px apart */
-.range-pick,
-.range-row,
-.band-grid,
-.free-states {
+/* the rows under the chart are the kit's (lesson-range.css); here the
+   sounds' row and the six bands, three a row */
+.range-sounds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.band-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
 }
-.range-sounds,
-.band-grid,
-.free-states {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.range-pick[hidden],
-.range-row[hidden],
 .band-grid[hidden] {
   display: none;
-}
-.range-row > :only-child {
-  grid-column: 1 / -1;
-}
-.range-toy .btn {
-  min-width: 0;
-  padding-inline: 10px;
-  white-space: normal;
-  line-height: 1.2;
-}
-.range-toy .btn:not(.primary)[aria-pressed='true'],
-.range-toy .btn:not(.primary).is-on {
-  border-color: color-mix(in srgb, var(--amber) 70%, transparent);
-  background: color-mix(in srgb, var(--amber) 14%, transparent);
-}
-.range-toy .switch {
-  justify-content: center;
-}
-/* Step 5's singers wait for the predict's guess, and look it, as a locked play button does */
-.range-toy .btn[disabled] {
-  cursor: not-allowed;
-  opacity: 0.42;
 }
 /* Lower and Higher repeat while held: a long press must not select or open a menu */
 .hold-btn {
@@ -174,61 +150,6 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-}
-.range-toy .small-print {
-  margin: 10px 0 0;
-  font-size: var(--fs-14);
-  line-height: 1.45;
-  color: var(--ink-3);
-}
-.range-toy .small-print[hidden] {
-  display: none;
-}
-
-/* the scrub bar: the siren's six seconds across its row, a 44 px thumb */
-.scrub {
-  --u: 0;
-  position: relative;
-  min-height: 44px;
-  margin-top: 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  touch-action: none;
-}
-.scrub[hidden] {
-  display: none;
-}
-.scrub:focus-visible {
-  outline: 2px solid var(--aqua);
-  outline-offset: 2px;
-}
-.scrub-track {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  top: 50%;
-  height: 4px;
-  margin-top: -2px;
-  border-radius: 2px;
-  background: var(--hair-2);
-}
-.scrub-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--u) * 100%);
-  border-radius: 2px;
-  background: var(--amber);
-}
-.scrub-thumb {
-  position: absolute;
-  top: 50%;
-  left: calc(var(--u) * 100%);
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--amber) 0 9px, transparent 10px);
-  border: 1px solid color-mix(in srgb, var(--amber) 55%, transparent);
 }
 
 /* the push gauge at the chart's right, level with the lit middle, where
@@ -320,23 +241,6 @@
 .l7-meter {
   align-items: stretch;
 }
-.live-viz {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 240px;
-  border-radius: var(--r-md);
-  background: radial-gradient(100% 90% at 50% 40%, #121927, #0b0f16);
-  border: 1px solid var(--hair);
-  overflow: hidden;
-}
-.live-viz canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 .l7-meter .ring {
   align-self: center;
 }
@@ -344,11 +248,6 @@
 @media (max-width: 560px) {
   .l7-meter {
     flex-direction: column;
-  }
-  .live-viz {
-    flex: none;
-    width: 100%;
-    height: 230px;
   }
 }
 
