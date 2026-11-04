@@ -552,7 +552,7 @@ The dose and the retries, all in the flow rule below (FACTS 53, 54):
 The flow is a pure rule, Lesson 5's `lesson-05/hold-flow.ts`, moved into the kit as
 `kit/hold-flow.ts` with the hold lengths as data (Lesson 5 passes ten seconds then fifteen, this
 page ten alone), `TAKES_PER_HOLD` 3, `CELEBRATE_SHARE` 0.8 and `TRICKY_SHARE` 0.5 unchanged
-(`lesson-05/hold-flow.ts:28-37`; needs 8). From the comfort answer, the voice, whether sound and Web
+(`kit/hold-flow.ts:37-43`; needs 8). From the comfort answer, the voice, whether sound and Web
 Audio are on, the takes so far (how many, and for each whether it had voice, whether it was
 abandoned and its share in the band), and the answers so far (the latest, and whether "Effortful" or
 "Uncomfortable" was ever answered), it gives the state, the controls shown, the lines, whether Merc
@@ -560,7 +560,7 @@ celebrates and the Wrap's card, so every branch above is unit-tested without a m
 6).
 
 Listening: Lesson 3's `kit/listen.ts` unchanged, through Lesson 5's hold runner moved into the kit
-(`holdOne`, `lesson-05/sing-hold.ts:116-169`; needs 9) with Merc's Listen phase passed in, so
+(`holdOne`, `kit/hold-run.ts:142-197`; needs 9) with Merc's Listen phase passed in, so
 Lesson 5's passes its two-second note and this page its ten seconds of vowels:
 `micManager.acquire('lesson-13')` for each take (`kit/listen.ts:59`), released when it ends, on
 leaving the section, on `pagehide` and when the tab is hidden (`:18-22`); the YIN-only F0 stream;
@@ -889,14 +889,16 @@ and the four-words strip in the kit.
    source, the resonators' response (the RBJ lowpass, as `verify13.py` gives it), the levels, the
    segments, the labelled peaks, the in-between resonances of a change, and the equal-power factors,
    unit-tested against `verify13.py`'s numbers (Tests, 1 and 2).
-8. `kit/hold-flow.ts`, Lesson 5's `lesson-05/hold-flow.ts` moved into the kit (Toys 6), with the
-   hold lengths as data, so Lesson 5 keeps ten seconds then fifteen and this page has ten alone, and
-   with the Wrap's rest card after effort (item 10). Lesson 5's tests move with it and pass
-   unchanged.
-9. `kit/hold-run.ts`, Lesson 5's `holdOne` and its lead (`lesson-05/sing-hold.ts:40-42`,
-   `:88-169`) moved into the kit, with Merc's Listen phase passed in as a function that resolves
-   `false` when it was cut short, and a hook on the first voiced frame for the vowel cues. Lesson 5
-   passes its two-second note, unchanged.
+8. `kit/hold-flow.ts`, built: Lesson 5's hold flow moved into the kit (Toys 6), with the holds'
+   lengths as data (`HoldPlan`, `kit/hold-flow.ts:30-34`), so Lesson 5 keeps ten seconds then
+   fifteen (`lesson-05/hold-flow.ts:31-35`) and this page has ten alone, and with the Wrap's rest
+   card after effort (`restAfterEffort`, item 10). Lesson 5's own tests stay beside its plan and
+   pass unchanged through the kit; the kit's test covers one hold and the rest card after effort.
+9. `kit/hold-run.ts`, built: Lesson 5's `holdOne` and its lead moved into the kit (`GAP_SEC` and
+   `BREATHE_SEC`, `kit/hold-run.ts:44-45`; `lead` and `holdOne`, `:112-197`), with Merc's Listen
+   phase passed in as a demonstration that resolves `false` when it was cut short, and `onSung`,
+   which hears each frame's seconds since the first voiced frame, for the vowel cues. Lesson 5
+   passes its two-second note (`MERC_SEC`, `lesson-05/sing-hold.ts:38`), unchanged.
 10. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
     `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
     (`:69-78`) and Lessons 6, 7, 9, 10, 11 and 13 all choose it, as Lesson 11's spec proposes (its

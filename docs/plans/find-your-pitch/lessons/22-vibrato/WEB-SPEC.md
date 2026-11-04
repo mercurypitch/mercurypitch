@@ -389,7 +389,7 @@ Lesson 5's Sing it (its WEB-SPEC, Toys 6), moved into the kit with options (What
 still need, item 7), with two ten-second holds read by the centre-line reader. Every state has a
 visible status line that is also announced (`aria-live="polite"`). Each hold allows up to three
 takes in a visit, as Lesson 5's does (`TAKES_PER_HOLD`,
-`src/features/lessons/lesson-05/hold-flow.ts:31-32`).
+`src/features/lessons/kit/hold-flow.ts:37-38`).
 
 States:
 
@@ -431,7 +431,7 @@ States:
    `src/features/lessons/kit/hold-take.ts:39-42`). Nothing plays while it is open. **No live band
    state**: during the take the band's edge does not light, the band does not glow and no line names
    where the voice is against the band, since a wave wider than the band would flip it on every
-   swing; Lesson 5's take shows its state live (`src/features/lessons/lesson-05/sing-hold.ts:60-88`;
+   swing; Lesson 5's take shows its state live (`src/features/lessons/kit/hold-run.ts:83-110`;
    FACTS 57). The microphone is released when the take ends.
 8. **After the take**: the centre-line reader reads it (below). The learner's line stays drawn.
    Where the reader found a vibrato, the line's middle draws itself over it as a dashed violet line
@@ -481,7 +481,7 @@ the summary's subject, "the middle of your line". Both holds take Lesson 5's mod
 flow needs no option for it. From the hold, the take's reading, the answer and the takes so far it
 gives the next state, the buttons, the lines, whether the singing Merc celebrates and the Wrap's
 card, so every branch is unit-tested without a microphone (Tests, 11). Lesson 5's own constants
-stay its defaults (`src/features/lessons/lesson-05/hold-flow.ts:28-37`).
+stay its defaults (`src/features/lessons/kit/hold-flow.ts:37-43`).
 
 **The centre-line reader** (`kit/hold-centre.ts`, new, pure and unit-tested; What the kit and the app
 still need, item 6):
@@ -586,7 +586,7 @@ Sing it's notes in the chosen voice's octave, each with the vibrato its play nam
   `src/features/lessons/kit/sound.ts:321-347`).
 - **Merc's model notes** in Sing it are timed notes with the default vibrato, before both holds, as
   Lesson 5's are (`playTone`, `src/features/lessons/kit/sound.ts:561-569`;
-  `src/features/lessons/lesson-05/sing-hold.ts:106`).
+  `src/features/lessons/lesson-05/sing-hold.ts:52`).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the Straight note word, which a
   phone's speaker carries through the "ooh"'s overtones, as Lesson 14's D3 does (FACTS, Layout).
 
@@ -731,9 +731,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      about 6 of 10 seconds in the band, and ±60 about 4 (FACTS 43).
 7. **Lesson 5's hold flow in the kit**, code with tests: Lesson 5's take
    (`src/features/lessons/lesson-05/sing-hold.ts:1-20`), its flow rule
-   (`src/features/lessons/lesson-05/hold-flow.ts:1-22`) and its Sing it move into the kit with
+   (`src/features/lessons/kit/hold-flow.ts:1-25`) and its Sing it move into the kit with
    options: the holds' lengths, 10 and 15 there, 10 and 10 here (`HOLD_SEC`,
-   `src/features/lessons/lesson-05/hold-flow.ts:28-29`); the listening notes, a 10-second and a
+   `src/features/lessons/lesson-05/hold-flow.ts:31-32`); the listening notes, a 10-second and a
    15-second note there, one 10-second note here; the reader, today's or the centre-line reader;
    the live band state, on there and off here; `restAfterEffort`, off there and on here; Hold 2's
    button; and the summary's subject. Lesson 5's page keeps its behaviour, and its tests move with
