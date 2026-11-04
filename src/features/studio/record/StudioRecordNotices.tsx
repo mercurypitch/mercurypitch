@@ -4,6 +4,7 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
+import { studioRecordCardAside } from './record-card-aside'
 import { liveTakeSpan } from './StudioLaneTake'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
@@ -140,14 +141,16 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
  * The card for an armed or recording lane. It floats over the foot of the
  * lanes, above the zoom and the clip bar, so it hides neither the ruler nor
  * a lane's name and never pushes the lanes down. It mounts after the
- * timeline (StudioWorkspace.tsx), whose last row makes room for it.
+ * timeline (StudioWorkspace.tsx), whose last row makes room for it. On a
+ * phone it steps aside while an armed lane's line bar holds the foot
+ * (record-card-aside.ts).
  */
 export function StudioRecordStatus(props: StudioRecordNoticesProps) {
   const recorder = () => props.recorder
   const lane = () =>
     recorder().laneName(recorder().view().targetTrackId) ?? 'a new lane'
   return (
-    <Show when={recorder().phase() !== 'idle'}>
+    <Show when={recorder().phase() !== 'idle' && !studioRecordCardAside()}>
       <div class={styles.statusDock}>
         <div
           class={styles.status}

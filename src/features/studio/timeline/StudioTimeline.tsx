@@ -4,6 +4,7 @@ import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { setStudioRecordCardAside } from '../record/record-card-aside'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { studioTakeRunning } from '../record/take-running'
 import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
@@ -196,11 +197,24 @@ export function StudioTimeline(props: StudioTimelineProps) {
   )
   onCleanup(() => clearTimeout(statusTimer))
   // One lane's volume or pan line is open at a time (line-editor.ts). A
-  // chosen clip, the lane going or another song closes it. A take holds it,
-  // and so does a phone's record card, which takes the foot it stands in.
-  const lines = createStudioLineEditor(
-    () => studioTakeRunning() || (props.phone && props.record != null),
+  // chosen clip, the lane going or another song closes it. A take holds it.
+  // On a phone, an armed lane's line bar stands where the record card
+  // floats, which steps aside for it; a take closes the line there, so the
+  // card is back for the count-in and after the take.
+  const lines = createStudioLineEditor(studioTakeRunning)
+  createEffect(
+    on(
+      studioTakeRunning,
+      (running) => {
+        if (running && props.phone) lines.close()
+      },
+      { defer: true },
+    ),
   )
+  createEffect(() =>
+    setStudioRecordCardAside(props.phone && lines.view() !== null),
+  )
+  onCleanup(() => setStudioRecordCardAside(false))
   const lineTrack = () => {
     const open = lines.view()
     return open ? tracks().get(open.trackId) : undefined

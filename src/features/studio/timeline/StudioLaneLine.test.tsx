@@ -7,6 +7,7 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAutomationPoint, StudioProject, } from '@/lib/studio/model/types'
+import { studioRecordCardAside } from '../record/record-card-aside'
 import { setStudioTakeRunning } from '../record/take-running'
 import { StudioTimeline } from './StudioTimeline'
 import type { StudioTimelineRecording } from './types'
@@ -409,7 +410,7 @@ describe('Studio lane line', () => {
     expect(toggle).toBeEnabled()
   })
 
-  it('leaves a phone’s foot to the record card while a lane is armed', () => {
+  it('opens a phone lane’s lines while a lane is armed, and the record card steps aside for its bar', () => {
     // Arrange
     const { toggle } = mount({
       phone: true,
@@ -417,12 +418,41 @@ describe('Studio lane line', () => {
     })
 
     // Act
-    fireEvent.click(toggle)
+    openLine(toggle)
 
     // Assert
-    expect(toggle).toBeDisabled()
-    expect(toggle).toHaveAttribute('title', 'Disarm the lane to draw lines')
+    expect(toggle).toBeEnabled()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('toolbar', { name: 'Guitar lines' })).toBeTruthy()
+    expect(studioRecordCardAside()).toBe(true)
+  })
+
+  it('closes a phone’s lines when the armed lane’s take starts, so the record card comes back', () => {
+    // Arrange
+    const { toggle } = mount({
+      phone: true,
+      record: { trackId: 'track-1', live: null, level: 0, listening: true },
+    })
+    openLine(toggle)
+
+    // Act
+    setStudioTakeRunning(true)
+    const during = {
+      disabled: (toggle as HTMLButtonElement).disabled,
+      title: toggle.title,
+      aside: studioRecordCardAside(),
+    }
+    setStudioTakeRunning(false)
+
+    // Assert
+    expect(during).toEqual({
+      disabled: true,
+      title: 'Stop the take to draw lines',
+      aside: false,
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(document.querySelector('[data-studio-line]')).toBeNull()
+    expect(studioRecordCardAside()).toBe(false)
   })
 
   it('stands the line bar in the dock beside the lanes while the desk is open', () => {
