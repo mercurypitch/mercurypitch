@@ -656,6 +656,15 @@ a.mp-set-button {
   transition: background-color var(--mp-out, 220ms) var(--mp-ease, ease);
 }
 
+/* Drawn at 51 x 31, it takes a tap over 59 x 45, as the system's own switch
+   takes one beyond what it draws: 31 px tall was a target under the 44 px
+   floor. The row is 51 px or more, so the area stays inside its row. */
+.mp-switch::after {
+  content: '';
+  position: absolute;
+  inset: -7px -4px;
+}
+
 .mp-switch[aria-checked='true'] {
   background: var(--green);
   box-shadow: none;
