@@ -120,6 +120,10 @@ export interface RangeSeam extends NoteSpan {
   readonly label?: string
   readonly t0?: number
   readonly t1?: number
+  /** The moment its words are centred on, seconds; without it they end at its right. */
+  readonly labelAt?: number
+  /** Its words under it, where a line rides above it: by default they sit above. */
+  readonly labelBelow?: boolean
 }
 
 /** A lit stretch of the window with the rest dimmed, and its words: a reading. */
@@ -327,7 +331,7 @@ export function seamBox(
   }
 }
 
-/** A seam across the plot or its slot, shaded, its words at its right, above it. */
+/** A seam across the plot or its slot, shaded, its words above or under it, at its right or at their own moment. */
 export function drawSeam(f: DrawFrame, s: RangeSeam): void {
   const { ctx } = f
   const { x0, x1, y0, y1 } = seamBox(f, s)
@@ -345,9 +349,16 @@ export function drawSeam(f: DrawFrame, s: RangeSeam): void {
   if (s.label === undefined) return
   ctx.font = MONO_SM
   ctx.fillStyle = COLOR.ink2
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'bottom'
-  ctx.fillText(s.label, x1 - 4, y0 - 2)
+  const below = s.labelBelow === true
+  ctx.textBaseline = below ? 'top' : 'bottom'
+  const y = below ? y1 + 2 : y0 - 2
+  if (s.labelAt === undefined) {
+    ctx.textAlign = 'right'
+    ctx.fillText(s.label, x1 - 4, y)
+  } else {
+    ctx.textAlign = 'center'
+    ctx.fillText(s.label, xOfT(f, s.labelAt), y)
+  }
 }
 
 /** The time area cut into `count` equal slots: faint rules between them, each numbered at its foot. */

@@ -182,13 +182,18 @@ describe('mountRangeChart', () => {
   })
 })
 
-/** A context that records each stroke's width and alpha, and each fill. */
+/** A context that records each stroke's width and alpha, each fill, and each line of words with its place. */
 function recorder(): {
   ctx: CanvasRenderingContext2D
   strokes: { width: number; alpha: number }[]
   fills: number
+  texts: { text: string; x: number; y: number; align: string }[]
 } {
-  const out = { strokes: [] as { width: number; alpha: number }[], fills: 0 }
+  const out = {
+    strokes: [] as { width: number; alpha: number }[],
+    fills: 0,
+    texts: [] as { text: string; x: number; y: number; align: string }[],
+  }
   const state: Record<string, unknown> = { lineWidth: 1, globalAlpha: 1 }
   const ctx = new Proxy(state, {
     get: (t, key) => {
@@ -199,6 +204,9 @@ function recorder(): {
             alpha: Number(t.globalAlpha),
           })
       if (key === 'fillRect') return () => (out.fills += 1)
+      if (key === 'fillText')
+        return (text: string, x: number, y: number) =>
+          out.texts.push({ text, x, y, align: String(t.textAlign) })
       if (key in t) return t[key as string]
       return () => ({ addColorStop: () => undefined })
     },
@@ -214,6 +222,9 @@ function recorder(): {
     },
     get fills() {
       return out.fills
+    },
+    get texts() {
+      return out.texts
     },
   }
 }
@@ -326,6 +337,33 @@ describe("the range chart's gears, seams and slots (Lesson 11)", () => {
     // Assert: one fill, the hatch, and its two edges
     expect(r.fills).toBe(1)
     expect(r.strokes).toHaveLength(3)
+  })
+
+  it("ends a seam's words at its right above it, or centres them on a moment of their own, under it", () => {
+    // Arrange
+    const r = recorder()
+    const f = stepsFrame(310, r.ctx)
+
+    // Act
+    drawSeam(f, { lo: 55, hi: 57, label: 'the switch' })
+    drawSeam(f, {
+      lo: 55,
+      hi: 57,
+      label: "Merc's model",
+      labelAt: 2,
+      labelBelow: true,
+    })
+
+    // Assert
+    expect(r.texts).toEqual([
+      { text: 'the switch', x: f.x1 - 4, y: yOf(f, 57) - 2, align: 'right' },
+      {
+        text: "Merc's model",
+        x: xOfT(f, 2),
+        y: yOf(f, 55) + 2,
+        align: 'center',
+      },
+    ])
   })
 
   it('mounts with none of these drawn: no slots, no caption and no seams', () => {
