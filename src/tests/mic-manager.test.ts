@@ -604,6 +604,23 @@ describe('MicManager input for one hold', () => {
       expect(states.at(-1)).toMatchObject({ active: false, scoped: null })
       expect(mgr.getScopedHold()).toBeNull()
     })
+
+    it("opens the input it asks for, not the app's old one, when the app switches to that input as it arms", async () => {
+      const gum = openEach()
+      await mgr.setPreferredDevice('app-in')
+      const voice = asMock(await mgr.acquire('voice'))
+
+      // The Studio arms on the default in the moment the app's input changes to it.
+      const arming = mgr.acquireFrom('studio', null)
+      const switching = mgr.setPreferredDevice(null)
+      const held = asMock((await arming).stream)
+      await switching
+
+      expect(held.track.getSettings().deviceId).toBe('default')
+      expect(held).not.toBe(voice)
+      expect(askedFor(gum)).toEqual(['app-in', undefined])
+      expect(voice.track.stop).toHaveBeenCalled()
+    })
   })
 
   describe('a muted input', () => {

@@ -147,6 +147,10 @@ export class MicManager {
   // is not the app's, so the shared stream, and every consumer on it, stays
   // on the app's input.
   private scoped: ScopedHold | null = null
+  // The input the open shared stream was opened for, null for the default.
+  // Not preferredDeviceId, which changes before the stream on the old one
+  // closes (setPreferredDevice).
+  private streamFor: string | null = null
   // The browser-resolved id for the current route. Keep it after teardown so
   // calibration and compensation still address the same physical input while
   // the system-default choice is closed; clear it when the requested route
@@ -357,14 +361,12 @@ export class MicManager {
     if (!this.holdsDevice()) releaseMicLock()
   }
 
-  /** Whether `deviceId` is the app's input: the one the shared stream asks for, or is on. */
+  /** Whether `deviceId` is the app's input: the one the open shared stream was opened for or is on, or else the one it would open. */
   private onSharedRoute(deviceId: string | null): boolean {
-    if (deviceId === this.preferredDeviceId) return true
-    return (
-      deviceId !== null &&
-      this.stream !== null &&
-      trackDeviceId(this.stream) === deviceId
-    )
+    const stream = this.stream
+    if (stream === null) return deviceId === this.preferredDeviceId
+    if (deviceId === this.streamFor) return true
+    return deviceId !== null && trackDeviceId(stream) === deviceId
   }
 
   /** Hear `hold`'s input go: its track ended, or muted for MUTED_INPUT_LOST_MS. */
@@ -465,11 +467,14 @@ export class MicManager {
   private async openShared(gone?: () => void): Promise<MediaStream> {
     this.cancelLinger()
     if (this.stream !== null) return this.stream
-    const stream = await this.openDevice(this.preferredDeviceId, () => {
+    let opensFor = this.preferredDeviceId
+    const stream = await this.openDevice(opensFor, () => {
+      opensFor = null
       this.preferredDeviceId = null
       gone?.()
     })
     this.stream = stream
+    this.streamFor = opensFor
     this.resolvedDeviceId = trackDeviceId(stream) ?? this.preferredDeviceId
     this.attachEndedHandlers(stream)
     return stream
