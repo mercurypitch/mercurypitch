@@ -242,4 +242,18 @@ describe('playLine', () => {
       ctx.filters[0],
     ])
   })
+
+  it("plays the line in the caller's partials, whatever its kind", async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+
+    // Act: Merc's voice in the soft tone's partials (Lesson 11's upper gear)
+    runs.playLine(LINE, { audible: true, kind: 'merc', wave: 'soft' })
+
+    // Assert
+    expect(ctx.oscillators[0].wave?.partials).toEqual([
+      1, 0.3, 0.11, 0.05, 0.024, 0.012,
+    ])
+  })
 })

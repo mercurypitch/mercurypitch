@@ -18,14 +18,12 @@ afterEach(() => {
 async function voiceOn() {
   const on = await soundOn()
   const waves: number[][] = []
-  // the double's wave takes no arguments; the page's voice passes two
-  const wave = (_real: unknown, imag: unknown): object => {
-    waves.push(Array.from(imag as Float32Array))
-    return {}
-  }
-  vi.spyOn(on.ctx, 'createPeriodicWave').mockImplementation(
-    wave as () => object,
-  )
+  // each wave's whole table, its first entry too, then the double's own wave
+  const make = on.ctx.createPeriodicWave.bind(on.ctx)
+  vi.spyOn(on.ctx, 'createPeriodicWave').mockImplementation((real, imag) => {
+    waves.push(Array.from(imag))
+    return make(real, imag)
+  })
   const voice = await import('./vowel-voice')
   return { ...on, voice, waves }
 }

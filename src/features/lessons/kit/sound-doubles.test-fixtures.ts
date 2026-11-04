@@ -34,6 +34,11 @@ export class FakeParam {
   }
 }
 
+/** A periodic wave: its partials' amplitudes, the first the fundamental. */
+export interface FakeWave {
+  readonly partials: readonly number[]
+}
+
 export class FakeNode {
   connect(): void {}
   disconnect(): void {}
@@ -43,7 +48,11 @@ export class FakeOscillator extends FakeNode {
   readonly frequency = new FakeParam(440)
   readonly detune = new FakeParam(0)
   readonly stops: number[] = []
-  setPeriodicWave(): void {}
+  /** The wave it plays, as the context made it: its partials' amplitudes. */
+  wave: FakeWave | null = null
+  setPeriodicWave(w: FakeWave): void {
+    this.wave = w
+  }
   start(): void {}
   stop(t: number): void {
     this.stops.push(t)
@@ -137,8 +146,10 @@ export class FakeContext {
   createDynamicsCompressor(): FakeCompressor {
     return new FakeCompressor()
   }
-  createPeriodicWave(): object {
-    return {}
+  createPeriodicWave(_real: Float32Array, imag: Float32Array): FakeWave {
+    return {
+      partials: Array.from(imag.slice(1), (a) => Math.round(a * 1000) / 1000),
+    }
   }
   resume(): Promise<void> {
     return Promise.resolve()
