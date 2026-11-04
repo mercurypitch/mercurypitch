@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Sing it's moving parts (WEB-SPEC, Toys 4, states 5 to 7), apart from the
-// flow that decides what the card offers (siren-flow.ts) and the card that
+// flow that decides what the card offers (kit/siren-flow.ts) and the card that
 // shows it (sing.ts). The live chart is the range chart over ten seconds, a
 // take's longest: the voice's column, Merc's amber siren drawn as it sounds
 // and kept faint behind a take for its shape, the singer's violet line, and

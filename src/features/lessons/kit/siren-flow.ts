@@ -1,45 +1,52 @@
 // ============================================================
-// Lesson 7 siren flow — what Sing it offers next, as a pure rule
+// Siren flow — what a page's one sung siren offers next, as a pure rule
 // ============================================================
 //
-// Sing it is one gentle siren on "ng" (WEB-SPEC, Toys 4). From the comfort
-// answer, whether Merc's siren has been heard, the takes so far (each:
-// whether it had voice, whether it lit a band, whether it was abandoned),
-// whether the visit's one Again has been used, and the answers to "How did
-// that feel?", this gives what the card offers and says, and the Wrap's
-// card, so every branch is unit-tested without a microphone
-// (siren-flow.test.ts). The page draws what it says: a button it does not
-// offer is absent, never disabled, except Start while Merc's siren has not
-// been heard (hear it first: playbook rule 16).
+// Sing it as one siren on "ng" (Lesson 7's WEB-SPEC, Toys 4; Lesson 11's,
+// Toys 4). From the comfort answer, whether Merc's siren has been heard, the
+// takes so far (each: whether it had voice, whether it was abandoned, and
+// on a page that reads its takes, what the reading made of it), whether the
+// visit's one Again has been used, and the answers to "How did that feel?",
+// this gives what the card offers and says, and the Wrap's card, so every
+// branch is unit-tested without a microphone (siren-flow.test.ts). The page
+// draws what it says: a button it does not offer is absent, never disabled,
+// except Start while Merc's siren has not been heard (hear it first:
+// playbook rule 16).
 //
-// The retry rules (FACTS 58): at most three takes a visit, every take
-// counting; at most two sung sirens. Again after "Easy" or "Workable" comes
-// once a visit, whatever the reading. A take that heard no voice asks no
-// feeling question, and its Again is a fresh start that leaves the one Again
-// unused. A take abandoned when the page was hidden or the section left asks
-// none either, and Start comes back while takes remain, Done for today once
-// none do; if it had voice it uses the one Again up. Never a retry after
-// "Effortful" or "Uncomfortable": once either has been picked, no Again and
-// no Start for the rest of the visit, and the Wrap shows the rest card, as
-// after "Just listen today" (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). An
-// answer can change until the next take or Done for today, which ends the
-// takes, keeps the card's question, its answer and its lines, and locks the
-// answer as it stands; the strongest report the visit has had decides the
-// closing line, because the singer's report outranks every reading
-// (REQ-GVC-024). Nothing here is stored: the ending lasts the visit.
+// Lesson 7's page reads each take and lights the middle half of the siren
+// (`reading: true`); Lesson 11's reads nothing, since the app cannot tell a
+// gear (its FACTS 27, 64). Without the reading no state closes on a band or
+// says "Try again": every sung siren closes on the page's plain line.
+//
+// The retry rules (Lesson 7 FACTS 58, Lesson 11 FACTS 63): at most three
+// takes a visit, every take counting; at most two sung sirens. Again after
+// "Easy" or "Workable" comes once a visit, whatever the reading. A take
+// that heard no voice asks no feeling question, and its Again is a fresh
+// start that leaves the one Again unused. A take abandoned when the page
+// was hidden or the section left asks none either, and Start comes back
+// while takes remain, Done for today once none do; if it had voice it uses
+// the one Again up. Never a retry after "Effortful" or "Uncomfortable":
+// once either has been picked, no Again and no Start for the rest of the
+// visit, and the Wrap shows the rest card, as after "Just listen today"
+// (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055). Done for today ends the takes,
+// keeps the card's question, its answer and its lines, and locks the answer
+// as it stands; the strongest report the visit has had decides the closing
+// line, because the singer's report outranks every reading (REQ-GVC-024).
+// Nothing here is stored: the ending lasts the visit.
 
-import type { Feeling } from '@/features/lessons/kit/comfort'
-import { afterFeeling } from '@/features/lessons/kit/comfort'
+import type { Feeling } from './comfort'
+import { afterFeeling } from './comfort'
 
 /** Takes a visit allows, and sung sirens. */
 export const MAX_TAKES = 3
 export const MAX_SUNG = 2
 
-/** What a take came to: no voice at all, too little to read, or a band lit. */
+/** What a reading made of a take: no voice at all, too little to read, or a band lit. */
 export type TakeKind = 'none' | 'unsteady' | 'band'
 
 export interface TakeMark {
-  readonly kind: TakeKind
+  /** On a page that reads its takes, what the reading made of it. */
+  readonly kind?: TakeKind
   /** Ended because the viewer left (the tab hidden, the section left). */
   readonly abandoned: boolean
   /** It heard a voice: an abandoned take may have, or not. */
@@ -150,6 +157,17 @@ export function mayTake(v: SirenVisit): boolean {
 /** The line after an answer: a band lit, none lit, "Effortful"'s, or "Uncomfortable"'s. */
 export type Closing = 'band' | 'plain' | 'gentle' | 'enough'
 
+/** How a page runs the flow. */
+export interface FlowOptions {
+  /**
+   * The page reads each take and lights a band (Lesson 7): a take with a
+   * band closes on the band's line, and one too unsteady to read says "Try
+   * again" beside its Again. Off (Lesson 11), every sung siren closes on
+   * the plain line, and nothing says "Try again".
+   */
+  readonly reading?: boolean
+}
+
 export interface SirenOffers {
   /** The briefing's Start is on the card. */
   readonly start: boolean
@@ -165,18 +183,18 @@ export interface SirenOffers {
   /** Done for today. */
   readonly done: boolean
   readonly closing: Closing | null
-  /** "Try again at about speaking volume.", only beside an offered Again. */
+  /** "Try again at about speaking volume.", only beside an offered Again, and only on a page that reads. */
   readonly tryAgain: boolean
   readonly doctor: boolean
-  /** The reading's band and line stay on the chart. */
-  readonly keepBand: boolean
+  /** The take's line stays on the chart, and on a page that reads, its band. */
+  readonly keepLine: boolean
   /** The Wrap's rest card in place of the Vocal Range Test card. */
   readonly restCard: boolean
 }
 
 /** What the card offers and says for the visit as it stands. */
-export function offers(v: SirenVisit): SirenOffers {
-  const card = cardOffers(v)
+export function offers(v: SirenVisit, o: FlowOptions = {}): SirenOffers {
+  const card = cardOffers(v, o.reading === true)
   if (!v.finished) return card
   // Done for today ends the takes, not the card: the question, its answer
   // and its lines stay as they stand, the answer locked, nothing starts a
@@ -194,7 +212,7 @@ export function offers(v: SirenVisit): SirenOffers {
 }
 
 /** The card's question, lines and buttons, before Done for today has its say. */
-function cardOffers(v: SirenVisit): SirenOffers {
+function cardOffers(v: SirenVisit, reading: boolean): SirenOffers {
   const last = v.takes[v.takes.length - 1]
   const restCard = v.mode === 'listen' || v.rest
   const base: SirenOffers = {
@@ -208,7 +226,7 @@ function cardOffers(v: SirenVisit): SirenOffers {
     closing: null,
     tryAgain: false,
     doctor: v.discomfort,
-    keepBand: false,
+    keepLine: false,
     restCard,
   }
   if (v.mode !== 'sing') return base
@@ -226,32 +244,18 @@ function cardOffers(v: SirenVisit): SirenOffers {
   }
   // no voice came: no question, a fresh start while takes remain
   if (!last.voiced) return { ...base, again: mayTake(v), done: true }
-  if (v.feeling === null) return { ...base, ask: true, keepBand: true }
+  if (v.feeling === null) return { ...base, ask: true, keepLine: true }
   if (v.discomfort)
     return { ...base, ask: true, closing: 'enough', doctor: true }
-  if (v.effort) return { ...base, ask: true, closing: 'gentle', keepBand: true }
+  if (v.effort) return { ...base, ask: true, closing: 'gentle', keepLine: true }
   const again = mayTake(v) && !v.againUsed
   return {
     ...base,
     ask: true,
     again,
     done: true,
-    closing: last.kind === 'band' ? 'band' : 'plain',
-    tryAgain: again && last.kind === 'unsteady',
-    keepBand: true,
+    closing: reading && last.kind === 'band' ? 'band' : 'plain',
+    tryAgain: reading && again && last.kind === 'unsteady',
+    keepLine: true,
   }
 }
-
-/** The lines the card shows, LESSON.md's own. */
-export const SIREN_LINES = {
-  band: "That's it: one gentle siren, done. The lit band shows where its middle notes sat today.",
-  plain: "That's it: one gentle siren, done.",
-  tryAgain: 'Try again at about speaking volume.',
-  gentle: 'Keep it gentle: rest before you sing again.',
-  enough:
-    "Thanks for saying so. That's enough singing for today: rest your voice.",
-  startFirst: "Play Merc's siren first",
-  startOff:
-    "Sound is off, so nothing played. Turn sound on to hear Merc's siren, then press Start.",
-  noAudio: "This browser can't play sound here.",
-} as const

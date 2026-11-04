@@ -21,7 +21,7 @@ import { bandLabel, BANDS, bandSaid, pushReadout, SIREN_SEC, sirenWhere, twinkle
 import { HERO_BEFORE, heroAfter, singerLines, sirenSaid, songSaid, TYPES_NAMED, typesSaid, } from './range-words'
 import { afterStatus, STATUS } from './sing'
 import { takeSaid } from './sing-take'
-import { SIREN_LINES } from './siren-flow'
+import { SIREN_LINES } from './siren-lines'
 import { TYPES_GUESS } from './steps'
 
 const VOICES: readonly ChartVoice[] = ['lower', 'higher']
@@ -107,7 +107,7 @@ describe("Lesson 7's live words", () => {
       closing: 'plain' as const,
       tryAgain: true,
       doctor: false,
-      keepBand: true,
+      keepLine: true,
       restCard: false,
     }
 
@@ -201,5 +201,24 @@ describe("the steps' stage", () => {
     // Assert
     expect(names.length).toBeGreaterThan(20)
     expect(twice).toEqual([])
+  })
+})
+
+describe("Lesson 7's siren lines", () => {
+  it("speak LESSON.md's lines, word for word", () => {
+    expect(SIREN_LINES.band).toBe(
+      "That's it: one gentle siren, done. The lit band shows where its middle notes sat today.",
+    )
+    expect(SIREN_LINES.plain).toBe("That's it: one gentle siren, done.")
+    expect(SIREN_LINES.tryAgain).toBe('Try again at about speaking volume.')
+    expect(SIREN_LINES.gentle).toBe(
+      'Keep it gentle: rest before you sing again.',
+    )
+    expect(SIREN_LINES.enough).toBe(
+      "Thanks for saying so. That's enough singing for today: rest your voice.",
+    )
+    expect(SIREN_LINES.startOff).toBe(
+      "Sound is off, so nothing played. Turn sound on to hear Merc's siren, then press Start.",
+    )
   })
 })
