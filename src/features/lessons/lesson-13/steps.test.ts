@@ -17,11 +17,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createLessonMenu } from '@/features/lessons/kit/lesson-menu'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { live, resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { DECK_QUERY, registerToy } from '@/features/lessons/kit/step-deck'
 import { el, mountSteps, said, settle, shown, soundOn, } from './page-dom.test-fixtures'
+import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 
 vi.mock('@/features/lessons/kit/run', async (actual) => ({
   ...(await actual<typeof RunModule>()),
@@ -256,6 +258,20 @@ function menuJump(deck: StepDeck, n: number): void {
   el(`#lessonMenu a[href="#step-${n}"]`).click()
 }
 
+/** The quick check's first question answered "330 Hz", whose feedback sends the viewer to Step 1, and that link pressed. */
+function quizLink(deck: StepDeck): void {
+  createQuiz({ questions: QUIZ_QUESTIONS, lesson: 13, keys: QUIZ_KEYS, deck })
+  const option = Array.from(
+    document.querySelectorAll<HTMLElement>('#qs .opt'),
+  ).find((b) => b.textContent?.includes('330 Hz'))
+  if (option === undefined) throw new Error('no option "330 Hz"')
+  option.click()
+  // the quiz shows the step, then again once its scroll has had time
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  el('#qs a[data-goto-step="1"]').click()
+  vi.runOnlyPendingTimers()
+}
+
 /** The phone's deck: the step deck's query matches. */
 function phoneDeck(): void {
   const matching = window.matchMedia.bind(window)
@@ -283,6 +299,7 @@ const ROUTES: readonly {
   },
   { name: 'a swipe', to: 5, phone: true, go: () => swipe(300, 100) },
   { name: "the lesson menu's jump", to: 2, go: (deck) => menuJump(deck, 2) },
+  { name: 'a quick-check step link', to: 1, go: quizLink },
   {
     name: 'a #step-N address',
     to: 2,
