@@ -1,14 +1,16 @@
-// Studio transport — explicit playback, repeat, a typed clock and actual stereo output metering.
+// Studio transport — explicit playback, repeat, a clock you type into or scrub with the wheel, and actual stereo output metering.
 import type { JSX } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createSignal, onCleanup, Show } from 'solid-js'
 import { Repeat } from '@/components/icons'
 import { publishFootSpace } from '@/lib/foot-space'
 import type { StudioMeterSnapshot } from '@/lib/studio/metering/stream-meter'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
+import { attachStudioClockScrub, studioClockScrubTarget } from './clock-scrub'
 import { studioTakeRunning } from './record/take-running'
 import { PauseFilled, PlayFilled, PunchRange, SkipBackFilled, } from './studio-icons'
 import styles from './StudioPage.module.css'
+import { studioScrubGrid } from './timeline/scrub-step'
 import { formatStudioTime, parseStudioTime } from './timeline/timeline-geometry'
 
 interface StudioTransportProps {
@@ -51,6 +53,13 @@ export function StudioTransport(props: StudioTransportProps) {
           STUDIO_SAMPLE_RATE,
       ),
     )
+
+  /** A scrub leaves the typed draft, so the clock follows the playhead again. */
+  const scrubTo = (frame: number) => {
+    focusedText = null
+    setDraft(null)
+    props.onSeek(frame)
+  }
 
   function commit(input: HTMLInputElement): void {
     const text = draft()
@@ -134,6 +143,14 @@ export function StudioTransport(props: StudioTransportProps) {
           item, so a new time lays out only the clock. */}
       <span class={styles.clockBox}>
         <input
+          ref={(clock) => {
+            const detach = attachStudioClockScrub(clock, {
+              frame: () => props.playheadFrame,
+              endFrame: () => props.endFrame,
+              seek: scrubTo,
+            })
+            onCleanup(detach)
+          }}
           class={styles.clock}
           type="text"
           role="spinbutton"
@@ -145,7 +162,7 @@ export function StudioTransport(props: StudioTransportProps) {
           aria-valuemax={props.endFrame / STUDIO_SAMPLE_RATE}
           aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
           aria-valuetext={formatStudioTime(props.playheadFrame)}
-          title="Type a time, such as 1:05.5 or 65.5"
+          title="Type a time, such as 1:05.5, or scroll over the clock to move the playhead (Shift: finer)"
           value={draft() ?? formatStudioTime(props.playheadFrame)}
           onFocus={(event) => {
             focusedText = formatStudioTime(props.playheadFrame)
@@ -172,14 +189,16 @@ export function StudioTransport(props: StudioTransportProps) {
               input.value = focusedText
               input.select()
             } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+              // A step as the wheel takes it: a grid line with Snap, else a second.
               event.preventDefault()
-              focusedText = null
-              setDraft(null)
-              const step = event.shiftKey ? 0.1 : 1
-              seek(
-                props.playheadFrame / STUDIO_SAMPLE_RATE +
-                  (event.key === 'ArrowUp' ? step : -step),
+              const target = studioClockScrubTarget(
+                props.playheadFrame,
+                event.key === 'ArrowUp' ? 1 : -1,
+                studioScrubGrid(),
+                event.shiftKey,
+                props.endFrame,
               )
+              if (target !== props.playheadFrame) scrubTo(target)
             }
           }}
         />

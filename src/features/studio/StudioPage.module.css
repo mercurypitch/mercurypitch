@@ -671,6 +671,17 @@
   border-color: var(--studio-accent);
   outline: none;
 }
+/* The wheel and a sideways drag scrub the clock; a sideways touch is the
+   scrub's, an upright one still scrolls the page (clock-scrub.ts). */
+.clock:not(:focus),
+.clock[data-scrubbing] {
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.clock[data-scrubbing] {
+  border-color: var(--studio-line-strong);
+  user-select: none;
+}
 .topActions {
   display: flex;
   align-items: center;
