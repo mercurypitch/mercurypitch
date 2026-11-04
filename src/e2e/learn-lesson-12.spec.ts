@@ -12,7 +12,8 @@
 // to end 1), at a phone's size and a desktop's: no AudioContext before the
 // first tap, and nothing plays before a play button; and its fourteenth: a
 // visitor with the studio installed still gets the lesson, not the shell.
-// Its fourth, the ring of rooms, step by step as each step is wired: Step
+// Its second, the cold open's predict, at both sizes, with sound on and
+// off. Its fourth, the ring of rooms, step by step: Step
 // 2's key switch relabels the chips to G major's, vii° reading F♯ A C, and
 // C puts them back; Step 3's Play I, then vi ends with the centre reading
 // "vi · A minor", read from the words the ring's last frame draws, and
@@ -22,8 +23,11 @@
 // keyboard and the summary counts its room; the key switch, the names
 // switch and Slow toggle `aria-pressed`, and the key switch says the key
 // once in the polite line; and at 390 x 844 every target of Steps 1 to 4
-// is at least 44 px square with none overlapping. Each toy's own checks
-// join it as that toy is wired.
+// is at least 44 px square with none overlapping; Step 5's tunes and free
+// play join them, a tune's button reading Stop while it plays. Its ninth,
+// the recall and the quick check, and its tenth, the practice links. Sing
+// it is its own spec (learn-lesson-12-sing.spec.ts), and so is reduced
+// motion (learn-lesson-12-motion.spec.ts).
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -468,7 +472,7 @@ for (const viewport of [
 test.describe("the ring of rooms' targets at 390 x 844", () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('every target of Steps 1 to 4 is at least 44 px square, and none overlaps another, in C and in G', async ({
+  test('every target of Steps 1 to 5, and of free play, is at least 44 px square, and none overlaps another, in C and in G', async ({
     page,
   }) => {
     // Arrange
@@ -487,6 +491,11 @@ test.describe("the ring of rooms' targets at 390 x 844", () => {
     await page.getByRole('button', { name: 'Next step', exact: true }).click()
     await expect(page.locator('#stepNow')).toHaveText('4')
     expect(await expectTargets(page, TOY, 'Step 4')).toBe(11)
+    await page.getByRole('button', { name: 'Next step', exact: true }).click()
+    await expect(page.locator('#stepNow')).toHaveText('5')
+    expect(await expectTargets(page, TOY, 'Step 5')).toBe(12)
+    await page.locator('#freePlay').scrollIntoViewIfNeeded()
+    expect(await expectTargets(page, '#freePlay', 'free play')).toBe(19)
   })
 })
 
@@ -520,4 +529,251 @@ test.describe('the ring of rooms at 844 x 390', () => {
     expect(readout.x).toBeGreaterThan(figure.x + figure.width / 2)
     expect(readout.y - figure.y).toBeLessThan(40)
   })
+})
+
+/** The hero ring's latest frame: when it was drawn, on the page's clock, and the words in it. */
+const heroFrame = (page: Page): Promise<{ at: number; words: string[] }> =>
+  page.locator('#heroSpiral canvas').evaluate((canvas) => {
+    const w = window as unknown as {
+      framesOf: WeakMap<Element, { at: number; words: string[] }>
+    }
+    return w.framesOf.get(canvas) ?? { at: 0, words: [] }
+  })
+
+/** A play's button has sounded to its end: lit, then out. */
+async function playedOut(play: Locator): Promise<void> {
+  await expect(play).toHaveClass(/\bis-on\b/)
+  await expect(play).not.toHaveClass(/\bis-on\b/, { timeout: 15_000 })
+}
+
+// WEB-SPEC, End to end 2: the cold open's predict, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the cold open at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+    test.describe.configure({ timeout: 120_000 })
+
+    test('the four chords play before a choice and reveal nothing; the tunes wait for a choice, and the reveal for both, their counts said as each ends', async ({
+      page,
+    }) => {
+      // Arrange: sound on from the gate, every word the hero's ring draws kept
+      await watchCanvasWords(page)
+      await page.goto('/learn/12')
+      await page.locator('#gateBtn').click()
+      const chords = page.locator('#heroPlay')
+      const tunes = ['tune-1', 'tune-2'].map((t) =>
+        page.locator(`.hero-plays [data-play="${t}"]`),
+      )
+      const reveal = page.locator('#predict .reveal')
+      const hint = page.locator('#predict .lock-hint')
+      const said = page.locator('#heroSpiral [data-rooms-said]')
+
+      // Act: the four chords, before a choice
+      for (const t of tunes) await expect(t).toBeDisabled()
+      await chords.click()
+      await expect(said).toHaveText(
+        'Four chords: C major, G major, A minor, F major.',
+      )
+      await playedOut(chords)
+
+      // Assert: nothing on the ring counts a tune, and nothing is revealed
+      expect((await heroFrame(page)).words.join(' ')).not.toContain(
+        'On a corner',
+      )
+      await expect(hint).toHaveText('Choose an answer to unlock the two tunes.')
+      await expect(reveal).toBeHidden()
+
+      // Act: a choice, the four chords again, then each tune
+      await page.locator('#predict [data-choice="most"]').click()
+      for (const t of tunes) await expect(t).toBeEnabled()
+      await chords.click()
+      await playedOut(chords)
+      await expect(hint).toHaveText(
+        'Now hear both tunes, 1 and 2, for the answer.',
+      )
+      await tunes[0].click()
+      await expect(said).toHaveText('Tune 1, over the four chords.')
+      await expect(said).toHaveText('On a corner: 11 of 15.', {
+        timeout: 15_000,
+      })
+      await expect(tunes[0]).not.toHaveClass(/\bis-on\b/)
+      const afterOne = await reveal.isHidden()
+      await tunes[1].click()
+      await expect(said).toHaveText('On a corner: 10 of 12.', {
+        timeout: 15_000,
+      })
+
+      // Assert: the reveal waited for both, and says the choice
+      expect(afterOne).toBe(true)
+      await expect(reveal).toBeVisible()
+      await expect(reveal).toContainText('You said: most of them')
+      await expect(hint).toHaveText(
+        'Play either tune again, or just the four chords.',
+      )
+      expect((await heroFrame(page)).words).toContain('On a corner: 10 of 12')
+    })
+
+    test('with sound off the four chords show the sound-off line before a choice, and heard with sound on bring the lock line back', async ({
+      page,
+    }) => {
+      // Arrange: sound turned off from the masthead
+      await page.goto('/learn/12')
+      const sound = page.locator('#soundSwitch')
+      await sound.click()
+      if ((await sound.getAttribute('aria-pressed')) === 'true')
+        await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'false')
+      const chords = page.locator('#heroPlay')
+      const hint = page.locator('#predict .lock-hint')
+
+      // Act
+      await chords.click()
+      await playedOut(chords)
+      const silent = (await hint.textContent())?.trim()
+      await sound.click()
+      await expect(sound).toHaveAttribute('aria-pressed', 'true')
+      await chords.click()
+      await playedOut(chords)
+
+      // Assert: Edge cases
+      expect(silent).toBe(
+        'Sound is off: nothing played. Turn sound on, then play it again.',
+      )
+      await expect(hint).toHaveText('Choose an answer to unlock the two tunes.')
+      await expect(page.locator('#predict .reveal')).toBeHidden()
+    })
+  })
+}
+
+// WEB-SPEC, End to end 3: Step 5's tune toy by keyboard, at 390 x 844
+test.describe('Step 5 at 390 x 844', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test("Step 5 by keyboard: Tab meets the slider, the three tunes and Slow, then the chips; a tune's button reads Stop while it plays, and the count reaches the live region", async ({
+    page,
+  }) => {
+    // Arrange
+    test.setTimeout(60_000)
+    await watchLive(page)
+    await openStep(page, '/learn/12', 5)
+
+    // Act
+    const met = await tabsWithin(page, `${TOY} [data-fig-label]`, TOY)
+    const tune = page.locator(`${TOY} [data-tune="tune-2"]`)
+    await tune.focus()
+    await page.keyboard.press('Enter')
+    const playing = {
+      name: await tune.getAttribute('aria-label'),
+      words: (await tune.textContent())?.trim(),
+    }
+    await expect(tune).toHaveAttribute('aria-label', 'Play tune 2', {
+      timeout: 15_000,
+    })
+
+    // Assert
+    expect(met).toEqual([
+      SLIDER,
+      'Play tune 1',
+      'Play tune 2',
+      'Play tune 2 with even notes',
+      'Slow',
+      ...CHIPS,
+    ])
+    expect(playing).toEqual({ name: 'Stop tune 2', words: 'Stop' })
+    await expect
+      .poll(async () => (await liveSaid(page)).map((s) => s.text))
+      .toEqual(
+        expect.arrayContaining([
+          'Tune 2, over the four chords.',
+          'On a corner: 10 of 12.',
+        ]),
+      )
+  })
+})
+
+// WEB-SPEC, End to end 9, at a phone's size and a desktop's
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the quizzes at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test("the recall shows open to everyone, marks nothing done and links Lesson 10's steps in a new tab; the quick check marks Lesson 12 done", async ({
+      page,
+    }) => {
+      // Arrange: no lesson done
+      await page.goto('/learn/12')
+      const recall = page.locator('#recall-qs')
+      const check = page.locator('#qs')
+      /** Answers `option`, in `quiz`. */
+      const answer = (quiz: Locator, option: string): Promise<void> =>
+        quiz.getByRole('button', { name: option, exact: true }).click()
+
+      // Act: the recall, open, both answered with the misconception
+      await expect(page.locator('#recallQuiz')).toBeVisible()
+      await expect(recall.locator('.q')).toHaveCount(2)
+      await answer(recall, '4')
+      await answer(recall, 'Major')
+
+      // Assert: nothing marked done, and each step link opens Lesson 10 in a new tab
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        null,
+      )
+      const links = await recall
+        .locator('.fb a')
+        .evaluateAll((as) =>
+          as.map((a) => [
+            a.getAttribute('href'),
+            a.getAttribute('target'),
+            a.textContent,
+          ]),
+        )
+      expect(links).toEqual([
+        ['/learn/10#step-1', '_blank', 'Try Lesson 10, Step 1 again'],
+        ['/learn/10#step-3', '_blank', 'Try Lesson 10, Step 3 again'],
+      ])
+
+      // Act: the recall's chord plays from its slot, then the quick check
+      const chord = recall.getByRole('button', {
+        name: "Play the question's chord",
+      })
+      await chord.click()
+      await playedOut(chord)
+      for (const q of await check.locator('.q').all())
+        await q.locator('.opt').first().click()
+
+      // Assert: every line starts the kit's way, and Lesson 12 is done
+      const lines = await page
+        .locator('#recall-qs .fb, #qs .fb')
+        .evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''))
+      expect(lines).toHaveLength(6)
+      for (const line of lines) expect(line).toMatch(/^(Right\.|Not quite\.)/)
+      expect(await page.evaluate(() => localStorage.getItem('fyp-done'))).toBe(
+        '[12]',
+      )
+    })
+  })
+}
+
+// WEB-SPEC, End to end 10: every practice link carries the lesson before any hash
+test('every practice link carries ?lesson=12 before any hash, and opens in a new tab', async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/12')
+  const links = await page
+    .locator('main a[href^="/pitch-training"], main a[href^="/ear-lab"]')
+    .evaluateAll((as) =>
+      as.map((a) => [a.getAttribute('href'), a.getAttribute('target')]),
+    )
+
+  // Assert
+  expect(links.length).toBeGreaterThan(1)
+  for (const [href, target] of links) {
+    expect(href).toMatch(/^\/(pitch-training|ear-lab)\?lesson=12(#|$)/)
+    expect(target).toBe('_blank')
+  }
 })

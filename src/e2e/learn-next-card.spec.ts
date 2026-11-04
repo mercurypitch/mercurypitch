@@ -313,7 +313,7 @@ test("Lesson 11's card sets up Lesson 12 with its tease, one line above its hook
   ).toEqual({ rooms: 4, beads: 0, words: '', red: [], moving: 0 })
 })
 
-test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook, and holds no button", async ({
+test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook, keeps the page's tease still after its words, and holds no button", async ({
   page,
 }) => {
   // Act
@@ -330,12 +330,22 @@ test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook
       .locator('.next-words > *')
       .evaluateAll((els) => els.map((e) => e.className)),
   ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
-  // the card's words alone: the page's tease still joins them with the Wrap
+  // the page's tease still after the words: aria-hidden, "?" on its peaks
+  // and no other words, and still
   expect(
     await c.evaluate((a) =>
       Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
     ),
-  ).toEqual(['next-words'])
+  ).toEqual(['next-words', 'l12-tease'])
+  const still = c.locator('svg.l12-tease')
+  await expect(still).toBeVisible()
+  await expect(still).toHaveAttribute('aria-hidden', 'true')
+  expect(
+    await still.evaluate((svg) => ({
+      words: Array.from(svg.querySelectorAll('text'), (t) => t.textContent),
+      moving: svg.getAnimations({ subtree: true }).length,
+    })),
+  ).toEqual({ words: ['?', '?', '?'], moving: 0 })
   await expect(c.locator('button')).toHaveCount(0)
 })
 

@@ -283,3 +283,64 @@ test("Lesson 9, published while Lesson 6 is held back and Lesson 3 is a draft, k
   await expect(page.locator('a[href^="/learn/06"]')).toHaveCount(0)
   expect(errors).toEqual([])
 })
+
+test("Lesson 12, where Lesson 10 is held back, keeps its chip plain, links Lesson 10 from nowhere, and its recall's step link keeps its words", async ({
+  page,
+}) => {
+  // Arrange
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  // Act
+  await serveWith(page, '/learn/12', {
+    drafts: true,
+    lessons: { 10: { published: false } },
+  })
+
+  // Assert: the chip stays, as a plain chip, and nothing links Lesson 10
+  const chip = page.locator('ul.meta .chip', { hasText: 'After Lesson 10' })
+  await expect(chip).toHaveCount(1)
+  await expect(chip).not.toHaveAttribute('href', /./)
+  await expect(page.locator('a[href^="/learn/10"]')).toHaveCount(0)
+  const card = await mapCard(page, 10)
+  await expect(card.locator('.chip')).toHaveText('Coming later')
+  await expect(card.locator('a.btn')).toHaveCount(0)
+  const ten = await menuRow(page, 10)
+  await expect(ten).toHaveClass(/\blater\b/)
+  await expect(page.locator('#lessonMenu a[href^="/learn/10"]')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+
+  // Act: the recall still shows, and its answer that names a step
+  const recall = page.locator('#recall-qs')
+  await expect(recall.locator('.q')).toHaveCount(2)
+  await recall.getByRole('button', { name: '4', exact: true }).click()
+
+  // Assert: the words stay, with no link
+  const fb = recall.locator('.fb')
+  await expect(fb).toHaveCount(1)
+  await expect(fb).toContainText('Try Lesson 10, Step 1 again')
+  await expect(fb.locator('a')).toHaveCount(0)
+  await expect(page.locator('a[href^="/learn/10"]')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test("Lesson 10's Wrap shows Lesson 11, a draft held back, as coming later, while the map and the menu link Lesson 12, published", async ({
+  page,
+}) => {
+  // Arrange: mercurypitch.com's default, Lessons 10 and 12 published and Lesson 11 not
+  await serveWith(page, '/learn/10', {
+    drafts: false,
+    lessons: { 10: { published: true }, 12: { published: true } },
+  })
+
+  // Assert: the card names Lesson 11 and takes the viewer to the map
+  const next = nextCard(page)
+  await expect(next).toHaveAttribute('href', '#explorer')
+  await expect(next.locator('.eyebrow')).toHaveText(
+    'Next lesson 11 · Registers and the break Coming later',
+  )
+  const card = await mapCard(page, 12)
+  await expect(card.locator('a.btn')).toHaveAttribute('href', '/learn/12')
+  const twelve = await menuRow(page, 12)
+  await expect(twelve).toHaveAttribute('href', '/learn/12')
+})
