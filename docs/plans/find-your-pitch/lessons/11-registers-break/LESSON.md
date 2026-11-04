@@ -308,9 +308,9 @@ is changing gear, not making a mistake.
   seconds to breathe. Then a dot glides between them for four seconds, and you follow it with your
   voice. It runs six rounds, each glide up to an octave, around a note low in the voice range saved
   in Settings. Set your range there first, under Singing Voice Range ("Don't know? Find my voice"
-  helps). Most of its score is how close you come to the second note. Its help asks for glides with
-  no breaks between your low and high voice. If your voice flips anyway, let it: every voice changes
-  gear. A flip skips part of the slide, so it can lower the score: that's a flip, not a mistake.
+  helps). Most of its score is how close you come to the second note. If your voice flips, let it:
+  every voice changes gear. A flip skips part of the slide, so it can lower the score: that's a
+  flip, not a mistake.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable. Practise it free:
   **mercurypitch.com/pitch-training**, then tap Siren / Range Explorer." Under it: "Ten minutes,
@@ -322,11 +322,12 @@ is changing gear, not making a mistake.
 _[Editorial: both addresses link `/pitch-training?lesson=11`, which opens the Exercises tab with no
 intro (FACTS 43), so the card, the rest card and the footer carry no first-visit line. A proposed
 slug, `/exercises/siren?lesson=11` (CURRICULUM § 4 item 1), would open the drill itself; until it
-ships the card names the tap (FACTS 46). The card says plainly what the drill's own help asks for,
-because the page lets a flip happen where the help asks for glides "without breaks or jumps
-between your low and high voice" (FACTS 42). WEB-SPEC's App content item proposes that line in the
-lesson's terms: "Stay relaxed and let the pitch flow. If your voice flips between your low and high
-voice, let it: every voice changes gear." When it ships, the card's help sentence goes. Not
+ships the card names the tap (FACTS 46). The drill's help asked for glides "without breaks or
+jumps between your low and high voice" (FACTS 42), where the page lets a flip happen, so the card
+said plainly what the help asked for. WEB-SPEC's App content item gave that line in the lesson's
+terms, "Stay relaxed and let the pitch flow. If your voice flips between your low and high voice,
+let it: every voice changes gear.", and it shipped with the page, so the card's help sentence went,
+and its next line lost its "anyway". Not
 linked: Slide In/Out, whose speed score is full only for a slide of about a third of a second or
 quicker, and nothing by about a second (FACTS 44); the Ascent, whose range week asks for notes past
 the comfortable top; and the Sing room's premium rooms, Ng slides among them (FACTS 45).]_

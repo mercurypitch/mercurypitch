@@ -609,7 +609,7 @@ are listed so this page's needs are in one place.
 12. **The practise links that wait** (Practice links), the app's work: Scale Runner's scale types
     and launch field (SEASON-2 § 5.2 item 13). The two app notes found on the way have shipped:
     Staccato Precision's help says what it scores, pitch and not timing
-    (`src/features/exercises/exercise-help.ts:225`); and Scale Runner's grade reaches 100, so its
+    (`src/features/exercises/exercise-help.ts:226`); and Scale Runner's grade reaches 100, so its
     level can rise as well as ease, and the card says its window shortens as the level rises (FACTS
     64, 67).
 

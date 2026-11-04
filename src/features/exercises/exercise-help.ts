@@ -184,11 +184,12 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     ],
   },
   [EXERCISE_SIREN]: {
-    summary: 'Glide your full range up and down like a smooth siren.',
+    summary:
+      'Glide up and down like a smooth siren, within an easy part of your range.',
     body: [
-      'A "siren" is a long, smooth glide through your range — low to high and back — keeping the sound connected the whole way.',
-      'Stay relaxed and let the pitch flow continuously without breaks or jumps between your low and high voice.',
-      'You are scored on how smooth and connected the glide is.',
+      'A "siren" is a long, smooth glide — low to high and back — keeping the sound connected the whole way.',
+      'Stay relaxed and let the pitch flow. If your voice flips between your low and high voice, let it: every voice changes gear.',
+      'Most of your score is how close you come to the second note.',
     ],
   },
   [EXERCISE_CALL_RESPONSE]: {
