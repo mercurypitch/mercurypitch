@@ -295,7 +295,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         </>
       ),
       onConfirm: () => {
-        melodyStore.deleteMelody(key)
+        const places = melodyStore.deleteMelody(key)
         setSelectedMelodyKey(null)
         if (editingMelodyKey() === key) {
           cancelEdit()
@@ -303,7 +303,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         showActionNotification(`Deleted "${melodyName}"`, 'warning', {
           label: 'Undo',
           onClick: () => {
-            melodyStore.restoreMelody(melody)
+            melodyStore.restoreMelody(melody, places)
             showNotification(`Restored "${melodyName}"`, 'success')
           },
         })
