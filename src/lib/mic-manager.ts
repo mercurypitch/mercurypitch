@@ -16,21 +16,12 @@
 // needs call-tuned constraints (echo cancellation) and owns its own
 // MediaStreamTrack for the peer connection, so it manages its own stream.
 
+import type { MicError } from './mic-errors'
+import { classifyError, heldElsewhere, NO_CAPTURE, superseded, } from './mic-errors'
 import type { MicLockRecord } from './mic-lock'
 import { claimMicLock, micLockStatus, releaseMicLock, requestMicHandoff, setMicYieldHandler, } from './mic-lock'
 
-export type MicErrorKind =
-  | 'permission-denied'
-  | 'device-busy'
-  | 'no-device'
-  /** Another MercuryPitch tab holds the mic. Offer a hand-off, not a retry. */
-  | 'held-elsewhere'
-  | 'unknown'
-
-export interface MicError {
-  kind: MicErrorKind
-  message: string
-}
+export type { MicError, MicErrorKind } from './mic-errors'
 
 export interface MicState {
   /** True while the device is open and at least one consumer holds it. */
@@ -82,51 +73,12 @@ export const BACKGROUND_HOLD_IDS: readonly string[] = ['routine']
 const BUSY_RETRY_DELAY_MS = 250
 
 /**
- * The error name openDevice throws where the page cannot ask for a microphone
- * at all: no navigator.mediaDevices, as on an insecure origin, in some
- * embedded views and in some television browsers. Reaching through it anyway
- * threw a TypeError whose raw text became the copy.
+ * How long the track of an input of its own may stay muted before it counts
+ * as gone. A browser that keeps one capture at a time (WebKit) mutes the
+ * earlier track, rather than ending it, as another opens: a take would go on
+ * recording silence with nothing said.
  */
-const NO_CAPTURE = 'NoCaptureError'
-
-function classifyError(err: unknown): MicError {
-  const name = (err as { name?: string } | null | undefined)?.name
-  const rawMessage = (err as { message?: string } | null | undefined)?.message
-  switch (name) {
-    case 'NotAllowedError':
-    case 'PermissionDeniedError':
-    case 'SecurityError':
-      return {
-        kind: 'permission-denied',
-        message:
-          'Microphone access was denied. Allow microphone access in your browser to continue.',
-      }
-    case 'NotReadableError':
-    case 'AbortError':
-    case 'TrackStartError':
-      return {
-        kind: 'device-busy',
-        message: 'The microphone is in use by another app or browser tab.',
-      }
-    case 'NotFoundError':
-    case 'DevicesNotFoundError':
-      return { kind: 'no-device', message: 'No microphone was found.' }
-    case NO_CAPTURE:
-      // A retry cannot help, so it is a missing device, not a busy one.
-      return {
-        kind: 'no-device',
-        message: 'This browser cannot use a microphone.',
-      }
-    default:
-      return {
-        kind: 'unknown',
-        message:
-          rawMessage !== undefined && rawMessage.length > 0
-            ? rawMessage
-            : 'The microphone is unavailable.',
-      }
-  }
-}
+const MUTED_INPUT_LOST_MS = 500
 
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -135,17 +87,10 @@ function stopTracks(stream: MediaStream): void {
   for (const track of stream.getTracks()) track.stop?.()
 }
 
-function heldElsewhere(): MicError {
-  return {
-    kind: 'held-elsewhere',
-    message:
-      'Another MercuryPitch tab is using your microphone. Use it here instead to move it over.',
-  }
-}
-
-/** An input of its own asked for again, or let go, before its open ran. */
-function superseded(): MicError {
-  return { kind: 'unknown', message: 'The input changed before it opened.' }
+/** The input a stream is on, as the browser names it; null where it does not say. */
+function trackDeviceId(stream: MediaStream): string | null {
+  const id = stream.getAudioTracks?.()[0]?.getSettings?.().deviceId?.trim()
+  return id !== undefined && id.length > 0 ? id : null
 }
 
 /** Audio input devices (mics, line/instrument inputs e.g. an audio interface).
@@ -184,6 +129,12 @@ interface ScopedHold {
   /** Its input was gone, so its stream is the default's. */
   missing: boolean
   stream: MediaStream | null
+  /** It records from the shared stream: its input is the app's. */
+  shared: boolean
+  /** Takes its listeners off its track when it ends. */
+  readonly watch: AbortController
+  /** A mute under way on its track, which loses the hold at MUTED_INPUT_LOST_MS. */
+  muted: ReturnType<typeof setTimeout> | null
 }
 
 export class MicManager {
@@ -192,8 +143,9 @@ export class MicManager {
   private error: MicError | null = null
   private preferredDeviceId: string | null = null
   // One consumer can hold an input of its own (acquireFrom): the Studio
-  // records from the input picked for it on a stream of its own, so the
-  // shared stream, and every consumer on it, stays on the app's input.
+  // records from the input picked for it, on a stream of its own when that
+  // is not the app's, so the shared stream, and every consumer on it, stays
+  // on the app's input.
   private scoped: ScopedHold | null = null
   // The browser-resolved id for the current route. Keep it after teardown so
   // calibration and compensation still address the same physical input while
@@ -278,6 +230,20 @@ export class MicManager {
     this.preferredDeviceId = next
     this.resolvedDeviceId = null
     await this.enqueue(async () => {
+      // An input of its own recording from the shared stream keeps it, as a
+      // stream of its own now; the app's consumers open the new input when
+      // they next acquire, as they would after a teardown.
+      const hold = this.scoped
+      if (
+        hold?.shared === true &&
+        hold.stream !== null &&
+        hold.stream === this.stream
+      ) {
+        hold.shared = false
+        this.stream = null
+        this.emit()
+        return
+      }
       this.teardown()
     })
   }
@@ -293,6 +259,11 @@ export class MicManager {
    * this one opens; its consumers hear that through the 'ended' path, as
    * from an unplugged device, not as silence. The hold ends through its own
    * release, never through release(consumerId).
+   *
+   * On the app's own input, the one the shared stream asks for or is on (the
+   * default for both, say), it records from the shared stream instead of
+   * opening a second capture, which such a browser would mute one of. Its
+   * track muted for MUTED_INPUT_LOST_MS counts as gone, as an unplug does.
    */
   acquireFrom(
     consumerId: string,
@@ -303,6 +274,9 @@ export class MicManager {
       deviceId: deviceId !== null && deviceId !== '' ? deviceId : null,
       missing: false,
       stream: null,
+      shared: false,
+      watch: new AbortController(),
+      muted: null,
     }
     // Taken now, not when the open runs, so a release queued before this
     // call finds its hold replaced and leaves this one be (releaseHold).
@@ -322,12 +296,15 @@ export class MicManager {
         }
         this.blockedBy = null
       }
+      hold.shared = this.onSharedRoute(hold.deviceId)
       let stream: MediaStream
       try {
-        stream = await this.openDevice(hold.deviceId, () => {
-          hold.deviceId = null
-          hold.missing = true
-        })
+        stream = hold.shared
+          ? await this.openShared(() => (hold.missing = true))
+          : await this.openDevice(hold.deviceId, () => {
+              hold.deviceId = null
+              hold.missing = true
+            })
       } catch (err) {
         if (this.scoped === hold) this.scoped = null
         if (!this.holdsDevice()) releaseMicLock()
@@ -335,22 +312,9 @@ export class MicManager {
         this.emit()
         throw this.error
       }
-      if (this.scoped !== hold) {
-        // Released while it opened.
-        stopTracks(stream)
-        if (!this.holdsDevice()) releaseMicLock()
-        throw superseded()
-      }
+      if (this.scoped !== hold) this.dropOpened(hold, stream)
       hold.stream = stream
-      for (const track of stream.getTracks()) {
-        track.addEventListener?.('ended', () => {
-          if (hold.stream !== stream) return
-          hold.stream = null
-          if (this.scoped === hold) this.scoped = null
-          if (!this.holdsDevice()) releaseMicLock()
-          this.emit()
-        })
-      }
+      this.watchHold(hold, stream)
       this.error = null
       this.emit()
       return {
@@ -361,11 +325,19 @@ export class MicManager {
     })
   }
 
+  /** Give back what `hold`'s open got, after it was let go while it opened; its caller hears it was superseded. */
+  private dropOpened(hold: ScopedHold, stream: MediaStream): never {
+    if (hold.shared) this.lingerIfUnheld()
+    else stopTracks(stream)
+    if (!this.holdsDevice()) releaseMicLock()
+    throw superseded()
+  }
+
   /** End `hold` while it is the input of its own; a later acquireFrom or a loss ended it otherwise. */
   private releaseHold(hold: ScopedHold): void {
     void this.enqueue(async () => {
       if (this.scoped !== hold) return
-      // Not shared, so it closes now, without the linger.
+      // A stream of its own closes now; the shared one stays for the linger.
       this.endScoped(hold)
       this.emit()
     })
@@ -374,11 +346,53 @@ export class MicManager {
   /** Close a hold on an input of its own; its consumer sees `scoped` go. */
   private endScoped(hold: ScopedHold): void {
     if (this.scoped === hold) this.scoped = null
-    if (hold.stream !== null) {
-      stopTracks(hold.stream)
-      hold.stream = null
-    }
+    hold.watch.abort()
+    if (hold.muted !== null) clearTimeout(hold.muted)
+    hold.muted = null
+    const stream = hold.stream
+    hold.stream = null
+    // The shared stream stays with its consumers, or for the linger.
+    if (stream !== null && hold.shared) this.lingerIfUnheld()
+    else if (stream !== null) stopTracks(stream)
     if (!this.holdsDevice()) releaseMicLock()
+  }
+
+  /** Whether `deviceId` is the app's input: the one the shared stream asks for, or is on. */
+  private onSharedRoute(deviceId: string | null): boolean {
+    if (deviceId === this.preferredDeviceId) return true
+    return (
+      deviceId !== null &&
+      this.stream !== null &&
+      trackDeviceId(this.stream) === deviceId
+    )
+  }
+
+  /** Hear `hold`'s input go: its track ended, or muted for MUTED_INPUT_LOST_MS. */
+  private watchHold(hold: ScopedHold, stream: MediaStream): void {
+    const options = { signal: hold.watch.signal }
+    const lose = () => {
+      if (hold.stream !== stream) return
+      this.endScoped(hold)
+      this.emit()
+    }
+    const muted = () => {
+      if (hold.stream !== stream || hold.muted !== null) return
+      hold.muted = setTimeout(lose, MUTED_INPUT_LOST_MS)
+    }
+    for (const track of stream.getTracks()) {
+      // Muted already, as a shared stream an earlier capture muted is: no 'mute' comes.
+      if (track.muted) muted()
+      track.addEventListener?.('ended', lose, options)
+      track.addEventListener?.('mute', muted, options)
+      track.addEventListener?.(
+        'unmute',
+        () => {
+          if (hold.muted !== null) clearTimeout(hold.muted)
+          hold.muted = null
+        },
+        options,
+      )
+    }
   }
 
   private buildConstraints(deviceId: string | null): MediaStreamConstraints {
@@ -416,26 +430,8 @@ export class MicManager {
 
       this.consumers.add(consumerId)
 
-      if (this.stream !== null) {
-        this.error = null
-        this.emit()
-        return this.stream
-      }
-
       try {
-        const stream = await this.openDevice(this.preferredDeviceId, () => {
-          this.preferredDeviceId = null
-        })
-        this.stream = stream
-        const reportedDeviceId = stream
-          .getAudioTracks?.()[0]
-          ?.getSettings?.()
-          .deviceId?.trim()
-        this.resolvedDeviceId =
-          reportedDeviceId !== undefined && reportedDeviceId.length > 0
-            ? reportedDeviceId
-            : this.preferredDeviceId
-        this.attachEndedHandlers(stream)
+        const stream = await this.openShared()
         this.error = null
         this.emit()
         return stream
@@ -460,9 +456,38 @@ export class MicManager {
   release(consumerId: string): void {
     void this.enqueue(async () => {
       if (!this.consumers.delete(consumerId)) return
-      if (this.consumers.size === 0) this.scheduleLinger()
+      this.lingerIfUnheld()
       this.emit()
     })
+  }
+
+  /** The shared stream, opened on the app's input when it is closed; `gone` hears it fall back to the default. */
+  private async openShared(gone?: () => void): Promise<MediaStream> {
+    this.cancelLinger()
+    if (this.stream !== null) return this.stream
+    const stream = await this.openDevice(this.preferredDeviceId, () => {
+      this.preferredDeviceId = null
+      gone?.()
+    })
+    this.stream = stream
+    this.resolvedDeviceId = trackDeviceId(stream) ?? this.preferredDeviceId
+    this.attachEndedHandlers(stream)
+    return stream
+  }
+
+  /** Whether nothing holds the shared stream: no consumer, and no input of its own recording from it. */
+  private unheld(): boolean {
+    const hold = this.scoped
+    const recording =
+      hold?.shared === true &&
+      hold.stream !== null &&
+      hold.stream === this.stream
+    return this.consumers.size === 0 && !recording
+  }
+
+  /** Close the shared stream after the linger, once nothing holds it. */
+  private lingerIfUnheld(): void {
+    if (this.unheld()) this.scheduleLinger()
   }
 
   /** Open `deviceId` (null for the default); `gone` hears when it fell back to the default. */
@@ -514,7 +539,7 @@ export class MicManager {
     this.cancelLinger()
     this.lingerTimer = setTimeout(() => {
       this.lingerTimer = null
-      if (this.consumers.size === 0) this.teardown()
+      if (this.unheld()) this.teardown()
     }, LINGER_MS)
   }
 
@@ -526,9 +551,14 @@ export class MicManager {
   }
 
   private teardown(): void {
-    if (this.stream !== null) {
-      stopTracks(this.stream)
+    this.cancelLinger()
+    const stream = this.stream
+    if (stream !== null) {
+      stopTracks(stream)
       this.stream = null
+      // An input of its own recording from it goes with it.
+      const hold = this.scoped
+      if (hold?.shared === true && hold.stream === stream) this.endScoped(hold)
     }
     // With no device open, this tab no longer has any claim on one.
     if (!this.holdsDevice()) releaseMicLock()
