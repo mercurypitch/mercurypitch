@@ -61,7 +61,7 @@ function mount(
   const toggle = screen.getByRole('button', {
     name: 'Guitar volume and pan lines',
   })
-  return { project, commands, toggle, setSelectedClipId }
+  return { project, setProject, commands, toggle, setSelectedClipId }
 }
 
 /** Open the lane's line and give its box a size, as a browser lays it out. */
@@ -192,6 +192,29 @@ describe('Studio lane line', () => {
     expect(volumeLine(commands)).toEqual([
       [{ frame: 480000 + 96000, value: -21.9 }],
     ])
+  })
+
+  it('puts the chosen point’s readout on the side no neighbouring point is under', () => {
+    // Arrange: 0 dB at 0:10, and -30 dB a second (20 px) later.
+    const { toggle } = mount({
+      volume: [
+        { frame: 480000, value: 0 },
+        { frame: 528000, value: -30 },
+      ],
+    })
+    const area = openLine(toggle)
+    const side = () =>
+      area.querySelector('[data-side]')?.getAttribute('data-side')
+
+    // Act
+    screen.getByRole('button', { name: /Volume point at 0:10/ }).focus()
+    const overQuieter = side()
+    screen.getByRole('button', { name: /Volume point at 0:11/ }).focus()
+    const underLouder = side()
+
+    // Assert
+    expect(overQuieter).toBe('above')
+    expect(underLouder).toBe('below')
   })
 
   it('deletes the focused point with Delete and moves to its neighbour', async () => {
@@ -326,6 +349,30 @@ describe('Studio lane line', () => {
     expect(bar.style.left).toBe('12px')
     expect(bar.style.right).toBe('12px')
     expect(within(bar).getByRole('button', { name: 'Done' })).toBeVisible()
+  })
+
+  it('stands a phone lane’s lines toggle under its name while the lanes have room, and beside it when they do not', () => {
+    // Arrange
+    const { toggle, setProject } = mount({ phone: true })
+    const roomy = toggle.textContent
+
+    // Act
+    setProject((current) => ({
+      ...current,
+      tracks: [
+        ...current.tracks,
+        ...[2, 3, 4].map((n) => ({
+          ...current.tracks[0],
+          id: `track-${n}`,
+          name: `Take ${n}`,
+        })),
+      ],
+    }))
+
+    // Assert
+    expect(roomy).toBe('Lines')
+    expect(toggle.textContent).toBe('')
+    expect(toggle).toHaveAccessibleName('Guitar volume and pan lines')
   })
 
   it('stands the line bar in the dock beside the lanes while the desk is open', () => {

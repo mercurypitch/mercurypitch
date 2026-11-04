@@ -160,6 +160,40 @@ test.describe('on a computer', () => {
   })
 })
 
+test.describe('on a tablet', () => {
+  test.use({
+    viewport: { width: 1024, height: 768 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('Studio keeps the line bar short of the zoom buttons on a tablet, with finger-sized commands', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000)
+    await openArrangement(page)
+    await openLines(page)
+    const bar = await box(
+      studioRegion(page).getByRole('toolbar', { name: 'Phrase lines' }),
+    )
+    const zoom = await box(
+      studioRegion(page).getByRole('group', { name: 'Timeline zoom' }),
+    )
+    const beside = bar.x + bar.width <= zoom.x
+    const above = bar.y + bar.height <= zoom.y
+    expect(beside || above).toBe(true)
+    for (const button of await studioRegion(page)
+      .getByRole('toolbar', { name: 'Phrase lines' })
+      .getByRole('button')
+      .all()) {
+      const target = await box(button)
+      const name = (await button.getAttribute('title')) ?? undefined
+      expect(target.height, name).toBeGreaterThanOrEqual(44)
+      expect(target.width, name).toBeGreaterThanOrEqual(44)
+    }
+  })
+})
+
 test.describe('on a phone', () => {
   test.use({
     viewport: { width: 390, height: 844 },

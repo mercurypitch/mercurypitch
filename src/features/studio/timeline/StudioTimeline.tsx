@@ -212,6 +212,15 @@ export function StudioTimeline(props: StudioTimelineProps) {
     if (lines.view() && !lineTrack()) untrack(lines.close)
   })
   createEffect(on(projectId, () => lines.close(), { defer: true }))
+  // A phone overview shares its height among the lanes.
+  const phoneRow = () =>
+    Math.max(
+      64,
+      Math.min(
+        112,
+        Math.floor((height() - 32) / Math.max(1, props.project.tracks.length)),
+      ),
+    )
   const lane: StudioLaneView = {
     assets,
     clips,
@@ -224,6 +233,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
     pointer,
     resource,
     lines,
+    // Two 44 px targets and the header's padding: 44 + 4 + 44 + 12.
+    stackHeader: () => props.phone && phoneRow() >= 104,
     status: showStatus,
   }
   // The docked buttons, zoom's three and the clip bar's four or the line
@@ -432,8 +443,12 @@ export function StudioTimeline(props: StudioTimelineProps) {
           playheadFrame={props.playheadFrame}
           writable={props.writable}
           phone={props.phone}
+          touch={props.phone || props.tablet === true}
           left={headerWidth() + 12}
           bottom={floor() + 12}
+          // The zoom pill's corner: its offset, three buttons with the
+          // pill's gaps, padding and border (.zoom), and a gap before it.
+          reserve={gutter() + 12 + 3 * (props.tablet === true ? 44 : 30) + 20}
           docked={inDock}
           onCommand={props.onCommand}
           onStatus={showStatus}
@@ -460,10 +475,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         '--studio-time-width': `${timeWidth()}px`,
         '--studio-major': `${major()}px`,
         '--studio-minor': `${major() / minorCount()}px`,
-        // A phone overview shares its height among the lanes.
-        '--studio-row-height': props.phone
-          ? `${Math.max(64, Math.min(112, Math.floor((height() - 32) / Math.max(1, props.project.tracks.length))))}px`
-          : undefined,
+        '--studio-row-height': props.phone ? `${phoneRow()}px` : undefined,
       }}
     >
       <div

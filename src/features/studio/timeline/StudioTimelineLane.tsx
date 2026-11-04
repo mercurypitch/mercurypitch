@@ -31,6 +31,8 @@ export interface StudioLaneView {
   readonly pointer: StudioPointerEditor
   readonly resource: Accessor<StudioWaveformResource>
   readonly lines: StudioLineEditor
+  /** A phone lane with room for it stands its lines toggle under its name. */
+  readonly stackHeader: Accessor<boolean>
   /** Said in the timeline's status pill. */
   status(message: string): void
 }
@@ -84,6 +86,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       classList={{
         [lineStyles.touchIdentity]:
           props.timeline.phone || props.timeline.tablet === true,
+        [lineStyles.stackedIdentity]: props.view.stackHeader(),
       }}
     >
       <StudioTrackName
@@ -110,6 +113,9 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         onClick={toggleLines}
       >
         <LaneLine />
+        <Show when={props.view.stackHeader()}>
+          <span>Lines</span>
+        </Show>
       </button>
     </div>
   )
