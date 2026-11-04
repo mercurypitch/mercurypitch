@@ -16,7 +16,7 @@ import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { closeStudioComp, studioCompClipId } from './comp-editor'
 import type { StudioCompRow, StudioCompSpan } from './comp-rows'
-import { studioCompCell, studioCompLit, studioCompRows, studioCompSnap, studioCompStartSpan, studioCompStep, studioCompSwipe, studioCompTimelineFrame, } from './comp-rows'
+import { studioCompCell, studioCompLit, studioCompRows, studioCompSnap, studioCompStartSpan, studioCompStep, studioCompSwipe, studioCompTimelineFrame, studioCompUnlit, } from './comp-rows'
 import styles from './StudioCompLanes.module.css'
 import { studioWaveSpan } from './StudioTimelineClip'
 import { StudioWaveform } from './StudioWaveform'
@@ -138,6 +138,10 @@ function CompRows(props: CompRowsProps) {
   } | null>(null)
   const [selection, setSelection] = createSignal<StudioCompSpan | null>(null)
   const [focused, setFocused] = createSignal<number | null>(null)
+  // The keys' pick shows once the keys or a click make one: a swipe is done.
+  const [keyed, setKeyed] = createSignal(false)
+  const picking = (pass: number) => keyed() && focused() === pass
+  let pointing = false
   const strips = new Map<number, HTMLElement>()
   let drag: Drag | null = null
   // Another clip's passes start their own pick.
@@ -188,27 +192,36 @@ function CompRows(props: CompRowsProps) {
     const count = clip().passes?.count ?? 0
     const at = (frame: number) =>
       formatStudioTime(studioCompTimelineFrame(clip(), frame))
-    const picked =
-      focused() === row.pass
-        ? `. Picked ${at(current().from)} to ${at(current().to)}`
-        : ''
+    const picked = picking(row.pass)
+      ? `. Picked ${at(current().from)} to ${at(current().to)}`
+      : ''
     return `Pass ${row.number} of ${count}${row.number === count ? ', newest' : ''}, ${plays}${picked}`
+  }
+
+  /** Focus the pass a row above (-1) or below (1), if there is one. */
+  function moveRow(row: StudioCompRow, by: -1 | 1): void {
+    const next = rows().findIndex((item) => item.pass === row.pass) + by
+    if (next >= 0 && next < rows().length)
+      strips.get(rows()[next].pass)?.focus()
+  }
+
+  /** Enter uses the pick; a pick nobody can see yet shows first and waits for the next Enter. */
+  function enter(row: StudioCompRow): void {
+    if (keyed()) use(row.pass, current().from, current().to)
+    else setKeyed(true)
   }
 
   function keyDown(event: KeyboardEvent, row: StudioCompRow): void {
     const step =
       event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
-    const index = rows().findIndex((item) => item.pass === row.pass)
-    if (step !== 0)
+    if (step !== 0) {
       setSelection(
         studioCompStep(clip(), current(), grid(), step, event.shiftKey),
       )
-    else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-      const next = index + (event.key === 'ArrowUp' ? -1 : 1)
-      if (next >= 0 && next < rows().length)
-        strips.get(rows()[next].pass)?.focus()
-    } else if (event.key === 'Enter')
-      use(row.pass, current().from, current().to)
+      setKeyed(true)
+    } else if (event.key === 'ArrowUp') moveRow(row, -1)
+    else if (event.key === 'ArrowDown') moveRow(row, 1)
+    else if (event.key === 'Enter') enter(row)
     else if (event.key === 'Escape') close()
     else return
     event.preventDefault()
@@ -219,7 +232,10 @@ function CompRows(props: CompRowsProps) {
     if (event.button !== 0 || !props.timeline.writable) return
     event.preventDefault()
     const strip = event.currentTarget as HTMLElement
+    pointing = true
     strip.focus()
+    pointing = false
+    setKeyed(false)
     strip.setPointerCapture(event.pointerId)
     drag = {
       pass: row.pass,
@@ -258,6 +274,7 @@ function CompRows(props: CompRowsProps) {
     setPreview(null)
     if (!active.moved) {
       setSelection(studioCompCell(clip(), active.anchor, grid()))
+      setKeyed(true)
       return
     }
     const covered = dragged(event, active)
@@ -305,7 +322,10 @@ function CompRows(props: CompRowsProps) {
                 aria-describedby={hint}
                 data-studio-comp-pass={row.pass}
                 style={{ left: `${left()}px`, width: `${width()}px` }}
-                onFocus={() => setFocused(row.pass)}
+                onFocus={() => {
+                  setFocused(row.pass)
+                  setKeyed(!pointing)
+                }}
                 onBlur={() =>
                   setFocused((now) => (now === row.pass ? null : now))
                 }
@@ -339,13 +359,26 @@ function CompRows(props: CompRowsProps) {
                     />
                   )}
                 </Show>
+                <For each={studioCompUnlit(clip(), row.pass)}>
+                  {(part) => (
+                    <span
+                      class={styles.unlit}
+                      data-studio-comp-unlit=""
+                      style={place(part)}
+                    />
+                  )}
+                </For>
                 <Show when={preview()?.pass === row.pass && preview()}>
                   {(shown) => (
                     <span class={styles.preview} style={place(shown().span)} />
                   )}
                 </Show>
-                <Show when={focused() === row.pass}>
-                  <span class={styles.picked} style={place(current())} />
+                <Show when={picking(row.pass)}>
+                  <span
+                    class={styles.picked}
+                    data-studio-comp-picked=""
+                    style={place(current())}
+                  />
                 </Show>
               </div>
             </div>

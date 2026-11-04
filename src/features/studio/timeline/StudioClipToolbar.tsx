@@ -14,6 +14,7 @@ import { studioTakeRunning } from '../record/take-running'
 import { CompPasses, InfoCircle, RangeBrackets } from '../studio-icons'
 import { fitClipBar, watchClipBarRoom } from './clip-bar-fold'
 import { STUDIO_COMP_HELD_TITLE, studioCompClipId, studioCompHeld, toggleStudioComp, } from './comp-editor'
+import compStyles from './StudioCompLanes.module.css'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -65,7 +66,7 @@ function PassPicker(props: {
           >
             <Show when={props.clip.comp}>
               <option value="comp" disabled>
-                Comp
+                Comped
               </option>
             </Show>
             <For each={Array.from({ length: shown().count }, (_, i) => i)}>
@@ -186,6 +187,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
       <Show when={props.docked !== true && props.clip.passes}>
         <button
           type="button"
+          class={compStyles.toggle}
           data-tour="studio.comp"
           data-studio-comp-toggle=""
           aria-pressed={studioCompClipId() === props.clip.id}

@@ -188,6 +188,21 @@ describe("the clip bar's Comp", () => {
     expect(studioCompClipId()).toBeNull()
   })
 
+  it('calls the pass of a comped clip Comped, so Comp names the button alone', () => {
+    bar({
+      ...take,
+      comp: [
+        { fromSourceFrame: 4 * BAR, toSourceFrame: 5 * BAR, pass: 0 },
+        { fromSourceFrame: 5 * BAR, toSourceFrame: 6 * BAR, pass: 2 },
+      ],
+    })
+    const picker = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Pass this clip plays',
+    })
+    expect(picker.selectedOptions[0]?.textContent).toBe('Comped')
+    expect(screen.getByRole('button', { name: 'Comp' })).toBeInTheDocument()
+  })
+
   it('waits for a take, and is not there for a clip with one pass', () => {
     setStudioTakeRunning(true)
     bar(take)
