@@ -1,6 +1,6 @@
-// Studio lane navigation tests — which wheel turns zoom, which scroll through the song, which the browser keeps, and what a pinch does between two frames.
-import { describe, expect, it } from 'vitest'
-import { studioPinchStep, studioWheelIntent, studioWheelPixels, } from './lane-navigation'
+// Studio lane navigation tests — which wheel turns zoom, which scroll through the song, which the browser keeps, what a pinch does between two frames, and Safari's trackpad pinch.
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { attachStudioLaneNavigation, studioGestureZoom, studioPinchStep, studioWheelIntent, studioWheelPixels, } from './lane-navigation'
 
 const wheel = (more: Partial<WheelEvent> = {}) => ({
   ctrlKey: false,
@@ -78,5 +78,139 @@ describe('studioPinchStep', () => {
       studioPinchStep({ distance: 0, x: 0, y: 0 }, { distance: 40, x: 0, y: 0 })
         .factor,
     ).toBe(1)
+  })
+})
+
+describe('studioGestureZoom', () => {
+  it("zooms by each Safari gesture event's scale against the one before", () => {
+    expect(studioGestureZoom(1, 1.25)).toBe(1.25)
+    expect(studioGestureZoom(1.25, 1.5625)).toBeCloseTo(1.25, 10)
+    expect(studioGestureZoom(1.5, 1.5)).toBe(1)
+    expect(studioGestureZoom(2, 1)).toBe(0.5)
+  })
+
+  it('reads a missing or broken scale as no zoom, and never jumps more than twice', () => {
+    expect(studioGestureZoom(1, Number.NaN)).toBe(1)
+    expect(studioGestureZoom(0, 1.2)).toBe(1)
+    expect(studioGestureZoom(1, 0)).toBe(1)
+    expect(studioGestureZoom(0.1, 5)).toBe(2)
+  })
+})
+
+describe("Safari's trackpad pinch over the lanes", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.replaceChildren()
+  })
+
+  /** A browser with Safari's GestureEvent; any constructor stands in for it. */
+  const safari = () => vi.stubGlobal('GestureEvent', Event)
+
+  function lanes() {
+    const viewport = document.createElement('div')
+    document.body.append(viewport)
+    const zoomBy = vi.fn()
+    const detach = attachStudioLaneNavigation(viewport, { zoomBy })
+    return { viewport, zoomBy, detach }
+  }
+
+  /** A gesture event as Safari sends one: its scale since the pinch began. */
+  function gesture(
+    target: Element,
+    type: string,
+    more: { scale?: number; clientX?: number } = {},
+  ): Event {
+    const event = Object.assign(
+      new Event(type, { bubbles: true, cancelable: true }),
+      more,
+    )
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('zooms the timeline about the pointer, not the page', () => {
+    safari()
+    const { viewport, zoomBy } = lanes()
+
+    const start = gesture(viewport, 'gesturestart', { scale: 1, clientX: 300 })
+    const change = gesture(viewport, 'gesturechange', {
+      scale: 1.5,
+      clientX: 300,
+    })
+    gesture(viewport, 'gesturechange', { scale: 3, clientX: 320 })
+    const end = gesture(viewport, 'gestureend', { scale: 3, clientX: 320 })
+
+    expect(zoomBy.mock.calls).toEqual([
+      [1.5, 300],
+      [2, 320],
+    ])
+    for (const event of [start, change, end])
+      expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('zooms about where the pointer last was when the event does not say', () => {
+    safari()
+    const { viewport, zoomBy } = lanes()
+    viewport.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, clientX: 420 }),
+    )
+    gesture(viewport, 'gesturestart', { scale: 1 })
+    gesture(viewport, 'gesturechange', { scale: 1.2 })
+    expect(zoomBy).toHaveBeenCalledExactlyOnceWith(1.2, 420)
+  })
+
+  it('leaves a pinch on a touch screen to its fingers, so it zooms once', () => {
+    safari()
+    const { viewport, zoomBy } = lanes()
+    const touches = [
+      { clientX: 200, clientY: 100 },
+      { clientX: 300, clientY: 100 },
+    ]
+    viewport.dispatchEvent(
+      Object.assign(new Event('touchstart', { bubbles: true }), { touches }),
+    )
+    gesture(viewport, 'gesturestart', { scale: 1, clientX: 250 })
+    const change = gesture(viewport, 'gesturechange', {
+      scale: 1.5,
+      clientX: 250,
+    })
+    expect(zoomBy).not.toHaveBeenCalled()
+    // Safari's own page zoom still stays out of the lanes.
+    expect(change.defaultPrevented).toBe(true)
+  })
+
+  it('does not zoom twice when a pinch also comes as Ctrl and the wheel', () => {
+    safari()
+    const { viewport, zoomBy } = lanes()
+    gesture(viewport, 'gesturestart', { scale: 1, clientX: 300 })
+    const wheel = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: -4,
+      clientX: 300,
+    })
+    viewport.dispatchEvent(wheel)
+    expect(wheel.defaultPrevented).toBe(true)
+    expect(zoomBy).not.toHaveBeenCalled()
+  })
+
+  it('listens for no gesture events where the browser has none, as in Chromium', () => {
+    const { viewport, zoomBy } = lanes()
+    const change = gesture(viewport, 'gesturechange', {
+      scale: 2,
+      clientX: 300,
+    })
+    expect(zoomBy).not.toHaveBeenCalled()
+    expect(change.defaultPrevented).toBe(false)
+  })
+
+  it('stops listening once detached', () => {
+    safari()
+    const { viewport, zoomBy, detach } = lanes()
+    detach()
+    gesture(viewport, 'gesturestart', { scale: 1, clientX: 300 })
+    gesture(viewport, 'gesturechange', { scale: 2, clientX: 300 })
+    expect(zoomBy).not.toHaveBeenCalled()
   })
 })
