@@ -23,16 +23,20 @@
   gap: 0.35rem;
 }
 
+/* The Developer screen's own rows, which this panel now sits among (the
+   AirPlay check's, shell.css `.mp-dev__row`): 44 px, 15 px words, 12 px
+   corners. Drawn for the old floating console, these were 28 px tall, in
+   12 px words with 4 px corners. */
 .button {
   flex: 1 1 auto;
   min-width: 9rem;
-  padding: 0.35rem 0.6rem;
-  font: inherit;
-  font-size: 0.75rem;
+  min-height: 44px;
+  padding: 10px 14px;
+  font: 600 15px/20px var(--font-body, sans-serif);
   color: var(--text-primary, #e7e9ea);
-  background: var(--surface-hover, #1d1f23);
-  border: 1px solid var(--border, #2f3336);
-  border-radius: 4px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border-color, rgba(230, 237, 243, 0.12));
+  border-radius: 12px;
   cursor: pointer;
 }
 

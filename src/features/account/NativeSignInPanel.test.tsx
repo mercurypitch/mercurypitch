@@ -9,6 +9,8 @@
 // do, and says so plainly if it is somehow pressed anyway.
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
@@ -71,6 +73,25 @@ beforeEach(() => {
     userId: 'u-1',
     isNew: false,
     user: { authProvider: 'google', email: 'a@b.com' },
+  })
+})
+
+describe('its buttons', () => {
+  // The panel sits among the Developer screen's rows of 44 px; drawn for
+  // the old floating console, its buttons were 28 px tall. Read from the
+  // stylesheet: jsdom lays nothing out.
+  it('are as tall as a finger needs, with words of the screen they sit in', () => {
+    const css = readFileSync(
+      resolve(
+        process.cwd(),
+        'src/features/account/NativeSignInPanel.module.css',
+      ),
+      'utf8',
+    )
+    const button = /\n\.button \{([^}]*)\}/u.exec(css)?.[1] ?? ''
+
+    expect(button).toMatch(/\n\s*min-height: (4[4-9]|[5-9]\d)px;/u)
+    expect(button).toMatch(/\n\s*font: 600 15px\/20px /u)
   })
 })
 
