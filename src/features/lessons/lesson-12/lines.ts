@@ -139,6 +139,25 @@ export const tuneEndLine = (on: number, of: number): string =>
 export const tuneButtonName = (id: TuneId, playing: boolean): string =>
   `${playing ? 'Stop' : 'Play'} ${TUNE_NAME[id]}`
 
+/** The cold open's two choices: [ Most of them ] [ Hardly any ]. */
+export type ColdChoice = 'most' | 'hardly'
+
+/** The cold open's predict: its lock hint in the markup, its hints for the kit, and its "You said" lines (LESSON.md; WEB-SPEC, Toys 3). */
+export const COLD_PREDICT = {
+  lock: 'Choose an answer to unlock the two tunes.',
+  hints: {
+    chosen:
+      'Locked in. Play tune 1, then tune 2, and watch where the notes land.',
+    next: 'Now hear both tunes, 1 and 2, for the answer.',
+    silent: 'Sound is off: nothing played. Turn sound on, then play it again.',
+    again: 'Play either tune again, or just the four chords.',
+  },
+  guess: {
+    most: 'You said: most of them',
+    hardly: 'You said: hardly any',
+  } satisfies Readonly<Record<ColdChoice, string>>,
+} as const
+
 /** The ring's centre label, drawn in the figure: "C major", and from Step 2 on "vi · A minor". */
 export const centreLabel = (chord: Chord, numerals: boolean): string => {
   const name = `${signName(chord.spelled[0], { octave: false })} ${chord.quality}`

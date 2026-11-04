@@ -7,14 +7,23 @@
 // live line holds a sharp or flat sign or a bare numeral. The syllables are
 // the kit's `MAJOR_SOLFEGE`, passed in as the names switch will pass them.
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
 import type { Naming } from './lines'
-import { centreLabel, chipName, cornerCount, figureSummary, fourChordsLine, keyTurnedLine, readoutHtml, readoutWords, rootMoves, slideLine, tuneButtonName, tuneEndLine, tuneStartLine, } from './lines'
+import { centreLabel, chipName, COLD_PREDICT, cornerCount, figureSummary, fourChordsLine, keyTurnedLine, readoutHtml, readoutWords, rootMoves, slideLine, tuneButtonName, tuneEndLine, tuneStartLine, } from './lines'
 import { chordsOf, KEYS, TUNE_IDS } from './music'
 
 const syllable = (degree: number): string => MAJOR_SOLFEGE[degree]
+const LESSON = readFileSync(
+  resolve(
+    process.cwd(),
+    'docs/plans/find-your-pitch/lessons/12-chords-four-chord-song/LESSON.md',
+  ),
+  'utf8',
+).replace(/\s+/g, ' ')
 const LETTERS: Naming = { syllable, solfege: false }
 const DO_RE_MI: Naming = { syllable, solfege: true }
 
@@ -203,6 +212,24 @@ describe('the hero and the tune toy (Toys 2 and 5)', () => {
       ['Play tune 2', 'Stop tune 2'],
       ['Play tune 2 with even notes', 'Stop tune 2 with even notes'],
     ])
+  })
+})
+
+describe("the cold open's predict (Toys 3)", () => {
+  it('takes its lock line, every hint and both guess lines from LESSON.md, word for word', () => {
+    // Arrange
+    const lines = [
+      COLD_PREDICT.lock,
+      ...Object.values(COLD_PREDICT.hints),
+      ...Object.values(COLD_PREDICT.guess),
+    ]
+
+    // Act
+    const missing = lines.filter((line) => !LESSON.includes(`"${line}"`))
+
+    // Assert: LESSON.md, Cold open: predict
+    expect(lines).toHaveLength(7)
+    expect(missing).toEqual([])
   })
 })
 

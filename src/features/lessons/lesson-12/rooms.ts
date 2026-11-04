@@ -58,7 +58,7 @@ import type { Spiral } from '@/features/lessons/kit/spiral'
 import { mountSpiral } from '@/features/lessons/kit/spiral'
 import type { Naming } from './lines'
 import { chipName, figureSummary, keyTurnedLine, rootMoves, slideLine, tuneEndLine, tuneStartLine, } from './lines'
-import type { KeyName, TuneId } from './music'
+import type { KeyName, TuneId, TuneNote } from './music'
 import { BAR_SEC, chordsOf, LOOP_DEGREES } from './music'
 import type { KeyTurn, LabelMode, Play, RoomsState, WalkPlay, } from './rooms-draw'
 import { drawRooms, roomsAnimating, TURN_SEC } from './rooms-draw'
@@ -116,6 +116,10 @@ export interface RoomsOptions {
   readonly mode?: RoomsMode
   /** The page's one-sound owner. */
   readonly owner?: SoundOwner
+  /** The centre's label, when not the state's own: none on the hero's ring (WEB-SPEC, Toys 2). */
+  readonly label?: LabelMode
+  /** Hears each of a tune's notes as it starts, with its index and the tune's length: the hero's Merc sings it. */
+  readonly onSung?: (n: TuneNote, i: number, count: number) => void
 }
 
 export interface Rooms {
@@ -147,12 +151,14 @@ export interface Rooms {
   playChip(degree: number): Promise<boolean>
   /** Play I, then vi, and the corner's slide. */
   playSlide(): Promise<boolean>
-  /** Play the loop, each room lit while its chord sounds. */
-  playLoop(): Promise<boolean>
+  /** Play the loop, each room lit while its chord sounds; `audible` as the press decided it, if it did. */
+  playLoop(audible?: boolean): Promise<boolean>
   /** Play the roots alone, each joined to the one before and its move named. */
   playRoots(): Promise<boolean>
   /** A tune over the loop, its walk drawn and its corners counted; false when cut short. */
-  playTune(id: TuneId): Promise<boolean>
+  playTune(id: TuneId, audible?: boolean): Promise<boolean>
+  /** Says a line in the ring's polite line, once. */
+  say(line: string): void
   /**
    * Plays a sound the page builds of the kit's runs itself, as the toy's
    * own plays sound: the page's one sound, stopped by the next; false when
@@ -241,7 +247,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       turn,
       rooms: drawn,
       lit,
-      label: LABEL[settings.mode],
+      label: opts.label ?? LABEL[settings.mode],
       compact: compact(),
       slide,
       walk,
@@ -262,7 +268,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   // ------------------------------------------------------------ the words
 
   function say(line: string): void {
-    if (said !== null) said.textContent = line
+    if (said !== null && said.textContent !== line) said.textContent = line
   }
 
   /** The chips' two lines and names, in the key and names that show. */
@@ -343,8 +349,11 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   }
 
   /** A fixed sound in the soft tone, at twice its lengths under Slow. */
-  function sound(notes: readonly SoundNote[], hooks: Hooks): Promise<boolean> {
-    const audible = Sound.canPlay()
+  function sound(
+    notes: readonly SoundNote[],
+    hooks: Hooks,
+    audible = Sound.canPlay(),
+  ): Promise<boolean> {
     const played = settings.slow ? slow(notes) : [...notes]
     return start(
       (onNote) => playNotes(played, { audible, kind: 'soft', onNote }),
@@ -393,21 +402,25 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     return done
   }
 
-  function playLoop(): Promise<boolean> {
+  function playLoop(audible?: boolean): Promise<boolean> {
     const bar = scaled(BAR_SEC)
-    return sound(loop(settings.key), {
-      onNote: (n) => {
-        const degree = LOOP_DEGREES[Math.floor(n.t / bar + 1e-6)] ?? null
-        if (degree === lit && sounding === degree) return
-        lit = degree
-        light(degree)
-        changed()
+    return sound(
+      loop(settings.key),
+      {
+        onNote: (n) => {
+          const degree = LOOP_DEGREES[Math.floor(n.t / bar + 1e-6)] ?? null
+          if (degree === lit && sounding === degree) return
+          lit = degree
+          light(degree)
+          changed()
+        },
+        ended: () => {
+          lit = null
+          light(null)
+        },
       },
-      ended: () => {
-        lit = null
-        light(null)
-      },
-    })
+      audible,
+    )
   }
 
   function playRoots(): Promise<boolean> {
@@ -433,16 +446,18 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     return done
   }
 
-  function playTune(id: TuneId): Promise<boolean> {
+  function playTune(id: TuneId, audible = Sound.canPlay()): Promise<boolean> {
     const s = tuneSound(id, settings.key, settings.slow)
-    const audible = Sound.canPlay()
     let heard = 0
     const done = start(
       (onNote) => playNotes(s.notes, { audible, kind: 'soft', onNote }),
       {
         onNote: (_, i) => {
           const sung = s.sungAt(i)
-          if (sung !== null) heard = sung + 1
+          if (sung !== null) {
+            heard = sung + 1
+            opts.onSung?.(s.tune[sung], sung, s.tune.length)
+          }
           // each chord's chip lights with its room, as in the loop
           const degree = s.chordAt(i)
           if (degree !== null && sounding !== degree) light(degree)
@@ -581,6 +596,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     playLoop,
     playRoots,
     playTune,
+    say,
     playRun: (begin) => start(begin),
     stop,
     state,

@@ -21,9 +21,10 @@
 // The switches, the steps' deck with the ring of rooms in each step's
 // state, its chord strip, Step 2's key switch, Step 3's slide and names
 // switch, Step 4's loop and roots, Step 5's tunes and their Slow, the next
-// lesson's card, the season map, the masthead and Merc and Tavi. The rest
-// does nothing until it is wired: the cold open on the hero's ring, the
-// recall and the quick check, the four words, Sing it and free play.
+// lesson's card, the season map, the masthead and Merc and Tavi; and the
+// cold open on the hero's ring, with its predict. The rest does nothing
+// until it is wired: the recall and the quick check, the four words, Sing
+// it and free play.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -49,6 +50,7 @@ import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 initSoundSwitch()
@@ -67,6 +69,10 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+
+// the cold open on the hero's ring, which a step change of the deck ends
+initColdOpen(deck)
+
 initSteps(deck, ringNames)
 deck.start()
 
