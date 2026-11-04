@@ -9,7 +9,7 @@
 import type { AudioEngine } from '@/lib/audio-engine'
 import { downloadMIDI, exportFilename, importMelodyFromMIDI, readMidiTempoBpm, } from '@/lib/piano-roll'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { generateShareURL } from '@/lib/share-url'
+import { copyShareURL } from '@/lib/share-url'
 import { bpm, keyName, scaleType, setBpm, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
@@ -60,10 +60,17 @@ export function useEditorController(_deps: Deps): EditorController {
     const bpmVal = bpm()
     const totalBeats = melodyTotalBeats(melody)
 
-    const url = generateShareURL(melody, bpmVal, key, scaleTypeVal, totalBeats)
-    void navigator.clipboard.writeText(url).then(() => {
-      showNotification('Share URL copied to clipboard!', 'success')
-    })
+    // copyShareURL builds the same URL and falls back when the clipboard
+    // refuses (no secure context, a denied permission). A bare writeText with
+    // only a success handler left a refusal unhandled: no word to the user,
+    // and the crash screen from the app's error boundary.
+    void copyShareURL(melody, bpmVal, key, scaleTypeVal, totalBeats).then(
+      (copied) => {
+        if (copied)
+          showNotification('Share URL copied to clipboard!', 'success')
+        else showNotification('Could not copy the share link', 'error')
+      },
+    )
   }
 
   const handleExportMIDI = (): void => {
