@@ -11,16 +11,16 @@
 // starts with "Right", "Yes" or "Correct" (WEB-SPEC, Recall and quick
 // check). No question plays a sound.
 //
-// The recall asks Lesson 11's questions 1 and 2 under their ids `l11-q1`
-// and `l11-q2` (FACTS 4). Lesson 11's page has no module of its own yet, so
-// they are written here from LESSON.md's recall, Lesson 11's words; once
-// its page is built they come from its quiz, filtered by id, as Lesson 9's
-// come from Lesson 6's. The kit's quiz turns their "Try Step 2 again" and
-// "Try Step 3 again" into "Try Lesson 11, Step 2 again" and "Try Lesson 11,
-// Step 3 again", links to Lesson 11's page at that step in a new tab, and
-// where Lesson 11 is not live keeps the words with no link.
+// The recall asks Lesson 11's questions 1 and 2, the very objects Lesson
+// 11's page asks, under their ids `l11-q1` and `l11-q2` (FACTS 4), taken
+// from its quiz by id, as Lesson 9's come from Lesson 6's. The kit's quiz
+// turns their "Try Step 2 again" and "Try Step 3 again" into "Try Lesson
+// 11, Step 2 again" and "Try Lesson 11, Step 3 again", links to Lesson
+// 11's page at that step in a new tab, and where Lesson 11 is not live
+// keeps the words with no link.
 
 import type { QuizOptions, QuizQuestion } from '@/features/lessons/kit/quiz'
+import { QUIZ_QUESTIONS as LESSON_11_QUESTIONS } from '@/features/lessons/lesson-11/quiz-questions'
 
 /** The quick check's storage keys, its seed and its record. */
 export const QUIZ_KEYS: QuizOptions['keys'] = {
@@ -32,52 +32,9 @@ export const QUIZ_KEYS: QuizOptions['keys'] = {
 const tryStep = (n: number): string =>
   ` <a href="#step-${n}" data-goto-step="${n}">Try Step ${n} again</a>.`
 
-/** The recall's two questions, Lesson 11's 1 and 2. */
-export const RECALL_QUESTIONS: readonly QuizQuestion[] = [
-  {
-    id: 'l11-q1',
-    question: 'Your voice flips as you slide up. What does that mean?',
-    options: [
-      {
-        text: 'Your voice changed gear: every voice has gears',
-        correct: true,
-        feedback:
-          'A flip is a change of register, and every voice has registers.',
-      },
-      {
-        text: "You're doing it wrong",
-        feedback: `Even a larynx in a lab can flip when its stretch changes smoothly.${tryStep(2)}`,
-      },
-      {
-        text: "You've reached your highest note",
-        feedback:
-          'A flip can come well inside a range, where either gear can sing.',
-      },
-    ],
-  },
-  {
-    id: 'l11-q2',
-    question:
-      "Yesterday your voice flipped on a slide. Today, on the same slide, it didn't. Why might that be?",
-    options: [
-      {
-        text: 'Around the middle, either gear can sing the same notes',
-        correct: true,
-        feedback:
-          'So a slide can switch in a different place, or stay in one gear.',
-      },
-      {
-        text: 'One slide was out of tune',
-        feedback: `A flip is a change of gear, not a wrong note.${tryStep(3)}`,
-      },
-      {
-        text: 'Flips only happen to beginners',
-        feedback:
-          'Every voice has gears, trained or not, and classical singers learn to hide the switch.',
-      },
-    ],
-  },
-]
+/** The recall's two questions, Lesson 11's own. */
+export const RECALL_QUESTIONS: readonly QuizQuestion[] =
+  LESSON_11_QUESTIONS.filter((q) => q.id === 'l11-q1' || q.id === 'l11-q2')
 
 export const QUIZ_QUESTIONS: readonly QuizQuestion[] = [
   {

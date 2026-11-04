@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'
 import { lessonOfQuestion } from '@/features/lessons/kit/quiz'
+import { QUIZ_QUESTIONS as LESSON_11 } from '@/features/lessons/lesson-11/quiz-questions'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
 import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
 
@@ -136,6 +137,12 @@ describe('the quick check', () => {
 })
 
 describe('the recall', () => {
+  it("asks Lesson 11's own questions 1 and 2, the objects its page asks", () => {
+    expect(RECALL_QUESTIONS).toHaveLength(2)
+    for (const q of RECALL_QUESTIONS)
+      expect(LESSON_11.find((l) => l.id === q.id)).toBe(q)
+  })
+
   it("asks Lesson 11's questions 1 and 2 under Lesson 11's ids", () => {
     expect(RECALL_QUESTIONS.map((q) => q.id)).toEqual(['l11-q1', 'l11-q2'])
     expect(RECALL_QUESTIONS.map((q) => lessonOfQuestion(q.id))).toEqual([
