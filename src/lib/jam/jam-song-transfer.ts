@@ -235,23 +235,44 @@ export async function sendInChunks(
     })
   }
 
-  const waitForDrain = () =>
-    new Promise<void>((resolve) => {
-      const onLow = () => {
-        channel.removeEventListener('bufferedamountlow', onLow)
-        resolve()
-      }
-      channel.addEventListener('bufferedamountlow', onLow)
-    })
-
-  for (let i = 0; i < count; i++) {
+  const stopIfGone = () => {
     if (opts.signal?.aborted === true) {
       throw new TransferAbortedError('The transfer was cancelled.')
     }
     if (channel.readyState !== 'open') {
       throw new TransferAbortedError('The connection closed mid-transfer.')
     }
-    if (channel.bufferedAmount > SEND_HIGH_WATER) await waitForDrain()
+  }
+
+  // A channel that closes with its buffer full never fires
+  // bufferedamountlow, so a wait on that event alone never ended: the share
+  // stood at "sending" for good and Stop could not reach it. The wait also
+  // looks, every poll, for a closed channel or a Stop.
+  const waitForDrain = () =>
+    new Promise<void>((resolve) => {
+      let poll: ReturnType<typeof setTimeout> | undefined
+      const done = () => {
+        clearTimeout(poll)
+        channel.removeEventListener('bufferedamountlow', done)
+        resolve()
+      }
+      const check = () => {
+        if (opts.signal?.aborted === true || channel.readyState !== 'open') {
+          done()
+        } else {
+          poll = setTimeout(check, DRAIN_POLL_MS)
+        }
+      }
+      channel.addEventListener('bufferedamountlow', done)
+      poll = setTimeout(check, DRAIN_POLL_MS)
+    })
+
+  for (let i = 0; i < count; i++) {
+    stopIfGone()
+    if (channel.bufferedAmount > SEND_HIGH_WATER) {
+      await waitForDrain()
+      stopIfGone()
+    }
     const { start, end } = chunkRange(i, total, size)
     channel.send(bytes.slice(start, end))
     report(end)
