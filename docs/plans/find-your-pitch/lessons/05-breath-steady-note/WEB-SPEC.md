@@ -128,7 +128,7 @@ for Steps 2, 3 and 4, for these reasons:
 
 - The band chart (Merc's band at A3) with the level strip and a held voice, drawn violet. One
   slider, **Push**, 0 to 100, starting at 50, moves the voice's level and pitch together through
-  the kit's `setGain` and `setFreq` (`sound.ts:231-238`): ±6 dB and ±60 cents at the ends (FACTS
+  the kit's `setGain` and `setFreq` (`sound.ts:237-244`): ±6 dB and ±60 cents at the ends (FACTS
   73). The line draws in a scrolling 4-second window while the note sounds.
 - Sounding the note: `holdToPlay` sounds it while a pointer holds the slider, or for 0.7 s after
   the last arrow key (`kit/toy-helpers.ts:19-67`); it handles no Space or Enter, so on its own a

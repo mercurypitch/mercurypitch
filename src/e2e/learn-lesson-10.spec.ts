@@ -120,10 +120,9 @@ for (const viewport of [
       // Assert
       expect(await heard(page)).toEqual({ contexts: 0, sources: 0 })
       await expect(page.locator('.lm-btn')).toBeVisible()
-      // Lesson 11 has no page yet: the Wrap's card leads to it on the map
       await expect(page.locator('#wrap a.next-card')).toHaveAttribute(
-        'data-select-lesson',
-        '11',
+        'href',
+        '/learn/11',
       )
       expect(errors).toEqual([])
     })

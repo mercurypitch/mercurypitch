@@ -319,6 +319,33 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 11's page, its reading time and its Siren link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film (WEB-SPEC, Tests 12)
+      const L11 = season.LESSONS[11]
+      expect([L11.page, L11.minutes, L11.film], drafts).toEqual([
+        '/learn/11',
+        16,
+        undefined,
+      ])
+      expect(L11.pr.link, drafts).toEqual({
+        href: '/pitch-training?lesson=11',
+        addr: 'mercurypitch.com/pitch-training',
+        label: 'Exercises',
+        note: 'then tap Siren / Range Explorer',
+      })
+      expect(L11.pr.link?.note, drafts).not.toMatch(
+        /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,
+      )
+      // the drills it still needs stay the team's (WEB-SPEC, Explorer and season data)
+      expect(L11.pr.needs, drafts).toBe('siren and slide drills')
+      expect(season.EDGES, drafts).toContainEqual([7, 11])
+    }
+  })
+
   it("keeps Lesson 12's page, its reading time and its ear drill's link in every build", async () => {
     for (const drafts of ['1', '0'] as const) {
       // Act

@@ -531,15 +531,15 @@ music bed (FACTS 75 to 79).
   today"'s play and the sing-along in Merc's "ooh", Tavi's an octave above Merc's; the count-in is the
   woodblock (FACTS 79).
 - **A part under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:533-541`). The other part is the one exception: one voice along
-  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:315-347`), each note a held point at
+  (`src/features/lessons/kit/sound.ts:539-547`). The other part is the one exception: one voice along
+  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:321-353`), each note a held point at
   its pitch, joined to the next by a glide of 0.05 s, built before the take opens and booked on the
   audio clock to start on bar 1's first beat through the voice's `at`
   (`src/features/lessons/kit/sound.ts:39-43`), the hush leaving it sounding, as Lesson 24's item 5
   keeps its drone. Its release ends it as its last note ends. Two notes on one pitch in a row, which
   this page's parts never have and Lesson 28's song may, are struck again by a dip in the contour's
   level, to a quarter for 0.08 s between them (What the kit and the app still need, item 6).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:181`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:187`); a
   two-part play at the note level for each part. In a run the other part sits at a level the lab
   sets, under Merc's model, so the singer's own voice stays clear in the headphones (FACTS 79).
 - **Low notes.** The page's lowest sounds are C3, 130.81 Hz, Step 4's chord root and Merc's do in

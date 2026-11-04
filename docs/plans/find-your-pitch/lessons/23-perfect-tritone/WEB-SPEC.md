@@ -355,8 +355,8 @@ the guide drawn on the staff and no Move do. In order:
    line. The stop line on its own line, then two buttons. Play Merc's notes plays Merc's line
    (lower) or Tavi's (higher) as two contours a breath apart, each one voice: do held 1.15 s and a
    0.05 s glide to so, held 1.8 s; 1.0 s of quiet; then so held 1.15 s, a 0.05 s glide to do, held
-   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:290`;
-   `playContour`, `src/features/lessons/kit/sound.ts:575`), each note lighting as it sounds. Start
+   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:296`;
+   `playContour`, `src/features/lessons/kit/sound.ts:581`), each note lighting as it sounds. Start
    the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
    (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it counts in on do, 0.8 s
    at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and a
@@ -461,7 +461,7 @@ and the page has no music bed.
 
 - **Two notes together** (the cold open's last chord, Step 4's B and F, the listening pair, quick
   check 4) start in one timer task, so their voices share one clock (`playNotes`,
-  `src/features/lessons/kit/run.ts:113`); a pair's second note is timed from the play's start, as
+  `src/features/lessons/kit/run.ts:116`); a pair's second note is timed from the play's start, as
   Lesson 6 times its pairs, so the drawing and the sound never drift.
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
   clock (`src/features/lessons/kit/sound.ts:16-21`), so do and so join with no click.
@@ -528,7 +528,7 @@ quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, 
   only the perfect intervals and the tritone (the ear-drill launch kind)", stays until it ships; it
   is admin only, never drawn on a lesson page (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [6, 23], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 23's
-  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
+  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480`).
 - The tease on Lesson 22's card is this lesson's, set on Lesson 23 in the lesson copy (`LESSON_COPY`,
   `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "One note, swinging. Now two notes
   together: one pair wants to move.", with Lesson 22's planned line as a variant, `teaseAlts` `[{

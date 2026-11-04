@@ -371,7 +371,7 @@ on offer under it (FACTS 70).
 
 The entry for `kit/season.ts`, in Season 2's data once the kit's seasons land (What the kit and the
 app still need, item 3), in the form of Lesson 12's entry
-(`src/features/lessons/kit/season.ts:375-394`) and Lesson 9's link
+(`src/features/lessons/kit/season.ts:386-405`) and Lesson 9's link
 (`src/features/lessons/kit/season.ts:335-343`):
 
 - `n: 27`, `lane: 'theory'`, `title: 'Seventh chords and inversions'`, `short: 'Sevenths'`,
@@ -382,7 +382,7 @@ app still need, item 3), in the form of Lesson 12's entry
   seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack
   with major against dominant seventh alone (the ear-drill launch kind)".
 - Two edges: `[12, 27]` and `[23, 27]`, so the explorer lights Lessons 12 and 23 as this lesson's
-  path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:442-469`).
+  path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:453-480`).
 - In `kit/lesson-copy.ts` (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): the hook
   with no alternative; the tease for this lesson, which Lesson 26's card prints, "G, B and D going
   home to C, E and G. Now add one note on top.", with `teaseAlts` `three-notes`, "Three notes make a

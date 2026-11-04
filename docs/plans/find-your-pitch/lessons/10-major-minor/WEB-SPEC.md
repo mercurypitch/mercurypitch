@@ -36,7 +36,7 @@ slide guide with Move do, and free play in the Wrap. It is published only after 
 `/learn/06`, is, because its recall check asks Lesson 6's questions and its prerequisite chip names
 Lesson 6 (FACTS 2, 7), and after the vocal coach has looked at its voice lines (LESSON.md, For the
 vocal coach). Until both are done it is a draft (`src/features/lessons/kit/drafts.ts:5-24`,
-`:30-41`). Every build carries `learn/10.html`, as it carries every lesson page
+`:30-42`). Every build carries `learn/10.html`, as it carries every lesson page
 (`tools/draft-lessons.ts:8-14`), and its line in `drafts.ts` holds it back on mercurypitch.com: the
 site worker answers `/learn/10` with the 404 page, and every page's explorer shows Lesson 10 with no
 link, as a lesson not written yet (`src/lesson-gate.ts:10-12`;
@@ -683,9 +683,9 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 - **What it plays through.** Every play is one of the kit's runs
   (`src/features/lessons/kit/run.ts`), which a stop, leaving the step or the page's one-sound owner
   ends where it stands: `playTone` and `playContour` give no way to stop a sound once it starts
-  (`src/features/lessons/kit/sound.ts:560-584`). Chords, thirds, triads, the pattern, scales, the
+  (`src/features/lessons/kit/sound.ts:566-590`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
-  `playNotes` (`run.ts:113-155`), whose visuals run to their end with sound off. The count-in is
+  `playNotes` (`run.ts:116-158`), whose visuals run to their end with sound off. The count-in is
   one voice the page keeps and stops (`countIn`, `kit/move-do.ts:69-74`), and a bead tapped on the
   hero's spiral plays the spiral's own note, through the same owner (Toys 2).
 - **A chord** is three voices that share one onset, so they start in one task and share one start
@@ -694,15 +694,15 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 - **A move** is the two held notes as voices for its 3.1 s and the moving note as one voice along a
   contour, `contourOf(329.63, [{ hold: 1.2 }, { glide: 0.4, to: 311.13 }, { hold: 1.5 }])` for mi,
   or from 392.00 to 369.99 for so: the held notes through `playNotes` and the line through
-  `playLine`, one run through `allOf` (`run.ts:101-111`, `:162-184`; `contourOf`,
-  `sound.ts:285-308`), whose pitch glides on the audio clock (`:314-347`; FACTS 73). The bead's
+  `playLine`, one run through `allOf` (`run.ts:103-114`, `:165-187`; `contourOf`,
+  `sound.ts:291-314`), whose pitch glides on the audio clock (`:320-353`; FACTS 73). The bead's
   slide is timed from the same start, so it lands as the note lands.
 - **Levels**: a tapped note at the soft tone's 0.13; a chord's voices at 0.075 each; Merc's "ooh" at
   the kit's level; the count-in at 0.065 (FACTS 80, 81).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:510-522`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:516-528`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:475-477`).
+  hidden (`sound.ts:481-483`).
 
 ## Merc and Tavi
 
@@ -1149,13 +1149,13 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
    starts "Right." or "Not quite.".
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
-11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-104`) end on the row for
+11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-110`) end on the row for
     the page before the season's first lesson with no page (`lessonWithNoPage`, `:34`), which is
     this page's while Lesson 11 has none: the eyebrow "Next lesson 11 · Registers and the break
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:136-153`) and this one's (`:217-260`); its still inside the card holds no button.
+    card (`:142-159`) and this one's (`:223-266`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
     alternative hook's note never reaches the page (`:78-80`).
