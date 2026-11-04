@@ -49,10 +49,10 @@ export interface VoiceOptions {
  * A timbre shapes a voice as it is built: it takes the voice's lowpass,
  * which it may retune, and routes the filtered tone to the envelope itself,
  * through nodes of its own, adding to `parts` any source it starts at `at`
- * (a wobble, breath noise), so each stops with the voice. The timbres live
- * in their own module (kit/timbre.ts), loaded only by the page that sings
- * them, and this hook is all a first paint carries of them; without one, a
- * voice is built exactly as before.
+ * (a wobble, breath noise), so each stops with the voice; `parts[0]` is the
+ * voice's oscillator, which it may give a wave of its own (Lesson 13's
+ * vowels, lesson-13/vowel-voice.ts). This hook is all a first paint carries
+ * of a timbre; without one, a voice is built exactly as before.
  */
 export type Timbre = (
   filter: BiquadFilterNode,
