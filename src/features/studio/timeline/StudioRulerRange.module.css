@@ -57,6 +57,18 @@
   left: auto;
   right: -12px;
 }
+/* At 0:00 the grip's outer half would lie under the lane names: it turns
+   inward, its mark still on the range's edge, so all of it takes a press. */
+.fromStart .handle:not(.end) {
+  left: 0;
+}
+.fromStart .handle:not(.end)::after {
+  left: 0;
+  border-radius: 0 0 2px 0;
+}
+.fromStart .handle:not(.end)::before {
+  left: 0;
+}
 .handle:focus-visible {
   outline: 2px solid var(--studio-accent);
   outline-offset: -2px;
