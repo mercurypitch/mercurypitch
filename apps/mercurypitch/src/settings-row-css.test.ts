@@ -47,3 +47,35 @@ describe("a settings row's value", () => {
     expect(declaration('.mp-set-row__value', 'white-space')).toBe('nowrap')
   })
 })
+
+describe("a settings row's focus ring", () => {
+  // The list clips its overflow to its rounded corners, so a ring drawn
+  // outside the row lost its sides on every row and all of itself on a row
+  // alone in its card: focused, Settings' Account card showed no ring.
+  it('is drawn inside the row, since the list it sits in clips', () => {
+    const width = Number.parseFloat(
+      (declaration('.mp-set-row:focus-visible', 'outline') ?? '').split(
+        /\s+/u,
+      )[0],
+    )
+    const offset = Number.parseFloat(
+      declaration('.mp-set-row:focus-visible', 'outline-offset') ?? 'NaN',
+    )
+
+    expect(declaration('.mp-set-list', 'overflow')).toBe('hidden')
+    expect(width).toBeGreaterThanOrEqual(2)
+    expect(offset).toBeLessThanOrEqual(-width)
+  })
+
+  it('rounds its corners inside the card, so the card cuts none of them', () => {
+    const card = Number.parseFloat(
+      declaration('.mp-set-list', 'border-radius') ?? 'NaN',
+    )
+    const ring = Number.parseFloat(
+      declaration('.mp-set-row:focus-visible', 'border-radius') ?? 'NaN',
+    )
+
+    expect(ring).toBeGreaterThan(0)
+    expect(ring).toBeLessThanOrEqual(card)
+  })
+})
