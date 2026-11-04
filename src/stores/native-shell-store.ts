@@ -62,7 +62,12 @@ export type {
 export interface NativeRunControls {
   /** The tab the run belongs to. The session pill keys off it. */
   readonly tab: ActiveTab
-  /** The room's name, for the pill and the room header. */
+  /**
+   * The room's name, for the pill and the room header. Both read it where
+   * they track, so a room that renames itself registers a getter (the Sing
+   * room is named for the cover it draws): the header follows it at once,
+   * and the pill keeps the name the room had when the singer left it.
+   */
   readonly roomLabel: string
   /** The room's OWN play state — not `playbackState()`. See the header. */
   isPlaying: () => boolean

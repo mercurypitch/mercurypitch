@@ -6,6 +6,9 @@
 // in, and it is what the native room header's chip and the session pill say —
 // a header reading "Sing" over a photograph of a studio is the app naming the
 // tab it is on rather than the place it has put you (device round 1, P4).
+// The Sing room has covers to pick from now, and is named for the one it
+// draws (its label in `src/lib/backgrounds/background-catalog.ts`); the name
+// here is its default cover's, and what it falls back to.
 //
 // THESE ARE THE MOCK'S NAMES, not a catalogue a singer can choose from. One
 // room per instrument, fixed, exactly as the approved screens draw it; the

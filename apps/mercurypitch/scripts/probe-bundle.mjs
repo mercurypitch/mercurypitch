@@ -86,7 +86,7 @@ import { walkLeaderboard, walkProgress } from './probe-progress.mjs'
 import { EXERCISE_FRAMES, EXERCISE_LANDSCAPE_FRAMES, walkExerciseEntry, } from './probe-exercise-entry.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
 import { frameName, SAFE_AREA_FRAMES, walkSafeAreas, } from './probe-safe-areas.mjs'
-import { parseRoomNames } from './room-names-source.mjs'
+import { parseCoverLabels, parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
 /** Every frame the walk is repeated at. The lab's, and the owner's phone. */
@@ -111,6 +111,21 @@ const ROOM_NAMES = parseRoomNames(
     ),
     'utf8',
   ),
+)
+/**
+ * The Sing room is named for the cover it draws, so each Sing cover's label
+ * is a name the pill can hold as well. Read from the catalogue the same way,
+ * and every Sing entry must be read or it throws (room-names-source.mjs).
+ */
+const SING_COVER_LABELS = parseCoverLabels(
+  readFileSync(
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../../src/lib/backgrounds/background-catalog.ts',
+    ),
+    'utf8',
+  ),
+  'sing',
 )
 const STEP_TIMEOUT_MS = 10_000
 
@@ -2533,8 +2548,12 @@ async function walkRound2(page, ctx, steps) {
     )
   }
 
-  // Every name the app can put in the pill, measured in the pill.
-  const names = Object.entries(ROOM_NAMES)
+  // Every name the app can put in the pill, measured in the pill: each
+  // room's own, and each Sing cover's.
+  const names = [
+    ...Object.entries(ROOM_NAMES),
+    ...Object.entries(SING_COVER_LABELS),
+  ]
   const fits = await page
     .locator('[data-testid="shell-session-pill-name"]')
     .evaluate((node, list) => {
@@ -2554,7 +2573,7 @@ async function walkRound2(page, ctx, steps) {
     )
   }
   steps.push(
-    `pill: the real "${real.name} ·${real.stateText.replace(/^\s*·/u, '')}" at ${real.pill.width}x${real.pill.height}, the control ${real.control.width}x${real.control.height} inside it, ${real.railTop === null ? '' : `${Math.round((real.railTop - real.pill.bottom) * 10) / 10} px clear of the rail, `}and all ${names.length} room names fit whole`,
+    `pill: the real "${real.name} ·${real.stateText.replace(/^\s*·/u, '')}" at ${real.pill.width}x${real.pill.height}, the control ${real.control.width}x${real.control.height} inside it, ${real.railTop === null ? '' : `${Math.round((real.railTop - real.pill.bottom) * 10) / 10} px clear of the rail, `}and all ${names.length} room and cover names fit whole`,
   )
 
   // And the stylesheet's own promise, labelled as exactly that: a name longer

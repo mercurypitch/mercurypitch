@@ -50,6 +50,7 @@ interface RoomSignals {
   summary: Signal<TakeSummary | null>
   previous: Signal<SingTake | null>
   clock: Signal<TakeClock>
+  roomLabel: Signal<string>
 }
 
 let signals: RoomSignals | undefined
@@ -70,12 +71,14 @@ function room(): RoomSignals {
     startedAt: 0,
     endedAt: 0,
   })
+  const [roomLabel, setRoomLabel] = createSignal('')
   signals = {
     context: [context, setContext],
     takes: [takes, setTakes],
     summary: [summary, setSummary],
     previous: [previous, setPrevious],
     clock: [clock, setClock],
+    roomLabel: [roomLabel, setRoomLabel],
   }
   return signals
 }
@@ -141,14 +144,25 @@ export function singTakeClock(): TakeClock {
   return room().clock[0]()
 }
 
+/**
+ * The room the take on the card was sung in, named as it was when the take
+ * ended. The card keeps it: a supporter cover that lands while the card is
+ * open names the room from then on, not the take sung before it.
+ */
+export function singTakeRoomLabel(): string {
+  return room().roomLabel[0]()
+}
+
 export function setSingTakeResult(
   summary: TakeSummary,
   previous: SingTake | null,
   clock: TakeClock,
+  roomLabel: string,
 ): void {
   room().summary[1](summary)
   room().previous[1](previous)
   room().clock[1](clock)
+  room().roomLabel[1](roomLabel)
 }
 
 /** Keep or Discard, Back, a backdrop tap — every way the card closes. */

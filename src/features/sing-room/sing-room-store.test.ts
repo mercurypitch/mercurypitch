@@ -2,7 +2,7 @@ import { createEffect, createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { micIntent } from './room-machine'
 import { setSingMicGranted } from './sing-room-settings'
-import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, resetSingRoom, setSingTakeResult, singRoomContext, singTakeSummary, takesThisSession, } from './sing-room-store'
+import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, resetSingRoom, setSingTakeResult, singRoomContext, singTakeRoomLabel, singTakeSummary, takesThisSession, } from './sing-room-store'
 
 beforeEach(() => {
   resetSingRoom()
@@ -108,11 +108,12 @@ describe('the take on the end card', () => {
     dispatchSingRoom({ type: 'enter', hasSummary: false })
     dispatchSingRoom({ type: 'sing-a-note' })
     dispatchSingRoom({ type: 'mic-granted' })
-    setSingTakeResult(summary, null, { startedAt: 1, endedAt: 2 })
+    setSingTakeResult(summary, null, { startedAt: 1, endedAt: 2 }, 'Choir Room')
     dispatchSingRoom({ type: 'stop', hasTake: true })
     // Back, a tab hop, anything that unmounts the room.
     dispatchSingRoom({ type: 'leave' })
     expect(singTakeSummary()).toEqual(summary)
+    expect(singTakeRoomLabel()).toBe('Choir Room')
     expect(enterSingRoom().state).toBe('ended')
   })
 
@@ -154,7 +155,12 @@ describe('takes this session', () => {
   it('does NOT start over while an undecided card is waiting', () => {
     enterSingRoom()
     expect(beginTake()).toBe(1)
-    setSingTakeResult(summaryFixture, null, { startedAt: 1, endedAt: 2 })
+    setSingTakeResult(
+      summaryFixture,
+      null,
+      { startedAt: 1, endedAt: 2 },
+      'Retro Analog Studio',
+    )
     dispatchSingRoom({ type: 'stop', hasTake: true })
     dispatchSingRoom({ type: 'leave' })
     enterSingRoom()
