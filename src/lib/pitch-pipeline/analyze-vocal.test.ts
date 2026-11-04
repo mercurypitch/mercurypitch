@@ -11,7 +11,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { WINDOW_STEP_SEC } from '@/lib/midi-generator'
-import { analyzeVocalSamples, isAnalysisAbort, segmentVocalContour, VOCAL_ANALYSIS_DEFAULTS, } from '@/lib/pitch-pipeline/analyze-vocal'
+import { analyzeVocalSamples, isAnalysisAbort, pitchHistoryFromNotes, segmentVocalContour, VOCAL_ANALYSIS_DEFAULTS, } from '@/lib/pitch-pipeline/analyze-vocal'
 
 const SAMPLE_RATE = 16000
 
@@ -223,5 +223,24 @@ describe('VOCAL_ANALYSIS_DEFAULTS', () => {
       scaleType: 'major',
       cleanupAmount: 0.3,
     })
+  })
+})
+
+describe('pitchHistoryFromNotes', () => {
+  it('gives each trace point the octave of its note, at the ends of the range too', () => {
+    const notes = [
+      { midi: 1, noteName: 'C#-1', startSec: 0, endSec: 0.1 },
+      { midi: 12, noteName: 'C0', startSec: 0.1, endSec: 0.2 },
+      { midi: 60, noteName: 'C4', startSec: 0.2, endSec: 0.3 },
+      { midi: 127, noteName: 'G9', startSec: 0.3, endSec: 0.4 },
+    ]
+
+    const history = pitchHistoryFromNotes(notes)
+
+    // Read from the name's last character, C0 came back as octave 4 (0 is
+    // falsy) and C#-1 as octave 1.
+    const octaveOf = (name: string) =>
+      history.find((point) => point.noteName === name)?.octave
+    expect(['C#-1', 'C0', 'C4', 'G9'].map(octaveOf)).toEqual([-1, 0, 4, 9])
   })
 })
