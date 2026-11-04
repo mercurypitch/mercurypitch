@@ -1,4 +1,4 @@
-// Studio top bar — the transport stays centred at every width, the song title keeps its words, the save status never runs into the transport, the actions keep clear of it while Punch shows, and a phone sheet draws no handle it cannot use.
+// Studio top bar — the transport stays centred at every width, the song title keeps its words, the save status never runs into the transport, the actions keep the bar's gap from it just past every fold and while Punch shows, and a phone sheet draws no handle it cannot use.
 import { expect, type Page, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -68,6 +68,46 @@ test('Studio top bar keeps the transport centred and the song title whole from 1
   }
 })
 
+/**
+ * Every bar width from `from` to `to` px, two at a time, where the actions
+ * share the transport's row but sit nearer it than the bar's own 16 px gap.
+ * Just past each fold is where they met: a fold comes when the unfolded
+ * actions no longer fit, so the widths it misses are the ones it was due at.
+ */
+async function crowdedWidths(
+  page: Page,
+  from: number,
+  to: number,
+): Promise<string[]> {
+  const bar = studioRegion(page).locator('[data-studio-top-bar]')
+  const viewport = page.viewportSize()!
+  // The bar is the viewport less the app's own chrome beside it.
+  const chrome =
+    viewport.width - (await bar.evaluate((element) => element.clientWidth))
+  const crowded: string[] = []
+  for (let width = from; width <= to; width += 2) {
+    await page.setViewportSize({
+      width: width + chrome,
+      height: viewport.height,
+    })
+    await expect
+      .poll(() => bar.evaluate((element) => element.clientWidth))
+      .toBe(width)
+    const gap = (await barLayout(page)).actionsGap
+    if (gap !== null && gap < 16) crowded.push(`${width} px bar: ${gap} px`)
+  }
+  return crowded
+}
+
+test('Studio top bar keeps its actions 16 px clear of the transport just past every fold', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openArrangement(page)
+  expect(await crowdedWidths(page, 860, 1440)).toEqual([])
+})
+
 test('Studio top bar keeps its actions clear of the transport while Punch shows', async ({
   page,
 }) => {
@@ -104,6 +144,15 @@ test.describe('on a tablet', () => {
     viewport: { width: 1180, height: 820 },
     hasTouch: true,
     isMobile: true,
+  })
+
+  test('Studio top bar keeps finger-sized actions 16 px clear of the transport just past every fold', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await page.setViewportSize({ width: 1600, height: 900 })
+    await openArrangement(page)
+    expect(await crowdedWidths(page, 900, 1540)).toEqual([])
   })
 
   test('Studio top bar keeps the transport centred, the title whole and every target finger-sized', async ({
