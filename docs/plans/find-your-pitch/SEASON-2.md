@@ -943,7 +943,7 @@ and First Light does not step aside. Item 21 fixes it.
     where notes 1 to 3 were cut off 0.3 s in at every level, and the top note ends before the
     singing starts (`use-chord-stacker-controller.ts:144-168`). The help says what the drill does, a
     chord heard a note at a time and each note sung back on its own
-    (`src/features/exercises/exercise-help.ts:211-219`), with the summary and first sentence Lesson
+    (`src/features/exercises/exercise-help.ts:212-220`), with the summary and first sentence Lesson
     27 proposed (Lesson 27 WEB-SPEC, What the kit and the app still need, item 10). Lesson 27.
 19. **A cadence-type ear drill** (a bank of perfect, imperfect, plagal and interrupted cadences is
     data; a new drill, or a mode of Cadence, which names progressions today,

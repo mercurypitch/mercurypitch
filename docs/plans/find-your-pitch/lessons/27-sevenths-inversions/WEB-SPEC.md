@@ -444,7 +444,7 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
     the summary and the first sentence proposed here, "Hear a chord one note at a time, then sing
     each note back in tune." and "You hear a chord one note at a time, from the root up, then sing
     each note back on its own.", and adds the octave and the run's five rounds, one chord each
-    (`src/features/exercises/exercise-help.ts:211-219`). The play loop waited only a fixed 300 ms
+    (`src/features/exercises/exercise-help.ts:212-220`). The play loop waited only a fixed 300 ms
     after each note, so notes 1 to 3 were cut off 0.3 s in at every level; it now waits each note
     out before the gap, as Arpeggio Jumper does
     (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:144-168`; FACTS 62). The

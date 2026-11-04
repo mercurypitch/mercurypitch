@@ -152,8 +152,8 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,300 words on `pnpm lesson:words` (FACTS 5; the review's 2,286), 79 under the
-series' cap of 2,379. The page runs about 16 minutes: 9.66 of reading at 238 words a minute and
+The learner copy is 2,285 words on `pnpm lesson:words` (FACTS 5; the review's too), 94 under the
+series' cap of 2,379. The page runs about 16 minutes: 9.60 of reading at 238 words a minute and
 about 6.5 of sound, toys and tasks, 16.1 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of
 active time, as Lessons 3, 5, 6, 7 and 9 are (16, 18, 17, 16 and 16 minutes), and acceptable by
 their precedent. Each step's text, with its Try and its Notice, runs 93 to 116 words (Steps 1 to 5:
@@ -656,16 +656,16 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   From its default centre note the drill's glides stay in the lower half of the saved preset, so it
   asks for nothing near the top of the saved range, but its octave glide starts on the preset's
   lowest note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
-- **App content, small** (MASTER-PLAN § 7's App content track), proposed, for the Siren exercise
-  (FACTS 41, 42):
-  - its help (`src/features/exercises/exercise-help.ts:186-193`): ":150" "Glide your full range up
+- **App content, small** (MASTER-PLAN § 7's App content track), for the Siren exercise (FACTS 41,
+  42), its help done with the page and the rest proposed:
+  - its help (`src/features/exercises/exercise-help.ts:186-193` at `12b3d7304`; done, `:186-194`): ":150" "Glide your full range up
     and down like a smooth siren." becomes "Glide up and down like a smooth siren, within an easy
     part of your range."; ":152" drops "through your range"; ":153" becomes LESSON.md's "Stay
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
     every voice changes gear."; and ":154", which says the glide is scored on how smooth and
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
     code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (#1192): no
-    change. When the help changes, the card's sentence about it goes (LESSON.md's editorial note).
+    change. With the help changed, the card's sentence about it went (LESSON.md's editorial note).
   - its menu card (`src/features/exercises/ExerciseMenu.tsx:179-180`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the

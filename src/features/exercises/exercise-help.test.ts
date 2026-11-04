@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_HELP } from './exercise-help'
-import { EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_STACCATO, } from './types'
+import { EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_SIREN, EXERCISE_STACCATO, } from './types'
 
 describe('exercise help', () => {
   it('says what the Long note lantern counts: a vibrato costs steadiness, and the Accuracy Tier sets the top', () => {
@@ -61,5 +61,28 @@ describe('exercise help', () => {
     expect(words).toMatch(/one note at a time/)
     expect(words).toMatch(/on its own/)
     expect(words).not.toMatch(/already sounding|lock in/i)
+  })
+
+  it('lets a flip come in the Siren, asks for no full range, and says what most of its score is', () => {
+    // Every voice has gears, and a slide can flip between them (Lesson 11
+    // FACTS 42), so the help never asks for a glide without breaks; the
+    // glides stay in an easy part of the saved range; and 70 % of a round's
+    // score is how close the voice ends to the second note (FACTS 41).
+    // Arrange
+    const help = EXERCISE_HELP[EXERCISE_SIREN]
+
+    // Act
+    const words = [help.summary, ...help.body].join(' ')
+
+    // Assert
+    expect(help.summary).toMatch(/within an easy part of your range/)
+    expect(words).toMatch(
+      /If your voice flips .*, let it: every voice changes gear\./,
+    )
+    expect(words).toMatch(
+      /Most of your score is how close you come to the second note\./,
+    )
+    expect(words).not.toMatch(/without breaks|full range|through your range/i)
+    expect(words).not.toMatch(/smooth and connected the glide is/)
   })
 })
