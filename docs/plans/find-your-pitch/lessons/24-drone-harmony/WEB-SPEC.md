@@ -427,7 +427,7 @@ Lesson 5's Sing it, moved into the kit with options (Lesson 22's item 7,
 holds over a drone, then a set of two of ten, read by Lesson 22's centre-line reader (The reader,
 below). Every state has a visible status line that is also announced (`aria-live="polite"`). Each
 set allows up to three takes in a visit, as each of Lesson 5's holds does (`TAKES_PER_HOLD`,
-`src/features/lessons/lesson-05/hold-flow.ts:31-32`); the set's rules follow the states.
+`src/features/lessons/kit/hold-flow.ts:37-38`); the set's rules follow the states.
 
 States:
 
@@ -542,7 +542,7 @@ States:
 - **A hold with no voice within 6 s** ends the set there. The readings so far stay, and the kit's
   no-start line shows (`NO_START_LINE`, `src/features/lessons/kit/hold-take.ts:48-49`). If a hold
   of the set was sung before it, "How did that feel?" follows, since Lesson 5's flow asks it
-  whenever anything was sung (`afterTake`, `src/features/lessons/lesson-05/hold-flow.ts:84-97`) and
+  whenever anything was sung (`afterTake`, `src/features/lessons/kit/hold-flow.ts:89-103`) and
   a singer who stops partway may have stopped for discomfort; then Easy or Workable offers **Again**,
   while the set has takes left, and **Done for today**, never the next set, and Effortful and
   Uncomfortable end as in state 9. If none was sung, **Again**, while the set has takes left, and
@@ -778,7 +778,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      states and the holds for the chip (SEASON-2 § 1.3), and checks the brightness against the
      luminance cap.
 8. **Lesson 5's hold flow, this page's options**: holds of 5 seconds as well as 10 and 15 (`HOLD_SEC`,
-   `src/features/lessons/lesson-05/hold-flow.ts:28-29`; the hold reader's length,
+   `src/features/lessons/lesson-05/hold-flow.ts:31-32`; the hold reader's length,
    `src/features/lessons/kit/hold-take.ts:56`); a set of three notes, each with its own model note,
    then a set of two, with the set's rules (Toys 6): a take is one run of a set, Again sings the
    whole set, a hold with no voice ends the set, the celebration needs every hold read; the drone
