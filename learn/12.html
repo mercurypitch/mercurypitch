@@ -1691,14 +1691,13 @@
                   ><span class="sr">four</span> and
                   <span aria-hidden="true">V</span
                   ><span class="sr">five</span> are major,
-                  <span aria-hidden="true">ii</span
-                  ><span class="sr">two minor</span>,
+                  <span aria-hidden="true">ii</span><span class="sr">two</span>,
                   <span aria-hidden="true">iii</span
-                  ><span class="sr">three minor</span> and
+                  ><span class="sr">three</span> and
                   <span aria-hidden="true">vi</span
-                  ><span class="sr">six minor</span> minor, and
+                  ><span class="sr">six</span> minor, and
                   <span aria-hidden="true">vii°</span
-                  ><span class="sr">seven diminished</span> diminished.</span
+                  ><span class="sr">seven</span> diminished.</span
                 >
               </li>
               <li>
@@ -1788,26 +1787,237 @@
           </div>
 
           <!-- the next lesson's card: the kit draws its words from the season
-               (kit/next-card.ts), and its tease still joins this slot with
-               the Wrap's toys -->
-          <div class="next-card card l12-next" data-next-card hidden></div>
+               (kit/next-card.ts), and keeps the tease still in its slot -->
+          <div class="next-card card l12-next" data-next-card hidden>
+            <!-- the tease still: one level pitch line over a strip of bars
+                 whose peaks carry only "?", drawn, not measured -->
+            <svg
+              class="l12-tease"
+              viewBox="0 0 320 112"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                class="bars"
+                d="M20 104v-28h8v28ZM34 104v-40h8v40ZM48 104v-54h8v54ZM62 104v-64h8v64ZM76 104v-48h8v48ZM90 104v-34h8v34ZM104 104v-28h8v28ZM118 104v-32h8v32ZM132 104v-44h8v44ZM146 104v-58h8v58ZM160 104v-42h8v42ZM174 104v-28h8v28ZM188 104v-22h8v22ZM202 104v-24h8v24ZM216 104v-34h8v34ZM230 104v-48h8v48ZM244 104v-32h8v32ZM258 104v-20h8v20ZM272 104v-15h8v15ZM286 104v-11h8v11Z"
+              />
+              <text class="q" x="66" y="33">?</text>
+              <text class="q" x="150" y="39">?</text>
+              <text class="q" x="234" y="49">?</text>
+              <path class="pitch" d="M16 14H304" />
+            </svg>
+          </div>
           <!-- Shown by kit/plan-back.ts, only to someone who answered the
                plan's questions. Beside the card, never inside its link. -->
           <a class="plan-back" data-plan-back hidden href="/#/plan"
             >Back to your plan</a
           >
 
-          <!-- free play: every control of the ring of rooms on one card,
-               once the lesson is done; shown once it is wired -->
+          <!-- free play: every control of the ring of rooms on one card
+               (wrap.ts), nothing locked, since the guided steps come first.
+               Its controls carry the steps' names, and its groups are named
+               for free play, as the steps' stage has its own -->
           <div
             class="card stage-card free-play rooms-toy l12-free"
             id="freePlay"
-            hidden
           >
             <p class="eyebrow">
               <span class="fig">Free play:</span> try every control of the ring
               of rooms in one place
             </p>
+            <div class="viz tall wide rooms-viz" data-rooms-viz>
+              <canvas
+                role="slider"
+                aria-label="Free play: the ring of rooms, pick a note, C4 to B4"
+                aria-describedby="freeSummary"
+              ></canvas>
+              <div class="readout">
+                <div class="ro">
+                  <span class="k">Moves</span
+                  ><span class="v" data-rooms-moves>&#8212;</span>
+                </div>
+              </div>
+              <p class="sr" id="freeSummary" data-rooms-summary>
+                C major's seven chords, none lit.
+              </p>
+              <p class="sr" aria-live="polite" data-rooms-said></p>
+            </div>
+            <div class="controls rooms-row">
+              <div
+                class="seg"
+                role="group"
+                aria-label="Free play: the key"
+                data-rooms-key
+              >
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-key="C"
+                  aria-pressed="true"
+                >
+                  C
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-key="G"
+                  aria-pressed="false"
+                >
+                  G
+                </button>
+              </div>
+              <button
+                class="btn sm primary"
+                type="button"
+                data-rooms-play="slide"
+              >
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                ><span
+                  >Play <span aria-hidden="true">I</span
+                  ><span class="sr">one</span>, then
+                  <span aria-hidden="true">vi</span
+                  ><span class="sr">six minor</span></span
+                >
+              </button>
+              <button
+                class="btn sm primary"
+                type="button"
+                data-rooms-play="loop"
+              >
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                >Play the loop
+              </button>
+              <button class="btn sm" type="button" data-rooms-play="roots">
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                >Play the roots
+              </button>
+              <button
+                class="btn sm primary"
+                type="button"
+                data-tune="tune-1"
+                aria-label="Play tune 1"
+              >
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                ><span data-tune-label>Tune 1</span>
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-tune="tune-2"
+                aria-label="Play tune 2"
+              >
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                ><span data-tune-label>Tune 2</span>
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                data-tune="even"
+                aria-label="Play tune 2 with even notes"
+              >
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                ><span data-tune-label>Even notes</span>
+              </button>
+              <div
+                class="seg"
+                role="group"
+                aria-label="Free play: names on the ring"
+              >
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-names="letters"
+                  aria-pressed="true"
+                >
+                  Letters
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-names="solfege"
+                  aria-pressed="false"
+                >
+                  Do-re-mi
+                </button>
+              </div>
+              <button
+                class="switch"
+                type="button"
+                data-rooms-slow
+                aria-pressed="false"
+              >
+                <span class="track" aria-hidden="true"></span>Slow
+              </button>
+            </div>
+            <div
+              class="chord-strip"
+              role="group"
+              aria-label="Free play: the seven chords"
+              data-chord-strip
+            >
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="0"
+                aria-label="The chord on do: C, E, G"
+              >
+                <b data-chip-top>on do</b><span data-chip-notes>C E G</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="1"
+                aria-label="The chord on re: D, F, A"
+              >
+                <b data-chip-top>on re</b><span data-chip-notes>D F A</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="2"
+                aria-label="The chord on mi: E, G, B"
+              >
+                <b data-chip-top>on mi</b><span data-chip-notes>E G B</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="3"
+                aria-label="The chord on fa: F, A, C"
+              >
+                <b data-chip-top>on fa</b><span data-chip-notes>F A C</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="4"
+                aria-label="The chord on so: G, B, D"
+              >
+                <b data-chip-top>on so</b><span data-chip-notes>G B D</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="5"
+                aria-label="The chord on la: A, C, E"
+              >
+                <b data-chip-top>on la</b><span data-chip-notes>A C E</span>
+              </button>
+              <button
+                class="btn l12-chip"
+                type="button"
+                data-chip="6"
+                aria-label="The chord on ti: B, D, F"
+              >
+                <b data-chip-top>on ti</b><span data-chip-notes>B D F</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>

@@ -25,8 +25,9 @@
 // open on the hero's ring, with its predict; the recall from Lesson 10,
 // the four words, Sing it whole (its comfort check, voice choice, Merc's
 // notes, Move do, the guide and "How did that feel?") with the Wrap's
-// card its ending picks, and the quick check. Free play does nothing
-// until it is wired.
+// card its ending picks, the quick check, and the Wrap's free play, with
+// every control of the ring of rooms on the page's names store, before
+// the next lesson's card with the page's tease still.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -67,6 +68,7 @@ import { initRecall } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 initSoundSwitch()
 initMotionSwitch()
@@ -101,6 +103,9 @@ initSing({ blue: mercBlue, orange: mercOrange })
 // the quick check: answering all four marks Lesson 12 done; its step links
 // open the deck at their step
 createQuiz({ questions: QUIZ_QUESTIONS, lesson: 12, keys: QUIZ_KEYS, deck })
+
+// free play: every control of the ring of rooms, on the page's names store
+initWrap(ringNames)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(12)

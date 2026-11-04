@@ -172,6 +172,26 @@ function bindNames(
 }
 
 /**
+ * Binds every control of a copy of the ring of rooms inside `root`: the
+ * key switch, the plays, the tunes, Slow and the names switch, the plays
+ * sharing one light as they share one sound. The stage's copy and free
+ * play's both. Returns how to show the key again, after a step opens C.
+ */
+export function bindControls(
+  root: HTMLElement,
+  rooms: Rooms,
+  names: ModeStore<LettersSolfegeMode>,
+): () => void {
+  const showKey = bindKey(root, rooms)
+  const light = playLights()
+  bindPlays(root, rooms, light)
+  bindTunes(root, rooms, light)
+  bindSlow(root, rooms)
+  bindNames(root, rooms, names)
+  return showKey
+}
+
+/**
  * Mounts the stage's ring of rooms and follows the deck: registered before
  * `deck.start()`, so an address that names a step opens it. `names` is the
  * page's names store, Letters or Do-re-mi.
@@ -187,13 +207,7 @@ export function initSteps(
     active: deck.toyActive(1),
     owner: NowPlaying,
   })
-  const showKey = bindKey(root, rooms)
-  // the stage's plays share one light, as they share one sound
-  const light = playLights()
-  bindPlays(root, rooms, light)
-  bindTunes(root, rooms, light)
-  bindSlow(root, rooms)
-  bindNames(root, rooms, names)
+  const showKey = bindControls(root, rooms, names)
   registerToy({
     onStep(n, previous) {
       // the step showing shown again, as the phone deck and the wide page

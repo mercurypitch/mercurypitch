@@ -6,7 +6,8 @@
 // here: every ♯ and ♭ its text prints is followed by its spoken name, the
 // sign itself hidden from a screen reader; every Roman numeral its copy
 // prints is hidden the same way, with its spoken form after it ("vi" is
-// read "six minor", numerals.ts), and no numeral is ever read bare; no
+// read "six minor", numerals.ts, and in the Wrap's recap, whose words name
+// each quality, its plain number), and no numeral is ever read bare; no
 // accessible name or share card carries a sign, and none a numeral; every
 // id a label or description points at exists, once; every button is a
 // button, not a submit; there is no Watch section, because Lesson 12 has no
@@ -24,7 +25,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { spokenNumeral } from './numerals'
+import { plainNumeral, spokenNumeral } from './numerals'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/12.html'), 'utf8')
 const DIR = resolve(process.cwd(), 'src/features/lessons/lesson-12')
@@ -123,7 +124,12 @@ describe("Lesson 12's page", () => {
     // Act: what follows each, and any numeral a reader would meet as it is
     const unspoken = shown.flatMap((e) => {
       const said = e.nextElementSibling
-      const want = spokenNumeral(words(e))
+      // the Wrap's recap names each quality in its own words, so its
+      // numerals are read as plain numbers there, and only there
+      const want =
+        e.closest('.recap li:nth-child(2)') === null
+          ? spokenNumeral(words(e))
+          : plainNumeral(words(e))
       const heard = said?.matches('.sr') === true ? words(said) : ''
       return heard === want || heard === `chord ${want}`
         ? []
