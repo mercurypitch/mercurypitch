@@ -12,6 +12,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSONS, minutesSpan } from '../features/lessons/kit/season'
+import { LESSONS_2 } from '../features/lessons/kit/season-2'
 import { hasWatchPage, watchPath } from '../features/lessons/kit/watch-pages'
 
 const LAYOUTS = [
@@ -48,7 +49,9 @@ for (const l of LAYOUTS) {
       )
       for (const lane of ['Theory', 'Voice'])
         await expect(
-          page.getByRole('heading', { level: 3, name: lane, exact: true }),
+          page
+            .locator('#season')
+            .getByRole('heading', { level: 3, name: lane, exact: true }),
         ).toBeVisible()
       const width = await page.evaluate(() => ({
         page: document.documentElement.scrollWidth,
@@ -86,6 +89,39 @@ for (const l of LAYOUTS) {
           await expect(item.getByText('Coming', { exact: true })).toBeHidden()
         }
       }
+    })
+
+    test('shows Season 2 after Season 1, its fourteen lessons coming, none a link', async ({
+      page,
+    }) => {
+      // Act
+      await page.goto('/learn/')
+
+      // Assert
+      const section = page.locator('#season-2')
+      await expect(section.getByRole('heading', { level: 2 })).toHaveText(
+        'Season 2: Read it, harmonise it',
+      )
+      await expect(section.locator('.hub-first')).toHaveText(
+        "New to the series? Start with Season 1's Lessons 1, 2 and 4.",
+      )
+      const numbers = await section
+        .locator('.hub-lesson .kicker')
+        .allTextContents()
+      expect(new Set(numbers.map((t) => t.trim()))).toEqual(
+        new Set(LESSONS_2.map((L) => `Lesson ${L.n}`)),
+      )
+      expect(numbers).toHaveLength(LESSONS_2.length)
+      await expect(section.getByRole('link')).toHaveCount(0)
+      for (const go of await section.locator('.hub-go').allTextContents())
+        expect(go.trim()).toBe('Coming')
+      const below = await page.evaluate(
+        () =>
+          (document.querySelector('#season-2')?.getBoundingClientRect().top ??
+            0) >
+          (document.querySelector('#season')?.getBoundingClientRect().top ?? 0),
+      )
+      expect(below).toBe(true)
     })
   })
 }
