@@ -7,7 +7,7 @@
 import { ensurePersistentStorage } from '@/db/persistent-storage'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/uvr-store'
-import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, showUvrModelNotice, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
+import { clearUvrSessionApiId, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionChunkCount, setUvrSessionProvider, showUvrModelNotice, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { audioDurationSecs } from './audio-duration'
 
@@ -163,13 +163,10 @@ async function processLocal(
     setUvrSessionProvider(sessionId, sep.provider)
 
   // Store chunk count for UI
-  const numChunks = computeChunkRanges(audio.length, UVR_CHUNK_CONFIG).length
-  const sessions = getAllUvrSessions()
-  const s = sessions.find((x) => x.sessionId === sessionId)
-  if (s) {
-    s.numChunks = numChunks
-    saveAllUvrSessions(sessions)
-  }
+  setUvrSessionChunkCount(
+    sessionId,
+    computeChunkRanges(audio.length, UVR_CHUNK_CONFIG).length,
+  )
 
   sep.onProgress = (pct) => {
     const elapsed = Date.now() - startTime
