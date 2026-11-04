@@ -224,6 +224,7 @@ export function StudioRulerRange(props: StudioRulerRangeProps) {
             class={styles.range}
             classList={{
               [styles.draft]: props.range === null,
+              [styles.fromStart]: range().startFrame <= 0,
               [styles.narrow]:
                 frameToPixel(
                   range().endFrame - range().startFrame,

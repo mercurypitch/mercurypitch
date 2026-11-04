@@ -1,6 +1,6 @@
-// Studio control states — the Sound role list draws the app's chevron, a pressed Repeat stays pressed under the pointer and differs from an unpressed one at 3:1 in both themes, and a take's Stop stays in reach under a tablet's Export drawer.
+// Studio control states — the Sound role list draws the app's chevron, a pressed Repeat stays pressed under the pointer and differs from an unpressed one at 3:1 in both themes, the range's start grip is whole at 0:00, and a take's Stop stays in reach under a tablet's Export drawer.
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 test.use({
@@ -137,6 +137,46 @@ for (const theme of THEMES) {
       .not.toBe(hoverOff)
   })
 }
+
+test('Studio range keeps its start grip whole and grabbable at 0:00 @smoke', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openArrangement(page)
+  const studio = studioRegion(page)
+  await studioClip(page, 'Phrase').click()
+  await studio
+    .getByRole('toolbar', { name: 'Selected clip' })
+    .getByRole('button', { name: 'Range', exact: true })
+    .click()
+  const start = studio.getByRole('slider', { name: 'Range start' })
+  await expect(start).toHaveAttribute('aria-valuenow', '0')
+  // Every column of the grip takes a press: none lies under the lane names.
+  const hits = await start.evaluate((handle) => {
+    const box = handle.getBoundingClientRect()
+    const y = box.top + box.height / 2
+    let taken = 0
+    let columns = 0
+    for (let x = Math.ceil(box.left); x < box.right; x++) {
+      columns++
+      if (document.elementFromPoint(x, y) === handle) taken++
+    }
+    return { taken, columns }
+  })
+  expect(hits.columns).toBeGreaterThanOrEqual(24)
+  expect(hits.taken).toBe(hits.columns)
+
+  // A real drag from the grip moves the start: it is grabbable, not just drawn.
+  const box = (await start.boundingBox())!
+  await page.mouse.move(box.x + 4, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 60, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await start.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(0)
+})
 
 test.describe('on a tablet', () => {
   test.use({
