@@ -17,91 +17,26 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { bankItemState, LEAP_BANK, STACK_BANK } from '@/lib/ear/banks'
 import type { ConfusionMatrix } from '@/lib/ear/confusion-report'
 import { buildConfusionMatrix, topConfusions } from '@/lib/ear/confusion-report'
 import { findThresholdDrill } from '@/lib/ear/drills'
-import { HOME_DEGREES, homeItemState } from '@/lib/ear/item-bank'
 import { INDEX_MAX } from '@/lib/ear/mercury-index'
-import { calibrationHistory, earConfusions, earItemStates, thresholdHistory, } from '@/stores/ear-lab-store'
+import { calibrationHistory, earConfusions, thresholdHistory, } from '@/stores/ear-lab-store'
 import styles from './EarReport.module.css'
 import { StageBar } from './EarStage'
 import stage from './EarStage.module.css'
 import { dateLabel } from './instruments'
-import type { TracePoint } from './ReadingTrace'
 import { ReadingTrace } from './ReadingTrace'
+import type { ConfusionSection, ReportRange, TracePoint } from './report-data'
+import { CONFUSION_SECTIONS, DEFAULT_REPORT_RANGE, REPORT_RANGES, REPORT_THRESHOLDS, reportEarliest, reportFrom, } from './report-data'
 import { useCompactStage } from './use-compact-stage'
 
-export type ReportRange = '4w' | '12w' | 'all'
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000
-
-const RANGES: { id: ReportRange; label: string; weeks: number | null }[] = [
-  { id: '4w', label: '4 wk', weeks: 4 },
-  { id: '12w', label: '12 wk', weeks: 12 },
-  { id: 'all', label: 'All', weeks: null },
-]
-
-interface ConfusionSection {
-  drillId: string
-  title: string
-  /** Confusion-key labels in axis order. */
-  labels: string[]
-  /** Display name per label (axis ticks + sentences). */
-  display: (label: string) => string
-  /** Tap attempts for a label's item (rate denominator). */
-  attemptsFor: (label: string) => number
+/** The web's words for each range. */
+const RANGE_LABEL: Record<ReportRange, string> = {
+  '4w': '4 wk',
+  '12w': '12 wk',
+  all: 'All',
 }
-
-const SECTIONS: ConfusionSection[] = [
-  {
-    drillId: 'home',
-    title: 'Home',
-    labels: HOME_DEGREES.map((d) => `deg-${d.degree}`),
-    display: (label) => {
-      const degree = HOME_DEGREES.find((d) => `deg-${d.degree}` === label)
-      return degree ? `${degree.solfege} (${degree.degree})` : label
-    },
-    attemptsFor: (label) => {
-      const degree = Number(label.replace('deg-', ''))
-      return homeItemState(earItemStates(), degree).attempts
-    },
-  },
-  {
-    drillId: 'leap',
-    title: 'Leap',
-    labels: LEAP_BANK.map((item) => item.itemId),
-    display: (label) =>
-      LEAP_BANK.find((item) => item.itemId === label)?.label ?? label,
-    attemptsFor: (label) => {
-      const item = LEAP_BANK.find((i) => i.itemId === label)
-      return item ? bankItemState(earItemStates(), item).attempts : 0
-    },
-  },
-  {
-    drillId: 'stack',
-    title: 'Stack',
-    labels: STACK_BANK.map((item) => item.itemId),
-    display: (label) =>
-      STACK_BANK.find((item) => item.itemId === label)?.name ?? label,
-    attemptsFor: (label) => {
-      const item = STACK_BANK.find((i) => i.itemId === label)
-      return item ? bankItemState(earItemStates(), item).attempts : 0
-    },
-  },
-  {
-    drillId: 'contour',
-    title: 'Contour',
-    labels: ['up', 'down', 'same'],
-    display: (label) => label,
-    // Contour's expected labels are directions, not items — no
-    // per-item denominator exists, so sentences show counts only and
-    // the matrix has no diagonal.
-    attemptsFor: () => 0,
-  },
-]
-
-const THRESHOLDS = ['hairline', 'the-grid'] as const
 
 interface EarReportProps {
   onBack: () => void
@@ -110,34 +45,25 @@ interface EarReportProps {
 }
 
 export function EarReport(props: EarReportProps): JSX.Element {
-  const [range, setRange] = createSignal<ReportRange>('12w')
+  const [range, setRange] = createSignal<ReportRange>(DEFAULT_REPORT_RANGE)
   const compact = useCompactStage()
   const now = () => props.now?.() ?? Date.now()
 
   /** The oldest timestamp on file: the All range's left edge. */
-  const earliest = createMemo(() => {
-    const stamps = [
-      ...calibrationHistory().map((run) => run.at),
-      ...THRESHOLDS.flatMap((id) => thresholdHistory(id).map((r) => r.at)),
-    ]
-    return stamps.length > 0 ? Math.min(...stamps) : now() - WEEK_MS
-  })
-  const from = () => {
-    const weeks = RANGES.find((r) => r.id === range())?.weeks ?? null
-    return weeks === null ? earliest() : now() - weeks * WEEK_MS
-  }
+  const earliest = createMemo(() => reportEarliest(now()))
+  const from = () => reportFrom(range(), now(), earliest())
   const inRange = (at: number) => at >= from() && at <= now()
 
   const RangeControl = (): JSX.Element => (
     <div class={styles.range} role="group" aria-label="Range">
-      <For each={RANGES}>
+      <For each={REPORT_RANGES}>
         {(option) => (
           <button
             type="button"
             aria-pressed={range() === option.id}
             onClick={() => setRange(option.id)}
           >
-            {option.label}
+            {RANGE_LABEL[option.id]}
           </button>
         )}
       </For>
@@ -169,7 +95,7 @@ export function EarReport(props: EarReportProps): JSX.Element {
         <div class={styles.grid}>
           <IndexPlate from={from()} to={now()} inRange={inRange} />
           <ThresholdPlates from={from()} to={now()} inRange={inRange} />
-          <For each={SECTIONS}>
+          <For each={CONFUSION_SECTIONS}>
             {(section) => <ConfusionPlate section={section} />}
           </For>
         </div>
@@ -270,7 +196,7 @@ function IndexPlate(props: WindowProps): JSX.Element {
 
 function ThresholdPlates(props: WindowProps): JSX.Element {
   const withHistory = () =>
-    THRESHOLDS.filter((id) => thresholdHistory(id).length > 0)
+    REPORT_THRESHOLDS.filter((id) => thresholdHistory(id).length > 0)
 
   return (
     <Show

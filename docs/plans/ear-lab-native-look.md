@@ -296,6 +296,49 @@ owner-approved mock-ups,
 - The bench's two stylesheets join the room's in the look test: no brass,
   parchment or serif.
 
+## The Ear Report, in the same light (4 Nov)
+
+The bench's Ear Report row opened the web's report, brass plates and all,
+inside the native tab, and it opened wherever the bench had been scrolled
+to. The native build now draws its own (`merc/MercReport.tsx`), from the
+mock-ups on the same canvas, [Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw)
+(Report-top, -moved, -home, -contour and -empty). The web keeps its plates;
+both read the same data (`report-data.ts`).
+
+- **A bar that stays**: the round glass back button, "Ear Report" and its
+  line, over the night as the report scrolls under it. Android's back goes
+  back to the bench as the button does.
+- **Merc's line from the numbers** (`merc/report-lines.ts`): how the Index
+  moved since the seal before, and the mix-up that slips most ("Up 31 since
+  Sep 8. Fa slips to Mi the most."); before a seal, the invitation to
+  calibrate.
+- **The range** (4 weeks, 12 weeks, All) as a glass switch; it moves the
+  traces only. Mix-ups count for all time, and the foot says so.
+- **The Index** as the bench draws it: the number in 700, its move teal when
+  it rose, the seals as bright marks on a lit line with its area under it,
+  and a caption that counts them ("Three seals in twelve weeks.").
+- **What moved**: each threshold in its station's two lights, its reading
+  and its best, its sealed marks bright on a solid line and its practice
+  dashed, drawn the other way up so the line climbs as the ear sharpens.
+  The axes print round ends (250 and 190, 10 and 30 cents), not the fitted
+  ones.
+- **What your ear mixes up**: each drill's map, what played down the side
+  and what was answered across. A miss glows in the station's second light,
+  brighter the more it happens, the hottest with a halo; a right answer is a
+  teal ring; Shape's misses take its blue, since its cyan is too near the
+  teal. Contour's directions are no items, so its map has no diagonal. A
+  bank too wide for a phone (Leap's twelve) draws only the items with a
+  mix-up, and scrolls inside its card if those are still too many. The three
+  that slip most are said in words, as counts ("7 times"): the tries behind
+  a share are counted from tapped answers only, so a mix-up sung into the
+  mic would read larger than it is.
+- **Drills with nothing yet** wait together in one quiet row, by their
+  instruments' discs.
+- **It opens at its own top, and the bench comes back where it was left**
+  (`merc/tab-scroll.ts`): the two share the tab's one scroller and unmount
+  in turn.
+- The report's stylesheet joins the look test: no brass, parchment or serif.
+
 ## Decided after the review (owner, 31 Oct)
 
 - **Tap or sing is asked on the station's sheet, before the run**, not

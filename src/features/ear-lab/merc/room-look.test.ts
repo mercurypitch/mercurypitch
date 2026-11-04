@@ -14,6 +14,7 @@ const SHEETS = {
   plate: 'src/features/ear-lab/merc/plate.module.css',
   loupe: 'src/features/ear-lab/merc/loupe.module.css',
   bench: 'src/features/ear-lab/merc/bench.module.css',
+  report: 'src/features/ear-lab/merc/report.module.css',
   rooms: 'src/features/premium-exercises/ear-rooms-row.module.css',
 } as const
 

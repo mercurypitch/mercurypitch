@@ -77,7 +77,7 @@ These are the rules that break things when ignored.
 | `lessons` | [spiral.ts](../../src/features/lessons/kit/spiral.ts) | 65.2k | Lesson spiral — the pitch spiral and the keyboard it unrolls into One control with three ways in: drag to turn the spiral and tap a bead... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
-| `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 31.1k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
+| `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 18.7k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 15.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |

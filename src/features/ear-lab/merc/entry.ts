@@ -1,5 +1,6 @@
 // ============================================================
-// The Ear Lab with Merc's lazy chunk: the drill room and the tab.
+// The Ear Lab with Merc's lazy chunk: the drill room, the tab and its
+// Ear Report.
 //
 // Loaded only through dynamic imports behind EAR_LAB_WITH_MERC
 // (stage-switch.tsx, EarLabPage.tsx), so the web and the store build fold
@@ -13,3 +14,4 @@ import '@fontsource-variable/crimson-pro/wght-italic.css'
 
 export { MercBench } from './MercBench'
 export { MercDrillRoom } from './MercDrillRoom'
+export { MercReport } from './MercReport'
