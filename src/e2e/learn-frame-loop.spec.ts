@@ -6,7 +6,7 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every lesson page, Lessons 1 to 10 and 12, each figure that uses one of
+// On every lesson page, Lessons 1 to 10, 12 and 13, each figure that uses one of
 // the three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
@@ -16,7 +16,7 @@
 // phone, where the explorer is a list, Lesson 8's whole page rests again
 // once a second tap on Lesson 13's row folds its card away.
 //
-// On Lessons 6 to 10 and 12 every figure now says when it has nothing to
+// On Lessons 6 to 10, 12 and 13 every figure now says when it has nothing to
 // draw, so there the whole page asks for no frame at all at rest. Lesson 9's
 // checks here are the explorer, the cold open's chart, at rest and through
 // Merc's leap, and the steps' ladder chart with Step 1's folds strip, at
@@ -35,6 +35,9 @@
 // the ring once, and through Step 4's Play the roots, whose beads pulse
 // only while each root sounds; then the explorer and the page at rest. The
 // hero's ring, Sing it's guide and ring join them once they are wired.
+// Lesson 13's are the steps' vowel figure, at rest and through Step 2's
+// ‘ah’, whose strip draws only while it sounds, then the explorer and the
+// page at rest.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -435,6 +438,23 @@ test('Lesson 12: the ring of rooms and the explorer rest, and so does the whole 
     page.locator('#toyRooms [data-rooms-play="roots"]').click(),
   )
   await explorerRests(page, 12, true)
+})
+
+test("Lesson 13: the steps' vowel figure and the explorer rest, and so does the whole page", async ({
+  page,
+}) => {
+  const figure = '#toyVowels [data-vowel-viz] canvas'
+  await open(page, 13)
+
+  // the strip draws only while a vowel sounds, and rests once it has
+  await scrollTo(page, figure)
+  await page.getByRole('button', { name: 'Next step', exact: true }).click()
+  await expect(page.locator('#stepNow')).toHaveText('2')
+  await scrollTo(page, figure)
+  await runRests(page, [figure], true, () =>
+    page.locator('#toyVowels [data-part="2"] [data-vowel="ah"]').click(),
+  )
+  await explorerRests(page, 13, true)
 })
 
 test.describe('on a phone', () => {

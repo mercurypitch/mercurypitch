@@ -118,14 +118,18 @@ describe('the strip as a play sounds (WEB-SPEC, Toys 1, Changing vowel)', () => 
       columns: ee.segments,
       peaks: ee.peaks,
       vowel: 'ee',
+      res: resonatorsOf('lower', 'ee'),
     })
     expect(during.peaks).toEqual(ee.peaks)
     expect(during.columns).not.toEqual(ee.segments)
     expect(during.columns).not.toEqual(ah.segments)
+    expect(during.res[0].hz).toBeGreaterThan(279.8)
+    expect(during.res[0].hz).toBeLessThan(645.4)
     expect(after).toEqual({
       columns: ah.segments,
       peaks: ah.peaks,
       vowel: 'ah',
+      res: resonatorsOf('lower', 'ah'),
     })
   })
 
