@@ -74,6 +74,11 @@ if (!IS_NATIVE_BUILD || import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
 /** Safety valve: skip anything suspiciously large for a preference. */
 const MAX_VALUE_BYTES = 8 * 1024
 
+/** A value the push skips, so the account has never seen it. */
+function overPushCeiling(value: string | null): boolean {
+  return value !== null && value.length > MAX_VALUE_BYTES
+}
+
 const PUSH_DEBOUNCE_MS = 1500
 
 function isSyncedKey(key: string): boolean {
@@ -251,8 +256,15 @@ async function pullOnce(): Promise<boolean> {
           applyPersistedValue(row.key, row.value)
           clearPendingIfUnchanged(row.key, pending[row.key], identity.userId)
         }
-      } else if (localStorage.getItem(row.key) !== row.value) {
-        applyPersistedValue(row.key, row.value)
+      } else {
+        const local = localStorage.getItem(row.key)
+        // A local value over the push ceiling was never sent, so this row is
+        // older than it, or another device's. Applying it would replace what
+        // only this device holds (150 annotations with the 20 that last
+        // fitted), so the local value stays.
+        if (local !== row.value && !overPushCeiling(local)) {
+          applyPersistedValue(row.key, row.value)
+        }
       }
     }
     for (const key of Object.keys(MERGE_ON_PULL)) {
