@@ -1,12 +1,14 @@
 // Studio line bar — the open line's commands at the arrangement's foot: Volume or Pan, a point at the playhead, delete, clear, done.
-// Like the clip bar, it stands as icons in the dock beside the lanes while the desk is open.
+// Like the clip bar, it stands as icons in the dock beside the lanes while the desk is open, and
+// folds to icons when its names would run into zoom (clip-bar-fold.ts).
 import type { JSX } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, onCleanup, onMount, Show } from 'solid-js'
 import { CheckSmall, Plus, Trash2, Volume2 } from '@/components/icons'
 import type { StudioAutomationParam } from '@/lib/studio/model/automation'
 import { studioLaneValueAt } from '@/lib/studio/model/automation'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioTrack } from '@/lib/studio/model/types'
+import { fitClipBar, watchClipBarRoom } from './clip-bar-fold'
 import { studioLineValue } from './lane-line'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
@@ -28,8 +30,6 @@ interface StudioLineBarProps {
   /** Offsets inside the timeline: past the lane headers, above the scrollbar. */
   left: number
   bottom: number
-  /** Room kept at the foot's right for the zoom buttons. */
-  reserve?: number
   /** In the dock beside the arrangement: icons only, the names kept for assistive tech. */
   docked?: boolean
   onCommand(command: StudioCommand): boolean
@@ -54,15 +54,20 @@ export function StudioLineBar(props: StudioLineBarProps) {
     return {
       left: `${props.phone ? 12 : props.left}px`,
       right: props.phone ? '12px' : undefined,
-      // Short of the zoom buttons: a narrow arrangement wraps the bar.
-      'max-width': props.phone
-        ? undefined
-        : `calc(100% - ${props.left + (props.reserve ?? 0)}px)`,
-      'flex-wrap': props.phone ? undefined : 'wrap',
       bottom: `${props.bottom}px`,
       '--studio-track': props.color,
     }
   }
+  let bar: HTMLDivElement | undefined
+  // The lane's name and the line's name change the bar's width.
+  createEffect(() => {
+    void props.track.name
+    void param()
+    if (bar && props.docked !== true) fitClipBar(bar)
+  })
+  onMount(() => {
+    if (bar && props.docked !== true) onCleanup(watchClipBarRoom(bar))
+  })
 
   function addAtPlayhead(): void {
     const frame = Math.max(0, Math.round(props.playheadFrame))
@@ -104,6 +109,7 @@ export function StudioLineBar(props: StudioLineBarProps) {
       aria-label={`${props.track.name} lines`}
       aria-orientation={props.docked === true ? 'vertical' : undefined}
       data-studio-line-bar=""
+      ref={bar}
       style={place()}
     >
       <Show when={!props.phone}>
