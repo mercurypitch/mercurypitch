@@ -45,9 +45,9 @@
 import type { FilmState } from './films'
 import { filmState } from './films'
 import type { CuriosityCopy } from './lesson-copy'
-import { LESSON_COPY } from './lesson-copy'
+import { LESSON_COPY, SEASON_END } from './lesson-copy'
 
-export const TOPICS = {
+export const TOPICS: Readonly<Record<string, string>> = {
   T01: 'Sound and pitch: vibration, frequency, hertz; high is not loud',
   T02: 'Octave and octave equivalence; seven letter names; octave numbers',
   T03: 'Twelve notes: semitones, tones, sharps and flats, keyboard',
@@ -80,9 +80,9 @@ export const TOPICS = {
   S14: 'Vowels',
   S16: 'Legato and phrasing; breath planning',
   S17: 'Dynamics without pushing: messa di voce',
-} as const
+}
 
-export type TopicId = keyof typeof TOPICS
+export type TopicId = string // the benchmark's: each season names its own (Season.topics)
 
 /** Theory above, voice below; the trailer and the finale sit between them. */
 export type Lane = 'theory' | 'voice' | 'both'
@@ -471,29 +471,36 @@ export const EDGES: readonly Edge[] = [
   [12, 14],
 ]
 
-/** Each lesson's direct prerequisites, in EDGES order; absent for a lesson that needs none. */
-export const PREREQ: Readonly<Partial<Record<number, readonly number[]>>> =
-  EDGES.reduce<Partial<Record<number, number[]>>>((out, [a, b]) => {
+/** Lessons by number, each with its direct prerequisites. */
+export type Prereqs = Readonly<Partial<Record<number, readonly number[]>>>
+
+/** Each lesson's direct prerequisites from `edges`, in their order; absent for a lesson that needs none. */
+export function prereqOf(edges: readonly Edge[]): Prereqs {
+  return edges.reduce<Partial<Record<number, number[]>>>((out, [a, b]) => {
     ;(out[b] ??= []).push(a)
     return out
   }, {})
+}
 
-/** The lessons that name `n` as a direct prerequisite, in lesson order. */
-export function unlocks(n: number): number[] {
-  return Object.keys(PREREQ)
+/** Each lesson's direct prerequisites, in EDGES order; absent for a lesson that needs none. */
+export const PREREQ: Prereqs = prereqOf(EDGES)
+
+/** The lessons that name `n` as a direct prerequisite in `prereq`, in lesson order. */
+export function unlocks(n: number, prereq: Prereqs = PREREQ): number[] {
+  return Object.keys(prereq)
     .map(Number)
-    .filter((k) => PREREQ[k]?.includes(n) === true)
+    .filter((k) => prereq[k]?.includes(n) === true)
 }
 
 /** Every lesson `n` builds on, directly or through another lesson: its path in. */
-export function ancestors(n: number): Set<number> {
+export function ancestors(n: number, prereq: Prereqs = PREREQ): Set<number> {
   const out = new Set<number>()
-  const todo = [...(PREREQ[n] ?? [])]
+  const todo = [...(prereq[n] ?? [])]
   while (todo.length > 0) {
     const k = todo.pop()!
     if (out.has(k)) continue
     out.add(k)
-    todo.push(...(PREREQ[k] ?? []))
+    todo.push(...(prereq[k] ?? []))
   }
   return out
 }
@@ -508,19 +515,25 @@ export type EdgeRole = 'in' | 'out' | 'path'
 export interface LessonPath {
   /** Every lesson the selected one builds on; their nodes take the 'anc' class. */
   readonly ancestors: ReadonlySet<number>
-  /** One entry per EDGES item, in order: its role, or null for an edge off the path. */
+  /** One entry per edge, in order: its role, or null for an edge off the path. */
   readonly roles: readonly (EdgeRole | null)[]
 }
 
 /**
- * What the explorer lights when lesson `n` is selected. Its own links lead;
- * an edge with both ends among its ancestors (or itself) is on its path in;
- * everything else stays faint, even a branch that leaves the path.
+ * What the explorer lights when lesson `n` is selected, among `edges`. Its
+ * own links lead; an edge with both ends among its ancestors (or itself) is
+ * on its path in; everything else stays faint, even a branch that leaves the
+ * path. A later season's map passes its own edges, and every season's
+ * prerequisites, so its path runs on into the seasons before it.
  */
-export function lessonPath(n: number): LessonPath {
-  const before = ancestors(n)
+export function lessonPath(
+  n: number,
+  edges: readonly Edge[] = EDGES,
+  prereq: Prereqs = PREREQ,
+): LessonPath {
+  const before = ancestors(n, prereq)
   const onPath = new Set([...before, n])
-  const roles = EDGES.map(([a, b]): EdgeRole | null => {
+  const roles = edges.map(([a, b]): EdgeRole | null => {
     if (b === n) return 'in'
     if (a === n) return 'out'
     return onPath.has(a) && onPath.has(b) ? 'path' : null
@@ -544,4 +557,73 @@ export function minutesSpan(
   if (times.length === 0) return null
   const [least, most] = [Math.min(...times), Math.max(...times)]
   return least === most ? String(least) : `${least} to ${most}`
+}
+
+/** A season's arc: its name, its span in words, and its first and last lesson. */
+export type Arc = readonly [
+  name: string,
+  span: string,
+  first: number,
+  last: number,
+]
+
+/** Season 1's two arcs. */
+export const ARCS: readonly Arc[] = [
+  ['Hear it', 'Lessons 1 to 7', 1, 7],
+  ['Shape it', 'Lessons 8 to 14', 8, 14],
+]
+
+/**
+ * The card a season's last lesson draws in place of the next lesson's
+ * (next-card.ts): its question answered, a whole song and the season's map.
+ */
+export interface SeasonClose {
+  readonly eyebrow: string
+  /** The answer, and the invitation to sing a whole song. */
+  readonly line: string
+  /** The answer alone, after a visit whose singing ended in rest (comfort.ts `VisitEnding`). */
+  readonly rest: string
+  /** Same-origin, marked with the page's lesson as every practise link is. */
+  readonly song: { readonly label: string; readonly path: string }
+  readonly map: { readonly label: string; readonly href: string }
+}
+
+/**
+ * A season, as every surface that draws one reads it. Season 1 is this
+ * file's (SEASON_1). Each later season has a module of its own in the same
+ * form (season-2.ts), which no Season 1 page loads, so a Season 1 page's
+ * first paint carries none of it (scripts/assert-first-paint-budgets.mjs
+ * holds that); what lists every season reads seasons.ts. Lessons are
+ * numbered on across seasons, so a lesson's number names it in every
+ * season, and a later season's edges may start in an earlier one.
+ */
+export interface Season {
+  /** Its number, as the masthead says it: "Season 2 · Lesson 15". */
+  readonly n: number
+  /** Its name, where it has one: "Read it, harmonise it". */
+  readonly name?: string
+  /** Its lessons in order, each with its lesson's copy. */
+  readonly lessons: readonly Lesson[]
+  /** Every prerequisite of its lessons, those from an earlier season included. */
+  readonly edges: readonly Edge[]
+  /** Its lessons' direct prerequisites, from `edges`. */
+  readonly prereq: Prereqs
+  /** Its topics by id. */
+  readonly topics: Readonly<Record<string, string>>
+  readonly arcs: readonly Arc[]
+  /** Its last lesson, whose page closes the season instead of naming a next lesson. */
+  readonly last: number
+  readonly close: SeasonClose
+}
+
+/** Season 1: the trailer and Lessons 1 to 14. */
+export const SEASON_1: Season = {
+  n: 1,
+  lessons: LESSONS,
+  edges: EDGES,
+  prereq: PREREQ,
+  topics: TOPICS,
+  arcs: ARCS,
+  last: 14,
+  close: SEASON_END,
 }

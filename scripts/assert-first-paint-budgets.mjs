@@ -435,7 +435,8 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
  * change to the source, and a static import from a page's own graph does it
  * in plain sight. Matched against the `sources` of every first-paint chunk's
  * source map. A rule's `remedy`, when it has one, replaces the default
- * advice, for a module that a chunk of its own would not keep off a page.
+ * advice, for a module that a chunk of its own would not keep off a page,
+ * and its `documents`, when it has them, are the only documents it holds.
  */
 export const FIRST_PAINT_FORBIDDEN_SOURCES = [
   {
@@ -461,6 +462,19 @@ export const FIRST_PAINT_FORBIDDEN_SOURCES = [
     // dependency of every lesson page, so the default advice would not help.
     remedy:
       "Only the admin console may import it: find the static import that pulls it in, from season.ts, lesson-copy.ts or the page's own module, and take it out.",
+  },
+  {
+    // Season 2's map, kit/season-2.ts: its lessons, topics, edges and close.
+    // A Season 1 page's explorer loads it on demand, when its Season 2 tab
+    // opens, so no Season 1 page paints with it, and the seasons' aggregate
+    // (kit/seasons.ts) is for the hub, the worker and the console only. A
+    // Season 2 page carries it, so the rule holds Season 1's documents,
+    // Lessons 1 to 14 and their watch pages, alone (`documents`).
+    label: "Season 2's lesson data",
+    pattern: /(?:^|\/)src\/features\/lessons\/kit\/(?:season-2|seasons)\.ts$/,
+    documents: /^learn\/(?:0\d|1[0-4])(?:\.html|\/)/,
+    remedy:
+      "A Season 1 page may load it only when its explorer's Season 2 tab opens: find the static import of season-2.ts or seasons.ts that pulls it in and take it out.",
   },
 ]
 
@@ -673,6 +687,7 @@ export function judgeFirstPaint(
         continue
       }
       for (const rule of forbidden) {
+        if (rule.documents !== undefined && !rule.documents.test(name)) continue
         const hit = chunk.sources.find((source) => rule.pattern.test(source))
         if (hit === undefined) continue
         problems.push(

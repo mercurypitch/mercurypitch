@@ -9,6 +9,7 @@ import { parseLessonPatch, VARIANT_ID } from '@/lib/lesson-state'
 import type { LessonCopy } from './lesson-copy'
 import { DEFAULT_ID, hookFor, hookMarkup, isHookMarkup, SEASON_END, TEASE_MAX, teaseFor, } from './lesson-copy'
 import { LESSONS } from './season'
+import { SEASON_2_END } from './season-2'
 
 /** A lesson's copy for a resolver test: a default hook, one alternative with markup and one without, a tease with one alternative. */
 const copy: LessonCopy = {
@@ -252,6 +253,9 @@ describe("the season's copy", () => {
       ...HOOKS,
       ...TEASES,
       [14, SEASON_END.line] as const,
+      [14, SEASON_END.rest] as const,
+      [28, SEASON_2_END.line] as const,
+      [28, SEASON_2_END.rest] as const,
     ])
       expect(text, `lesson ${n}`).not.toMatch(PLANNING)
   })

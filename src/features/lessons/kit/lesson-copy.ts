@@ -128,13 +128,17 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
 }
 
 /**
- * The card that closes the season, on its last lesson's page where the next
+ * The card that closes Season 1, on its last lesson's page where the next
  * lesson's card would be: the trailer's question, answered (CURIOSITY-MOMENTS
- * § 5 item 4), and two ways on, a whole song and the season's map.
+ * § 5 item 4), and two ways on, a whole song and the season's map. After a
+ * visit whose singing ended in rest it keeps the answer and the map alone
+ * (`rest`), since nothing may then send the learner to sing. A later
+ * season's close is in its own module (season-2.ts).
  */
 export const SEASON_END = {
   eyebrow: 'End of Season 1',
   line: "You've seen every note you sing. Now sing a whole song.",
+  rest: "You've seen every note you sing.",
   /** Same-origin, marked with the page's lesson as every practise link is. */
   song: { label: 'Karaoke Night', path: '/karaoke-night' },
   map: { label: 'See the season map', href: '#explorer' },

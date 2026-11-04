@@ -1,0 +1,210 @@
+// ============================================================
+// Season 2 map tests — Lessons 15 to 28, their edges and their close
+// ============================================================
+
+import { readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { TEASE_MAX } from './lesson-copy'
+import { ancestors, lessonPath, LESSONS, SEASON_1, unlocks } from './season'
+import { EDGES_2, LESSONS_2, SEASON_2, TOPICS_2 } from './season-2'
+import { ALL_LESSONS, ALL_PREREQ, seasonOf, SEASONS } from './seasons'
+
+describe('Season 2', () => {
+  it('is Lessons 15 to 28 in order, numbered on from Season 1', () => {
+    // Assert
+    expect(LESSONS_2.map((L) => L.n)).toEqual([
+      15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+    ])
+    expect(SEASON_2.n).toBe(2)
+    expect(SEASON_2.lessons).toBe(LESSONS_2)
+  })
+
+  it('knows its last lesson, and so does Season 1', () => {
+    // Assert
+    for (const s of SEASONS)
+      expect(s.last, `season ${s.n}`).toBe(
+        Math.max(...s.lessons.map((L) => L.n)),
+      )
+    expect(SEASON_1.last).toBe(14)
+    expect(SEASON_2.last).toBe(28)
+  })
+
+  it('takes its name from its plan, "Read it, harmonise it"', () => {
+    expect(SEASON_2.name).toBe('Read it, harmonise it')
+  })
+
+  it('alternates theory and voice, and ends on both', () => {
+    // Assert: SEASON-2 § 2, odd lessons theory, even voice, Lesson 28 both
+    for (const L of LESSONS_2) {
+      const lane = L.n === 28 ? 'both' : L.n % 2 === 1 ? 'theory' : 'voice'
+      expect(L.lane, `lesson ${L.n}`).toBe(lane)
+    }
+  })
+
+  it('has no page, no reading time and no film for any lesson yet: each is coming later', () => {
+    // Assert
+    for (const L of LESSONS_2) {
+      expect(L.page, `lesson ${L.n}`).toBeUndefined()
+      expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
+      expect(L.film, `lesson ${L.n}`).toBeUndefined()
+      expect(L.len, `lesson ${L.n}`).toBeUndefined()
+    }
+  })
+
+  it('has no page in the repository either, so no entry should have one', () => {
+    // Arrange: learn/NN.html for 15 and up
+    const learn = resolve(__dirname, '../../../../learn')
+    const pages = readdirSync(learn)
+      .map((f) => /^(\d{2})\.html$/.exec(f)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+      .filter((n) => n >= 15)
+
+    // Assert
+    expect(pages).toEqual([])
+  })
+
+  it('names every topic of its lessons, and asks every hook as a question', () => {
+    // Assert
+    for (const L of LESSONS_2) {
+      expect(L.topics.length, `lesson ${L.n}`).toBeGreaterThan(0)
+      for (const t of L.topics)
+        expect(TOPICS_2[t], `lesson ${L.n}, ${t}`).toBeTruthy()
+      expect(L.hook, `lesson ${L.n}`).toMatch(/\?$/)
+    }
+  })
+
+  it('names none of its topics that no lesson teaches', () => {
+    const taught = new Set(LESSONS_2.flatMap((L) => L.topics))
+    expect(Object.keys(TOPICS_2).filter((t) => !taught.has(t))).toEqual([])
+  })
+
+  it("sends every practise link to this site, marked with the lesson's number", () => {
+    // Assert
+    for (const L of LESSONS_2) {
+      const link = L.pr.link
+      expect(link, `lesson ${L.n}`).toBeDefined()
+      const url = new URL(link?.href ?? '', 'https://mercurypitch.com')
+      expect(url.origin, `lesson ${L.n}`).toBe('https://mercurypitch.com')
+      expect(url.searchParams.get('lesson'), `lesson ${L.n}`).toBe(String(L.n))
+      expect(link?.href.startsWith('/'), `lesson ${L.n}`).toBe(true)
+    }
+  })
+
+  it('holds the prerequisites of SEASON-2 § 4.3, Season 1 lessons among them', () => {
+    // Assert
+    expect(SEASON_2.prereq).toEqual({
+      15: [2],
+      16: [9, 15],
+      17: [8],
+      18: [16, 17],
+      19: [17],
+      20: [5, 9, 10],
+      21: [6, 15],
+      22: [14],
+      23: [6],
+      24: [5, 10, 23],
+      25: [10, 21, 23],
+      26: [12, 24],
+      27: [12, 23],
+      28: [18, 26],
+    })
+  })
+
+  it('leads every edge into one of its lessons, from a lesson before it', () => {
+    // Assert
+    for (const [a, b] of EDGES_2) {
+      expect(b >= 15 && b <= 28, `${a}-${b}`).toBe(true)
+      expect(a, `${a}-${b}`).toBeLessThan(b)
+      expect(seasonOf(a), `${a}-${b}`).toBeDefined()
+    }
+  })
+
+  it('leaves out every edge implied through another, across both seasons', () => {
+    // Assert: no prerequisite of a lesson is already behind another of them
+    for (const L of LESSONS_2) {
+      const pre = SEASON_2.prereq[L.n] ?? []
+      for (const p of pre)
+        for (const q of pre) {
+          if (p === q) continue
+          expect(
+            ancestors(q, ALL_PREREQ).has(p),
+            `lesson ${L.n}: ${p} is behind ${q}`,
+          ).toBe(false)
+        }
+    }
+  })
+
+  it('walks a path back into Season 1, and opens only its own lessons', () => {
+    // Act
+    const path = lessonPath(16, SEASON_2.edges, ALL_PREREQ)
+
+    // Assert: 16 needs 9 and 15; 9 needs 3 and 6; 15 needs 2
+    expect([...path.ancestors].sort((a, b) => a - b)).toEqual([
+      1, 2, 3, 4, 6, 9, 15,
+    ])
+    expect(path.roles).toHaveLength(EDGES_2.length)
+    expect(unlocks(15, SEASON_2.prereq)).toEqual([16, 21])
+    expect(unlocks(28, SEASON_2.prereq)).toEqual([])
+  })
+
+  it("closes on Lesson 28's lines, with a rest line beside its invitation", () => {
+    // Assert
+    expect(SEASON_2.close.eyebrow).toBe('End of Season 2')
+    expect(SEASON_2.close.line).toBe(
+      "You've read a song in two parts. Now sing a whole song.",
+    )
+    expect(SEASON_2.close.rest).toBe("You've read a song in two parts.")
+    expect(SEASON_2.close.song).toEqual({
+      label: 'Karaoke Night',
+      path: '/karaoke-night',
+    })
+    expect(SEASON_2.close.map.href).toBe('#explorer')
+  })
+
+  it('spans its arcs over its lessons, Read it then Harmonise it', () => {
+    expect(SEASON_2.arcs).toEqual([
+      ['Read it', 'Lessons 15 to 21', 15, 21],
+      ['Harmonise it', 'Lessons 22 to 28', 22, 28],
+    ])
+  })
+
+  it('carries no copy of its own yet: each tease lands with the page that draws it', () => {
+    for (const L of LESSONS_2) {
+      expect(L.tease, `lesson ${L.n}`).toBeUndefined()
+      expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
+    }
+    expect(TEASE_MAX).toBe(70)
+  })
+})
+
+describe('the seasons', () => {
+  it('put every lesson in exactly one season, the trailer and Lessons 1 to 28', () => {
+    // Assert
+    expect(ALL_LESSONS.map((L) => L.n)).toEqual(
+      Array.from({ length: 29 }, (_, n) => n),
+    )
+    for (const L of ALL_LESSONS)
+      expect(
+        SEASONS.filter((s) => s.lessons.includes(L)).length,
+        `lesson ${L.n}`,
+      ).toBe(1)
+  })
+
+  it("find a lesson's season by its number", () => {
+    expect(seasonOf(0)).toBe(SEASON_1)
+    expect(seasonOf(14)).toBe(SEASON_1)
+    expect(seasonOf(15)).toBe(SEASON_2)
+    expect(seasonOf(28)).toBe(SEASON_2)
+    expect(seasonOf(29)).toBeUndefined()
+  })
+
+  it("keep Season 1's map as it was: its own lessons, edges and topics", () => {
+    expect(SEASON_1.lessons).toBe(LESSONS)
+    expect(SEASON_1.edges.every(([, b]) => b <= 14)).toBe(true)
+    for (const L of LESSONS)
+      for (const t of L.topics)
+        expect(SEASON_1.topics[t], `lesson ${L.n}, ${t}`).toBeTruthy()
+  })
+})

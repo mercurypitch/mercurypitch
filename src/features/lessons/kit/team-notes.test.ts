@@ -15,7 +15,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CuriosityCopy, HookVariant, TeaseVariant } from './lesson-copy'
 import { LESSON_COPY } from './lesson-copy'
-import { LESSONS } from './season'
+import { ALL_LESSONS } from './seasons'
 import type { VariantNotes } from './team-notes'
 import { HOOK_NOTES, SIGNATURES, TEASE_NOTES } from './team-notes'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
@@ -70,13 +70,13 @@ describe.each([
 })
 
 describe('SIGNATURES', () => {
-  it('gives every season entry a signature, and no lesson the season lacks', () => {
+  it("gives every season's entries a signature, and no lesson the seasons lack", () => {
     // Act
     const signed = Object.keys(SIGNATURES).map(Number)
 
     // Assert
-    expect(signed).toEqual(LESSONS.map((L) => L.n))
-    for (const L of LESSONS)
+    expect(signed).toEqual(ALL_LESSONS.map((L) => L.n))
+    for (const L of ALL_LESSONS)
       expect(SIGNATURES[L.n]?.trim() ?? '', `lesson ${L.n}`).not.toBe('')
   })
 })
