@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
-import { micLatencyPathMs, setMicLatencyPathByKey, setMicLatencyPathMs, } from '@/stores/mic-latency-path-store'
+import { micLatencyPathMs, micLatencyPathMsForDevice, setMicLatencyPathByKey, setMicLatencyPathMs, } from '@/stores/mic-latency-path-store'
 
 describe('mic latency path store', () => {
   beforeEach(() => {
@@ -25,6 +25,14 @@ describe('mic latency path store', () => {
 
     setAudioRouteForTests(null)
     expect(micLatencyPathMs()).toBe(52.4)
+  })
+
+  it("reads another input's path by its own key, on the route the sound takes now", () => {
+    setMicLatencyPathByKey({ 'desk-mic': 31, 'bluetooth:desk-mic': 190 })
+    expect(micLatencyPathMsForDevice('desk-mic')).toBe(31)
+    expect(micLatencyPathMsForDevice(null)).toBeNull()
+    setAudioRouteForTests('bluetooth')
+    expect(micLatencyPathMsForDevice('desk-mic')).toBe(190)
   })
 
   it('forgets the path when a measurement comes without one', () => {
