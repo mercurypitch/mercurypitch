@@ -36,8 +36,9 @@
 // only while each root sounds; then the explorer and the page at rest. The
 // hero's ring, Sing it's guide and ring join them once they are wired.
 // Lesson 13's are the steps' vowel figure, at rest and through Step 2's
-// ‘ah’, whose strip draws only while it sounds, then the explorer and the
-// page at rest.
+// ‘ah’, whose strip draws only while it sounds, then the explorer, which
+// opens on its own card's shaking plate, and the page at rest once the
+// motion switch holds the plate, or another card shows.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -193,17 +194,20 @@ const node = (page: Page, n: number) =>
 /**
  * The explorer at rest; Lesson 13's plate shaking its sand, then held
  * still by the motion switch, then shaking again; and the page's own card,
- * with no plate, at rest.
+ * with no plate, at rest. On Lesson 13's own page the explorer opens on the
+ * plate, so the page rests once the switch holds it, and the card with no
+ * plate is Lesson 12's.
  */
 async function explorerRests(
   page: Page,
   own: number,
   whole: boolean,
 ): Promise<void> {
+  const plateOwn = own === 13
   await scrollTo(page, '#explorer')
-  if (whole) await expectRest(page, null)
+  if (whole && !plateOwn) await expectRest(page, null)
 
-  await node(page, 13).click()
+  if (!plateOwn) await node(page, 13).click()
   await expectMoving(page, PLATE)
   if (whole) await expectMoving(page, null)
 
@@ -220,7 +224,7 @@ async function explorerRests(
   await scrollTo(page, PLATE)
   await expectMoving(page, PLATE)
 
-  await node(page, own).click()
+  await node(page, plateOwn ? 12 : own).click()
   await expect(page.locator('#exCardHost .plate')).toHaveCount(0)
   if (whole) await expectRest(page, null)
 }
