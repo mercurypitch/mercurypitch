@@ -21,7 +21,7 @@
 // test needs neither storage nor a page.
 
 import type { StepMark, StepMarks } from './position'
-import type { Lesson } from './season'
+import type { Lesson, Prereqs } from './season'
 import { PREREQ } from './season'
 
 export type LessonState =
@@ -65,16 +65,18 @@ const begun = (mark: StepMark | undefined): mark is StepMark =>
 
 /**
  * The lesson to recommend next: the first live lesson, other than this
- * page's, that is not done and whose direct prerequisites are all done.
+ * page's, that is not done and whose direct prerequisites (`prereq`, a
+ * later season's reaching back into the seasons before it) are all done.
  */
 export function upNext(
   lessons: readonly Lesson[],
   viewer: Viewer,
+  prereq: Prereqs = PREREQ,
 ): number | null {
   for (const L of lessons) {
     if (L.page === undefined || L.n === viewer.current) continue
     if (viewer.done.has(L.n)) continue
-    if ((PREREQ[L.n] ?? []).every((p) => viewer.done.has(p))) return L.n
+    if ((prereq[L.n] ?? []).every((p) => viewer.done.has(p))) return L.n
   }
   return null
 }
@@ -113,12 +115,13 @@ function stateOf(
   return L.n === next ? 'next' : 'ready'
 }
 
-/** Every lesson as this viewer stands with it, in season order. */
+/** Every lesson as this viewer stands with it, in season order; `prereq` as `upNext` reads it. */
 export function lessonViews(
   lessons: readonly Lesson[],
   viewer: Viewer,
+  prereq: Prereqs = PREREQ,
 ): LessonView[] {
-  const next = upNext(lessons, viewer)
+  const next = upNext(lessons, viewer, prereq)
   return lessons.map((L) => {
     const done = viewer.done.has(L.n)
     const kept = viewer.steps[L.n]

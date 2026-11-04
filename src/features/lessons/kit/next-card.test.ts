@@ -4,6 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { VisitEnding } from './comfort'
 import { SEASON_END } from './lesson-copy'
 import type * as Card from './next-card'
 import type { NextCard, SeasonEnd } from './next-card'
@@ -12,6 +13,7 @@ import { Done } from './progress'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
 import { lessonWithNoPage } from './season.test-fixtures'
+import { LESSONS_2, SEASON_2 } from './season-2'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
 /** The card for a lesson, never the season's close. */
@@ -108,9 +110,48 @@ describe('nextCard', () => {
       kind: 'end',
       eyebrow: 'End of Season 1',
       line: "You've seen every note you sing. Now sing a whole song.",
+      rest: "You've seen every note you sing.",
       song: { label: 'Karaoke Night', href: '/karaoke-night?lesson=14' },
       map: { label: 'See the season map', href: '#explorer' },
     })
+  })
+
+  it("closes Season 1 on Lesson 14's page even where Season 2's lessons follow it", () => {
+    // Act: one list holding both seasons, as a page carrying both reads it
+    const c = nextCard([...LESSONS, ...LESSONS_2], [], {}, 14)
+
+    // Assert: Season 1's close, never Lesson 15's card
+    expect(c?.kind).toBe('end')
+    expect(c?.kind === 'end' ? c.eyebrow : null).toBe('End of Season 1')
+  })
+
+  it("closes Season 2 on Lesson 28's page in its own words, its song marked with 28", () => {
+    // Act
+    const c = nextCard(LESSONS_2, [], {}, 28, SEASON_2)
+
+    // Assert
+    expect(c).toEqual({
+      kind: 'end',
+      eyebrow: 'End of Season 2',
+      line: "You've read a song in two parts. Now sing a whole song.",
+      rest: "You've read a song in two parts.",
+      song: { label: 'Karaoke Night', href: '/karaoke-night?lesson=28' },
+      map: { label: 'See the season map', href: '#explorer' },
+    })
+  })
+
+  it("names Lesson 28 on Lesson 27's page, coming later on the map", () => {
+    // Act
+    const c = lessonCard(nextCard(LESSONS_2, [], {}, 27, SEASON_2))
+
+    // Assert
+    expect([c?.n, c?.title, c?.state, c?.kind, c?.href]).toEqual([
+      28,
+      'Cadences, form and a song in two parts',
+      'Coming later',
+      'map',
+      '#explorer',
+    ])
   })
 
   it("marks the song's link with the finale's number, as the finale's own practise link is", () => {
@@ -241,6 +282,59 @@ describe('createNextCard', () => {
 
   afterEach(() => {
     document.body.textContent = ''
+    VisitEnding.set('practise')
+  })
+
+  it("keeps the close's answer and the map, and drops the song, while the visit ends in rest", () => {
+    // Arrange: the finale's Wrap
+    document.body.innerHTML =
+      '<div class="next-card card l14-next" data-next-card hidden><figure class="end-still"></figure></div>'
+    const ways = (): (string | null)[][] =>
+      Array.from(document.querySelectorAll('[data-next-card] a')).map((a) => [
+        a.textContent,
+        a.getAttribute('href'),
+      ])
+    const line = (): string | null | undefined =>
+      document.querySelector('[data-next-card] .end-line')?.textContent
+
+    // Act: Sing it ends in rest after the card is drawn
+    createNextCard(LAST, VisitEnding)
+    VisitEnding.set('rest')
+
+    // Assert
+    expect(line()).toBe("You've seen every note you sing.")
+    expect(ways()).toEqual([['See the season map', '#explorer']])
+    expect(
+      Array.from(
+        document.querySelector('[data-next-card]')?.children ?? [],
+      ).map((e) => e.className),
+    ).toEqual(['next-words', 'end-still'])
+
+    // Act: a later ending that sings again
+    VisitEnding.set('practise')
+
+    // Assert
+    expect(line()).toBe(SEASON_END.line)
+    expect(ways()).toEqual([
+      ['Karaoke Night', '/karaoke-night?lesson=14'],
+      ['See the season map', '#explorer'],
+    ])
+  })
+
+  it('draws a rest close at once on a page whose visit already ended in rest', () => {
+    // Arrange
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+    VisitEnding.set('rest')
+
+    // Act
+    createNextCard(LAST, VisitEnding)
+
+    // Assert
+    const card = document.querySelector<HTMLElement>('[data-next-card]')
+    expect(card?.querySelector('.end-line')?.textContent).toBe(SEASON_END.rest)
+    expect(card?.dataset.ending).toBe('rest')
+    expect(card?.querySelector('a.btn.primary')).toBeNull()
   })
 
   it('draws the card in place of the mark, keeping what the mark held after its words', () => {
@@ -395,5 +489,65 @@ describe('createNextCard', () => {
       for (const [what, team] of TEAM_STRINGS)
         expect(text.includes(team), `lesson ${L.n}: ${what}`).toBe(false)
     }
+  })
+})
+
+describe('createNextCard on a Season 2 page (page-state.ts carrySeason)', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    document.body.textContent = ''
+  })
+
+  it("closes Season 2 on Lesson 28's page, and names Lesson 16 on Lesson 15's", async () => {
+    // Arrange: fresh modules, so the season carried here stays in this test
+    const page = await import('./page-state')
+    const card: typeof Card = await import('./next-card')
+    const season2 = await import('./season-2')
+    page.carrySeason(season2.SEASON_2)
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+
+    // Act
+    card.createNextCard(28)
+
+    // Assert
+    const end = document.querySelector<HTMLElement>('[data-next-card]')
+    expect(end?.dataset.nextCard).toBe('end')
+    expect(end?.querySelector('.eyebrow')?.textContent).toBe('End of Season 2')
+    expect(end?.querySelector('a.btn.primary')?.getAttribute('href')).toBe(
+      '/karaoke-night?lesson=28',
+    )
+
+    // Act: Lesson 15's Wrap
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+    card.createNextCard(15)
+
+    // Assert
+    const next = document.querySelector<HTMLElement>('[data-next-card]')
+    expect(next?.dataset.nextCard).toBe('16')
+    expect(next?.dataset.selectLesson).toBe('16')
+  })
+
+  it("closes Season 1 on Lesson 14's page of a build that carries Season 2", async () => {
+    // Arrange
+    const page = await import('./page-state')
+    const card: typeof Card = await import('./next-card')
+    const season2 = await import('./season-2')
+    page.carrySeason(season2.SEASON_2)
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+
+    // Act
+    card.createNextCard(14)
+
+    // Assert
+    const end = document.querySelector<HTMLElement>('[data-next-card]')
+    expect(end?.dataset.nextCard).toBe('end')
+    expect(end?.querySelector('.eyebrow')?.textContent).toBe('End of Season 1')
   })
 })
