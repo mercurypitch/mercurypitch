@@ -74,7 +74,7 @@ wordmark, and the motion rules. On this page:
 - **No decorative staff or clef anywhere.** Season 1's section heads carry a faint staff with an
   engraved G clef (`learn/12.html:551-552`; `src/features/lessons/kit/lesson-base.css:397-440`),
   which every page's module engraves (`engraveClefs`,
-  `src/features/lessons/kit/page-chrome.ts:161-175`, called at `src/features/lessons/lesson-12/main.ts:85`),
+  `src/features/lessons/kit/page-chrome.ts:161-175`, called at `src/features/lessons/lesson-12/main.ts:91`),
   and the body's background tiles a fainter one down every page, five 1 px lines 9 px apart every
   168 px (`src/features/lessons/kit/lesson-base.css:128-157`). This page has none of them: in a
   lesson that teaches the staff, a staff on screen is always music (SEASON-2 § 1.5 item 7; FACTS 6;
