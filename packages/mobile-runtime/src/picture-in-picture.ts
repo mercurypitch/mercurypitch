@@ -20,13 +20,15 @@
 // ...`: another app's sound starting and stopping, a call, the route.
 //
 // On iOS the same lyrics and clock also reach a TV connected to the phone by
-// AirPlay screen mirroring or a cable (TVLyrics.swift). While a test build's
-// switch is on (`setTvLyricsEnabled`), the TV shows them full screen in place
-// of the phone, and the room keeps handing them over while it does
-// (`onTvLyrics`). Off, the TV mirrors the phone. A second switch puts the
-// room's whole stage on the TV instead (`setTvStageEnabled`, TVStage.swift):
-// a page of its own draws it there from the messages the room sends
-// (`sendTvStage`), and the two switches take each other's place.
+// AirPlay screen mirroring or a cable (TVLyrics.swift). While its switch is
+// on (`setTvLyricsEnabled`), the TV shows them full screen in place of the
+// phone, and the room keeps handing them over while it does (`onTvLyrics`).
+// Off, the TV mirrors the phone. A second switch puts the room's whole stage
+// on the TV instead (`setTvStageEnabled`, TVStage.swift): a page of its own
+// draws it there from the messages the room sends (`sendTvStage`), and the
+// two switches take each other's place. The app's TV chooser throws them
+// as a TV connects, in every build (apps/mercurypitch/src/shell/tv/), and a
+// test build's Developer screen throws them by hand.
 //
 // The web has no window for a page: inert wrappers, and the plugin is never
 // even registered there.
@@ -295,7 +297,7 @@ export function onPictureInPicture(
 
 /** A TV connected to the iPhone, and what it shows (TVLyrics.swift). */
 export interface TvLyricsState {
-  /** The test build's switch: on, a connected TV shows the lyrics. */
+  /** The lyrics' switch: on, a connected TV shows the lyrics. */
   readonly enabled: boolean
   /** A TV is connected, by AirPlay screen mirroring or a cable. */
   readonly connected: boolean

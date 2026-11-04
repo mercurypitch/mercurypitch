@@ -2,7 +2,8 @@
 // The TV stage, as the bridge hands it to the Karaoke room
 // ============================================================
 //
-// iOS: a TV connected to the phone that draws the room's stage while a test
+// iOS: a TV connected to the phone that draws the room's stage once the
+// singer picks the stage for it (the TV chooser, src/shell/tv/), or a test
 // build's "Stage on a connected TV" is on (ios/App/App/LyricsWindow/
 // TVStage.swift). The room hears whether the TV shows it and sends what to
 // draw (src/features/karaoke-room/useKaraokeTvStage.ts); none of it exists

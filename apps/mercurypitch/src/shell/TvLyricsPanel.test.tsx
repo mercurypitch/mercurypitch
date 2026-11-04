@@ -2,13 +2,16 @@
 // switch that puts the Karaoke room's lyrics on a connected TV in place of
 // the mirror, a second that puts its whole stage there instead, the stage
 // picture's offset, and rows that say whether a TV is connected and what it
-// shows. The plugin is mocked at the platform module, as the app's other
-// native panels are; a phone without it reads as having no TV.
+// shows. Beside them, how many TVs the TV chooser keeps a choice for, which
+// the switches leave alone. The plugin is mocked at the platform module, as
+// the app's other native panels are; a phone without it reads as having no
+// TV.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setTvStageOffsetMs, tvStageOffsetMs } from '@/stores/tv-stage-store'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
+import { reloadTvMemoryForTests, rememberedChoice, rememberTv, } from './tv/tv-memory'
 import { TvLyricsPanel } from './TvLyricsPanel'
 
 type TvState = { enabled: boolean; connected: boolean; showing: boolean }
@@ -167,6 +170,24 @@ describe('the TV section', () => {
 
     expect(stop).toHaveBeenCalledTimes(1)
     expect(stopStage).toHaveBeenCalledTimes(1)
+  })
+
+  it('counts the TVs the chooser keeps, and its switches leave their choices alone', async () => {
+    localStorage.clear()
+    reloadTvMemoryForTests()
+    rememberTv('LG webOS TV OLED48C24LA', 'stage')
+    open()
+    await settle()
+    const kept = el('[data-settings-row="tv-remembered"]').textContent ?? ''
+
+    toggle().click()
+    await settle()
+
+    expect(kept).toContain('1 TV kept')
+    expect(platform.setTvLyricsEnabled.mock.calls).toEqual([[true]])
+    expect(rememberedChoice('LG webOS TV OLED48C24LA')).toBe('stage')
+    localStorage.clear()
+    reloadTvMemoryForTests()
   })
 
   it('has no switch to turn on where the phone has no TV to give', async () => {

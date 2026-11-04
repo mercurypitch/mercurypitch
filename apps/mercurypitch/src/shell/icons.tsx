@@ -564,3 +564,32 @@ export const CloudIcon: Component<ShellIconProps> = (props) => (
     <path d="M7.5 18.5h9.5a4 4 0 0 0 .6-7.95A5.75 5.75 0 0 0 6.4 9.4a4.6 4.6 0 0 0 1.1 9.1z" />
   </svg>
 )
+
+// ── A connected TV ───────────────────────────────────────────
+
+/** A TV: a wide screen on two feet, where a computer stands on one. */
+export const TvIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="2.5" y="4.5" width="19" height="12.5" rx="2" />
+    <path d="M9 17l-1.5 3.5M15 17l1.5 3.5" />
+  </svg>
+)
+
+/** The stage on the TV: notes on their lane, the words under them. */
+export const TvStageIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="2.5" y="4.5" width="19" height="12.5" rx="2" />
+    <path d="M5.5 10h3.5M11 7.5h3M16.5 9h2" />
+    <path d="M6.5 13.5h11" />
+    <path d="M9 17l-1.5 3.5M15 17l1.5 3.5" />
+  </svg>
+)
+
+/** The lyrics on the TV: lines of words, filling the screen. */
+export const TvLyricsIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="2.5" y="4.5" width="19" height="12.5" rx="2" />
+    <path d="M6.5 8.5h11M7.5 11h9M8.5 13.5h7" />
+    <path d="M9 17l-1.5 3.5M15 17l1.5 3.5" />
+  </svg>
+)

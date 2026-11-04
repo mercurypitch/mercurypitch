@@ -16,6 +16,10 @@
 // them, and on Android Play's review access (KaraokeSongsGroups.tsx). The
 // subscription is Mercury Pitch Cloud's, in Settings itself (CloudGroup.tsx).
 //
+// Then, on an iPhone, the TVs it remembers and what each shows when it
+// connects: the stage, the lyrics or the phone (../tv/TvSettingsGroup.tsx,
+// the TV chooser's memory). No group where the phone has no TV plugin.
+//
 // Last, whether the room gets songs ready to find by singing while it rests
 // (karaoke-notes-reader.ts): the web's "Index new songs", synced, the one
 // way to turn those reads off.
@@ -27,6 +31,7 @@ import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, k
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { karaokeAutoIndexShazam, setKaraokeAutoIndexShazam, } from '@/stores/karaoke-settings-store'
+import { TvSettingsGroup } from '../tv/TvSettingsGroup'
 import { KaraokeSongsGroups } from './KaraokeSongsGroups'
 import { SettingsChoice, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
@@ -127,6 +132,7 @@ export function KaraokeSettingsScreen(
           />
         </Show>
       </SettingsGroup>
+      <TvSettingsGroup />
       <SettingsGroup title="Find by singing">
         <SettingsRow
           id="karaoke-find-ready"

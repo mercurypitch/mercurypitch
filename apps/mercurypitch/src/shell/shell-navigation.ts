@@ -31,6 +31,7 @@ import { closeLatencySheet, latencySheetOpen } from './settings/latency-sheet'
 import { dismissSettingsAlert, settingsAlertOpen, } from './settings/settings-alert'
 import { signInBack, signInOpen } from './settings/sign-in-state'
 import { voiceprintAskNotNow, voiceprintAskUp } from './settings/voiceprint-ask'
+import { notNowTv, tvChoiceUp } from './tv/tv-choice'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
 
@@ -210,7 +211,8 @@ function shellOverlayOpen(): boolean {
     latencySheetOpen() ||
     cloudOfferUp() ||
     offerOpen() ||
-    voiceprintAskUp()
+    voiceprintAskUp() ||
+    tvChoiceUp()
   )
 }
 
@@ -239,7 +241,8 @@ export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
     latencySheetOpen() ||
     cloudOfferUp() ||
     offerOpen() ||
-    voiceprintAskUp()
+    voiceprintAskUp() ||
+    tvChoiceUp()
   ) {
     return 'sheet'
   }
@@ -325,8 +328,11 @@ export function performBack(host: BackHost): BackOutcome {
       // Keep, the Cloud offer and the voiceprint ask take Back as Not now.
       // The singer sheet, over a board, closes whatever pane it is on: it
       // hands over to the sign-in sheet by closing first, so the two are
-      // never up together.
-      if (voiceprintAskUp()) voiceprintAskNotNow()
+      // never up together. The TV's question rises over every other sheet
+      // as a TV connects, so it comes before all of them, and Back is its
+      // Not now: the mirror, for this connection only.
+      if (tvChoiceUp()) notNowTv()
+      else if (voiceprintAskUp()) voiceprintAskNotNow()
       else if (singerSheetOpen()) closeSingerSheet()
       else if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
