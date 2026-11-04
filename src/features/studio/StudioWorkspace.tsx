@@ -1,5 +1,5 @@
 // Studio workspace — arrangement view state, contextual panels and the shared audio transport.
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Plus } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
@@ -219,14 +219,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     project().tracks.find((track) => track.id === selectedTrackId())
   const selectedAsset = () =>
     props.studio.assets().find((asset) => asset.id === selectedClip()?.assetId)
-  const trackAssets = createMemo(() => {
-    const ids = new Set(
-      project()
-        .clips.filter((clip) => clip.trackId === selectedTrackId())
-        .map((clip) => clip.assetId),
-    )
-    return props.studio.assets().filter((asset) => ids.has(asset.id))
-  })
 
   const editor = createStudioEditor({
     project: () => props.studio.project(),
@@ -696,7 +688,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             <Show when={panel() === 'track' && selectedTrack()}>
               <StudioTrackDetails
                 track={selectedTrack()!}
-                assets={trackAssets()}
+                project={project()}
+                assets={props.studio.assets()}
                 writable={writable()}
                 arming={phone() ? recorder.arming : undefined}
                 input={recorder}

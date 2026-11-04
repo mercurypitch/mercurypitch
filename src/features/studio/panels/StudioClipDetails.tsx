@@ -1,10 +1,11 @@
-// Studio clip details — numeric alternatives to move, trim and source-anchored fades; a MIDI clip's notes open from here.
+// Studio clip details — numeric alternatives to move, trim and source-anchored fades, and a loop take's passes; a MIDI clip's notes open from here.
 import { Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { NoteBars } from '../studio-icons'
+import { StudioClipPasses } from './StudioClipPasses'
 import { StudioNumberField } from './StudioNumberField'
 
 interface StudioClipDetailsProps {
@@ -194,6 +195,7 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
       <p class={styles.help}>
         Trim values refer to the original take. Your audio stays intact.
       </p>
+      <StudioClipPasses {...props} />
     </div>
   )
 }
