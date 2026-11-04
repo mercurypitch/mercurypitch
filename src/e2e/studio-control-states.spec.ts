@@ -1,6 +1,12 @@
-// Studio control states — the Sound role list draws the app's chevron, and a pressed Repeat stays pressed under the pointer and differs from an unpressed one at 3:1 in both themes.
+// Studio control states — the Sound role list draws the app's chevron, a pressed Repeat stays pressed under the pointer and differs from an unpressed one at 3:1 in both themes, and a take's Stop stays in reach under a tablet's Export drawer.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
+
+test.use({
+  launchOptions: { args: fakeMicArgs(writeToneWav(220, 30)) },
+  permissions: ['microphone'],
+})
 
 const THEMES = ['light', 'dark'] as const
 
@@ -131,3 +137,52 @@ for (const theme of THEMES) {
       .not.toBe(hoverOff)
   })
 }
+
+test.describe('on a tablet', () => {
+  test.use({
+    viewport: { width: 1024, height: 768 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('Studio keeps a take’s Stop in reach while the Export drawer is open', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    const record = studio.locator('[data-studio-record]')
+    // One press arms the lane and starts the take.
+    await record.click()
+    await expect(record).toHaveAccessibleName('Stop recording', {
+      timeout: 15_000,
+    })
+    await studio.locator('[data-tour="studio.export"]').click()
+    await expect(studio.getByRole('dialog', { name: 'Export' })).toBeVisible()
+    const stop = studio
+      .locator('[data-studio-record-status]')
+      .getByRole('button', { name: 'Stop', exact: true })
+    await expect(stop).toBeVisible()
+    // The tap lands on Stop, not on the drawer or its shade.
+    const onTop = await stop.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      const hit = document.elementFromPoint(
+        box.left + box.width / 2,
+        box.top + box.height / 2,
+      )
+      return hit !== null && element.contains(hit)
+    })
+    expect(onTop).toBe(true)
+    // And clear of the drawer, so it hides none of Export.
+    const drawer = (await studio
+      .getByRole('dialog', { name: 'Export' })
+      .boundingBox())!
+    const card = (await studio
+      .locator('[data-studio-record-status]')
+      .boundingBox())!
+    expect(card.x + card.width).toBeLessThanOrEqual(drawer.x)
+    await stop.tap()
+    await expect(record).toHaveAccessibleName('Record', { timeout: 15_000 })
+    await expect(studio.getByRole('dialog', { name: 'Export' })).toBeVisible()
+  })
+})

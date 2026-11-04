@@ -879,6 +879,22 @@
     animation: studio-panel 0.2s ease-out;
   }
 }
+/* A drawer and its shade cover the lanes, and with them a take's card
+   (StudioRecord.module.css): the card comes up over the shade, centred in
+   the room the drawer leaves, so Stop stays in reach and Export stays
+   whole. A phone's sheet has the transport, and its Record, at its foot. */
+.workspace:not(.phone)
+  .editor:has(> .panelShade > [aria-modal='true'])
+  .arrangement
+  > :has(> [data-studio-record-status]) {
+  z-index: 31;
+}
+.workspace:not(.phone)
+  .editor:has(> .panelShade > [aria-modal='true'])
+  [data-studio-record-status] {
+  left: calc((100% - min(400px, 100%)) / 2);
+  width: min(680px, calc(100% - min(400px, 100%) - 32px));
+}
 @keyframes studio-shade {
   from {
     opacity: 0;
