@@ -528,7 +528,7 @@ quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, 
   only the perfect intervals and the tritone (the ear-drill launch kind)", stays until it ships; it
   is admin only, never drawn on a lesson page (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [6, 23], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 23's
-  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
+  prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
 - The tease on Lesson 22's card is this lesson's, set on Lesson 23 in the lesson copy (`LESSON_COPY`,
   `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "One note, swinging. Now two notes
   together: one pair wants to move.", with Lesson 22's planned line as a variant, `teaseAlts` `[{

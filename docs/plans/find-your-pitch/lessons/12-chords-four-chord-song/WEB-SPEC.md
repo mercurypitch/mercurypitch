@@ -844,7 +844,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:138-157`).
-2. `src/features/lessons/kit/drafts.ts:30-41`: Lesson 12's line, after Lesson 8's and in the form of
+2. `src/features/lessons/kit/drafts.ts:30-42`: Lesson 12's line, after Lesson 8's and in the form of
    Lessons 3, 5 and 6's:
    `12: "Lesson 10's page at /learn/10, and the vocal coach's look at the sung checkpoint"`. While
    it stands, the page is held back on mercurypitch.com and served on the dev site and every PR
@@ -950,10 +950,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:273`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:287`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:103-105`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:616-620`, and for CSS `:646-652`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:636-640`, and for CSS `:666-672`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
@@ -1273,7 +1273,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     (`:37-104`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
     `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 7's row reads for
     Lesson 8; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:130-147`); its still inside the card holds no button.
+    Lesson 1's card (`:136-153`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
     alternative hook's note never reaches the page (`:78-80`).

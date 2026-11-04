@@ -1,0 +1,202 @@
+/* ============================================================
+   Lesson 13 — Resonance and vowels: the page's own figures and rows
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
+   @import below, which the build inlines, and not as main.ts's import: it
+   shares a chunk with the kit's comfort check and voice choice, which this
+   page does not load until Sing it is wired. Imported here alone, it would
+   leave that chunk for a sheet of its own, which Lessons 3 and 5 to 10 link
+   after their own sheet, so its rules would win over theirs
+   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
+   page by @import"). Once Sing it loads those modules, the import moves
+   back to main.ts. Here: the hero's vowel figure between
+   Merc and Tavi, with the two plays and the strip's gloss under it; the
+   vowel figure's floor and its rows of controls (WEB-SPEC, Toys 1, Layout
+   and targets); the vowel names row; Sing it's chart with its strip; free
+   play; and the next card's still. The strip's colours are the canvas's
+   (kit/spectrum-strip.ts); nothing here is violet, mint or gold. */
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: the vowel figure between Merc and Tavi */
+.l13-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --fig-h: clamp(260px, 24vw, 330px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--fig-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the figure's base, where Merc and Tavi stand */
+.l13-duo .floor {
+  top: var(--fig-h);
+}
+.l13-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l13-duo .merc-blue {
+  grid-column: 1;
+}
+.l13-duo .merc-orange {
+  grid-column: 3;
+}
+.l13-duo .hero-vowels {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--fig-h);
+}
+/* the compact figure takes its box's height, not the kit's tall one */
+.hero-vowels .vowel-viz {
+  height: 100%;
+}
+/* the two plays sit under the stage, outside the predict card */
+.l13-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+.strip-gloss {
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media (max-width: 1080px) {
+  .l13-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --fig-h: clamp(260px, 40vw, 340px);
+  }
+  /* Play Merc's 'ee' sits right under the stage, before the sound gate
+     (the kit orders the hero's parts at this width) */
+  .l13-hero .hero-plays {
+    order: 4;
+  }
+  .l13-hero .strip-gloss {
+    order: 4;
+  }
+}
+/* on a phone the figure takes the stage's width, and Merc and Tavi stand smaller either side of its base */
+@media (max-width: 560px) {
+  .l13-duo {
+    --merc: min(25vw, 100px);
+    --fig-h: 240px;
+    margin-top: 2px;
+  }
+  .l13-duo .hero-vowels {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- the vowel figure */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* Twelve segments a column need a 240 px figure at the least: the strip is
+   then 122 px, a segment every 10.2 px (WEB-SPEC, Toys 1, Heights), as
+   Lesson 3's band chart sets its own floor. */
+.vowel-viz {
+  --viz-min: 240px;
+}
+/* one row of each step's controls, 8 px apart, each a 44 px target that
+   shares its row evenly: two, three or five a row */
+.vowel-toy .vowel-row {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.vowel-toy .vowel-row[hidden] {
+  display: none;
+}
+.vowel-toy .vowel-row.one {
+  grid-template-columns: minmax(0, 1fr);
+}
+.vowel-toy .vowel-row.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.vowel-toy .vowel-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.vowel-toy .vowel-row.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.vowel-toy .vowel-row .btn,
+.vowel-toy .vowel-row .switch {
+  min-width: 0;
+  min-height: 44px;
+  justify-content: center;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* five vowels a row at 55 px each on the narrowest phone: no icon */
+.vowel-toy .vowel-row.five .ico {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- the vowel names row */
+/* five cells, the vowel of the moment bold and underlined, so it never
+   rests on colour alone (WEB-SPEC, Toys 6) */
+.vowel-names {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.vowel-names[hidden] {
+  display: none;
+}
+.vowel-names li {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hair);
+  color: var(--ink-3);
+  font-family: var(--f-mono);
+  font-size: 14px;
+}
+.vowel-names li.is-now {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  border-color: var(--chrome);
+}
+
+/* ---------------------------------------------------------------- Sing it's chart, with the strip under it */
+.vowel-chart {
+  position: relative;
+  height: 340px;
+}
+.vowel-chart canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@media (max-width: 420px) {
+  .vowel-chart {
+    height: 310px;
+  }
+}
+
+/* ---------------------------------------------------------------- the Wrap */
+.l13-free > .eyebrow {
+  margin-bottom: 10px;
+}
+/* the next card's still: Twinkle's first phrase, twice, after its words */
+.l13-next .next-fig {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin-top: 12px;
+}

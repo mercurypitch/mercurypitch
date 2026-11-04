@@ -30,7 +30,7 @@ signature is that path (FACTS 4).
 Its public home is `mercurypitch.com/learn/22`: a hand-written document `learn/22.html` with its
 module in `src/features/lessons/lesson-22/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season pairs it with Lesson 20 for the
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season pairs it with Lesson 20 for the
 coach, and it can go out with Voice Mirror's link alone (SEASON-2 § 8.2 item 5,
 `docs/plans/find-your-pitch/SEASON-2.md:1269-1270`).
 
@@ -654,7 +654,7 @@ Lesson 5's is (`src/features/lessons/kit/season.ts:245-263`):
   team's only: the field is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [14, 22], as SEASON-2 § 4.3 gives it (FACTS 2); Lesson 22's prerequisite list is
-  then [14] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
+  then [14] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
 - The tease on Lesson 21's card is this lesson's, set on Lesson 22 in the lesson copy: `tease`
   "Merc holds one note, and its line swings past both edges of the band.", with `teaseAlts`
   `[{ id: 'nudged', text: 'Each fifth is nudged two cents. A held note can move far more.' }]` and
@@ -677,7 +677,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `22: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out; the masthead
    then names Season 2, where today its season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`).

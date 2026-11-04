@@ -516,7 +516,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 10's
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [10, 25], [21, 25] and [23, 25], the first a cross-season edge, as SEASON-2 § 4.3
   gives them (FACTS 2). Lesson 25's prerequisite list is then [10, 21, 23] (`PREREQ`,
-  `src/features/lessons/kit/season.ts:452-458`).
+  `src/features/lessons/kit/season.ts:463-469`).
 - The tease on Lesson 24's card is this lesson's, set on Lesson 25 in the lesson copy (`LESSON_COPY`,
   `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "A minor tune, played twice. The second
   ending changes one note.", with Lesson 24's planned line as a variant, `teaseAlts` `[{ id: 'plan',
