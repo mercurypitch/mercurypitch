@@ -1,9 +1,11 @@
 // Studio track controls — the lane's name beside mute and solo, then a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
+// A lane that follows a volume or pan line (lib/studio/model/automation.ts) holds that control still and says so.
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
 import { Volume2, VolumeX } from '@/components/icons'
 import { createStudioKeyBurst } from '@/features/studio/mix/key-burst'
 import { useStudioLiveMix } from '@/features/studio/mix/live-mix'
+import { hasStudioAutomation } from '@/lib/studio/model/automation'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioTrack } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
@@ -109,6 +111,10 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
   let panInput: HTMLInputElement | undefined
   let faderDrag: (MixDrag & { readonly perPixel: number }) | null = null
   let knobDrag: MixDrag | null = null
+  /** A control a line drives: the line plays, so the control stays where it is. */
+  const lined = (kind: MixKind) =>
+    hasStudioAutomation(props.track, kind === 'gainDb' ? 'volume' : 'pan')
+  const movable = (kind: MixKind) => props.writable && !lined(kind)
 
   function update(
     changes: Partial<Pick<StudioTrack, 'gainDb' | 'pan' | 'mute' | 'solo'>>,
@@ -165,6 +171,19 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
   createEffect(() => {
     if (!props.writable) untrack(cancel)
   })
+  // A line drawn under a moving control, as by an undo, lets go of it.
+  createEffect(() => {
+    for (const kind of ['gainDb', 'pan'] as const)
+      if (lined(kind)) untrack(() => drop(kind))
+  })
+
+  function drop(kind: MixKind): void {
+    if (kind === 'gainDb') faderDrag = null
+    else knobDrag = null
+    if (moving() === kind) setMoving(null)
+    bursts[kind].cancel()
+    release(kind)
+  }
 
   function capture(event: PointerEvent): void {
     ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
@@ -176,7 +195,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
     props.strip === true ? -event.clientY : event.clientX
 
   function faderDown(event: PointerEvent): void {
-    if (!props.writable || event.button !== 0 || !faderInput) return
+    if (!movable('gainDb') || event.button !== 0 || !faderInput) return
     event.preventDefault()
     faderInput.focus({ preventScroll: true })
     bursts.gainDb.flush()
@@ -234,7 +253,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
   const angle = () => pan() * 135
 
   function knobDown(event: PointerEvent): void {
-    if (!props.writable || event.button !== 0) return
+    if (!movable('pan') || event.button !== 0) return
     event.preventDefault()
     panInput?.focus({ preventScroll: true })
     bursts.pan.flush()
@@ -326,14 +345,19 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
     <div
       class={styles.volume}
       classList={{ [styles.faderMoving]: moving() === 'gainDb' }}
-      title="Drag to set the volume. Double-click for 0 dB."
+      data-lined={lined('gainDb') ? '' : undefined}
+      title={
+        lined('gainDb')
+          ? 'This lane follows its volume line. Clear the line to use the fader.'
+          : 'Drag to set the volume. Double-click for 0 dB.'
+      }
       onPointerDown={faderDown}
       onPointerMove={faderMove}
       onPointerUp={faderUp}
       onLostPointerCapture={faderUp}
       onPointerCancel={faderCancel}
       onDblClick={() => {
-        if (props.writable) commit('gainDb', 0)
+        if (movable('gainDb')) commit('gainDb', 0)
       }}
     >
       <input
@@ -346,12 +370,16 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         max={STUDIO_FADER_MAX_DB}
         step={FADER_STEP_DB}
         value={clampGain(gain())}
-        disabled={!props.writable}
+        disabled={!movable('gainDb')}
         style={{
           '--fill': `${gainPercent(gain())}%`,
           '--unity': `${gainPercent(0)}%`,
         }}
-        aria-valuetext={`${gain().toFixed(1)} dB`}
+        aria-valuetext={
+          lined('gainDb')
+            ? 'Follows its volume line'
+            : `${gain().toFixed(1)} dB`
+        }
         onKeyDown={(event) => bursts.gainDb.keyDown(event)}
         onInput={(event) =>
           rangeInput('gainDb', event.currentTarget.valueAsNumber)
@@ -371,21 +399,28 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         </span>
       </Show>
       {props.meter}
-      <output class={styles.gainValue}>{gain().toFixed(1)} dB</output>
+      <output class={styles.gainValue}>
+        {lined('gainDb') ? 'Line' : `${gain().toFixed(1)} dB`}
+      </output>
     </div>
   )
   const knob = () => (
     <span
       class={styles.knob}
       classList={{ [styles.knobTurning]: moving() === 'pan' }}
-      title={`Pan ${studioPanLabel(pan())}. Drag up or down; double-click to centre.`}
+      data-lined={lined('pan') ? '' : undefined}
+      title={
+        lined('pan')
+          ? 'This lane follows its pan line. Clear the line to use the knob.'
+          : `Pan ${studioPanLabel(pan())}. Drag up or down; double-click to centre.`
+      }
       onPointerDown={knobDown}
       onPointerMove={knobMove}
       onPointerUp={knobUp}
       onLostPointerCapture={knobUp}
       onPointerCancel={knobCancel}
       onDblClick={() => {
-        if (props.writable) commit('pan', 0)
+        if (movable('pan')) commit('pan', 0)
       }}
     >
       <input
@@ -397,11 +432,13 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         max="1"
         step="0.01"
         value={pan()}
-        disabled={!props.writable}
+        disabled={!movable('pan')}
         aria-valuetext={
-          pan() === 0
-            ? 'Centre'
-            : `${Math.round(Math.abs(pan()) * 100)} percent ${pan() < 0 ? 'left' : 'right'}`
+          lined('pan')
+            ? 'Follows its pan line'
+            : pan() === 0
+              ? 'Centre'
+              : `${Math.round(Math.abs(pan()) * 100)} percent ${pan() < 0 ? 'left' : 'right'}`
         }
         onKeyDown={(event) => bursts.pan.keyDown(event)}
         onInput={(event) =>
@@ -439,7 +476,7 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
         />
       </svg>
       <span class={styles.panValue} aria-hidden="true">
-        {studioPanLabel(pan())}
+        {lined('pan') ? 'Line' : studioPanLabel(pan())}
       </span>
     </span>
   )

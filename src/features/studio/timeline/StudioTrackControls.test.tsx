@@ -3,10 +3,11 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createStudioLiveMix, StudioLiveMixContext, } from '@/features/studio/mix/live-mix'
+import { withStudioAutomation } from '@/lib/studio/model/automation'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
-import type { StudioProject } from '@/lib/studio/model/types'
+import type { StudioAutomationPoint, StudioProject, } from '@/lib/studio/model/types'
 import { StudioTrackControls } from './StudioTrackControls'
 
 afterEach(() => {
@@ -15,13 +16,15 @@ afterEach(() => {
 })
 
 /** The lane header's controls and the desk strip's, sharing one live mix as in the workspace. */
-function mount(gainDb = 0) {
+function mount(gainDb = 0, volume: readonly StudioAutomationPoint[] = []) {
   const log: string[] = []
+  const track = {
+    ...createStudioTrack({ id: 'keys', name: 'Keys', order: 0 }),
+    gainDb,
+  }
   const [project, setProject] = createSignal<StudioProject>({
     ...createStudioProject({ id: 'song', title: 'Fader song' }),
-    tracks: [
-      { ...createStudioTrack({ id: 'keys', name: 'Keys', order: 0 }), gainDb },
-    ],
+    tracks: [withStudioAutomation(track, 'volume', volume)],
   })
   const command = vi.fn((edit: StudioCommand) => {
     log.push(`command ${JSON.stringify(edit)}`)
@@ -51,7 +54,7 @@ function mount(gainDb = 0) {
     </StudioLiveMixContext.Provider>
   ))
   const [header, strip] = screen.getAllByRole('slider', { name: 'Keys volume' })
-  return { project, command, log, header, strip }
+  return { project, setProject, command, log, header, strip }
 }
 
 // jsdom has no PointerEvent: a MouseEvent under a pointer event's name keeps
@@ -152,5 +155,56 @@ describe('Studio track controls', () => {
     fireEvent.keyDown(pan, { key: 'Control' })
     expect(ui.command).toHaveBeenCalledTimes(2)
     expect(ui.project().tracks[0].pan).toBe(0.02)
+  })
+  it('holds a lane’s fader still while its volume line plays it, says why, and leaves the pan knob free', () => {
+    // Arrange
+    const ui = mount(-3, [{ frame: 0, value: -12 }])
+    const zone = ui.strip.parentElement!
+
+    // Act
+    pointer(zone, 'pointerdown', 100)
+    pointer(zone, 'pointermove', 120)
+    pointer(zone, 'pointerup', 120)
+    fireEvent.dblClick(ui.header.parentElement!)
+
+    // Assert
+    expect(ui.command).not.toHaveBeenCalled()
+    expect(ui.header).toBeDisabled()
+    expect(readout(ui.header)).toBe('Follows its volume line')
+    expect(ui.header.parentElement).toHaveAttribute(
+      'title',
+      'This lane follows its volume line. Clear the line to use the fader.',
+    )
+    expect(screen.getAllByText('Line')).toHaveLength(2)
+    for (const knob of screen.getAllByRole('slider', { name: 'Keys pan' }))
+      expect(knob).toBeEnabled()
+  })
+
+  it('lets go of a moving fader when a volume line arrives under it, as an undo can bring one', () => {
+    // Arrange
+    const ui = mount()
+    const zone = ui.strip.parentElement!
+    pointer(zone, 'pointerdown', 100)
+    pointer(zone, 'pointermove', 110)
+
+    // Act
+    ui.setProject((current) =>
+      applyStudioCommand(
+        current,
+        {
+          type: 'set-lane-automation',
+          trackId: 'keys',
+          param: 'volume',
+          points: [{ frame: 0, value: -6 }],
+        },
+        { assets: [] },
+      ),
+    )
+    pointer(zone, 'pointerup', 110)
+
+    // Assert
+    expect(ui.command).not.toHaveBeenCalled()
+    expect(ui.log).toEqual(['preview keys {"gainDb":-18}', 'preview keys null'])
+    expect(ui.project().tracks[0].gainDb).toBe(0)
   })
 })

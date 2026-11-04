@@ -4,18 +4,18 @@ import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
-import { StudioLaneTake } from '../record/StudioLaneTake'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
+import { createStudioLineEditor } from './line-editor'
 import { createStudioPlayheadMotion } from './playhead-motion'
-import { studioSourcePresentation } from './source-presentation'
 import { StudioClipToolbar } from './StudioClipToolbar'
+import { StudioLineBar } from './StudioLineBar'
 import { StudioPhoneClipNote } from './StudioPhoneClipNote'
 import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
-import { StudioTimelineClip } from './StudioTimelineClip'
-import { StudioTrackControls, StudioTrackName } from './StudioTrackControls'
+import type { StudioLaneView } from './StudioTimelineLane'
+import { StudioTimelineLane } from './StudioTimelineLane'
 import type { StudioRulerTick } from './timeline-geometry'
 import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
@@ -192,12 +192,50 @@ export function StudioTimeline(props: StudioTimelineProps) {
     ),
   )
   onCleanup(() => clearTimeout(statusTimer))
-  // Seven docked buttons stack in one column when the arrangement is tall
-  // enough (the sizes in .dock), and go two to a row when it is not.
-  const dockColumns = () =>
-    height() + floor() >= (props.tablet === true ? 7 * 44 + 4 : 7 * 30 + 26)
+  // One lane's volume or pan line is open at a time (line-editor.ts). A
+  // chosen clip, the lane going or another song closes it.
+  const lines = createStudioLineEditor()
+  const lineTrack = () => {
+    const open = lines.view()
+    return open ? tracks().get(open.trackId) : undefined
+  }
+  createEffect(
+    on(
+      () => props.selectedClipId,
+      (id) => {
+        if (id !== null) lines.close()
+      },
+      { defer: true },
+    ),
+  )
+  createEffect(() => {
+    if (lines.view() && !lineTrack()) untrack(lines.close)
+  })
+  createEffect(on(projectId, () => lines.close(), { defer: true }))
+  const lane: StudioLaneView = {
+    assets,
+    clips,
+    scale,
+    scroll,
+    contentWidth,
+    timeWidth,
+    anySolo,
+    snap,
+    pointer,
+    resource,
+    lines,
+    status: showStatus,
+  }
+  // The docked buttons, zoom's three and the clip bar's four or the line
+  // bar's five, stack in one column when the arrangement is tall enough
+  // (the sizes in .dock), and go two to a row when it is not.
+  const dockColumns = () => {
+    const buttons = 3 + (lineTrack() ? 5 : 4)
+    return height() + floor() >=
+      (props.tablet === true ? buttons * 44 + 4 : buttons * 32 + 12)
       ? 1
       : 2
+  }
   const measure = () => {
     setWidth(viewport.clientWidth)
     setGutter(viewport.offsetWidth - viewport.clientWidth)
@@ -381,6 +419,29 @@ export function StudioTimeline(props: StudioTimelineProps) {
     </Show>
   )
 
+  // The open line's bar takes the clip bar's place: opening a line lets go of the clip.
+  const lineBar = (inDock: boolean) => (
+    <Show when={(inDock || props.drawerOpen !== true) && lineTrack()}>
+      {(track) => (
+        <StudioLineBar
+          track={track()}
+          editor={lines}
+          color={studioTrackColor(
+            studioTrackHue(track(), trackIds().indexOf(track().id)),
+          )}
+          playheadFrame={props.playheadFrame}
+          writable={props.writable}
+          phone={props.phone}
+          left={headerWidth() + 12}
+          bottom={floor() + 12}
+          docked={inDock}
+          onCommand={props.onCommand}
+          onStatus={showStatus}
+        />
+      )}
+    </Show>
+  )
+
   return (
     <div
       class={styles.timeline}
@@ -503,112 +564,16 @@ export function StudioTimeline(props: StudioTimelineProps) {
             />
           </div>
           <For each={trackIds()}>
-            {(id, index) => {
-              const track = () => tracks().get(id)!
-              const lane = () => laneClips().get(id) ?? []
-              const color = createMemo(() =>
-                studioTrackColor(studioTrackHue(track(), index())),
-              )
-              const source = () =>
-                studioSourcePresentation(assets().get(lane()[0]?.assetId))
-              const clipIds = createMemo(
-                () => lane().map((clip) => clip.id),
-                [],
-                {
-                  equals: (before, after) =>
-                    before.length === after.length &&
-                    before.every((clipId, at) => clipId === after[at]),
-                },
-              )
-              return (
-                <div
-                  class={styles.lane}
-                  data-track-id={id}
-                  data-studio-track={id}
-                  data-selected={props.selectedTrackId === id ? '' : undefined}
-                  data-silent={
-                    track().mute || (anySolo() && !track().solo)
-                      ? ''
-                      : undefined
-                  }
-                  style={{ '--studio-track': color() }}
-                >
-                  <div class={styles.trackHeader}>
-                    <Show
-                      when={!props.phone}
-                      fallback={
-                        <StudioTrackName
-                          id={id}
-                          name={track().name}
-                          onDetails={props.onTrackDetails}
-                        />
-                      }
-                    >
-                      <StudioTrackControls
-                        track={track()}
-                        writable={props.writable}
-                        tablet={props.tablet === true}
-                        soloedOut={anySolo() && !track().solo}
-                        onCommand={props.onCommand}
-                        identity={
-                          <StudioTrackName
-                            id={id}
-                            name={track().name}
-                            source={source().label}
-                            onDetails={props.onTrackDetails}
-                          />
-                        }
-                      />
-                    </Show>
-                  </div>
-                  <div
-                    class={styles.laneAudio}
-                    data-studio-lane-audio=""
-                    onClick={(event) => {
-                      if (event.target !== event.currentTarget) return
-                      props.onSelectClip(null)
-                      props.onSelectTrack?.(id)
-                    }}
-                  >
-                    <For each={clipIds()}>
-                      {(clipId) => {
-                        const clip = () => clips().get(clipId)!
-                        return (
-                          <StudioTimelineClip
-                            clip={clip()}
-                            asset={assets().get(clip().assetId)}
-                            keyboardPreview={props.keyboardPreviewClip}
-                            trackName={track().name}
-                            selected={props.selectedClipId === clipId}
-                            writable={props.writable}
-                            phone={props.phone}
-                            tablet={props.tablet === true}
-                            scale={scale()}
-                            scroll={scroll()}
-                            contentWidth={contentWidth()}
-                            color={color()}
-                            pointer={pointer}
-                            resource={resource()}
-                            onSelect={() => props.onSelectClip(clipId)}
-                            onDetails={() => props.onClipDetails(clipId)}
-                          />
-                        )
-                      }}
-                    </For>
-                    <Show when={props.record?.trackId === id && props.record}>
-                      {(record) => (
-                        <StudioLaneTake
-                          {...record()}
-                          scale={scale()}
-                          scroll={scroll()}
-                          contentWidth={contentWidth()}
-                        />
-                      )}
-                    </Show>
-                  </div>
-                </div>
-              )
-            }}
+            {(id, index) => (
+              <StudioTimelineLane
+                id={id}
+                index={index()}
+                track={tracks().get(id)!}
+                clips={laneClips().get(id) ?? []}
+                timeline={props}
+                view={lane}
+              />
+            )}
           </For>
           <Show when={props.record?.trackId === null && props.record}>
             {(record) => (
@@ -742,6 +707,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
               })}
             </Show>
             {clipBar(false)}
+            {lineBar(false)}
           </>
         }
       >
@@ -753,6 +719,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         >
           {zoomControls()}
           {clipBar(true)}
+          {lineBar(true)}
         </div>
       </Show>
       <p

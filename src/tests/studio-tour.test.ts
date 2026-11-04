@@ -83,6 +83,7 @@ describe('Studio tour selection', () => {
       'snap',
       'timeline',
       'track-controls',
+      'lines',
       'mix',
       'history',
       'transport',
