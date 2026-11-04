@@ -123,6 +123,15 @@ describe('the explorer, a tab per season', () => {
     expect(document.querySelector('#graph .prior-lbl')?.textContent).toBe(
       'Season 1',
     )
+    // the Season 1 column clears the lane labels, which reach about 155px
+    // in, and its caption is centred over it
+    const lefts = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '#graph .node.prior, #graph .prior-lbl',
+      ),
+    ).map((d) => parseFloat(d.style.left))
+    expect(new Set(lefts).size).toBe(1)
+    expect(lefts[0] - 15).toBeGreaterThan(165)
     expect(
       Array.from(document.querySelectorAll('#graph .arc span')).map(
         (a) => a.textContent,

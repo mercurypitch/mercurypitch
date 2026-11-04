@@ -99,7 +99,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // with the lesson menu and the next-lesson card (131 before them); the
   // renderer is the same dynamic import as Lesson 1's.
   // Raised to 168 for the seasons: 168,139 bytes on main before them,
-  // 171,675 with them, against 171,008 at 167. None of it is Season 2's data, which
+  // 171,657 with them, against 171,008 at 167. None of it is Season 2's data, which
   // loads only when the explorer's Season 2 tab opens (the forbidden list
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
@@ -176,8 +176,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // line, on every lesson page, in the chunks Lesson 3 loads them in.
   // Lesson 11's page shell adds its own entry, with its page, minutes and
   // practice link, and its drafts line: 235 bytes more, which 133 holds.
-  // Raised to 137 for the seasons: 135,744 bytes on main before them,
-  // 139,280 with them, against 139,264 at 136. None of it is Season 2's data, which
+  // Raised to 137 for the seasons: 135,744 bytes on main before them, 139,262
+  // with them (136 would leave 2 bytes). None of it is Season 2's data, which
   // loads only when the explorer's Season 2 tab opens (the forbidden list
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
@@ -201,7 +201,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // The 1,238 are the kit's plan for the holds' lengths, the Listen phase a
   // page passes in, and Lesson 5's plan over them.
   // Raised to 142 for the seasons: 141,020 bytes on main before them,
-  // 144,556 with them, against 144,384 at 141. None of it is Season 2's data, which
+  // 144,538 with them, against 144,384 at 141. None of it is Season 2's data, which
   // loads only when the explorer's Season 2 tab opens (the forbidden list
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
@@ -235,7 +235,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // them, 133,496 with them, against 133,120 at 130. The 440 are the
   // episode, toast and films modules in chunks of their own, as on Lesson 5.
   // Raised to 135 for the seasons: 134,054 bytes on main before them,
-  // 137,590 with them, against 137,216 at 134. None of it is Season 2's data, which
+  // 137,572 with them, against 137,216 at 134. None of it is Season 2's data, which
   // loads only when the explorer's Season 2 tab opens (the forbidden list
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
@@ -309,7 +309,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // entry and drafts line, on every lesson page. Lesson 11's page shell adds
   // its own entry and drafts line: 242 bytes more, which 111 holds.
   // Raised to 114 for the seasons: 112,971 bytes on main before them,
-  // 116,507 with them, against 115,712 at 113. None of it is Season 2's data, which
+  // 116,489 with them, against 115,712 at 113. None of it is Season 2's data, which
   // loads only when the explorer's Season 2 tab opens (the forbidden list
   // below): it is the kit's code for seasons, the explorer's tabs and its
   // column of the season before, a close per season that follows the
