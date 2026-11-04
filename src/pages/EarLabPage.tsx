@@ -14,8 +14,9 @@
 //
 // On a phone build with the Ear Lab with Merc (EAR_LAB_WITH_MERC) the
 // bench is the native tab instead (features/ear-lab/merc/MercBench.tsx),
-// with the Ear rooms as its own row, and every drill opens in the native
-// room (EarStage.tsx). Both are one lazy chunk behind the switch.
+// with the Ear rooms as its own row, every drill opens in the native
+// room (EarStage.tsx), and the Ear Report is drawn in the room's light
+// (merc/MercReport.tsx). All are one lazy chunk behind the switch.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
@@ -86,6 +87,20 @@ const MercBench: Component<MercBenchProps> = EAR_LAB_WITH_MERC
   ? lazy(async () =>
       import('@/features/ear-lab/merc/entry').then((module) => ({
         default: module.MercBench,
+      })),
+    )
+  : () => null
+
+interface MercReportProps {
+  onBack: () => void
+  onNavigate: (view: EarLabView) => void
+}
+
+/** The Ear Report in the room's light, on the same build and chunk. */
+const MercReport: Component<MercReportProps> = EAR_LAB_WITH_MERC
+  ? lazy(async () =>
+      import('@/features/ear-lab/merc/entry').then((module) => ({
+        default: module.MercReport,
       })),
     )
   : () => null
@@ -229,7 +244,11 @@ export function EarLabPage(): JSX.Element {
           <FieldBookView onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
-          <EarReport onBack={back} />
+          {EAR_LAB_WITH_MERC ? (
+            <MercReport onBack={back} onNavigate={setView} />
+          ) : (
+            <EarReport onBack={back} />
+          )}
         </Show>
       </EarRoomShell>
     </div>

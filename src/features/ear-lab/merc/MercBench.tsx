@@ -48,6 +48,7 @@ import { HelpSheet } from './Sheets'
 import { drillName, STATION_ORDER, stationCast, stationInstruments, stationReading, stationTitle, wildSongs, } from './stations'
 import { StationSheet } from './StationSheet'
 import { mercStill } from './stills'
+import { leaveBench, returnToBench } from './tab-scroll'
 import { TodayDone } from './TodayDone'
 
 function segmentLength(segment: SprintSegment): string {
@@ -74,7 +75,10 @@ export function MercBench(props: MercBenchProps): JSX.Element {
   const [dayDone, setDayDone] = createSignal(returning?.todayDone === true)
   const [help, setHelp] = createSignal(false)
   let todayCard: HTMLElement | undefined
+  let benchRoot: HTMLDivElement | undefined
   onMount(() => {
+    // Back from the Ear Report: where the bench stood when it opened it.
+    returnToBench(benchRoot)
     if (returning?.origin.kind === 'today' && !dayDone()) {
       todayCard?.scrollIntoView({ block: 'center' })
     }
@@ -95,6 +99,13 @@ export function MercBench(props: MercBenchProps): JSX.Element {
       }),
     )
   })
+
+  /** The Ear Report, from its row or the day's close; the bench keeps
+   *  its place to come back to (tab-scroll.ts). */
+  const openReport = (): void => {
+    leaveBench(benchRoot)
+    props.onNavigate('report')
+  }
 
   // ── What the bench reads ──────────────────────────────────────
   const plan = createMemo(() => todaysSprint())
@@ -216,7 +227,12 @@ export function MercBench(props: MercBenchProps): JSX.Element {
   }
 
   return (
-    <div class={styles.bench} data-testid="merc-bench" id="ear-lab-panel">
+    <div
+      ref={benchRoot}
+      class={styles.bench}
+      data-testid="merc-bench"
+      id="ear-lab-panel"
+    >
       <div class={styles.column}>
         <div class={styles.hero}>
           <img
@@ -565,7 +581,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
               type="button"
               class={styles.link}
               data-testid="merc-report"
-              onClick={() => props.onNavigate('report')}
+              onClick={openReport}
             >
               <span>
                 <b>Ear Report</b>
@@ -607,7 +623,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
               litAtOpen={openedLit}
               onReport={() => {
                 setDayDone(false)
-                props.onNavigate('report')
+                openReport()
               }}
               onClose={() => setDayDone(false)}
             />

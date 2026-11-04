@@ -13,13 +13,8 @@ import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { dateLabel } from './instruments'
 import styles from './ReadingTrace.module.css'
-
-export interface TracePoint {
-  at: number
-  value: number
-  /** A sealed calibration (brass) rather than practice (silver). */
-  sealed: boolean
-}
+import type { TracePoint } from './report-data'
+import { fitDomain } from './report-data'
 
 interface ReadingTraceProps {
   /** For the spoken summary: "Hairline threshold". */
@@ -44,25 +39,6 @@ const RIGHT = 540
 const TOP = 30
 const BOTTOM = 160
 const GRID_ROWS = [TOP, (TOP + BOTTOM) / 2, BOTTOM]
-
-/** Axis bounds that keep the trace off the frame: a fitted domain is
- *  padded by a twelfth on each side, and a flat trace gets a band
- *  around it so a single reading still has an axis to read. */
-export function fitDomain(
-  values: readonly number[],
-  fixed?: readonly [number, number],
-): [number, number] {
-  if (fixed) return [fixed[0], fixed[1]]
-  if (values.length === 0) return [0, 1]
-  const lo = Math.min(...values)
-  const hi = Math.max(...values)
-  if (hi === lo) {
-    const band = Math.max(Math.abs(lo) * 0.25, 1)
-    return [lo - band, hi + band]
-  }
-  const pad = (hi - lo) / 12
-  return [lo - pad, hi + pad]
-}
 
 export function ReadingTrace(props: ReadingTraceProps): JSX.Element {
   const sorted = createMemo(() => [...props.points].sort((a, b) => a.at - b.at))
