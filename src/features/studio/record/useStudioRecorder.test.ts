@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
   onChange: null as null | ((view: StudioRecorderView) => void),
   acquireMic: null as null | (() => Promise<{ stream: MediaStream }>),
+  roundTrip: null as
+    | null
+    | ((context: AudioContext, stream: MediaStream) => number),
   acquireFrom: vi.fn(),
   micListener: null as null | ((state: unknown) => void),
   indicator: null as null | (() => boolean),
@@ -25,9 +28,11 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
     acquireMic: () => Promise<{ stream: MediaStream }>
+    roundTrip: (context: AudioContext, stream: MediaStream) => number
   }) => {
     mocks.onChange = deps.onChange
     mocks.acquireMic = deps.acquireMic
+    mocks.roundTrip = deps.roundTrip
     mocks.recorder = {
       arm: vi.fn(() => Promise.resolve()),
       record: vi.fn(),
@@ -52,6 +57,9 @@ vi.mock('@/lib/mic-manager', () => ({
     acquire: vi.fn(),
     acquireFrom: mocks.acquireFrom,
     release: vi.fn(),
+    // The app's own input: the one its latency is measured on by default.
+    getResolvedDevice: () => 'app-in',
+    getPreferredDevice: () => 'app-in',
     subscribe: (listener: (state: unknown) => void) => {
       mocks.micListener = listener
       return () => undefined
@@ -76,6 +84,9 @@ vi.mock('@/lib/local-save-navigation-reason', () => ({
 
 const { describeStudioRecordError, studioNextTakeNumber, useStudioRecorder } =
   await import('./useStudioRecorder')
+const { setMicLatencyByDevice } = await import('@/stores/mic-latency-store')
+const { setMicLatencyPathByKey } =
+  await import('@/stores/mic-latency-path-store')
 const { studioTakeRunning } = await import('./take-running')
 const { readStudioRecordSettings } =
   await import('@/lib/studio/record/record-settings')
@@ -471,6 +482,30 @@ describe('useStudioRecorder input', () => {
     hook.chooseInput(null, 'Default input')
     expect(hook.inputMissing()).toBe(false)
     expect(readStudioRecordSettings().inputLabel).toBeNull()
+    dispose()
+  })
+
+  it("takes off the round trip measured on the input it records from, not the app's", () => {
+    const { hook, dispose } = mount()
+    // 40 ms on the app's input, on a 30 ms output path; 120 ms on the
+    // Studio's, on a 50 ms one. The Studio's clock buffers 80 ms.
+    setMicLatencyByDevice({ 'app-in': 40, 'usb-2': 120 })
+    setMicLatencyPathByKey({ 'app-in': 30, 'usb-2': 50 })
+    const context = { baseLatency: 0.02, outputLatency: 0.06 }
+    const stream = {
+      getAudioTracks: () => [{ getSettings: () => ({ deviceId: 'usb-2' }) }],
+    }
+
+    const seconds = mocks.roundTrip!(
+      context as unknown as AudioContext,
+      stream as unknown as MediaStream,
+    )
+
+    // 120 ms, and the 30 ms more the Studio's clock buffers than the one measured on.
+    expect(seconds).toBeCloseTo(0.15, 6)
+    expect(hook.roundTrip()).toMatchObject({ source: 'measured' })
+    setMicLatencyByDevice({})
+    setMicLatencyPathByKey({})
     dispose()
   })
 

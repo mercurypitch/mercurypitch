@@ -39,8 +39,8 @@ import { studioTakeClip } from '@/lib/studio/record/take-passes'
 import type { StudioTakeCut } from '@/lib/studio/record/take-plan'
 import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
 import { studioRoundTrip } from '@/lib/studio/record/take-timing'
-import { micLatencyPathMs } from '@/stores/mic-latency-path-store'
-import { micLatencyMs } from '@/stores/mic-latency-store'
+import { micLatencyPathMsForDevice } from '@/stores/mic-latency-path-store'
+import { micLatencyMsForDevice } from '@/stores/mic-latency-store'
 import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
@@ -165,11 +165,20 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
 
   function measureRoundTrip(context: AudioContext, stream: MediaStream) {
     const reported = stream.getAudioTracks?.()[0]?.getSettings?.() as
-      | { latency?: number }
+      | { latency?: number; deviceId?: string }
       | undefined
+    // Measured on the input this take records from, which need not be the
+    // app's (MicManager.acquireFrom): as its track names it, else as asked.
+    const named = reported?.deviceId?.trim() ?? ''
+    const device =
+      named.length > 0
+        ? named
+        : inputMissing()
+          ? null
+          : settings().inputDeviceId
     const trip = studioRoundTrip({
-      measuredMs: micLatencyMs(),
-      measuredPathMs: micLatencyPathMs(),
+      measuredMs: micLatencyMsForDevice(device),
+      measuredPathMs: micLatencyPathMsForDevice(device),
       pathSeconds: audioOutputPathSeconds(context),
       inputSeconds: reported?.latency,
       offsetMs: settings().offsetMs,

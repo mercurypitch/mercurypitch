@@ -122,8 +122,13 @@ const routeKey = (route: LatencyRoute, deviceKey: string): string =>
  * beside each measurement (the phone's day of it, latency-measured.ts).
  */
 export function currentLatencyKey(): string {
+  return latencyKeyForDevice(currentMicDeviceKey())
+}
+
+/** The key `deviceId`'s measurement is kept under on the route the sound takes now (null for the default). */
+export function latencyKeyForDevice(deviceId: string | null): string {
   const route = currentLatencyRoute()
-  const deviceKey = currentMicDeviceKey()
+  const deviceKey = deviceId ?? DEFAULT_DEVICE_KEY
   return route === null ? deviceKey : routeKey(route, deviceKey)
 }
 
