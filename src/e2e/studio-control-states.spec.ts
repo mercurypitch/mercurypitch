@@ -1,5 +1,5 @@
-// Studio control states — the Sound role list draws the app's chevron in both themes.
-import { expect, type Page, test } from '@playwright/test'
+// Studio control states — the Sound role list draws the app's chevron, and a pressed Repeat stays pressed under the pointer and differs from an unpressed one at 3:1 in both themes.
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
 const THEMES = ['light', 'dark'] as const
@@ -45,6 +45,29 @@ async function contrast(page: Page, a: string, b: string): Promise<number> {
   )
 }
 
+/** The button's own fill over its host's, as painted: an opaque `rgb()`. */
+async function paintedFill(button: Locator): Promise<string> {
+  return button.evaluate((element) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 1
+    const context = canvas.getContext('2d', { willReadFrequently: true })!
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, 1, 1)
+    const layers: string[] = []
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const fill = getComputedStyle(node).backgroundColor
+      layers.unshift(fill)
+      if (/^rgb\(/.test(fill)) break
+    }
+    for (const fill of layers) {
+      context.fillStyle = fill
+      context.fillRect(0, 0, 1, 1)
+    }
+    const [r, g, b] = context.getImageData(0, 0, 1, 1).data
+    return `rgb(${r}, ${g}, ${b})`
+  })
+}
+
 for (const theme of THEMES) {
   test(`Studio Sound role list draws the app's chevron in the ${theme} theme`, async ({
     page,
@@ -70,5 +93,41 @@ for (const theme of THEMES) {
     // The chevron sits 9-19 px from the right: the text keeps clear of it.
     expect(style.paddingRight).toBeGreaterThanOrEqual(24)
     expect(await contrast(page, style.text, style.fill)).toBeGreaterThan(7)
+  })
+
+  test(`Studio Repeat stays pressed under the pointer and reads as pressed in the ${theme} theme`, async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await openInTheme(page, theme)
+    const repeat = studioRegion(page).getByRole('button', {
+      name: 'Repeat song',
+      exact: true,
+    })
+    await page.mouse.move(2, 2)
+    const offFill = await paintedFill(repeat)
+    await repeat.click()
+    await expect(repeat).toHaveAttribute('aria-pressed', 'true')
+    await page.mouse.move(2, 2)
+    await expect.poll(() => paintedFill(repeat)).not.toBe(offFill)
+    const onFill = await paintedFill(repeat)
+    // The fill is the state's mark: 3:1 from the unpressed look (WCAG 1.4.11).
+    expect(await contrast(page, onFill, offFill)).toBeGreaterThanOrEqual(3)
+
+    // Hover may tint a pressed button; it never makes it look unpressed.
+    await repeat.hover()
+    await expect
+      .poll(async () => contrast(page, await paintedFill(repeat), offFill))
+      .toBeGreaterThanOrEqual(3)
+    const hoverOff = await repeat.evaluate(
+      (element) => getComputedStyle(element).color,
+    )
+    await repeat.click()
+    await expect(repeat).toHaveAttribute('aria-pressed', 'false')
+    await expect
+      .poll(async () =>
+        repeat.evaluate((element) => getComputedStyle(element).color),
+      )
+      .not.toBe(hoverOff)
   })
 }
