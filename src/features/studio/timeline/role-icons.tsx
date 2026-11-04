@@ -63,12 +63,16 @@ const ROLE_DRAWINGS: Readonly<Record<TrackRole, () => JSX.Element>> = {
       <path d="M10.3 16.2h3.4M10.3 18.4h3.4" />
     </g>
   ),
+  // A bass is told from the electric guitar by its length: its neck and
+  // head run half as long again, on a smaller offset body whose upper horn
+  // is the longer, with four tuning pegs in two pairs set well apart and a
+  // pickup that stays clear of the outline at 28 px.
   bass: () => (
     <g transform={TILT}>
-      <path d="M9.7 13.7c-1.2-.6-2.3.3-2.1 1.7.2 1.5-.7 2.2-.7 3.6 0 2 1.9 2.9 5.1 2.9s5.1-.9 5.1-2.9c0-1.4-.9-2.1-.7-3.6.2-1.4-.9-2.3-2.1-1.7-.8.4-1.2 1-2.3 1s-1.5-.6-2.3-1Z" />
-      <path d="M11.3 14.6V3.2M12.7 14.6V3.2M11.1 3.2 10.8.4h2.4l-.4 2.8" />
-      <path d="M9.4 1.3h1.5M9.4 2.5h1.5M13.1 1.3h1.5M13.1 2.5h1.5" />
-      <path d="M10.6 18.5h2.8" />
+      <path d="M11.2 16.65C10.6 15.8 9.7 14.9 8.8 14.8 8 14.7 7.6 15.8 8.1 16.9 8.7 18.1 7.4 19.1 7.5 20.7 7.6 22.6 9.5 23.7 12 23.7S16.4 22.6 16.5 20.7C16.6 19.3 15.5 18.4 15.9 17.3 16.1 16.3 15.8 15.5 15 15.6 14.2 15.7 13.4 16.1 12.8 16.65" />
+      <path d="M10.8 20.2h2.4" />
+      <path d="M11.2 16.65V5.2M12.8 16.65V5.2M11.2 5.2 11 0C11-1 11.4-1.5 12-1.5S13-1 13 0l-.2 5.2" />
+      <path stroke-width="1.5" d="M11 .9H8.8M11 3.9H8.8M13 .9h2.2M13 3.9h2.2" />
     </g>
   ),
   piano: () => (
