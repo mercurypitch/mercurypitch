@@ -228,6 +228,24 @@ describe("Lesson 11's chart, Step 2's slide", () => {
     },
   )
 
+  it('draws the slide as far as it stands, and nothing of it at the start', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.show(2)
+
+    // Act
+    for (const k of Array<string>(17).fill('ArrowRight')) key(k)
+    const scrubbed = stepsToy().scene.lines.map((l) => l.points)
+    key('Home')
+
+    // Assert
+    expect(scrubbed).toHaveLength(1)
+    expect(scrubbed[0][0]).toMatchObject({ t: 0, midi: N.E3 })
+    expect(scrubbed[0][scrubbed[0].length - 1].t).toBeCloseTo(1.7, 6)
+    expect(stepsToy().scene.lines).toEqual([])
+    expect(stepsToy().scene.seams).toHaveLength(1)
+  })
+
   it('draws the seam across the plot, labelled the switch', () => {
     // Arrange
     const deck = mountSteps()
@@ -424,6 +442,20 @@ describe("Lesson 11's chart, Step 5's figure", () => {
     for (const r of hidden)
       expect(r.points.every((p) => p.level === 0.5)).toBe(true)
     expect(said()).toBe('Hide the switch: the same notes in one even sound.')
+  })
+
+  it('draws nothing of the figure until it sounds, with motion on', () => {
+    // Arrange
+    motion.reduced = false
+    const deck = mountSteps()
+    deck.show(5)
+
+    // Act
+    btn('[data-style="flip"]').click()
+
+    // Assert
+    expect(btn('[data-style="flip"]').classList.contains('is-on')).toBe(true)
+    expect(stepsToy().scene.lines).toEqual([])
   })
 
   it('draws the figure as seven short lines, thick below the seam and thin above it', async () => {

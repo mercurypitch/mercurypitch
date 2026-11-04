@@ -185,6 +185,86 @@ export function mountRegistersToy(
 
   const sounding = (key: string): boolean => now !== null && now.o.key === key
 
+  /** Step 1: each gear's note, in its half, as far as it has sounded. */
+  function gearsScene(s: RangeScene): void {
+    chart.setSeconds(GEARS_SEC)
+    for (const g of ['lower', 'upper'] as const) {
+      if (gearT[g] <= 0) continue
+      const line = shifted(gearNote(voice, g === 'lower' ? 1 : 0), GEAR_AT[g])
+      s.lines.push(lineOf(drawn(line, GEAR_AT[g] + gearT[g]), sounding(g)))
+    }
+  }
+
+  /** Step 2: the slide across the full seam. */
+  function slideScene(s: RangeScene, full: RangeSeam): void {
+    chart.setSeconds(SIREN_UP)
+    s.seams = [full]
+    if (slideT > 0)
+      s.lines.push(lineOf(drawn(upHalf(voice), slideT), sounding('slide')))
+  }
+
+  /** Step 3: three slides in three slots, the first two with their seams. */
+  function threeScene(s: RangeScene, full: RangeSeam): void {
+    chart.setSeconds(THREE_SLOT * 3)
+    s.slots = 3
+    const lines = threeSlides(voice)
+    lines.forEach((line, k) => {
+      if (threeT[k] <= 0) return
+      const at = THREE_SLOT * k
+      if (k === 0)
+        s.seams.push({
+          lo: full.lo,
+          hi: full.hi,
+          t0: at,
+          t1: at + THREE_SLOT,
+        })
+      if (k === 1) {
+        const lo = sirenFloor(voice) + 5
+        s.seams.push({ lo, hi: lo + JUMP, t0: at, t1: at + THREE_SLOT })
+      }
+      s.lines.push(
+        lineOf(drawn(shifted(line, at), at + threeT[k]), sounding(`three${k}`)),
+      )
+    })
+  }
+
+  /** Step 4: five slides, each in its slot over its narrower seam. */
+  function smootherScene(s: RangeScene): void {
+    chart.setSeconds(FIVE_SLOT * 5)
+    s.slots = 5
+    fiveT.forEach((t, k) => {
+      if (t <= 0) return
+      const at = FIVE_SLOT * k
+      s.seams.push({ ...smootherSeam(voice, k), t0: at, t1: at + FIVE_SLOT })
+      const line = shifted(smootherSlide(voice, k), at + FIVE_PAD)
+      s.lines.push(
+        lineOf(
+          drawn(line, at + FIVE_PAD + t),
+          (sounding('five') && t < SLIDE_SEC) || sounding(`one${k}`),
+        ),
+      )
+    })
+  }
+
+  /** Step 5: the figure, the way last played, across the full seam. */
+  function stylesScene(s: RangeScene, full: RangeSeam): void {
+    chart.setSeconds(FIGURE_SEC)
+    s.seams = [full]
+    if (style === null || styleT <= 0) return
+    const points = figureDrawn(voice, style, styleT)
+    s.lines.push({ points, color: RANGE_COLOR.target, head: null })
+  }
+
+  const scenes: Readonly<
+    Record<ToyState, (s: RangeScene, full: RangeSeam) => void>
+  > = {
+    gears: gearsScene,
+    slide: slideScene,
+    three: threeScene,
+    smoother: smootherScene,
+    styles: stylesScene,
+  }
+
   function build(): void {
     const s = chart.scene
     s.caption = CAPTION
@@ -196,66 +276,7 @@ export function mountRegistersToy(
       hi: flipFrom(voice) + JUMP,
       label: SWITCH_LABEL,
     }
-    if (state === 'gears') {
-      chart.setSeconds(GEARS_SEC)
-      for (const g of ['lower', 'upper'] as const) {
-        if (gearT[g] <= 0) continue
-        const line = shifted(gearNote(voice, g === 'lower' ? 1 : 0), GEAR_AT[g])
-        s.lines.push(lineOf(drawn(line, GEAR_AT[g] + gearT[g]), sounding(g)))
-      }
-    } else if (state === 'slide') {
-      chart.setSeconds(SIREN_UP)
-      s.seams = [full]
-      if (slideT > 0)
-        s.lines.push(lineOf(drawn(upHalf(voice), slideT), sounding('slide')))
-    } else if (state === 'three') {
-      chart.setSeconds(THREE_SLOT * 3)
-      s.slots = 3
-      const lines = threeSlides(voice)
-      lines.forEach((line, k) => {
-        if (threeT[k] <= 0) return
-        const at = THREE_SLOT * k
-        if (k === 0)
-          s.seams.push({
-            lo: full.lo,
-            hi: full.hi,
-            t0: at,
-            t1: at + THREE_SLOT,
-          })
-        if (k === 1) {
-          const lo = sirenFloor(voice) + 5
-          s.seams.push({ lo, hi: lo + JUMP, t0: at, t1: at + THREE_SLOT })
-        }
-        s.lines.push(
-          lineOf(
-            drawn(shifted(line, at), at + threeT[k]),
-            sounding(`three${k}`),
-          ),
-        )
-      })
-    } else if (state === 'smoother') {
-      chart.setSeconds(FIVE_SLOT * 5)
-      s.slots = 5
-      fiveT.forEach((t, k) => {
-        if (t <= 0) return
-        const at = FIVE_SLOT * k
-        s.seams.push({ ...smootherSeam(voice, k), t0: at, t1: at + FIVE_SLOT })
-        const line = shifted(smootherSlide(voice, k), at + FIVE_PAD)
-        s.lines.push(
-          lineOf(
-            drawn(line, at + FIVE_PAD + t),
-            (sounding('five') && t < SLIDE_SEC) || sounding(`one${k}`),
-          ),
-        )
-      })
-    } else {
-      chart.setSeconds(FIGURE_SEC)
-      s.seams = [full]
-      if (style !== null && styleT > 0) {
-        const points = figureDrawn(voice, style, styleT)
-        s.lines.push({ points, color: RANGE_COLOR.target, head: null })
-      }
-    }
+    scenes[state](s, full)
     syncGauge()
     syncScrub()
     viz.setAttribute('aria-label', summaryOf(state, voice))
@@ -514,10 +535,10 @@ export function mountRegistersToy(
     )
   }
 
-  // Step 5: one figure, two ways
-  for (const b of styleBtns) {
+  /** Step 5: one figure, two ways, a button each. */
+  function bindStyle(b: HTMLButtonElement): void {
     const way = b.dataset.style
-    if (way !== 'flip' && way !== 'hide') continue
+    if (way !== 'flip' && way !== 'hide') return
     b.addEventListener('click', () =>
       press(way, () => {
         style = way
@@ -534,11 +555,12 @@ export function mountRegistersToy(
       }),
     )
   }
+  styleBtns.forEach(bindStyle)
 
-  // Slow, one a state: a play of that state carries on at the new speed
-  for (const b of slowBtns) {
+  /** Slow, one a state: a play of that state carries on at the new speed. */
+  function bindSlow(b: HTMLButtonElement): void {
     const s = STATES.find((x) => x === b.dataset.slow)
-    if (s === undefined || s === 'gears') continue
+    if (s === undefined || s === 'gears') return
     b.addEventListener('click', () => {
       slow[s] = !slow[s]
       b.setAttribute('aria-pressed', String(slow[s]))
@@ -549,6 +571,7 @@ export function mountRegistersToy(
       if (t < lineLength(p.o.line)) start({ ...p.o, from: t })
     })
   }
+  slowBtns.forEach(bindSlow)
 
   // ------------------------------------------------------------ the voice
 
