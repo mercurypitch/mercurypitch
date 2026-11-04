@@ -2,11 +2,13 @@
 // The Karaoke room's stage on a connected TV: the native wiring
 // ============================================================
 //
-// A proof of concept (ios/App/App/LyricsWindow/TVStage.swift). The rules
-// that are easy to lose and fail silently: the plugin answers the names the
-// JavaScript side calls and sends the event it listens to; the TV gets a
-// window only on an external display's scene and only with the switch on,
-// which starts off, so a store build mirrors; the window holds a plain web
+// ios/App/App/LyricsWindow/TVStage.swift, switched by the TV chooser in
+// every build (src/shell/tv/tv-choice.ts) and by a test build's Developer
+// screen. The rules that are easy to lose and fail silently: the plugin
+// answers the names the JavaScript side calls and sends the event it
+// listens to; the TV gets a window only on an external display's scene and
+// only with the switch on, which starts off, so a TV mirrors until a choice
+// is made; the window holds a plain web
 // view with no bridge of its own and no plugins, showing the stage page from
 // the app's bundle through the bridge's own scheme handler, and none where
 // the bundle has no page or it does not load, so the TV mirrors; a message the
@@ -100,7 +102,7 @@ describe('the plugin', () => {
     expect(page).toContain('appendingPathComponent("stage.html")')
   })
 
-  it('finds no page where the bundle has none, as a store build has not', () => {
+  it('finds no page where the bundle has none, so the TV mirrors', () => {
     const page = swiftFunction(PLUGIN, 'stagePage')
     expect(page).toMatch(
       /let file = bridge\.config\.appLocation\.appendingPathComponent\("stage\.html"\)\s*guard FileManager\.default\.fileExists\(atPath: file\.path\) else \{\s*return nil/u,

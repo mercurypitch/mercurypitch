@@ -61,7 +61,9 @@ const storeBinary = args.includes(STORE_BINARY_FLAG)
  * (KaraokeAudioPanel.tsx), the Cloud subscription's timings
  * (SubscriptionTimingPanel.tsx) and the AirPlay sound check
  * (AirPlayCheckPanel.tsx, and airplay-check.ts by the line each tap
- * writes). Nothing the web imports reaches any of them. And the audio census the native entry installs beside them
+ * writes), and the TV section: its two switches and the stage picture's
+ * Earlier and Later (TvLyricsPanel.tsx, `dev-tv-lyrics` and the
+ * `dev-tv-stage-` ids). Nothing the web imports reaches any of them. And the audio census the native entry installs beside them
  * (apps/mercurypitch/src/shell/audio-census.ts), by the event it records
  * for each mic track, and the subscription's timer
  * (apps/mercurypitch/src/shell/subscription-timing.ts), by the line it
@@ -89,11 +91,21 @@ const FINGERPRINTS = [
   'mic-opened',
   'dev-cloud-timings',
   'dev-airplay-check',
+  'dev-tv-lyrics',
+  'dev-tv-stage-',
   '[airplay check] ',
   '[audio report ',
   '[subscription] ',
   'production server',
 ]
+
+// NOT A FINGERPRINT, ever: the TV chooser and the stage page. Every build
+// asks what a connected TV shows and carries the page the stage is drawn
+// on, the store build included (apps/mercurypitch/src/shell/tv/,
+// apps/mercurypitch/stage.html), so a needle that matched either would
+// fail every store binary. The chooser's ids are `tv-choice` and
+// `tv-forget`, the Developer screen's `dev-tv-`; the test reads the
+// chooser's and the page's real sources and holds this to it.
 
 /**
  * The floating developer console, checked in a store binary only: its panel
