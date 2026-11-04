@@ -5,15 +5,19 @@
 // The line goes through the recorder's own score type and writers, and is
 // read back with the importers a reopened file goes through.
 
-import { describe, expect, it } from 'vitest'
+import { createRoot } from 'solid-js'
+import { describe, expect, it, vi } from 'vitest'
+import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { exportRecordingGuitarPro, exportRecordingMidi, } from '@/lib/guitar/recording-export'
 import { isPitchedMidiSongTrack, parseMidiSong } from '@/lib/midi-song'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
 import type { TranscribedNote } from '@/lib/transcription/stem-transcription'
-import { practiceScoreFromMeasuredReference } from './measured-reference-export'
+import { MEASURED_EXPORT_BPM, practiceScoreFromMeasuredReference, } from './measured-reference-export'
 import type { GuitarNightReference } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
+import { createSavedScoreGuitarNightReferencePort } from './saved-score-reference-port'
+import { useGuitarNightScoreRoomController } from './useGuitarNightScoreRoomController'
 
 const NOW = new Date('2026-11-03T12:00:00.000Z')
 
@@ -40,15 +44,40 @@ function bassLine(notes: TranscribedNote[]): GuitarNightReference {
   })
 }
 
-/** What a reopened Guitar Pro file holds, through the room's own importer. */
-async function reopenGuitarPro(bytes: Uint8Array) {
-  // jsdom's File has no arrayBuffer(); the importer only asks for that.
-  const file = {
-    name: 'line.gp',
+/** A file as the room's picker hands it over. */
+function pickedFile(name: string, bytes: Uint8Array): File {
+  // jsdom's File has no arrayBuffer(); the importers only ask for that.
+  return {
+    name,
     arrayBuffer: async () => bytes.slice().buffer,
   } as unknown as File
-  const { song } = await parseGuitarProFile(file)
+}
+
+/** What a reopened Guitar Pro file holds, through the room's own importer. */
+async function reopenGuitarPro(bytes: Uint8Array) {
+  const { song } = await parseGuitarProFile(pickedFile('line.gp', bytes))
   return song.tracks.find(isPitchedMidiSongTrack)?.notes ?? []
+}
+
+/** Where a reopened note starts, in the seconds the line was heard in. */
+const secondsAt = (beat: number): number => (beat * 60) / MEASURED_EXPORT_BPM
+
+/** Half a thirty-second note at the export tempo: the writer's rounding. */
+const HALF_GRID_SECONDS = 60 / MEASURED_EXPORT_BPM / 16
+
+/** A band the room never starts: these tests only read the room's tempo. */
+function idleBand(): GuitarRoomBand {
+  return {
+    start: vi.fn(),
+    activate: vi.fn(),
+    setMasterLevel: vi.fn(),
+    setElectricAmpParameters: vi.fn(),
+    setMelodyChannelLevel: vi.fn(),
+    setPercussionTrackAudible: vi.fn(),
+    stop: vi.fn(),
+    getAudioGraph: vi.fn(),
+    dispose: vi.fn(async () => undefined),
+  } as unknown as GuitarRoomBand
 }
 
 describe('practiceScoreFromMeasuredReference', () => {
@@ -64,8 +93,8 @@ describe('practiceScoreFromMeasuredReference', () => {
       title: 'Nothing in the Dark Bass line',
       createdAt: '2026-11-03T12:00:00.000Z',
       updatedAt: '2026-11-03T12:00:00.000Z',
-      // Four beats a second: Guitar Pro's thirty-second grid is 31 ms.
-      bpm: 240,
+      // The score room's fastest tempo, so the file plays at its own.
+      bpm: 220,
       timeSignature: [4, 4],
       grid: 'display',
       instrument: 'bass',
@@ -79,8 +108,8 @@ describe('practiceScoreFromMeasuredReference', () => {
           id: reference.notes[0].id,
           evidenceId: reference.notes[0].id,
           midi: 28,
-          startBeat: 1,
-          endBeat: 3,
+          startBeat: expect.closeTo((0.25 * 220) / 60, 9),
+          endBeat: expect.closeTo((0.75 * 220) / 60, 9),
           string: 4,
           fret: 0,
         },
@@ -88,8 +117,8 @@ describe('practiceScoreFromMeasuredReference', () => {
           id: reference.notes[1].id,
           evidenceId: reference.notes[1].id,
           midi: 33,
-          startBeat: 4,
-          endBeat: 5,
+          startBeat: expect.closeTo(220 / 60, 9),
+          endBeat: expect.closeTo((1.25 * 220) / 60, 9),
           string: 3,
           fret: 0,
         },
@@ -156,7 +185,8 @@ describe('a measured line, written and opened again', () => {
         note(33, 0.5, 0.5),
         note(35, 1.25, 0.25),
         note(40, 2, 1),
-        // Across a bar line (bar 4 starts at 4 s): two tied notes, read as one.
+        // Across a bar line (bar 5 starts at 16 beats, 4.36 s): two tied
+        // notes, read as one.
         note(43, 3.5, 1),
       ]),
       'Song',
@@ -169,8 +199,15 @@ describe('a measured line, written and opened again', () => {
     )
 
     expect(reopened.map((each) => each.midi)).toEqual([28, 33, 35, 40, 43])
-    expect(reopened.map((each) => each.startBeat)).toEqual([0, 2, 5, 8, 14])
-    expect(reopened[4].duration).toBeCloseTo(4)
+    reopened.forEach((each, index) => {
+      const heard = [0, 0.5, 1.25, 2, 3.5][index]
+      expect(Math.abs(secondsAt(each.startBeat) - heard)).toBeLessThanOrEqual(
+        HALF_GRID_SECONDS,
+      )
+    })
+    expect(Math.abs(secondsAt(reopened[4].duration) - 1)).toBeLessThanOrEqual(
+      2 * HALF_GRID_SECONDS,
+    )
   })
 
   it('comes back from MIDI with the same notes', async () => {
@@ -179,12 +216,41 @@ describe('a measured line, written and opened again', () => {
 
     expect(notes.map((each) => each.midi)).toEqual([28, 33, 35, 40, 43])
   })
+
+  it.each([
+    ['Guitar Pro', 'line.gp', exportRecordingGuitarPro],
+    ['MIDI', 'line.mid', exportRecordingMidi],
+  ] as const)(
+    'plays in the score room at the tempo it was written at, from %s',
+    async (_format, name, write) => {
+      // The room's own way in: the file picked, saved to the song library,
+      // opened as a reference, and timed by the room.
+      const score = line()
+      const port = createSavedScoreGuitarNightReferencePort()
+      const summary = await port.importReference(
+        pickedFile(name, await write(score)),
+      )
+      const opened = port.openReference(summary.songId)
+      if (!opened.ok) throw new Error(opened.code)
+      expect(opened.reference.tempoBpm).toBe(score.bpm)
+
+      createRoot((dispose) => {
+        const room = useGuitarNightScoreRoomController({
+          reference: () => opened.reference,
+          createBand: idleBand,
+        })
+        expect(room.scoreTempo()).toBe(score.bpm)
+        expect(room.tempoBpm()).toBe(score.bpm)
+        dispose()
+      })
+    },
+  )
 })
 
 describe('a measured line the recorder could not have held', () => {
   it('writes attacks 50 ms apart on one string as Guitar Pro', async () => {
     // A bass's E string takes MIDI 28 and 29 alone. At 60 BPM the grid is
-    // 125 ms and these four attacks fell into two cells; at 240 it is 31 ms.
+    // 125 ms and these four attacks fell into two cells; at 220 it is 34 ms.
     const dense = practiceScoreFromMeasuredReference(
       bassLine([
         note(28, 0, 0.05),
@@ -214,7 +280,11 @@ describe('a measured line the recorder could not have held', () => {
     const reopened = await reopenGuitarPro(await exportRecordingGuitarPro(long))
     const song = parseMidiSong(await exportRecordingMidi(long))
 
-    expect(reopened.map((each) => each.startBeat)).toEqual([0, 2060])
+    expect(reopened).toHaveLength(2)
+    expect(secondsAt(reopened[0].startBeat)).toBe(0)
+    expect(
+      Math.abs(secondsAt(reopened[1].startBeat) - 515),
+    ).toBeLessThanOrEqual(HALF_GRID_SECONDS)
     expect(
       song?.tracks.find(isPitchedMidiSongTrack)?.notes.map((each) => each.midi),
     ).toEqual([28, 33])

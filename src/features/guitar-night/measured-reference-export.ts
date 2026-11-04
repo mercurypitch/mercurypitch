@@ -14,17 +14,22 @@ import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import type { GuitarNightReference } from './reference-port'
 
 /**
- * The tempo a measured line is written at: four beats a second.
+ * The tempo a measured line is written at: the score room's fastest, 220 BPM
+ * (`GUITAR_ROOM_BAND_MAX_TEMPO_BPM`), so the file plays there at its own
+ * tempo. The room holds every score to its band's range, and a line written
+ * at 240 BPM played 8 % slow.
  *
  * The line was heard in seconds and has no tempo of its own; the stage reads
  * it at one beat a second (`MEASURED_REFERENCE_TEMPO`). Guitar Pro rounds to
  * thirty-second notes of the score's tempo, 125 ms at 60 BPM, and real lines
  * play faster than that: the bass line read from Dance of Death's stem has
  * 335 attacks closer together, its guitar line 59, and the writer refused
- * both. At 240 BPM the grid is 31 ms and both write. MIDI keeps the same
+ * both. At 220 BPM the grid is 34 ms. The transcriber keeps no note shorter
+ * than 50 ms, so two attacks never share a cell; Dance of Death's closest on
+ * one string are 60 ms apart, and both lines write. MIDI keeps the same
  * seconds at any tempo, so both formats share this score.
  */
-export const MEASURED_EXPORT_BPM = 240
+export const MEASURED_EXPORT_BPM = 220
 
 /**
  * The practice score a measured line exports as; null for a reference that

@@ -11,7 +11,7 @@ export const GUITAR_RECORDING_LIMIT_SECONDS = 300
  * still held to the take: five minutes and a second. Scores used to come only
  * from takes, so a transcribed line of a longer song could not be exported.
  * Twenty minutes fits the Guitar Pro writer's 2,048 bars for a measured line
- * (240 BPM in 4/4: 1,200 bars); the 10,000-note cap applies on its own.
+ * (220 BPM in 4/4: 1,100 bars); the 10,000-note cap applies on its own.
  */
 export const GUITAR_PRACTICE_SCORE_LIMIT_SECONDS = 1200
 export const GUITAR_RECORDING_CHUNK_FRAMES = 8192
