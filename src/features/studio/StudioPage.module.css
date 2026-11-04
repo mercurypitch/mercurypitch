@@ -708,9 +708,10 @@
   background: var(--studio-line-strong);
 }
 /* Folding, widest first. Each step leaves the actions no wider than the
-   song's side, so the transport stays centred (thresholds measured with
-   the labels in English at 13 px). */
-@container (max-width: 1389px) {
+   song's side, so the transport stays centred, and comes while they are
+   still the bar's 16 px gap from the transport (thresholds measured with
+   the labels in English at 13 px; studio-top-bar.spec.ts sweeps them). */
+@container (max-width: 1411px) {
   .workspace:not(.phone) .label {
     position: absolute;
     width: 1px;
@@ -1328,7 +1329,7 @@
     margin-inline: -25px;
   }
   /* Finger-sized actions are wider, so each fold comes sooner. */
-  @container (max-width: 1479px) {
+  @container (max-width: 1503px) {
     .workspace:not(.phone) .label {
       position: absolute;
       width: 1px;
@@ -1342,7 +1343,7 @@
       padding: 0;
     }
   }
-  @container (max-width: 1219px) {
+  @container (max-width: 1254px) {
     .transport > div:last-child {
       display: none;
     }
@@ -1350,7 +1351,7 @@
       padding-right: 6px;
     }
   }
-  @container (max-width: 1059px) {
+  @container (max-width: 1096px) {
     .workspace:not(.phone) .exportLabel {
       position: absolute;
       width: 1px;
@@ -1364,7 +1365,7 @@
       padding: 0;
     }
   }
-  @container (max-width: 959px) {
+  @container (max-width: 1007px) {
     .workspace:not(.phone) .topBarRow {
       grid-template-columns: minmax(0, 1fr) auto;
       row-gap: 6px;
