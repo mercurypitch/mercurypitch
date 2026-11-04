@@ -192,8 +192,8 @@ These are the rules that break things when ignored.
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 950 | UVR API Client - Frontend Integration |
 | [use-dry-voice-capture.ts](../../src/lib/use-dry-voice-capture.ts) | 850 | Dry Voice Capture Controller — reusable local mic recording and review Owns the full temporary-capture lifecycle but never persists a take. |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 750 | Lyrics Service — fetch, parse, and sync lyrics |
+| [mic-manager.ts](../../src/lib/mic-manager.ts) | 750 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 750 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
-| [mic-manager.ts](../../src/lib/mic-manager.ts) | 700 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 700 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
