@@ -116,6 +116,29 @@ describe("Lesson 11's page", () => {
     for (const b of buttons) expect(b, b).toMatch(/type="button"/)
   })
 
+  it('holds two Go deeper drawers, closed, under Steps 1 and 3, and nothing in them plays', () => {
+    // Act: each step's article, and the drawers in it
+    const steps = [1, 2, 3, 4, 5].map(
+      (n) =>
+        new RegExp(
+          `<article class="step" id="step-${n}"[\\s\\S]*?</article>`,
+        ).exec(PAGE)?.[0] ?? '',
+    )
+    const drawers = steps.map(
+      (a) => a.match(/<details class="deeper"[^>]*>/g) ?? [],
+    )
+
+    // Assert: WEB-SPEC, Toys 6
+    expect(drawers.map((d) => d.length)).toEqual([1, 0, 1, 0, 0])
+    for (const d of drawers.flat()) expect(d).not.toMatch(/\bopen\b/)
+    for (const a of [steps[0], steps[2]]) {
+      const drawer =
+        /<details class="deeper"[\s\S]*?<\/details>/.exec(a)?.[0] ?? ''
+      expect(drawer).toContain('Go deeper')
+      expect(drawer).not.toMatch(/<button|data-play/)
+    }
+  })
+
   it('carries no Watch section: Lesson 11 has no film', () => {
     expect(PAGE).not.toMatch(/id="watch"/)
     expect(PAGE).not.toMatch(/<video/)

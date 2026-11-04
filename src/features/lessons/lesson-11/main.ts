@@ -10,9 +10,10 @@
 // renderer loads last, as its own chunk, so the page reads before it
 // arrives. A draft until the vocal coach has signed it off (kit/drafts.ts).
 //
-// The switches, the cold open (cold-open.ts), the steps' deck with the
-// range chart in each step's state (steps.ts, registers-toy.ts), the next
-// lesson's card, the season map, the masthead and Merc and Tavi.
+// The switches, the cold open (cold-open.ts), the recall and the four
+// words, the steps' deck with the range chart in each step's state
+// (steps.ts, registers-toy.ts), the quick check, the next lesson's card,
+// the season map, the masthead and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -32,17 +33,24 @@ import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
-// the cold open: two sirens on the hero's range chart, and the predict
+// the cold open comes first, the recall follows it, asked of everyone,
+// and the four words come before the first step
 initColdOpen()
+initRecall()
+initWords()
 
 // five steps, one range chart
 const deck = createStepDeck({
@@ -51,6 +59,15 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+// the quick check: answering all four marks Lesson 11 done; its step links
+// move the deck
+createQuiz({
+  questions: QUIZ_QUESTIONS,
+  lesson: 11,
+  keys: QUIZ_KEYS,
+  deck,
+})
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(11)
