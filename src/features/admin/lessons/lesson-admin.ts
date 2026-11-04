@@ -7,9 +7,10 @@
 // build makes it public (docs/plans/find-your-pitch/SEARCH.md § 12). Or from
 // the Content Studio: an override in the lesson state (src/lib/lesson-state.ts)
 // publishes or unpublishes it on one site whatever the code says, and the
-// site follows within about a minute. This module turns the season's own data
-// (season.ts, drafts.ts, films.ts, and each lesson's signature from
-// team-notes.ts, which no lesson page carries) into one row per lesson, reads
+// site follows within about a minute. This module turns the seasons' own data
+// (seasons.ts, drafts.ts, films.ts, and each lesson's signature from
+// team-notes.ts, which no lesson page carries) into one row per lesson of
+// every season, reads
 // what the site it runs on really serves (each lesson's page, /sitemap.xml
 // and /llms.txt), and derives each lesson's release checklist from the two
 // and from its override. No DOM, so the page and its tests share every rule.
@@ -24,7 +25,7 @@ import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { FilmRegistry, FilmSources, FilmState, } from '@/features/lessons/kit/films'
 import { FILMS, filmSources, filmState } from '@/features/lessons/kit/films'
 import type { Lesson } from '@/features/lessons/kit/season'
-import { LESSONS, PREREQ } from '@/features/lessons/kit/season'
+import { ALL_LESSONS, ALL_PREREQ } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 
 /**
@@ -85,9 +86,14 @@ export function lessonAddress(n: number): string {
   return `/learn/${String(n).padStart(2, '0')}`
 }
 
-/** One row per lesson, in season order: the trailer, then Lessons 1 to 14. */
+/**
+ * One row per lesson, in lesson order: the trailer, then Lessons 1 to 28,
+ * every season's. A lesson with no page and no draft line is planned, so
+ * it has no release to make and cannot be published here (Season 2's
+ * lessons, until each page lands).
+ */
 export function lessonRows(
-  lessons: readonly Lesson[] = LESSONS,
+  lessons: readonly Lesson[] = ALL_LESSONS,
   /** A draft list in drafts.ts's place, for a test; drafts.ts's own when absent. */
   drafts?: Readonly<Partial<Record<number, string>>>,
   films: FilmRegistry = FILMS,
@@ -534,7 +540,7 @@ const inOrder = (ns: Iterable<number>): number[] =>
 export function aheadOf(
   n: number,
   isPublished: (n: number) => boolean,
-  prerequisites: Prerequisites = PREREQ,
+  prerequisites: Prerequisites = ALL_PREREQ,
   recalls: Prerequisites = RECALLS,
 ): Ahead {
   const before = prerequisites[n] ?? []

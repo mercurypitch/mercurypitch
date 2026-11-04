@@ -176,10 +176,21 @@ describe('lessonAnswerInBounds', () => {
     }
   })
 
+  it('takes a Season 2 page and question, and none past Lesson 28', () => {
+    expect(lessonAnswerInBounds({ ...ANSWER, page: 16, qLesson: 15 })).toBe(
+      true,
+    )
+    expect(lessonAnswerInBounds({ ...ANSWER, page: 28, qLesson: 28 })).toBe(
+      true,
+    )
+    expect(lessonAnswerInBounds({ ...ANSWER, page: 29 })).toBe(false)
+    expect(lessonAnswerInBounds({ ...ANSWER, qLesson: 29 })).toBe(false)
+  })
+
   it('holds the ranges the pages send', () => {
     expect(Object.fromEntries(LESSON_ANSWER_BOUNDS)).toEqual({
-      page: [1, 14],
-      qLesson: [1, 14],
+      page: [1, 28],
+      qLesson: [1, 28],
       q: [1, 4],
       firstTry: [0, 1],
       k: [2, 6],

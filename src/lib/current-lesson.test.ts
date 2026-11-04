@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import { LESSONS } from '@/features/lessons/kit/season'
+import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { currentLesson, currentLessonHref, LESSONS_HUB, readDoneLessons, RELEASED_LESSONS, } from './current-lesson'
 import { LESSON_DONE_KEY } from './lesson-done'
 
@@ -14,9 +15,10 @@ afterEach(() => {
 })
 
 describe('the released lessons', () => {
-  it('are the season lessons with a page that are not drafts, as the season titles them', () => {
-    // Arrange: what the lesson kit's own data says is released as built.
-    const released = LESSONS.filter(
+  it("are every season's lessons with a page that are not drafts, as the season titles them", () => {
+    // Arrange: what the lesson kit's own data says is released as built,
+    // Season 2's included, so a Season 2 release joins the list too
+    const released = ALL_LESSONS.filter(
       (L) => L.page !== undefined && DRAFT_LESSONS[L.n] === undefined,
     ).map(({ n, title, page }) => ({ n, title, page }))
 

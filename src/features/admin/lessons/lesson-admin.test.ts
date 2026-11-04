@@ -15,6 +15,8 @@ import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
 import { lessonWithNoPage } from '@/features/lessons/kit/season.test-fixtures'
+import { LESSONS_2 } from '@/features/lessons/kit/season-2'
+import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import type { ChecklistInputs, Fetcher, LessonRow, ListingCheck, PageCheck, ReleaseStep, } from './lesson-admin'
 import { checkPage, lessonRows, llmsPaths, pagePath, readListing, releaseChecklist, sitemapPaths, } from './lesson-admin'
@@ -67,10 +69,26 @@ const siteSteps = (steps: readonly ReleaseStep[]) =>
     .map((step) => [step.id, step.state, step.detail])
 
 describe('lessonRows', () => {
-  it('gives every Season 1 lesson one row, the trailer first', () => {
-    expect(lessonRows().map((row) => row.lesson.n)).toEqual([
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-    ])
+  it("gives every season's lessons one row each, the trailer first, then Lessons 1 to 28", () => {
+    expect(lessonRows().map((row) => row.lesson.n)).toEqual(
+      Array.from({ length: 29 }, (_, n) => n),
+    )
+  })
+
+  it('reads every Season 2 lesson as planned, with no page and nothing to publish', () => {
+    // Act
+    const rows = lessonRows().filter((row) => row.lesson.n >= 15)
+
+    // Assert
+    expect(rows.map((row) => row.lesson.n)).toEqual(LESSONS_2.map((L) => L.n))
+    for (const row of rows) {
+      expect(row.build, `lesson ${row.lesson.n}`).toBe('planned')
+      expect(row.built, `lesson ${row.lesson.n}`).toBe(false)
+      expect(row.written, `lesson ${row.lesson.n}`).toBe(false)
+      expect(row.waitingOn, `lesson ${row.lesson.n}`).toBeNull()
+      expect(row.path).toBe(`/learn/${row.lesson.n}`)
+      expect(row.signature, `lesson ${row.lesson.n}`).not.toBeNull()
+    }
   })
 
   it('reads a lesson on the draft list as a draft, with what it waits on word for word', () => {
@@ -147,7 +165,7 @@ describe('lessonRows', () => {
 
     expect(rowFor(0, rows).path).toBeNull()
     expect(rows.slice(1).map((row) => row.path)).toEqual(
-      LESSONS.slice(1).map(
+      ALL_LESSONS.slice(1).map(
         (lesson) => `/learn/${String(lesson.n).padStart(2, '0')}`,
       ),
     )

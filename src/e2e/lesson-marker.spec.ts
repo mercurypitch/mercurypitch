@@ -146,7 +146,7 @@ test.describe('a first visit without a lesson marker', () => {
     await expect(page.locator('#ear-lab-panel')).toBeVisible()
   })
 
-  for (const search of ['?lesson=15', '?lesson=2', '?lesson=']) {
+  for (const search of ['?lesson=29', '?lesson=2', '?lesson=']) {
     test(`/ear-lab${search} is not a lesson's link, and opens on the intro`, async ({
       page,
     }) => {

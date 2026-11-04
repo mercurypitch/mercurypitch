@@ -80,7 +80,7 @@ describe('a fresh visitor', () => {
   })
 
   it.each([
-    ['/ear-lab?lesson=15#/ear-lab'],
+    ['/ear-lab?lesson=29#/ear-lab'],
     ['/ear-lab?lesson=2#/ear-lab'],
     ['/ear-lab?lesson=#/ear-lab'],
     ['/ear-lab?lessons=02#/ear-lab'],
