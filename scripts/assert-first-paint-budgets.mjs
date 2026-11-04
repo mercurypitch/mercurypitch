@@ -258,7 +258,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // as Lesson 3 is: its own module on the kit, with the range chart in Merc's
   // two gears, the cold open's sirens, the four words, the steps' five
   // states, Sing it and free play. Its page shell weighed 74,137 bytes; the
-  // whole page 134 in build:e2e (137,153 bytes), of which 15,621 are the
+  // whole page 134 in build:e2e (137,304 bytes), of which 15,655 are the
   // chunk it shares with Lesson 7 (the range chart, the siren flow, the
   // "ng" and Lesson 7's quiz questions); the budget is a quarter over. The
   // listener, the pitch detector and the take arrive through a dynamic

@@ -254,8 +254,22 @@ function cardOffers(v: SirenVisit, reading: boolean): SirenOffers {
     ask: true,
     again,
     done: true,
-    closing: reading && last.kind === 'band' ? 'band' : 'plain',
-    tryAgain: reading && again && last.kind === 'unsteady',
+    ...readingSays(reading ? last.kind : undefined, again),
     keepLine: true,
+  }
+}
+
+/**
+ * What an easy take's card makes of its reading: the band's closing for a
+ * band lit, Try again for an unsteady take while takes remain. Without a
+ * reading (`kind` undefined) the closing is plain.
+ */
+function readingSays(
+  kind: TakeKind | undefined,
+  again: boolean,
+): Pick<SirenOffers, 'closing' | 'tryAgain'> {
+  return {
+    closing: kind === 'band' ? 'band' : 'plain',
+    tryAgain: again && kind === 'unsteady',
   }
 }
