@@ -3,7 +3,9 @@
 // ============================================================
 //
 // The masthead's "Season 1 · Lesson 02" is this menu's button, its ring
-// filling as the viewer moves through the steps. It opens the season as one
+// filling as the viewer moves through the steps; the season is the page's
+// lesson's (page-state.ts `pageSeason`), "Season 2 · Lesson 15" on a Season
+// 2 page. It opens the lesson's season as one
 // list, each lesson done, here, in progress, up next, ready or coming later
 // (lesson-state.ts, which the explorer's card asks too), and this page's
 // lesson open to its steps. Without it a page had no way to another lesson
@@ -27,14 +29,14 @@
 
 import './lesson-menu.css'
 import { clamp } from './dom'
-import { ARCS } from './explorer-graph'
 import type { LessonState, LessonView } from './lesson-state'
 import { lessonViews, stateWords } from './lesson-state'
-import { pageLessons } from './page-state'
+import { pageLessons, pageSeason } from './page-state'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
-import type { Lane, Lesson } from './season'
+import type { Lane, Lesson, Season } from './season'
+import { SEASON_1 } from './season'
 import type { StepDeck } from './step-deck'
 import { stepFromHash } from './step-deck'
 import { startTour } from './tour-gate'
@@ -108,7 +110,8 @@ export interface MenuModel {
   readonly arcs: readonly MenuArc[]
 }
 
-const SEASON = 'Season 1'
+/** A season as the masthead names it: "Season 1". */
+const seasonName = (season: Season): string => `Season ${season.n}`
 /** Where the button shows "Season 1 · " before its lesson (lesson-menu.css hides it at 1020 px and under). */
 const SEASON_SHOWN = '(min-width: 1021px)'
 
@@ -187,10 +190,10 @@ function rowOf(v: LessonView, deck: DeckNow, current: number): MenuRow {
 }
 
 /**
- * The menu as this viewer stands with the season: the trailer left out,
- * every lesson's row in its arc, and this page's lesson at the step its deck
- * shows now. Pure: the caller hands in the done list, the remembered steps
- * and the deck.
+ * The menu as this viewer stands with `season`, whose lessons as the page
+ * shows them are `lessons`: the trailer left out, every lesson's row in its
+ * arc, and this page's lesson at the step its deck shows now. Pure: the
+ * caller hands in the done list, the remembered steps and the deck.
  */
 export function menuModel(
   lessons: readonly Lesson[],
@@ -198,19 +201,20 @@ export function menuModel(
   positions: StepMarks,
   current: number,
   deck: DeckNow,
+  season: Season = SEASON_1,
 ): MenuModel {
-  const views = lessonViews(lessons, {
-    current,
-    done: new Set(done),
-    steps: positions,
-  }).filter((v) => v.lesson.n >= 1)
+  const views = lessonViews(
+    lessons,
+    { current, done: new Set(done), steps: positions },
+    season.prereq,
+  ).filter((v) => v.lesson.n >= 1)
   const rows = views.map((v) => rowOf(v, deck, current))
   const finished = views.filter((v) => v.done && v.state !== 'later').length
   const self = views.find((v) => v.lesson.n === current)
   const of = deck.titles.length
   const step = deck.titles[deck.now - 1] ?? ''
   return {
-    season: `${SEASON} · ${views.length} lessons`,
+    season: `${seasonName(season)} · ${views.length} lessons`,
     count: `${finished} of ${views.length} done`,
     bars: views.map((v) => ({ kind: barOf(v), fill: fillOf(v, deck) })),
     here: {
@@ -221,7 +225,7 @@ export function menuModel(
       href: `#step-${deck.now}`,
       fill: self === undefined ? 0 : fillOf(self, deck),
     },
-    arcs: ARCS.map(([name, span, from, to]) => ({
+    arcs: season.arcs.map(([name, span, from, to]) => ({
       name,
       span,
       rows: rows.filter((r) => r.n >= from && r.n <= to),
@@ -291,6 +295,9 @@ function rowMarkup(r: MenuRow): string {
   return `<li>${row}${stepsMarkup(r)}</li>`
 }
 
+/** "Season 1" from "Season 1 · 14 lessons". */
+const seasonLabel = (season: string): string => season.split(' · ')[0]
+
 /** "Season 1 · 14 lessons" with the count in its own span, which a phone leaves out: the count beside it gives the 14. */
 function seasonMarkup(season: string): string {
   const at = season.indexOf(' · ')
@@ -334,7 +341,7 @@ export function menuMarkup(
     foot.practise === null
       ? ''
       : `<a class="btn sm" href="${esc(foot.practise)}" target="_blank" rel="noopener">Practise in MercuryPitch${icon('i-out')}<span class="sr">, opens in a new tab</span></a>`
-  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${SEASON} lessons">${arcs}</nav><div class="lm-foot">${map}<button class="btn sm" type="button" data-close data-tour>Tour this page</button>${practise}<a class="btn sm" href="/">MercuryPitch home</a><a class="btn sm" href="${HUB}">All lessons</a></div></div>`
+  return `<div class="lm-in"><div class="lm-head"><h2 id="lessonMenuTitle">Find Your Pitch <small>${seasonMarkup(m.season)}</small></h2><p class="lm-count">${m.count}</p><button class="btn icon lm-x" type="button" data-close aria-label="Close">${icon('i-x')}</button></div><div class="lm-bar" aria-hidden="true">${bars}</div>${onPage}<a class="lm-here" href="${m.here.href}" aria-label="${esc(m.here.label)}">${ring(m.here.fill)}<span class="lm-here-t"><b>${esc(m.here.title)}</b><span>${esc(m.here.line)}</span></span><span class="btn primary sm" aria-hidden="true">Continue</span></a><nav class="lm-season" aria-label="${seasonLabel(m.season)} lessons">${arcs}</nav><div class="lm-foot">${map}<button class="btn sm" type="button" data-close data-tour>Tour this page</button>${practise}<a class="btn sm" href="/">MercuryPitch home</a><a class="btn sm" href="${HUB}">All lessons</a></div></div>`
 }
 
 // ---------------------------------------------------------------- the menu on a page
@@ -398,7 +405,9 @@ function outside(dialog: HTMLDialogElement, e: MouseEvent): boolean {
  */
 export function createLessonMenu(o: LessonMenuOptions): void {
   const { deck } = o
-  const lessons = pageLessons()
+  const season = pageSeason(o.lesson)
+  const named = seasonName(season)
+  const lessons = pageLessons(document, season.lessons)
   const L = lessons.find((x) => x.n === o.lesson)
   const total = lessons.filter((x) => x.n >= 1).length
   const sheet = window.matchMedia('(max-width: 820px)')
@@ -422,11 +431,11 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   const nameButton = (): void =>
     btn.setAttribute(
       'aria-label',
-      `${seasonShown.matches ? `${SEASON} · ` : ''}${label}, ${opens}`,
+      `${seasonShown.matches ? `${named} · ` : ''}${label}, ${opens}`,
     )
   nameButton()
   seasonShown.addEventListener('change', nameButton)
-  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${SEASON} · </span>${label}</span>${icon('i-right', 'ico lm-chev')}`
+  btn.innerHTML = `${ring(0)}<span class="lm-l"><span class="lm-s">${named} · </span>${label}</span>${icon('i-right', 'ico lm-chev')}`
   o.label.replaceWith(btn)
   // the welcome tour again from anywhere on the page, as the panel's "Tour
   // this page" plays it: a question mark at the masthead's right end
@@ -462,11 +471,14 @@ export function createLessonMenu(o: LessonMenuOptions): void {
   }
 
   function render(): void {
-    const m = menuModel(lessons, Done.list(), Positions.all(), o.lesson, {
-      now: deck.current,
-      titles: deck.titles,
-      after,
-    })
+    const m = menuModel(
+      lessons,
+      Done.list(),
+      Positions.all(),
+      o.lesson,
+      { now: deck.current, titles: deck.titles, after },
+      season,
+    )
     const sections = o.sections.filter(shown).map(sectionOf)
     dialog.innerHTML = menuMarkup(m, sections, foot)
   }
