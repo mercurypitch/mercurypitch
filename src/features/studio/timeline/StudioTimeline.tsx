@@ -446,9 +446,6 @@ export function StudioTimeline(props: StudioTimelineProps) {
           touch={props.phone || props.tablet === true}
           left={headerWidth() + 12}
           bottom={floor() + 12}
-          // The zoom pill's corner: its offset, three buttons with the
-          // pill's gaps, padding and border (.zoom), and a gap before it.
-          reserve={gutter() + 12 + 3 * (props.tablet === true ? 44 : 30) + 20}
           docked={inDock}
           onCommand={props.onCommand}
           onStatus={showStatus}
