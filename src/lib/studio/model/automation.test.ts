@@ -4,7 +4,7 @@ import { studioAutomationValueAt, studioLaneValueAt, withStudioAutomation, } fro
 import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, redoStudioCommand, undoStudioCommand, } from './history'
 import { studioFixture, TEST_NOW } from './model.test-fixtures'
-import type { StudioAutomationPoint, StudioProject } from './types'
+import type { StudioAsset, StudioAutomationPoint, StudioClip, StudioProject, } from './types'
 import { validateStudioProject } from './validation'
 import { StudioValidationError } from './validation-values'
 
@@ -190,5 +190,77 @@ describe('Studio lane automation', () => {
     // Assert
     expect(opened).toEqual(project)
     expect(Object.hasOwn(opened.tracks[0], 'automation')).toBe(false)
+  })
+})
+
+describe('Studio lane automation beside clip edits', () => {
+  it('keeps a lane’s lines through choosing a loop take’s pass and a punch into the lane', () => {
+    // Arrange: the lane's clip is a loop take, three passes of 1000 frames.
+    const { project, asset, clip } = studioFixture()
+    const take: StudioAsset = {
+      ...asset,
+      id: 'take-1',
+      normalizedFrameCount: 3500,
+      canonicalPcmByteLength: 32 + 3500 * 4,
+    }
+    const looped: StudioClip = {
+      ...clip,
+      assetId: take.id,
+      sourceInFrame: 2200,
+      sourceOutFrame: 3200,
+      fades: { curve: 'linear-amplitude' },
+      passes: { firstFrame: 200, frames: 1000, count: 3 },
+    }
+    const options = { assets: [asset, take], now: TEST_NOW }
+    const song = [
+      { param: 'volume' as const, points: line },
+      { param: 'pan' as const, points: [{ frame: 0, value: -0.5 }] },
+    ].reduce(
+      (current, { param, points }) =>
+        applyStudioCommand(
+          current,
+          { type: 'set-lane-automation', trackId: 'track-1', param, points },
+          options,
+        ),
+      { ...project, clips: [looped] } as StudioProject,
+    )
+    const lines = song.tracks[0].automation
+
+    // Act
+    const chosen = applyStudioCommand(
+      song,
+      { type: 'choose-pass', clipId: 'clip-1', pass: 0 },
+      options,
+    )
+    const punched = applyStudioCommand(
+      chosen,
+      {
+        type: 'punch-clip',
+        clip: {
+          id: 'take-clip',
+          trackId: 'track-1',
+          assetId: asset.id,
+          startFrame: 400,
+          sourceInFrame: 0,
+          sourceOutFrame: 200,
+          gainDb: 0,
+          fades: { curve: 'linear-amplitude' },
+        },
+        afterClipId: 'clip-after',
+        fadeFrames: 20,
+      },
+      options,
+    )
+
+    // Assert
+    expect(lines).toEqual({ volume: line, pan: [{ frame: 0, value: -0.5 }] })
+    expect(chosen.clips[0].sourceInFrame).toBe(200)
+    expect(punched.clips.map((one) => one.id).sort()).toEqual([
+      'clip-1',
+      'clip-after',
+      'take-clip',
+    ])
+    expect(chosen.tracks[0].automation).toEqual(lines)
+    expect(punched.tracks[0].automation).toEqual(lines)
   })
 })

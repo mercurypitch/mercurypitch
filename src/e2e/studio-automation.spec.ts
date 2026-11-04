@@ -160,6 +160,45 @@ test.describe('on a computer', () => {
   })
 })
 
+test.describe('beside the ruler’s range', () => {
+  test.use({ viewport: { width: 1440, height: 1000 } })
+
+  test('Studio takes a point inside the range while a line is open, and the range keeps its handles', async ({
+    page,
+  }) => {
+    test.setTimeout(60_000)
+    await openArrangement(page)
+    await setStudioZoom(page, 40)
+    const studio = studioRegion(page)
+    // A range over the Phrase clip, set from its toolbar.
+    const clip = studio.locator('[data-studio-clip]').first()
+    await clip.click()
+    await studio
+      .getByRole('toolbar', { name: 'Selected clip' })
+      .getByRole('button', { name: 'Range', exact: true })
+      .click()
+    const end = studio.getByRole('slider', { name: 'Range end', exact: true })
+    await expect(end).toBeVisible()
+    const rangeEnd = await end.getAttribute('aria-valuetext')
+    const area = await openLines(page)
+    const lane = await box(area)
+    const span = await box(clip)
+
+    // A click in the shaded range lands on the line, not on the range.
+    await page.mouse.click(span.x + span.width / 2, lane.y + lane.height / 2)
+    await expect
+      .poll(async () => (await savedLine(page, 'volume'))?.length)
+      .toBe(1)
+    await expect(end).toHaveAttribute('aria-valuetext', rangeEnd ?? '')
+
+    // The range's end still moves from its handle, the line still open.
+    await end.focus()
+    await page.keyboard.press('ArrowLeft')
+    await expect(end).not.toHaveAttribute('aria-valuetext', rangeEnd ?? '')
+    await expect(area).toBeVisible()
+  })
+})
+
 test.describe('on a tablet', () => {
   test.use({
     viewport: { width: 1024, height: 768 },

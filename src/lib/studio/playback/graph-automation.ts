@@ -14,7 +14,9 @@
 // - Play, a resume and a retime start it afresh at the run's first frame,
 //   before the run's envelope opens over it;
 // - a seek crosses it to the new place over the 10 ms its audio crosses;
-// - a loop point crosses it back to the song's start over the same 10 ms;
+// - a loop point crosses it back to where the plan starts, the song's
+//   start or that of the range Repeat plays (loop-range.ts), over the same
+//   10 ms;
 // - a line drawn, moved or cleared while the song plays glides in over
 //   12 ms, as a fader does;
 // - Repeat, a re-plan and a chain swap cut it where the clock is about to
@@ -178,7 +180,7 @@ function writeAhead(
     const next = firstKnotAfter(knots, frame)
     const another = state.looping || pass < furthestPass(state)
     if (another && (knots.at(next)?.frame ?? Infinity) >= state.endFrame) {
-      // The pass ends here: cross back to the song's start for the next.
+      // The pass ends here: cross back to the plan's start for the next.
       const end = state.endFrame
       if (!put(faderTime(state, pass, end), studioKnotGainsAt(knots, end)))
         return
