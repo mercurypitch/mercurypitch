@@ -1,6 +1,7 @@
 // Studio edge envelopes — one versioned musical de-click policy for live and offline graphs.
 import type { StudioPlannedSegment } from '../model/arrangement-plan'
 import { studioClipGainAtSourceFrame } from '../model/arrangement-plan'
+import { studioCrossfadeGain } from '../model/comp-plan'
 
 export const STUDIO_EDGE_POLICY_VERSION = 'studio-edges-3ms-v1'
 export const STUDIO_EDGE_FRAMES = 144
@@ -29,9 +30,11 @@ export function studioSegmentGain(
     { gainDb: 0, fades: segment.fades },
     sourceFrame,
   )
+  // A comp's crossfades (comp-plan.ts); 1 for a segment with none.
   return (
     Math.pow(10, (segment.gainDb + segment.preparationGainDb) / 20) *
-    Math.min(explicit, safety)
+    Math.min(explicit, safety) *
+    studioCrossfadeGain(segment.crossfades, sourceFrame)
   )
 }
 
@@ -53,7 +56,13 @@ export function scheduleStudioSegmentGain(
     segment.groupStartFrame + width,
     segment.groupEndFrame - width,
   ]
-  for (const fade of [segment.fades.in, segment.fades.out]) {
+  const { crossfades } = segment
+  for (const fade of [
+    segment.fades.in,
+    segment.fades.out,
+    crossfades?.in,
+    crossfades?.out,
+  ]) {
     if (!fade) continue
     points.push(
       start + fade.fromSourceFrame - segment.sourceInFrame,
