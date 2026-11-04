@@ -879,13 +879,19 @@
 }
 
 /* Its own scroll container: `.main-content` is the app's scroller and this
-   screen is not inside it. */
+   screen is not inside it.
+
+   The scroll padding is the padding's twin: a control the keyboard or a
+   screen reader moves the focus to is scrolled clear of the dock as well,
+   not only reachable by hand. Without it the focus stopped on rows under
+   the rail (Leagues' and Community's last rows, at 390 x 844). */
 .mp-pushed__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: calc(var(--tabbar-total) + 16px);
+  scroll-padding-bottom: calc(var(--tabbar-total) + 16px);
 }
 
 /* The dock is over this screen, the session pill with it while a run is
@@ -893,6 +899,9 @@
    under the pill with no scroll to lift it out (TestFlight 0.7.1). */
 :root[data-shell-pill='on'] .mp-pushed__body {
   padding-bottom: calc(var(--tabbar-total) + 16px + var(--touch-target) + 8px);
+  scroll-padding-bottom: calc(
+    var(--tabbar-total) + 16px + var(--touch-target) + 8px
+  );
 }
 
 /* ---------- a premium room, full-bleed (premium-rooms.ts, D1) ---------- */
@@ -966,6 +975,7 @@
 :root[data-shell-pill='on'] .mp-pushed--bleed .mp-pushed__body {
   overflow: hidden;
   padding-bottom: 0;
+  scroll-padding-bottom: 0;
 }
 
 /* The parked run's pill waits off screen while a full-bleed room is open;

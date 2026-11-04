@@ -82,8 +82,12 @@
   );
 }
 
+/* Each padding here has a scroll padding as its twin, so a control the
+   keyboard or a screen reader moves the focus to is scrolled clear of the
+   chrome too, not only reachable by hand. */
 :root[data-native-shell] .main-content {
   padding-bottom: calc(var(--tabbar-total) + 8px);
+  scroll-padding-bottom: calc(var(--tabbar-total) + 8px);
 }
 
 /* And the session pill while a run is parked: it rides above the rail in the
@@ -93,6 +97,9 @@
    pill. The shell says it is there on <html>, as it says the rail is. */
 :root[data-native-shell][data-shell-pill='on'] .main-content {
   padding-bottom: calc(var(--tabbar-total) + 8px + var(--touch-target) + 8px);
+  scroll-padding-bottom: calc(
+    var(--tabbar-total) + 8px + var(--touch-target) + 8px
+  );
 }
 
 /* The room header is fixed chrome the shell draws over the top of a room, so
@@ -100,6 +107,7 @@
    header carry the attribute. */
 :root[data-native-shell][data-room-header='on'] .main-content {
   padding-top: calc(var(--safe-top) + 52px);
+  scroll-padding-top: calc(var(--safe-top) + 52px);
 }
 
 /* Its companion at the other corner: while a run is going, the shell's tab
