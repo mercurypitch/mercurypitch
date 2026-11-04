@@ -25,6 +25,9 @@
   overscroll-behavior: contain;
   /* Focus scrolling keeps a clip clear of the sticky header and ruler. */
   scroll-padding: var(--studio-ruler-height) 0 0 var(--studio-header-width);
+  /* One finger pans the lanes; two zoom the timeline, never the page
+     (lane-navigation.ts). */
+  touch-action: pan-x pan-y;
 }
 .surface {
   position: relative;
@@ -76,7 +79,8 @@
   grid-area: 1 / 2;
   position: relative;
   cursor: pointer;
-  /* Drag scrubs the playhead; the labels are not text to select. */
+  /* A drag draws the range and the playhead's handle scrubs
+     (ruler-gesture.ts); the labels are not text to select. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -114,19 +118,29 @@
   height: 11px;
   background: var(--studio-tick-major);
 }
-/* The playhead and its cap move by transform while the song plays, so a
-   tick repaints them and lays nothing out. */
+/* The playhead and its handle move by transform while the song plays, so a
+   tick repaints them and lays nothing out. The handle is wider than its cap,
+   so a pointer finds it, and on a touch screen a finger does. */
+.playheadHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24px;
+  margin-left: -12px;
+  cursor: ew-resize;
+  will-change: transform;
+}
 .playheadCap {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 11px;
-  height: 13px;
-  margin-left: -5px;
+  left: 50%;
+  width: 12px;
+  height: 14px;
+  margin-left: -6px;
   background: var(--studio-accent);
   clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
   pointer-events: none;
-  will-change: transform;
 }
 
 /* View controls in the corner cell; zoom floats over the arrangement's corner */
@@ -241,8 +255,34 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: var(--studio-text-2);
+  color: var(--studio-text);
   cursor: pointer;
+}
+/* The level between the steps says what the group is at a glance. */
+.zoomLevel {
+  min-width: 38px;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
+}
+/* A phone's pair, in the ruler's corner above the lane names. */
+.timeline .zoomCompact {
+  position: static;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.zoomCompact button {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--studio-control);
 }
 @media (hover: hover) {
   .zoom button:hover:not(:disabled) {
@@ -1432,6 +1472,11 @@
   padding: 0;
   border-radius: 8px;
 }
+.tablet .playheadHandle,
+.phone .playheadHandle {
+  width: 44px;
+  margin-left: -22px;
+}
 .tablet .snapLabel {
   display: none;
 }
@@ -1460,7 +1505,8 @@
 .phone {
   --studio-row-height: 64px;
   --studio-clip-inset: 5px;
-  --studio-ruler-height: 28px;
+  /* Tall enough for zoom's two buttons in the corner. */
+  --studio-ruler-height: 44px;
 }
 .phone .trackHeader {
   padding: 6px 8px 6px 12px;
@@ -1479,10 +1525,11 @@
   -webkit-box-orient: vertical;
 }
 .phone .corner {
+  justify-content: center;
   padding: 0;
 }
 .phone .tick {
-  padding-top: 6px;
+  padding-top: 12px;
   font-size: 10px;
 }
 .phone .clipTitle {

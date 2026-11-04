@@ -79,6 +79,6 @@ export interface StudioTimelineProps {
   arming?: StudioLaneArming
   /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */
   range?: StudioFrameRange | null
-  /** Set or clear the range: Shift-drag on the ruler, its handles, or a clip's toolbar. */
+  /** Set or clear the range: a drag along the ruler, its handles, or a clip's toolbar. */
   onRange?(range: StudioFrameRange | null): void
 }

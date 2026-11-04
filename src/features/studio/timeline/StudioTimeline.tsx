@@ -1,5 +1,4 @@
 // Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking.
-import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show, untrack, } from 'solid-js'
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -7,10 +6,12 @@ import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { setStudioRecordCardAside } from '../record/record-card-aside'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { studioTakeRunning } from '../record/take-running'
-import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import { StudioViewControls } from '../StudioViewControls'
+import { attachStudioLaneNavigation } from './lane-navigation'
 import { createStudioLineEditor } from './line-editor'
 import { createStudioPlayheadMotion } from './playhead-motion'
+import { createStudioRulerGesture } from './ruler-gesture'
+import { publishStudioScrubGrid } from './scrub-step'
 import { StudioClipToolbar } from './StudioClipToolbar'
 import { StudioLineBar } from './StudioLineBar'
 import { StudioPhoneClipNote } from './StudioPhoneClipNote'
@@ -18,19 +19,18 @@ import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './S
 import styles from './StudioTimeline.module.css'
 import type { StudioLaneView } from './StudioTimelineLane'
 import { StudioTimelineLane } from './StudioTimelineLane'
+import { StudioZoomControls } from './StudioZoomControls'
 import type { StudioRulerTick } from './timeline-geometry'
 import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
 import type { StudioTimelineProps } from './types'
 import { useStudioPointer } from './useStudioPointer'
 import { createStudioWaveformResource } from './waveform-resource'
+import { createStudioZoom } from './zoom-control'
+import { installStudioZoomKeys } from './zoom-keys'
+import { studioFitZoom, studioZoomFloor } from './zoom-math'
 
 export type { StudioTimelineNotice, StudioTimelineProps } from './types'
-
-/** Zoom stops in pixels per second; Fit may land between them. */
-export const STUDIO_ZOOM_STOPS = [10, 15, 20, 30, 40, 60, 80, 120, 160, 200]
-/** How far a press on a playing song's ruler moves before it becomes a drag, in pixels. */
-const RULER_DRAG_SLOP_PX = 4
 
 export function StudioTimeline(props: StudioTimelineProps) {
   let viewport!: HTMLDivElement
@@ -61,15 +61,19 @@ export function StudioTimeline(props: StudioTimelineProps) {
           contentEnd() + 10 * STUDIO_SAMPLE_RATE,
         ),
   )
-  const scale = createMemo(() =>
-    props.phone
-      ? // The end keeps room for the last ruler label.
-        (contentWidth() - 32) / (endFrame() / STUDIO_SAMPLE_RATE)
-      : Math.min(
-          studioPixelsPerSecond(props.pixelsPerSecond),
-          8_000_000 / (endFrame() / STUDIO_SAMPLE_RATE),
-        ),
-  )
+  // A phone opens on the whole song, its end clear of the last ruler label;
+  // zoomed in, it scrolls as a tablet does.
+  const [phoneFit, setPhoneFit] = createSignal(true)
+  const phoneFitScale = () =>
+    (contentWidth() - 32) / (endFrame() / STUDIO_SAMPLE_RATE)
+  const scale = createMemo(() => {
+    const zoomed = Math.min(
+      studioPixelsPerSecond(props.pixelsPerSecond),
+      8_000_000 / (endFrame() / STUDIO_SAMPLE_RATE),
+    )
+    if (!props.phone) return zoomed
+    return phoneFit() ? phoneFitScale() : Math.max(phoneFitScale(), zoomed)
+  })
   const timeWidth = createMemo(() =>
     Math.max(contentWidth(), frameToPixel(endFrame(), scale())),
   )
@@ -238,7 +242,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       64,
       Math.min(
         112,
-        Math.floor((height() - 32) / Math.max(1, props.project.tracks.length)),
+        Math.floor((height() - 48) / Math.max(1, props.project.tracks.length)),
       ),
     )
   const lane: StudioLaneView = {
@@ -277,12 +281,32 @@ export function StudioTimeline(props: StudioTimelineProps) {
     typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
   onCleanup(() => observer?.disconnect())
 
-  // Dragging along the ruler scrubs. A stopped song follows the pointer. A
-  // playing one jumps where the press lands, at once, as a DAW's does; a
-  // drag from there moves its playhead line and jumps again on release, so
-  // it does not jump under every pointer move.
-  const [scrubFrame, setScrubFrame] = createSignal<number | null>(null)
-  const shownPlayhead = () => scrubFrame() ?? props.playheadFrame
+  // A click on the ruler seeks, a drag draws the range, and the playhead's
+  // handle scrubs (ruler-gesture.ts). The range snaps as a clip's edge does.
+  let ruler!: HTMLDivElement
+  const rulerFrame = (event: { clientX: number }) =>
+    pixelToFrame(
+      event.clientX - ruler.getBoundingClientRect().left,
+      scale(),
+      endFrame(),
+    )
+  const range = createStudioRangeTools({
+    frameAt: rulerFrame,
+    scale,
+    snapping: snap,
+    timeline: props,
+  })
+  const gesture = createStudioRulerGesture({
+    frameAt: rulerFrame,
+    playheadFrame: () => props.playheadFrame,
+    playing: () => props.playing === true,
+    seek: (frame) => props.onSeek(frame),
+    draw: {
+      ...range.draw,
+      start: (frame) => props.onRange !== undefined && range.draw.start(frame),
+    },
+  })
+  const shownPlayhead = () => gesture.scrubFrame() ?? props.playheadFrame
   // A playing song's line runs on the compositor, checked against the clock
   // on every tick; dragged, or with the song stopped, it stands where its
   // style puts it.
@@ -294,7 +318,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
   })
   const following = () =>
     props.playing === true &&
-    scrubFrame() === null &&
+    gesture.scrubFrame() === null &&
     props.playheadClock !== undefined
   createEffect(() => {
     if (!following()) motion.stop()
@@ -313,114 +337,45 @@ export function StudioTimeline(props: StudioTimelineProps) {
     motion.moving()
       ? {}
       : { transform: `translateX(${frameToPixel(shownPlayhead(), scale())}px)` }
-  let press: { x: number; dragged: boolean } | null = null
-  let ruler!: HTMLDivElement
-  // The range on the ruler (StudioRulerRange.tsx) snaps as a clip's edge does.
-  const range = createStudioRangeTools({
-    frameAt: (event) => rulerFrame(event, ruler),
+  // Fit shows the whole song: a long one below the first stop, and on a
+  // phone the overview it opens on. The keys and the buttons zoom about the
+  // playhead, the wheel and a pinch about the pointer (zoom-control.ts).
+  const fitZoom = () => studioFitZoom(contentWidth(), contentEnd())
+  const zoom = createStudioZoom({
+    viewport: () => viewport,
+    headerWidth,
+    contentWidth,
     scale,
-    snapping: snap,
-    timeline: props,
+    floor: () => (props.phone ? phoneFitScale() : studioZoomFloor(fitZoom())),
+    playheadFrame: () => props.playheadFrame,
+    apply: (next) => {
+      const fitted = props.phone && next <= phoneFitScale() + 0.05
+      if (props.phone) setPhoneFit(fitted)
+      if (!fitted) props.onZoom?.(next)
+    },
+    fit: () => {
+      if (props.project.clips.length === 0) return
+      if (props.phone) setPhoneFit(true)
+      else props.onZoom?.(fitZoom())
+      viewport.scrollLeft = 0
+    },
   })
-
-  function rulerFrame(event: PointerEvent, ruler: HTMLElement): number {
-    const rect = ruler.getBoundingClientRect()
-    return pixelToFrame(event.clientX - rect.left, scale(), endFrame())
-  }
-
-  function scrubTo(event: PointerEvent, ruler: HTMLElement): void {
-    const frame = rulerFrame(event, ruler)
-    setScrubFrame(frame)
-    if (props.playing !== true) props.onSeek(frame)
-  }
-
-  function pressRuler(event: PointerEvent, ruler: HTMLElement): void {
-    press = { x: event.clientX, dragged: false }
-    if (props.playing === true) props.onSeek(rulerFrame(event, ruler))
-    else scrubTo(event, ruler)
-  }
-
-  function dragRuler(event: PointerEvent, ruler: HTMLElement): void {
-    if (range.draw.move(event) || !press) return
-    // A hand that stays put on a playing song already jumped it on the press.
-    const near = Math.abs(event.clientX - press.x) < RULER_DRAG_SLOP_PX
-    if (props.playing === true && !press.dragged && near) return
-    press.dragged = true
-    scrubTo(event, ruler)
-  }
-
-  function endScrub(commit: boolean): void {
-    if (range.draw.end(commit)) return
-    const frame = scrubFrame()
-    press = null
-    setScrubFrame(null)
-    if (commit && frame !== null) props.onSeek(frame)
-  }
-
-  function zoomStep(direction: 1 | -1): void {
-    const current = props.pixelsPerSecond
-    const next =
-      direction > 0
-        ? STUDIO_ZOOM_STOPS.find((stop) => stop > current + 0.5)
-        : [...STUDIO_ZOOM_STOPS].reverse().find((stop) => stop < current - 0.5)
-    if (next !== undefined) props.onZoom?.(next)
-  }
-
-  function zoomToFit(): void {
-    const seconds = Math.max(1, contentEnd() / STUDIO_SAMPLE_RATE + 1)
-    // Fit may go below the first zoom stop: a long song must still fit. It
-    // rounds down to a tenth, so a narrow window is filled, not three-quarters.
-    const fit = Math.floor(((contentWidth() - 24) / seconds) * 10) / 10
-    props.onZoom?.(
-      Math.max(
-        1,
-        Math.min(STUDIO_ZOOM_STOPS[STUDIO_ZOOM_STOPS.length - 1], fit),
-      ),
-    )
-    viewport.scrollLeft = 0
-  }
-
-  // Zoom floats at the arrangement's foot, or heads the dock beside it.
-  const zoomControls = (place?: JSX.CSSProperties) => (
-    <div
-      class={styles.zoom}
-      role="group"
-      aria-label="Timeline zoom"
-      data-studio-zoom=""
-      style={place}
-    >
-      <button
-        type="button"
-        aria-label="Zoom out"
-        title="Zoom out"
-        disabled={props.pixelsPerSecond <= STUDIO_ZOOM_STOPS[0]}
-        onClick={() => zoomStep(-1)}
-      >
-        <ZoomOut size={15} />
-      </button>
-      <button
-        type="button"
-        aria-label="Zoom in"
-        title="Zoom in"
-        disabled={
-          props.pixelsPerSecond >=
-          STUDIO_ZOOM_STOPS[STUDIO_ZOOM_STOPS.length - 1]
-        }
-        onClick={() => zoomStep(1)}
-      >
-        <ZoomIn size={15} />
-      </button>
-      <button
-        type="button"
-        aria-label="Fit song to width"
-        title="Fit song to width"
-        disabled={props.project.clips.length === 0}
-        onClick={zoomToFit}
-      >
-        <FitWidth size={15} />
-      </button>
-    </div>
+  onCleanup(
+    installStudioZoomKeys({
+      scope: () => viewport?.closest('[data-tour="studio.workspace"]') ?? null,
+      zoom,
+    }),
   )
+  // The clock in the transport scrubs along this grid (scrub-step.ts).
+  createEffect(() =>
+    publishStudioScrubGrid({
+      snap: snap(),
+      pixelsPerSecond: scale(),
+      tempoBpm:
+        props.project.ruler === 'bars' ? props.project.tempoBpm : undefined,
+    }),
+  )
+  onCleanup(() => publishStudioScrubGrid(null))
   // A floating bar steps aside during a drag; a docked one covers nothing.
   const clipBar = (inDock: boolean) => (
     <Show
@@ -502,13 +457,27 @@ export function StudioTimeline(props: StudioTimelineProps) {
           viewport = element
           setWidth(element.clientWidth || 800)
           observer?.observe(element)
+          onCleanup(attachStudioLaneNavigation(element, zoom))
         }}
         onScroll={() => setScroll(viewport.scrollLeft)}
+        // A second finger is a pinch: the ruler lets go (ruler-gesture.ts).
+        onTouchStart={(event) => {
+          if (event.touches.length > 1) gesture.cancel()
+        }}
       >
         <div class={styles.surface}>
           <div class={styles.rulerRow}>
             <div class={styles.corner}>
-              <Show when={!props.phone}>
+              <Show
+                when={!props.phone}
+                fallback={
+                  <StudioZoomControls
+                    zoom={zoom}
+                    empty={props.project.clips.length === 0}
+                    compact
+                  />
+                }
+              >
                 <StudioViewControls
                   project={props.project}
                   writable={props.writable}
@@ -533,17 +502,19 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 event.preventDefault()
                 ruler.focus({ preventScroll: true })
                 ruler.setPointerCapture(event.pointerId)
-                // Shift-drag draws a range instead of scrubbing.
-                if (!(props.onRange && range.draw.press(event)))
-                  pressRuler(event, ruler)
+                const target = event.target as Element
+                gesture.press(
+                  event,
+                  target.closest('[data-studio-playhead-handle]') !== null,
+                )
               }}
               onPointerMove={(event) => {
                 if (event.currentTarget.hasPointerCapture(event.pointerId))
-                  dragRuler(event, ruler)
+                  gesture.move(event)
               }}
-              onPointerUp={() => endScrub(true)}
-              onPointerCancel={() => endScrub(false)}
-              onLostPointerCapture={() => endScrub(true)}
+              onPointerUp={(event) => gesture.release(event)}
+              onPointerCancel={() => gesture.cancel()}
+              onLostPointerCapture={(event) => gesture.release(event)}
               onKeyDown={(event) => {
                 const frame = studioRulerKeyFrame(
                   event.key,
@@ -576,13 +547,17 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   )
                 }}
               </Index>
+              {/* The playhead's handle: a press on it scrubs. */}
               <span
                 ref={(element) => onCleanup(motion.attach(element))}
-                class={styles.playheadCap}
+                class={styles.playheadHandle}
                 data-studio-playhead="cap"
+                data-studio-playhead-handle=""
                 aria-hidden="true"
                 style={playheadStyle()}
-              />
+              >
+                <span class={styles.playheadCap} />
+              </span>
             </div>
             <StudioRulerRange
               tools={range}
@@ -730,10 +705,14 @@ export function StudioTimeline(props: StudioTimelineProps) {
         fallback={
           <>
             <Show when={!props.phone}>
-              {zoomControls({
-                right: `${gutter() + 12}px`,
-                bottom: `${floor() + 12}px`,
-              })}
+              <StudioZoomControls
+                zoom={zoom}
+                empty={props.project.clips.length === 0}
+                style={{
+                  right: `${gutter() + 12}px`,
+                  bottom: `${floor() + 12}px`,
+                }}
+              />
             </Show>
             {clipBar(false)}
             {lineBar(false)}
@@ -746,7 +725,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
           data-studio-dock=""
           style={{ '--studio-dock-columns': dockColumns() }}
         >
-          {zoomControls()}
+          <StudioZoomControls
+            zoom={zoom}
+            empty={props.project.clips.length === 0}
+            docked
+          />
           {clipBar(true)}
           {lineBar(true)}
         </div>

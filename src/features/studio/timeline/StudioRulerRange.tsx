@@ -2,15 +2,15 @@
 // Studio ruler range — the stretch of the song Repeat loops and Punch records in, drawn on the ruler with a handle at each end
 // ============================================================
 //
-// Shift-drag along the ruler draws a range, and a clip's toolbar sets one
-// to the clip (StudioClipToolbar.tsx). Each end has a handle to drag, or to
-// move with the arrow keys a grid step at a time, and the cross clears it.
-// A drag shows its range as it goes and sets it once, on release: a range
-// Repeat plays is followed by the playing song (loop-range.ts), and one
-// change is one re-plan, not one per pointer move. While a take runs the
-// range holds still (take-running.ts): its handles go, and Shift-drag
-// draws nothing. The range is the session's view, like the zoom: it is
-// not saved with the song.
+// A drag along the ruler draws a range, as in REAPER (ruler-gesture.ts:
+// a click seeks instead), and a clip's toolbar sets one to the clip
+// (StudioClipToolbar.tsx). Each end has a handle to drag, or to move with
+// the arrow keys a grid step at a time, and the cross clears it. A drag
+// shows its range as it goes and sets it once, on release: a range Repeat
+// plays is followed by the playing song (loop-range.ts), and one change is
+// one re-plan, not one per pointer move. While a take runs the range holds
+// still (take-running.ts): its handles go, and a drag draws nothing. The
+// range is the session's view, like the zoom: it is not saved with the song.
 //
 // The range lies over the ruler but beside it in the page, not inside it:
 // the ruler is the playhead's slider, and a slider's children are
@@ -62,47 +62,46 @@ export function studioRangeEdge(
 }
 
 /**
- * Shift-drag on the ruler draws a range. `press` says whether it took the
- * pointer; a press without Shift is the ruler's own scrub.
+ * Draws a range on the ruler: from the frame a drag started at to the
+ * pointer, both snapped. It shows as it goes and is set once, on release.
  */
 export function createStudioRangeDraw(options: {
-  frameAt(event: PointerEvent): number
+  frameAt(event: { clientX: number }): number
   snap(frame: number): number
   commit(range: StudioFrameRange): void
-  /** A take is running: a Shift-press is taken, and draws nothing. */
+  /** A take is running: nothing starts. */
   locked?(): boolean
 }) {
   const [draft, setDraft] = createSignal<StudioFrameRange | null>(null)
   let from: number | null = null
   return {
     draft: draft as Accessor<StudioFrameRange | null>,
-    press(event: PointerEvent): boolean {
-      if (!event.shiftKey) return false
-      if (options.locked?.() === true) return true
-      from = options.snap(options.frameAt(event))
+    /** Starts a range at `frame`; false while a take holds the range still. */
+    start(frame: number): boolean {
+      if (options.locked?.() === true) return false
+      from = options.snap(frame)
       setDraft(null)
       return true
     },
-    move(event: PointerEvent): boolean {
-      if (from === null) return false
+    move(event: { clientX: number }): void {
+      if (from === null) return
       setDraft(studioRangeBetween(from, options.snap(options.frameAt(event))))
-      return true
     },
-    /** Release sets the range drawn; a cancel or a range too short sets none. */
-    end(commit: boolean): boolean {
-      if (from === null) return false
-      const drawn = draft()
+    /** Release sets the range drawn and returns it; a cancel or a range too short sets none. */
+    end(commit: boolean): StudioFrameRange | null {
+      const drawn = from === null ? null : draft()
       from = null
       setDraft(null)
-      if (commit && drawn !== null) options.commit(drawn)
-      return true
+      if (!commit || drawn === null) return null
+      options.commit(drawn)
+      return drawn
     },
   }
 }
 
 /** What the ruler's range needs from the timeline: the frame under a pointer, snapping, and its props for the song, the playhead and where a drawn range goes. */
 export function createStudioRangeTools(options: {
-  frameAt(event: PointerEvent): number
+  frameAt(event: { clientX: number }): number
   scale(): number
   snapping(): boolean
   timeline: Pick<StudioTimelineProps, 'project' | 'playheadFrame' | 'onRange'>

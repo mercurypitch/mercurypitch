@@ -60,7 +60,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Choose your view',
     targetSelector: '[data-tour="studio.view-controls"]',
     description:
-      'Snap, and the ruler in time or beats. Tempo only sets the beat grid; it never stretches your audio. Zoom sits in the lower right corner of the timeline.',
+      'Snap, and the ruler in time or beats. Tempo only sets the beat grid; it never stretches your audio. Zoom sits in the lower right corner of the timeline, and Ctrl with the wheel, or a pinch, zooms where you point.',
     placement: 'bottom',
     whenPresent: true,
   },
@@ -76,7 +76,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Arrange the song',
     targetSelector: '[data-tour="studio.timeline"]',
     description:
-      'Select a clip to move, trim or fade it. Details gives exact values; Split cuts at the playhead. Clips need free space in a lane, or you can drag to New lane.',
+      'Select a clip to move, trim or fade it. Details gives exact values; Split cuts at the playhead. Clips need free space in a lane, or you can drag to New lane. Click the ruler to move the playhead, or drag along it to mark a range for Repeat and Punch.',
     placement: 'top',
     whenPresent: true,
   },
@@ -84,7 +84,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Follow the song',
     targetSelector: '[data-tour="studio.timeline-overview"]',
     description:
-      'Scroll through the arrangement and tap the ruler to listen from another position. Move, trim and fade clips on a tablet or computer.',
+      'Tap the ruler to listen from another position, or drag along it to mark a range for Repeat. Pinch or use the zoom buttons above the lane names to look closer. Move, trim and fade clips on a tablet or computer.',
     placement: 'top',
     whenPresent: true,
   },
@@ -140,7 +140,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Listen',
     targetSelector: '[data-tour="studio.transport"]',
     description:
-      'Play and pause the song, return to the start, or repeat the arrangement. Playback starts only when you press Play.',
+      'Play and pause the song, return to the start, or repeat the arrangement or the range on the ruler. Scroll over the time to move the playhead. Playback starts only when you press Play.',
     placement: 'top',
     whenPresent: true,
   },

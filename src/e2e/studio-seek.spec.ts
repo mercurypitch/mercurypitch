@@ -1,4 +1,4 @@
-// Studio seek while playing — a press on the ruler moves the playing song there at once, with no dip, no gap and no sources left behind.
+// Studio seek while playing — a click on the ruler moves the playing song there as it comes up, with no dip, no gap and no sources left behind.
 import { expect, test } from '@playwright/test'
 import { openArrangement, setStudioZoom, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
@@ -78,7 +78,7 @@ test.describe('Studio seek while playing', () => {
     }
   })
 
-  test('a press on the ruler moves a playing song there at once with no dip or gap, and fifty more leave no sources behind @smoke', async ({
+  test('a click on the ruler moves a playing song there as it comes up, with no dip or gap, and fifty more leave no sources behind @smoke', async ({
     page,
   }) => {
     test.setTimeout(180_000)
@@ -110,9 +110,10 @@ test.describe('Studio seek while playing', () => {
 
     await clearClicks(page)
     await press(25)
-    const down = (await readClicks(page)).find(({ kind }) => kind === 'down')!
-    await untilAudioClock(page, down.contextTime + 0.47)
-    const seek = readSeek(await captureOutput(page), down, 990, 300)
+    // A click seeks as it comes up (ruler-gesture.ts): time it from there.
+    const up = (await readClicks(page)).find(({ kind }) => kind === 'up')!
+    await untilAudioClock(page, up.contextTime + 0.47)
+    const seek = readSeek(await captureOutput(page), up, 990, 300)
     // A seek that stopped and rebuilt the song fell 37 dB here, stayed
     // 20 dB down for over 100 ms, and the new place came 206 ms or more
     // after the press.
