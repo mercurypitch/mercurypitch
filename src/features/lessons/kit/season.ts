@@ -398,8 +398,19 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Resonance and vowels',
     short: 'Vowels',
     topics: ['T28', 'S13', 'S14'],
+    // A draft until its sign-off (drafts.ts): built in every mode, and live
+    // where the page state publishes it (publish.ts).
+    minutes: 16,
+    page: '/learn/13',
     hook: 'If ‘ee’ and ‘ah’ sung on the same note draw the same pitch line, what makes them sound different?',
-    pr: { needs: 'Long Note on vowels' },
+    pr: {
+      needs: 'Long Note on vowels',
+      link: {
+        href: '/mirror?lesson=13',
+        addr: 'mercurypitch.com/mirror',
+        label: 'Voice Mirror',
+      },
+    },
     fig: 'chladni',
   },
   {

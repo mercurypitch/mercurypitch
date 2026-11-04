@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3, 5 to 10 and 12 are live here; a page that holds them
+// does, so Lessons 3, 5 to 10, 12 and 13 are live here; a page that holds them
 // back is next-card.test.ts's, and one the site worker served with the
 // console's state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -97,7 +97,13 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/12',
-    'Next lesson 13 · Resonance and vowels Coming later',
+    'Next lesson 13 · Resonance and vowels Ready · 16 min',
+    '/learn/13',
+    'Start lesson',
+  ],
+  [
+    '/learn/13',
+    'Next lesson 14 · Phrasing: sing a whole song Coming later',
     '#explorer',
     'See it on the map',
   ],
@@ -279,6 +285,31 @@ test("Lesson 12's card sets up Lesson 13 with its tease, one line above its hook
   await expect(c.locator('button')).toHaveCount(0)
 })
 
+test("Lesson 13's card sets up Lesson 14 with its tease, one line above its hook, and keeps the page's still after its words", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/13')
+
+  // Assert: the card's words in the order eyebrow, tease, hook and way on, then the figure (WEB-SPEC, End to end 10)
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[14]?.tease ?? 'Lesson 14 has a tease',
+  )
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'next-fig'])
+  await expect(c.locator('.next-fig')).toBeVisible()
+  await expect(c.locator('button')).toHaveCount(0)
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {
@@ -391,6 +422,7 @@ for (const [width, height, name] of [
       '/learn/09',
       '/learn/10',
       '/learn/12',
+      '/learn/13',
     ]) {
       test(`${path}: every prerequisite chip is a 44 px target`, async ({
         page,

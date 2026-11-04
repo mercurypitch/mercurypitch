@@ -163,7 +163,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and quizzes load them (the hero sky through kit/still-sky.ts), the chunk
   // goes, to about 134,166 bytes: 22 over 131, so 131 comes back only once
   // 22 more are found.
-  'learn/03.html': 132,
+  // Raised to 133 for Lesson 13's page shell: 134,988 bytes before it,
+  // 135,251 with it, against 135,168 at 132. The 263 are Lesson 13's season
+  // entry, with its page, minutes and Voice Mirror link, and its drafts
+  // line, on every lesson page, in the chunks Lesson 3 loads them in.
+  'learn/03.html': 133,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -255,7 +259,17 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // lights in a chunk it shares with Lesson 10, bring it to 112,067. The
   // ceiling is the smallest whole KB above the measure, raised with each
   // toy that joins until the page is whole and takes a quarter over.
-  'learn/12.html': 110,
+  // Raised to 111 for Lesson 13's page shell: 112,558 bytes before it,
+  // 112,729 with it, against 112,640 at 110. The 171 are Lesson 13's season
+  // entry and drafts line, on every lesson page.
+  'learn/12.html': 111,
+  // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
+  // Lesson 3 is. Measured 73,377 bytes in build:e2e for its page shell:
+  // the kit's deck, switches, masthead, next-lesson card, explorer and
+  // Merc and Tavi, with none of its toys wired yet. The ceiling is the
+  // smallest whole KB above that, so each toy that joins raises it, with
+  // its measure, until the page is whole and takes a quarter over.
+  'learn/13.html': 72,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -360,6 +374,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own, and the shared Inter and Outfit @font-face rules. The smallest
   // whole KB above that, as for its script.
   'learn/12.html': 87,
+  // Lesson 13 (a draft, as above). Measured 87,584 bytes in build:e2e for
+  // its page shell: the kit's sheets (with the voice lessons', inlined into
+  // its own by @import, and the shared parts), its own, and the shared
+  // Inter and Outfit @font-face rules. The smallest whole KB above that, as
+  // for its script.
+  'learn/13.html': 86,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

@@ -27,7 +27,7 @@ their pitch line is drawn beside it. The card's signature is that path (FACTS 4)
 Its public home is `mercurypitch.com/learn/16`: a hand-written document `learn/16.html` with its
 module in `src/features/lessons/lesson-16/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season orders it after Sight-Singing's
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season orders it after Sight-Singing's
 "hear do" start, bass clef, key signature and octave folding (SEASON-2 § 8.2 item 4), and the
 season's release starts when it is ready (FACTS 63; Decisions for the owner, 2).
 
@@ -510,7 +510,7 @@ Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's
   (SEASON-2 § 5.2 item 10)", which is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [9, 16], a cross-season edge, and [15, 16], as SEASON-2 § 4.3 gives them (FACTS 2);
-  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
+  Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
 - The tease on Lesson 15's card is this lesson's, set on Lesson 16 in the lesson copy: `tease` "Five
   notes on the staff. Tavi has never heard them.", `teaseAlts`
   `[{ id: 'any-note', text: 'Now you can see where any note sits.' }]`, with the variant's team note
@@ -532,7 +532,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `16: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 9's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out.
 4. **The staff toy** (Lesson 15's item 4), with this page's options: the Clef switch on the stored
    voice; **Hear it inside**, a play option that lights each note 1.0 s before its onset; **Names on ·

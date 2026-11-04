@@ -152,6 +152,33 @@ describe('seasonFor', () => {
     expect([season[12].page, season[12].minutes]).toEqual(['/learn/12', 15])
   })
 
+  it('draws Lesson 13 held back, by its draft line or by the console, with neither its page nor its reading time', () => {
+    // Act: a draft where drafts are held back, and one the console holds back
+    const seasons = [
+      seasonFor(LESSONS, defaultPageState(false)),
+      seasonFor(LESSONS, served({ 13: { published: false } }, true)),
+    ]
+
+    // Assert: Lesson 13's WEB-SPEC, Tests 13
+    for (const season of seasons)
+      expect([season[13].page, season[13].minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect([LESSONS[13].page, LESSONS[13].minutes]).toEqual(['/learn/13', 16])
+  })
+
+  it('keeps Lesson 13, a draft, its page and its reading time where drafts are shown', () => {
+    // Act
+    const season = seasonFor(LESSONS, defaultPageState(true))
+
+    // Assert
+    expect(DRAFT_LESSONS[13]).toBe(
+      "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+    )
+    expect([season[13].page, season[13].minutes]).toEqual(['/learn/13', 16])
+  })
+
   it('keeps every page where everything is published, the same objects as the season', () => {
     // Act
     const season = seasonFor(LESSONS, defaultPageState(true))

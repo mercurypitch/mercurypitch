@@ -255,6 +255,7 @@ const NO_FILM = [
   { n: 8, title: 'Beat, tempo and the backbeat' },
   { n: 10, title: 'Major and minor' },
   { n: 12, title: 'Chords and the four-chord song' },
+  { n: 13, title: 'Resonance and vowels' },
 ] as const
 
 for (const { n, title } of NO_FILM) {

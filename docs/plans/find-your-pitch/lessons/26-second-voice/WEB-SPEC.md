@@ -39,7 +39,7 @@ beside it (FACTS 31, 44).
 Its public home is `mercurypitch.com/learn/26`: a hand-written document `learn/26.html` with its
 module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
 `docs/plans/find-your-pitch/SEASON-2.md:1272-1273`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
@@ -655,7 +655,7 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
    pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `26: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out.
 4. **Lesson 18's pieces**, as its spec gives them and this page cites them, without restating them:
    its item 7, the sing flow in the kit with a take read in time and `kit/read-in-time.ts`

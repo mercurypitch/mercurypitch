@@ -347,6 +347,29 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 13's page, its reading time and Voice Mirror's link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film; Voice Mirror reads pitch only
+      const L13 = season.LESSONS[13]
+      expect([L13.page, L13.minutes, L13.film], drafts).toEqual([
+        '/learn/13',
+        16,
+        undefined,
+      ])
+      expect(L13.pr.link, drafts).toEqual({
+        href: '/mirror?lesson=13',
+        addr: 'mercurypitch.com/mirror',
+        label: 'Voice Mirror',
+      })
+      // the drill it still needs stays the team's (WEB-SPEC, Explorer and season data)
+      expect(L13.pr.needs, drafts).toBe('Long Note on vowels')
+      expect(season.EDGES, drafts).toContainEqual([11, 13])
+    }
+  })
+
   it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
     // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
     const pages = readdirSync(resolve(__dirname, '../../../../learn'))

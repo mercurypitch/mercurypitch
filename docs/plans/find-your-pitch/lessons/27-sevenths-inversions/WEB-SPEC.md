@@ -382,7 +382,7 @@ app still need, item 3), in the form of Lesson 12's entry
   seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack
   with major against dominant seventh alone (the ear-drill launch kind)".
 - Two edges: `[12, 27]` and `[23, 27]`, so the explorer lights Lessons 12 and 23 as this lesson's
-  path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:431-458`).
+  path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:442-469`).
 - In `kit/lesson-copy.ts` (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): the hook
   with no alternative; the tease for this lesson, which Lesson 26's card prints, "G, B and D going
   home to C, E and G. Now add one note on top.", with `teaseAlts` `three-notes`, "Three notes make a
@@ -408,7 +408,7 @@ first; they are listed so this page's needs are in one place.
    `/learn/27.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint
    budgets. The lesson pages' route already takes any two digits (`LESSON_PAGE`,
    `src/lesson-gate.ts:134`).
-2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:31-41`):
+2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:31-42`):
    `27: "Lessons 12 and 23's pages at /learn/12 and /learn/23, and the vocal coach's look at the sung
 checkpoint and the sung drill"`. Releasing it is deleting that line, then listing the page in the
    sitemap and llms.txt (SEARCH.md § 12 item 3).

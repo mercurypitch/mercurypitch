@@ -42,7 +42,7 @@ with its module in `src/features/lessons/lesson-15/`, wired as Lesson 12's page 
 (`src/features/lessons/lesson-12/main.ts`): a written lesson with no film, its cold open before its
 recall, a recall shown to everyone and a sing-along with no microphone. It is published only after
 the vocal coach has looked at its voice lines (LESSON.md, For the vocal coach), and until then it
-is a draft, in the draft list's form (`src/features/lessons/kit/drafts.ts:29-41`): the site worker
+is a draft, in the draft list's form (`src/features/lessons/kit/drafts.ts:29-42`): the site worker
 holds a draft back on mercurypitch.com and every build carries its page
 (`tools/draft-lessons.ts:8-14`). Its prerequisite, Lesson 2, is live, so nothing else holds it
 (FACTS 2, 7). The release follows Lesson 16, not Lesson 15, since the two open the season together
@@ -525,7 +525,7 @@ other, paused off screen, and the still images when WebGL fails.
 
 Lesson 15's entry, proposed for Season 2's data, which goes in its own module that a Season 1 page
 does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
-(`src/features/lessons/kit/season.ts:405-419`, Lesson 14's):
+(`src/features/lessons/kit/season.ts:416-430`, Lesson 14's):
 
 - `n: 15`, `lane: 'theory'`, `title: 'The staff: where notes sit'`, `short: 'The staff'`, `topics:
 ['T30']`, with T30's name, "Staff notation: staff, clefs, ledger lines, grand staff", as SEASON-2
@@ -540,7 +540,7 @@ Sing it (drafts.ts).` The entry decides nothing about being live: the draft list
   answered on a keyboard or by letter", stays until it ships; it is "Admin only, never drawn on a
   lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [2, 15], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 15's
-  prerequisite list is then [2] (`PREREQ`, `src/features/lessons/kit/season.ts:452-458`).
+  prerequisite list is then [2] (`PREREQ`, `src/features/lessons/kit/season.ts:463-469`).
 - The tease on this page's next-lesson card is Lesson 16's, set on Lesson 16 in the lesson copy
   (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): settled, `tease` "Five notes on the
   staff. Tavi has never heard them.", with the plan's line as a variant, `teaseAlts` `[{ id:
@@ -563,7 +563,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    `/learn/15.html` in `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`), beside the drafts'
    entries; the first-paint budgets (FACTS 73). The lesson pages' route already takes any two
    digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
-2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:29-41`):
+2. **The draft line**, in the draft list's form (`src/features/lessons/kit/drafts.ts:29-42`):
    `15: "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)"`. Releasing it is deleting
    that line, then listing the page in the sitemap and llms.txt (SEARCH.md § 12 item 3).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1): Season 2's data in its own module, its topics

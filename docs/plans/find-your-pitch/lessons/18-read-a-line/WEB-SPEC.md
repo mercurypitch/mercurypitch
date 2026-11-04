@@ -32,7 +32,7 @@ signature is that path (FACTS 4).
 Its public home is `mercurypitch.com/learn/18`: a hand-written document `learn/18.html` with its
 module in `src/features/lessons/lesson-18/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season makes it with Lesson 16, once
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season makes it with Lesson 16, once
 Sight-Singing has its work for the lessons and sight-singing in time, and the two go to the coach
 together (SEASON-2 § 8.2 item 4; FACTS 73; Decisions for the owner, 2).
 
@@ -653,7 +653,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    lesson pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `18: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 9's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out.
 4. **The reading staff**: the staff toy (SEASON-2 § 6.2 item 2) with rhythm on the staff (item 3), as
    Lessons 15 and 17's specs ask, and this page's additions:

@@ -822,7 +822,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    the drafts' entries, whose
    comment gives the reason: where a draft is not published, its address must reach the site
    worker's 404 page, never the app shell (`:138-157`).
-2. `src/features/lessons/kit/drafts.ts:30-41`: Lesson 10's line, in the form of Lessons 3 and 5's:
+2. `src/features/lessons/kit/drafts.ts:30-42`: Lesson 10's line, in the form of Lessons 3 and 5's:
    `10: "Lesson 6's page at /learn/06, and the vocal coach's look at the sung checkpoint"`. While it
    stands, the page is held back on mercurypitch.com and served on the dev site and every PR
    preview, and the console can publish it there before both are done, with no release
@@ -1155,7 +1155,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:130-147`) and this one's (`:211-254`); its still inside the card holds no button.
+    card (`:136-153`) and this one's (`:217-260`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
     alternative hook's note never reaches the page (`:78-80`).

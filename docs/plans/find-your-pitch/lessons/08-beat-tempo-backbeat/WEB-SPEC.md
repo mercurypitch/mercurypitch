@@ -928,7 +928,7 @@ was built on.
 11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
-12. `src/features/lessons/kit/drafts.ts:30-41`: Lesson 8's line, "the vocal coach's sign-off
+12. `src/features/lessons/kit/drafts.ts:30-42`: Lesson 8's line, "the vocal coach's sign-off
     (MASTER-PLAN § 12 item 8)", in the form of Lessons 3 and 5's, and the season entry above. The
     console puts the page live on mercurypitch.com by publishing it, with no release
     (`kit/drafts.ts:13`); releasing it in code means deleting that line (`drafts.ts:18-24`).
@@ -998,7 +998,7 @@ was built on.
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:103-169`, Lessons 3 and 5),
-    at `:215-221`, and its CSS ceiling at `:328-331`, since every build carries every lesson page.
+    at `:219-225`, and its CSS ceiling at `:342-345`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1108,7 +1108,7 @@ parts:
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:350-367`); a state that holds it back draws it with
+    document in `learn/` (`kit/season.test.ts:373-390`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none

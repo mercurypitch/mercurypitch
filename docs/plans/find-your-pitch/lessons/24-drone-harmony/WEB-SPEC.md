@@ -36,7 +36,7 @@ singer's line left to Lesson 26 (FACTS 4, 38).
 Its public home is `mercurypitch.com/learn/24`: a hand-written document `learn/24.html` with its
 module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season puts Lessons 24, 26 and 28
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
 8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1272-1273`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
@@ -702,7 +702,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:346-364`):
   item 15); a drone with harmonics", is the team's only: the field is
   "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [5, 24], [10, 24] and [23, 24], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 24's
-  prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:452-457`).
+  prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:463-468`).
 - The tease on Lesson 23's card is this lesson's, set on Lesson 24 in the lesson copy: `tease` "A
   drone, and a second note just above it, almost in tune.", with `teaseAlts`
   `[{ id: 'fifths', text: 'Fifths count as settled, tritones lean. Next, a note against a drone.' }]`
@@ -726,7 +726,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `24: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit** (SEASON-2 § 6.2 item 1), as Lesson 15's spec sets them out; the masthead
    then names Season 2, where today its season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`).

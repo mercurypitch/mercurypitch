@@ -48,7 +48,7 @@ along the song's sections (FACTS 4, 29 to 36).
 Its public home is `mercurypitch.com/learn/28`: a hand-written document `learn/28.html` with its
 module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a draft until the vocal
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
-list's form (`src/features/lessons/kit/drafts.ts:31-41`). The season builds Lessons 24, 26 and 28
+list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
 `docs/plans/find-your-pitch/SEASON-2.md:1272-1273`).
 
@@ -642,7 +642,7 @@ stills when WebGL fails.
 ## Explorer and season data
 
 Lesson 28's entry, proposed for Season 2's data in its own module, in Season 1's entry form, as
-Lesson 14's is (`src/features/lessons/kit/season.ts:405-419`):
+Lesson 14's is (`src/features/lessons/kit/season.ts:416-430`):
 
 - `n: 28`, `lane: 'both'`, `title: 'Cadences, form and a song in two parts'`, `short: 'Cadences'`,
   `topics: ['T22', 'T31']`, with their names as SEASON-2 § 4.1 gives them, "Phrases and cadences"
@@ -653,7 +653,7 @@ Lesson 14's is (`src/features/lessons/kit/season.ts:405-419`):
   drill (item 17)", is the team's only: the field is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [18, 28] and [26, 28], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 28's
-  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:453-457`).
+  prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:464-468`).
 - The tease on Lesson 27's card is this lesson's, set on Lesson 28 in the lesson copy
   (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): `tease` "A song in two parts. At
   bar 8 it seems to end, then keeps going.", 64 characters, inside `TEASE_MAX`
@@ -678,7 +678,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:134`).
 2. **The draft line**, in the draft list's form:
    `28: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
-   (`src/features/lessons/kit/drafts.ts:31-41`).
+   (`src/features/lessons/kit/drafts.ts:31-42`).
 3. **Seasons in the kit, and a close per season** (SEASON-2 § 6.2 item 1), required before this page
    is built:
    - a season that knows its last lesson, so `nextCard` stops at it: today it looks for lesson n + 1
