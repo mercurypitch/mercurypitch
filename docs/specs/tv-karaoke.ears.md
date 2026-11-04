@@ -30,7 +30,10 @@ wait only for the device check; `076` shipped, to verify on a TV; `015`,
 are hardened and carry the notes the phone's lane draws; and `005` conflicts
 with `101` on the stage page, an open point under `005`. Later that day:
 the view-mode lane is the phone's zen ribbon drawn for a TV (`022`), and
-`028` is added, the paused screen, built in view mode.
+`028` is added, the paused screen, built in view mode. Updated 2026-11-04:
+`106` is added, the TV chooser, built on `feat/tv-choice` from the owner's
+call of 3 Nov; with it every build carries the stage page, the store build
+included, and `104` says so.
 
 **Source (existing):** `src/lib/device-tier.ts` — device class and tier;
 `src/styles/performance-mode.css` — the TV focus ring;
@@ -793,11 +796,13 @@ _Tests:_ `src/lib/mic-latency-route.test.ts`,
 
 ---
 
-## iOS second screen — `REQ-TV-100..105`
+## iOS second screen — `REQ-TV-100..106`
 
 POC-3 (PR #1179) builds `100`-`102` and `104`-`105` behind a test build's
-"Stage on a connected TV" switch, which starts off; a store build carries no
-stage page, so its TV mirrors (`REQ-TV-090`, `104`).
+"Stage on a connected TV" switch, which starts off. Since the TV chooser
+(`106`) every build, the store build included, asks what a TV shows as it
+connects and carries the stage page; the switches stay a test build's, for
+trying a view by hand. A TV mirrors until a choice is made (`REQ-TV-090`).
 
 ### REQ-TV-100 — The stage on the external display **[open; POC merged, PR #1179]**
 
@@ -866,15 +871,15 @@ recorded in the plan.
 TV mirrors the phone. A load cancelled by the next one is not a failure.
 _Source:_ `stagePage()` in `LyricsWindowPlugin.swift` returns nil where the
 bundle has no `stage.html`; `pageFailed()` in `TVStage.swift` takes the
-window down; and a store build carries no stage page, since
-`apps/mercurypitch/vite.config.ts` adds it only with the Developer screen,
-which a store build never has (`portableConsoleFor`).
+window down. Until the TV chooser (`106`) a store build carried no stage
+page, since `apps/mercurypitch/vite.config.ts` added it only with the
+Developer screen. Now every build carries it, the store build included, so
+this is the fallback for a page that does not load, or a bundle that lost
+it: `assert-bundle.mjs` fails a built bundle without it.
 _Tests:_ `apps/mercurypitch/src/ios-tv-stage.test.ts` ("finds no page where
-the bundle has none", "gives the TV back to the mirror when the page does not
-load"); `apps/mercurypitch/src/api-base.test.ts` (the portable console and
-the Developer screen "are out of the store build, whatever the env says"). A
-store build installed over a test build that left the switch on is the case
-this covers: TestFlight and the App Store share the app's settings.
+the bundle has none, so the TV mirrors", "gives the TV back to the mirror
+when the page does not load"); `apps/mercurypitch/src/tv-stage-build.test.ts`
+(the dev and the store build's config both carry the page).
 
 ### REQ-TV-105 — The picture can be moved to meet the sound **[open; POC merged, PR #1179]**
 
@@ -887,6 +892,63 @@ _Tests:_ `src/stores/tv-stage-store.test.ts`;
 `src/features/karaoke-room/useKaraokeTvStage.test.ts` ("moves the picture by
 the Developer screen's offset");
 `apps/mercurypitch/src/shell/TvLyricsPanel.test.tsx`.
+
+### REQ-TV-106 — The TV asks once, and remembers **[built on feat/tv-choice; device check pending]**
+
+**WHEN** an external-display scene connects (AirPlay screen mirroring, or a
+cable) **AND** no choice is remembered for that TV, the iOS app shall ask on
+the phone what the TV shows: the stage (`REQ-TV-100`), marked recommended,
+or the lyrics full screen, with the plain mirror of the phone as a quiet
+third answer, and a box "Remember for" the TV's name, ticked by default.
+**WHILE** the question is up, the TV shall mirror the phone, question
+included, whatever view it showed last. **WHEN** the singer answers with the
+box ticked, the system shall show the answer and keep it for that TV;
+unticked, it shall show it for this connection only, and the next
+connection shall ask again. **IF** the singer closes the question (Not now,
+Back, the backdrop, a swipe, Escape), **THEN** the TV shall mirror the phone
+for this connection and nothing shall be kept. **WHEN** a TV with a
+remembered choice connects, the system shall show that choice without
+asking. AirPlay's sound alone gives the phone no screen and shall ask
+nothing.
+
+A TV shall be known by the name of the sound's route port on AirPlay or
+HDMI (`audioRoutePort`), as the route settles after the screen connects:
+its first move that names a TV, or, with none within 2 s, the TV it names
+then. The route as the screen arrives is not taken at once, since it may
+still be an AirPlay speaker the sound was on before. A TV with no name by
+then shall be kept under one key for every such TV, which the box calls
+"this TV". What is kept stays on the phone, out of the settings sync, and
+the console never names a TV.
+
+Settings, Karaoke, TV shall list the remembered TVs, each with its choice,
+which the singer can change (shown at once on that TV while it is
+connected) or forget. Before any TV is remembered, it shall say in a line
+what happens when one connects. **WHERE** the phone has no TV plugin
+(Android, the web), there shall be no question and no TV group. Every build
+shall carry the stage page (`REQ-TV-104`).
+
+A test build's Developer switches set what the TV shows now, and leave what
+the singer chose alone.
+_Why:_ the owner, 3 Nov 2026, after the TV lyrics and the TV stage "worked
+great" over Screen Mirroring on an LG C2: "Stage is better, I would say,
+showing pitch plus lyrics below, but maybe on first mirror or sharing of the
+app through airplay we can simply ask a simple A/B and a checkbox to
+remember the selection for that device."
+_Source:_ `apps/mercurypitch/src/shell/tv/`: `tv-choice.ts` (the flow),
+`tv-name.ts` (the name and its wait), `tv-memory.ts` (kept per TV, under an
+`mp:` key), `TvChoiceSheet.tsx`, `TvSettingsGroup.tsx`; Back in
+`apps/mercurypitch/src/shell/shell-navigation.ts`; the route and its port
+set together in `src/stores/audio-route-store.ts`; the page in every build
+in `apps/mercurypitch/vite.config.ts`. No Swift change: the plugin's TV
+calls were in every build already.
+_Tests:_ `apps/mercurypitch/src/shell/tv/tv-choice.test.ts`,
+`tv-memory.test.ts`, `tv-name.test.ts`, `TvChoiceSheet.test.tsx` and
+`TvSettingsGroup.test.tsx`; `apps/mercurypitch/src/shell/shell-navigation.tv-choice.test.ts`;
+`src/tests/audio-route-store.test.ts` ("moves a route and its port
+together"); `apps/mercurypitch/src/tv-stage-build.test.ts`;
+`scripts/assert-no-portable-console.test.mjs` (the chooser and the page pass
+a store binary, the Developer TV section fails it); a device check,
+[tv-device-tests.md](../plans/tv-device-tests.md), Test 6.
 
 ---
 
