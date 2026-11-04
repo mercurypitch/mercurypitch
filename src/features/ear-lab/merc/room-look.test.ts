@@ -23,6 +23,20 @@ function css(path: string): string {
   return readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\//gu, '')
 }
 
+/** WCAG contrast of white at `alpha` over the fill `hex`. */
+function onFill(hex: string, alpha: number): number {
+  const fill = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+  const ink = fill.map((c) => 255 * alpha + c * (1 - alpha))
+  const lum = (rgb: number[]): number => {
+    const [r, g, b] = rgb.map((c) => {
+      const v = c / 255
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  return (lum(ink) + 0.05) / (lum(fill) + 0.05)
+}
+
 describe("the drill room's stylesheets", () => {
   for (const [name, path] of Object.entries(SHEETS)) {
     it(`${name}: no brass, parchment or serif left`, () => {
@@ -36,6 +50,24 @@ describe("the drill room's stylesheets", () => {
       expect(text).not.toMatch(/(?<!sans-)serif/iu)
     })
   }
+
+  it.each([
+    ['room', SHEETS.room],
+    ['bench', SHEETS.bench],
+  ])(
+    "%s: writes a lit button's small line at 4.5:1 or more on the filled violet",
+    (_, path) => {
+      const text = css(path)
+      const fill = /--room-lit-fill: (#[\da-f]{6})/u.exec(text)?.[1] ?? ''
+      const small = /\n\.primary small \{([^}]*)\}/u.exec(text)?.[1] ?? ''
+      const said = /color: (?:#fff;|rgb\(255 255 255 \/ (\d+)%\);)/u.exec(small)
+
+      expect(fill).toBe('#7c4dff')
+      expect(said).not.toBeNull()
+      const alpha = said?.[1] === undefined ? 1 : Number(said[1]) / 100
+      expect(onFill(fill, alpha)).toBeGreaterThanOrEqual(4.5)
+    },
+  )
 
   it("keeps the kit's colours: lit violet, the filled violet, teal and red", () => {
     const room = css(SHEETS.room)

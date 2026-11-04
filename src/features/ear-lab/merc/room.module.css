@@ -722,9 +722,11 @@
   cursor: pointer;
 }
 
+/* White, as the label is, and quieter by its weight and size alone: at 80%
+   on the violet it read 3.7:1; white is 4.8:1. */
 .primary small {
   font: 500 14px/1.1 var(--room-sans);
-  color: rgb(255 255 255 / 80%);
+  color: #fff;
 }
 
 /* And the glass outline for the rest. */
