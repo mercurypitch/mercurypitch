@@ -691,5 +691,75 @@ describe('MicManager input for one hold', () => {
       expect(voice.track.stop).not.toHaveBeenCalled()
       expect(mgr.getStream()).toBe(voice)
     })
+
+    describe('while the page is hidden', () => {
+      /** The page goes to the background, or shows again, as the browser tells it. */
+      const setHidden = (hidden: boolean) => {
+        vi.spyOn(document, 'hidden', 'get').mockReturnValue(hidden)
+        document.dispatchEvent(new Event('visibilitychange'))
+      }
+
+      afterEach(() => setHidden(false))
+
+      it('waits out a mute however long it lasts, as a take on another tab keeps going', async () => {
+        openEach()
+        const states: MicState[] = []
+        mgr.subscribe((state) => states.push(state))
+        const studio = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+
+        // WebKit mutes a hidden page's capture.
+        setHidden(true)
+        fire(studio, 'mute')
+        await vi.advanceTimersByTimeAsync(60_000)
+
+        expect(states.at(-1)?.scoped).toBe('studio')
+        expect(studio.track.stop).not.toHaveBeenCalled()
+      })
+
+      it('counts the half second from when the page shows again, while the track is still muted', async () => {
+        openEach()
+        const states: MicState[] = []
+        mgr.subscribe((state) => states.push(state))
+        const studio = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+        setHidden(true)
+        fire(studio, 'mute')
+        await vi.advanceTimersByTimeAsync(3000)
+
+        setHidden(false)
+        await vi.advanceTimersByTimeAsync(499)
+        expect(states.at(-1)?.scoped).toBe('studio')
+        await vi.advanceTimersByTimeAsync(1)
+        expect(states.at(-1)?.scoped).toBeNull()
+        expect(studio.track.stop).toHaveBeenCalled()
+      })
+
+      it('stops a count under way when the page hides, and keeps an input that unmutes there', async () => {
+        openEach()
+        const studio = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+
+        fire(studio, 'mute')
+        await vi.advanceTimersByTimeAsync(300)
+        setHidden(true)
+        await vi.advanceTimersByTimeAsync(5000)
+        fire(studio, 'unmute')
+        setHidden(false)
+        await vi.advanceTimersByTimeAsync(1000)
+
+        expect(mgr.getScopedHold()?.consumerId).toBe('studio')
+        expect(studio.track.stop).not.toHaveBeenCalled()
+      })
+
+      it('keeps the half-second rule while the page shows', async () => {
+        openEach()
+        setHidden(false)
+        const studio = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+
+        fire(studio, 'mute')
+        await vi.advanceTimersByTimeAsync(500)
+
+        expect(mgr.getScopedHold()).toBeNull()
+        expect(studio.track.stop).toHaveBeenCalled()
+      })
+    })
   })
 })

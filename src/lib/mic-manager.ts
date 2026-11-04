@@ -18,6 +18,7 @@
 
 import type { MicError } from './mic-errors'
 import { classifyError, heldElsewhere, NO_CAPTURE, superseded, } from './mic-errors'
+import { watchInputLoss } from './mic-input-loss'
 import type { MicLockRecord } from './mic-lock'
 import { claimMicLock, micLockStatus, releaseMicLock, requestMicHandoff, setMicYieldHandler, } from './mic-lock'
 
@@ -72,14 +73,6 @@ export const BACKGROUND_HOLD_IDS: readonly string[] = ['routine']
 // (typically a previous handle that has not finished releasing yet).
 const BUSY_RETRY_DELAY_MS = 250
 
-/**
- * How long the track of an input of its own may stay muted before it counts
- * as gone. A browser that keeps one capture at a time (WebKit) mutes the
- * earlier track, rather than ending it, as another opens: a take would go on
- * recording silence with nothing said.
- */
-const MUTED_INPUT_LOST_MS = 500
-
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -131,10 +124,8 @@ interface ScopedHold {
   stream: MediaStream | null
   /** It records from the shared stream: its input is the app's. */
   shared: boolean
-  /** Takes its listeners off its track when it ends. */
+  /** Stops watching its track (watchInputLoss) when it ends. */
   readonly watch: AbortController
-  /** A mute under way on its track, which loses the hold at MUTED_INPUT_LOST_MS. */
-  muted: ReturnType<typeof setTimeout> | null
 }
 
 export class MicManager {
@@ -272,7 +263,8 @@ export class MicManager {
    * On the app's own input, the one the shared stream asks for or is on (the
    * default for both, say), it records from the shared stream instead of
    * opening a second capture, which such a browser would mute one of. Its
-   * track muted for MUTED_INPUT_LOST_MS counts as gone, as an unplug does.
+   * track muted for half a second while the page shows counts as gone, as an
+   * unplug does (watchInputLoss).
    */
   acquireFrom(
     consumerId: string,
@@ -285,7 +277,6 @@ export class MicManager {
       stream: null,
       shared: false,
       watch: new AbortController(),
-      muted: null,
     }
     // Taken now, not when the open runs, so a release queued before this
     // call finds its hold replaced and leaves this one be (releaseHold).
@@ -360,8 +351,6 @@ export class MicManager {
   private endScoped(hold: ScopedHold): void {
     if (this.scoped === hold) this.scoped = null
     hold.watch.abort()
-    if (hold.muted !== null) clearTimeout(hold.muted)
-    hold.muted = null
     const stream = hold.stream
     hold.stream = null
     // The shared stream stays with its consumers, or for the linger.
@@ -378,32 +367,13 @@ export class MicManager {
     return deviceId !== null && trackDeviceId(stream) === deviceId
   }
 
-  /** Hear `hold`'s input go: its track ended, or muted for MUTED_INPUT_LOST_MS. */
+  /** End `hold` when its input goes (watchInputLoss): its track ended, or stayed muted while the page showed. */
   private watchHold(hold: ScopedHold, stream: MediaStream): void {
-    const options = { signal: hold.watch.signal }
-    const lose = () => {
+    watchInputLoss(stream, hold.watch.signal, () => {
       if (hold.stream !== stream) return
       this.endScoped(hold)
       this.emit()
-    }
-    const muted = () => {
-      if (hold.stream !== stream || hold.muted !== null) return
-      hold.muted = setTimeout(lose, MUTED_INPUT_LOST_MS)
-    }
-    for (const track of stream.getTracks()) {
-      // Muted already, as a shared stream an earlier capture muted is: no 'mute' comes.
-      if (track.muted) muted()
-      track.addEventListener?.('ended', lose, options)
-      track.addEventListener?.('mute', muted, options)
-      track.addEventListener?.(
-        'unmute',
-        () => {
-          if (hold.muted !== null) clearTimeout(hold.muted)
-          hold.muted = null
-        },
-        options,
-      )
-    }
+    })
   }
 
   private buildConstraints(deviceId: string | null): MediaStreamConstraints {
