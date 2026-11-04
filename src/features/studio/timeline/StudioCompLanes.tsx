@@ -10,7 +10,7 @@
 // uses the focused pass there, Escape closes. A phone has the lane sheet
 // instead (StudioCompSheet.tsx).
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, createUniqueId, For, on, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, Show, } from 'solid-js'
 import { studioClipOnPass } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -144,6 +144,18 @@ function CompRows(props: CompRowsProps) {
   let pointing = false
   const strips = new Map<number, HTMLElement>()
   let drag: Drag | null = null
+  // A second finger is a pinch (lane-navigation.ts): the swipe lets go and
+  // uses nothing, as a clip drag and the ruler's gestures do.
+  const secondPointer = (event: PointerEvent) => {
+    if (drag !== null && event.pointerId !== drag.pointerId) letGo()
+  }
+
+  function letGo(): void {
+    drag = null
+    setPreview(null)
+    window.removeEventListener('pointerdown', secondPointer, true)
+  }
+  onCleanup(letGo)
   // Another clip's passes start their own pick.
   createEffect(
     on(
@@ -229,7 +241,8 @@ function CompRows(props: CompRowsProps) {
   }
 
   function pointerDown(event: PointerEvent, row: StudioCompRow): void {
-    if (event.button !== 0 || !props.timeline.writable) return
+    if (event.button !== 0 || !event.isPrimary || !props.timeline.writable)
+      return
     event.preventDefault()
     const strip = event.currentTarget as HTMLElement
     pointing = true
@@ -244,6 +257,7 @@ function CompRows(props: CompRowsProps) {
       anchor: sourceAt(event, strip),
       moved: false,
     }
+    window.addEventListener('pointerdown', secondPointer, true)
   }
 
   /** The stretch a drag covers so far, snapped as it will be used. */
@@ -270,8 +284,7 @@ function CompRows(props: CompRowsProps) {
   function pointerUp(event: PointerEvent): void {
     const active = drag
     if (!active || active.pointerId !== event.pointerId) return
-    drag = null
-    setPreview(null)
+    letGo()
     if (!active.moved) {
       setSelection(studioCompCell(clip(), active.anchor, grid()))
       setKeyed(true)
@@ -333,10 +346,7 @@ function CompRows(props: CompRowsProps) {
                 onPointerDown={(event) => pointerDown(event, row)}
                 onPointerMove={pointerMove}
                 onPointerUp={pointerUp}
-                onPointerCancel={() => {
-                  drag = null
-                  setPreview(null)
-                }}
+                onPointerCancel={letGo}
               >
                 <For each={studioCompLit(clip(), row.pass)}>
                   {(part) => (
