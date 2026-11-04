@@ -227,6 +227,22 @@
 
 /* ---------- the rail ---------- */
 
+/* The band's glass: the rail, the More circle and the transport. In light
+   it is a white glass, thicker than the kit's. At the kit's 72 % of the
+   light grey, a room's dark picture behind it (the alley, the Sing room's
+   studio, the Ear Lab, a stage) took the glass to a mid grey, and the
+   labels on it, in the secondary ink, to 3:1. White at 90 % holds them at
+   AA over the darkest room, as the More sheet's cards (white at 92 %) do;
+   dark keeps the kit's glass. A token on the shell, so the rule that reads
+   it never names a theme. */
+.mp-shell {
+  --mp-band-glass: var(--glass-bg);
+}
+
+:root[data-theme='light'] .mp-shell {
+  --mp-band-glass: color-mix(in srgb, #ffffff 90%, transparent);
+}
+
 .mp-rail-row {
   display: flex;
   align-items: center;
@@ -243,7 +259,7 @@
   height: var(--tabbar-height);
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--glass-bg);
+  background: var(--mp-band-glass);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
@@ -277,9 +293,12 @@
 }
 
 /* The selected mark is never colour alone: the symbol fills in, the tinted
-   plate appears behind it, and aria-current says so out loud. */
+   plate appears behind it, and aria-current says so out loud. Its ink is the
+   theme's accent for text: the same as the accent in dark, and in light the
+   deeper blue the light theme keeps for words, since the fill accent on its
+   own plate read 3.6:1 there over a light page and 2:1 over a dark room. */
 .mp-rail__item[aria-current='page'] {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
@@ -307,7 +326,7 @@
   place-items: center;
   border: 1px solid var(--glass-border);
   border-radius: 999px;
-  background: var(--glass-bg);
+  background: var(--mp-band-glass);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--mp-glass-shadow);
@@ -323,7 +342,7 @@
 }
 
 .mp-more-aside[aria-current='page'] {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 
 /* A 320 px phone: at 13 px "Progress" is 55 px wide, and a quarter of the
@@ -381,7 +400,7 @@
   gap: 16px;
   padding: 1px 12px;
   border-radius: 999px;
-  background: var(--glass-bg);
+  background: var(--mp-band-glass);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
