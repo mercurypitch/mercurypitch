@@ -17,6 +17,7 @@ import { createSignal } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
+import { backgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
 import type { NativeShellApi } from '@/stores/native-shell-store'
@@ -283,6 +284,98 @@ describe('the room when the melody runs out', () => {
 
     expect(room.picker.trackModalSong()).toBeNull()
     expect(room.picker.isModalOpen()).toBe(false)
+  })
+})
+
+describe("the room's name", () => {
+  // The header chip, the session pill and the take card all said "Retro
+  // Analog Studio" whatever cover was picked. The room is named for the cover
+  // it draws now, and the header reads the name live, so a pick renames the
+  // room on screen. The pick is the app's one Sing controller, so each case
+  // puts the studio back.
+  const sing = backgroundSurfaceController('sing')
+
+  afterEach(() => {
+    sing.select('sing-retro-analog-studio')
+    localStorage.removeItem('pitchperfect_sing_background')
+  })
+
+  it('is the cover it draws, and follows a new pick', () => {
+    sing.select('sing-retro-analog-studio')
+    mountRoom()
+    expect(nativeRunControls()?.roomLabel).toBe('Retro Analog Studio')
+
+    // The same registration, read again: a name copied at mount would still
+    // say the studio here.
+    sing.select('sing-choir-room')
+    expect(nativeRunControls()?.roomLabel).toBe('Choir Room')
+    sing.select('sing-rehearsal-attic')
+    expect(nativeRunControls()?.roomLabel).toBe('Rehearsal Attic')
+  })
+
+  it('is the cover on screen, not one still on its way', () => {
+    // A supporter cover picked in the room opens behind the one drawn: the
+    // controller holds it as requested while its image is fetched, or falls
+    // back to the studio when the room's access is gone. Either way the
+    // singer sees the drawn cover, and that is the name.
+    sing.select('sing-choir-room')
+    const requested = vi
+      .spyOn(sing, 'requestedId')
+      .mockReturnValue('sing-echo-cistern')
+    try {
+      mountRoom()
+      expect(nativeRunControls()?.roomLabel).toBe('Choir Room')
+    } finally {
+      requested.mockRestore()
+    }
+  })
+
+  it('captions the take card with the room the take ended in, and keeps it', async () => {
+    sing.select('sing-choir-room')
+    const room = mountRoom()
+    dispatchSingRoom({ type: 'sing-a-note' })
+    dispatchSingRoom({ type: 'priming-continue' })
+    dispatchSingRoom({ type: 'mic-granted' })
+    // Four seconds of A3: over the three of voice a take needs to be kept.
+    for (let at = 0; at <= 4000; at += 16) room.frame(at, 220)
+    nativeRunControls()?.stop()
+    await Promise.resolve()
+
+    const caption = (): string | null | undefined =>
+      screen.getByTestId('sing-take-sheet').querySelector('p')?.textContent
+    expect(caption()).toMatch(/^Sing · Choir Room · /u)
+
+    // A cover that lands while the card is open, as a supporter cover's
+    // image can after a late pick, renames the room from then on, not the
+    // take sung before it.
+    sing.select('sing-rehearsal-attic')
+    await Promise.resolve()
+    expect(nativeRunControls()?.roomLabel).toBe('Rehearsal Attic')
+    expect(caption()).toMatch(/^Sing · Choir Room · /u)
+  })
+
+  it('takes the name the picker lists a cover under', () => {
+    // A supporter cover's name in the picker is the server's title, which
+    // Studio can change; the chip and the pill read the same list, so a
+    // renamed cover is one name everywhere. The build's catalogue answers
+    // only for a cover the list does not hold.
+    sing.select('sing-choir-room')
+    const listed = sing.options()
+    const renamed = vi
+      .spyOn(sing, 'options')
+      .mockReturnValue(
+        listed.map((option) =>
+          option.id === 'sing-choir-room'
+            ? { ...option, label: 'Choir Loft' }
+            : option,
+        ),
+      )
+    try {
+      mountRoom()
+      expect(nativeRunControls()?.roomLabel).toBe('Choir Loft')
+    } finally {
+      renamed.mockRestore()
+    }
   })
 })
 

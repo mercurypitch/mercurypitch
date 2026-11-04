@@ -35,6 +35,7 @@ import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { roomName } from '@/features/rooms/room-names'
 import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
+import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
@@ -61,7 +62,7 @@ import { createRunOutWatch } from './run-out-watch'
 import { loadSingGlass, persistSingGlass, SING_GLASS_VAR } from './sing-glass'
 import styles from './sing-room.module.css'
 import { setSingCoachMarkSeen, setSingMicGranted, setSingMicOnArrival, setSingPerNoteBurn, SING_COACH_MARK, singCoachMarkSeen, singMicOnArrival, singPerNoteBurn, } from './sing-room-settings'
-import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSingTakeResult, singRoomContext, singTakeClock, singTakePrevious, singTakeSummary, takesThisSession, } from './sing-room-store'
+import { beginTake, clearSingTakeResult, dispatchSingRoom, enterSingRoom, setSingTakeResult, singRoomContext, singTakeClock, singTakePrevious, singTakeRoomLabel, singTakeSummary, takesThisSession, } from './sing-room-store'
 import { SingRoomHud } from './SingRoomHud'
 import { SingRoomOptions } from './SingRoomOptions'
 import { SingRoomPicker } from './SingRoomPicker'
@@ -217,6 +218,22 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   // contract `useBackgroundSurfaceController` takes this flag for.
   const background = useBackgroundSurfaceController('sing', pickerOpen)
 
+  // The room is named for the cover it draws: with the Choir Room picked it
+  // is the Choir Room, not the studio the room first opened on. The header
+  // chip says it, the session pill follows it while the run's room is on
+  // screen, and a take ends with it (the take card keeps that name). It is
+  // the cover drawn, not one still on its way, under the name the picker
+  // gives it: a supporter cover's is the server's title, which Studio can
+  // change. A cover neither knows keeps the room's own name.
+  const roomLabel = createMemo(() => {
+    const id = background.resolved().id
+    return (
+      background.options().find((option) => option.id === id)?.label ??
+      getBackgroundDefinition(id)?.label ??
+      roomName('sing')
+    )
+  })
+
   // The take on the card is the STORE's, not this component's. Both halves of
   // it — the state that says a card is open and the summary the card draws —
   // have to survive a remount or neither may: see `sing-room-store.ts`.
@@ -272,10 +289,12 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // The previous take is captured BEFORE Keep writes, so the line the
     // singer is reading cannot change into a comparison with the take they
     // are deciding about.
-    setSingTakeResult(computed, lastSingTake(), {
-      startedAt: takeRecording.startedAtEpoch,
-      endedAt: Date.now(),
-    })
+    setSingTakeResult(
+      computed,
+      lastSingTake(),
+      { startedAt: takeRecording.startedAtEpoch, endedAt: Date.now() },
+      untrack(roomLabel),
+    )
     return true
   }
 
@@ -679,7 +698,13 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     onCleanup(
       registerRunControls({
         tab: TAB_SINGING,
-        roomLabel: roomName('sing'),
+        // A getter, so the header's chip follows a new cover the moment it
+        // is drawn: the shell reads it where it tracks. The pill follows it
+        // too while this room is registered, and keeps the last name once
+        // the room unmounts (run-shell-store.ts).
+        get roomLabel() {
+          return roomLabel()
+        },
         isPlaying: () => runIsLive(ctx()),
         isPaused: () => runIsPaused(ctx()),
         isCountingIn: () => props.isCountingIn(),
@@ -1092,7 +1117,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         previous={singTakePrevious()}
         startedAt={singTakeClock().startedAt}
         endedAt={singTakeClock().endedAt}
-        roomLabel={roomName('sing')}
+        roomLabel={singTakeRoomLabel()}
         onKeep={keepTake}
         onDismiss={keepTake}
         onDiscard={() => {

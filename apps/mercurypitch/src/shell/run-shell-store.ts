@@ -85,9 +85,12 @@ export const COLUMN_IDLE_MS = 4000
 const CLOCK_INTERVAL_MS = 500
 
 const [runOwner, setRunOwner] = createSignal<ActiveTab | null>(null)
-// The room's name, captured when the run starts. The pill outlives the room
+// The room's name, taken when the run starts and kept in step with the room
+// while it is on screen (the machine below): a room can rename itself mid-run
+// (the Sing room is named for the cover it draws). The pill outlives the room
 // that registered the controls — leaving the tab unmounts it — so the label
-// cannot be read back off them at the moment it is needed.
+// cannot be read back off them at the moment it is needed; it keeps the last
+// name the room had.
 const [runLabel, setRunLabel] = createSignal('')
 const [takeOnScreen, setTakeOnScreen] = createSignal(false)
 const [locked, setLocked] = createSignal(false)
@@ -753,6 +756,18 @@ createRoot(() => {
       })
     }),
   )
+
+  // The pill names the room the run is in, as it is when the singer leaves
+  // it. The Sing room is named for the cover it draws, and its picker stays
+  // open over a live run, so a new cover picked mid-run renames the room the
+  // pill is about to stand for. While the run's own room is registered its
+  // name is followed here; once the room unmounts, the last name stays.
+  createEffect(() => {
+    const controls = nativeRunControls()
+    const owner = runOwner()
+    if (controls === null || owner === null || controls.tab !== owner) return
+    setRunLabel(controls.roomLabel)
+  })
 
   // Leaving the room an ended run belongs to closes the book on it: there is
   // no take to come back to, so neither the pill nor the `ended` state may

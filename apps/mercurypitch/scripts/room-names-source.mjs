@@ -39,3 +39,34 @@ export function parseRoomNames(source) {
   }
   return names
 }
+
+/**
+ * The labels of one surface's covers, read out of the background catalogue
+ * (`src/lib/backgrounds/background-catalog.ts`) the same way. The Sing room
+ * is named for the cover it draws, so every Sing cover's label is a name the
+ * session pill can hold. Fails closed as above: every catalogue entry of the
+ * surface must have its label read, or this throws.
+ *
+ * @param {string} source the text of background-catalog.ts
+ * @param {string} surface the surface whose covers to read, e.g. 'sing'
+ * @returns {Record<string, string>} every cover id of that surface to its label
+ */
+export function parseCoverLabels(source, surface) {
+  const entries = [...source.matchAll(/\bsurface:\s*'([\w-]+)'/gu)].filter(
+    (match) => match[1] === surface,
+  ).length
+  /** @type {Record<string, string>} */
+  const labels = {}
+  for (const [, id, entrySurface, , label] of source.matchAll(
+    /\bid:\s*'([\w-]+)',\s*surface:\s*'([\w-]+)',\s*label:\s*(['"])((?:(?!\3).)+)\3\s*,/gu,
+  )) {
+    if (entrySurface === surface) labels[id] = label
+  }
+  const read = Object.keys(labels).length
+  if (entries === 0 || read !== entries) {
+    throw new Error(
+      `${surface} covers: ${entries} entries, could read the label of ${read}`,
+    )
+  }
+  return labels
+}

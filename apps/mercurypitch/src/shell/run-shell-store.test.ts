@@ -185,6 +185,40 @@ describe('who the run belongs to', () => {
     expect(runLabel()).toBe('Sing')
   })
 
+  it('names the room as it was when the singer left it, renamed mid-run or not', async () => {
+    // The Sing room is named for the cover it draws, and its picker opens
+    // over a live run: a new cover renames the room the pill will stand for.
+    const [name, setName] = createSignal('Retro Analog Studio')
+    const room = fakeRoom()
+    // On the controls object itself, as the room registers it: `fakeRoom`'s
+    // spread of `extra` would read a getter once and keep the value.
+    Object.defineProperty(room.controls, 'roomLabel', { get: name })
+    unregister = registerRunControls(room.controls)
+
+    room.play()
+    expect(runLabel()).toBe('Retro Analog Studio')
+
+    setName('Choir Room')
+    expect(runLabel()).toBe('Choir Room')
+
+    // Paused, the same.
+    room.controls.pause()
+    await settled()
+    setName('Rehearsal Attic')
+    expect(runLabel()).toBe('Rehearsal Attic')
+
+    parkRun()
+    await settled()
+    // Leaving unmounts the room, which takes its registration with it.
+    unregister?.()
+    unregister = null
+    setActiveTab(TAB_PROGRESS)
+    await settled()
+
+    expect(parked()).toBe(true)
+    expect(runLabel()).toBe('Rehearsal Attic')
+  })
+
   it('falls back to the tab on screen when no room registered', () => {
     setActiveTab(TAB_EAR_LAB)
 
