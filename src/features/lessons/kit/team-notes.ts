@@ -27,7 +27,7 @@
 // is, so the admin console and the e2e specs, which run in plain Node, read
 // it as it is.
 
-/** Each lesson's signature image by lesson number, the trailer's at 0: one for every season entry. */
+/** Each lesson's signature image by lesson number, the trailer's at 0: one for every entry of every season. */
 export const SIGNATURES: Readonly<Partial<Record<number, string>>> = {
   0: 'The promise, and a map of all fourteen hooks.',
   1: 'The pitch line winds into a spiral; the spiral unrolls into the keyboard.',
@@ -44,6 +44,20 @@ export const SIGNATURES: Readonly<Partial<Record<number, string>>> = {
   12: 'Four chords as four rooms on the spiral; a melody walking through them.',
   13: 'One pitch line over a harmonic spectrum whose peaks move as the vowel changes.',
   14: "A whole song's pitch line with breath marks and a swell drawn in light.",
+  15: "The pitch line's black-key lanes fold away and its white-key lanes close into five lines; Lesson 1's keyboard slides under the grand staff, and the two staves meet at middle C.",
+  16: "Lesson 4's staircase turns into the staff with the house on do; each note lights a beat before it sounds, and the names fade until only the house is left.",
+  17: "Lesson 8's beat pads grow noteheads and stems, halve into eighths, join into half notes, and lift onto one line, then the staff.",
+  18: "Lesson 16's staff over Lesson 17's beat grid; a cursor moves at tempo, patterns bracket themselves as it reaches them, and the song sheet's marks appear over the sounds they ask for.",
+  19: "Lesson 8's six pads, regrouped: 3 + 3 makes two beats, 2 + 2 + 2 makes three; then a beat splits in three and a note leaves beat 3 for the and.",
+  20: "Lesson 4's staircase loses fa and ti, and both semitone risers go with them; what is left climbs 2, 2, 3, 2 and 3; then the run is beads on a string, drawn closer as the tempo rises, each bead still in its band.",
+  21: "Lesson 2's ring of twelve beads, threaded by fifths; the house walks round it and each step adds a sharp to the signature beside it, the flats the other way; then twelve pure fifths miss by 23.46 cents, and equal temperament closes the ring.",
+  22: "Lesson 5's band, zoomed until a held note's wave shows: a counter and a ruler measure it, a middle line draws itself, and the app's ribbon stands beside it, labelled a mark.",
+  23: "An interval and its upside down fill the octave on the pitch line; curled into Lesson 2's ring, the tritone is its diameter.",
+  24: "Lesson 5's band with a drone under it: a top note sinks into it and its throb stills, the beads stand over it tuned two ways, and a wave smears the fifth's slow beat.",
+  25: "Lesson 10's minor staircase: te slides up to ti, le to ti opens into a wider stair, then le rises too, going up only.",
+  26: "Lesson 6's ‘Twinkle’ copied a third higher, the copy bending to the key's rows: some thirds four semitones and some three.",
+  27: "Lesson 12's rooms on the ring; the V room gains a fourth corner; ti and fa lie straight across and fold inwards to do and mi; a chord turns over and keeps its name.",
+  28: "A song in two parts on two staffs, Merc's lower part blue and Tavi's upper part orange; a tag names each phrase's cadence, and form letters gather above the sections.",
 }
 
 /** A lesson's notes by variant id: why each variant exists. */

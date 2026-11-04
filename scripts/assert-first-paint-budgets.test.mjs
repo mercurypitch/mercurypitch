@@ -479,3 +479,74 @@ test('the team notes are on the on-demand list, and the copy every lesson page c
     0,
   )
 })
+
+// Season 2's map as a build names it in a source map.
+const SEASON_2_SOURCE = '../../src/features/lessons/kit/season-2.ts'
+
+/** A lesson page's first paint that carries `source` beside its own module. */
+const carrying = (name, source) =>
+  new Map([
+    [
+      name,
+      built(
+        ['../../src/features/lessons/kit/season.ts', source],
+        'assets/lesson-abc.js',
+      ),
+    ],
+  ])
+
+test("fails a Season 1 page that downloads Season 2's data, whatever its budget", () => {
+  for (const name of [
+    'learn/01.html',
+    'learn/14.html',
+    'learn/02/watch.html',
+  ]) {
+    for (const source of [
+      SEASON_2_SOURCE,
+      '../../src/features/lessons/kit/seasons.ts',
+    ]) {
+      const problems = judgeFirstPaint(
+        carrying(name, source),
+        { [name]: 5000 },
+        {},
+      )
+
+      assert.equal(problems.length, 1, `${name}, ${source}`)
+      assert.match(
+        problems[0],
+        new RegExp(
+          `${name.replace(/[./]/g, '\\$&')} downloads Season 2's lesson data before first paint`,
+        ),
+      )
+      assert.match(problems[0], /explorer's Season 2 tab/)
+    }
+  }
+})
+
+test("lets a Season 2 page, and any page that is not a lesson's, carry Season 2's data", () => {
+  for (const name of [
+    'learn/15.html',
+    'learn/28.html',
+    'learn/index.html',
+    'index.html',
+  ]) {
+    assert.deepEqual(
+      judgeFirstPaint(carrying(name, SEASON_2_SOURCE), { [name]: 5000 }, {}),
+      [],
+      name,
+    )
+  }
+})
+
+test("puts Season 2's data and the seasons' aggregate on the list, and Season 1's map not", () => {
+  const hits = (source) =>
+    FIRST_PAINT_FORBIDDEN_SOURCES.filter((rule) => rule.pattern.test(source))
+
+  assert.equal(hits(SEASON_2_SOURCE).length, 1)
+  assert.equal(hits('../../src/features/lessons/kit/seasons.ts').length, 1)
+  assert.equal(hits('../../src/features/lessons/kit/season.ts').length, 0)
+  assert.equal(
+    hits('../../src/features/lessons/kit/season-2.test.ts').length,
+    0,
+  )
+})
