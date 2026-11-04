@@ -12,7 +12,10 @@
 // scene: sung lines (Merc's amber, the singer's violet) with their glowing
 // heads, a tune's beads, the gold bracket, the voice types as columns of
 // their own, a voice's range bar, a reading's lit stretch with the rest
-// dimmed, a note on the column, and shaded seams (Lesson 11).
+// dimmed, a note on the column; and for Lesson 11, Merc's line in two
+// gears, shaded seams across the plot or one slot of it, the time area cut
+// into numbered slots, and a caption naming the model. Each of Lesson 11's
+// parts is off in a blank scene, so Lesson 7's chart draws as it did.
 //
 // The chart paints only when its scene has changed (`changed`) or while a
 // controller moves something (`animate`), so a still chart costs the page's
@@ -22,7 +25,7 @@
 import { q } from './dom'
 import { addDrawer, surface, wake, watch } from './frame-loop'
 import type { DrawFrame, NoteSpan, RangeBand, RangeBar, RangeBead, RangeBracket, RangeColumn, RangeLine, RangeSeam, RangeWash, } from './range-chart-draw'
-import { drawBands, drawBar, drawBeads, drawBracket, drawColumn, drawLine, drawNote, drawPlayhead, drawRows, drawSeam, drawWash, RANGE_COLOR, } from './range-chart-draw'
+import { drawBands, drawBar, drawBeads, drawBracket, drawCaption, drawColumn, drawLine, drawNote, drawPlayhead, drawRows, drawSeam, drawSlots, drawWash, RANGE_COLOR, } from './range-chart-draw'
 import type { ColumnForm, RangeFrame, RangeWindow } from './range-chart-layout'
 import { midiAt, rangeFrame, xOfT, yOf } from './range-chart-layout'
 
@@ -39,7 +42,13 @@ export type {
   RangeWash,
 } from './range-chart-draw'
 export type { ColumnForm, RangeFrame, RangeWindow } from './range-chart-layout'
-export { RANGE_COLOR }
+export {
+  GEAR_WIDTH,
+  gearWidth,
+  RANGE_COLOR,
+  SEAM_MIN_PX,
+  seamBox,
+} from './range-chart-draw'
 
 export interface RangeChartOptions {
   /** The notes on the chart, MIDI. */
@@ -61,6 +70,8 @@ export interface RangeScene {
   wash: RangeWash | null
   bands: RangeBand[]
   bar: RangeBar | null
+  /** The time area cut into this many numbered slots (0: none). */
+  slots: number
   lines: RangeLine[]
   beads: RangeBead[]
   /** The beads' colour (default Merc's amber). */
@@ -69,6 +80,8 @@ export interface RangeScene {
   /** A note on the column, drawn as a bead. */
   note: number | null
   playhead: number | null
+  /** Words at the plot's top right ("Merc's model"), or none. */
+  caption: string | null
 }
 
 export interface RangeChart {
@@ -104,12 +117,14 @@ const blankScene = (column: RangeColumn | null): RangeScene => ({
   wash: null,
   bands: [],
   bar: null,
+  slots: 0,
   lines: [],
   beads: [],
   beadColor: RANGE_COLOR.target,
   bracket: null,
   note: null,
   playhead: null,
+  caption: null,
 })
 
 export function mountRangeChart(
@@ -136,6 +151,7 @@ export function mountRangeChart(
 
   function paint(f: DrawFrame): void {
     drawRows(f, opts.names !== false)
+    if (scene.slots > 1) drawSlots(f, scene.slots)
     if (scene.column !== null) drawColumn(f, scene.column, form === 'wide')
     for (const s of scene.seams) drawSeam(f, s)
     if (scene.bands.length > 0) drawBands(f, scene.bands)
@@ -146,6 +162,7 @@ export function mountRangeChart(
     drawBeads(f, scene.beads, scene.beadColor)
     if (scene.bracket !== null) drawBracket(f, scene.bracket)
     if (scene.note !== null) drawNote(f, scene.note)
+    if (scene.caption !== null) drawCaption(f, scene.caption)
   }
 
   const changed = (): void => {

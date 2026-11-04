@@ -11,7 +11,12 @@
 // dimmed are always words and pattern as well as brightness. The voice
 // types and a singer's range are chrome outlines with ink words, never a
 // colour. A shaded seam (Lesson 11, a register's change of gear) is a
-// band across the plot under a coarser hatch, with its own words.
+// band across the plot, or across one slot of it, under a coarser hatch,
+// with its own words: it spans the jump a line makes, never under 2 px.
+// A line sung in two gears (Lesson 11's model) is drawn thick where the
+// lower gear sounds and thin where the upper does, its width following the
+// lower gear's share of the sound: a drawing convention for the folds'
+// thickness, never a loudness.
 
 import { clamp, TAU } from './dom'
 import { COLOR, letterOf, octaveOf, rgba } from './notes'
@@ -49,7 +54,22 @@ export interface RangeColumn extends NoteSpan {
 export interface LinePoint {
   readonly t: number
   readonly midi: number | null
+  /**
+   * The lower gear's share of the sound here, 1 (all lower gear) to 0 (all
+   * upper): a line whose points carry it is drawn in gears (Lesson 11).
+   */
+  readonly share?: number
 }
+
+/** A line's width in the lower gear and in the upper, px (Lesson 11 WEB-SPEC, Look). */
+export const GEAR_WIDTH = { lower: 6, upper: 2 } as const
+
+/** The width of a line in gears where the lower gear has `share` of the sound. */
+export const gearWidth = (share: number): number =>
+  GEAR_WIDTH.upper + (GEAR_WIDTH.lower - GEAR_WIDTH.upper) * clamp(share, 0, 1)
+
+/** A seam is never drawn under this height, px. */
+export const SEAM_MIN_PX = 2
 
 /** A sung line: Merc's siren, or the singer's. */
 export interface RangeLine {
@@ -91,9 +111,15 @@ export interface RangeBar extends NoteSpan {
   readonly lines: readonly string[]
 }
 
-/** A seam: a band across the plot, shaded, with words (Lesson 11's change of gear). */
+/**
+ * A seam: a band from the note a line jumps from to the note it jumps to,
+ * shaded, with words (Lesson 11's change of gear), across the plot or
+ * across the stretch of time `t0` to `t1` (one slot).
+ */
 export interface RangeSeam extends NoteSpan {
   readonly label?: string
+  readonly t0?: number
+  readonly t1?: number
 }
 
 /** A lit stretch of the window with the rest dimmed, and its words: a reading. */
@@ -276,19 +302,84 @@ export function drawColumn(f: DrawFrame, c: RangeColumn, wide: boolean): void {
   drawColumnWords(f, c, wide, lit, ends)
 }
 
-/** A seam across the plot, shaded, its words at the right. */
+/**
+ * Where a seam is drawn: from its upper note's height to its lower's, never
+ * under 2 px (centred on the jump where the floor applies), across the plot
+ * or its stretch of time.
+ */
+export function seamBox(
+  f: RangeFrame,
+  s: RangeSeam,
+): { x0: number; x1: number; y0: number; y1: number } {
+  let y0 = yOf(f, s.hi)
+  let y1 = yOf(f, s.lo)
+  if (y1 - y0 < SEAM_MIN_PX) {
+    const mid = (y0 + y1) / 2
+    y0 = mid - SEAM_MIN_PX / 2
+    y1 = mid + SEAM_MIN_PX / 2
+  }
+  const timed = s.t0 !== undefined && s.t1 !== undefined
+  return {
+    x0: timed ? xOfT(f, s.t0 ?? 0) : f.x0,
+    x1: timed ? xOfT(f, s.t1 ?? 0) : f.x1,
+    y0,
+    y1,
+  }
+}
+
+/** A seam across the plot or its slot, shaded, its words at its right, above it. */
 export function drawSeam(f: DrawFrame, s: RangeSeam): void {
   const { ctx } = f
-  const { y0, y1 } = spanY(f, s.lo, s.hi)
-  ctx.fillStyle = rgba(COLOR.chrome, 0.08)
-  ctx.fillRect(f.x0, y0, f.x1 - f.x0, y1 - y0)
-  hatch(f, f.x0, f.x1, y0, y1, 4, 0.12)
+  const { x0, x1, y0, y1 } = seamBox(f, s)
+  ctx.fillStyle = rgba(COLOR.chrome, 0.1)
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+  hatch(f, x0, x1, y0, y1, 4, 0.2)
+  ctx.strokeStyle = rgba(COLOR.chrome, 0.32)
+  ctx.lineWidth = 1
+  for (const y of [y0, y1]) {
+    ctx.beginPath()
+    ctx.moveTo(x0, y)
+    ctx.lineTo(x1, y)
+    ctx.stroke()
+  }
   if (s.label === undefined) return
   ctx.font = MONO_SM
   ctx.fillStyle = COLOR.ink2
   ctx.textAlign = 'right'
   ctx.textBaseline = 'bottom'
-  ctx.fillText(s.label, f.x1 - 4, y0 - 2)
+  ctx.fillText(s.label, x1 - 4, y0 - 2)
+}
+
+/** The time area cut into `count` equal slots: faint rules between them, each numbered at its foot. */
+export function drawSlots(f: DrawFrame, count: number): void {
+  if (count < 2) return
+  const { ctx } = f
+  const each = (f.tX1 - f.tX0) / count
+  ctx.strokeStyle = rgba(COLOR.chrome, 0.16)
+  ctx.lineWidth = 1
+  for (let i = 1; i < count; i++) {
+    const x = Math.round(f.tX0 + i * each) + 0.5
+    ctx.beginPath()
+    ctx.moveTo(x, f.top)
+    ctx.lineTo(x, f.bottom)
+    ctx.stroke()
+  }
+  ctx.font = MONO_SM
+  ctx.fillStyle = COLOR.ink3
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  for (let i = 0; i < count; i++)
+    ctx.fillText(String(i + 1), f.tX0 + (i + 0.5) * each, f.bottom - 2)
+}
+
+/** A caption at the plot's top right: "Merc's model" wherever the model is drawn. */
+export function drawCaption(f: DrawFrame, text: string): void {
+  const { ctx } = f
+  ctx.font = MONO_SM
+  ctx.fillStyle = COLOR.ink2
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'top'
+  ctx.fillText(text, f.x1 - 4, f.top + 2)
 }
 
 /** A reading's lit stretch across the plot, the rest dimmed; a stretch beyond the window is a strip along its edge. */
@@ -350,18 +441,44 @@ export function drawLine(f: DrawFrame, line: RangeLine): void {
   ctx.strokeStyle = line.color
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  for (const [width, a] of [
-    [10, 0.13],
-    [2.6, 1],
-  ] as const) {
-    ctx.lineWidth = width
-    ctx.globalAlpha = a * alpha
-    tracePath(f, line.points)
-    ctx.stroke()
-  }
+  if (line.points.some((p) => p.share !== undefined))
+    drawGears(f, line.points, alpha)
+  else
+    for (const [width, a] of [
+      [10, 0.13],
+      [2.6, 1],
+    ] as const) {
+      ctx.lineWidth = width
+      ctx.globalAlpha = a * alpha
+      tracePath(f, line.points)
+      ctx.stroke()
+    }
   ctx.globalAlpha = 1
   if (line.head !== undefined && line.head !== null)
     drawHead(f, line.head, line.color, alpha)
+}
+
+/** A line in gears: each stretch between two points as wide as its gears' mean share, over a glow as wide again. */
+function drawGears(
+  f: DrawFrame,
+  points: readonly LinePoint[],
+  alpha: number,
+): void {
+  const { ctx } = f
+  for (const glow of [true, false]) {
+    ctx.globalAlpha = (glow ? 0.13 : 1) * alpha
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1]
+      const b = points[i]
+      if (a.midi === null || b.midi === null) continue
+      const w = gearWidth(((a.share ?? 1) + (b.share ?? 1)) / 2)
+      ctx.lineWidth = glow ? w + 7 : w
+      ctx.beginPath()
+      ctx.moveTo(xOfT(f, a.t), yOf(f, pinned(f, a.midi)))
+      ctx.lineTo(xOfT(f, b.t), yOf(f, pinned(f, b.midi)))
+      ctx.stroke()
+    }
+  }
 }
 
 /** A line's points as one path, lifting the pen over a gap (a point with no note). */
