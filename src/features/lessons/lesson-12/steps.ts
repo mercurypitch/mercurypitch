@@ -30,22 +30,27 @@
 // Play the loop and Play the roots are one round each. Each play's button
 // is lit while it sounds (kit/play-lights.ts), as Lesson 10's are. Slow
 // (`aria-pressed`) serves Steps 3, 4 and 5, and holds from step to step,
-// from the next play. Step 5's tunes are wired with the tune toy; until
-// then they do nothing.
+// from the next play. Step 5's Tune 1, Tune 2 and Even notes each play
+// their tune over the loop (tune-play.ts), and while one plays its button
+// reads "Stop", its name "Stop tune 1" to match (WCAG 2.5.3), and a press
+// stops it, its walk and its count kept where they reached.
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import { bindModeToggle } from '@/features/lessons/kit/names'
 import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import type { PlayLight } from '@/features/lessons/kit/play-lights'
 import { playLights } from '@/features/lessons/kit/play-lights'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
 import { showParts } from '@/features/lessons/kit/step-parts'
-import type { KeyName } from './music'
+import { tuneButtonName } from './lines'
+import type { KeyName, TuneId } from './music'
 import { KEYS } from './music'
 import type { Rooms, RoomsMode } from './rooms'
 import { mountRooms } from './rooms'
+import { tuneIdOf } from './tune-play'
 
 /** Each step's figure label. */
 export const FIG: Readonly<Record<number, string>> = {
@@ -92,14 +97,55 @@ const PLAYS: Readonly<Record<string, (rooms: Rooms) => Promise<boolean>>> = {
 }
 
 /** Each play button starts its play, lit while it sounds: the page's one sound, stopping the last. */
-function bindPlays(root: HTMLElement, rooms: Rooms): void {
-  const light = playLights()
+function bindPlays(root: HTMLElement, rooms: Rooms, light: PlayLight): void {
   for (const b of qa<HTMLButtonElement>('button[data-rooms-play]', root)) {
     const play = PLAYS[b.dataset.roomsPlay ?? '']
     if (play !== undefined)
       b.addEventListener('click', () => {
         light(b, play(rooms))
       })
+  }
+}
+
+/** A tune's button, playing or not: its words, "Stop" while it plays, its name and its icon. */
+function tuneButton(
+  b: HTMLButtonElement,
+  id: TuneId,
+): (playing: boolean) => void {
+  const label = b.querySelector('[data-tune-label]')
+  const words = label?.textContent ?? ''
+  return (playing) => {
+    if (label !== null) label.textContent = playing ? 'Stop' : words
+    b.setAttribute('aria-label', tuneButtonName(id, playing))
+    b.querySelector('use')?.setAttribute(
+      'href',
+      playing ? '#i-pause' : '#i-play',
+    )
+  }
+}
+
+/**
+ * Tune 1, Tune 2 and Even notes: each plays its tune, lit while it sounds,
+ * and reads "Stop" while it plays; a press then stops it.
+ */
+function bindTunes(root: HTMLElement, rooms: Rooms, light: PlayLight): void {
+  for (const b of qa<HTMLButtonElement>('button[data-tune]', root)) {
+    const id = tuneIdOf(b.dataset.tune)
+    if (id === null) continue
+    const show = tuneButton(b, id)
+    b.addEventListener('click', () => {
+      if (rooms.tune === id) {
+        rooms.stop()
+        return
+      }
+      const done = rooms.playTune(id)
+      light(b, done)
+      show(true)
+      void done.then(() => {
+        // the same tune pressed again since plays on, its button with it
+        if (rooms.tune !== id) show(false)
+      })
+    })
   }
 }
 
@@ -142,7 +188,10 @@ export function initSteps(
     owner: NowPlaying,
   })
   const showKey = bindKey(root, rooms)
-  bindPlays(root, rooms)
+  // the stage's plays share one light, as they share one sound
+  const light = playLights()
+  bindPlays(root, rooms, light)
+  bindTunes(root, rooms, light)
   bindSlow(root, rooms)
   bindNames(root, rooms, names)
   registerToy({

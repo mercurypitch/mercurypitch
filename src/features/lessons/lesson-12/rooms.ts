@@ -26,7 +26,11 @@
 // lights I, slides its corner on G to A as vi comes in (D to E in G) and
 // leaves vi lit; Play the loop lights each room and its chip while its
 // chord sounds; Play the roots joins each root to the one before and
-// names each move in the figure's readout. Slow doubles every length.
+// names each move in the figure's readout; a tune (tune-play.ts) walks
+// through the loop's rooms, each sung note pulsing its bead and gold on a
+// corner of the lit room, the count of corners under the ring, its walk
+// and its count kept, faint, until the next play, and the polite line says
+// the tune as it starts and its count as it ends. Slow doubles every length.
 //
 // Every play is the page's one sound (kit/now-playing.ts): it stops the
 // sound before it, a newer one stops it, and one cut short leaves what it
@@ -53,16 +57,17 @@ import { Sound } from '@/features/lessons/kit/sound'
 import type { Spiral } from '@/features/lessons/kit/spiral'
 import { mountSpiral } from '@/features/lessons/kit/spiral'
 import type { Naming } from './lines'
-import { chipName, figureSummary, keyTurnedLine, rootMoves, slideLine, } from './lines'
-import type { KeyName } from './music'
+import { chipName, figureSummary, keyTurnedLine, rootMoves, slideLine, tuneEndLine, tuneStartLine, } from './lines'
+import type { KeyName, TuneId } from './music'
 import { BAR_SEC, chordsOf, LOOP_DEGREES } from './music'
-import type { KeyTurn, LabelMode, Play, RoomsState } from './rooms-draw'
+import type { KeyTurn, LabelMode, Play, RoomsState, WalkPlay, } from './rooms-draw'
 import { drawRooms, roomsAnimating, TURN_SEC } from './rooms-draw'
 import type { RingMarks, RootMark } from './rooms-marks'
 import { drawMarks, marksAnimating, syllablesOf } from './rooms-marks'
 import type { SoundNote } from './sounds'
 import { chip, iThenVi, loop, roots, slow } from './sounds'
 import { compactFor } from './strip-layout'
+import { tallyOf, tuneSound } from './tune-play'
 
 /** The ring's states, one for each step (WEB-SPEC, Toys 1). */
 export type RoomsMode = 'build' | 'numerals' | 'slide' | 'loop' | 'tunes'
@@ -122,6 +127,8 @@ export interface Rooms {
   readonly lit: number | null
   /** The chip lit while its chord sounds, by degree, or null. */
   readonly sounding: number | null
+  /** The tune playing now, or null. */
+  readonly tune: TuneId | null
   /** Whether the figure draws its compact layout: under 240 px tall. */
   readonly compact: boolean
   /** A state's opening: in C, its own rooms, none lit, at once and silent; what sounds stops. */
@@ -144,6 +151,8 @@ export interface Rooms {
   playLoop(): Promise<boolean>
   /** Play the roots alone, each joined to the one before and its move named. */
   playRoots(): Promise<boolean>
+  /** A tune over the loop, its walk drawn and its corners counted; false when cut short. */
+  playTune(id: TuneId): Promise<boolean>
   /**
    * Plays a sound the page builds of the kit's runs itself, as the toy's
    * own plays sound: the page's one sound, stopped by the next; false when
@@ -200,6 +209,9 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   let sounding: number | null = null
   let rootMarks: RootMark[] = []
   let rootsPlaying = false
+  // the last tune's walk, kept faint once it ends until the next play
+  let walk: WalkPlay | null = null
+  let tune: TuneId | null = null
   let run: Run | null = null
   let ending: Hooks['ended'] | null = null
   // the figure's last height, px; 0 before it has one
@@ -232,7 +244,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       label: LABEL[settings.mode],
       compact: compact(),
       slide,
-      walk: null,
+      walk,
       reduced: reducedMotion(),
     }
   }
@@ -309,6 +321,8 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
   ): Promise<boolean> {
     stop()
     clearRoots()
+    // the last tune's walk stays only until the next play
+    walk = null
     opts.owner?.claim(stop)
     const r = begin((n, i) => {
       if (run === r) hooks.onNote?.(n, i)
@@ -419,6 +433,37 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     return done
   }
 
+  function playTune(id: TuneId): Promise<boolean> {
+    const s = tuneSound(id, settings.key, settings.slow)
+    const audible = Sound.canPlay()
+    let heard = 0
+    const done = start(
+      (onNote) => playNotes(s.notes, { audible, kind: 'soft', onNote }),
+      {
+        onNote: (_, i) => {
+          const sung = s.sungAt(i)
+          if (sung !== null) heard = sung + 1
+          // each chord's chip lights with its room, as in the loop
+          const degree = s.chordAt(i)
+          if (degree !== null && sounding !== degree) light(degree)
+        },
+        ended: (whole) => {
+          tune = null
+          light(null)
+          if (walk !== null && !whole) walk = { ...walk, stoppedAt: now() }
+          const count = tallyOf(s.tune, whole ? s.tune.length : heard)
+          say(tuneEndLine(count.on, count.of))
+        },
+      },
+    )
+    walk = { id, key: settings.key, at: now(), by: s.by, stoppedAt: null }
+    tune = id
+    lit = null
+    say(tuneStartLine(id))
+    changed()
+    return done
+  }
+
   // a chip plays its chord in the key that shows
   strip?.addEventListener('click', (e) => {
     const b = (e.target as Element).closest<HTMLButtonElement>('[data-chip]')
@@ -483,12 +528,16 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     get sounding() {
       return sounding
     },
+    get tune() {
+      return tune
+    },
     get compact() {
       return compact()
     },
     setMode(mode) {
       stop()
       clearRoots()
+      walk = null
       settings = { ...settings, mode, key: 'C' }
       drawn = [...OPENING_ROOMS[mode]]
       lit = null
@@ -507,6 +556,8 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       if (key === settings.key || turning) return false
       stop()
       clearRoots()
+      // a walk is drawn in its own key: the turned rooms leave it behind
+      walk = null
       turn = { from: settings.key, at: t }
       settings = { ...settings, key }
       syncChips()
@@ -529,6 +580,7 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
     playSlide,
     playLoop,
     playRoots,
+    playTune,
     playRun: (begin) => start(begin),
     stop,
     state,
