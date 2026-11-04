@@ -88,11 +88,19 @@ describe('streaks use the singer’s calendar day', () => {
   it('todayDateString reports the local day', async () => {
     process.env.TZ = 'Asia/Tokyo'
     vi.resetModules()
-    const { todayDateString: freshToday } =
-      await import('@/db/services/streak-service')
-    const { localDayString } = await import('@/lib/local-day')
+    // Pinned to a moment when Tokyo's day and UTC's differ. Read off the real
+    // clock, the case could only fail between 15:00 and 24:00 UTC, so a
+    // return to the UTC key passed it every morning.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-07-06T20:00:00Z')) // 05:00 Tue in Tokyo
+    try {
+      const { todayDateString: freshToday } =
+        await import('@/db/services/streak-service')
 
-    expect(freshToday()).toBe(localDayString(new Date()))
+      expect(freshToday()).toBe('2026-07-07')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('is exported and callable in the ambient timezone', () => {
