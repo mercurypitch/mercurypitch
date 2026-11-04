@@ -1042,6 +1042,20 @@ import handler, issue #813.
 **Rule:** clip what runs off an edge to that edge, and check a margin by scanning the drawn pixels against the background, not by comparing layout numbers.
 **See:** `drawLane` in `src/lib/tv-stage/renderer.ts`, `apps/mercurypitch/scripts/probe-tv-stage.mjs`.
 
+### Put a room's photograph column on the dark stage, not its root
+
+**Symptom:** in the light theme the native Sing room's "Hum. The line is you." read 1.3:1 and its capsule's label 2.3:1, on the main tab, while every dark-theme review looked right.
+**Cause:** the room is a dark photograph in either theme but read the app's tokens, whose fallbacks are the dark values; in light they flip to dark inks. Opting the room's ROOT into `.mp-dark-stage` would also darken its sheets, which copy the palette at their anchor (`portal-skin.ts`), and the document's `--glass-bg` is mixed at `:root`, so it stays light under the stage's light ink.
+**Rule:** put `mp-dark-stage` on the element drawn over the photograph, mix the glass again there, and list it in `dark-stage.test.ts`. Review a room in light, not only dark, and give a fixed fill a fixed ink.
+**See:** `.ui` in `src/features/sing-room/sing-room.module.css`, `src/features/sing-room/sing-room-palette.test.ts`.
+
+### Give every padding a scroller keeps for floating chrome a scroll-padding twin
+
+**Symptom:** walked with the keyboard, the focus stopped on Leagues' and Community's last rows under the native rail, though a hand could scroll them clear.
+**Cause:** the padding lets a hand lift the last row out; focus and a screen reader only scroll a control into the scroller's box, which runs under the dock.
+**Rule:** wherever a scroller pads for the dock, the pill or a room header, set the same `scroll-padding`, and check focused controls' boxes against the chrome in a browser.
+**See:** `.mp-pushed__body` in `apps/mercurypitch/src/shell/shell.css`, `src/styles/mobile-kit.css`, `apps/mercurypitch/src/scroll-padding-css.test.ts`.
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
