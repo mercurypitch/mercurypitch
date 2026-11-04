@@ -253,9 +253,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx = canvasRef.getContext('2d')
     resizeCanvas()
 
-    // Initialize audio engine for click-to-play
+    // Initialize audio engine for click-to-play. init() builds an
+    // AudioContext, and a browser refuses one now and then (too many in the
+    // document, or none outside a gesture). Caught, that costs click-to-play
+    // its sound; uncaught, it reached the window and raised the crash screen.
     audioEngine = new AudioEngine()
-    audioEngine.init()
+    audioEngine.init().catch((err: unknown) => {
+      console.error('[PitchCanvas] audio init failed:', err)
+    })
     audioRegistry.register(audioEngine)
     // Expose for click-to-play handlers
     ;(
