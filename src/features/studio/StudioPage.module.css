@@ -228,15 +228,22 @@
   width: 17px;
   height: 17px;
 }
+/* On (Repeat, Punch): the accent fill, which stands 3:1 off the bar where
+   the soft wash did not. */
+.iconButton[aria-pressed='true'] {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
 @media (hover: hover) {
   .iconButton:hover:not(:disabled) {
     background: var(--studio-hover);
     color: var(--studio-text);
   }
-}
-.iconButton[aria-pressed='true'] {
-  background: var(--studio-accent-soft);
-  color: var(--studio-accent-text);
+  /* Hover tints a pressed button; it never makes it look unpressed. */
+  .iconButton[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--studio-accent-hover);
+    color: var(--studio-on-accent);
+  }
 }
 .playButton {
   width: 40px;
