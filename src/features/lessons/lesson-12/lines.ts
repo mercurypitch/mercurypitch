@@ -20,7 +20,7 @@
 
 import { majorScale } from '@/features/lessons/kit/major-scale'
 import type { Spelled } from '@/features/lessons/kit/notes'
-import { nameHtml, signName, spellOn, wordName, } from '@/features/lessons/kit/notes'
+import { hz, nameHtml, signName, spellOn, wordName, } from '@/features/lessons/kit/notes'
 import type { Chord, KeyName, TuneId } from './music'
 import { chordsOf, LOOP_DEGREES, loopOf, rootLine } from './music'
 import { numberWord } from './numerals'
@@ -184,3 +184,7 @@ export function readoutHtml(doMidi: number): string {
   const line = singLine(doMidi).map((s) => nameHtml(s))
   return `do is ${line[0]}: ${line.join(', ')}`
 }
+
+/** Sing it's ring label, in the markup's form: do's name, as the readout names it, and its frequency, "Do: C4 · 262 Hz". */
+export const ringLabel = (doMidi: number): string =>
+  `Do: ${nameHtml(majorScale(doMidi)[0])} · ${Math.round(hz(doMidi))} Hz`

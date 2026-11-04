@@ -2,25 +2,13 @@
    Lesson 12 — Chords and the four-chord song: the page's own figures and cards
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts, lesson-guide and lesson-voice). The last two come in by the
-   @imports below, which the build inlines, and not as main.ts's imports.
-   Each shares a chunk with modules this page's shell does not load yet: the
-   slide guide's sheet with Lesson 2's quiz modules (Lessons 2, 4, 6, 8, 9
-   and 10), and the voice lessons' sheet with the comfort check and the
-   voice choice (Lessons 3 and 5 to 10). Imported here alone, each would
-   leave its chunk for a sheet of its own, which those pages link after
-   their own sheet, so its rules would win over theirs
-   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
-   page by @import"). Once the page loads those modules, each import moves
-   back to main.ts.
+   lesson-guide, lesson-parts and lesson-voice), each imported by main.ts.
 
    Here: the hero's ring between Merc and Tavi, with the three plays under
    it; the ring of rooms' figure, its chord strip of seven chips and each
    step's row of controls (WEB-SPEC, Toys 1, "Layout and targets" and "The
    stuck stage"); Tavi's line in Step 5; Sing it's guide beside its ring;
    and the Wrap's cards. */
-@import '../kit/lesson-guide.css';
-@import '../kit/lesson-voice.css';
 
 /* ---------------------------------------------------------------- hero: the ring between Merc and Tavi */
 .l12-duo {
