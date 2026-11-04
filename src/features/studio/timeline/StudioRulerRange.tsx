@@ -18,13 +18,12 @@
 // assistive tech. Each handle is a slider of its own, with its bounds.
 import type { Accessor } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { STUDIO_MIN_LOOP_FRAMES } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
 import { CrossSmall } from '../studio-icons'
 import styles from './StudioRulerRange.module.css'
-import { formatStudioTime, frameToPixel } from './timeline-geometry'
+import { formatStudioTime, frameToPixel, studioAriaSeconds, } from './timeline-geometry'
 import { snapStudioPosition, studioGridInterval } from './timeline-snap'
 import type { StudioTimelineProps } from './types'
 
@@ -178,9 +177,9 @@ export function StudioRulerRange(props: StudioRulerRangeProps) {
         role="slider"
         tabIndex={0}
         aria-label={edge === 'start' ? 'Range start' : 'Range end'}
-        aria-valuemin={bounds().min / STUDIO_SAMPLE_RATE}
-        aria-valuemax={bounds().max / STUDIO_SAMPLE_RATE}
-        aria-valuenow={frame() / STUDIO_SAMPLE_RATE}
+        aria-valuemin={studioAriaSeconds(bounds().min)}
+        aria-valuemax={studioAriaSeconds(bounds().max)}
+        aria-valuenow={studioAriaSeconds(frame())}
         aria-valuetext={formatStudioTime(frame())}
         data-studio-range-handle={edge}
         onPointerDown={(event) => {

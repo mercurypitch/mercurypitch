@@ -1,6 +1,6 @@
 // Studio timeline geometry tests — source trims and viewport coordinates preserve exact frame positions.
 import { describe, expect, it } from 'vitest'
-import { clipEndFrame, formatStudioMoment, formatStudioTime, frameToPixel, parseStudioTime, pixelToFrame, studioRulerTicks, } from './timeline-geometry'
+import { clipEndFrame, formatStudioMoment, formatStudioTime, frameToPixel, parseStudioTime, pixelToFrame, studioAriaSeconds, studioRulerTicks, } from './timeline-geometry'
 
 describe('Studio timeline geometry', () => {
   it('round-trips frame positions at fractional zoom and clamps seeks to the song range', () => {
@@ -73,5 +73,13 @@ describe('Studio timeline geometry', () => {
       '1.3',
       '1.4',
     ])
+  })
+})
+
+describe('studioAriaSeconds', () => {
+  it('says a frame in seconds to the millisecond, never a run of repeating digits', () => {
+    expect(studioAriaSeconds(16000)).toBe(0.333)
+    expect(studioAriaSeconds(96000)).toBe(2)
+    expect(studioAriaSeconds(0)).toBe(0)
   })
 })

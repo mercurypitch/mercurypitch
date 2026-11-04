@@ -99,6 +99,11 @@ it('leaves the playhead alone with the arrows, and says why, while a take runs',
   expect(clock.getAttribute('title')).toMatch(/^Type a time/)
 })
 
+it('says the playhead to the millisecond', () => {
+  const { clock } = renderTransport(vi.fn(), () => 16000)
+  expect(clock).toHaveAttribute('aria-valuenow', '0.333')
+})
+
 it('holds the focused time while the song plays, so typing replaces it', () => {
   const [frame, setFrame] = createSignal(83.456 * 48000)
   // The accessor is read inside renderTransport's JSX, a tracked scope.

@@ -38,10 +38,19 @@ export function studioZoomFloor(fit: number): number {
   return Math.max(1, Math.min(STUDIO_ZOOM_STOPS[0], fit))
 }
 
-/** `value` held between `floor` and the closest zoom. */
+/**
+ * A zoom to a hundredth of a pixel per second. A pinch multiplies many small
+ * factors, which ends in float noise (53.24000000000001); nobody sees a
+ * hundredth of a pixel a second.
+ */
+export function roundStudioZoom(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+/** `value` held between `floor` and the closest zoom, to a hundredth. */
 export function clampStudioZoom(value: number, floor: number): number {
   if (!Number.isFinite(value)) return floor
-  return Math.max(floor, Math.min(STUDIO_ZOOM_MAX, value))
+  return roundStudioZoom(Math.max(floor, Math.min(STUDIO_ZOOM_MAX, value)))
 }
 
 /**

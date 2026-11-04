@@ -21,14 +21,14 @@ import type { StudioLaneView } from './StudioTimelineLane'
 import { StudioTimelineLane } from './StudioTimelineLane'
 import { StudioZoomControls } from './StudioZoomControls'
 import type { StudioRulerTick } from './timeline-geometry'
-import { formatStudioTime, frameToPixel, pixelToFrame, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
+import { formatStudioTime, frameToPixel, pixelToFrame, studioAriaSeconds, studioContentEnd, studioPixelsPerSecond, studioRulerKeyFrame, studioRulerTicks, } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
 import type { StudioTimelineProps } from './types'
 import { useStudioPointer } from './useStudioPointer'
 import { createStudioWaveformResource } from './waveform-resource'
 import { createStudioZoom } from './zoom-control'
 import { installStudioZoomKeys } from './zoom-keys'
-import { studioFitZoom, studioZoomFloor } from './zoom-math'
+import { roundStudioZoom, studioFitZoom, studioZoomFloor } from './zoom-math'
 
 export type { StudioTimelineNotice, StudioTimelineProps } from './types'
 
@@ -441,7 +441,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       }}
       aria-label="Song arrangement"
       data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
-      data-studio-scale={scale()}
+      data-studio-scale={roundStudioZoom(scale())}
       style={{
         '--studio-header-width': `${headerWidth()}px`,
         '--studio-time-width': `${timeWidth()}px`,
@@ -493,8 +493,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
               tabIndex={0}
               aria-label="Song playhead"
               aria-valuemin={0}
-              aria-valuemax={endFrame() / STUDIO_SAMPLE_RATE}
-              aria-valuenow={props.playheadFrame / STUDIO_SAMPLE_RATE}
+              aria-valuemax={studioAriaSeconds(endFrame())}
+              aria-valuenow={studioAriaSeconds(props.playheadFrame)}
               aria-valuetext={formatStudioTime(props.playheadFrame)}
               ref={(element) => (ruler = element)}
               onPointerDown={(event) => {

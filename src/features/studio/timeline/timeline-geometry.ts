@@ -38,6 +38,11 @@ export function pixelToFrame(
   )
 }
 
+/** A frame in seconds to the millisecond, for an ARIA value: 0.333, not 0.3333333333333333. */
+export function studioAriaSeconds(frame: number): number {
+  return Math.round((frame / STUDIO_SAMPLE_RATE) * 1000) / 1000
+}
+
 export function formatStudioTime(frame: number): string {
   const milliseconds = Math.max(
     0,
