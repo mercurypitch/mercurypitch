@@ -167,6 +167,23 @@ export const lineLength = (line: GearLine): number =>
 export const stretched = (line: GearLine, factor: number): GearLine =>
   line.map((p) => ({ ...p, t: p.t * factor }))
 
+/** A line from `t0` on, its times counted from there: a play that carries on where it stood. */
+export function lineFrom(line: GearLine, t0: number): GearLine {
+  if (t0 <= 0 || line.length === 0) return line
+  const i = line.findIndex((p) => p.t > t0)
+  if (i === -1) return [{ ...line[line.length - 1], t: 0 }]
+  const a = line[i - 1]
+  const b = line[i]
+  const u = (t0 - a.t) / (b.t - a.t)
+  const first: GearPoint = {
+    t: 0,
+    midi: a.midi + (b.midi - a.midi) * u,
+    share: a.share + (b.share - a.share) * u,
+    level: a.level + (b.level - a.level) * u,
+  }
+  return [first, ...line.slice(i).map((p) => ({ ...p, t: p.t - t0 }))]
+}
+
 /** A line moved `by` seconds along the time area: a slot of the chart. */
 export const shifted = (line: GearLine, by: number): GearLine =>
   line.map((p) => ({ ...p, t: p.t + by }))

@@ -21,7 +21,7 @@ import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 import type { GearLine } from './lines'
-import { figureDrawn, figureLine, figureNotes, gearContours, gearNote, gearNoteOf, gearPair, laterSlide, lineLength, N, oneGearSlide, singSirenLine, SIREN_RATE, sirenLine, SMOOTHER_SEC, smootherRun, smootherSeam, smootherSlide, spoken, STEPS_WINDOW, stretched, upHalf, } from './lines'
+import { figureDrawn, figureLine, figureNotes, gearContours, gearNote, gearNoteOf, gearPair, laterSlide, lineFrom, lineLength, N, oneGearSlide, singSirenLine, SIREN_RATE, sirenLine, SMOOTHER_SEC, smootherRun, smootherSeam, smootherSlide, spoken, STEPS_WINDOW, stretched, upHalf, } from './lines'
 
 const VOICES: readonly Voice[] = ['lower', 'higher']
 
@@ -361,5 +361,38 @@ describe('the gear model (FACTS 74)', () => {
     }
     for (const [name, f] of Object.entries(facts))
       expect(hz(N[name as keyof typeof N]), name).toBeCloseTo(f, 2)
+  })
+})
+
+describe('a line carried on from where it stood', () => {
+  it('starts at the point it stood on, mid-crossfade, and keeps the rest of the line in its times', () => {
+    // Arrange
+    const line = upHalf('lower')
+    const t0 = 3 / SIREN_RATE + 0.015
+
+    // Act
+    const rest = lineFrom(line, t0)
+
+    // Assert
+    expect(rest[0].t).toBe(0)
+    expect(rest[0].share).toBeCloseTo(0.625, 9)
+    expect(rest[0].midi).toBeCloseTo(N.G3 + 0.75, 9)
+    expect(lineLength(rest)).toBeCloseTo(lineLength(line) - t0, 9)
+    expect(rest.slice(1)).toEqual(
+      line.filter((p) => p.t > t0).map((p) => ({ ...p, t: p.t - t0 })),
+    )
+  })
+
+  it('is the line itself from its start, and its last point alone from its end', () => {
+    // Arrange
+    const line = upHalf('higher')
+
+    // Act
+    const whole = lineFrom(line, 0)
+    const after = lineFrom(line, 9)
+
+    // Assert
+    expect(whole).toBe(line)
+    expect(after).toEqual([{ ...line[line.length - 1], t: 0 }])
   })
 })
