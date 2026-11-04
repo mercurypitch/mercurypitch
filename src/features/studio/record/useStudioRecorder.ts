@@ -206,9 +206,10 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       setInputMissing(held.missing)
       // The page may use the microphone now, so the browser names its inputs.
       void inputs.refresh()
-      return held.stream
+      // Given back through itself, never by the Studio's id: a late release
+      // from an earlier arm cannot end this one (MicManager.acquireFrom).
+      return held
     },
-    releaseMic: () => micManager.release(STUDIO_RECORD_MIC_ID),
     prepareWorklet: prepareStudioRecorderWorklet,
     openCapture: openStudioCapture,
     createSource: (context, stream) => context.createMediaStreamSource(stream),

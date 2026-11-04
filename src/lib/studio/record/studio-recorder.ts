@@ -29,7 +29,7 @@ import { createStudioClickScheduler } from './click-track'
 import type { StudioInputMonitor } from './input-monitor'
 import type { StudioCaptureStop } from './pcm-capture'
 import type { StudioRecordSettings } from './record-settings'
-import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
+import type { StudioCapturedTake, StudioMicHold, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
 import type { StudioLivePeaks } from './take-audio'
 import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
 import type { StudioTakeJournalFeed } from './take-journal-feed'
@@ -84,6 +84,8 @@ const TOO_SOON_IN_RANGE =
 
 interface Armed {
   readonly context: AudioContext
+  /** Given back through itself only: a late release from an earlier arm cannot end it. */
+  readonly mic: StudioMicHold
   readonly stream: MediaStream
   readonly source: AudioNode
   readonly capture: StudioCaptureHandle
@@ -120,7 +122,6 @@ interface Take {
   readonly journal: StudioTakeJournalFeed
 }
 
-/** Whether any of a take is left once its start is trimmed to the song frame heard. */
 /** The take's length in the 48 kHz frames its import keeps. */
 function takeFrames(current: Take): number {
   return Math.round(
@@ -180,9 +181,9 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     // Both start before anything is awaited: the press must still be current.
     const unlocked = deps.unlock().catch(() => false)
     const mic = deps.acquireMic()
-    let stream: MediaStream
+    let held: StudioMicHold
     try {
-      stream = await mic
+      held = await mic
     } catch (error) {
       if (token === armToken)
         set({ phase: 'idle', error: deps.describeError(error) })
@@ -195,11 +196,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         throw new Error(AUDIO_DID_NOT_START)
       await deps.prepareWorklet(context)
       if (token !== armToken || disposed) throw new Error('disarmed')
-      armed = open(context, stream, trackId)
+      armed = open(context, held, trackId)
       set({ phase: 'armed', level: 0 })
       return true
     } catch (error) {
-      deps.releaseMic()
+      // This arm's own: an arm after it holds a microphone of its own.
+      held.release()
       if (token === armToken && !disposed)
         set({
           phase: 'idle',
@@ -220,15 +222,17 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   function open(
     context: AudioContext,
-    stream: MediaStream,
+    mic: StudioMicHold,
     trackId: string | null,
   ): Armed {
+    const stream = mic.stream
     const source = deps.createSource(context, stream)
     const capture = deps.openCapture(context, source, captureEvents())
     const monitor = deps.createMonitor(context, source)
     monitor.set(deps.monitorLevel(trackId))
     return {
       context,
+      mic,
       stream,
       source,
       capture,
@@ -250,7 +254,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     } catch {
       // Already apart.
     }
-    deps.releaseMic()
+    closing.mic.release()
   }
 
   function disarm(): void {

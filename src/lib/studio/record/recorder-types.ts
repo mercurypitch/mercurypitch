@@ -103,11 +103,16 @@ export interface StudioRecorderTransport {
   anchor(): StudioTakeAnchor | null
 }
 
+/** The microphone an arm opened, and the one way to give that one back (MicManager.acquireFrom). */
+export interface StudioMicHold {
+  readonly stream: MediaStream
+  release(): void
+}
+
 export interface StudioRecorderDeps {
   unlock(): Promise<boolean>
   clock(): AudioContext | null
-  acquireMic(): Promise<MediaStream>
-  releaseMic(): void
+  acquireMic(): Promise<StudioMicHold>
   prepareWorklet(context: AudioContext): Promise<void>
   openCapture(
     context: AudioContext,

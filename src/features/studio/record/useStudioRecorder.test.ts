@@ -7,7 +7,7 @@ import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
   onChange: null as null | ((view: StudioRecorderView) => void),
-  acquireMic: null as null | (() => Promise<MediaStream>),
+  acquireMic: null as null | (() => Promise<{ stream: MediaStream }>),
   acquireFrom: vi.fn(),
   micListener: null as null | ((state: unknown) => void),
   indicator: null as null | (() => boolean),
@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
-    acquireMic: () => Promise<MediaStream>
+    acquireMic: () => Promise<{ stream: MediaStream }>
   }) => {
     mocks.onChange = deps.onChange
     mocks.acquireMic = deps.acquireMic
@@ -455,10 +455,11 @@ describe('useStudioRecorder input', () => {
   it('arms on the chosen input, and says when it was not connected', async () => {
     const { hook, dispose } = mount()
     hook.chooseInput('usb-mic', 'USB Mic')
-    const stream = {} as MediaStream
-    mocks.acquireFrom.mockResolvedValueOnce({ stream, missing: true })
+    const held = { stream: {} as MediaStream, missing: true, release: vi.fn() }
+    mocks.acquireFrom.mockResolvedValueOnce(held)
 
-    await expect(mocks.acquireMic!()).resolves.toBe(stream)
+    // MicManager's hold as it is: the recorder gives it back through itself.
+    await expect(mocks.acquireMic!()).resolves.toBe(held)
 
     expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'usb-mic')
     expect(hook.inputMissing()).toBe(true)

@@ -366,7 +366,7 @@ describe('MicManager input for one hold', () => {
     expect(mgr.getConsumers()).toEqual(['voice'])
     expect(mgr.getScopedHold()?.consumerId).toBe('studio')
 
-    mgr.release('studio')
+    held.release()
     await vi.advanceTimersByTimeAsync(0)
     expect(studio.track.stop).toHaveBeenCalled()
     expect(voice.track.stop).not.toHaveBeenCalled()
@@ -378,10 +378,11 @@ describe('MicManager input for one hold', () => {
   it('ends only the hold a release was called for, so a re-arm on another input opens that input', async () => {
     const gum = openEach()
     await mgr.setPreferredDevice('app-in')
-    const first = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+    const held = await mgr.acquireFrom('studio', 'usb-1')
+    const first = asMock(held.stream)
 
     // A re-arm: the release is queued, the next open asked for in the same task.
-    mgr.release('studio')
+    held.release()
     const second = await mgr.acquireFrom('studio', 'usb-2')
     await vi.advanceTimersByTimeAsync(0)
 
@@ -391,6 +392,35 @@ describe('MicManager input for one hold', () => {
     expect(first.track.stop).toHaveBeenCalled()
     expect(mgr.getScopedHold()?.stream).toBe(second.stream)
     expect(askedFor(gum)).toEqual(['usb-1', 'usb-2'])
+  })
+
+  it('leaves the newer hold open when a hold it replaced lets go late', async () => {
+    openEach()
+    const stale = await mgr.acquireFrom('studio', 'usb-1')
+    // A newer hold asked for, then the one it replaces released after it.
+    const pending = mgr.acquireFrom('studio', 'usb-2')
+    stale.release()
+    const newer = await pending
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(asMock(stale.stream).track.stop).toHaveBeenCalled()
+    expect(asMock(newer.stream).track.stop).not.toHaveBeenCalled()
+    expect(mgr.getScopedHold()?.stream).toBe(newer.stream)
+    // Late again, after the newer hold opened: still only its own.
+    stale.release()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mgr.getScopedHold()?.stream).toBe(newer.stream)
+  })
+
+  it("ends an input of its own only through its hold, not by the consumer's id", async () => {
+    openEach()
+    const held = await mgr.acquireFrom('studio', 'usb-1')
+
+    mgr.release('studio')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(asMock(held.stream).track.stop).not.toHaveBeenCalled()
+    expect(mgr.getScopedHold()?.stream).toBe(held.stream)
   })
 
   it('records from the default input when asked, whatever the app picked', async () => {
