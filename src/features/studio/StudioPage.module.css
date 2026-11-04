@@ -959,6 +959,8 @@
   font-size: 12px;
   font-weight: 500;
 }
+/* The app's select draws its chevron as a background image: set the
+   colour alone, so a list keeps it. */
 .stackedField input,
 .stackedField select {
   box-sizing: border-box;
@@ -968,7 +970,7 @@
   padding: 0 10px;
   border: 1px solid var(--studio-line-strong);
   border-radius: 8px;
-  background: var(--studio-bg);
+  background-color: var(--studio-bg);
   color: var(--studio-text);
   font: inherit;
 }
@@ -996,6 +998,10 @@
   height: 1px;
   margin: 4px 0;
   background: var(--studio-line);
+}
+/* The chevron's room, after the field's own padding. */
+.stackedField select {
+  padding-right: 30px;
 }
 .menuList {
   display: flex;
