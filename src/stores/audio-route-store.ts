@@ -33,6 +33,11 @@
 // removes are said only where the route moved. A change that carries iOS's
 // reason is said even where it did not: the reason is the news.
 //
+// A ROUTE AND ITS PORT MOVE TOGETHER, in one batch: the TV chooser names a
+// TV by the port of an AirPlay or HDMI route (apps/mercurypitch/src/shell/
+// tv/tv-name.ts), and a reader that saw the new route with the old port
+// would name the TV "Speaker".
+//
 // THE ROUTE IS THE APP'S OWN SESSION'S. WebKit plays the page from a session
 // of its own, which goes to AirPlay where the app's never does: on the
 // owner's iPhone every route the app's session reported was the speaker at
@@ -42,7 +47,7 @@
 //
 // Tests: src/tests/audio-route-store.test.ts.
 
-import { createSignal } from 'solid-js'
+import { batch, createSignal } from 'solid-js'
 import type { NativeAudioOutput, NativeAudioRoute, NativeAudioRouteChange, } from '@/stores/native-shell-store'
 
 const [route, setRoute] = createSignal<NativeAudioRoute | null>(null)
@@ -112,9 +117,11 @@ export function followAudioRoute(
     why: string,
     sayAnyway: boolean,
   ): void => {
-    setRoute(next)
-    setPort(portName)
-    setSessionRate(rateOf(rate))
+    batch(() => {
+      setRoute(next)
+      setPort(portName)
+      setSessionRate(rateOf(rate))
+    })
     const heard = `${next} ${portName ?? ''}`
     if (!sayAnyway && heard === said) return
     said = heard
@@ -164,7 +171,9 @@ export function setAudioRouteForTests(
   portName: string | null = null,
   rate: number | null = null,
 ): void {
-  setRoute(next)
-  setPort(portName)
-  setSessionRate(rate)
+  batch(() => {
+    setRoute(next)
+    setPort(portName)
+    setSessionRate(rate)
+  })
 }
