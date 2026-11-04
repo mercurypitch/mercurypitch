@@ -271,7 +271,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 3 is: its own module on the kit, with the vowel model, the
   // spectrum strip under the band chart, the vowel voice, the cold open's
   // predict, the four words, the steps, the quizzes, Sing it on the kit's
-  // hold run, and free play. Measured 128 in build:e2e (130,916 bytes); the
+  // hold run, and free play. Measured 128 in build:e2e (130,947 bytes); the
   // budget is a quarter over that. The listener, the pitch detector and the
   // hold reader arrive through a dynamic import when Sing it's Start is
   // pressed, as on Lessons 3, 5 and 9, so the page stays this light only
