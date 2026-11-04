@@ -1,10 +1,12 @@
 // ============================================================
-// Learn hub — the season's map on /learn/, read off season.ts and the lesson documents
+// Learn hub — each season's map on /learn/, read off the seasons and the lesson documents
 // ============================================================
 //
 // learn/index.html is Find Your Pitch's hub, served at /learn/: a plain
 // document with no script, whose words about the series are written by
-// hand. What it says of each lesson is not. The season map, the span of
+// hand. What it says of each lesson is not. Each season's map (Season 1's
+// at `<!-- hub:season -->`, Season 2's at `<!-- hub:season-2 -->`, from
+// kit/seasons.ts), the span of
 // reading times and the series' `hasPart` are written into it here, on the
 // dev server and in every build, from season.ts and the lesson documents,
 // as tools/lesson-links.ts fills the entry documents' navs. So no lesson's
@@ -37,7 +39,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { Lane, Lesson } from '../src/features/lessons/kit/season'
-import { LESSONS, minutesSpan } from '../src/features/lessons/kit/season'
+import { minutesSpan } from '../src/features/lessons/kit/season'
+import { ALL_LESSONS, seasonOf } from '../src/features/lessons/kit/seasons'
 import { watchPath } from '../src/features/lessons/kit/watch-pages'
 import { lessonDocument, lessonPages, lessonPath, watchPages, } from './draft-lessons'
 import { lessonHeadline } from './lesson-links'
@@ -52,12 +55,15 @@ const SITE_ORIGIN = 'https://mercurypitch.com'
 const MARKS = {
   minutes: '<!-- hub:minutes -->',
   season: '<!-- hub:season -->',
+  season2: '<!-- hub:season-2 -->',
   parts: '"hasPart": []',
 } as const
 
-/** A Season 1 lesson as the hub lists it. */
+/** A lesson as the hub lists it. */
 export interface HubLesson {
   readonly n: number
+  /** Its season's number, whose map lists it. */
+  readonly season: number
   readonly lane: Lane
   /** Its document's headline, or its season title while it has none. */
   readonly name: string
@@ -71,10 +77,10 @@ export interface HubLesson {
   readonly watch?: string
 }
 
-/** Every Season 1 lesson, the trailer left out, as the repository at `root` has it. */
+/** Every lesson of every season, the trailer left out, as the repository at `root` has it. */
 export function hubLessons(
   root: string,
-  lessons: readonly Lesson[] = LESSONS,
+  lessons: readonly Lesson[] = ALL_LESSONS,
 ): HubLesson[] {
   const written = lessonPages(root)
   const films = watchPages(root)
@@ -89,6 +95,7 @@ export function hubLessons(
         : undefined
       return {
         n: L.n,
+        season: seasonOf(L.n)?.n ?? 1,
         lane: L.lane,
         name: headline ?? L.title,
         hook: L.hook,
@@ -140,13 +147,22 @@ function lessonMarkup(L: HubLesson): string {
   return `<li class="hub-lesson"><p class="kicker">Lesson ${L.n}</p><h4 id="${name}">${esc(L.name)}</h4><p class="hub-hook" data-lesson="${L.n}">${esc(L.hook)}</p><div class="hub-go">${statusMarkup(L)}</div></li>`
 }
 
-/** The season map: one list a lane, each lesson once, in lesson order. */
-export function seasonMarkup(lessons: readonly HubLesson[]): string {
+/**
+ * A season's map: one list a lane, each lesson once, in lesson order. A
+ * later season's lane ids take its number (`s2-lane-theory`), so no id is
+ * on the page twice.
+ */
+export function seasonMarkup(
+  lessons: readonly HubLesson[],
+  season = 1,
+): string {
+  const id = (lane: Lane): string =>
+    season === 1 ? `lane-${lane}` : `s${season}-lane-${lane}`
   const lanes = LANES.map(([lane, title]) => {
     const own = lessons.filter((L) => L.lane === lane)
     if (own.length === 0) return ''
     const items = own.map(lessonMarkup).join('\n')
-    return `<section class="hub-lane ${lane}" aria-labelledby="lane-${lane}">\n<h3 class="kicker" id="lane-${lane}">${title}</h3>\n<ol class="hub-list">\n${items}\n</ol>\n</section>`
+    return `<section class="hub-lane ${lane}" aria-labelledby="${id(lane)}">\n<h3 class="kicker" id="${id(lane)}">${title}</h3>\n<ol class="hub-list">\n${items}\n</ol>\n</section>`
   })
   return `<div class="hub-lanes">\n${lanes.filter(Boolean).join('\n')}\n</div>`
 }
@@ -159,7 +175,7 @@ export function seriesParts(live: readonly number[]): { '@id': string }[] {
 }
 
 /**
- * The hub's document with the season map, the reading times and the
+ * The hub's document with each season's map, the reading times and the
  * series' parts written in; `live` is the lessons live by the build's
  * default, over which the reading times are spanned. Throws when the
  * document lacks a mark or holds one twice, and when no lesson in `live`
@@ -180,9 +196,12 @@ export function fillHub(
     throw new Error(
       `No lesson live by the build's default has a reading time (season.ts), so ${HUB_DOCUMENT} cannot say how long a lesson takes.`,
     )
+  const of = (season: number): HubLesson[] =>
+    lessons.filter((L) => L.season === season)
   return html
     .replace(MARKS.minutes, () => span)
-    .replace(MARKS.season, () => seasonMarkup(lessons))
+    .replace(MARKS.season, () => seasonMarkup(of(1)))
+    .replace(MARKS.season2, () => seasonMarkup(of(2), 2))
     .replace(
       MARKS.parts,
       () => `"hasPart": ${JSON.stringify(seriesParts(live))}`,

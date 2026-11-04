@@ -13,7 +13,7 @@
 import type { PageState } from './features/lessons/kit/publish'
 import { isLive, seasonFor } from './features/lessons/kit/publish'
 import type { Lesson } from './features/lessons/kit/season'
-import { LESSONS } from './features/lessons/kit/season'
+import { ALL_LESSONS } from './features/lessons/kit/seasons'
 import { hasWatchPage, watchPath } from './features/lessons/kit/watch-pages'
 
 /** The site's address, as the sitemap and llms.txt write it. */
@@ -33,10 +33,10 @@ function lessonAt(
   return { origin: m[1], n: Number(m[2]), kind: m[3] ? 'watch' : 'page' }
 }
 
-/** The lessons a listing should hold for `state`, as the page shows the season: live, with a page. */
+/** The lessons a listing should hold for `state`, every season's, as the page shows them: live, with a page. */
 export function liveLessons(state: PageState): Lesson[] {
-  return seasonFor(LESSONS, state).filter(
-    (L) => L.page !== undefined && isLive(L.n, LESSONS, state),
+  return seasonFor(ALL_LESSONS, state).filter(
+    (L) => L.page !== undefined && isLive(L.n, ALL_LESSONS, state),
   )
 }
 

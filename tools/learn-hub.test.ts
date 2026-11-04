@@ -10,7 +10,9 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LESSONS, minutesSpan } from '../src/features/lessons/kit/season'
+import { minutesSpan } from '../src/features/lessons/kit/season'
+import { LESSONS_2 } from '../src/features/lessons/kit/season-2'
+import { ALL_LESSONS, seasonOf } from '../src/features/lessons/kit/seasons'
 import { lessonDocument, lessonPages, lessonPath, liveByDefault, markLessonStates, } from './draft-lessons'
 import type { HubLesson } from './learn-hub'
 import { fillHub, HUB_DOCUMENT, hubLessons, seasonMarkup, seriesParts, } from './learn-hub'
@@ -31,15 +33,17 @@ describe('the lessons the hub lists', () => {
   const lessons = hubLessons(ROOT)
   const written = lessonPages(ROOT)
 
-  it('are every Season 1 lesson once, in order, the trailer left out', () => {
+  it("are every season's lessons once, in order, the trailer left out, each with its season", () => {
     expect(lessons.map((L) => L.n)).toEqual(
-      LESSONS.filter((L) => L.n >= 1).map((L) => L.n),
+      ALL_LESSONS.filter((L) => L.n >= 1).map((L) => L.n),
     )
+    for (const L of lessons)
+      expect(L.season, `Lesson ${L.n}`).toBe(seasonOf(L.n)?.n)
   })
 
   it("name each lesson as its document's headline does, or as the season does while it has none", () => {
     for (const L of lessons) {
-      const season = LESSONS.find((x) => x.n === L.n)
+      const season = ALL_LESSONS.find((x) => x.n === L.n)
       if (written.includes(L.n)) {
         const headline = lessonHeadline(repoFile(lessonDocument(L.n)))
         expect(L.name, `Lesson ${L.n}`).toBe(headline)
@@ -56,12 +60,18 @@ describe('the lessons the hub lists', () => {
   it('carry the reading times the season gives them', () => {
     for (const L of lessons)
       expect(L.minutes, `Lesson ${L.n}`).toBe(
-        LESSONS.find((x) => x.n === L.n)?.minutes,
+        ALL_LESSONS.find((x) => x.n === L.n)?.minutes,
       )
   })
 
   it('span their reading times from the shortest to the longest, or name the one they share', () => {
-    const one: HubLesson = { n: 1, lane: 'theory', name: 'A', hook: 'B?' }
+    const one: HubLesson = {
+      n: 1,
+      season: 1,
+      lane: 'theory',
+      name: 'A',
+      hook: 'B?',
+    }
     expect(
       minutesSpan([
         { ...one, minutes: 15 },
@@ -180,7 +190,10 @@ describe('the filled hub', () => {
       `Each lesson takes about ${minutesSpan(hubLessons(ROOT).filter((L) => L.n <= 2))} minutes.`,
     )
     expect(doc.querySelectorAll('#season .hub-lesson')).toHaveLength(
-      hubLessons(ROOT).length,
+      hubLessons(ROOT).filter((L) => L.season === 1).length,
+    )
+    expect(doc.querySelectorAll('#season-2 .hub-lesson')).toHaveLength(
+      LESSONS_2.length,
     )
     const series = Array.from(
       doc.querySelectorAll('script[type="application/ld+json"]'),
@@ -346,5 +359,59 @@ describe('the hub document', () => {
       'https://about.mercurypitch.com/terms/',
       'https://about.mercurypitch.com/imprint/',
     ])
+  })
+})
+
+describe("the hub's Season 2", () => {
+  const hub = repoFile(HUB_DOCUMENT)
+  const doc = read(fillHub(hub, hubLessons(ROOT), [2, 1]))
+  const section = doc.querySelector('#season-2')
+
+  it('is a section of its own after Season 1, named for the season', () => {
+    expect(words(section?.querySelector('h2') ?? null)).toBe(
+      'Season 2: Read it, harmonise it',
+    )
+    expect(
+      doc.querySelector('#season')?.compareDocumentPosition(section!),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('tells a newcomer which three Season 1 lessons to start with, in one line and no link', () => {
+    const first = section?.querySelector('.hub-first') ?? null
+    expect(words(first)).toBe(
+      "New to the series? Start with Season 1's Lessons 1, 2 and 4.",
+    )
+    expect(first?.querySelector('a')).toBeNull()
+  })
+
+  it('lists its fourteen lessons, each coming, with no link and no reading time', () => {
+    const items = Array.from(section?.querySelectorAll('.hub-lesson') ?? [])
+    // a list a lane, theory first, as Season 1's map is
+    expect(items.map((li) => li.querySelector('h4')?.id).sort()).toEqual(
+      LESSONS_2.map((L) => `lesson-${L.n}`),
+    )
+    for (const li of items) {
+      expect(words(li.querySelector('.hub-go'))).toBe('Coming')
+      expect(li.querySelector('a')).toBeNull()
+    }
+  })
+
+  it('gives its lanes ids of their own, so no id is on the page twice', () => {
+    const ids = Array.from(doc.querySelectorAll('[id]')).map((el) => el.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(
+      Array.from(section?.querySelectorAll('.hub-lane h3') ?? []).map(
+        (h) => h.id,
+      ),
+    ).toEqual(['s2-lane-theory', 's2-lane-voice', 's2-lane-both'])
+  })
+
+  it('keeps Season 2 out of the series parts and the reading times while none of its lessons is live', () => {
+    const series = Array.from(
+      doc.querySelectorAll('script[type="application/ld+json"]'),
+    )
+      .map((s) => JSON.parse(s.textContent ?? '') as Record<string, unknown>)
+      .find((node) => node['@type'] === 'CreativeWorkSeries')
+    expect(JSON.stringify(series?.hasPart)).not.toMatch(/learn\/(1[5-9]|2\d)/)
   })
 })
