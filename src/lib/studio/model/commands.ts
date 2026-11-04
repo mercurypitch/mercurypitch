@@ -3,6 +3,8 @@ import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
 import type { StudioAutomationEdit } from './automation'
 import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
+import type { StudioCompEdit } from './clip-comp'
+import { applyStudioCompEdit, fitStudioComps, isStudioCompEdit, } from './clip-comp'
 import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioPasteEdit } from './placement-commands'
@@ -16,6 +18,7 @@ import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
 
 export type StudioEdit =
+  | StudioCompEdit
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
@@ -164,7 +167,8 @@ function duplicateClip(
 
 function editClip(
   project: StudioProject,
-  edit: Extract<StudioEdit, { clipId: string }>,
+  // A comp edit names a clip too; clip-comp.ts applies it.
+  edit: Exclude<Extract<StudioEdit, { clipId: string }>, StudioCompEdit>,
 ): StudioProject {
   const clip = getClip(project, edit.clipId)
   switch (edit.type) {
@@ -245,6 +249,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioSoundEdit(edit)) return applyStudioSoundEdit(project, edit)
   if (isStudioAutomationEdit(edit))
     return applyStudioAutomationEdit(project, edit)
+  if (isStudioCompEdit(edit)) return applyStudioCompEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':
@@ -341,7 +346,11 @@ export function applyStudioCommand(
 ): StudioProject {
   const initial = validateStudioProject(project, options.assets)
   const edits = command.type === 'batch' ? command.commands : [command]
-  const next = edits.reduce(applyEdit, initial)
+  // An edit that moves a comped clip's edges cuts its comp to them (clip-comp.ts).
+  const next = edits.reduce(
+    (current, edit) => fitStudioComps(applyEdit(current, edit)),
+    initial,
+  )
   if (JSON.stringify(next) === JSON.stringify(initial)) return project
   return reviseStudioProject(project, next, options)
 }
