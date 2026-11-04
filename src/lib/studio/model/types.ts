@@ -157,6 +157,17 @@ export interface StudioClipPasses {
   readonly count: number
 }
 
+/**
+ * One stretch of a comped loop take (clip-comp.ts): the pass that plays
+ * over it, between two of the clip's own source frames.
+ */
+export interface StudioCompSegment {
+  readonly fromSourceFrame: Frame
+  readonly toSourceFrame: Frame
+  /** Counted from 0, oldest first, as 'choose-pass' counts. */
+  readonly pass: number
+}
+
 export interface StudioClip {
   readonly id: string
   readonly trackId: string
@@ -175,6 +186,8 @@ export interface StudioClip {
   readonly passes?: StudioClipPasses
   /** The sequence a MIDI clip plays, its audio rendered from it; absent for an audio clip. */
   readonly midi?: StudioClipMidi
+  /** Which pass plays each stretch of a loop take's clip; absent, its own pass plays throughout. */
+  readonly comp?: readonly StudioCompSegment[]
 }
 
 export interface StudioAsset {

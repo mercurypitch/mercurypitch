@@ -3,6 +3,7 @@ import { TRACK_ROLES } from '@/lib/studio-fx/role-chains'
 import { STUDIO_MAX_CLIP_PASSES, studioPassAt, studioPassWindow, } from './clip-passes'
 import type { StudioAsset, StudioClip, StudioClipPasses, StudioTrack, } from './types'
 import { validateStudioLaneAutomation } from './validation-automation'
+import { validateClipComp } from './validation-comp'
 import { validateStudioChain } from './validation-fx'
 import { validateStudioClipMidi } from './validation-midi'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
@@ -70,7 +71,7 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
       'gainDb',
       'fades',
     ],
-    ['passes', 'midi'],
+    ['passes', 'midi', 'comp'],
   )
   for (const key of ['id', 'trackId', 'assetId'])
     idValue(value[key], `${path}.${key}`)
@@ -119,6 +120,8 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
     validateClipPasses(clip, value.passes, `${path}.passes`)
   if (Object.hasOwn(value, 'midi'))
     validateStudioClipMidi(value.midi, `${path}.midi`)
+  if (Object.hasOwn(value, 'comp'))
+    validateClipComp(clip, value.comp, `${path}.comp`)
   return structuredClone(clip)
 }
 

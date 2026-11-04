@@ -5,6 +5,8 @@ import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
 import type { StudioAutomationEdit } from './automation'
 import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
+import type { StudioCompEdit } from './clip-comp'
+import { applyStudioCompEdit, fitStudioComps, isStudioCompEdit, } from './clip-comp'
 import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioMidiRenderEdit } from './midi-render-commands'
@@ -23,6 +25,7 @@ import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
 
 export type StudioEdit =
+  | StudioCompEdit
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
@@ -200,10 +203,10 @@ function setTrackInstrument(
   }
 }
 
-/** An edit of one clip's placement or sound; its notes are a sequence edit's. */
+/** An edit of one clip's placement or sound; its notes are a sequence edit's, and its comp clip-comp.ts's. */
 type StudioClipEdit = Exclude<
   Extract<StudioEdit, { clipId: string }>,
-  StudioSequenceEdit
+  StudioSequenceEdit | StudioCompEdit
 >
 
 function editClip(project: StudioProject, edit: StudioClipEdit): StudioProject {
@@ -289,6 +292,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioSequenceEdit(edit)) return applyStudioSequenceEdit(project, edit)
   if (isStudioMidiRenderEdit(edit))
     return applyStudioMidiRenderEdit(project, edit)
+  if (isStudioCompEdit(edit)) return applyStudioCompEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':
@@ -387,9 +391,15 @@ export function applyStudioCommand(
 ): StudioProject {
   const initial = validateStudioProject(project, options.assets)
   const edits = command.type === 'batch' ? command.commands : [command]
-  // A sequence no clip names any more goes with the command that left it so;
-  // undo brings it back with its clip.
-  const next = pruneStudioSequences(edits.reduce(applyEdit, initial))
+  // An edit that moves a comped clip's edges cuts its comp to them
+  // (clip-comp.ts). A sequence no clip names any more goes with the command
+  // that left it so; undo brings it back with its clip.
+  const next = pruneStudioSequences(
+    edits.reduce(
+      (current, edit) => fitStudioComps(applyEdit(current, edit)),
+      initial,
+    ),
+  )
   if (JSON.stringify(next) === JSON.stringify(initial)) return project
   return reviseStudioProject(project, next, options)
 }
