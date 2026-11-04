@@ -9,7 +9,9 @@
 //
 // - Ctrl or Cmd with the wheel, and a trackpad pinch (which the browser
 //   sends as Ctrl and the wheel), zoom the timeline about the pointer.
-//   Left to the browser, they zoomed the whole page.
+//   Left to the browser, they zoomed the whole page. Safari sends a
+//   trackpad pinch as gesture events instead (studioGestureZoom), and only
+//   a browser that has them listens for them.
 // - A plain wheel over lanes that all fit, with nowhere to go up or down,
 //   moves through the song instead. A song of a few lanes fits a desktop
 //   window, and there a wheel turned over the lanes did nothing at all.
@@ -59,6 +61,20 @@ export function studioWheelPixels(
   return event.deltaY
 }
 
+/**
+ * What one of Safari's gesture events zooms by. Safari sends a trackpad
+ * pinch as gesturestart, gesturechange and gestureend, each with the scale
+ * since the pinch began, instead of Ctrl and the wheel: a step is that scale
+ * against the one before, never more than double or half at once.
+ */
+export function studioGestureZoom(previous: number, scale: number): number {
+  if (!(previous > 0) || !(scale > 0) || !Number.isFinite(scale)) return 1
+  return Math.min(2, Math.max(0.5, scale / previous))
+}
+
+/** Safari's GestureEvent, as far as a pinch reads it. */
+type GestureInput = Event & { scale?: number; clientX?: number }
+
 /** Two fingers as a pinch reads them: how far apart, and the point between. */
 export interface StudioPinchPoint {
   distance: number
@@ -101,17 +117,23 @@ export function attachStudioLaneNavigation(
   options: { zoomBy(factor: number, clientX: number): void },
 ): () => void {
   let pinch: StudioPinchPoint | null = null
+  // Safari's pinch: the scale it reached so far, while one is under way.
+  let gestureScale: number | null = null
+  let pointerX: number | null = null
 
   const onWheel = (event: WheelEvent) => {
+    pointerX = event.clientX
     const intent = studioWheelIntent(event, {
       vertical: viewport.scrollHeight > viewport.clientHeight + 1,
       horizontal: viewport.scrollWidth > viewport.clientWidth + 1,
     })
     if (intent === 'native') return
     if (event.cancelable) event.preventDefault()
-    if (intent === 'zoom')
-      options.zoomBy(studioWheelZoomFactor(event), event.clientX)
-    else {
+    if (intent === 'zoom') {
+      // A pinch Safari already sends as gesture events zooms once.
+      if (gestureScale === null)
+        options.zoomBy(studioWheelZoomFactor(event), event.clientX)
+    } else {
       const pixels = studioWheelPixels(event, viewport.clientWidth)
       // A notch moves as far as a notch scrolls down; a trackpad its own way.
       viewport.scrollLeft += isStudioWheelNotch(event)
@@ -139,17 +161,57 @@ export function attachStudioLaneNavigation(
   const onTouchEnd = (event: TouchEvent) => {
     pinch = event.touches.length === 2 ? pinchPoint(event.touches) : null
   }
+  const gestureX = (event: GestureInput): number => {
+    if (typeof event.clientX === 'number' && Number.isFinite(event.clientX))
+      return event.clientX
+    if (pointerX !== null) return pointerX
+    const box = viewport.getBoundingClientRect()
+    return box.left + box.width / 2
+  }
+  const onGestureStart = (event: Event) => {
+    event.preventDefault()
+    gestureScale = (event as GestureInput).scale ?? 1
+  }
+  const onGestureChange = (event: Event) => {
+    event.preventDefault()
+    const scale = (event as GestureInput).scale ?? 1
+    const factor = studioGestureZoom(gestureScale ?? 1, scale)
+    gestureScale = scale
+    // On an iPad the fingers' touches carry the pinch already (onTouchMove).
+    if (pinch === null && factor !== 1)
+      options.zoomBy(factor, gestureX(event as GestureInput))
+  }
+  const onGestureEnd = (event: Event) => {
+    event.preventDefault()
+    gestureScale = null
+  }
+  const onPointerMove = (event: PointerEvent) => {
+    pointerX = event.clientX
+  }
+  const gestures =
+    typeof (globalThis as { GestureEvent?: unknown }).GestureEvent !==
+    'undefined'
 
   viewport.addEventListener('wheel', onWheel, { passive: false })
   viewport.addEventListener('touchstart', onTouchStart, { passive: true })
   viewport.addEventListener('touchmove', onTouchMove, { passive: false })
   viewport.addEventListener('touchend', onTouchEnd, { passive: true })
   viewport.addEventListener('touchcancel', onTouchEnd, { passive: true })
+  if (gestures) {
+    viewport.addEventListener('gesturestart', onGestureStart)
+    viewport.addEventListener('gesturechange', onGestureChange)
+    viewport.addEventListener('gestureend', onGestureEnd)
+    viewport.addEventListener('pointermove', onPointerMove, { passive: true })
+  }
   return () => {
     viewport.removeEventListener('wheel', onWheel)
     viewport.removeEventListener('touchstart', onTouchStart)
     viewport.removeEventListener('touchmove', onTouchMove)
     viewport.removeEventListener('touchend', onTouchEnd)
     viewport.removeEventListener('touchcancel', onTouchEnd)
+    viewport.removeEventListener('gesturestart', onGestureStart)
+    viewport.removeEventListener('gesturechange', onGestureChange)
+    viewport.removeEventListener('gestureend', onGestureEnd)
+    viewport.removeEventListener('pointermove', onPointerMove)
   }
 }
