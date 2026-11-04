@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { type Download, expect, type Locator, type Page, test, } from '@playwright/test'
 import type { StudioClip } from '../lib/studio/model/types'
-import { openArrangement, readStudioProject, setClipStart, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { openArrangement, readStudioProject, setClipStart, studioClip, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
 import { audioClock, captureStudioOutput, untilAudioClock, } from './helpers/studio-output-capture'
 import { captureSpan } from './helpers/studio-output-span'
 import { fakeMicArgs } from './helpers/tone-wav'
@@ -513,6 +513,52 @@ test.describe('Studio comping', () => {
       studio.getByRole('group', { name: /^Pass \d of 3/ }),
     ).toHaveCount(0)
     await expect(takeButton(page, /, Take 1, comp of 3 passes, /)).toBeFocused()
+  })
+
+  test('over the passes the wheel zooms and scrolls the song as over a lane', async ({
+    page,
+  }) => {
+    test.setTimeout(240_000)
+    await recordLoop(page)
+    const studio = studioRegion(page)
+    await takeButton(page, /, Take 1, pass 3 of 3, /).click()
+    await studio
+      .getByRole('toolbar', { name: 'Selected clip' })
+      .getByRole('button', { name: 'Comp', exact: true })
+      .click()
+    const middle = passRow(page, 2)
+    await middle.scrollIntoViewIfNeeded()
+    const box = (await middle.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    const scale = async () =>
+      Number(
+        await studio
+          .locator('[data-studio-scale]')
+          .getAttribute('data-studio-scale'),
+      )
+    const moved = () =>
+      timelineViewport(page).evaluate(
+        (element) => element.scrollLeft + element.scrollTop,
+      )
+
+    // Ctrl with the wheel zooms the timeline, never the page.
+    const before = await scale()
+    await page.keyboard.down('Control')
+    await page.mouse.wheel(0, -100)
+    await page.keyboard.up('Control')
+    await expect.poll(scale).toBeGreaterThan(before)
+    expect(await page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1)
+
+    // A plain wheel moves the lanes: down where they can go, else on through the song.
+    const at = await moved()
+    await page.mouse.wheel(0, 300)
+    await expect.poll(moved).toBeGreaterThan(at)
+
+    // Neither turn of the wheel touched the comp.
+    expect(await savedComp(page)).toEqual([])
+    await expect(passRow(page, 3)).toHaveAccessibleName(
+      /^Pass 3 of 3, newest, plays the whole clip/,
+    )
   })
 
   test('a phone comps a bar at a tap in the lane sheet', async ({ page }) => {
