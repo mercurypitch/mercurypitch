@@ -414,6 +414,7 @@
 }
 
 .segment {
+  position: relative;
   min-width: 44px;
   min-height: 36px;
   padding: 0 10px;
@@ -423,6 +424,20 @@
   color: var(--text-secondary, #a8b3bf);
   font: 500 13px/1 var(--font-body, sans-serif);
   cursor: pointer;
+}
+
+/* Each segment and each switch takes a tap over 44 px of height, past what
+   it draws (36 and 26): the option rows are 44 px or more, so the areas stay
+   in their row, and side by side the segments' areas never meet. */
+.segment::after,
+.switch::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.switch::after {
+  inset: -9px 0;
 }
 
 .segmentOn {
