@@ -75,6 +75,7 @@ for (const [name, width, phone] of [
     const common = [
       'song-options',
       'add-takes',
+      'lines',
       'mix',
       'history',
       'transport',

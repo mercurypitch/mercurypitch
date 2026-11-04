@@ -1,0 +1,274 @@
+/* Studio lane lines — a lane's open volume or pan line over its dimmed clips, the header toggle that opens it, and its bar. */
+
+/* The line covers its lane's clips, under the lane header and the playhead. */
+.area {
+  position: absolute;
+  inset: var(--studio-clip-inset) 0;
+  z-index: 3;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* The clips stay in view under a wash, so the line reads first. */
+.area::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--studio-clip-inset)) 0;
+  background: color-mix(in srgb, var(--studio-bg) 62%, transparent);
+  pointer-events: none;
+}
+.readOnly {
+  cursor: default;
+}
+.drawing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.guide {
+  stroke: var(--studio-line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+.line {
+  fill: none;
+  stroke: var(--studio-track);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+/* No points yet: where the fader or the knob holds the lane now. */
+.rest {
+  stroke: var(--studio-track);
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  opacity: 0.75;
+}
+
+/* The scale stays at the left of what shows: top, 0 dB or centre, foot. */
+.scale {
+  position: absolute;
+  inset: 0 auto 0 0;
+  pointer-events: none;
+}
+.scale span {
+  position: absolute;
+  left: 0;
+  color: var(--studio-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.scaleTop {
+  top: 0;
+}
+.scaleGuide {
+  transform: translateY(calc(-100% - 2px));
+}
+.scaleFoot {
+  bottom: 0;
+}
+
+.hint {
+  position: absolute;
+  top: 50%;
+  max-width: min(420px, 70vw);
+  margin: 0;
+  padding: 4px 10px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-text-2);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.snapMark {
+  position: absolute;
+  inset: calc(-1 * var(--studio-clip-inset)) auto;
+  width: 0;
+  border-left: 1px dashed var(--studio-accent);
+  pointer-events: none;
+}
+
+/* Points: a dot on the line, inside a larger target. */
+.area button.point {
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  min-height: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--studio-track);
+  border-radius: 50%;
+  background: var(--studio-raised);
+  cursor: grab;
+  touch-action: none;
+}
+.area button.point::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+}
+.touch button.point {
+  width: 18px;
+  height: 18px;
+}
+/* 44 px under a finger. */
+.touch button.point::before {
+  inset: -13px;
+}
+.area button.pointSelected {
+  z-index: 2;
+  background: var(--studio-track);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--studio-track) 32%, transparent);
+}
+.readOnly button.point {
+  cursor: default;
+}
+.area button.point:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 3px;
+}
+
+/* The chosen point's value and time, above it, or below near the top. */
+.readout {
+  position: absolute;
+  z-index: 3;
+  padding: 3px 7px;
+  transform: translate(-50%, calc(-100% - 14px));
+  border-radius: 6px;
+  background: var(--studio-raised);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-text);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.readoutBelow {
+  transform: translate(-50%, 14px);
+}
+.touch .readout {
+  transform: translate(-50%, calc(-100% - 26px));
+}
+.touch .readoutBelow {
+  transform: translate(-50%, 26px);
+}
+
+/* The lane header's name beside the toggle that opens its lines. */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+.identity > button:first-child {
+  flex: 1 1 auto;
+}
+.identity button.toggle {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text-2);
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+.toggle svg {
+  width: 15px;
+  height: 15px;
+}
+/* A lane that follows a line says so with a dot in its hue. */
+.identity button.toggle[data-has-lines]::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--studio-bar);
+  border-radius: 50%;
+  background: var(--studio-track);
+}
+@media (hover: hover) {
+  .identity button.toggle:hover:not([aria-pressed='true']) {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
+}
+.identity button.toggle[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+.identity button.toggle:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+/* Touch: a full-height target beside the name. */
+.touchIdentity button.toggle {
+  width: 32px;
+  height: 44px;
+  border-radius: 8px;
+}
+.touchIdentity .toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The bar: Volume or Pan, then the point and line commands. */
+.paramIcon {
+  display: inline-flex;
+}
+.bar button.param[aria-pressed='true'] {
+  background: var(--studio-hover);
+  color: var(--studio-text);
+  box-shadow: inset 0 -2px 0 var(--studio-track, var(--studio-accent));
+}
+/* A phone runs the bar across the foot of the lanes, icons for the commands. */
+.phoneBar {
+  justify-content: space-between;
+}
+.bar.phoneBar button {
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+}
+.phoneBar .paramIcon {
+  display: none;
+}
+.phoneBar .commandText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identity button.toggle {
+    transition: none;
+  }
+}

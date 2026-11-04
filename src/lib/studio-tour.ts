@@ -97,6 +97,14 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     whenPresent: true,
   },
   {
+    title: 'Draw volume and pan lines',
+    targetSelector: '[data-tour="studio.lines"]',
+    description:
+      'Lines change a track’s volume or pan as the song plays: fade a guitar in, or move a harmony left for one chorus. Open them here, then add points on the lane and drag them.',
+    placement: 'bottom',
+    whenPresent: true,
+  },
+  {
     title: 'Mix every track',
     targetSelector: '[data-tour="studio.mix"]',
     description:
