@@ -87,9 +87,16 @@ function strip(number: number): HTMLElement {
   return element
 }
 
-function pointer(type: string, target: HTMLElement, clientX: number) {
+/** A pointer event as a mouse or the first finger sends it, or another finger with `id`. */
+function pointer(
+  type: string,
+  target: HTMLElement,
+  clientX: number,
+  finger: { id: number; primary: boolean } = { id: 1, primary: true },
+) {
   const event = new MouseEvent(type, { bubbles: true, clientX, button: 0 })
-  Object.defineProperty(event, 'pointerId', { value: 1 })
+  Object.defineProperty(event, 'pointerId', { value: finger.id })
+  Object.defineProperty(event, 'isPrimary', { value: finger.primary })
   target.dispatchEvent(event)
 }
 
@@ -151,6 +158,25 @@ describe('Studio comp lanes', () => {
       toSourceFrame: 2 * PASS + 48_000,
       pass: 0,
     })
+  })
+
+  it('lets a swipe go when a second finger lands, so a pinch over the passes uses nothing', () => {
+    const { command } = setup()
+    openStudioComp('take')
+    const first = strip(1)
+    const newest = strip(3)
+    const second = { id: 2, primary: false }
+
+    // Two fingers spread across the passes, as a pinch to zoom does.
+    pointer('pointerdown', first, 100 + 20)
+    pointer('pointermove', first, 100 + 40)
+    pointer('pointerdown', newest, 100 + 100, second)
+    pointer('pointermove', newest, 100 + 150, second)
+    pointer('pointermove', first, 100 + 10)
+    pointer('pointerup', newest, 100 + 150, second)
+    pointer('pointerup', first, 100 + 10)
+
+    expect(command).not.toHaveBeenCalled()
   })
 
   it('takes a swipe as it is with Snap off', () => {
