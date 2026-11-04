@@ -30,7 +30,7 @@
 //
 // Every play is the page's one sound (kit/now-playing.ts): a play here
 // stops any other on the page, another sound stops it, and so does leaving
-// free play, by Sing it's rule (sing.ts `onLeave`): off screen for 600 ms,
+// free play, by Sing it's rule (kit/leave.ts `onLeave`): off screen for 600 ms,
 // the page hidden, or the page gone. Each control and each line is the
 // steps' own (steps.ts, lines.ts), so free play says each change once in
 // its polite line in the steps' words, and asks the frame loop for nothing
@@ -38,6 +38,7 @@
 
 import { q } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
+import { onLeave } from '@/features/lessons/kit/leave'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import type { LettersSolfegeMode } from '@/features/lessons/kit/names-modes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
@@ -47,7 +48,6 @@ import { Sound } from '@/features/lessons/kit/sound'
 import type { BeadsSettings, ChordBeads } from './chord-beads'
 import { mountChordBeads } from './chord-beads'
 import { playPattern } from './pattern'
-import { onLeave } from './sing'
 import type { Tempo } from './sounds'
 import { bindNames, bindQuality, bindRoots, bindSwitch, scaleNotes, stageNotes, } from './steps'
 

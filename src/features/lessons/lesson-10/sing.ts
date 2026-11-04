@@ -54,6 +54,7 @@
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, mountPractiseCard, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
+import { onLeave } from '@/features/lessons/kit/leave'
 import { majorScale } from '@/features/lessons/kit/major-scale'
 import type { Which } from '@/features/lessons/kit/merc-duo'
 import { COUNT_IN_SEC, countIn, nextShift, setMoveEnds, } from '@/features/lessons/kit/move-do'
@@ -88,9 +89,6 @@ const RING_WORDS = {
 } as const
 const COUNT_IN_WORD = 'Get ready'
 
-/** How long the section may be off screen before what plays stops, ms (Lesson 3's rule). */
-const AWAY_MS = 600
-
 /** Writes a live line only when its words change, so a screen reader hears it once. */
 function say(el: HTMLElement, text: string): void {
   if (el.textContent !== text) el.textContent = text
@@ -113,24 +111,6 @@ function shownLine(card: HTMLElement): HTMLElement | null {
     '[data-panel]:not([hidden]) p',
   )
   return Array.from(lines).find((p) => p.closest('[hidden]') === null) ?? null
-}
-
-/** Calls `leave` once `section` has been off screen for 600 ms, when the page is hidden, and when it goes. */
-export function onLeave(section: HTMLElement, leave: () => void): void {
-  // leaving is staying away: a panel that grows or shrinks can take the
-  // section off screen for a moment, and that must not stop a sweep
-  let away = 0
-  new IntersectionObserver((entries) => {
-    window.clearTimeout(away)
-    // only the section is watched, so a report's last entry is where it stands now
-    const last = entries[entries.length - 1]
-    if (last !== undefined && !last.isIntersecting)
-      away = window.setTimeout(leave, AWAY_MS)
-  }).observe(section)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) leave()
-  })
-  window.addEventListener('pagehide', () => leave())
 }
 
 export function initSing(stills: RingStills): void {

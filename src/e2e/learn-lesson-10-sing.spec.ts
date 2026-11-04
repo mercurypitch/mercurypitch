@@ -289,7 +289,7 @@ for (const viewport of [
       const card = page.locator('#singCard')
       // a walk off the card's end scrolls the page away, and the scroll
       // back lands before a press: what plays stops once Sing it has been
-      // off screen 600 ms (sing.ts `onLeave`)
+      // off screen 600 ms (kit/leave.ts `onLeave`)
       const press = async (sel: string): Promise<void> => {
         await card.locator(sel).focus()
         await expect.poll(() => scrollStill(page)).toBe(true)
