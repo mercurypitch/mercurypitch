@@ -259,8 +259,8 @@ export interface NativeDeviceApi {
    */
   pictureInPictureLyrics: ((script: LyricWindowScript | null) => void) | null
   /**
-   * iOS: whether a TV connected to the phone shows the room's lyrics (a test
-   * build's "Lyrics on a connected TV"), now and on every change. The TV
+   * iOS: whether a TV connected to the phone shows the room's lyrics (the
+   * TV chooser's Lyrics), now and on every change. The TV
    * draws them from the same script as the window, so the room keeps handing
    * it over while the TV shows them, window or not. Returns the unsubscribe.
    * Absent where no TV can show them.
@@ -276,8 +276,8 @@ export interface NativeDeviceApi {
   onExternalScreen?: (handler: (connected: boolean) => void) => () => void
   /**
    * iOS: a TV connected to the phone that draws the room's stage, the pitch
-   * lane, the lyrics and the score (a test build's "Stage on a connected
-   * TV"). Absent where no TV can.
+   * lane, the lyrics and the score (the TV chooser's Stage). Absent where
+   * no TV can.
    */
   tvStage?: NativeTvStage
   /**

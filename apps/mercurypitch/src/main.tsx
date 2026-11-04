@@ -231,11 +231,12 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
-  // The Karaoke room's lyrics on a TV connected by AirPlay screen mirroring
-  // or a cable, in place of a mirror of the phone: a proof of concept for
-  // karaoke on a TV (ios/App/App/LyricsWindow/TVLyrics.swift). Off unless
-  // switched on here, so a store build's TV always mirrors. Same gate, same
-  // reason.
+  // What a TV connected by AirPlay screen mirroring or a cable shows now:
+  // the Karaoke room's lyrics or its stage, in place of a mirror of the
+  // phone, and the stage picture's offset (ios/App/App/LyricsWindow/). Every
+  // build asks what a TV shows as it connects (shell/tv/tv-choice.ts); these
+  // switches are a tester's, and leave what the singer chose alone. Same
+  // gate, same reason.
   void import('./shell/TvLyricsPanel').then((module) => {
     const Panel = module.TvLyricsPanel
     registerDeveloperSection({

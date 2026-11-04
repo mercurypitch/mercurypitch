@@ -2,13 +2,14 @@
 // The Karaoke room's stage on a connected TV: what the room sends
 // ============================================================
 //
-// A proof of concept for karaoke on a TV (issue #489, the third proof of
-// concept). With a test build's "Stage on a connected TV" on, an iPhone with
-// AirPlay screen mirroring gives the TV a page of its own that draws the
-// room's stage, the pitch lane, the lyrics and the score, in the TV's own
-// landscape, while the phone stays the room and the microphone in whatever
-// way it is held (ios/App/App/LyricsWindow/TVStage.swift). The page has no
-// way into the room, so the room sends it everything (src/lib/tv-stage/):
+// Karaoke on a TV (issue #489, from the third proof of concept). Once the
+// singer picks the stage for a TV (the native app's TV chooser, in every
+// build), an iPhone with AirPlay screen mirroring gives the TV a page of its
+// own that draws the room's stage, the pitch lane, the lyrics and the
+// score, in the TV's own landscape, while the phone stays the room and the
+// microphone in whatever way it is held (ios/App/App/LyricsWindow/
+// TVStage.swift). The page has no way into the room, so the room sends it
+// everything (src/lib/tv-stage/):
 //
 //   THE SONG, each time the TV starts showing the stage and each time the
 //   song changes or more of it arrives: its length, its lyrics as the

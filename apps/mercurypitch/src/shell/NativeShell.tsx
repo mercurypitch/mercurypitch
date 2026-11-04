@@ -14,8 +14,9 @@
 //
 // WHAT IT OWNS: the rail, the transport that replaces it during a run, the
 // corner chip and its column, the session pill, the More sheet, the room
-// header on a room that registered controls, and the native Settings with
-// the screens it pushes. WHAT IT DOES NOT: the run itself. The room owns Start, the engine
+// header on a room that registered controls, the native Settings with the
+// screens it pushes, and the question a TV asks as it connects (tv/). WHAT
+// IT DOES NOT: the run itself. The room owns Start, the engine
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
@@ -65,6 +66,8 @@ import { ShellRoot } from './ShellRoot'
 import type { ShellScreensProps } from './ShellScreens'
 import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
+import { installTvChoice } from './tv/tv-choice'
+import { TvChoiceSheet } from './tv/TvChoiceSheet'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
 const MINIMISE_AT = 24
@@ -311,6 +314,11 @@ export const NativeShell: Component = () => {
     // What Community kept for an account goes when it signs out or the
     // phone changes hands (community-entry.ts; nothing in a store build).
     onCleanup(installCommunity())
+
+    // A TV connected by Screen Mirroring or a cable: what it shows, asked
+    // once per TV and kept (tv/tv-choice.ts). Nothing on a phone with no
+    // TV plugin: Android and the web.
+    onCleanup(installTvChoice())
 
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
@@ -657,6 +665,12 @@ export const NativeShell: Component = () => {
               this phone's voiceprints go to it (voiceprint-ask.ts). After
               the sign-in sheet, so it rises over it as that one goes. */}
           <VoiceprintAskSheet />
+
+          {/* A TV that just connected and has no remembered choice: what it
+              shows (tv/tv-choice.ts). After every other sheet, so it rises
+              over whichever is up as the TV arrives, and Back answers it
+              first. */}
+          <TvChoiceSheet />
 
           {/* The question a Settings screen is asking, if any. After the
               sheet, so an alert asked over it is drawn over it. */}

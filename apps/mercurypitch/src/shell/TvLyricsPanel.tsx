@@ -1,10 +1,15 @@
 // ============================================================
-// TV — the Karaoke room on a connected TV, two proofs of concept
+// TV: what a connected TV shows now, for a test build's tester
 // ============================================================
 //
-// AirPlay screen mirroring, or a cable, gives the iPhone a TV, and by default
-// the TV mirrors it. Two switches put something of the room's own there
-// instead, while the phone stays the room and the microphone:
+// AirPlay screen mirroring, or a cable, gives the iPhone a TV, and in every
+// build the TV chooser asks once per TV what it shows and keeps the answer
+// (shell/tv/tv-choice.ts; Settings, Karaoke, TV lists what is kept). These
+// switches set what the TV shows NOW, through the same two plugin switches
+// the chooser uses, and leave the chooser's memory alone: a tester can try
+// either view without changing what the singer chose for that TV, and the
+// TV's own choice comes back the next time it connects. The memory's count
+// is shown here, so the two are read side by side.
 //
 //   Lyrics on a connected TV: the lyrics full screen, drawn as the lyrics
 //   window draws them (ios/App/App/LyricsWindow/TVLyrics.swift). They move
@@ -15,14 +20,15 @@
 //   TV's own landscape, whatever way the phone is held (TVStage.swift, a
 //   page of its own fed by the room, src/lib/tv-stage/). The picture can be
 //   moved earlier or later in small steps, kept on the phone, for a TV whose
-//   picture and sound end up apart (tv-stage-store.ts).
+//   picture and sound end up apart (tv-stage-store.ts): a tester's setting
+//   until the TV's own delay is measured, so it is here alone.
 //
 // A TV shows one or the other, so each switch turns the other off; the rows
 // say whether a TV is connected and what it shows, as the plugin reports it.
 //
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
-// through a dynamic import (main.tsx), so a store build carries none of it
-// and its TV always mirrors.
+// through a dynamic import (main.tsx), so a store build carries none of it:
+// there, what a TV shows is the chooser's alone.
 
 import { onTvLyrics, onTvStage, readTvLyrics, readTvStage, setTvLyricsEnabled, setTvStageEnabled, } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
@@ -31,6 +37,7 @@ import { theDevice, thisDeviceLower } from '@/lib/device-noun'
 import { describeTvStageOffset, nudgeTvStageOffset, TV_STAGE_OFFSET_STEP_MS, tvStageOffsetMs, } from '@/stores/tv-stage-store'
 import { SettingsGroup, SettingsRow } from './settings/SettingsList'
 import { SettingsSwitch } from './settings/SettingsSwitch'
+import { rememberedTvs } from './tv/tv-memory'
 
 export const TvLyricsPanel: Component = () => {
   const [present, setPresent] = createSignal(true)
@@ -87,6 +94,11 @@ export const TvLyricsPanel: Component = () => {
     void setTvStageEnabled(next).then(read)
   }
 
+  const remembered = (): string => {
+    const count = rememberedTvs().length
+    if (count === 0) return 'none kept'
+    return count === 1 ? '1 TV kept' : `${String(count)} TVs kept`
+  }
   const tv = (): string => {
     if (!present()) return `none on ${thisDeviceLower()}`
     return connected() ? 'connected' : 'none'
@@ -103,7 +115,7 @@ export const TvLyricsPanel: Component = () => {
         <SettingsRow
           id="tv-lyrics"
           label="Lyrics on a connected TV"
-          sub={`With AirPlay screen mirroring, the TV shows the Karaoke room's lyrics full screen in place of ${theDevice()}, which stays the room and the microphone. Off, the TV mirrors ${theDevice()}. The lyrics move only with Keep playing in the background on.`}
+          sub={`Now, on the TV that is connected: the Karaoke room's lyrics full screen in place of ${theDevice()}, which stays the room and the microphone. Off, the TV mirrors ${theDevice()}. The lyrics move only with Keep playing in the background on.`}
           accessory={
             <SettingsSwitch
               checked={enabled()}
@@ -117,7 +129,7 @@ export const TvLyricsPanel: Component = () => {
         <SettingsRow
           id="tv-stage"
           label="Stage on a connected TV"
-          sub={`With AirPlay screen mirroring, the TV shows the Karaoke room's pitch lane, lyrics and score in its own landscape, however ${theDevice()} is held. Turning it on turns the lyrics off: the TV shows one or the other.`}
+          sub={`Now, on the TV that is connected: the Karaoke room's pitch lane, lyrics and score in its own landscape, however ${theDevice()} is held. Turning it on turns the lyrics off: the TV shows one or the other.`}
           accessory={
             <SettingsSwitch
               checked={stageEnabled()}
@@ -159,6 +171,12 @@ export const TvLyricsPanel: Component = () => {
               </button>
             </span>
           }
+        />
+        <SettingsRow
+          id="tv-remembered"
+          label="What each TV shows when it connects"
+          sub="Chosen on the TV's sheet, kept in Settings, Karaoke, TV. These switches leave it alone: the TV's own choice comes back as it next connects."
+          value={remembered()}
         />
       </SettingsGroup>
       <dl class="mp-dev__readout">
