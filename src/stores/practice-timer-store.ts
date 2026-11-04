@@ -162,7 +162,9 @@ export function startPracticeTimer(): void {
   ticking = true
   let micOpen = false
   micManager.subscribe((state) => {
-    micOpen = state.active
+    // A Studio take records from an input of its own, which `active` (the
+    // shared stream's) says nothing about.
+    micOpen = state.active || (state.scoped ?? null) !== null
   })
   setInterval(() => {
     practiceTimerTick(micOpen)
