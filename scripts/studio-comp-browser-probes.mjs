@@ -11,6 +11,9 @@
 // as far as the two sides lie apart. Across a crossfade the export steps
 // no further than the planned envelope allows: each side's own step at its
 // gain, plus its level times how far its gain moves in one frame.
+// A lane's volume and pan lines play on a stage after its faders
+// (graph-automation.ts), so they ride over a comp as over any clip: a comp
+// under lines exports as it plays, and the lines are heard on it.
 import { EMPTY_CHAIN } from '/src/lib/studio-fx/chain-spec.ts'
 import { measureTrackLatencies } from '/src/lib/studio-fx/mixdown.ts'
 import { encodeCanonicalPcm, sha256Bytes, } from '/src/lib/studio/audio/canonical-pcm.ts'
@@ -114,12 +117,13 @@ function compOf(clip) {
   ]
 }
 
-/** A one-lane song of `role` (a dry lane has no effects) holding `clips`. */
-function song(role, dry, clips, sources) {
+/** A one-lane song of `role` (a dry lane has no effects) holding `clips`, under volume and pan `lines` if given. */
+function song(role, dry, clips, sources, lines) {
   const made = createStudioTrack({ id: 'lane', name: role, order: 0, role })
-  const track = dry
+  const plain = dry
     ? { ...made, balanceGainDb: 0, fx: { ...made.fx, baseSpec: EMPTY_CHAIN } }
     : made
+  const track = lines === undefined ? plain : { ...plain, automation: lines }
   const project = {
     ...createStudioProject({ id: 'comp-probe', title: 'Comp probe', now: NOW }),
     tracks: [track],
@@ -129,15 +133,43 @@ function song(role, dry, clips, sources) {
   return { project, assets, sources: new Map(sources) }
 }
 
-/** A comped loop take, alone on a lane. */
-function compedSong(role, dry) {
+/** A comped loop take, alone on a lane, under `lines` if given. */
+function compedSong(role, dry, lines) {
   const clip = takeClip('take-clip', 'lane', 1)
   return song(
     role,
     dry,
     [{ ...clip, comp: compOf(clip) }],
     [['take', takeAudio()]],
+    lines,
   )
+}
+
+/** A frame of the song, `seconds` in. */
+const frameAt = (seconds) => Math.round(seconds * SR)
+
+/** A lane line through `[seconds, value]` points. */
+const line = (points) =>
+  points.map(([seconds, value]) => ({ frame: frameAt(seconds), value }))
+
+/**
+ * Lines over the comped clip (0.2 s to 1.7 s, joins at 0.769 s and
+ * 1.263 s): the pan swings across the first join, and the volume holds
+ * 12 dB down across the second.
+ */
+const COMP_LINES = {
+  volume: line([
+    [0.1, 0],
+    [0.9, 0],
+    [1, -12],
+    [1.6, -12],
+  ]),
+  pan: line([
+    [0.1, 0],
+    [0.6, -0.5],
+    [0.9, 0.5],
+    [1, 0],
+  ]),
 }
 
 function buffersOn(ctx, sources) {
@@ -332,6 +364,51 @@ async function exportCompedDryLane() {
   }
 }
 
+/** The level of `[from, to)` of the song in a render, both sides, in dBFS. */
+function rmsDb(render, from, to) {
+  const off = Math.round(render.heardFrame)
+  let sum = 0
+  for (const channel of ['left', 'right'])
+    for (let f = from; f < to; f++) sum += render[channel][off + f] ** 2
+  return db(Math.sqrt(sum / (2 * (to - from))))
+}
+
+/**
+ * The comped dry lane under a volume and a pan line, exported against its
+ * Play: the comp's joins and the lane's lines play together, an export the
+ * Play it stands for to the -120 dBFS a lane with lines alone is held to
+ * (exportLines in studio-automation-browser-probes.mjs). And the volume
+ * line is heard on the comp: 12 dB down over its low stretch, a join and
+ * all, against the same comp with no lines.
+ */
+async function exportCompedLinedLane() {
+  const made = compedSong('other', true, COMP_LINES)
+  const play = await renderPlay(
+    made,
+    await prepare(made, true),
+    2,
+    CALLBACK - 0.5,
+  )
+  const exported = await renderExport(made)
+  const comparedFrames = sharedFrames(play, exported, SONG_FRAMES)
+  const worstDbfs = worstBetween(play, exported, 0, SONG_FRAMES)
+  const low = [frameAt(1.05), frameAt(1.55)]
+  const plain = await renderExport(compedSong('other', true))
+  const lowered = await renderExport(
+    compedSong('other', true, { volume: COMP_LINES.volume }),
+  )
+  const dipDb = round(rmsDb(lowered, ...low) - rmsDb(plain, ...low), 3)
+  return {
+    worstDbfs,
+    comparedFrames,
+    dipDb,
+    pass:
+      comparedFrames >= AT + PASS &&
+      worstDbfs < -120 &&
+      Math.abs(dipDb + 12) < 0.05,
+  }
+}
+
 /**
  * The comped clip through the voice chain at Best: Play and export line up
  * at lag 0 and differ no more than two Plays of the same song do, one
@@ -479,8 +556,9 @@ async function hashOf(render) {
 /**
  * Songs with no comp, Played and exported, hashed: a plain clip with fades
  * and gain, a split that coalesces, the loop take on its middle pass with
- * fades, and split halves of it on two other passes, on a dry lane and
- * through the bass chain (which renders the same every time).
+ * fades, and split halves of it on two other passes, on a dry lane, on a
+ * dry lane under volume and pan lines, and through the bass chain (which
+ * renders the same every time).
  */
 function uncompedSongs() {
   const plain = noise(1.2 * SR, 0.3, 11)
@@ -541,8 +619,25 @@ function uncompedSongs() {
     ['take', takeAudio()],
     ['plain', plain],
   ]
+  const lines = {
+    volume: line([
+      [0.1, 0],
+      [1, -6],
+      [2.5, -6],
+      [3, 0],
+      [4.2, -12],
+      [5, 0],
+    ]),
+    pan: line([
+      [0.1, 0],
+      [1, -0.7],
+      [2, 0.7],
+      [4.5, 0],
+    ]),
+  }
   return [
     ['dry', song('other', true, clips('lane'), sources), true],
+    ['lined', song('other', true, clips('lane'), sources, lines), true],
     ['bass', song('bass', false, clips('lane'), sources), false],
   ]
 }
@@ -564,6 +659,7 @@ export async function runStudioCompProbes({ comp = true } = {}) {
   const results = { uncompedHashes: await uncompedHashes() }
   if (!comp) return results
   results.exportCompedDryLane = await exportCompedDryLane()
+  results.exportCompedLinedLane = await exportCompedLinedLane()
   results.exportCompedVoice = await exportCompedVoice()
   results.joinSteps = await joinSteps()
   return results
