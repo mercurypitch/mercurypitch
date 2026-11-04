@@ -22,8 +22,8 @@
 import { DRAFTS_SHOWN } from './draft-switch'
 import type { PageState, Reading } from './publish'
 import { isLive, linkedLessonOfHref, PAGE_STATE_ID, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
-import type { Lesson } from './season'
-import { LESSONS } from './season'
+import type { Lesson, Season } from './season'
+import { SEASON_1 } from './season'
 
 /**
  * The state of a page no worker served: no overrides, and this build's
@@ -51,14 +51,17 @@ export function readPageState(doc: Document = document): PageState {
   return served ?? (parse(BUILD_STATE_JSON) as PageState)
 }
 
-/** The season as `doc` shows it (publish.ts `seasonFor`): lessons held back have no page, each its picked hook and tease. */
-export function pageLessons(doc: Document = document): Lesson[] {
-  return seasonFor(LESSONS, readPageState(doc))
+/** `lessons` as `doc` shows them (publish.ts `seasonFor`): held back with no page, each its picked hook and tease. */
+export function pageLessons(
+  doc: Document = document,
+  lessons: readonly Lesson[] = carriedLessons(),
+): Lesson[] {
+  return seasonFor(lessons, readPageState(doc))
 }
 
 /** Whether lesson `n` is live on `doc`: published, with a page. */
 export function lessonLive(n: number, doc: Document = document): boolean {
-  return isLive(n, LESSONS, readPageState(doc))
+  return isLive(n, carriedLessons(), readPageState(doc))
 }
 
 /**
@@ -89,9 +92,10 @@ function unlink(a: HTMLAnchorElement): void {
  */
 export function followPageState(doc: Document = document): void {
   const state = readPageState(doc)
+  const lessons = carriedLessons()
   for (const a of Array.from(doc.querySelectorAll('a[href]'))) {
     const n = linkedLessonOfHref(a.getAttribute('href') ?? '')
-    if (n !== null && !isLive(n, LESSONS, state)) unlink(a as HTMLAnchorElement)
+    if (n !== null && !isLive(n, lessons, state)) unlink(a as HTMLAnchorElement)
   }
   for (const el of Array.from(
     doc.querySelectorAll('[data-if-live], [data-if-planned]'),
@@ -101,8 +105,45 @@ export function followPageState(doc: Document = document): void {
       : 'planned'
     const n = readingLesson(el.getAttribute(`data-if-${reading}`))
     if (n === null) continue
-    if (readingHolds(reading, n, LESSONS, state))
+    if (readingHolds(reading, n, lessons, state))
       el.replaceWith(...Array.from(el.childNodes))
     else el.remove()
   }
+}
+
+// ---------------------------------------------------------------- seasons
+//
+// Every page carries Season 1 (season.ts). A later season's page carries its
+// own season as well, by `carrySeason` before anything draws, so its lists,
+// its links and its next card know its season's lessons; every lesson the
+// page carries is what `pageLessons`, `lessonLive` and `followPageState`
+// read. A Season 1 page carries no other: its explorer loads Season 2 for
+// its own tab only (explorer.ts), and nothing else on the page changes.
+
+/** The seasons this page carries, in order: Season 1, and a later season's own. */
+const carried: Season[] = [SEASON_1]
+
+/** Every lesson of every season this page carries, in lesson order. */
+function carriedLessons(): Lesson[] {
+  return carried.flatMap((s) => s.lessons)
+}
+
+/**
+ * Carries `season` on this page: a later season's page calls it once, from
+ * its module, before it draws anything. Carrying one twice changes nothing.
+ */
+export function carrySeason(season: Season): void {
+  if (carried.some((s) => s.n === season.n)) return
+  carried.push(season)
+  carried.sort((a, b) => a.n - b.n)
+}
+
+/** The seasons this page carries, in order. */
+export function pageSeasons(): readonly Season[] {
+  return carried
+}
+
+/** The season lesson `n` belongs to among the seasons this page carries; Season 1 for any other. */
+export function pageSeason(n: number): Season {
+  return carried.find((s) => s.lessons.some((L) => L.n === n)) ?? SEASON_1
 }

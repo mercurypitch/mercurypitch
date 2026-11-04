@@ -19,25 +19,33 @@
 // explorer's `[data-select-lesson]`, which selects the lesson there. The
 // tease and the hook are the ones the admin console picked.
 //
-// After the season's last lesson there is no lesson to go on to, and the
-// card closes the season instead: the trailer's question answered, and two
-// ways on, Karaoke Night for a whole song and the season's map. It holds
-// two links, so it is no link itself.
+// A season knows its last lesson (season.ts `Season.last`), and that
+// lesson's page has no lesson to go on to, even where a later season's
+// lessons follow: its card closes the season instead, in that season's
+// words (`Season.close`): its question answered, and two ways on, Karaoke
+// Night for a whole song and the season's map. It holds two links, so it
+// is no link itself. After a visit whose singing ended in rest (comfort.ts
+// `VisitEnding`) nothing may send the learner to sing, so the close keeps
+// its answer and the map, and drops the invitation and Karaoke Night; it
+// follows the ending as Sing it sets it, when the page hands it the ending
+// (a season's last lesson sings). The card does not import the ending
+// itself, so no page that never sings carries comfort.ts for it.
 //
 // A page marks the card's place with `[data-next-card]`, its classes the
 // card's; whatever the mark holds, such as Lesson 2's two figures, stays in
 // the card after its words. Draw it before `createExplorer`, which binds the
 // map link.
 
+import type { Ending } from './comfort'
 import { svg } from './dom'
-import { SEASON_END } from './lesson-copy'
 import type { LessonAction } from './lesson-state'
 import { lessonViews, stateWords } from './lesson-state'
-import { pageLessons } from './page-state'
+import { pageLessons, pageSeason } from './page-state'
 import type { StepMarks } from './position'
 import { Positions } from './position'
 import { Done } from './progress'
-import type { Lesson } from './season'
+import type { Lesson, Season, SeasonClose } from './season'
+import { SEASON_1 } from './season'
 
 /** The lesson after this page's, as its card shows it. */
 export interface NextCard {
@@ -66,6 +74,8 @@ export interface SeasonEnd {
   readonly kind: 'end'
   readonly eyebrow: string
   readonly line: string
+  /** The line after a visit whose singing ended in rest: the answer, with no invitation to sing. */
+  readonly rest: string
   /** Karaoke Night, marked with the page's lesson as every practise link is; it opens a tab of its own. */
   readonly song: EndLink
   /** The season's map, on this page. */
@@ -74,37 +84,42 @@ export interface SeasonEnd {
 
 const pad = (n: number): string => String(n).padStart(2, '0')
 
-/** The season's close, as the page of lesson `current` draws it. */
-function seasonEnd(current: number): SeasonEnd {
+/** A season's close, as the page of lesson `current` draws it. */
+function seasonEnd(close: SeasonClose, current: number): SeasonEnd {
   return {
     kind: 'end',
-    eyebrow: SEASON_END.eyebrow,
-    line: SEASON_END.line,
+    eyebrow: close.eyebrow,
+    line: close.line,
+    rest: close.rest,
     song: {
-      label: SEASON_END.song.label,
-      href: `${SEASON_END.song.path}?lesson=${pad(current)}`,
+      label: close.song.label,
+      href: `${close.song.path}?lesson=${pad(current)}`,
     },
-    map: { label: SEASON_END.map.label, href: SEASON_END.map.href },
+    map: { label: close.map.label, href: close.map.href },
   }
 }
 
 /**
- * The card for the lesson after lesson `current`; after the season's last
- * lesson, the season's close; null for a lesson the season does not have.
+ * The card for the lesson after lesson `current` among `lessons`, the
+ * lessons of `season` as the page shows them; on the season's last lesson,
+ * its close; null for a lesson the season does not have, or whose next the
+ * list lacks.
  */
 export function nextCard(
   lessons: readonly Lesson[],
   done: readonly number[],
   steps: StepMarks,
   current: number,
+  season: Season = SEASON_1,
 ): NextCard | SeasonEnd | null {
-  const v = lessonViews(lessons, {
-    done: new Set(done),
-    steps,
-    current,
-  }).find((x) => x.lesson.n === current + 1)
-  if (v === undefined)
-    return lessons.some((L) => L.n === current) ? seasonEnd(current) : null
+  if (!lessons.some((L) => L.n === current)) return null
+  if (current === season.last) return seasonEnd(season.close, current)
+  const v = lessonViews(
+    lessons,
+    { done: new Set(done), steps, current },
+    season.prereq,
+  ).find((x) => x.lesson.n === current + 1)
+  if (v === undefined) return null
   const way =
     v.action ??
     ({ label: 'See it on the map', kind: 'map', href: '#explorer' } as const)
@@ -145,8 +160,21 @@ function words(c: NextCard): HTMLElement {
   )
 }
 
-/** The season's closing card, in the mark's classes, keeping what the mark held after its words. */
-function endCard(c: SeasonEnd, mark: HTMLElement, slot: Node[]): HTMLElement {
+/**
+ * The close's words for the visit's ending: after one that ended in rest,
+ * the answer and the map alone, with no invitation to sing.
+ */
+function endWords(c: SeasonEnd, ending: Ending): HTMLElement {
+  const map = el('a', 'btn', c.map.label)
+  map.setAttribute('href', c.map.href)
+  if (ending === 'rest')
+    return el(
+      'div',
+      'next-words',
+      el('p', 'eyebrow', el('span', 'fig', c.eyebrow)),
+      el('p', 'end-line', c.rest),
+      el('p', 'end-ways', map),
+    )
   const song = el('a', 'btn primary', c.song.label)
   song.setAttribute('href', c.song.href)
   song.setAttribute('target', '_blank')
@@ -154,41 +182,61 @@ function endCard(c: SeasonEnd, mark: HTMLElement, slot: Node[]): HTMLElement {
   // the practise links' mark for a tab of its own, after the name
   const out = svg('svg', { class: 'ico', 'aria-hidden': 'true' }, song)
   svg('use', { href: '#i-out' }, out)
-  const map = el('a', 'btn', c.map.label)
-  map.setAttribute('href', c.map.href)
-  const card = el(
+  return el(
     'div',
-    mark.className,
-    el(
-      'div',
-      'next-words',
-      el('p', 'eyebrow', el('span', 'fig', c.eyebrow)),
-      el('p', 'end-line', c.line),
-      el('p', 'end-ways', song, map),
-    ),
-    ...slot,
+    'next-words',
+    el('p', 'eyebrow', el('span', 'fig', c.eyebrow)),
+    el('p', 'end-line', c.line),
+    el('p', 'end-ways', song, map),
   )
+}
+
+/** The visit's ending as a page hands it to the card: comfort.ts `VisitEnding`. */
+export interface EndingSource {
+  /** Calls `fn` now and after every change. */
+  subscribe(fn: (e: Ending) => void): void
+}
+
+/**
+ * The season's closing card, in the mark's classes, keeping what the mark
+ * held after its words, redrawn whenever the visit's ending changes.
+ */
+function endCard(
+  c: SeasonEnd,
+  mark: HTMLElement,
+  slot: Node[],
+  ending: EndingSource | undefined,
+): HTMLElement {
+  const card = el('div', mark.className)
   card.classList.add('is-end')
   card.dataset.nextCard = 'end'
+  const paint = (e: Ending): void => {
+    card.dataset.ending = e
+    card.replaceChildren(endWords(c, e), ...slot)
+  }
+  if (ending === undefined) paint('practise')
+  else ending.subscribe(paint)
   return card
 }
 
 /**
  * Draws the card for the lesson after `lesson` in the page's
- * `[data-next-card]`, and redraws it as lessons are marked done; after the
- * season's last lesson, the season's close. A page with no mark draws none.
+ * `[data-next-card]`, and redraws it as lessons are marked done; on its
+ * season's last lesson, the season's close, which follows `ending`, the
+ * visit's, where the page hands it in. A page with no mark draws none.
  */
-export function createNextCard(lesson: number): void {
+export function createNextCard(lesson: number, ending?: EndingSource): void {
   const mark = document.querySelector<HTMLElement>('[data-next-card]')
   if (mark === null) return
   const slot = Array.from(mark.childNodes)
-  const lessons = pageLessons()
+  const season = pageSeason(lesson)
+  const lessons = pageLessons(document, season.lessons)
   const read = (): NextCard | SeasonEnd | null =>
-    nextCard(lessons, Done.list(), Positions.all(), lesson)
+    nextCard(lessons, Done.list(), Positions.all(), lesson, season)
   const first = read()
   if (first === null) return
   if (first.kind === 'end') {
-    mark.replaceWith(endCard(first, mark, slot))
+    mark.replaceWith(endCard(first, mark, slot, ending))
     return
   }
   const card = document.createElement('a')
