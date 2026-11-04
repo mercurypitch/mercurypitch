@@ -9,7 +9,7 @@
 // - a line lands on the song's frames: a 40 dB drop over 10 ms reads where
 //   the song says, to a few hundredths of a decibel;
 // - a seek and a loop point cross a line without a step, and a line's level
-//   is heard where it is drawn;
+//   is heard where it is drawn, with Repeat over the song or over a range;
 // - what lines cost an export, per lane.
 // The song helpers mirror scripts/studio-epoch-browser-probes.mjs.
 import { EMPTY_CHAIN } from '/src/lib/studio-fx/chain-spec.ts'
@@ -201,14 +201,19 @@ function clockOf(ctx, baseLatency) {
   })
 }
 
-async function prepare(made, dry, frozen) {
+async function prepare(made, dry, frozen, range) {
   if (dry) {
     const framesByTrack = Object.fromEntries(
       made.project.tracks.map((track) => [track.id, 0]),
     )
     return {
+      // A range Repeat plays is a plan from its start to its end (prepare-plan.ts).
       plan: compileStudioArrangement(made.project, made.assets, {
         latencies: { sampleRate: SR, framesByTrack },
+        ...(range && {
+          startFrame: range.startFrame,
+          endFrame: range.endFrame,
+        }),
       }),
       master: EMPTY_CHAIN,
       latency: 0,
@@ -267,7 +272,8 @@ async function renderPlay(
       master: prepared.master,
       measured: { gainDb: 0, safetyGainDb: 0 },
       repeat: options.repeat === true,
-      timing: { fromFrame: 0, audibleEpoch: 0 },
+      timing: { fromFrame: options.range?.startFrame ?? 0, audibleEpoch: 0 },
+      fixedEnd: options.range?.endFrame ?? null,
       latency: prepared.latency,
       buildGraph: buildStudioGraph,
       createLaneMeter: createStudioLaneMeter,
@@ -655,6 +661,54 @@ async function loopGlides() {
 }
 
 /**
+ * Repeat over a range of the rising lane, 0.9 s to 2.5 s, as the ruler's
+ * range sets it (loop-range.ts): each loop point takes the gain from the
+ * line's value at the range's end back to its value at the range's start
+ * over 10 ms, no frame moving it more than that glide does, and between
+ * loop points the gain follows the line, pass after pass, to within
+ * 0.05 dB. A line read from the song's start at each loop point would
+ * miss by 5.4 dB.
+ */
+async function rangeLoopGlides() {
+  const range = { startFrame: s(0.9), endFrame: s(2.5) }
+  const lined = steady({ volume: RISE })
+  const plain = steady()
+  const options = { repeat: true, seconds: 6, range }
+  const a = await renderPlay(
+    lined,
+    await prepare(lined, true, undefined, range),
+    2,
+    CALLBACK,
+    options,
+  )
+  const b = await renderPlay(
+    plain,
+    await prepare(plain, true, undefined, range),
+    2,
+    CALLBACK,
+    options,
+  )
+  const length = range.endFrame - range.startFrame
+  // Three loop points, 1.6 s, 3.2 s and 4.8 s into the run.
+  const end = s(5.5)
+  const gains = stageGain(a, b, 0, end)
+  const step = largestStep(a, b, s(0.1), end)
+  const glideFrames = 0.01 * SR
+  const heard = (seconds) => 10 ** ((-20 + (20 * seconds) / 3.4) / 20)
+  const glide = (heard(2.5) - heard(0.9)) / glideFrames
+  const missDb = worstMiss(gains, RISE, s(0.1), end, (n) => {
+    const into = n % length
+    return n >= length && into <= glideFrames ? null : range.startFrame + into
+  })
+  return {
+    largestStep: round(step, 6),
+    glideStep: round(glide, 6),
+    missDb,
+    pass: step <= 3 * glide && missDb <= 0.05,
+  }
+}
+
+/**
  * What lines cost an export: eight dry lanes over a 20 s song, each with a
  * volume line of 40 points and a pan line of 20, against the same lanes
  * without lines; the median of three renders of each.
@@ -739,6 +793,7 @@ export async function runStudioAutomationProbes() {
     lineOnTime: await lineOnTime(),
     seekGlides: await seekGlides(),
     loopGlides: await loopGlides(),
+    rangeLoopGlides: await rangeLoopGlides(),
     exportCost: await exportCost(),
   }
 }
