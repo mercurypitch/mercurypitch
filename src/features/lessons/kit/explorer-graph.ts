@@ -7,12 +7,13 @@
 // placed beside each node (on a map under 1100 px wide, no wider than its
 // share of its lane, so a long name wraps instead of touching the next),
 // and the painters that restyle a node, a label or a list row when the
-// selection or the lane filter changes. explorer.ts owns the selection, the
-// filter and every event.
+// selection or the lane filter changes. Each draws the season it is handed
+// (season.ts `Season`), whose edges may start in an earlier season.
+// explorer.ts owns the season shown, the selection, the filter and every
+// event.
 
 import { q, svg } from './dom'
-import type { Lane, Lesson } from './season'
-import { EDGES, LESSONS } from './season'
+import type { Arc, Edge, Lane, Lesson } from './season'
 
 /** Each lane's line across the map, px from its top. */
 export const LANE_Y: Record<Lane, number> = {
@@ -20,15 +21,24 @@ export const LANE_Y: Record<Lane, number> = {
   both: 210,
   voice: 292,
 }
-const LANE_BANDS: readonly (readonly [Lane, string, string])[] = [
-  ['theory', 'Theory', '7 lessons'],
-  ['voice', 'Voice', '6 lessons + 14'],
-]
-/** The season's two arcs: each one's name, its span in words, and its first and last lesson. */
-export const ARCS: readonly (readonly [string, string, number, number])[] = [
-  ['Hear it', 'Lessons 1 to 7', 1, 7],
-  ['Shape it', 'Lessons 8 to 14', 8, 14],
-]
+
+/**
+ * The two lane bands and what each says of its lessons: "7 lessons" above,
+ * "6 lessons + 14" below, the lesson in both lanes counted with voice.
+ */
+export function laneBands(
+  lessons: readonly Lesson[],
+): readonly (readonly [Lane, string, string])[] {
+  const count = (k: Lane): number => lessons.filter((L) => L.lane === k).length
+  const both = lessons
+    .filter((L) => L.lane === 'both' && L.kind !== 'Trailer')
+    .map((L) => ` + ${L.n}`)
+    .join('')
+  return [
+    ['theory', 'Theory', `${count('theory')} lessons`],
+    ['voice', 'Voice', `${count('voice')} lessons${both}`],
+  ]
+}
 
 /** A lane label's width, px, on a map wide enough to give it. */
 const LABEL_W = 150
@@ -62,8 +72,11 @@ export interface Look {
 }
 
 /** The two lane bands behind the map, each with its name. */
-export function addLaneBands(graph: HTMLElement): void {
-  for (const [k, name, sub] of LANE_BANDS) {
+export function addLaneBands(
+  graph: HTMLElement,
+  lessons: readonly Lesson[],
+): void {
+  for (const [k, name, sub] of laneBands(lessons)) {
     const band = document.createElement('div')
     band.className = 'lane'
     band.style.top = `${LANE_Y[k] - 37}px`
@@ -81,8 +94,9 @@ export function addArcs(
   graph: HTMLElement,
   X: (n: number) => number,
   colW: number,
+  arcs: readonly Arc[],
 ): void {
-  for (const [t, s, a, b] of ARCS) {
+  for (const [t, s, a, b] of arcs) {
     const arc = document.createElement('div')
     arc.className = 'arc'
     arc.style.left = `${X(a) - colW * 0.42}px`
@@ -97,46 +111,65 @@ export function addArcs(
  * into it (theory down, voice up, deeper for longer spans), and an edge
  * between lanes leaves and arrives vertically, so none crosses a label.
  */
-function edgePath(a: number, b: number, p: Pos, to: Pos, colW: number): string {
-  const la = LESSONS[a].lane
-  if (la === LESSONS[b].lane && la !== 'both') {
-    const hh = Math.min(84, 36 + 8 * (b - a)) * (la === 'theory' ? 1 : -1)
+function edgePath(
+  la: Lane,
+  lb: Lane,
+  span: number,
+  p: Pos,
+  to: Pos,
+  colW: number,
+): string {
+  if (la === lb && la !== 'both') {
+    const hh = Math.min(84, 36 + 8 * span) * (la === 'theory' ? 1 : -1)
     return `M${p.x} ${p.y} C${p.x + colW * 0.35} ${p.y + hh} ${to.x - colW * 0.35} ${to.y + hh} ${to.x} ${to.y}`
   }
   const my = (p.y + to.y) / 2
   return `M${p.x} ${p.y} C${p.x} ${my} ${to.x} ${my} ${to.x} ${to.y}`
 }
 
-/** One path per prerequisite, in EDGES order (the painter matches them by index). */
+/**
+ * One path per prerequisite, in `edges` order (the painter matches them by
+ * index); `lane` is each end's lane. An edge from an earlier season starts
+ * at its lesson's place in the column before the season (`pos`), and runs
+ * level from it before it turns in, under the nodes it passes.
+ */
 export function addEdges(
   edgesSvg: SVGSVGElement,
   pos: (n: number) => Pos,
   colW: number,
+  edges: readonly Edge[],
+  lane: (n: number) => Lane,
+  prior: (n: number) => boolean = () => false,
 ): SVGPathElement[] {
-  return EDGES.map(([a, b]) =>
-    svg(
-      'path',
-      { class: 'edge', d: edgePath(a, b, pos(a), pos(b), colW) },
-      edgesSvg,
-    ),
-  )
+  return edges.map(([a, b]) => {
+    const p = pos(a)
+    const to = pos(b)
+    const d = prior(a)
+      ? `M${p.x} ${p.y} C${to.x - colW * 0.6} ${p.y} ${to.x - colW * 0.6} ${to.y} ${to.x} ${to.y}`
+      : edgePath(lane(a), lane(b), b - a, p, to, colW)
+    return svg('path', { class: 'edge', d }, edgesSvg)
+  })
 }
 
 /** A lane's lessons in season order. */
-const laneLessons = (k: Exclude<Lane, 'both'>): number[] =>
-  LESSONS.filter((L) => L.lane === k)
+const laneLessons = (
+  k: Exclude<Lane, 'both'>,
+  lessons: readonly Lesson[],
+): number[] =>
+  lessons
+    .filter((L) => L.lane === k)
     .map((L) => L.n)
     .sort((a, b) => a - b)
 
 /**
  * Labels sit outside the gutter: theory above, voice below, the trailer and
- * Lesson 14 beside their nodes. Neighbours a column apart (1 and 2) lean
+ * a season's finale (Lesson 14, Lesson 28) beside their nodes. Neighbours a column apart (1 and 2) lean
  * away from each other instead of wrapping into one another.
  */
-export function labelLeans(): Map<number, Lean> {
+export function labelLeans(lessons: readonly Lesson[]): Map<number, Lean> {
   const lean = new Map<number, Lean>()
   for (const k of ['theory', 'voice'] as const) {
-    const ns = laneLessons(k)
+    const ns = laneLessons(k, lessons)
     for (let i = 1; i < ns.length; i++) {
       if (ns[i] - ns[i - 1] < 2) {
         lean.set(ns[i - 1], 'ar')
@@ -159,11 +192,12 @@ export function labelWidths(
   mapW: number,
   colW: number,
   leans: ReadonlyMap<number, Lean>,
+  lessons: readonly Lesson[],
 ): Map<number, number> {
   const widths = new Map<number, number>()
   const half = (cols: number): number => (cols * colW - LABEL_GAP) / 2
   for (const k of ['theory', 'voice'] as const) {
-    const ns = laneLessons(k)
+    const ns = laneLessons(k, lessons)
     ns.forEach((n, i) => {
       const before = i === 0 ? Infinity : half(n - ns[i - 1])
       const after = i === ns.length - 1 ? Infinity : half(ns[i + 1] - n)
@@ -196,7 +230,7 @@ export function nodeLabel(
   return lab
 }
 
-/** The trailer's label reads to the right of its node, Lesson 14's to the left. */
+/** The trailer's label reads to the right of its node, a finale's to the left. */
 function placeSideLabel(lab: HTMLDivElement, n: number, p: Pos): void {
   lab.style.top = `${p.y - 9}px`
   lab.style.width = '110px'

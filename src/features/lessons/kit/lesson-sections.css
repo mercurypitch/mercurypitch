@@ -841,6 +841,21 @@
 .edge.dim {
   opacity: 0.4;
 }
+/* a later season's map: the earlier season's lessons its edges start from,
+   small and still, in the column before it */
+.node.prior {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  font-size: var(--fs-14);
+  cursor: default;
+}
+.node.prior:hover {
+  transform: none;
+}
+.graph .prior-lbl {
+  text-align: center;
+}
 @keyframes flow {
   to {
     stroke-dashoffset: -22;
