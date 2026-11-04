@@ -7,6 +7,7 @@ interface MockTrack {
   stop: ReturnType<typeof vi.fn>
   addEventListener: ReturnType<typeof vi.fn>
   getSettings: () => MediaTrackSettings
+  muted?: boolean
 }
 
 interface MockStream {
@@ -334,11 +335,13 @@ describe('MicManager input for one hold', () => {
       return Promise.resolve(makeStream(device ?? 'default'))
     })
   const asMock = (stream: MediaStream | null) => stream as unknown as MockStream
-  /** The browser ends a stream's track, as an unplug or a second capture does. */
-  const endTrack = (stream: MockStream) => {
-    for (const [type, listener] of stream.track.addEventListener.mock.calls)
-      if (type === 'ended') (listener as () => void)()
+  /** The browser fires `type` at a stream's track. */
+  const fire = (stream: MockStream, type: string) => {
+    for (const [name, listener] of stream.track.addEventListener.mock.calls)
+      if (name === type) (listener as () => void)()
   }
+  /** The browser ends a stream's track, as an unplug or a second capture does. */
+  const endTrack = (stream: MockStream) => fire(stream, 'ended')
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -511,5 +514,144 @@ describe('MicManager input for one hold', () => {
     refuse = false
     await mgr.acquire('guitar')
     expect(askedFor(gum)).toEqual(['usb-1', undefined])
+  })
+
+  describe("on the app's own input", () => {
+    it('records from the shared stream when both ask for the default, opening no second capture', async () => {
+      const gum = openEach()
+      const voice = asMock(await mgr.acquire('voice'))
+      const states: MicState[] = []
+      mgr.subscribe((state) => states.push(state))
+
+      const held = await mgr.acquireFrom('studio', null)
+
+      expect(asMock(held.stream)).toBe(voice)
+      expect(askedFor(gum)).toEqual([undefined])
+      expect(states.at(-1)).toMatchObject({
+        active: true,
+        consumers: ['voice'],
+        scoped: 'studio',
+      })
+      held.release()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(voice.track.stop).not.toHaveBeenCalled()
+      expect(mgr.getStream()).toBe(voice)
+      expect(mgr.getScopedHold()).toBeNull()
+    })
+
+    it("shares the input the app's stream is on, or asks for, and opens it for consumers that come later", async () => {
+      // The app asks for the default, and the browser opens the desk mic for it.
+      const gum = mockGetUserMedia((constraints) =>
+        Promise.resolve(makeStream(deviceOf(constraints) ?? 'desk-mic')),
+      )
+      const voice = asMock(await mgr.acquire('voice'))
+      const desk = await mgr.acquireFrom('studio', 'desk-mic')
+      expect(asMock(desk.stream)).toBe(voice)
+      desk.release()
+      mgr.release('voice')
+      await vi.advanceTimersByTimeAsync(2000)
+
+      // Both ask for the guitar input; the Studio asks first.
+      await mgr.setPreferredDevice('guitar-in')
+      const guitar = await mgr.acquireFrom('studio', 'guitar-in')
+      const tuner = await mgr.acquire('tuner')
+      expect(tuner).toBe(guitar.stream)
+      expect(askedFor(gum)).toEqual([undefined, 'guitar-in'])
+    })
+
+    it('keeps the shared stream open while it records from it, past the last consumer and the linger', async () => {
+      openEach()
+      const voice = asMock(await mgr.acquire('voice'))
+      const held = await mgr.acquireFrom('studio', null)
+
+      mgr.release('voice')
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(voice.track.stop).not.toHaveBeenCalled()
+      expect(mgr.getScopedHold()?.stream).toBe(held.stream)
+
+      held.release()
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(voice.track.stop).toHaveBeenCalled()
+      expect(mgr.getStream()).toBeNull()
+    })
+
+    it("keeps its input when the app picks another, and the app's consumers open the app's", async () => {
+      const gum = openEach()
+      const held = await mgr.acquireFrom('studio', null)
+
+      await mgr.setPreferredDevice('guitar-in')
+      const guitar = asMock(await mgr.acquire('guitar'))
+
+      expect(asMock(held.stream).track.stop).not.toHaveBeenCalled()
+      expect(mgr.getScopedHold()?.stream).toBe(held.stream)
+      expect(guitar.track.getSettings().deviceId).toBe('guitar-in')
+      expect(askedFor(gum)).toEqual([undefined, 'guitar-in'])
+      held.release()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(asMock(held.stream).track.stop).toHaveBeenCalled()
+      expect(guitar.track.stop).not.toHaveBeenCalled()
+    })
+
+    it('tells its consumer when the browser ends the shared stream under it', async () => {
+      openEach()
+      const voice = asMock(await mgr.acquire('voice'))
+      await mgr.acquireFrom('studio', null)
+      const states: MicState[] = []
+      mgr.subscribe((state) => states.push(state))
+
+      endTrack(voice)
+
+      expect(states.at(-1)).toMatchObject({ active: false, scoped: null })
+      expect(mgr.getScopedHold()).toBeNull()
+    })
+  })
+
+  describe('a muted input', () => {
+    it('counts a mute on its own track that lasts half a second as a lost input, and a shorter one as nothing', async () => {
+      openEach()
+      const states: MicState[] = []
+      mgr.subscribe((state) => states.push(state))
+      const studio = asMock((await mgr.acquireFrom('studio', 'usb-1')).stream)
+
+      fire(studio, 'mute')
+      await vi.advanceTimersByTimeAsync(499)
+      fire(studio, 'unmute')
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(states.at(-1)?.scoped).toBe('studio')
+
+      // A browser that keeps one capture at a time mutes this one as another opens.
+      fire(studio, 'mute')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(states.at(-1)?.scoped).toBeNull()
+      expect(mgr.getScopedHold()).toBeNull()
+      expect(studio.track.stop).toHaveBeenCalled()
+    })
+
+    it("lets the shared stream's consumers keep it when its track stays muted under the Studio", async () => {
+      openEach()
+      const voice = asMock(await mgr.acquire('voice'))
+      await mgr.acquireFrom('studio', null)
+
+      fire(voice, 'mute')
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(mgr.getScopedHold()).toBeNull()
+      expect(voice.track.stop).not.toHaveBeenCalled()
+      expect(mgr.getStream()).toBe(voice)
+    })
+
+    it('times a mute already under way when the hold starts, as on a shared stream an earlier capture muted', async () => {
+      openEach()
+      const voice = asMock(await mgr.acquire('voice'))
+      // Muted before the Studio arms, so no 'mute' reaches its hold.
+      voice.track.muted = true
+
+      await mgr.acquireFrom('studio', null)
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(mgr.getScopedHold()).toBeNull()
+      expect(voice.track.stop).not.toHaveBeenCalled()
+      expect(mgr.getStream()).toBe(voice)
+    })
   })
 })
