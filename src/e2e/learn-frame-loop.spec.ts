@@ -30,11 +30,14 @@
 // they sound, Sing it's ring and guide, whose path lights only while Merc
 // sings his notes, free play's chord beads, through a gap's two notes as
 // the steps' are, then the explorer and the page at rest. Lesson 12's are
-// the steps' ring of rooms, at rest, through Step 2's key turn, which moves
-// only while the rooms turn, once a chip's chord has sounded, which paints
-// the ring once, and through Step 4's Play the roots, whose beads pulse
-// only while each root sounds; then the explorer and the page at rest. The
-// hero's ring, Sing it's guide and ring join them once they are wired.
+// the hero's ring, once the four chords have lit each room as its chord
+// starts, and through tune 1, whose walk moves only while it plays and its
+// line fades; the steps' ring of rooms, at rest, through Step
+// 2's key turn, which moves only while the rooms turn, once a chip's chord
+// has sounded, which paints the ring once, and through Step 4's Play the
+// roots, whose beads pulse only while each root sounds; Sing it's ring and
+// guide, whose path lights only while Merc sings his notes; free play's
+// ring, painted once by a chip; then the explorer and the page at rest.
 // Lesson 11's are its page shell's, the explorer and the page at rest; its
 // range chart in the hero, the steps, Sing it and free play join them once
 // they are wired.
@@ -427,12 +430,26 @@ test('Lesson 11: the explorer rests, and so does the whole page', async ({
   await explorerRests(page, 11, true)
 })
 
-test('Lesson 12: the ring of rooms and the explorer rest, and so does the whole page', async ({
+test("Lesson 12: the hero's ring, the ring of rooms, Sing it's ring and guide, free play and the explorer rest, and so does the whole page", async ({
   page,
 }) => {
+  const hero = '#heroSpiral canvas'
   const rooms = '#toyRooms [data-rooms-viz] canvas'
   await open(page, 12)
 
+  // the hero's ring: the four chords light each room once as its chord
+  // starts, and nothing moves while they sound; a tune's walk moves only
+  // while it plays and its line fades
+  await page.locator('#heroPlay').click()
+  await expectRest(page, hero)
+  await expectRest(page, null)
+  await expect(page.locator('#heroPlay')).not.toHaveClass(/\bis-on\b/, {
+    timeout: 15_000,
+  })
+  await page.locator('#predict [data-choice="most"]').click()
+  await runRests(page, [hero], true, () =>
+    page.locator('.hero-plays [data-play="tune-1"]').click(),
+  )
   await scrollTo(page, rooms)
   await page.getByRole('button', { name: 'Next step', exact: true }).click()
   await expect(page.locator('#stepNow')).toHaveText('2')
@@ -452,6 +469,21 @@ test('Lesson 12: the ring of rooms and the explorer rest, and so does the whole 
   await runRests(page, [rooms], true, () =>
     page.locator('#toyRooms [data-rooms-play="roots"]').click(),
   )
+  // Sing it's ring and guide, the path lit as Merc sings his notes
+  const guide = '#rootsGuide canvas'
+  await comfort(page, 'sing')
+  await expect(page.locator('[data-notes-play]')).toBeVisible()
+  await scrollTo(page, guide)
+  await runRests(page, ['#ring', guide], true, () =>
+    page.locator('[data-notes-play]').click(),
+  )
+  await expectNoRipples(page, '#ring')
+  // free play's ring, its room lit once by a chip's chord
+  const free = '#freePlay [data-rooms-viz] canvas'
+  await scrollTo(page, free)
+  await page.locator('#freePlay [data-chip="4"]').click()
+  await expectRest(page, free)
+  await expectRest(page, null)
   await explorerRests(page, 12, true)
 })
 
