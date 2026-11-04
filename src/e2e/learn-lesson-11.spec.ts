@@ -12,10 +12,14 @@
 // first tap, and nothing plays before a play button; and a
 // visitor with the studio installed still gets the lesson, not the shell,
 // as Lesson 3's spec checks its own.
-// This is the page shell's spec; each toy's own checks join it as that toy
-// is wired.
+// Then the cold open's predict, played with sound on and off (End to end 2);
+// the steps' chart by keyboard and its targets at a phone's widths (End to
+// end 3 and 5); the recall and the quick check; the Wrap's links; and
+// reduced motion. Sing it on the fake microphone is
+// learn-lesson-11-sing.spec.ts's.
 
 import type { Page } from '@playwright/test'
+import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 import { expect, test } from './helpers/lesson-page'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
@@ -165,4 +169,237 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
   // Assert
   await expect(page).toHaveTitle(TITLE)
   await expect(page.locator('#root')).toHaveCount(0)
+})
+
+test("Tavi's siren plays before a choice, the choice locks, and the reveal waits for Merc's siren heard", async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/learn/11')
+  await page.locator('#gateBtn').click()
+  const tavi = page.locator('.hero-plays [data-play="orange"]')
+  const merc = page.locator('.hero-plays [data-play="blue"]')
+  const reveal = page.locator('#predict .reveal')
+  const said = page.locator('[data-hero-said]')
+  await expect(merc).toBeDisabled()
+
+  // Tavi's siren, heard to its end: it says what it drew, and reveals nothing
+  await tavi.click()
+  await expect(said).toHaveText(/^Tavi's siren, from D 4 up to B 4 and back/, {
+    timeout: 20_000,
+  })
+  await expect(reveal).toBeHidden()
+
+  // the choice locks and opens Merc's siren, whose end brings the reveal
+  await page.locator('#predict [data-choice="every"]').click()
+  await expect(page.locator('#predict [data-choice="every"]')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.locator('#predict [data-choice="mistake"]')).toBeDisabled()
+  await expect(page.locator('#predict .lock-hint')).toHaveText(
+    "Locked in. Now play Merc's siren.",
+  )
+  await merc.click()
+  await expect(reveal).toBeVisible({ timeout: 20_000 })
+  await expect(reveal.locator('.mono')).toHaveText('You said: every voice can')
+  await expect(said).toHaveText('Each seam is now labelled the switch.')
+  await expect(page.locator('[data-hero-key]')).toBeVisible()
+  await expect(page.locator('#predict .lock-hint')).toHaveText(
+    'Play either siren again.',
+  )
+  expect(errors).toEqual([])
+})
+
+test("with sound off, Tavi's siren says nothing played, and puts the lock hint back once heard", async ({
+  page,
+}) => {
+  await page.goto('/learn/11')
+  // the switch turns sound on from unset, then off
+  await page.locator('#soundSwitch').click()
+  await page.locator('#soundSwitch').click()
+  await expect(page.locator('#soundSwitch')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+
+  await page.locator('.hero-plays [data-play="orange"]').click()
+
+  await expect(page.locator('#predict .lock-hint')).toContainText(
+    'Sound is off, so nothing played.',
+    { timeout: 20_000 },
+  )
+  await expect(page.locator('#predict .reveal')).toBeHidden()
+})
+
+test('the slide is scrubbed by keyboard, a tenth of a second a press, and named in words', async ({
+  page,
+}) => {
+  await page.goto('/learn/11#step-2')
+  await expect(page.locator('#stepNow')).toHaveText('2')
+  const scrub = page.locator('#toyRange [data-slide-scrub]')
+
+  await scrub.focus()
+  for (let i = 0; i < 9; i++) await page.keyboard.press('ArrowRight')
+
+  await expect(scrub).toHaveAttribute(
+    'aria-valuetext',
+    '0.9 seconds of 4: lower gear, near F sharp 3',
+  )
+  for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight')
+  await expect(scrub).toHaveAttribute(
+    'aria-valuetext',
+    '1.7 seconds of 4: the switch, from G 3 to A 3',
+  )
+  await page.keyboard.press('End')
+  await expect(scrub).toHaveAttribute('aria-valuenow', '4.0')
+  await page.keyboard.press('Home')
+  await expect(scrub).toHaveAttribute('aria-valuenow', '0.0')
+})
+
+// WEB-SPEC, Toys 1 "Layout and targets": every target at least 44 px square,
+// to the whole pixel as drum-night.spec.ts measures its targets, since a row
+// laid out at 44 px can measure a hundred-thousandth under it
+for (const width of [344, 390]) {
+  test(`every control on the stage is at least 44 px square at ${width} px, in every step`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 })
+    for (let n = 1; n <= 5; n++) {
+      await page.goto(`/learn/11#step-${n}`)
+      await expect(page.locator('#stepNow')).toHaveText(String(n))
+      const small = await page
+        .locator('#toyRange button, #toyRange [role="slider"]')
+        .evaluateAll((els) =>
+          els
+            .map((e) => {
+              const r = e.getBoundingClientRect()
+              return {
+                name: e.getAttribute('aria-label') ?? e.textContent?.trim(),
+                w: r.width,
+                h: r.height,
+              }
+            })
+            .filter(
+              (r) => r.w > 0 && (Math.round(r.w) < 44 || Math.round(r.h) < 44),
+            ),
+        )
+      expect(small, `step ${n}`).toEqual([])
+    }
+  })
+}
+
+test("the recall asks Lesson 7's questions, marks nothing done and links Lesson 7's steps in a new tab", async ({
+  page,
+}) => {
+  await page.goto('/learn/11')
+  const done = (): Promise<string | null> =>
+    page.evaluate(() => localStorage.getItem('fyp-done'))
+  const before = await done()
+  expect([null, '[]']).toContain(before)
+
+  const qs = page.locator('#recall-qs .q')
+  await expect(qs).toHaveCount(2)
+  await qs
+    .nth(0)
+    .getByRole('button', {
+      name: 'A staircase, one step for each note',
+      exact: true,
+    })
+    .click()
+  await qs
+    .nth(1)
+    .getByRole('button', {
+      name: 'Always: the range decides the type',
+      exact: true,
+    })
+    .click()
+
+  for (const [words, href] of [
+    ['Try Lesson 7, Step 1 again', '/learn/07#step-1'],
+    ['Try Lesson 7, Step 5 again', '/learn/07#step-5'],
+  ]) {
+    const link = page.locator('#recall-qs a', { hasText: words })
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link).toHaveAttribute('target', '_blank')
+  }
+  expect(await done()).toBe(before)
+})
+
+test('the quick check links its steps, starts each line Right. or Not quite., and marks Lesson 11 done', async ({
+  page,
+}) => {
+  await page.goto('/learn/11')
+  const check = page.locator('#qs .q')
+
+  // a wrong answer links to the step whose chart answers it, on this page
+  await check
+    .nth(2)
+    .getByRole('button', { name: 'Yes, with enough sirens', exact: true })
+    .click()
+  await page.locator('#qs a', { hasText: 'Try Step 4 again' }).click()
+  await expect(page.locator('#stepNow')).toHaveText('4')
+
+  for (const [i, name] of [
+    [0, 'Your voice changed gear: every voice has gears'],
+    [1, 'Around the middle, either gear can sing the same notes'],
+    [3, 'Yodelling'],
+  ] as const)
+    await check.nth(i).getByRole('button', { name, exact: true }).click()
+
+  await expect(page.locator('#scoreN')).toHaveText('3')
+  const lines = await page
+    .locator('#qs .fb')
+    .evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''))
+  expect(lines).toHaveLength(4)
+  for (const line of lines) expect(line).toMatch(/^(Right\.|Not quite\.)/)
+  await expect(page.locator('#exCardHost')).toContainText('Done')
+})
+
+test("the Wrap's links carry lesson=11, and its card leads to Lesson 12's page", async ({
+  page,
+}) => {
+  await page.goto('/learn/11')
+
+  const hrefs = await page
+    .locator('a[href*="lesson="]')
+    .evaluateAll((links) => links.map((a) => a.getAttribute('href')))
+  expect(hrefs.length).toBeGreaterThan(1)
+  for (const href of hrefs) expect(href).toBe('/pitch-training?lesson=11')
+
+  const card = page.locator('#wrap a.next-card')
+  await expect(card).toHaveAttribute('href', '/learn/12')
+  await expect(card.locator('.chip')).toHaveText('Start lesson')
+  await expect(card.locator('.next-tease')).toHaveText(
+    LESSON_COPY[12]?.tease ?? 'Lesson 12 has a tease',
+  )
+})
+
+test('with reduced motion the slide draws at once, and nothing moves on its own', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/learn/11#step-2')
+  await expect(page.locator('#stepNow')).toHaveText('2')
+  const scrub = page.locator('#toyRange [data-slide-scrub]')
+  await expect(scrub).toHaveAttribute('aria-valuenow', '0.0')
+
+  await page.locator('#toyRange [data-slide-play]').click()
+
+  // the whole line at once: the scrub bar and the gauge at the slide's end
+  await expect(scrub).toHaveAttribute('aria-valuenow', '4.0', { timeout: 500 })
+  await expect(page.locator('#toyRange [data-stretch-fill]')).toHaveAttribute(
+    'style',
+    /width: 100%/,
+  )
+  const animations = await page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter((a) => a.playState === 'running' && a.effect !== null)
+        .map((a) => (a.effect as KeyframeEffect).target?.className ?? '')
+        .filter((c) => typeof c === 'string' && c.length > 0).length,
+  )
+  expect(animations).toBe(0)
 })
