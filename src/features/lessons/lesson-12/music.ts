@@ -264,6 +264,13 @@ const WRITTEN: Readonly<Record<TuneId, Written>> = {
  */
 const barAt = (t: number): number => Math.floor(t / BAR_SEC + 1e-6)
 
+/**
+ * An onset as a play times it: to the nearest nanosecond, so even notes'
+ * 3.9999… is the third bar's 4 and the note starts in the same timer task
+ * as the chord under it (kit/run.ts starts one task for each onset).
+ */
+const onset = (t: number): number => Math.round(t * 1e9) / 1e9
+
 /** A tune over the key's loop, each note timed from the play's start (FACTS 35 to 37, 69a). */
 export function tuneOf(id: TuneId, name: KeyName): TuneNote[] {
   const loop = loopOf(name)
@@ -273,7 +280,7 @@ export function tuneOf(id: TuneId, name: KeyName): TuneNote[] {
     const midi = written + shift
     const bar = barAt(t)
     const note = {
-      t,
+      t: onset(t),
       dur: beats * BEAT_SEC,
       midi,
       bar,
