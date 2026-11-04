@@ -139,6 +139,25 @@
   display: block;
   pointer-events: none;
 }
+/* The clip bar's Comp while the passes are open: the accent, under the
+   pointer too. Its own class, so the lane line bar's buttons keep theirs. */
+.toggle[aria-pressed='true'],
+.toggle[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.toggle[aria-pressed='true'] svg {
+  color: currentColor;
+}
+
+/* Where another pass plays, a veil over this one's audio. */
+.unlit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--studio-clip-base) 55%, transparent);
+  pointer-events: none;
+}
 /* A drag in progress, and the stretch the keys picked. */
 .preview,
 .picked {

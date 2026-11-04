@@ -23,6 +23,20 @@ const take: StudioClip = {
   passes: { firstFrame: 0, frames: PASS, count: 3 },
 }
 
+/** The newest pass, the oldest over the second quarter of the clip, then the newest again. */
+const stretched: StudioClip = {
+  ...take,
+  comp: [
+    { fromSourceFrame: 2 * PASS, toSourceFrame: 2 * PASS + 24_000, pass: 2 },
+    {
+      fromSourceFrame: 2 * PASS + 24_000,
+      toSourceFrame: 2 * PASS + 48_000,
+      pass: 0,
+    },
+    { fromSourceFrame: 2 * PASS + 48_000, toSourceFrame: 3 * PASS, pass: 2 },
+  ],
+}
+
 function setup(
   options: { clip?: StudioClip; phone?: boolean; snap?: boolean } = {},
 ) {
@@ -169,34 +183,58 @@ describe('Studio comp lanes', () => {
     expect(lit(3)).toEqual(['0px 200px'])
     expect(lit(1)).toEqual([])
 
-    setProject((song) => ({
-      ...song,
-      clips: [
-        {
-          ...take,
-          comp: [
-            {
-              fromSourceFrame: 2 * PASS,
-              toSourceFrame: 2 * PASS + 24_000,
-              pass: 2,
-            },
-            {
-              fromSourceFrame: 2 * PASS + 24_000,
-              toSourceFrame: 2 * PASS + 48_000,
-              pass: 0,
-            },
-            {
-              fromSourceFrame: 2 * PASS + 48_000,
-              toSourceFrame: 3 * PASS,
-              pass: 2,
-            },
-          ],
-        },
-      ],
-    }))
+    setProject((song) => ({ ...song, clips: [stretched] }))
 
     expect(lit(3)).toEqual(['0px 50px', '100px 100px'])
     expect(lit(1)).toEqual(['50px 50px'])
+  })
+
+  it('dims each pass where another plays', () => {
+    const { setProject } = setup()
+    openStudioComp('take')
+    const unlit = (number: number) =>
+      [
+        ...strip(number).querySelectorAll<HTMLElement>(
+          '[data-studio-comp-unlit]',
+        ),
+      ].map((part) => `${part.style.left} ${part.style.width}`)
+    expect(unlit(3)).toEqual([])
+    expect(unlit(1)).toEqual(['0px 200px'])
+
+    setProject((song) => ({ ...song, clips: [stretched] }))
+
+    expect(unlit(3)).toEqual(['50px 50px'])
+    expect(unlit(1)).toEqual(['0px 50px', '100px 100px'])
+    // Other passes side by side dim as one stretch.
+    expect(unlit(2)).toEqual(['0px 200px'])
+  })
+
+  it('marks the pick for the keys or a click, and leaves none after a swipe', () => {
+    setup()
+    openStudioComp('take')
+    const middle = strip(2)
+    const picked = (element: HTMLElement) =>
+      element.querySelector<HTMLElement>('[data-studio-comp-picked]')
+
+    // A swipe focuses its pass and is done: nothing waits for Enter.
+    pointer('pointerdown', middle, 100 + 20)
+    pointer('pointermove', middle, 100 + 90)
+    pointer('pointerup', middle, 100 + 90)
+    expect(document.activeElement).toBe(middle)
+    expect(picked(middle)).toBeNull()
+    expect(middle.getAttribute('aria-label')).not.toContain('Picked')
+
+    // A click picks the grid cell under it, for Enter to use.
+    pointer('pointerdown', middle, 100 + 130)
+    pointer('pointerup', middle, 100 + 130)
+    expect(picked(middle)?.style.left).toBe('125px')
+    expect(middle.getAttribute('aria-label')).toContain(
+      'Picked 0:02.250 to 0:02.500',
+    )
+
+    // The pass the keys move to shows the pick at once.
+    fireEvent.keyDown(middle, { key: 'ArrowUp' })
+    expect(picked(strip(3))?.style.left).toBe('125px')
   })
 
   it('moves a selection with the arrows and plays the focused pass there with Enter', () => {
