@@ -21,7 +21,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
-import { LESSONS } from '../features/lessons/kit/season'
+import { LESSONS, PREREQ } from '../features/lessons/kit/season'
 import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
 
 /** The card at the foot of this page's Wrap. */
@@ -404,6 +404,20 @@ const chipTargets = (
     }),
   )
 
+/**
+ * Every lesson page whose prerequisite chips hold a link, read from the
+ * season: one of its direct prerequisites has a page too. A prerequisite
+ * with no page is a plain chip (kit/page-state.ts), so Lesson 13's chip,
+ * "After Lesson 11", joins once Lesson 11's page does.
+ */
+const CHIP_PAGES = LESSONS.filter(
+  (l) =>
+    l.page !== undefined &&
+    (PREREQ[l.n] ?? []).some(
+      (p) => LESSONS.find((x) => x.n === p)?.page !== undefined,
+    ),
+).map((l) => l.page ?? '')
+
 for (const [width, height, name] of [
   [1280, 720, 'a laptop'],
   [390, 844, 'a phone'],
@@ -411,19 +425,7 @@ for (const [width, height, name] of [
   test.describe(`on ${name}, ${width} x ${height}`, () => {
     test.use({ viewport: { width, height } })
 
-    for (const path of [
-      '/learn/02',
-      '/learn/03',
-      '/learn/04',
-      '/learn/05',
-      '/learn/06',
-      '/learn/07',
-      '/learn/08',
-      '/learn/09',
-      '/learn/10',
-      '/learn/12',
-      '/learn/13',
-    ]) {
+    for (const path of CHIP_PAGES) {
       test(`${path}: every prerequisite chip is a 44 px target`, async ({
         page,
       }) => {
