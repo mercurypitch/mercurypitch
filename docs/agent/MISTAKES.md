@@ -2232,6 +2232,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** for a baseline build, run the binary directly with the script's environment (`env VITE_...=... ./node_modules/.bin/vite build`), or make a real worktree and `pnpm install --offline --frozen-lockfile` in it. Never `pnpm run` in a tree whose `node_modules` points at another checkout's.
 **See:** the `build:e2e` script in `package.json`.
 
+### Let a theme switch settle before judging a screenshot's colours
+
+**Symptom:** light-theme Studio captures showed dark lane headers with dark names (1.1:1) and dark captures showed light ones; a review flagged contrast failures in five of eight images.
+**Cause:** the capture set `data-theme` and shot at once. `.trackHeader` fades its background over 0.15 s, so the headers were caught part way between the two themes while surfaces without a transition had already switched.
+**Rule:** after setting `data-theme`, wait past the longest colour transition (500 ms covers Studio) before a screenshot whose colours anyone will judge, or set the theme before the page loads. A colour that blends both themes is a capture artifact, not a token bug.
+**See:** `src/features/studio/timeline/StudioTimeline.module.css` (`.trackHeader`)
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
