@@ -71,6 +71,17 @@ const words = (e: Element | null | undefined): string =>
   (e?.textContent ?? '').replace(/\s+/g, ' ').trim()
 
 describe("Lesson 13's page", () => {
+  it('takes the query-led title the owner chose for the season, 60 characters at most', () => {
+    // Act
+    const title = doc().title
+
+    // Assert
+    expect(title).toBe(
+      'Resonance and vowels: why ee and ah differ | MercuryPitch',
+    )
+    expect(title.length).toBeLessThanOrEqual(60)
+  })
+
   it('puts no sign in an accessible name, a share card or a description: they are spoken', () => {
     // Arrange
     const named = [

@@ -546,6 +546,10 @@ describe('after the hold (states 9 and 10)', () => {
     await takeWith(reading(0.9), true)
     feel('workable')
 
+    // a press the page never offers, as a script might make it
+    btn('[data-panel="after"] [data-sing="again"]').click()
+    await settle()
+
     // Assert
     expect(fake.holds).toHaveLength(3)
     expect(showing('[data-sing="again"]')).toBe(false)
