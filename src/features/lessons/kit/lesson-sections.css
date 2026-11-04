@@ -854,7 +854,8 @@
   transform: none;
 }
 .graph .prior-lbl {
-  text-align: center;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 @keyframes flow {
   to {

@@ -506,9 +506,10 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     graph.textContent = ''
     const W = graph.clientWidth
     const GH = graph.clientHeight || 400
-    const gut = 112
-    // a later season's map gives its first column to the season before
+    // a later season's map gives its first column to the season before,
+    // past a gutter wide enough that its stubs clear the lane labels
     const before = prior.length > 0 ? 1 : 0
+    const gut = before > 0 ? 156 : 112
     const colW = (W - gut - 14) / (lessons.length + before)
     const first = lessons[0].n
     const X = (n: number): number => gut + (n - first + before + 0.5) * colW
@@ -535,9 +536,8 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
     if (before > 0) {
       const cap = document.createElement('div')
       cap.className = 'lane-lbl prior-lbl'
-      cap.style.left = `${gut}px`
+      cap.style.left = `${gut + colW / 2}px`
       cap.style.top = '40px'
-      cap.style.width = `${colW}px`
       cap.textContent = `Season ${season.n - 1}`
       graph.appendChild(cap)
     }
