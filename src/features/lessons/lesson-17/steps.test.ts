@@ -8,8 +8,9 @@
 // bar (WEB-SPEC, Toys 5); Halve and Join on the chosen beat, played at
 // once, and the hint for a press that cannot go (Toys 1); Play both and the
 // tempo; Count, faint every second play; Note · Rest and the rest strip;
-// Step 5's lift, its bars written by their first play, Dot, Tie and Clef;
-// the switch kept across steps; and leaving a step stops what it plays.
+// Step 5's lift, its bars written by their first play, Dot, Tie and Clef,
+// and the clef of a voice chosen later in the sung part; the switch kept
+// across steps; and leaving a step stops what it plays.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -20,6 +21,7 @@ import { FOUR_QUARTERS, halve, join, toggleRest, writeGrid, } from '@/features/l
 import type * as SoundAheadModule from '@/features/lessons/kit/sound-ahead'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import type * as WoodblockModule from '@/features/lessons/kit/woodblock'
 import { drive, el, finish, loadPage, resetRuns, runs, soundOn, words, } from './page-dom.test-fixtures'
 import { halvedLine, initSteps, joinedLine, keptWritten, REFUSAL_HINT, restLine, } from './steps'
@@ -467,6 +469,41 @@ describe('the stage, step by step', () => {
       /tied across the bar line, on the treble staff$/,
     )
     expect(new Set(voices)).toEqual(new Set([hz(A4)]))
+  })
+
+  it('takes the clef of a voice chosen later, in the sung part, redrawing Step 5 as it shows', () => {
+    // Arrange
+    const deck = mountSteps()
+
+    // Act: chosen while Step 1 plays, which plays on, then at Step 5 once
+    // its bars are written: the same voice again changes nothing
+    showing('[data-rb-play]').click()
+    VoiceChoice.set('higher')
+    const stepOne = runs[runs.length - 1].stopped
+    drive()
+    deck.show(5)
+    const opened = figure().getAttribute('aria-label')
+    showing('[data-rb-play]').click()
+    VoiceChoice.set('higher')
+    const same = runs[runs.length - 1].stopped
+    drive()
+    VoiceChoice.set('lower')
+    const bass = [
+      el('[data-rb-clef="bass"]').getAttribute('aria-pressed'),
+      figure().getAttribute('aria-label'),
+      written(),
+    ]
+    voices.length = 0
+    showing('[data-rb-play]').click()
+    drive()
+
+    // Assert (WEB-SPEC, Toys 7, part 2, state 2)
+    expect([stepOne, same]).toEqual([false, false])
+    expect(opened).toMatch(/on the treble staff$/)
+    expect(bass[0]).toBe('true')
+    expect(bass[1]).toMatch(/on the bass staff$/)
+    expect(bass[2]).toEqual([0, 1, 2, 3, 4, 5])
+    expect(new Set(voices)).toEqual(new Set([hz(A3)]))
   })
 
   it('keeps the pitch line on across the steps, and stops what a step plays as it is left', () => {

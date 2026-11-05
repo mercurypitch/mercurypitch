@@ -21,8 +21,9 @@
 // that second row, centred on its cell, where it has its neighbours' room. A
 // strip can read only some of its cells (the rest strip's examples read only
 // the rest's), and the others take no room. Second-row readings never
-// overlap: one that would is moved right of the one before it, and every
-// reading is kept inside the figure.
+// overlap: one that would is moved right of the one before it, or, at the
+// figure's right edge, the ones before it move left; a row too full for its
+// runs' readings closes them up, "2×0.5 s". Every reading stays inside.
 
 import type { PlacedSymbol, StripCell } from './rhythm-model'
 import { runText, secondsText, stripCells, stripRuns } from './rhythm-model'
@@ -139,16 +140,41 @@ export function planStrip(
       cells: [i],
     })
   })
-  return { cells, readings: spread(readings, o.right) }
+  return { cells, readings: spread(readings, o.left, o.right) }
 }
 
-/** The second row's readings moved apart, left to right, so none overlaps the one before it. */
-function spread(readings: readonly Reading[], right: number): Reading[] {
-  let edge = -Infinity
-  return readings.map((r) => {
-    if (r.row === 0) return r
-    const x = Math.min(Math.max(r.x, edge + r.width / 2), right - r.width / 2)
-    edge = x + r.width / 2
-    return x === r.x ? r : { ...r, x }
-  })
+/** A run's reading closed up, "2×0.5 s"; any other as it is. */
+function closed(r: Reading): Reading {
+  const text = r.text.replace(' × ', '×')
+  return text === r.text ? r : { ...r, text, width: readWidth(text) }
+}
+
+/**
+ * The second row's readings moved apart so none overlaps another: each
+ * pushed right of the one before it, then, back from the right edge, left of
+ * the one after it, its runs closed up first when the row cannot hold them.
+ */
+function spread(
+  readings: readonly Reading[],
+  left: number,
+  right: number,
+): Reading[] {
+  const total = readings.reduce((w, r) => w + (r.row === 1 ? r.width : 0), 0)
+  const fitted =
+    total > right - left
+      ? readings.map((r) => (r.row === 1 ? closed(r) : r))
+      : readings
+  const second = fitted.flatMap((r, i) => (r.row === 1 ? [i] : []))
+  const xs = fitted.map((r) => r.x)
+  let edge = left
+  for (const i of second) {
+    xs[i] = Math.max(xs[i], edge + fitted[i].width / 2)
+    edge = xs[i] + fitted[i].width / 2
+  }
+  edge = right
+  for (const i of second.reverse()) {
+    xs[i] = Math.min(xs[i], edge - fitted[i].width / 2)
+    edge = xs[i] - fitted[i].width / 2
+  }
+  return fitted.map((r, i) => (xs[i] === r.x ? r : { ...r, x: xs[i] }))
 }

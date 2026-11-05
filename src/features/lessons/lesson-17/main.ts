@@ -29,9 +29,13 @@ import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// the kit's guide and voice sheets come in by lesson-17.css's @import while
-// this module loads none of the kit parts they sit beside in the other
-// lessons' chunks, so those chunks keep their stylesheets in their order
+// the sung bars bring the kit's comfort check, and the Wrap's rest line
+// with it, so taking the voice lessons' sheet here keeps it in the chunk it
+// shares with them, linked before the page's own; the guide's sheet comes
+// in by lesson-17.css's @import, since this module loads none of the kit
+// parts it sits beside in the other lessons' chunks (MISTAKES.md, on the
+// lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-17.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -47,6 +51,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -74,14 +79,18 @@ void import('./recall').then(
 )
 // four words, each figure a short rhythm written as it plays
 initWords()
-// Tap it: the two written bars, read from the page and tapped over the
-// click; a chunk of its own, after first paint, since the take, its judge,
-// the tap pad and the clap's drum voices are some 15 KB the first screen
-// never needs (one that cannot load leaves the bars undrawn)
-void import('./take').then(
-  ({ initTake }) => initTake(q('#singCard')),
+// Tap it, then sing it: the two written bars, tapped over the click and
+// then sung on one note; a chunk of its own, after first paint, since the
+// take, its judge, the tap pad, the clap's drum voices and the sung part
+// are some 20 KB the first screen never needs (one that cannot load
+// leaves the card's figures undrawn)
+void import('./checkpoint').then(
+  ({ initCheckpoint }) => initCheckpoint(),
   () => undefined,
 )
+
+// the Wrap's practice card, its rest line picked by the sung bars' ending
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(17)

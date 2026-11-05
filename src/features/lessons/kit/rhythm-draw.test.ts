@@ -536,6 +536,23 @@ describe('drawRhythm', () => {
     expect(all(el, '.rb-tick')).toHaveLength(0)
   })
 
+  it('draws a figure at no size, as in a panel not yet shown, with no box of negative size', () => {
+    // Act
+    const { el } = draw(
+      [times(4, note(1)), times(4, note(1))],
+      {},
+      { w: 0, h: 0 },
+    )
+
+    // Assert
+    const sizes = Array.from(el.querySelectorAll('rect'), (r) => [
+      Number(r.getAttribute('width')),
+      Number(r.getAttribute('height')),
+    ])
+    expect(sizes.length).toBeGreaterThan(0)
+    expect(sizes.flat().every((n) => n >= 0)).toBe(true)
+  })
+
   it("lays a one-bar figure's pads the width of their beats, 44 px or more from 344 px up (FACTS 70)", () => {
     // Act
     const { fig } = draw([times(4, note(1))], {}, NARROW)
