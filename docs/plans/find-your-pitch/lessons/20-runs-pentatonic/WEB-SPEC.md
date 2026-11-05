@@ -539,7 +539,7 @@ sharp, and to D, with two.' }]` (FACTS 5). This lesson's own, set on Lesson 20 a
   is beads on a string, drawn closer as the tempo rises, each bead still in its band." It goes in
   the team's notes, which no lesson page loads.
 - No `fig`: the card shows no figure, as Lesson 14's does (`cardFigure`,
-  `src/features/lessons/kit/explorer-figures.ts:188-194`). The explorer opens on Season 2's tab,
+  `src/features/lessons/kit/explorer-figures.ts:189-196`). The explorer opens on Season 2's tab,
   and its card reads "Ready · read" with "15 min" once the page is live, as every lesson's card
   without a film does (`chipText`, `src/features/lessons/kit/explorer.ts:167-174`).
 

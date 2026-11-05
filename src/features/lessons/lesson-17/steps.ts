@@ -50,6 +50,16 @@ export const REFUSAL_HINT: Readonly<Record<GridRefusal, string>> = {
   silent: 'Turn the rest back into a note first.',
 }
 
+/** What Dot, Tie and Clef say they changed, in Step 5 and free play (WEB-SPEC, Toys 1). */
+export const STAFF_SAID = {
+  dotOn: 'Dots added: a dotted half note, then a dotted quarter and an eighth',
+  dotOff: 'Dots taken off: a half note and a quarter, then two quarters',
+  tieOn: 'Tie added across the bar line',
+  tieOff: 'Tie taken off',
+  bass: 'The bass staff: every note on A3',
+  treble: 'The treble staff: every note on A4',
+} as const
+
 /** Said once the halvings have been heard to their end. */
 export const HALVINGS_LINE =
   'A whole note, two half notes, four quarter notes, eight eighth notes and sixteen sixteenth notes at 60 beats per minute: 4 seconds, 2 seconds each, 1 second each, 0.5 seconds each and 0.25 seconds each.'
@@ -399,16 +409,14 @@ export function initSteps(): RhythmBar {
   }
 
   dotBtn.addEventListener('click', () => {
-    const line = s.dot
-      ? 'Dots taken off: a half note and a quarter, then two quarters'
-      : 'Dots added: a dotted half note, then a dotted quarter and an eighth'
+    const line = s.dot ? STAFF_SAID.dotOff : STAFF_SAID.dotOn
     staffChange(() => {
       s.dot = !s.dot
     }, line)
     dotBtn.setAttribute('aria-pressed', String(s.dot))
   })
   tieBtn.addEventListener('click', () => {
-    const line = s.tie ? 'Tie taken off' : 'Tie added across the bar line'
+    const line = s.tie ? STAFF_SAID.tieOff : STAFF_SAID.tieOn
     staffChange(() => {
       s.tie = !s.tie
     }, line)
@@ -459,11 +467,7 @@ export function initSteps(): RhythmBar {
       const c: Clef = b.dataset.rbClef === 'treble' ? 'treble' : 'bass'
       if (c === s.clef) return
       redrawClef(c)
-      bar.say(
-        c === 'bass'
-          ? 'The bass staff: every note on A3'
-          : 'The treble staff: every note on A4',
-      )
+      bar.say(STAFF_SAID[c])
     })
   // a voice chosen in the sung part sets the clef for the rest of the visit
   // (WEB-SPEC, Toys 7, part 2, state 2), Step 5 redrawn on it if it shows

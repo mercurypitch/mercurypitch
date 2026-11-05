@@ -148,7 +148,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    rest card instead, without that line or link (Toys 6). It links `/mirror?lesson=13` in a new tab.
 9. **Lesson explorer**: the kit's, with Lesson 13 as the current node and the line under its
    heading from LESSON.md; its card shows what `kit/lesson-state.ts` says of a live lesson, the
-   plate figure (`fig: 'chladni'`, `kit/explorer-figures.ts:188-213`; FACTS 10a), and no Watch
+   plate figure (`fig: 'chladni'`, `kit/explorer-figures.ts:189-217`; FACTS 10a), and no Watch
    button, since Lesson 13 has no published film (`kit/season.ts:23-25`).
 10. **Footer**: Lesson 1's, with "Season 1 · Lesson 13 · Resonance and vowels"; the practice link,
     printed `mercurypitch.com/mirror` and linking `/mirror?lesson=13`, with "Voice Mirror is free,
@@ -770,7 +770,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its minutes, the plate figure and its caption, "A vibrating plate: sand gathers where the
-  plate stays still" (`kit/explorer-figures.ts:210`; FACTS 10a), no Watch button
+  plate stays still" (`kit/explorer-figures.ts:214`; FACTS 10a), no Watch button
   (`kit/season.ts:23-25`), and the learner's fields only, which
   `src/e2e/learn-no-planning-text.spec.ts` holds every built lesson page to.
 

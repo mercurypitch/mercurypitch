@@ -249,6 +249,26 @@ describe('the explorer, a tab per season', () => {
     expect(
       card?.querySelector('a.addr[href="/ear-lab?lesson=17"]'),
     ).not.toBeNull()
+    expect(card?.querySelector('.ex-fig svg.ex-rhythm')).not.toBeNull()
+    expect(card?.querySelector('.ex-fig figcaption')?.textContent).toBe(
+      "A bar of four quarter notes, written over Lesson 8's beat pads",
+    )
+  })
+
+  it("draws Lesson 17's figure on a Season 1 page too, once Season 2's tab brings it", async () => {
+    // Arrange
+    explorerPage()
+    const explorer = createExplorer({ current: 1 })
+    await openSeason2()
+
+    // Act
+    explorer.select(17, false)
+
+    // Assert: the figure comes with Season 2's data (season-2-figures.ts)
+    expect(openTitle()).toBe('How long is a note?')
+    expect(
+      document.querySelector('#exCardHost .ex-card .ex-fig svg.ex-rhythm'),
+    ).not.toBeNull()
   })
 
   it("lights a Season 2 lesson's lines in from Season 1, and its Season 1 lessons on its path", async () => {

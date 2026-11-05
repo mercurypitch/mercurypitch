@@ -423,7 +423,7 @@ nudged two cents. A held note can move far more.' }]`, and its note in the team'
   beside it, the flats the other way; then twelve pure fifths miss by 23.46 cents, and equal
   temperament closes the ring." It goes in the team's notes, which no lesson page loads.
 - No `fig`: the card shows no figure, as Lesson 14's does (`cardFigure`,
-  `src/features/lessons/kit/explorer-figures.ts:188-194`). The explorer opens on Season 2's tab, and
+  `src/features/lessons/kit/explorer-figures.ts:189-196`). The explorer opens on Season 2's tab, and
   its card reads "Ready · read" with "15 min" once the page is live.
 
 ## What the kit and the app still need

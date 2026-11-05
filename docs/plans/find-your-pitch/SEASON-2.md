@@ -1051,7 +1051,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    (`src/features/lessons/kit/season.ts:1-3`) with Season 1's topics (:50-83) and its lessons
    indexed by number (`LESSONS[n].n === n`, :109); the masthead's season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`); the season's end card says "End of Season 1"
-   (`src/features/lessons/kit/lesson-copy.ts:153-159`); the explorer is "Season 1 as a map"
+   (`src/features/lessons/kit/lesson-copy.ts:154-160`); the explorer is "Season 1 as a map"
    (`src/features/lessons/kit/explorer.ts:2` at `ad0a099f7`); the hub says Season 1 (`learn/index.html:265`). The kit
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page

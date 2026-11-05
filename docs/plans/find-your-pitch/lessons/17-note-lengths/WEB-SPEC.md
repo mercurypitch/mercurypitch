@@ -695,7 +695,7 @@ are in; items 6 to 8 and 12 come with the page's own PR.
     The Ear Lab keeps its own.
 12. **The explorer's figure**: a new `fig` kind, `'rhythm'`, in the entry's type, which offers
     `'poster'`, `'metronome'` and `'chladni'` today (`src/features/lessons/kit/season.ts:138`), drawn
-    with its caption in `cardFigure` (`src/features/lessons/kit/explorer-figures.ts:188-213`): four
+    with its caption in `cardFigure` (`src/features/lessons/kit/explorer-figures.ts:189-217`): four
     quarter notes on one line over four pads, "A bar of four quarter notes, written over Lesson 8's
     beat pads" (Explorer and season data).
 

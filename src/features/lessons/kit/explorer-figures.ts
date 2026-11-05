@@ -15,7 +15,7 @@ import type { Surface } from './frame-loop'
 import { surface } from './frame-loop'
 import { Motion, reducedMotion } from './motion-switch'
 import { COLOR } from './notes'
-import type { Lesson } from './season'
+import type { Lesson, SeasonFigures } from './season'
 
 /**
  * The metronome as SVG markup. Its body's gradient takes `id`, so a page
@@ -183,11 +183,13 @@ export function plateFigure(canvas: HTMLCanvasElement): PlateFigure | null {
 
 /**
  * The figure beside a lesson's card, or null for none: a poster figure
- * needs the poster's URL from the page, set as a property, never markup.
+ * needs the poster's URL from the page, set as a property, never markup,
+ * and a kind the kit does not draw comes with its season (`own`).
  */
 export function cardFigure(
   L: Lesson,
   poster: string | undefined,
+  own?: SeasonFigures,
 ): HTMLElement | null {
   const fig = L.fig
   if (fig === undefined || (fig === 'poster' && poster === undefined))
@@ -195,7 +197,9 @@ export function cardFigure(
   const f = document.createElement('figure')
   f.className = 'ex-fig'
   f.style.margin = '0'
-  if (fig === 'poster') {
+  const drawn = own?.[fig]
+  if (drawn !== undefined) f.innerHTML = drawn()
+  else if (fig === 'poster') {
     const img = document.createElement('img')
     img.src = poster ?? ''
     img.alt = L.posterAlt ?? ''
@@ -205,10 +209,10 @@ export function cardFigure(
     f.append(img, cap)
   } else if (fig === 'metronome') {
     f.innerHTML = `${metronomeSVG()}<figcaption>A metronome, its arm on beats 2 and 4</figcaption>`
-  } else {
+  } else if (fig === 'chladni') {
     f.innerHTML =
       '<div class="plate"><canvas aria-hidden="true"></canvas></div><figcaption>A vibrating plate: sand gathers where the plate stays still</figcaption>'
-  }
+  } else return null
   return f
 }
 

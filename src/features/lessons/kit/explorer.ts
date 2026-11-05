@@ -344,7 +344,7 @@ export function createExplorer(opts: ExplorerOptions): Explorer {
       season,
       short,
     )
-    const fig = cardFigure(L, opts.posters?.[L.n])
+    const fig = cardFigure(L, opts.posters?.[L.n], season.figures)
     if (fig !== null) el.appendChild(fig)
     el.addEventListener('click', (e) => {
       const target = e.target instanceof Element ? e.target : null

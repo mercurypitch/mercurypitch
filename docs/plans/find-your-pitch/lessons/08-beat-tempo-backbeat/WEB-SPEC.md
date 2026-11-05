@@ -858,7 +858,7 @@ Lesson 8's entry (`kit/season.ts:303-324`; FACTS 58), as this page wrote it:
   Pocket" by `practiseMarkup` (`kit/explorer.ts:191-196`). `pr.needs`, "Ear Lab Time (an ear-drill
   link)", stays as it is: it is admin only, never drawn on a lesson page (`season.ts:102-103`).
 - The signature (`kit/team-notes.ts:40`) and `fig: 'metronome'` stay as they are. The card's figure caption, "A metronome, its arm on
-  beats 2 and 4" (`kit/explorer-figures.ts:207`), is the kit's and stays: the card's arm swings in
+  beats 2 and 4" (`kit/explorer-figures.ts:211`), is the kit's and stays: the card's arm swings in
   CSS at a fixed rate that names no tempo, 1.1 s a side (`lesson-sections.css:999-1010`), and the
   caption describes the drawing, which claims no tempo (FACTS 58, Illustrations without claims).
 - The hook stays word for word (`season.ts:312`; FACTS 1), with no alternative, and the tease stays

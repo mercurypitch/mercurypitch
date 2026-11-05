@@ -134,8 +134,8 @@ export interface Lesson extends CuriosityCopy {
   /** The question the lesson opens with: its default hook, variant id 'default' (lesson-copy.ts). */
   readonly hook: string
   readonly pr: Practise
-  /** The figure beside its card; 'poster' shows the poster its page hands the explorer. */
-  readonly fig?: 'poster' | 'metronome' | 'chladni'
+  /** The figure beside its card; 'poster' shows the poster its page hands the explorer, 'rhythm' four quarter notes over four pads. */
+  readonly fig?: 'poster' | 'metronome' | 'chladni' | 'rhythm'
   /** The poster's alt text, for a card whose figure is the poster. */
   readonly posterAlt?: string
 }
@@ -617,7 +617,14 @@ export interface Season {
   /** Its last lesson, whose page closes the season instead of naming a next lesson. */
   readonly last: number
   readonly close: SeasonClose
+  /** The card figures its lessons name that the kit does not draw, loaded with the season's data. */
+  readonly figures?: SeasonFigures
 }
+
+/** A card figure's markup, its caption included, by the kind a lesson names. */
+export type SeasonFigures = Readonly<
+  Partial<Record<NonNullable<Lesson['fig']>, () => string>>
+>
 
 /** Season 1: the trailer and Lessons 1 to 14. */
 export const SEASON_1: Season = {

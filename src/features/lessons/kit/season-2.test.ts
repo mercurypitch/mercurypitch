@@ -225,10 +225,11 @@ describe('Season 2', () => {
     ])
   })
 
-  it("teases Lesson 16 on Lesson 15's card and Lesson 17 on Lesson 16's, and carries no other copy of its own yet", () => {
+  it("teases Lesson 16 on Lesson 15's card, Lesson 17 on Lesson 16's and Lesson 18 on Lesson 17's, and carries no other copy of its own yet", () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
+    const L18 = LESSONS_2.find((L) => L.n === 18)
 
     // Assert: Lesson 16 FACTS 5b; a tease lands with the page that draws it
     expect(L16?.tease).toBe(
@@ -247,9 +248,14 @@ describe('Season 2', () => {
         text: 'Same five notes, twice as fast: the note shapes change.',
       },
     ])
+    // Lesson 17 FACTS 5: on Lesson 17's next-lesson card, above its tease still
+    expect(L18?.tease).toBe(
+      'Now you can read when each note comes, and where it sits.',
+    )
+    expect(L18?.teaseAlts).toBeUndefined()
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n === 16 || L.n === 17) continue
+      if (L.n >= 16 && L.n <= 18) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }
