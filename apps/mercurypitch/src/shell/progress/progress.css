@@ -158,18 +158,12 @@
   --sheet-handle: rgb(21 19 42 / 22%);
 }
 
-/* The tab's scroller keeps a focused control clear of the chrome as its
-   padding keeps a hand's: of the small bar at the top and the rail at the
-   foot, the parked run's pill with it (MISTAKES.md, scroll padding). */
+/* The tab's scroller keeps a focused control clear of the small bar at
+   the top, as tall as the bar (MISTAKES.md, the scroll-padding twin). The
+   foot is the kit's: every tab's scroller keeps the rail and the parked
+   run's pill clear (src/styles/mobile-kit.css). */
 :root[data-native-shell] .main-content:has(.mp-prog) {
   scroll-padding-top: calc(var(--safe-top, 0px) + 52px);
-  scroll-padding-bottom: calc(var(--tabbar-total) + 8px);
-}
-
-:root[data-native-shell][data-shell-pill='on'] .main-content:has(.mp-prog) {
-  scroll-padding-bottom: calc(
-    var(--tabbar-total) + 8px + var(--touch-target) + 8px
-  );
 }
 
 /* The stage the cards stand on: fixed, so the night stays still while the
