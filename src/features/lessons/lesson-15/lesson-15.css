@@ -238,11 +238,12 @@
 }
 .l15-tease svg {
   display: block;
-  flex: 1 1 auto;
+  flex: 0 1 288px;
   min-width: 0;
-  height: 96px;
+  height: 120px;
 }
-.l15-tease .q {
+/* its own class: the quiz's .q would draw a question's grid and rule here */
+.l15-tease-q {
   font: 600 var(--fs-22) / 1 var(--f-display);
   color: var(--chrome);
 }
