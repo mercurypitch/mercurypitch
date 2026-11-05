@@ -1,5 +1,5 @@
-// Studio input monitor — off builds nothing; on plays the input folded, spread, through its lane's chain at the monitor profile and its faders; moving the arm crosses paths without doubling the input; a lane not heard, and dispose, take the graph apart after the release.
-import { describe, expect, it } from 'vitest'
+// Studio input monitor — off builds nothing; on plays the input folded, spread, through its lane's chain at the monitor profile and its faders; moving the arm crosses paths without doubling the input; a lane not heard, and dispose, take the graph apart after the release; and dispose says when its input may close: at once with nothing heard, once the last path has come apart otherwise.
+import { describe, expect, it, vi } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -196,5 +196,47 @@ describe('the input monitor', () => {
     scheduler.advance(RELEASED_MS)
     expect(stillWired(ctx)).toEqual([])
     expect(input.targets).toEqual([])
+  })
+
+  it('lets its input go at once when nothing is heard', () => {
+    const { monitor } = setup()
+    monitor.set(sound('lane-1', { on: false }))
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    expect(silent).toHaveBeenCalledOnce()
+  })
+
+  it('keeps its input until the path it heard has come apart, then lets it go', () => {
+    const { input, scheduler, monitor } = setup()
+    monitor.set(sound('lane-1'))
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    scheduler.advance(RELEASED_MS - 1)
+    expect(silent).not.toHaveBeenCalled()
+    expect(input.targets).toHaveLength(1)
+    scheduler.advance(1)
+    expect(input.targets).toEqual([])
+    expect(silent).toHaveBeenCalledOnce()
+  })
+
+  it('waits for the last path still releasing, not the first', () => {
+    const { scheduler, monitor } = setup()
+    monitor.set(sound('lane-1'))
+    // The arm moves at 0, the lane is muted at 100: each path releases then.
+    monitor.set(sound('lane-2'))
+    scheduler.advance(100)
+    monitor.set(sound('lane-2', { gains: [0, 0] }))
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    scheduler.advance(RELEASED_MS - 1)
+    expect(silent).not.toHaveBeenCalled()
+    scheduler.advance(1)
+    expect(silent).toHaveBeenCalledOnce()
   })
 })

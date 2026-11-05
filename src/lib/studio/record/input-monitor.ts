@@ -24,7 +24,11 @@
 //
 // Level changes follow the house envelopes (CONVENTIONS.md 5b): toward the
 // new level with setTargetAtTime, and to silence with the release, the
-// nodes coming apart only after it.
+// nodes coming apart only after it. The input is the release's source too:
+// disposed, the monitor says when the last path has come apart, and the arm
+// keeps its source and microphone open until then (studio-recorder.ts
+// `closeArmed`), so a disarm while the singer is heard is a release, not a
+// cut.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -109,6 +113,8 @@ export function createStudioInputMonitor(
   let current: MonitorPath | null = null
   const releasing = new Set<MonitorPath>()
   let closed = false
+  /** Told once the input is no longer heard (dispose). */
+  const silent: (() => void)[] = []
 
   function openInlet(): MonitorInlet {
     const fold = channelGain(context, 1)
@@ -129,6 +135,7 @@ export function createStudioInputMonitor(
     inlet.fold.disconnect()
     inlet.spread.disconnect()
     inlet = null
+    for (const told of silent.splice(0)) told()
   }
 
   function buildPath(sound: StudioMonitorSound): MonitorPath {
@@ -218,11 +225,20 @@ export function createStudioInputMonitor(
       for (const [side, gain] of path.sides.entries())
         glide(context, gain.gain, sound.gains[side], MOVE_SECONDS / 5)
     },
-    dispose(): void {
-      if (closed) return
-      closed = true
-      if (current !== null) release(current)
-      current = null
+    /**
+     * Release every path for good. `whenSilent` runs once the last one has
+     * come apart and the input feeds nothing here, at once when none sounds:
+     * until then the input must stay open, or the release is cut.
+     */
+    dispose(whenSilent?: () => void): void {
+      if (!closed) {
+        closed = true
+        if (current !== null) release(current)
+        current = null
+      }
+      if (whenSilent === undefined) return
+      if (inlet === null) whenSilent()
+      else silent.push(whenSilent)
     },
   }
 }

@@ -14,7 +14,9 @@
 // file. The lane stays armed after a take, as a DAW's armed track does, so
 // the next Record starts the next take; the microphone is released when the
 // lane is disarmed, when the microphone or the clock goes away, or when the
-// Studio closes, and the mic icon goes off with it.
+// Studio closes, and the mic icon goes off with it. A monitor the singer
+// still hears glides out first, on the input it hears: the source and the
+// microphone close once it is silent, a quarter of a second later.
 //
 // Nothing here knows Solid or the Studio's storage: the hook
 // (useStudioRecorder.ts) supplies the clock, the microphone, the transport
@@ -244,20 +246,26 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     }
   }
 
-  /** Close everything the arm opened and give the microphone back. */
+  /** Close everything the arm opened and give the microphone back, once a heard monitor has glided out. */
   function closeArmed(): void {
     const closing = armed
     armed = null
     if (closing === null) return
     closing.capture.dispose()
-    closing.monitor.dispose()
     closing.clicks.stop()
-    try {
-      closing.source.disconnect()
-    } catch {
-      // Already apart.
-    }
-    closing.mic.release()
+    // Closed under a heard monitor, the input would cut its release, and the
+    // singer hears the cut (CONVENTIONS.md 5b). Late, this closes only this
+    // arm's own source and hold, never a newer arm's: each arm opens a
+    // source of its own, and a hold ends only through itself
+    // (MicManager.acquireFrom).
+    closing.monitor.dispose(() => {
+      try {
+        closing.source.disconnect()
+      } catch {
+        // Already apart.
+      }
+      closing.mic.release()
+    })
   }
 
   function disarm(): void {
