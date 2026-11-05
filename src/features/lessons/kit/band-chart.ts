@@ -21,7 +21,10 @@
 // arcs between them (band-chart-arcs.ts): the page passes their painter in
 // (`paintRungs`), so no lesson without rungs downloads it. Its notes axis
 // can name the rungs' rows in words in place of the grid's letters, the
-// gutter widened to fit (`names`, band-chart-names.ts).
+// gutter widened to fit (`names`, band-chart-names.ts). Lesson 14 adds a
+// song: Merc's notes as bands over their own times, lit along their length
+// by their level, with the words under them, the chords, breath marks and
+// a level strip where a figure asks (band-chart-song.ts).
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it while it is on
 // screen, in each frame where what it shows differs from what it last drew:
@@ -43,6 +46,7 @@ import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
 import type { RungNames } from './band-chart-names'
 import type { Rung } from './band-chart-rungs'
+import type { SongScene } from './band-chart-song'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
@@ -138,6 +142,12 @@ export interface BandScene {
   arcs?: Arc[]
   /** The spectrum strip under the plot, on a chart given its `under` (spectrum-strip.ts). */
   spectrum?: SpectrumScene
+  /**
+   * A phrase or a whole song, its words and breath marks, on a chart given
+   * band-chart-song.ts's `paintSong` and `songUnder`: it takes the place of
+   * Merc's band, as rungs do.
+   */
+  song?: SongScene
 }
 
 export interface BandChart {
