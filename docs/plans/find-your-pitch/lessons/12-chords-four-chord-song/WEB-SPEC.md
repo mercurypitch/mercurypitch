@@ -110,7 +110,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 12", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
    `initMasthead` (`src/features/lessons/kit/page-chrome.ts:127-159`) with Lesson 4's map of
-   sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:99-110`), which draws the lesson menu,
+   sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:108-119`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:131`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
@@ -133,7 +133,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 4. **Four words you'll meet**: diatonic, Roman numeral, diminished and augmented, each with its
    definition, a small figure and a play button (Toys 4).
 5. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step on
-   the one ring-of-rooms toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:72-76`), in
+   the one ring-of-rooms toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:73-76`), in
    five states (Toys 1):
    1. Where do a key's chords come from? The seven chips of C major.
    2. How do Roman numerals name them? The chips with their numerals, and the key switch C · G; the
@@ -156,7 +156,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
    ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:126-149`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(12)` before
-   `createExplorer({ current: 12 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:94-96`;
+   `createExplorer({ current: 12 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:105`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
    "Next lesson 13 · Resonance and vowels" with "Coming later"; then Lesson 13's tease, "Same note,
    two vowels: ‘ee’, then ‘ah’.", above Lesson 13's hook, and "See it on the map" while Lesson 13
@@ -220,7 +220,7 @@ minute. Free play in the Wrap is not counted.
 | 5. The tune toy           | Toys 1's ring; the kit's Merc voice (`kind: 'merc'`, `kit/sound.ts:29-43`)                                                                                                                                                                                                                                                                                                      | Two tunes over the loop, and tune 2 with even notes                                                                                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); the kit's slide guide and breathing ring (`kit/slide-guide.ts`, `kit/sing.ts`); Move do and its count-in note, Lesson 4's, which Lesson 10's spec moves into the kit; the guide's breath mark, from Lesson 6's page; Lesson 6's rest card after "Effortful" | A path of five roots with the chords under it; Move do stopping at three higher; the Easy and Workable line                                                                                                                   |
 | 7. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                                                                                                     | Three items in two drawers                                                                                                                                                                                                    |
-| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:58-65`); Lesson 10's questions                                                                                                                                                                                                                   | Ids and keys; spoken numerals                                                                                                                                                                                                 |
+| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:59-65`); Lesson 10's questions                                                                                                                                                                                                                   | Ids and keys; spoken numerals                                                                                                                                                                                                 |
 | 9. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`), as Lesson 2's figures sit in it                                                                                                                                                                                                                                                                                   | One still: a level pitch line over a strip of bars whose peaks carry only "?"                                                                                                                                                 |
 
 ### 1. The ring of rooms
@@ -234,8 +234,11 @@ the stage-fit test reach every action.
 - **Seen from above.** `setView('top')` at mount looks straight down the axis, so one turn is a ring
   of twelve (`spiral.ts:179-180`; `src/features/lessons/kit/spiral-draw.ts:17-21`), and `ring: 60`
   keeps the turn from C4 lit from above (`spiral.ts:132-133`), so C4 to B4 sit on it and the other
-  turns fade (`ringFade`, `spiral-draw.ts:106-116`). `setTurning(false)` holds it still
-  (`spiral.ts:177-178`), and `range: () => [60, 71]` keeps the slider on the lit turn
+  turns fade (`ringFade`, `spiral-draw.ts:106-116`). `setTurning(false)` stops its drift
+  (`spiral.ts:607`, `:768-769`), but a drag, Shift with an arrow key and a flick's glide still turn
+  it while it is not unrolled (`:454-462`, `:574-575`, `:603-606`), so each room is drawn from where
+  its beads land in that frame and turns with them. `range: () => [60, 71]` keeps the slider on the
+  lit turn
   (`spiral.ts:130-131`). The notes sit at 30 degrees a semitone, A at the front
   (`spiral-draw.ts:130-131`), and the ring's radius is the smaller of 0.27 of the figure's width and
   0.29 of its height (`spiral-draw.ts:136`). Every name follows the page's sharps-or-flats choice
@@ -270,7 +273,9 @@ the stage-fit test reach every action.
 - **Numerals** (Step 2): it opens on the seven rooms, faint, with the chips' numerals in place of
   "on do" to "on ti". **The key switch C · G** is a segmented switch (`aria-pressed`, at least 44 px
   each), from C. G turns every room round the ring together by seven semitones, 210 degrees, in 0.6
-  s on the kit's `expoOut` curve (`src/features/lessons/kit/reveal.ts:17-18`), while the chips
+  s on the kit's expo-out curve, as a function for the canvas (`easeOutExpo`,
+  `src/features/lessons/kit/reveal.ts:27-29`, beside the CSS string `EASE.expoOut` at `:18`), while
+  the chips
   relabel to G major's notes: I is G B D, V is D F♯ A, vii° is F♯ A C (FACTS 19). C turns them
   back. Each room keeps its shape and its numeral. The switch is silent; a chip then plays its
   chord in the key that shows, from the key's own octave: in C from C4, in G from G3 (FACTS 69).
@@ -351,9 +356,10 @@ the stage-fit test reach every action.
   Do-re-mi with the syllables in place of the letters. A polite live region says what each action
   changed, once: "G major: every chord turned round the ring." or "One, C major, then six, A minor:
   C and E stay, and G becomes A." Every accessible name and live text uses words, never a ♯ or ♭
-  sign and never a bare numeral (`wordName`, `notes.ts:193`; Toys 8, spoken numerals). Tab order:
-  the step's own buttons in reading order, the switches, then the chips from I to vii°, then the
-  ring's slider.
+  sign and never a bare numeral (`wordName`, `notes.ts:193`; Toys 8, spoken numerals). Tab order
+  follows the layout, so the DOM, the eye and the focus agree: the ring's slider, then the step's
+  own buttons and switches in reading order, under the figure, then the chips from I to vii° under
+  them.
 - **States**: build; numerals; slide; loop; tunes; free play, every control together; each in its
   full or compact layout, in C or in G, under Letters or Do-re-mi. Any state can be playing or
   still. Leaving a step by any route (Next or Back, a swipe, the lesson menu's jump, `#step-N` or a
@@ -469,7 +475,8 @@ bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
   minim. **Tune 2** plays G4 (0.75 s) C5 (0.25 s) E5 (1.0 s) | C5 B4 G4 | A4 C5 E5 | F5 D5 C5, the
   same long-short-long in every bar. **Even notes** plays tune 2's twelve notes at 0.667 s each over
   the same chords (FACTS 37). The three are buttons in Step 5 and free play, at least 44 px tall,
-  and a play's button reads "Stop" while it plays.
+  and a play's button reads "Stop", with the pause icon, while it plays; a press on it then stops
+  the tune, its walk and its count kept where they reached.
 - **The walk.** Each sung note pulses its bead on the lit turn, whatever its octave, and a blue line
   joins it to the note before; the line stays drawn, faint, until the next play. A note that is a
   note of the chord sounding under it lands on a corner of the lit room: its bead glows gold and
@@ -480,11 +487,16 @@ bar of four crotchets, 0.5 s a crotchet, 8.0 s a play (FACTS 35 to 37, 68).
   stays at its end, "11 of 15", "10 of 12" or, for Even notes, "10 of 12", until the next play.
 - **Slow** (`aria-pressed`) doubles every length, the loop's with the tune's, 16.0 s.
 - Under the tune the chord's voices sound at 0.05 each, so the tune stands clear of them (FACTS 74).
-- Merc sings in the hero (`mercSing('blue', midi, true)` as each note starts and `false` as it
-  ends, `src/features/lessons/kit/merc-duo.ts:164`) while Tavi listens (`mercListen`, `:206`); on
-  the steps' ring no Merc is on screen, and the walk alone carries it.
-- Its accessible names are "Play tune 1", "Play tune 2" and "Play tune 2 with even notes"; the live
-  region speaks the start and the count, as in Toys 2.
+- Merc sings in the hero through the kit's `singAlong`
+  (`src/features/lessons/kit/sing-along.ts:26`), which opens his mouth for each note as it starts
+  and closes it as it ends, or at once when the tune is cut short (`stopSingAlong`, `:41`), while
+  Tavi listens (`mercListen`,
+  `src/features/lessons/kit/merc-duo.ts:207`); on the steps' ring no Merc is on screen, and the
+  walk alone carries it.
+- Its accessible names are "Play tune 1", "Play tune 2" and "Play tune 2 with even notes", and
+  while a tune plays its button's name is "Stop tune 1", "Stop tune 2" or "Stop tune 2 with even
+  notes", so the name says what the button shows (WCAG 2.5.3); the live region speaks the start and
+  the count, as in Toys 2.
 - States: still, with no walk; playing; ended, its walk and its count kept.
 
 ### 6. Sing it
@@ -545,7 +557,7 @@ States:
 
 1. **Comfort check**, always first and asked every visit (never stored): Lesson 3's line, its list
    naming all six of REQ-GVC-020's conditions, and its two buttons, through `mountComfort`
-   (`src/features/lessons/kit/comfort.ts:158-166`; FACTS 53).
+   (`src/features/lessons/kit/comfort.ts:159`; FACTS 53).
 2. **Voice choice**, after either comfort answer: Lesson 3's two buttons with Merc and Tavi's stills
    (`aria-pressed`, at least 44 px), read from and stored in `fyp-voice` through `VoiceChoice` and
    `bindVoiceButtons` (`src/features/lessons/kit/voice-choice.ts:30-47`, `:60-77`; FACTS 55). Its
@@ -558,7 +570,7 @@ States:
    **Play Merc's notes** sings the five roots over the chords on a tap in the chosen voice, the path
    lighting as they play; Start the guide and Move do are not shown, and nothing asks the viewer to
    sing (REQ-GVC-021). The answer holds for the visit, and the Wrap shows the rest card
-   (`VisitEnding`, `comfort.ts:95-114`).
+   (`VisitEnding`, `comfort.ts:101-114`).
 4. **Ready**: the controls in LESSON.md's order, under the Your turn text and the stop line, which
    sits in one place, on its own line above the buttons. **Play Merc's notes** sings do, so, la, fa
    and do over the chords, on do = C4 (lower) or C5 (higher), in Merc's "ooh", 10.0 s (FACTS 59,
@@ -568,8 +580,8 @@ States:
    and three higher, moving Merc's notes, the chords, the guide's count-in and its readout together,
    from "do is A♭3" to "do is E♭4" for the lower voice (spoken "do is A flat 3"), or A♭4 to E♭5 for
    the higher (FACTS 60). Lesson 4's Move do goes four either way (`MOVE_MAX`,
-   `kit/move-do.ts:26-27`, `:38-49`), so the kit's takes a limit for each side, and this page
-   passes four and three. At its limit a button is `aria-disabled`.
+   `kit/move-do.ts:27`), and the kit's takes a reach for each side (`MoveReach`, `:30-36`), so this
+   page passes four and three. At its limit a button is `aria-disabled` (`setMoveEnds`, `:52`).
 5. **Guide**: **Start the guide** is enabled once Merc's notes have played with sound on (hear it
    first: playbook rule 16); until then it is `aria-disabled`, with the hint "Play Merc's notes
    first". With sound off, Play Merc's notes runs its lights silently and the hint says why, in this
@@ -584,10 +596,10 @@ States:
    text (REQ-GVC-080, as `lesson-03/sing-view.ts:1-9` does). When the sweep ends, the feeling
    question follows.
 6. **How did that feel?** appears under the guide each time a sweep ends, asked afresh with no
-   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:168-206`; FACTS 63).
+   answer pressed: Lesson 3's four answers through `mountFeelings` (`comfort.ts:175-206`; FACTS 63).
    The kit locks the answer once given, until the next sweep resets it; Lesson 6's page passes the
    kit's `changeable`, so its answer can change until then (`mountFeelings`,
-   `comfort.ts:168-179`). This page keeps the lock until the coach settles
+   `comfort.ts:175-188`). This page keeps the lock until the coach settles
    it for the series, as Lesson 10's does (Decisions for the owner).
    - Easy or Workable shows LESSON.md's line, "Do, so, la, fa, do: you just sang the loop's roots.",
      which names the task, never the voice or how the notes went, since nothing listened, and leaves
@@ -638,7 +650,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   filtered by id, as Lesson 4's page takes Lesson 2's (`lesson-04/quiz-questions.ts:28-29`);
   otherwise they are written into this page's `lesson-12/quiz-questions.ts` as Lesson 3 writes
   Lesson 2's (`lesson-03/quiz-questions.ts:116`), and give way to the import when Lesson 10's lands.
-  Shown to everyone, as Lesson 4's recall is (`lesson-04/main.ts:58-65`), since Lesson 10 is a
+  Shown to everyone, as Lesson 4's recall is (`lesson-04/main.ts:59-65`), since Lesson 10 is a
   prerequisite (CURRICULUM § 3.3). Prefix `recall-`, keys `fyp-l12-recall-seed` and
   `fyp-l12-recall-v1`; earlier answers are never shown, so the answers measure delayed retrieval
   (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Its links open Lesson 10's page
@@ -659,8 +671,13 @@ keeps a link's words and drops the link wherever that lesson is not live.
   quiz, the practice card's I–V–vi–IV), they are `aria-hidden` and a visually hidden spoken form
   follows them, as Lesson 2's contract does for a ♯ (`signsHtml`, `notes.ts:221`): a numeral is its
   number, with "minor" after a lower-case one and "diminished" after vii°, so "I–V–vi–IV" is spoken
-  "one, five, six minor, four" and "vii°" "seven diminished". The helper is the page's own,
-  `lesson-12/numerals.ts`, with its unit test; it moves into the kit when a second page needs it.
+  "one, five, six minor, four" and "vii°" "seven diminished". One line takes the plain number
+  alone: the Wrap's recap names each quality in its own words, "one, four and five are major, two,
+  three and six minor, and seven diminished", so its numerals are spoken "two", "three", "six" and
+  "seven", never "six minor minor" (`plainNumeral`, `plainNumeralHtml`); `page.test.ts` allows that
+  form in the recap's line and nowhere else. The helpers are the page's own,
+  `lesson-12/numerals.ts`, with their unit test; they move into the kit when a second page needs
+  them.
 
 ### 9. Tease still
 
@@ -673,9 +690,9 @@ labelled "flat", since the series keeps "flat" for too low (HUMANIZE pattern 6).
 since the card is a link, and it plays no sound. Its styles go under a class of its own: not Lesson
 2's `.tease` (`src/features/lessons/lesson-02/lesson-02.css:510`), which `learn-next-card.spec.ts`
 tests, and not the tease line's `.next-tease`
-(`src/features/lessons/kit/lesson-sections.css:296-298`); in the kit's shared still styles, if the
-page that first adds them (CURIOSITY-MOMENTS § 3.1, "one still per card") lands first, else in this
-page's stylesheet. It does not move.
+(`src/features/lessons/kit/lesson-sections.css:296-298`). No page had added the kit's shared
+still styles (CURIOSITY-MOMENTS § 3.1, "one still per card") when it was built, so they sit in this
+page's stylesheet, under `.l12-tease` (`lesson-12/lesson-12.css`). It does not move.
 
 ## Audio
 
@@ -700,8 +717,10 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   report "not heard" to the predict (`kit/predict.ts:31-41`, `:187-188`).
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
-  at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), through `playTone`
-  (`src/features/lessons/kit/sound.ts:566-575`), whose visuals run even when sound is off.
+  at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), as one of the kit's runs
+  (`playNotes`, `src/features/lessons/kit/run.ts:117`), which can be stopped, where `playTone`
+  (`src/features/lessons/kit/sound.ts:567`) resolves only once its note has ended; the visuals run
+  even when sound is off.
 - **A loop or a tune** is timed from one start, as Lessons 2 and 4 time their examples (`schedule`,
   `src/features/lessons/lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`): every chord
   and every sung note starts on its own timer, counted from the play's start, and a chord and the
@@ -729,12 +748,13 @@ still images when WebGL fails or would run on the CPU.
 
 - They live in the hero, on either side of the spiral, and are on screen while the cold open plays.
   Tavi asks and Merc answers in the bubbles (LESSON.md). While the four chords sound, both listen
-  (`mercListen`, `merc-duo.ts:206`). While a tune plays, Merc sings it (`mercSing`, `:164`), note by
-  note, and Tavi listens: Merc said "Listen to both", and sings them. Tavi celebrates once as
-  the reveal shows, the puzzled guesser who then gets it (`mercCelebrate('orange', 1600)`, `:217`,
-  as Lesson 2's cold open does, `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one, since
-  the reveal calls no choice right: the page mounts the pair with `{ sparkles: 'none' }`
-  (`MercDuoOptions`, `merc-duo.ts:120-126`). The page asks for no other state.
+  (`mercListen`, `merc-duo.ts:207`). While a tune plays, Merc sings it through the kit's
+  `singAlong` (`kit/sing-along.ts:26`), note by note, and Tavi listens: Merc said "Listen to both",
+  and sings them. Tavi celebrates once as the reveal shows, the puzzled guesser who then gets it
+  (`mercCelebrate('orange', 1600)`, `merc-duo.ts:217`, as Lesson 2's cold open does,
+  `lesson-02/cold-open.ts:56`; playbook rule 15), a quiet one, since the reveal calls no choice
+  right: the page mounts the pair with `{ sparkles: 'none' }` (`MercDuoOptions`,
+  `merc-duo.ts:119-127`). The page asks for no other state.
 - In Sing it Merc and Tavi appear as stills, in the ring (Toys 6).
 - Under reduced motion or Pause animations each Merc holds a still frame and skips the reactions.
 
@@ -767,11 +787,15 @@ still images when WebGL fails or would run on the CPU.
   progression (FACTS 49). On the web it does not open from a lesson link today, and the page does
   not link it.
 - **Needed, proposed: Chord Stacker's major and minor triads** (CURRICULUM § 4 item 4): two chord
-  types beside its five, `maj` and `min`, at 0, 4, 7 and 0, 3, 7 semitones, with their labels in
-  the setup's Chord Type menu. When they ship, LESSON.md's editorial note says the card may name
-  Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A data-only slug
-  that opens Chord Stacker on a triad (`EXERCISE_SLUGS`, `src/features/exercises/slug-map.ts:54-86`)
-  would need the chord type in the launch, which a slug cannot carry today (FACTS 51): proposed
+  types beside its five, `maj` and `min`, at 0, 4, 7 and 0, 3, 7 semitones. Its setup has no chord
+  type to choose today: it shuffles every type into each run
+  (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:92`), and its setup only
+  lists the five (`ChordStackerExercise.tsx:120`), so the triads need a chord-type setting and a
+  launch field as well as their two rows. When they ship, LESSON.md's editorial note says the card
+  may name Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A
+  data-only slug that opens Chord Stacker on a triad (`EXERCISE_SLUGS`,
+  `src/features/exercises/slug-map.ts:54-86`) would need the chord type in the launch, which a slug
+  cannot carry today (FACTS 51): proposed
   with it, not before.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned
   `ear-drill` launch kind): Cadence opened on its own, with the page's "then tap Cadence" dropped
@@ -860,8 +884,11 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    the corner slide, the loop, the roots and the tune toy, with its pure helpers: the chords of a
    major key from its tonic (their notes, gaps, quality and numeral), each room's sides round the
    ring, a tune's notes against its chords (on a corner or between), and the strip's layout. The
-   kit's spiral needs nothing: `setView('top')`, `ring`, `range`, `overlay`, `light`, `setLabels`
-   and `setTurning` are on main (`kit/spiral.ts:103-141`, `:154-187`).
+   kit's spiral took two parts, both on main now: an `owner` for its own plays, so a bead tap is the
+   page's one sound (`SpiralOptions.owner`, `kit/spiral.ts:138`), and `overlayWants`, so the page
+   rests between plays (`:127`). `setView('top')`, `ring`, `range`, `overlay`, `light`, `setLabels`
+   and `setTurning` were there already (`kit/spiral.ts:103-141`, `:154-187`); `setTurning(false)`
+   stops only the drift, so the rooms follow the beads (Toys 1).
 4. `lesson-12/cold-open.ts`, new (Toys 2): the hero's ring, its rooms and the tunes' walk.
 5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), with a choice of modes, as
    Lesson 10's spec moves it into the kit (its What the kit and the app still need, item 5). If
@@ -875,8 +902,9 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 10's spec planned (its item 7). It sets `disabled`
    at its limits; this page needs `aria-disabled`, never `disabled`, so a keyboard user's focus
    stays put, and one thing more: a limit for each side, four lower and three higher, where Lessons
-   4, 6, 8 and 10 take four either way (FACTS 60). If this page lands first, it adds both to the
-   kit's part, and Lessons 4, 6 and 8 keep four either way.
+   4, 6, 8 and 10 take four either way (FACTS 60). Both are in the kit's part now, from Lesson 10's
+   page: `aria-disabled` at its ends (`setMoveEnds`, `kit/move-do.ts:52`) and a reach for each side
+   (`MoveReach`, `:30-36`), and Lessons 4, 6 and 8 keep four either way.
 8. The sound rules' helpers (Audio; Toys 3). On main, from Lesson 6's page: the page-wide "now
    playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
    for a play cut short (`kit/predict.ts:31-41`, `:187-188`). A `schedule` that can be stopped is
@@ -1161,7 +1189,8 @@ parts it adds:
 1. The chords: C major's seven from its scale, C E G, D F A, E G B, F A C, G B D, A C E and B D F,
    with their gaps, 4 and 3 or 3 and 4 with a fifth of 7, and 3 and 3 with a fifth of 6; three
    major, three minor and one diminished, none augmented; their numerals I, ii, iii, IV, V, vi and
-   vii°, the app's `ROMAN` (`src/lib/ear/progressions.ts:28`); the same numerals and qualities in G
+   vii°, the app's numerals through `romanOf` (`src/lib/ear/progressions.ts:30-32`; its `ROMAN`,
+   `:28`, is not exported); the same numerals and qualities in G
    major, spelled G B D to F♯ A C, with no flat (FACTS 13 to 19).
 2. The rooms: each room's sides round the ring, major 4, 3 and 5, minor 3, 4 and 5, diminished 3, 3
    and 6; G major's rooms are C major's turned seven semitones; I and vi share C and E (FACTS 21,

@@ -403,7 +403,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Piano Night — practice piano, phrase by phrase',
     lede: 'A focused room for the keyboard. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo, reading it as falling notes, as a staff or as hands on the keys. Works with a MIDI keyboard or the keys on screen.',
-    lessonsPractised: [10, 12],
+    lessonsPractised: [10],
     app: {
       name: 'Piano Night',
       category: 'MusicApplication',
@@ -435,7 +435,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Guitar Night — a rehearsal room that reads your playing',
     lede: 'Start on one open string, or bring a song and mute the guitarist on it. The room listens through a microphone, an interface or MIDI, reads the bar back to you as tab, and loops the four bars you keep missing.',
-    lessonsPractised: [10, 12],
+    lessonsPractised: [10],
     app: {
       name: 'Guitar Night',
       category: 'MusicApplication',
@@ -500,7 +500,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Ear Lab — ear training measured in real units',
     lede: 'A bench that reads in cents, milliseconds and notes — real units, not a grade. Calibrate once, then practice at whichever faculty is neediest: pitch resolution, harmony, melody, timbre and time. Everything is measured, nothing is guessed.',
-    lessonsPractised: [2, 6, 10],
+    lessonsPractised: [2, 6, 10, 12],
     app: {
       name: 'Ear Lab',
       category: 'MusicApplication',
@@ -588,7 +588,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Practice singing on pitch, and see the proof',
     lede: 'Most pitch practice ends with a feeling. This ends with a number. Hold a note, run a scale or chase a moving target, and MercuryPitch draws what you actually sang against what you meant. After each run you get a score out of 100 and the spot where you drifted furthest, in cents, rather than being told it was close.',
-    lessonsPractised: [3, 4, 5, 9],
+    lessonsPractised: [3, 4, 5, 9, 12],
     app: {
       name: 'MercuryPitch Pitch Training',
       category: 'MusicApplication',

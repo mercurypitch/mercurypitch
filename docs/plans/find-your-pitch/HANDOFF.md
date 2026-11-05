@@ -229,6 +229,11 @@ need them ("needs 5" is item 5 of a lesson's list):
     the spiral rests when nothing on it moves; and the spiral's own notes go through a page's
     one-sound owner. In #1207, chords on the kit's runs: notes that share an onset start together,
     a note may carry its own tone and level, and `allOf` joins several runs into one.
+  - **Lesson 12's two kit asks went in with Lesson 10's**: a tone on each note, so one run carries
+    the chords and Merc's tune over them and the drawing hears the same start (#1207), and Move
+    do's reach for each side, which Lesson 12's page sets to four lower and three higher (#1206).
+    Its page adds one part, `kit/leave.ts`: Sing it's stop once a section has been off screen for
+    600 ms or the page is hidden, which Lesson 10's page had kept as its own and now shares.
 
 A suggested order: 9 (it brings the rungs), then 10, 12, 11, 13 and 14.
 
