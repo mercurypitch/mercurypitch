@@ -165,8 +165,8 @@ One component, the kit's band chart (`kit/band-chart.ts`) on a notes axis, in se
 step, hear, ladder, order, landing and free play, plus live mode at the checkpoint (Toys 4).
 
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:54-68`), with its 40
-  px gutter on the left (`:217`). Only the rungs' rows are named, each by its syllable and its
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:58-72`), with its 40
+  px gutter on the left (`:227`). Only the rungs' rows are named, each by its syllable and its
   spelled note in Lesson 4's spelling ("so · A3"), through a new rung-names option beside `named`,
   since the kit's grid letters every natural row and names its `named` notes in full
   (`drawNotesGrid`, `kit/band-chart-draw.ts:113-141`; FACTS 22). Time runs left to right. Each of
@@ -346,7 +346,7 @@ States:
      4's spelling (FACTS 22). The ladder choice and Move do can change before Start or Start again,
      and Move do before Again, whose two buttons are the ladder choice there; never during a take.
    - Start: with sound on, it asks for the microphone (`listen('lesson-09', Sound.context())`,
-     `kit/listen.ts:54-57`), then Merc sings the chosen ladder, each slot's band lighting as he
+     `kit/listen.ts:59-62`), then Merc sings the chosen ladder, each slot's band lighting as he
      sings it (Listen), then, at least 0.4 s after his last note ends, the take opens. With sound
      off, Start and Play Merc's ladder play nothing and ask for nothing, and the hint shows: "Sound
      is off, so nothing played. Turn sound on to hear Merc's ladder, then press Start." Start
@@ -360,7 +360,7 @@ States:
 6. **Take**: the status reads "Your turn: start on do when you're ready. Move on each time the next
    band lights up." The take waits up to 6 s for the first voiced frame, then runs one 1.5 s slot a
    note from that frame, 6.0 s for the full ladder and 7.5 s for the smaller (`takeFrames`,
-   `kit/listen.ts:168-195`, with `wait: 6` and `run` the ladder's length, `:89-110`; FACTS 76).
+   `kit/listen.ts:174-201`, with `wait: 6` and `run` the ladder's length, `:95-116`; FACTS 76).
    Before the voice starts, do's band glows; from the first voiced frame, each slot's band glows in
    turn, every 1.5 s: that is the guide, on the chart itself, so the page needs no ring or countdown
    beside it. The violet line draws live, folded around the glowing rung's note (its cents from the
@@ -384,7 +384,7 @@ States:
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
    leaves off.
    - Easy or Workable: the count, and "If that felt tricky, good: that's learning." when fewer than
-     all the heard notes landed (`trickyAfter`, `kit/take.ts:184-186`); then, if the visit's one
+     all the heard notes landed (`trickyAfter`, `kit/take.ts:200-202`); then, if the visit's one
      Again is unused and fewer than three takes have been made, **Again** (the same ladder, named
      "Again: do-mi-so-do" or "Again: the smaller ladder") and, after the full ladder, **Again,
      smaller** too (named "Again, smaller ladder", which holds its visible label); either uses the
@@ -435,7 +435,7 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 
 - Input: the take's raw frames, the ladder's rungs as MIDI notes in sung order (from do D3: 50, 54,
   57, 62, or 50, 54, 57, 54, 50), and the slot length, 1.5 s. A frame is voiced when Voice Mirror's
-  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:125-147`).
+  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:141-163`).
 - No voiced frame gives `{ heard: false }`, the "didn't hear you start" line (state 7).
 - The slots start at the first voiced frame: slot k holds the raw frames from 1.5k s to 1.5(k + 1) s
   after it. Each slot is read by the kit's own `readTake` against its rung, unchanged: its first 0.3
@@ -447,21 +447,21 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 - The line for a slot, `rungLine(label, reading)`: the rung's label ("Do", "Mi", "So", "Top do"; on
   the smaller ladder "Do", "Mi", "So", "Mi again", "Do again"), a middle dot, then the reading:
   "Right in the middle: …", "In the band: …" or "Close: …", each with the kit's gap words
-  (`readingLine`, `kit/take.ts:88-105`), without its "Listen again, then aim a touch higher." on a
+  (`readingLine`, `kit/take.ts:97-114`), without its "Listen again, then aim a touch higher." on a
   close note; beyond 60 cents, "{About a semitone below}, nearer a different note."
-  (`semitonesAway`, `:79-86`), without the kit's "Listen again, then slide up to the band." (FACTS
+  (`semitonesAway`, `:88-95`), without the kit's "Listen again, then slide up to the band." (FACTS
   79); a slot without steady voice, "We didn't hear a steady note there." (new,
   `NOT_STEADY_RUNG_LINE`), without the kit's "Try again at about speaking volume."
-  (`NOT_STEADY_LINE`, `:74-75`); and the octave line, when there is one, as a second sentence
-  (`octaveLine`, `:107-113`).
+  (`NOT_STEADY_LINE`, `:83-84`); and the octave line, when there is one, as a second sentence
+  (`octaveLine`, `:116-129`).
 - The count's line is the kit's `countLine` ("This time, 3 of your 4 notes landed in the band.", or
   "… of the 3 notes we heard …"), or `NONE_HEARD_LINE` when voice came but no note was steady
-  (`kit/take.ts:173-182`).
+  (`kit/take.ts:189-198`).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do.
 
 Listening: Lesson 3's `kit/listen.ts`, unchanged: `micManager.acquire('lesson-09')` for the take
-(`:59`), released when it ends, on leaving the section, on `pagehide` and when the tab is hidden
+(`:64`), released when it ends, on leaving the section, on `pagehide` and when the tab is hidden
 (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. Nothing is recorded or kept, nothing leaves the device, and no event
@@ -520,7 +520,7 @@ kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playb
 started only by a tap: Merc's notes, leaps, paths and ladders in Merc's "ooh"; the illustrated
 landing, the recall's two notes and the rung taps in free play in the soft tone (FACTS 90 to 96). A
 leap is two notes, each its own voice, so a repeated note is heard as two; Step 5's slide is one
-voice that glides, the kit's `contourVoice` (`kit/sound.ts:327`). Nothing autoplays, nothing plays
+voice that glides, the kit's `contourVoice` (`kit/sound.ts:328`). Nothing autoplays, nothing plays
 while a take is open, and the page has no music bed.
 
 One sound plays at a time, page-wide. Every source, the cold open, the Four words, the step toys,
@@ -719,7 +719,7 @@ table):
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`: rungs in the scene, each a band at its cents
    from do, over a time slot or across the plot, each with its glow and its lit edge; Merc's arcs,
    with an optional number; and a rung-names option on the notes axis beside `named`
-   (`band-chart.ts:54-68`), which names the given rows ("so · A3") and leaves the rest unnamed (Toys
+   (`band-chart.ts:58-72`), which names the given rows ("so · A3") and leaves the rest unnamed (Toys
    1). The existing single band is the one-rung case, so Lessons 3 and 5's figures see no change; a
    unit test proves it.
 6. The folds strip: the kit's folds (`kit/folds.ts`), in a 64 px canvas under the band chart inside

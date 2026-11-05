@@ -192,7 +192,7 @@ its columns from Merc's vowel model (`lesson-13/vowels.ts`, needs 7), a pure mod
 the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
 
 - **Drawing.** The band chart's plot on top: Merc's note as the band's centre, the band 35 cents
-  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:55-74`) with only
+  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:59-78`) with only
   the ±35 ticks named, and Merc's amber line drawn left to right as it sounds and level at the
   centre, its vibrato left out as on Lessons 3 and 5 (`kit/band-chart.ts:5-12`; FACTS 43). Under
   it, the strip: one column for each harmonic of the note up to 4,000 Hz, the k-th centred at
@@ -358,7 +358,7 @@ that file's unless it says otherwise.
   (`kit/predict.ts:187-188`). The predict's own two plays never cut each other short: a tap on one
   while the other plays does nothing (`busy`, `:179`). So a play here is cut short only by another
   source taking the page's sound (a Four words play, a step toy: Audio), or by sound turned off or
-  the page hidden, which stop every voice (`kit/sound.ts:481-483`, `:513`).
+  the page hidden, which stop every voice (`kit/sound.ts:516-518`, `:548`).
 
 - The tests that hold each state. The kit's own (`src/features/lessons/kit/predict.test.ts`): a
   free play that works before a choice and never reveals (`:288-302`), the lock hint back after a
@@ -488,14 +488,14 @@ States:
    lights up."; the ring turns from the first voiced frame and closes over the ten seconds; the
    violet line draws on the fixed frame, folded into Merc's octave; Merc and Tavi both `listen`; the
    strip stays dark. The take opens 0.4 s after Merc's demonstration ends, during the Breathe ring,
-   with every sound held off while it is open (`Sound.hush`, `kit/sound.ts:544-547`). It waits up to
+   with every sound held off while it is open (`Sound.hush`, `kit/sound.ts:579-582`). It waits up to
    6 s from opening for the first voiced frame, then runs exactly 10 s from it, timed on the frames'
    own clock; it ends sooner only if the voice stops for more than 1 s, so a breath of under a
    second between vowels does not end it, though its silence counts as time out of the band
    (`HOLD_WAIT_SEC`, `HOLD_QUIET_SEC`, `kit/hold-take.ts:39-44`, and the reader's rules, `:1-31`).
    The names row lights ‘ee’ as the take opens and ‘eh’, ‘ah’, ‘oh’ and ‘oo’ at 2, 4, 6 and 8 s from
    the first voiced frame, on the frames' clock (the listener's `onFrame` gives the first voiced
-   time, `kit/listen.ts:89-110`): a pace, never a check, and nothing on the page compares the voice
+   time, `kit/listen.ts:95-116`): a pace, never a check, and nothing on the page compares the voice
    with the vowel lit. Nothing on the page extends the take. The microphone is released when it
    ends.
 8. **Reading**: one line from the kit's hold reader (`readHold`, `kit/hold-take.ts:265`), unchanged:
@@ -516,7 +516,7 @@ States:
    (`:56-87`) with its `restAfterEffort`, proposed here and built by #1192 (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
-     (`TRICKY_LINE`, `kit/take.ts:174`), if it was in the band for under half; then Lesson 5's
+     (`TRICKY_LINE`, `kit/take.ts:190`), if it was in the band for under half; then Lesson 5's
      "Rest for a few easy breaths. Ready when you are.", with **Again** (named "Again: one more
      hold") while the visit has had fewer than three takes, and **Done for today**. The Wrap shows
      the practice card.
@@ -573,7 +573,7 @@ celebrates and the Wrap's card, so every branch above is unit-tested without a m
 Listening: Lesson 3's `kit/listen.ts` unchanged, through Lesson 5's hold runner moved into the kit
 (`holdOne`, `kit/hold-run.ts:142-197`; needs 9) with Merc's Listen phase passed in, so
 Lesson 5's passes its two-second note and this page its ten seconds of vowels:
-`micManager.acquire('lesson-13')` for each take (`kit/listen.ts:59`), released when it ends, on
+`micManager.acquire('lesson-13')` for each take (`kit/listen.ts:64`), released when it ends, on
 leaving the section, on `pagehide` and when the tab is hidden (`:18-22`); the YIN-only F0 stream;
 one AudioContext through `Sound.context()`, so every note Merc sings and every frame the take
 hears share a clock; nothing plays while a take is open. The frames are read for pitch and then
@@ -628,9 +628,9 @@ nothing plays while a take is open, and the page has no music bed.
 
 The vowel model (FACTS 40), Merc's model, labelled so on the figure:
 
-- Each sung line is one of the kit's contour voices (`contourVoice`, `kit/sound.ts:327-353`) in
+- Each sung line is one of the kit's contour voices (`contourVoice`, `kit/sound.ts:328-354`) in
   Merc's kind (`kind: 'merc'`), so it keeps his vibrato, 5.5 Hz and ±14 cents grown in over 0.35 s,
-  his attack and release, and his gain, 0.2 (`:181-204`; FACTS 43). The page's own timbre
+  his attack and release, and his gain, 0.2 (`:182-205`; FACTS 43). The page's own timbre
   (`kit/sound.ts`'s `timbre` option; `lesson-13/vowel-voice.ts`, `vowelTimbre`) changes what it is
   made of, as built in place of the two options needs 5 proposed: the voice's oscillator, which the
   kit hands a timbre as `parts[0]`, takes a periodic wave of the source, every harmonic of the
@@ -649,8 +649,8 @@ The vowel model (FACTS 40), Merc's model, labelled so on the figure:
   from 0.28 to 0.71 in the lower voice and from 0.11 to 2.64 in the higher, over every note Move
   reaches (FACTS 67). A play's `gain` is Merc's 0.2 times the largest factor among the vowels it
   sings on its note, and each point's `level` is its vowel's factor over that largest, so every
-  level is at most 1, as `ContourPoint.level` asks (`kit/sound.ts:277-284`), and the level glides
-  with the resonances. The master gain and compressor stay as they are (`:115-124`). The voice's
+  level is at most 1, as `ContourPoint.level` asks (`kit/sound.ts:278-285`), and the level glides
+  with the resonances. The master gain and compressor stay as they are (`:116-125`). The voice's
   overall loudness is matched by ear to Merc's "ooh" on Lessons 3 and 5 before publishing, on a
   phone's speaker and on headphones (Decisions 2; Contract).
 - The source alone (Step 1, free play's All harmonics) is the same voice with the source's wave
@@ -685,8 +685,8 @@ that runs to its end (Toys 2; `kit/predict.ts:31-41`, `:184-188`). Both parts ca
 Lesson 6's page, and are on main.
 
 A sequence decides once, at the tap, whether it sounds (`ToneOptions.audible`,
-`kit/sound.ts:561-564`), so a step's later vowels never ask `Sound.canPlay()` from a timer, which
-would show the sound-off toast with no tap (`:520-528`). A play pressed again while it runs stops
+`kit/sound.ts:596-599`), so a step's later vowels never ask `Sound.canPlay()` from a timer, which
+would show the sound-off toast with no tap (`:555-563`). A play pressed again while it runs stops
 it; a play pressed while another runs stops the other and starts. The predict's two plays are the
 exception: the kit ignores a tap on either while one runs (Toys 2). While a take is open every play
 on the page is silent, as the kit's hush makes it. A live line is written to its region only when
@@ -884,7 +884,7 @@ and the four-words strip in the kit.
    (`assert-first-paint-budgets.mjs:190-193`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`: no new option. The two options first proposed here, `partials` and
    `resonators`, and a `res` on `ContourPoint`, are built instead as the page's own timbre on the
-   `timbre` option Lesson 7's page added (`:44-45`, `:184`), as its "ng" and lip trill are
+   `timbre` option Lesson 7's page added (`:45-46`, `:185`), as its "ng" and lip trill are
    (`kit/timbre.ts`): the kit hands a timbre the voice's parts, `parts[0]` its oscillator, which
    the page's timbre gives the source's wave (`lesson-13/vowel-voice.ts`, `vowelTimbre`); the
    resonators' values ride on the page's own contour points (`lesson-13/plays.ts`, `VowelPoint`),
@@ -893,7 +893,7 @@ and the four-words strip in the kit.
    proposes a `wave` and a `lowpass` option for its gears (its needs 6); a timbre carries both.
 6. `kit/spectrum-strip.ts`, new: the LED strip as a painter under the band chart's plot, as
    `kit/band-chart-hold.ts`'s level strip is (`:1-13`, `:37-42`), behind a `spectrum` option on
-   `BandChartOptions` (`kit/band-chart.ts:70-99`), off by default, with a scene field holding the
+   `BandChartOptions` (`kit/band-chart.ts:74-103`), off by default, with a scene field holding the
    columns (each its harmonic number and its lit segments), the labelled peaks, the curves (each a
    resonance frequency and its points) and the caption. It draws only what the scene gives it, takes
    no audio input, and is pure but for the canvas calls, with its layout (column centres and widths,
@@ -951,7 +951,7 @@ tease (`kit/next-card.ts`, its copy from `kit/lesson-copy.ts`), the step deck th
 an address names (`kit/step-deck.ts`), Watch only with a published film (`kit/season.ts:23-25`),
 learner-only explorer cards, the band chart and its hold frame (`kit/band-chart.ts`,
 `kit/band-chart-hold.ts`), the hold reader (`kit/hold-take.ts`), the contour voices (`contourVoice`,
-`playContour`, `kit/sound.ts:327-353`, `:581-590`), the warm-up (`kit/warm-up.ts`), the voice choice
+`playContour`, `kit/sound.ts:328-354`, `:616-625`), the warm-up (`kit/warm-up.ts`), the voice choice
 (`kit/voice-choice.ts`) and the comfort check (`kit/comfort.ts`). Released lessons need no edit when
 this page goes live, since every lesson page draws the season as its state shows it
 (`kit/page-state.ts:54-57`): Lesson 12's next card turns from "Coming later" to "Start lesson" and

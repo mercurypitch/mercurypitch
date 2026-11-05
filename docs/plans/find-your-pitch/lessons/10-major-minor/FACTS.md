@@ -198,11 +198,11 @@ Full references. The facts below use the short names in bold, with the page or s
 
 Every example is synthesised in the page by the kit's sound module and started only by a tap. A
 tapped note, a chord and the toys' plays use its soft tone (partials 1, .3, .11, .05, .024, .012
-through a 3,400 Hz lowpass; `src/features/lessons/kit/sound.ts:126`, `:183`); Merc's singing uses
+through a 3,400 Hz lowpass; `src/features/lessons/kit/sound.ts:127`, `:184`); Merc's singing uses
 Merc's "ooh" (partials 1, .62, .38, .24, .14, .08, .045, .025 through a 2,600 Hz lowpass, with a
-5.5 Hz vibrato of ±14 cents grown in over 0.35 s; `sound.ts:127-130`, `:183`, `:194-205`). A note
+5.5 Hz vibrato of ±14 cents grown in over 0.35 s; `sound.ts:128-131`, `:184`, `:195-206`). A note
 that slides is one voice along a path of holds and glides, its pitch gliding exponentially in hertz
-(`contourOf`, `contourVoice` and `playContour`, `sound.ts:296-315`, `:327-353`, `:581-590`).
+(`contourOf`, `contourVoice` and `playContour`, `sound.ts:297-316`, `:328-354`, `:616-625`).
 Frequencies are f = 440 × 2^((m − 69) / 12) for MIDI note m (`hz`, `kit/notes.ts:43`; Lesson 2
 FACTS 6), to two decimals, as `verify10.py` printed them.
 
@@ -228,8 +228,8 @@ FACTS 6), to two decimals, as `verify10.py` printed them.
 77. Step 5's scales: C4 to C5 in C major and in C natural minor, 0.45 s a note, the last 0.9 s, 4.05 s each, Lesson 4's `scale-c` timing; Slow doubles every length, as in Steps 1 to 3 (75) | 24, 27, 70; Lesson 4 FACTS 57; MASTER-PLAN § 4.2 item 5 ("play / pause / scrub / slow on every animation") | by construction
 78. The ear games: on thirds, eight rounds, each a root from C4 to G4, any of the eight semitones, MIDI 60 to 67, black keys included, then the note 3 or 4 semitones above, 0.6 s and 0.8 s, 0.15 s apart; on chords, ten rounds, each a root from those same eight, its scale's first five notes at 0.32 s each, 0.25 s of silence, then its major or minor triad together for 1.2 s; a miss replays the round at 1.5 times its lengths, as Lesson 6's games replay a missed pair | 43, 70a; Lesson 6 WEB-SPEC, Toys 4 ("replays the pair at 1.5 times the lengths") | by construction (`ROOT_LO` and `ROOT_HI`, `src/features/lessons/lesson-10/game-rounds.ts:30-32`; `rootOf`, `:86-87`, which draws any of the eight); WEB-SPEC, Toys 5
 79. Quiz question 2 plays D4, F4 and A4 together for 1.4 s, a D minor triad (D to F is 3 semitones, D to A 7) | 19, 70a | by construction (all white keys, so its spelling needs no sign)
-80. The sing-along: for the lower voice, do = E3: E3, G♯3, B3, then E3, G3, B3, at 65's lengths, in Merc's "ooh"; for the higher, the same an octave up, E4, G♯4, B4, then E4, G4, B4, in Tavi's; Move do shifts both chords (64). Start the guide counts in with do, once, in the soft tone at half a tapped note's level (gain 0.065 against the soft tone's 0.13, `sound.ts:187`) for 0.8 s, then 0.2 s of silence; the 10-second sweep that follows is silent | 63 to 65, 70; Lesson 4 FACTS 63 (the same count-in) | by construction; arithmetic
-81. A chord's notes are separate voices started together, each at 0.075, so three sound at about 1.7 times one tapped note, and two together, a third's or a move's held pair, at 0.075 each too, about 1.15 times, under the master's compressor (threshold −16 dB, ratio 3; `sound.ts:117-122`); the page has no music bed | WEB-SPEC, Audio; Lesson 6 FACTS 71 (no bed) | by construction (`CHORD_GAIN`, `src/features/lessons/lesson-10/sounds.ts:32-33`, on every note that shares an onset, `:78-83`); 3 × 0.075 = 0.225 and 2 × 0.075 = 0.15 against a tapped note's 0.13
+80. The sing-along: for the lower voice, do = E3: E3, G♯3, B3, then E3, G3, B3, at 65's lengths, in Merc's "ooh"; for the higher, the same an octave up, E4, G♯4, B4, then E4, G4, B4, in Tavi's; Move do shifts both chords (64). Start the guide counts in with do, once, in the soft tone at half a tapped note's level (gain 0.065 against the soft tone's 0.13, `sound.ts:188`) for 0.8 s, then 0.2 s of silence; the 10-second sweep that follows is silent | 63 to 65, 70; Lesson 4 FACTS 63 (the same count-in) | by construction; arithmetic
+81. A chord's notes are separate voices started together, each at 0.075, so three sound at about 1.7 times one tapped note, and two together, a third's or a move's held pair, at 0.075 each too, about 1.15 times, under the master's compressor (threshold −16 dB, ratio 3; `sound.ts:118-123`); the page has no music bed | WEB-SPEC, Audio; Lesson 6 FACTS 71 (no bed) | by construction (`CHORD_GAIN`, `src/features/lessons/lesson-10/sounds.ts:32-33`, on every note that shares an onset, `:78-83`); 3 × 0.075 = 0.225 and 2 × 0.075 = 0.15 against a tapped note's 0.13
 
 ## Layout
 

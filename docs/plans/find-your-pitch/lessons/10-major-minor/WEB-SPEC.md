@@ -513,14 +513,14 @@ game already has. It sits in its step's text column, under the Notice, as Lesson
 ### 6. Sing it
 
 The guide is the kit's slide guide (`src/features/lessons/kit/slide-guide.ts`, `mountGuide` at
-`:406`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
+`:388`), as Lesson 4's page uses it (`lesson-04/sing.ts`), on eight rows from do up to so: the four
 the chords use named do, me, mi and so, and the other four faint (`GuideRow`,
-`slide-guide.ts:40-47`). The rows show syllables only, no letters, so no spelling can go wrong
+`slide-guide.ts:42-49`). The rows show syllables only, no letters, so no spelling can go wrong
 wherever Move do puts do; a readout names do in Lesson 4's names for the key, "do is E3", spoken "do
 is E 3" (FACTS 64). Merc's path is do-mi-so, 1.2 s a note and the top note 1.8 s, then do-me-so, the
-second phrase's first point marked `gap` (`:16-17`, `:53-54`), so nothing is drawn across the 1.6 s
+second phrase's first point marked `gap` (`:16-17`, `:55-56`), so nothing is drawn across the 1.6 s
 between them: 10.0 s in all (FACTS 65). The path carries the kit's breath mark, from Lesson 6's page
-(`breaths`, `kit/slide-guide.ts:64-65`), at the start of the gap, 4.2 s in: a small
+(`breaths`, `kit/slide-guide.ts:66-67`), at the start of the gap, 4.2 s in: a small
 tick in the path's own colour with the word "breathe" (FACTS 66). Beside the guide, the kit's
 breathing ring (`mountRing`, `src/features/lessons/kit/sing.ts:135`) shows the still of the Merc
 singing, Merc for the lower voice and Tavi for the higher, never a microphone icon. Every state
@@ -683,9 +683,9 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 - **What it plays through.** Every play is one of the kit's runs
   (`src/features/lessons/kit/run.ts`), which a stop, leaving the step or the page's one-sound owner
   ends where it stands: `playTone` and `playContour` give no way to stop a sound once it starts
-  (`src/features/lessons/kit/sound.ts:566-590`). Chords, thirds, triads, the pattern, scales, the
+  (`src/features/lessons/kit/sound.ts:601-625`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
-  `playNotes` (`run.ts:116-158`), whose visuals run to their end with sound off. The count-in is
+  `playNotes` (`run.ts:163-205`), whose visuals run to their end with sound off. The count-in is
   one voice the page keeps and stops (`countIn`, `kit/move-do.ts:69-74`), and a bead tapped on the
   hero's spiral plays the spiral's own note, through the same owner (Toys 2).
 - **A chord** is three voices that share one onset, so they start in one task and share one start
@@ -695,14 +695,14 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   contour, `contourOf(329.63, [{ hold: 1.2 }, { glide: 0.4, to: 311.13 }, { hold: 1.5 }])` for mi,
   or from 392.00 to 369.99 for so: the held notes through `playNotes` and the line through
   `playLine`, one run through `allOf` (`run.ts:103-114`, `:165-187`; `contourOf`,
-  `sound.ts:291-314`), whose pitch glides on the audio clock (`:320-353`; FACTS 73). The bead's
+  `sound.ts:292-315`), whose pitch glides on the audio clock (`:321-354`; FACTS 73). The bead's
   slide is timed from the same start, so it lands as the note lands.
 - **Levels**: a tapped note at the soft tone's 0.13; a chord's voices at 0.075 each; Merc's "ooh" at
   the kit's level; the count-in at 0.065 (FACTS 80, 81).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:516-528`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:551-563`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:481-483`).
+  hidden (`sound.ts:516-518`).
 
 ## Merc and Tavi
 
@@ -855,12 +855,12 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit beside the slide guide since
    #1192 (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 6's spec listed it, Lesson 6's copy with it.
    Lessons 4, 6, 8 and 9 use the kit's, as this page does. The kit's guide waits through a count-in
-   before its sweep (`sweep`, `src/features/lessons/kit/slide-guide.ts:79-80`). Since #1206 the
+   before its sweep (`sweep`, `src/features/lessons/kit/slide-guide.ts:81-82`). Since #1206 the
    kit's `setMoveEnds` marks the button at a limit `aria-disabled`, never `disabled`, so a keyboard
    user's focus stays on it, with a reach for each side (`MoveReach`, `kit/move-do.ts:29-36`;
    `:51-63`), on every page that uses it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
-   `kit/slide-guide.ts:64-65`), on main with it; this page passes one mark, at the start of the gap
+   `kit/slide-guide.ts:66-67`), on main with it; this page passes one mark, at the start of the gap
    (FACTS 66).
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
    `lessonPageHref` (`:141-143`, `:137-139`), and Lessons 3, 4 and 5 take it from there
