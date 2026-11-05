@@ -1,6 +1,7 @@
-// Studio arming for browser tests — the transport's Record button, a lane's arm button, arming a lane until its microphone is open, recording a take, and a lane's input chosen in its Track details.
+// Studio arming for browser tests — the transport's Record button, a lane's arm button, arming a lane until its microphone is open, recording a take, a lane's input chosen in its Track details, and monitoring turned on or off in Sound.
 import { expect, type Locator, type Page } from '@playwright/test'
 import { studioRegion } from './dedicatedstudio-fixture'
+import { clearClicks, readClicks } from './studio-output-capture'
 
 /** The transport's Record button, the one shown in this layout. */
 export function recordButton(page: Page): Locator {
@@ -73,4 +74,23 @@ export async function setLaneInput(
   await studio
     .getByRole('button', { name: 'Close Track details', exact: true })
     .click()
+}
+
+/** Turn monitoring on or off in Sound; resolves with the audio clock at the change (captureStudioOutput stamps it). */
+export async function setMonitoring(page: Page, on: boolean): Promise<number> {
+  const studio = studioRegion(page)
+  await studio.getByRole('button', { name: 'Sound', exact: true }).click()
+  await clearClicks(page)
+  await studio
+    .getByRole('checkbox', { name: 'Monitor through headphones' })
+    .setChecked(on)
+  const [change] = (await readClicks(page)).filter(
+    ({ kind }) => kind === 'change',
+  )
+  if (on)
+    await expect(studio.locator('[data-studio-monitor-help]')).toContainText(
+      "through the lane's effects",
+    )
+  await studio.getByRole('button', { name: 'Close Sound', exact: true }).click()
+  return change.contextTime
 }
