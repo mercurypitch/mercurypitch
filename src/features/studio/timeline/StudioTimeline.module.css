@@ -365,16 +365,26 @@
     var(--studio-accent) 28%,
     var(--studio-bar)
   );
+  --studio-selected-text-2: var(--studio-text-2);
 }
+/* On the light tint the secondary ink (Mute, Solo, gain, pan) measured
+   3.8:1, so there it moves halfway to the name's ink, 5.9:1. The dark tint
+   keeps 4.8:1 with the ink as it is. */
 :global(html[data-theme='light']) .lane {
   --studio-selected-header: color-mix(
     in srgb,
     var(--studio-accent) 32%,
     var(--studio-bar)
   );
+  --studio-selected-text-2: color-mix(
+    in srgb,
+    var(--studio-text) 50%,
+    var(--studio-text-2)
+  );
 }
 .lane[data-selected] .trackHeader,
 .lane:has(.selectedClip) .trackHeader {
+  --studio-text-2: var(--studio-selected-text-2);
   background: var(--studio-selected-header);
 }
 .lane[data-selected] .trackHeader::before,
