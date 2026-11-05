@@ -79,8 +79,12 @@ export function symbolWords(symbols: readonly Written[]): string {
 
 const BARS_WORDS = ['no bars', 'One bar', 'Two bars', 'Three bars']
 
-/** Where the figure is written: "on one line", "on the bass staff". */
-export function staffWords(staff: 'line' | 'bass' | 'treble'): string {
+/** Where the figure is written, or seen: one line, a staff, or the pitch line. */
+export type WordsStaff = 'line' | 'bass' | 'treble' | 'lanes'
+
+/** Where the figure is, in words: "on one line", "on the bass staff", "on the pitch line". */
+export function staffWords(staff: WordsStaff): string {
+  if (staff === 'lanes') return 'on the pitch line'
   return staff === 'line' ? 'on one line' : `on the ${staff} staff`
 }
 
@@ -90,10 +94,7 @@ export function staffWords(staff: 'line' | 'bass' | 'treble'): string {
  * then two quarter notes and a half note, on the bass staff", and a tie
  * is said after them.
  */
-export function figureWords(
-  bars: readonly Bar[],
-  staff: 'line' | 'bass' | 'treble',
-): string {
+export function figureWords(bars: readonly Bar[], staff: WordsStaff): string {
   const what = bars.map((b) => symbolWords(b)).join(', then ')
   const count = BARS_WORDS[bars.length] ?? `${bars.length} bars`
   const across = bars.some(

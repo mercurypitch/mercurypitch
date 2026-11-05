@@ -47,6 +47,8 @@ export interface RhythmView {
   readonly scene: RhythmScene
   /** The figure's name, for a screen reader. */
   readonly label: string
+  /** Its name when the bar is seen on the pitch line; the label by default. */
+  readonly laneLabel?: string
   /**
    * Its pads' buttons: 'choose' marks one beat pressed (Halve and Join's
    * choice), 'press' only answers a press (Note · Rest); null for a figure
@@ -92,9 +94,33 @@ export interface RhythmBarOptions {
   readonly onPad?: (beat: number) => void
 }
 
+/** How the bar is seen, whatever its view: on the pitch line, and with each note's count under it. */
+export interface RhythmSeen {
+  readonly lanes: boolean
+  readonly counts: boolean
+}
+
+export interface ShowOptions {
+  /** The heard symbols' strip cells read, as by default; false once the tempo has changed since they were heard. */
+  readonly readings?: boolean
+}
+
 export interface RhythmBar {
   /** Draws a view; `written` says which symbols show as already heard, row by row (none by default). */
-  show(view: RhythmView, written?: (row: number, i: number) => boolean): void
+  show(
+    view: RhythmView,
+    written?: (row: number, i: number) => boolean,
+    so?: ShowOptions,
+  ): void
+  /** Draws the view on the pitch line or with its counts, or not, keeping what was heard and anything playing. */
+  see(next: Partial<RhythmSeen>): void
+  readonly seen: RhythmSeen
+  /**
+   * Redraws the view's rows at a new tempo, keeping what is written and
+   * anything playing; the strip's readings go, to read again at the new
+   * tempo as each note ends (WEB-SPEC, Toys 6).
+   */
+  retempo(bpm: number): void
   /** The view shown. */
   readonly view: RhythmView | null
   /** Plays parts in turn; true once heard to its end, false when stopped. */
@@ -105,6 +131,8 @@ export interface RhythmBar {
   choose(beat: number | null): void
   /** Says a line in the figure's polite region, once. */
   say(text: string): void
+  /** Which of a row's symbols are written, as heard so far. */
+  written(row?: number): readonly boolean[]
   /** The drawn figure, for the toy's own checks. */
   readonly figure: RhythmFigure | null
 }
@@ -150,10 +178,10 @@ function partHits(part: PlayPart, index: number): Hit<RbHit>[] {
   stripCells(placed).forEach((c, cell) =>
     hits.push({ beat: c.at + c.beats, data: { k: 'end', part: index, cell } }),
   )
-  if (part.view.scene.counts === true)
-    countsOf(placed).forEach((count, c) =>
-      hits.push({ beat: count.at, data: { k: 'count', part: index, c } }),
-    )
+  // booked whether or not the counts show, so Count switched on mid-play lights them
+  countsOf(placed).forEach((count, c) =>
+    hits.push({ beat: count.at, data: { k: 'count', part: index, c } }),
+  )
   return hits
 }
 
@@ -204,10 +232,11 @@ export function planPlay(parts: readonly PlayPart[]): PlanBar[] {
   return plan
 }
 
-/** Every row's state, nothing heard. */
+/** Every row's state: what `written` says was heard, its cells read unless the readings are off. */
 function blank(
   view: RhythmView,
   written?: (row: number, i: number) => boolean,
+  readings = true,
 ): RowState[] {
   return view.scene.rows.map((row, r) => {
     const placed = placeBars(row.bars)
@@ -215,8 +244,8 @@ function blank(
     return {
       written: shown,
       metre: shown.some(Boolean),
-      read: stripCells(placed).map((c) =>
-        shown.slice(c.first, c.last + 1).every(Boolean),
+      read: stripCells(placed).map(
+        (c) => readings && shown.slice(c.first, c.last + 1).every(Boolean),
       ),
     }
   })
@@ -235,6 +264,9 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
   let buttons: HTMLButtonElement[] = []
   // the counts faint, from a play that asked for it until the next play
   let faint = false
+  let seen: RhythmSeen = { lanes: false, counts: false }
+  const labelOf = (v: RhythmView): string =>
+    seen.lanes ? (v.laneLabel ?? v.label) : v.label
 
   const paint = (): void => figure?.set(states)
   const patch = (row: number, next: Partial<RowState>): void => {
@@ -288,7 +320,12 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
   function draw(): void {
     if (view === null) return
     o.figure.dataset.voice = o.voice()
-    figure = drawRhythm(svgEl, view.scene, figureSize(o.figure))
+    const scene: RhythmScene = {
+      ...view.scene,
+      lanes: seen.lanes || view.scene.lanes === true,
+      counts: seen.counts || view.scene.counts === true,
+    }
+    figure = drawRhythm(svgEl, scene, figureSize(o.figure))
     paint()
     placePads()
   }
@@ -296,13 +333,34 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
   function show(
     next: RhythmView,
     written?: (row: number, i: number) => boolean,
+    so: ShowOptions = {},
   ): void {
     view = next
-    o.figure.setAttribute('aria-label', next.label)
-    states = blank(next, written).map((s, i) => ({
+    o.figure.setAttribute('aria-label', labelOf(next))
+    states = blank(next, written, so.readings !== false).map((s, i) => ({
       ...s,
       faint,
       chosen: i === 0 ? chosen : null,
+    }))
+    draw()
+  }
+
+  function see(next: Partial<RhythmSeen>): void {
+    seen = { ...seen, ...next }
+    if (view === null) return
+    o.figure.setAttribute('aria-label', labelOf(view))
+    draw()
+  }
+
+  function retempo(bpm: number): void {
+    if (view === null) return
+    const rows = view.scene.rows.map((row) => ({ ...row, bpm }))
+    view = { ...view, scene: { ...view.scene, rows } }
+    // a cell filling at the old tempo stops; it reads at its end
+    states = states.map((s) => ({
+      ...s,
+      read: s.read?.map(() => false),
+      filling: null,
     }))
     draw()
   }
@@ -477,6 +535,11 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
 
   return {
     show,
+    see,
+    get seen() {
+      return seen
+    },
+    retempo,
     get view() {
       return view
     },
@@ -487,6 +550,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     },
     choose,
     say,
+    written: (row = 0) => [...(states[row]?.written ?? [])],
     get figure() {
       return figure
     },

@@ -2,19 +2,21 @@
    Lesson 17 — How long is a note?: the page's own figures and cards
    ============================================================
    Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
-   and lesson-parts, imported by main.ts, and the guide's and the voice
-   lessons' sheets, taken in here by @import so they inline into this page's
-   own sheet and split no chunk the other lessons share (MISTAKES.md, on the
-   lessons' base stylesheet).
+   and lesson-parts, imported by main.ts, and the guide's, the voice
+   lessons' and the rhythm bar's sheets, taken in here by @import so they
+   inline into this page's own sheet and split no chunk the other lessons
+   share (MISTAKES.md, on the lessons' base stylesheet).
 
    Here: the hero's pads between Merc and Tavi, with the two plays under
-   them; the tap take and the sung bars on one card; and the Wrap's cards,
-   with the next card's tease still and free play. No decorative staff: the
-   section heads carry none, and the body's season-2 class drops the
-   background's (kit/lesson-base.css). */
+   them; Step 5's lift, the line becoming the staff; the tap take and the
+   sung bars on one card; and the Wrap's cards, with the next card's tease
+   still and free play. No decorative staff: the section heads carry none,
+   and the body's season-2 class drops the background's
+   (kit/lesson-base.css). */
 
 @import '../kit/lesson-guide.css';
 @import '../kit/lesson-voice.css';
+@import '../kit/lesson-rhythm.css';
 
 /* ---------------------------------------------------------------- hero: the pads between Merc and Tavi */
 .l17-duo {
@@ -217,4 +219,39 @@
 .l17-free .controls {
   flex-wrap: wrap;
   align-items: center;
+}
+
+/* ---------------------------------------------------------------- Step 5: the line becomes the staff */
+/* the staff is drawn where it ends; each part starts where the one line
+   had it (lift.ts): the staff's lines from the line, the symbols, beams and
+   the 4/4 from their places beside it, while the clef and the bar lines
+   draw in, over 0.6 s on the kit's expoOut (WEB-SPEC, Toys 5) */
+.rb.is-lifting .rb-staff[data-place],
+.rb.is-lifting .rb-sym,
+.rb.is-lifting .rb-beam,
+.rb.is-lifting .rb-metre {
+  animation: rb-lift 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rb.is-lifting .rb-clef,
+.rb.is-lifting .rb-barline {
+  animation: rb-draw-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes rb-lift {
+  from {
+    transform: translate(var(--lift-x, 0px), var(--lift-y, 0px));
+  }
+}
+@keyframes rb-draw-in {
+  from {
+    opacity: 0;
+  }
+}
+/* at once, under reduced motion or with Pause animations on */
+.motion-paused .rb.is-lifting * {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb.is-lifting * {
+    animation: none;
+  }
 }

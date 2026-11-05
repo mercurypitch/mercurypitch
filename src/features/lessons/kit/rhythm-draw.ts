@@ -412,7 +412,7 @@ function notation(
       yAt(row, place),
       staffed ? 'rb-staff' : 'rb-line',
       parent,
-    )
+    ).dataset.place = String(place)
   if (staff !== 'line')
     engraveClef(staff, SIDE + row.space * 0.5, yAt(row, 0), row.space, parent)
   const metre = engraveMetre(

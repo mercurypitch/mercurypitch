@@ -44,6 +44,9 @@ describe('rhythm words', () => {
     ).toBe(
       'One bar of 4/4: a half note and two quarter notes, with a tie, on the treble staff',
     )
+    expect(figureWords([[note(1), note(1), note(2)]], 'lanes')).toBe(
+      'One bar of 4/4: two quarter notes and a half note, on the pitch line',
+    )
   })
 
   it('counts runs of equal symbols, dotted ones and rests by name, "an" before a vowel', () => {

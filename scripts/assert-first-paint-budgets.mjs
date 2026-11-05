@@ -377,10 +377,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/15.html': 179,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
-  // 2's map (kit/season-2.ts) as a Season 2 page must. Its page shell weighs
-  // 84,000 bytes in build:e2e, the budget the smallest whole KB above that,
-  // to rise as each part joins.
-  'learn/17.html': 83,
+  // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
+  // rhythm bar on the beat clock (kit/rhythm-bar.ts, its drawing, model,
+  // words and stopwatch strip, and the staff's places and glyphs) and Step
+  // 5's lift: 131,264 bytes in build:e2e, the budget the smallest whole KB
+  // above that, to rise as each part joins.
+  'learn/17.html': 129,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -506,12 +508,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
-  // Lesson 17 (a draft, as above). Its page shell weighs 88,092 bytes in
-  // build:e2e: the kit's sheets (with the guide's and the voice lessons',
-  // inlined into its own by @import, and the shared parts), its own, and
-  // the shared Inter and Outfit @font-face rules; the budget the smallest
-  // whole KB above that, to rise as each part joins.
-  'learn/17.html': 87,
+  // Lesson 17 (a draft, as above), with its steps: 92,407 bytes in
+  // build:e2e, the kit's sheets (with the guide's, the voice lessons' and
+  // the rhythm bar's, inlined into its own by @import, and the shared
+  // parts), its own, and the shared Inter and Outfit @font-face rules; the
+  // budget the smallest whole KB above that, to rise as each part joins.
+  'learn/17.html': 91,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter
