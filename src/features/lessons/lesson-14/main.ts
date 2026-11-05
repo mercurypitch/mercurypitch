@@ -18,9 +18,9 @@
 //
 // In reading order: the switches, the cold open on the hero's song line,
 // the four words, the steps' deck with the song line in each step's state,
-// the quick check, the season's close, the season map, the masthead, the
-// recall, and Merc and Tavi. Sing it and the Wrap's practise card and
-// still join with their own modules.
+// the quick check, the Wrap's practise card and the season's close with
+// the song line's still, the season map, the masthead, the recall, and
+// Merc and Tavi. Sing it joins with its own modules.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -38,7 +38,6 @@ import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
-import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
@@ -48,6 +47,7 @@ import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
@@ -70,8 +70,9 @@ deck.start()
 
 createQuiz({ questions: QUIZ_QUESTIONS, lesson: 14, keys: QUIZ_KEYS, deck })
 
-// the season's close first: the explorer binds its map link
-createNextCard(14)
+// the Wrap's practise card and the season's close first: the explorer
+// binds the close's map link
+initWrap()
 createExplorer({ current: 14 })
 
 // the last screen's way back to the plan, for someone who answered its

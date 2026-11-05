@@ -39,7 +39,7 @@ import { MAJOR_DEGREES } from '@/features/lessons/kit/major-scale'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import { VERSE } from '@/features/lessons/kit/twinkle'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
-import { liveSummary, phraseSummary, SONG_SUMMARY, swellSummary } from './lines'
+import { liveSummary, phraseSummary, SONG_SUMMARY, STILL_ALT, swellSummary, } from './lines'
 import type { SongNote, TakeId } from './song'
 import { chordMarks, doOf, laOf, lineNotes, PUSH_AT, SOLFEGE, SWELL_SEC, SWELL_STAR, SWELL_WINDOW, TAKE_BREATH, takeNotes, VERSE_BREATHS, VERSE_SEC, verseNotes, } from './song'
 
@@ -230,8 +230,9 @@ export function summaryFor(
 ): string {
   switch (state) {
     case 'song':
-    case 'still':
       return SONG_SUMMARY
+    case 'still':
+      return STILL_ALT
     case 'swell':
       return swellSummary(doMidi)
     case 'endings':
