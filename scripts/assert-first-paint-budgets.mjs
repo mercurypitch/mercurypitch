@@ -333,10 +333,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
   // page shell weighed 82,864 bytes; with the steps' staff toy (kit/staff.ts,
-  // its drawing, places and glyphs, and the key strip) 113,061 in
+  // its drawing, places and glyphs, and the key strip) 113,061, and with the
+  // cold open's pitch line, its fold and the kit's predict 120,406 in
   // build:e2e, the budget the smallest whole KB above that, to rise as each
   // part joins.
-  'learn/15.html': 111,
+  'learn/15.html': 118,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

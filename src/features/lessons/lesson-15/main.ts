@@ -41,6 +41,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -80,6 +81,10 @@ initMasthead(
   },
   { lesson: 15, deck },
 )
+// the hero's pitch line and the predict it folds into an answer; the
+// welcome tour waits for its choice, so this runs after the masthead has
+// started the tour, in the same task (kit/tour-gate.ts `holdTour`)
+initColdOpen(deck)
 initReveals()
 startFrameLoop()
 // Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
