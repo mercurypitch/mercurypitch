@@ -284,8 +284,19 @@ describe('requireAuth', () => {
     })
   })
 
-  it('skips the network when a valid token exists', async () => {
+  // A valid token is checked with /me once a session; after that it is
+  // trusted without the network. The test signs out first and verifies its
+  // own token: it once leaned on the test before it having verified an
+  // identical one, so it passed only when both minted their token in the
+  // same second, and failed alone or on a slow runner.
+  it('skips the network once a valid token is verified', async () => {
+    logout()
     setAuthToken(makeToken(3600))
+    const verify = mockFetchOnce(200, {})
+    expect(await requireAuth()).toBe(true)
+    expect(verify).toHaveBeenCalledTimes(1)
+    expect(verify.mock.calls[0]?.[0]).toBe('http://api.test/api/auth/me')
+
     const fetchMock = mockFetchOnce(200, {})
     expect(await requireAuth()).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
