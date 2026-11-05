@@ -307,12 +307,36 @@ describe("Lesson 14's page", () => {
       expect(m).not.toMatch(/DRAFT_LESSONS|DRAFTS_SHOWN|import\.meta\.env/)
   })
 
-  it('makes no analyser and loads no listener or recorder in any of its modules up front', () => {
-    for (const m of modules) {
-      const code = m.replace(/^\s*\/\/.*$/gm, '')
-      expect(code).not.toMatch(/createAnalyser|AnalyserNode/)
-      expect(m).not.toMatch(/^import .*kit\/(listen|record|mic-hold)'/m)
+  it('makes no analyser, and loads the listener, the recorder and the take only from Sing it, after first paint', () => {
+    // Arrange: the page's modules main.ts loads up front, by their static imports
+    const source = (f: string): string =>
+      readFileSync(resolve(DIR, `${f}.ts`), 'utf8')
+    const upFront = new Set<string>()
+    const visit = (f: string): void => {
+      if (upFront.has(f)) return
+      upFront.add(f)
+      for (const [, local] of source(f).matchAll(
+        /^import (?!type )[^\n]*? from '\.\/([\w-]+)'$/gm,
+      ))
+        visit(local)
     }
+    visit('main')
+
+    // Assert
+    for (const m of modules)
+      expect(m.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(
+        /createAnalyser|AnalyserNode/,
+      )
+    expect(upFront.has('sing')).toBe(true)
+    expect(upFront.has('sing-take')).toBe(false)
+    for (const f of upFront)
+      expect(source(f), f).not.toMatch(
+        /^import (?!type )[^\n]*? from '@\/features\/lessons\/kit\/(listen|record|take)'$/m,
+      )
+    expect(source('sing')).toMatch(/import\('\.\/sing-take'\)/)
+    expect(source('sing')).toMatch(
+      /import\('@\/features\/lessons\/kit\/record'\)/,
+    )
   })
 
   it('names a share card that is in public/, at the size its head gives', () => {
