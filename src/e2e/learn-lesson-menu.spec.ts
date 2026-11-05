@@ -15,7 +15,7 @@
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
-import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
+import { HELD_BACK, holdBack } from './helpers/held-back'
 
 /** The masthead's button that opens the season. */
 const trigger = (page: Page): Locator =>
@@ -257,6 +257,7 @@ const NO_FILM = [
   { n: 11, title: 'Registers and the break' },
   { n: 12, title: 'Chords and the four-chord song' },
   { n: 13, title: 'Resonance and vowels' },
+  { n: 14, title: 'Phrasing: sing a whole song' },
 ] as const
 
 for (const { n, title } of NO_FILM) {
@@ -338,8 +339,9 @@ for (const l of LAYOUTS) {
   test(`on ${l.name} (${l.width} x ${l.height}) every row and step is a 44 px target, and a lesson coming later is no link @smoke`, async ({
     page,
   }) => {
-    // Arrange
+    // Arrange: a lesson held back, as one not written yet
     await page.setViewportSize({ width: l.width, height: l.height })
+    await holdBack(page)
     await page.goto('/learn/02')
     await expect(trigger(page)).toBeVisible()
 
@@ -380,8 +382,8 @@ for (const l of LAYOUTS) {
       )
     expect(later).not.toEqual([])
     expect(later.filter((r) => r !== 'plain')).toEqual([])
-    // the season's first lesson with no page, found rather than named
-    const { n, title } = lessonWithNoPage()
+    // the lesson held back, coming later
+    const { n, title } = HELD_BACK
     const coming = menu(page)
       .getByRole('listitem')
       .filter({ hasText: `Lesson ${n}, ${title}, coming later` })

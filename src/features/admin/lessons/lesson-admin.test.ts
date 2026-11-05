@@ -14,7 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import type { Lesson } from '@/features/lessons/kit/season'
 import { LESSONS } from '@/features/lessons/kit/season'
-import { lessonWithNoPage } from '@/features/lessons/kit/season.test-fixtures'
+import { withNoPage } from '@/features/lessons/kit/season.test-fixtures'
 import { LESSONS_2 } from '@/features/lessons/kit/season-2'
 import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
@@ -102,23 +102,26 @@ describe('lessonRows', () => {
     }
   })
 
-  it('reads a page with no draft line as released, and no page at all as planned', () => {
-    const rows = lessonRows(LESSONS, {})
+  it('reads a page with no draft line as released, and no page at all as planned', () =>
+    withNoPage(({ n: planned }) => {
+      const rows = lessonRows(LESSONS, {})
 
-    expect(
-      rows.filter((row) => row.build === 'released').map((row) => row.lesson.n),
-    ).toEqual(
-      LESSONS.filter((lesson) => lesson.page !== undefined).map(
-        (lesson) => lesson.n,
-      ),
-    )
-    expect(rowFor(lessonWithNoPage().n, rows)).toMatchObject({
-      build: 'planned',
-      built: false,
-      written: false,
-      waitingOn: null,
-    })
-  })
+      expect(
+        rows
+          .filter((row) => row.build === 'released')
+          .map((row) => row.lesson.n),
+      ).toEqual(
+        LESSONS.filter((lesson) => lesson.page !== undefined).map(
+          (lesson) => lesson.n,
+        ),
+      )
+      expect(rowFor(planned, rows)).toMatchObject({
+        build: 'planned',
+        built: false,
+        written: false,
+        waitingOn: null,
+      })
+    }))
 
   it('tells a draft this build leaves out from one it shows', () => {
     const shown = rowFor(3, lessonRows([LESSONS[3]], { 3: 'a sign-off' }))
@@ -498,8 +501,10 @@ describe('releaseChecklist', () => {
 
     expect(ids(2)).toContain('film')
     expect(ids(4)).not.toContain('film')
-    const planned = rowFor(lessonWithNoPage().n, lessonRows(LESSONS, {}))
-    expect(states(releaseChecklist(planned, site, SHOWN))).toEqual([
+    const planned = withNoPage(({ n }) =>
+      states(releaseChecklist(rowFor(n, lessonRows(LESSONS, {})), site, SHOWN)),
+    )
+    expect(planned).toEqual([
       ['page', 'todo'],
       ['release', 'todo'],
       ['sitemap', 'todo'],

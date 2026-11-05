@@ -21,7 +21,7 @@ import { Positions } from './position'
 import { Done } from './progress'
 import type { Lesson, Practise } from './season'
 import { LESSONS, TOPICS } from './season'
-import { lessonWithNoPage } from './season.test-fixtures'
+import { withNoPage } from './season.test-fixtures'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
 /** A lesson for a card test, live or coming later as `extra` makes it. */
@@ -293,21 +293,23 @@ describe('createExplorer', () => {
     expect(cardRows().Length).toBe('8 min · film 5:14')
   })
 
-  it('draws a lesson coming later without a Length row', () => {
-    // Arrange
-    const later = lessonWithNoPage()
-    explorerPage()
-    const explorer = createExplorer({ current: 1 })
+  it('draws a lesson coming later without a Length row', () =>
+    // Arrange: a lesson not written yet
+    withNoPage((later) => {
+      explorerPage()
+      const explorer = createExplorer({ current: 1 })
 
-    // Act
-    explorer.select(later.n, false)
+      // Act
+      explorer.select(later.n, false)
 
-    // Assert
-    const rows = Object.keys(cardRows())
-    expect(rows).toContain('Builds on')
-    expect(rows).not.toContain('Length')
-    expect(openCard()?.querySelector('.chip')?.textContent).toBe('Coming later')
-  })
+      // Assert
+      const rows = Object.keys(cardRows())
+      expect(rows).toContain('Builds on')
+      expect(rows).not.toContain('Length')
+      expect(openCard()?.querySelector('.chip')?.textContent).toBe(
+        'Coming later',
+      )
+    }))
 
   it('draws a lesson with no drill to link without a Practise row', () => {
     // Arrange: every lesson links a drill today, so one is given, while this
@@ -638,6 +640,38 @@ describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.t
     expect(hidden?.innerHTML).not.toContain('/learn/13')
     expect(
       hidden?.querySelector('a.addr[href="/mirror?lesson=13"]'),
+    ).not.toBeNull()
+  })
+
+  it('treats Lesson 14, a draft too, the same way either side of the switch, Karaoke Night kept', async () => {
+    // Arrange
+    const lessonFourteen = async (
+      drafts: '1' | '0',
+    ): Promise<Element | null> => {
+      vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
+      vi.resetModules()
+      const { createExplorer: explorerBuilt } = await import('./explorer')
+      explorerPage()
+      explorerBuilt({ current: 1 }).select(14, false)
+      return document.querySelector('#exCardHost .ex-card')
+    }
+
+    // Act
+    const shown = await lessonFourteen('1')
+    const shownLinks = cardLinks()
+    const hidden = await lessonFourteen('0')
+
+    // Assert: to read where drafts show; coming later, and nothing to the page, where they do not
+    expect(shown?.querySelector('h3')?.textContent).toBe(
+      'Phrasing: sing a whole song',
+    )
+    expect(shownLinks).toEqual(['/learn/14'])
+    expect(shown?.textContent).not.toContain('Watch')
+    expect(hidden?.querySelector('.chip')?.textContent).toBe('Coming later')
+    expect(hidden?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
+    expect(hidden?.innerHTML).not.toContain('/learn/14')
+    expect(
+      hidden?.querySelector('a.addr[href="/karaoke-night?lesson=14"]'),
     ).not.toBeNull()
   })
 })

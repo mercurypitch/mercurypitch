@@ -12,7 +12,7 @@ import { createNextCard, nextCard } from './next-card'
 import { Done } from './progress'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
-import { lessonWithNoPage } from './season.test-fixtures'
+import { withNoPage } from './season.test-fixtures'
 import { LESSONS_2, SEASON_2 } from './season-2'
 import { TEAM_STRINGS } from './team-notes.test-fixtures'
 
@@ -75,23 +75,22 @@ describe('nextCard', () => {
     ])
   })
 
-  it('opens the map on a lesson coming later, with no page to link', () => {
+  it('opens the map on a lesson coming later, with no page to link', () =>
     // Arrange: a lesson not written yet
-    const later = lessonWithNoPage()
+    withNoPage((later) => {
+      // Act: on the page of the lesson before it
+      const c = lessonCard(nextCard(LESSONS, [], {}, later.n - 1))
 
-    // Act: on the page of the lesson before it
-    const c = lessonCard(nextCard(LESSONS, [], {}, later.n - 1))
-
-    // Assert
-    expect([c?.n, c?.title, ...way(c)]).toEqual([
-      later.n,
-      later.title,
-      'Coming later',
-      'See it on the map',
-      'map',
-      '#explorer',
-    ])
-  })
+      // Assert
+      expect([c?.n, c?.title, ...way(c)]).toEqual([
+        later.n,
+        later.title,
+        'Coming later',
+        'See it on the map',
+        'map',
+        '#explorer',
+      ])
+    }))
 
   it("gives a lesson with no tease none: Lesson 3, whose figures are on Lesson 2's card", () => {
     // Act
@@ -413,31 +412,31 @@ describe('createNextCard', () => {
     ]).toEqual(['Done · 13 min', 'Read again', true, '/learn/02'])
   })
 
-  it("links a lesson coming later to the map, as the explorer's lesson link", () => {
+  it("links a lesson coming later to the map, as the explorer's lesson link", () =>
     // Arrange: a lesson not written yet
-    const later = lessonWithNoPage().n
-    document.body.innerHTML =
-      '<div class="next-card card" data-next-card hidden></div>'
+    withNoPage(({ n: later }) => {
+      document.body.innerHTML =
+        '<div class="next-card card" data-next-card hidden></div>'
 
-    // Act: on the page of the lesson before it
-    createNextCard(later - 1)
+      // Act: on the page of the lesson before it
+      createNextCard(later - 1)
 
-    // Assert
-    const card = document.querySelector<HTMLAnchorElement>('a.next-card')
-    expect([
-      card?.getAttribute('href'),
-      card?.dataset.selectLesson,
-      card?.classList.contains('is-later'),
-      card?.querySelector('.tempo')?.textContent,
-      card?.querySelector('.chip')?.textContent,
-    ]).toEqual([
-      '#explorer',
-      String(later),
-      true,
-      'Coming later',
-      'See it on the map',
-    ])
-  })
+      // Assert
+      const card = document.querySelector<HTMLAnchorElement>('a.next-card')
+      expect([
+        card?.getAttribute('href'),
+        card?.dataset.selectLesson,
+        card?.classList.contains('is-later'),
+        card?.querySelector('.tempo')?.textContent,
+        card?.querySelector('.chip')?.textContent,
+      ]).toEqual([
+        '#explorer',
+        String(later),
+        true,
+        'Coming later',
+        'See it on the map',
+      ])
+    }))
 
   it("closes the season on its last lesson's page: no link itself, its two ways on links", () => {
     // Arrange: the finale's Wrap, a figure in the mark

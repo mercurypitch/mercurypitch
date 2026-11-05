@@ -430,6 +430,9 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Phrasing: sing a whole song',
     short: 'Phrasing',
     topics: ['S16', 'S17', 'T22'],
+    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    minutes: 18,
+    page: '/learn/14',
     hook: 'If every note of a song is in tune, what is left to shape?',
     pr: {
       link: {

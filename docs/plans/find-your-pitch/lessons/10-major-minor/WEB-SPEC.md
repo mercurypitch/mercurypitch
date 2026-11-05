@@ -917,7 +917,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
     measured, with the lessons' headroom, a quarter over. Every build emits every lesson page, a
-    draft's included (`scripts/assert-first-paint-budgets.mjs:110-112`); `build:e2e` runs the check
+    draft's included (`scripts/assert-first-paint-budgets.mjs:117-119`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one line each. Until then the draft's rules hold
@@ -1096,7 +1096,7 @@ parts it adds:
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 10 as "Coming later", with no link to
     `/learn/10` and its practice link kept, and with '1' links it to read, as
-    `src/features/lessons/kit/explorer.test.ts:481-506` checks Lesson 5 (the block, `:438-507`). Its
+    `src/features/lessons/kit/explorer.test.ts:483-508` checks Lesson 5 (the block, `:440-509`). Its
     link's `note` matches none of the backlog words (`/needs|slug|deep link|for now/i`).
 13. The names switch: under Minor, Do-re-mi names the staircase do re me fa so le te do, and under
     Major do re mi fa so la ti do (FACTS 8, 26); Letters gives `spellScale`'s names on every root

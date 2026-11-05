@@ -9,20 +9,20 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 and 5 to 13 are live here; a page that holds them
-// back is next-card.test.ts's, and one the site worker served with the
-// console's state is learn-publish-state.spec.ts's. A lesson with a tease
+// does, so Lessons 3 to 14 are live here; a page that holds them back is
+// next-card.test.ts's, and one the site worker served with the console's
+// state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
-// its hook; the season's close, on a finale with no page yet, is
-// next-card.test.ts's too. The card for a lesson coming later is found in
-// the season, on the page before its first lesson with no page
-// (`lessonWithNoPage`), so no new lesson page moves these tests.
+// its hook; the season's last page closes the season instead. The card for
+// a lesson coming later is on the page before a lesson the page state holds
+// back (helpers/held-back.ts), since every lesson in the season has a page,
+// so no new lesson page moves these tests.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
 import { LESSONS, PREREQ } from '../features/lessons/kit/season'
-import { lessonWithNoPage } from '../features/lessons/kit/season.test-fixtures'
+import { HELD_BACK, holdBack } from './helpers/held-back'
 
 /** The card at the foot of this page's Wrap. */
 const card = (page: Page): Locator => page.locator('#wrap a.next-card')
@@ -30,8 +30,8 @@ const card = (page: Page): Locator => page.locator('#wrap a.next-card')
 /** A lesson's number as its address writes it: 9 is "09". */
 const pad = (n: number): string => String(n).padStart(2, '0')
 
-/** The season's first lesson with no page: the page before it ends on its card. */
-const LATER = lessonWithNoPage()
+/** A lesson held back, as one not written yet: the page before it ends on its card. */
+const LATER = HELD_BACK
 
 // each page's card: [page, its eyebrow, where it goes, its way on]
 const CARDS: readonly (readonly [string, string, string, string])[] = [
@@ -108,10 +108,10 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
     'Start lesson',
   ],
   [
-    `/learn/${pad(LATER.n - 1)}`,
-    `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
-    '#explorer',
-    'See it on the map',
+    '/learn/13',
+    'Next lesson 14 · Phrasing: sing a whole song Ready · 18 min',
+    '/learn/14',
+    'Start lesson',
   ],
 ]
 
@@ -372,6 +372,35 @@ test("Lesson 13's card sets up Lesson 14 with its tease, one line above its hook
   ).toEqual(['next-words', 'next-fig'])
   await expect(c.locator('.next-fig')).toBeVisible()
   await expect(c.locator('button')).toHaveCount(0)
+  await expect(c).toHaveAttribute('href', '/learn/14')
+})
+
+test("Lesson 14's Wrap closes the season: no link itself, its line, Karaoke Night in a tab of its own and the map, then the page's still", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/14')
+
+  // Assert: the kit's close in the mark's classes, the figure kept after its words
+  const end = page.locator('#wrap [data-next-card="end"]')
+  await expect(end).toHaveClass(/\bl14-next\b/)
+  expect(await end.evaluate((e) => e.tagName)).toBe('DIV')
+  await expect(end.locator('.eyebrow')).toHaveText('End of Season 1')
+  await expect(end.locator('.end-line')).toHaveText(
+    "You've seen every note you sing. Now sing a whole song.",
+  )
+  const song = end.getByRole('link', { name: 'Karaoke Night' })
+  await expect(song).toHaveAttribute('href', '/karaoke-night?lesson=14')
+  await expect(song).toHaveAttribute('target', '_blank')
+  await expect(
+    end.getByRole('link', { name: 'See the season map' }),
+  ).toHaveAttribute('href', '#explorer')
+  expect(
+    await end.evaluate((e) =>
+      Array.from(e.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'end-still'])
+  await expect(page.locator('#wrap a.next-card')).toHaveCount(0)
 })
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
@@ -422,10 +451,29 @@ test('reads the next lesson again once it is done', async ({ page }) => {
   await expect(c).toHaveAttribute('href', '/learn/02')
 })
 
+test('a lesson coming later is the card before it: Coming later, and a way to the map', async ({
+  page,
+}) => {
+  // Arrange: a lesson held back
+  await holdBack(page)
+
+  // Act
+  await page.goto(`/learn/${pad(LATER.n - 1)}`)
+
+  // Assert
+  const c = card(page)
+  await expect(c.locator('.eyebrow')).toHaveText(
+    `Next lesson ${pad(LATER.n)} · ${LATER.title} Coming later`,
+  )
+  await expect(c.locator('.chip')).toHaveText('See it on the map')
+  await expect(c).toHaveAttribute('href', '#explorer')
+})
+
 test('a lesson coming later opens the map on its card @smoke', async ({
   page,
 }) => {
-  // Arrange
+  // Arrange: a lesson held back
+  await holdBack(page)
   await page.goto(`/learn/${pad(LATER.n - 1)}`)
 
   // Act

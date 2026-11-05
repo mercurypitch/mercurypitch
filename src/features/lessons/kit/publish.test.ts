@@ -8,7 +8,7 @@ import type { PageState } from './publish'
 import { defaultPageState, isLive, isPublished, lessonOfHref, pageStateJson, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
 import type { Lesson } from './season'
 import { LESSONS } from './season'
-import { lessonWithNoPage } from './season.test-fixtures'
+import { withNoPage } from './season.test-fixtures'
 
 const served = (lessons: PageState['lessons'], drafts = false): PageState => ({
   ...defaultPageState(drafts),
@@ -43,16 +43,16 @@ describe('isPublished', () => {
 })
 
 describe('isLive', () => {
-  it('needs a page as well: a lesson not written yet is coming later whatever the console says', () => {
+  it('needs a page as well: a lesson not written yet is coming later whatever the console says', () =>
     // Arrange: a lesson with no page, published by the console
-    const { n } = lessonWithNoPage()
-    const state = served({ [n]: { published: true } })
+    withNoPage(({ n }) => {
+      const state = served({ [n]: { published: true } })
 
-    // Act + Assert
-    expect(isLive(n, LESSONS, state)).toBe(false)
-    expect(isLive(2, LESSONS, state)).toBe(true)
-    expect(isLive(99, LESSONS, state)).toBe(false)
-  })
+      // Act + Assert
+      expect(isLive(n, LESSONS, state)).toBe(false)
+      expect(isLive(2, LESSONS, state)).toBe(true)
+      expect(isLive(99, LESSONS, state)).toBe(false)
+    }))
 })
 
 describe('seasonFor', () => {
@@ -204,6 +204,33 @@ describe('seasonFor', () => {
       "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect([season[13].page, season[13].minutes]).toEqual(['/learn/13', 16])
+  })
+
+  it('draws Lesson 14 held back, by its draft line or by the console, with neither its page nor its reading time', () => {
+    // Act: a draft where drafts are held back, and one the console holds back
+    const seasons = [
+      seasonFor(LESSONS, defaultPageState(false)),
+      seasonFor(LESSONS, served({ 14: { published: false } }, true)),
+    ]
+
+    // Assert
+    for (const season of seasons)
+      expect([season[14].page, season[14].minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect([LESSONS[14].page, LESSONS[14].minutes]).toEqual(['/learn/14', 18])
+  })
+
+  it('keeps Lesson 14, a draft, its page and its reading time where drafts are shown', () => {
+    // Act
+    const season = seasonFor(LESSONS, defaultPageState(true))
+
+    // Assert
+    expect(DRAFT_LESSONS[14]).toBe(
+      "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+    )
+    expect([season[14].page, season[14].minutes]).toEqual(['/learn/14', 18])
   })
 
   it('keeps every page where everything is published, the same objects as the season', () => {

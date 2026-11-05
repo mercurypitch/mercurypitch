@@ -397,6 +397,29 @@ describe('a draft lesson (drafts.ts)', () => {
     }
   })
 
+  it("keeps Lesson 14's page, its reading time and Karaoke Night's link in every build", async () => {
+    for (const drafts of ['1', '0'] as const) {
+      // Act
+      const season = await seasonBuilt(drafts)
+
+      // Assert: a draft, as Lesson 3 is, with no film and no figure on its card
+      const L14 = season.LESSONS[14]
+      expect([L14.page, L14.minutes, L14.film, L14.fig], drafts).toEqual([
+        '/learn/14',
+        18,
+        undefined,
+        undefined,
+      ])
+      expect(L14.pr.link, drafts).toEqual({
+        href: '/karaoke-night?lesson=14',
+        addr: 'mercurypitch.com/karaoke-night',
+        label: 'Karaoke Night',
+      })
+      // the season's last lesson
+      expect(season.LESSONS.at(-1), drafts).toBe(L14)
+    }
+  })
+
   it('gives every lesson page in the repository its page in the season, whichever way a build reads drafts', async () => {
     // Arrange: every learn/NN.html, as the build takes them (tools/draft-lessons.ts)
     const pages = readdirSync(resolve(__dirname, '../../../../learn'))

@@ -366,9 +366,10 @@ describe('a lesson page', () => {
     expect(notModified?.status).toBe(304)
     expect(notModified?.headers.get('ETag')).toBe(ETAG)
 
-    // A lesson no page is built for yet is the asset layer's own 404
+    // A lesson no page is built for yet is the asset layer's own 404: Season
+    // 2's first, now that every Season 1 lesson has a page
     const { ask: askUnbuilt } = gate()
-    const missing = await askUnbuilt('/learn/14')
+    const missing = await askUnbuilt('/learn/15')
     expect(missing?.status).toBe(404)
     expect(missing?.headers.get('X-Robots-Tag')).toBeNull()
   })
