@@ -640,13 +640,13 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    and `kit/range-chart-draw.ts`.
 4. `kit/sound.ts`: the "ng" and lip-trill timbres (Audio). The voice that follows a pitch path is on
    main: `contourVoice` and `playContour` glide pitch and level exponentially from point to point
-   (`kit/sound.ts:320-353`, `:581-590`). Built: `kit/timbre.ts`, the "ng" (Merc's "ooh" through a
+   (`kit/sound.ts:321-354`, `:616-625`). Built: `kit/timbre.ts`, the "ng" (Merc's "ooh" through a
    900 Hz lowpass) and the lip trill, each a `Timbre` that the voice's new `timbre` option applies as
-   the voice is built (`kit/sound.ts:44-45`, `:190`), in a module only this page loads.
+   the voice is built (`kit/sound.ts:45-46`, `:191`), in a module only this page loads.
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
    by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). Both
-   built: `readSiren` at `kit/take.ts:247`, `middleHalf` at `metrics.ts:353-368` and the parity test
+   built: `readSiren` at `kit/take.ts:263`, `middleHalf` at `metrics.ts:353-368` and the parity test
    at `metrics.test.ts:479`. The note formatter is on main: Lesson 4's spelling helper names a note
    with its sign and in words (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
 6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,

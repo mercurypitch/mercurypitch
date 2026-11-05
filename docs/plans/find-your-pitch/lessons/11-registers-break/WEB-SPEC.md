@@ -367,7 +367,7 @@ that file's unless it says otherwise.
   (`kit/predict.ts:187-188`). The predict's own two plays never cut each other short: a tap on one
   while the other plays does nothing (`busy`, `:179`). So a siren is cut short only by another
   source taking the page's sound (a Four words play, a step toy: Audio), or by sound turned off or
-  the page hidden, which stop every voice (`kit/sound.ts:481-483`, `:513`).
+  the page hidden, which stop every voice (`kit/sound.ts:516-518`, `:548`).
 
 - The kit's own tests hold these rules (`src/features/lessons/kit/predict.test.ts`): the sound-off
   hint after a choice (`:153-169`), the play cut short (`:198-221`), the lock hint back after a
@@ -432,15 +432,15 @@ States:
    sound on to hear Merc's slow siren, then press Start." That is Lesson 1's rule, as Lessons 5 to 7
    and 9 apply it: what waits on hearing a sound waits while the sound is off.
 6. **Take**: Start asks for the microphone (`listen('lesson-11', Sound.context())`,
-   `kit/listen.ts:54-57`), and the take opens at least 0.4 s after any sound has ended, with every
-   sound held off while it is open (`Sound.hush`, `kit/sound.ts:539-547`). The status reads
+   `kit/listen.ts:59-62`), and the take opens at least 0.4 s after any sound has ended, with every
+   sound held off while it is open (`Sound.hush`, `kit/sound.ts:574-582`). The status reads
    "Breathe, then hum one slow siren on "ng", up only as far as is easy and back. We stop listening
    when you stop." The take waits up to 6 s for the first voiced frame, then runs until the voice
    has been quiet for 1.0 s after at least 2.0 s of it, or for 14 s from the first voiced frame,
-   whichever comes first; nothing on the page extends it (`takeFrames`, `kit/listen.ts:168-195`,
+   whichever comes first; nothing on the page extends it (`takeFrames`, `kit/listen.ts:174-201`,
    with `wait: 6`, `run: 14`, `quiet: 1` and Lesson 7's `quietAfter: 2`; FACTS 63). The violet
    line draws live on the window from the left, from the listener's frames smoothed for drawing
-   (`latest`, `kit/listen.ts:39-40`), as Lesson 7's does; a frame outside the window pins to the
+   (`latest`, `kit/listen.ts:44-45`), as Lesson 7's does; a frame outside the window pins to the
    chart's top or bottom edge with a small arrow and no number. A jump in the line is drawn as it
    comes and named by nothing: a jump can be a flip, a breath or the detector's error, and the page
    tells none of them apart (FACTS 27). Merc's line stays on the chart, faint, for the shape.
@@ -509,7 +509,7 @@ the lines and the Wrap's card, so every branch above is unit-tested without a mi
 7).
 
 Listening: Lesson 3's `kit/listen.ts`, with one option added: `micManager.acquire('lesson-11')` for
-the take (`:59`), released when it ends, on leaving the section, on `pagehide` and when the tab is
+the take (`:64`), released when it ends, on leaving the section, on `pagehide` and when the tab is
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The frames are drawn and then dropped: nothing reads them, nothing is
@@ -576,7 +576,7 @@ take is open, and the page has no music bed.
 
 The gear model (FACTS 74), Merc's model, labelled so on the chart:
 
-- Each sung line is two of the kit's contour voices (`contourVoice`, `kit/sound.ts:320-353`), one
+- Each sung line is two of the kit's contour voices (`contourVoice`, `kit/sound.ts:321-354`), one
   per gear, on one pitch path: the two take the same points, the same times and pitches, and start
   on the same audio-clock time (`at`), so their pitches and Merc's vibratos move together. The
   lower gear is Merc's "ooh" (`kind: 'merc'`); the upper gear is Merc's voice with the soft tone's
@@ -619,8 +619,8 @@ for "not heard", where `true` or nothing is a play heard to its end, so Lessons 
 change (`:31-41`; What the kit and the app still need, 10; unit tests 14 and 15).
 
 A sequence decides once, at the tap, whether it sounds (`ToneOptions.audible`,
-`kit/sound.ts:561-564`), so a step's later notes never ask `Sound.canPlay()` from a timer, which
-would show the sound-off toast with no tap (`:520-528`). A play that is pressed again while it runs
+`kit/sound.ts:596-599`), so a step's later notes never ask `Sound.canPlay()` from a timer, which
+would show the sound-off toast with no tap (`:555-563`). A play that is pressed again while it runs
 pauses it; a play pressed while another runs stops the other and starts. A live line is written to
 its region only when its text changes, so a screen reader does not hear the same line twice.
 
@@ -829,22 +829,22 @@ the others take it.
    stretch gauge, a strip outside the canvas whose fill follows the line's time. The column is an
    option too, which this page leaves off. A unit test proves that a chart with none of the new
    options draws as Lesson 7's does.
-6. `kit/sound.ts`: two options on `VoiceOptions` (`:30-52`), proposed: `wave`, the partials a voice
-   uses whatever its `kind` (today `build` picks them from the kind, `:178-179`), so a Merc voice
+6. `kit/sound.ts`: two options on `VoiceOptions` (`:31-53`), proposed: `wave`, the partials a voice
+   uses whatever its `kind` (today `build` picks them from the kind, `:179-180`), so a Merc voice
    can take the soft partials and keep its vibrato and envelope; and `lowpass`, the filter's
-   frequency in hertz (today 2,600 for Merc and 3,400 for the soft tone, `:181-184`). Lesson 7's
-   "ng" came another way: the voice's `timbre` option (`:44-45`, `:190`), with `NG` in
+   frequency in hertz (today 2,600 for Merc and 3,400 for the soft tone, `:182-185`). Lesson 7's
+   "ng" came another way: the voice's `timbre` option (`:45-46`, `:191`), with `NG` in
    `kit/timbre.ts` (`:28-32`) retuning that lowpass to 900 Hz. Without the two options every voice
    is as today, so Lessons 1 to 7 see no change; a unit test proves it.
 7. `kit/siren-flow.ts`, the Sing it flow as a pure rule shared with Lesson 7's page (Toys 4), with
    Lesson 7's reading as an option, so that a flow with no reading never shows a band, a reading or
    "Try again". Lesson 7's page had the rule in `lesson-07/siren-flow.ts`; this page promoted it
    (done: `reading` in `FlowOptions`, Lesson 7's lines in `lesson-07/siren-lines.ts`).
-8. `kit/listen.ts`: a `quietAfter` option on `TakeOptions` (`:89-110`), built with Lesson 7's page,
+8. `kit/listen.ts`: a `quietAfter` option on `TakeOptions` (`:95-116`), built with Lesson 7's page,
    whose take needs it ("quiet for 1.0 s after at least 2.0 s of voice", its Toys 4): `quiet` ends a
-   take only once the take has heard `quietAfter` seconds of voice (`:100-105`), so a breath in the
+   take only once the take has heard `quietAfter` seconds of voice (`:106-111`), so a breath in the
    first two seconds does not end it; absent, a take ends on `quiet` as before (`takeOver`,
-   `:146-160`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
+   `:152-166`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
    (`:69-78`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by #1192: Lesson 6's
@@ -879,7 +879,7 @@ the others take it.
 
 Lesson 6's page (#1149) also brought kit parts this page does not use: the ear game
 (`kit/ear-game.ts`), the tune line (`kit/tune-line.ts`, with its layout, drawing and motion modules)
-and the slide guide's `breaths` (`kit/slide-guide.ts:65`). The siren is one breath and draws on the
+and the slide guide's `breaths` (`kit/slide-guide.ts:67`). The siren is one breath and draws on the
 range chart.
 
 Already on main, so this page needs nothing more from them: run-time publishing (`kit/publish.ts`,
@@ -889,7 +889,7 @@ lesson menu and the remembered steps (`kit/lesson-menu.ts`, `kit/position.ts`), 
 next-lesson card with the next lesson's tease (`kit/next-card.ts`, its copy from
 `kit/lesson-copy.ts`), the step deck that opens at a step an address names (`kit/step-deck.ts`),
 Watch only with a published film (`kit/season.ts:23-25`), learner-only explorer cards, the contour
-voices (`contourVoice`, `playContour`, `kit/sound.ts:320-353`, `:577-590`), the warm-up
+voices (`contourVoice`, `playContour`, `kit/sound.ts:321-354`, `:612-625`), the warm-up
 (`kit/warm-up.ts`), the voice choice (`kit/voice-choice.ts`) and the comfort check
 (`kit/comfort.ts`). Released lessons need no edit when this page goes live, since every lesson page
 draws the season as its state shows it (`kit/page-state.ts:54-57`): Lesson 10's next card turns from

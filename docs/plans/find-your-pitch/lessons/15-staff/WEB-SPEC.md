@@ -364,8 +364,8 @@ staff (Toys 1, state 6). In order:
 3. **Your turn**, the stop line on its own line, then two buttons: Play Merc's notes and Start the
    guide. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as one voice along a
    contour, each of the first four notes a 1.15 s hold and a 0.05 s glide, the top note 1.8 s
-   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:286-314`,
-   `:577-590`), lighting
+   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:287-315`,
+   `:612-625`), lighting
    each note amber as it sounds. Start the guide waits until Merc's notes have been heard with sound
    on, with Lesson 12's hint, "Play Merc's notes first", and its sound-off line
    (`src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it counts in on do, 0.8 s at 0.065
@@ -525,7 +525,7 @@ other, paused off screen, and the still images when WebGL fails.
 
 Lesson 15's entry, proposed for Season 2's data, which goes in its own module that a Season 1 page
 does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
-(`src/features/lessons/kit/season.ts:427-441`, Lesson 14's):
+(`src/features/lessons/kit/season.ts:427-444`, Lesson 14's):
 
 - `n: 15`, `lane: 'theory'`, `title: 'The staff: where notes sit'`, `short: 'The staff'`, `topics:
 ['T30']`, with T30's name, "Staff notation: staff, clefs, ledger lines, grand staff", as SEASON-2

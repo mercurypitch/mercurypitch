@@ -184,9 +184,9 @@ Full references. The facts below use the short names in bold, with the page or s
 
 Every example is synthesised in the page by the kit's sound module and started only by a tap. A
 tapped note and the toys' plays use its soft tone (partials 1, .3, .11, .05, .024, .012;
-`src/features/lessons/kit/sound.ts:126`); Merc's singing uses Merc's "ooh" (partials 1, .62, .38,
+`src/features/lessons/kit/sound.ts:127`); Merc's singing uses Merc's "ooh" (partials 1, .62, .38,
 .24, .14, .08, .045, .025 through a 2,600 Hz lowpass, with a 5.5 Hz vibrato of ±14 cents grown in
-over 0.35 s; `sound.ts:126-129`, `:183`, `:195-200`). Frequencies are f = 440 × 2^((m − 69) / 12) for
+over 0.35 s; `sound.ts:127-130`, `:184`, `:196-201`). Frequencies are f = 440 × 2^((m − 69) / 12) for
 MIDI note m (`hz`, `src/features/lessons/kit/notes.ts:43`; Lesson 2 FACTS 6), to two decimals, as
 `verify.py` printed them. The demonstrations run at 0.5 s a crotchet; the sing-along at 0.6 s.
 
@@ -216,7 +216,7 @@ MIDI note m (`hz`, `src/features/lessons/kit/notes.ts:43`; Lesson 2 FACTS 6), to
 67. Step or leap? (Step 2): ten rounds, each two soft tones, 0.6 s and 0.8 s, 0.15 s apart, the first from C4 to G4, the interval drawn from 1, 2 (steps) and 3, 4, 5, 7 semitones (leaps), up or down at a coin flip. Name it (Step 5): eight rounds, each of 1, 2, 5 and 7 semitones twice in a shuffled order with no interval twice running, the steps played down and the leaps up, as their anchors go (22, 25) | 14, 62a | by construction; WEB-SPEC, Toys 4
 68. The anchor board (Step 5): "How I won-der", four notes, F4 F4 E4 E4, and its interval F4 to E4 ("I" to "won-"); "lit-tle star", A4 A4 G4 (G4 for 1.0 s), and A4 to G4; "Should auld ac-quain-tance be for-got", 25's eight notes at 0.5 s a crotchet (dotted crotchets 0.75 s, quavers 0.25 s), 4.0 s, and C4 to F4; "twin-kle, twin-kle", C4 C4 G4 G4, and C4 to G4; the octave, Lesson 1's A3 then A4, 0.8 s each; each bare interval 0.6 s and 0.8 s, 0.15 s apart | 22, 25, 19, 62 | by construction; the snippets are the scores' own notes, synthesised
 69. Quiz question 3: C4 then F4, 0.6 s and 0.8 s, 0.15 s apart, a perfect fourth up, the interval of "Should auld" | 25, 62 | by construction
-70. The sing-along: the first version from do = D3, D3 D3 A3 A3 B3 B3 A3, G3 G3 F♯3 F♯3 E3 E3 D3, and the second from do = F3, F3 F3 C4 C4 D4 D4 C4, B♭3 B♭3 A3 A3 G3 G3 F3, each 9.6 s (58), in Merc's "ooh"; for the higher voice the same an octave up in Tavi's "ooh"; Move do shifts both (57). Start the guide counts in with do of the version last played, once, in the soft tone at half a tapped note's level (gain 0.065 against the soft tone's 0.13, `sound.ts:187`) for 0.8 s, then 0.2 s of silence; the 9.6-second sweep that follows is silent | 20, 56 to 58, 62; Lesson 4 FACTS 63 (the same count-in) | by construction; arithmetic
+70. The sing-along: the first version from do = D3, D3 D3 A3 A3 B3 B3 A3, G3 G3 F♯3 F♯3 E3 E3 D3, and the second from do = F3, F3 F3 C4 C4 D4 D4 C4, B♭3 B♭3 A3 A3 G3 G3 F3, each 9.6 s (58), in Merc's "ooh"; for the higher voice the same an octave up in Tavi's "ooh"; Move do shifts both (57). Start the guide counts in with do of the version last played, once, in the soft tone at half a tapped note's level (gain 0.065 against the soft tone's 0.13, `sound.ts:188`) for 0.8 s, then 0.2 s of silence; the 9.6-second sweep that follows is silent | 20, 56 to 58, 62; Lesson 4 FACTS 63 (the same count-in) | by construction; arithmetic
 71. Neither recall question plays a sound (Lesson 4's questions 1 and 4 have none), and the page has no music bed | Lesson 4 LESSON.md, Quick check; Lesson 4 FACTS 64 | read; page design
 
 ## Layout

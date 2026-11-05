@@ -62,7 +62,7 @@ and wordmark, and the motion rules. On this page:
   where level is height in a strip of its own, as Lesson 5 draws it.
 - A breath mark is the kit's, the one Lesson 6's slide guide draws: a small tick over the line with
   the word "breathe", in the line's colour, lit once the voice reaches it (`kit/slide-guide.ts`: the
-  header, `:20-25`; `breaths`, `:64-65`; `breathAt`, `:342-361`; `drawBreaths`, `:363-388`), the
+  header, `:20-25`; `breaths`, `:66-67`; `breathAt`, `:338-357`; `drawBreaths`, `:363-388`), the
   tick a score's comma (26).
 - The words sit under the notes, each syllable under its note in the chart's mono at 11 px, ink-2,
   the sounding one ink (91).
@@ -200,7 +200,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   kit as data (`kit/twinkle.ts`, proposed, What the kit and the app still need, 6), with the five
   breath marks at 5.7, 11.7, 17.7, 23.7 and 29.7 s (85).
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:54-68`), with its 40
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:58-72`), with its 40
   px gutter on the left. Only the song's six rows are named, by syllable alone, "do", "re", "mi",
   "fa", "so" and "la", through Lesson 9's rung-names option (two letters fit the gutter; the chart's
   summary gives the spelled note), since the kit's grid letters every natural row (`drawNotesGrid`,
@@ -341,7 +341,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (Audio). While a take sounds the predict ignores its own two buttons (`:179`), so in the cold open
   a take is cut short only from outside it: another source taking the page's one "now playing" owner
   (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
-  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:482`, `:513`)
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:517`, `:548`)
   without telling the source. The page's `play` resolves `false` in each of the three cases, so it
   must notice the last two itself (Audio).
 - The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
@@ -433,7 +433,7 @@ States:
      never during a take; a take made before a move is redrawn against the bands it was sung to,
      since the chart keeps each take's own do.
    - **Start take 1**: with sound on, it asks for the microphone
-     (`listen('lesson-14', Sound.context())`, `kit/listen.ts:54-57`), then Merc sings the phrase,
+     (`listen('lesson-14', Sound.context())`, `kit/listen.ts:59-62`), then Merc sings the phrase,
      take 2 (90), the chart lighting each band as he sings it, then Lesson 4's count-in, do once and
      softly (89), then the take opens. **Start take 2**, and Again, give the count-in and the take,
      with Play Merc's phrase there before them for anyone who wants it again. With sound off, Start
@@ -447,9 +447,9 @@ States:
 6. **Take**: the status reads "Take 1: sing the phrase when you're ready, and follow the bands as
    they light." (take 2: "Take 2: breathe, then sing through to "star", and breathe after it."). The
    take waits up to 6 s for the first voiced frame, then runs until 1.2 s of quiet or 8 s from that
-   frame (`takeFrames`, `kit/listen.ts:168-195`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
-   `:89-110`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
-   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:106-107`), a playhead runs
+   frame (`takeFrames`, `kit/listen.ts:174-201`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
+   `:95-116`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
+   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:112-113`), a playhead runs
    along the line at 80 beats a minute and each band lights as it passes: that is the guide, on the
    chart itself, so the page needs no ring or countdown beside it. The violet line draws live at the
    playhead, folded around the band under it (its cents from that band through `foldCents`,
@@ -538,7 +538,7 @@ pure and unit-tested; 53):
 
 - Input: the take's raw frames, the take's number, and Merc's do and la as MIDI notes (from do D3:
   50 and 59). A frame is voiced when Voice Mirror's `preprocess` keeps it, as `readTake` takes them
-  (`kit/take.ts:125-147`).
+  (`kit/take.ts:141-163`).
 - Under 1.5 s of voiced frames gives `{ heard: false }` and `NOT_HEARD_PHRASE_LINE`, "We didn't hear
   the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
@@ -550,12 +550,12 @@ pure and unit-tested; 53):
   swell.
 - The octave line, as a second sentence, only when both notes, moved by the same whole number of
   octaves, are Merc's do and la: the kit's octave words in the plural, "You sang it an octave lower:
-  same notes." (`octaveLine`, `kit/take.ts:107-113`, whose "two octaves" form carries over).
+  same notes." (`octaveLine`, `kit/take.ts:116-129`, whose "two octaves" form carries over).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do (95).
 
 Listening: Lesson 3's `kit/listen.ts`, with one addition: `micManager.acquire('lesson-14')` for the
-take (`:59`), released when it ends, on leaving the section, on `pagehide` and when the tab is
+take (`:64`), released when it ends, on leaving the section, on `pagehide` and when the tab is
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The addition is `Listener.media`, the stream the listener already holds
@@ -577,7 +577,7 @@ Recording (`kit/record.ts`, proposed; 51, 52):
 - Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
   same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
   never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
-  past the master bus's compressor (`kit/sound.ts:115-124`), and through no automatic gain, so a swell
+  past the master bus's compressor (`kit/sound.ts:116-125`), and through no automatic gain, so a swell
   keeps its shape.
 - The stream it records is the listener's, the mic manager's analysis stream, with the browser's
   echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
@@ -641,7 +641,7 @@ Every tone is synthesised in the page with Web Audio at the frequencies in 82, t
 sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`), and started only
 by a tap: Merc's takes, phrases and the song in Merc's "ooh"; the chords and the count-in in the
 soft tone (83 to 90). A sung line is one voice from breath to breath, the kit's `contourVoice`
-(`kit/sound.ts:320-353`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
+(`kit/sound.ts:321-354`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
 dips to 0.6 of its level for about 0.06 s, never to silence, so two notes are heard as two within
 one voice; a chord is three soft voices at 0.05 each, held for its minim (87). A breath is a 0.3 s
 gap, not a sound, because the kit's noise cannot be stopped once started (84). The one recorded
@@ -844,13 +844,13 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    syllable (Lesson 9 WEB-SPEC, What the kit and the app still need, 5; if Lesson 9's page has not
    brought them, this one does); the words strip, its syllables centred under their notes at 11 px;
    the chord strip; breath marks, the slide guide's tick and word (`kit/slide-guide.ts`: `breathAt`,
-   `:342-361`; `drawBreaths`, `:363-388`), moved into a drawing both charts share; the light along a
+   `:338-357`; `drawBreaths`, `:363-388`), moved into a drawing both charts share; the light along a
    band, from a level curve, kept once sounded; and Step 3's two windows over one band. The existing
    single band is the case with none of these, so Lessons 3, 5 and 9's figures see no change; a unit
    test proves it.
 6. `kit/twinkle.ts`, proposed: the whole first verse as data, six lines of `MelodyNote` (degree,
    beats, syllable) in the form Lesson 6's `lesson-06/melody.ts` keeps its first two lines
-   (`MelodyNote`, `:21-29`; `TWINKLE`, `:37-61`), with each syllable's printed form ("Twin-",
+   (`MelodyNote`, `:20-22`; `TWINKLE`, `:25-30`), with each syllable's printed form ("Twin-",
    "kle,"), the page's chords and the five breath marks, so the tune is written once and Lesson 6's
    page reads its two lines from the kit.
 7. `kit/record.ts` and `Listener.media` (Toys 4, Recording), proposed: the first kit module that
