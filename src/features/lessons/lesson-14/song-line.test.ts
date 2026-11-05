@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
-import { phraseSummary, SONG_SUMMARY } from './lines'
+import { phraseSummary, SONG_SUMMARY, STILL_ALT } from './lines'
 import { mountSongLine, playedScene, restingScene, secondsOf, summaryFor, takePlay, windowOf, } from './song-line'
 
 afterEach(() => {
@@ -85,7 +85,8 @@ describe("Lesson 14's song line", () => {
       [29.7, 0.5],
     ])
     expect(still.breaths.every((b) => b.lit && !b.word)).toBe(true)
-    expect(summaryFor('still', 50)).toBe(SONG_SUMMARY)
+    expect(summaryFor('still', 50)).toBe(STILL_ALT)
+    expect(summaryFor('song', 50)).toBe(SONG_SUMMARY)
   })
 
   it('lights take 2 as far as it has sounded: "star" on in ink at 5.1 s, its breath mark dark until 5.7 s', () => {
