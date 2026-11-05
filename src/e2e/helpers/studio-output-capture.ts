@@ -102,8 +102,24 @@ declare global {
       }
       clicks: StudioClickStamp[]
       starts: StudioClickStamp[]
+      recorder?: StudioRecorder
     }
   }
+}
+
+/**
+ * The output the page sent to its speakers, copied from the analyser on the
+ * page's own timer and laid end to end on the audio clock (recordOutput).
+ */
+export interface StudioRecorder {
+  /** Frame f sits at f modulo the ring's length. */
+  readonly ring: Float32Array
+  /** The oldest frame the ring still holds, and the frame after its newest. */
+  oldest: number
+  filled: number
+  /** Frames a copy came too late to hold, or that two copies placed differently. */
+  readonly faults: { kind: 'gap' | 'disagree'; at: number; frames: number }[]
+  timer: number
 }
 
 /**
@@ -159,6 +175,7 @@ export async function captureStudioOutput(page: Page): Promise<void> {
       ) {
         const context = target.context
         if (window.__studioCapture?.context !== context) {
+          window.clearInterval(window.__studioCapture?.recorder?.timer)
           const analyser = context.createAnalyser()
           analyser.fftSize = frames
           window.__studioCapture = {
@@ -273,6 +290,88 @@ export async function captureOutput(page: Page): Promise<StudioCapture> {
     startFrame: raw.endFrame - raw.samples.length,
     samples: Float32Array.from(raw.samples),
   }
+}
+
+/** How much of the output the recorder keeps, back from its newest frame. */
+const RECORD_SECONDS = 8
+/** How often it copies the analyser: well inside the 680 ms the analyser holds. */
+const RECORD_EVERY_MS = 100
+
+/**
+ * Keep the output from here on, the analyser's last 680 ms included: copied
+ * on the page's timer every 100 ms and laid end to end on the audio clock,
+ * so a span can be read after an action however long the action and the
+ * round trips took (captureSpan). Frames two copies share must agree
+ * exactly. A copy that disagrees, or that came too late to join the last,
+ * is kept as a fault, and a span across one throws. Once per capture: later
+ * calls do nothing.
+ */
+export async function recordOutput(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ seconds, every }) => {
+      const capture = window.__studioCapture
+      if (!capture) throw new Error('No audio context is being captured.')
+      if (capture.recorder) return
+      const { analyser, context } = capture
+      const part = new Float32Array(analyser.fftSize)
+      const ring = new Float32Array(Math.round(seconds * context.sampleRate))
+      const slot = (frame: number) =>
+        ((frame % ring.length) + ring.length) % ring.length
+      const recorder: StudioRecorder = {
+        ring,
+        oldest: Number.NaN,
+        filled: Number.NaN,
+        faults: [],
+        timer: 0,
+      }
+      const copy = () => {
+        // The clock moves a quantum at a time: copy until it holds still
+        // around the copy, or leave it to the next tick.
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const before = context.currentTime
+          analyser.getFloatTimeDomainData(part)
+          if (context.currentTime !== before) continue
+          const end = Math.round(before * context.sampleRate)
+          const start = end - part.length
+          if (Number.isNaN(recorder.filled))
+            recorder.oldest = recorder.filled = start
+          if (start > recorder.filled) {
+            recorder.faults.push({
+              kind: 'gap',
+              at: recorder.filled,
+              frames: start - recorder.filled,
+            })
+            recorder.filled = start
+          }
+          for (
+            let frame = Math.max(start, recorder.oldest);
+            frame < recorder.filled;
+            frame++
+          )
+            if (ring[slot(frame)] !== part[frame - start]) {
+              recorder.faults.push({
+                kind: 'disagree',
+                at: frame,
+                frames: recorder.filled - frame,
+              })
+              break
+            }
+          for (let frame = recorder.filled; frame < end; frame++)
+            ring[slot(frame)] = part[frame - start]
+          recorder.filled = Math.max(recorder.filled, end)
+          recorder.oldest = Math.max(
+            recorder.oldest,
+            recorder.filled - ring.length,
+          )
+          return
+        }
+      }
+      copy()
+      recorder.timer = window.setInterval(copy, every)
+      capture.recorder = recorder
+    },
+    { seconds: RECORD_SECONDS, every: RECORD_EVERY_MS },
+  )
 }
 
 /** Buffer sources started on the tapped context, and those not ended yet. */

@@ -1,7 +1,7 @@
 // Studio playback quality — a tier chosen while stopped plays from the next Play and stays on this device.
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, untilAudioClock, } from './helpers/studio-output-capture'
+import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, recordOutput, untilAudioClock, } from './helpers/studio-output-capture'
 import { captureSpan, readStart } from './helpers/studio-output-span'
 import { steadyWav } from './helpers/studio-output'
 
@@ -46,6 +46,7 @@ test.describe('Studio playback quality', () => {
     await toggle.click()
     await expect(toggle).toHaveAccessibleName('Pause song')
     await untilAudioClock(page, (await audioClock(page)) + 1)
+    await recordOutput(page)
     await pressToggle()
     await expect(toggle).toHaveAccessibleName('Play song')
 
