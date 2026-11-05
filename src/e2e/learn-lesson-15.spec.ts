@@ -12,8 +12,9 @@
 // before the first tap, and nothing plays before a play button; and a
 // visitor with the studio installed still gets the lesson, not the shell.
 // It carries Season 2, so its masthead and its map are Season 2's, and it
-// draws no staff for show (WEB-SPEC, Tests 16). Each toy's own checks join
-// it as that toy is wired.
+// draws no staff for show (WEB-SPEC, Tests 16). The staff toy on the
+// stage says each place it plays, and is big enough to tap on a phone: its
+// places 13 px apart or more, and Step 5's keys 44 px wide (FACTS 71).
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -192,4 +193,72 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
   // Assert
   await expect(page).toHaveTitle(TITLE)
   await expect(page.locator('#root')).toHaveCount(0)
+})
+
+test.describe('the staff toy on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  /** The staff toy's polite line. */
+  const said = (page: Page) => page.locator('#toyStaff [data-staff-said]')
+
+  test('says each place as Step up climbs it, and a tap on a line plays that line', async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto('/learn/15')
+    await page.locator('#gateBtn').click()
+    const toy = page.locator('#toyStaff')
+    await toy.scrollIntoViewIfNeeded()
+
+    // Act
+    await toy.getByRole('button', { name: 'Step up' }).click()
+    await expect(said(page)).toHaveText('E4, the bottom line')
+    await toy.getByRole('button', { name: 'Step up' }).click()
+    await expect(said(page)).toHaveText('F4, the bottom space')
+    // a tap on the second line, where the drawing put it
+    const at = await toy.locator('[data-staff-svg]').evaluate((svg) => {
+      const box = svg.getBoundingClientRect()
+      const line = svg.querySelectorAll('.st-line')[1]
+      return {
+        x: box.left + box.width / 2,
+        y: box.top + Number(line.getAttribute('y1')),
+      }
+    })
+    await page.mouse.click(at.x, at.y)
+
+    // Assert
+    await expect(said(page)).toHaveText('G4, the second line')
+  })
+
+  test('draws its places 13 px apart or more, and Step 5 keys 44 px wide', async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto('/learn/15')
+    const toy = page.locator('#toyStaff')
+    await toy.scrollIntoViewIfNeeded()
+
+    // Act
+    const gap = await toy.locator('[data-staff-svg]').evaluate((svg) => {
+      const ys = Array.from(svg.querySelectorAll('.st-line'), (l) =>
+        Number(l.getAttribute('y1')),
+      )
+      return (ys[0] - ys[1]) / 2
+    })
+    await page.goto('/learn/15#step-5')
+    await page.locator('#toyStaff').scrollIntoViewIfNeeded()
+    await expect(
+      page.locator('#toyStaff .st-key.is-white').first(),
+    ).toBeAttached()
+    const keys = await page
+      .locator('#toyStaff .st-key.is-white')
+      .evaluateAll((rects) => rects.map((r) => Number(r.getAttribute('width'))))
+
+    // Assert: the strip's window, 7 or 8 white keys, each a 44 px target
+    // less the hairline between keys
+    expect(gap).toBeGreaterThanOrEqual(13)
+    expect(keys.length).toBeGreaterThanOrEqual(7)
+    for (const w of keys.filter((k) => k > 20))
+      expect(w).toBeGreaterThanOrEqual(42.5)
+  })
 })

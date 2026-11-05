@@ -2,10 +2,10 @@
    Lesson 15 — The staff: where notes sit: the page's own figures and cards
    ============================================================
    Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
-   and lesson-parts, imported by main.ts, and the guide's and the voice
-   lessons' sheets, taken in here by @import so they inline into this page's
-   own sheet and split no chunk the other lessons share (MISTAKES.md, on the
-   lessons' base stylesheet).
+   and lesson-parts, imported by main.ts, and the guide's, the voice
+   lessons' and the staff toy's sheets, taken in here by @import so they
+   inline into this page's own sheet and split no chunk the other lessons
+   share (MISTAKES.md, on the lessons' base stylesheet).
 
    Here: the hero's pitch line between Merc and Tavi, with the two plays under
    it; the staff toy's stage and each step's row of plays (WEB-SPEC, Toys 1);
@@ -16,6 +16,7 @@
 
 @import '../kit/lesson-guide.css';
 @import '../kit/lesson-voice.css';
+@import '../kit/lesson-staff.css';
 
 /* ---------------------------------------------------------------- hero: the pitch line between Merc and Tavi */
 .l15-duo {
@@ -91,11 +92,12 @@
   line-height: 16px;
 }
 /* stuck beside the text, the kit shrinks the figure to the room its
-   controls leave, never below 300 px here, where a single staff's space is
-   at least 26 px; the deck keeps the kit's floors (FACTS 71) */
+   controls leave, never below 260 px here, where a single staff's space is
+   still 24 px, so Step 5's grand staff, key strip and four controls share a
+   1024 x 640 screen; the deck keeps the kit's floors (FACTS 71) */
 @media (min-width: 961px) and (min-height: 561px) {
   .steps-stage .staff-viz {
-    --viz-min: 300px;
+    --viz-min: 260px;
   }
 }
 /* Step up, Step down and the pitch-line switch, then the step's own plays,
