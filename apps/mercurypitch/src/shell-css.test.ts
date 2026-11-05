@@ -131,6 +131,15 @@ describe('the rail minimised to its one tab', () => {
     )
     expect(declaration('.mp-rail__item', 'border-radius')).toBe('999px')
   })
+
+  // At 13 px "Progress" is 55 px, and the circle's inside, less the tab's
+  // inset, left it 50: the minimised Progress tab read "Progr...". The pill
+  // keeps the circle for the shorter labels and grows to a label wider.
+  it('grows to a label wider than the circle', () => {
+    expect(declaration('.mp-rail-row.is-min .mp-rail', 'min-width')).toBe(
+      'max-content',
+    )
+  })
 })
 
 // Android's picture-in-picture window holds the Karaoke room's compact view
