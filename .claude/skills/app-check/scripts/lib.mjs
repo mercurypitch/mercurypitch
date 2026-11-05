@@ -695,17 +695,36 @@ export async function probeFocus(page, { stops = 20 } = {}) {
   return page.evaluate(() => window.__acFocus.results)
 }
 
-/** WCAG contrast of an element's text over its composited background. */
+/**
+ * WCAG contrast of an element's text over its composited background.
+ *
+ * Every colour is read back through a 1x1 canvas, because Chromium computes
+ * a color-mix() to `color(srgb ...)` or `oklab(...)`, not rgb(). A parser
+ * that reads only rgb() skips such a layer and measures against whatever
+ * lies behind it: on 2026-11-05 a selected Studio lane header's oklab()
+ * background was skipped, and its Solo read 6.45:1 against the page behind
+ * instead of 5.89:1. A colour the canvas cannot read, a background image, or
+ * a painted ::before or ::after on the way up marks the result approx: check
+ * those by pixels.
+ */
 export async function contrastOf(locator) {
   return locator.evaluate((el) => {
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = 1
+    const cx = cv.getContext('2d', { willReadFrequently: true })
+    let approx = false
     const parse = (c) => {
-      const m = c.match(/rgba?\(([^)]+)\)/)
-      if (!m) return null
-      const p = m[1]
-        .split(/[ ,/]+/)
-        .filter(Boolean)
-        .map(Number)
-      return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }
+      if (!c || c === 'transparent') return { r: 0, g: 0, b: 0, a: 0 }
+      cx.fillStyle = '#010203'
+      cx.fillStyle = c
+      if (cx.fillStyle === '#010203' && c.toLowerCase() !== '#010203') {
+        approx = true
+        return null
+      }
+      cx.clearRect(0, 0, 1, 1)
+      cx.fillRect(0, 0, 1, 1)
+      const [r, g, b, a] = cx.getImageData(0, 0, 1, 1).data
+      return { r, g, b, a: a / 255 }
     }
     const over = (top, under) => ({
       r: top.r * top.a + under.r * (1 - top.a),
@@ -714,17 +733,27 @@ export async function contrastOf(locator) {
       a: 1,
     })
     const layers = []
-    let approx = false
     for (let n = el; n; n = n.parentElement) {
       const cs = getComputedStyle(n)
       if (cs.backgroundImage !== 'none') approx = true
+      // A painted ::before or ::after (a tint, a plate) can lie under the
+      // text, and no computed style of the element itself shows it.
+      for (const pseudo of ['::before', '::after']) {
+        const ps = getComputedStyle(n, pseudo)
+        if (ps.content === 'none' || ps.content === 'normal') continue
+        const pc = parse(ps.backgroundColor)
+        if ((pc && pc.a > 0) || ps.backgroundImage !== 'none') approx = true
+      }
       const c = parse(cs.backgroundColor)
       if (c && c.a > 0) layers.push(c)
       if (c && c.a === 1) break
     }
     let bg = { r: 255, g: 255, b: 255, a: 1 }
     for (let i = layers.length - 1; i >= 0; i--) bg = over(layers[i], bg)
-    const fg = over(parse(getComputedStyle(el).color), bg)
+    const fg = over(
+      parse(getComputedStyle(el).color) ?? { r: 0, g: 0, b: 0, a: 1 },
+      bg,
+    )
     const lum = ({ r, g, b }) => {
       const f = (v) => {
         v /= 255
