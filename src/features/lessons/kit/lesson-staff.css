@@ -1,0 +1,156 @@
+/* ============================================================
+   Staff toy — the engraving's tokens: line weight, ink, the lit notes
+   ============================================================
+   The staff toy's look (staff.ts, staff-draw.ts; Lesson 15's WEB-SPEC, Look).
+   A page that mounts the toy takes this sheet into its own by @import, so it
+   inlines there and no chunk the other lessons share changes (MISTAKES.md,
+   on the lessons' base stylesheet).
+
+   The lines are ink at 3:1 or more against the figure's background at every
+   stop of its gradient (#121927 to #0b0f16): chrome at .62 is about 5.1:1
+   on the darker stop and 4.9:1 on the lighter, where the stats snippet's .26
+   gave 1.8:1 (Lesson 15 FACTS 72). Ledger lines take the same weight and
+   colour. The weight is a token, for the check on a real phone at 390 px. */
+
+:root {
+  --staff-weight: 1.3px;
+  --staff-ink: rgba(195, 204, 214, 0.62);
+  --staff-head: var(--chrome);
+  --staff-lit: var(--ink);
+}
+
+.staff-viz svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: pan-y;
+  cursor: pointer;
+}
+.staff-viz svg:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -3px;
+  border-radius: var(--r-md);
+}
+.st-line,
+.st-ledger {
+  stroke: var(--staff-ink);
+  stroke-width: var(--staff-weight);
+  stroke-linecap: butt;
+}
+.st-line.is-lit {
+  stroke: var(--staff-lit);
+}
+.st-gold {
+  stroke: var(--gold);
+  stroke-width: calc(var(--staff-weight) + 0.9px);
+}
+.st-gold-name {
+  fill: var(--gold);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.st-clef {
+  fill: var(--staff-head);
+}
+.st-brace {
+  fill: none;
+  stroke: var(--staff-head);
+  stroke-width: 2.2px;
+  stroke-linecap: round;
+}
+.st-head,
+.st-sign {
+  fill: var(--staff-head);
+}
+.st-head.is-lit {
+  fill: var(--staff-lit);
+}
+.st-head.is-amber {
+  fill: var(--amber);
+}
+.st-head.is-blue {
+  fill: var(--signal-blue);
+}
+.st-halo {
+  fill: none;
+  stroke-width: 1.5px;
+  opacity: 0.55;
+  stroke: var(--staff-lit);
+}
+.st-halo.is-amber {
+  stroke: var(--amber);
+}
+.st-halo.is-blue {
+  stroke: var(--signal-blue);
+}
+.st-home {
+  fill: none;
+  stroke: var(--staff-head);
+  stroke-width: 1.9px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.st-name,
+.st-letter {
+  fill: var(--ink-2);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.st-name {
+  fill: var(--ink);
+}
+.st-lane.is-white {
+  fill: rgba(195, 204, 214, 0.3);
+}
+.st-lane.is-black {
+  fill: rgba(195, 204, 214, 0.1);
+}
+.st-lane.is-lit {
+  fill: var(--staff-lit);
+}
+.st-connector {
+  stroke: rgba(195, 204, 214, 0.6);
+  stroke-width: 1px;
+}
+.st-sweep {
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.st-key.is-white {
+  fill: #5d6874;
+}
+.st-key.is-white.is-lit {
+  fill: #dfe6ee;
+}
+.st-key.is-black {
+  fill: #0d1117;
+  stroke: rgba(195, 204, 214, 0.4);
+  stroke-width: 1px;
+}
+.st-key.is-black.is-lit {
+  fill: var(--chrome);
+}
+.st-key-name {
+  fill: #0d1117;
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.st-key.is-white:not(.is-lit) + .st-key-name {
+  fill: var(--ink);
+}
+@media (forced-colors: active) {
+  .st-line,
+  .st-ledger,
+  .st-brace,
+  .st-sweep {
+    stroke: CanvasText;
+  }
+  .st-head,
+  .st-clef,
+  .st-sign {
+    fill: CanvasText;
+  }
+}
