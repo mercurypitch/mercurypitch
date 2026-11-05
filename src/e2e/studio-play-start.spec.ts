@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
-import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, untilAudioClock, } from './helpers/studio-output-capture'
+import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, readStarts, untilAudioClock, } from './helpers/studio-output-capture'
 import type { StartReading } from './helpers/studio-output-span'
 import { captureSpan, readStart } from './helpers/studio-output-span'
 import { steadyWav } from './helpers/studio-output'
@@ -102,6 +102,22 @@ test.describe('Studio Play after Pause', () => {
       await page.mouse.down()
       await page.mouse.up()
     }
+    // Play schedules the song a lead past the audio clock it reads as it
+    // acts, and its first source start stamps that read (captureStudioOutput).
+    const playedAfter = async (
+      release: StudioClickStamp,
+    ): Promise<StudioClickStamp> => {
+      let played: StudioClickStamp | undefined
+      await expect
+        .poll(async () => {
+          played = (await readStarts(page)).find(
+            ({ performanceMs }) => performanceMs >= release.performanceMs,
+          )
+          return played !== undefined
+        })
+        .toBe(true)
+      return played!
+    }
     const measurePlay = async (
       label: string,
       pausedSeconds = 1,
@@ -114,9 +130,14 @@ test.describe('Studio Play after Pause', () => {
       const clicks = await readClicks(page)
       const down = clicks.find(({ kind }) => kind === 'down')!
       const up = clicks.find(({ kind }) => kind === 'up')!
+      const played = await playedAfter(up)
       const start = readStart(
-        await captureSpan(page, down.contextTime - 0.1, down.contextTime + 1),
-        down,
+        await captureSpan(
+          page,
+          played.contextTime - 0.1,
+          played.contextTime + 1,
+        ),
+        played,
         330,
         900,
       )
@@ -125,6 +146,8 @@ test.describe('Studio Play after Pause', () => {
           label,
           ...start,
           pressToReleaseMs: (up.contextTime - down.contextTime) * 1000,
+          releaseToPlayMs: played.performanceMs - up.performanceMs,
+          clockMovedMs: (played.contextTime - up.contextTime) * 1000,
           baseLatencyMs: down.baseLatency * 1000,
           outputLatencyMs: down.outputLatency * 1000,
         })}`,
@@ -175,17 +198,26 @@ test.describe('Studio Play after Pause', () => {
 
     // Every one of these Plays starts a graph that was ready before the
     // press. Only the first Play of a visit builds in the press now (the
-    // clock comes into being inside it), and it has no press on that clock
-    // to measure from, so the readings are held to the soonest of them.
-    // Measured in headless Chromium on Linux with the Studio's 'playback'
-    // buffers (a device callback of 1,024 frames, 21.3 ms): a ready graph
-    // reached half level 57 to 79 ms after the press, one built in the
-    // press 91 to 113 ms. A built graph starts 60 ms after its build, so its
-    // new compressors settle first (run.ts), where a ready one starts a
-    // callback and 5 ms out (seekEarliest): 34 ms apart plus the build.
-    // Each press is stamped on a clock that moves a callback at a time, so
-    // a ready graph can read a callback later than the soonest, and one
-    // built in the press reads at least 34 ms later at the same step.
+    // clock comes into being inside it), so the readings are held to the
+    // soonest of them.
+    //
+    // Each is timed from the audio clock Play read as it started the song,
+    // not from the press. The press is stamped at pointerdown, but Play acts
+    // on the click after the release, and Playwright's press and release
+    // are two round trips: on a loaded CI runner they landed 3 to 37 ms
+    // apart. And the clock moves a device callback (1,024 frames, 21.3 ms)
+    // at a time, so a callback that landed between a stamp and Play's own
+    // read moved the reading by a callback. Together they failed this spec
+    // on every retry of one run with nothing built: each failing reading,
+    // taken from the release, was under a build's.
+    //
+    // From the clock Play read, in headless Chromium on Linux with the
+    // Studio's 'playback' buffers, idle or with every core busy: a ready
+    // graph reached half level 52 to 58 ms later, and the first Play, built
+    // in the press, 91.5 ms. A built graph starts 60 ms past its build so
+    // its new compressors settle first (run.ts), where a ready one starts a
+    // callback and 5 ms out (seekEarliest): 34 ms apart, so a graph built in
+    // the press still reads well past the soonest.
     const readings = [warm, quiet, moved, added]
     const soonest = (key: 'firstSoundMs' | 'halfLevelMs') =>
       Math.min(...readings.map((reading) => reading[key]!))

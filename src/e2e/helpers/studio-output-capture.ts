@@ -101,17 +101,22 @@ declare global {
         live: Set<AudioBufferSourceNode>
       }
       clicks: StudioClickStamp[]
+      starts: StudioClickStamp[]
     }
   }
 }
 
 /**
  * Where the audio clock stood when a pointer was pressed or released, a key
- * went down or up, or a control committed a change.
+ * went down or up, a control committed a change, or the page started a
+ * buffer source on the tapped context.
  */
 export interface StudioClickStamp {
-  readonly kind: 'down' | 'up' | 'key' | 'keyup' | 'change'
-  /** performance.now() in the capture phase, before any handler of the page. */
+  readonly kind: 'down' | 'up' | 'key' | 'keyup' | 'change' | 'start'
+  /**
+   * performance.now() in the capture phase, before any handler of the page;
+   * for a start, as the page called it.
+   */
   readonly performanceMs: number
   /** The context's currentTime then: the render position. */
   readonly contextTime: number
@@ -132,8 +137,9 @@ export interface StudioCapture {
 /**
  * Tap every connection to an AudioContext's destination, count the buffer
  * sources the page starts and those not yet ended, and stamp each pointer
- * press and release, each key press and release and each committed change
- * with the audio clock. Offline renders are left out, as tapOutput does.
+ * press and release, each key press and release, each committed change and
+ * each buffer source's start with the audio clock. Offline renders are left
+ * out, as tapOutput does.
  */
 export async function captureStudioOutput(page: Page): Promise<void> {
   await page.addInitScript((frames) => {
@@ -160,6 +166,7 @@ export async function captureStudioOutput(page: Page): Promise<void> {
             analyser,
             sources: { created: 0, live: new Set() },
             clicks: [],
+            starts: [],
           }
         }
         const output = typeof args[1] === 'number' ? args[1] : 0
@@ -183,13 +190,13 @@ export async function captureStudioOutput(page: Page): Promise<void> {
       }
       return source
     }
-    const stamp = (kind: StudioClickStamp['kind']) => () => {
-      const capture = window.__studioCapture
-      if (!capture) return
+    const stampOf = (
+      kind: StudioClickStamp['kind'],
+      context: AudioContext,
+    ): StudioClickStamp => {
       const performanceMs = performance.now()
-      const { context } = capture
       const output = context.getOutputTimestamp()
-      capture.clicks.push({
+      return {
         kind,
         performanceMs,
         contextTime: context.currentTime,
@@ -197,7 +204,24 @@ export async function captureStudioOutput(page: Page): Promise<void> {
         outputPerformanceMs: output.performanceTime ?? 0,
         baseLatency: context.baseLatency,
         outputLatency: context.outputLatency,
-      })
+      }
+    }
+    // A source is scheduled a lead past the clock its caller read just
+    // before: its start stamps that read.
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (
+      this: AudioBufferSourceNode,
+      ...args: Parameters<AudioBufferSourceNode['start']>
+    ) {
+      const capture = window.__studioCapture
+      if (capture?.context === this.context)
+        capture.starts.push(stampOf('start', capture.context))
+      return start.apply(this, args)
+    }
+    const stamp = (kind: StudioClickStamp['kind']) => () => {
+      const capture = window.__studioCapture
+      if (!capture) return
+      capture.clicks.push(stampOf(kind, capture.context))
     }
     window.addEventListener('pointerdown', stamp('down'), { capture: true })
     window.addEventListener('pointerup', stamp('up'), { capture: true })
@@ -207,16 +231,23 @@ export async function captureStudioOutput(page: Page): Promise<void> {
   }, CAPTURE_FRAMES)
 }
 
-/** Forget earlier stamps. */
+/** Forget earlier stamps, the starts' too. */
 export async function clearClicks(page: Page): Promise<void> {
   await page.evaluate(() => {
-    if (window.__studioCapture) window.__studioCapture.clicks = []
+    if (!window.__studioCapture) return
+    window.__studioCapture.clicks = []
+    window.__studioCapture.starts = []
   })
 }
 
 /** The stamps since the last clear, in order. */
 export async function readClicks(page: Page): Promise<StudioClickStamp[]> {
   return page.evaluate(() => window.__studioCapture?.clicks ?? [])
+}
+
+/** The buffer sources started on the tapped context since the last clear, in order. */
+export async function readStarts(page: Page): Promise<StudioClickStamp[]> {
+  return page.evaluate(() => window.__studioCapture?.starts ?? [])
 }
 
 /** The newest 32768 samples sent to the speakers, ending where the audio clock stands. */
