@@ -299,7 +299,7 @@ export function createShaperPath(
 /** The latency twin of an oversampled shaper: the same resampling, a straight line. */
 export function createIdentityShaperPath(
   ctx: BaseAudioContext,
-  oversample: OverSampleType = '4x',
+  oversample: OverSampleType | null = '4x',
 ): ShaperPath {
   const path = createShaperPath(ctx, createIdentityCurve(), oversample)
   path.input.gain.value = 1 / IDENTITY_DOMAIN
