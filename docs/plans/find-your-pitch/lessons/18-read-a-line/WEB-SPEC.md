@@ -739,7 +739,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 16. **The planning-text test's topic codes**, found here, have shipped. Its pattern took a T or an
     S, two digits and a word's end, so a letter after the digits hid Season 2's split codes, S11a,
     S11b, S20a and S20b, from it; it now takes one lowercase letter there
-    (`src/e2e/learn-no-planning-text.spec.ts:40`), so it catches each of them.
+    (`src/e2e/learn-no-planning-text.spec.ts:41`), so it catches each of them.
 
 ## Decisions for the owner
 
@@ -905,7 +905,7 @@ Page tests, against a local or dev build, never production:
     `timeRequired` `PT16M` (`src/tests/lesson-pages.test.ts:154-159`,
     `src/tests/lesson-pages.test.ts:191-211`).
 12. No planning text on the page: no topic code such as "S11b" or "T32", no "planned", "slug" or "for
-    the team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`). Its pattern for a topic's code now
+    the team" (`src/e2e/learn-no-planning-text.spec.ts:23-42`). Its pattern for a topic's code now
     takes a lettered code such as S11b too (What the kit and the app still need, item 16).
 13. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck (`src/e2e/learn-stage-fit.spec.ts:229-235`).

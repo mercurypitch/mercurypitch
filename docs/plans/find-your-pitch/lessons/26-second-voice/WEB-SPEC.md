@@ -870,7 +870,7 @@ Page tests (the series' own, run on every lesson page): the head test, with the 
 description's length and its "A sixteen-minute lesson", the chip and `timeRequired`
 (`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, S20b
 included, since the test's pattern takes a lettered code
-(`src/e2e/learn-no-planning-text.spec.ts:40`); the stage fits a 390 px screen; first paint within
+(`src/e2e/learn-no-planning-text.spec.ts:41`); the stage fits a 390 px screen; first paint within
 the budget; the claims validator; one sound at a time; no background staff or clef; the tour's
 hold.
 

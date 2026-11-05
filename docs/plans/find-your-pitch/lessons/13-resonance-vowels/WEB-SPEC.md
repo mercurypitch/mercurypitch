@@ -113,7 +113,7 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
    is a long one: on a phone the strip's gloss may go under the stage's fold before the choices
    do, and the gloss is the line to move below the choices if End to end 5 reports them off the
    first screen. `src/e2e/learn-cold-open-fold.spec.ts` holds the title on the first screen at its
-   seven sizes and reports where the first control and the choices sit (`:167-206`).
+   seven sizes and reports where the first control and the choices sit (`:171-210`).
 3. **Recall from Lesson 11**: Lesson 11's questions 1 and 2, for everyone (Toys 5).
 4. **Four words you'll meet**: harmonic, spectrum, resonance and formant, each with its definition,
    a small figure and a button (Toys 3).
@@ -874,9 +874,9 @@ and the four-words strip in the kit.
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:202`, `:253`;
-   `:386`, `:396`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:722`, `:755`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:335-345`),
+   `:399`, `:409`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:742`, `:775`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:348-358`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:222-224`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
@@ -1151,7 +1151,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    x 657 and on a phone held sideways (FACTS 68); `src/e2e/learn-no-planning-text.spec.ts` reads it
    for the team's planning words and every variant's note the same way, and
    `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the first screen at seven sizes and
-   reports where Play Merc's ‘ee’ and the two choices sit (`:167-206`).
+   reports where Play Merc's ‘ee’ and the two choices sit (`:171-210`).
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`), as
    `src/e2e/learn-lesson-05.spec.ts` drives Lesson 5's hold: a steady A3 (`writeToneWav(220, 20)`)
    in the lower voice reads "In the band for all 10 seconds." and asks "How did that feel?"; the
@@ -1174,10 +1174,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 9. Every practice link carries `?lesson=13`; opening `/mirror?lesson=13` in a fresh profile boots
    Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
-    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:472`); its
+    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:479`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
     the hook, the card's words in the order eyebrow, tease, hook and way on, then the figure, as
-    that spec checks Lessons 1 and 2's cards (`:142-159`, `:406-422`).
+    that spec checks Lessons 1 and 2's cards (`:149-166`, `:413-429`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
     ring holds still, and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

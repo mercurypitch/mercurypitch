@@ -811,10 +811,10 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:379-382`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:680-686`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:392-395`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:700-706`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:335-345`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:348-358`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
@@ -1105,8 +1105,8 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:423-440`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 11 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-189`). That
-    file's example of a lesson with no page is found, not named (`:45-56`, through
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:59-190`). That
+    file's example of a lesson with no page is found, not named (`:46-57`, through
     `lessonWithNoPage` in `kit/season.test-fixtures.ts:27-41`), so this page's arrival does not
     break it. Lesson 11's practise link carries `?lesson=11`, and `EDGES` holds [7, 11].
 13. The kit's new option (What the kit and the app still need, 9):
@@ -1152,7 +1152,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play Tavi's siren and the two choices sit
-   (`:176-203`).
+   (`:180-207`).
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`): with
    sound off, Start stays `aria-disabled` after Play Merc's slow siren and the hint says sound is
    off; with sound on, a glide from E3 up to C♯4 and back (`writeGlideWav(164.81, 277.18, 4)`) in

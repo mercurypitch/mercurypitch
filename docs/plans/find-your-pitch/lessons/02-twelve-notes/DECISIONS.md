@@ -283,7 +283,7 @@ Script critic (`review/script-02/report.md`, SHIP once S1 to S3 are applied):
 - Script N3 (o10's "Then"): CHANGED. o10 "And how many cents is a tone?"; SCRIPT.md's audit calls it a transfer question (decisions 8 and 60).
 - Script N4 (o7 and b34 no longer meet): CHANGED. o7 "Then how do musicians choose a name?"; b34 "It depends on the music around it. Both are right." (decision 18).
 - Script N5 (predict-e's hold is short): CHANGED. predict-e is 2.0 s, and S12b has a small "Predict." tag (decision 58).
-- Script N6 (FACTS 28's "head label"): CHANGED. FACTS 28 describes the code's left-anchored "you are here" marker (`PitchCanvas.tsx:2038-2092`), and S14c and S14e draw the name there, as the app does (decision 69).
+- Script N6 (FACTS 28's "head label"): CHANGED. FACTS 28 describes the code's left-anchored "you are here" marker (`PitchCanvas.tsx:2043-2097`), and S14c and S14e draw the name there, as the app does (decision 69).
 - Script N7 (decision 7's reason; the page's bubble): CHANGED. Decision 7 now says the guess is the intuitive picture that blue's count exposes; the page's bubble drops "but twelve notes", so the climb is the reveal.
 - Script N8 ("warm-up" with two meanings): CHANGED. MASTER-PLAN § 4.2's item 3 is now a "recall check" (that one line), LESSON's section is "Recall from Lesson 1", the page's Contour line says "For an easier first drill", and BRIEF, WEB-SPEC, FACTS 35 and decisions 1, 3, 5, 33 and 49 follow; "warm-up" now means only a vocal warm-up in Lesson 2's documents.
 - Script N9 (standing decisions in the change log): CHANGED. Decisions 54 to 66 now sit in the topical sections; the numbers stay as stable ids, so every reference (SCRIPT.md, BRIEF, decisions 7 and 28, owner question 1) still holds.

@@ -996,9 +996,9 @@ was built on.
     linked from no entry document, with its service-worker rule kept
     (`src/tests/lesson-pages.test.ts:309-346`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
-    asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
+    asks and `lesson-pages.test.ts:284-292` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:118-184`, Lessons 3 and 5),
-    at `:261-267`, and its CSS ceiling at `:401-404`, since every build carries every lesson page.
+    at `:261-267`, and its CSS ceiling at `:414-417`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1109,7 +1109,7 @@ parts:
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
     document in `learn/` (`kit/season.test.ts:423-440`); a state that holds it back draws it with
-    neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
+    neither (`kit/publish.test.ts:60-75`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
     carries `aria-disabled`; the choice enables the three buttons through `unlocks` and Tempo
@@ -1179,18 +1179,18 @@ draft shown as `build:e2e` shows it):
 10. Every practice link carries `?lesson=08` before any hash: `/drum-night?drawer=learn&lesson=08`
     and `/ear-lab?lesson=08`.
 11. The next-lesson card: a row for `/learn/08` in `src/e2e/learn-next-card.spec.ts`'s `CARDS`
-    (`:37-110`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
+    (`:38-111`), `['/learn/08', 'Next lesson 09 · Landing a leap Coming later', '#explorer', 'See it
 on the map']`, while Lesson 9 has no page; a test as the spec's Lesson 1 test is (`:117-134`):
     `.next-tease` reads `LESSON_COPY[9].tease`, and the card's words run eyebrow, `next-tease`,
     `q2`, `chip`; and its tease figure, after the words, holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every built lesson,
-    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:24`),
+    this one included. Its pattern for the team's word "Signature" is case-sensitive (`:25`),
     so the page's "time signature" stays lower case wherever it appears, as LESSON.md writes it.
 13. The first screen: the kit's `src/e2e/learn-cold-open-fold.spec.ts` loads every lesson the e2e
-    bundle carries (`:32`), so this page joins it on its first build, at its seven sizes from 390 x
-    844 to 1440 x 900 (`:35-58`). It holds that the title, `h1.hook#hook` (which it finds as
-    `h1#hook`, `:119`), is wholly on the first screen at load (`:197-202`), and it reports where the
-    opening's first control and the predict's choices sit (`:79-139`): here "Play with claps on 1
+    bundle carries (`:33`), so this page joins it on its first build, at its seven sizes from 390 x
+    844 to 1440 x 900 (`:36-59`). It holds that the title, `h1.hook#hook` (which it finds as
+    `h1#hook`, `:120`), is wholly on the first screen at load (`:201-206`), and it reports where the
+    opening's first control and the predict's choices sit (`:80-140`): here "Play with claps on 1
     and 3", the first Play in `main > section.hero`, and the two `#predict [data-choice]` buttons.
     The page aims for CURIOSITY-MOMENTS § 3.1's mark: at 390 x 844 the title and the first Play on
     the first screen, at 1024 x 640 the stage and the choices too. The app-check sweep screenshots

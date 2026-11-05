@@ -705,7 +705,7 @@ Page tests, against a local or dev build, never production:
     description 80 to 160 with "A fifteen-minute lesson", the chip "15 minutes" and `timeRequired`
     `PT15M`.
 11. No planning text on the page: no topic code such as "S18", no "planned" or "for the team"
-    (`src/e2e/learn-no-planning-text.spec.ts:22-41`).
+    (`src/e2e/learn-no-planning-text.spec.ts:23-42`).
 12. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck, Tempo's notches, Play it smudged and the staff switch among them
     (`src/e2e/learn-stage-fit.spec.ts:33-54`).
