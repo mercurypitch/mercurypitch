@@ -20,7 +20,7 @@ import type { Figure, Mark } from './band-chart.test-fixtures'
 import { channels, marksOf, paintCharts, picture, } from './band-chart.test-fixtures'
 import { BAND_COLOR } from './band-chart-draw'
 import { HOLD_5, PUSH_5, SING_3 } from './band-chart-lessons.test-fixtures'
-import { levelAt, paintSong, songRoom, songUnder, STRIP_ROW, } from './band-chart-song'
+import { KEPT_FADE, levelAt, paintSong, songRoom, songUnder, STRIP_ROW, } from './band-chart-song'
 import type { SongScene } from './band-chart-song-scene'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { BREATHE } from './breath-mark'
@@ -191,6 +191,38 @@ describe('a song line', () => {
     expect(Math.max(...word.xs)).toBeLessThanOrEqual(
       chart.pointOf(6, 0).x + 1e-9,
     )
+  })
+
+  it('keeps a take’s line under the live one, faint behind a newer take, each named just after its end', async () => {
+    // Arrange: take 1 sung around do and so, take 2 a little above
+    const line = (c: number) => [
+      { t: 0, c },
+      { t: 1, c: c + 700 },
+      { t: 1.4, c: null },
+    ]
+    const song = songOf({
+      bands: TWO,
+      traces: [
+        { line: line(0), faint: true, name: 'take 1' },
+        { line: line(30), faint: false, name: 'take 2' },
+      ],
+    })
+
+    // Act
+    const [{ chart, calls }] = await paintCharts(songLine(song))
+
+    // Assert
+    const marks = marksOf(calls)
+    const violet = channels(BAND_COLOR.singer).rgb
+    const strokes = marks.filter(
+      (m) => m.rgb === violet && m.width === 2.6 && m.xs.length > 0,
+    )
+    expect(strokes.map((m) => m.opacity)).toEqual([KEPT_FADE, 1])
+    const [one] = wordsOf(marks, 'take 1')
+    const [two] = wordsOf(marks, 'take 2')
+    expect([one.opacity, two.opacity]).toEqual([KEPT_FADE, 1])
+    expect(one.xs[0]).toBeGreaterThan(chart.pointOf(1, 700).x)
+    expect(one.ys[0]).toBeCloseTo(chart.pointOf(1, 700).y, 1)
   })
 
   it('draws a breath mark given no word as its tick alone', async () => {
