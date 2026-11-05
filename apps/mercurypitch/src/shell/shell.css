@@ -371,7 +371,12 @@
    Shrunk, the pill is that one tab, as iOS's own tab bar minimises into a
    single button: a circle of the bar's height that the tab's tinted plate
    fills to the glass border. The plate kept its 52 px height inside it and
-   floated there, a ring of bare glass round it (owner, 29 Oct). */
+   floated there, a ring of bare glass round it (owner, 29 Oct).
+
+   A label wider than the circle's inside widens it into a capsule just
+   wide enough: at 13 px "Progress" is 55 px, and the circle left it 50, so
+   the minimised Progress tab read "Progr...". The shorter labels keep the
+   circle. */
 .mp-rail-row.is-min {
   justify-content: flex-end;
 }
@@ -379,6 +384,7 @@
 .mp-rail-row.is-min .mp-rail {
   flex: 0 0 auto;
   width: var(--tabbar-height);
+  min-width: max-content;
   padding: 0;
 }
 
