@@ -950,6 +950,15 @@
 .detailsFields > .dangerButton {
   min-height: 40px;
 }
+/* The two rules above outrank the touch block's plain `.button` and
+   `.dangerButton`, so a finger's 44 px is restated here: Remove track was
+   40 px tall on a phone. */
+@media (pointer: coarse) {
+  .detailsFields > .button,
+  .detailsFields > .dangerButton {
+    min-height: 44px;
+  }
+}
 .field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 140px;
@@ -1021,6 +1030,14 @@
   background-color: var(--studio-bg);
   color: var(--studio-text);
   font: inherit;
+}
+/* A finger's 44 px, as the details' buttons take: the track's name, its
+   sound and its input were 36 px tall on a phone. */
+@media (pointer: coarse) {
+  .stackedField input,
+  .stackedField select {
+    height: 44px;
+  }
 }
 /* A lane's details open with what its compact header leaves out: its lines,
    and on a phone its arm. */
