@@ -6,9 +6,13 @@
 // so Lessons 18 and 19 can play theirs with it. A view is what the figure
 // shows: rows of bars on one line or a staff, or the pitch-line view, with
 // their pads, counts and stopwatch strip (kit/rhythm-draw.ts). A play is
-// parts in turn, each a row of a view at its tempo, after a silence if it
-// asks for one: Play the halvings' five bars each written in place of the
-// one before, Play both's two rows a second apart.
+// parts in turn, each a row of a view at its tempo, after a silence or a
+// count-in on the click if it asks for one: Play the halvings' five bars
+// each written in place of the one before, Play both's two rows a second
+// apart, the checkpoint's Hear the bars after a bar counted in. Outside a
+// play, a page can light a pad or a note (`light`), as the checkpoint's
+// take does under its own click, and draw taps as ticks across the strip
+// (`ticks`), kept through every redraw.
 //
 // Every sound goes through the beat clock (kit/beat-clock.ts), booked ahead
 // on the audio clock into the run's own bus, so stopping cancels what was
@@ -31,7 +35,7 @@
 import type { Bar as ClockBar, Hit, Run, Spot } from './beat-clock'
 import { BeatClock } from './beat-clock'
 import type { SoundOwner } from './now-playing'
-import type { RhythmFigure, RowState } from './rhythm-draw'
+import type { RhythmFigure, RhythmTick, RowState } from './rhythm-draw'
 import { drawRhythm, figureSize } from './rhythm-draw'
 import type { RhythmScene } from './rhythm-layout'
 import { placeRow } from './rhythm-layout'
@@ -68,6 +72,8 @@ export interface PlayPart {
   readonly bpm: () => number
   /** Seconds of silence before it. */
   readonly pause?: number
+  /** Beats of the click alone before it, beat 1 higher: a count-in. */
+  readonly countIn?: number
   /** Unwritten as it starts, so it is written as it sounds in place of what was there. */
   readonly fresh?: boolean
 }
@@ -138,6 +144,13 @@ export interface RhythmBar {
   say(text: string): void
   /** Which of a row's symbols are written, as heard so far. */
   written(row?: number): readonly boolean[]
+  /** Lights a beat's pad, or a symbol as sounding, outside a play: the checkpoint's take, which plays only the click. */
+  light(next: {
+    readonly pad: number | null
+    readonly sounding: number | null
+  }): void
+  /** Draws taps as ticks across the first row's strip, kept across redraws, or clears them with null. */
+  ticks(at: readonly RhythmTick[] | null): void
   /** The drawn figure, for the toy's own checks. */
   readonly figure: RhythmFigure | null
 }
@@ -223,6 +236,16 @@ export function planPlay(parts: readonly PlayPart[]): PlanBar[] {
       const seconds = part.pause
       push(1, [], index, () => 60 / seconds, -1)
     }
+    if (part.countIn !== undefined && part.countIn > 0) {
+      const clicks = Array.from(
+        { length: part.countIn },
+        (_, b): Hit<RbHit> => ({
+          beat: b,
+          data: { k: 'click', high: b === 0 },
+        }),
+      )
+      push(part.countIn, clicks, index, part.bpm, -1)
+    }
     const row = part.view.scene.rows[part.row ?? 0]
     const beats = row.beats ?? row.bars.length * BAR_BEATS
     const hits = partHits(part, index)
@@ -275,6 +298,8 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
   // the counts faint, from a play that asked for it until the next play
   let faint = false
   let seen: RhythmSeen = { lanes: false, counts: false }
+  // the taps' ticks, drawn again with every redraw until cleared
+  let tickMarks: readonly RhythmTick[] | null = null
   const labelOf = (v: RhythmView): string =>
     seen.lanes ? (v.laneLabel ?? v.label) : v.label
 
@@ -337,6 +362,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     }
     figure = drawRhythm(svgEl, scene, figureSize(o.figure))
     paint()
+    if (tickMarks !== null) figure.ticks(0, tickMarks)
     placePads()
   }
 
@@ -564,6 +590,14 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     choose,
     say,
     written: (row = 0) => [...(states[row]?.written ?? [])],
+    light(next) {
+      patch(0, { lit: next.pad, sounding: next.sounding })
+      paint()
+    },
+    ticks(at) {
+      tickMarks = at
+      figure?.ticks(0, at ?? [])
+    },
     get figure() {
       return figure
     },

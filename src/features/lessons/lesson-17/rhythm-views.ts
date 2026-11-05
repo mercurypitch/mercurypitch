@@ -8,7 +8,8 @@
 // written two ways (FACTS 17); Step 3's two bars played in turn; Step 4's
 // grid with its rests, and the rest strip's five examples, each with its
 // silence heard between two notes (FACTS 26a); Step 5's two bars on the
-// staff, with Dot and Tie (FACTS 29). Each view is named for what it shows,
+// staff, with Dot and Tie (FACTS 29); and the checkpoint's two written
+// bars, tapped and then sung (FACTS 36). Each view is named for what it shows,
 // written or on the pitch line (kit/rhythm-words.ts), so the figure's group
 // says what is drawn; how the bar is seen, the pitch line and the counts,
 // is the rhythm bar's own (kit/rhythm-bar.ts `see`).
@@ -62,6 +63,12 @@ export const BOTH_TWICE: readonly Bar[] = [TEMPO_BAR, TEMPO_BAR]
 export const COUNT_BARS: readonly Bar[] = [
   times(8, n(0.5)),
   [n(1), n(0.5), n(0.5), ...times(4, n(0.25)), n(1)],
+]
+
+/** The checkpoint's two written bars: two quarters and a half note, then two eighths, a quarter, two eighths and a quarter (FACTS 36). */
+export const TAKE_BARS: readonly Bar[] = [
+  [n(1), n(1), n(2)],
+  [n(0.5), n(0.5), n(1), n(0.5), n(0.5), n(1)],
 ]
 
 /** Step 5's two bars: half, quarter, quarter, then quarter, quarter, half; Dot makes a dotted half and a dotted quarter, Tie joins the bar line's two quarters. */

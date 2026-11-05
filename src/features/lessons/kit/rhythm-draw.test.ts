@@ -502,6 +502,40 @@ describe('drawRhythm', () => {
     expect(cells[2]).toBeLessThan(xOf(row, 3.5))
   })
 
+  it("draws taps as ticks across a row's strip where each fell, gold where one met its note, each set in place of the last", () => {
+    // Arrange
+    const { el, fig } = draw([times(4, note(1))])
+    const row = fig.layout.rows[0]
+
+    // Act
+    fig.ticks(0, [
+      { beat: 0.1, met: true },
+      { beat: 1.5, met: false },
+    ])
+    const first = all(el, '.rb-tick').map((t) => t.classList.contains('is-met'))
+    fig.ticks(0, [{ beat: 2, met: false }])
+
+    // Assert (Lesson 17 WEB-SPEC, Toys 7 and Look)
+    expect(first).toEqual([true, false])
+    const ticks = all(el, '.rb-tick')
+    expect(ticks).toHaveLength(1)
+    expect(num(ticks[0], 'x1')).toBeCloseTo(xOf(row, 2), 1)
+    expect(ticks[0].classList.contains('is-met')).toBe(false)
+    expect(num(ticks[0], 'y1')).toBeLessThan(row.stripTop)
+    expect(num(ticks[0], 'y2')).toBeGreaterThan(row.stripTop + row.stripH)
+  })
+
+  it('draws no ticks on a figure with no strip', () => {
+    // Arrange
+    const { el, fig } = draw([times(4, note(1))], { strip: false })
+
+    // Act
+    fig.ticks(0, [{ beat: 1, met: true }])
+
+    // Assert
+    expect(all(el, '.rb-tick')).toHaveLength(0)
+  })
+
   it("lays a one-bar figure's pads the width of their beats, 44 px or more from 344 px up (FACTS 70)", () => {
     // Act
     const { fig } = draw([times(4, note(1))], {}, NARROW)

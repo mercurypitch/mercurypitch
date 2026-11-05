@@ -291,6 +291,33 @@ describe('planPlay', () => {
     ])
   })
 
+  it('counts a part in on the click alone, beat 1 higher, lighting no pad', () => {
+    // Arrange
+    const view = viewOf([times(4, note(1))])
+
+    // Act
+    const plan = planPlay([{ view, bpm: () => 60, countIn: 4 }])
+
+    // Assert: the count-in, the bar, and the short bar for its last reading
+    expect(plan.map((p) => [p.bar.beats, p.from])).toEqual([
+      [4, -1],
+      [4, 0],
+      [1, -1],
+    ])
+    expect(
+      plan[0].bar.hits.map((h) => [
+        h.beat,
+        h.data.k,
+        (h.data as { high?: boolean }).high,
+      ]),
+    ).toEqual([
+      [0, 'click', true],
+      [1, 'click', false],
+      [2, 'click', false],
+      [3, 'click', false],
+    ])
+  })
+
   it('keeps a figure that ends short on its last beat, and reads its last cell after it', () => {
     // Arrange: the half rest's example, ending on the next bar's first note
     const v = viewOf([[note(1), note(1), rest(2)], [note(1)]])
@@ -620,6 +647,32 @@ describe('mountRhythmBar', () => {
 
     // Assert
     expect(frames).toEqual([null, 1.25, null])
+  })
+
+  it('lights a pad and a note outside a play, and keeps its ticks through a redraw until cleared', () => {
+    // Arrange
+    const { bar } = mount()
+    const view = viewOf([times(4, note(1))], null)
+    bar.show(view, () => true)
+    const pad = (b: number) =>
+      document.querySelectorAll('.rb-pad')[b]?.classList.contains('is-now')
+    const sounding = () =>
+      Array.from(document.querySelectorAll('.rb-sym.is-sounding'), (g) =>
+        Number(g.getAttribute('data-i')),
+      )
+
+    // Act
+    bar.light({ pad: 2, sounding: 1 })
+    const lit = [pad(2), pad(1), sounding()]
+    bar.ticks([{ beat: 1, met: true }])
+    bar.see({ counts: true })
+    const kept = document.querySelectorAll('.rb-tick.is-met').length
+    bar.ticks(null)
+
+    // Assert
+    expect(lit).toEqual([true, false, [1]])
+    expect(kept).toBe(1)
+    expect(document.querySelectorAll('.rb-tick')).toHaveLength(0)
   })
 
   it('answers a pad pressed, marks the chosen one, and moves the choice with the arrow keys', () => {
