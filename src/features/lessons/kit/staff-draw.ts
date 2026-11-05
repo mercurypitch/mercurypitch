@@ -11,8 +11,9 @@
 //
 // The engraving is the stats site's (its staff-engraving snippet): five
 // evenly spaced lines, true-size clefs and filled noteheads from Noto
-// Music's outlines (kit/glyphs.ts), a sign to the left of its note, ledger
-// lines a little wider than a notehead and only as far as the note needs.
+// Music's outlines (glyphs.ts and staff-glyphs.ts), a sign to the left of
+// its note, ledger lines a little wider than a notehead and only as far as
+// the note needs.
 // No stems, no time or key signature: note lengths wait for Lesson 17. The
 // line weight and colour are the toy's tokens (lesson-staff.css), ink at
 // 3:1 or more against the figure at every stop of its gradient (FACTS 72).
@@ -26,12 +27,13 @@
 // lane to its notehead, so a step of one letter shows as one lane or two.
 
 import { svg } from './dom'
-import { F_CLEF_PATH, FLAT_PATH, G_CLEF_PATH, NOTEHEAD_PATH, NOTO_GLYPHS, SHARP_PATH, } from './glyphs'
+import { G_CLEF_PATH } from './glyphs'
 import { HOME_PATH } from './home-glyph'
 import type { Strip } from './key-strip'
 import { stripLayout } from './key-strip'
 import type { Spelled } from './notes'
 import { isBlack, signName } from './notes'
+import { F_CLEF_PATH, FLAT_PATH, NOTEHEAD_PATH, NOTO_GLYPHS, SHARP_PATH, } from './staff-glyphs'
 import type { Clef, StaffKind } from './staff-places'
 import { clefPlace, isLine, ledgersOf, LINES, midiOf, noteAt, placeOf, writtenOf, } from './staff-places'
 
@@ -200,7 +202,7 @@ export function layoutScene(w: number, h: number, s: Scene): Layout {
 /** The places of the staff lines a scene draws. */
 const linesOf = (staff: StaffKind): readonly number[] => LINES[staff]
 
-/** A glyph from kit/glyphs.ts at true size, its baseline at (x, y). */
+/** A Noto Music glyph at true size, its baseline at (x, y). */
 function glyph(
   d: string,
   x: number,

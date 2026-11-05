@@ -17,7 +17,7 @@ says what the page needs from each (What the kit and the app still need, items 3
   masthead's constant (`src/features/lessons/kit/season.ts:1-3`;
   `src/features/lessons/kit/lesson-menu.ts:111`), and this page is Season 2's first.
 - **The staff toy** (§ 6.2 item 2): the stats site's engraving as a page toy, with the F clef the
-  kit lacks (`src/features/lessons/kit/glyphs.ts:10`), the house on do, a "See it on the pitch
+  kit lacks (`src/features/lessons/kit/glyphs.ts:15`), the house on do, a "See it on the pitch
   line" switch and play on every example. Lesson 15 is its first page, so this spec gives its
   first form (Toys 1).
 
@@ -209,7 +209,7 @@ so the keyboard and the stage-fit test reach every action.
 
 - **The engraving.** The stats site's snippets are its start (SEASON-2 § 6.1 item 1): a staff of
   five evenly spaced lines; true-size clefs from Noto Music's outlines, the G clef the kit has
-  (`G_CLEF_PATH`, `src/features/lessons/kit/glyphs.ts:10`) and the F clef from the snippet's
+  (`G_CLEF_PATH`, `src/features/lessons/kit/glyphs.ts:15`) and the F clef from the snippet's
   glyphs (`research/stats-snippets/noto-music-glyph-paths.json:13`), drawn with its bottom line at
   font y −88, since its dots centre at font y 644 (`research/stats-snippets/staff-engraving.js:123-127`);
   the filled notehead (`noto-music-glyph-paths.json:160`), the sharp (`:76`) and the flat (`:62`).
