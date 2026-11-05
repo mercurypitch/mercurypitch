@@ -38,6 +38,15 @@
 // and the run counts one take a slot. A rung's line (`rungLine`) leaves off
 // the advice to listen or try again: the lines stay on screen after an
 // answer that ends the singing (Lesson 9 FACTS 79).
+//
+// A phrase (Lesson 14) is read for the notes it ran over and nothing else
+// (`readRange`): the 10th and 90th percentiles of its voiced frames' pitch,
+// each taken to its nearest note, and Lesson 3's octave line in the plural
+// when both, moved by the same whole octaves, are Merc's do and la. It reads
+// no breath, no swell and no loudness, and counts nothing (Lesson 14 FACTS
+// 53): the singer hears those on playback. Under 1.5 s of voice it heard no
+// phrase, and says so with no advice to try again, since the takes stop at
+// three.
 
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { computeRange, foldCents, median, middleHalf, preprocess, } from '@/lib/mirror/metrics'
@@ -104,12 +113,19 @@ export function readingLine(d: number): string {
   return readingWords(d)
 }
 
-/** "You sang it an octave lower: same note.", or null where it would not be true. */
-export function octaveLine(d: number, octaves: number): string | null {
+/**
+ * "You sang it an octave lower: same note.", or null where it would not be
+ * true; "same notes." for a phrase (Lesson 14), whose every note moved.
+ */
+export function octaveLine(
+  d: number,
+  octaves: number,
+  what: 'note' | 'notes' = 'note',
+): string | null {
   if (octaves === 0 || Math.abs(d) > OCTAVE_LINE_CENTS) return null
   const n = Math.abs(octaves)
   const size = n === 1 ? 'an octave' : `${NUMBER_WORDS[Math.min(n, 6)]} octaves`
-  return `You sang it ${size} ${octaves < 0 ? 'lower' : 'higher'}: same note.`
+  return `You sang it ${size} ${octaves < 0 ? 'lower' : 'higher'}: same ${what}.`
 }
 
 const notSteady: TakeReading = {
@@ -334,4 +350,80 @@ export function readLadder(
     ),
   )
   return { heard: true, slots, count: countRun(slots.map((s) => [s])) }
+}
+
+/** Seconds of voice a phrase needs to be read (Lesson 14 FACTS 53). */
+export const PHRASE_VOICE_SEC = 1.5
+
+/** A phrase with too little voice to read: the kit's not-steady line, for a phrase, with no advice after it. */
+export const NOT_HEARD_PHRASE_LINE = "We didn't hear the phrase that time."
+
+/** A phrase take: no phrase heard, or the notes it ran over. */
+export type RangeReading =
+  | { readonly heard: false; readonly line: string }
+  | {
+      readonly heard: true
+      /** The nearest notes to the take's 10th and 90th percentiles of pitch, MIDI. */
+      readonly low: number
+      readonly high: number
+      /** "Take 1, drawn over Merc's bands: your line ran from about D3 to B3.", its notes in signs. */
+      readonly line: string
+      /** The same line in words, for a screen reader: "… about F sharp 3 …". */
+      readonly spoken: string
+      /** "You sang it an octave lower: same notes.", where both ends are Merc's do and la moved by whole octaves. */
+      readonly octaveLine: string | null
+    }
+
+/** The `p`th percentile of sorted values, by the nearest rank. */
+function percentile(sorted: readonly number[], p: number): number {
+  const i = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.round(p * (sorted.length - 1))),
+  )
+  return sorted[i]
+}
+
+/** A phrase take's line: the notes its line ran over, in signs or in words. */
+export function rangeLine(
+  take: number,
+  low: number,
+  high: number,
+  name: Namer = inSigns,
+): string {
+  const head = `Take ${take}, drawn over Merc's bands:`
+  if (low === high) return `${head} your line stayed at about ${name(low)}.`
+  return `${head} your line ran from about ${name(low)} to ${name(high)}.`
+}
+
+/**
+ * Reads a phrase take (Lesson 14): its raw frames, the take's number, and
+ * Merc's do and la as MIDI notes. Under 1.5 s of voiced frames it heard no
+ * phrase; otherwise the line names the notes the take ran over.
+ */
+export function readRange(
+  frames: readonly F0Frame[],
+  take: number,
+  doMidi: number,
+  laMidi: number,
+): RangeReading {
+  const voiced = preprocess(frames)
+  if (
+    voiced.length < 2 ||
+    voiced.length * estimateFrameHop(voiced) < PHRASE_VOICE_SEC
+  )
+    return { heard: false, line: NOT_HEARD_PHRASE_LINE }
+  const sorted = voiced.map((v) => v.cents).sort((a, b) => a - b)
+  const low = Math.round(percentile(sorted, 0.1) / 100)
+  const high = Math.round(percentile(sorted, 0.9) / 100)
+  const shift = low - doMidi
+  const octaves =
+    shift !== 0 && shift % 12 === 0 && high - laMidi === shift ? shift / 12 : 0
+  return {
+    heard: true,
+    low,
+    high,
+    line: rangeLine(take, low, high),
+    spoken: rangeLine(take, low, high, inWords),
+    octaveLine: octaveLine(0, octaves, 'notes'),
+  }
 }
