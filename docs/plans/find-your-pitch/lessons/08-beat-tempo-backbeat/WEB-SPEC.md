@@ -773,7 +773,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:188`; FACTS 30c); the count-in do at 0.065.
 - **What the kit's sound module has** (What the kit and the app still need, item 5): a voice and a
   burst of noise start at a time ahead on the audio clock (`at`, `kit/sound.ts:40-44`, `:176`;
-  `playNoise`, `:412-479`), and `contourVoice` releases on it (`:328-354`). This page added the
+  `playNoise`, `:413-514`), and `contourVoice` releases on it (`:328-354`). This page added the
   rest, the bus and the note in a module of their own that only this page imports,
   `kit/sound-ahead.ts`, so no other lesson's first paint carries them: a caller's own bus on the
   master, `openBus`, so the drums play into it and obey the Sound switch, the hush and the
@@ -890,7 +890,7 @@ was built on.
    `:116`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page stop;
    `tick` with a start time (`:390-411`); a voice given a length stopped on the audio clock, where
    `voice` stops one on a timer (`:269-275`). The beat clock keeps the clock map itself. Voices and
-   noise already took a start time (`:40-44`, `:412-479`). Built with the bus and the note in
+   noise already took a start time (`:40-44`, `:413-514`). Built with the bus and the note in
    `kit/sound-ahead.ts` (`openBus`, `:18-66`; `bookNote`, `:68-100`), which only this page imports,
    so every other lesson's first paint stays without them; `kit/sound.ts` lends it the master
    (`openMaster`, `:523-531`) and closes its buses with every voice (`onStopAll`, `:533-536`).
