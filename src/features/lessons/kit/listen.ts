@@ -15,14 +15,14 @@
 // and every frame it hears share a clock. It registers with the mic
 // sentinel like every surface that holds the device.
 //
-// The listener records nothing and keeps nothing: a take is the pitch
-// frames of one reply, held in memory until it is read and then dropped
-// (REQ-GVC-004), and nothing leaves the device (REQ-GVC-003). A page that
-// records its takes to play them back (Lesson 14) does so through
-// kit/record.ts, over the stream the listener already holds (`media`), and
-// says so itself. The page lets go of the device
+// Nothing is recorded or kept: a take is the pitch frames of one reply,
+// held in memory until it is read and then dropped (REQ-GVC-004), and
+// nothing leaves the device (REQ-GVC-003). The page lets go of the device
 // when its run ends, when the viewer leaves the section, when the tab is
 // hidden and when the page is hidden for good (`release`, `releaseNow`).
+// A page that records its takes to play them back does so through
+// kit/record.ts, over the stream the listener already holds (`media`), and
+// says so itself: the listener records nothing.
 
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
