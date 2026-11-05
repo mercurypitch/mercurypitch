@@ -32,6 +32,8 @@
 // which the row labels are written as markup (so a ♯ is spoken), each at its
 // row's height.
 
+import type { BreathPlace } from './breath-mark'
+import { BREATH_WORD, drawBreath } from './breath-mark'
 import { clamp, q } from './dom'
 import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
 import { reducedMotion } from './motion-switch'
@@ -323,11 +325,8 @@ function drawSweep(
   ctx.stroke()
 }
 
-/** A breath mark: its tick's foot, and where its word stands. */
-export interface BreathMark {
-  readonly x: number
-  /** The tick's foot: the tick rises 8 px from it, up and to the right. */
-  readonly y: number
+/** A breath mark: its tick's foot, and where its word stands (kit/breath-mark.ts draws it). */
+export interface BreathMark extends BreathPlace {
   /** The word's anchor: its foot, centred over the tick, or its top, `beside` the tick on its right. */
   readonly word: {
     readonly x: number
@@ -335,9 +334,6 @@ export interface BreathMark {
     readonly beside: boolean
   }
 }
-
-/** The breath word's size, and the space between its foot and the tick's, px. */
-const BREATH_WORD = 11
 
 /**
  * Where a breath mark `t` seconds in sits: over the path there, clear of the
@@ -369,22 +365,8 @@ function drawBreaths(
   color: string,
   reached: number,
 ): void {
-  ctx.font = `500 ${BREATH_WORD}px "JetBrains Mono", monospace`
-  ctx.lineCap = 'round'
-  for (const t of breaths) {
-    const { x, y, word } = breathAt(f, path, t)
-    const lit = reached >= t
-    ctx.strokeStyle = rgba(color, lit ? 1 : 0.7)
-    ctx.fillStyle = rgba(color, lit ? 1 : 0.7)
-    ctx.lineWidth = lit ? 2.2 : 1.8
-    ctx.beginPath()
-    ctx.moveTo(x - 1.5, y)
-    ctx.lineTo(x + 2.5, y - 8)
-    ctx.stroke()
-    ctx.textAlign = word.beside ? 'left' : 'center'
-    ctx.textBaseline = word.beside ? 'top' : 'bottom'
-    ctx.fillText('breathe', word.x, word.y)
-  }
+  for (const t of breaths)
+    drawBreath(ctx, breathAt(f, path, t), color, reached >= t)
 }
 
 /**
