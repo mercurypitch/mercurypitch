@@ -16,11 +16,11 @@
 // height (song-line.ts). It is the last lesson of Season 1, so its closing
 // card is the season's close.
 //
-// The switches, the steps' deck with the song line in each step's state,
-// the season's close, the season map, the masthead and Merc and Tavi. The
-// rest does nothing until it is wired: the song line on the hero, the cold
-// open, the recall and the quick check, the four words, Sing it and the
-// closing card's still.
+// In reading order: the switches, the cold open on the hero's song line,
+// the four words, the steps' deck with the song line in each step's state,
+// the quick check, the season's close, the season map, the masthead, the
+// recall, and Merc and Tavi. Sing it and the Wrap's practise card and
+// still join with their own modules.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -40,9 +40,14 @@ import { initMercs } from '@/features/lessons/kit/merc-duo'
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { createQuiz } from '@/features/lessons/kit/quiz'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
+import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
+import { initRecall } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
@@ -52,6 +57,9 @@ initSoundSwitch({
 initMotionSwitch()
 Motion.init()
 
+initColdOpen()
+initWords()
+
 // five steps, one song line
 const deck = createStepDeck({
   toyFor: () => 1,
@@ -59,6 +67,8 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+createQuiz({ questions: QUIZ_QUESTIONS, lesson: 14, keys: QUIZ_KEYS, deck })
 
 // the season's close first: the explorer binds its map link
 createNextCard(14)
@@ -83,6 +93,7 @@ initMasthead(
   },
   { lesson: 14, deck },
 )
+initRecall()
 initReveals()
 startFrameLoop()
 // Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
