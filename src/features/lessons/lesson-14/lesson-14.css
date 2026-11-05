@@ -2,15 +2,7 @@
    Lesson 14 — Phrasing: sing a whole song: the page's own figures and rows
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
-   @import below, which the build inlines, and not as main.ts's import: it
-   shares a chunk with the kit's comfort check and voice choice, which this
-   page does not load until Sing it is wired. Imported here alone, it would
-   leave that chunk for a sheet of its own, which Lessons 3 and 5 to 10 link
-   after their own sheet, so its rules would win over theirs
-   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
-   page by @import"). Once Sing it loads those modules, the import moves
-   back to main.ts.
+   lesson-parts and lesson-voice, each imported by main.ts).
 
    Here: the hero's song line under Merc and Tavi, across the stage's whole
    width, with the two plays and the gloss under it; the song line's floor
@@ -20,7 +12,6 @@
    at 420 px and under); and the closing card's still. The song line's colours
    are the canvas's (kit/band-chart-song.ts): Merc's bands amber, the
    learner's line violet. */
-@import '../kit/lesson-voice.css';
 
 /* ---------------------------------------------------------------- hero: Merc and Tavi, the song line under them */
 /* four lesson chips wrap onto rows of their own: 16 px between the rows

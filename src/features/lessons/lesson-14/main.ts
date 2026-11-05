@@ -29,8 +29,9 @@ import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// lesson-voice.css comes in by lesson-14.css's @import until Sing it loads
-// the modules it shares a chunk with (lesson-14.css says why)
+// in the chunk of the kit's comfort check and voice choice, which the Wrap
+// and the steps load, so every voice lesson links it where it did
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-14.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
