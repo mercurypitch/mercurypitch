@@ -232,7 +232,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     const source = deps.createSource(context, stream)
     const capture = deps.openCapture(context, source, captureEvents())
     const monitor = deps.createMonitor(context, source)
-    monitor.set(deps.monitorLevel(trackId))
+    monitor.set(deps.monitorSound(trackId))
     return {
       context,
       mic,
@@ -726,11 +726,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       if (view.phase !== 'armed' && view.phase !== 'arming') return
       if (trackId === view.targetTrackId) return
       set({ targetTrackId: trackId })
-      armed?.monitor.set(deps.monitorLevel(trackId))
+      armed?.monitor.set(deps.monitorSound(trackId))
     },
     /** The armed lane's monitoring follows the settings and the lane. */
     updateMonitor(): void {
-      armed?.monitor.set(deps.monitorLevel(view.targetTrackId))
+      armed?.monitor.set(deps.monitorSound(view.targetTrackId))
     },
     clearMessages(): void {
       if (view.error !== null || view.notice !== null)

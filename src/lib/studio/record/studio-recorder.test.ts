@@ -3,11 +3,29 @@ import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
+import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioCaptureEvents } from './capture-node'
+import type { StudioMonitorSound } from './input-monitor'
 import type { StudioRecordSettings } from './record-settings'
 import { DEFAULT_STUDIO_RECORD_SETTINGS } from './record-settings'
 import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './studio-recorder'
 import { createStudioRecorder, MIC_LOST_ARMED, MIC_LOST_BEFORE_TAKE, MIC_LOST_MID_TAKE, } from './studio-recorder'
+
+const EMPTY_CHAIN = normalizeChainSpec({ effects: [] })
+
+/** What the harness's lanes sound like: no effects, both sides at `gain`. */
+function laneSound(
+  laneId: string | null,
+  on = false,
+  gain = 1,
+): StudioMonitorSound {
+  return {
+    on,
+    laneId: laneId ?? 'new-take-lane',
+    spec: EMPTY_CHAIN,
+    gains: [gain, gain],
+  }
+}
 
 afterEach(() => vi.useRealTimers())
 
@@ -76,7 +94,7 @@ function harness(
     createSource: () => source as unknown as AudioNode,
     createClicks: () => clicks,
     createMonitor: () => monitor,
-    monitorLevel: () => ({ on: false, gain: 1, pan: 0 }),
+    monitorSound: (trackId) => laneSound(trackId),
     transport,
     settings: () => ({
       ...DEFAULT_STUDIO_RECORD_SETTINGS,
@@ -249,7 +267,7 @@ describe('arming', () => {
     expect(await arming).toBe(true)
     expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-1' })
     expect(h.deps.openCapture).toHaveBeenCalledOnce()
-    expect(h.monitor.set).toHaveBeenCalledWith({ on: false, gain: 1, pan: 0 })
+    expect(h.monitor.set).toHaveBeenCalledWith(laneSound('lane-1'))
 
     h.worklet.level(0.4, 1536)
     expect(h.view().level).toBe(0.4)
@@ -296,11 +314,8 @@ describe('arming', () => {
 
   it('moves the arm to the lane pressed while the microphone opens, metering that lane', async () => {
     const h = harness({
-      monitorLevel: (trackId) => ({
-        on: true,
-        gain: trackId === 'lane-2' ? 0.5 : 1,
-        pan: 0,
-      }),
+      monitorSound: (trackId) =>
+        laneSound(trackId, true, trackId === 'lane-2' ? 0.5 : 1),
     })
     const arming = h.recorder.arm('lane-1')
 
@@ -309,11 +324,9 @@ describe('arming', () => {
     expect(h.view()).toMatchObject({ phase: 'arming', targetTrackId: 'lane-2' })
     expect(await arming).toBe(true)
     expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-2' })
-    expect(h.monitor.set).toHaveBeenLastCalledWith({
-      on: true,
-      gain: 0.5,
-      pan: 0,
-    })
+    expect(h.monitor.set).toHaveBeenLastCalledWith(
+      laneSound('lane-2', true, 0.5),
+    )
   })
 
   it('closes the capture and gives the microphone back on disarm', async () => {

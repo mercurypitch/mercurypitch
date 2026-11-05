@@ -149,10 +149,10 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 17.9k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept Arming a lane opens... |
+| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 18.2k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept Arming a lane opens... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
-| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.0k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
+| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.1k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |

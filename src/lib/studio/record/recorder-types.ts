@@ -7,7 +7,7 @@
 // set of shapes, and the recorder stays a readable length.
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
-import type { StudioInputMonitor, StudioMonitorLevel } from './input-monitor'
+import type { StudioInputMonitor, StudioMonitorSound } from './input-monitor'
 import type { StudioRecordSettings } from './record-settings'
 import type { StudioLivePeaks } from './take-audio'
 import type { StudioTakeCut } from './take-plan'
@@ -127,7 +127,8 @@ export interface StudioRecorderDeps {
     context: AudioContext,
     input: AudioNode,
   ): Pick<StudioInputMonitor, 'set' | 'dispose'>
-  monitorLevel(trackId: string | null): StudioMonitorLevel
+  /** What the input sounds like through the lane: null is the new lane a take starts. */
+  monitorSound(trackId: string | null): StudioMonitorSound
   transport: StudioRecorderTransport
   settings(): StudioRecordSettings
   /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */

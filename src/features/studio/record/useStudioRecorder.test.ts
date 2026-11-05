@@ -1,7 +1,8 @@
-// Record in the Studio, the hook — one press of Record or R starts a take on the armed lane (arming one first when none is), each lane's arm button moves or drops the arm, repeat steps aside for a take, the mic icon and a lost mic follow the phase, a journaled take is offered only while it is not in the song, and the controls that wait for a take hear when it runs.
+// Record in the Studio, the hook — one press of Record or R starts a take on the armed lane (arming one first when none is), each lane's arm button moves or drops the arm, repeat steps aside for a take, the mic icon and a lost mic follow the phase, a journaled take is offered only while it is not in the song, the controls that wait for a take hear when it runs, and the monitor hears the armed lane's moving fader only while the microphone is open and monitoring is on.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
+import type { StudioMovingMix } from '@/lib/studio/record/monitor-sound'
 import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 
 const mocks = vi.hoisted(() => ({
@@ -92,6 +93,9 @@ const { setMicLatencyByDevice } = await import('@/stores/mic-latency-store')
 const { setMicLatencyPathByKey } =
   await import('@/stores/mic-latency-path-store')
 const { studioTakeRunning } = await import('./take-running')
+const { createStudioProject, createStudioTrack } =
+  await import('@/lib/studio/model/defaults')
+const { createStudioLiveMix } = await import('../mix/live-mix')
 const { readStudioRecordSettings } =
   await import('@/lib/studio/record/record-settings')
 
@@ -134,6 +138,7 @@ function mount(
     range?: { startFrame: number; endFrame: number } | null
     project?: StudioProject
     selected?: string | null
+    liveMix?: StudioMovingMix
   } = {},
 ) {
   const [selected, setSelected] = createSignal<string | null>(
@@ -167,6 +172,7 @@ function mount(
       transport: transport as never,
       selectedTrackId: selected,
       audioBusy: () => options.audioBusy ?? false,
+      liveMix: options.liveMix,
     })
     return done
   })
@@ -635,6 +641,53 @@ describe('useStudioRecorder input', () => {
     hook.chooseInput('usb-mic', 'USB Mic')
     expect(hook.settings().inputDeviceId).toBe('desk-mic')
     expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
+    dispose()
+  })
+})
+
+describe('useStudioRecorder monitoring', () => {
+  afterEach(() => localStorage.clear())
+
+  it("hears the armed lane's fader move while monitoring is on, and works nothing out while the mic is closed or monitoring is off", () => {
+    // A whole song: a monitored lane works out its effects from the mix.
+    const lead = createStudioTrack({
+      id: 'lane-1',
+      name: 'Lead',
+      order: 0,
+      role: 'voice',
+    })
+    const whole = {
+      ...createStudioProject({
+        id: 'song-1',
+        title: 'Song',
+        now: '2026-11-05T12:00:00.000Z',
+      }),
+      tracks: [lead],
+    }
+    const liveMix = createStudioLiveMix()
+    const { hook, dispose } = mount({ project: whole, liveMix })
+    const recorder = mocks.recorder!
+    hook.setSettings({ ...hook.settings(), monitor: true })
+
+    // The mic is closed: a fader moving reaches nothing.
+    recorder.updateMonitor.mockClear()
+    liveMix.setLane('lane-1', { gainDb: -12 })
+    expect(recorder.updateMonitor).not.toHaveBeenCalled()
+
+    // Armed: each move is heard.
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
+    recorder.updateMonitor.mockClear()
+    liveMix.setLane('lane-1', { gainDb: -6 })
+    liveMix.setLane('lane-1', { gainDb: -3, pan: 0.5 })
+    expect(recorder.updateMonitor).toHaveBeenCalledTimes(2)
+
+    // Monitoring off: the monitor hears that, then no move after it.
+    recorder.updateMonitor.mockClear()
+    hook.setSettings({ ...hook.settings(), monitor: false })
+    expect(recorder.updateMonitor).toHaveBeenCalled()
+    recorder.updateMonitor.mockClear()
+    liveMix.setLane('lane-1', { gainDb: 0 })
+    expect(recorder.updateMonitor).not.toHaveBeenCalled()
     dispose()
   })
 })

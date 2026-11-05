@@ -121,9 +121,11 @@ export function StudioRecordSettings(props: {
         <span>Monitor through headphones</span>
       </label>
       <Show when={settings().monitor}>
-        <p class={common.help}>
-          You hear yourself a little late. Use headphones, or the speakers feed
-          back into the microphone.
+        <p class={common.help} data-studio-monitor-help="">
+          You hear yourself through the lane's effects, a little late. The
+          compressor, de-esser, dynamic EQ and limiter sit out so the effects
+          add no delay, and takes record dry. Use headphones, or the speakers
+          feed back into the microphone.
         </p>
       </Show>
       <label class={styles.offset}>
