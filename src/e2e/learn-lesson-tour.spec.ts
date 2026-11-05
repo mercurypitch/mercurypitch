@@ -599,10 +599,10 @@ test("Lesson 15's first visit holds the card until the predict's choice, and the
   // Arrange: Lesson 15's WEB-SPEC, Tests 17, on a screen whose first view
   // holds the predict, as a first visit's tour opens only at the top
   await page.setViewportSize(DESKTOP)
-  await page.goto('/learn/15')
+  // the tour's chunk loaded and the page quiet: a first visit's tour not
+  // held would be open by now, as it opens the moment its chunk arrives
+  await page.goto('/learn/15', { waitUntil: 'networkidle' })
   await expect(page.locator('#predict [data-choice="nine"]')).toBeVisible()
-  // the page is read for a while with no choice, and scrolls as ever
-  await page.waitForTimeout(2500)
   const before = await card(page).count()
   const overflow = await page.evaluate(
     () => getComputedStyle(document.documentElement).overflowY,
