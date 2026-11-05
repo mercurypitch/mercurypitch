@@ -366,10 +366,10 @@ row links nothing until its lesson is released, and that release links it:
 | ------------------------------------------------------ | --------------------------------------- |
 | `/mirror`, `/vocal-range-test`                         | 1 (note names), 3 (matching), 7 (range) |
 | `/voice-type-test`, `/which-singer-has-my-vocal-range` | 7, 11                                   |
-| `/pitch-training`                                      | 3, 4, 5, 9                              |
-| `/ear-lab`                                             | 2, 6, 10                                |
+| `/pitch-training`                                      | 3, 4, 5, 9, 12                          |
+| `/ear-lab`                                             | 2, 6, 10, 12                            |
 | `/drum-night`                                          | 8                                       |
-| `/piano-night`, `/guitar-night`                        | 10, 12                                  |
+| `/piano-night`, `/guitar-night`                        | 10                                      |
 | `/karaoke-night`, `/jam`                               | 14                                      |
 
 These links are what turn the rooms and the lessons into one topic the engines

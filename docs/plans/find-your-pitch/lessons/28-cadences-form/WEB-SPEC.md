@@ -774,7 +774,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     `/ear-lab` row gains 28 (`docs/plans/find-your-pitch/SEARCH.md:370`, `:373`). The entry pages
     follow, since the entry test holds that table equal to the entry pages' lessons, room by room
     (`src/tests/entry-page-model.test.ts:497-529`): Karaoke Night's list gains 28 beside 14
-    (`lessonsPractised`, `src/seo/entry-pages.ts:272`), Ear Lab's gains 28 beside 2, 6 and 10
+    (`lessonsPractised`, `src/seo/entry-pages.ts:272`), Ear Lab's gains 28 beside 2, 6, 10 and 12
     (`lessonsPractised`, `src/seo/entry-pages.ts:503`), and Jam's stays 14
     (`lessonsPractised`, `src/seo/entry-pages.ts:537`).
 
