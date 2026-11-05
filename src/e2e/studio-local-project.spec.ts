@@ -1,6 +1,7 @@
 // Studio local projects — real file imports, durable reloads and portable backup ownership.
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { followDeviceTheme, switchTheme } from './helpers/theme'
 import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 function audioFixture(durationSeconds = 1, frequency = 220): Buffer {
@@ -213,6 +214,7 @@ test('Studio shows both themes and edits a real take with one set of track contr
   test.setTimeout(90_000)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  await followDeviceTheme(page)
   await openStudio(page, true)
   const studio = page.getByRole('region', { name: 'Studio', exact: true })
   await studio
@@ -286,11 +288,8 @@ test('Studio shows both themes and edits a real take with one set of track contr
     studio.getByRole('button', { name: /^Vocal, Vocal.wav,/ }),
   ).toHaveAttribute('aria-label', /0:02/)
   await studio.getByRole('button', { name: 'Close Clip details' }).click()
-  for (const theme of ['dark', 'light']) {
-    await page.evaluate(
-      (value) => document.documentElement.setAttribute('data-theme', value),
-      theme,
-    )
+  for (const theme of ['dark', 'light'] as const) {
+    await switchTheme(page, theme)
     // The Studio paints with the app's own theme tokens.
     await expect(studio).toHaveCSS(
       'background-color',
@@ -403,6 +402,7 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
   page,
 }, testInfo) => {
   test.setTimeout(120_000)
+  await followDeviceTheme(page)
   await openStudio(page, true)
   const studio = page.getByRole('region', { name: 'Studio', exact: true })
   await studio
@@ -433,11 +433,8 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
       studio.getByText('Saved in this browser', { exact: true }),
     ).toBeVisible()
   }
-  for (const theme of ['dark', 'light']) {
-    await page.evaluate(
-      (value) => document.documentElement.setAttribute('data-theme', value),
-      theme,
-    )
+  for (const theme of ['dark', 'light'] as const) {
+    await switchTheme(page, theme)
     await expect(
       studio.getByRole('radiogroup', { name: 'Timeline ruler' }),
     ).toHaveCSS(
