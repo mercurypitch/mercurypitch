@@ -86,4 +86,8 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   14: {
     band: "The original tease. It is true of the lesson, but it sits before the cold open's reveal and points at its answer, a line that stays in its band.",
   },
+  16: {
+    'any-note':
+      "The plan's line, the close of Lesson 15's card. It claims only what Lesson 15 has taught, where a note sits on either staff, so it sums up that lesson instead of setting up this one.",
+  },
 }

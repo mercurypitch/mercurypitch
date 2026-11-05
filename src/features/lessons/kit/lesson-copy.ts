@@ -125,6 +125,15 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  16: {
+    tease: 'Five notes on the staff. Tavi has never heard them.',
+    teaseAlts: [
+      {
+        id: 'any-note',
+        text: 'Now you can see where any note sits.',
+      },
+    ],
+  },
 }
 
 /**
