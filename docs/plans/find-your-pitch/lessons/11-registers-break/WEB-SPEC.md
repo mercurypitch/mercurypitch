@@ -811,14 +811,14 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:117-165`, `:388-391`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:689-695`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:379-382`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:680-686`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:344-354`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:335-345`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener and the pitch detector arrive
    through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:122-125`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:123-126`), and the ceiling holds only while that
    boundary does.
 5. `kit/range-chart.ts`, new with Lesson 7's page (its Toys 1 and needs 3: "generic over a window,
    a column and its lit band, lines, bands and range bars, so Lesson 11 ... and Lesson 14 can use

@@ -978,10 +978,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:371`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:362`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
-    (`scripts/assert-first-paint-budgets.mjs:117-119`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:753-756`, and for CSS `:786-789`; FACTS 76),
+    (`scripts/assert-first-paint-budgets.mjs:118-120`), and a document it emits with no budget
+    fails the check (`assert-first-paint-budgets.mjs:744-747`, and for CSS `:777-780`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
