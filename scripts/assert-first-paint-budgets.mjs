@@ -214,7 +214,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/05.html': 142,
+  // Raised to 143 for Lesson 14's steps, cold open and Wrap: 145,038 bytes
+  // before them, 145,517 with them, against 145,408 at 142. The 479 are
+  // none of Lesson 14's code: the modules Lesson 5 shares with it (its two
+  // takes, now kit/push-take.ts, the band chart, the kit's predict and
+  // quiz) regroup into chunks of their own, each with its imports.
+  'learn/05.html': 143,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -248,7 +253,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/04.html': 135,
+  // Raised to 136 for Lesson 14's steps, cold open and Wrap: 138,134 bytes
+  // before them, 138,512 with them, against 138,240 at 135. The 378 are
+  // none of Lesson 14's code: the modules Lesson 4 shares with it (the
+  // breath mark the slide guide draws, the kit's predict, quiz and runs)
+  // regroup into chunks of their own, each with its imports.
+  'learn/04.html': 136,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -325,7 +335,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // masthead, the season's close, explorer and Merc and Tavi, measured
   // 77,595 bytes in build:e2e. The ceiling is set for the page it becomes,
   // a quarter over its measure once whole; until then it holds the shell
-  // and each toy as it joins.
+  // and each toy as it joins: with the steps' song line, the cold open,
+  // the four words, the quizzes and the Wrap it is 124,060 bytes.
   'learn/14.html': 190,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
