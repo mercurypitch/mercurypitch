@@ -12,6 +12,10 @@
 // Thirteen bars share the card's width, about 25 px a column at 390 wide:
 // each button is its whole column, the chart's full height, so a tap
 // anywhere above a week lands on it.
+//
+// A week that earned a milestone wears a pin over its bar, and a key under
+// the axis says what the pin means, since a touch has no tooltip to ask.
+// Both are for the eye only: a week's name already says its milestone.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, Show } from 'solid-js'
@@ -147,6 +151,9 @@ export function RhythmCard(props: RhythmCardProps): JSX.Element {
 
   const first = (): ProgressWeekView | undefined => props.weeks[0]
   const last = (): ProgressWeekView | undefined => props.weeks.at(-1)
+  /** Whether any week wears a pin, so the pins need their key. */
+  const pinned = (): boolean =>
+    props.weeks.some((week) => Boolean(week.milestoneLabel))
 
   return (
     <section
@@ -197,7 +204,10 @@ export function RhythmCard(props: RhythmCardProps): JSX.Element {
               >
                 <span class="mp-prog-week__bar" aria-hidden="true" />
                 <Show when={week.milestoneLabel}>
-                  <span class="mp-prog-week__pin" aria-hidden="true" />
+                  <span
+                    class="mp-prog-pin mp-prog-week__pin"
+                    aria-hidden="true"
+                  />
                 </Show>
               </button>
             )}
@@ -209,6 +219,12 @@ export function RhythmCard(props: RhythmCardProps): JSX.Element {
             <span>{last()?.shortLabel}</span>
           </Show>
         </div>
+        <Show when={pinned()}>
+          <p class="mp-prog-weeks__key" aria-hidden="true">
+            <span class="mp-prog-pin" />
+            Milestone earned that week
+          </p>
+        </Show>
       </Show>
       <p class="mp-prog-card__text">{props.rhythm.summary}</p>
       <Tiles facts={props.rhythm.facts} />
