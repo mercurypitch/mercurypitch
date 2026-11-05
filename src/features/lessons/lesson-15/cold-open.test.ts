@@ -113,6 +113,23 @@ describe('the hero before a choice', () => {
   })
 })
 
+describe('the climb on the pitch line, after a choice', () => {
+  it('reveals nothing, heard to its end with sound on: only the five lines answer', async () => {
+    // Arrange
+    initColdOpen(deck)
+    choose('nine')
+
+    // Act
+    climb().click()
+    await settle()
+    await hearAll(0)
+
+    // Assert: WEB-SPEC, Tests 5
+    expect(reveal().hidden).toBe(true)
+    expect(words(el('#predict .lock-hint'))).toBe(COLD_PREDICT.hints.chosen)
+  })
+})
+
 describe('the climb on the five lines', () => {
   it('waits for a choice, then folds the pitch line into a staff as its first note sounds', async () => {
     // Arrange
