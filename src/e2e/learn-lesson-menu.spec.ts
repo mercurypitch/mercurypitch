@@ -259,9 +259,13 @@ const NO_FILM = [
   { n: 13, title: 'Resonance and vowels' },
   { n: 14, title: 'Phrasing: sing a whole song' },
   { n: 15, title: 'The staff: where notes sit' },
+  // its sung part is a tapped checkpoint first, so its anchor says so
+  { n: 17, title: 'How long is a note?', sing: 'Tap it' },
 ] as const
 
-for (const { n, title } of NO_FILM) {
+for (const entry of NO_FILM) {
+  const { n, title } = entry
+  const sing = 'sing' in entry ? entry.sing : 'Sing'
   const path = `/learn/${String(n).padStart(2, '0')}`
 
   test.describe(`on Lesson ${n}, a page with no film`, () => {
@@ -275,7 +279,8 @@ for (const { n, title } of NO_FILM) {
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.goto(path)
         await expect(trigger(page)).toHaveAccessibleName(
-          `Season ${n >= 15 ? 2 : 1} · Lesson ${String(n).padStart(2, '0')}, ${title}. All 14 lessons`,
+          // a title that ends on its own mark takes no full stop after it
+          `Season ${n >= 15 ? 2 : 1} · Lesson ${String(n).padStart(2, '0')}, ${title}${/[.?!]$/.test(title) ? '' : '.'} All 14 lessons`,
         )
         await trigger(page).tap()
         await expect(hereRow(page)).toBeFocused()
@@ -321,7 +326,7 @@ for (const { n, title } of NO_FILM) {
         })
         await expect(onPage.getByRole('link')).toHaveText([
           'Lesson',
-          'Sing',
+          sing,
           'Explorer',
         ])
       })

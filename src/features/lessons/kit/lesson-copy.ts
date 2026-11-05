@@ -134,6 +134,15 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  17: {
+    tease: 'Same written bar, played twice. Only the tempo changes.',
+    teaseAlts: [
+      {
+        id: 'shapes',
+        text: 'Same five notes, twice as fast: the note shapes change.',
+      },
+    ],
+  },
 }
 
 /**

@@ -917,7 +917,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
     measured, with the lessons' headroom, a quarter over. Every build emits every lesson page, a
-    draft's included (`scripts/assert-first-paint-budgets.mjs:118-120`); `build:e2e` runs the check
+    draft's included (`scripts/assert-first-paint-budgets.mjs:127-129`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one line each. Until then the draft's rules hold
@@ -1155,7 +1155,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:149-166`) and this one's (`:230-273`); its still inside the card holds no button.
+    card (`:155-172`) and this one's (`:236-279`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:47-49`), for the team's words (`:23-42`), and the
     alternative hook's note never reaches the page (`:79-81`).

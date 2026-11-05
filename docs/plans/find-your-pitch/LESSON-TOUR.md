@@ -31,7 +31,7 @@ page in four more steps, with an X and a Skip for people who know their way arou
 
 One list serves every lesson. A step whose targets are all missing or hidden on a page is left out
 there, and the count follows ("1 of 4"). Every target of a step that shows is lit together. All
-fourteen pages show all five steps, at 390 px and at 1440 px.
+sixteen pages show all five steps, at 390 px and at 1440 px.
 
 | #   | Lights                                                                                                             | Title              | Words                                                                                                                                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -230,9 +230,9 @@ left, 780 bytes.
   reload; walking it on a wide screen glides (each Next leaves the page where it was in its own
   task), marks no step reached, keeps the deck on step 1, and once the page is at rest the viewer's
   own scroll to step 3 is remembered; Tab stays in, Escape closes and focus returns to the menu
-  after a replay; the question mark plays it from step 1 on a return visit, at 390x844 and
-  1440x900, as tall as the menu button, and takes the focus back; a deep link skips it and the next
-  page offers it; all fifteen pages offer five steps, and Lessons 10 to 15 light their targets at
+  after a replay; the question mark plays it from step 1 on a return visit, at 390x844 and 1440x900,
+  as tall as the menu button, and takes the focus back; a deep link skips it and the next page
+  offers it; all sixteen pages offer five steps, and Lessons 10 to 15 and 17 light their targets at
   390x844 and 1440x900; on Lesson 1's first visit the wheel and the keys leave the page at the top
   with no scrollbar, and the card comes with nothing moving, before the cap, as the hold lifts;
   Lesson 3 never holds; under reduced motion nothing glides.

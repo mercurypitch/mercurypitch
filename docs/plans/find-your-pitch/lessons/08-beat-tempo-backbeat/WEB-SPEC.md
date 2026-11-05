@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:309-346`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:284-292` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:118-184`, Lessons 3 and 5),
-    at `:275-281`, and its CSS ceiling at `:426-429`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:127-193`, Lessons 3 and 5),
+    at `:296-302`, and its CSS ceiling at `:453-456`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
