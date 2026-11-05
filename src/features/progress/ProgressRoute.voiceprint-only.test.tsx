@@ -30,7 +30,8 @@ vi.mock('./progress-data', () => ({
 
 import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
 import { buildProgressModel } from './model'
-import { isProgressEmpty, ProgressRoute } from './ProgressRoute'
+import { ProgressRoute } from './ProgressRoute'
+import { isProgressEmpty } from './useProgressRecord'
 
 /** Signed out, one device take, nothing practiced. */
 const readingOnly = buildProgressModel(

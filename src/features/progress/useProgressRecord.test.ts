@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ProgressModel } from './model'
 import { buildProgressModel } from './model'
-import { hasProgressLoadFailure, isProgressEmpty, progressModelForKey, progressResourceKey, } from './ProgressRoute'
+import { hasProgressLoadFailure, isProgressEmpty, progressModelForKey, progressResourceKey, } from './useProgressRecord'
 
 function emptyModel(): ProgressModel {
   return buildProgressModel(
@@ -21,7 +21,7 @@ function emptyModel(): ProgressModel {
   )
 }
 
-describe('ProgressRoute identity and state helpers', () => {
+describe('The Progress record identity and state helpers', () => {
   it('keys progress reads to both identity and new session writes', () => {
     expect(progressResourceKey(4, 9)).toBe('auth:4:sessions:9')
     expect(progressResourceKey(5, 9)).not.toBe(progressResourceKey(4, 9))
