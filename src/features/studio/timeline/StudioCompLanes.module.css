@@ -1,0 +1,185 @@
+/* Studio comp lanes — a loop take's passes as rows under its lane (StudioCompLanes.tsx).
+   The rows are the lane's last child, across both of its columns: the lane
+   grows by their height and the lanes below move down. Each row keeps the
+   lane's two columns, a sticky name on the left and the time on the right,
+   and reads the lane's hue from the variables .lane sets. */
+
+.comp {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--studio-line);
+  background: color-mix(in srgb, var(--studio-track) 5%, var(--studio-bg));
+}
+
+.bar,
+.row {
+  display: grid;
+  grid-template-columns: var(--studio-header-width) var(--studio-time-width);
+}
+.bar {
+  height: 32px;
+}
+.row {
+  height: 48px;
+  border-top: 1px solid color-mix(in srgb, var(--studio-line) 60%, transparent);
+}
+
+.head {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px 0 16px;
+  background: var(--studio-bar);
+  border-right: 1px solid var(--studio-line);
+  color: var(--studio-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.head::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--studio-track);
+  opacity: 0.6;
+}
+.bar .head {
+  justify-content: space-between;
+}
+.tag {
+  color: var(--studio-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.time {
+  position: relative;
+  min-width: 0;
+}
+.hint {
+  position: sticky;
+  left: calc(var(--studio-header-width) + 12px);
+  display: inline-block;
+  max-width: calc(100vw - var(--studio-header-width) - 24px);
+  padding: 8px 0 0 12px;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.done {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .done:hover {
+    background: var(--studio-hover);
+  }
+}
+.done:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+
+/* A pass over the clip's span: dim where another pass plays, lit where it does. */
+.strip {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--studio-track) 26%, transparent);
+  border-radius: 5px;
+  background: color-mix(
+    in srgb,
+    var(--studio-track) 6%,
+    var(--studio-clip-base)
+  );
+  color: color-mix(in srgb, var(--track-wave) 55%, transparent);
+}
+.writable {
+  cursor: crosshair;
+  touch-action: none;
+}
+.strip:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.lit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-top: 3px solid var(--studio-track);
+  background: color-mix(
+    in srgb,
+    var(--studio-track) 34%,
+    var(--studio-clip-base)
+  );
+  pointer-events: none;
+}
+.wave {
+  position: absolute;
+  top: 3px;
+  bottom: 0;
+  display: block;
+  pointer-events: none;
+}
+/* The clip bar's Comp while the passes are open: the accent, under the
+   pointer too. Its own class, so the lane line bar's buttons keep theirs. */
+.toggle[aria-pressed='true'],
+.toggle[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
+.toggle[aria-pressed='true'] svg {
+  color: currentColor;
+}
+
+/* Where another pass plays, a veil over this one's audio. */
+.unlit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--studio-clip-base) 55%, transparent);
+  pointer-events: none;
+}
+/* A drag in progress, and the stretch the keys picked. */
+.preview,
+.picked {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.preview {
+  border-inline: 2px solid var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 28%, transparent);
+}
+.picked {
+  border: 2px dashed var(--studio-accent);
+  border-radius: 4px;
+}
+
+@media (pointer: coarse) {
+  .row {
+    height: 56px;
+  }
+  .done {
+    min-height: 44px;
+  }
+}

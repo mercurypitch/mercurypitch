@@ -31,6 +31,7 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'set-fades': 'change fades',
   'set-clip-gain': 'change clip volume',
   'choose-pass': 'choose pass',
+  'comp-pass': 'comp',
   'set-project-settings': 'change song settings',
   'set-sound-flavour': 'change flavour',
   'set-sound-macros': 'adjust sound',

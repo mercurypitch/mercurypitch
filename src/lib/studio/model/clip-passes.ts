@@ -62,9 +62,10 @@ export function studioClipSourceBounds(
   )
 }
 
-/** The clip playing pass `index` instead: its source frames and fades moved by whole passes. */
+/** The clip playing pass `index` whole instead: its source frames and fades moved by whole passes, any comp let go (clip-comp.ts). */
 export function studioClipOnPass(clip: StudioClip, index: number): StudioClip {
   if (!clip.passes) return clip
+  const { comp: _comp, ...whole } = clip
   const shift =
     (index - studioPassAt(clip.passes, clip.sourceInFrame)) * clip.passes.frames
   const move = (ramp: { fromSourceFrame: number; toSourceFrame: number }) => ({
@@ -72,7 +73,7 @@ export function studioClipOnPass(clip: StudioClip, index: number): StudioClip {
     toSourceFrame: ramp.toSourceFrame + shift,
   })
   return {
-    ...clip,
+    ...whole,
     sourceInFrame: clip.sourceInFrame + shift,
     sourceOutFrame: clip.sourceOutFrame + shift,
     fades: {

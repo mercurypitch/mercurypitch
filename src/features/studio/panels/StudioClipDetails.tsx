@@ -1,8 +1,9 @@
-// Studio clip details — numeric alternatives to move, trim and source-anchored fades.
+// Studio clip details — numeric alternatives to move, trim and source-anchored fades, and a loop take's passes.
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
+import { StudioClipPasses } from './StudioClipPasses'
 import { StudioNumberField } from './StudioNumberField'
 
 interface StudioClipDetailsProps {
@@ -169,6 +170,7 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
       <p class={styles.help}>
         Trim values refer to the original take. Your audio stays intact.
       </p>
+      <StudioClipPasses {...props} />
     </div>
   )
 }

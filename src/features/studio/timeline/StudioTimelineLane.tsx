@@ -8,6 +8,7 @@ import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
 import { studioSourcePresentation } from './source-presentation'
+import { StudioCompLanes } from './StudioCompLanes'
 import { StudioArmButton, StudioRolePlate } from './StudioLaneHeader'
 import { StudioLaneLine } from './StudioLaneLine'
 import lineStyles from './StudioLaneLine.module.css'
@@ -272,6 +273,11 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
           )}
         </Show>
       </div>
+      <StudioCompLanes
+        trackId={props.id}
+        timeline={props.timeline}
+        view={props.view}
+      />
     </div>
   )
 }

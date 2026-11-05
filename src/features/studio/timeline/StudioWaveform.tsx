@@ -9,6 +9,7 @@
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { studioPeakLevel } from '@/lib/studio/audio/waveform-peaks'
 import { studioClipGainAtSourceFrame } from '@/lib/studio/model/arrangement-plan'
+import { studioCompSourceFrame } from '@/lib/studio/model/clip-comp'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
 import type { StudioWaveformEnvelope, StudioWaveformResource, } from './waveform-resource'
@@ -30,8 +31,9 @@ export interface StudioWaveformProps {
  * Column extremes and loudness, gain applied, ready to draw as two fills:
  * from the coarsest level of the take's peaks that still has a peak for
  * every column, so a whole song and the closest zoom read about as many.
+ * A comped clip reads each column from the pass playing at its middle.
  */
-function envelopeColumns(
+export function studioEnvelopeColumns(
   wave: StudioWaveformEnvelope,
   clip: StudioClip,
   width: number,
@@ -47,8 +49,13 @@ function envelopeColumns(
   for (let x = 0; x < width; x++) {
     const from = sourceInFrame + (x / width) * duration
     const to = sourceInFrame + ((x + 1) / width) * duration
-    const first = Math.floor(from / framesPerPeak)
-    const last = Math.min(minima.length - 1, Math.floor(to / framesPerPeak))
+    const middle = (from + to) / 2
+    const shift = clip.comp ? studioCompSourceFrame(clip, middle) - middle : 0
+    const first = Math.floor((from + shift) / framesPerPeak)
+    const last = Math.min(
+      minima.length - 1,
+      Math.floor((to + shift) / framesPerPeak),
+    )
     let top = 0
     let bottom = 0
     let loud = 0
@@ -117,7 +124,7 @@ function drawEnvelope(
 ): void {
   const mid = frame.height / 2
   const reach = mid - 2
-  const { high, low, body } = envelopeColumns(
+  const { high, low, body } = studioEnvelopeColumns(
     wave,
     frame.clip,
     frame.columns,

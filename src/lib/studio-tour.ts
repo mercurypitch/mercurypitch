@@ -81,6 +81,14 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     whenPresent: true,
   },
   {
+    title: 'Keep the best of each pass',
+    targetSelector: '[data-tour="studio.comp"]',
+    description:
+      'A loop take keeps every pass. Comp lays them out under the lane: drag along a pass to use that stretch of it, and the clip plays the result.',
+    placement: 'top',
+    whenPresent: true,
+  },
+  {
     title: 'Follow the song',
     targetSelector: '[data-tour="studio.timeline-overview"]',
     description:

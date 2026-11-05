@@ -1,8 +1,9 @@
 // Studio clip toolbar — the selected clip's name and commands, floating at the timeline's foot like zoom,
 // or stacked as icons in the dock beside the arrangement while the desk is open. The dock has room for
 // its seven icons only (dockColumns, StudioTimeline.tsx), so Range and a loop take's pass list stay on
-// the floating bar: with the desk open, a range is drawn on the ruler instead. The floating bar folds
-// to icons when its names would run into zoom (clip-bar-fold.ts).
+// the floating bar: with the desk open, a range is drawn on the ruler instead. So does Comp, which
+// opens a loop take's passes under its lane (StudioCompLanes.tsx). The floating bar folds to icons
+// when its names would run into zoom (clip-bar-fold.ts).
 import { createEffect, For, onCleanup, onMount, Show } from 'solid-js'
 import { Copy, Split, Trash2 } from '@/components/icons'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
@@ -10,8 +11,10 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
-import { InfoCircle, RangeBrackets } from '../studio-icons'
+import { CompPasses, InfoCircle, RangeBrackets } from '../studio-icons'
 import { fitClipBar, watchClipBarRoom } from './clip-bar-fold'
+import { STUDIO_COMP_HELD_TITLE, studioCompClipId, studioCompHeld, toggleStudioComp, } from './comp-editor'
+import compStyles from './StudioCompLanes.module.css'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -36,7 +39,7 @@ interface StudioClipToolbarProps {
   onRemove(): void
 }
 
-/** A loop take's passes: which one the clip plays, picked from a list. */
+/** A loop take's passes: which one the clip plays, picked from a list; a comp plays several. */
 function PassPicker(props: {
   clip: StudioClip
   writable: boolean
@@ -52,7 +55,7 @@ function PassPicker(props: {
             aria-label="Pass this clip plays"
             data-studio-pass-picker=""
             disabled={!props.writable}
-            value={shown().number - 1}
+            value={props.clip.comp ? 'comp' : shown().number - 1}
             onChange={(event) =>
               props.onCommand({
                 type: 'choose-pass',
@@ -61,6 +64,11 @@ function PassPicker(props: {
               })
             }
           >
+            <Show when={props.clip.comp}>
+              <option value="comp" disabled>
+                Comped
+              </option>
+            </Show>
             <For each={Array.from({ length: shown().count }, (_, i) => i)}>
               {(index) => (
                 <option value={index}>
@@ -175,6 +183,27 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
           writable={props.writable}
           onCommand={(command) => props.onCommand(command)}
         />
+      </Show>
+      <Show when={props.docked !== true && props.clip.passes}>
+        <button
+          type="button"
+          class={compStyles.toggle}
+          data-tour="studio.comp"
+          data-studio-comp-toggle=""
+          aria-pressed={studioCompClipId() === props.clip.id}
+          disabled={!props.writable || studioCompHeld()}
+          title={
+            studioCompHeld()
+              ? STUDIO_COMP_HELD_TITLE
+              : studioCompClipId() === props.clip.id
+                ? 'Close the passes'
+                : 'Pick the best stretch of each pass'
+          }
+          onClick={() => toggleStudioComp(props.clip.id)}
+        >
+          <CompPasses size={15} />
+          <span class={styles.toolbarText}>Comp</span>
+        </button>
       </Show>
       <span class={styles.toolbarDivider} aria-hidden="true" />
       <button
