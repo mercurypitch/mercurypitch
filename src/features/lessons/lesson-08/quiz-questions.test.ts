@@ -14,7 +14,8 @@ import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { lessonOfQuestion, linkAway, recallStepHref, } from '@/features/lessons/kit/quiz'
 import { QUIZ_QUESTIONS as LESSON_6 } from '@/features/lessons/lesson-06/quiz-questions'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { QUIZ_QUESTIONS, RECALL_QUESTIONS } from './quiz-questions'
+import { QUIZ_QUESTIONS } from './quiz-questions'
+import { RECALL_QUESTIONS } from './recall'
 
 /** Markup as text. */
 const text = (html: string): string => html.replace(/<[^>]+>/g, '')

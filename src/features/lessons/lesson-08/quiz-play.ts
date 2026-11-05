@@ -14,7 +14,7 @@ import type { EarPlaying } from '@/features/lessons/kit/ear-game'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { Sound } from '@/features/lessons/kit/sound'
 import { barClicks } from './bar-rounds'
-import { playClicks } from './count-the-bar'
+import { playClicks } from './play-clicks'
 
 export function bindQuizPlays(host: HTMLElement): void {
   let playing: EarPlaying | null = null

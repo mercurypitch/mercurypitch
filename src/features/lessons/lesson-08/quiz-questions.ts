@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 8 questions — the quick check, and the recall from Lesson 6
+// Lesson 8 questions — the quick check
 // ============================================================
 //
 // Word for word from LESSON.md, in authored order: the stored seed shuffles
@@ -9,23 +9,14 @@
 // answers it (Steps 2, 3, 4 and 5). Question 2 is heard: its play button
 // sits in its slot (quiz-play.ts plays it). The kit prints "Right." or "Not
 // quite." before each line, so none starts with "Right", "Yes" or
-// "Correct".
-//
-// The recall asks Lesson 6's questions 1 and 4, the very objects Lesson 6's
-// page asks, under their ids `l06-q1` and `l06-q4` (FACTS 3). The kit's quiz
-// turns their "Try Step 3 again" into "Try Lesson 6, Step 3 again", a link
-// to Lesson 6's page at that step in a new tab (WEB-SPEC, Toys 7).
+// "Correct". The recall's questions, Lesson 6's, are recall.ts's, so a page
+// that asks these four again (Lesson 17's recall) loads none of Lesson 6's.
 
 import type { QuizQuestion } from '@/features/lessons/kit/quiz'
-import { QUIZ_QUESTIONS as LESSON_6_QUESTIONS } from '@/features/lessons/lesson-06/quiz-questions'
 
 /** "Try Step N again", as a link the quiz turns into a jump to that step. */
 const tryStep = (n: number): string =>
   ` <a href="#step-${n}" data-goto-step="${n}">Try Step ${n} again</a>.`
-
-/** The recall's two questions, Lesson 6's own. */
-export const RECALL_QUESTIONS: readonly QuizQuestion[] =
-  LESSON_6_QUESTIONS.filter((q) => q.id === 'l06-q1' || q.id === 'l06-q4')
 
 /** Question 2's play button, in its slot. */
 const PLAY_BARS =

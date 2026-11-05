@@ -514,7 +514,7 @@ Two quizzes through the kit's quiz, with the options it has (an id prefix each, 
 and `away` for another lesson's step links).
 
 - **The recall** imports Lesson 8's question objects, `l08-q2` and `l08-q4`, filtered by id as
-  Lesson 8 imports Lesson 6's (`src/features/lessons/lesson-08/quiz-questions.ts:26-28`), never
+  Lesson 8 imports Lesson 6's (`src/features/lessons/lesson-08/recall.ts:33-35`), never
   copied; its "Try Step N again" links become "Try Lesson 8, Step N again" to `/learn/08#step-N`, in
   a new tab, through `recallStepHref` (`src/features/lessons/kit/quiz.ts:142`). Question 2's "Play
   two bars" is Lesson 8's quiz play, bound on the recall's host (FACTS 7). Everyone sees it. Lesson

@@ -63,6 +63,15 @@ const deck = createStepDeck({
 initSteps()
 deck.start()
 
+// the recall from Lesson 8 and the quick check, whose step links use the
+// deck: a chunk of their own, after first paint, since the kit's quiz and
+// Lesson 8's play, with its beat machine and drum voices, are some 30 KB
+// the hero never needs (one that cannot load leaves the two lists empty)
+void import('./recall').then(
+  ({ initQuizzes }) => initQuizzes(deck),
+  () => undefined,
+)
+
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(17)
 createExplorer({ current: 17 })

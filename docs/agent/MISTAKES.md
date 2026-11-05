@@ -1063,6 +1063,13 @@ import handler, issue #813.
 **Rule:** render the absent case with a helper that never passes the default, and assert the state the page says it drew (`data-state`) before its contents.
 **See:** `openBare` in `apps/mercurypitch/src/shell/progress/ProgressView.test.tsx`.
 
+### Before a lesson imports another lesson's module, cut its edges into modules that sit beside a shared stylesheet
+
+**Symptom:** wiring Lesson 17's recall, which asks Lesson 8's questions and plays Lesson 8's two bars, reordered eight other lesson pages' stylesheets with their bytes unchanged: the guide's sheet moved after the page's own on Lessons 2 to 15, and the ear game's after Lesson 8's. Every test and the first-paint budgets passed; only a comparison of the built pages' links showed it.
+**Cause:** Lesson 8's questions imported Lesson 6's for its own recall, Lesson 6's imported Lesson 4's, and so back to Lesson 2's; its quiz play imported Count the bar, which imports the kit's ear game. Lesson 2's questions shared a chunk with the guide's sheet, and the ear game with its own, because the same lessons reached both. Once Lesson 17 reached the module and not the sheet, Rollup split them, and Vite links a chunk of CSS alone after the page's own stylesheet, as in the entry on the lessons' base stylesheet above. Loading the import after first paint changes nothing: a dynamic chunk counts as one more importer.
+**Rule:** list what the borrowed module reaches before importing it, and move what the borrowing page needs into a module that reaches nothing shared with a stylesheet (Lesson 8's recall now takes Lesson 6's questions itself, and its quiz play's clicks have a module of their own). Then compare each `dist/learn/NN.html`'s stylesheet links with main's build: the same files, in the same order.
+**See:** `src/features/lessons/lesson-08/recall.ts`, `src/features/lessons/lesson-08/play-clicks.ts`, `src/features/lessons/lesson-17/main.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
