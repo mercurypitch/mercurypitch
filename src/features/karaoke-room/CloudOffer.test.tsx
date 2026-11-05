@@ -93,10 +93,11 @@ function accountSays(user: {
   }
 }
 
+import { EXERCISE_LEAP_CLIFFS } from '@/lib/domain/exercise-contracts'
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { askCloudPlan, closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
+import { askCloudPlan, closeCloudOffer, cloudOffer, cloudOfferGuest, openCloudOffer, openRoomOffer, resetCloudOfferForTests, setCloudOfferGuest, unaskedRefusal, } from './cloud-offer-store'
 import { CloudOffer, OFFLINE_LINE, SLOW_PURCHASE_MS } from './CloudOffer'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 
@@ -915,5 +916,48 @@ describe('Restore purchase', () => {
         'No Mercury Pitch Cloud subscription was found to restore.',
       ),
     )
+  })
+})
+
+describe('opened by a premium room whose free taste is used', () => {
+  it('names the room and what the subscription opens, and counts its way there', async () => {
+    withStore(
+      store({
+        subscribe: vi
+          .fn<KaraokeSubscriptionApi['subscribe']>()
+          .mockResolvedValue('purchased'),
+      }),
+    )
+    render(() => <CloudOffer />)
+    openRoomOffer(EXERCISE_LEAP_CLIFFS)
+    const offer = await waitFor(() =>
+      screen.getByRole('dialog', { name: 'Keep training with Merc' }),
+    )
+    expect(
+      within(offer).getByRole('heading', { name: 'Keep training with Merc' }),
+    ).toBeTruthy()
+    expect(within(offer).getByTestId('cloud-offer-room').textContent).toBe(
+      "You've had your free runs of Leap. Every Merc room, as often as you like, and your own songs to sing.",
+    )
+    expect(cloudOffer()).toMatchObject({
+      source: 'room',
+      room: EXERCISE_LEAP_CLIFFS,
+    })
+
+    await waitFor(() => expect(subscribeButton(offer).disabled).toBe(false))
+    fireEvent.click(subscribeButton(offer))
+    await waitFor(() => expect(counts.sent).toContain('room_trial_leap'))
+    expect(counts.sent).toEqual([
+      'cloud_view_room',
+      'room_offer_leap',
+      'cloud_subscribe_tap',
+      'cloud_purchase_success',
+      'room_trial_leap',
+    ])
+    // What follows the yes still knows the room it came from.
+    expect(cloudOffer()).toMatchObject({
+      view: 'subscribed',
+      room: EXERCISE_LEAP_CLIFFS,
+    })
   })
 })

@@ -16,6 +16,8 @@ import type { JSX } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { tasteLine } from '@/lib/free-taste'
+import { tasteRunsUsed, tasteShows } from '@/stores/free-taste-store'
 import type { PremiumExercise } from './catalogue'
 import { catalogueGroups } from './catalogue'
 import styles from './ear-rooms-row.module.css'
@@ -67,6 +69,11 @@ export function EarRoomsRow(props: EarRoomsRowProps): JSX.Element {
                           {best()}
                         </span>
                       )}
+                    </Show>
+                    <Show when={tasteShows()}>
+                      <span class={styles.best} data-testid="ear-rooms-taste">
+                        {tasteLine(exercise.id, tasteRunsUsed(exercise.id))}
+                      </span>
                     </Show>
                   </span>
                 </button>

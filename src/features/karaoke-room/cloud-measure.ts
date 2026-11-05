@@ -23,6 +23,7 @@ export const CLOUD_VIEW_EVENT: Readonly<
   settings: 'cloud_view_settings',
   onboarding: 'cloud_view_onboarding',
   'onboarding-exit': 'cloud_view_onboarding_exit',
+  room: 'cloud_view_room',
 }
 
 /** What the store answered a Subscribe. */

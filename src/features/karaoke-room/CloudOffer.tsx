@@ -63,6 +63,7 @@ import { accountHeld } from '@/db/services/auth-service'
 import { trackEvent } from '@/lib/analytics'
 import { deviceNoun, thisDeviceLower, yourDevice } from '@/lib/device-noun'
 import { isAppleTouchDevice } from '@/lib/device-tier'
+import { ROOM_EVENTS, ROOM_OFFER_TITLE, roomOfferLine } from '@/lib/free-taste'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import type { KaraokeOffer } from '@/stores/native-shell-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
@@ -282,6 +283,10 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
   const reduced = reducedMotion()
 
   const view = () => cloudOffer()?.view ?? null
+  /** The premium room that opened it, its free taste used, or undefined. */
+  const room = () => cloudOffer()?.room
+  const title = (): string =>
+    room() === undefined ? CLOUD_OFFER_TITLE : ROOM_OFFER_TITLE
   const offering = (): boolean => view() === 'offer'
 
   // A signed-in singer the server gives no free song a month is asked to
@@ -384,6 +389,11 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
     setSlow(false)
     setBuying(false)
     trackEvent(PURCHASE_EVENT[outcome])
+    // Bought from a room's offer: the room's last step to the subscription.
+    const from = room()
+    if (outcome === 'purchased' && from !== undefined) {
+      trackEvent(ROOM_EVENTS[from].trial)
+    }
     switch (outcome) {
       case 'purchased':
       case 'moved':
@@ -456,7 +466,7 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
       close={() => {
         closeCloudOffer(offering() ? 'not-now' : 'done')
       }}
-      ariaLabel={offering() ? CLOUD_OFFER_TITLE : "You're subscribed"}
+      ariaLabel={offering() ? title() : "You're subscribed"}
       snap={offering() ? 'tall' : 'content'}
       class={panelClass()}
       backdropClass={styles.scrim}
@@ -487,7 +497,14 @@ export function CloudOffer(props: CloudOfferProps): JSX.Element {
             </div>
             <div class={styles.head}>
               <p class={styles.kicker}>{CLOUD_NAME}</p>
-              <h2 class={styles.title}>{CLOUD_OFFER_TITLE}</h2>
+              <h2 class={styles.title}>{title()}</h2>
+              <Show when={room()}>
+                {(id) => (
+                  <p class={styles.roomLine} data-testid="cloud-offer-room">
+                    {roomOfferLine(id())}
+                  </p>
+                )}
+              </Show>
             </div>
             <ol class={styles.path}>
               <For each={cloudSteps(props.platform)}>

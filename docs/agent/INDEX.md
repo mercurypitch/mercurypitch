@@ -116,8 +116,8 @@ These are the rules that break things when ignored.
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.7k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `mercury-sing` | [mercury-sing-engine.ts](../../src/features/mercury-sing/mercury-sing-engine.ts) | 1.6k | Mercury Sing engine — listen, match, decide, hand off The headless controller behind the stage: owns its own AudioEngine + LivePitchBuffe... |
+| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.5k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
-| `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.4k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
 | `tours` | [TourScreenHost.tsx](../../src/features/tours/TourScreenHost.tsx) | 1.3k | TourScreenHost — what a tour asks before it changes the screen Draws the question a door asks before a tour closes what the singer has op... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.2k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 1.1k | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
@@ -203,10 +203,10 @@ These are the rules that break things when ignored.
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
 | [consent.ts](../../src/lib/consent.ts) | 550 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
+| [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 550 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
-| [funnel-event-catalog.ts](../../src/lib/funnel-event-catalog.ts) | 500 | funnel-event-catalog — the ONE list of funnel event names Both halves of the funnel read this file: each client surface derives its event... |
 | [hash-router.ts](../../src/lib/hash-router.ts) | 500 | Hash Router — Client-side hash-based routing |
 | [portable-console.ts](../../src/lib/portable-console.ts) | 500 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
@@ -241,15 +241,16 @@ These are the rules that break things when ignored.
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 350 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
+| [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 300 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 300 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [native-device-api.ts](../../src/stores/native-device-api.ts) | 300 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
-| [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 250 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
 | [airplay-suspicion.ts](../../src/stores/airplay-suspicion.ts) | 200 | AirPlay suspected — where the page's sound likely goes, from its rate The route (audio-route-store.ts) is the app's own AVAudioSession's,... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 200 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
+| [free-taste-store.ts](../../src/stores/free-taste-store.ts) | 200 | The premium rooms' free taste, as it stands on this phone: the runs each room has given, whether the gate is on, and whether a room may o... |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |

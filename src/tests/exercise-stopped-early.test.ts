@@ -68,6 +68,11 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 vi.mock('@/stores/usage-store', () => ({ recordCompletion: vi.fn() }))
+// The premium rooms' free taste counts whole runs only (free-taste-store.ts).
+const taste = vi.hoisted(() => ({ noteTasteRun: vi.fn() }))
+vi.mock('@/stores/free-taste-store', () => ({
+  noteTasteRun: taste.noteTasteRun,
+}))
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
 
 import { activeChallengeAttempt, beginChallengeAttempt, clearChallengeAttempt, } from '@/features/challenges/challenge-attempt'
@@ -390,6 +395,17 @@ describe('the funnel, for a stopped run', () => {
     await record(await droneRun('all'))
     expect(mocks.saveSessionRecord).toHaveBeenCalledTimes(1)
     expect(vi.mocked(trackEvent)).not.toHaveBeenCalledWith('session_stopped')
+  })
+})
+
+describe("a premium room's free taste", () => {
+  it('counts a whole run, never a stopped one', async () => {
+    taste.noteTasteRun.mockClear()
+    await record(await droneRun(1))
+    expect(taste.noteTasteRun).not.toHaveBeenCalled()
+    const whole = await droneRun('all')
+    await record(whole)
+    expect(taste.noteTasteRun).toHaveBeenCalledExactlyOnceWith(whole.type)
   })
 })
 

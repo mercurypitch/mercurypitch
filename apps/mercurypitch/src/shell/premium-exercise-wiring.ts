@@ -35,8 +35,10 @@
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
+import { provideTasteOffer, provideTasteSubscription, } from '@/stores/free-taste-store'
 import type { NativeShellApi } from '@/stores/native-shell-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { cloudSubscribed, offerForRoom, openRoomFromCard, } from './free-taste-gate'
 import type { PushedScreen } from './pushed-screen-ids'
 import { pushScreen } from './run-shell-store'
 
@@ -146,7 +148,18 @@ export function openPremiumExercise(id: PremiumExerciseId): void {
 }
 
 function install(): PremiumExerciseApi {
-  return { openExercise: openPremiumExercise }
+  // The free taste asks the Karaoke room's answer on the subscription, and
+  // a card's tap passes its gate (free-taste-gate.ts). The Warm-up's path
+  // opens its stops' rooms past it, with openPremiumExercise.
+  provideTasteSubscription(cloudSubscribed)
+  provideTasteOffer((id) => {
+    void offerForRoom(id)
+  })
+  return {
+    openExercise: (id) => {
+      openRoomFromCard(id, openPremiumExercise)
+    },
+  }
 }
 
 export function installPremiumExercises(): PremiumExerciseApi {
