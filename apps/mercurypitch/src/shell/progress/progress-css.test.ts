@@ -3,10 +3,9 @@
 // ============================================================
 //
 // Read from the stylesheets, since jsdom lays nothing out:
-//   - the tab's scroller keeps a focused control as clear of the chrome as
-//     its padding keeps a hand's (MISTAKES.md, the scroll padding's twin):
-//     the rail and the parked run's pill at the foot, the small bar at the
-//     top;
+//   - the tab's scroller keeps a focused control clear of the small bar at
+//     the top (MISTAKES.md, the scroll-padding twin), and leaves the foot,
+//     the rail and the parked run's pill, to the kit;
 //   - every colour the night draws, the day draws too, so the light theme
 //     never shows a night ink on a white card;
 //   - nothing is set under 13 px.
@@ -27,7 +26,6 @@ const ALL = [
   read('./progress-cards.css'),
   read('./progress-sheets.css'),
 ].join('\n')
-const KIT = read('../../../../../src/styles/mobile-kit.css')
 
 /** The declarations of the first rule for exactly this selector. */
 function rule(css: string, selector: string): string {
@@ -61,34 +59,6 @@ function tokens(css: string, selector: string): string[] {
 }
 
 describe("the Progress tab's scroll padding", () => {
-  it('keeps the rail clear of a focused control as the padding keeps it of a hand', () => {
-    expect(
-      value(
-        PAGE,
-        ':root[data-native-shell] .main-content:has(.mp-prog)',
-        'scroll-padding-bottom',
-      ),
-    ).toBe(
-      value(KIT, ':root[data-native-shell] .main-content', 'padding-bottom'),
-    )
-  })
-
-  it('keeps the parked run’s pill clear the same way', () => {
-    expect(
-      value(
-        PAGE,
-        ":root[data-native-shell][data-shell-pill='on'] .main-content:has(.mp-prog)",
-        'scroll-padding-bottom',
-      ),
-    ).toBe(
-      value(
-        KIT,
-        ":root[data-native-shell][data-shell-pill='on'] .main-content",
-        'padding-bottom',
-      ),
-    )
-  })
-
   it('keeps the small bar clear at the top, as tall as the bar is', () => {
     expect(
       value(
@@ -97,6 +67,15 @@ describe("the Progress tab's scroll padding", () => {
         'scroll-padding-top',
       ),
     ).toBe(value(PAGE, '.mp-prog-bar', 'height'))
+  })
+
+  // The kit pads every tab's foot and gives it the twin, with and without
+  // the parked run's pill (scroll-padding-css.test.ts). A foot of the
+  // page's own would be a second copy to keep in step, and as specific as
+  // the kit's pill rule and loaded after it, so it would win while the pill
+  // is up and leave the focus under the pill.
+  it("leaves the foot's scroll padding to the kit", () => {
+    expect(ALL).not.toMatch(/scroll-padding(?:-bottom|-block(?:-end)?)?\s*:/u)
   })
 })
 
