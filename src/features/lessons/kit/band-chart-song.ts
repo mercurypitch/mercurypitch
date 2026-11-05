@@ -29,10 +29,10 @@
 
 import type { Under } from './band-chart'
 import type { ChartFrame } from './band-chart-draw'
-import { BAND_COLOR, drawBand, MONO, xOf, yOf } from './band-chart-draw'
+import { BAND_COLOR, drawBand, drawTrace, MONO, xOf, yOf, } from './band-chart-draw'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, STRIP_GAP, stripHeight } from './band-chart-hold'
-import type { SongBand, SongBreath, SongScene, SongWord, } from './band-chart-song-scene'
+import type { SongBand, SongBreath, SongScene, SongTrace, SongWord, } from './band-chart-song-scene'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { BREATH_FONT, BREATHE, drawBreath } from './breath-mark'
 import { COLOR, rgba } from './notes'
@@ -175,6 +175,7 @@ export function paintSong(
   ctx.setLineDash([])
   for (const m of s.breaths)
     drawBreath(ctx, breathPlace(f, ctx, s.bands, m), BAND_COLOR.target, m.lit)
+  for (const k of s.traces ?? []) drawKept(f, k)
   ctx.font = MONO
   ctx.fillStyle = COLOR.ink2
   ctx.textAlign = 'center'
@@ -185,6 +186,25 @@ export function paintSong(
     ctx.fillText(s.name, f.x0 + 4, f.top + 2)
   }
   return true
+}
+
+/** How faint a kept take is behind a newer one. */
+export const KEPT_FADE = 0.35
+
+/** A take kept on the chart: its line, faint behind a newer one, and its name just after its last voiced point. */
+function drawKept(f: ChartFrame, k: SongTrace): void {
+  const { ctx } = f
+  drawTrace(f, k.line, k.faint ? KEPT_FADE : 1)
+  const last = [...k.line].reverse().find((p) => p.c !== null)
+  if (last?.c === undefined || last.c === null) return
+  ctx.font = WORDS_FONT
+  ctx.fillStyle = BAND_COLOR.singer
+  ctx.globalAlpha = k.faint ? KEPT_FADE : 1
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  const x = Math.min(xOf(f, last.t) + 6, f.x1 - ctx.measureText(k.name).width)
+  ctx.fillText(k.name, x, yOf(f, Math.min(Math.max(last.c, f.lo), f.hi)))
+  ctx.globalAlpha = 1
 }
 
 /**

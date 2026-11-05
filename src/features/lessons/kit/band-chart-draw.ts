@@ -222,7 +222,12 @@ export interface TracePoint {
  * The singer's line, violet. A point beyond the chart is pinned to its edge,
  * so a note far from Merc's still draws, along the top or the bottom.
  */
-export function drawTrace(f: ChartFrame, points: readonly TracePoint[]): void {
+export function drawTrace(
+  f: ChartFrame,
+  points: readonly TracePoint[],
+  /** Below 1, a line kept faint behind a newer one (Lesson 14's takes). */
+  fade = 1,
+): void {
   const { ctx } = f
   ctx.strokeStyle = BAND_COLOR.singer
   ctx.lineJoin = 'round'
@@ -232,7 +237,7 @@ export function drawTrace(f: ChartFrame, points: readonly TracePoint[]): void {
     [2.6, 1],
   ] as const) {
     ctx.lineWidth = width
-    ctx.globalAlpha = alpha
+    ctx.globalAlpha = alpha * fade
     ctx.beginPath()
     let pen = false
     for (const p of points) {
