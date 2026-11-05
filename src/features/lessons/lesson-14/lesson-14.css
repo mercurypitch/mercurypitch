@@ -15,8 +15,9 @@
    Here: the hero's song line under Merc and Tavi, across the stage's whole
    width, with the two plays and the gloss under it; the song line's floor
    on the stage and its rows of controls, Step 1's six phrases in two rows
-   of three (WEB-SPEC, Toys 1, Layout and targets); Sing it's chart and the
-   takes' playback; and the closing card's still. The song line's colours
+   of three (WEB-SPEC, Toys 1, Layout and targets); Sing it's lines and the
+   takes' playback, its chart the kit's (lesson-voice.css, 240 px and 210 px
+   at 420 px and under); and the closing card's still. The song line's colours
    are the canvas's (kit/band-chart-song.ts): Merc's bands amber, the
    learner's line violet. */
 @import '../kit/lesson-voice.css';
@@ -185,10 +186,6 @@
   margin: 10px 0 0;
   color: var(--ink-2);
 }
-/* the take's chart: Merc's seven bands, its words, the learner's line */
-.l14-sing .sing-chart {
-  height: 260px;
-}
 .l14-sing .take-line {
   margin: 10px 0 0;
   color: var(--ink-2);
@@ -205,11 +202,6 @@
   display: block;
   width: 100%;
   margin-top: 12px;
-}
-@media (max-width: 420px) {
-  .l14-sing .sing-chart {
-    height: 230px;
-  }
 }
 
 /* ---------------------------------------------------------------- the wrap */
