@@ -144,7 +144,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    `[data-next-card]` mark, whose children the kit keeps in the card after its words, in the form
    the kit's own test gives,
    `<div class="next-card card l14-next" data-next-card hidden><figure class="end-still">`
-   (`src/features/lessons/kit/next-card.test.ts:442-473`). The kit draws the close once and never
+   (`src/features/lessons/kit/next-card.test.ts:441-472`). The kit draws the close once and never
    redraws it (`next-card.ts:224-227`), so today it says "Now sing a whole song." whatever Sing it's
    ending. This page needs a close that knows the ending, and is not built before it (What the kit
    and the app still need, 12; 78): after "Effortful", "Uncomfortable" or "Just listen today" the
@@ -723,11 +723,11 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   and no reading time (`:102-124`), so the entry reads neither `DRAFT_LESSONS` nor `DRAFTS_SHOWN`,
   which `kit/drafts.test.ts` keeps to the publishing rules alone (`:57-67`). Its link stays as it
   is, `href: '/karaoke-night?lesson=14'`, `addr: 'mercurypitch.com/karaoke-night'` and
-  `label: 'Karaoke Night'` (`season.ts:434-440`), with no `needs`. Its topics stay; its hook is the
-  entry's, the default (`:433`), and its tease, which Lesson 13's card draws, is
+  `label: 'Karaoke Night'` (`season.ts:437-443`), with no `needs`. Its topics stay; its hook is the
+  entry's, the default (`:436`), and its tease, which Lesson 13's card draws, is
   `kit/lesson-copy.ts`'s (`:120`), with the old tease kept as `band` (`:121-126`) and the old hook,
   `compelling`, dropped by #1186, as 1 and 2 record. `EDGES` already holds [5, 14], [8, 14], [9,
-  14] and [12, 14] (`season.ts:468-471`).
+  14] and [12, 14] (`season.ts:471-474`).
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
   again"), its hook, its topics, the lessons it builds on, its practise link and its minutes
@@ -829,15 +829,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:110-158`,
-   `:209-217`; `:363-366`, `:376-380`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:660-664`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:117-193`,
+   `:262-270`; `:404-407`, `:417-421`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:754-758`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:319-329`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:344-354`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:214-216`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:226-228`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:114-118`), and the record module and the app's recorder
+   (`scripts/assert-first-paint-budgets.mjs:121-125`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by
@@ -1086,12 +1086,12 @@ parts:
 14. Season data: Lesson 14's entry has `minutes: 18` and `page: '/learn/14'` in every build,
     whichever way `VITE_DRAFT_LESSONS` reads, as `season.test.ts` checks Lessons 3 to 5's
     (`:241-266`), and the same file's check of every page in the repository then covers it
-    (`:400-417`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
+    (`:423-440`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-189`); that
     file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
     page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:238` suggests,
-    `lessonWithNoPage` (`kit/season.test-fixtures.ts:22-36`) finds none, and each test that asks it
+    `lessonWithNoPage` (`kit/season.test-fixtures.ts:27-41`) finds none, and each test that asks it
     for an example fails by saying so. Lesson 14's practise link carries `?lesson=14`, and `EDGES`
     holds [5, 14], [8, 14], [9, 14] and [12, 14].
 15. The kit's new option (What the kit and the app still need, 9), if this page lands it:
@@ -1112,7 +1112,7 @@ parts:
 18. The season's close: `createNextCard(14)` on the page's mark draws "End of Season 1", the line,
     Karaoke Night at `/karaoke-night?lesson=14` with `target="_blank"` and `rel="noopener"`, and
     "See the season map" at `#explorer`, and keeps the still after its words, as `next-card.test.ts`
-    checks the kit (`:442-473`); and after each of the three rest endings, "Effortful",
+    checks the kit (`:441-472`); and after each of the three rest endings, "Effortful",
     "Uncomfortable" and "Just listen today", the close keeps "End of Season 1", "You've seen every
     note you sing." and "See the season map", and shows neither "Now sing a whole song." nor its
     Karaoke Night button, while every other ending keeps both.

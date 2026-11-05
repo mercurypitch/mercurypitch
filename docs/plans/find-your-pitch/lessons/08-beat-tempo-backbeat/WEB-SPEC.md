@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:307-344`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:282-290` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:110-176`, Lessons 3 and 5),
-    at `:253-259`, and its CSS ceiling at `:385-388`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:117-183`, Lessons 3 and 5),
+    at `:270-276`, and its CSS ceiling at `:410-413`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1108,7 +1108,7 @@ parts:
 13. `metronomeSVG(id)`: two copies have distinct gradient ids.
 14. The season entry: Lesson 8 keeps `page` and `minutes` in every build, as Lessons 3 and 5 do
     (`kit/season.test.ts:241-266`), and the season gives the page its entry, as it must every lesson
-    document in `learn/` (`kit/season.test.ts:400-417`); a state that holds it back draws it with
+    document in `learn/` (`kit/season.test.ts:423-440`); a state that holds it back draws it with
     neither (`kit/publish.test.ts:59-74`); its link's `note` matches none of the backlog words
     (`kit/season.test.ts:177-190`).
 15. Step 5's lock: before the predict's choice, Play, March, Rock and Tempo are `disabled` and none
