@@ -3,7 +3,8 @@
 // ============================================================
 //
 // A run is one sound in flight: a line sung along a contour (`playLine`),
-// with a timbre if the caller brings one (kit/timbre.ts); a tune, note by
+// with a timbre if the caller brings one (kit/timbre.ts), or with breaths
+// in it, one voice from breath to breath (`playLines`); a tune, note by
 // note, each note its own voice (`playNotes`); or one note held for a moment
 // (`playNote`); each in Merc's "ooh" unless the caller picks the soft tone,
 // and a note may take a tone and a level of its own. Notes that share an
@@ -111,6 +112,52 @@ export function playLine(points: readonly ContourPoint[], o: RunOptions): Run {
       })
     : null
   return timed(contourLength(points), o.audible, () => v?.stop(0.08))
+}
+
+/** One breath's worth of a sung line: `points` sung as one voice from `t` seconds into the run. */
+export interface RunLine {
+  readonly t: number
+  readonly points: readonly ContourPoint[]
+}
+
+/**
+ * A sung line with breaths in it: each breath's worth one voice along its
+ * contour, started on its own timer as `playNotes` starts its notes, and
+ * nothing sounding between them (Lesson 14's phrases, its WEB-SPEC, Audio).
+ * It lasts until its last voice ends, or `length` seconds where the line
+ * ends on a breath; `stop` ends every voice within a short release.
+ */
+export function playLines(
+  lines: readonly RunLine[],
+  o: RunOptions & { readonly length?: number },
+): Run {
+  const timers: number[] = []
+  const voices: Voice[] = []
+  for (const line of lines)
+    timers.push(
+      window.setTimeout(() => {
+        if (!o.audible) return
+        const v = contourVoice(line.points, {
+          kind: o.kind ?? 'merc',
+          gain: o.gain,
+          timbre: o.timbre,
+          wave: o.wave,
+        })
+        if (v !== null) voices.push(v)
+      }, line.t * 1000),
+    )
+  const end = lines.reduce(
+    (at, line) => Math.max(at, line.t + contourLength(line.points)),
+    0,
+  )
+  return timed(
+    Math.max(end, o.length ?? 0),
+    o.audible,
+    () => {
+      voices.forEach((v) => v.stop(0.08))
+    },
+    timers,
+  )
 }
 
 /** A tune, note by note, each its own voice, ending with its last-ending note; `onNote` hears each as it starts. */
