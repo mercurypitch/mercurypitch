@@ -765,7 +765,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   prints it, and only this page says why the hold is suggested on vowels. Its hook is the entry's
   (`kit/season.ts:416`), and its tease is `kit/lesson-copy.ts`'s (`:118`), with no alternative hook,
   as FACTS 1 and 10 record: this spec changes no hook or tease line. Its signature (`kit/team-notes.ts:45`)
-  is the team's and never drawn (`:5-9`). `EDGES` already holds [11, 13] (`kit/season.ts:467`).
+  is the team's and never drawn (`:5-9`). `EDGES` already holds [11, 13] (`kit/season.ts:470`).
 
 - **The explorer card**: what the kit draws for a lesson with a page and no published film: its
   state and main action from `kit/lesson-state.ts` ("Start lesson", "Continue: step N" or "Read
@@ -873,15 +873,15 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:194`, `:245`;
-   `:370`, `:380`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:701`, `:734`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:319-329`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:201`, `:262`;
+   `:395`, `:405`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:731`, `:764`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:344-354`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:214-216`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:226-228`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:190-193`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:197-200`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`: no new option. The two options first proposed here, `partials` and
    `resonators`, and a `res` on `ContourPoint`, are built instead as the page's own timbre on the
    `timbre` option Lesson 7's page added (`:45-46`, `:185`), as its "ng" and lip trill are
@@ -1174,10 +1174,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 9. Every practice link carries `?lesson=13`; opening `/mirror?lesson=13` in a fresh profile boots
    Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
-    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:425`); its
+    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:472`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
     the hook, the card's words in the order eyebrow, tease, hook and way on, then the figure, as
-    that spec checks Lessons 1 and 2's cards (`:142-159`, `:377-393`).
+    that spec checks Lessons 1 and 2's cards (`:142-159`, `:406-422`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
     ring holds still, and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.
