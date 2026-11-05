@@ -2239,6 +2239,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** after setting `data-theme`, wait past the longest colour transition (500 ms covers Studio) before a screenshot whose colours anyone will judge, or set the theme before the page loads. A colour that blends both themes is a capture artifact, not a token bug.
 **See:** `src/features/studio/timeline/StudioTimeline.module.css` (`.trackHeader`)
 
+### Compare a take with a tap on its own source, never with the fake microphone's file
+
+**Symptom:** a Studio take recorded from `--use-file-for-fake-audio-capture` never matched the WAV it came from: no 64-sample run of it appeared anywhere in the file, and two takes of one looping file never matched each other either.
+**Cause:** Chromium hands the page a resampled copy of the file. Nothing above about 20 kHz survives (22-24 kHz sat 91 dB down in a take of white noise, against 11 dB down in the file), the take correlated with the file at 0.8, and its peaks rose past the file's. Each loop of a 2 s file also landed 138 frames earlier than the one before, so the copy does not repeat with the file either (headless Chromium 148, 5 Nov 2026).
+**Rule:** to prove what a take keeps, record its source beside the take's own capture (an AudioWorklet on the same `MediaStreamAudioSourceNode`, folded to mono as capture-node.ts folds it) and compare the take with that, converted as take-audio.ts `floatToPcm16` converts. The file fixes what the page hears in kind (a tone's pitch, where bursts and silences fall), never its samples.
+**See:** `src/e2e/studio-record-monitor.spec.ts` (`tapMicrophone`)
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
