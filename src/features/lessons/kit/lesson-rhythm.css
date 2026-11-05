@@ -1,0 +1,308 @@
+/* ============================================================
+   Rhythm bar — the writing's tokens: ink notes on chrome lines, the lit note, the pads and the strip
+   ============================================================
+   The rhythm bar's look (rhythm-draw.ts; Lesson 17 WEB-SPEC, Look). A page
+   that mounts the toy takes this sheet into its own by @import, so it
+   inlines there and no chunk the other lessons share changes (MISTAKES.md,
+   on the lessons' base stylesheet).
+
+   Notation is ink on chrome lines: heads, stems, flags, beams, rests, dots,
+   ties and the 4/4. A note lights in its singer's colour while it sounds,
+   Merc's blue or Tavi's orange, set on the figure as --rb-voice. Rests and
+   silences are dashed ink-2 in the strip and on the pitch line, so a
+   silence is never taken for a short note; the pitch line's bands are the
+   app's amber. Gold is not used here: it marks only the checkpoint's fit.
+
+   A symbol fades in over 0.12 s at its start and a strip cell fills over
+   its length; under reduced motion, or with Pause animations on, a symbol
+   shows at once and a cell shows its reading at once when its note ends. */
+
+:root {
+  --rb-line: rgba(195, 204, 214, 0.62);
+  --rb-voice: var(--signal-blue);
+}
+
+.rb svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.rb[data-voice='tavi'] {
+  --rb-voice: var(--orange);
+}
+
+/* ---------------------------------------------------------------- the toy's rows */
+/* the figure and the pads' layer share one row, the layer after the
+   controls in reading order, as Lesson 8's beat machine lays its cells */
+.toy.rb-toy.is-active,
+.rb-toy.free-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.rb-toy > * {
+  grid-column: 1;
+  min-width: 0;
+}
+.rb-toy > .eyebrow {
+  grid-row: 1;
+}
+.rb-toy > .rb,
+.rb-toy > .rb-pads {
+  grid-row: 2;
+}
+.rb-toy .viz.rb {
+  height: 250px;
+}
+.rb-toy [data-rb-for][hidden] {
+  display: none;
+}
+.rb-pads {
+  position: relative;
+  margin: 1px;
+  z-index: 1;
+  touch-action: pan-y;
+  pointer-events: none;
+}
+.rb-pads[hidden] {
+  display: none;
+}
+@media (max-width: 960px) {
+  .rb-toy > .rb-pads {
+    margin: 1px -12px;
+  }
+}
+.rb-padbtn {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.rb-padbtn:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 1px;
+}
+.rb-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- the lines and the 4/4 */
+.rb-line,
+.rb-staff {
+  stroke: var(--rb-line);
+  stroke-width: 1.3px;
+}
+.rb-line {
+  stroke-width: 1.6px;
+}
+.rb-barline {
+  stroke: var(--rb-line);
+  stroke-width: 1.3px;
+}
+.rb-clef {
+  fill: var(--chrome);
+}
+.rb-metre-digit {
+  fill: var(--ink);
+  font-family: var(--f-display);
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- the notes and rests */
+.rb-ink,
+.rb-head {
+  fill: var(--ink);
+}
+.rb-head.rb-open {
+  fill: none;
+  stroke: var(--ink);
+}
+.rb-stem,
+.rb-rest-stroke {
+  stroke: var(--ink);
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rb-tie {
+  fill: var(--ink);
+}
+.rb-sym.is-sounding .rb-ink,
+.rb-sym.is-sounding .rb-head,
+.rb-tie.is-sounding {
+  fill: var(--rb-voice);
+}
+.rb-sym.is-sounding .rb-head.rb-open {
+  fill: none;
+  stroke: var(--rb-voice);
+}
+.rb-sym.is-sounding .rb-stem,
+.rb-sym.is-sounding .rb-rest-stroke {
+  stroke: var(--rb-voice);
+}
+/* once the beam is drawn, the flags it replaces go */
+.rb-sym.is-beamed .rb-flag.is-beamable {
+  display: none;
+}
+
+.rb-sym,
+.rb-tie,
+.rb-beam,
+.rb-barline,
+.rb-metre,
+.rb-count,
+.rb-read {
+  transition: opacity 0.12s var(--ease);
+}
+.rb .is-hidden {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------- the pitch-line view */
+.rb-lane {
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.rb-lane.is-note {
+  stroke: var(--rb-line);
+}
+.rb-beatline {
+  stroke: var(--hair);
+  stroke-width: 1px;
+}
+.rb-beatline.is-bar {
+  stroke: var(--hair-3);
+}
+.rb-band {
+  fill: var(--amber);
+}
+.rb-sym.is-sounding .rb-band {
+  fill: var(--amber);
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.7));
+}
+.rb-gap {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.2px;
+  stroke-dasharray: 4 3;
+}
+
+/* ---------------------------------------------------------------- the pads */
+.rb-pad-box {
+  fill: rgba(195, 204, 214, 0.04);
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.rb-pad-n {
+  fill: var(--chrome);
+  font: 600 var(--fs-18) / 1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+.rb-pad.one .rb-pad-n {
+  font-size: var(--fs-22);
+}
+.rb-pad.is-now .rb-pad-box {
+  fill: rgba(230, 237, 243, 0.12);
+  stroke: var(--ink);
+}
+.rb-pad.is-now .rb-pad-n {
+  fill: var(--ink);
+}
+.rb-pad.is-chosen .rb-pad-box {
+  stroke: var(--aqua);
+  stroke-width: 2px;
+}
+
+/* ---------------------------------------------------------------- the counts */
+.rb-count {
+  fill: var(--ink-2);
+  font: 600 var(--fs-12) / 1 var(--f-mono);
+}
+.rb-count.is-held {
+  fill: var(--ink-3);
+}
+.rb-count.is-lit {
+  fill: var(--ink);
+}
+.rb-count.is-faint {
+  opacity: 0.35;
+}
+.rb-count.is-faint.is-hidden {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------- the stopwatch strip */
+.rb-cell-box {
+  fill: rgba(195, 204, 214, 0.05);
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.rb-cell.is-rest .rb-cell-box {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-dasharray: 4 3;
+}
+.rb-fill {
+  fill: rgba(230, 237, 243, 0.14);
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.rb-cell.is-rest .rb-fill {
+  fill: rgba(168, 179, 191, 0.1);
+}
+.rb-cell.is-filling .rb-fill {
+  animation: rb-fill var(--fill-s, 1s) linear forwards;
+}
+.rb-cell.is-full .rb-fill {
+  transform: scaleX(1);
+}
+@keyframes rb-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+.rb-read {
+  fill: var(--ink);
+  font: 500 var(--fs-12) / 1 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- still, when asked */
+.motion-paused .rb .rb-sym,
+.motion-paused .rb .rb-tie,
+.motion-paused .rb .rb-beam,
+.motion-paused .rb .rb-barline,
+.motion-paused .rb .rb-metre,
+.motion-paused .rb .rb-count,
+.motion-paused .rb .rb-read {
+  transition: none;
+}
+.motion-paused .rb .rb-cell.is-filling .rb-fill {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb .rb-sym,
+  .rb .rb-tie,
+  .rb .rb-beam,
+  .rb .rb-barline,
+  .rb .rb-metre,
+  .rb .rb-count,
+  .rb .rb-read {
+    transition: none;
+  }
+  .rb .rb-cell.is-filling .rb-fill {
+    animation: none;
+  }
+}
