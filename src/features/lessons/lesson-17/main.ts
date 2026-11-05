@@ -46,6 +46,7 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -71,6 +72,8 @@ void import('./recall').then(
   ({ initQuizzes }) => initQuizzes(deck),
   () => undefined,
 )
+// four words, each figure a short rhythm written as it plays
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(17)

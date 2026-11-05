@@ -26,7 +26,12 @@
 // one beat join into a beam once every note under it is written, so a beat
 // of eighths written as it sounds shows its flags until its last note, then
 // the beam (WEB-SPEC, Toys 1, "Written as it sounds"). The 4/4 is written at
-// the line's start, shown with the first note heard.
+// the line's start, shown with the first note heard. A bare figure, a short
+// rhythm on its own as the four words' tickets show one, has neither the
+// 4/4 nor a bar line, and its bars, groups here, may start where the row
+// says (WEB-SPEC, Toys 4).
+//
+// Where everything falls is kit/rhythm-layout.ts's, pure.
 //
 // The pitch-line view is Season 1's picture: time left to right, pitch up,
 // each sound a band as long as it is held, rests as dashed gaps, the beat
@@ -37,143 +42,15 @@
 import type { BeamGroup } from '@/lib/ear/rhythm-notation'
 import { beamGroups } from '@/lib/ear/rhythm-notation'
 import { svg } from './dom'
-import type { Spelled } from './notes'
 import type { Metrics, NoteSpot } from './rhythm-glyphs'
 import { engraveClef, engraveMetre, engraveNote, engraveRest, metrics, r, stemEnd, stemX, tiePath, } from './rhythm-glyphs'
-import type { Bar, FigureCount, PlacedSymbol } from './rhythm-model'
-import { BAR_BEATS, countsOf, GAP_S, placeBars, soundsOf } from './rhythm-model'
-import type { Clef } from './staff-places'
+import type { RhythmLayout, RhythmRow, RhythmScene, RhythmStaff, RowLayout, } from './rhythm-layout'
+import { headInset, layoutRhythm, placeRow, SIDE, STAFF_A, symbolX, xOf, } from './rhythm-layout'
+import type { FigureCount, PlacedSymbol } from './rhythm-model'
+import { BAR_BEATS, countsOf, GAP_S, soundsOf } from './rhythm-model'
 import { ledgersOf, placeOf } from './staff-places'
 import type { StripPlan } from './stopwatch-strip'
 import { planStrip } from './stopwatch-strip'
-
-/** What the bars sit on: one line, or a five-line staff in its clef. */
-export type RhythmStaff = 'line' | Clef
-
-/** One row of the figure: its bars and the tempo it plays at. */
-export interface RhythmRow {
-  readonly bars: readonly Bar[]
-  /** Beats per minute, for the strip's readings. */
-  readonly bpm: number
-  /** Beats across the row; by default its bars', so a figure ending on the next bar's first note can keep its room. */
-  readonly beats?: number
-  /** Each sound's note on a staff, in order; by default every one on A3 on the bass staff and A4 on the treble (FACTS 29). */
-  readonly notes?: readonly Spelled[]
-  /** Which strip cells read, by index; every one by default. */
-  readonly reads?: (index: number) => boolean
-}
-
-export interface RhythmScene {
-  readonly staff: RhythmStaff
-  readonly rows: readonly RhythmRow[]
-  /** The pitch-line view in place of the notation. */
-  readonly lanes?: boolean
-  /** Numbered pads under each row's beats, or none. */
-  readonly pads?: boolean
-  /** Each note's count under it. */
-  readonly counts?: boolean
-  /** The stopwatch strip under each row. */
-  readonly strip?: boolean
-  /** The hero's size: smaller type and a shorter figure. */
-  readonly compact?: boolean
-}
-
-/** A row in the figure's pixels. */
-export interface RowLayout {
-  /** Beat 0's left edge and the last beat's right edge. */
-  readonly x0: number
-  readonly x1: number
-  readonly beats: number
-  /** The line, or the staff's middle line. */
-  readonly y: number
-  /** The staff's space, the unit every glyph is drawn to. */
-  readonly space: number
-  /** The pads' box. */
-  readonly top: number
-  readonly bottom: number
-  readonly numberY: number
-  readonly countY: number
-  readonly stripTop: number
-  readonly stripH: number
-  /** The strip's second row of readings: its baseline. */
-  readonly read2Y: number
-}
-
-export interface RhythmLayout {
-  readonly w: number
-  readonly h: number
-  readonly rows: readonly RowLayout[]
-}
-
-/** Where a beat falls in a row. */
-export const xOf = (row: RowLayout, beat: number): number =>
-  row.x0 + (beat / row.beats) * (row.x1 - row.x0)
-
-/** A row's beats: its own, or its bars'. */
-const beatsOf = (row: RhythmRow): number =>
-  row.beats ?? row.bars.length * BAR_BEATS
-
-const SIDE = 4
-
-/**
- * Lays the rows out in a figure `w` by `h`: one row uses the height
- * Lesson 8's figure has, two share it (Play both), each with its pads,
- * counts and strip.
- */
-export function layoutRhythm(
-  w: number,
-  h: number,
-  scene: RhythmScene,
-): RhythmLayout {
-  const n = scene.rows.length
-  const space = scene.compact === true ? 7 : n > 1 ? 8 : 10
-  const staffed = scene.staff !== 'line' && scene.lanes !== true
-  const left = SIDE + space * (staffed ? 6.2 : 2.6)
-  const strip = scene.strip !== false
-  const stripH = scene.compact === true ? 18 : 22
-  // one row's parts, top to bottom, from the room its stems and ties take
-  const above = space * (staffed ? 4.2 : 4.4)
-  const below = space * (scene.counts === true ? 5.2 : 3.4)
-  const padsH = scene.pads === false ? 0 : space * 1.9
-  const stripRoom = strip ? stripH + 26 : 0
-  const rowH = above + below + padsH + stripRoom
-  const offset = Math.max(0, (h - rowH * n) / (n + 1))
-  const rows = scene.rows.map((row, i): RowLayout => {
-    const top = offset + i * (rowH + offset)
-    const y = top + above
-    const bottom = y + below + padsH
-    const stripTop = bottom + 8
-    return {
-      x0: left,
-      x1: w - SIDE,
-      beats: beatsOf(row),
-      y,
-      space,
-      top: top + 2,
-      bottom,
-      numberY: bottom - space * 0.7,
-      countY: y + space * 4.1,
-      stripTop,
-      stripH,
-      read2Y: stripTop + stripH + 15,
-    }
-  })
-  return { w, h, rows }
-}
-
-/** How far into its slot a note's head sits: half a short note's slot, at most a set inset. */
-const headInset = (row: RowLayout, beats: number): number =>
-  Math.min(((xOf(row, beats) - xOf(row, 0)) / 2) * 0.9, row.space * 1.3)
-
-/** A symbol's anchor: its head's centre, or a rest's. */
-export const symbolX = (row: RowLayout, p: PlacedSymbol): number =>
-  xOf(row, p.beat) + headInset(row, Math.min(p.beats, 1))
-
-/** The note every sound plays on a staff when the row names none: A3 on the bass, A4 on the treble (FACTS 29). */
-export const STAFF_A: Readonly<Record<Clef, Spelled>> = {
-  bass: { letter: 'A', alter: 0, octave: 3 },
-  treble: { letter: 'A', alter: 0, octave: 4 },
-}
 
 /** A note's place on the row's staff: its letters above the bottom line, or the one line's 4. */
 function placeIn(staff: RhythmStaff, row: RhythmRow, sound: number): number {
@@ -415,13 +292,16 @@ function notation(
     ).dataset.place = String(place)
   if (staff !== 'line')
     engraveClef(staff, SIDE + row.space * 0.5, yAt(row, 0), row.space, parent)
-  const metre = engraveMetre(
-    row.x0 - row.space * (staffed ? 1.4 : 1.35),
-    row.y,
-    row.space,
-    staffed,
-    parent,
-  )
+  const metre =
+    scene.bare === true
+      ? null
+      : engraveMetre(
+          row.x0 - row.space * (staffed ? 1.4 : 1.35),
+          row.y,
+          row.space,
+          staffed,
+          parent,
+        )
   const spots = spotsOf(scene, rowScene, row, placed)
   const groups = beamGroups(placed)
   const beamed = new Set(groups.flatMap((g) => g.members))
@@ -460,7 +340,7 @@ function notation(
     symbols,
     ties: ties(placed, spots, m, row.space, parent),
     beams: beams(groups, spots, m, row.space, parent),
-    barlines: barlines(row, placed, staffed, parent),
+    barlines: scene.bare === true ? [] : barlines(row, placed, staffed, parent),
     metre,
   }
 }
@@ -659,7 +539,7 @@ function drawRow(
   index: number,
   parent: Element,
 ): RowParts {
-  const placed = placeBars(rowScene.bars)
+  const placed = placeRow(rowScene)
   const g = svg('g', { class: 'rb-row', 'data-row': index }, parent)
   const pads = scene.pads === false ? [] : drawPads(row, g)
   const drawn =

@@ -16,8 +16,10 @@
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { readRhythm } from '@/lib/ear/rhythm-notation'
-import type { RhythmFigure, RhythmScene, RowState } from './rhythm-draw'
-import { drawRhythm, layoutRhythm, xOf } from './rhythm-draw'
+import type { RhythmFigure, RowState } from './rhythm-draw'
+import { drawRhythm } from './rhythm-draw'
+import type { RhythmScene } from './rhythm-layout'
+import { layoutRhythm, xOf } from './rhythm-layout'
 import type { Bar, NoteValue, Written } from './rhythm-model'
 import { FOUR_QUARTERS, placeBars, toggleRest, writeGrid } from './rhythm-model'
 
@@ -444,6 +446,60 @@ describe('drawRhythm', () => {
     const row = fig.layout.rows[0]
     expect(counts[4]).toBeGreaterThan(xOf(row, 3))
     expect(counts[4]).toBeLessThan(xOf(row, 3.5))
+  })
+
+  it('draws a bare figure with no 4/4 and no bar line, even written, and keeps no room for the 4/4', () => {
+    // Arrange: a whole note, then two halves, as the four words' Note value
+    const bars = [[note(4)], [note(2), note(2)]]
+    const bare = draw(bars, { bare: true, compact: true, pads: false })
+    const barred = layoutRhythm(PHONE.w, PHONE.h, {
+      staff: 'line',
+      rows: [{ bars, bpm: 60 }],
+      compact: true,
+      pads: false,
+    })
+
+    // Act
+    bare.fig.set([written(bare.fig)])
+
+    // Assert (Lesson 17 WEB-SPEC, Toys 4)
+    expect(all(bare.el, '.rb-sym:not(.is-hidden)')).toHaveLength(3)
+    expect(all(bare.el, '.rb-metre')).toHaveLength(0)
+    expect(all(bare.el, '.rb-barline')).toHaveLength(0)
+    expect(bare.fig.layout.rows[0].x0).toBeLessThan(barred.rows[0].x0)
+    expect(bare.fig.layout.rows[0].x0).toBeGreaterThan(4)
+  })
+
+  it("sets a row's bars at its own starts, and their strip cells with them", () => {
+    // Act: two quarters, a beat's pause, then two quarters tied, over five beats
+    const { el, fig } = draw(
+      [
+        [note(1), note(1)],
+        [note(1, { tie: true }), note(1)],
+      ],
+      {
+        bare: true,
+        rows: [
+          {
+            bars: [
+              [note(1), note(1)],
+              [note(1, { tie: true }), note(1)],
+            ],
+            bpm: 60,
+            starts: [0, 3],
+            beats: 5,
+          },
+        ],
+      },
+    )
+    const row = fig.layout.rows[0]
+
+    // Assert
+    expect(fig.rows[0].placed.map((p) => p.beat)).toEqual([0, 1, 3, 4])
+    const cells = all(el, '.rb-cell-box').map((c) => num(c, 'x'))
+    expect(cells).toHaveLength(3)
+    expect(cells[2]).toBeGreaterThan(xOf(row, 3))
+    expect(cells[2]).toBeLessThan(xOf(row, 3.5))
   })
 
   it("lays a one-bar figure's pads the width of their beats, 44 px or more from 344 px up (FACTS 70)", () => {

@@ -91,6 +91,24 @@ describe('the bars in place', () => {
     ])
   })
 
+  it("places each bar from its own first beat when told, so a short rhythm's groups can sit a pause apart", () => {
+    // Act: the four words' tie, two quarters, a beat's pause, the same two tied
+    const placed = placeBars([bar('q q'), bar('q~ q')], 4, [0, 3])
+
+    // Assert
+    expect(placed.map((p) => [p.beat, p.bar, p.onset, p.tie])).toEqual([
+      [0, 0, 0, false],
+      [1, 0, 1, false],
+      [3, 1, 2, true],
+      [4, 1, null, false],
+    ])
+    expect(soundsOf(placed).map((s) => [s.at, s.beats])).toEqual([
+      [0, 1],
+      [1, 1],
+      [3, 2],
+    ])
+  })
+
   it('keeps a written rest where the Ear Lab would hold the note through it (FACTS 26a, 44)', () => {
     // Act: quarter, quarter, half rest, then the next bar's first quarter
     const placed = placeBars([bar('q q hr'), bar('q')])

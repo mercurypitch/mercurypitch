@@ -250,6 +250,47 @@ describe('planPlay', () => {
     ])
   })
 
+  it("knocks only a bare figure's first beat higher, and books each bar's symbols from its own start", () => {
+    // Arrange: the four words' tie, two quarters, a beat's pause, the same two tied
+    const v = viewOf([
+      [note(1), note(1)],
+      [note(1, { tie: true }), note(1)],
+    ])
+    const view = {
+      ...v,
+      scene: {
+        ...v.scene,
+        bare: true,
+        rows: [{ ...v.scene.rows[0], starts: [0, 3], beats: 5 }],
+      },
+    }
+
+    // Act
+    const plan = planPlay([{ view, bpm: () => 60 }])
+    const at = (k: string) =>
+      plan.flatMap((p, i) =>
+        p.bar.hits
+          .filter((h) => h.data.k === k)
+          .map((h) => [i, h.beat, (h.data as { high?: boolean }).high]),
+      )
+
+    // Assert
+    expect(plan.map((p) => p.bar.beats)).toEqual([4, 1, 1])
+    expect(at('click').map((c) => c[2])).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+    ])
+    expect(at('sym').map((s) => [s[0], s[1]])).toEqual([
+      [0, 0],
+      [0, 1],
+      [0, 3],
+      [1, 0],
+    ])
+  })
+
   it('keeps a figure that ends short on its last beat, and reads its last cell after it', () => {
     // Arrange: the half rest's example, ending on the next bar's first note
     const v = viewOf([[note(1), note(1), rest(2)], [note(1)]])

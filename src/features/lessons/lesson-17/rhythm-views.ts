@@ -14,7 +14,7 @@
 // is the rhythm bar's own (kit/rhythm-bar.ts `see`).
 
 import type { PlayPart, RhythmView } from '@/features/lessons/kit/rhythm-bar'
-import type { RhythmStaff } from '@/features/lessons/kit/rhythm-draw'
+import type { RhythmStaff } from '@/features/lessons/kit/rhythm-layout'
 import type { Bar, GridBar, NoteValue, Written, } from '@/features/lessons/kit/rhythm-model'
 import { HALVINGS, writeGrid } from '@/features/lessons/kit/rhythm-model'
 import { figureWords } from '@/features/lessons/kit/rhythm-words'
