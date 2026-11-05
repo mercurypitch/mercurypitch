@@ -444,7 +444,8 @@ function drawPads(row: RowLayout, parent: Element): SVGGElement[] {
       {
         x: r(x + 2),
         y: r(row.top),
-        width: r(xOf(row, b + 1) - x - 4),
+        // a figure drawn at no size, in a panel not yet shown, has empty pads
+        width: r(Math.max(0, xOf(row, b + 1) - x - 4)),
         height: r(row.bottom - row.top),
         rx: 10,
         class: 'rb-pad-box',

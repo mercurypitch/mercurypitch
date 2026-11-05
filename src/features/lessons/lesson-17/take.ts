@@ -81,9 +81,13 @@ export type TakeHit =
   | { readonly k: 'click'; readonly high: boolean }
   | { readonly k: 'note'; readonly i: number }
 
-/** The take's five bars: a knock on every beat, beat 1 of each higher, and in the written two each note's start. */
-export function takeBars(): Bar<TakeHit>[] {
-  return Array.from({ length: TAKE.beats / 4 }, (_, b) => ({
+/**
+ * `count` bars of four on the click alone, a knock on every beat, beat 1 of
+ * each higher, with each written note's start from beat `from` on: the
+ * take's five bars, and the sung part's guide's three (sing.ts).
+ */
+export function clickBars(count: number, from: number): Bar<TakeHit>[] {
+  return Array.from({ length: count }, (_, b) => ({
     beats: 4,
     hits: [
       ...[0, 1, 2, 3].map((beat) => ({
@@ -91,7 +95,7 @@ export function takeBars(): Bar<TakeHit>[] {
         data: { k: 'click', high: beat === 0 } as TakeHit,
       })),
       ...TAKE_ONSETS.flatMap((at, i) => {
-        const beat = TAKE.judgedFrom + at - b * 4
+        const beat = from + at - b * 4
         return beat >= 0 && beat < 4
           ? [{ beat, data: { k: 'note', i } as TakeHit }]
           : []
@@ -99,6 +103,10 @@ export function takeBars(): Bar<TakeHit>[] {
     ],
   }))
 }
+
+/** The take's five bars: one counted in, two of every beat, then the written two from beat 12. */
+export const takeBars = (): Bar<TakeHit>[] =>
+  clickBars(TAKE.beats / 4, TAKE.judgedFrom)
 
 /** The pad a beat lights: the beat bars' on the written bars' pads, one bar each, and the written bars' own. */
 export function padOf(spot: Spot): number | null {

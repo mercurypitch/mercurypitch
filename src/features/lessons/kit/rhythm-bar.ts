@@ -85,6 +85,8 @@ export interface PlayOptions {
   readonly line?: string
   /** The note's voice: the soft one in the steps, Merc's in the sung part. */
   readonly kind?: 'soft' | 'merc'
+  /** Whether it sounds, for a caller that asked the Sound switch already: `Sound.canPlay()` by default. */
+  readonly audible?: boolean
 }
 
 export interface RhythmBarOptions {
@@ -444,7 +446,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     states = states.map((s) => ({ ...s, faint }))
     const plan = planPlay(parts)
     const freq = o.freq()
-    const audible = Sound.canPlay()
+    const audible = po.audible ?? Sound.canPlay()
     let at = 0
     const rowOf = (part: number): number => parts[part].row ?? 0
     const placedAll = parts.map((part) =>

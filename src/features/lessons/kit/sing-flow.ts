@@ -37,9 +37,15 @@
 // events in any order.
 //
 // The status lines and the two hints are the series' (Lessons 6, 8, 10 and
-// 12). The voice choice's two lines are markup, and the flow says which
-// shows. The flow writes nothing: only the voice is stored, by the kit's
-// voice choice.
+// 12), naming what Merc sings as the page's button does (`notes`, "Merc's
+// notes" unless a page names it, as Lesson 17's "Merc's bars"). A page may
+// also cap the sweeps a visit holds (`guides`), as Lesson 8 holds two:
+// Start the guide shows until the first sweep, and then Again, once Easy or
+// Workable answers a sweep, until the cap; a sweep cut short counts for
+// nothing. Without a cap, as on Lessons 12 and 15, Start the guide stays
+// and no Again shows. The voice choice's two lines are markup, and the flow
+// says which shows. The flow writes nothing: only the voice is stored, by
+// the kit's voice choice.
 
 import type { Ending, Feeling } from './comfort'
 import { afterFeeling } from './comfort'
@@ -159,6 +165,10 @@ export interface SingView<K extends string = string> {
   /** Start the guide answers once Merc's notes have been heard with sound on; until then it is aria-disabled. */
   readonly startEnabled: boolean
   readonly hint: Hint | null
+  /** Start the guide is on the card: while singing, and with a cap only until the first sweep. */
+  readonly startShown: boolean
+  /** Again, the guide once more: with a cap, after a sweep Easy or Workable answered, until the cap. */
+  readonly againShown: boolean
   /** The answer pressed in the question showing: none when a sweep's end asks afresh. */
   readonly answer: Feeling | null
   readonly after: After<K> | null
@@ -169,17 +179,33 @@ export interface SingView<K extends string = string> {
   readonly status: string
 }
 
-/** The status lines the series words them (Lessons 6, 8, 10 and 12). */
-export const STATUS = {
-  comfort: 'Before you sing: how is your voice today?',
-  voiceSing: "Choose the voice you'll sing with.",
-  voiceListen: 'Choose a voice: it picks the Merc who sings.',
-  listen: "Just listening today: press Play Merc's notes to hear them.",
-  first: "Play Merc's notes first: Merc sings them, then the guide is yours.",
-  ready: "Start the guide when you're ready, or play Merc's notes again.",
-  guiding: 'Your turn: sing with the guide.',
-  feel: 'How did that feel?',
-} as const
+/** The status lines the series words them (Lessons 6, 8, 10 and 12), for what Merc sings, `notes`. */
+function statusFor(notes: string) {
+  return {
+    comfort: 'Before you sing: how is your voice today?',
+    voiceSing: "Choose the voice you'll sing with.",
+    voiceListen: 'Choose a voice: it picks the Merc who sings.',
+    listen: `Just listening today: press Play ${notes} to hear them.`,
+    first: `Play ${notes} first: Merc sings them, then the guide is yours.`,
+    ready: `Start the guide when you're ready, or play ${notes} again.`,
+    guiding: 'Your turn: sing with the guide.',
+    feel: 'How did that feel?',
+  } as const
+}
+
+/** The hints under Start the guide (Lesson 12's WEB-SPEC, Toys 6, state 5), for what Merc sings, `notes`. */
+function hintFor(notes: string): Readonly<Record<Hint, string>> {
+  return {
+    first: `Play ${notes} first`,
+    silent: `Sound is off: nothing played. Turn sound on to hear ${notes}, then start the guide.`,
+  }
+}
+
+/** What Merc sings unless a page names it. */
+const NOTES = "Merc's notes"
+
+/** The status lines, with "Merc's notes". */
+export const STATUS = statusFor(NOTES)
 
 /** Lesson 3's lines after Effortful and Uncomfortable. */
 const CLOSING = {
@@ -188,23 +214,28 @@ const CLOSING = {
     "Thanks for saying so. That's enough singing for today: rest your voice.",
 } as const
 
-/** The hints under Start the guide (Lesson 12's WEB-SPEC, Toys 6, state 5). */
-export const HINT: Readonly<Record<Hint, string>> = {
-  first: "Play Merc's notes first",
-  silent:
-    "Sound is off: nothing played. Turn sound on to hear Merc's notes, then start the guide.",
-}
+/** The hints, with "Merc's notes". */
+export const HINT: Readonly<Record<Hint, string>> = hintFor(NOTES)
 
 export interface SingFlowOptions<K extends string> {
   /** The key of the line Easy and Workable give, as the page's markup marks it (`data-after`). */
   readonly sung: K
   /** That line's words. */
   readonly line: string
+  /** What Merc sings, as the page's button names it: "Merc's notes" by default. */
+  readonly notes?: string
+  /** The sweeps a visit holds, Start the guide's and then Again's: no cap by default. */
+  readonly guides?: number
 }
 
 export interface SingFlow<K extends string> {
   /** The lines after an answer: the page's own, then Lesson 3's two. */
   readonly AFTER: Readonly<Record<After<K>, string>>
+  /** The status lines and the hints, naming what Merc sings as the page does. */
+  readonly STATUS: Readonly<Record<keyof typeof STATUS, string>>
+  readonly HINT: Readonly<Record<Hint, string>>
+  /** The kit's rule, with the page's cap: a sweep past it, or after an unanswered one, does not start. */
+  nextState(s: SingState, e: SingEvent): SingState
   singView(s: SingState): SingView<K>
 }
 
@@ -223,34 +254,48 @@ export function singFlow<K extends string>(o: SingFlowOptions<K>): SingFlow<K> {
   const AFTER = { [o.sung]: o.line, ...CLOSING } as Readonly<
     Record<After<K>, string>
   >
+  const status = statusFor(o.notes ?? NOTES)
+  const cap = o.guides ?? null
+
+  /** With a cap, a sweep after the first waits for Easy or Workable (a hard answer puts the guide away), and none runs past the cap. */
+  const another = (s: SingState): boolean =>
+    cap === null || s.sweeps === 0 || (s.sweeps < cap && s.feeling !== null)
 
   /** The kit's closing line for an answer, or the page's own for Easy and Workable. */
   const afterOf = (f: Feeling): After<K> =>
     afterFeeling(f, AFTER_OPTIONS).closing ?? o.sung
 
   function statusOf(s: SingState, after: After<K> | null): string {
-    if (s.comfort === null) return STATUS.comfort
+    if (s.comfort === null) return status.comfort
     if (s.voice === null)
-      return s.comfort === 'listen' ? STATUS.voiceListen : STATUS.voiceSing
-    if (s.comfort === 'listen') return STATUS.listen
-    if (s.sweeping) return STATUS.guiding
+      return s.comfort === 'listen' ? status.voiceListen : status.voiceSing
+    if (s.comfort === 'listen') return status.listen
+    if (s.sweeping) return status.guiding
     if (after !== null) return AFTER[after]
-    if (s.sweeps > 0) return STATUS.feel
-    return s.heard ? STATUS.ready : STATUS.first
+    if (s.sweeps > 0) return status.feel
+    return s.heard ? status.ready : status.first
   }
 
   return {
     AFTER,
+    STATUS: status,
+    HINT: hintFor(o.notes ?? NOTES),
+    nextState(s, e) {
+      return e.type === 'sweepStart' && !another(s) ? s : nextState(s, e)
+    },
     singView(s) {
       const singing = s.comfort === 'sing' && !s.putAway
       const answer = s.sweeping ? null : s.feeling
       const after = answer === null ? null : afterOf(answer)
+      const again = cap !== null && s.sweeps > 0
       return {
         panels: panelsOf(s),
         voiceLine: s.hadVoice ? 'stored' : 'none',
         singParts: singing,
         startEnabled: s.heard,
         hint: !singing || s.heard ? null : s.silent ? 'silent' : 'first',
+        startShown: singing && !again,
+        againShown: singing && again && !s.sweeping && another(s),
         answer,
         after,
         doctor: s.doctor,

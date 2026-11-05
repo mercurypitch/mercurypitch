@@ -1251,7 +1251,7 @@
               </div>
 
               <!-- 3, 4 and 5. Merc's bars, the guide and Move the note -->
-              <div class="sing-panel" data-panel="line" hidden>
+              <div class="sing-panel" data-panel="notes" hidden>
                 <p class="turn" data-sing-part>
                   <b>Your turn:</b> Merc sings the same two bars on one note,
                   A3, or A4 for the higher voice, over the click. Play them,
@@ -1315,18 +1315,22 @@
                   </div>
                 </div>
                 <p class="guide-hint" id="guideHint" data-guide-hint>
-                  Play Merc's bars first.
+                  Play Merc's bars first
                 </p>
                 <p class="unscored" id="guideNote" data-sing-part>
                   The guide lights each note as it goes by, with the click under
                   it. Nothing listens here and nothing is scored. It's just for
                   you.
                 </p>
-                <p class="do-readout" data-do-readout aria-live="polite">
-                  note: as written
-                </p>
                 <div class="l17-guide">
-                  <div class="line-guide" id="lineGuide"></div>
+                  <p class="do-readout" data-do-readout aria-live="polite">
+                    note: as written
+                  </p>
+                  <div
+                    class="rb line-guide"
+                    id="lineGuide"
+                    aria-hidden="true"
+                  ></div>
                   <img
                     class="guide-merc"
                     src="/src/features/lessons/lesson-01/assets/merc-blue.png"

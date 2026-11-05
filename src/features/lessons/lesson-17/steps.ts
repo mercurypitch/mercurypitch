@@ -445,22 +445,34 @@ export function initSteps(): RhythmBar {
     lift(figure, liftPlan(view.scene.rows, s.clef, size.w, size.h))
   }
 
+  /** Step 5 on the other clef, as it shows: the staff and the sound move together; what was heard stays written. */
+  function redrawClef(c: Clef): void {
+    bar.stop()
+    const written = bar.written(0)
+    setClef(c)
+    if (ownShown) showOwn(written)
+    else bar.show(carriedView(), (_r, i) => written[i] === true)
+  }
+
   for (const b of clefBtns)
     b.addEventListener('click', () => {
       const c: Clef = b.dataset.rbClef === 'treble' ? 'treble' : 'bass'
       if (c === s.clef) return
-      bar.stop()
-      const written = bar.written(0)
-      setClef(c)
-      // the staff and the sound move together; what was heard stays written
-      if (ownShown) showOwn(written)
-      else bar.show(carriedView(), (_r, i) => written[i] === true)
+      redrawClef(c)
       bar.say(
         c === 'bass'
           ? 'The bass staff: every note on A3'
           : 'The treble staff: every note on A4',
       )
     })
+  // a voice chosen in the sung part sets the clef for the rest of the visit
+  // (WEB-SPEC, Toys 7, part 2, state 2), Step 5 redrawn on it if it shows
+  VoiceChoice.subscribe((v) => {
+    const c: Clef = v === 'higher' ? 'treble' : 'bass'
+    if (v === null || c === s.clef) return
+    if (s.step === 5) redrawClef(c)
+    else setClef(c)
+  })
 
   // ---------------------------------------------------------------- every step: Play, Reset and the pitch line
   function onPlay(btn: HTMLButtonElement): void {

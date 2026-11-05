@@ -1,9 +1,9 @@
 /* ============================================================
    Lesson 17 — How long is a note?: the page's own figures and cards
    ============================================================
-   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
-   and lesson-parts, imported by main.ts, and the guide's, the voice
-   lessons', the rhythm bar's and the tap pad's sheets, taken in here by
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and the voice lessons' sheet, imported by main.ts, and the
+   guide's, the rhythm bar's and the tap pad's sheets, taken in here by
    @import so they inline into this page's own sheet and split no chunk the
    other lessons share (MISTAKES.md, on the lessons' base stylesheet).
 
@@ -15,7 +15,6 @@
    (kit/lesson-base.css). */
 
 @import '../kit/lesson-guide.css';
-@import '../kit/lesson-voice.css';
 @import '../kit/lesson-rhythm.css';
 @import '../kit/lesson-tap-pad.css';
 
@@ -236,14 +235,33 @@
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
-/* the guide beside the still of the Merc singing, never a microphone */
+/* the guide beside the still of the Merc singing, never a microphone; on a
+   phone the still sits by the readout, and the guide spans the card as the
+   take's figure does, so its strip has the take's room */
 .l17-guide {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 84px;
-  gap: 14px;
+  column-gap: 14px;
   align-items: center;
 }
+.l17-guide .do-readout {
+  grid-row: 1;
+  grid-column: 1 / -1;
+}
+/* the same two bars as the take's, their pads and strip under them */
+.l17-sing .line-guide {
+  position: relative;
+  grid-row: 2;
+  grid-column: 1;
+  height: 170px;
+}
+/* the learner's turn lights each note in ink: no voice sings it */
+.l17-sing .line-guide.is-guide {
+  --rb-voice: var(--ink);
+}
 .l17-guide .guide-merc {
+  grid-row: 2;
+  grid-column: 2;
   width: 84px;
   height: 84px;
   object-fit: contain;
@@ -251,9 +269,17 @@
 @media (max-width: 560px) {
   .l17-guide {
     grid-template-columns: minmax(0, 1fr) 56px;
-    gap: 8px;
+    column-gap: 8px;
+  }
+  .l17-guide .do-readout {
+    grid-column: 1;
+    margin: 0;
+  }
+  .l17-sing .line-guide {
+    grid-column: 1 / -1;
   }
   .l17-guide .guide-merc {
+    grid-row: 1;
     width: 56px;
     height: 56px;
   }

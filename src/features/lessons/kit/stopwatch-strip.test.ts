@@ -46,14 +46,14 @@ function plan(
 
 const texts = (p: StripPlan): string[] => p.readings.map((r) => r.text)
 
-/** Whether two readings on one row share any pixel. */
+/** Whether two readings on one row share any pixel: two packed edge to edge do not. */
 const overlap = (p: StripPlan): boolean =>
   p.readings.some((a, i) =>
     p.readings.some(
       (b, j) =>
         j > i &&
         a.row === b.row &&
-        Math.abs(a.x - b.x) < (a.width + b.width) / 2,
+        Math.abs(a.x - b.x) < (a.width + b.width) / 2 - 1e-9,
     ),
   )
 
@@ -189,6 +189,48 @@ describe('planStrip', () => {
     for (const r of p.readings) {
       expect(r.x - r.width / 2).toBeGreaterThanOrEqual(4)
       expect(r.x + r.width / 2).toBeLessThanOrEqual(306)
+    }
+  })
+
+  it('packs a full second row both ways, closing its runs up when it must', () => {
+    // Arrange: the take's two bars, too narrow to read "1 s" in its cell
+    const bars: Bar[] = [
+      [note(1), note(1), note(2)],
+      [note(0.5), note(0.5), note(1), note(0.5), note(0.5), note(1)],
+    ]
+
+    // Act
+    const roomy = plan(bars, 60, 266)
+    const tight = plan(bars, 60, 250)
+
+    // Assert
+    const second = (p: StripPlan) =>
+      p.readings.filter((r) => r.row === 1).map((r) => r.text)
+    expect(second(roomy)).toEqual([
+      '1 s',
+      '1 s',
+      '2 × 0.5 s',
+      '1 s',
+      '2 × 0.5 s',
+      '1 s',
+    ])
+    expect(second(tight)).toEqual([
+      '1 s',
+      '1 s',
+      '2×0.5 s',
+      '1 s',
+      '2×0.5 s',
+      '1 s',
+    ])
+    for (const [p, width] of [
+      [roomy, 266],
+      [tight, 250],
+    ] as const) {
+      expect(overlap(p)).toBe(false)
+      for (const r of p.readings) {
+        expect(r.x - r.width / 2).toBeGreaterThanOrEqual(4)
+        expect(r.x + r.width / 2).toBeLessThanOrEqual(width - 4)
+      }
     }
   })
 
