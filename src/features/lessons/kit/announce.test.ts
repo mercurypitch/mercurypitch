@@ -14,6 +14,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.useRealTimers()
   document.body.textContent = ''
 })
@@ -111,6 +112,22 @@ describe('announce', () => {
     // Assert
     expect(held).toBe('Pitch: falling')
     expect(announcer().textContent).toBe('')
+  })
+
+  it('books its clearing with its words, so neither timer needs the window when it comes', () => {
+    // Arrange: the window gone under booked words, as a test file's teardown removes it
+    announce('Locked in.')
+    const line = announcer()
+    vi.stubGlobal('window', undefined)
+
+    // Act
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS)
+    const written = line.textContent
+    vi.advanceTimersByTime(ANNOUNCE_CLEAR_MS)
+
+    // Assert
+    expect(written).toBe('Locked in.')
+    expect(line.textContent).toBe('')
   })
 })
 
