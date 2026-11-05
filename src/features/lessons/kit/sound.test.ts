@@ -361,13 +361,48 @@ describe('playNoise', () => {
 
     // Act
     kit.Sound.hush(true)
-    kit.playNoise({ dur: 0.35 })
+    const hushed = kit.playNoise({ dur: 0.35 })
     kit.Sound.hush(false)
     kit.Sound.set('off')
-    kit.playNoise({ dur: 0.35 })
+    const off = kit.playNoise({ dur: 0.35 })
 
     // Assert
     expect(ctx.sources).toHaveLength(0)
+    expect([hushed, off]).toEqual([null, null])
+  })
+
+  it('stops from where it stands, as every voice does, once its voice is told to', async () => {
+    // Arrange: an in-breath of 0.3 s, cut 0.1 s in
+    const { kit, ctx } = await soundOn()
+    const breath = kit.playNoise({ dur: 0.3, band: { hz: 1800, q: 0.6 } })
+    ctx.currentTime = 0.1
+
+    // Act
+    breath?.stop(0.04)
+
+    // Assert: the envelope falls from 0.1 s, and the source stops once it has
+    const envelope = ctx.gains[1].gain.events
+    expect(envelope.slice(-3)).toEqual([
+      ['cancelScheduledValues', 0.1],
+      ['setValueAtTime', expect.any(Number), 0.1],
+      ['setTargetAtTime', 0, 0.1, 0.04 / 5],
+    ])
+    expect(ctx.sources[0].stops.at(-1)).toBeCloseTo(0.1 + 0.04 + kit.SLACK, 9)
+    expect(breath?.alive).toBe(false)
+  })
+
+  it('stops when every sound stops: the Sound switch turned off', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    const breath = kit.playNoise({ dur: 0.3 })
+    ctx.currentTime = 0.05
+
+    // Act
+    kit.Sound.set('off')
+
+    // Assert
+    expect(breath?.alive).toBe(false)
+    expect(ctx.sources[0].stops.at(-1)).toBeLessThan(0.3)
   })
 })
 

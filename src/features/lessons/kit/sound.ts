@@ -21,7 +21,8 @@
 // wherever the voice is.
 //
 // Noise is the one sound with no pitch (`playNoise`): band-passed, the air
-// of an "h" before a note; white and 3 ms long, the click of a catch.
+// of an "h" before a note; white and 3 ms long, the click of a catch. It
+// stops like every other voice, from where it stands.
 
 import { toast } from './toast'
 
@@ -446,10 +447,13 @@ function noiseBuffer(context: AudioContext): AudioBuffer {
  * Noise on the house envelope: an exponential attack from the floor, a
  * setTargetAtTime release, and the source stopped only once the release has
  * died away. The air of an "h" before a note, or a 3 ms click. Silent while
- * sound is not on or a take is open, like every other sound here.
+ * sound is not on or a take is open, like every other sound here. It hands
+ * back a voice like every other sound, so a page can cut it short (an
+ * in-breath when the viewer leaves a step), and every sound stopping stops
+ * it too; null when it played nothing.
  */
-export function playNoise(o: NoiseOptions): void {
-  if (ctx === null || master === null || state !== 'on' || hushed) return
+export function playNoise(o: NoiseOptions): Voice | null {
+  if (ctx === null || master === null || state !== 'on' || hushed) return null
   const context = ctx
   const t = context.currentTime + Math.max(0, o.at ?? 0)
   const attack = o.attack ?? 0.02
@@ -476,6 +480,37 @@ export function playNoise(o: NoiseOptions): void {
   env.connect(master)
   src.start(t)
   src.stop(t + held + release + SLACK)
+  let alive = true
+  const handle: Voice = {
+    get alive() {
+      return alive
+    },
+    setFreq: () => undefined,
+    setGain(v, timeConstant = 0.04) {
+      if (alive) env.gain.setTargetAtTime(v, context.currentTime, timeConstant)
+    },
+    stop(rel = release) {
+      if (!alive) return
+      alive = false
+      live.delete(handle)
+      const now = context.currentTime
+      env.gain.cancelScheduledValues(now)
+      env.gain.setValueAtTime(env.gain.value, now)
+      env.gain.setTargetAtTime(0, now, rel / 5)
+      try {
+        src.stop(now + rel + SLACK)
+      } catch {
+        // already stopped
+      }
+    },
+  }
+  live.add(handle)
+  const settle = held + release + SLACK + Math.max(0, o.at ?? 0)
+  setTimeout(() => {
+    alive = false
+    live.delete(handle)
+  }, settle * 1000)
+  return handle
 }
 
 document.addEventListener('visibilitychange', () => {
