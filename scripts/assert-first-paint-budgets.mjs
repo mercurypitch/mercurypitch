@@ -105,13 +105,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  // Raised to 169 for Lesson 14's page shell: 171,657 bytes on main before
-  // it, 172,219 with it, against 172,032 at 168. 500 of the 562 are on every
-  // lesson page: the kit's noise, which now hands back a voice a page can
-  // stop like any other (kit/sound.ts), and Lesson 14's season entry, with
-  // its page and minutes, and its drafts line. The other 62 are the slide
+  // Raised to 169 for Lesson 14's page: 171,335 bytes on main before it,
+  // 172,282 with it, against 172,032 at 168. About 500 of the 947 are on
+  // every lesson page: the kit's noise, which now hands back a voice a page
+  // can stop like any other (kit/sound.ts), and Lesson 14's season entry,
+  // with its page and minutes, and its drafts line. The rest is the slide
   // guide's breath mark, drawn now by kit/breath-mark.ts, which every
-  // figure with a breath shares.
+  // figure with a breath shares, and the modules Lesson 2 shares with
+  // Lesson 14 regrouped into chunks of their own.
   'learn/02.html': 169,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
@@ -214,12 +215,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  // Raised to 143 for Lesson 14's steps, cold open and Wrap: 145,038 bytes
-  // before them, 145,517 with them, against 145,408 at 142. The 479 are
-  // none of Lesson 14's code: the modules Lesson 5 shares with it (its two
-  // takes, now kit/push-take.ts, the band chart, the kit's predict and
-  // quiz) regroup into chunks of their own, each with its imports.
-  'learn/05.html': 143,
+  'learn/05.html': 142,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -253,12 +249,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  // Raised to 136 for Lesson 14's steps, cold open and Wrap: 138,134 bytes
-  // before them, 138,512 with them, against 138,240 at 135. The 378 are
-  // none of Lesson 14's code: the modules Lesson 4 shares with it (the
-  // breath mark the slide guide draws, the kit's predict, quiz and runs)
-  // regroup into chunks of their own, each with its imports.
-  'learn/04.html': 136,
+  'learn/04.html': 135,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -331,13 +322,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // while that boundary holds.
   'learn/13.html': 160,
   // Lesson 14, "Phrasing: sing a whole song", a draft too, built in every
-  // mode as Lesson 3 is. Its page shell, the kit's deck, switches,
-  // masthead, the season's close, explorer and Merc and Tavi, measured
-  // 77,595 bytes in build:e2e. The ceiling is set for the page it becomes,
-  // a quarter over its measure once whole; until then it holds the shell
-  // and each toy as it joins: with the steps' song line, the cold open,
-  // the four words, the quizzes and the Wrap it is 124,060 bytes.
-  'learn/14.html': 190,
+  // mode as Lesson 3 is: the kit's deck, switches, masthead, explorer and
+  // the season's close, the song line on the band chart, the cold open,
+  // the steps, the four words, the quizzes, Sing it's card and flow, and
+  // the Wrap, 141,597 bytes in build:e2e; a quarter over. Sing it's take,
+  // the listener and the recorder load only from its Start, and Merc and
+  // Tavi's renderer after first paint, as on every lesson page.
+  'learn/14.html': 173,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -452,11 +443,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // parts), its own, and the shared Inter and Outfit @font-face rules; a
   // quarter over.
   'learn/13.html': 107,
-  // Lesson 14 (a draft, as above). Its page shell measured 87,639 bytes in
-  // build:e2e: the kit's sheets (with the voice lessons', inlined into its
-  // own by @import, and the shared parts), its own, and the shared Inter
-  // and Outfit @font-face rules; a quarter over, about.
-  'learn/14.html': 107,
+  // Lesson 14 (a draft, as above): 87,943 bytes in build:e2e, the kit's
+  // sheets (the voice lessons' in the comfort chunk, as on Lessons 3, 5 to
+  // 11 and 13, and the shared parts), its own, and the shared Inter and
+  // Outfit @font-face rules; a quarter over.
+  'learn/14.html': 108,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

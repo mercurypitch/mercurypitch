@@ -917,7 +917,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 14. The first-paint budget, in the change that adds the page: `learn/10.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript and its render-blocking CSS,
     measured, with the lessons' headroom, a quarter over. Every build emits every lesson page, a
-    draft's included (`scripts/assert-first-paint-budgets.mjs:117-119`); `build:e2e` runs the check
+    draft's included (`scripts/assert-first-paint-budgets.mjs:118-120`); `build:e2e` runs the check
     (`package.json:20`), and a document it emits with no budget fails it (FACTS 83).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one line each. Until then the draft's rules hold
