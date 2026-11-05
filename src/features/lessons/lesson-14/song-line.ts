@@ -90,13 +90,26 @@ export interface SongLine {
   /** Do moved (Move do) or the voice changed: the bands, the rows and the window move with it. */
   setDo(doMidi: number): void
   play(p: Play): Drawing
-  /** A take drawn up to `t` seconds, without sound (Step 5's scrub). */
-  scrub(p: Play, t: number): void
+  /**
+   * A take drawn up to `t` seconds, without sound (Step 5's scrub, Sing
+   * it's guide); `reduced`, each band lit whole once its note starts.
+   */
+  scrub(p: Play, t: number, reduced?: boolean): void
   /** The violet drawings over the plot (Step 3's two lines), and the level strip. */
   drawLines(line: readonly TracePoint[], level: readonly LevelPoint[]): void
+  /**
+   * What a page lays over every scene the line draws, from do now (Sing
+   * it's kept takes and take 2's plan); null for nothing.
+   */
+  decorate(fn: Decor | null): void
+  /** Names what the canvas shows, in place of its state's summary until do moves (Sing it's take). */
+  describe(text: string): void
   /** The canvas's spoken summary of what it shows now. */
   readonly summary: string
 }
+
+/** A page's layer over the line's scenes, given do now. */
+export type Decor = (scene: SongScene, doMidi: number) => SongScene
 
 /** Each row a degree of the scale, named by its syllable alone, two letters that fit the gutter. */
 function syllableNames(): RungNames {
@@ -341,7 +354,12 @@ export function mountSongLine(
     under: songUnder(() => chart?.scene.song),
   })
   const c: BandChart = chart
-  let rest = restingScene(state, doMidi)
+  let decor: Decor | null = null
+  const resting = (): SongScene => {
+    const r = restingScene(state, doMidi, line)
+    return decor === null ? r : decor(r, doMidi)
+  }
+  let rest = resting()
   // the play in flight, and the clock it started on
   let current: { p: Play; start: number; done: boolean } | null = null
   let summary = ''
@@ -355,7 +373,7 @@ export function mountSongLine(
     win = windowOf(state, doMidi)
     c.setTarget(doMidi)
     c.setWindow(secondsOf(state))
-    rest = restingScene(state, doMidi, line)
+    rest = resting()
     c.scene.song = rest
     describe(summaryFor(state, doMidi, line))
   }
@@ -444,13 +462,20 @@ export function mountSongLine(
         cancel: () => settle(cur, false),
       }
     },
-    scrub(p, t) {
+    scrub(p, t, reduced = false) {
       current = null
       c.scene.song = playedScene(rest, doMidi, p, t, {
-        reduced: false,
+        reduced,
         whole: false,
       })
       c.scene.playhead = t + (p.at ?? 0)
+      wake()
+    },
+    describe,
+    decorate(fn) {
+      decor = fn
+      rest = resting()
+      if (current === null) c.scene.song = rest
       wake()
     },
     drawLines(lineNow, level) {

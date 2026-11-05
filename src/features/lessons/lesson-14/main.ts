@@ -18,9 +18,9 @@
 //
 // In reading order: the switches, the cold open on the hero's song line,
 // the four words, the steps' deck with the song line in each step's state,
-// the quick check, the Wrap's practise card and the season's close with
-// the song line's still, the season map, the masthead, the recall, and
-// Merc and Tavi. Sing it joins with its own modules.
+// Sing it on the song line's live state, the quick check, the Wrap's
+// practise card and the season's close with the song line's still, the
+// season map, the masthead, the recall, and Merc and Tavi.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -46,6 +46,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { QUIZ_KEYS, QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 import { initWrap } from './wrap'
@@ -69,6 +70,7 @@ const deck = createStepDeck({
 initSteps(deck)
 deck.start()
 
+initSing()
 createQuiz({ questions: QUIZ_QUESTIONS, lesson: 14, keys: QUIZ_KEYS, deck })
 
 // the Wrap's practise card and the season's close first: the explorer
