@@ -8,22 +8,19 @@
 // 3), two bars of tapping every beat (4 to 11), four of tapping 2 and 4
 // (12 to 27).
 //
-// 1. Lining up. Each tap whose nearest beat is one of the pulse bars' gives
-//    a sample, its time less that beat's, and Drum Night's estimator
-//    (src/lib/timing/input-latency.ts) takes their middle, outliers set
-//    aside, between 0 and 250 ms. It needs five samples, and five of them
-//    inside its outlier radius; with fewer, the take is not lined up.
-// 2. Matching. Every tap less the estimate, measured from beat 12, goes to
-//    the Ear Lab's judge (src/lib/ear/rhythm-take.ts), imported, never
-//    copied: the sixteen beats 12 to 27 as onsets, its 120 ms window for
-//    taps on crotchets, and the bar 15.5 beats less the window long, so it
-//    takes taps from 120 ms before beat 12 to half a beat after beat 27.
-// 3. The line, the first that applies, which describes the taps, never the
-//    person, and claims nothing it did not measure (FACTS 42, 44).
+// The kit's tap judge (kit/tap-judge.ts) lines the taps up from the two
+// bars of every beat and matches them to the sixteen beats 12 to 27 with
+// the Ear Lab's judge and its 120 ms window for taps on crotchets, from
+// 120 ms before beat 12 to half a beat after beat 27. This module's own
+// are the take's shape, its line, the first that applies, which describes
+// the taps, never the person, and claims nothing it did not measure
+// (FACTS 42, 44), and its ticks, gold on 2 and 4.
 
 import type { StripTick } from '@/features/lessons/kit/beat-strip'
-import { judgeTake, TOLERANCE_MS } from '@/lib/ear/rhythm-take'
-import { DRUM_LATENCY_MIN_SAMPLES, estimateDrumInputLatency, } from '@/lib/timing/input-latency'
+import type { TapTakeShape } from '@/features/lessons/kit/tap-judge'
+import { judgeTaps, TAP_WINDOW_MS, tapsWord, } from '@/features/lessons/kit/tap-judge'
+
+export { tapsWord }
 
 /** The take's shape, in beats from beat 0. */
 export const TAKE = {
@@ -35,8 +32,19 @@ export const TAKE = {
   beats: 28,
 } as const
 
+/** The take's shape as the kit's judge reads it: every beat from beat 12 a note. */
+const SHAPE: TapTakeShape = {
+  pulseFrom: TAKE.pulseFrom,
+  pulseTo: TAKE.pulseTo,
+  judgedFrom: TAKE.judgedFrom,
+  onsets: Array.from(
+    { length: TAKE.judgedTo - TAKE.judgedFrom + 1 },
+    (_, i) => i,
+  ),
+}
+
 /** A tap within this of a judged beat is on it, ms (TOLERANCE_MS.quarters). */
-export const WINDOW_MS = TOLERANCE_MS.quarters
+export const WINDOW_MS = TAP_WINDOW_MS
 
 export const LINES = {
   notLined:
@@ -44,25 +52,6 @@ export const LINES = {
   none: 'No taps came in the last four bars. After the two bars of every beat, tap 2 and 4.',
   backbeat: 'All 8 landed on 2 and 4: a backbeat.',
 } as const
-
-const WORDS = [
-  'No',
-  'One',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-]
-
-/** A count that starts a sentence: "One tap", "Two taps" to "Nine taps", then "10 taps". */
-export function tapsWord(n: number): string {
-  const count = n < WORDS.length ? WORDS[n] : String(n)
-  return `${count} ${n === 1 ? 'tap' : 'taps'}`
-}
 
 export interface TakeResult {
   readonly line: string
@@ -73,27 +62,6 @@ export interface TakeResult {
   readonly matchedNone: number
   /** Where each lined-up tap of the last four bars fell, by bar (four rows), gold on 2 and 4. */
   readonly ticks: readonly (readonly StripTick[])[]
-}
-
-/** The pulse bars' samples: each tap's offset from its nearest beat, where that beat is one of beats 4 to 11. */
-export function pulseSamples(
-  taps: readonly number[],
-  beat0: number,
-  beatMs: number,
-): number[] {
-  return taps.flatMap((t) => {
-    const nearest = Math.round((t - beat0) / beatMs)
-    return nearest >= TAKE.pulseFrom && nearest <= TAKE.pulseTo
-      ? [t - (beat0 + nearest * beatMs)]
-      : []
-  })
-}
-
-/** The estimate the lining-up takes, or null when too few samples agree. */
-export function lineUp(samples: readonly number[]): number | null {
-  const r = estimateDrumInputLatency(samples)
-  if (r.status !== 'ready' || r.estimateMs === null) return null
-  return r.inlierCount >= DRUM_LATENCY_MIN_SAMPLES ? r.estimateMs : null
 }
 
 /** The line for the counts, the first that applies (WEB-SPEC, Toys 6). */
@@ -137,35 +105,27 @@ export function judgeBackbeat(
   beat0: number,
   beatMs: number,
 ): TakeResult {
-  const latency = lineUp(pulseSamples(taps, beat0, beatMs))
-  const empty = [[], [], [], []]
-  if (latency === null)
+  const j = judgeTaps(taps, beat0, beatMs, SHAPE)
+  if (j === null)
     return {
       line: LINES.notLined,
       latencyMs: null,
       onBackbeat: 0,
       onOneThree: 0,
       matchedNone: 0,
-      ticks: empty,
+      ticks: [[], [], [], []],
     }
-  const origin = beat0 + TAKE.judgedFrom * beatMs
-  const rel = taps.map((t) => t - latency - origin)
-  const onsets = Array.from(
-    { length: TAKE.judgedTo - TAKE.judgedFrom + 1 },
-    (_, i) => i * beatMs,
-  )
-  const barMs = 15.5 * beatMs - WINDOW_MS
-  const v = judgeTake(rel, onsets, WINDOW_MS, barMs)
+  const { met, extras } = j.verdict
   // beat 12 is beat 1 of its bar, so an odd onset is beat 2 or 4
-  const onBackbeat = v.met.filter((m, i) => m && i % 2 === 1).length
-  const onOneThree = v.met.filter((m, i) => m && i % 2 === 0).length
-  const matchedNone = v.extras.length
+  const onBackbeat = met.filter((m, i) => m && i % 2 === 1).length
+  const onOneThree = met.filter((m, i) => m && i % 2 === 0).length
+  const matchedNone = extras.length
   return {
     line: takeLine(onBackbeat, onOneThree, matchedNone),
-    latencyMs: latency,
+    latencyMs: j.latencyMs,
     onBackbeat,
     onOneThree,
     matchedNone,
-    ticks: ticksOf(rel, beatMs, barMs),
+    ticks: ticksOf(j.rel, beatMs, j.barMs),
   }
 }
