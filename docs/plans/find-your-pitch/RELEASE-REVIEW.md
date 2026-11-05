@@ -946,7 +946,7 @@ None found.
 
 - [ ] **L8-09** Lesson 8 polish `BROWSER`
   - The metronome switch is named "Click" (reads as an instruction); sing-part divs carry aria-labelledby with no role (ignored; axe flags it); the beat-machine summary is read twice and steps 1-3 expose an empty "The beat grid's cells" group; "Tap every beat: bar 1 of 2" lacks a full stop; "every fourth beat, 1 2 3 4." vs "1 2, 1 2."; "All 8 landed" (8 what?); the fourth clap lands on the held "star"; "Rhythm is ... how they group into bars" mixes in metre; "Cadenza: your solo, on the beat" (a cadenza leaves the beat); "Choose an answer to unlock the sound." when only one play is locked; pressing the aria-disabled "Start the guide" does nothing visible; footer practise links are 22 px apart (axe target-size, also Lesson 6).
-  - Where: learn/08.html:452, 459, 676-687, 839-845, 1151-1154, 1192, 1204, 1248, 1716-1723, footer; lesson-08/take.ts:45-46; lesson-08/bar-rounds.ts:37; lesson-08/take-judge.ts:45; lesson-08/sing.ts:221-225
+  - Where: learn/08.html:452, 459, 676-687, 839-845, 1151-1154, 1192, 1204, 1248, 1716-1723, footer; lesson-08/take.ts:45-46; lesson-08/bar-rounds.ts:37; lesson-08/take-judge.ts:53; lesson-08/sing.ts:221-225
   - Fix: See the Lesson 8 table in the appendix.
   - Standard: WCAG 2.4.6, 2.5.8; consistency
   - **Status (Open):** #1177 fixes two of these: the lock line names "the play button" where one play is locked (Lessons 2 and 8; it said "unlock the sound"), and the footer's practise links are 44 px tall (axe's target-size, on Lesson 6 too). The rest stay open.
