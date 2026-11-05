@@ -10,8 +10,10 @@
 // books, a knock per beat, beat 1's higher, and one voice for a tied pair
 // held for its length less the gap; a part written in place of the one
 // before; the counts lit in turn, or faint; the page's one owner stopping
-// it; a pad's press, and the arrow keys; and the line said once a play is
-// heard to its end, never when it is stopped.
+// it; a pad's press, and the arrow keys; the line said once a play is
+// heard to its end, never when it is stopped; and the bar seen on the
+// pitch line or with its counts, or redrawn at a new tempo, keeping what
+// was heard, its readings gone until each note ends again.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -467,6 +469,93 @@ describe('mountRhythmBar', () => {
     // Assert
     expect(afterStop).toBe('')
     expect(said.textContent).toBe('Played.')
+  })
+
+  it('sees the bar on the pitch line or with its counts, keeping what was heard, and names it so', () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = {
+      ...viewOf([times(4, note(1))]),
+      laneLabel: 'One bar, on the pitch line',
+    }
+    bar.show(view)
+    void bar.play([{ view, bpm: () => 60 }])
+    drive(2)
+
+    // Act
+    bar.see({ lanes: true })
+    const lanes = [
+      figure.querySelector('svg')?.dataset.staff,
+      figure.getAttribute('aria-label'),
+      shown(figure),
+    ]
+    bar.see({ counts: true })
+    const counts = figure.querySelectorAll('.rb-count').length
+    bar.see({ lanes: false, counts: false })
+
+    // Assert
+    expect(lanes).toEqual(['lanes', 'One bar, on the pitch line', ['0', '1']])
+    expect(counts).toBe(4)
+    expect(bar.seen).toEqual({ lanes: false, counts: false })
+    expect(figure.getAttribute('aria-label')).toBe('One bar')
+    expect(figure.querySelectorAll('.rb-count')).toHaveLength(0)
+    expect(shown(figure)).toEqual(['0', '1'])
+  })
+
+  it('lights a count switched on mid-play', () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = viewOf([times(4, note(1))])
+    bar.show(view)
+    void bar.play([{ view, bpm: () => 60 }])
+    drive(1)
+
+    // Act
+    bar.see({ counts: true })
+    drive(1)
+
+    // Assert
+    expect(figure.querySelector('.rb-count.is-lit')?.textContent).toBe('2')
+  })
+
+  it('redraws at a new tempo keeping what is written; its readings go, and read again at that tempo as each note ends', async () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = viewOf([[note(1), note(1), note(2)]])
+    bar.show(view)
+    const first = bar.play([{ view, bpm: () => 60 }])
+    drive()
+    await finish()
+    await first
+    const heard = readings(figure)
+
+    // Act
+    bar.retempo(120)
+    const after = [shown(figure), readings(figure)]
+    const faster = bar.view
+    if (faster === null) throw new Error('no view')
+    void bar.play([{ view: faster, bpm: () => 120 }])
+    drive(2)
+
+    // Assert (WEB-SPEC, Toys 6)
+    expect(heard).toEqual(['1 s', '1 s', '2 s'])
+    expect(after).toEqual([['0', '1', '2'], []])
+    expect(readings(figure)).toEqual(['0.5 s'])
+  })
+
+  it('shows a bar as heard with its readings off, as after a tempo change', () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = viewOf([times(4, note(1))])
+
+    // Act
+    bar.show(view, () => true, { readings: false })
+    const quiet = [shown(figure), readings(figure)]
+    bar.show(view, () => true)
+
+    // Assert
+    expect(quiet).toEqual([['0', '1', '2', '3'], []])
+    expect(readings(figure)).toEqual(['1 s', '1 s', '1 s', '1 s'])
   })
 
   it('answers a pad pressed, marks the chosen one, and moves the choice with the arrow keys', () => {
