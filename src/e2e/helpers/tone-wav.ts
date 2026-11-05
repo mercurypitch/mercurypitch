@@ -226,6 +226,67 @@ export function writeStepsWav(
 }
 
 /**
+ * Seeded noise in bursts at half scale, 16-bit mono PCM at 48 kHz:
+ * `onSeconds` of noise, then `offSeconds` of silence, `bursts` times. Each
+ * burst is new noise, so a stretch of a recording lines up with one place
+ * only, and the silence between bursts shows what an effect adds once the
+ * input stops. Chromium hands the page a resampled copy (nothing above
+ * about 20 kHz), so a take is never the file's own samples.
+ */
+export function writeNoiseBurstWav(
+  onSeconds: number,
+  offSeconds: number,
+  bursts: number,
+  seed: number,
+): string {
+  const on = Math.round(RATE * onSeconds)
+  const period = on + Math.round(RATE * offSeconds)
+  let state = seed >>> 0
+  const buf = wavOf(period * bursts, (i) => {
+    if (i % period >= on) return 0
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+    return (state / 2 ** 32 - 0.5) * 2 * 0.5
+  })
+  return place(
+    `mercurypitch-e2e-noise-bursts-${onSeconds}-${offSeconds}-${bursts}-${seed}.wav`,
+    buf,
+  )
+}
+
+/**
+ * A stereo input that tells its sides apart: a steady tone of `hz` on the
+ * left, and on the right `onSeconds` of noise, then `offSeconds` of
+ * silence, `bursts` times, each burst new noise (as `writeNoiseBurstWav`),
+ * so a take of either side or of both lines up with one place only.
+ * Chromium hands it over as two channels with the browser's voice
+ * processing off (`writeStereoToneWav`).
+ */
+export function writeToneAndBurstsWav(
+  hz: number,
+  onSeconds: number,
+  offSeconds: number,
+  bursts: number,
+  seed: number,
+): string {
+  const on = Math.round(RATE * onSeconds)
+  const period = on + Math.round(RATE * offSeconds)
+  let state = seed >>> 0
+  const buf = wavOf(
+    period * bursts,
+    (i) => 0.5 * Math.sin((2 * Math.PI * hz * i) / RATE),
+    (i) => {
+      if (i % period >= on) return 0
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+      return (state / 2 ** 32 - 0.5) * 2 * 0.5
+    },
+  )
+  return place(
+    `mercurypitch-e2e-tone-and-bursts-${hz}-${onSeconds}-${offSeconds}-${bursts}-${seed}.wav`,
+    buf,
+  )
+}
+
+/**
  * Chromium flags that route the generated tone into getUserMedia. Chromium
  * loops the file; with `loop: false` (its `%noloop` suffix) it plays it once
  * from each opening of the microphone, then repeats the last slice it read,

@@ -1,8 +1,10 @@
-// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and saves the note played in the song as the sequence its clip plays, its sound in the take starting at its frame or within one audio callback after; and the Inputs view lists the keyboard with its lane and a light while it plays. Nothing reaches the live site.
+// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and saves the note played in the song as the sequence its clip plays, its sound in the take starting at its frame or within one audio callback after; and the Inputs view lists the keyboard with its lane and a light while it plays. Its notes are heard once, through the lane, whether monitoring is on or off, and not at all with the lane muted. Nothing reaches the live site.
 import { expect, test } from '@playwright/test'
 import { openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { armLane, recordTake } from './helpers/studio-arming'
+import { armLane, recordTake, setMonitoring } from './helpers/studio-arming'
 import { installFakeMidi, microphonesAsked, playLaneFromKeys, playMidi as play, routeNetwork, } from './helpers/studio-midi'
+import { audioClock, captureOutput, captureStudioOutput, untilAudioClock, } from './helpers/studio-output-capture'
+import { toneAmplitude } from './helpers/studio-output-span'
 import { storedTake, studioTickFrame } from './helpers/studio-takes'
 
 test.use({ viewport: { width: 1440, height: 900 } })
@@ -106,6 +108,56 @@ test.describe('Studio MIDI lanes', () => {
     }).toPass({ timeout: 10_000 })
     await play(page, [0x80, 64, 0])
     await expect(light).not.toHaveAttribute('data-active', '')
+    expect(live).toEqual([])
+  })
+
+  test("plays a MIDI lane's notes once, through its lane, with monitoring on or off, and not with the lane muted", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    const live = await routeNetwork(page)
+    await page.addInitScript(installFakeMidi)
+    await captureStudioOutput(page)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await playLaneFromKeys(page, 'Lane 2')
+    await armLane(page, 'Lane 2')
+
+    /** Middle C held half a second, and how strong it is at the speakers over the 0.3 s from where it starts. */
+    const heard = async () => {
+      await play(page, [0x90, 60, 100])
+      await untilAudioClock(page, (await audioClock(page)) + 0.5)
+      const capture = await captureOutput(page)
+      await play(page, [0x80, 60, 0])
+      await untilAudioClock(page, (await audioClock(page)) + 0.5)
+      const window = Math.round(0.3 * capture.sampleRate)
+      const onset = capture.samples.findIndex(
+        (sample) => Math.abs(sample) > 1e-3,
+      )
+      if (onset < 0) return 0
+      expect(onset + window).toBeLessThanOrEqual(capture.samples.length)
+      return toneAmplitude(capture, onset, window, 261.63)
+    }
+    // The synth plays an arm's first note 1.4 dB under the ones after it,
+    // in the take as well: one note first, so the two compared are alike.
+    await heard()
+    const off = await heard()
+    await setMonitoring(page, true)
+    const on = await heard()
+    await studio
+      .getByRole('button', { name: 'Mute Lane 2', exact: true })
+      .click()
+    await untilAudioClock(page, (await audioClock(page)) + 0.3)
+    const muted = await heard()
+    console.log(
+      `[studio-midi-lanes] ${JSON.stringify({ off, on, muted, onAgainstOffDb: 20 * Math.log10(on / off) })}`,
+    )
+
+    expect(off).toBeGreaterThan(0.005)
+    // The one path through the lane: a second would put the note 6 dB up.
+    expect(Math.abs(20 * Math.log10(on / off))).toBeLessThan(1.5)
+    expect(muted).toBeLessThan(off / 100)
     expect(live).toEqual([])
   })
 })
