@@ -36,6 +36,7 @@
 
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
+import { seasonOf } from '../src/features/lessons/kit/seasons'
 import { watchDocument } from '../src/features/lessons/kit/watch-pages'
 import { lessonDocument, lessonPages, watchPages } from './draft-lessons'
 import { hubLessons } from './learn-hub'
@@ -131,10 +132,15 @@ export interface LessonWay {
   readonly href: string
 }
 
-/** The lessons either side of a lesson that have a page; either is absent where there is none. */
+/**
+ * The lessons either side of a lesson that have a page, either absent where
+ * there is none, and the lesson's own season, which names their nav
+ * (Season 1 where absent).
+ */
 export interface LessonWays {
   readonly prev?: LessonWay
   readonly next?: LessonWay
+  readonly season?: number
 }
 
 /** Lesson `n`'s neighbours with a page, as the repository at `root` has them, named as the hub names them. */
@@ -148,17 +154,23 @@ export function lessonWays(root: string, n: number): LessonWays {
   }
   const prev = way(n - 1)
   const next = way(n + 1)
+  const season = seasonOf(n)?.n
   return {
     ...(prev === undefined ? {} : { prev }),
     ...(next === undefined ? {} : { next }),
+    ...(season === undefined ? {} : { season }),
   }
 }
 
 /** Where the lessons either side go in a lesson document: first in its foot. */
 const WAYS_AFTER = '<footer class="foot">'
 
-/** The words the lesson menu's list of them goes by (kit/lesson-menu.ts). */
-const WAYS_LABEL = 'Season 1 lessons'
+/**
+ * The words the lesson menu's list of the page's own season goes by
+ * (kit/lesson-menu.ts): "Season 2 lessons" on a Season 2 page, though the
+ * lesson before its first is Season 1's last.
+ */
+const waysLabel = (season: number): string => `Season ${season} lessons`
 
 const icon = (id: string): string =>
   `<svg class="ico" aria-hidden="true"><use href="#${id}" /></svg>`
@@ -179,7 +191,7 @@ export function waysMarkup(ways: LessonWays): string {
     ways.next === undefined ? '' : wayMarkup(ways.next, 'next'),
   ].filter(Boolean)
   if (links.length === 0) return ''
-  return `\n      <nav class="wrap foot-ways" aria-label="${WAYS_LABEL}">\n        ${links.join('\n        ')}\n      </nav>`
+  return `\n      <nav class="wrap foot-ways" aria-label="${waysLabel(ways.season ?? 1)}">\n        ${links.join('\n        ')}\n      </nav>`
 }
 
 /** Throws unless `html` holds `mark` exactly once, as the ways written at it need. */

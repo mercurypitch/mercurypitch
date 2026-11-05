@@ -21,7 +21,7 @@
 
 import { DRAFTS_SHOWN } from './draft-switch'
 import type { PageState, Reading } from './publish'
-import { isLive, linkedLessonOfHref, PAGE_STATE_ID, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
+import { isLive, isPublished, linkedLessonOfHref, PAGE_STATE_ID, parsePageState, readingHolds, readingLesson, seasonFor, } from './publish'
 import type { Lesson, Season } from './season'
 import { SEASON_1 } from './season'
 
@@ -85,6 +85,24 @@ function unlink(a: HTMLAnchorElement): void {
 }
 
 /**
+ * Whether a link in this page's markup to lesson `n` stays: the lesson
+ * live, by the seasons this page carries. A lesson of a season it does not
+ * carry, as Lesson 15 is on Lesson 14's page, has a page wherever the
+ * build linked it (tools/lesson-ways.ts), so its state alone decides, as
+ * the site worker's reading of every season has it (src/lesson-gate.ts
+ * `followState`).
+ */
+function linkLive(
+  n: number,
+  lessons: readonly Lesson[],
+  state: PageState,
+): boolean {
+  return lessons.some((L) => L.n === n)
+    ? isLive(n, lessons, state)
+    : isPublished(n, state)
+}
+
+/**
  * Settles `doc`'s own markup for its state: every link to a lesson that is
  * not live, or to its watch page, loses its link, and of each lesson-state reading the true one
  * stays, unwrapped, and the other goes. A reading whose lesson is not a
@@ -95,7 +113,8 @@ export function followPageState(doc: Document = document): void {
   const lessons = carriedLessons()
   for (const a of Array.from(doc.querySelectorAll('a[href]'))) {
     const n = linkedLessonOfHref(a.getAttribute('href') ?? '')
-    if (n !== null && !isLive(n, lessons, state)) unlink(a as HTMLAnchorElement)
+    if (n !== null && !linkLive(n, lessons, state))
+      unlink(a as HTMLAnchorElement)
   }
   for (const el of Array.from(
     doc.querySelectorAll('[data-if-live], [data-if-planned]'),

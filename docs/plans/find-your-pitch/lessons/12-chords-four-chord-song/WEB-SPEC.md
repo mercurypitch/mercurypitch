@@ -1156,7 +1156,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
   console asks before it publishes Lesson 12 ahead of Lesson 10, but publishes on "Publish anyway"
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
-  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But
+  (`src/features/lessons/kit/page-state.ts:84-127`; `src/features/lessons/kit/quiz.ts:186-216`). But
   the recall would ask about a lesson the learner cannot open.
 - **Lesson 13 not yet live**: the next card reads "Coming later" and "See it on the map", to
   `#explorer` (`kit/next-card.ts:108-110`).

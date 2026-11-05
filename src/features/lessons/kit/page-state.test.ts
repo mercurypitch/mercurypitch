@@ -210,6 +210,64 @@ describe('followPageState', () => {
     })
   })
 
+  describe("on Lesson 14's foot, which links Lesson 15 of a season this page does not carry", () => {
+    const ROOT = resolve(__dirname, '../../../..')
+    const built = new DOMParser().parseFromString(
+      fillLessonWays(
+        readFileSync(resolve(ROOT, lessonDocument(14)), 'utf8'),
+        lessonWays(ROOT, 14),
+      ),
+      'text/html',
+    )
+    const FOOT = built.querySelector('.foot-ways')?.outerHTML ?? ''
+    const ways = (doc: Document) =>
+      Array.from(doc.querySelectorAll('.foot-ways a'), (a) =>
+        a.getAttribute('href'),
+      )
+
+    it('keeps the link to Lesson 15 once it is published, as the site worker does', () => {
+      // Arrange: drafts held back, as on mercurypitch.com, both lessons published
+      const doc = servedDocument(
+        STATE({ 13: { published: true }, 15: { published: true } }, false),
+        FOOT,
+      )
+
+      // Act
+      followPageState(doc)
+
+      // Assert
+      expect(ways(doc)).toEqual(['/learn/13', '/learn/15'])
+    })
+
+    it('keeps it where drafts are shown', () => {
+      // Arrange
+      const doc = servedDocument(STATE({}, true), FOOT)
+
+      // Act
+      followPageState(doc)
+
+      // Assert
+      expect(ways(doc)).toEqual(['/learn/13', '/learn/15'])
+    })
+
+    it('takes it out while Lesson 15 is a draft held back', () => {
+      // Arrange: Lesson 13 published, Lesson 15 a draft with no override
+      const doc = servedDocument(
+        STATE({ 13: { published: true } }, false),
+        FOOT,
+      )
+
+      // Act
+      followPageState(doc)
+
+      // Assert
+      expect(ways(doc)).toEqual(['/learn/13'])
+      expect(doc.querySelector('.foot-ways')?.textContent).not.toContain(
+        'Lesson 15',
+      )
+    })
+  })
+
   it('leaves a page whose every lesson is live as it was', () => {
     // Arrange
     const doc = servedDocument(STATE({}), BODY)

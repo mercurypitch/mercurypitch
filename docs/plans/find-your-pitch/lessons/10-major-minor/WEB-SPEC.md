@@ -1017,7 +1017,7 @@ CURIOSITY-MOMENTS § 5 item 2.
   console asks before it publishes Lesson 10 ahead of Lesson 6, but publishes on "Publish anyway"
   (Decisions for the owner, item 3). Published first, it would break nothing: its chip would stay as
   a plain chip, and its recall's step links would keep their words with no link
-  (`src/features/lessons/kit/page-state.ts:84-108`; `src/features/lessons/kit/quiz.ts:186-216`). But
+  (`src/features/lessons/kit/page-state.ts:84-127`; `src/features/lessons/kit/quiz.ts:186-216`). But
   the recall would ask about a lesson the learner cannot open.
 - **The admin console's hook.** The console could switch Lesson 10's hook to its alternative,
   `bright-dark`, "Which single note turns a bright major chord into a dark minor one?"

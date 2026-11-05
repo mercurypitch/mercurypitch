@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { seasonOf } from '../src/features/lessons/kit/seasons'
 import { lessonDocument, lessonPages, lessonPath } from './draft-lessons'
 import { hubLessons } from './learn-hub'
 import { fillLessonWays, lessonWays, trailSteps } from './lesson-ways'
@@ -129,11 +130,11 @@ describe.each(lessonPages(ROOT))(
         }),
       )
 
-      // Assert: no list at all where neither lesson beside it has a page
+      // Assert: no list at all where neither lesson beside it has a page,
+      // and the list named for the page's own season, as its lesson menu's is
+      const label = `Season ${String(seasonOf(n)?.n)} lessons`
       expect(navs).toEqual(
-        ways.length === 0
-          ? []
-          : [{ first: true, label: 'Season 1 lessons', links: ways }],
+        ways.length === 0 ? [] : [{ first: true, label, links: ways }],
       )
     })
 
