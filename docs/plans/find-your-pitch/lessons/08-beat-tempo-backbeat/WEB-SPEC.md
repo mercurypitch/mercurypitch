@@ -697,7 +697,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   the recall has a backstop: `section#recall` sits inside
   `<div data-if-live="6">`. Where Lesson 6 is not live, the site worker takes out the wrapper and
   the section in it (`src/lesson-gate.ts:20-21`), and on a page no worker served `followPageState`
-  does the same as the page boots (`kit/page-state.ts:84-108`, run first in `initMasthead`,
+  does the same as the page boots (`kit/page-state.ts:84-127`, run first in `initMasthead`,
   `kit/page-chrome.ts:131`); where it is live, the wrapper goes and the section stays. The build
   marks the wrapper's tag `hidden` where its build's default holds Lesson 6 back, as it marks a
   reading's span, so a page no worker served reads right before its script runs: this page taught

@@ -73,7 +73,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
    `initMasthead(sections, { lesson: 9, deck })` (`kit/page-chrome.ts:115-131`): before anything else
    the page's links to other lessons follow the state it was served with (`followPageState`,
-   `kit/page-state.ts:84-108`; Edge cases), then "Season 1 · Lesson 09" opens the lesson menu
+   `kit/page-state.ts:84-127`; Edge cases), then "Season 1 · Lesson 09" opens the lesson menu
    (`kit/lesson-menu.ts`), and the page's steps are remembered as the viewer moves through them
    (`kit/position.ts`).
 2. **Hero**, laid out as Lesson 2's is (`learn/02.html:333-506`). The hero copy holds the kicker;
@@ -823,7 +823,7 @@ What the page does where nothing above says:
   but the publish order is a rule for whoever uses it (the intro), so the page follows the state it
   is served with. The site worker, and then the masthead's `followPageState`, make every link to a
   lesson that
-  is not live no link (`src/lesson-gate.ts:524-534`, `:548-568`; `kit/page-state.ts:64-108`, called
+  is not live no link (`src/lesson-gate.ts:524-534`, `:548-568`; `kit/page-state.ts:64-127`, called
   by `initMasthead`, `kit/page-chrome.ts:131`): the "After Lesson 3" or "After Lesson 6" chip stays
   as a plain chip, and any other link keeps its words. The kit's quiz does the same for the recall's
   step links, which keep their words, "Try Lesson 6, Step 5 again", with no link

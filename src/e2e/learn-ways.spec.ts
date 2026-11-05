@@ -14,6 +14,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
+import { seasonOf } from '../features/lessons/kit/seasons'
 
 const LESSONS = lessonPages(process.cwd())
 
@@ -80,11 +81,14 @@ for (const n of LESSONS) {
   })
 }
 
-/** The links in a page's foot to the lessons either side, each its rel and address. */
-function footWays(page: Page) {
+/** Lesson `n`'s season, by number. */
+const season = (n: number): number | undefined => seasonOf(n)?.n
+
+/** The links in lesson `n`'s foot to the lessons either side, its nav named for the lesson's own season. */
+function footWays(page: Page, n: number) {
   return page
     .getByRole('contentinfo')
-    .getByRole('navigation', { name: 'Season 1 lessons' })
+    .getByRole('navigation', { name: `Season ${String(season(n))} lessons` })
     .getByRole('link')
 }
 
@@ -105,7 +109,7 @@ for (const n of LESSONS) {
     await page.goto(lessonPath(n))
 
     // Assert
-    const links = footWays(page)
+    const links = footWays(page, n)
     await expect(links).toHaveCount(beside(n).length)
     expect(
       await links.evaluateAll((as) =>
@@ -118,7 +122,11 @@ for (const n of LESSONS) {
   })
 }
 
-for (const n of LESSONS.filter((m) => LESSONS.includes(m + 1))) {
+// A season's last lesson closes its season in the Wrap with no next-lesson
+// card (kit/next-card.ts), so its foot alone links the next season's first
+for (const n of LESSONS.filter(
+  (m) => LESSONS.includes(m + 1) && season(m) === season(m + 1),
+)) {
   test(`${lessonPath(n)}'s Wrap shows the next lesson once, in its card, with the foot's link below it`, async ({
     page,
   }) => {
@@ -132,7 +140,7 @@ for (const n of LESSONS.filter((m) => LESSONS.includes(m + 1))) {
     ).toHaveAttribute('href', next)
     await expect(page.locator(`#wrap a[href="${next}"]`)).toHaveCount(1)
     await expect(
-      footWays(page).and(page.locator(`[href="${next}"]`)),
+      footWays(page, n).and(page.locator(`[href="${next}"]`)),
     ).toHaveText(new RegExp(`^Next lesson\\s*Lesson ${n + 1}\\b`))
   })
 }
