@@ -12,8 +12,8 @@
 // once under reduced motion or with Pause animations on.
 
 import { qa } from '@/features/lessons/kit/dom'
-import type { RhythmRow, RowLayout } from '@/features/lessons/kit/rhythm-draw'
-import { layoutRhythm, STAFF_A, symbolX, xOf, } from '@/features/lessons/kit/rhythm-draw'
+import type { RhythmRow, RowLayout } from '@/features/lessons/kit/rhythm-layout'
+import { layoutRhythm, STAFF_A, symbolX, xOf, } from '@/features/lessons/kit/rhythm-layout'
 import type { PlacedSymbol } from '@/features/lessons/kit/rhythm-model'
 import { BAR_BEATS, placeBars } from '@/features/lessons/kit/rhythm-model'
 import type { Clef } from '@/features/lessons/kit/staff-places'

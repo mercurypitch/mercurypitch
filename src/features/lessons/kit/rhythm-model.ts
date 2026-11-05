@@ -90,19 +90,22 @@ const flagsOf = (value: number): number =>
 
 /**
  * The figure's symbols in place, in beats from its start, a bar every
- * `beatsPerBar` beats. A note that starts a sound carries its place among
- * those notes as `onset`, as the Ear Lab numbers its notes; a rest's, and a
- * tied-to note's, is null, since neither starts one.
+ * `beatsPerBar` beats, or each bar from its own first beat in `starts`
+ * when given, so a short rhythm's groups can sit a pause apart. A note that
+ * starts a sound carries its place among those notes as `onset`, as the
+ * Ear Lab numbers its notes; a rest's, and a tied-to note's, is null,
+ * since neither starts one.
  */
 export function placeBars(
   bars: readonly Bar[],
   beatsPerBar = BAR_BEATS,
+  starts?: readonly number[],
 ): PlacedSymbol[] {
   const placed: PlacedSymbol[] = []
   let onset = 0
   let tied = false
   bars.forEach((bar, b) => {
-    let at = b * beatsPerBar
+    let at = starts?.[b] ?? b * beatsPerBar
     for (const w of bar) {
       const note = w.kind === 'note'
       placed.push({

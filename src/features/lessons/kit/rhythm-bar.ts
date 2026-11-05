@@ -12,8 +12,9 @@
 //
 // Every sound goes through the beat clock (kit/beat-clock.ts), booked ahead
 // on the audio clock into the run's own bus, so stopping cancels what was
-// booked: a woodblock knock on each beat, beat 1's higher (kit/woodblock.ts,
-// FACTS 62), and each sound a voice at the learner's note, held for its
+// booked: a woodblock knock on each beat, beat 1's higher, or only the
+// first in a bare figure, which has no bars (kit/woodblock.ts, FACTS 62),
+// and each sound a voice at the learner's note, held for its
 // length less the gap (kit/sound-ahead.ts `bookNote`, FACTS 63), a tied run
 // as one voice. What is drawn follows the sound as heard: each symbol is
 // written at its start, a sounding note lit in its singer's colour, the 4/4
@@ -30,9 +31,11 @@
 import type { Bar as ClockBar, Hit, Run, Spot } from './beat-clock'
 import { BeatClock } from './beat-clock'
 import type { SoundOwner } from './now-playing'
-import type { RhythmFigure, RhythmScene, RowState } from './rhythm-draw'
+import type { RhythmFigure, RowState } from './rhythm-draw'
 import { drawRhythm, figureSize } from './rhythm-draw'
-import { BAR_BEATS, countsOf, heldSeconds, placeBars, soundsOf, stripCells, } from './rhythm-model'
+import type { RhythmScene } from './rhythm-layout'
+import { placeRow } from './rhythm-layout'
+import { BAR_BEATS, countsOf, heldSeconds, soundsOf, stripCells, } from './rhythm-model'
 import { padWords } from './rhythm-words'
 import { Sound } from './sound'
 import type { Bus } from './sound-ahead'
@@ -165,12 +168,17 @@ interface PlanBar {
 /** The hits of one part's row, at their beats from the row's start. */
 function partHits(part: PlayPart, index: number): Hit<RbHit>[] {
   const row = part.view.scene.rows[part.row ?? 0]
-  const placed = placeBars(row.bars)
+  const placed = placeRow(row)
   const beats = row.beats ?? row.bars.length * BAR_BEATS
   const sounds = new Map(soundsOf(placed).map((s) => [s.first, s.beats]))
   const hits: Hit<RbHit>[] = [{ beat: 0, data: { k: 'start', part: index } }]
+  // beat 1 of each bar knocks higher; a bare figure has no bars, only its start
+  const bare = part.view.scene.bare === true
   for (let b = 0; b < beats; b++)
-    hits.push({ beat: b, data: { k: 'click', high: b % BAR_BEATS === 0 } })
+    hits.push({
+      beat: b,
+      data: { k: 'click', high: bare ? b === 0 : b % BAR_BEATS === 0 },
+    })
   placed.forEach((p, i) =>
     hits.push({
       beat: p.beat,
@@ -241,7 +249,7 @@ function blank(
   readings = true,
 ): RowState[] {
   return view.scene.rows.map((row, r) => {
-    const placed = placeBars(row.bars)
+    const placed = placeRow(row)
     const shown = placed.map((_, i) => written?.(r, i) ?? false)
     return {
       written: shown,
@@ -414,7 +422,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     let at = 0
     const rowOf = (part: number): number => parts[part].row ?? 0
     const placedAll = parts.map((part) =>
-      placeBars(part.view.scene.rows[part.row ?? 0].bars),
+      placeRow(part.view.scene.rows[part.row ?? 0]),
     )
     const cellsAll = placedAll.map((placed) => stripCells(placed))
     const placedOf = (part: number) => placedAll[part]

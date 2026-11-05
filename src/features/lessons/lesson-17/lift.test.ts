@@ -10,8 +10,8 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import type { RhythmRow } from '@/features/lessons/kit/rhythm-draw'
 import { drawRhythm } from '@/features/lessons/kit/rhythm-draw'
+import type { RhythmRow } from '@/features/lessons/kit/rhythm-layout'
 import type { NoteValue, Written } from '@/features/lessons/kit/rhythm-model'
 import type { Clef } from '@/features/lessons/kit/staff-places'
 import { lift, liftPlan } from './lift'
