@@ -10,6 +10,7 @@ import type { LessonCopy } from './lesson-copy'
 import { DEFAULT_ID, hookFor, hookMarkup, isHookMarkup, SEASON_END, TEASE_MAX, teaseFor, } from './lesson-copy'
 import { LESSONS } from './season'
 import { SEASON_2_END } from './season-2'
+import { ALL_LESSONS } from './seasons'
 
 /** A lesson's copy for a resolver test: a default hook, one alternative with markup and one without, a tease with one alternative. */
 const copy: LessonCopy = {
@@ -321,6 +322,13 @@ describe('the lesson pages', () => {
       }
     })
 
+  /** Lesson `n`, from whichever season holds it. */
+  const lessonOf = (n: number) => {
+    const L = ALL_LESSONS.find((x) => x.n === n)
+    if (L === undefined) throw new Error(`no lesson ${n} in any season`)
+    return L
+  }
+
   const meta = (doc: Document, sel: string): string =>
     flat(doc.querySelector(sel)?.getAttribute('content') ?? '')
 
@@ -330,7 +338,7 @@ describe('the lesson pages', () => {
     for (const { n, doc } of PAGES) {
       const h1 = doc.querySelector('h1.hook#hook')
       expect(flat(h1?.textContent ?? ''), `lesson ${n}`).toBe(
-        flat(LESSONS[n].hook),
+        flat(lessonOf(n).hook),
       )
     }
   })
@@ -338,7 +346,7 @@ describe('the lesson pages', () => {
   it('opens every page’s shared descriptions on that hook, and names it as the headline’s alternative', () => {
     for (const { n, doc } of PAGES) {
       // Arrange
-      const hook = flat(LESSONS[n].hook)
+      const hook = flat(lessonOf(n).hook)
       const ld = doc.querySelector('script[type="application/ld+json"]')
       const headline: unknown =
         ld === null

@@ -14,12 +14,16 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// No Season 2 lesson has a page yet: each is coming later, with no page, no
-// reading time and no film, as Lesson 14 was before its page. Its page, its
-// reading time, its tease and its figure land with the page. Its practise
-// link (`pr.link`) is drawn on its card from now on, marked with its lesson
-// as every practise link is (src/lib/lesson-marker.ts reads 15 to 28).
+// Lesson 15 has its page, a draft (drafts.ts); every later lesson is coming
+// later, with no page, no reading time and no film, as Lesson 14 was before
+// its page. Its page, its reading time, its tease and its figure land with
+// the page. Each entry takes its lesson's copy from lesson-copy.ts, as
+// Season 1's do, so Lesson 16's tease, set on Lesson 16, shows on Lesson
+// 15's next-lesson card. Its practise link (`pr.link`) is drawn on its card
+// from now on, marked with its lesson as every practise link is
+// (src/lib/lesson-marker.ts reads 15 to 28).
 
+import { LESSON_COPY } from './lesson-copy'
 import type { Arc, Edge, Lesson, Season, SeasonClose } from './season'
 import { prereqOf } from './season'
 
@@ -48,14 +52,17 @@ export const TOPICS_2: Readonly<Record<string, string>> = {
   S20b: 'Sing a second part with a melody',
 }
 
-/** Season 2's lessons, in order. */
-export const LESSONS_2: readonly Lesson[] = [
+/** Season 2's entries as written here, before each takes its lesson's copy. */
+const ENTRIES_2: readonly Lesson[] = [
   {
     n: 15,
     lane: 'theory',
     title: 'The staff: where notes sit',
     short: 'The staff',
     topics: ['T30'],
+    // A draft until the vocal coach's look at Sing it (drafts.ts).
+    minutes: 15,
+    page: '/learn/15',
     hook: 'A piano has 88 keys. How can five lines write down every one of them?',
     pr: {
       needs:
@@ -299,6 +306,12 @@ export const LESSONS_2: readonly Lesson[] = [
     },
   },
 ]
+
+/** Season 2's lessons, in order, each with its alternative hooks and its tease from lesson-copy.ts. */
+export const LESSONS_2: readonly Lesson[] = ENTRIES_2.map((L) => ({
+  ...L,
+  ...LESSON_COPY[L.n],
+}))
 
 /**
  * SEASON-2 § 4.3's prerequisite table, which leaves out every edge implied

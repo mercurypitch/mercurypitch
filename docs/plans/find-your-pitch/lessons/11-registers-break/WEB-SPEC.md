@@ -735,12 +735,12 @@ the others take it.
    asked to publish it (FACTS 9). `/learn/11` and `/learn/11.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-157`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:339-343`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:341-345`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to a
    released lesson's listings, the sitemap, llms.txt, the service worker and a link from every
-   entry document (`lesson-pages.test.ts:277-305`), in place of a draft's (`:307-344`), and
+   entry document (`lesson-pages.test.ts:279-307`), in place of a draft's (`:309-346`), and
    `tools/lesson-links.ts` links it from every entry document by its headline (FACTS 48). Indexing
    is requested on the day the console publishes it, not at the release (SEARCH.md § 3.2).
 2. The page's head, written in full from its first commit:
@@ -759,7 +759,7 @@ the others take it.
      owner, "Registers and the break: Find Your Pitch | MercuryPitch" (55). SEARCH.md § 4's draft
      for Lesson 11, "Registers and the break: why voices flip | MercuryPitch" (`SEARCH.md:242`), is
      not used: "why voices flip" leans on the predict's answer. The worker never rewrites a title.
-     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`;
+     The h1 is `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:335-344`;
      Hero);
    - the meta description, "Why does your voice sometimes flip as you slide up? A sixteen-minute
      lesson with sound toys on chest voice, head voice and the break." (133 characters, inside the
@@ -768,9 +768,9 @@ the others take it.
    - `og:title` and `twitter:title`, "Registers and the break: Find Your Pitch, Lesson 11"
      (`learn/02.html:26-29`, `:45-48`);
    - `og:description`, the full hook and one line, "Why does your voice sometimes flip as you slide
-     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:353-356`;
+     up? Hear Merc's siren flip, then make your guess." (`lesson-copy.test.ts:361-364`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:357-359`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:365-367`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/11`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -781,7 +781,7 @@ the others take it.
      (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:342-350`, `:360`): `@id` `https://mercurypitch.com/learn/11#lesson` and
+     (`lesson-copy.test.ts:350-358`, `:368`): `@id` `https://mercurypitch.com/learn/11#lesson` and
      `url` `https://mercurypitch.com/learn/11` (`lesson-pages.test.ts:173-174`); the headline
      "Registers and the break"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:182-183`); `position: 11`,
@@ -792,9 +792,9 @@ the others take it.
      mercurypitch.com, which nothing writes at run time, so it is set in the commit that deletes the
      page's `drafts.ts` line or in one straight after the console publishes it, as the owner picks
      (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:212-225`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:213-226`;
      `learn/02.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:265-274`).
+     "Legal" (`lesson-pages.test.ts:267-276`).
 
    None of it answers the predict: the title, the hook and the descriptions say a voice may flip,
    never whether a flip is a mistake, and "Hear Merc's siren flip" is the cold open's set-up
@@ -804,7 +804,7 @@ the others take it.
    `src/tests/lesson-pages.test.ts` asks of every lesson document, a draft's included, from its
    first commit: the `og:image` it names is in `public/`, at the pixel size its `og:image:width`
    and `og:image:height` give, with an `og:image:alt` that `twitter:image:alt` repeats
-   (`:227-246`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
+   (`:228-247`). It is 1200 x 630, a baseline JPEG as Lesson 4's card is
    (`public/learn/lesson-04-og.jpg`), drawn with the page's own kit so that it looks like the page
    it opens: the title, Lesson 11 and the wordmark over the range chart's compact still, Tavi's
    amber siren thick, then thin across the grey seam, between Merc and Tavi. It
@@ -1179,7 +1179,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 12, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     "Four chords, round and round.", sits one line above the hook, the card's words in the order
-    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:142-159`).
+    eyebrow, tease, hook and way on, as that spec checks Lesson 1's card (`:149-166`).
 11. With reduced motion emulated, a line draws at once, the gauge shows its end, the ring holds
     still with "Listening", and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

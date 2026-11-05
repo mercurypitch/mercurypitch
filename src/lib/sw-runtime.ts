@@ -186,6 +186,10 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // the same reason.
   '/learn/14',
   '/learn/14.html',
+  // Lesson 15, Season 2's first, a draft as Lessons 3 and 5 to 14 are, for
+  // the same reason.
+  '/learn/15',
+  '/learn/15.html',
   '/jam-rooms',
   '/jam-rooms.html',
   // Search-intent entries (src/seo/entry-pages.ts). Each boots an existing

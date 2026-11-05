@@ -258,6 +258,7 @@ const NO_FILM = [
   { n: 12, title: 'Chords and the four-chord song' },
   { n: 13, title: 'Resonance and vowels' },
   { n: 14, title: 'Phrasing: sing a whole song' },
+  { n: 15, title: 'The staff: where notes sit' },
 ] as const
 
 for (const { n, title } of NO_FILM) {
@@ -274,7 +275,7 @@ for (const { n, title } of NO_FILM) {
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.goto(path)
         await expect(trigger(page)).toHaveAccessibleName(
-          `Season 1 · Lesson ${String(n).padStart(2, '0')}, ${title}. All 14 lessons`,
+          `Season ${n >= 15 ? 2 : 1} · Lesson ${String(n).padStart(2, '0')}, ${title}. All 14 lessons`,
         )
         await trigger(page).tap()
         await expect(hereRow(page)).toBeFocused()

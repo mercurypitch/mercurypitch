@@ -754,14 +754,14 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    asked to publish it (11). `/learn/14` and `/learn/14.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-157`), so the service worker never serves the app
    shell in the lesson's place. As a draft, `src/tests/lesson-pages.test.ts` holds the page to the
-   draft checks (`:307-344`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:322-325`),
-   linked from no entry document (`:327-337`), and its service-worker rule kept (`:339-343`). On
+   draft checks (`:309-346`): in neither the sitemap nor llms.txt (`lesson-pages.test.ts:324-327`),
+   linked from no entry document (`:329-339`), and its service-worker rule kept (`:341-345`). On
    release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml` and to
    `public/llms.txt`'s Lessons list (`:66-80`), whose intro already allows a page with no episode
    (`:68-70`); until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the release
-   checks instead (`:277-305`): listed in the sitemap, llms.txt and the service worker
-   (`lesson-pages.test.ts:282-290`), and linked from every generated entry document (`:292-304`) by
+   checks instead (`:279-307`): listed in the sitemap, llms.txt and the service worker
+   (`lesson-pages.test.ts:284-292`), and linked from every generated entry document (`:294-306`) by
    its headline, which `tools/lesson-links.ts` writes and the test reads
    (`lesson-pages.test.ts:101-117`). Nothing writes `datePublished` at run time, so a published draft
    is served without one; it is set in the commit that deletes the page's `drafts.ts` line or in one
@@ -769,17 +769,17 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    when the console publishes the page, not at a release (SEARCH.md § 3.2, 12).
 2. The page's head, written in full from its first commit, since both tests read it while the page
    is a draft: `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts
-   included (`lesson-copy.test.ts:327-362`), and `src/tests/lesson-pages.test.ts` holds every lesson
+   included (`lesson-copy.test.ts:335-370`), and `src/tests/lesson-pages.test.ts` holds every lesson
    document, drafts included, to its head, its structured data, its breadcrumb, its share card and
    its legal links (`:139-275`). So Lesson 14 meets all of the checks below as a draft; its release
-   adds only the listings and links of item 1 (`:277-305`). The hook's copies are the ones the site
+   adds only the listings and links of item 1 (`:279-307`). The hook's copies are the ones the site
    worker rewrites when the console picks another hook (`src/lesson-gate.ts:453-460`, `:573-602`);
    it never rewrites the title. Only the meta description and the Article's description, which
    repeat each other, may shorten the hook, and every other copy carries it whole. In Lesson 4's
    form (`learn/04.html:9-136`), with the default hook (13):
    - the title, "Phrasing in singing: breath, swell and shape | MercuryPitch" (59 characters, under
      the test's 60, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:245`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:335-344`; Hero);
    - the meta description, "If every note of a song is in tune, what is left to shape? Hear Merc
      sing one phrase twice, then sing it and listen back." (121 characters, inside the test's 81 to
      160, `lesson-pages.test.ts:156-159`, and 153 with `compelling`, since dropped);
@@ -787,8 +787,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      hold the headline, as the title did until #1187 (`lesson-pages.test.ts:184-188`);
    - `og:description`, the full hook and one line, "If every note of a song is in tune, what is left
      to shape? Hear one phrase sung twice, then sing it yourself." (109 characters; 141 with
-     `compelling`, since dropped; `lesson-copy.test.ts:353-356`), and `twitter:description`, the
-     hook exactly (`:357-359`);
+     `compelling`, since dropped; `lesson-copy.test.ts:361-364`), and `twitter:description`, the
+     hook exactly (`:365-367`);
    - canonical and `og:url` `https://mercurypitch.com/learn/14`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -797,10 +797,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      `twitter:image:alt` "The title card: Find Your Pitch, Lesson 14, Phrasing: sing a whole song,
      above the first line of "Twinkle, Twinkle, Little Star" as seven amber bands with its words,
      between Merc and Tavi." (`learn/04.html:34-43`, `:53-60`), which the test holds to
-     the file (`lesson-pages.test.ts:227-246`; item 3);
+     the file (`lesson-pages.test.ts:228-247`; item 3);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:342-350`, `:360`), and the other test asks for the Article first
+     (`lesson-copy.test.ts:350-358`, `:368`), and the other test asks for the Article first
      (`lesson-pages.test.ts:169-171`): `@id` `https://mercurypitch.com/learn/14#lesson` and `url`
      `https://mercurypitch.com/learn/14` (`:173-174`); the headline "Phrasing: sing a whole song";
      `alternativeHeadline`, the hook exactly; `description`, the meta description's words, and
@@ -811,14 +811,14 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
      softer", "How a phrase ends: perfect and imperfect cadences" and "Recording yourself and
      listening back", none of which says what a swell does to the line, as in Lesson 4's
      (`learn/04.html:69-111`). It has no `datePublished` (item 1);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:212-225`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:213-226`;
      `learn/04.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:263-274`).
+     "Legal" (`lesson-pages.test.ts:265-276`).
    - Before #1186 dropped `compelling`, picking it wrote it into every copy of the hook: every
      description stayed between 80 and 160 characters with either hook (13).
 3. The share image the head names, `public/learn/lesson-14-og.jpg`, which
    `src/tests/lesson-pages.test.ts` checks on every lesson document, drafts included, so from the
-   page's first commit (`:227-246`): `og:image` is
+   page's first commit (`:228-247`): `og:image` is
    `https://mercurypitch.com/learn/lesson-14-og.jpg`, the file is in `public/`, its pixel size, read
    from the JPEG's frame header (`:41-56`), is what `og:image:width` and `og:image:height` say,
    `og:image:alt` is not empty, and `twitter:image` and `twitter:image:alt` repeat the two. It is
@@ -882,7 +882,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
     would gain the shorter line beside its own (`lesson-copy.ts:135-141`), kept free of the team's
-    words as the test asks (`lesson-copy.test.ts:249-257`). Its unit test and End to end 11 check it
+    words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
@@ -1088,8 +1088,8 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:423-440`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 14 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-189`); that
-    file's example of a lesson with no page is found, not named (`:45-56`). When the season's last
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:59-190`); that
+    file's example of a lesson with no page is found, not named (`:46-57`). When the season's last
     page lands, Lesson 14's in the order `docs/plans/find-your-pitch/HANDOFF.md:238` suggests,
     `lessonWithNoPage` (`kit/season.test-fixtures.ts:27-41`) finds none, and each test that asks it
     for an example fails by saying so. Lesson 14's practise link carries `?lesson=14`, and `EDGES`

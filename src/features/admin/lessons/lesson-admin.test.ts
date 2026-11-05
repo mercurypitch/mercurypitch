@@ -75,12 +75,14 @@ describe('lessonRows', () => {
     )
   })
 
-  it('reads every Season 2 lesson as planned, with no page and nothing to publish', () => {
+  it('reads every Season 2 lesson but Lesson 15 as planned, with no page and nothing to publish', () => {
     // Act
-    const rows = lessonRows().filter((row) => row.lesson.n >= 15)
+    const rows = lessonRows().filter((row) => row.lesson.n >= 16)
 
     // Assert
-    expect(rows.map((row) => row.lesson.n)).toEqual(LESSONS_2.map((L) => L.n))
+    expect(rows.map((row) => row.lesson.n)).toEqual(
+      LESSONS_2.filter((L) => L.n >= 16).map((L) => L.n),
+    )
     for (const row of rows) {
       expect(row.build, `lesson ${row.lesson.n}`).toBe('planned')
       expect(row.built, `lesson ${row.lesson.n}`).toBe(false)
@@ -89,6 +91,21 @@ describe('lessonRows', () => {
       expect(row.path).toBe(`/learn/${row.lesson.n}`)
       expect(row.signature, `lesson ${row.lesson.n}`).not.toBeNull()
     }
+  })
+
+  it("reads Lesson 15, Season 2's first page, as a draft built where drafts are shown, waiting on its sign-off", () => {
+    // Act
+    const row = rowFor(15, lessonRows())
+
+    // Assert
+    expect(row).toMatchObject({
+      build: 'draft',
+      built: true,
+      written: true,
+      waitingOn: DRAFT_LESSONS[15],
+      path: '/learn/15',
+    })
+    expect(row.signature).not.toBeNull()
   })
 
   it('reads a lesson on the draft list as a draft, with what it waits on word for word', () => {

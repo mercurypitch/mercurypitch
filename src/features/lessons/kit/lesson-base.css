@@ -125,6 +125,22 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: clip;
+  /* Season 1's faint staff tiled down the page, five 1 px lines 9 px apart
+     every 168 px; a Season 2 page drops it (.season-2), since there a staff
+     is always music (Lesson 15's WEB-SPEC, Look), and keeps the three glows */
+  --bg-staff: repeating-linear-gradient(
+    180deg,
+    rgba(195, 204, 214, 0.03) 0 1px,
+    transparent 1px 9px,
+    rgba(195, 204, 214, 0.03) 9px 10px,
+    transparent 10px 18px,
+    rgba(195, 204, 214, 0.03) 18px 19px,
+    transparent 19px 27px,
+    rgba(195, 204, 214, 0.03) 27px 28px,
+    transparent 28px 36px,
+    rgba(195, 204, 214, 0.03) 36px 37px,
+    transparent 37px 168px
+  );
   background-image:
     radial-gradient(
       70% 46% at 50% -6%,
@@ -141,20 +157,11 @@ body {
       color-mix(in srgb, var(--aqua) 6%, transparent),
       transparent 62%
     ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(195, 204, 214, 0.03) 0 1px,
-      transparent 1px 9px,
-      rgba(195, 204, 214, 0.03) 9px 10px,
-      transparent 10px 18px,
-      rgba(195, 204, 214, 0.03) 18px 19px,
-      transparent 19px 27px,
-      rgba(195, 204, 214, 0.03) 27px 28px,
-      transparent 28px 36px,
-      rgba(195, 204, 214, 0.03) 36px 37px,
-      transparent 37px 168px
-    );
+    var(--bg-staff);
   background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+}
+body.season-2 {
+  --bg-staff: none;
 }
 body::before {
   content: '';

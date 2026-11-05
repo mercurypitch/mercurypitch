@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LESSONS, PREREQ } from '@/features/lessons/kit/season'
+import { ALL_LESSONS, ALL_PREREQ } from '@/features/lessons/kit/seasons'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 import { draftLessons, lessonDocument, lessonPath, releasedLessons, } from '../../tools/draft-lessons'
 import { lessonHeadline, releasedLessonLinks } from '../../tools/lesson-links'
@@ -190,8 +190,9 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
 
   it("states the season's run time on its chip, in timeRequired and in its descriptions", () => {
     const document = parse(file)
-    const minutes = LESSONS[n]?.minutes
-    expect(minutes, 'no minutes in season.ts').toBeDefined()
+    // every season's lessons, Season 2's in season-2.ts, so a page reads its own season
+    const minutes = ALL_LESSONS.find((L) => L.n === n)?.minutes
+    expect(minutes, 'no minutes in its season').toBeDefined()
     if (minutes === undefined) return
     const chips = Array.from(
       document.querySelectorAll('.chip'),
@@ -247,7 +248,8 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
 
   // The header's "After Lesson N" chips are written by hand, and the season's
   // edges are what the menu and the map read: a page whose chips name other
-  // lessons than PREREQ tells a learner a different way in.
+  // lessons than its season's prerequisites tells a learner a different way
+  // in; Lesson 15's chip names Lesson 2, from the season before.
   it('names the lessons it comes after, as the season does', () => {
     const chips = Array.from(
       parse(file).querySelectorAll('ul.meta a.chip-link'),
@@ -256,7 +258,7 @@ describe.each(DOCUMENTS)('lesson document %i', (n) => {
       href: a.getAttribute('href'),
     }))
     expect(chips).toEqual(
-      (PREREQ[n] ?? []).map((k) => ({ after: k, href: lessonPath(k) })),
+      (ALL_PREREQ[n] ?? []).map((k) => ({ after: k, href: lessonPath(k) })),
     )
   })
 

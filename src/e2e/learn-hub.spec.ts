@@ -23,6 +23,9 @@ const LAYOUTS = [
 /** Every Season 1 lesson, the trailer left out. */
 const SEASON = LESSONS.filter((L) => L.n >= 1)
 
+/** Every lesson of the series, in both seasons, the trailer left out. */
+const SERIES = [...SEASON, ...LESSONS_2]
+
 /** The page's structured-data blocks, parsed. */
 const blocks = (page: Page): Promise<Record<string, unknown>[]> =>
   page
@@ -91,7 +94,7 @@ for (const l of LAYOUTS) {
       }
     })
 
-    test('shows Season 2 after Season 1, its fourteen lessons coming, none a link', async ({
+    test('shows Season 2 after Season 1, each of its fourteen lessons once, a link where it has a page and coming where not', async ({
       page,
     }) => {
       // Act
@@ -112,9 +115,28 @@ for (const l of LAYOUTS) {
         new Set(LESSONS_2.map((L) => `Lesson ${L.n}`)),
       )
       expect(numbers).toHaveLength(LESSONS_2.length)
-      await expect(section.getByRole('link')).toHaveCount(0)
-      for (const go of await section.locator('.hub-go').allTextContents())
-        expect(go.trim()).toBe('Coming')
+      for (const L of LESSONS_2) {
+        const item = section.locator('.hub-lesson', {
+          has: page.locator('.kicker', {
+            hasText: new RegExp(`^Lesson ${L.n}$`),
+          }),
+        })
+        await expect(item, `Lesson ${L.n}`).toHaveCount(1)
+        if (L.page === undefined) {
+          await expect(item.locator('.hub-go')).toHaveText('Coming')
+          await expect(item.getByRole('link')).toHaveCount(0)
+        } else {
+          await expect(
+            item.getByRole('link', {
+              name: new RegExp(`^Start lesson ?: Lesson ${L.n}, `),
+            }),
+          ).toHaveAttribute('href', L.page)
+          await expect(item.getByText('Coming', { exact: true })).toBeHidden()
+        }
+      }
+      await expect(section.getByRole('link')).toHaveCount(
+        LESSONS_2.filter((L) => L.page !== undefined).length,
+      )
       const below = await page.evaluate(
         () =>
           (document.querySelector('#season-2')?.getBoundingClientRect().top ??
@@ -147,14 +169,14 @@ test('links lessons that each answer, and says the same in its head and structur
     'https://mercurypitch.com/learn/',
   )
 
-  // Each lesson link answers in the preview
+  // Each lesson link answers in the preview, in both seasons' maps
   const links = await page
-    .locator('#season a')
+    .locator('#season a, #season-2 a')
     .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   // The map draws lane by lane, so its links are compared in lesson order
   // and each live lesson's film where it has a watch page (kit/watch-pages.ts)
   expect([...links].sort()).toEqual(
-    SEASON.flatMap((L) =>
+    SERIES.flatMap((L) =>
       L.page === undefined
         ? []
         : hasWatchPage(L.n)
@@ -168,7 +190,7 @@ test('links lessons that each answer, and says the same in its head and structur
   }
 
   // How long a lesson takes, over the lessons linked and no other
-  const linked = SEASON.filter(
+  const linked = SERIES.filter(
     (L) => L.page !== undefined && links.includes(L.page),
   )
   await expect(page.locator('.hub-time')).toHaveText(

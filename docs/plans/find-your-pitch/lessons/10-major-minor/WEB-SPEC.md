@@ -165,7 +165,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
     printed `mercurypitch.com/pitch-training` and `mercurypitch.com/ear-lab`, with "Drone Intonation
     and Stack are free." and no first-visit line (FACTS 45, 46, 47); Lesson 1's fonts line and
     "Every sound on this page is synthesised in your browser" (FACTS 6, Labels); the legal links, as
-    every lesson document closes (`src/tests/lesson-pages.test.ts:263-274`). With no film there are
+    every lesson document closes (`src/tests/lesson-pages.test.ts:265-276`). With no film there are
     no voices to credit.
 
 ## Length
@@ -873,8 +873,8 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
     where Lesson 6's page passes the new `changeable` (Toys 6; Decisions for the owner).
 11. `kit/season.ts`, Lesson 10's entry (Explorer and season data).
 12. The head, from SEARCH.md § 3 and Lesson 4's document (`learn/04.html:9-145`), held by
-    `src/features/lessons/kit/lesson-copy.test.ts:327-362` and
-    `src/tests/lesson-pages.test.ts:139-275` on every page, a draft's included, from its first
+    `src/features/lessons/kit/lesson-copy.test.ts:335-370` and
+    `src/tests/lesson-pages.test.ts:139-277` on every page, a draft's included, from its first
     commit:
     - title, at most 60 characters, ending " | MercuryPitch" (`lesson-pages.test.ts:154-155`):
       SEARCH.md § 4's draft, "Major and minor: the one note that changes | MercuryPitch" (57
@@ -922,7 +922,7 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
     `public/llms.txt` (its Lessons list, `:66-80`), one line each. Until then the draft's rules hold
     on the repository: in neither file, linked from no entry document, its service-worker rule kept
-    (`src/tests/lesson-pages.test.ts:307-344`). While the console has it published, the site worker
+    (`src/tests/lesson-pages.test.ts:309-346`). While the console has it published, the site worker
     adds it to the sitemap and llms.txt it serves, and takes it out again if it is held back
     (`src/lesson-gate.ts:22-24`; `src/features/lessons/kit/drafts.ts:18-21`). So indexing is
     requested when the console publishes the page, not at the release.
@@ -1092,7 +1092,7 @@ parts it adds:
     `recallStepHref(6, 5)` is `/learn/06#step-5`.
 12. The season entry: `seasonFor` with a state that holds Lesson 10 back, by its draft default or by
     `{ 10: { published: false } }`, gives it no `page` and no `minutes`, as
-    `src/features/lessons/kit/publish.test.ts:58-74` checks Lessons 2 and 3. On a page no worker
+    `src/features/lessons/kit/publish.test.ts:59-75` checks Lessons 2 and 3. On a page no worker
     served, with `VITE_DRAFT_LESSONS` stubbed to '0' and the modules reloaded (`vi.stubEnv`,
     `vi.resetModules`), Lesson 1's explorer shows Lesson 10 as "Coming later", with no link to
     `/learn/10` and its practice link kept, and with '1' links it to read, as
@@ -1150,12 +1150,12 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
 11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-110`) end on the row for
-    the page before the season's first lesson with no page (`lessonWithNoPage`, `:34`), which is
+    the page before the season's first lesson with no page (`lessonWithNoPage`, `:35`), which is
     this page's while Lesson 11 has none: the eyebrow "Next lesson 11 · Registers and the break
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:142-159`) and this one's (`:223-266`); its still inside the card holds no button.
+    card (`:149-166`) and this one's (`:230-273`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
     alternative hook's note never reaches the page (`:78-80`).

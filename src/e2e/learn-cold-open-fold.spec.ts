@@ -25,6 +25,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { fileURLToPath } from 'node:url'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
+import { seasonOf } from '../features/lessons/kit/seasons'
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -142,8 +143,11 @@ function measureFold(): Fold {
 async function load(page: Page, n: number): Promise<void> {
   await page.goto(lessonPath(n))
   // the season map draws near the end of the module's boot; its list of
-  // rows is drawn at every width, where a phone hides the graph
-  await expect(page.locator('#exList .ex-row')).toHaveCount(15)
+  // rows, one for each of the page's own season's lessons, is drawn at
+  // every width, where a phone hides the graph
+  await expect(page.locator('#exList .ex-row')).toHaveCount(
+    seasonOf(n)?.lessons.length ?? 0,
+  )
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
 }
 

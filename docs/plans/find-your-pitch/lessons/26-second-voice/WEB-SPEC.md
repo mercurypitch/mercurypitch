@@ -107,7 +107,7 @@ Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, are 
    - the description, 121 characters: "Can you make a harmony by singing the tune a third higher? A
      sixteen-minute lesson with sound toys and a harmony to sing.", which the head test holds to 80
      to 160 characters (`src/tests/lesson-pages.test.ts:156-159`) and to the chip's run time in
-     words (`src/tests/lesson-pages.test.ts:191-210`);
+     words (`src/tests/lesson-pages.test.ts:191-211`);
    - og:title and twitter:title "A second voice · Find Your Pitch, Lesson 26" (43);
      og:description and twitter:description the hook alone (58);
    - the share card `learn/lesson-26-og.jpg`, 1200 by 630, drawing the hero's still, "Twinkle" on

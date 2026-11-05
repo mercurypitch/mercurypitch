@@ -9,6 +9,7 @@ import { defaultPageState, isLive, isPublished, lessonOfHref, pageStateJson, par
 import type { Lesson } from './season'
 import { LESSONS } from './season'
 import { withNoPage } from './season.test-fixtures'
+import { LESSONS_2 } from './season-2'
 
 const served = (lessons: PageState['lessons'], drafts = false): PageState => ({
   ...defaultPageState(drafts),
@@ -231,6 +232,36 @@ describe('seasonFor', () => {
       "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect([season[14].page, season[14].minutes]).toEqual(['/learn/14', 18])
+  })
+
+  it("draws Lesson 15, Season 2's first, held back by its draft line or by the console, with neither its page nor its reading time", () => {
+    // Act: a draft where drafts are held back, and one the console holds back
+    const seasons = [
+      seasonFor(LESSONS_2, defaultPageState(false)),
+      seasonFor(LESSONS_2, served({ 15: { published: false } }, true)),
+    ]
+    const at = (season: Lesson[]) => season.find((L) => L.n === 15)
+
+    // Assert: Lesson 15's WEB-SPEC, What the kit and the app still need, item 2
+    for (const season of seasons)
+      expect([at(season)?.page, at(season)?.minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect(isLive(15, LESSONS_2, defaultPageState(false))).toBe(false)
+  })
+
+  it('keeps Lesson 15, a draft, its page and its reading time where drafts are shown', () => {
+    // Act
+    const season = seasonFor(LESSONS_2, defaultPageState(true))
+    const L15 = season.find((L) => L.n === 15)
+
+    // Assert
+    expect(DRAFT_LESSONS[15]).toBe(
+      "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
+    )
+    expect([L15?.page, L15?.minutes]).toEqual(['/learn/15', 15])
+    expect(isLive(15, LESSONS_2, defaultPageState(true))).toBe(true)
   })
 
   it('keeps every page where everything is published, the same objects as the season', () => {

@@ -530,7 +530,7 @@ kit parts it adds:
    "inversion" or "bottom note" (FACTS 1a, 1b).
 10. **The head**: the title at most 60 characters; the description 80 to 160 characters with "A
     fifteen-minute lesson"; `timeRequired` `PT15M`; no head text contains "F" as a note name
-    (`src/tests/lesson-pages.test.ts:154-159`; `src/tests/lesson-pages.test.ts:196-209`).
+    (`src/tests/lesson-pages.test.ts:154-159`; `src/tests/lesson-pages.test.ts:197-210`).
 11. **The words**: three words, none built on G; their plays as Toys 4 (FACTS 41).
 12. **The recall** imports `l12-q3` and Lesson 23's question 1, and its step links read "Try Lesson
     12, Step 4 again" and open `/learn/12` at that step in a new tab (FACTS 7).

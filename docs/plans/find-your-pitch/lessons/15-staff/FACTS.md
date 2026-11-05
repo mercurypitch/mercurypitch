@@ -214,7 +214,7 @@ them.
   picture of a card's set-up, not a staff example, which SEASON-2 § 1.4 item 1 has play.
 - No decorative staff or clef appears anywhere on the page: on this page a staff is always music
   (SEASON-2 § 1.5 item 7; 6). The kit draws two on every lesson page today, and a Season 2 page drops
-  both: the section heads' faint staff with its clef (`src/features/lessons/kit/lesson-base.css:397-440`),
+  both: the section heads' faint staff with its clef (`src/features/lessons/kit/lesson-base.css:404-447`),
   and a faint five-line staff tiled down the body's background, five 1 px lines 9 px apart every 168
   px (`:128-157`; WEB-SPEC, What the kit and the app still need, item 7).
 

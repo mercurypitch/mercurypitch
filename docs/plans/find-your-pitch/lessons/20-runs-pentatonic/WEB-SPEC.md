@@ -96,7 +96,7 @@ Each section's heading, and the line above it, are in LESSON.md ("Section headin
    the description, "How do singers sing a fast run without the notes smudging together? A
    fifteen-minute lesson with sound toys: the pentatonic scale and a run to sing." (148), which the
    head test holds to 80 to 160 characters and to the chip's run time in words
-   (`src/tests/lesson-pages.test.ts:155-159`, `src/tests/lesson-pages.test.ts:191-210`);
+   (`src/tests/lesson-pages.test.ts:155-159`, `src/tests/lesson-pages.test.ts:191-211`);
    og:title and twitter:title "Runs and the pentatonic scale · Find Your Pitch, Lesson 20" (58), in
    Lesson 4's form; og:description and twitter:description the hook alone (67); the share card
    `learn/lesson-20-og.jpg`, 1200 by 630, its alt "The title card: Find Your Pitch, Lesson 20, Runs
