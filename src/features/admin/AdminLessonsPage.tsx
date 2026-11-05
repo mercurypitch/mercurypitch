@@ -28,7 +28,7 @@ import { ChevronDown, Eye, RotateCcw } from '@/components/icons'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
 import { DRAFTS_SHOWN } from '@/features/lessons/kit/draft-switch'
 import type { Lesson } from '@/features/lessons/kit/season'
-import { TOPICS } from '@/features/lessons/kit/season'
+import { seasonsTitle, topicName } from '@/features/lessons/kit/seasons'
 import { useConfirm } from '@/lib/use-confirm'
 import styles from './AdminLessonsPage.module.css'
 import type { CopyChoicesFor } from './lessons/copy-choices'
@@ -71,6 +71,9 @@ const STATE_WORDS: Record<StepState, string> = {
   unknown: 'Could not check',
   problem: 'Problem',
 }
+
+/** The seasons the table holds, as its heading names them: "Seasons 1 and 2". */
+const SEASONS_TITLE = seasonsTitle()
 
 const LANES: Record<Lesson['lane'], string> = {
   theory: 'Theory',
@@ -420,7 +423,7 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
 
       <section class={styles.section} aria-labelledby="admin-lessons-season">
         <h3 id="admin-lessons-season" class={styles.sectionTitle}>
-          Season 1
+          {SEASONS_TITLE}
         </h3>
         <div
           class={styles.tableWrap}
@@ -430,8 +433,8 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
         >
           <table class={styles.table}>
             <caption id="admin-lessons-caption" class={styles.srOnly}>
-              Season 1: each lesson on {origin}, what this build holds, and what
-              the site serves
+              {SEASONS_TITLE}: each lesson on {origin}, what this build holds,
+              and what the site serves
             </caption>
             <thead>
               <tr>
@@ -630,7 +633,8 @@ export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
                           <For each={row.lesson.topics}>
                             {(topic) => (
                               <li>
-                                <code>{topic}</code> {TOPICS[topic]}
+                                <code>{topic}</code>{' '}
+                                {topicName(row.lesson.n, topic)}
                               </li>
                             )}
                           </For>

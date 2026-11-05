@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { TEASE_MAX } from './lesson-copy'
 import { ancestors, lessonPath, LESSONS, SEASON_1, unlocks } from './season'
 import { EDGES_2, LESSONS_2, SEASON_2, TOPICS_2 } from './season-2'
-import { ALL_LESSONS, ALL_PREREQ, seasonOf, SEASONS } from './seasons'
+import { ALL_LESSONS, ALL_PREREQ, seasonOf, SEASONS, seasonsTitle, topicName, } from './seasons'
 
 describe('Season 2', () => {
   it('is Lessons 15 to 28 in order, numbered on from Season 1', () => {
@@ -198,6 +198,21 @@ describe('the seasons', () => {
     expect(seasonOf(15)).toBe(SEASON_2)
     expect(seasonOf(28)).toBe(SEASON_2)
     expect(seasonOf(29)).toBeUndefined()
+  })
+
+  it('are named together as a heading names them', () => {
+    expect(seasonsTitle([1])).toBe('Season 1')
+    expect(seasonsTitle([1, 2])).toBe('Seasons 1 and 2')
+    expect(seasonsTitle([1, 2, 3])).toBe('Seasons 1, 2 and 3')
+    expect(seasonsTitle()).toBe('Seasons 1 and 2')
+  })
+
+  it("name a topic in its own lesson's season's words", () => {
+    // Lesson 14 touches cadences lightly; Lesson 28 teaches them
+    expect(topicName(14, 'T22')).toBe('Phrases and cadences (light)')
+    expect(topicName(28, 'T22')).toBe('Phrases and cadences')
+    // a lesson no season holds keeps the topic's id
+    expect(topicName(29, 'T22')).toBe('T22')
   })
 
   it("keep Season 1's map as it was: its own lessons, edges and topics", () => {

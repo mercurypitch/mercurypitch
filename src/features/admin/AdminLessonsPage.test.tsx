@@ -3,7 +3,7 @@
 // ============================================================
 //
 // The page's read side, whose whole worth is being right: one row per
-// Season 1 lesson, its state on this site and why, a draft that says what
+// lesson of every season, its state on this site and why, a draft that says what
 // it waits on in drafts.ts's own words, and a live column that is what the
 // site answered, not what the build expects. The site and the lesson-state
 // API are the things stubbed, at `fetch`; the rows are the season's real
@@ -14,6 +14,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/t
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DRAFT_LESSONS } from '@/features/lessons/kit/drafts'
 import { LESSONS, TOPICS } from '@/features/lessons/kit/season'
+import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import { AdminLessonsPage } from './AdminLessonsPage'
@@ -171,6 +172,30 @@ describe('AdminLessonsPage', () => {
     for (const topic of lesson.topics) {
       expect(facts.getByText(topic).closest('li')).toHaveTextContent(
         `${topic} ${TOPICS[topic]}`,
+      )
+    }
+  })
+
+  it("names the table for every season, and each topic in its own season's words", async () => {
+    stubLessonSite({})
+    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    await settled()
+
+    expect(
+      screen.getByRole('heading', { name: 'Seasons 1 and 2' }),
+    ).toBeInTheDocument()
+    const named = (n: number, topic: string): HTMLElement | null =>
+      within(card(n)).getByText(topic).closest('li')
+    // T22 is a topic of both seasons, in each season's own words
+    expect(named(14, 'T22')).toHaveTextContent(
+      /^T22 Phrases and cadences \(light\)$/,
+    )
+    expect(named(28, 'T22')).toHaveTextContent(/^T22 Phrases and cadences$/)
+    const lesson = ALL_LESSONS.find((L) => L.n === 28)
+    expect(lesson?.topics.length).toBeGreaterThan(0)
+    for (const topic of lesson?.topics ?? []) {
+      expect(named(28, topic)).toHaveTextContent(
+        `${topic} ${SEASON_2.topics[topic]}`,
       )
     }
   })

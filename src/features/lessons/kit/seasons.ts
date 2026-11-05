@@ -31,3 +31,16 @@ export const ALL_PREREQ: Prereqs = Object.assign(
 export function seasonOf(n: number): Season | undefined {
   return SEASONS.find((s) => s.lessons.some((L) => L.n === n))
 }
+
+/** Seasons `ns`, every season by default, as a heading names them: "Season 1", "Seasons 1 and 2". */
+export function seasonsTitle(
+  ns: readonly number[] = SEASONS.map((s) => s.n),
+): string {
+  if (ns.length === 1) return `Season ${ns[0]}`
+  return `Seasons ${ns.slice(0, -1).join(', ')} and ${ns[ns.length - 1]}`
+}
+
+/** A topic's name in the words of lesson `n`'s own season: Season 2's T22 is not Season 1's. */
+export function topicName(n: number, topic: string): string {
+  return seasonOf(n)?.topics[topic] ?? topic
+}
