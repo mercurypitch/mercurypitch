@@ -102,7 +102,7 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    - the description, "How do singers read a tune they've never heard without stopping on every
      note? A sixteen-minute lesson with sound toys: read and sing a tune in time." (149), which the
      head test holds to over 80 and at most 160 characters and to the chip's run time in words
-     (`src/tests/lesson-pages.test.ts:154-159`, `src/tests/lesson-pages.test.ts:191-210`);
+     (`src/tests/lesson-pages.test.ts:154-159`, `src/tests/lesson-pages.test.ts:191-211`);
    - og:title and twitter:title "Read and sing a whole line · Find Your Pitch, Lesson 18" (55);
      og:description and twitter:description the hook alone (78);
    - the share card `learn/lesson-18-og.jpg`, 1200 by 630, drawing the cold open's bass staff, its
@@ -903,7 +903,7 @@ Page tests, against a local or dev build, never production:
 11. The head test (`src/tests/lesson-pages.test.ts`): the title within 60 characters, the description
     over 80 and at most 160 with "A sixteen-minute lesson", the chip "16 minutes" and
     `timeRequired` `PT16M` (`src/tests/lesson-pages.test.ts:154-159`,
-    `src/tests/lesson-pages.test.ts:191-210`).
+    `src/tests/lesson-pages.test.ts:191-211`).
 12. No planning text on the page: no topic code such as "S11b" or "T32", no "planned", "slug" or "for
     the team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`). Its pattern for a topic's code now
     takes a lettered code such as S11b too (What the kit and the app still need, item 16).

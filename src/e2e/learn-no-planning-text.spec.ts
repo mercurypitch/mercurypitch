@@ -17,6 +17,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { lessonPages, lessonPath } from '../../tools/draft-lessons'
+import { seasonOf } from '../features/lessons/kit/seasons'
 import { TEAM_STRINGS } from '../features/lessons/kit/team-notes.test-fixtures'
 
 /** The team's words, each a sign that planning has reached a learner's screen. */
@@ -95,12 +96,15 @@ for (const n of LESSONS) {
     // Arrange: every move lands at once
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(lessonPath(n))
-    const map = page.locator('#graph .node')
-    await expect(map).toHaveCount(15)
+    // a node for each of the page's own season's lessons (a later season's
+    // map draws the earlier lessons it builds on small, as no button)
+    const count = seasonOf(n)?.lessons.length ?? 0
+    const map = page.locator('#graph button.node')
+    await expect(map).toHaveCount(count)
     const found = planningIn(await learnerText(page, 'body'), 'the page')
 
     // Act: open every lesson's card from the map, then the lesson menu
-    for (let i = 0; i < 15; i += 1) {
+    for (let i = 0; i < count; i += 1) {
       await map.nth(i).click()
       const card = page.locator('#exCardHost .ex-card')
       await expect(card).toBeVisible()

@@ -427,15 +427,17 @@ describe('a draft lesson (drafts.ts)', () => {
       .filter((nn): nn is string => nn !== undefined)
 
     for (const drafts of ['1', '0'] as const) {
-      // Act
-      const season = await seasonBuilt(drafts)
+      // Act: every season, as that build has them (Season 2's pages too)
+      await seasonBuilt(drafts)
+      const { ALL_LESSONS } = await import('./seasons')
 
       // Assert
       expect(pages.length, drafts).toBeGreaterThanOrEqual(5)
       for (const nn of pages)
-        expect(season.LESSONS[Number(nn)]?.page, `${drafts}: ${nn}`).toBe(
-          `/learn/${nn}`,
-        )
+        expect(
+          ALL_LESSONS.find((L) => L.n === Number(nn))?.page,
+          `${drafts}: ${nn}`,
+        ).toBe(`/learn/${nn}`)
     }
   })
 

@@ -72,11 +72,11 @@ wordmark, and the motion rules. On this page:
 - **The pitch line** keeps Season 1's look: a lane a semitone, the white-key lanes chrome and the
   black-key lanes fainter (FACTS 33).
 - **No decorative staff or clef anywhere.** Season 1's section heads carry a faint staff with an
-  engraved G clef (`learn/12.html:551-552`; `src/features/lessons/kit/lesson-base.css:397-440`),
+  engraved G clef (`learn/12.html:551-552`; `src/features/lessons/kit/lesson-base.css:404-447`),
   which every page's module engraves (`engraveClefs`,
   `src/features/lessons/kit/page-chrome.ts:161-175`, called at `src/features/lessons/lesson-12/main.ts:122`),
   and the body's background tiles a fainter one down every page, five 1 px lines 9 px apart every
-  168 px (`src/features/lessons/kit/lesson-base.css:128-157`). This page has none of them: in a
+  168 px (`src/features/lessons/kit/lesson-base.css:128-165`). This page has none of them: in a
   lesson that teaches the staff, a staff on screen is always music (SEASON-2 § 1.5 item 7; FACTS 6;
   What the kit and the app still need, item 7).
 
@@ -575,7 +575,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:129-141`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card
    for Lesson 15 would answer nothing, but Season 1's end would be gone. `LESSONS[n].n === n` (`src/features/lessons/kit/season.ts:108-110`) and the head
-   test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-210`) read one list by number;
+   test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-211`) read one list by number;
    with Season 2 in its own module, both read the season the page belongs to.
 4. **The staff toy** (SEASON-2 § 6.2 item 2; Toys 1): `src/features/lessons/kit/staff.ts`, new,
    with its pure helpers and their unit tests (a note's place in a clef, its ledger count, its
@@ -591,7 +591,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    options, and Lesson 17's sung bars can take the flow too.
 7. **No decorative staff** (Look): the page's section heads have no `.mv-staff`, and its module
    does not call `engraveClefs`; and a Season 2 page drops the body's background staff, the
-   repeating five-line gradient (`src/features/lessons/kit/lesson-base.css:128-157`), by a class on
+   repeating five-line gradient (`src/features/lessons/kit/lesson-base.css:128-165`), by a class on
    `body` or in the season's own stylesheet, keeping the background's three glows. Season 1 pages
    keep both.
 8. **The lesson copy**: Lesson 16's tease, set on Lesson 16

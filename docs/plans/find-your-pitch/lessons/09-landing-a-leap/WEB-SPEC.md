@@ -647,23 +647,23 @@ table):
    it (FACTS 9). `/learn/09` and `/learn/09.html` go in `STANDALONE_DOCUMENT_PATHS`
    (`src/lib/sw-runtime.ts:93`, the lessons `:131-157`), so the service worker never serves the app
    shell in the lesson's place; `src/tests/lesson-pages.test.ts` checks a draft for them too
-   (`:339-343`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
+   (`:341-345`). On release: delete the `drafts.ts` line, and add the page to `public/sitemap.xml`
    and to `public/llms.txt`'s Lessons list (`:66-70`), whose intro already allows a page with no
    episode; until then the site worker adds the page to both only while it is published
    (`src/lesson-gate.ts:22-24`). Then `src/tests/lesson-pages.test.ts` holds the page to the
-   released checks (`:277-305`), and `tools/lesson-links.ts` links it from every entry document by
+   released checks (`:279-307`), and `tools/lesson-links.ts` links it from every entry document by
    its headline (FACTS 63).
 2. The page's head, written in full from its first commit:
    `src/features/lessons/kit/lesson-copy.test.ts` reads every `learn/NN.html`, drafts included
    (`:305-320`), and `src/tests/lesson-pages.test.ts` holds every lesson document's head and
-   structured data, a draft's included (`:139-275`), and a released lesson's listings (`:277-305`).
+   structured data, a draft's included (`:139-275`), and a released lesson's listings (`:279-307`).
    The hook's copies are the ones the site worker rewrites when the console picks an alternative
    hook (`src/lesson-gate.ts:17-19`, `:454-469`); only the meta description and the Article's
    description, which repeat each other, may shorten the hook, and every other copy carries it
    whole. As Lesson 2's head has them (`learn/02.html:9-136`):
    - the title, "Landing a leap: singing big intervals in tune | MercuryPitch" (60 characters, the
      test's most, `lesson-pages.test.ts:154-155`), SEARCH.md § 4's draft (`SEARCH.md:240`), and
-     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:327-336`; Hero);
+     the h1, `h1.hook#hook`, the hook in its default wording (`lesson-copy.test.ts:335-344`; Hero);
    - the meta description, "How do you land a note you have to leap to? A sixteen-minute lesson on
      big leaps: hear the landing note first, aim at its band, then sing a ladder." (147 characters,
      inside the test's 80 to 160, `lesson-pages.test.ts:156-159`, with the run time in words that
@@ -672,9 +672,9 @@ table):
    - `og:title` and `twitter:title`, "Landing a leap: Find Your Pitch, Lesson 9", hold the headline,
      as the title did until #1187 (`lesson-pages.test.ts:184-188`; `learn/02.html:26-29`);
    - `og:description`, the full hook and one line, "How do you land a note you have to leap to? Hear
-     the landing note first, then aim at it." (`lesson-copy.test.ts:353-356`;
+     the landing note first, then aim at it." (`lesson-copy.test.ts:361-364`;
      `learn/02.html:30-33`), and `twitter:description`, the hook exactly
-     (`lesson-copy.test.ts:357-359`; `learn/02.html:49-52`);
+     (`lesson-copy.test.ts:365-367`; `learn/02.html:49-52`);
    - canonical and `og:url` `https://mercurypitch.com/learn/09`, `robots` "index, follow,
      max-image-preview:large" and `twitter:card` "summary_large_image"
      (`lesson-pages.test.ts:143-161`);
@@ -685,7 +685,7 @@ table):
      Tavi." (`learn/02.html:34-43`, `:53-60`);
    - the Article node, in the head's first `application/ld+json` script and as a single object,
      since the test reads `alternativeHeadline` there and checks it only when present
-     (`lesson-copy.test.ts:342-350`, `:360`): `@id` `https://mercurypitch.com/learn/09#lesson` and
+     (`lesson-copy.test.ts:350-358`, `:368`): `@id` `https://mercurypitch.com/learn/09#lesson` and
      `url` `https://mercurypitch.com/learn/09` (`lesson-pages.test.ts:173-174`); the headline
      "Landing a leap"; `alternativeHeadline`, the hook exactly; `description`, the meta
      description's words, and `image`, the `og:image` URL (`:182-183`); `position: 9`,
@@ -695,12 +695,12 @@ table):
      (`learn/04.html:61-68`): the date is the day the page first goes live on mercurypitch.com,
      which nothing writes at run time, so it is set in the commit that deletes the page's
      `drafts.ts` line or in one straight after the console publishes it (SEARCH.md § 3.2);
-   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:212-225`;
+   - a BreadcrumbList from the home page to the headline (`lesson-pages.test.ts:213-226`;
      `learn/02.html:112-136`); and the legal links, privacy, terms and imprint, in a `nav` labelled
-     "Legal" (`lesson-pages.test.ts:263-274`).
+     "Legal" (`lesson-pages.test.ts:265-276`).
 3. The share image the head names, `public/learn/lesson-09-og.jpg`, which
    `src/tests/lesson-pages.test.ts` requires of every lesson document, a draft's included: in
-   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:227-246`). It is
+   `public/`, at the pixel size its `og:image:width` and `og:image:height` give (`:228-247`). It is
    1200 x 630, a baseline JPEG as Lesson 4's card is (`public/learn/lesson-04-og.jpg`), drawn with
    the page's own kit so that it looks like the page it opens: the title, Lesson 09 and the wordmark
    over the ladder chart's compact still, do's and so's bands with Merc's amber arc between them,
@@ -905,7 +905,7 @@ parts:
     (`:241-266`), and the same file's check of every page in the repository then covers it
     (`:423-440`); `seasonFor(LESSONS, defaultPageState(false))` gives Lesson 9 no page and no
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
-    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:58-189`). That
+    keeps both, as `publish.test.ts` checks a lesson held back and one published (`:59-190`). That
     file's example of a lesson with no page is found, not named: the first lesson the season has
     with none (`:45-56`, through `lessonWithNoPage` in `kit/season.test-fixtures.ts:27-41`), so
     this page's arrival does not break it. Lesson 9's practise link carries `?lesson=09`, and
@@ -971,7 +971,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:142-159`).
+    hook and way on, as that spec checks Lesson 1's card (`:149-166`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

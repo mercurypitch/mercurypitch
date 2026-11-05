@@ -384,16 +384,40 @@ describe("the hub's Season 2", () => {
     expect(first?.querySelector('a')).toBeNull()
   })
 
-  it('lists its fourteen lessons, each coming, with no link and no reading time', () => {
+  it('lists its fourteen lessons, each with no page coming, with no link and no reading time', () => {
     const items = Array.from(section?.querySelectorAll('.hub-lesson') ?? [])
     // a list a lane, theory first, as Season 1's map is
     expect(items.map((li) => li.querySelector('h4')?.id).sort()).toEqual(
       LESSONS_2.map((L) => `lesson-${L.n}`),
     )
-    for (const li of items) {
+    const unwritten = items.filter(
+      (li) => li.querySelector('h4')?.id !== 'lesson-15',
+    )
+    expect(unwritten).toHaveLength(13)
+    for (const li of unwritten) {
       expect(words(li.querySelector('.hub-go'))).toBe('Coming')
       expect(li.querySelector('a')).toBeNull()
     }
+  })
+
+  it('writes both readings of Lesson 15, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, so neither live by these defaults nor drawn as one
+    const go = section
+      ?.querySelector('#lesson-15')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="15"] a')?.getAttribute('href'),
+    ).toBe('/learn/15')
+    expect(words(go?.querySelector('span[data-if-live="15"]') ?? null)).toBe(
+      '15 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="15"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
   })
 
   it('gives its lanes ids of their own, so no id is on the page twice', () => {

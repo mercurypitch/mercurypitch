@@ -113,7 +113,7 @@ in Lesson 2's order (FACTS 5a). Each section's heading, and the line above it, a
    - the description, 130 characters: "How can a song sound as if it's ending, then keep going? A
      nineteen-minute lesson with sound toys and a song in two parts to sing.", which the head test
      holds to 80 to 160 characters (`src/tests/lesson-pages.test.ts:156-159`) and to the chip's run
-     time in words (`src/tests/lesson-pages.test.ts:191-210`), "nineteen" among its words
+     time in words (`src/tests/lesson-pages.test.ts:191-211`), "nineteen" among its words
      (`MINUTE_WORDS`, `src/tests/lesson-pages.test.ts:75-89`);
    - og:title and twitter:title "Cadences, form and a song in two parts · Find Your Pitch, Lesson
      28" (67), in Lesson 4's form; og:description and twitter:description the hook alone (56);

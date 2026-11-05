@@ -232,7 +232,7 @@ left, 780 bytes.
   own scroll to step 3 is remembered; Tab stays in, Escape closes and focus returns to the menu
   after a replay; the question mark plays it from step 1 on a return visit, at 390x844 and
   1440x900, as tall as the menu button, and takes the focus back; a deep link skips it and the next
-  page offers it; all fourteen pages offer five steps, and Lessons 10 to 14 light their targets at
+  page offers it; all fifteen pages offer five steps, and Lessons 10 to 15 light their targets at
   390x844 and 1440x900; on Lesson 1's first visit the wheel and the keys leave the page at the top
   with no scrollbar, and the card comes with nothing moving, before the cap, as the hold lifts;
   Lesson 3 never holds; under reduced motion nothing glides.

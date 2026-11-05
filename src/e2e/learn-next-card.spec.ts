@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 to 14 are live here; a page that holds them back is
+// does, so Lessons 3 to 15 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -21,7 +21,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 import { LESSON_COPY } from '../features/lessons/kit/lesson-copy'
-import { LESSONS, PREREQ } from '../features/lessons/kit/season'
+import { LESSONS } from '../features/lessons/kit/season'
+import { ALL_LESSONS, ALL_PREREQ } from '../features/lessons/kit/seasons'
 import { HELD_BACK, holdBack } from './helpers/held-back'
 
 /** The card at the foot of this page's Wrap. */
@@ -112,6 +113,12 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
     'Next lesson 14 · Phrasing: sing a whole song Ready · 18 min',
     '/learn/14',
     'Start lesson',
+  ],
+  [
+    '/learn/15',
+    'Next lesson 16 · Sing what you see Coming later',
+    '#explorer',
+    'See it on the map',
   ],
 ]
 
@@ -520,13 +527,14 @@ const chipTargets = (
  * Every lesson page whose prerequisite chips hold a link, read from the
  * season: one of its direct prerequisites has a page too. A prerequisite
  * with no page is a plain chip (kit/page-state.ts), so Lesson 13's chip,
- * "After Lesson 11", joined with Lesson 11's page.
+ * "After Lesson 11", joined with Lesson 11's page, and Lesson 15's names
+ * Lesson 2, of the season before.
  */
-const CHIP_PAGES = LESSONS.filter(
+const CHIP_PAGES = ALL_LESSONS.filter(
   (l) =>
     l.page !== undefined &&
-    (PREREQ[l.n] ?? []).some(
-      (p) => LESSONS.find((x) => x.n === p)?.page !== undefined,
+    (ALL_PREREQ[l.n] ?? []).some(
+      (p) => ALL_LESSONS.find((x) => x.n === p)?.page !== undefined,
     ),
 ).map((l) => l.page ?? '')
 

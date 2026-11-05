@@ -5,6 +5,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DRAFT_LESSONS } from './drafts'
 import { TEASE_MAX } from './lesson-copy'
 import { ancestors, lessonPath, LESSONS, SEASON_1, unlocks } from './season'
 import { EDGES_2, LESSONS_2, SEASON_2, TOPICS_2 } from './season-2'
@@ -42,9 +43,9 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for any lesson yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16 to 28 yet: each is coming later', () => {
     // Assert
-    for (const L of LESSONS_2) {
+    for (const L of LESSONS_2.filter((L) => L.n >= 16)) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
       expect(L.film, `lesson ${L.n}`).toBeUndefined()
@@ -52,7 +53,32 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page in the repository either, so no entry should have one', () => {
+  it("gives Lesson 15 its page and its reading time, a draft with no film, and Compose's link", () => {
+    // Act
+    const L15 = LESSONS_2.find((L) => L.n === 15)
+
+    // Assert: Lesson 15's WEB-SPEC, Explorer and season data
+    expect([L15?.page, L15?.minutes, L15?.film, L15?.len]).toEqual([
+      '/learn/15',
+      15,
+      undefined,
+      undefined,
+    ])
+    expect(DRAFT_LESSONS[15]).toBe(
+      "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
+    )
+    expect(L15?.pr.link).toEqual({
+      href: '/?lesson=15#/compose',
+      addr: 'mercurypitch.com/#/compose',
+      label: 'Compose',
+      note: 'then choose Sheet Music',
+    })
+    // the drill it still needs stays the team's
+    expect(L15?.pr.needs).toMatch(/^A note-reading drill/)
+    expect(SEASON_2.prereq[15]).toEqual([2])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lesson 15 alone', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -62,7 +88,10 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([])
+    expect(pages).toEqual([15])
+    expect(
+      LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
+    ).toEqual(pages)
   })
 
   it('names every topic of its lessons, and asks every hook as a question', () => {

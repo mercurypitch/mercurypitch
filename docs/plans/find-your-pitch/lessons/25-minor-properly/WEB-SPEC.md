@@ -746,7 +746,7 @@ Page tests, against a local or dev build, never production:
 10. The head test (`src/tests/lesson-pages.test.ts`): the title within 60 characters, the
     description 80 to 160 with "A fifteen-minute lesson", the Article's description with it too,
     the chip "15 minutes" and `timeRequired` `PT15M` (`src/tests/lesson-pages.test.ts:154-159`,
-    `src/tests/lesson-pages.test.ts:198-209`).
+    `src/tests/lesson-pages.test.ts:199-210`).
 11. No planning text on the page: no topic code such as "T15b", no "planned", "deep link" or "for the
     team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`).
 12. The stage-fit test at the four short landscape sizes, every step's controls on screen with the

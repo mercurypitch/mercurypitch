@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LESSON_COPY } from '@/features/lessons/kit/lesson-copy'
 import type { PageState } from '@/features/lessons/kit/publish'
 import { LESSONS, minutesSpan } from '@/features/lessons/kit/season'
+import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { watchDocument, watchLessons, watchPath, } from '@/features/lessons/kit/watch-pages'
 import type { LessonState } from '@/lib/lesson-state'
 import { isDraftLessonsShown, lessonDocument, lessonPages, liveByDefault, markLessonStates, watchPages, } from '../tools/draft-lessons'
@@ -366,10 +367,10 @@ describe('a lesson page', () => {
     expect(notModified?.status).toBe(304)
     expect(notModified?.headers.get('ETag')).toBe(ETAG)
 
-    // A lesson no page is built for yet is the asset layer's own 404: Season
-    // 2's first, now that every Season 1 lesson has a page
+    // A lesson no page is built for yet is the asset layer's own 404:
+    // Lesson 16, now that Season 2's first has a page too
     const { ask: askUnbuilt } = gate()
-    const missing = await askUnbuilt('/learn/15')
+    const missing = await askUnbuilt('/learn/16')
     expect(missing?.status).toBe(404)
     expect(missing?.headers.get('X-Robots-Tag')).toBeNull()
   })
@@ -920,7 +921,7 @@ describe('the hub', () => {
 
   /** How the line reads when the lessons `live` are the live ones. */
   const timeFor = (live: readonly number[]): string =>
-    `Each lesson takes about ${minutesSpan(LESSONS.filter((L) => live.includes(L.n)))} minutes.`
+    `Each lesson takes about ${minutesSpan(ALL_LESSONS.filter((L) => live.includes(L.n)))} minutes.`
 
   /** Lesson `n`'s hook as the map asks it. */
   const hookOf = (doc: Document, n: number): string =>
@@ -1053,12 +1054,14 @@ describe('the hub', () => {
     const doc = await page(await ask('/learn/'))
 
     // Assert
-    const withPage = LESSONS.filter((L) => L.page !== undefined).map((L) => L.n)
+    const withPage = ALL_LESSONS.filter((L) => L.page !== undefined).map(
+      (L) => L.n,
+    )
     expect(parts(doc)).toEqual(withPage)
     expect(time(doc)).toBe(timeFor(withPage))
-    // the map draws lane by lane, so its links are compared as a set
+    // each season's map draws lane by lane, so its links are compared as a set
     expect(
-      Array.from(doc.querySelectorAll('#season a'))
+      Array.from(doc.querySelectorAll('#season a, #season-2 a'))
         .map((a) => a.getAttribute('href'))
         .sort(),
     ).toEqual(linksTo(withPage))

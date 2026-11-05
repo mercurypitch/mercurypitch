@@ -1,0 +1,239 @@
+/* ============================================================
+   Lesson 15 — The staff: where notes sit: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the guide's and the voice
+   lessons' sheets, taken in here by @import so they inline into this page's
+   own sheet and split no chunk the other lessons share (MISTAKES.md, on the
+   lessons' base stylesheet).
+
+   Here: the hero's pitch line between Merc and Tavi, with the two plays under
+   it; the staff toy's stage and each step's row of plays (WEB-SPEC, Toys 1);
+   Tavi's line in Step 2; Sing it's staff beside the still of the Merc who
+   sings; and the Wrap's cards, with the next card's tease still and free
+   play. No decorative staff: the section heads carry none, and the body's
+   season-2 class drops the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-guide.css';
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: the pitch line between Merc and Tavi */
+.l15-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --staff-h: clamp(270px, 25vw, 340px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--staff-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the pitch line's base, where Merc and Tavi stand */
+.l15-duo .floor {
+  top: var(--staff-h);
+}
+.l15-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l15-duo .merc-blue {
+  grid-column: 1;
+}
+.l15-duo .merc-orange {
+  grid-column: 3;
+}
+.l15-duo .hero-staff {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--staff-h);
+}
+.l15-duo .hero-staff svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the two plays sit under the stage, outside the predict card */
+.l15-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l15-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --staff-h: clamp(270px, 42vw, 360px);
+  }
+  /* Play the climb sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width) */
+  .l15-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone the pitch line takes the stage's width, and Merc and Tavi stand smaller either side of its base */
+@media (max-width: 560px) {
+  .l15-duo {
+    --merc: min(25vw, 100px);
+    --staff-h: 264px;
+    margin-top: 2px;
+  }
+  .l15-duo .hero-staff {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- the staff toy's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* stuck beside the text, the kit shrinks the figure to the room its
+   controls leave, never below 300 px here, where a single staff's space is
+   at least 26 px; the deck keeps the kit's floors (FACTS 71) */
+@media (min-width: 961px) and (min-height: 561px) {
+  .steps-stage .staff-viz {
+    --viz-min: 300px;
+  }
+}
+/* Step up, Step down and the pitch-line switch, then the step's own plays,
+   each a row straight under the figure that wraps on a phone */
+.staff-toy .staff-row,
+.staff-toy .staff-plays {
+  margin-top: 10px;
+}
+.staff-toy .controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* Treble · Bass and the free play's three staves: each button a 44 px target */
+.staff-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Tavi's question in Step 2: a bubble beside her still */
+.l15-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l15-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l15-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l15-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l15-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l15-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l15-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l15-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l15-sing .voice-clef {
+  margin: 14px 0 12px;
+  color: var(--ink-2);
+}
+/* the learner's staff, the still of the Merc who sings beside it */
+.l15-sing-staff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+}
+.l15-sing-staff .viz {
+  height: 230px;
+}
+.l15-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.l15-sing-staff .staff-row {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+@media (max-width: 560px) {
+  .l15-sing-staff {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+  .l15-sing-staff .viz {
+    height: 210px;
+  }
+  .l15-sing-staff .sing-merc {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l15-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l15-app .rest-line {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l15-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l15-app a.addr {
+  text-decoration: none;
+}
+.l15-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: a treble staff with five plain
+   noteheads and a "?", under a class of its own, apart from .next-tease */
+.l15-tease {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l15-tease svg {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 96px;
+}
+.l15-tease .q {
+  font: 600 var(--fs-22) / 1 var(--f-display);
+  color: var(--chrome);
+}
+.l15-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l15-free .staff-kind {
+  margin-bottom: 10px;
+}

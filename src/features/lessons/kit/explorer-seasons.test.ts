@@ -144,7 +144,7 @@ describe('the explorer, a tab per season', () => {
     ).toEqual(['Theory7 lessons', 'Voice6 lessons + 28'])
   })
 
-  it("opens Season 2 on Lesson 15's card, coming later, building on Lesson 2 of Season 1", async () => {
+  it("opens Season 2 on Lesson 15's card, to read where drafts show, building on Lesson 2 of Season 1", async () => {
     // Arrange
     explorerPage()
     createExplorer({ current: 1 })
@@ -152,14 +152,18 @@ describe('the explorer, a tab per season', () => {
     // Act
     await openSeason2()
 
-    // Assert
+    // Assert: Lesson 15 is a draft with a page, shown in this build
     const card = document.querySelector('#exCardHost .ex-card')
     expect(openTitle()).toBe('The staff: where notes sit')
     expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 15')
     expect(card?.querySelector('.eyebrow')?.textContent).toContain(
-      'Coming later',
+      'Ready · read',
     )
-    expect(card?.querySelector('.ex-actions')).toBeNull()
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['/learn/15'])
     expect(
       Array.from(card?.querySelectorAll('[data-go]') ?? []).map(
         (b) => b.textContent,
@@ -172,6 +176,51 @@ describe('the explorer, a tab per season', () => {
     expect(card?.querySelector('.topic')?.textContent).toBe(
       'Staff notation: staff, clefs, ledger lines, grand staff',
     )
+  })
+
+  it("draws Lesson 15 coming later where drafts are held back, with nothing to its page and Compose's link kept", async () => {
+    // Arrange: a production build's default for a page no worker served
+    vi.stubEnv('VITE_DRAFT_LESSONS', '0')
+    vi.resetModules()
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    explorerPage()
+    explorerBuilt({ current: 1 })
+
+    // Act
+    await openSeason2()
+
+    // Assert: Lesson 15's WEB-SPEC, What the kit and the app still need, item 2
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain(
+      'Coming later',
+    )
+    expect(card?.querySelector('.ex-actions')).toBeNull()
+    expect(card?.innerHTML).not.toContain('/learn/15')
+    expect(
+      card?.querySelector('a.addr[href="/?lesson=15#/compose"]'),
+    ).not.toBeNull()
+    vi.unstubAllEnvs()
+  })
+
+  it('opens a Season 2 page that carries its season on its own tab, on its own card', async () => {
+    // Arrange: Lesson 15's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 15 })
+
+    // Assert: no load waits, since the page carries the season
+    expect(tabs()).toEqual([
+      ['Season 1', 'false'],
+      ['Season 2', 'true'],
+    ])
+    expect(nodes()[0]).toBe(15)
+    expect(openTitle()).toBe('The staff: where notes sit')
   })
 
   it("lights a Season 2 lesson's lines in from Season 1, and its Season 1 lessons on its path", async () => {
