@@ -11,11 +11,15 @@
 // Then WEB-SPEC's first end-to-end check (Tests, End to end 1), at a
 // phone's size and a desktop's: no AudioContext before the first tap, and
 // nothing plays before a play button; and a visitor with the studio
-// installed still gets the lesson, not the shell. Each toy's own checks
-// join it as that toy is wired.
+// installed still gets the lesson, not the shell. Then the cold open's
+// predict, the stage's targets and Step 1 by keyboard, the season's close
+// after a rest, and what the page keeps and sends: nothing asks for the
+// microphone before Sing it's Start, nothing leaves the page, and only the
+// lesson's own keys are stored.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
+import { expectTargets, openStep, tabsWithin } from './helpers/lesson-qa'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
 const TITLE = 'Phrasing in singing: breath, swell and shape | MercuryPitch'
@@ -165,4 +169,160 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
   // Assert
   await expect(page).toHaveTitle(TITLE)
   await expect(page.locator('#root')).toHaveCount(0)
+})
+
+const TOY = '#toySong'
+
+test('the cold open: take 1 plays before a choice, take 2 waits for one, and the reveal comes once take 2 has played @smoke', async ({
+  page,
+}) => {
+  // Arrange: sound on from the gate
+  await page.goto('/learn/14')
+  await page.locator('#gateBtn').click()
+  const take2 = page.locator('.hero [data-play="take2"]')
+  const reveal = page.locator('#predict .reveal')
+
+  // Act: take 1 before a choice
+  await expect(take2).toBeDisabled()
+  await page.locator('#heroPlay').click()
+  await expect(page.locator('#heroSong [data-hero-said]')).toHaveText(
+    'Take 1: phrase 1 on “ooh”, with a breath between “little” and “star”',
+    { timeout: 10_000 },
+  )
+
+  // Assert: nothing revealed; a choice opens take 2, which reveals once heard
+  await expect(reveal).toBeHidden()
+  await page.locator('#predict [data-choice="level"]').click()
+  await expect(take2).toBeEnabled()
+  await take2.click()
+  await expect(reveal).toBeVisible({ timeout: 12_000 })
+  await expect(reveal).toContainText('You said: it stays level')
+  await expect(page.locator('#heroSong [data-hero-said]')).toContainText(
+    'Take 2: the same seven notes, with the breath after “star”.',
+  )
+})
+
+test('Step 1 by keyboard: Tab meets Play the song, then the six phrases, and a phrase plays by Enter, its button a Stop', async ({
+  page,
+}) => {
+  // Arrange
+  await openStep(page, '/learn/14', 1)
+
+  // Act
+  const met = await tabsWithin(page, `${TOY} [data-fig-label]`, TOY)
+  const phrase = page.locator(`${TOY} [data-phrase="3"]`)
+  await phrase.focus()
+  await page.keyboard.press('Enter')
+
+  // Assert
+  expect(met).toEqual([
+    'Play the song',
+    'Play phrase 1: Twinkle, twinkle, little star',
+    'Play phrase 2: How I wonder what you are',
+    'Play phrase 3: Up above the world so high',
+    'Play phrase 4: Like a diamond in the sky',
+    'Play phrase 5: Twinkle, twinkle, little star',
+    'Play phrase 6: How I wonder what you are',
+  ])
+  await expect(phrase).toHaveAccessibleName(
+    'Stop phrase 3: Up above the world so high',
+  )
+  await expect(page.locator(`${TOY} [data-song-caption]`)).toHaveText(
+    'Up above the world so high,',
+  )
+})
+
+for (const width of [390, 344]) {
+  test.describe(`the song line's targets at ${width} px wide`, () => {
+    test.use({ viewport: { width, height: 844 } })
+
+    test('every target of Steps 1 to 5 is at least 44 px square, and none overlaps another', async ({
+      page,
+    }) => {
+      // Arrange
+      await openStep(page, '/learn/14', 1)
+      const counts: number[] = []
+
+      // Act, Assert
+      for (let n = 1; n <= 5; n++) {
+        if (n > 1) {
+          await page
+            .getByRole('button', { name: 'Next step', exact: true })
+            .click()
+          await expect(page.locator('#stepNow')).toHaveText(String(n))
+        }
+        counts.push(await expectTargets(page, TOY, `Step ${n}`))
+      }
+      expect(counts).toEqual([7, 2, 2, 2, 2])
+    })
+  })
+}
+
+test('the page asks for no microphone, sends nothing away and keeps only its own keys, through the cold open, the steps, the words and the quizzes', async ({
+  page,
+}) => {
+  // Arrange: every microphone request counted, every request off this site kept
+  await page.addInitScript(() => {
+    const w = window as unknown as { micAsks: number }
+    w.micAsks = 0
+    const media = navigator.mediaDevices
+    if (media !== undefined) {
+      const real = media.getUserMedia.bind(media)
+      media.getUserMedia = (c?: MediaStreamConstraints) => {
+        w.micAsks += 1
+        return real(c)
+      }
+    }
+  })
+  const away: string[] = []
+  const origin = new URL(page.url() === 'about:blank' ? 'http://x' : page.url())
+  page.on('request', (r) => {
+    const u = new URL(r.url())
+    if (
+      u.protocol.startsWith('http') &&
+      u.hostname !== 'localhost' &&
+      u.hostname !== '127.0.0.1' &&
+      u.hostname !== origin.hostname
+    )
+      away.push(u.href)
+  })
+  await page.goto('/learn/14')
+  await page.locator('#gateBtn').click()
+
+  // Act: a take, a word, Step 1's song played and stopped, and an answer in
+  // each quiz. The song's Play is Step 1's, so Step 1 opens first: a click
+  // that scrolled to it from the words could stop the page on Step 2, which
+  // hides it.
+  await page.locator('#heroPlay').click()
+  await page.locator('[data-word-play="swell"]').click()
+  await openStep(page, '/learn/14', 1)
+  await page.locator(`${TOY} [data-song-play="song"]`).click()
+  await page.locator(`${TOY} [data-song-play="song"]`).click()
+  await page.locator('#rc-qs .q .opt').first().click()
+  await page.locator('#qs .q .opt').first().click()
+  for (const id of ['#words', '#lesson', '#sing', '#wrap', '#explorer'])
+    await page.locator(id).scrollIntoViewIfNeeded()
+
+  // Assert
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { micAsks: number }).micAsks,
+    ),
+  ).toBe(0)
+  expect(away).toEqual([])
+  const keys = await page.evaluate(() => Object.keys(localStorage).sort())
+  expect(
+    keys.filter(
+      (k) =>
+        !/^fyp-l14-(seed|quiz-v1|recall-seed|recall-v1|warmup)$/.test(k) &&
+        !/^fyp-(voice|done|pos|sound|motion|tour|tour-seen)$/.test(k),
+    ),
+  ).toEqual([])
+  expect(
+    await page.evaluate(async () =>
+      'indexedDB' in window && 'databases' in indexedDB
+        ? (await indexedDB.databases()).map((d) => d.name)
+        : [],
+    ),
+  ).toEqual([])
 })
