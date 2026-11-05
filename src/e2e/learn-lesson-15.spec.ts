@@ -287,3 +287,124 @@ test.describe('the staff toy on a phone', () => {
       expect(w).toBeGreaterThanOrEqual(42.5)
   })
 })
+
+test.describe('free play on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('picks the grand staff, shows its Lower keys and Higher keys, and says each place Step up plays', async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto('/learn/15')
+    await page.locator('#gateBtn').click()
+    const free = page.locator('#freePlay')
+    await free.scrollIntoViewIfNeeded()
+    await expect(free.getByRole('button', { name: 'Lower keys' })).toBeHidden()
+
+    // Act
+    await free.getByRole('button', { name: 'Grand staff' }).click()
+    await free.getByRole('button', { name: 'Step up' }).click()
+
+    // Assert: WEB-SPEC, Toys 1, state 7
+    await expect(free.locator('[data-staff-svg]')).toHaveAttribute(
+      'aria-label',
+      /^Grand staff: /,
+    )
+    await expect(free.getByRole('button', { name: 'Lower keys' })).toBeVisible()
+    await expect(
+      free.getByRole('button', { name: 'Higher keys' }),
+    ).toBeVisible()
+    await expect(free.locator('[data-staff-said]')).toHaveText(
+      'G2, the bottom line of the bass staff',
+    )
+    const keys = await free
+      .locator('.st-key.is-white')
+      .evaluateAll((rects) => rects.map((r) => Number(r.getAttribute('width'))))
+    expect(keys.length).toBeGreaterThanOrEqual(7)
+    for (const w of keys.filter((k) => k > 20))
+      expect(w).toBeGreaterThanOrEqual(42.5)
+  })
+})
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`the tease still draws its clef and five noteheads inside its box at ${String(viewport.width)} px, and no rule over its "?" (WEB-SPEC, Toys 8)`, async ({
+    page,
+  }) => {
+    // Arrange
+    await page.setViewportSize(viewport)
+    await page.goto('/learn/15')
+    const still = page.locator('.l15-tease svg[data-tease-staff]')
+    await still.scrollIntoViewIfNeeded()
+
+    // Act: an svg hides what it draws past its box, but the drawing's own
+    // box still reaches past it, so a clipped clef shows here
+    const inside = await still.evaluate((svg) => {
+      const box = svg.getBoundingClientRect()
+      const within = (el: Element): boolean => {
+        const r = el.getBoundingClientRect()
+        return (
+          r.left >= box.left - 0.5 &&
+          r.right <= box.right + 0.5 &&
+          r.top >= box.top - 0.5 &&
+          r.bottom <= box.bottom + 0.5
+        )
+      }
+      return {
+        clef: Array.from(svg.querySelectorAll('.st-clef'), within),
+        heads: Array.from(svg.querySelectorAll('.st-head'), within),
+      }
+    })
+    const rule = await page
+      .locator('.l15-tease-q')
+      .evaluate((q) => getComputedStyle(q).borderTopStyle)
+
+    // Assert
+    expect(inside).toEqual({ clef: [true], heads: Array(5).fill(true) })
+    expect(rule).toBe('none')
+  })
+}
+
+test('one sound at a time: the recall pair stops the climb, the climb stops the pair, and a word stops either (WEB-SPEC, Tests 15)', async ({
+  page,
+}) => {
+  // Arrange: sound on, every play still on the page where it was drawn
+  await page.goto('/learn/15')
+  await page.locator('#gateBtn').click()
+  await expect(page.locator('#recall-qs [data-quiz-pair]')).toBeAttached()
+
+  // Act: each press 150 ms after the one before, by script, so no press
+  // scrolls a play off screen (which stops it after 600 ms on its own)
+  const lit = await page.evaluate(async () => {
+    const CLIMB = '.hero-plays [data-play="climb"]'
+    const PAIR = '#recall-qs [data-quiz-pair]'
+    const WORD = '#words [data-word-play="staff"]'
+    const on = (s: string): boolean =>
+      document.querySelector(s)?.classList.contains('is-on') ?? false
+    const press = async (s: string) => {
+      document.querySelector<HTMLElement>(s)?.click()
+      await new Promise((r) => window.setTimeout(r, 150))
+      return { climb: on(CLIMB), pair: on(PAIR), word: on(WORD) }
+    }
+    return [
+      await press(CLIMB),
+      await press(PAIR),
+      await press(CLIMB),
+      await press(WORD),
+      await press(PAIR),
+      await press(WORD),
+    ]
+  })
+
+  // Assert: only the newest is lit, every time
+  expect(lit).toEqual([
+    { climb: true, pair: false, word: false },
+    { climb: false, pair: true, word: false },
+    { climb: true, pair: false, word: false },
+    { climb: false, pair: false, word: true },
+    { climb: false, pair: true, word: false },
+    { climb: false, pair: false, word: true },
+  ])
+})
