@@ -77,6 +77,7 @@ export function listenDouble(
       takes.opening?.()
       return Promise.resolve({
         holding: true,
+        media: {} as MediaStream,
         latest: () => null,
         release: () => {
           takes.released += 1

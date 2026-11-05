@@ -24,6 +24,7 @@ function fakeListener(): Listener {
     get holding() {
       return holding
     },
+    media: {} as MediaStream,
     latest: () => null,
     release: () => {
       holding = false
