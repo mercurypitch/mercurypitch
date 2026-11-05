@@ -17,48 +17,17 @@
 
 import { MAJOR_DEGREES, majorScale } from '@/features/lessons/kit/major-scale'
 import type { Spelled } from '@/features/lessons/kit/notes'
+import type { MelodyNote } from '@/features/lessons/kit/twinkle'
+import { VERSE } from '@/features/lessons/kit/twinkle'
 
-/** One note of a tune: its scale degree (0 do to 5 la), its length in crotchets, and its syllable. */
-export interface MelodyNote {
-  /** An index into the major scale, 0 do, 1 re, 2 mi, 3 fa, 4 so, 5 la. */
-  readonly degree: number
-  /** 1 a crotchet, 2 a minim. */
-  readonly beats: number
-  /** The sung syllable, as a screen reader says it ("twin", "kle"). */
-  readonly syllable: string
-}
-
-const n = (degree: number, syllable: string, beats = 1): MelodyNote => ({
-  degree,
-  beats,
-  syllable,
-})
+export type { MelodyNote }
 
 /**
  * "Twinkle, Twinkle"'s first two lines (FACTS 20): do do so so la la so,
  * fa fa mi mi re re do, on "Twin-kle, twin-kle, lit-tle star, How I won-der
- * what you are!".
+ * what you are!", as the kit keeps the verse (kit/twinkle.ts).
  */
-export const TWINKLE: readonly (readonly MelodyNote[])[] = [
-  [
-    n(0, 'twin'),
-    n(0, 'kle'),
-    n(4, 'twin'),
-    n(4, 'kle'),
-    n(5, 'lit'),
-    n(5, 'tle'),
-    n(4, 'star', 2),
-  ],
-  [
-    n(3, 'How'),
-    n(3, 'I'),
-    n(2, 'won'),
-    n(2, 'der'),
-    n(1, 'what'),
-    n(1, 'you'),
-    n(0, 'are', 2),
-  ],
-]
+export const TWINKLE: readonly (readonly MelodyNote[])[] = VERSE.slice(0, 2)
 
 /** The do-re-mi name of each degree the tune uses (Lesson 4's names). */
 export const SOLFEGE: readonly string[] = ['do', 're', 'mi', 'fa', 'so', 'la']
