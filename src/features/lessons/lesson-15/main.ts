@@ -31,9 +31,9 @@ import '@/features/lessons/kit/lesson-stage.css'
 // stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// the voice lessons' sheet comes in by lesson-15.css's @import while this
-// module loads none of the kit parts it sits beside in the other lessons'
-// chunks, so those chunks keep their stylesheets in their order
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-15.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -48,8 +48,10 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -70,6 +72,10 @@ deck.start()
 initQuizzes(deck)
 // four words, each figure a small staff
 initWords()
+
+// Sing it on the kit's flow, and the Wrap's card in the version it picks
+initSing()
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(15)
