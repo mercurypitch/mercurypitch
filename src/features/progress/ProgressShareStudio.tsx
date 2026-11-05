@@ -41,6 +41,14 @@ export interface ProgressShareStudioProps {
   initialHandle?: string
   /** Overrides the Pressing plate without exposing technical sliders in UI. */
   appearance?: ProgressShareAppearance
+  /**
+   * `dialog`, the web's, is the studio's own overlay: portalled, with its
+   * focus trap and the page's scroll held. `inline` draws it in place, for
+   * a host that is that dialog already and brings its own backdrop, trap
+   * and scroll: the native app's sheet (apps/mercurypitch/src/shell/
+   * progress).
+   */
+  presentation?: 'dialog' | 'inline'
   onClose: () => void
   onOutcome?: (status: ProgressShareExportStatus) => void
 }
@@ -111,9 +119,10 @@ export function ProgressShareStudio(
   const close = (): void => {
     if (!exporting()) props.onClose()
   }
+  const inline = (): boolean => props.presentation === 'inline'
 
   useFocusTrap(() => dialogRef, {
-    isOpen: () => props.open,
+    isOpen: () => props.open && !inline(),
     onClose: close,
     initialFocus: () => dialogRef,
   })
@@ -139,7 +148,7 @@ export function ProgressShareStudio(
   })
 
   createEffect(() => {
-    if (!props.open) return
+    if (!props.open || inline()) return
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     onCleanup(() => {
@@ -241,255 +250,268 @@ export function ProgressShareStudio(
       .filter((fact) => clean(fact.value) !== '' && clean(fact.label) !== '')
       .slice(0, 3)
 
-  return (
-    <Show when={props.open}>
-      <Portal>
-        <div
-          class={`${styles.overlay} mp-dark-stage`}
-          data-testid="progress-share-overlay"
-          onClick={close}
-        >
-          <div
-            ref={dialogRef}
-            class={styles.dialog}
-            data-testid="progress-share-studio"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            aria-describedby={descriptionId}
-            aria-busy={exporting() ? true : undefined}
-            tabindex="-1"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div class={styles.header}>
-              <div class={styles.titleLockup}>
-                <span class={styles.brandMark} aria-hidden="true">
-                  MP
-                </span>
-                <div>
-                  <p>Progress share studio</p>
-                  <h2 id={titleId}>Give one moment a lasting shape.</h2>
-                </div>
-              </div>
-              <button
-                type="button"
-                class={styles.close}
-                aria-label="Close share studio"
-                disabled={exporting()}
-                onClick={close}
-              >
-                <X />
-              </button>
-            </div>
-
-            <p id={descriptionId} class={styles.description}>
-              Your real practice evidence is pressed into a MercuryPitch card.
-              Review every included detail before anything leaves this device.
-            </p>
-
-            <div class={styles.workspace}>
-              <section class={styles.previewSection} aria-label="Card preview">
-                <div
-                  classList={{
-                    [styles.previewFrame]: true,
-                    [styles.previewFeed]: format() === 'feed',
-                    [styles.previewStory]: format() === 'story',
-                    [styles.previewSquare]: format() === 'square',
-                  }}
-                >
-                  <div
-                    ref={previewMountRef}
-                    class={styles.canvasMount}
-                    data-testid="progress-share-preview"
-                  />
-                  <Show when={previewStatus() !== 'ready'}>
-                    <div class={styles.previewState}>
-                      <Show
-                        when={previewStatus() === 'failed'}
-                        fallback={
-                          <>
-                            <span class={styles.developingLine} />
-                            <p role="status" aria-live="polite">
-                              Developing your Pressing…
-                            </p>
-                          </>
-                        }
-                      >
-                        <p role="alert">{PREVIEW_FAILURE}</p>
-                        <button type="button" onClick={retryPreview}>
-                          Try preview again
-                        </button>
-                      </Show>
-                    </div>
-                  </Show>
-                </div>
-                <p class={styles.previewCaption}>
-                  Exact PNG preview · {PROGRESS_SHARE_SIZES[format()].width} ×{' '}
-                  {PROGRESS_SHARE_SIZES[format()].height}
-                </p>
-              </section>
-
-              <div class={styles.controls}>
-                <fieldset class={styles.formatFieldset} disabled={exporting()}>
-                  <legend>Choose a frame</legend>
-                  <div class={styles.formatOptions}>
-                    <For each={PROGRESS_SHARE_STUDIO_FORMATS}>
-                      {(option) => (
-                        <label
-                          classList={{
-                            [styles.formatOption]: true,
-                            [styles.formatSelected]: format() === option.id,
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name={formatName}
-                            value={option.id}
-                            checked={format() === option.id}
-                            onChange={() => setFormat(option.id)}
-                          />
-                          <span>
-                            <strong>{option.label}</strong>
-                            <small>{option.ratio}</small>
-                          </span>
-                          <em>{option.use}</em>
-                        </label>
-                      )}
-                    </For>
-                  </div>
-                </fieldset>
-
-                <section
-                  class={styles.evidence}
-                  aria-labelledby={evidenceTitleId}
-                >
-                  <div class={styles.sectionHeading}>
-                    <div>
-                      <p>Immutable evidence</p>
-                      <h3 id={evidenceTitleId}>What the card includes</h3>
-                    </div>
-                    <span>Review</span>
-                  </div>
-                  <blockquote>{props.moment.claim}</blockquote>
-                  <Show when={clean(props.moment.context) !== ''}>
-                    <p class={styles.context}>{props.moment.context}</p>
-                  </Show>
-                  <dl class={styles.factList}>
-                    <For each={visibleFacts()}>
-                      {(fact) => (
-                        <div>
-                          <dt>{fact.label}</dt>
-                          <dd>{fact.value}</dd>
-                        </div>
-                      )}
-                    </For>
-                    <Show when={clean(props.moment.period) !== ''}>
-                      <div>
-                        <dt>Period</dt>
-                        <dd>{props.moment.period}</dd>
-                      </div>
-                    </Show>
-                    <Show when={clean(props.moment.trace?.description) !== ''}>
-                      <div class={styles.traceFact}>
-                        <dt>Voice trace</dt>
-                        <dd>{props.moment.trace?.description}</dd>
-                      </div>
-                    </Show>
-                  </dl>
-                </section>
-
-                <section class={styles.identity} aria-labelledby={handleId}>
-                  <label class={styles.identityToggle}>
-                    <span>
-                      <strong id={handleId}>Add my handle</strong>
-                      <small>Off by default. Your name stays private.</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={includeIdentity()}
-                      disabled={exporting()}
-                      onChange={(event) =>
-                        setIncludeIdentity(event.currentTarget.checked)
-                      }
-                    />
-                    <i aria-hidden="true" />
-                  </label>
-                  <Show when={includeIdentity()}>
-                    <label class={styles.handleField} for={`${handleId}-input`}>
-                      Handle shown on card
-                      <input
-                        id={`${handleId}-input`}
-                        type="text"
-                        value={handle()}
-                        maxLength={40}
-                        autocomplete="off"
-                        autocapitalize="none"
-                        spellcheck={false}
-                        placeholder="@yourhandle"
-                        disabled={exporting()}
-                        onInput={(event) =>
-                          setHandle(event.currentTarget.value)
-                        }
-                      />
-                    </label>
-                  </Show>
-                </section>
-              </div>
-            </div>
-
-            <div class={styles.footer}>
-              <div class={styles.delivery}>
-                <Show
-                  when={deliveryStatus()}
-                  fallback={
-                    <p>
-                      Opens your share sheet when available; otherwise saves a
-                      PNG.
-                    </p>
-                  }
-                >
-                  {(status) => (
-                    <p
-                      classList={{ [styles.deliveryError]: status().isError }}
-                      role={status().role}
-                      aria-live={status().live}
-                      aria-atomic="true"
-                    >
-                      {status().message}
-                    </p>
-                  )}
-                </Show>
-                <Show when={exporting()}>
-                  <p role="status" aria-live="polite" aria-atomic="true">
-                    Generating the full-resolution card…
-                  </p>
-                </Show>
-              </div>
-              <div class={styles.actions}>
-                <button
-                  type="button"
-                  class={styles.cancel}
-                  disabled={exporting()}
-                  onClick={close}
-                >
-                  Not now
-                </button>
-                <button
-                  type="button"
-                  class={styles.export}
-                  data-testid="progress-share-export"
-                  disabled={previewStatus() !== 'ready' || exporting()}
-                  onClick={beginExport}
-                >
-                  <Share />
-                  {exportLabel()}
-                </button>
-              </div>
-            </div>
+  // The same studio either way. As a dialog it is the overlay's one child,
+  // the trap's root and a Tab stop of its own; inline it is a labelled group
+  // inside the host's dialog, which owns all three.
+  const studio = (): JSX.Element => (
+    <div
+      ref={dialogRef}
+      class={styles.dialog}
+      data-testid="progress-share-studio"
+      role={inline() ? 'group' : 'dialog'}
+      aria-modal={inline() ? undefined : 'true'}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      aria-busy={exporting() ? true : undefined}
+      tabindex={inline() ? undefined : '-1'}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div class={styles.header}>
+        <div class={styles.titleLockup}>
+          <span class={styles.brandMark} aria-hidden="true">
+            MP
+          </span>
+          <div>
+            <p>Progress share studio</p>
+            <h2 id={titleId}>Give one moment a lasting shape.</h2>
           </div>
         </div>
-      </Portal>
+        <button
+          type="button"
+          class={styles.close}
+          aria-label="Close share studio"
+          disabled={exporting()}
+          onClick={close}
+        >
+          <X />
+        </button>
+      </div>
+
+      <p id={descriptionId} class={styles.description}>
+        Your real practice evidence is pressed into a MercuryPitch card. Review
+        every included detail before anything leaves this device.
+      </p>
+
+      <div class={styles.workspace}>
+        <section class={styles.previewSection} aria-label="Card preview">
+          <div
+            classList={{
+              [styles.previewFrame]: true,
+              [styles.previewFeed]: format() === 'feed',
+              [styles.previewStory]: format() === 'story',
+              [styles.previewSquare]: format() === 'square',
+            }}
+          >
+            <div
+              ref={previewMountRef}
+              class={styles.canvasMount}
+              data-testid="progress-share-preview"
+            />
+            <Show when={previewStatus() !== 'ready'}>
+              <div class={styles.previewState}>
+                <Show
+                  when={previewStatus() === 'failed'}
+                  fallback={
+                    <>
+                      <span class={styles.developingLine} />
+                      <p role="status" aria-live="polite">
+                        Developing your Pressing…
+                      </p>
+                    </>
+                  }
+                >
+                  <p role="alert">{PREVIEW_FAILURE}</p>
+                  <button type="button" onClick={retryPreview}>
+                    Try preview again
+                  </button>
+                </Show>
+              </div>
+            </Show>
+          </div>
+          <p class={styles.previewCaption}>
+            Exact PNG preview · {PROGRESS_SHARE_SIZES[format()].width} ×{' '}
+            {PROGRESS_SHARE_SIZES[format()].height}
+          </p>
+        </section>
+
+        <div class={styles.controls}>
+          <fieldset class={styles.formatFieldset} disabled={exporting()}>
+            <legend>Choose a frame</legend>
+            <div class={styles.formatOptions}>
+              <For each={PROGRESS_SHARE_STUDIO_FORMATS}>
+                {(option) => (
+                  <label
+                    classList={{
+                      [styles.formatOption]: true,
+                      [styles.formatSelected]: format() === option.id,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name={formatName}
+                      value={option.id}
+                      checked={format() === option.id}
+                      onChange={() => setFormat(option.id)}
+                    />
+                    <span>
+                      <strong>{option.label}</strong>
+                      <small>{option.ratio}</small>
+                    </span>
+                    <em>{option.use}</em>
+                  </label>
+                )}
+              </For>
+            </div>
+          </fieldset>
+
+          <section class={styles.evidence} aria-labelledby={evidenceTitleId}>
+            <div class={styles.sectionHeading}>
+              <div>
+                <p>Immutable evidence</p>
+                <h3 id={evidenceTitleId}>What the card includes</h3>
+              </div>
+              <span>Review</span>
+            </div>
+            <blockquote>{props.moment.claim}</blockquote>
+            <Show when={clean(props.moment.context) !== ''}>
+              <p class={styles.context}>{props.moment.context}</p>
+            </Show>
+            <dl class={styles.factList}>
+              <For each={visibleFacts()}>
+                {(fact) => (
+                  <div>
+                    <dt>{fact.label}</dt>
+                    <dd>{fact.value}</dd>
+                  </div>
+                )}
+              </For>
+              <Show when={clean(props.moment.period) !== ''}>
+                <div>
+                  <dt>Period</dt>
+                  <dd>{props.moment.period}</dd>
+                </div>
+              </Show>
+              <Show when={clean(props.moment.trace?.description) !== ''}>
+                <div class={styles.traceFact}>
+                  <dt>Voice trace</dt>
+                  <dd>{props.moment.trace?.description}</dd>
+                </div>
+              </Show>
+            </dl>
+          </section>
+
+          <section class={styles.identity} aria-labelledby={handleId}>
+            <label class={styles.identityToggle}>
+              <span>
+                <strong id={handleId}>Add my handle</strong>
+                <small>Off by default. Your name stays private.</small>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                checked={includeIdentity()}
+                disabled={exporting()}
+                onChange={(event) =>
+                  setIncludeIdentity(event.currentTarget.checked)
+                }
+              />
+              <i aria-hidden="true" />
+            </label>
+            <Show when={includeIdentity()}>
+              <label class={styles.handleField} for={`${handleId}-input`}>
+                Handle shown on card
+                <input
+                  id={`${handleId}-input`}
+                  type="text"
+                  value={handle()}
+                  maxLength={40}
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck={false}
+                  placeholder="@yourhandle"
+                  disabled={exporting()}
+                  onInput={(event) => setHandle(event.currentTarget.value)}
+                />
+              </label>
+            </Show>
+          </section>
+        </div>
+      </div>
+
+      <div class={styles.footer}>
+        <div class={styles.delivery}>
+          <Show
+            when={deliveryStatus()}
+            fallback={
+              <p>
+                Opens your share sheet when available; otherwise saves a PNG.
+              </p>
+            }
+          >
+            {(status) => (
+              <p
+                classList={{ [styles.deliveryError]: status().isError }}
+                role={status().role}
+                aria-live={status().live}
+                aria-atomic="true"
+              >
+                {status().message}
+              </p>
+            )}
+          </Show>
+          <Show when={exporting()}>
+            <p role="status" aria-live="polite" aria-atomic="true">
+              Generating the full-resolution card…
+            </p>
+          </Show>
+        </div>
+        <div class={styles.actions}>
+          <button
+            type="button"
+            class={styles.cancel}
+            disabled={exporting()}
+            onClick={close}
+          >
+            Not now
+          </button>
+          <button
+            type="button"
+            class={styles.export}
+            data-testid="progress-share-export"
+            disabled={previewStatus() !== 'ready' || exporting()}
+            onClick={beginExport}
+          >
+            <Share />
+            {exportLabel()}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <Show when={props.open}>
+      <Show
+        when={inline()}
+        fallback={
+          <Portal>
+            <div
+              class={`${styles.overlay} mp-dark-stage`}
+              data-testid="progress-share-overlay"
+              onClick={close}
+            >
+              {studio()}
+            </div>
+          </Portal>
+        }
+      >
+        <div
+          class={`${styles.inline} mp-dark-stage`}
+          data-testid="progress-share-inline"
+        >
+          {studio()}
+        </div>
+      </Show>
     </Show>
   )
 }

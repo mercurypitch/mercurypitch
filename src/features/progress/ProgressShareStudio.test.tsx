@@ -368,4 +368,42 @@ describe('ProgressShareStudio', () => {
     await waitFor(() => expect(outside).toHaveFocus())
     outside.remove()
   })
+
+  it('draws in place for a host that is the dialog, holding neither the scroll nor the keys', async () => {
+    shareMocks.render.mockResolvedValue(freshCanvas())
+    document.body.style.overflow = 'auto'
+    const onClose = vi.fn()
+    const host = document.createElement('section')
+    document.body.append(host)
+
+    render(
+      () => (
+        <ProgressShareStudio
+          open
+          moment={moment}
+          presentation="inline"
+          onClose={onClose}
+        />
+      ),
+      { container: host },
+    )
+
+    // In the host, not portalled to <body>, and a group inside the host's
+    // dialog rather than a dialog of its own.
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByTestId('progress-share-overlay')).toBeNull()
+    const studio = screen.getByRole('group', {
+      name: 'Give one moment a lasting shape.',
+    })
+    expect(host.contains(studio)).toBe(true)
+    expect(studio).not.toHaveAttribute('aria-modal')
+    expect(document.body.style.overflow).toBe('auto')
+    // The host's trap answers Escape; the studio does not close itself.
+    fireEvent.keyDown(studio, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Close share studio' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    host.remove()
+    document.body.style.overflow = ''
+  })
 })
