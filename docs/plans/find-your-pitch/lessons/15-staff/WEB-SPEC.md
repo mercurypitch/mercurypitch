@@ -771,3 +771,41 @@ production:
 - No faint staff shows behind the page at any width, and no section head carries one (Tests, 16).
 - The app-check sweep at phone and desktop width, with Sing it open in each state and the cold open
   before and after its reveal.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The clef switch and free play's choice of staff are segmented controls, `role="group"` with
+  `aria-pressed` buttons, as the kit's other segmented controls are, not radio groups (Toys 1,
+  item 4).
+- The staff toy's F clef, notehead, sharp and flat are in a module of their own,
+  `kit/staff-glyphs.ts`, with their licence line; `kit/glyphs.ts` keeps the G clef alone (What the
+  kit and the app still need, item 4). A module is one chunk for every page that imports it: in
+  `glyphs.ts` they added about 2 KB of script to every lesson page's first paint and took Lesson 2
+  over its ceiling, and in a module of their own only the pages with a staff toy load them.
+- The sing flow in the kit (`kit/sing-flow.ts`) is a pure state machine whose options are the
+  page's own line after Easy and Workable and that line's key. Move do and the guide's drawing are
+  not options: each page's controller keeps them, since Lesson 12 draws a spiral and this page a
+  staff. Lesson 12's `sing-flow.ts` binds the kit's flow with its own line, and Lesson 12 behaves
+  as before (Toys 5; What the kit and the app still need, item 6).
+- At 390 px the key strip shows 7 white keys, not 8, each kept at 44 px: the figure at that width
+  is narrower than the sum above assumed. Lower keys and Higher keys pan it (Toys 1, item 5).
+- The grand staff is compact, with middle C's one ledger line between the staves, so the whole of
+  it fits the stage at 390 px; a staff space there is about 15 px, not 18 (Toys 1).
+- The stage's figure floor (`--viz-min`) is 260 px on this page: at that floor the steps' staff
+  with its key strip keeps each step's controls on screen at the four short landscape sizes.
+- Free play is the staff toy on a card of its own with one segmented control, Treble · Bass ·
+  Grand staff, in place of every step state. The two single staves tap and step through their
+  places; the grand staff is Step 5's, over the key strip, whose Lower keys and Higher keys show
+  only under it. The pitch-line switch is there too; Step 1's kept letters and Step 3's moving note
+  stay in their steps (Toys 1, item 7).
+- The tour is held until the predict's choice and opens only on a page at its top, by the kit's
+  rule. On a 1440 x 900 desktop the choices sit at the first screen's foot, so the tour opens after
+  the choice. On a phone the predict sits below the first screen, so a first visit scrolls to
+  choose, and the tour is offered on the next lesson page it opens at the top; the lesson menu's
+  "Tour this page" runs it at once (Toys 3).
+- Lesson 2's pair in the recall claims the page's one sound as it starts: a newer sound stops its
+  notes and its chips, and a cut frees its button at once, so a press plays the pair again
+  (`bindQuizPair(host, owner)`, Audio). Lesson 2's own page passes no owner, and its pair plays to
+  its end as before.
