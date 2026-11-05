@@ -126,7 +126,7 @@ export interface StudioRecorderDeps {
   createMonitor(
     context: AudioContext,
     input: AudioNode,
-  ): Pick<StudioInputMonitor, 'set' | 'dispose'>
+  ): Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'>
   /** What the input sounds like through the lane: null is the new lane a take starts. */
   monitorSound(trackId: string | null): StudioMonitorSound
   transport: StudioRecorderTransport

@@ -29,6 +29,20 @@
 // keeps its source and microphone open until then (studio-recorder.ts
 // `closeArmed`), so a disarm while the singer is heard is a release, not a
 // cut.
+//
+// A path rises only once the input has settled. A new source plays silence
+// until the microphone's samples reach it, 10 to 202 ms after the press in
+// headless Chromium, and they begin wherever the waveform is. The browser's
+// buffer then runs dry for two quanta about 14 ms in, and in 3 of 13
+// re-arms again 173 to 181 ms after the press, the input stepping on either
+// side of each gap. A path already rising carried those steps to the singer
+// as clicks, up to 17.6 times the tone's own steepest step. So the arm says
+// when its worklet first meters a sound (studio-recorder.ts
+// `captureEvents`), and the path rises from silence a quarter of a second
+// after that. An input silent for longer, a muted microphone, comes up after
+// a second anyway, so the monitor never stays shut. The wait holds back the
+// first rise only: once up, the input plays straight through, no later than
+// before.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -41,6 +55,10 @@ const RELEASE_SLACK_SECONDS = 0.06
 const CROSS_TIME_CONSTANT = RELEASE_SECONDS / 5
 /** How fast a volume or pan the singer sets is reached. */
 const MOVE_SECONDS = 0.05
+/** How long the input sounds before a path rises on it: past the gaps a new source's first moments hold. */
+const SETTLE_MS = 250
+/** How long a path waits for the input's first sound before it rises anyway: five times the slowest arrival measured. */
+const ARRIVAL_WAIT_MS = 1000
 
 export interface StudioMonitorSound {
   /** The singer turned monitoring on. */
@@ -115,6 +133,21 @@ export function createStudioInputMonitor(
   let closed = false
   /** Told once the input is no longer heard (dispose). */
   const silent: (() => void)[] = []
+  /** The input has settled, or the wait for its first sound is over: a heard path may rise. */
+  let settled = false
+  /** Ends the settling the input's first sound began. */
+  let stopSettling: (() => void) | null = null
+  const stopWaiting = schedule(settle, ARRIVAL_WAIT_MS)
+
+  function settle(): void {
+    if (settled) return
+    settled = true
+    stopWaiting()
+    stopSettling?.()
+    stopSettling = null
+    if (current !== null)
+      glide(context, current.level.gain, 1, CROSS_TIME_CONSTANT)
+  }
 
   function openInlet(): MonitorInlet {
     const fold = channelGain(context, 1)
@@ -195,7 +228,7 @@ export function createStudioInputMonitor(
     )
   }
 
-  /** The lane's path, brought back from its release or built afresh, rising on the crossing's time constant. */
+  /** The lane's path, brought back from its release or built afresh, rising on the crossing's time constant once the input has settled. */
   function bringIn(sound: StudioMonitorSound): MonitorPath {
     let path = [...releasing].find((item) => item.laneId === sound.laneId)
     if (path === undefined) path = buildPath(sound)
@@ -204,7 +237,7 @@ export function createStudioInputMonitor(
       path.cancelRemoval = null
       releasing.delete(path)
     }
-    glide(context, path.level.gain, 1, CROSS_TIME_CONSTANT)
+    if (settled) glide(context, path.level.gain, 1, CROSS_TIME_CONSTANT)
     return path
   }
 
@@ -226,6 +259,16 @@ export function createStudioInputMonitor(
         glide(context, gain.gain, sound.gains[side], MOVE_SECONDS / 5)
     },
     /**
+     * The input's first samples are here: the arm's worklet metered a sound.
+     * A heard path rises from silence once they have settled, and every one
+     * after it at once; the wait for a silent input is over.
+     */
+    inputArrived(): void {
+      if (closed || settled || stopSettling !== null) return
+      stopWaiting()
+      stopSettling = schedule(settle, SETTLE_MS)
+    },
+    /**
      * Release every path for good. `whenSilent` runs once the last one has
      * come apart and the input feeds nothing here, at once when none sounds:
      * until then the input must stay open, or the release is cut.
@@ -233,6 +276,8 @@ export function createStudioInputMonitor(
     dispose(whenSilent?: () => void): void {
       if (!closed) {
         closed = true
+        stopWaiting()
+        stopSettling?.()
         if (current !== null) release(current)
         current = null
       }

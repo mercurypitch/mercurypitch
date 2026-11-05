@@ -16,7 +16,9 @@
 // lane is disarmed, when the microphone or the clock goes away, or when the
 // Studio closes, and the mic icon goes off with it. A monitor the singer
 // still hears glides out first, on the input it hears: the source and the
-// microphone close once it is silent, a quarter of a second later.
+// microphone close once it is silent, a quarter of a second later. On an
+// arm, it rises a quarter of a second after the first sound the worklet
+// meters (input-monitor.ts).
 //
 // Nothing here knows Solid or the Studio's storage: the hook
 // (useStudioRecorder.ts) supplies the clock, the microphone, the transport
@@ -93,7 +95,7 @@ interface Armed {
   readonly stream: MediaStream
   readonly source: AudioNode
   readonly capture: StudioCaptureHandle
-  readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
+  readonly monitor: Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'>
   readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
 }
 
@@ -232,8 +234,8 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
   ): Armed {
     const stream = mic.stream
     const source = deps.createSource(context, stream)
-    const capture = deps.openCapture(context, source, captureEvents())
     const monitor = deps.createMonitor(context, source)
+    const capture = deps.openCapture(context, source, captureEvents(monitor))
     monitor.set(deps.monitorSound(trackId))
     return {
       context,
@@ -281,9 +283,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   // ── The worklet's messages ───────────────────────────────────
 
-  function captureEvents(): StudioCaptureEvents {
+  /** The worklet listens to the same source as `monitor`, so its first sound is the monitor's too. */
+  function captureEvents(monitor: Armed['monitor']): StudioCaptureEvents {
     return {
       level: (peak) => {
+        if (peak > 0) monitor.inputArrived()
         if (view.phase !== 'idle') set({ level: peak })
       },
       started: (frame) => onStarted(frame),
@@ -573,7 +577,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     armed.capture.dispose()
     armed = {
       ...armed,
-      capture: deps.openCapture(armed.context, armed.source, captureEvents()),
+      capture: deps.openCapture(
+        armed.context,
+        armed.source,
+        captureEvents(armed.monitor),
+      ),
     }
   }
 
