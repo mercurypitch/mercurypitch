@@ -11,7 +11,7 @@ import type { DeckNow, MenuModel, MenuRow } from './lesson-menu'
 import { menuMarkup, menuModel } from './lesson-menu'
 import { defaultPageState, seasonFor } from './publish'
 import { LESSONS } from './season'
-import { lessonWithNoPage } from './season.test-fixtures'
+import { withNoPage } from './season.test-fixtures'
 import { LESSONS_2, SEASON_2 } from './season-2'
 import type { StepDeck } from './step-deck'
 import { TOUR_KEY, TOUR_VERSION } from './tour-gate'
@@ -29,51 +29,51 @@ const row = (m: MenuModel, n: number): MenuRow | undefined =>
   rows(m).find((r) => r.n === n)
 
 describe('menuModel', () => {
-  it('gives each lesson its state, its right-hand text and where its row goes', () => {
-    // Arrange: on Lesson 2's page, Lesson 1 done, Lesson 4 left at step 3
-    const kept = { 4: { step: 3, of: 5 } }
-    const later = lessonWithNoPage().n
+  it('gives each lesson its state, its right-hand text and where its row goes', () =>
+    // Arrange: on Lesson 2's page, Lesson 1 done, Lesson 4 left at step 3,
+    // and a lesson not written yet
+    withNoPage(({ n: later }) => {
+      const kept = { 4: { step: 3, of: 5 } }
 
-    // Act
-    const m = menuModel(LESSONS, [1], kept, 2, DECK)
+      // Act
+      const m = menuModel(LESSONS, [1], kept, 2, DECK)
 
-    // Assert
-    expect(
-      [1, 2, 3, 4, 5, later].map((n) => {
-        const r = row(m, n)
-        return [n, r?.state, r?.meta, r?.href]
-      }),
-    ).toEqual([
-      [1, 'done', 'Done · 8 min', '/learn/01'],
-      [2, 'here', 'Step 3 of 6', '#top'],
-      [3, 'next', 'Up next', '/learn/03'],
-      [4, 'progress', 'Step 3 of 5', '/learn/04#step-3'],
-      [5, 'ready', 'Ready · 18 min', '/learn/05'],
-      [later, 'later', 'Coming later', null],
-    ])
-  })
+      // Assert
+      expect(
+        [1, 2, 3, 4, 5, later].map((n) => {
+          const r = row(m, n)
+          return [n, r?.state, r?.meta, r?.href]
+        }),
+      ).toEqual([
+        [1, 'done', 'Done · 8 min', '/learn/01'],
+        [2, 'here', 'Step 3 of 6', '#top'],
+        [3, 'next', 'Up next', '/learn/03'],
+        [4, 'progress', 'Step 3 of 5', '/learn/04#step-3'],
+        [5, 'ready', 'Ready · 18 min', '/learn/05'],
+        [later, 'later', 'Coming later', null],
+      ])
+    }))
 
-  it('says each row as a sentence, so a lesson coming later is never a dead link', () => {
-    // Arrange
-    const later = lessonWithNoPage()
+  it('says each row as a sentence, so a lesson coming later is never a dead link', () =>
+    // Arrange: a lesson not written yet
+    withNoPage((later) => {
+      // Act
+      const m = menuModel(LESSONS, [1], {}, 2, DECK)
 
-    // Act
-    const m = menuModel(LESSONS, [1], {}, 2, DECK)
-
-    // Assert
-    expect([1, 2, 3, later.n].map((n) => row(m, n)?.label)).toEqual([
-      'Lesson 1, What is a note?, done, 8 minutes',
-      'Lesson 2, Twelve notes, step 3 of 6',
-      'Lesson 3, Match a note, up next',
-      `Lesson ${later.n}, ${later.title}, coming later`,
-    ])
-    const hrefs = rows(m)
-      .filter((r) => r.state === 'later')
-      .map((r) => r.href)
-    expect(hrefs).toEqual(
-      LESSONS.filter((L) => L.n > 0 && L.page === undefined).map(() => null),
-    )
-  })
+      // Assert
+      expect([1, 2, 3, later.n].map((n) => row(m, n)?.label)).toEqual([
+        'Lesson 1, What is a note?, done, 8 minutes',
+        'Lesson 2, Twelve notes, step 3 of 6',
+        'Lesson 3, Match a note, up next',
+        `Lesson ${later.n}, ${later.title}, coming later`,
+      ])
+      const hrefs = rows(m)
+        .filter((r) => r.state === 'later')
+        .map((r) => r.href)
+      expect(hrefs).toEqual(
+        LESSONS.filter((L) => L.n > 0 && L.page === undefined).map(() => null),
+      )
+    }))
 
   it('recommends as up next the first lesson ready whose prerequisites are all done', () => {
     // Act: on Lesson 1's page, before and after Lesson 1 is done

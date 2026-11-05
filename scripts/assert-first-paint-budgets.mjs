@@ -105,7 +105,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/02.html': 168,
+  // Raised to 169 for Lesson 14's page shell: 171,657 bytes on main before
+  // it, 172,219 with it, against 172,032 at 168. 500 of the 562 are on every
+  // lesson page: the kit's noise, which now hands back a voice a page can
+  // stop like any other (kit/sound.ts), and Lesson 14's season entry, with
+  // its page and minutes, and its drafts line. The other 62 are the slide
+  // guide's breath mark, drawn now by kit/breath-mark.ts, which every
+  // figure with a breath shares.
+  'learn/02.html': 169,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
   // every mode like the rest: the site worker decides where it is live
@@ -313,6 +320,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // pressed, as on Lessons 3, 5 and 9, so the page stays this light only
   // while that boundary holds.
   'learn/13.html': 160,
+  // Lesson 14, "Phrasing: sing a whole song", a draft too, built in every
+  // mode as Lesson 3 is. Its page shell, the kit's deck, switches,
+  // masthead, the season's close, explorer and Merc and Tavi, measured
+  // 77,595 bytes in build:e2e. The ceiling is set for the page it becomes,
+  // a quarter over its measure once whole; until then it holds the shell
+  // and each toy as it joins.
+  'learn/14.html': 190,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -427,6 +441,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // parts), its own, and the shared Inter and Outfit @font-face rules; a
   // quarter over.
   'learn/13.html': 107,
+  // Lesson 14 (a draft, as above). Its page shell measured 87,639 bytes in
+  // build:e2e: the kit's sheets (with the voice lessons', inlined into its
+  // own by @import, and the shared parts), its own, and the shared Inter
+  // and Outfit @font-face rules; a quarter over, about.
+  'learn/14.html': 107,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

@@ -31,7 +31,7 @@ page in four more steps, with an X and a Skip for people who know their way arou
 
 One list serves every lesson. A step whose targets are all missing or hidden on a page is left out
 there, and the count follows ("1 of 4"). Every target of a step that shows is lit together. All
-thirteen pages show all five steps, at 390 px and at 1440 px.
+fourteen pages show all five steps, at 390 px and at 1440 px.
 
 | #   | Lights                                                                                                             | Title              | Words                                                                                                                                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -232,7 +232,7 @@ left, 780 bytes.
   own scroll to step 3 is remembered; Tab stays in, Escape closes and focus returns to the menu
   after a replay; the question mark plays it from step 1 on a return visit, at 390x844 and
   1440x900, as tall as the menu button, and takes the focus back; a deep link skips it and the next
-  page offers it; all thirteen pages offer five steps, and Lessons 10 to 13 light their targets at
+  page offers it; all fourteen pages offer five steps, and Lessons 10 to 14 light their targets at
   390x844 and 1440x900; on Lesson 1's first visit the wheel and the keys leave the page at the top
   with no scrollbar, and the card comes with nothing moving, before the cap, as the hold lifts;
   Lesson 3 never holds; under reduced motion nothing glides.

@@ -120,6 +120,11 @@ for (const viewport of [
       await expect(page.locator('#wrap a.next-card .eyebrow')).toContainText(
         'Next lesson 14',
       )
+      // and leads to its page, now that Lesson 14 has one
+      await expect(page.locator('#wrap a.next-card')).toHaveAttribute(
+        'href',
+        '/learn/14',
+      )
       expect(errors).toEqual([])
     })
 

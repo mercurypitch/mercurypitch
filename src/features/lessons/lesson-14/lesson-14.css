@@ -1,0 +1,240 @@
+/* ============================================================
+   Lesson 14 — Phrasing: sing a whole song: the page's own figures and rows
+   ============================================================
+   Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice). The voice lessons' sheet comes in by the
+   @import below, which the build inlines, and not as main.ts's import: it
+   shares a chunk with the kit's comfort check and voice choice, which this
+   page does not load until Sing it is wired. Imported here alone, it would
+   leave that chunk for a sheet of its own, which Lessons 3 and 5 to 10 link
+   after their own sheet, so its rules would win over theirs
+   (docs/agent/MISTAKES.md, "Take the lessons' base stylesheet into another
+   page by @import"). Once Sing it loads those modules, the import moves
+   back to main.ts.
+
+   Here: the hero's song line under Merc and Tavi, across the stage's whole
+   width, with the two plays and the gloss under it; the song line's floor
+   on the stage and its rows of controls, Step 1's six phrases in two rows
+   of three (WEB-SPEC, Toys 1, Layout and targets); Sing it's chart and the
+   takes' playback; and the closing card's still. The song line's colours
+   are the canvas's (kit/band-chart-song.ts): Merc's bands amber, the
+   learner's line violet. */
+@import '../kit/lesson-voice.css';
+
+/* ---------------------------------------------------------------- hero: Merc and Tavi, the song line under them */
+/* four lesson chips wrap onto rows of their own: 16 px between the rows
+   keeps each chip's 44 px tap box whole (lesson-base.css,
+   `.chip-link::after`), as Lessons 5 and 9 set it */
+.l14-hero .meta {
+  row-gap: 16px;
+}
+.l14-duo {
+  --merc: clamp(110px, 10vw, 150px);
+  height: calc(var(--merc) * 1.02);
+}
+/* the compact song line: a phrase of seven notes and its words needs the
+   stage's width, so it stands under Merc and Tavi, not between them */
+.hero-song {
+  height: clamp(168px, 14vw, 200px);
+  margin: 4px 0 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l14-hero .stage-shot {
+  padding-bottom: 16px;
+}
+/* the two plays sit under the stage, outside the predict card */
+.l14-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+.stage-gloss {
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media (max-width: 1080px) {
+  .l14-duo {
+    --merc: clamp(110px, 18vw, 160px);
+  }
+  /* Play take 1 sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width) */
+  .l14-hero .hero-plays,
+  .l14-hero .stage-gloss {
+    order: 4;
+  }
+}
+/* on a phone Merc and Tavi stand smaller over the song line */
+@media (max-width: 560px) {
+  .l14-duo {
+    --merc: min(26vw, 100px);
+    margin-top: -10px;
+  }
+  .hero-song {
+    height: 168px;
+  }
+}
+
+/* ---------------------------------------------------------------- the song line's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* The kit's figure heights, given way to the controls no lower than this:
+   lower, the words strip, the chord strip and the plot crowd one another
+   (WEB-SPEC, Toys 1, Heights) */
+.song-viz {
+  --viz-min: 210px;
+}
+.song-viz canvas {
+  position: absolute;
+  inset: 0;
+}
+.song-caption,
+.song-status {
+  margin: 8px 0 0;
+  min-height: 1.4em;
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.song-caption {
+  font: 600 var(--fs-16) / 1.4 var(--f-display);
+  color: var(--ink);
+}
+.song-caption:empty {
+  display: none;
+}
+/* each step's controls one row where they fit, wrapping on a phone: every
+   target 44 px, 10 px apart */
+.song-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.song-row[hidden],
+.phrase-grid[hidden] {
+  display: none;
+}
+.song-toy .btn {
+  min-width: 0;
+  min-height: 44px;
+  white-space: normal;
+  line-height: 1.2;
+}
+.song-row .btn {
+  flex: 1 1 140px;
+  justify-content: center;
+}
+/* Step 5's scrub bar, the kit's range (lesson-stage.css), on its own row */
+.song-row .range {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* Step 1's six phrases: two rows of three, 8 px apart, 44 px tall */
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.phrase-grid .btn {
+  justify-content: center;
+}
+/* the phrase that is playing, or was last played, is marked by more than colour */
+.phrase-grid .btn[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+}
+@media (forced-colors: active) {
+  .phrase-grid .btn[aria-current='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l14-sing .sing-card .turn {
+  margin: 14px 0 10px;
+}
+.l14-sing .move-do {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+.l14-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l14-sing .sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l14-sing .cant-record {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+}
+/* the take's chart: Merc's seven bands, its words, the learner's line */
+.l14-sing .sing-chart {
+  height: 260px;
+}
+.l14-sing .take-line {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+}
+/* the takes' playback: each take its own Play, one seek bar under them */
+.playback {
+  margin: 12px 0 0;
+}
+.playback[hidden],
+.playback .seek[hidden] {
+  display: none;
+}
+.playback .seek {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+@media (max-width: 420px) {
+  .l14-sing .sing-chart {
+    height: 230px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l14-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l14-app .dose {
+  margin: 10px 0 0;
+  color: var(--ink);
+}
+.l14-next {
+  margin-top: 18px;
+}
+/* the closing card's still: the whole song, its five breath marks and the
+   swell on each "star" in light, after the kit's words */
+.l14-next .end-still {
+  height: 150px;
+  margin: 14px 0 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l14-next .end-still canvas {
+  position: absolute;
+  inset: 0;
+}
