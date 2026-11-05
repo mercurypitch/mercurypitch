@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
-import { audioClock, captureStudioOutput, clearClicks, liveSources, readClicks, untilAudioClock, } from './helpers/studio-output-capture'
+import { audioClock, captureStudioOutput, clearClicks, liveSources, readClicks, recordOutput, untilAudioClock, } from './helpers/studio-output-capture'
 import type { EditReading } from './helpers/studio-output-edit'
 import { EDIT_STEADY_MS, readEdit } from './helpers/studio-output-edit'
 import { captureSpan } from './helpers/studio-output-span'
@@ -120,6 +120,9 @@ test.describe('Studio edits while playing', () => {
       .click()
     await studio.getByRole('button', { name: 'Play song', exact: true }).click()
     await untilAudioClock(page, (await audioClock(page)) + 2)
+    // Record from here on: each edit's span starts 350 ms before its stamp,
+    // and the presses of an action can outlast the 680 ms the analyser holds.
+    await recordOutput(page)
 
     /** Make one edit and read what it did, from the stamp of `kind` it makes. */
     const measure = async (

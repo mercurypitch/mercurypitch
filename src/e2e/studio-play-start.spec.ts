@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import type { StudioCapture, StudioClickStamp, } from './helpers/studio-output-capture'
-import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, readStarts, untilAudioClock, } from './helpers/studio-output-capture'
+import { audioClock, captureStudioOutput, clearClicks, importWav, readClicks, readStarts, recordOutput, untilAudioClock, } from './helpers/studio-output-capture'
 import type { StartReading } from './helpers/studio-output-span'
 import { captureSpan, readStart } from './helpers/studio-output-span'
 import { steadyWav } from './helpers/studio-output'
@@ -163,6 +163,7 @@ test.describe('Studio Play after Pause', () => {
     await toggle.click()
     await expect(toggle).toHaveAccessibleName('Pause song')
     await untilAudioClock(page, (await audioClock(page)) + 1)
+    await recordOutput(page)
     await pressToggle()
 
     const warm = await measurePlay('play after pause')

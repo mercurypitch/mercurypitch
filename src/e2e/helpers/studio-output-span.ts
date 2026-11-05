@@ -1,55 +1,78 @@
-// Studio output span — captures stitched end to end on the audio clock, and what a start from silence did to the sound.
+// Studio output span — every sample the page sent to its speakers between two audio-clock times, and what a start from silence did to the sound.
 //
 // One capture holds 32768 frames, 680 ms at 48 kHz and 743 ms at 44.1 kHz:
-// less than a cold Play takes to sound and settle. So captures are taken
-// every half span and stitched on their audio-clock frames. Frames two
-// captures share must agree exactly, or the stitch throws: a capture placed
-// a quantum off would otherwise read as a gap, a click or a late start.
+// less than a cold Play takes to sound and settle. Captures were taken from
+// the spec, every half span, and stitched on their audio-clock frames. On a
+// loaded CI runner the round trips of an action of five key presses then
+// outlasted the 680 ms, and a span that starts before the action had lost
+// its start before its first capture. So the page records (recordOutput):
+// it copies the analyser every 100 ms and lays the copies end to end, and a
+// span is read from that once it holds the span's end. Frames two copies
+// share must agree exactly, or the span throws: a copy placed a quantum off
+// would otherwise read as a gap, a click or a late start.
 //
 // Every window, step and position below is a whole frame, as in readSeek:
 // a millisecond is 44.1 frames on the CI runner, and fractional positions
 // once read samples that do not exist and turned every level into NaN.
 import type { Page } from '@playwright/test'
 import type { StudioCapture, StudioClickStamp } from './studio-output-capture'
-import { captureOutput, untilAudioClock } from './studio-output-capture'
+import { recordOutput } from './studio-output-capture'
 
-const CAPTURE_FRAMES = 32768
-
-/** Every sample sent to the speakers from audio-clock time `from` to `to`. */
+/**
+ * Every sample sent to the speakers from audio-clock time `from` to `to`,
+ * from the page's recording, started here if no spec started it sooner.
+ */
 export async function captureSpan(
   page: Page,
   from: number,
   to: number,
 ): Promise<StudioCapture> {
-  const rate = await page.evaluate(
-    () => window.__studioCapture?.context.sampleRate ?? 0,
-  )
-  if (!rate) throw new Error('No audio context is being captured.')
-  const span = CAPTURE_FRAMES / rate
-  const first = Math.round(from * rate)
-  const last = Math.round(to * rate)
-  if (last <= first) throw new Error('A span needs an end after its start.')
-  const samples = new Float32Array(last - first)
-  let filled = first
-  let at = from + span / 2
-  while (filled < last) {
-    await untilAudioClock(page, at)
-    const part = await captureOutput(page)
-    const partEnd = part.startFrame + part.samples.length
-    if (part.startFrame > filled)
-      throw new Error(
-        `The captures leave ${part.startFrame - filled} frames out at frame ${filled}.`,
-      )
-    for (let frame = Math.max(first, part.startFrame); frame < filled; frame++)
-      if (samples[frame - first] !== part.samples[frame - part.startFrame])
-        throw new Error(`Two captures disagree at frame ${frame}.`)
-    const end = Math.min(partEnd, last)
-    for (let frame = filled; frame < end; frame++)
-      samples[frame - first] = part.samples[frame - part.startFrame]
-    filled = Math.max(filled, end)
-    at = partEnd / rate + span / 2
-  }
-  return { sampleRate: rate, startFrame: first, samples }
+  await recordOutput(page)
+  return page
+    .evaluate(
+      async ({ from, to }) => {
+        const capture = window.__studioCapture
+        const recorder = capture?.recorder
+        if (!capture || !recorder)
+          throw new Error('No audio context is being captured.')
+        const rate = capture.context.sampleRate
+        const first = Math.round(from * rate)
+        const last = Math.round(to * rate)
+        if (last <= first)
+          throw new Error('A span needs an end after its start.')
+        const deadline =
+          performance.now() +
+          Math.max(0, to - capture.context.currentTime) * 1000 +
+          10_000
+        while (recorder.filled < last) {
+          if (performance.now() > deadline)
+            throw new Error(
+              'The audio clock did not reach the end of the span.',
+            )
+          await new Promise((resolve) => setTimeout(resolve, 20))
+        }
+        if (first < recorder.oldest)
+          throw new Error(
+            `The recording does not reach back to frame ${first}.`,
+          )
+        for (const fault of recorder.faults)
+          if (fault.at < last && fault.at + fault.frames > first)
+            throw new Error(
+              fault.kind === 'gap'
+                ? `The captures leave ${fault.frames} frames out at frame ${fault.at}.`
+                : `Two captures disagree at frame ${fault.at}.`,
+            )
+        const { ring } = recorder
+        const samples: number[] = []
+        for (let frame = first; frame < last; frame++)
+          samples.push(
+            ring[((frame % ring.length) + ring.length) % ring.length],
+          )
+        return { sampleRate: rate, startFrame: first, samples }
+      },
+      { from, to },
+    )
+    .then((raw) => ({ ...raw, samples: Float32Array.from(raw.samples) }))
 }
 
 const db = (amplitude: number) =>
