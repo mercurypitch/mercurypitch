@@ -87,6 +87,7 @@ describe('a hold on the page frame loop', () => {
     const stream = createF0Stream(audioContext(), {} as MediaStream)
     const listener = {
       holding: true,
+      media: {} as MediaStream,
       stream,
       latest: () => stream.latestSmoothed(),
       release: () => undefined,

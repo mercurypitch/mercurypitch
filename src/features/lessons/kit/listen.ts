@@ -15,9 +15,12 @@
 // and every frame it hears share a clock. It registers with the mic
 // sentinel like every surface that holds the device.
 //
-// Nothing is recorded or kept: a take is the pitch frames of one reply,
-// held in memory until it is read and then dropped (REQ-GVC-004), and
-// nothing leaves the device (REQ-GVC-003). The page lets go of the device
+// The listener records nothing and keeps nothing: a take is the pitch
+// frames of one reply, held in memory until it is read and then dropped
+// (REQ-GVC-004), and nothing leaves the device (REQ-GVC-003). A page that
+// records its takes to play them back (Lesson 14) does so through
+// kit/record.ts, over the stream the listener already holds (`media`), and
+// says so itself. The page lets go of the device
 // when its run ends, when the viewer leaves the section, when the tab is
 // hidden and when the page is hidden for good (`release`, `releaseNow`).
 
@@ -36,6 +39,8 @@ export type { PitchFrame }
 export interface Listener {
   /** True while this page holds the microphone. */
   readonly holding: boolean
+  /** The microphone's stream, as the mic manager opened it: kit/record.ts records from it without asking again. */
+  readonly media: MediaStream
   /** The newest frame, smoothed for drawing (never for reading). */
   latest(): PitchFrame | null
   /** Lets go of the microphone; the device closes after the manager's short linger. */
@@ -70,6 +75,7 @@ export async function listen(
   }
   const listener = {
     stream,
+    media,
     get holding() {
       return holding
     },
