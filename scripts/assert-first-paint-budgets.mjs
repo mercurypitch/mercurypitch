@@ -380,10 +380,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
   // rhythm bar on the beat clock (kit/rhythm-bar.ts, its drawing, model,
   // words and stopwatch strip, and the staff's places and glyphs), Step 5's
-  // lift, and the cold open's compact pads, metronome and predict: 136,906
+  // lift, and the cold open's compact pads, metronome and predict: 138,041
   // bytes in build:e2e, the budget the smallest whole KB above that, to rise
-  // as each part joins.
-  'learn/17.html': 134,
+  // as each part joins. The recall and the quick check load after first
+  // paint, as a chunk of their own, with the kit's quiz and Lesson 8's play.
+  'learn/17.html': 135,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
