@@ -333,11 +333,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
   // page shell weighed 82,864 bytes; with the steps' staff toy (kit/staff.ts,
-  // its drawing, places and glyphs, and the key strip) 113,061, and with the
-  // cold open's pitch line, its fold and the kit's predict 120,406 in
-  // build:e2e, the budget the smallest whole KB above that, to rise as each
-  // part joins.
-  'learn/15.html': 118,
+  // its drawing, places and glyphs, and the key strip) 113,061, with the
+  // cold open's pitch line, its fold and the kit's predict 120,406, and with
+  // the kit's quiz, the recall's Lesson 2 questions and its pair, and the
+  // quick check 132,396 in build:e2e, the budget the smallest whole KB
+  // above that, to rise as each part joins.
+  'learn/15.html': 130,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -457,12 +458,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // 11 and 13, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/14.html': 108,
-  // Lesson 15 (a draft, as above). Measured 90,099 bytes in build:e2e: the
-  // kit's sheets (with the guide's, the voice lessons' and the staff toy's,
-  // inlined into its own by @import, and the shared parts), its own, and
-  // the shared Inter and Outfit @font-face rules; the budget the smallest
-  // whole KB above that, to rise as each part joins.
-  'learn/15.html': 88,
+  // Lesson 15 (a draft, as above). Measured 90,169 bytes in build:e2e: the
+  // kit's sheets (the guide's in the chunk the quizzes share, the voice
+  // lessons' and the staff toy's inlined into its own by @import, and the
+  // shared parts), its own, and the shared Inter and Outfit @font-face
+  // rules; the budget the smallest whole KB above that, to rise as each
+  // part joins.
+  'learn/15.html': 89,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

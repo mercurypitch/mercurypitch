@@ -417,7 +417,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   deck opens a page at the step its address names (`src/features/lessons/kit/step-deck.ts:21-23`).
   Question 2's slot is Lesson 2's own, its play button and its "1st" and "2nd" chips
   (`QUIZ_PAIR_SLOT`), handled by `bindQuizPair` on this quiz's host
-  (`src/features/lessons/lesson-02/quiz-pair.ts:49-58`), which plays Lesson 2's pair (FACTS 61).
+  (`src/features/lessons/lesson-02/quiz-pair.ts:73-85`), which plays Lesson 2's pair (FACTS 61).
   That handler takes no sound owner today, so the kit's version takes one and this page passes it
   (What the kit and the app still need, item 11; Audio).
 - **Quick check**: LESSON.md's four questions, ids `l15-q1` to `l15-q4`, keys `fyp-l15-seed` and
@@ -609,7 +609,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 10. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
     `learn/lesson-15-og.jpg` and its alt, and the structured data with `timeRequired` `PT15M`.
 11. **The recall pair's sound owner** (Toys 7; Audio): Lesson 2's handler for question 2's play
-    takes no owner and keeps its own guard (`src/features/lessons/lesson-02/quiz-pair.ts:28-58`). It
+    takes no owner and keeps its own guard (`src/features/lessons/lesson-02/quiz-pair.ts:34-85`). It
     gains an optional one, `bindQuizPair(host, owner?)`, which claims the owner as the pair starts
     and stops the pair when a newer sound claims it, as the words strip does; Lesson 2's page passes
     none and keeps its behaviour.

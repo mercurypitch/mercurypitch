@@ -25,10 +25,15 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
+// the recall brings Lesson 2's quiz modules onto this page, so taking this
+// sheet here keeps it in their chunk, and Lessons 2, 4, 6, 8, 9, 10 and 12
+// still link it before their own sheets (MISTAKES.md, on the lessons' base
+// stylesheet)
+import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// the kit's guide and voice sheets come in by lesson-15.css's @import while
-// this module loads none of the kit parts they sit beside in the other
-// lessons' chunks, so those chunks keep their stylesheets in their order
+// the voice lessons' sheet comes in by lesson-15.css's @import while this
+// module loads none of the kit parts it sits beside in the other lessons'
+// chunks, so those chunks keep their stylesheets in their order
 import './lesson-15.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -42,6 +47,7 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -58,6 +64,9 @@ const deck = createStepDeck({
 })
 initSteps()
 deck.start()
+
+// the recall from Lesson 2 and the quick check, each on the kit's quiz
+initQuizzes(deck)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(15)
