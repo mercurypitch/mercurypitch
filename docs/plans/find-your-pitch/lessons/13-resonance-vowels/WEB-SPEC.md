@@ -873,12 +873,12 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:202`, `:253`;
-   `:399`, `:409`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:742`, `:775`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:348-358`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:202`, `:267`;
+   `:411`, `:421`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:753`, `:786`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:360-370`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:222-224`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:228-230`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
    (`assert-first-paint-budgets.mjs:198-201`), and the ceiling holds only while that boundary does.

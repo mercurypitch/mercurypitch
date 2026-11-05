@@ -215,7 +215,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/05.html': 142,
+  // Raised to 143 for Lesson 15's page: 145,177 bytes on main before it,
+  // 145,530 with it, against 145,408 at 142. Rollup's are 5; the other 348
+  // are on every lesson page: Lesson 16's tease and its alternative in the
+  // lesson copy (137), Lesson 15's drafts line (73), the page state's
+  // carrySeason, which Lesson 15's page is the first to call (75), and its
+  // rule for a link into a season the page does not carry (63).
+  'learn/05.html': 143,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -249,7 +255,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/04.html': 135,
+  // Raised to 136 for Lesson 15's page: 138,203 bytes on main before it,
+  // 139,101 with it, against 138,240 at 135. 348 of the 898 are the four on
+  // every lesson page, as on Lesson 5. 183 are Lesson 2's quiz pair, which
+  // can now let go of its button when a newer sound cuts it, on every page
+  // that has the pair. The other 367 are Rollup's: the key strip, which
+  // Lesson 15's staff toy shares, moves out of the page's module, and the
+  // major scale out of Move do's chunk, since Lesson 15 loads Move do alone,
+  // each into a chunk of its own.
+  'learn/04.html': 136,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -331,17 +345,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/14.html': 173,
   // Lesson 15, "The staff: where notes sit", Season 2's first page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
-  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
-  // page shell weighed 82,864 bytes; with the steps' staff toy (kit/staff.ts,
-  // its drawing, places and glyphs, and the key strip) 113,061, with the
-  // cold open's pitch line, its fold and the kit's predict 120,406, and with
-  // the kit's quiz, the recall's Lesson 2 questions and its pair, and the
-  // quick check 132,396, with the four words' figures and plays 134,648, and
-  // with Sing it on the kit's sing flow, comfort check and voice choice
-  // 144,360 in build:e2e, the budget the smallest whole KB above that, to
-  // rise as each part joins. Sing it opens no microphone, so nothing of the
-  // listener comes in.
-  'learn/15.html': 141,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
+  // the steps' staff toy (kit/staff.ts, its drawing, places and glyphs, and
+  // the key strip), the cold open's pitch line and fold on the kit's
+  // predict, the recall's Lesson 2 questions and pair and the quick check
+  // on the kit's quiz, the four words' figures and plays, Sing it on the
+  // kit's sing flow, comfort check and voice choice, and the Wrap's free
+  // play and tease still, 146,372 bytes in build:e2e; a quarter over. Sing
+  // it opens no microphone, so nothing of the listener comes in.
+  'learn/15.html': 179,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -461,13 +473,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // 11 and 13, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/14.html': 108,
-  // Lesson 15 (a draft, as above). Measured 90,654 bytes in build:e2e: the
-  // kit's sheets (the guide's and the voice lessons' in the chunks the
-  // quizzes and Sing it share, the staff toy's inlined into its own by
-  // @import, and the shared parts), its own, and the shared Inter and Outfit
-  // @font-face rules; the budget the smallest whole KB above that, to rise
-  // as each part joins.
-  'learn/15.html': 89,
+  // Lesson 15 (a draft, as above): 90,657 bytes in build:e2e, the kit's
+  // sheets (the guide's and the voice lessons' in the chunks the quizzes and
+  // Sing it share, the staff toy's inlined into its own by @import, and the
+  // shared parts), its own, and the shared Inter and Outfit @font-face
+  // rules; a quarter over.
+  'learn/15.html': 111,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter
