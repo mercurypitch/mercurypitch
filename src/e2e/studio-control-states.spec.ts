@@ -115,10 +115,12 @@ for (const theme of THEMES) {
     await repeat.click()
     await expect(repeat).toHaveAttribute('aria-pressed', 'true')
     await page.mouse.move(2, 2)
-    await expect.poll(() => paintedFill(repeat)).not.toBe(offFill)
-    const onFill = await paintedFill(repeat)
     // The fill is the state's mark: 3:1 from the unpressed look (WCAG 1.4.11).
-    expect(await contrast(page, onFill, offFill)).toBeGreaterThanOrEqual(3)
+    // Poll the contrast, not a mere change: the fill eases over 0.12 s, and
+    // a busy machine can sample it halfway (1.52:1 on 2026-11-05).
+    await expect
+      .poll(async () => contrast(page, await paintedFill(repeat), offFill))
+      .toBeGreaterThanOrEqual(3)
 
     // Hover may tint a pressed button; it never makes it look unpressed.
     await repeat.hover()
