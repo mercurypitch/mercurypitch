@@ -62,7 +62,7 @@ and wordmark, and the motion rules. On this page:
   where level is height in a strip of its own, as Lesson 5 draws it.
 - A breath mark is the kit's, the one Lesson 6's slide guide draws: a small tick over the line with
   the word "breathe", in the line's colour, lit once the voice reaches it (`kit/slide-guide.ts`: the
-  header, `:20-25`; `breaths`, `:66-67`; `breathAt`, `:338-357`; `drawBreaths`, `:363-388`), the
+  header, `:20-25`; `breaths`, `:66-67`; `breathAt`, `:338-357`; `drawBreaths`, `:359-370`), the
   tick a score's comma (26).
 - The words sit under the notes, each syllable under its note in the chart's mono at 11 px, ink-2,
   the sounding one ink (91).
@@ -264,7 +264,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   `kit/band-chart-hold.ts:29`, `:34-35`), each window's level drawn in it as height. **Play the
   swell** plays it (86): a violet line glides in from 40 cents low by 0.5 s and holds the band's
   centre while the strip rises from half height to full at 2.5 s and back at 4.0 s. **Play Lesson
-  5's push** plays Lesson 5's pushed take as Lesson 5 plays it (`lesson-05/lines.ts:29-43`, 39): the
+  5's push** plays Lesson 5's pushed take as Lesson 5 plays it (`kit/push-take.ts:22-36`, 39): the
   line climbs 60 cents over its last 3 s, leaving the band at 2.75 s, as its strip rises the same 6
   dB. Both lines are violet and belong to no Merc, with "Both are drawings, not recordings." in the
   step's Notice (93). Both lines stay drawn once played, so they can be compared.
@@ -715,7 +715,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 
 ## Explorer and season data
 
-- **Season data**: Lesson 14's entry in `kit/season.ts` (`:427-441`) gains a plain `minutes: 18` and
+- **Season data**: Lesson 14's entry in `kit/season.ts` (`:427-444`) gains a plain `minutes: 18` and
   `page: '/learn/14'` after its topics, in every build, under the comment Lesson 5's entry carries,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` (`season.ts:250`), as Lesson 3's own
   are written (`season.ts:210-213`) and Lesson 6's (`:270-272`; 8, 12). Whether the page is live is
@@ -844,7 +844,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    syllable (Lesson 9 WEB-SPEC, What the kit and the app still need, 5; if Lesson 9's page has not
    brought them, this one does); the words strip, its syllables centred under their notes at 11 px;
    the chord strip; breath marks, the slide guide's tick and word (`kit/slide-guide.ts`: `breathAt`,
-   `:338-357`; `drawBreaths`, `:363-388`), moved into a drawing both charts share; the light along a
+   `:338-357`; `drawBreaths`, `:359-370`), moved into a drawing both charts share; the light along a
    band, from a level curve, kept once sounded; and Step 3's two windows over one band. The existing
    single band is the case with none of these, so Lessons 3, 5 and 9's figures see no change; a unit
    test proves it.
@@ -884,7 +884,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     would gain the shorter line beside its own (`lesson-copy.ts:135-141`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:249-257`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
-13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:445-479`),
+13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
@@ -1169,7 +1169,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 11. The Wrap ends on the season's close: on `/learn/14` the card reads "End of Season 1" and the
     line, holds the two links and keeps its figure after its words;
     `src/e2e/learn-next-card.spec.ts`, which today leaves the close to `next-card.test.ts` because
-    the finale has no page (`src/e2e/learn-next-card.spec.ts:16-17`), gains this check. After
+    the finale has no page (`src/e2e/learn-next-card.spec.ts:16`), gains this check. After
     "Uncomfortable" and after "Effortful", each reached with the fake microphone as End to end 6
     reaches them, and after "Just listen today", the card keeps "You've seen every note you sing."
     and "See the season map", and shows neither "Now sing a whole song." nor a link to
@@ -1229,3 +1229,31 @@ Page QA before publishing (PRODUCTION-PIPELINE § 5) adds, for this page:
 - Every step stage fits the four short landscape screens with the masthead (End to end 5), and the
   app-check sweep (`.claude/skills/app-check`) passes at phone and desktop width with Sing it open
   in each state, run locally or on dev, never against production.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Every play button reads "Stop" while it sounds, and its accessible name says what it stops ("Stop
+  Merc's take 1", "Stop your take 1"); a second press stops it.
+- Two notes of the same pitch in a row draw as one band, with no gap: a gap on the song line means a
+  breath. Step 3's level strip pinches to nothing between its two windows.
+- The page keeps the breath a 0.3 s gap of silence; the kit's stoppable noise (What the kit and the
+  app still need, 13) is built, for a page that wants an audible in-breath.
+- Sing it's guide for take 1 is the phrase at 80 beats a minute with no breath mark; take 2's is its
+  plan, the breath after "star" and its swell in faint light, shown while take 2 is next and while
+  it runs. Under reduced motion each band lights whole as its note starts.
+- A take's line is kept in absolute pitch and redrawn against the bands after Move do; take 1's is
+  faint (35 %) once take 2 is drawn, and each is named just after its last voiced point.
+- Once a visit's three takes are made and the last needs no answer, the playback stage opens for
+  whatever was heard, with the status "That's every take for this visit." and Done for today. "Now
+  take 2" shows only beside Start take 2.
+- A take abandoned when the page is hidden says "That take stopped when you left, so it was not
+  kept." and brings its Start back while takes remain. Delete says "Your takes are deleted.", and
+  Done for today "Done for today."
+- The seek bar stays where a playback stopped, or at the take's end once it played to it; a Play
+  from the end starts again 0.2 s before the voice.
+- `lesson-voice.css` is imported by `main.ts`, as on Lessons 3, 5 to 11 and 13, so every lesson
+  page links the same stylesheets in the same order as before this page.
+- First paint: 141,597 bytes of script and 87,943 of CSS in `build:e2e`; the ceilings are 173 KB
+  and 108 KB.

@@ -724,7 +724,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 8. **Lesson 14's recorder and a playback with a part**: `kit/record.ts` as Lesson 14's spec proposes
    it (`docs/plans/find-your-pitch/lessons/14-phrasing-whole-song/WEB-SPEC.md:564-591`), whichever
    page builds it first; the listener's stream for it, `Listener.media`, which the kit's listener
-   does not expose today (`Listener`, `src/features/lessons/kit/listen.ts:36-45`, holds `holding`,
+   does not expose today (`Listener`, `src/features/lessons/kit/listen.ts:39-50`, holds `holding`,
    `latest`, `release` and `releaseNow`) and Lesson 14's spec does not list either; the recorder's
    own header, since the listener says nothing is recorded
    (`src/features/lessons/kit/listen.ts:18-22`); and this page's playback (Toys 6): the take's first
