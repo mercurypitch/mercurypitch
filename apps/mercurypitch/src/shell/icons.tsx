@@ -593,3 +593,45 @@ export const TvLyricsIcon: Component<ShellIconProps> = (props) => (
     <path d="M9 17l-1.5 3.5M15 17l1.5 3.5" />
   </svg>
 )
+
+// ── Progress (NATIVE_PROGRESS) ───────────────────────────────
+
+/** Share: the box with its arrow out, the way the phone's own sheet draws it. */
+export const ShareIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 15V4M8 8l4-4 4 4" />
+    <path d="M6 11v8a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 18 19v-8" />
+  </svg>
+)
+
+/** What counts: the question mark in a ring. */
+export const QuestionIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M9.6 9.4a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.2-2.4 3.6M12 17h.01" />
+  </svg>
+)
+
+/** An exercise, and a best like for like: the line a drill draws. */
+export const PulseIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M3 12h4l2-5 3 10 3-7 2 2h4" />
+  </svg>
+)
+
+/** A challenge: the target a set task aims at. */
+export const TargetIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="4.5" />
+    <path d="M12 12h.01" />
+  </svg>
+)
+
+/** A first reading, and the voice's constellation: two stars. */
+export const SparkleIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9-1.9 5.1-1.9-5.1-5.1-1.9 5.1-1.9z" />
+    <path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
+  </svg>
+)

@@ -1,0 +1,709 @@
+/* ============================================================
+   The Progress tab's history, its notes and states, and its sheets
+   (NATIVE_PROGRESS)
+   ============================================================
+
+   The sheets are the kit's (Sheet.tsx), portalled to <body>: what they
+   read of the page's theme, they read from the tokens copied at their
+   anchor, inside the page's root (progress.css). Loaded last of the
+   page's three stylesheets, so its reduced-motion block outranks the
+   others' by order. */
+
+/* ---------- history ---------- */
+
+.mp-prog-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mp-prog-history__title {
+  font: 700 24px/1.2 var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--prog-ink);
+}
+
+.mp-prog-filters {
+  display: flex;
+  gap: 8px;
+  margin: 4px calc(-1 * max(16px, calc(var(--safe-right, 0px) + 8px))) 4px 0;
+  padding: 2px max(16px, calc(var(--safe-right, 0px) + 8px)) 2px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mp-prog-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.mp-prog-filter {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--prog-card-line);
+  border-radius: 999px;
+  background: var(--prog-card);
+  color: var(--prog-text-2);
+  font: 600 14px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The filter in force: its edge, its ground and its ink all change. */
+.mp-prog-filter[aria-pressed='true'] {
+  border-color: var(--prog-lit-edge);
+  background: var(--prog-lit-tint);
+  color: var(--prog-ink);
+}
+
+.mp-prog-history__none {
+  padding: 18px;
+  border: 1px dashed var(--prog-card-line);
+  border-radius: 18px;
+  font: 500 14px/1.4 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-prog-day__label {
+  margin: 8px 2px 0;
+  font: 600 13px/1.2 var(--font-body, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--prog-text-3);
+}
+
+.mp-prog-day__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-prog-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 18px;
+  background: var(--prog-card);
+  color: var(--prog-text);
+}
+
+a.mp-prog-item:active {
+  background: var(--prog-press);
+}
+
+.mp-prog-item__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--prog-practice);
+  color: var(--prog-practice-ink);
+}
+
+.mp-prog-item__icon[data-source='exercise'],
+.mp-prog-kind[data-source='exercise'] .mp-prog-kind__icon {
+  background: var(--prog-exercise);
+  color: var(--prog-exercise-ink);
+}
+
+.mp-prog-item__icon[data-source='challenge'],
+.mp-prog-kind[data-source='challenge'] .mp-prog-kind__icon {
+  background: var(--prog-challenge);
+  color: var(--prog-challenge-ink);
+}
+
+.mp-prog-item__icon[data-source='weekly'],
+.mp-prog-kind[data-source='weekly'] .mp-prog-kind__icon {
+  background: var(--prog-weekly);
+  color: var(--prog-weekly-ink);
+}
+
+.mp-prog-item__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mp-prog-item__title {
+  font: 600 15px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+  overflow-wrap: anywhere;
+}
+
+.mp-prog-item__where {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.mp-prog-item__where svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+/* ---------- where the record is kept ---------- */
+
+.mp-prog-coverage {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 2px 0;
+  color: var(--prog-text-3);
+}
+
+.mp-prog-coverage > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.mp-prog-coverage__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font: 500 13px/1.4 var(--font-body, sans-serif);
+}
+
+.mp-prog-coverage__text b {
+  color: var(--prog-text);
+  font-weight: 600;
+}
+
+/* ---------- notes ---------- */
+
+.mp-prog-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--prog-card-line);
+  border-radius: 18px;
+  background: var(--prog-card);
+}
+
+.mp-prog-note--warn > svg {
+  flex: 0 0 auto;
+  color: var(--prog-warn-ink);
+}
+
+.mp-prog-note__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 400 14px/1.4 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-note__text strong {
+  display: block;
+  color: var(--prog-ink);
+  font-weight: 600;
+}
+
+.mp-prog-note__action {
+  flex: 0 0 auto;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--prog-glass-line);
+  border-radius: 22px;
+  background: var(--prog-glass);
+  color: var(--prog-text);
+  font: 600 14px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+/* ---------- opening, a first visit, a failure ---------- */
+
+.mp-prog-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mp-prog-skel {
+  display: block;
+  border-radius: 24px;
+  background: linear-gradient(
+    90deg,
+    var(--prog-skeleton) 0%,
+    var(--prog-skeleton-shine) 50%,
+    var(--prog-skeleton) 100%
+  );
+  background-size: 200% 100%;
+  animation: mp-prog-shine 1.4s ease-in-out infinite;
+}
+
+.mp-prog-skel--moment {
+  height: 300px;
+}
+
+.mp-prog-skel--card {
+  height: 220px;
+}
+
+@keyframes mp-prog-shine {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.mp-prog-empty,
+.mp-prog-failure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 12px 0;
+  text-align: center;
+}
+
+/* An orb with three bars in it, drawn: the first run's place. */
+.mp-prog-empty__art {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border: 1.5px solid var(--prog-chip-line);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 30%,
+    color-mix(in srgb, var(--prog-lit-pale) 22%, transparent),
+    color-mix(in srgb, var(--prog-lit) 12%, transparent) 50%,
+    transparent 100%
+  );
+}
+
+.mp-prog-empty__art::after {
+  content: '';
+  position: absolute;
+  left: 44px;
+  right: 44px;
+  bottom: 47px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--prog-week-dot);
+}
+
+.mp-prog-empty__art i {
+  position: absolute;
+  bottom: 48px;
+  width: 12px;
+  border-radius: 6px;
+  background: var(--prog-week-dot);
+}
+
+.mp-prog-empty__art i:nth-child(1) {
+  left: 52px;
+  height: 16px;
+}
+
+.mp-prog-empty__art i:nth-child(2) {
+  left: 74px;
+  height: 40px;
+  background: linear-gradient(
+    180deg,
+    var(--prog-week-top),
+    var(--prog-week-foot)
+  );
+}
+
+.mp-prog-empty__art i:nth-child(3) {
+  left: 96px;
+  height: 24px;
+}
+
+.mp-prog-empty__art b {
+  position: absolute;
+  left: 75px;
+  top: 51px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--prog-week-now-top);
+}
+
+.mp-prog-empty__title,
+.mp-prog-failure__title {
+  margin-top: 26px;
+  font: 700 26px/1.2 var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--prog-ink);
+}
+
+.mp-prog-empty__text,
+.mp-prog-failure__text {
+  margin-top: 12px;
+  max-width: 32ch;
+  font: 400 15px/1.5 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-empty__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 40px;
+}
+
+.mp-prog-empty__actions .mp-prog-button {
+  min-height: 52px;
+  border-radius: 26px;
+  font-size: 16px;
+}
+
+.mp-prog-failure__icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--prog-card-line);
+  border-radius: 50%;
+  background: var(--prog-card);
+  color: var(--prog-warn-ink);
+}
+
+.mp-prog-failure .mp-prog-button {
+  margin-top: 28px;
+  min-width: 200px;
+}
+
+/* ---------- the sheets ---------- */
+
+.mp-prog-sheet {
+  color: var(--prog-text);
+  font-family: var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-prog-sheet :where(h2, h3, h4, p, ul, ol, dl, dd) {
+  margin: 0;
+}
+
+.mp-prog-sheet :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+
+.mp-prog-sheet__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mp-prog-sheet__top--end {
+  justify-content: flex-end;
+}
+
+.mp-prog-sheet__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mp-prog-sheet__title {
+  margin-top: 4px;
+  font: 700 22px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+}
+
+.mp-prog-sheet__lead {
+  margin-top: 10px;
+  font: 400 15px/1.45 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-kinds {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mp-prog-kind {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 16px;
+  background: var(--prog-tile);
+}
+
+.mp-prog-kind__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--prog-practice);
+  color: var(--prog-practice-ink);
+}
+
+.mp-prog-kind__name {
+  font: 600 15px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-week-sheet {
+  padding-bottom: 8px;
+}
+
+.mp-prog-week-sheet .mp-prog-meta:last-child {
+  margin-top: 12px;
+}
+
+.mp-prog-week-sheet__mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font: 600 15px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-week-sheet__mark svg {
+  flex: 0 0 auto;
+  color: var(--prog-weekly-ink);
+}
+
+/* What counts: the web's guide, at the native app's sizes and in the
+   page's inks. The guide reads the app's tokens, so the sheet sets them. */
+.mp-prog-counts {
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-xl: 22px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --text-primary: var(--prog-ink);
+  --text-secondary: var(--prog-text-2);
+  --text-muted: var(--prog-text-3);
+  --border: var(--prog-glass-line);
+  --radius-md: 12px;
+
+  padding-bottom: 12px;
+  line-height: 1.45;
+}
+
+.mp-prog-counts .mp-prog-sheet__top {
+  float: right;
+  margin: 0 0 4px 12px;
+}
+
+/* The cabinet: every badge and achievement. */
+.mp-prog-cabinet__group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 22px;
+  font: 600 13px/1.2 var(--font-body, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--prog-text-3);
+}
+
+.mp-prog-cabinet__group span {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mp-prog-cabinet__badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mp-prog-cabinet-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 18px;
+  background: var(--prog-tile);
+  text-align: center;
+}
+
+.mp-prog-cabinet-badge .mp-prog-mark-art {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+}
+
+/* Not earned yet: the art quieter, and the lock in words beside it. */
+.mp-prog-cabinet-badge:not([data-earned]) .mp-prog-mark-art {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.mp-prog-cabinet-badge__name {
+  font: 600 14px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-cabinet-badge__how {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+  font: 500 13px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-cabinet-badge__how svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.mp-prog-cabinet__shelf {
+  margin-top: 16px;
+}
+
+.mp-prog-cabinet__shelf h4 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font: 600 16px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+}
+
+.mp-prog-cabinet__shelf h4 span {
+  font: 500 13px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-cabinet__shelf > .mp-prog-meta {
+  margin-top: 4px;
+}
+
+.mp-prog-cabinet__goals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mp-prog-goal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 16px;
+  background: var(--prog-tile);
+}
+
+.mp-prog-goal__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--prog-tile);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-goal[data-unlocked] .mp-prog-goal__icon {
+  background: var(--prog-challenge);
+  color: var(--prog-challenge-ink);
+}
+
+.mp-prog-goal__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mp-prog-goal__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font: 600 15px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-goal__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mp-prog-goal__track {
+  flex: 1 1 auto;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--prog-rule);
+}
+
+.mp-prog-goal__track i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--prog-lit), var(--prog-cyan));
+}
+
+/* Share: the web's studio, drawn in the sheet, which is its dialog. The
+   studio is a dark room in either theme, so its sheet is too. */
+[role='dialog'].mp-prog-share-sheet {
+  --sheet-gutter-left: 0px;
+  --sheet-gutter-right: 0px;
+  --sheet-handle: rgb(255 255 255 / 28%);
+
+  padding-bottom: 0;
+  background: #070911;
+  color: #f5f4fb;
+}
+
+/* ---------- reduced motion: nothing moves ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-prog-bar__side,
+  .mp-prog-bar__title,
+  .mp-prog[data-collapsed='on'] .mp-prog-bar__side,
+  .mp-prog[data-collapsed='on'] .mp-prog-bar__title,
+  .mp-prog-dot i {
+    transition: none;
+  }
+
+  .mp-prog-skel {
+    animation: none;
+  }
+
+  .mp-prog-pager {
+    scroll-behavior: auto;
+  }
+
+  .mp-prog-round:active,
+  .mp-prog-button:active {
+    transform: none;
+  }
+}

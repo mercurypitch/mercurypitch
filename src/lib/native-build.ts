@@ -133,6 +133,19 @@ export const NATIVE_LEAGUES: boolean = true
 export const NATIVE_COMMUNITY: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build draws the Progress tab as the native app's own page
+ * (apps/mercurypitch/src/shell/progress): the same record as the web's
+ * page (useProgressRecord, progress-view-model.ts), in the native rooms'
+ * cards, sheets and icons. On in a native test build, TestFlight among
+ * them, and off in the store build, which keeps the web page under the
+ * shell, until the owner flips it. Folded like `KARAOKE_IMPORT`, so the
+ * store build carries none of it (assert-bundle.mjs STAGE 2): the page is
+ * a lazy chunk the shell lends the app through the bridge (NativeShell.tsx,
+ * App.tsx), and a build with it carries no chunk of the web page.
+ */
+export const NATIVE_PROGRESS: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.

@@ -6,7 +6,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, ErrorBoundary, For, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { lazy } from 'solid-js'
-import { Portal } from 'solid-js/web'
+import { Dynamic, Portal } from 'solid-js/web'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { ComposeMobileToolbar } from '@/components/compose/ComposeMobileToolbar'
@@ -41,8 +41,8 @@ import type { PlanLayerProps } from '@/features/plan/PlanLayer'
 import { syncPlanForAccount } from '@/features/plan/sync-for-account'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
-import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { consumeRunParked, nativeSkipTarget } from '@/stores/native-shell-store'
+import { IS_NATIVE_BUILD, NATIVE_PROGRESS } from '@/lib/native-build'
+import { consumeRunParked, nativeShellApi, nativeSkipTarget, } from '@/stores/native-shell-store'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -148,11 +148,24 @@ const VoiceConstellationSurface = lazy(async () =>
     (m) => ({ default: m.VoiceConstellationSurface }),
   ),
 )
-const ProgressRoute = lazy(async () =>
-  import('@/features/progress/ProgressRoute').then((m) => ({
-    default: m.ProgressRoute,
-  })),
-)
+// The Progress tab. On a build with the native page (NATIVE_PROGRESS) it is
+// the shell's own (apps/mercurypitch/src/shell/progress): drawn in the
+// shell's icons and sheets, opening its Leagues screen, none of which this
+// tree can import, so the shell lends it through the bridge and the tab
+// draws it here, in the tab's own scroller. The constant picks before
+// `lazy()` is ever written, as for the Karaoke room, so a build with the
+// native page carries no chunk of the web one, and the web and the store
+// build none of the bridge's.
+const ProgressRoute: Component = NATIVE_PROGRESS
+  ? () => null
+  : lazy(async () =>
+      import('@/features/progress/ProgressRoute').then((m) => ({
+        default: m.ProgressRoute,
+      })),
+    )
+const NativeProgressPage: Component = NATIVE_PROGRESS
+  ? () => <Dynamic component={nativeShellApi()?.progressPage} />
+  : () => null
 
 const VoiceConstellationLoadingShell: Component<{ onClose: () => void }> = (
   props,
@@ -3880,7 +3893,13 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_PROGRESS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_PROGRESS)}>
                   <Suspense fallback={<SkeletonTabContent />}>
-                    <ProgressRoute />
+                    {/* A ternary, not a <Show>: NATIVE_PROGRESS is a
+                        compile-time literal, and only a ternary folds. */}
+                    {NATIVE_PROGRESS ? (
+                      <NativeProgressPage />
+                    ) : (
+                      <ProgressRoute />
+                    )}
                   </Suspense>
                 </TabErrorBoundary>
               </Show>

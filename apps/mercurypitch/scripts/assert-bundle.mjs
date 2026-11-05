@@ -556,6 +556,18 @@ const KARAOKE_STAGE_2 = [
   // The row's two-people chip (PeopleIcon, shell/icons.tsx): its last
   // stroke's path data, written verbatim into the template that draws it.
   ['M17.6 13.7a6.5 6.5 0 0 1 3.4 5.8', "the Community row's chip"],
+  // The Progress tab's own page, on a switch of its own until the owner
+  // flips it (NATIVE_PROGRESS): a lazy chunk the shell lends the app through
+  // the bridge (NativeShell.tsx, App.tsx), which a store build has none of,
+  // its tab drawing the web page instead. Found by its test ids and its own
+  // words, none of which the web page says.
+  ['shell-progress', 'the native Progress page'],
+  ['progress-week-sheet', "the native Progress page's week sheet"],
+  ['Tap a week', "the native Progress page's rhythm"],
+  [
+    'Your progress starts with one run.',
+    "the native Progress page's first visit",
+  ],
 ]
 
 /**

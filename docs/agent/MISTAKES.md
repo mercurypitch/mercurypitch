@@ -1056,6 +1056,13 @@ import handler, issue #813.
 **Rule:** wherever a scroller pads for the dock, the pill or a room header, set the same `scroll-padding`, and check focused controls' boxes against the chrome in a browser.
 **See:** `.mp-pushed__body` in `apps/mercurypitch/src/shell/shell.css`, `src/styles/mobile-kit.css`, `apps/mercurypitch/src/scroll-padding-css.test.ts`.
 
+### Render a test's "no value" without the prop: a spread `undefined` does not clear it
+
+**Symptom:** a test of the native Progress page's failure spread `{ snapshot: undefined }` over a helper's default snapshot, and the page drew the record instead of the failure it meant to check.
+**Cause:** Solid merges spread props by reading the sources from the last to the first and taking the first value that is not `undefined` (`mergeProps`), so a later `undefined` falls through to an earlier value.
+**Rule:** render the absent case with a helper that never passes the default, and assert the state the page says it drew (`data-state`) before its contents.
+**See:** `openBare` in `apps/mercurypitch/src/shell/progress/ProgressView.test.tsx`.
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
