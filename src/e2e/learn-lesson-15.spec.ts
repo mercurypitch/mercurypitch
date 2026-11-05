@@ -195,6 +195,31 @@ test('a visitor with the studio installed still gets the lesson, not the shell @
   await expect(page.locator('#root')).toHaveCount(0)
 })
 
+test('the climb on the five lines folds the pitch line into a staff, then the predict reveals', async ({
+  page,
+}) => {
+  // Arrange: sound on; before a choice the hero draws the pitch line alone
+  await page.goto('/learn/15')
+  await page.locator('#gateBtn').click()
+  const hero = page.locator('#heroStaff [data-hero-svg]')
+  await expect(hero.locator('.st-lane')).toHaveCount(18)
+  await expect(hero.locator('.st-line, .st-clef')).toHaveCount(0)
+
+  // Act
+  await page.locator('#predict [data-choice="nine"]').click()
+  await page.locator('[data-play="lines"]').click()
+
+  // Assert: the staff as the climb begins, the reveal once it ends (6.1 s)
+  await expect(hero.locator('.st-line')).toHaveCount(5, { timeout: 3000 })
+  await expect(hero.locator('.st-clef')).toHaveCount(1)
+  await expect(page.locator('#predict .reveal')).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.locator('#predict .reveal .mono')).toHaveText(
+    'You said: nine',
+  )
+})
+
 test.describe('the staff toy on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 

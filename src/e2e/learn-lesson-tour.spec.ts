@@ -43,6 +43,19 @@ const card = (page: Page) =>
 const next = (page: Page) =>
   card(page).getByRole('button', { name: /^(Next|Done)$/ })
 
+/**
+ * Opens lesson `n` on a first visit: Lesson 15's card waits for the
+ * predict's choice (kit/tour-gate.ts `holdTour`), since its steps' stop
+ * would answer it, so there the choice comes first, made where the page
+ * stands: a first visit's tour opens only at the top, and on a phone the
+ * predict sits below the first screen.
+ */
+async function openFirstVisit(page: Page, n: number): Promise<void> {
+  await page.goto(lessonPath(n))
+  if (n === 15)
+    await page.locator('#predict [data-choice="nine"]').dispatchEvent('click')
+}
+
 /** The tour's record, as the page reads it. */
 const record = (page: Page): Promise<string | null> =>
   page.evaluate((k) => localStorage.getItem(k), TOUR_KEY)
@@ -464,7 +477,7 @@ test('every lesson page offers the same five steps', async ({ page }) => {
 
   // Act
   for (const n of LESSONS) {
-    await page.goto(lessonPath(n))
+    await openFirstVisit(page, n)
     await expect(card(page)).toBeVisible(OPENED)
     // its words, not as drawn: the count is set in capitals
     counts.push((await card(page).locator('.tour-count').textContent()) ?? '')
@@ -496,7 +509,7 @@ for (const [n, name, size] of [
   }) => {
     // Arrange
     await page.setViewportSize(size)
-    await page.goto(lessonPath(n))
+    await openFirstVisit(page, n)
     await expect(card(page)).toBeVisible(OPENED)
     const lights: boolean[] = []
 
@@ -578,6 +591,56 @@ test("on Lesson 1's first visit the page holds still while Merc and Tavi land, a
   expect(log.held).toHaveLength(2)
   expect(log.held[1] - log.card).toBeLessThanOrEqual(50)
   await expect(page.locator('html')).not.toHaveClass(/\btour-wait\b/)
+})
+
+test("Lesson 15's first visit holds the card until the predict's choice, and the lesson menu's tour comes at once", async ({
+  page,
+}) => {
+  // Arrange: Lesson 15's WEB-SPEC, Tests 17, on a screen whose first view
+  // holds the predict, as a first visit's tour opens only at the top
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/15')
+  await expect(page.locator('#predict [data-choice="nine"]')).toBeVisible()
+  // the page is read for a while with no choice, and scrolls as ever
+  await page.waitForTimeout(2500)
+  const before = await card(page).count()
+  const overflow = await page.evaluate(
+    () => getComputedStyle(document.documentElement).overflowY,
+  )
+
+  // Act
+  await page.locator('#predict [data-choice="nine"]').click()
+
+  // Assert
+  expect(before).toBe(0)
+  expect(overflow).not.toBe('hidden')
+  await expect(card(page)).toBeVisible()
+  await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
+  await card(page).getByRole('button', { name: 'Skip tour' }).click()
+  await expect(card(page)).toHaveCount(0)
+})
+
+test("Lesson 15's lesson menu runs the tour at once, with no choice made", async ({
+  page,
+}) => {
+  // Arrange: a return visit, the tour already seen
+  await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [
+    TOUR_KEY,
+    TOUR_VERSION,
+  ] as const)
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/learn/15')
+
+  // Act
+  await page.locator('.lm-btn').click()
+  await page
+    .locator('#lessonMenu')
+    .getByRole('button', { name: 'Tour this page' })
+    .click()
+
+  // Assert
+  await expect(card(page)).toBeVisible()
+  await expect(card(page).getByRole('heading')).toHaveText(TITLES[0])
 })
 
 test("Lesson 3's first visit holds nothing: its card comes at once, and the page scrolls", async ({
