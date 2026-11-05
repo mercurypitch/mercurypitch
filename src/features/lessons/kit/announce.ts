@@ -45,12 +45,16 @@ export function announce(text: string): void {
   window.clearTimeout(clearing)
   el.textContent = ''
   if (text === '') return
+  // The clearing is booked with the words, not when they are written, so
+  // neither timer reaches for the window when it comes: one that comes
+  // after its page has gone, as a test file's does once its teardown has
+  // removed the window, touches only its own line.
   pending = window.setTimeout(() => {
     el.textContent = text
-    clearing = window.setTimeout(() => {
-      el.textContent = ''
-    }, ANNOUNCE_CLEAR_MS)
   }, ANNOUNCE_DELAY_MS)
+  clearing = window.setTimeout(() => {
+    el.textContent = ''
+  }, ANNOUNCE_DELAY_MS + ANNOUNCE_CLEAR_MS)
 }
 
 /** The blocks a reveal draws on lines of their own; a `br` ends a line too. */
