@@ -31,7 +31,9 @@
 // 4/4 nor a bar line, and its bars, groups here, may start where the row
 // says (WEB-SPEC, Toys 4).
 //
-// Where everything falls is kit/rhythm-layout.ts's, pure.
+// Where everything falls is kit/rhythm-layout.ts's, pure. Over the strip,
+// the checkpoint draws each tap as a tick where it fell, gold where it met
+// its note (`ticks`).
 //
 // The pitch-line view is Season 1's picture: time left to right, pitch up,
 // each sound a band as long as it is held, rests as dashed gaps, the beat
@@ -78,6 +80,8 @@ interface RowParts {
   }[]
   readonly cells: readonly SVGGElement[]
   readonly readings: readonly { cells: readonly number[]; el: SVGTextElement }[]
+  /** Where the taps' ticks go, over the strip; null with no strip. */
+  readonly tickLayer: SVGGElement | null
   readonly plan: StripPlan
   /** The sounds, a tied run as one, each with its symbols. */
   readonly sounds: readonly { first: number; last: number }[]
@@ -113,6 +117,12 @@ export interface PadBox {
   readonly h: number
 }
 
+/** A tap drawn where it fell in a row: its beat from the row's start, and whether it met its note. */
+export interface RhythmTick {
+  readonly beat: number
+  readonly met: boolean
+}
+
 /** A drawn figure: where everything is, and how to show a moment of it. */
 export interface RhythmFigure {
   readonly layout: RhythmLayout
@@ -125,6 +135,8 @@ export interface RhythmFigure {
   /** Where a row's pad for a beat is. */
   padBox(row: number, beat: number): PadBox
   set(states: readonly RowState[]): void
+  /** Draws taps as ticks across a row's strip, gold where one met its note, in place of the ticks before. */
+  ticks(row: number, at: readonly RhythmTick[]): void
 }
 
 /** The figure's size: its box, or a phone's figure where nothing lays it out (jsdom). */
@@ -488,7 +500,7 @@ function drawStrip(
   row: RowLayout,
   plan: StripPlan,
   parent: Element,
-): Pick<RowParts, 'cells' | 'readings'> {
+): Pick<RowParts, 'cells' | 'readings' | 'tickLayer'> {
   const g = svg('g', { class: 'rb-strip', 'aria-hidden': 'true' }, parent)
   const cells = plan.cells.map((c) => {
     const cg = svg(
@@ -528,7 +540,7 @@ function drawStrip(
       g,
     ),
   }))
-  return { cells, readings }
+  return { cells, readings, tickLayer: svg('g', { class: 'rb-ticks' }, g) }
 }
 
 /** One row, drawn. */
@@ -562,7 +574,7 @@ function drawRow(
   })
   const strip =
     scene.strip === false
-      ? { cells: [], readings: [] }
+      ? { cells: [], readings: [], tickLayer: null }
       : drawStrip(row, plan, g)
   return {
     placed,
@@ -667,6 +679,26 @@ export function drawRhythm(
         showWriting(p, st)
         showTime(p, st)
       })
+    },
+    ticks(ri, at) {
+      const layer = parts[ri]?.tickLayer ?? null
+      const row = L.rows[ri] as RowLayout | undefined
+      if (layer === null || row === undefined) return
+      layer.replaceChildren()
+      for (const t of at) {
+        const x = r(xOf(row, t.beat))
+        svg(
+          'line',
+          {
+            x1: x,
+            x2: x,
+            y1: r(row.stripTop - 4),
+            y2: r(row.stripTop + row.stripH + 4),
+            class: t.met ? 'rb-tick is-met' : 'rb-tick',
+          },
+          layer,
+        )
+      }
     },
   }
 }

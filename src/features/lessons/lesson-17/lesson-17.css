@@ -3,9 +3,9 @@
    ============================================================
    Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
    and lesson-parts, imported by main.ts, and the guide's, the voice
-   lessons' and the rhythm bar's sheets, taken in here by @import so they
-   inline into this page's own sheet and split no chunk the other lessons
-   share (MISTAKES.md, on the lessons' base stylesheet).
+   lessons', the rhythm bar's and the tap pad's sheets, taken in here by
+   @import so they inline into this page's own sheet and split no chunk the
+   other lessons share (MISTAKES.md, on the lessons' base stylesheet).
 
    Here: the hero's pads between Merc and Tavi, with the two plays under
    them; Step 5's lift, the line becoming the staff; the tap take and the
@@ -17,6 +17,7 @@
 @import '../kit/lesson-guide.css';
 @import '../kit/lesson-voice.css';
 @import '../kit/lesson-rhythm.css';
+@import '../kit/lesson-tap-pad.css';
 
 /* ---------------------------------------------------------------- hero: the pads between Merc and Tavi */
 .l17-duo {
@@ -186,6 +187,11 @@
 .l17-sing .take-bars {
   margin: 14px 0 0;
   min-height: 96px;
+}
+/* the two written bars on one line, their pads and strip under them */
+.l17-sing .take-rb {
+  position: relative;
+  height: 170px;
 }
 .l17-sing .take-pad {
   width: 100%;

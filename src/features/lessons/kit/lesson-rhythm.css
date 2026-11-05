@@ -11,7 +11,8 @@
    Merc's blue or Tavi's orange, set on the figure as --rb-voice. Rests and
    silences are dashed ink-2 in the strip and on the pitch line, so a
    silence is never taken for a short note; the pitch line's bands are the
-   app's amber. Gold is not used here: it marks only the checkpoint's fit.
+   app's amber. Gold marks only the checkpoint's fit: a tap's tick where it
+   met its note.
 
    A symbol fades in over 0.12 s at its start and a strip cell fills over
    its length; under reduced motion, or with Pause animations on, a symbol
@@ -33,6 +34,18 @@
 }
 .rb[data-voice='tavi'] {
   --rb-voice: var(--orange);
+}
+
+/* ---------------------------------------------------------------- the taps' ticks */
+/* where each lined-up tap fell, across the strip: gold only where it met
+   its note, the one gold on the page (Lesson 17 WEB-SPEC, Look) */
+.rb-tick {
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.rb-tick.is-met {
+  stroke: var(--gold);
 }
 
 /* ---------------------------------------------------------------- the toy's rows */

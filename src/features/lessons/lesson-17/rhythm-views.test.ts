@@ -12,7 +12,15 @@
 import { describe, expect, it } from 'vitest'
 import { fillsBars, placeBars, stripCells, } from '@/features/lessons/kit/rhythm-model'
 import { lengthsWords } from '@/features/lessons/kit/rhythm-words'
-import { BOTH_PARTS, BOTH_SIXTY, BOTH_TWICE, BOTH_VIEW, COUNT_BARS, COUNT_PARTS, FIG, HALVING_PARTS, REST_EXAMPLES, restView, rowView, staffBars, STATE_OF, TEMPO_BAR, } from './rhythm-views'
+import { BOTH_PARTS, BOTH_SIXTY, BOTH_TWICE, BOTH_VIEW, COUNT_BARS, COUNT_PARTS, FIG, HALVING_PARTS, REST_EXAMPLES, restView, rowView, staffBars, STATE_OF, TAKE_BARS, TEMPO_BAR, } from './rhythm-views'
+import { TAKE_ONSETS } from './take-judge'
+
+describe("the checkpoint's bars", () => {
+  it('writes the two bars whose nine notes the take judges (FACTS 36)', () => {
+    expect(fillsBars(TAKE_BARS)).toBe(true)
+    expect(placeBars(TAKE_BARS).map((p) => p.beat)).toEqual([...TAKE_ONSETS])
+  })
+})
 
 describe("the steps' bars", () => {
   it('gives each step a state and a figure label', () => {

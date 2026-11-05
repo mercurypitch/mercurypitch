@@ -381,11 +381,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // rhythm bar on the beat clock (kit/rhythm-bar.ts, its drawing, model,
   // words and stopwatch strip, and the staff's places and glyphs), Step 5's
   // lift, the cold open's compact pads, metronome and predict, and the four
-  // words on the kit's words strip: 140,204 bytes in build:e2e, the budget
+  // words on the kit's words strip: 141,250 bytes in build:e2e, the budget
   // the smallest whole KB above that, to rise as each part joins. The recall
-  // and the quick check load after first paint, as a chunk of their own,
-  // with the kit's quiz and Lesson 8's play.
-  'learn/17.html': 137,
+  // and the quick check (the kit's quiz, Lesson 8's play) and the take (its
+  // judge, the tap pad, the clap) load after first paint, each on its own.
+  'learn/17.html': 138,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -511,12 +511,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
-  // Lesson 17 (a draft, as above), with its steps, its cold open and its
-  // four words: 93,335 bytes in build:e2e, the kit's sheets (with the
-  // guide's, the voice lessons' and the rhythm bar's, inlined into its own
-  // by @import, and the shared parts), its own, and the shared Inter and
-  // Outfit @font-face rules; the budget the smallest whole KB above that,
-  // to rise as each part joins.
+  // Lesson 17 (a draft, as above), with its steps, its cold open, its four
+  // words and the checkpoint's take: 94,135 bytes in build:e2e, the kit's
+  // sheets (the guide's, the voice lessons', the rhythm bar's and the tap
+  // pad's inlined into its own by @import, and the shared parts), its own,
+  // and the shared Inter and Outfit @font-face rules; the budget the
+  // smallest whole KB above that, to rise as each part joins.
   'learn/17.html': 92,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which

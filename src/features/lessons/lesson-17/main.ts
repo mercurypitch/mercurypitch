@@ -74,6 +74,14 @@ void import('./recall').then(
 )
 // four words, each figure a short rhythm written as it plays
 initWords()
+// Tap it: the two written bars, read from the page and tapped over the
+// click; a chunk of its own, after first paint, since the take, its judge,
+// the tap pad and the clap's drum voices are some 15 KB the first screen
+// never needs (one that cannot load leaves the bars undrawn)
+void import('./take').then(
+  ({ initTake }) => initTake(q('#singCard')),
+  () => undefined,
+)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(17)
