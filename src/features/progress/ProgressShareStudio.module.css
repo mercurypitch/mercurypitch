@@ -1,4 +1,7 @@
-.overlay {
+/* The studio's palette, on its own overlay (the web's dialog) and on the
+   host a native sheet draws it in (`presentation="inline"`). */
+.overlay,
+.inline {
   /* Shell atmosphere and preview bloom are intentionally independent from the
      renderer's plate exposure and data scrim API. */
   --share-studio-backdrop-opacity: 0.86;
@@ -14,6 +17,11 @@
   --share-studio-deep: #070911;
   --share-studio-surface: #0d101a;
 
+  color: var(--share-studio-ink);
+  color-scheme: dark;
+}
+
+.overlay {
   position: fixed;
   z-index: 1500;
   inset: 0;
@@ -21,7 +29,6 @@
   overflow: auto;
   place-items: center;
   padding: clamp(0.75rem, 2.5vw, 2.25rem);
-  color: var(--share-studio-ink);
   background:
     radial-gradient(
       circle at 22% 18%,
@@ -30,26 +37,52 @@
     ),
     rgb(2 4 10 / var(--share-studio-backdrop-opacity));
   backdrop-filter: blur(18px) saturate(0.86);
-  color-scheme: dark;
   overscroll-behavior: contain;
 }
 
 .overlay *,
 .overlay *::before,
-.overlay *::after {
+.overlay *::after,
+.inline *,
+.inline *::before,
+.inline *::after {
   box-sizing: border-box;
 }
 
 .overlay button,
-.overlay input {
+.overlay input,
+.inline button,
+.inline input {
   font: inherit;
 }
 
 .overlay button:focus-visible,
 .overlay input:focus-visible,
+.inline button:focus-visible,
+.inline input:focus-visible,
 .formatOption:focus-within {
   outline: 2px solid var(--share-studio-aqua);
   outline-offset: 3px;
+}
+
+/* Inline, the host is the dialog and its scroller: the studio is the
+   content, edge to edge, with no box, rise or height of its own. Two
+   classes, so the phone-width rules below cannot put the full-screen
+   height back. */
+.inline .dialog {
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+}
+
+/* Under the host's own grab band, not the status bar. */
+.inline .header {
+  padding-top: 0.25rem;
 }
 
 .dialog {
