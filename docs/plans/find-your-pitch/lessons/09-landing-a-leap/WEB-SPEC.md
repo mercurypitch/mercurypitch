@@ -707,14 +707,14 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:404-407`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:712-716`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:127-175`, `:431-434`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:745-749`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:360-370`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:387-397`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:123-126`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:132-135`), and the ceiling holds only while that
    boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`: rungs in the scene, each a band at its cents
    from do, over a time slot or across the plot, each with its glow and its lit edge; Merc's arcs,
@@ -971,7 +971,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:149-166`).
+    hook and way on, as that spec checks Lesson 1's card (`:155-172`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

@@ -75,13 +75,16 @@ describe('lessonRows', () => {
     )
   })
 
-  it('reads every Season 2 lesson but Lesson 15 as planned, with no page and nothing to publish', () => {
+  it('reads every Season 2 lesson but Lessons 15 and 17 as planned, with no page and nothing to publish', () => {
     // Act
-    const rows = lessonRows().filter((row) => row.lesson.n >= 16)
+    const withPage = (n: number): boolean => n === 15 || n === 17
+    const rows = lessonRows().filter(
+      (row) => row.lesson.n >= 15 && !withPage(row.lesson.n),
+    )
 
     // Assert
     expect(rows.map((row) => row.lesson.n)).toEqual(
-      LESSONS_2.filter((L) => L.n >= 16).map((L) => L.n),
+      LESSONS_2.filter((L) => !withPage(L.n)).map((L) => L.n),
     )
     for (const row of rows) {
       expect(row.build, `lesson ${row.lesson.n}`).toBe('planned')
@@ -104,6 +107,21 @@ describe('lessonRows', () => {
       written: true,
       waitingOn: DRAFT_LESSONS[15],
       path: '/learn/15',
+    })
+    expect(row.signature).not.toBeNull()
+  })
+
+  it('reads Lesson 17 as a draft built where drafts are shown, waiting on Lesson 8 and the coach', () => {
+    // Act
+    const row = rowFor(17, lessonRows())
+
+    // Assert
+    expect(row).toMatchObject({
+      build: 'draft',
+      built: true,
+      written: true,
+      waitingOn: DRAFT_LESSONS[17],
+      path: '/learn/17',
     })
     expect(row.signature).not.toBeNull()
   })

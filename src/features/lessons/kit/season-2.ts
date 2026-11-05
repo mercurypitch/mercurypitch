@@ -14,10 +14,10 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lesson 15 has its page, a draft (drafts.ts); every later lesson is coming
-// later, with no page, no reading time and no film, as Lesson 14 was before
-// its page. Its page, its reading time, its tease and its figure land with
-// the page. Each entry takes its lesson's copy from lesson-copy.ts, as
+// Lessons 15 and 17 have their pages, drafts (drafts.ts); every other
+// lesson is coming later, with no page, no reading time and no film, as
+// Lesson 14 was before its page. A lesson's page, its reading time, its
+// tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
 // Season 1's do, so Lesson 16's tease, set on Lesson 16, shows on Lesson
 // 15's next-lesson card. Its practise link (`pr.link`) is drawn on its card
 // from now on, marked with its lesson as every practise link is
@@ -99,6 +99,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'How long is a note?',
     short: 'Note lengths',
     topics: ['T07'],
+    // A draft until Lesson 8's page is live and the vocal coach has looked
+    // at the sung part (drafts.ts).
+    minutes: 16,
+    page: '/learn/17',
     hook: 'Why is a quarter note not a quarter of a second?',
     pr: {
       needs: 'The Chart without triplets or sixteenths (an ear-drill link)',

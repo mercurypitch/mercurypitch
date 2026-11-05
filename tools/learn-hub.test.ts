@@ -391,9 +391,10 @@ describe("the hub's Season 2", () => {
       LESSONS_2.map((L) => `lesson-${L.n}`),
     )
     const unwritten = items.filter(
-      (li) => li.querySelector('h4')?.id !== 'lesson-15',
+      (li) =>
+        !['lesson-15', 'lesson-17'].includes(li.querySelector('h4')?.id ?? ''),
     )
-    expect(unwritten).toHaveLength(13)
+    expect(unwritten).toHaveLength(12)
     for (const li of unwritten) {
       expect(words(li.querySelector('.hub-go'))).toBe('Coming')
       expect(li.querySelector('a')).toBeNull()
@@ -415,6 +416,26 @@ describe("the hub's Season 2", () => {
       '15 minutes',
     )
     expect(words(go?.querySelector('span[data-if-planned="15"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
+  it('writes both readings of Lesson 17, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lesson 15 is
+    const go = section
+      ?.querySelector('#lesson-17')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="17"] a')?.getAttribute('href'),
+    ).toBe('/learn/17')
+    expect(words(go?.querySelector('span[data-if-live="17"]') ?? null)).toBe(
+      '16 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="17"]') ?? null)).toBe(
       'Coming',
     )
     expect(go?.querySelector('.hub-film')).toBeNull()

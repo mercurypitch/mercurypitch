@@ -43,9 +43,9 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 16 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16 and 18 to 28 yet: each is coming later', () => {
     // Assert
-    for (const L of LESSONS_2.filter((L) => L.n >= 16)) {
+    for (const L of LESSONS_2.filter((L) => L.n !== 15 && L.n !== 17)) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
       expect(L.film, `lesson ${L.n}`).toBeUndefined()
@@ -78,7 +78,33 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[15]).toEqual([2])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lesson 15 alone', () => {
+  it("gives Lesson 17 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+    // Act
+    const L17 = LESSONS_2.find((L) => L.n === 17)
+
+    // Assert: Lesson 17's WEB-SPEC, Explorer and season data
+    expect([L17?.page, L17?.minutes, L17?.film, L17?.len]).toEqual([
+      '/learn/17',
+      16,
+      undefined,
+      undefined,
+    ])
+    expect(DRAFT_LESSONS[17]).toBe(
+      "Lesson 8's page at /learn/08, and the vocal coach's look at the sung part",
+    )
+    expect(L17?.pr.link).toEqual({
+      href: '/ear-lab?lesson=17',
+      addr: 'mercurypitch.com/ear-lab',
+      label: 'Ear Lab',
+      note: 'then tap The Chart',
+    })
+    // the drill it still needs stays the team's
+    expect(L17?.pr.needs).toMatch(/^The Chart without triplets/)
+    // Lesson 15 only helps, so Lesson 8 is its one way in
+    expect(SEASON_2.prereq[17]).toEqual([8])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lessons 15 and 17', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -88,7 +114,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15])
+    expect(pages).toEqual([15, 17])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -199,9 +225,10 @@ describe('Season 2', () => {
     ])
   })
 
-  it("teases Lesson 16 on Lesson 15's card, and carries no other copy of its own yet", () => {
+  it("teases Lesson 16 on Lesson 15's card and Lesson 17 on Lesson 16's, and carries no other copy of its own yet", () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
+    const L17 = LESSONS_2.find((L) => L.n === 17)
 
     // Assert: Lesson 16 FACTS 5b; a tease lands with the page that draws it
     expect(L16?.tease).toBe(
@@ -210,9 +237,19 @@ describe('Season 2', () => {
     expect(L16?.teaseAlts).toEqual([
       { id: 'any-note', text: 'Now you can see where any note sits.' },
     ])
+    // Lesson 17 FACTS 5b: the cold open's set-up, and the season plan's line
+    expect(L17?.tease).toBe(
+      'Same written bar, played twice. Only the tempo changes.',
+    )
+    expect(L17?.teaseAlts).toEqual([
+      {
+        id: 'shapes',
+        text: 'Same five notes, twice as fast: the note shapes change.',
+      },
+    ])
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n === 16) continue
+      if (L.n === 16 || L.n === 17) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

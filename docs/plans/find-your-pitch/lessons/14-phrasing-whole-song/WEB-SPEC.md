@@ -829,15 +829,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:118-194`,
-   `:267-275`; `:420-423`, `:433-437`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:776-780`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:127-209`,
+   `:288-296`; `:447-450`, `:460-464`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:809-813`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:360-370`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:387-397`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:228-230`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:243-245`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:122-126`), and the record module and the app's recorder
+   (`scripts/assert-first-paint-budgets.mjs:131-135`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`, the song line's parts (Toys 1): Lesson 9's
    rungs over time slots and its rung names, which this page uses as sequence mode and names by
@@ -881,7 +881,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:144-150`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:153-159`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),

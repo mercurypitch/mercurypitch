@@ -1,0 +1,87 @@
+// ============================================================
+// Lesson 17 page — "How long is a note?", in reading order
+// ============================================================
+//
+// learn/17.html carries every word of the lesson; this module adds what the
+// markup cannot. A written lesson with no film, so there is no Watch section
+// and the masthead's anchors are Lesson, Tap it and Explorer. The hero is
+// the cold open, in Lesson 2's order: the hook, the stage, the sound gate
+// and the predict, then the recall (CURIOSITY-MOMENTS § 3.1). One object
+// carries the lesson: Lesson 8's beat pads, written down, the kit's rhythm
+// bar in five states. Every sound goes through the beat clock and the
+// page's one owner (kit/now-playing.ts); nothing listens. Merc and Tavi's
+// renderer loads last, as its own chunk, so the page reads before it
+// arrives. A draft until the vocal coach has looked at the sung part
+// (kit/drafts.ts).
+//
+// Season 2's page: it carries its season before anything draws
+// (kit/page-state.ts `carrySeason`), so the masthead, the explorer, its
+// links and the next-lesson card know Lessons 15 to 28, and the explorer
+// opens on Season 2's tab. On this page a staff is always music, so it
+// draws no decorative one: no section head carries the faint staff and its
+// clef (no `engraveClefs`), and the body's `season-2` class drops the
+// background's (WEB-SPEC, Look).
+
+import '@fontsource-variable/inter'
+import '@fontsource-variable/outfit'
+import '@/features/lessons/kit/lesson-fonts.css'
+import '@/features/lessons/kit/lesson-base.css'
+import '@/features/lessons/kit/lesson-sections.css'
+import '@/features/lessons/kit/lesson-stage.css'
+import '@/features/lessons/kit/lesson-parts.css'
+// the kit's guide and voice sheets come in by lesson-17.css's @import while
+// this module loads none of the kit parts they sit beside in the other
+// lessons' chunks, so those chunks keep their stylesheets in their order
+import './lesson-17.css'
+import { q } from '@/features/lessons/kit/dom'
+import { createExplorer } from '@/features/lessons/kit/explorer'
+import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
+import { initMercs } from '@/features/lessons/kit/merc-duo'
+import { Motion } from '@/features/lessons/kit/motion-switch'
+import { createNextCard } from '@/features/lessons/kit/next-card'
+import { initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
+import { carrySeason } from '@/features/lessons/kit/page-state'
+import { initReveals } from '@/features/lessons/kit/reveal'
+import { SEASON_2 } from '@/features/lessons/kit/season-2'
+import { createStepDeck } from '@/features/lessons/kit/step-deck'
+
+// Season 2, before anything draws
+carrySeason(SEASON_2)
+
+initSoundSwitch()
+initMotionSwitch()
+Motion.init()
+
+// five steps, one rhythm bar
+const deck = createStepDeck({
+  toyFor: () => 1,
+  after: { label: 'Tap it', selector: '#sing' },
+})
+deck.start()
+
+// the next lesson's card first: the explorer binds its link to the map
+createNextCard(17)
+createExplorer({ current: 17 })
+
+// the last screen's way back to the plan, for someone who answered its
+// questions: a chunk of its own, after first paint (one that cannot load
+// leaves the link hidden)
+void import('@/features/lessons/kit/plan-back').then(
+  ({ bootPlanBackLink }) => bootPlanBackLink(document),
+  () => undefined,
+)
+
+initMasthead(
+  {
+    recall: '#lesson',
+    words: '#lesson',
+    lesson: '#lesson',
+    sing: '#sing',
+    explorer: '#explorer',
+  },
+  { lesson: 17, deck },
+)
+initReveals()
+startFrameLoop()
+// Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
+void initMercs(q('#heroStage'), { sparkles: 'none' })

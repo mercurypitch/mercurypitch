@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 3 to 15 are live here; a page that holds them back is
+// does, so Lessons 3 to 15 and 17 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -117,6 +117,12 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   [
     '/learn/15',
     'Next lesson 16 · Sing what you see Coming later',
+    '#explorer',
+    'See it on the map',
+  ],
+  [
+    '/learn/17',
+    'Next lesson 18 · Read and sing a whole line Coming later',
     '#explorer',
     'See it on the map',
   ],

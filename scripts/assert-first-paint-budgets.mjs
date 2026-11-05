@@ -113,7 +113,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // guide's breath mark, drawn now by kit/breath-mark.ts, which every
   // figure with a breath shares, and the modules Lesson 2 shares with
   // Lesson 14 regrouped into chunks of their own.
-  'learn/02.html': 169,
+  // Raised to 170 for Lesson 17's page shell: 172,820 bytes on main before
+  // it, 173,376 with it, against 173,056 at 169. 237 of the 556 are on
+  // every lesson page: Lesson 17's tease and its alternative
+  // (kit/lesson-copy.ts, 158) and its drafts line (79). The other 319 are
+  // the kit's predict, quiz and glyphs (kit/predict.ts, quiz.ts, glyphs.ts)
+  // in a chunk of their own again, with its preload and imports, since the
+  // shell loads none of them (353), less 34 of the minifier's renaming. The
+  // chunk goes once Lesson 17's cold open and quizzes load them, and 169
+  // can be tried then.
+  'learn/02.html': 170,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
   // every mode like the rest: the site worker decides where it is live
@@ -191,7 +200,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // column of the season before, a close per season that follows the
   // visit's ending, and the masthead's season from the lesson, on every
   // lesson page.
-  'learn/03.html': 137,
+  // Raised to 138 for Lesson 17's page shell: 140,004 bytes on main before
+  // it, 140,563 with it, against 140,288 at 137. 237 of the 559 are Lesson
+  // 17's tease, its alternative and its drafts line, on every lesson page,
+  // as on Lesson 2; the other 322 are the kit's predict, quiz and glyphs in
+  // a chunk of their own again (356), less 34 of the minifier's renaming,
+  // and 137 can be tried once Lesson 17 loads them.
+  'learn/03.html': 138,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -263,7 +278,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 15's staff toy shares, moves out of the page's module, and the
   // major scale out of Move do's chunk, since Lesson 15 loads Move do alone,
   // each into a chunk of its own.
-  'learn/04.html': 136,
+  // Raised to 137 for Lesson 17's page shell: 139,104 bytes on main before
+  // it, 139,669 with it, against 139,264 at 136. 237 of the 565 are Lesson
+  // 17's tease, its alternative and its drafts line, on every lesson page,
+  // as on Lesson 2; the other 328 are the kit's predict, quiz and glyphs in
+  // a chunk of their own again (362), less 34 of the minifier's renaming,
+  // and 136 can be tried once Lesson 17 loads them.
+  'learn/04.html': 137,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -354,6 +375,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // play and tease still, 146,372 bytes in build:e2e; a quarter over. Sing
   // it opens no microphone, so nothing of the listener comes in.
   'learn/15.html': 179,
+  // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
+  // every mode as Lesson 3 is: its own module on the kit, carrying Season
+  // 2's map (kit/season-2.ts) as a Season 2 page must. Its page shell weighs
+  // 84,000 bytes in build:e2e, the budget the smallest whole KB above that,
+  // to rise as each part joins.
+  'learn/17.html': 83,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -479,6 +506,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
+  // Lesson 17 (a draft, as above). Its page shell weighs 88,092 bytes in
+  // build:e2e: the kit's sheets (with the guide's and the voice lessons',
+  // inlined into its own by @import, and the shared parts), its own, and
+  // the shared Inter and Outfit @font-face rules; the budget the smallest
+  // whole KB above that, to rise as each part joins.
+  'learn/17.html': 87,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

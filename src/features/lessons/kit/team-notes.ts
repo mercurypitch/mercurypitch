@@ -90,4 +90,8 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
     'any-note':
       "The plan's line, the close of Lesson 15's card. It claims only what Lesson 15 has taught, where a note sits on either staff, so it sums up that lesson instead of setting up this one.",
   },
+  17: {
+    shapes:
+      "The season plan's line, cut to fit and made true: it sets up the page changing while the tempo stays, which Step 2's Play both pays off, not the cold open, whose answer is that the page stays the same; so it is the alternative, and the default says what the cold open does (FACTS 5b).",
+  },
 }
