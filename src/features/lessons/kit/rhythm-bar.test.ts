@@ -33,6 +33,7 @@ interface FakeRun {
     book?: (data: unknown, when: number, bus: unknown) => void
     onHit?: (data: unknown, spot: Spot) => void
     onBeat?: (spot: Spot) => void
+    onFrame?: (spot: Spot) => void
   }
   stopped: boolean
   end: (heard: boolean) => void
@@ -110,7 +111,10 @@ const viewOf = (
   pads,
 })
 
-function mount(onPad?: (beat: number) => void) {
+function mount(
+  onPad?: (beat: number) => void,
+  onFrame?: (beats: number | null) => void,
+) {
   document.body.innerHTML =
     '<div class="rb-toy"><div class="viz wide rb" data-rb role="group"><p class="sr" aria-live="polite" data-rb-said></p></div><div class="rb-pads" data-rb-pads></div></div>'
   const figure = document.querySelector<HTMLElement>('[data-rb]')
@@ -127,6 +131,7 @@ function mount(onPad?: (beat: number) => void) {
     voice: () => 'merc',
     owner,
     onPad,
+    onFrame,
   })
   return { bar, figure, pads, said, owner }
 }
@@ -556,6 +561,24 @@ describe('mountRhythmBar', () => {
     // Assert
     expect(quiet).toEqual([['0', '1', '2', '3'], []])
     expect(readings(figure)).toEqual(['1 s', '1 s', '1 s', '1 s'])
+  })
+
+  it('hands each frame its beats as heard, and null as a play starts and ends', async () => {
+    // Arrange
+    const frames: (number | null)[] = []
+    const { bar } = mount(undefined, (b) => frames.push(b))
+    const view = viewOf([times(4, note(1))])
+    bar.show(view)
+
+    // Act
+    const heard = bar.play([{ view, bpm: () => 60 }])
+    runs[runs.length - 1].o.onFrame?.({ bar: 0, beat: 1, beats: 1.25 })
+    drive()
+    await finish()
+    await heard
+
+    // Assert
+    expect(frames).toEqual([null, 1.25, null])
   })
 
   it('answers a pad pressed, marks the chosen one, and moves the choice with the arrow keys', () => {

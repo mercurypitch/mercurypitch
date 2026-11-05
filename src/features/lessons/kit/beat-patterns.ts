@@ -14,6 +14,7 @@
 
 import type { DrumVoiceId } from '@/lib/drum-voices'
 import type { Bar, Hit } from './beat-clock'
+import { angleAtBeats } from './metronome-arm'
 
 /** A lane of the grid: its sound, its level and its words. */
 export interface Lane {
@@ -110,12 +111,9 @@ export function metronomeAngle(t: number, bpm: number): number {
   return angleAtBeats((t * bpm) / 60)
 }
 
-/** The arm's angle `beats` beats after its first, counted on the run's own beats, so a change of tempo bends no swing. */
-export function angleAtBeats(beats: number): number {
-  const a = -24 * Math.cos(Math.PI * beats)
-  // a tidy zero at the middle, never −0 or 1e-15
-  return Math.abs(a) < 1e-9 ? 0 : a
-}
+// the arm's angle by the beats is its own module, so a page that swings a
+// metronome loads nothing else of this one
+export { angleAtBeats }
 
 /** The pattern with one cell toggled: off goes on, on or accented goes off. */
 export function toggleCell(

@@ -92,6 +92,8 @@ export interface RhythmBarOptions {
   readonly owner: SoundOwner
   /** A pad pressed, or chosen by the arrow keys. */
   readonly onPad?: (beat: number) => void
+  /** Every frame while a play runs, the beats since its first as heard; null once it ends or stops (a metronome's swing). */
+  readonly onFrame?: (beats: number | null) => void
 }
 
 /** How the bar is seen, whatever its view: on the pitch line, and with each note's count under it. */
@@ -378,6 +380,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
   }
 
   function settle(): void {
+    o.onFrame?.(null)
     states = states.map((s) => ({
       ...s,
       sounding: null,
@@ -509,6 +512,8 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
       book,
       onHit: heard,
       onBeat,
+      onFrame:
+        o.onFrame === undefined ? undefined : (spot) => o.onFrame?.(spot.beats),
     })
     run = r
     return r.done.then((finished) => {
