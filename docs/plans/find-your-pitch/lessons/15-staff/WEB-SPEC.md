@@ -23,7 +23,7 @@ says what the page needs from each (What the kit and the app still need, items 3
 
 Where this page shares a behaviour with Lesson 12's Sing it (the comfort check, the voice choice,
 "How did that feel?", the guide that waits for Merc's notes), it is Lesson 12's, as built
-(`src/features/lessons/lesson-12/sing-flow.ts:1-41`), unless this spec says otherwise: the guide
+(`src/features/lessons/kit/sing-flow.ts:1-42`), unless this spec says otherwise: the guide
 is drawn on the staff, there is no Move do, and the rest card keeps the practice link, as Lesson
 8's does (Toys 5).
 
@@ -350,7 +350,7 @@ The strip sits below the recall, below the reveal, so its definitions never answ
 
 ### 5. Sing it
 
-Lesson 12's sing flow (`src/features/lessons/lesson-12/sing-flow.ts:1-41`), moved into the kit with
+Lesson 12's sing flow (`src/features/lessons/kit/sing-flow.ts:1-42`), moved into the kit with
 Move do as an option (What the kit and the app still need, item 6), with the guide drawn on the
 staff (Toys 1, state 6). In order:
 
@@ -368,7 +368,7 @@ staff (Toys 1, state 6). In order:
    `:612-625`), lighting
    each note amber as it sounds. Start the guide waits until Merc's notes have been heard with sound
    on, with Lesson 12's hint, "Play Merc's notes first", and its sound-off line
-   (`src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it counts in on do, 0.8 s at 0.065
+   (`src/features/lessons/kit/sing-flow.ts:191-196`); then it counts in on do, 0.8 s at 0.065
    and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and the sweep runs
    6.6 s with no voice. No Move do and no readout (FACTS 56). The line under the buttons is
    LESSON.md's, "The guide counts you in on do, then a line sweeps along the notes. Nothing listens
@@ -389,7 +389,7 @@ feels comfortable.", above its text, and keeps Compose, since Compose asks for n
 It is Lesson 8's form, a line in the card shown for the rest ending, through the kit's
 `VisitEnding` (`src/features/lessons/kit/comfort.ts:89-114`), as Lesson 8's wrap shows it
 (`src/features/lessons/lesson-08/wrap.ts:5-10`, `:21-25`), with "Effortful" leading to the rest
-ending as Lesson 12's flow has it (`src/features/lessons/lesson-12/sing-flow.ts:27-29`, `:100`).
+ending as Lesson 12's flow has it (`src/features/lessons/kit/sing-flow.ts:29-31`, `:100`).
 The kit's practise card that stops being a link after those endings is not needed, since nothing
 on this card asks for the voice (`src/features/lessons/kit/comfort.ts:116-125`). Nothing listens:
 the page never asks for the microphone (FACTS 59a).

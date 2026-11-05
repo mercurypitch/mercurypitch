@@ -180,3 +180,24 @@ export const FREE_STATE: Readonly<
   bass: { staff: 'single', clef: 'bass', tap: 'place' },
   grand: STEP_STATE[5],
 }
+
+/** Sing it's five notes, do, re, mi, fa and so in G, for each voice (FACTS 55). */
+export const SING_NOTES: Readonly<
+  Record<'lower' | 'higher', readonly string[]>
+> = {
+  lower: ['G3', 'A3', 'B3', 'C4', 'D4'],
+  higher: ['G4', 'A4', 'B4', 'C5', 'D5'],
+}
+
+/** Each of the first four notes held 1.15 s, then a 0.05 s glide; the top note 1.8 s (FACTS 57). */
+export const SING_HOLD = 1.15
+export const SING_GLIDE = 0.05
+export const SING_TOP = 1.8
+
+/** When each of the five notes starts, s: one every 1.2 s. */
+export const SING_ONSETS: readonly number[] = [0, 1, 2, 3, 4].map(
+  (i) => Math.round(i * (SING_HOLD + SING_GLIDE) * 1000) / 1000,
+)
+
+/** Merc's notes, and the guide's sweep after the count-in: 6.6 s (FACTS 57, 69). */
+export const SING_SEC = Math.round((SING_ONSETS[4] + SING_TOP) * 1000) / 1000

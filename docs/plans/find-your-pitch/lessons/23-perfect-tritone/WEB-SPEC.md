@@ -358,7 +358,7 @@ the guide drawn on the staff and no Move do. In order:
    1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:297`;
    `playContour`, `src/features/lessons/kit/sound.ts:616`), each note lighting as it sounds. Start
    the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
-   (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`); then it counts in on do, 0.8 s
+   (`HINT`, `src/features/lessons/kit/sing-flow.ts:191-196`); then it counts in on do, 0.8 s
    at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and a
    chrome sweep line runs along the four notes in time, 7.0 s, with no voice and nothing on the
    notes themselves. No Move do and no readout (FACTS 53). The line under the buttons is LESSON.md's
@@ -369,7 +369,7 @@ the guide drawn on the staff and no Move do. In order:
    Effortful and Uncomfortable give Lesson 3's lines (with the doctor lines after Uncomfortable), put
    the guide away for the visit, as Lesson 12's flow does, and set the rest ending, "Effortful"
    included, as Lesson 12's flow asks (`AFTER_OPTIONS`,
-   `src/features/lessons/lesson-12/sing-flow.ts:99-100`; FACTS 56, 58).
+   `src/features/lessons/kit/sing-flow.ts:99-100`; FACTS 56, 58).
 5. **Just listen today**: Merc's line on a tap, in the chosen voice, no guide, and the doctor lines
    (FACTS 50); it sets the rest ending too.
 6. **Then just listen**, in every ending: Play ti and fa plays C♯ and G together for 1.5 s, then D
@@ -575,7 +575,7 @@ coach's look at Sing it"`. Releasing it is deleting that line, then listing the 
    `src/features/lessons/lesson-06/examples.ts:80-90`) move into the kit, since every interval on
    this page plays as Lesson 6's pair, and Lesson 6's page then imports them from there.
 6. **The sing flow in the kit** (Lesson 15 WEB-SPEC, What the kit and the app still need, item 6):
-   Lesson 12's flow (`src/features/lessons/lesson-12/sing-flow.ts:1-41`) with Move do and the guide's
+   Lesson 12's flow (`src/features/lessons/kit/sing-flow.ts:1-42`) with Move do and the guide's
    drawing as options. This page passes no Move do and the staff toy's sing state, and adds a plain
    play outside the flow, Play ti and fa, open in every ending.
 7. **The hero's pitch line**: `lesson-23/cold-open.ts`, new (Toys 2), on the staff toy's lanes.

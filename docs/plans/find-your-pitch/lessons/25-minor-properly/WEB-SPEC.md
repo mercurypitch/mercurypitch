@@ -335,7 +335,7 @@ the guide drawn on the staff and no Move do. In order:
    quiet; then so, ti and do the same way; 9.4 s in all (FACTS 45, 65; `contourOf`,
    `src/features/lessons/kit/sound.ts:297`; `playContour`, `src/features/lessons/kit/sound.ts:616`),
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
-   sound on, with Lesson 12's two hints (`HINT`, `src/features/lessons/lesson-12/sing-flow.ts:192-197`);
+   sound on, with Lesson 12's two hints (`HINT`, `src/features/lessons/kit/sing-flow.ts:191-196`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
    `src/features/lessons/kit/move-do.ts:65-74`; FACTS 46a), and a chrome sweep line runs along the six
    notes in time, 9.4 s, with no voice and nothing on the notes themselves. No Move do and no readout
@@ -344,7 +344,7 @@ the guide drawn on the staff and no Move do. In order:
    (`src/features/lessons/kit/comfort.ts:175`): Easy and Workable give LESSON.md's line; Effortful
    and Uncomfortable give Lesson 3's lines (with the doctor lines after Uncomfortable), put the guide
    away for the visit, as Lesson 12's flow does, and set the rest ending, "Effortful" included, as
-   Lesson 12's flow asks (`AFTER_OPTIONS`, `src/features/lessons/lesson-12/sing-flow.ts:99-100`;
+   Lesson 12's flow asks (`AFTER_OPTIONS`, `src/features/lessons/kit/sing-flow.ts:99-100`;
    FACTS 46, 47).
 5. **Just listen today**: Merc's line on a tap, in the chosen voice, no guide, and the doctor lines
    (FACTS 40); it sets the rest ending too.
