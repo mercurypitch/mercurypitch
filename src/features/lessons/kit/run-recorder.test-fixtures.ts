@@ -25,14 +25,16 @@
 // Only types come from kit/run.ts, so the swap's factory can load this file
 // before the module it replaces.
 
-import type { Run, RunNote, RunOptions } from './run'
+import type { Run, RunLine, RunNote, RunOptions } from './run'
 import type { ContourPoint } from './sound'
 
 /** Which of the kit's runs the page asked for. */
-export type RunKind = 'line' | 'notes' | 'note'
+export type RunKind = 'line' | 'lines' | 'notes' | 'note'
 
 type NotesOptions = RunOptions & {
   readonly onNote?: (n: RunNote, i: number) => void
+  /** A run of sung lines' least length (`playLines`). */
+  readonly length?: number
 }
 
 /** A run the page started: what it asked for, whether it was stopped, and the test's controls. */
@@ -42,6 +44,8 @@ export interface RecordedRun {
   readonly notes: readonly RunNote[]
   /** A sung line's contour; empty for a tune or a note. */
   readonly points: readonly ContourPoint[]
+  /** Sung lines, each from its own moment (`playLines`); empty for any other run. */
+  readonly lines: readonly RunLine[]
   readonly o: NotesOptions
   /** True once the page stopped it, or the test ended it unheard. */
   stopped: boolean
@@ -68,6 +72,7 @@ function record(
   notes: readonly RunNote[],
   points: readonly ContourPoint[],
   o: NotesOptions,
+  lines: readonly RunLine[] = [],
 ): Run {
   let settle: (heard: boolean) => void = () => undefined
   const done = new Promise<boolean>((resolve) => {
@@ -77,6 +82,7 @@ function record(
     kind,
     notes,
     points,
+    lines,
     o,
     stopped: false,
     over: false,
@@ -101,10 +107,14 @@ function record(
   }
 }
 
-/** The kit's three runs, as recorders: spread over kit/run.ts in a `vi.mock`. */
+/** The kit's four runs, as recorders: spread over kit/run.ts in a `vi.mock`. */
 export const recordedRuns = {
   playLine: (points: readonly ContourPoint[], o: RunOptions): Run =>
     record('line', [], points, o),
+  playLines: (
+    lines: readonly RunLine[],
+    o: RunOptions & { readonly length?: number },
+  ): Run => record('lines', [], [], o, lines),
   playNotes: (notes: readonly RunNote[], o: NotesOptions): Run =>
     record('notes', notes, [], o),
   playNote: (midi: number, seconds: number, o: RunOptions): Run =>

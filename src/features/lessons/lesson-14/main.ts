@@ -16,10 +16,11 @@
 // height (song-line.ts). It is the last lesson of Season 1, so its closing
 // card is the season's close.
 //
-// The switches, the steps' deck, the season's close, the season map, the
-// masthead and Merc and Tavi. The rest does nothing until it is wired: the
-// song line on the hero and the stage, the cold open, the recall and the
-// quick check, the four words, Sing it and the closing card's still.
+// The switches, the steps' deck with the song line in each step's state,
+// the season's close, the season map, the masthead and Merc and Tavi. The
+// rest does nothing until it is wired: the song line on the hero, the cold
+// open, the recall and the quick check, the four words, Sing it and the
+// closing card's still.
 
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
@@ -41,6 +42,7 @@ import { createNextCard } from '@/features/lessons/kit/next-card'
 import { engraveClefs, initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/lessons/kit/page-chrome'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initSteps } from './steps'
 
 // the gate's line while sound is off is the markup's (LESSON.md's); once it
 // is on, the line still names the microphone
@@ -55,6 +57,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+initSteps(deck)
 deck.start()
 
 // the season's close first: the explorer binds its map link
