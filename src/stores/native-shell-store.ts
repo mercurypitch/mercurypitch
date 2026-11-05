@@ -31,6 +31,7 @@
 // unmounts while the shell is still up must not leave a transport pointed at
 // a dead engine.
 
+import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
@@ -251,6 +252,14 @@ export interface NativeShellApi {
    * room that finds none treats it the same way.
    */
   karaokeSubscription?: KaraokeSubscriptionApi
+  /**
+   * The Progress tab's own page on a build with it (NATIVE_PROGRESS), which
+   * the app draws in the tab (App.tsx). It is the shell's: it draws in the
+   * shell's icons and sheets and opens its Leagues screen, none of which
+   * the app can import, so the shell lends it here as a lazy component.
+   * Absent on every other build, whose tab draws the web page.
+   */
+  progressPage?: Component
 }
 
 /**

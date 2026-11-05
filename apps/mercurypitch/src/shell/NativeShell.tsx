@@ -27,7 +27,7 @@ import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SingerSheetHost } from '@/components/moderation/SingerSheetHost'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { KARAOKE_IMPORT, NATIVE_COMMUNITY, NATIVE_LEAGUES, NATIVE_ONBOARDING, PREMIUM_EXERCISES, } from '@/lib/native-build'
+import { KARAOKE_IMPORT, NATIVE_COMMUNITY, NATIVE_LEAGUES, NATIVE_ONBOARDING, NATIVE_PROGRESS, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { onUnlockShown, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -225,6 +225,21 @@ const CommunityResultScreen: Component = NATIVE_COMMUNITY
     )
   : () => null
 
+/**
+ * The Progress tab's own page, on a build with it (`NATIVE_PROGRESS`) and no
+ * other: the same ternary as Long note's, so a build with the switch off
+ * keeps no chunk. The app draws it in the tab (App.tsx), lent through the
+ * bridge below, since it draws in the shell's icons and sheets and opens
+ * the Leagues screen, none of which the app can import.
+ */
+const ProgressScreen: Component = NATIVE_PROGRESS
+  ? lazy(async () =>
+      import('./progress/ProgressScreen').then((module) => ({
+        default: module.ProgressScreen,
+      })),
+    )
+  : () => null
+
 /** The two, for ShellScreens: none at all on a build without them. */
 const COMMUNITY_SCREENS: Pick<
   ShellScreensProps,
@@ -366,6 +381,8 @@ export const NativeShell: Component = () => {
         // room draws no way in (premium-exercise-wiring.ts).
         ...installPremiumExercises(),
         ...installLegendCard(),
+        // The Progress tab's page, on a build with it (NATIVE_PROGRESS).
+        ...(NATIVE_PROGRESS ? { progressPage: ProgressScreen } : {}),
       }),
     )
 

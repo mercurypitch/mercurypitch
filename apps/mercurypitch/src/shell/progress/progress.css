@@ -1,0 +1,597 @@
+/* ============================================================
+   The Progress tab, as the native app draws it (NATIVE_PROGRESS)
+   ============================================================
+
+   The native rooms' language at night (the Ear Lab's and the Legend's:
+   the dark stage, glass, lit violet, cyan, Inter for every word), and the
+   same page by day for the light theme. Every colour is a token on the
+   page's root, dark and light, so the sheets it opens take the right ones
+   at their anchor (MISTAKES.md, "Theme a portalled sheet with tokens at
+   its anchor"). Nothing under 13 px; every control 44 px or more but the
+   week bars, which share a card's width thirteen ways and take its whole
+   height instead.
+
+   Loaded by the page's lazy chunk alone, so a store build carries none. */
+
+.mp-prog {
+  /* Night: the native rooms' palette (merc/room.module.css, legend.css). */
+  --prog-ink: #fbf9ff;
+  --prog-text: #f4f1ff;
+  --prog-text-2: #c3c9da;
+  --prog-text-3: #a9b2c8;
+  --prog-stage: #050817;
+  --prog-stage-top: #060a1d;
+  --prog-stage-mid: #0a1030;
+  --prog-stage-low: #070b1d;
+  --prog-stage-foot: #05081a;
+  --prog-glow-a: rgb(154 135 240 / 24%);
+  --prog-glow-b: rgb(127 220 245 / 9%);
+  --prog-card: rgb(10 18 44 / 62%);
+  --prog-card-moment: rgb(10 18 44 / 66%);
+  --prog-card-glow: rgb(154 135 240 / 20%);
+  --prog-card-line: rgb(255 255 255 / 13%);
+  --prog-card-shadow: none;
+  --prog-tile: rgb(255 255 255 / 4%);
+  --prog-tile-line: rgb(255 255 255 / 12%);
+  --prog-press: rgb(255 255 255 / 8%);
+  --prog-glass: rgb(22 28 50 / 66%);
+  --prog-glass-line: rgb(255 255 255 / 15%);
+  --prog-glass-ink: #ebe8f8;
+  --prog-bar: rgb(8 12 32 / 82%);
+  --prog-bar-line: rgb(255 255 255 / 8%);
+  --prog-rule: rgb(255 255 255 / 8%);
+  --prog-lit: #9a87f0;
+  --prog-lit-pale: #c9bcff;
+  --prog-lit-fill: #7c4dff;
+  --prog-lit-glow: rgb(124 77 255 / 42%);
+  --prog-lit-tint: rgb(154 135 240 / 24%);
+  --prog-lit-edge: rgb(190 170 255 / 42%);
+  --prog-chip: rgb(155 120 255 / 16%);
+  --prog-chip-line: rgb(190 160 255 / 34%);
+  --prog-chip-ink: #efe9ff;
+  --prog-cyan: #7fdcf5;
+  --prog-week-top: #b4a5ff;
+  --prog-week-foot: rgb(111 207 233 / 55%);
+  --prog-week-now-top: #e3dcff;
+  --prog-week-now-foot: rgb(143 228 247 / 80%);
+  --prog-week-ring: #f1edff;
+  --prog-week-dot: rgb(255 255 255 / 28%);
+  --prog-week-pin: #ffd48a;
+  --prog-axis: rgb(255 255 255 / 10%);
+  --prog-key: rgb(255 255 255 / 10%);
+  --prog-key-black: #0b1029;
+  --prog-practice: rgb(154 135 240 / 18%);
+  --prog-practice-ink: #d6ccff;
+  --prog-exercise: rgb(127 220 245 / 14%);
+  --prog-exercise-ink: #a5ecfb;
+  --prog-challenge: rgb(94 230 196 / 14%);
+  --prog-challenge-ink: #94f0d8;
+  --prog-weekly: rgb(255 193 90 / 14%);
+  --prog-weekly-ink: #ffd48a;
+  --prog-warn-ink: #ffd48a;
+  --prog-focus: #c9bcff;
+  --prog-skeleton: rgb(255 255 255 / 6%);
+  --prog-skeleton-shine: rgb(255 255 255 / 10%);
+
+  /* The kit's sheets, read where each one is anchored (Sheet.tsx). */
+  --sheet-bg: linear-gradient(180deg, rgb(24 30 64 / 97%), rgb(12 17 42 / 98%));
+  --sheet-border: rgb(255 255 255 / 14%);
+  --sheet-radius: 28px;
+  --sheet-backdrop: rgb(2 4 14 / 62%);
+  --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+  --sheet-handle: rgb(255 255 255 / 28%);
+
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+  min-height: 100%;
+  color: var(--prog-text);
+  font: 400 15px/1.35 var(--font-body, 'Inter', system-ui, sans-serif);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Day: the same page in the light theme, its ink deep and its violet
+   darker, every pairing at 4.5:1 or more. */
+:root[data-theme='light'] .mp-prog {
+  --prog-ink: #15132a;
+  --prog-text: #15132a;
+  --prog-text-2: #4a5064;
+  --prog-text-3: #5b6275;
+  --prog-stage: #f5f4fa;
+  --prog-stage-top: #f3f1fb;
+  --prog-stage-mid: #f6f5fa;
+  --prog-stage-low: #f6f5fa;
+  --prog-stage-foot: #f2f1f7;
+  --prog-glow-a: rgb(124 92 245 / 16%);
+  --prog-glow-b: rgb(63 182 216 / 10%);
+  --prog-card: #ffffff;
+  --prog-card-moment: #ffffff;
+  --prog-card-glow: rgb(124 92 245 / 10%);
+  --prog-card-line: rgb(21 19 42 / 7%);
+  --prog-card-shadow: 0 8px 24px rgb(40 30 90 / 7%);
+  --prog-tile: #f6f5fb;
+  --prog-tile-line: rgb(21 19 42 / 7%);
+  --prog-press: rgb(21 19 42 / 6%);
+  --prog-glass: rgb(255 255 255 / 86%);
+  --prog-glass-line: rgb(21 19 42 / 10%);
+  --prog-glass-ink: #2a2840;
+  --prog-bar: rgb(255 255 255 / 88%);
+  --prog-bar-line: rgb(21 19 42 / 8%);
+  --prog-rule: rgb(21 19 42 / 8%);
+  --prog-lit: #6a3df0;
+  --prog-lit-pale: #4c2bc4;
+  --prog-lit-fill: #6a3df0;
+  --prog-lit-glow: rgb(106 61 240 / 30%);
+  --prog-lit-tint: rgb(106 61 240 / 12%);
+  --prog-lit-edge: rgb(106 61 240 / 30%);
+  --prog-chip: rgb(106 61 240 / 8%);
+  --prog-chip-line: rgb(106 61 240 / 24%);
+  --prog-chip-ink: #4c2bc4;
+  --prog-cyan: #11708a;
+  --prog-week-top: #7c5cf5;
+  --prog-week-foot: rgb(63 182 216 / 60%);
+  --prog-week-now-top: #5a32e0;
+  --prog-week-now-foot: #5a32e0;
+  --prog-week-ring: #2c1880;
+  --prog-week-dot: rgb(21 19 42 / 20%);
+  --prog-week-pin: #a86a00;
+  --prog-axis: rgb(21 19 42 / 10%);
+  --prog-key: rgb(21 19 42 / 8%);
+  --prog-key-black: #2a2840;
+  --prog-practice: rgb(106 61 240 / 10%);
+  --prog-practice-ink: #4c2bc4;
+  --prog-exercise: rgb(31 140 172 / 12%);
+  --prog-exercise-ink: #0f5f76;
+  --prog-challenge: rgb(20 140 110 / 12%);
+  --prog-challenge-ink: #0b6650;
+  --prog-weekly: rgb(200 130 20 / 14%);
+  --prog-weekly-ink: #7a4b00;
+  --prog-warn-ink: #7a4b00;
+  --prog-focus: #6a3df0;
+  --prog-skeleton: rgb(21 19 42 / 6%);
+  --prog-skeleton-shine: rgb(21 19 42 / 3%);
+
+  --sheet-bg: #ffffff;
+  --sheet-border: rgb(21 19 42 / 8%);
+  --sheet-backdrop: rgb(21 19 42 / 36%);
+  --sheet-handle: rgb(21 19 42 / 22%);
+}
+
+/* The tab's scroller keeps a focused control clear of the chrome as its
+   padding keeps a hand's: of the small bar at the top and the rail at the
+   foot, the parked run's pill with it (MISTAKES.md, scroll padding). */
+:root[data-native-shell] .main-content:has(.mp-prog) {
+  scroll-padding-top: calc(var(--safe-top, 0px) + 52px);
+  scroll-padding-bottom: calc(var(--tabbar-total) + 8px);
+}
+
+:root[data-native-shell][data-shell-pill='on'] .main-content:has(.mp-prog) {
+  scroll-padding-bottom: calc(
+    var(--tabbar-total) + 8px + var(--touch-target) + 8px
+  );
+}
+
+/* The stage the cards stand on: fixed, so the night stays still while the
+   cards scroll over it. */
+.mp-prog__stage {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 36% at 18% 4%, var(--prog-glow-a), transparent 70%),
+    radial-gradient(70% 30% at 92% 52%, var(--prog-glow-b), transparent 70%),
+    linear-gradient(
+      180deg,
+      var(--prog-stage-top) 0%,
+      var(--prog-stage-mid) 42%,
+      var(--prog-stage-low) 76%,
+      var(--prog-stage-foot) 100%
+    );
+  background-color: var(--prog-stage);
+}
+
+/* The foot of the screen fades under the rail, so a card's last line is
+   never cut by the glass. */
+.mp-prog__fade {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: calc(var(--tabbar-total, 72px) + 56px);
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--prog-stage-foot) 0%, transparent),
+    color-mix(in srgb, var(--prog-stage-foot) 92%, transparent) 58%,
+    var(--prog-stage-foot)
+  );
+}
+
+.mp-prog__col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top, 0px) + 8px)
+    max(16px, calc(var(--safe-right, 0px) + 8px)) 24px
+    max(16px, calc(var(--safe-left, 0px) + 8px));
+}
+
+.mp-prog :where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure) {
+  margin: 0;
+}
+
+.mp-prog :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+
+.mp-prog :where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mp-prog :where(button) {
+  font-family: inherit;
+}
+
+.mp-prog :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mp-prog :where(button, a, [tabindex='0']):focus-visible,
+.mp-prog-sheet :where(button, a, [tabindex='0']):focus-visible {
+  outline: 2px solid var(--prog-focus);
+  outline-offset: 2px;
+}
+
+.mp-prog-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mp-prog-meta {
+  font: 500 13px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+/* ---------- the header: the large title, and the small one ---------- */
+
+.mp-prog-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.mp-prog-top__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 700 34px/1.1 var(--font-body, sans-serif);
+  letter-spacing: -0.02em;
+  /* Nothing of the web's heading treatment: plain ink. */
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--prog-ink);
+}
+
+/* The small bar: its glass comes in as the large title slides under it
+   (--prog-collapse, title-collapse.ts), so the title is never drawn over
+   the clock unscreened; its title and Share once the large one has gone.
+   Until then it takes no tap: the header's own buttons are under it. */
+.mp-prog-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  height: calc(var(--safe-top, 0px) + 52px);
+  padding: 0 max(16px, var(--safe-right, 0px)) 4px
+    max(16px, var(--safe-left, 0px));
+  pointer-events: none;
+}
+
+.mp-prog-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-bottom: 1px solid var(--prog-bar-line);
+  background: var(--prog-bar);
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px));
+  backdrop-filter: var(--glass-blur, blur(18px));
+  opacity: var(--prog-collapse, 0);
+}
+
+.mp-prog-bar__side,
+.mp-prog-bar__title {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease,
+    visibility 0s linear 200ms;
+}
+
+.mp-prog[data-collapsed='on'] .mp-prog-bar {
+  pointer-events: auto;
+}
+
+.mp-prog[data-collapsed='on'] .mp-prog-bar__side,
+.mp-prog[data-collapsed='on'] .mp-prog-bar__title {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 200ms ease,
+    visibility 0s linear 0s;
+}
+
+.mp-prog-bar__side {
+  display: flex;
+  flex: 0 0 44px;
+  justify-content: flex-end;
+}
+
+.mp-prog-bar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 12px;
+  text-align: center;
+  font: 600 17px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+}
+
+/* The round glass button: What counts, Share, Close. */
+.mp-prog-round {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--prog-glass-line);
+  border-radius: 50%;
+  background: var(--prog-glass);
+  color: var(--prog-glass-ink);
+  cursor: pointer;
+}
+
+.mp-prog-round--48 {
+  width: 48px;
+  height: 48px;
+}
+
+.mp-prog-round:active {
+  transform: scale(0.96);
+}
+
+/* ---------- buttons and rows ---------- */
+
+.mp-prog-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--prog-lit-fill);
+  color: #ffffff;
+  font: 600 15px/1.2 var(--font-body, sans-serif);
+  text-align: center;
+  box-shadow: 0 6px 20px var(--prog-lit-glow);
+  cursor: pointer;
+}
+
+.mp-prog-button--line {
+  border: 1.5px solid var(--prog-glass-line);
+  background: transparent;
+  color: var(--prog-text);
+  box-shadow: none;
+}
+
+.mp-prog-button:active {
+  transform: scale(0.98);
+}
+
+.mp-prog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 16px;
+  background: var(--prog-tile);
+  color: var(--prog-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mp-prog-row:active {
+  background: var(--prog-press);
+}
+
+.mp-prog-row__lead {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--prog-lit-tint);
+  color: var(--prog-practice-ink);
+}
+
+.mp-prog-row__portrait {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+}
+
+.mp-prog-row__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-prog-row__name {
+  font: 600 15px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-row__line {
+  font: 500 13px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-row__chev {
+  flex: 0 0 auto;
+  color: var(--prog-text-3);
+}
+
+.mp-prog-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--prog-lit-pale);
+  font: 600 15px/1.3 var(--font-body, sans-serif);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- cards ---------- */
+
+.mp-prog-card {
+  position: relative;
+  padding: 18px;
+  border: 1px solid var(--prog-card-line);
+  border-radius: 24px;
+  background: var(--prog-card);
+  box-shadow: var(--prog-card-shadow);
+}
+
+.mp-prog-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mp-prog-eyebrow {
+  font: 600 13px/1.2 var(--font-body, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--prog-text-3);
+}
+
+.mp-prog-card__lead {
+  margin-top: 8px;
+  font: 600 18px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+  overflow-wrap: anywhere;
+}
+
+.mp-prog-card__text {
+  margin-top: 10px;
+  font: 400 14px/1.45 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+/* A figure over its words, two to a row. */
+.mp-prog-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.mp-prog-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 16px;
+  background: var(--prog-tile);
+}
+
+.mp-prog-tile__value {
+  order: -1;
+  font: 700 22px/1.1 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+  overflow-wrap: anywhere;
+}
+
+/* A figure written long (a date, "21 semitones") at a size its tile holds
+   on one line. */
+.mp-prog-tile__value[data-long] {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.mp-prog-tile__words {
+  font: 500 13px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-tile__detail {
+  font: 500 13px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+/* ---------- the period, when the record offers more than one ---------- */
+
+.mp-prog-switch {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  min-height: 44px;
+  padding: 3px;
+  border: 1px solid var(--prog-card-line);
+  border-radius: 999px;
+  background: var(--prog-card);
+}
+
+.mp-prog-switch button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--prog-text-3);
+  font: 600 14px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-prog-switch button[aria-pressed='true'] {
+  background: var(--prog-lit-tint);
+  box-shadow: inset 0 0 0 1px var(--prog-lit-edge);
+  color: var(--prog-ink);
+}

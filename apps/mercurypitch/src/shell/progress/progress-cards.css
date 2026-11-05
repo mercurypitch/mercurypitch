@@ -1,0 +1,587 @@
+/* ============================================================
+   The Progress tab's cards (NATIVE_PROGRESS): the moment's pages, the
+   rhythm's weeks, the skill threads, the voice, the paths, the milestones
+   and the league
+   ============================================================
+
+   The tokens they read are the page's (progress.css), set on its root for
+   night and day. Loaded by the page's lazy chunk alone, after progress.css
+   and before progress-sheets.css. */
+
+/* ---------- the moment, and the pages beside it ---------- */
+
+.mp-prog-moments {
+  padding: 0 0 4px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 90% at 100% 0%,
+      var(--prog-card-glow),
+      transparent 60%
+    ),
+    var(--prog-card-moment);
+  background-origin: border-box;
+}
+
+/* Each page at its own height, the pager at the shown one's (fit, in
+   ProgressMoments.tsx), and nothing scrolled up or down inside it. */
+.mp-prog-pager {
+  display: grid;
+  grid-auto-columns: 100%;
+  grid-auto-flow: column;
+  align-items: start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.mp-prog-pager::-webkit-scrollbar {
+  display: none;
+}
+
+/* The foot of each page holds its button's glow: the pager clips. */
+.mp-prog-moment {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px 18px 14px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.mp-prog-moment__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mp-prog-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--prog-chip-line);
+  border-radius: 999px;
+  background: var(--prog-chip);
+  color: var(--prog-chip-ink);
+  font: 600 13px/1 var(--font-body, sans-serif);
+}
+
+.mp-prog-moment__title {
+  margin-top: 14px;
+  font: 700 25px/1.18 var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--prog-ink);
+  overflow-wrap: anywhere;
+}
+
+.mp-prog-moment__context {
+  margin-top: 6px;
+}
+
+.mp-prog-moment__reason {
+  margin-top: 8px;
+  font: 400 14px/1.45 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-moment__basis {
+  margin-top: 10px;
+  font: 500 13px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-moment__actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.mp-prog-moment__go {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-shadow: 0 4px 12px var(--prog-lit-glow);
+}
+
+.mp-prog-dots {
+  display: flex;
+  justify-content: center;
+}
+
+.mp-prog-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.mp-prog-dot i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--prog-week-dot);
+  transition: width 200ms ease;
+}
+
+/* The page in view: a longer dot, never its colour alone. */
+.mp-prog-dot[aria-current='true'] i {
+  width: 18px;
+  border-radius: 3px;
+  background: var(--prog-lit-pale);
+}
+
+/* ---------- rhythm: the weeks ---------- */
+
+.mp-prog-weeks {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 120px;
+  margin: 12px -4px 0;
+}
+
+/* The line every bar stands on. */
+.mp-prog-weeks::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 8px;
+  height: 1px;
+  background: var(--prog-axis);
+  pointer-events: none;
+}
+
+.mp-prog-week {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  padding: 18px 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mp-prog-week:active {
+  background: var(--prog-press);
+}
+
+.mp-prog-week__bar {
+  display: block;
+  width: min(14px, 62%);
+  height: max(8px, calc(var(--level, 0) * 86px));
+  border-radius: 7px;
+  background: linear-gradient(
+    180deg,
+    var(--prog-week-top),
+    var(--prog-week-foot)
+  );
+}
+
+.mp-prog-week[data-empty] .mp-prog-week__bar {
+  width: 5px;
+  height: 5px;
+  margin-bottom: 1px;
+  border-radius: 50%;
+  background: var(--prog-week-dot);
+}
+
+/* The week in view: brighter and ringed, never its colour alone. */
+.mp-prog-week[data-selected] .mp-prog-week__bar {
+  background: linear-gradient(
+    180deg,
+    var(--prog-week-now-top),
+    var(--prog-week-now-foot)
+  );
+  box-shadow: 0 0 0 1.5px var(--prog-week-ring);
+}
+
+.mp-prog-week[data-selected][data-empty] .mp-prog-week__bar {
+  width: 9px;
+  height: 9px;
+  margin-bottom: -1px;
+  background: var(--prog-week-dot);
+}
+
+/* Read from the loaded history only: a dashed edge. */
+.mp-prog-week[data-partial]:not([data-empty]) .mp-prog-week__bar {
+  outline: 1.5px dashed var(--prog-week-ring);
+  outline-offset: 1px;
+}
+
+.mp-prog-week__pin {
+  position: absolute;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--prog-week-pin);
+}
+
+.mp-prog-weeks__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font: 500 13px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+/* ---------- skill threads ---------- */
+
+.mp-prog-thread + .mp-prog-thread {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--prog-rule);
+}
+
+.mp-prog-thread__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.mp-prog-thread__name {
+  min-width: 0;
+}
+
+.mp-prog-thread__name h3 {
+  font: 600 19px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+  overflow-wrap: anywhere;
+}
+
+.mp-prog-thread__name .mp-prog-meta {
+  margin-top: 4px;
+}
+
+.mp-prog-thread__latest {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.mp-prog-thread__latest b {
+  font: 700 28px/1 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+}
+
+.mp-prog-line {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 10px;
+  overflow: visible;
+}
+
+.mp-prog-line__grid {
+  fill: none;
+  stroke: var(--prog-rule);
+  stroke-width: 1;
+}
+
+.mp-prog-line__path {
+  fill: none;
+  stroke: var(--prog-lit);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mp-prog-line__stop-top {
+  stop-color: var(--prog-lit);
+  stop-opacity: 0.28;
+}
+
+.mp-prog-line__stop-foot {
+  stop-color: var(--prog-lit);
+  stop-opacity: 0;
+}
+
+.mp-prog-line__dot {
+  fill: var(--prog-lit-pale);
+}
+
+.mp-prog-line__dot[data-latest] {
+  stroke: var(--prog-week-ring);
+  stroke-width: 1.5;
+}
+
+.mp-prog-thread__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font: 500 13px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-thread__labels b {
+  font-weight: 600;
+  color: var(--prog-text);
+}
+
+/* ---------- your voice ---------- */
+
+.mp-prog-keys {
+  margin-top: 14px;
+}
+
+.mp-prog-keys svg {
+  display: block;
+  width: 100%;
+  height: 44px;
+}
+
+.mp-prog-keys__white {
+  fill: var(--prog-key);
+}
+
+.mp-prog-keys__white[data-lit] {
+  fill: var(--prog-lit);
+}
+
+.mp-prog-keys__black {
+  fill: var(--prog-key-black);
+}
+
+.mp-prog-keys__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font: 500 13px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-text-3);
+}
+
+.mp-prog-keys__lit {
+  font-weight: 600;
+  color: var(--prog-text);
+}
+
+.mp-prog-trace {
+  margin-top: 10px;
+}
+
+/* ---------- paths ---------- */
+
+.mp-prog-route {
+  margin-top: 14px;
+}
+
+.mp-prog-route__stop {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+.mp-prog-route__stop:last-child {
+  padding-bottom: 0;
+}
+
+/* The line from one stop to the next. */
+.mp-prog-route__stop:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--prog-cyan), var(--prog-lit));
+}
+
+.mp-prog-route__mark {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 2.5px solid var(--prog-cyan);
+  border-radius: 50%;
+  background: var(--prog-stage-mid);
+}
+
+/* The stop sung last: a filled lamp, and said so aloud. */
+.mp-prog-route__stop[data-status='current'] .mp-prog-route__mark {
+  border-color: var(--prog-lit);
+  background: var(--prog-lit);
+  box-shadow:
+    0 0 0 4px var(--prog-lit-tint),
+    0 0 14px var(--prog-lit-glow);
+}
+
+.mp-prog-route__stop[data-status='quiet'] .mp-prog-route__mark {
+  border-style: dashed;
+  border-color: var(--prog-text-3);
+}
+
+.mp-prog-route__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mp-prog-route__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font: 600 15px/1.25 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--prog-practice);
+  color: var(--prog-practice-ink);
+  font: 600 13px/1 var(--font-body, sans-serif);
+}
+
+.mp-prog-tag[data-source='exercise'] {
+  background: var(--prog-exercise);
+  color: var(--prog-exercise-ink);
+}
+
+.mp-prog-tag[data-source='challenge'] {
+  background: var(--prog-challenge);
+  color: var(--prog-challenge-ink);
+}
+
+.mp-prog-tag[data-source='weekly'] {
+  background: var(--prog-weekly);
+  color: var(--prog-weekly-ink);
+}
+
+/* ---------- milestones ---------- */
+
+/* The shelf runs to the card's right edge, and scrolls there. */
+.mp-prog-shelf {
+  display: flex;
+  gap: 10px;
+  margin: 12px -18px 0 0;
+  padding-right: 18px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 18px;
+  scrollbar-width: none;
+}
+
+.mp-prog-shelf::-webkit-scrollbar {
+  display: none;
+}
+
+.mp-prog-shelf__mark {
+  display: flex;
+  flex: 0 0 140px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px 12px;
+  border: 1px solid var(--prog-tile-line);
+  border-radius: 18px;
+  background: var(--prog-tile);
+  text-align: center;
+}
+
+.mp-prog-shelf__name {
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-text);
+}
+
+.mp-prog-shelf__detail {
+  font: 400 13px/1.3 var(--font-body, sans-serif);
+  color: var(--prog-text-2);
+}
+
+.mp-prog-mark-art {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--prog-lit-tint);
+  color: var(--prog-practice-ink);
+}
+
+/* The medallions are painted on a dark square: the circle is the coin. */
+.mp-prog-mark-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.12);
+}
+
+/* ---------- the league ---------- */
+
+.mp-prog-league {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  color: var(--prog-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mp-prog-league:active {
+  background: var(--prog-press);
+}
+
+.mp-prog-league__art {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--prog-lit-tint);
+  color: var(--prog-practice-ink);
+}
+
+.mp-prog-league__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mp-prog-league__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mp-prog-league__name {
+  font: 600 16px/1.2 var(--font-body, sans-serif);
+  color: var(--prog-ink);
+}
