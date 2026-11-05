@@ -12,7 +12,7 @@ import { expect } from 'vitest'
 
 /** The season table's body rows, the trailer first. */
 export function seasonRows(): HTMLElement[] {
-  const table = screen.getByRole('table', { name: /^Season 1/ })
+  const table = screen.getByRole('table', { name: /^Seasons 1 and 2:/ })
   const [, body] = within(table).getAllByRole('rowgroup')
   return within(body).getAllByRole('row')
 }
