@@ -45,14 +45,16 @@
 import type { Accessor, Signal } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import type { RoutineStop, StopResult, } from '@/components/room-kit/routine-stop'
+import { EXERCISE_WARM_UP_PATH } from '@/lib/domain/exercise-contracts'
 import { localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
 import type { WarmUpDays, WeekDot } from '@/lib/warm-up-days'
 import { isWarmUpDays, WARM_UP_DAYS_KEY, weekDots, withDay, } from '@/lib/warm-up-days'
+import { noteTasteRun, tasteAllows } from '@/stores/free-taste-store'
 import type { UnlockItem } from '@/stores/notifications-store'
 import { claimUnlocks } from '@/stores/notifications-store'
 import type { WarmUpDay } from './routine'
-import { canEnter, dayFor, finishStop, isWarmUpDay, nextStop, restartDay, roomIndex, skipStop, tally, } from './routine'
+import { atEnd, canEnter, dayFor, finishStop, isWarmUpDay, nextStop, restartDay, roomIndex, skipStop, tally, } from './routine'
 import type { WarmUpRoomId } from './warm-up-plan'
 import { isRoomStop, planWarmUp } from './warm-up-plan'
 
@@ -117,8 +119,14 @@ function markWarmedUp(date: string): void {
 }
 
 function keep(day: WarmUpDay): void {
+  const before = untrack(stored()[0])
   stored()[1](day)
   if (day.warmedUp) markWarmedUp(day.date)
+  // A run that has just reached its end with a stop finished is the
+  // Warm-up's one free run (free-taste-store.ts): counted once, as it lands.
+  const landed = atEnd(day) && tally(day).done > 0
+  const wasAtEnd = before !== null && before.date === day.date && atEnd(before)
+  if (landed && !wasAtEnd) noteTasteRun(EXERCISE_WARM_UP_PATH)
 }
 
 /** The stop whose room is open: an index into the plan's stops. */
@@ -322,12 +330,12 @@ export function warmUpAgain(): void {
 
 /**
  * Whether the singer may start a warm-up. The Warm-up gets one free run of
- * its own, then Premium (N3, owner's call pw-free "own"); that gate lands
- * with the store flip, for every exercise at once. Until then, every
- * build may.
+ * its own, then Premium (N3, owner's call pw-free "own"): the free taste
+ * says (free-taste-store.ts), which lets every run through until the V1
+ * flip turns its gate on, or the Developer screen does to try it.
  */
 export function canStartWarmUp(): boolean {
-  return true
+  return tasteAllows(EXERCISE_WARM_UP_PATH)
 }
 
 /** Drop the run and the days read so far and the open stop: the next read takes storage as it is now. */

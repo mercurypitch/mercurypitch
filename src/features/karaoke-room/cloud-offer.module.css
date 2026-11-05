@@ -162,6 +162,15 @@
   text-wrap: balance;
 }
 
+/* A premium room's offer: the taste just used, and what the subscription
+   opens, under the title. */
+.roomLine {
+  margin: 8px 0 0;
+  color: var(--cloud-muted);
+  font: 400 15px/21px var(--font-body, sans-serif);
+  text-wrap: pretty;
+}
+
 /* The path: pick, split, sing. The strand between the steps is the song.
    From 1 to 2 the voice and the music run braided; at 2 the voice leaves,
    and the music goes on alone to 3. */

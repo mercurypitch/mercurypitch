@@ -18,6 +18,7 @@ import { onCleanup } from 'solid-js'
 import type { RoutineStop } from '@/components/room-kit/routine-stop'
 import type { WarmUpRoomId } from '@/features/warm-up/warm-up-plan'
 import { leaveStop, routineStopFor } from '@/features/warm-up/warm-up-store'
+import { holdTasteForStop } from '@/stores/free-taste-store'
 
 /**
  * The room's stop, or undefined when it is not one; call as the room's
@@ -29,6 +30,8 @@ export function warmUpStop(
 ): RoutineStop | undefined {
   const stop = routineStopFor(id)
   if (stop === undefined) return undefined
+  // Its runs are the Warm-up's, not the room's own free taste.
+  onCleanup(holdTasteForStop(id))
   let ended = false
   const end = (): void => {
     ended = true

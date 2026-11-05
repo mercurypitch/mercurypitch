@@ -108,7 +108,7 @@ import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
-import { EAR_LAB_WITH_MERC, KARAOKE_IMPORT } from '@/lib/native-build'
+import { EAR_LAB_WITH_MERC, KARAOKE_IMPORT, PREMIUM_EXERCISES, } from '@/lib/native-build'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
 import { followAirPlaySuspicion, followExternalScreen, } from '@/stores/airplay-suspicion'
 import { followAudioRoute } from '@/stores/audio-route-store'
@@ -268,6 +268,19 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       registerDeveloperSection({
         id: 'cloud-timings',
         title: 'Cloud subscription',
+        render: () => <Panel />,
+      })
+    })
+  }
+  // The premium rooms' free taste, tried before the V1 flip turns its gate
+  // on: each room's free runs, then the Cloud offer (free-taste-store.ts).
+  // Only in a build with the premium exercises. Same gate, same reason.
+  if (PREMIUM_EXERCISES) {
+    void import('./shell/FreeTastePanel').then((module) => {
+      const Panel = module.FreeTastePanel
+      registerDeveloperSection({
+        id: 'free-taste',
+        title: 'Free taste',
         render: () => <Panel />,
       })
     })

@@ -13,6 +13,9 @@
 // skipped (warm-up-stop.ts). "Sing a song" goes back to the Sing room and
 // asks it for its song list (DESIGN-warm-up.md N15).
 //
+// Its free run used (free-taste-store.ts), the path is padlocked, and
+// "Warm up with Premium" opens the Cloud offer for it (free-taste-gate.ts).
+//
 // Opening is the choice: the screen records the Warm-up as the last
 // exercise the moment it mounts, as every room's screen does, and the Sing
 // screen's row offers it again from then on. Its stops do not: in the
@@ -28,6 +31,7 @@ import { rememberLastExercise } from '@/features/premium-exercises/last-exercise
 import { WarmUpPath } from '@/features/warm-up/WarmUpPath'
 import { EXERCISE_WARM_UP_PATH } from '@/lib/domain/exercise-contracts'
 import { requestSongList } from '@/stores/native-shell-store'
+import { offerWarmUp } from './free-taste-gate'
 import { openPremiumExercise, preloadExercise } from './premium-exercise-wiring'
 import { popScreen } from './run-shell-store'
 
@@ -40,6 +44,7 @@ export function WarmUpScreen(): JSX.Element {
       onPreload={preloadExercise}
       onOpenRoom={openPremiumExercise}
       onDone={popScreen}
+      onPremium={offerWarmUp}
       onSong={() => {
         popScreen()
         requestSongList()

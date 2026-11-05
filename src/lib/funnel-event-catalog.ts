@@ -157,6 +157,53 @@ export const APP_FUNNEL_EVENTS = [
   /** Songs sent to be separated. A client's first is the onboarding
    *  funnel's last step, the first import (S7b §7). */
   'import_sent',
+  /** The same offer, opened by a premium room whose free runs are used
+   *  (src/lib/free-taste.ts). Which room it was is in `room_offer_*`. */
+  'cloud_view_room',
+  /** The premium rooms' free taste, one name a room since these events
+   *  carry no metrics (src/lib/free-taste.ts ROOM_EVENTS): a tap on the
+   *  room's card (the Sing room's picker and row, the Ear Lab's Ear rooms
+   *  row), */
+  'room_tap_long_note',
+  'room_tap_echo',
+  'room_tap_ng_slides',
+  'room_tap_lip_roll',
+  'room_tap_warm_up',
+  'room_tap_home_note',
+  'room_tap_first_note',
+  'room_tap_leap',
+  'room_tap_harmony',
+  /** the room opened by that tap, */
+  'room_open_long_note',
+  'room_open_echo',
+  'room_open_ng_slides',
+  'room_open_lip_roll',
+  'room_open_warm_up',
+  'room_open_home_note',
+  'room_open_first_note',
+  'room_open_leap',
+  'room_open_harmony',
+  /** the Cloud offer shown in its place once its free runs are used (the
+   *  Warm-up's from its padlocked "Warm up with Premium"), */
+  'room_offer_long_note',
+  'room_offer_echo',
+  'room_offer_ng_slides',
+  'room_offer_lip_roll',
+  'room_offer_warm_up',
+  'room_offer_home_note',
+  'room_offer_first_note',
+  'room_offer_leap',
+  'room_offer_harmony',
+  /** and a subscription bought from that offer. */
+  'room_trial_long_note',
+  'room_trial_echo',
+  'room_trial_ng_slides',
+  'room_trial_lip_roll',
+  'room_trial_warm_up',
+  'room_trial_home_note',
+  'room_trial_first_note',
+  'room_trial_leap',
+  'room_trial_harmony',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */

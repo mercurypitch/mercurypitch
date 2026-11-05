@@ -38,6 +38,8 @@
 import { createSignal } from 'solid-js'
 import { ensureSingerIdentity } from '@/db/services/singer-identity'
 import { trackEvent } from '@/lib/analytics'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { ROOM_EVENTS } from '@/lib/free-taste'
 import { micActive, singingCaptureActive } from '@/stores/mic-store'
 import type { KaraokeCarryOutcome, KaraokeOffer, } from '@/stores/native-shell-store'
 import { nativeRunControls, nativeShellApi } from '@/stores/native-shell-store'
@@ -49,13 +51,15 @@ import { awaitSubscription, CLOUD_NAME, karaokeSongs, refreshKaraokeSongs, songs
 /**
  * Where an offer was opened from. The onboarding opens it at its end (beat
  * 9) and as its own Not now leaves (`onboarding-exit`), apart so the two
- * are counted apart.
+ * are counted apart. A premium room opens it in its own place once its free
+ * taste is used (`room`, src/lib/free-taste.ts).
  */
 export type CloudOfferSource =
   | 'import'
   | 'settings'
   | 'onboarding'
   | 'onboarding-exit'
+  | 'room'
 
 /** The offer itself, or what follows a yes from the store. */
 export type CloudOfferView = 'offer' | 'subscribed'
@@ -66,6 +70,7 @@ const ASKED_FOR: Readonly<Record<CloudOfferSource, boolean>> = {
   settings: true,
   onboarding: false,
   'onboarding-exit': false,
+  room: true,
 }
 
 /** After a Not now, no offer nobody asked for, for this long (S7 §5). */
@@ -80,6 +85,8 @@ const NOT_NOW_KEY = 'mp:cloud-offer-not-now'
 export interface CloudOfferState {
   readonly source: CloudOfferSource
   readonly view: CloudOfferView
+  /** The room that opened it, for `room`: the sheet names it. */
+  readonly room?: PremiumExerciseId
 }
 
 const [current, setCurrent] = createSignal<CloudOfferState | null>(null)
@@ -221,6 +228,17 @@ export function openCloudOffer(
 }
 
 /**
+ * The offer in a premium room's place, its free taste used: opened by the
+ * singer's tap on the room, so no cap applies. Counted as the offer's view
+ * and as the room's own step on the way to it.
+ */
+export function openRoomOffer(room: PremiumExerciseId): void {
+  setCurrent({ source: 'room', view: 'offer', room })
+  trackEvent(CLOUD_VIEW_EVENT.room)
+  trackEvent(ROOM_EVENTS[room].offer)
+}
+
+/**
  * The store said yes while the offer was up: say what follows, and ask the
  * server until it has heard. A caller that has already asked (a restore)
  * passes `wait: false`.
@@ -228,7 +246,7 @@ export function openCloudOffer(
 export function showCloudSubscribed(wait = true): void {
   const open = current()
   if (open === null) return
-  setCurrent({ source: open.source, view: 'subscribed' })
+  setCurrent({ ...open, view: 'subscribed' })
   if (wait) void waitForSongs()
 }
 

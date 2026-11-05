@@ -10,8 +10,8 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
 
 **The owner's decision and requests of 28 Oct 2026.**
 
-- Decided: the free taste is three runs per room, then the paywall. The gate comes with the V1 flip
-  and is not built yet.
+- Decided: the free taste is three runs per room, then the paywall. The gate comes with the V1 flip.
+  Built on 5 Nov 2026 and off until that flip (see "The free taste", under How they earn).
 - Asked for: the singer's own songs, imported and split in the Karaoke room, as First note's songs
   too.
 - Asked for: an optional hint with the words of the line the singer comes in on. It ships off by
@@ -408,7 +408,8 @@ mid-routine it would leave the Warm-up. With it the routine reads "4 min" on the
 - A song of the singer's own is read again only when its stems or the rules change: lyrics synced
   after the read bring their words at the next read, not before.
 - No paywall of its own yet. Like every premium room it rides `PREMIUM_EXERCISES` until the V1
-  flip, which brings the free taste with it: three runs per room, then the paywall.
+  flip, which turns the free taste on: three runs per room, then the paywall (built, see "The free
+  taste").
 
 ## Room 3: Leap
 
@@ -600,6 +601,39 @@ sheet, which is what Cloud sells. A free taste lets the rooms show their worth: 
 room, then the paywall (owner, 28 Oct 2026). The gate comes with the V1 flip (`PREMIUM_EXERCISES`
 in `src/lib/native-build.ts`). Measure the chain per room: row taps, room starts, offer views,
 trials.
+
+### The free taste (5 Nov 2026)
+
+Built, and off until the V1 flip turns `PREMIUM_GATE` on (`src/lib/native-build.ts`). A test build
+tries it from the Developer screen's **Free taste** section: "Try the free taste" turns the gate on
+for that phone, each room's runs used against its free ones are listed, and "Give every room its
+free runs again" resets them.
+
+- **How many.** The four Ear rooms give three runs each (owner, 28 Oct, confirmed 1 Nov). Long
+  note, Echo, Lip roll and Ng slides give one each, as `PREMIUM_EXERCISES` recorded, and the
+  Warm-up one run of its own (pw-free "own"). One table, `FREE_RUNS` in `src/lib/free-taste.ts`.
+- **What counts.** A run that reached its end and kept a result (`recordExerciseResult`); a run
+  stopped early never does. A room sung as a Warm-up stop counts for the Warm-up, not the room,
+  and a Warm-up run counts as it lands at its end with a stop finished. Runs count only while the
+  gate is on, so the taste starts when the gate does. The counts stay on the phone
+  (`mp:free-taste-runs`); the Karaoke import's free song is the server's.
+- **The gate.** A room's card (the Sing room's picker and row, the Ear Lab's Ear rooms row) opens
+  the room while runs are left. After the last, it opens the Cloud offer in the room's place:
+  "Keep training with Merc", with a line naming the room ("You've had your free runs of Leap.
+  Every Merc room, as often as you like, and your own songs to sing."), over the same plan and
+  steps. Inside a room, Start and Again ask the same before each new run (the room kit's dock),
+  so staying in the room does not run on past the taste. The Warm-up's path, its run used, shows
+  its padlocked "Warm up with Premium", which opens the offer. Before an offer opens the phone
+  asks the server and the store, as the import does: a subscriber goes straight in, and one the
+  store knows of before the server sees "You're subscribed" while it hears.
+- **The cards say it.** While the gate is on and the singer has no subscription, each card's last
+  line counts the taste: "3 free runs", "1 free run left", "Free runs used", "Your free warm-up".
+- **Measured, per room** (events carry no metrics, so the room is in the name): `room_tap_*` (a
+  card tapped), `room_open_*` (the room opened by it), `room_offer_*` (the offer in its place) and
+  `room_trial_*` (a subscription bought from that offer), beside `cloud_view_room`. The worker's
+  allowlist follows the catalogue, so it deploys before the client, as the catalogue asks.
+- **Not yet.** The counts do not follow the account: a reinstall gives the taste again. The
+  offer's art and steps are the Karaoke import's; only its title and line speak of the rooms.
 
 Practice on the device can be paid on the phone. `docs/plans/premium.md`, which said everything
 that runs on the device stays free, is marked outdated (owner, 27 Oct 2026).

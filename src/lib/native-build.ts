@@ -61,11 +61,21 @@ export const KARAOKE_IMPORT: boolean =
  * the builds the subscription does: a native test build, TestFlight among
  * them, and not the store build until the V1 flip puts the subscription in
  * it. Folded like `KARAOKE_IMPORT`, so the store build carries none of their
- * code (assert-bundle.mjs STAGE 2). The flip must bring the exercises' own
- * gate with it (one free run, then the paywall): a build that answers true
- * today opens them to everyone.
+ * code (assert-bundle.mjs STAGE 2). The flip must turn their own gate on
+ * with it (`PREMIUM_GATE`): a build that answers true and leaves the gate
+ * off opens them to everyone, as TestFlight does today.
  */
 export const PREMIUM_EXERCISES: boolean = KARAOKE_IMPORT
+
+/**
+ * Whether the premium rooms hold back once their free taste is used: so
+ * many finished runs each (src/lib/free-taste.ts), then the Cloud offer in
+ * the room's place, for a singer without the subscription. Off until the V1
+ * flip, which turns it on beside the subscription in the store build. A
+ * test build can try it before then from the Developer screen's Free taste
+ * switch (src/stores/free-taste-store.ts), which leaves this alone.
+ */
+export const PREMIUM_GATE: boolean = false
 
 /**
  * Whether this build carries the native app's own onboarding (plans S7 and

@@ -29,6 +29,7 @@ import { trackEvent } from '@/lib/analytics'
 import { runStoppedEarly } from '@/lib/domain/exercise-contracts'
 import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import { createPersistedSignal } from '@/lib/storage'
+import { noteTasteRun } from './free-taste-store'
 import { recordCompletion } from './usage-store'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
@@ -169,6 +170,9 @@ export function recordExerciseResult(
   // recordCompletion counts a FINISHED run for the survey gate (and counts
   // as activity too, so recordActivity is folded in).
   recordCompletion()
+  // A premium room's finished run is one of its free taste (free-taste-
+  // store.ts, which leaves a Warm-up stop's run to the Warm-up).
+  if (!runStoppedEarly(entry.metrics)) noteTasteRun(entry.type)
 
   const trace = lastRunTrace()
   const tracedRunMs =

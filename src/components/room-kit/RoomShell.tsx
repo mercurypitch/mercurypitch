@@ -54,6 +54,7 @@ import type { DemoLayerProps } from '@/components/demo-kit/DemoLayer'
 import { DemoLayer } from '@/components/demo-kit/DemoLayer'
 import { DemoTakePill } from '@/components/demo-kit/DemoTakePill'
 import type { DemoMode, ExerciseDemo, } from '@/components/demo-kit/useExerciseDemo'
+import { holdAnotherRun } from '@/stores/free-taste-store'
 import { createFocusHandoff } from './focus-handoff'
 import type { MicState } from './mic-state'
 import { RoomAsk, RoomBarEnd } from './RoomBar'
@@ -487,11 +488,16 @@ export function ShellDock<C extends string, T extends string>(
   // eslint-disable-next-line solid/reactivity -- the room's, made once
   const shell = props.shell
   const run = shell.run
+  // A premium room's free taste used, a new run opens the Cloud offer
+  // instead (free-taste-store.ts); a Warm-up stop's runs are the Warm-up's.
+  const held = (): boolean => shell.routine === null && holdAnotherRun()
   const again = (): void => {
+    if (held()) return
     if (props.onAgain === undefined) run.start()
     else props.onAgain()
   }
   const tapMic = (): void => {
+    if (shell.phase() === 'intro' && held()) return
     if (props.onMic !== undefined) props.onMic()
     else if (shell.phase() === 'intro') run.start()
     else run.stop()

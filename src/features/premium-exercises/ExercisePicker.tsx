@@ -26,8 +26,10 @@ import { Volume2 } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { WeekDots } from '@/components/room-kit/WeekDots'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { tasteLine } from '@/lib/free-taste'
 import type { WeekDot } from '@/lib/warm-up-days'
 import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
+import { tasteRunsUsed, tasteShows } from '@/stores/free-taste-store'
 import type { LegendCardWords } from '@/stores/native-shell-store'
 import type { CatalogueGroup, PremiumExercise } from './catalogue'
 import { catalogueGroups } from './catalogue'
@@ -119,6 +121,13 @@ const Card: Component<{
             <span class={styles.cardMeta} data-testid="sing-exercise-meta">
               <Volume2 />
               Merc sings it first
+            </span>
+          </Show>
+          {/* The free taste, while its gate is on and there is no
+              subscription (free-taste-store.ts). */}
+          <Show when={tasteShows()}>
+            <span class={styles.cardMeta} data-testid="sing-exercise-taste">
+              {tasteLine(props.exercise.id, tasteRunsUsed(props.exercise.id))}
             </span>
           </Show>
         </span>
