@@ -1063,7 +1063,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    WEB-SPEC, Toys 7). Season 2's close takes Lesson 28's lines (§ 3, Lesson 28's card), and Season
    1's gains its rest line, as Lesson 14's spec gives it (Lesson 14 WEB-SPEC item 12).
 2. **A staff toy**: the engraving of § 6.1 item 1 as a page toy, with the F clef (the kit has only a
-   G clef path, `src/features/lessons/kit/glyphs.ts:10`), the house on do (`home-glyph.ts`), the
+   G clef path, `src/features/lessons/kit/glyphs.ts:15`), the house on do (`home-glyph.ts`), the
    pitch-line toggle, and play on every example.
 3. **Rhythm on the staff**: the Ear Lab's notation maths is pure and can be shared
    (`src/lib/ear/rhythm-notation.ts:57-70`), but it writes only 4-beat bars (:24); 3/4 and 6/8 need

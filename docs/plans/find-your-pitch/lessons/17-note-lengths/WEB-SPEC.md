@@ -665,7 +665,7 @@ are in; items 6 to 8 and 12 come with the page's own PR.
    write-as-it-sounds drawing with its flags joining into a beam, and the stopwatch strip with its
    rule for narrow cells (Toys 6). 4/4 is all this page needs; 3/4 and 6/8 are Lesson 19's.
 4. **The staff toy** (SEASON-2 § 6.2 item 2) with the F clef, since the kit has only the G clef's path
-   (`G_CLEF_PATH`, `src/features/lessons/kit/glyphs.ts:10`): this page needs one pitch on either clef,
+   (`G_CLEF_PATH`, `src/features/lessons/kit/glyphs.ts:15`): this page needs one pitch on either clef,
    A3 on the bass staff's top line and A4 in the treble's second space, with A3's stems down, its ties
    above and its dots in the space above the top line, and A4's stems up, its ties below and its dots
    in its space (FACTS 29), all of which SEASON-2 § 6.1 item 1 marks as "checked, then built", where it

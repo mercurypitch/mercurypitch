@@ -173,7 +173,7 @@ purpose: `lesson=` and two digits, 01 to 14, Season 1's lessons"; `SEASON_1_LESS
 /^(?:0[1-9]|1[0-4])$/` (:19). Code read. Strong.
 
 **R15-20. The kit has only a G clef path and its pages engrave decorative clefs.**
-`src/features/lessons/kit/glyphs.ts:10` (`G_CLEF_PATH`); `src/features/lessons/kit/page-chrome.ts:166-175`
+`src/features/lessons/kit/glyphs.ts:15` (`G_CLEF_PATH`); `src/features/lessons/kit/page-chrome.ts:166-175`
 (`engraveClefs`, `svg.clef[data-clef="g"]`). The page toy needs an F clef (season plan § 6.2 item 2).
 Code read. Strong.
 
