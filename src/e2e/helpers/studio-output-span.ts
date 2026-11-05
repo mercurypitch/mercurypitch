@@ -132,23 +132,24 @@ function toneArrival(
 
 /** What a start from silence did, read from the output around one press. */
 export interface StartReading {
-  /** The output's level in the 30 ms before the press, in dBFS: silence when the song starts from silence. */
+  /** The output's level in the 30 ms before the stamp, in dBFS: silence when the song starts from silence. */
   readonly beforeDb: number
   /** The tone's settled amplitude, in dBFS. */
   readonly settledDb: number
-  /** Audio-clock ms from the press until the tone first reaches 1 % of that (-40 dB). */
+  /** Audio-clock ms from the stamp until the tone first reaches 1 % of that (-40 dB). */
   readonly firstSoundMs: number | null
   /** The same until half of it (-6 dB): most of the attack is over. */
   readonly halfLevelMs: number | null
-  /** How far the speakers trail the render clock at the press, as the page reports it, in ms. */
+  /** How far the speakers trail the render clock at the stamp, as the page reports it, in ms. */
   readonly outputPathMs: number
 }
 
 /**
- * Read a start from silence: the press's audio-clock stamp, a tone the song
- * plays, and that tone's level `settleMs` after the press. A capture that
- * does not hold the press and the settled level, or whose tone never came,
- * throws instead of reading as a fast start.
+ * Read a start from silence: an audio-clock stamp (a press, or the source
+ * start a Play scheduled from), a tone the song plays, and that tone's level
+ * `settleMs` after the stamp. A capture that does not hold the stamp and the
+ * settled level, or whose tone never came, throws instead of reading as a
+ * fast start.
  */
 export function readStart(
   capture: StudioCapture,
