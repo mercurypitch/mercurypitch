@@ -199,10 +199,22 @@ describe('Season 2', () => {
     ])
   })
 
-  it('carries no copy of its own yet: each tease lands with the page that draws it', () => {
+  it("teases Lesson 16 on Lesson 15's card, and carries no other copy of its own yet", () => {
+    // Arrange
+    const L16 = LESSONS_2.find((L) => L.n === 16)
+
+    // Assert: Lesson 16 FACTS 5b; a tease lands with the page that draws it
+    expect(L16?.tease).toBe(
+      'Five notes on the staff. Tavi has never heard them.',
+    )
+    expect(L16?.teaseAlts).toEqual([
+      { id: 'any-note', text: 'Now you can see where any note sits.' },
+    ])
     for (const L of LESSONS_2) {
-      expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
+      if (L.n === 16) continue
+      expect(L.tease, `lesson ${L.n}`).toBeUndefined()
+      expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }
     expect(TEASE_MAX).toBe(70)
   })

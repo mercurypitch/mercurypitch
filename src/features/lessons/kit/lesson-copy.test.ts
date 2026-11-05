@@ -31,14 +31,14 @@ const copy: LessonCopy = {
 const PLANNING =
   /Signature|deep link|\bslug\b|in production|\bplanned\b|durationSec|launch field|placeholder|proof episode|still rendering|for the team|\bblueprint\b|\b[TS]\d\d\b/i
 
-/** Every hook a page could draw: each lesson's default and its alternatives. */
-const HOOKS = LESSONS.flatMap((L) => [
+/** Every hook a page could draw, in either season: each lesson's default and its alternatives. */
+const HOOKS = ALL_LESSONS.flatMap((L) => [
   [L.n, L.hook] as const,
   ...(L.hookAlts ?? []).map((v) => [L.n, v.text] as const),
 ])
 
-/** Every tease a card could draw. */
-const TEASES = LESSONS.flatMap((L) => [
+/** Every tease a card could draw, in either season. */
+const TEASES = ALL_LESSONS.flatMap((L) => [
   ...(L.tease === undefined ? [] : [[L.n, L.tease] as const]),
   ...(L.teaseAlts ?? []).map((v) => [L.n, v.text] as const),
 ])
