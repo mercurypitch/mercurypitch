@@ -85,6 +85,13 @@
   }
 }
 
+/* ---------------------------------------------------------------- four words */
+/* each figure a small staff, as wide as the stub lets it be */
+.ticket .stub svg.word-fig {
+  width: 80px;
+  height: 120px;
+}
+
 /* ---------------------------------------------------------------- the staff toy's stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */
 .steps-stage .toy .eyebrow {

@@ -83,6 +83,8 @@ export interface Scene {
   readonly staffLit: Clef | null
   /** A small figure: no names, no letters, thinner margins. */
   readonly small?: boolean
+  /** Lines and spaces alone, with no clef: a staff before it says which notes. */
+  readonly noClef?: boolean
 }
 
 /** A scene with nothing on it: `staff` making room for `room`. */
@@ -345,7 +347,11 @@ function staves(s: Scene, L: Layout, parent: Element): void {
     hline(L.x0, L.x1, L.yOf(p), lit(p) ? 'st-line is-lit' : 'st-line', g)
   if (s.staff === 'grand') brace(L, g)
   const clefs: readonly Clef[] =
-    s.staff === 'grand' ? ['treble', 'bass'] : [s.staff]
+    s.noClef === true
+      ? []
+      : s.staff === 'grand'
+        ? ['treble', 'bass']
+        : [s.staff]
   for (const c of clefs) {
     const bottom = s.staff === 'grand' && c === 'treble' ? 12 : 0
     engraveClef(c, L.x0 + L.space * 0.3, L.yOf(bottom), L.space, g)

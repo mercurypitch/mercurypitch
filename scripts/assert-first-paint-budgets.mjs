@@ -336,9 +336,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // its drawing, places and glyphs, and the key strip) 113,061, with the
   // cold open's pitch line, its fold and the kit's predict 120,406, and with
   // the kit's quiz, the recall's Lesson 2 questions and its pair, and the
-  // quick check 132,396 in build:e2e, the budget the smallest whole KB
-  // above that, to rise as each part joins.
-  'learn/15.html': 130,
+  // quick check 132,396, and with the four words' figures and plays 134,648
+  // in build:e2e, the budget the smallest whole KB above that, to rise as
+  // each part joins.
+  'learn/15.html': 132,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -458,7 +459,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // 11 and 13, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/14.html': 108,
-  // Lesson 15 (a draft, as above). Measured 90,169 bytes in build:e2e: the
+  // Lesson 15 (a draft, as above). Measured 90,220 bytes in build:e2e: the
   // kit's sheets (the guide's in the chunk the quizzes share, the voice
   // lessons' and the staff toy's inlined into its own by @import, and the
   // shared parts), its own, and the shared Inter and Outfit @font-face

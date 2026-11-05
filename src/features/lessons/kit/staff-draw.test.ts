@@ -58,6 +58,18 @@ describe('drawScene', () => {
     expect(count(both, '.st-ledger')).toBe(0)
   })
 
+  it('draws a staff with no clef where the scene leaves it out', () => {
+    // Arrange
+    const el = figure()
+
+    // Act
+    drawScene(el, treble([], { noClef: true }), SIZE)
+
+    // Assert
+    expect(count(el, '.st-line')).toBe(5)
+    expect(count(el, '.st-clef')).toBe(0)
+  })
+
   it('spaces the five lines evenly, the clef of each staff on its own bottom line', () => {
     // Arrange
     const el = figure()
