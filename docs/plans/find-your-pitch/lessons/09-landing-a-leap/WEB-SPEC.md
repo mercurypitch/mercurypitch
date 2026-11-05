@@ -707,10 +707,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:379-382`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:681-685`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:118-166`, `:392-395`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:701-705`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:335-345`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:348-358`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -907,7 +907,7 @@ parts:
     reading time while its line is in `drafts.ts`, and `seasonFor(LESSONS, defaultPageState(true))`
     keeps both, as `publish.test.ts` checks a lesson held back and one published (`:59-190`). That
     file's example of a lesson with no page is found, not named: the first lesson the season has
-    with none (`:45-56`, through `lessonWithNoPage` in `kit/season.test-fixtures.ts:27-41`), so
+    with none (`:46-57`, through `lessonWithNoPage` in `kit/season.test-fixtures.ts:27-41`), so
     this page's arrival does not break it. Lesson 9's practise link carries `?lesson=09`, and
     `EDGES` holds [3, 9] and [6, 9].
 13. The kit's new option (What the kit and the app still need, 8):
@@ -944,7 +944,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
    first screen at seven sizes and reports where Play Merc's leap and the three choices sit
-   (`:176-203`).
+   (`:180-207`).
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`): with
    sound off, Start asks for no microphone and the hint says sound is off; with sound on, a steady
    A3 (`writeToneWav(220)`) on the lower full ladder reads so "Right in the middle" and the other

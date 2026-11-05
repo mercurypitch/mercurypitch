@@ -508,7 +508,7 @@ null; the card is not drawn, and the mark stays as the page wrote it, its figure
 (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`; `createNextCard`,
 `src/features/lessons/kit/next-card.ts:176-210` at `ad0a099f7`). With Season 2's lessons in the same list it would
 draw the close in Season 1's words, "End of Season 1" and "You've seen every note you sing. Now sing
-a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:130-141`), and Lesson 14's
+a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:139-150`), and Lesson 14's
 page would draw Lesson 15's card instead of its own close. Either way it draws once and never
 redraws
 (`src/features/lessons/kit/next-card.ts:224-227`), so it cannot follow Sing it's ending (FACTS 5).
@@ -686,7 +686,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      Lesson 14's page would draw Lesson 15's card, and Lesson 28's draws nothing until it is in the
      list;
    - a close per season: `SEASON_END` is one, "End of Season 1"
-     (`src/features/lessons/kit/lesson-copy.ts:130-141`); Season 2's is LESSON.md's, its eyebrow,
+     (`src/features/lessons/kit/lesson-copy.ts:139-150`); Season 2's is LESSON.md's, its eyebrow,
      its line and its rest line, with the same two ways on, kept free of the team's words as the
      copy's test asks;
    - the rest-aware close Lesson 14's item 12 requires, for both seasons: after "Effortful",
@@ -919,7 +919,7 @@ parts it adds:
 Page tests (the series' own, run on every lesson page): the head test, with the title, the
 description's length and its "A nineteen-minute lesson", the chip and `timeRequired`
 (`src/tests/lesson-pages.test.ts:156-159`, `:191-210`); no planning text on the page, T22 and T31
-included (`src/e2e/learn-no-planning-text.spec.ts:40`); the stage fits a 390 px screen; first
+included (`src/e2e/learn-no-planning-text.spec.ts:41`); the stage fits a 390 px screen; first
 paint within the budget; the claims validator; one sound at a time; no background staff or clef;
 the tour's hold.
 

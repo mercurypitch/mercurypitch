@@ -572,7 +572,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    next-lesson card draws the lesson after the page's own wherever the data holds one, and the
    season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`),
    so once Lesson 15 is in the data, Lesson 14's page would draw Lesson 15's card in place of
-   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:129-141`), which SEASON-2
+   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:138-150`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card
    for Lesson 15 would answer nothing, but Season 1's end would be gone. `LESSONS[n].n === n` (`src/features/lessons/kit/season.ts:108-110`) and the head
    test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-211`) read one list by number;
@@ -713,7 +713,7 @@ Page tests, against a local or dev build, never production:
    80 to 160 with "A fifteen-minute lesson", the chip "15 minutes" and `timeRequired` `PT15M`
    (`:155-159`, `:191-210`).
 10. No planning text on the page: no topic code such as "T30", no "planned", "deep link" or "for the
-    team" (`src/e2e/learn-no-planning-text.spec.ts:22-41`).
+    team" (`src/e2e/learn-no-planning-text.spec.ts:23-42`).
 11. The stage-fit test at the four short landscape sizes, every step's controls on screen with the
     stage stuck (`src/e2e/learn-stage-fit.spec.ts:36-57`).
 12. The first-paint budgets for `learn/15.html` (FACTS 73).

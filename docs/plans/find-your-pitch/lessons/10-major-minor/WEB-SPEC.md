@@ -1149,7 +1149,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
    starts "Right." or "Not quite.".
 10. Every practice link carries `?lesson=10` before any hash: `/pitch-training?lesson=10` and
     `/ear-lab?lesson=10`.
-11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:37-110`) end on the row for
+11. The next-lesson card: `src/e2e/learn-next-card.spec.ts`'s cards (`:38-111`) end on the row for
     the page before the season's first lesson with no page (`lessonWithNoPage`, `:35`), which is
     this page's while Lesson 11 has none: the eyebrow "Next lesson 11 · Registers and the break
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
@@ -1157,8 +1157,8 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
     card (`:149-166`) and this one's (`:230-273`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
-    this one included (`lessonPages`, `:46-48`), for the team's words (`:22-41`), and the
-    alternative hook's note never reaches the page (`:78-80`).
+    this one included (`lessonPages`, `:47-49`), for the team's words (`:23-42`), and the
+    alternative hook's note never reaches the page (`:79-81`).
 13. With reduced motion emulated, no bead travels, the stack and the spread land in their end
     states, Merc and Tavi hold still, and nothing moves on its own.
 14. A visitor with the studio installed still gets the lesson, not the shell (the service worker's

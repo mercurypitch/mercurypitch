@@ -830,10 +830,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:118-194`,
-   `:253-261`; `:395-398`, `:408-412`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:745-749`), so without them the Browser jobs fail before any spec
+   `:253-261`; `:408-411`, `:421-425`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:765-769`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:335-345`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:348-358`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
    (`assert-first-paint-budgets.mjs:222-224`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
@@ -881,7 +881,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:135-141`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:144-150`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),
@@ -1140,7 +1140,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    1024 x 640, 1133 x 631, 1280 x 680 and 1366 x 657 and on a phone held sideways (91);
    `src/e2e/learn-no-planning-text.spec.ts` reads it for the team's planning words and every
    variant's note the same way, and `src/e2e/learn-cold-open-fold.spec.ts` holds its title on the
-   first screen at seven sizes and reports where Play take 1 and the two choices sit (`:176-203`).
+   first screen at seven sizes and reports where Play take 1 and the two choices sit (`:180-207`).
 6. Sing it, with the fake microphone (`src/e2e/helpers/tone-wav.ts`, `fakeMicArgs`, `:198`): with
    sound off, Start asks for no microphone and the hint says sound is off; with sound on, a steady
    A3 (`writeToneWav(220)`) reads "Take 1, drawn over Merc's bands: your line stayed at about A3.";

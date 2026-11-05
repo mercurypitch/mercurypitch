@@ -225,9 +225,9 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
   `return (2 * Math.hypot(re, im)) / n` (`src/lib/mirror/metrics.ts:91-116`), described as
   "Modulation amplitude in cents — shown as "vibrato: 5.6 Hz, ±38 c"" (`:424-428`). That matches
   Sundberg's ± definition (R1).
-- The shared analyser searches 3 to 10 Hz (`src/lib/vocal-analyzer.ts:707-710`) and measures depth
-  "peak-to-peak" (`:725`); it reports a vibrato when the peak stands out and that depth passes 10
-  cents (`:739`). So the analyser's depth and Voice Mirror's extent are different measures; the
+- The shared analyser searches 3 to 10 Hz (`src/lib/vocal-analyzer.ts:712-715`) and measures depth
+  "peak-to-peak" (`:730`); it reports a vibrato when the peak stands out and that depth passes 10
+  cents (`:744`). So the analyser's depth and Voice Mirror's extent are different measures; the
   page quotes only Voice Mirror's.
 - The Vibrato exercise: help says "teachers build vibrato by oscillating about a semitone slowly"
   and "A healthy natural vibrato is about 5-7 pulses per second"

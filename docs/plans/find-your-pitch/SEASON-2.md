@@ -497,7 +497,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   tone by style (Nix 2014, Journal of Singing 70(4), 411-418; summary only, **not verified**);
   Sundberg's chapter in Dejonckere, Hirano and Sundberg (eds.), Vibrato (1995), **not read**. The
   app's numbers: its analyser looks for a vibrato between 3 and 10 Hz
-  (`src/lib/vocal-analyzer.ts:707-710`) and finds one when its peak stands out and its depth passes
+  (`src/lib/vocal-analyzer.ts:712-715`) and finds one when its peak stands out and its depth passes
   10 cents (:739); Voice Mirror's band is 3.5 to 8.5 Hz; the Vibrato drill's styles span 3 to 7 Hz
   (vibrato-styles.ts:31-65). The lesson quotes Voice Mirror's, the one it links. The coach signs off
   every vibrato line.
@@ -1051,7 +1051,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    (`src/features/lessons/kit/season.ts:1-3`) with Season 1's topics (:50-83) and its lessons
    indexed by number (`LESSONS[n].n === n`, :109); the masthead's season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`); the season's end card says "End of Season 1"
-   (`src/features/lessons/kit/lesson-copy.ts:135-141`); the explorer is "Season 1 as a map"
+   (`src/features/lessons/kit/lesson-copy.ts:144-150`); the explorer is "Season 1 as a map"
    (`src/features/lessons/kit/explorer.ts:2` at `ad0a099f7`); the hub says Season 1 (`learn/index.html:265`). The kit
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page
@@ -1221,7 +1221,7 @@ with Lessons 26 and 28.
     Drone Intonation, Lesson 28's keeps Karaoke Night and Cadence, and item 17 stays open for the
     web. When the lessons reach the native app, Harmony is the drill a learner can do alone, and its
     "How it works" demo sings the harmony wrong, with Merc's own note where the third goes, then
-    right (`docs/plans/ear-rooms.md:486-495`), the slip Lesson 26's reader names ("That was Merc's
+    right (`docs/plans/ear-rooms.md:487-496`), the slip Lesson 26's reader names ("That was Merc's
     note"). But it is a premium room, a free taste and then the paywall once the V1 flip brings the
     gate (`docs/plans/ear-rooms.md:13-14`; `src/lib/native-build.ts:59-66`), and the card says
     "Practise it free", so whether the card opens it first waits on MASTER-PLAN § 12 item 3, whether
