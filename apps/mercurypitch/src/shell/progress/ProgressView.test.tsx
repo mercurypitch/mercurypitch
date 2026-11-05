@@ -201,6 +201,45 @@ describe('the native Progress page, from the fixture snapshot', () => {
   })
 })
 
+describe("the rhythm's milestone pins", () => {
+  // A touch has no tooltip to ask what a pin means, so a key says it. Both
+  // are for the eye: a week's name already says its milestone.
+  it('keys the pins under the axis while a week wears one', () => {
+    const page = open()
+    const rhythm = page.querySelector('[data-testid="progress-rhythm"]')
+    const pins = [...(rhythm as Element).querySelectorAll('.mp-prog-week__pin')]
+    expect(
+      pins.map((pin) =>
+        pin.closest('.mp-prog-week')?.getAttribute('data-week'),
+      ),
+    ).toEqual(['week-two'])
+    expect(pins[0]?.getAttribute('aria-hidden')).toBe('true')
+    expect(weekBar(page, 1).getAttribute('aria-label')).toContain(
+      'Milestone: Four active weeks.',
+    )
+
+    const key = rhythm?.querySelector('.mp-prog-weeks__key')
+    expect(key?.textContent?.trim()).toBe('Milestone earned that week')
+    expect(key?.getAttribute('aria-hidden')).toBe('true')
+    expect(key?.querySelector('.mp-prog-pin')).not.toBeNull()
+    expect(key?.previousElementSibling?.className).toBe('mp-prog-weeks__axis')
+  })
+
+  it('draws no key when no week has a milestone', () => {
+    const record = snapshot()
+    const page = open({
+      snapshot: {
+        ...record,
+        weeks: record.weeks.map(({ milestoneLabel: _earned, ...week }) => week),
+      },
+    })
+    const rhythm = page.querySelector('[data-testid="progress-rhythm"]')
+    expect(rhythm?.querySelectorAll('.mp-prog-week')).toHaveLength(2)
+    expect(rhythm?.querySelectorAll('.mp-prog-week__pin')).toHaveLength(0)
+    expect(rhythm?.querySelector('.mp-prog-weeks__key')).toBeNull()
+  })
+})
+
 describe("a week's sheet", () => {
   it('opens on the week whose bar was tapped, with what the snapshot says of it', () => {
     const page = open()
