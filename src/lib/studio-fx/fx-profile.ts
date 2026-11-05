@@ -10,6 +10,12 @@
 //
 // Offline renders (export, compare, latency and loudness measurements)
 // never take a profile: they always run FULL_FX_PROFILE.
+//
+// One profile is not a playback tier: MONITOR_FX_PROFILE, for the armed
+// lane's chain as the singer hears it while they sing
+// (src/lib/studio/record/input-monitor.ts). Nothing lines a monitor up with
+// the song, so it gives up the chain's latency instead of keeping it: an
+// input heard through it is heard no later than a dry one.
 
 /** The effects whose shapers run oversampled at full quality. */
 export type StudioShaperEffect = 'saturation' | 'exciter' | 'limiter'
@@ -38,6 +44,14 @@ export interface StudioFxProfile {
    * as they do while their band is quiet, and never cut.
    */
   readonly lite: readonly StudioLiteEffect[]
+  /**
+   * No effect delays the signal: shapers run without oversampling and make
+   * up nothing, the transient shaper looks no way ahead, and the lookahead
+   * dynamics (LOOKAHEAD_DYNAMICS) pass the signal through untouched, since
+   * a DynamicsCompressorNode cannot run without its lookahead. Only the
+   * monitor's profile sets it.
+   */
+  readonly zeroLatency?: true
 }
 
 /** Every effect as export renders it. */
@@ -46,6 +60,34 @@ export const FULL_FX_PROFILE: StudioFxProfile = {
   oversample: { saturation: '4x', exciter: '4x', limiter: '4x' },
   reverbBus: false,
   lite: [],
+}
+
+/**
+ * The effects built on a DynamicsCompressorNode: each runs late by its
+ * lookahead (288 frames at 48 kHz in Chromium 148), which no setting of
+ * the node takes away.
+ */
+export const LOOKAHEAD_DYNAMICS = [
+  'compressor',
+  'deesser',
+  'dyneq',
+  'limiter',
+] as const
+
+/**
+ * The armed lane's chain while its input is monitored: every effect that
+ * adds no delay sounds as it does on the lane (EQ, tilt, gain, stereo,
+ * delay, reverb), saturation and the exciter without their oversampling,
+ * the transient shaper without its 3 ms lookahead, and the lookahead
+ * dynamics not at all. Measured in Chromium 148 at 48 kHz, they would add
+ * 6 ms each (the limiter 10), and a voice lane's chain 22 ms in all.
+ */
+export const MONITOR_FX_PROFILE: StudioFxProfile = {
+  id: 'monitor',
+  oversample: { saturation: 'none', exciter: 'none', limiter: 'none' },
+  reverbBus: false,
+  lite: [],
+  zeroLatency: true,
 }
 
 /** The shared reverb spaces a reverb bus offers, by decay. */
@@ -83,10 +125,26 @@ export function keepsOnlyLatency(
   return profile?.lite.some((lite) => lite === kind) === true
 }
 
-/** The oversampling `profile` asks of `effect`'s shapers; 4x without a profile. */
+/** Whether `profile` passes the signal straight through an effect of `kind`: a lookahead dynamics effect while monitoring. */
+export function passesStraightThrough(
+  profile: StudioFxProfile | undefined,
+  kind: string,
+): boolean {
+  return (
+    profile?.zeroLatency === true &&
+    LOOKAHEAD_DYNAMICS.some((dynamics) => dynamics === kind)
+  )
+}
+
+/**
+ * The oversampling `profile` asks of `effect`'s shapers: 4x without a
+ * profile, and null while monitoring, a shaper never oversampled that
+ * makes nothing up (effect-shell.ts `createShaperPath`).
+ */
 export function shaperOversample(
   profile: StudioFxProfile | undefined,
   effect: StudioShaperEffect,
-): OverSampleType {
+): OverSampleType | null {
+  if (profile?.zeroLatency === true) return null
   return profile?.oversample[effect] ?? '4x'
 }
