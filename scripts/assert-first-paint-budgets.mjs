@@ -294,32 +294,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the page stays this light only while that boundary holds.
   'learn/11.html': 167,
   // Lesson 12, "Chords and the four-chord song", a draft too, built in
-  // every mode as Lesson 3 is. Its page shell, the kit's deck, switches,
-  // masthead, next-lesson card, explorer and Merc and Tavi, measured 73,364
-  // bytes in build:e2e. The steps' ring of rooms brought it to 107,522: the
-  // kit's spiral seen from above, with its keys (17,850 bytes), the kit's
-  // runs, names and sound owner, and the ring's own states, painter, lines
-  // and sounds in the page's module. Steps 3 and 4's plays, the names
-  // switch and the ring's marks in the page's module, and the kit's play
-  // lights in a chunk it shares with Lesson 10, bring it to 112,067. The
-  // ceiling is the smallest whole KB above the measure, raised with each
-  // toy that joins until the page is whole and takes a quarter over.
-  // Raised to 111 for Lesson 13's page shell: 112,558 bytes before it,
-  // 112,729 with it, against 112,640 at 110. The 171 are Lesson 13's season
-  // entry and drafts line, on every lesson page. Lesson 11's page shell adds
-  // its own entry and drafts line: 242 bytes more, which 111 holds.
-  // Raised to 114 for the seasons: 112,971 bytes on main before them,
-  // 116,489 with them, against 115,712 at 113. None of it is Season 2's data, which
-  // loads only when the explorer's Season 2 tab opens (the forbidden list
-  // below): it is the kit's code for seasons, the explorer's tabs and its
-  // column of the season before, a close per season that follows the
-  // visit's ending, and the masthead's season from the lesson, on every
-  // lesson page. The rest of the page, from 116,489 bytes: Step 5's tunes,
-  // the cold open on the hero's ring with the kit's predict, the recall with
-  // Lesson 10's questions and quiz plays, the four words, Sing it on the
-  // kit's comfort check, voice choice, slide guide and breathing ring, and
-  // free play, 166,064 in all: 163.
-  'learn/12.html': 163,
+  // every mode as Lesson 3 is: its own module on the kit, with the ring of
+  // rooms (the kit's spiral seen from above, with its keys), its plays,
+  // the tune toy and its walk, the cold open on the hero's ring with the
+  // kit's predict, the recall with Lesson 10's questions and quiz plays,
+  // the four words, Sing it on the kit's comfort check, voice choice,
+  // slide guide and breathing ring, and free play. Measured 163 in
+  // build:e2e (166,064 bytes); the budget is a quarter over that. Sing it
+  // opens no microphone, so nothing of the listener comes in.
+  'learn/12.html': 203,
   // Lesson 13, "Resonance and vowels", a draft too, built in every mode as
   // Lesson 3 is: its own module on the kit, with the vowel model, the
   // spectrum strip under the band chart, the vowel voice, the cold open's
@@ -433,15 +416,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // inlined into its own by @import, and the shared parts), its own, and
   // the shared Inter and Outfit @font-face rules; a quarter over.
   'learn/11.html': 111,
-  // Lesson 12 (a draft, as above). Measured 88,243 bytes in build:e2e for
-  // its page shell: the kit's sheets (with the guide's and the voice
-  // lessons', inlined into its own by @import, and the shared parts), its
-  // own, and the shared Inter and Outfit @font-face rules. The smallest
-  // whole KB above that, as for its script. With Sing it loading the
-  // comfort check, the voice choice and the slide guide, the guide's and
-  // the voice lessons' sheets come in their shared chunks, as Lesson 10's
-  // do, and free play and the tease still add their rules: 89,362, 88.
-  'learn/12.html': 88,
+  // Lesson 12 (a draft, as above). Measured 88 in build:e2e (89,362
+  // bytes): the kit's sheets (with the slide guide's, the voice lessons'
+  // and the shared parts, in their shared chunks as Lesson 10's are), its
+  // own, with free play's and the tease still's rules, and the shared
+  // Inter and Outfit @font-face rules; a quarter over.
+  'learn/12.html': 110,
   // Lesson 13 (a draft, as above). Measured 86 in build:e2e (87,615
   // bytes): the kit's sheets (with the voice lessons' and the shared
   // parts), its own, and the shared Inter and Outfit @font-face rules; a

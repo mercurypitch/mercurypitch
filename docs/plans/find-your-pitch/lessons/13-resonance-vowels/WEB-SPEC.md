@@ -874,9 +874,9 @@ and the four-words strip in the kit.
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:194`, `:245`;
-   `:387`, `:397`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:721`, `:754`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:336-346`),
+   `:370`, `:380`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:701`, `:734`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:319-329`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:214-216`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
