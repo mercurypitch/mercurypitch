@@ -143,6 +143,7 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  18: { tease: 'Now you can read when each note comes, and where it sits.' },
 }
 
 /**

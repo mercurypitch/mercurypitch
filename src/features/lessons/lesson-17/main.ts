@@ -89,8 +89,15 @@ void import('./checkpoint').then(
   () => undefined,
 )
 
-// the Wrap's practice card, its rest line picked by the sung bars' ending
+// the Wrap's practice card, its rest line picked by the sung bars' ending,
+// and the tease still in the next-lesson card's slot
 initWrap()
+// free play, the rhythm bar's every control in two figures: a chunk of its
+// own after first paint, since nothing above the Wrap needs it
+void import('./free-play').then(
+  ({ initFreePlay }) => initFreePlay(),
+  () => undefined,
+)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(17)

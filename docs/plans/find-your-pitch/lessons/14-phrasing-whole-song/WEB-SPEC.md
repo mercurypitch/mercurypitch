@@ -881,7 +881,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:153-159`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:154-160`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
 13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),

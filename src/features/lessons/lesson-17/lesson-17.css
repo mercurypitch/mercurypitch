@@ -323,6 +323,12 @@
   flex-wrap: wrap;
   align-items: center;
 }
+/* Step 5's two bars on the staff, under the bar on one line */
+.l17-free-staff {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
 
 /* ---------------------------------------------------------------- Step 5: the line becomes the staff */
 /* the staff is drawn where it ends; each part starts where the one line

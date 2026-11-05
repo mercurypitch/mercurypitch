@@ -1556,9 +1556,9 @@
             >Back to your plan</a
           >
 
-          <!-- free play: the rhythm bar in two figures on one card (wrap.ts),
-               nothing locked, since the guided steps come first (WEB-SPEC,
-               Toys 8) -->
+          <!-- free play: the rhythm bar in two figures on one card
+               (free-play.ts), nothing locked, since the guided steps come
+               first (WEB-SPEC, Toys 8) -->
           <div class="card stage-card free-play rb-toy l17-free" id="freePlay">
             <p class="eyebrow">
               <span class="fig">Free play:</span> every control of the rhythm
@@ -1649,52 +1649,57 @@
               data-rb-pads
             ></div>
 
-            <div
-              class="viz wide rb rb-staff"
-              data-free-staff
-              role="group"
-              aria-label="Free play: two bars of 4/4 on the bass staff"
-            >
-              <p class="sr" aria-live="polite" data-rb-said></p>
-            </div>
-            <div class="controls rb-row">
-              <button class="btn sm primary" type="button" data-rb-play>
-                <svg class="ico" aria-hidden="true"><use href="#i-play" /></svg
-                ><span data-label>Play</span>
-              </button>
-              <button
-                class="btn sm"
-                type="button"
-                data-rb-dot
-                aria-pressed="false"
+            <!-- Step 5's two bars on the staff, a block of their own so the card's
+                 grid keeps them under the bar on one line -->
+            <div class="l17-free-staff">
+              <div
+                class="viz wide rb rb-staff"
+                data-free-staff
+                role="group"
+                aria-label="Free play: two bars of 4/4 on the bass staff"
               >
-                Dot
-              </button>
-              <button
-                class="btn sm"
-                type="button"
-                data-rb-tie
-                aria-pressed="false"
-              >
-                Tie
-              </button>
-              <div class="seg" role="group" aria-label="Free play: the clef">
-                <button
-                  class="btn sm"
-                  type="button"
-                  data-rb-clef="bass"
-                  aria-pressed="true"
-                >
-                  Bass
+                <p class="sr" aria-live="polite" data-rb-said></p>
+              </div>
+              <div class="controls rb-row">
+                <button class="btn sm primary" type="button" data-rb-play>
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-play" /></svg
+                  ><span data-label>Play</span>
                 </button>
                 <button
                   class="btn sm"
                   type="button"
-                  data-rb-clef="treble"
+                  data-rb-dot
                   aria-pressed="false"
                 >
-                  Treble
+                  Dot
                 </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-rb-tie
+                  aria-pressed="false"
+                >
+                  Tie
+                </button>
+                <div class="seg" role="group" aria-label="Free play: the clef">
+                  <button
+                    class="btn sm"
+                    type="button"
+                    data-rb-clef="bass"
+                    aria-pressed="true"
+                  >
+                    Bass
+                  </button>
+                  <button
+                    class="btn sm"
+                    type="button"
+                    data-rb-clef="treble"
+                    aria-pressed="false"
+                  >
+                    Treble
+                  </button>
+                </div>
               </div>
             </div>
           </div>

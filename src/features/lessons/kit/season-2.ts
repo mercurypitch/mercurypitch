@@ -26,6 +26,7 @@
 import { LESSON_COPY } from './lesson-copy'
 import type { Arc, Edge, Lesson, Season, SeasonClose } from './season'
 import { prereqOf } from './season'
+import { SEASON_2_FIGURES } from './season-2-figures'
 
 /** Season 2's topics by id, as SEASON-2 § 4.1 names them. */
 export const TOPICS_2: Readonly<Record<string, string>> = {
@@ -104,6 +105,7 @@ const ENTRIES_2: readonly Lesson[] = [
     minutes: 16,
     page: '/learn/17',
     hook: 'Why is a quarter note not a quarter of a second?',
+    fig: 'rhythm',
     pr: {
       needs: 'The Chart without triplets or sixteenths (an ear-drill link)',
       link: {
@@ -376,4 +378,5 @@ export const SEASON_2: Season = {
   arcs: ARCS_2,
   last: 28,
   close: SEASON_2_END,
+  figures: SEASON_2_FIGURES,
 }
