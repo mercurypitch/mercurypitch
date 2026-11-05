@@ -608,8 +608,9 @@ test("Lesson 15's first visit holds the card until the predict's choice, and the
     () => getComputedStyle(document.documentElement).overflowY,
   )
 
-  // Act
-  await page.locator('#predict [data-choice="nine"]').click()
+  // Act: the choice, made where the page stands (the predict's choices sit
+  // at the first screen's foot)
+  await page.locator('#predict [data-choice="nine"]').dispatchEvent('click')
 
   // Assert
   expect(before).toBe(0)
