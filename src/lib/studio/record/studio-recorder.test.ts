@@ -1,13 +1,34 @@
-// Studio recorder — arming opens the clock and the microphone in the press, the arm moves between lanes and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
+// Studio recorder — arming opens the clock and the microphone in the press, the arm moves between lanes and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept; an arm's monitor rises a quarter of a second after its input's first metered sound; a disarm keeps the input open until a heard monitor has glided out, and that late close ends only its own arm's source and hold.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
+import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { createManualScheduler, FakeAudioContext, FakeNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioCaptureEvents } from './capture-node'
+import type { StudioMonitorSound } from './input-monitor'
+import { createStudioInputMonitor } from './input-monitor'
 import type { StudioRecordSettings } from './record-settings'
 import { DEFAULT_STUDIO_RECORD_SETTINGS } from './record-settings'
 import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './studio-recorder'
 import { createStudioRecorder, MIC_LOST_ARMED, MIC_LOST_BEFORE_TAKE, MIC_LOST_MID_TAKE, } from './studio-recorder'
+
+const EMPTY_CHAIN = normalizeChainSpec({ effects: [] })
+
+/** What the harness's lanes sound like: no effects, both sides at `gain`. */
+function laneSound(
+  laneId: string | null,
+  on = false,
+  gain = 1,
+): StudioMonitorSound {
+  return {
+    on,
+    laneId: laneId ?? 'new-take-lane',
+    spec: EMPTY_CHAIN,
+    gains: [gain, gain],
+  }
+}
 
 afterEach(() => vi.useRealTimers())
 
@@ -31,7 +52,12 @@ function harness(
     dispose: ReturnType<typeof vi.fn>
   }[] = []
   const clicks = { schedule: vi.fn(), stop: vi.fn() }
-  const monitor = { set: vi.fn(), dispose: vi.fn() }
+  // Hears nothing, so it lets its input go as it is disposed.
+  const monitor = {
+    set: vi.fn(),
+    inputArrived: vi.fn(),
+    dispose: vi.fn((whenSilent?: () => void) => whenSilent?.()),
+  }
   const transport = {
     playing: vi.fn(() => false),
     playheadFrame: vi.fn(() => 96000),
@@ -76,7 +102,7 @@ function harness(
     createSource: () => source as unknown as AudioNode,
     createClicks: () => clicks,
     createMonitor: () => monitor,
-    monitorLevel: () => ({ on: false, gain: 1, pan: 0 }),
+    monitorSound: (trackId) => laneSound(trackId),
     transport,
     settings: () => ({
       ...DEFAULT_STUDIO_RECORD_SETTINGS,
@@ -133,15 +159,11 @@ function harness(
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-describe('another input picked on an armed lane', () => {
-  afterEach(() => releaseMicLock())
-
-  /** A browser that opens a stream on whichever input is asked for; the inputs it opened. */
-  function fakeInputs(): string[] {
-    const opened: string[] = []
-    ;(
-      globalThis.navigator as unknown as { mediaDevices: unknown }
-    ).mediaDevices = {
+/** A browser that opens a stream on whichever input is asked for; the inputs it opened. */
+function fakeInputs(): string[] {
+  const opened: string[] = []
+  ;(globalThis.navigator as unknown as { mediaDevices: unknown }).mediaDevices =
+    {
       getUserMedia: vi.fn(async (constraints: MediaStreamConstraints) => {
         const asked = (constraints.audio as MediaTrackConstraints).deviceId
         const device = (asked as { exact?: string } | undefined)?.exact
@@ -155,8 +177,11 @@ describe('another input picked on an armed lane', () => {
         return { getTracks: () => [track], getAudioTracks: () => [track] }
       }),
     }
-    return opened
-  }
+  return opened
+}
+
+describe('another input picked on an armed lane', () => {
+  afterEach(() => releaseMicLock())
 
   it("re-arms on the input picked: the capture hears that input, not the one before nor the app's", async () => {
     const opened = fakeInputs()
@@ -249,10 +274,20 @@ describe('arming', () => {
     expect(await arming).toBe(true)
     expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-1' })
     expect(h.deps.openCapture).toHaveBeenCalledOnce()
-    expect(h.monitor.set).toHaveBeenCalledWith({ on: false, gain: 1, pan: 0 })
+    expect(h.monitor.set).toHaveBeenCalledWith(laneSound('lane-1'))
 
     h.worklet.level(0.4, 1536)
     expect(h.view().level).toBe(0.4)
+  })
+
+  it('tells the monitor its input has arrived on the first sound metered, not on the silence a new source starts with', async () => {
+    const h = harness()
+    await h.recorder.arm('lane-1')
+
+    h.worklet.level(0, 1536)
+    expect(h.monitor.inputArrived).not.toHaveBeenCalled()
+    h.worklet.level(0.02, 3584)
+    expect(h.monitor.inputArrived).toHaveBeenCalled()
   })
 
   it('says why when the microphone is refused, and holds nothing', async () => {
@@ -296,11 +331,8 @@ describe('arming', () => {
 
   it('moves the arm to the lane pressed while the microphone opens, metering that lane', async () => {
     const h = harness({
-      monitorLevel: (trackId) => ({
-        on: true,
-        gain: trackId === 'lane-2' ? 0.5 : 1,
-        pan: 0,
-      }),
+      monitorSound: (trackId) =>
+        laneSound(trackId, true, trackId === 'lane-2' ? 0.5 : 1),
     })
     const arming = h.recorder.arm('lane-1')
 
@@ -309,11 +341,9 @@ describe('arming', () => {
     expect(h.view()).toMatchObject({ phase: 'arming', targetTrackId: 'lane-2' })
     expect(await arming).toBe(true)
     expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-2' })
-    expect(h.monitor.set).toHaveBeenLastCalledWith({
-      on: true,
-      gain: 0.5,
-      pan: 0,
-    })
+    expect(h.monitor.set).toHaveBeenLastCalledWith(
+      laneSound('lane-2', true, 0.5),
+    )
   })
 
   it('closes the capture and gives the microphone back on disarm', async () => {
@@ -326,6 +356,221 @@ describe('arming', () => {
     expect(h.monitor.dispose).toHaveBeenCalled()
     expect(h.releaseMic).toHaveBeenCalledOnce()
     expect(h.view().phase).toBe('idle')
+  })
+})
+
+describe("an armed lane's monitor", () => {
+  afterEach(() => releaseMicLock())
+
+  /** The house release and its slack, in ms: when a released monitor path comes apart. */
+  const RELEASED_MS = 240
+  /** How long an arm's input sounds before its monitor rises, in ms. */
+  const SETTLE_MS = 250
+
+  /** The real monitor on a graph of fakes, hearing the armed lane when `on`; each arm's source, in order. */
+  function monitored(over: Partial<StudioRecorderDeps> = {}, on = true) {
+    const graph = new FakeAudioContext()
+    const scheduler = createManualScheduler()
+    const sources: { readonly stream: MediaStream; readonly node: FakeNode }[] =
+      []
+    const h = harness({
+      createSource: (_context, stream) => {
+        const node = new FakeNode('source')
+        sources.push({ stream, node })
+        return node as unknown as AudioNode
+      },
+      createMonitor: (_context, input) =>
+        createStudioInputMonitor(graph.asContext, input, {
+          schedule: scheduler.schedule,
+        }),
+      monitorSound: (trackId) => laneSound(trackId, on),
+      ...over,
+    })
+    return { h, graph, scheduler, sources }
+  }
+
+  /** The newest arm's input sounds, its worklet metering a first level, and settles: its monitor rises. */
+  function hear(
+    h: ReturnType<typeof harness>,
+    scheduler: ReturnType<typeof createManualScheduler>,
+  ): void {
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(SETTLE_MS)
+  }
+
+  /** Each monitor path's level, the gain feeding the speakers, in the order they were built. */
+  const levelsOf = (graph: FakeAudioContext) =>
+    graph
+      .ofType<FakeGain>('gain')
+      .filter((gain) => gain.targets.includes(graph.destination))
+
+  /** Arms through `mic`, from the input `input()` names then; every hold it was given, its release watched. */
+  function holdsFrom(mic: MicManager, input: () => string) {
+    const holds: { readonly stream: MediaStream; readonly release: Mock }[] = []
+    const acquireMic = async () => {
+      const held = await mic.acquireFrom('studio-record', input())
+      const hold = { stream: held.stream, release: vi.fn(() => held.release()) }
+      holds.push(hold)
+      return hold
+    }
+    return { holds, acquireMic }
+  }
+
+  const stopOf = (stream: MediaStream) =>
+    (stream.getAudioTracks()[0] as unknown as { stop: Mock }).stop
+
+  it("keeps an arm's monitor silent until its input has sounded a quarter of a second, then rises from silence", async () => {
+    const { h, graph, scheduler } = monitored()
+    await h.recorder.arm('lane-1')
+    const [level] = levelsOf(graph)
+
+    expect(level.gain.destination).toBe(0)
+    h.worklet.level(0, 1536)
+    scheduler.advance(SETTLE_MS)
+    expect(level.gain.destination).toBe(0)
+    h.worklet.level(0.3, 3584)
+    scheduler.advance(SETTLE_MS - 1)
+    expect(level.gain.destination).toBe(0)
+    scheduler.advance(1)
+    expect(level.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+  })
+
+  it('keeps the source and the microphone until the monitor has glided out, then closes them', async () => {
+    const { h, scheduler, sources } = monitored()
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+
+    h.recorder.disarm()
+
+    expect(h.view().phase).toBe('idle')
+    expect(h.capture.dispose).toHaveBeenCalled()
+    scheduler.advance(RELEASED_MS - 1)
+    expect(sources[0].node.disconnectAllCount).toBe(0)
+    expect(h.releaseMic).not.toHaveBeenCalled()
+    scheduler.advance(1)
+    expect(sources[0].node.disconnectAllCount).toBe(1)
+    expect(h.releaseMic).toHaveBeenCalledOnce()
+  })
+
+  it('closes them at once when the monitor was not heard: off, or the lane muted', async () => {
+    for (const over of [
+      monitored({}, false),
+      monitored({ monitorSound: (trackId) => laneSound(trackId, true, 0) }),
+    ]) {
+      await over.h.recorder.arm('lane-1')
+
+      over.h.recorder.disarm()
+
+      expect(over.sources[0].node.disconnectAllCount).toBe(1)
+      expect(over.h.releaseMic).toHaveBeenCalledOnce()
+    }
+  })
+
+  for (const [where, next] of [
+    ['the same input', 'usb-1'],
+    ['another input', 'usb-2'],
+  ] as const) {
+    it(`keeps a re-arm's own source and hold when the arm before it closes late, on ${where}`, async () => {
+      fakeInputs()
+      const mic = new MicManager()
+      await mic.setPreferredDevice('app-in')
+      let input = 'usb-1'
+      const { holds, acquireMic } = holdsFrom(mic, () => input)
+      const { h, scheduler, sources } = monitored({ acquireMic })
+      expect(await h.recorder.arm('lane-1')).toBe(true)
+      hear(h, scheduler)
+
+      h.recorder.disarm()
+      scheduler.advance(100)
+      input = next
+      expect(await h.recorder.arm('lane-1')).toBe(true)
+      await settle()
+      // The first arm's input is still its own until its monitor has gone.
+      expect(holds[0].release).not.toHaveBeenCalled()
+      expect(sources[0].node.disconnectAllCount).toBe(0)
+      scheduler.advance(RELEASED_MS - 100)
+      await settle()
+
+      expect(holds[0].release).toHaveBeenCalledOnce()
+      expect(sources[0].node.disconnectAllCount).toBe(1)
+      // The re-arm's input plays on through its own monitor, held.
+      expect(holds[1].release).not.toHaveBeenCalled()
+      expect(sources[1].node.disconnectAllCount).toBe(0)
+      expect(sources[1].node.targets).toHaveLength(1)
+      expect(stopOf(holds[1].stream)).not.toHaveBeenCalled()
+      expect(mic.getScopedHold()?.stream).toBe(holds[1].stream)
+      expect(h.view()).toMatchObject({ phase: 'armed', error: null })
+    })
+  }
+
+  it('closes cleanly after a release of everything inside the glide, as another tab or a hidden page asks for', async () => {
+    fakeInputs()
+    const mic = new MicManager()
+    await mic.setPreferredDevice('app-in')
+    const { holds, acquireMic } = holdsFrom(mic, () => 'usb-1')
+    const { h, scheduler, sources } = monitored({ acquireMic })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+
+    h.recorder.disarm()
+    scheduler.advance(100)
+    await mic.forceReleaseAll()
+    expect(stopOf(holds[0].stream)).toHaveBeenCalledOnce()
+    scheduler.advance(RELEASED_MS - 100)
+    await settle()
+
+    expect(sources[0].node.disconnectAllCount).toBe(1)
+    expect(holds[0].release).toHaveBeenCalledOnce()
+    expect(stopOf(holds[0].stream)).toHaveBeenCalledOnce()
+    expect(mic.getScopedHold()).toBeNull()
+    // The next arm opens its input as ever.
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+    await settle()
+    expect(mic.getScopedHold()?.stream).toBe(holds[1].stream)
+    expect(stopOf(holds[1].stream)).not.toHaveBeenCalled()
+  })
+
+  it('still closes the input once the Studio closes inside the glide', async () => {
+    const { h, scheduler, sources } = monitored()
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+
+    h.recorder.disarm()
+    h.recorder.dispose()
+    scheduler.advance(RELEASED_MS)
+
+    expect(sources[0].node.disconnectAllCount).toBe(1)
+    expect(h.releaseMic).toHaveBeenCalledOnce()
+  })
+
+  it('rises a re-arm inside the release once its own input has settled, while the arm before it still closes late', async () => {
+    const { h, graph, scheduler, sources } = monitored()
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    const [first] = levelsOf(graph)
+
+    h.recorder.disarm()
+    scheduler.advance(100)
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+    const [, second] = levelsOf(graph)
+    // Its source starts silent, and mid-waveform once the samples come.
+    h.worklet.level(0.3, 1536)
+
+    scheduler.advance(RELEASED_MS - 100)
+    expect(sources[0].node.disconnectAllCount).toBe(1)
+    expect(h.releaseMic).toHaveBeenCalledOnce()
+    expect(levelsOf(graph)).toEqual([second])
+    expect(second.gain.destination).toBe(0)
+    scheduler.advance(SETTLE_MS - (RELEASED_MS - 100))
+
+    expect(second.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 0 })
+    expect(sources[1].node.disconnectAllCount).toBe(0)
+    expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 })
 

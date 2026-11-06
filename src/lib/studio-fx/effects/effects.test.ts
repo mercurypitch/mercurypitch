@@ -9,7 +9,7 @@ import { FAST_SETTLE_SECONDS } from '@/lib/studio-fx/effect-shell'
 import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, fakeShaperRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
-import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
+import { FULL_FX_PROFILE, MONITOR_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { measureShaperDelays, resetShaperDelaysForTests, } from '@/lib/studio-fx/shaper-delay'
 import { createEffectUnit } from './index'
 
@@ -320,6 +320,58 @@ describe('dynamics at Light playback quality', () => {
         .ofType<FakeCompressor>('compressor')
         .some((c) => c.threshold.value !== 0),
     ).toBe(true)
+  })
+})
+
+describe('effects on a monitored input', () => {
+  afterEach(() => resetShaperDelaysForTests())
+
+  const monitored = (kind: string) => {
+    const { ctx, env } = setup(false)
+    const unit = createEffectUnit(ctx.asContext, spec(kind), {
+      ...env,
+      profile: MONITOR_FX_PROFILE,
+    })
+    return { ctx, unit }
+  }
+
+  it.each(['compressor', 'deesser', 'dyneq', 'limiter'])(
+    '%s passes the input straight through: one gain at unity, no lookahead, no cut',
+    (kind) => {
+      const { ctx, unit } = monitored(kind)
+      expect(unit.input).toBe(unit.output)
+      expect(ctx.created.map((node) => node.nodeType)).toEqual(['gain'])
+      expect((unit.input as unknown as FakeGain).gain.value).toBe(1)
+      expect(unit.readReductionDb()).toBe(0)
+      unit.dispose()
+      expect(ctx.created[0].disconnectAllCount).toBe(1)
+    },
+  )
+
+  it('runs saturation and air without oversampling or a make-up delay, once 4x is measured late', async () => {
+    await measureShaperDelays(
+      48000,
+      fakeShaperRenderContext({ none: 0, '2x': 128, '4x': 192 }),
+    )
+    for (const kind of ['saturation', 'exciter']) {
+      const { ctx } = monitored(kind)
+      const shapers = ctx.ofType<FakeShaper>('shaper')
+      expect(shapers.length).toBeGreaterThan(0)
+      expect(shapers.every((shaper) => shaper.oversample === 'none')).toBe(true)
+      expect(ctx.ofType<FakeDelay>('delay')).toEqual([])
+    }
+  })
+
+  it('runs the transient shaper with no lookahead on either path', () => {
+    const { ctx } = monitored('transient')
+    expect(
+      ctx.ofType<FakeDelay>('delay').map((delay) => delay.delayTime.value),
+    ).toEqual([0, 0])
+  })
+
+  it.each(EFFECT_KINDS)('%s builds no compressor', (kind) => {
+    const { ctx } = monitored(kind)
+    expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
   })
 })
 

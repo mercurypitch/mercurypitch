@@ -14,7 +14,11 @@
 // file. The lane stays armed after a take, as a DAW's armed track does, so
 // the next Record starts the next take; the microphone is released when the
 // lane is disarmed, when the microphone or the clock goes away, or when the
-// Studio closes, and the mic icon goes off with it.
+// Studio closes, and the mic icon goes off with it. A monitor the singer
+// still hears glides out first, on the input it hears: the source and the
+// microphone close once it is silent, a quarter of a second later. On an
+// arm, it rises a quarter of a second after the first sound the worklet
+// meters (input-monitor.ts).
 //
 // Nothing here knows Solid or the Studio's storage: the hook
 // (useStudioRecorder.ts) supplies the clock, the microphone, the transport
@@ -91,7 +95,7 @@ interface Armed {
   readonly stream: MediaStream
   readonly source: AudioNode
   readonly capture: StudioCaptureHandle
-  readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
+  readonly monitor: Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'>
   readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
 }
 
@@ -230,9 +234,9 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
   ): Armed {
     const stream = mic.stream
     const source = deps.createSource(context, stream)
-    const capture = deps.openCapture(context, source, captureEvents())
     const monitor = deps.createMonitor(context, source)
-    monitor.set(deps.monitorLevel(trackId))
+    const capture = deps.openCapture(context, source, captureEvents(monitor))
+    monitor.set(deps.monitorSound(trackId))
     return {
       context,
       mic,
@@ -244,20 +248,26 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     }
   }
 
-  /** Close everything the arm opened and give the microphone back. */
+  /** Close everything the arm opened and give the microphone back, once a heard monitor has glided out. */
   function closeArmed(): void {
     const closing = armed
     armed = null
     if (closing === null) return
     closing.capture.dispose()
-    closing.monitor.dispose()
     closing.clicks.stop()
-    try {
-      closing.source.disconnect()
-    } catch {
-      // Already apart.
-    }
-    closing.mic.release()
+    // Closed under a heard monitor, the input would cut its release, and the
+    // singer hears the cut (CONVENTIONS.md 5b). Late, this closes only this
+    // arm's own source and hold, never a newer arm's: each arm opens a
+    // source of its own, and a hold ends only through itself
+    // (MicManager.acquireFrom).
+    closing.monitor.dispose(() => {
+      try {
+        closing.source.disconnect()
+      } catch {
+        // Already apart.
+      }
+      closing.mic.release()
+    })
   }
 
   function disarm(): void {
@@ -273,9 +283,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   // ── The worklet's messages ───────────────────────────────────
 
-  function captureEvents(): StudioCaptureEvents {
+  /** The worklet listens to the same source as `monitor`, so its first sound is the monitor's too. */
+  function captureEvents(monitor: Armed['monitor']): StudioCaptureEvents {
     return {
       level: (peak) => {
+        if (peak > 0) monitor.inputArrived()
         if (view.phase !== 'idle') set({ level: peak })
       },
       started: (frame) => onStarted(frame),
@@ -565,7 +577,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     armed.capture.dispose()
     armed = {
       ...armed,
-      capture: deps.openCapture(armed.context, armed.source, captureEvents()),
+      capture: deps.openCapture(
+        armed.context,
+        armed.source,
+        captureEvents(armed.monitor),
+      ),
     }
   }
 
@@ -726,11 +742,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       if (view.phase !== 'armed' && view.phase !== 'arming') return
       if (trackId === view.targetTrackId) return
       set({ targetTrackId: trackId })
-      armed?.monitor.set(deps.monitorLevel(trackId))
+      armed?.monitor.set(deps.monitorSound(trackId))
     },
     /** The armed lane's monitoring follows the settings and the lane. */
     updateMonitor(): void {
-      armed?.monitor.set(deps.monitorLevel(view.targetTrackId))
+      armed?.monitor.set(deps.monitorSound(view.targetTrackId))
     },
     clearMessages(): void {
       if (view.error !== null || view.notice !== null)

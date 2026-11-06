@@ -25,7 +25,8 @@
 //
 // The detector runs in mono (a linked stereo detector); a 3 ms lookahead on
 // the audio path, matched on the bypass path, lets the lift land on the very
-// first cycle of the hit.
+// first cycle of the hit. A monitored input (fx-profile.ts `zeroLatency`)
+// runs without it: its lift lands 3 ms into the hit instead.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import type { ShaperCurve } from '@/lib/studio-fx/dsp'
@@ -86,9 +87,9 @@ function gainOf(ctx: BaseAudioContext, value: number): GainNode {
   return node
 }
 
-function lookahead(ctx: BaseAudioContext): DelayNode {
+function lookahead(ctx: BaseAudioContext, seconds: number): DelayNode {
   const delay = ctx.createDelay(0.01)
-  delay.delayTime.value = LOOKAHEAD_SECONDS
+  delay.delayTime.value = seconds
   return delay
 }
 
@@ -211,8 +212,9 @@ export function createTransientUnit(
   env: EffectEnv,
 ): EffectUnit {
   const shell = createEffectShell(ctx, spec.enabled, WET_ONLY)
-  const wetLookahead = lookahead(ctx)
-  const dryLookahead = lookahead(ctx)
+  const ahead = env.profile?.zeroLatency === true ? 0 : LOOKAHEAD_SECONDS
+  const wetLookahead = lookahead(ctx, ahead)
+  const dryLookahead = lookahead(ctx, ahead)
   const vca = ctx.createGain()
   connectSeries([shell.input, wetLookahead, vca, shell.wet])
   connectSeries([shell.input, dryLookahead, shell.dry])

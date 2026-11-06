@@ -1,8 +1,10 @@
 // Studio epoch browser check: Plays asked for between two frames still start every source on a frame, and an export starts them on the frames a Play does, in real Chromium.
 // Usage: pnpm dev (or any local Vite server), then
 //   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json] [--suite automation]
-// --suite automation runs the lane line probes (studio-automation-browser-probes.mjs) instead.
-// Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Renders offline only: nothing plays aloud.
+// --suite automation runs the lane line probes (studio-automation-browser-probes.mjs) instead,
+// --suite monitor the input monitor probes (studio-monitor-browser-probes.mjs).
+// Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Nothing plays aloud: the
+// monitor suite runs a live AudioContext, and the browser is muted.
 import { chromium } from '@playwright/test'
 import assert from 'node:assert/strict'
 import console from 'node:console'
@@ -27,6 +29,10 @@ const SUITES = {
     module: '/scripts/studio-automation-browser-probes.mjs',
     run: 'runStudioAutomationProbes',
   },
+  monitor: {
+    module: '/scripts/studio-monitor-browser-probes.mjs',
+    run: 'runStudioMonitorProbes',
+  },
 }
 const suite = SUITES[values.suite]
 assert.ok(suite, `Unknown suite ${values.suite}`)
@@ -44,7 +50,8 @@ assert.ok(
 const browser = await chromium.launch({
   headless: true,
   executablePath: process.env.CHROME_PATH,
-  args: ['--mute-audio'],
+  // A live context starts without a press only with the autoplay policy off.
+  args: ['--mute-audio', '--autoplay-policy=no-user-gesture-required'],
 })
 try {
   const context = await browser.newContext({ ignoreHTTPSErrors: true })

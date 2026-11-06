@@ -10,6 +10,9 @@
 //
 // A dynamic EQ that follows another in a run (effects/dyneq.ts) adds no
 // lookahead of its own, so a following one is a plain wire.
+//
+// A monitored input (fx-profile.ts `zeroLatency`) keeps not even the
+// lookahead: every lookahead dynamics effect is a plain wire there.
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
@@ -56,6 +59,28 @@ export function createLatencyOnlyUnit(
       if (disposed) return
       disposed = true
       disconnectAll([input, twin, output])
+    },
+  }
+}
+
+/** A lookahead dynamics effect while its input is monitored: one gain at unity, no delay and no cut. */
+export function createStraightThroughUnit(
+  ctx: BaseAudioContext,
+  spec: EffectSpec,
+): EffectUnit {
+  const wire = ctx.createGain()
+  let disposed = false
+  return {
+    kind: spec.kind,
+    input: wire,
+    output: wire,
+    setEnabled() {},
+    setParams() {},
+    readReductionDb: () => 0,
+    dispose() {
+      if (disposed) return
+      disposed = true
+      wire.disconnect()
     },
   }
 }

@@ -103,6 +103,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     audioBusy: () => finishing(),
     recording: () => recorder.busy(),
   })
+  // A fader, pan knob or dial is heard while it moves, before it saves.
+  const liveMix = createStudioLiveMix({
+    previewLane: (trackId, draft) => transport.previewLane(trackId, draft),
+    previewMacro: (name, value) => transport.previewMacro(name, value),
+  })
   const recorder = useStudioRecorder({
     project: () => props.studio.project(),
     assets: () => props.studio.assets(),
@@ -111,17 +116,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     transport,
     selectedTrackId,
     audioBusy: () => finishing(),
+    liveMix,
   })
   /** A seek stops a take first: a take runs straight through the song. */
   const seek = (frame: number) => {
     recorder.stop()
     void transport.seek(frame)
   }
-  // A fader, pan knob or dial is heard while it moves, before it saves.
-  const liveMix = createStudioLiveMix({
-    previewLane: (trackId, draft) => transport.previewLane(trackId, draft),
-    previewMacro: (name, value) => transport.previewMacro(name, value),
-  })
   const project = () => props.studio.project()!
   const canProcess = () =>
     !props.studio.busy() && !props.studio.importing() && !recorder.busy()
