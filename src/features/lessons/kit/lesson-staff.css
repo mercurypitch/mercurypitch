@@ -19,7 +19,9 @@
   --staff-lit: var(--ink);
 }
 
-.staff-viz svg {
+/* the figure's own svg: a frame drawn inside it, as the interval state's
+   staff is, keeps its own size */
+.staff-viz > svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -28,7 +30,7 @@
   touch-action: pan-y;
   cursor: pointer;
 }
-.staff-viz svg:focus-visible {
+.staff-viz > svg:focus-visible {
   outline: 2px solid var(--aqua);
   outline-offset: -3px;
   border-radius: var(--r-md);
@@ -73,6 +75,9 @@
 .st-head.is-blue {
   fill: var(--signal-blue);
 }
+.st-head.is-orange {
+  fill: var(--orange);
+}
 .st-halo {
   fill: none;
   stroke-width: 1.5px;
@@ -84,6 +89,9 @@
 }
 .st-halo.is-blue {
   stroke: var(--signal-blue);
+}
+.st-halo.is-orange {
+  stroke: var(--orange);
 }
 .st-home {
   fill: none;
