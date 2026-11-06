@@ -415,8 +415,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // bars (src/lib/ear/metre.ts, 1,054): 141,436 bytes. Its cold open brings
   // the kit's predict (2,518), the hero's sky and Merc's hop: 147,300. The
   // quizzes load after first paint, but their import brings Vite's preload
-  // helper: 148,436.
-  'learn/19.html': 145,
+  // helper: 148,436. Its four words bring the kit's words strip: 151,022.
+  'learn/19.html': 148,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -553,8 +553,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // build:e2e: the kit's sheets (the rhythm bar's and the tap pad's inlined
   // into its own by @import, and the shared parts), its own, and the shared
   // Inter and Outfit @font-face rules; the budget the smallest whole KB
-  // above that, to rise as each part joins.
-  'learn/19.html': 84,
+  // above that, to rise as each part joins. Its four words' tickets, whose
+  // rules it shares with Lesson 17's in the rhythm bar's sheet, and the
+  // accent's light: 86,020.
+  'learn/19.html': 85,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

@@ -95,6 +95,19 @@
   }
 }
 
+/* ---------------------------------------------------------------- four words */
+/* each figure across the top of its ticket (kit/lesson-rhythm.css), with
+   no strip, so shorter than Lesson 17's */
+.rb-words .word-fig {
+  height: 76px;
+}
+/* the accent's first pad lights larger as it sounds (WEB-SPEC, Toys 4) */
+[data-word-fig='accent'] .rb-pad.one.is-now {
+  transform: scale(1.08);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 /* ---------------------------------------------------------------- the steps */
 /* Tavi's line at the head of Step 1, as Lesson 15's Step 2 has one */
 .l19-says {

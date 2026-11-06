@@ -127,41 +127,6 @@
   }
 }
 
-/* ---------------------------------------------------------------- four words */
-/* each figure a short rhythm with its strip, across the top of its ticket:
-   the kit's stub, 88 px wide, has no room for one (WEB-SPEC, Toys 4) */
-.l17-words .ticket {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-}
-.l17-words .ticket .stub {
-  border-right: 0;
-  border-bottom: 1px dashed var(--hair-2);
-  padding: 10px 14px 6px;
-}
-/* the ticket's notches move to the ends of its dashed line */
-.l17-words .ticket .stub::before,
-.l17-words .ticket .stub::after {
-  top: auto;
-  bottom: -10px;
-}
-.l17-words .ticket .stub::before {
-  left: -10px;
-  right: auto;
-}
-.l17-words .ticket .stub::after {
-  right: -10px;
-}
-.l17-words .word-fig {
-  position: relative;
-  width: 100%;
-  height: 104px;
-}
-.l17-words .ticket .stub svg {
-  width: 100%;
-  height: 100%;
-}
-
 /* ---------------------------------------------------------------- tap it, then sing it: two parts, one card */
 .l17-sing {
   max-width: 880px;
