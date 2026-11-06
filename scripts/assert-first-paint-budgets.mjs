@@ -413,8 +413,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the kit's rhythm bar with its drawing, model and words, the beat clock,
   // the app's drum voices (src/lib/drum-voices.ts, 5,284) and Subdivide's
   // bars (src/lib/ear/metre.ts, 1,054): 141,436 bytes. Its cold open brings
-  // the kit's predict (2,518), the hero's sky and Merc's hop: 147,300.
-  'learn/19.html': 144,
+  // the kit's predict (2,518), the hero's sky and Merc's hop: 147,300. The
+  // quizzes load after first paint, but their import brings Vite's preload
+  // helper: 148,436.
+  'learn/19.html': 145,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
