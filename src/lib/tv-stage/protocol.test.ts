@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TvStageFrame, TvStageSong } from '@/lib/tv-stage/protocol'
-import { readTvStageMessage, TV_STAGE_IDLE, TV_STAGE_PROTOCOL, } from '@/lib/tv-stage/protocol'
+import { readTvStageMessage, readTvStageValue, TV_STAGE_IDLE, TV_STAGE_PROTOCOL, } from '@/lib/tv-stage/protocol'
 
 const SONG: TvStageSong = {
   v: TV_STAGE_PROTOCOL,
@@ -82,5 +82,31 @@ describe('reading a message', () => {
     ['a score without its grade', { ...FRAME, score: { pct: 80 } }],
   ])('drops a frame with %s', (_name, message) => {
     expect(readTvStageMessage(JSON.stringify(message))).toBeNull()
+  })
+})
+
+// A Cast receiver gets its messages already parsed (the SDK reads the JSON),
+// so it checks the value as the stage page checks the text.
+describe('reading a value already parsed', () => {
+  it.each([
+    ['a song', SONG],
+    ['a frame', FRAME],
+    ['idle', TV_STAGE_IDLE],
+  ])('takes %s as the text would be taken', (_name, message) => {
+    expect(readTvStageValue(message)).toEqual(message)
+    expect(readTvStageValue(message)).toEqual(
+      readTvStageMessage(JSON.stringify(message)),
+    )
+  })
+
+  it.each([
+    ['nothing', null],
+    ['a string', JSON.stringify(SONG)],
+    ['a list', [SONG]],
+    ['another version', { ...SONG, v: 2 }],
+    ['a kind it does not know', { v: TV_STAGE_PROTOCOL, kind: 'probe' }],
+    ['a frame with a NaN', { ...FRAME, position: Number.NaN }],
+  ])('drops %s', (_name, value) => {
+    expect(readTvStageValue(value)).toBeNull()
   })
 })

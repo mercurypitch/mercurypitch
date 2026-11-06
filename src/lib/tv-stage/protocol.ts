@@ -153,6 +153,16 @@ function hasShape(message: Fields): boolean {
 }
 
 /**
+ * A message from a value already parsed, or null for anything else: another
+ * version, or a shape this stage does not know. A Cast receiver gets its
+ * messages parsed (src/lib/cast-receiver/caf-host.ts).
+ */
+export function readTvStageValue(value: unknown): TvStageMessage | null {
+  if (!isFields(value) || value.v !== TV_STAGE_PROTOCOL) return null
+  return hasShape(value) ? (value as unknown as TvStageMessage) : null
+}
+
+/**
  * A message read from its JSON, or null for anything else: not JSON,
  * another version, or a shape this stage does not know.
  */
@@ -163,6 +173,5 @@ export function readTvStageMessage(json: string): TvStageMessage | null {
   } catch {
     return null
   }
-  if (!isFields(parsed) || parsed.v !== TV_STAGE_PROTOCOL) return null
-  return hasShape(parsed) ? (parsed as unknown as TvStageMessage) : null
+  return readTvStageValue(parsed)
 }
