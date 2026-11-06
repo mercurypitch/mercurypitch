@@ -9,8 +9,8 @@
 // call to action, the example song, are the room's and the same on all
 // three: the tour's first stop rings that button (data-tour="karaoke.demo").
 
-import { Show } from 'solid-js'
 import type { JSX } from 'solid-js'
+import { Show } from 'solid-js'
 import type { KaraokeEntryIntent } from './entry-intent'
 
 interface HeroCopy {

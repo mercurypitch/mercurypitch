@@ -346,7 +346,9 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
 // so the welcome waits for the visitor's first visit to / (first-light-landing).
 const [firstLightDue, setShowWelcome] = createSignal(
   welcomeSeen() === '' &&
-    firstLightOpensOn(typeof location === 'undefined' ? '/' : location.pathname),
+    firstLightOpensOn(
+      typeof window === 'undefined' ? '/' : window.location.pathname,
+    ),
 )
 
 /**

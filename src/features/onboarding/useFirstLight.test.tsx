@@ -82,7 +82,11 @@ describe('a fresh visitor', () => {
 
   // A room's own document opens on its room (lib/first-light-landing.ts),
   // and spends nothing: the welcome waits for the first visit to /.
-  it.each([['/ear-lab#/ear-lab'], ['/jam#/jam'], ['/pitch-training#/exercises']])(
+  it.each([
+    ['/ear-lab#/ear-lab'],
+    ['/jam#/jam'],
+    ['/pitch-training#/exercises'],
+  ])(
     'gets the room at %s, and the welcome on the next visit to /',
     async (url) => {
       const { onboarding, ui } = await load(url)

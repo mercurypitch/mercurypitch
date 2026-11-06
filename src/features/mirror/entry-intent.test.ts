@@ -12,13 +12,12 @@ describe('mirrorEntryIntent', () => {
 
   // Each search landing that opens this room has a door of its own: they
   // fell through to the Mirror's, and three pages read as one.
-  it.each([
-    '/voice-type-test',
-    '/voice-type-test/',
-    '/voice-type-test.html',
-  ])('recognizes the voice-type test at %s', (pathname) => {
-    expect(mirrorEntryIntent(pathname)).toBe('voice-type')
-  })
+  it.each(['/voice-type-test', '/voice-type-test/', '/voice-type-test.html'])(
+    'recognizes the voice-type test at %s',
+    (pathname) => {
+      expect(mirrorEntryIntent(pathname)).toBe('voice-type')
+    },
+  )
 
   it.each([
     '/which-singer-has-my-vocal-range',

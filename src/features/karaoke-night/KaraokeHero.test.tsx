@@ -43,16 +43,18 @@ describe('KaraokeHero', () => {
       expect(
         screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent),
       ).toEqual([h1])
-      expect(container.querySelector('.kn-hero > p')?.textContent).toMatch(
-        lede,
-      )
+      expect(container.querySelector('.kn-hero > p')?.textContent).toMatch(lede)
     },
   )
 
   it('keeps the one call to action the tour rings, on every landing', () => {
     const onSingDemo = vi.fn()
     render(() => (
-      <KaraokeHero intent="vocal-remover" demoPlayable onSingDemo={onSingDemo} />
+      <KaraokeHero
+        intent="vocal-remover"
+        demoPlayable
+        onSingDemo={onSingDemo}
+      />
     ))
 
     const sing = screen.getByRole('button', { name: 'Sing this song' })

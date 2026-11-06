@@ -11,7 +11,10 @@
 // (KaraokeHero.tsx); the room behind it is the same. Read off the path, as
 // the Voice Mirror's doors are (src/features/mirror/entry-intent.ts).
 
-export type KaraokeEntryIntent = 'karaoke-night' | 'vocal-remover' | 'karaoke-app'
+export type KaraokeEntryIntent =
+  | 'karaoke-night'
+  | 'vocal-remover'
+  | 'karaoke-app'
 
 /** The landing at `pathname`, in its clean form or as the document Vite serves. */
 export function karaokeEntryIntent(pathname: string): KaraokeEntryIntent {
