@@ -17,7 +17,8 @@
 //   mixer hands them over (`laneNotes`): the notes edited in Pitch Studio,
 //   in the key being heard. So the TV draws what the phone draws, and a
 //   change to them on the phone (the notes read from the vocal, the key)
-//   goes to the TV as it happens. With no song in the room, idle.
+//   goes to the TV as it happens. With no song in the room, idle, and idle
+//   again as the room closes, so the TV does not run the song on after it.
 //
 //   FRAMES, twenty a second while the TV shows the stage and the room has a
 //   song: where the song is as the lyrics follow it, moved by the Developer
@@ -26,14 +27,14 @@
 //   frame is built on the one before it, whose clock it carries again if
 //   its own reading is not a number (feed.ts).
 //
-// Nothing is sent while the TV shows anything else, and nothing at all on a
-// phone that cannot give a TV the stage.
+// Nothing is sent while the TV shows anything else, but for the idle as the
+// room closes, and nothing at all on a phone that cannot give a TV the stage.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { singerSince, tvStageFrame, tvStageScore, tvStageSong, } from '@/lib/tv-stage/feed'
-import type { TvStageFrame, TvStageScore, TvStageSong, } from '@/lib/tv-stage/protocol'
+import type { TvStageFrame, TvStageReading, TvStageScore, TvStageSong, } from '@/lib/tv-stage/protocol'
 import { TV_STAGE_IDLE } from '@/lib/tv-stage/protocol'
 import { liveMicFeed } from '@/stores/live-mic-store'
 import type { NativeDeviceApi, NativeTvStage, } from '@/stores/native-shell-store'
@@ -85,19 +86,36 @@ function startFrames(
   let frames = 0
   let score: TvStageScore | null = null
   let last: TvStageFrame | null = null
+  let micFailed = false
+  /**
+   * The singer's readings since the last frame, and the score when it is
+   * due. A microphone that throws gives none, and the frame still goes: the
+   * clock is what keeps the TV with the song. Said once in the console, so a
+   * TV with no trail can be told from a singer who has not sung.
+   */
+  const fromMic = (): readonly TvStageReading[] => {
+    try {
+      const mic = liveMicFeed()
+      if (mic === null) return []
+      const singer = singerSince(mic.readings(), sentUpTo, mic.readingLagSec())
+      if (frames % TV_STAGE_SCORE_EVERY === 0) score = tvStageScore(mic.score())
+      return singer
+    } catch (error) {
+      if (!micFailed) {
+        micFailed = true
+        console.warn(
+          `[tv stage] the microphone could not be read for the TV: ${String(error)}`,
+        )
+      }
+      return []
+    }
+  }
   const send = (): void => {
     const position = controls.audibleElapsed() + tvStageOffsetMs() / 1000
     if (sentUpTo > position + SEEK_BACK_SEC) sentUpTo = position - SEEK_BACK_SEC
-    const mic = liveMicFeed()
-    const singer =
-      mic === null
-        ? []
-        : singerSince(mic.readings(), sentUpTo, mic.readingLagSec())
+    const singer = fromMic()
     const newest = singer.at(-1)
     if (newest !== undefined) sentUpTo = newest[0]
-    if (mic !== null && frames % TV_STAGE_SCORE_EVERY === 0) {
-      score = tvStageScore(mic.score())
-    }
     frames += 1
     last = tvStageFrame(
       {
@@ -147,4 +165,16 @@ export function useKaraokeTvStage(options: KaraokeTvStageOptions): void {
       onCleanup(startFrames(stage, controls))
     }),
   )
+
+  // The room closing: idle, as for a room with no song, whatever the TV
+  // shows now. Its last frame said where the song was, often still playing,
+  // and without this the TV ran the song on in silence while the singer was
+  // in another room. The app keeps the newest song and frame for a stage
+  // page that loads later (TVStage.swift), even while no TV shows the stage,
+  // so this also goes when the TV has gone back to the phone: a TV that
+  // comes back to the stage after the room closed gets idle, not the old
+  // song.
+  onCleanup(() => {
+    stage.send(TV_STAGE_IDLE)
+  })
 }

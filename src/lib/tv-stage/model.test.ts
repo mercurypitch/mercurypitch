@@ -91,6 +91,37 @@ describe('the clock', () => {
   it('is at the start before any frame', () => {
     expect(tvStagePosition(fold(song('S')), 1_000)).toBe(0)
   })
+
+  it('runs on through a stall of several seconds while the song plays', () => {
+    const state = fold(song('S'), frame(10, [], { at: 5_000 }))
+
+    expect(tvStagePosition(state, 13_000)).toBeCloseTo(18)
+  })
+
+  it('stands at the song’s end once the frames stop coming, however long after', () => {
+    // The song is 120 s long, and its last frame came a second before the end.
+    const state = fold(song('S'), frame(119, [], { at: 5_000 }))
+
+    expect(tvStagePosition(state, 7_000)).toBe(120)
+    expect(tvStagePosition(state, 7_000 + 600_000)).toBe(120)
+  })
+
+  it('leaves a reading already past the end where it is', () => {
+    // The Developer screen's offset can put the room's reading past the end.
+    const state = fold(song('S'), frame(120.4, [], { at: 5_000 }))
+
+    expect(tvStagePosition(state, 5_000)).toBeCloseTo(120.4)
+    expect(tvStagePosition(state, 6_000)).toBeCloseTo(120.4)
+  })
+
+  it('runs on with no end while the song’s length is not known', () => {
+    const state = fold(
+      { ...song('S'), duration: 0 },
+      frame(119, [], { at: 5_000 }),
+    )
+
+    expect(tvStagePosition(state, 7_000)).toBeCloseTo(121)
+  })
 })
 
 describe('the turn', () => {

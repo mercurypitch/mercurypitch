@@ -6,7 +6,10 @@
 // (protocol.ts): the song, the last clock reading, the singer's recent
 // pitch and the score. Between frames the song's position runs on from the
 // last reading by the wall clock, so the lane moves at the display's rate
-// while the room sends twenty frames a second.
+// while the room sends twenty frames a second. It never runs on past the
+// song's end, so a room that stops sending without a word (it broke) leaves
+// the lane standing at the end, not scrolling on for hours; a room that
+// closes says idle (useKaraokeTvStage.ts).
 //
 // The state also keeps when the song last started or stopped, and where it
 // was then (`turn`): the paused screen fades in and out from that moment
@@ -71,13 +74,21 @@ export const TRAIL_LIMIT = 1200
 /** A jump back of more than this, in seconds, is a seek rather than jitter. */
 const JUMP_BACK_SECONDS = 0.25
 
-/** The song's position at `nowMs`, run on from the last reading. */
+/**
+ * The song's position at `nowMs`, run on from the last reading, and never
+ * run on past the song's end once its length is known. The run-on has no
+ * time limit of its own: a phone that stalls for a few seconds mid-song must
+ * not stop a lane whose music plays on. A reading already past the end (the
+ * Developer screen's offset can put it there) stands where it is.
+ */
 export function tvStagePosition(state: TvStageState, nowMs: number): number {
   const clock = state.clock
   if (clock === null) return 0
   if (!clock.playing) return clock.position
-  const ran = Math.max(0, nowMs - clock.at) / 1000
-  return clock.position + ran * clock.rate
+  const ran = (Math.max(0, nowMs - clock.at) / 1000) * clock.rate
+  const length = state.song?.duration ?? 0
+  if (length <= 0) return clock.position + ran
+  return clock.position + Math.min(ran, Math.max(0, length - clock.position))
 }
 
 function trailAfterFrame(
