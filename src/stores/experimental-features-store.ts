@@ -10,13 +10,25 @@
 // switch wins over the default (src/lib/experimental-features.ts).
 //
 // The web entry asks once, at startup (src/index.tsx), and nothing waits for
-// the answer: the default holds until it comes, and a failure, a timeout or
-// an answer this page cannot read leaves the default standing. The native
-// entry never asks, so the native app is its build's default alone.
+// the answer: the page renders at once and follows the answer if it lands
+// within FEATURES_READ_TIMEOUT_MS. The native entry never asks, so the
+// native app is its build's default alone.
 //
-// `experimentalFeaturesPending` is true only while that one read is in
-// flight. The route guard (App.tsx) asks it, so a deep link to a feature the
-// owner switched on is not sent Home on a default that is about to change.
+// This browser keeps the last answer it heard (REMEMBERED_FEATURES_KEY), and
+// every later page starts from it, read before the first render. A read that
+// fails, times out or answers something this page cannot read leaves it
+// standing; only an answer from the server changes it, an "off" included.
+// Without it, a feature the owner switched on in production vanished for
+// any visit whose read was slow or offline, and Studio took the songs it
+// keeps in this browser with it. A read still out when the page stops
+// waiting is let run a while longer: its answer is not applied to a page
+// that has settled, but it is kept for the next one, so a browser whose
+// reads are always slow still learns a switch, one load late.
+//
+// `experimentalFeaturesPending` is true only while the page waits on that
+// one read. The route guard (App.tsx) asks it, so a deep link to a feature
+// the owner switched on is not sent Home on a default that is about to
+// change.
 //
 // It reads the build's env as it loads, which plain Node cannot do, and
 // Playwright loads specs in plain Node. So the tab constants, which specs
@@ -36,8 +48,17 @@ import { FEATURES_PATH, parseFeatureOverrides, resolveExperimentalFeature, } fro
 export const EXPERIMENTAL_FEATURES_BUILD_DEFAULT: boolean =
   import.meta.env.VITE_EXPERIMENTAL_FEATURES === '1'
 
-/** How long the startup read may take before the build's default stands for this page. */
+/** How long the page waits on the startup read before it settles on what it has. */
 export const FEATURES_READ_TIMEOUT_MS = 2500
+
+/** How long a read the page stopped waiting on may still land, to be kept for the next page. */
+export const FEATURES_LATE_READ_MS = 30_000
+
+/**
+ * Where this browser keeps the last switches it heard, beside the address
+ * it heard them from: an answer from one API is never another's.
+ */
+export const REMEMBERED_FEATURES_KEY = 'mp_experimental_features'
 
 /** The db-worker this build talks to; empty in a build with no API (the e2e and tour bundles). */
 const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -77,15 +98,32 @@ const [buildDefault, setBuildDefault] = createSignal(
   EXPERIMENTAL_FEATURES_BUILD_DEFAULT,
 )
 let request: Promise<void> | null = null
+/** The startup read, while its answer may still land. */
+let reading: AbortController | null = null
+/** Bumped by every load and reset, so a read from before one lands nowhere after it. */
+let generation = 0
 
 /** Whether this page shows `name`. Reactive: it follows the startup read when it lands. */
 export function experimentalFeatureOn(name: ExperimentalFeature): boolean {
   return resolveExperimentalFeature(name, buildDefault(), overrides())
 }
 
-/** True while the startup read is in flight. Reactive. */
+/** True while the page waits on the startup read. Reactive. */
 export function experimentalFeaturesPending(): boolean {
   return pending()
+}
+
+/**
+ * The default every experimental feature falls back to on this page where
+ * no switch is set: this build's, or the one an e2e spec boots it with.
+ * Reactive. The owner's console says it beside each switch.
+ */
+export function experimentalFeaturesBuildDefault(): boolean {
+  return buildDefault()
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function e2eDoor(): E2EExperimentsDoor | null {
@@ -113,28 +151,84 @@ function featuresRead(base: string): FeaturesRead | null {
   }
 }
 
-/** The switches, or none at all on any failure. Never rejects. */
-async function readOverrides(
+// ── What this browser heard last ─────────────────────────────────────
+
+/**
+ * The switches this browser last heard from `url`, or null when it heard
+ * none from there. Storage that is blocked, or holds anything else, reads
+ * as none. Never throws.
+ */
+function recall(url: string): FeatureOverrides | null {
+  try {
+    const raw = localStorage.getItem(REMEMBERED_FEATURES_KEY)
+    if (raw === null) return null
+    const kept: unknown = JSON.parse(raw)
+    if (!isRecord(kept) || kept.from !== url) return null
+    return parseFeatureOverrides(kept.switches)
+  } catch {
+    return null
+  }
+}
+
+function remember(url: string, switches: FeatureOverrides): void {
+  try {
+    localStorage.setItem(
+      REMEMBERED_FEATURES_KEY,
+      JSON.stringify({ from: url, switches }),
+    )
+  } catch {
+    // Blocked storage: the next page starts from the build's default, as
+    // every page did before anything was kept.
+  }
+}
+
+function forget(): void {
+  try {
+    localStorage.removeItem(REMEMBERED_FEATURES_KEY)
+  } catch {
+    // Blocked storage kept nothing to forget.
+  }
+}
+
+// ── The read ─────────────────────────────────────────────────────────
+
+/**
+ * The switches the server answered, or null when it gave no answer this
+ * page can read: a failure, an error status, a body that is not a JSON
+ * object. An object naming no switch IS an answer: none is set, and the
+ * build's default stands. Never rejects.
+ */
+async function askServer(
   url: string,
   fetcher: typeof fetch,
-  timeoutMs: number,
-): Promise<FeatureOverrides> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  signal: AbortSignal,
+): Promise<FeatureOverrides | null> {
   try {
-    const response = await fetcher(url, { signal: controller.signal })
-    if (!response.ok) return {}
-    return parseFeatureOverrides(await response.json())
+    const response = await fetcher(url, { signal })
+    if (!response.ok) return null
+    const body: unknown = await response.json()
+    return isRecord(body) ? parseFeatureOverrides(body) : null
   } catch {
-    return {}
-  } finally {
-    clearTimeout(timer)
+    return null
   }
+}
+
+/** `answer` if it lands within `ms`, null otherwise. Never rejects, as `answer` never does. */
+function within<T>(answer: Promise<T | null>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms)
+    void answer.then((value) => {
+      clearTimeout(timer)
+      resolve(value)
+    })
+  })
 }
 
 /**
  * Ask the db-worker for the owner's switches, once per page; later calls
- * share the first. Never rejects, and never blocks: call it without waiting.
+ * share the first. Starts the page from what this browser heard last,
+ * before it returns. Never rejects, and never blocks: call it without
+ * waiting.
  */
 export function loadExperimentalFeatures(
   options: LoadExperimentalFeaturesOptions = {},
@@ -145,21 +239,48 @@ export function loadExperimentalFeatures(
     request = Promise.resolve()
     return request
   }
+  const { url } = read
+  const heard = recall(url)
+  if (heard !== null) setOverrides(heard)
   setPending(true)
-  request = readOverrides(
-    read.url,
+  const run = ++generation
+  const waitMs = options.timeoutMs ?? read.timeoutMs ?? FEATURES_READ_TIMEOUT_MS
+  const controller = new AbortController()
+  reading = controller
+  const giveUp = setTimeout(
+    () => controller.abort(),
+    Math.max(waitMs, FEATURES_LATE_READ_MS),
+  )
+  const answer = askServer(
+    url,
     options.fetcher ?? ((input, init) => fetch(input, init)),
-    options.timeoutMs ?? read.timeoutMs ?? FEATURES_READ_TIMEOUT_MS,
-  ).then((answer) => {
-    setOverrides(answer)
+    controller.signal,
+  ).then((switches) => {
+    clearTimeout(giveUp)
+    if (reading === controller) reading = null
+    // A read given up on, by its own clock or by a reset, keeps nothing.
+    if (switches === null || controller.signal.aborted) return null
+    remember(url, switches)
+    return switches
+  })
+  request = within(answer, waitMs).then((switches) => {
+    if (run !== generation) return
+    if (switches !== null) setOverrides(switches)
     setPending(false)
   })
   return request
 }
 
-/** Back to a page that has not asked yet, on this build's default. Tests only. */
+/**
+ * Back to a page that has not asked yet, on this build's default, in a
+ * browser that has heard nothing. Tests only.
+ */
 export function resetExperimentalFeaturesStoreForTests(): void {
+  generation += 1
+  reading?.abort()
+  reading = null
   request = null
+  forget()
   setOverrides({})
   setPending(false)
   setBuildDefault(EXPERIMENTAL_FEATURES_BUILD_DEFAULT)
