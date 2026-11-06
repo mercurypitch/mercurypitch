@@ -30,7 +30,7 @@ export interface RhythmRow {
   readonly bpm: number
   /** Beats across the row; by default its bars', so a figure ending on the next bar's first note can keep its room. */
   readonly beats?: number
-  /** Each sound's note on a staff, in order; by default every one on A3 on the bass staff and A4 on the treble (FACTS 29). */
+  /** Each sound's note, in order: on a staff, by default every one on A3 on the bass staff and A4 on the treble (FACTS 29); where given, each sounds at its pitch and sits there on the pitch line, as Lesson 19's tunes do. */
   readonly notes?: readonly Spelled[]
   /** Which strip cells read, by index; every one by default. */
   readonly reads?: (index: number) => boolean
@@ -61,6 +61,8 @@ export interface RhythmScene {
   readonly arcs?: boolean
   /** The written bar above the pads; false for the pads alone, as the hero's six are (Lesson 19 WEB-SPEC, Toys 2). */
   readonly notation?: boolean
+  /** The time signature shown from the start, not with the first note heard, as Lesson 19's staff shows its clef and time signature before a tune has played (its WEB-SPEC, Toys 5); the rhythm bar reads it. */
+  readonly metreFirst?: boolean
   /**
    * A short rhythm on its own, as the four words' tickets show one (Lesson
    * 17 WEB-SPEC, Toys 4): no 4/4 and no bar line, no room kept for the

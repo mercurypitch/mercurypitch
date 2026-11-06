@@ -62,7 +62,7 @@ import type { RhythmLayout, RhythmRow, RhythmScene, RhythmStaff, RowLayout, } fr
 import { headInset, layoutRhythm, placeRow, SIDE, STAFF_A, symbolX, xOf, } from './rhythm-layout'
 import type { FigureCount, PlacedSymbol } from './rhythm-model'
 import { beamsOf, countsOf, GAP_S, soundsOf } from './rhythm-model'
-import { ledgersOf, placeOf } from './staff-places'
+import { ledgersOf, midiOf, placeOf } from './staff-places'
 import type { StripPlan } from './stopwatch-strip'
 import { planStrip } from './stopwatch-strip'
 
@@ -450,22 +450,45 @@ function notation(
   }
 }
 
-/** The pitch-line view of a row: lanes, beat lines, a band for each sound and a dashed gap for each rest. */
+/**
+ * The pitch-line view of a row: lanes, beat lines, a band for each sound
+ * and a dashed gap for each rest. A row on one note has five lanes, its
+ * note's the middle one; a row that gives its notes, a tune, has a lane at
+ * each of its pitches, a semitone half a lane, and each band at its own.
+ */
 function lanes(
   row: RowLayout,
   placed: readonly PlacedSymbol[],
-  bpm: number,
+  rowScene: RhythmRow,
   parent: Element,
 ): SVGGElement[] {
   const lane = row.space * 1.1
-  for (let k = -2; k <= 2; k++)
-    hline(
-      row.x0,
-      row.x1,
-      row.y + k * lane,
-      k === 0 ? 'rb-lane is-note' : 'rb-lane',
-      parent,
-    )
+  const sounds = soundsOf(placed)
+  const pitch = (n: number): number | null => {
+    const note = rowScene.notes?.[n]
+    return note === undefined ? null : midiOf(note)
+  }
+  const pitches = sounds
+    .map((_, n) => pitch(n))
+    .filter((m): m is number => m !== null)
+  const mid =
+    pitches.length === 0
+      ? null
+      : (Math.min(...pitches) + Math.max(...pitches)) / 2
+  const yOf = (m: number | null): number =>
+    mid === null || m === null ? row.y : row.y - ((m - mid) * lane) / 2
+  if (mid === null)
+    for (let k = -2; k <= 2; k++)
+      hline(
+        row.x0,
+        row.x1,
+        row.y + k * lane,
+        k === 0 ? 'rb-lane is-note' : 'rb-lane',
+        parent,
+      )
+  else
+    for (const m of [...new Set(pitches)].sort((a, b) => a - b))
+      hline(row.x0, row.x1, yOf(m), 'rb-lane', parent)
   // a line on each of the metre's beats, a bar's first marked
   for (let k = 0; k * row.beat <= row.beats + 1e-6; k++) {
     const b = k * row.beat
@@ -483,17 +506,25 @@ function lanes(
     )
   }
   // a band ends where its sound is let go, its gap at the tempo (FACTS 63)
+  const bpm = rowScene.bpm
   const gap = (beats: number): number =>
     (Math.min(GAP_S, (beats * 60) / bpm / 4) * bpm) / 60
-  const sounds = soundsOf(placed)
-  const band = (from: number, to: number, cls: string, g: Element): void => {
+  // a tune's bands a whole tone apart keep a gap between them
+  const h = mid === null ? lane * 0.9 : lane * 0.8
+  const band = (
+    from: number,
+    to: number,
+    cls: string,
+    g: Element,
+    y = row.y,
+  ): void => {
     svg(
       'rect',
       {
         x: r(from),
-        y: r(row.y - lane * 0.45),
+        y: r(y - h / 2),
         width: r(Math.max(2, to - from)),
-        height: r(lane * 0.9),
+        height: r(h),
         rx: 3,
         class: cls,
       },
@@ -510,15 +541,16 @@ function lanes(
       },
       parent,
     )
-    const sound = sounds.find((s) => s.first === i)
+    const n = sounds.findIndex((s) => s.first === i)
     if (p.kind === 'rest')
       band(xOf(row, p.beat) + 1, xOf(row, p.beat + p.beats) - 1, 'rb-gap', g)
-    else if (sound !== undefined)
+    else if (n !== -1)
       band(
-        xOf(row, sound.at),
-        xOf(row, sound.at + sound.beats - gap(sound.beats)),
+        xOf(row, sounds[n].at),
+        xOf(row, sounds[n].at + sounds[n].beats - gap(sounds[n].beats)),
         'rb-band',
         g,
+        yOf(pitch(n)),
       )
     return g
   })
@@ -700,7 +732,7 @@ function drawRow(
     scene.notation === false
       ? unwritten
       : scene.lanes === true
-        ? { ...unwritten, symbols: lanes(row, placed, rowScene.bpm, g) }
+        ? { ...unwritten, symbols: lanes(row, placed, rowScene, g) }
         : notation(scene, rowScene, row, placed, g)
   const counts = scene.counts === true ? drawCounts(row, placed, g) : []
   const reads = rowScene.reads
