@@ -16,10 +16,8 @@
 // in a browser it shows the idle screen and waits, which is how it can be
 // looked at without a TV: call `__mpStage.receive` from the console.
 
-import type { TvStageState } from '@/lib/tv-stage/model'
-import { applyTvStageMessage, EMPTY_TV_STAGE } from '@/lib/tv-stage/model'
 import { readTvStageMessage } from '@/lib/tv-stage/protocol'
-import { createTvStageView, drawTvStage } from '@/lib/tv-stage/renderer'
+import { startTvStageLoop } from '@/lib/tv-stage/stage-loop'
 
 declare global {
   interface Window {
@@ -28,34 +26,14 @@ declare global {
   }
 }
 
-let state: TvStageState = EMPTY_TV_STAGE
-const view = createTvStageView()
+const canvas = document.getElementById('stage')
+const stage = startTvStageLoop(
+  canvas instanceof HTMLCanvasElement ? canvas : null,
+)
 
 window.__mpStage = {
   receive: (json) => {
     const message = readTvStageMessage(json)
-    if (message !== null) state = applyTvStageMessage(state, message)
+    if (message !== null) stage.receive(message)
   },
 }
-
-const canvas = document.getElementById('stage')
-const ctx = canvas instanceof HTMLCanvasElement ? canvas.getContext('2d') : null
-
-/** The canvas's backing store at the screen's own pixels. */
-function fit(target: HTMLCanvasElement): { width: number; height: number } {
-  const scale = window.devicePixelRatio || 1
-  const width = Math.round(target.clientWidth * scale)
-  const height = Math.round(target.clientHeight * scale)
-  if (target.width !== width) target.width = width
-  if (target.height !== height) target.height = height
-  return { width, height }
-}
-
-function frame(): void {
-  if (canvas instanceof HTMLCanvasElement && ctx !== null) {
-    drawTvStage(ctx, state, Date.now(), fit(canvas), view)
-  }
-  requestAnimationFrame(frame)
-}
-
-requestAnimationFrame(frame)
