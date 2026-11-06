@@ -147,6 +147,11 @@
   width: 80px;
   height: 120px;
 }
+/* the line under a word's pair: "3 letters", "major", "minor" */
+.wf-caption {
+  fill: var(--ink-2);
+  font: 600 11px var(--f-mono);
+}
 
 /* ---------------------------------------------------------------- the staff toy's stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */
