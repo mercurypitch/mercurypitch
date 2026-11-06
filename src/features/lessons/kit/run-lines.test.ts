@@ -5,9 +5,11 @@
 // `playLines` sings a line as Lesson 14's phrases are sung (its WEB-SPEC,
 // Audio): each breath's worth one voice, started on its own timer, nothing
 // sounding between them, the run lasting to its last voice's end or to the
-// breath it ends on. Its voices are built for real on the fake AudioContext
-// the sound tests use (sound-doubles.test-fixtures.ts) and read from what
-// that context holds, as kit/run.test.ts reads `playLine`'s.
+// breath it ends on, and each breath's line with its own vibrato where it
+// carries one (Lesson 22's wave, then its straight note). Its voices are
+// built for real on the fake AudioContext the sound tests use
+// (sound-doubles.test-fixtures.ts) and read from what that context holds,
+// as kit/run.test.ts reads `playLine`'s.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { outcome, SHORT_RELEASE, soundOn } from './run.test-fixtures'
@@ -43,6 +45,29 @@ describe('playLines', () => {
     expect(first).toBe(2)
     expect(beforeBreath).toBe(2)
     expect(ctx.oscillators).toHaveLength(4)
+  })
+
+  it("sings each breath's line with its own vibrato where it has one, else the run's", async () => {
+    // Arrange: a wave, then a straight note, then a line with the run's own
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+    const wave = { rate: 6, extent: 50, growIn: 0.3 }
+
+    // Act
+    runs.playLines(
+      [
+        { t: 0, points: contourOf(220, [{ hold: 2 }]), vibrato: wave },
+        { t: 2.3, points: contourOf(220, [{ hold: 2 }]), vibrato: null },
+        { t: 4.5, points: contourOf(220, [{ hold: 1 }]) },
+      ],
+      { audible: true, vibrato: { rate: 5, extent: 20, growIn: 0.3 } },
+    )
+    await vi.advanceTimersByTimeAsync(4600)
+
+    // Assert: the wave's tone and modulator, the straight note's tone alone, then the run's modulator
+    expect(ctx.oscillators).toHaveLength(5)
+    expect(ctx.oscillators[1].frequency.value).toBe(6)
+    expect(ctx.oscillators[4].frequency.value).toBe(5)
   })
 
   it('lasts until its last voice ends, or to the breath it ends on', async () => {
