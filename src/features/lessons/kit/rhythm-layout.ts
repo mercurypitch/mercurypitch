@@ -9,11 +9,15 @@
 // stopwatch strip; every beat of a row is as wide as the next, so two rows
 // at different tempi share one time axis, and a note's head sits a little
 // into its beat. Step 5's lift reads the same layout for its two drawings
-// (lesson-17/lift.ts).
+// (lesson-17/lift.ts). A row's metre sets its bar's length (Lesson 19
+// WEB-SPEC, Toys 1): a pad spans a beat of 4/4 by default, or an eighth,
+// six to a bar of 6/8 or 3/4, each the same width; a grouped bar keeps room
+// under its pads for the arcs; and a figure of pads alone, the hero's, has
+// no notation, its pads the figure's whole height.
 
 import type { Spelled } from './notes'
-import type { Bar, PlacedSymbol } from './rhythm-model'
-import { BAR_BEATS, placeBars } from './rhythm-model'
+import type { Bar, Metre, PlacedSymbol } from './rhythm-model'
+import { barQuarters, beatQuarters, FOUR_FOUR, placeBars } from './rhythm-model'
 import type { Clef } from './staff-places'
 
 /** What the bars sit on: one line, or a five-line staff in its clef. */
@@ -30,8 +34,12 @@ export interface RhythmRow {
   readonly notes?: readonly Spelled[]
   /** Which strip cells read, by index; every one by default. */
   readonly reads?: (index: number) => boolean
-  /** Each bar's first beat, by default four beats after the last's, so a bare figure's groups can sit a pause apart. */
+  /** Each bar's first beat, by default a bar after the last's, so a bare figure's groups can sit a pause apart. */
   readonly starts?: readonly number[]
+  /** Its time signature; 4/4 by default. */
+  readonly metre?: Metre
+  /** A system that carries on the one above it: its clef, but no time signature again. */
+  readonly continues?: boolean
 }
 
 export interface RhythmScene {
@@ -47,6 +55,12 @@ export interface RhythmScene {
   readonly strip?: boolean
   /** The hero's size: smaller type and a shorter figure. */
   readonly compact?: boolean
+  /** The beats each pad spans: 1 by default, a pad a beat of 4/4; 0.5 for six pads to a bar of 6/8 or 3/4 (Lesson 19 FACTS 70). */
+  readonly padEvery?: number
+  /** An arc under each group of pads, a group a beat of the row's metre, drawn as the group's first note sounds (Lesson 19 WEB-SPEC, Toys 1). */
+  readonly arcs?: boolean
+  /** The written bar above the pads; false for the pads alone, as the hero's six are (Lesson 19 WEB-SPEC, Toys 2). */
+  readonly notation?: boolean
   /**
    * A short rhythm on its own, as the four words' tickets show one (Lesson
    * 17 WEB-SPEC, Toys 4): no 4/4 and no bar line, no room kept for the
@@ -61,6 +75,12 @@ export interface RowLayout {
   readonly x0: number
   readonly x1: number
   readonly beats: number
+  /** Its metre, its bar's beats and the metre's own beat, in quarter notes. */
+  readonly metre: Metre
+  readonly bar: number
+  readonly beat: number
+  /** The beats each pad spans. */
+  readonly padEvery: number
   /** The line, or the staff's middle line. */
   readonly y: number
   /** The staff's space, the unit every glyph is drawn to. */
@@ -74,6 +94,9 @@ export interface RowLayout {
   readonly stripH: number
   /** The strip's second row of readings: its baseline. */
   readonly read2Y: number
+  /** The arcs' top, under the pads, and how deep each curves. */
+  readonly arcY: number
+  readonly arcH: number
 }
 
 export interface RhythmLayout {
@@ -86,13 +109,16 @@ export interface RhythmLayout {
 export const xOf = (row: RowLayout, beat: number): number =>
   row.x0 + (beat / row.beats) * (row.x1 - row.x0)
 
+/** A row's metre: its own, or 4/4. */
+export const metreOf = (row: RhythmRow): Metre => row.metre ?? FOUR_FOUR
+
 /** A row's beats: its own, or its bars'. */
-const beatsOf = (row: RhythmRow): number =>
-  row.beats ?? row.bars.length * BAR_BEATS
+export const beatsOf = (row: RhythmRow): number =>
+  row.beats ?? row.bars.length * barQuarters(metreOf(row))
 
 /** A row's symbols in place, each bar from its own first beat. */
 export const placeRow = (row: RhythmRow): PlacedSymbol[] =>
-  placeBars(row.bars, BAR_BEATS, row.starts)
+  placeBars(row.bars, barQuarters(metreOf(row)), row.starts)
 
 /** The figure's margin either side, px. */
 export const SIDE = 4
@@ -109,35 +135,53 @@ export function layoutRhythm(
 ): RhythmLayout {
   const n = scene.rows.length
   const space = scene.compact === true ? 7 : n > 1 ? 8 : 10
-  const staffed = scene.staff !== 'line' && scene.lanes !== true
-  const left = SIDE + space * (staffed ? 6.2 : scene.bare === true ? 0.6 : 2.6)
+  const written = scene.notation !== false
+  const staffed = written && scene.staff !== 'line' && scene.lanes !== true
+  const margin = staffed ? 6.2 : scene.bare === true || !written ? 0.6 : 2.6
+  const left = SIDE + space * margin
   const strip = scene.strip !== false
   const stripH = scene.compact === true ? 18 : 22
-  // one row's parts, top to bottom, from the room its stems and ties take
-  const above = space * (staffed ? 4.2 : 4.4)
-  const below = space * (scene.counts === true ? 5.2 : 3.4)
-  const padsH = scene.pads === false ? 0 : space * 1.9
+  const arcH = scene.arcs === true ? space * 1.5 : 0
+  // one row's parts, top to bottom, from the room its stems and ties take;
+  // pads alone take the row's whole height
+  const above = written ? space * (staffed ? 4.2 : 4.4) : 0
+  const below = written ? space * (scene.counts === true ? 5.2 : 3.4) : 0
   const stripRoom = strip ? stripH + 26 : 0
-  const rowH = above + below + padsH + stripRoom
+  const padsH =
+    scene.pads === false
+      ? 0
+      : written
+        ? space * 1.9
+        : Math.max(space * 4, h / n - arcH - stripRoom - 4)
+  const rowH = above + below + padsH + arcH + stripRoom
   const offset = Math.max(0, (h - rowH * n) / (n + 1))
   const rows = scene.rows.map((row, i): RowLayout => {
     const top = offset + i * (rowH + offset)
     const y = top + above
     const bottom = y + below + padsH
-    const stripTop = bottom + 8
+    const stripTop = bottom + arcH + 8
+    const metre = metreOf(row)
     return {
       x0: left,
       x1: w - SIDE,
       beats: beatsOf(row),
+      metre,
+      bar: barQuarters(metre),
+      beat: beatQuarters(metre),
+      padEvery: scene.padEvery ?? 1,
       y,
       space,
       top: top + 2,
       bottom,
-      numberY: bottom - space * 0.7,
+      numberY: written
+        ? bottom - space * 0.7
+        : (top + bottom) / 2 + space * 0.6,
       countY: y + space * 4.1,
       stripTop,
       stripH,
       read2Y: stripTop + stripH + 15,
+      arcY: bottom + space * 0.35,
+      arcH: arcH - space * 0.5,
     }
   })
   return { w, h, rows }

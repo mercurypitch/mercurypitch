@@ -208,20 +208,21 @@ export function engraveRest(
     )
 }
 
-/** The 4/4 at `x`: on the one line straddling it, on a staff filling its two halves. */
+/** The time signature at `x`, 4/4 unless `digits` say otherwise: on the one line straddling it, on a staff filling its two halves. */
 export function engraveMetre(
   x: number,
   y: number,
   space: number,
   staffed: boolean,
   parent: Element,
+  digits: readonly [number, number] = [BAR_BEATS, BAR_BEATS],
 ): SVGGElement {
   const g = svg('g', { class: 'rb-metre', 'data-part': 'metre' }, parent)
   const size = staffed ? space * 2.15 : space * 1.7
   const ys = staffed
     ? [y - space * 0.08, y + space * 1.92]
     : [y - space * 0.2, y + space * 1.45]
-  for (const at of ys)
+  ys.forEach((at, i) =>
     svg(
       'text',
       {
@@ -230,10 +231,11 @@ export function engraveMetre(
         'font-size': r(size),
         'text-anchor': 'middle',
         class: 'rb-metre-digit',
-        text: String(BAR_BEATS),
+        text: String(digits[i]),
       },
       g,
-    )
+    ),
+  )
   return g
 }
 
@@ -246,6 +248,8 @@ export interface NoteEngraving {
   readonly ledgers: readonly number[]
   /** Its flags give way to a beam once its beat is written. */
   readonly beamable: boolean
+  /** Where its beam lies, so its stem reaches it: a beamed group's notes at different heights share one beam (Lesson 19 FACTS 30). */
+  readonly stemTo?: number
 }
 
 /** A note's head, stem, flags and dot, and its ledger lines. */
@@ -301,13 +305,14 @@ export function engraveNote(
 function stemAndFlags(p: PlacedSymbol, e: NoteEngraving, g: Element): void {
   const { spot, m } = e
   const x = stemX(spot, m)
+  const end = e.stemTo ?? stemEnd(spot, m)
   svg(
     'line',
     {
       x1: r(x),
       x2: r(x),
       y1: r(spot.y + (spot.down ? m.s : -m.s)),
-      y2: r(stemEnd(spot, m)),
+      y2: r(end),
       class: 'rb-stem',
       'stroke-width': r(m.stemW),
       'data-part': 'stem',
@@ -320,7 +325,7 @@ function stemAndFlags(p: PlacedSymbol, e: NoteEngraving, g: Element): void {
       {
         d: flagPath(
           x,
-          stemEnd(spot, m) + (spot.down ? -1 : 1) * k * 6.4 * m.s,
+          end + (spot.down ? -1 : 1) * k * 6.4 * m.s,
           m.s,
           spot.down,
         ),

@@ -164,6 +164,12 @@
 .rb-sym.is-sounding .rb-rest-stroke {
   stroke: var(--rb-voice);
 }
+/* a beamed triplet's 3, over its beam (Lesson 19 FACTS 41) */
+.rb-tuplet {
+  fill: var(--ink);
+  font-family: var(--f-display);
+  font-weight: 700;
+}
 /* once the beam is drawn, the flags it replaces go */
 .rb-sym.is-beamed .rb-flag.is-beamable {
   display: none;
@@ -175,7 +181,8 @@
 .rb-barline,
 .rb-metre,
 .rb-count,
-.rb-read {
+.rb-read,
+.rb-arc {
   transition: opacity 0.12s var(--ease);
 }
 .rb .is-hidden {
@@ -235,6 +242,14 @@
 .rb-pad.is-chosen .rb-pad-box {
   stroke: var(--aqua);
   stroke-width: 2px;
+}
+/* an arc under each group of pads, drawn as the group's first note sounds
+   (Lesson 19 WEB-SPEC, Look) */
+.rb-arc {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2px;
+  stroke-linecap: round;
 }
 
 /* ---------------------------------------------------------------- the counts */
@@ -299,7 +314,8 @@
 .motion-paused .rb .rb-barline,
 .motion-paused .rb .rb-metre,
 .motion-paused .rb .rb-count,
-.motion-paused .rb .rb-read {
+.motion-paused .rb .rb-read,
+.motion-paused .rb .rb-arc {
   transition: none;
 }
 .motion-paused .rb .rb-cell.is-filling .rb-fill {
@@ -312,7 +328,8 @@
   .rb .rb-barline,
   .rb .rb-metre,
   .rb .rb-count,
-  .rb .rb-read {
+  .rb .rb-read,
+  .rb .rb-arc {
     transition: none;
   }
   .rb .rb-cell.is-filling .rb-fill {
