@@ -1,10 +1,10 @@
 /* ============================================================
    Rhythm bar — the writing's tokens: ink notes on chrome lines, the lit note, the pads and the strip
    ============================================================
-   The rhythm bar's look (rhythm-draw.ts; Lesson 17 WEB-SPEC, Look). A page
-   that mounts the toy takes this sheet into its own by @import, so it
-   inlines there and no chunk the other lessons share changes (MISTAKES.md,
-   on the lessons' base stylesheet).
+   The rhythm bar's look (rhythm-draw.ts and rhythm-engrave.ts; Lesson 17
+   WEB-SPEC, Look). A page that mounts the toy takes this sheet into its own
+   by @import, so it inlines there and no chunk the other lessons share
+   changes (MISTAKES.md, on the lessons' base stylesheet).
 
    Notation is ink on chrome lines: heads, stems, flags, beams, rests, dots,
    ties and the 4/4. A note lights in its singer's colour while it sounds,

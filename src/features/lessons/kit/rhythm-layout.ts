@@ -146,6 +146,28 @@ export const placeRow = (row: RhythmRow): PlacedSymbol[] =>
 export const SIDE = 4
 
 /**
+ * One row's parts, top to bottom, px, from the room its stems and ties
+ * take: above its line or staff's middle line, below it, and its pads.
+ * Pads alone, with nothing written, take `room`, the row's height less its
+ * arcs and strip, and at least four spaces.
+ */
+function rowParts(
+  scene: RhythmScene,
+  shown: { written: boolean; staffed: boolean },
+  space: number,
+  room: number,
+): { above: number; below: number; padsH: number } {
+  const pads = scene.pads !== false
+  if (!shown.written)
+    return { above: 0, below: 0, padsH: pads ? Math.max(space * 4, room) : 0 }
+  return {
+    above: space * (shown.staffed ? 4.2 : 4.4),
+    below: space * (scene.counts === true ? 5.2 : 3.4),
+    padsH: pads ? space * 1.9 : 0,
+  }
+}
+
+/**
  * Lays the rows out in a figure `w` by `h`: one row uses the height
  * Lesson 8's figure has, two share it (Play both), each with its pads,
  * counts and strip.
@@ -164,17 +186,13 @@ export function layoutRhythm(
   const strip = scene.strip !== false
   const stripH = scene.compact === true ? 18 : 22
   const arcH = scene.arcs === true ? space * 1.5 : 0
-  // one row's parts, top to bottom, from the room its stems and ties take;
-  // pads alone take the row's whole height
-  const above = written ? space * (staffed ? 4.2 : 4.4) : 0
-  const below = written ? space * (scene.counts === true ? 5.2 : 3.4) : 0
   const stripRoom = strip ? stripH + 26 : 0
-  const padsH =
-    scene.pads === false
-      ? 0
-      : written
-        ? space * 1.9
-        : Math.max(space * 4, h / n - arcH - stripRoom - 4)
+  const { above, below, padsH } = rowParts(
+    scene,
+    { written, staffed },
+    space,
+    h / n - arcH - stripRoom - 4,
+  )
   const rowH = above + below + padsH + arcH + stripRoom
   const offset = Math.max(0, (h - rowH * n) / (n + 1))
   const rows = scene.rows.map((row, i): RowLayout => {

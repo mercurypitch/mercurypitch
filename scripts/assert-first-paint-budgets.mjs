@@ -412,7 +412,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // model and words), the app's drum voices (src/lib/drum-voices.ts) and
   // Subdivide's bars (src/lib/ear/metre.ts), the cold open's six pads, its
   // predict and Merc's hop, the four words, and the explorer's six pads with
-  // Season 2's data (kit/season-2-figures.ts): 152,574 bytes in build:e2e; a
+  // Season 2's data (kit/season-2-figures.ts): 152,871 bytes in build:e2e; a
   // quarter over. The recall and quick check, the take (its judge and the
   // tap pad) and free play load after first paint.
   'learn/19.html': 187,
