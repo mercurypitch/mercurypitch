@@ -429,9 +429,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must:
-  // 173,573 bytes in build:e2e with Sing it on the kit's sing flow, comfort
-  // check and voice choice, and its listening pair; 162,673 with its four
-  // words on Lesson 1's strip (kit/words-strip.ts), 159,919 with the
+  // 173,868 bytes in build:e2e with the Wrap's free play, a second staff toy
+  // in its interval state; 173,573 with Sing it on the kit's sing flow,
+  // comfort check and voice choice, and its listening pair; 162,673 with
+  // its four words on Lesson 1's strip (kit/words-strip.ts), 159,919 with the
   // recall's Lesson 6 questions and their plays and the quick check on the
   // kit's quiz, loaded with the page as Lesson 15's are, so the guide's
   // sheet stays in the quizzes' shared chunk (MISTAKES.md); 137,809 with its
