@@ -13,6 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as SoundKit from './sound'
+import type { FakeGain } from './sound-doubles.test-fixtures'
 import { AUDIBLE, FakeContext, FakeNode, valueAt, } from './sound-doubles.test-fixtures'
 import type * as TimbreKit from './timbre'
 
@@ -547,5 +548,90 @@ describe("a voice's partials (Lesson 11's gears, `wave`)", () => {
     expect(ctx.oscillators[1].frequency.value).toBe(5.5)
     expect(ctx.filters.map((f) => f.frequency.value)).toEqual([2600])
     expect(ctx.gains.map((g) => g.gain.value)).toContain(0.2)
+  })
+})
+
+describe("a voice's vibrato (Lesson 22 WEB-SPEC, What the kit and the app still need, item 4)", () => {
+  /** The gain whose events grow a vibrato's depth from 0: the modulator's depth, in cents. */
+  const depthOf = (ctx: FakeContext): FakeGain | undefined =>
+    ctx.gains.find((g) =>
+      g.gain.events.some(([m]) => m === 'linearRampToValueAtTime'),
+    )
+
+  it('builds no modulator for a straight note, of either kind', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, [{ hold: 1 }]), {
+      kind: 'merc',
+      vibrato: null,
+    })
+    kit.contourVoice(kit.contourOf(A3, [{ hold: 1 }]), { vibrato: null })
+
+    // Assert: one oscillator a voice, and nothing on its detune
+    expect(ctx.oscillators).toHaveLength(2)
+    expect(depthOf(ctx)).toBeUndefined()
+  })
+
+  it('swings at its own rate, its depth reaching its extent at its grow-in, from 0 at the start', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    ctx.currentTime = 2
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, [{ hold: 3 }]), {
+      kind: 'merc',
+      vibrato: { rate: 6, extent: 50, growIn: 0.3 },
+    })
+
+    // Assert
+    expect(ctx.oscillators[1].frequency.value).toBe(6)
+    const depth = depthOf(ctx)?.gain.events ?? []
+    expect(valueAt(depth, 2, 0)).toBe(0)
+    expect(valueAt(depth, 2.15, 0)).toBeCloseTo(25, 6)
+    expect(valueAt(depth, 2.3, 0)).toBeCloseTo(50, 6)
+    expect(valueAt(depth, 4, 0)).toBeCloseTo(50, 6)
+  })
+
+  it("keeps every voice built without the option as it was: Merc's 5.5 swings at ±14 over 0.35 s, the soft tone none", async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+
+    // Act
+    kit.contourVoice(kit.contourOf(A3, SLIDE), { kind: 'merc' })
+    const merc = depthOf(ctx)?.gain.events ?? []
+    kit.contourVoice(kit.contourOf(A3, SLIDE))
+
+    // Assert: Merc's tone and his modulator, then the soft tone alone
+    expect(kit.MERC_VIBRATO).toEqual({ rate: 5.5, extent: 14, growIn: 0.35 })
+    expect(ctx.oscillators).toHaveLength(3)
+    expect(ctx.oscillators[1].frequency.value).toBe(5.5)
+    expect(valueAt(merc, 0, 0)).toBe(0)
+    expect(valueAt(merc, 0.35, 0)).toBeCloseTo(14, 6)
+  })
+
+  it('glides a sounding vibrato to a new rate and extent within 50 ms, without restarting the voice', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    const v = kit.contourVoice(kit.contourOf(A3, [{ hold: 4 }]), {
+      kind: 'merc',
+      vibrato: { rate: 6, extent: 30, growIn: 0.3 },
+    })
+    ctx.currentTime = 1
+    const made = ctx.oscillators.length
+    const stops = ctx.oscillators.map((o) => [...o.stops])
+
+    // Act
+    v?.setVibrato?.({ rate: 7.5, extent: 60 })
+
+    // Assert
+    const rate = ctx.oscillators[1].frequency.events
+    const depth = depthOf(ctx)?.gain.events ?? []
+    expect(valueAt(rate, 1 + kit.VIBRATO_GLIDE, 6)).toBeCloseTo(7.5, 6)
+    expect(valueAt(depth, 1 + kit.VIBRATO_GLIDE, 0)).toBeCloseTo(60, 6)
+    expect(kit.VIBRATO_GLIDE).toBeLessThanOrEqual(0.05)
+    expect(ctx.oscillators).toHaveLength(made)
+    expect(ctx.oscillators.map((o) => o.stops)).toEqual(stops)
   })
 })
