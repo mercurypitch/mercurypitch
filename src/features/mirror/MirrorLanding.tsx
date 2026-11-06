@@ -49,6 +49,23 @@ const DOOR_COPY: Record<MirrorEntryIntent, DoorCopy> = {
     howItWorks: 'How the test works',
     mode: 'guided',
   },
+  // The voice-type test and the singer match say what their documents say,
+  // in their words (src/seo/entry-pages.ts): the run behind both is the
+  // guided one, so nothing here promises more than it measures.
+  'voice-type': {
+    headline: { lead: 'Find your ', lit: 'voice type.' },
+    lede: 'Glide from your lowest comfortable note to your highest comfortable note. Your result shows which of six voice types, from bass to soprano, your range overlaps most: a guide, not a verdict. Two short follow-ups add accuracy and steadiness.',
+    cta: 'Find my voice type',
+    howItWorks: 'How the test works',
+    mode: 'guided',
+  },
+  'singer-match': {
+    headline: { lead: 'Which singer has ', lit: 'your vocal range?' },
+    lede: 'Glide from your lowest comfortable note to your highest and back. We measure the notes you actually reach, place your range in one of six voice types and introduce a famous singer of that type, on a card you can keep or share.',
+    cta: 'Find my singer',
+    howItWorks: 'How the match works',
+    mode: 'guided',
+  },
   'voice-mirror': {
     headline: { lead: 'Meet your ', lit: 'voice twin.' },
     lede: 'Sing a couple of short tasks. We find your range, name a legend of your voice type, then map your voice as a voiceprint you can share.',

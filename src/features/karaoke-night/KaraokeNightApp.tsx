@@ -38,8 +38,10 @@ import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
+import { karaokeEntryIntent } from './entry-intent'
 import { exampleLinkSlug, findExampleBySongSlug } from './example-links'
 import { trackKaraoke } from './funnel'
+import { KaraokeHero } from './KaraokeHero'
 import { returnTourOffer, spendTourOffer, tourBelongsAt, tourOfferDue, } from './karaoke-tour-offer'
 import type { KaraokeSong } from './KaraokeRailPanels'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
@@ -111,6 +113,9 @@ function loadRailCollapsed(): boolean {
 }
 
 export function KaraokeNightApp() {
+  // Which landing opened the room: its hero leads with that page's own
+  // heading (entry-intent.ts). The path is this document's, fixed for it.
+  const entryIntent = karaokeEntryIntent(window.location.pathname)
   // Voice control works here exactly like in the app: the stage host's
   // mixer registers its command set on mount, and this flag lets that set
   // through its tab gate (there are no tabs on this surface).
@@ -936,37 +941,11 @@ export function KaraokeNightApp() {
             when={activeSong()}
             keyed
             fallback={
-              <div class="kn-hero">
-                <h1>Your stage is set</h1>
-                <p>
-                  Start with our ready-to-sing song, or add one you own. The
-                  vocals lift away, the lyrics light up line by line, and every
-                  note you sing is scored live.
-                </p>
-                <div class="kn-steps">
-                  <div class="kn-step">
-                    <span class="kn-step-n">1</span>
-                    <p>The vocals separate cleanly from the instruments</p>
-                  </div>
-                  <div class="kn-step">
-                    <span class="kn-step-n">2</span>
-                    <p>Lyrics sync to the music, word by word</p>
-                  </div>
-                  <div class="kn-step">
-                    <span class="kn-step-n">3</span>
-                    <p>Sing into the mic and watch your score climb</p>
-                  </div>
-                </div>
-                <Show when={demoIsPlayable(manifest())}>
-                  <button
-                    class="kn-btn kn-btn--primary"
-                    data-tour="karaoke.demo"
-                    onClick={() => singDemo(manifest()!)}
-                  >
-                    Sing this song
-                  </button>
-                </Show>
-              </div>
+              <KaraokeHero
+                intent={entryIntent}
+                demoPlayable={demoIsPlayable(manifest())}
+                onSingDemo={() => singDemo(manifest()!)}
+              />
             }
           >
             {(song) => (
