@@ -52,6 +52,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -76,6 +77,10 @@ deck.start()
 
 // the recall from Lesson 6 and the quick check, each on the kit's quiz
 initQuizzes(deck)
+
+// four words, each figure a small staff in the learner's clef, written as
+// it sounds
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(23)
