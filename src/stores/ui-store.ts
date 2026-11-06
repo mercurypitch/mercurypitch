@@ -353,10 +353,11 @@ const [firstLightDue, setShowWelcome] = createSignal(
  * Whether First Light has never been offered on this device, on whichever
  * document: what the opening takeover asks (App.tsx), so a first visit on a
  * room's document, where the welcome stays shut, is not handed the plan
- * layer in its place.
+ * layer in its place, and what a lesson's link spends (stepAsideForLesson).
+ * Never under the native build, for the reason `showWelcome` gives.
  */
 export function firstLightNeverOffered(): boolean {
-  return welcomeSeen() === ''
+  return !IS_NATIVE_BUILD && welcomeSeen() === ''
 }
 
 /**
