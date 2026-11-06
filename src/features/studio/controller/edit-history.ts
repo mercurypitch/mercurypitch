@@ -18,6 +18,7 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'remove-track': 'remove lane',
   'update-track': 'change lane',
   'set-track-role': 'change lane role',
+  'set-track-instrument': 'change lane instrument',
   'set-lane-automation': 'change line',
   'remove-clip': 'remove clip',
   'move-clip': 'move clip',
