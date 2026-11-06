@@ -80,8 +80,8 @@ These are the rules that break things when ignored.
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 18.7k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 15.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
-| `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 14.2k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.7k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -243,6 +243,7 @@ These are the rules that break things when ignored.
 | [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 350 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 300 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
+| [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 300 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 300 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [native-device-api.ts](../../src/stores/native-device-api.ts) | 300 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
@@ -255,7 +256,6 @@ These are the rules that break things when ignored.
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [blocked-singers-store.ts](../../src/stores/blocked-singers-store.ts) | 150 | Blocked singers — whom this account blocked, as this device knows it A board hides a singer the moment they are blocked from it (slice 4b... |
 | [echo-store.ts](../../src/stores/echo-store.ts) | 150 | Echo's records: the best at each level, the singer's root, the demo seen The live table of Echo's bests (its shape, its ordering and how... |
-| [experimental-features-store.ts](../../src/stores/experimental-features-store.ts) | 150 | Experimental features store — what this page shows, and the switches it reads at startup The build gives every experimental feature one d... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [first-note-store.ts](../../src/stores/first-note-store.ts) | 150 | First note's records — the best at each level, the demo seen A best is the most entries a run came in on the note, and among runs that ca... |
 | [glide-room-store.ts](../../src/stores/glide-room-store.ts) | 150 | A glide room's records: its bests, the easy note, the demo seen What each glide room keeps, made once for both (Lip roll's lip-roll-store... |

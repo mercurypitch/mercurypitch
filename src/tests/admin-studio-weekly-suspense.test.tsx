@@ -70,6 +70,11 @@ vi.mock('@/features/admin/AdminPremiumPerksPage', () => ({
 vi.mock('@/features/admin/AdminLessonsPage', () => ({
   AdminLessonsPage: () => <div data-testid="stub-lessons" />,
 }))
+vi.mock('@/features/admin/AdminFeaturesPage', () => ({
+  AdminFeaturesPage: (p: { adminKey: string }) => (
+    <div data-testid="stub-features">{p.adminKey}</div>
+  ),
+}))
 vi.mock('@/features/zen/guided-content-store', () => ({
   refreshGuidedContent: vi.fn(),
 }))
@@ -131,6 +136,7 @@ describe('AdminContentStudio section switching under a slow fetch', () => {
       [/^Demo\b/, 'stub-demo'],
       [/^Perks\b/, 'stub-perks'],
       [/^Lessons\b/, 'stub-lessons'],
+      [/^Features\b/, 'stub-features'],
       [/^Exercises\b/, 'stub-exercises'],
     ] as const
     for (const [name, testid] of rounds) {
