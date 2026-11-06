@@ -9,8 +9,9 @@
 // words carry the brand gradient, one sentence of promise and one large pill.
 //
 // The order is the hierarchy. One primary action, the pill; "How it works"
-// under it as a quiet text button; and the way to Break Glass at the foot of
-// the page, a quiet link just above the legal row. It used to sit straight
+// under it as a quiet text button; the document's questions, where it has
+// them (EntryFaq); and the way to Break Glass at the foot of the page, a
+// quiet link just above the legal row. It used to sit straight
 // under the pill in a second colour, asking a visitor who came for their
 // range to pick between two games before they had sung a note (owner review,
 // 11 Oct 2026: "the main page, where it has the break the glass link and
@@ -22,6 +23,7 @@
 // eyebrow names the Check-up; the run that follows is the same one.
 
 import type { JSX } from 'solid-js'
+import { EntryFaq } from '@/components/EntryFaq'
 import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { IconGlass } from './icons'
@@ -93,8 +95,8 @@ export interface MirrorLandingProps {
   onHowItWorks: () => void
 }
 
-/** The start screen: two blocks in the page shell, the screen itself and the
- *  side door that sits at the foot above the legal row. */
+/** The start screen: blocks in the page shell, the screen itself, the
+ *  document's questions and the side door at the foot above the legal row. */
 export function MirrorLanding(props: MirrorLandingProps): JSX.Element {
   const door = (): DoorCopy => DOOR_COPY[props.entryIntent]
 
@@ -130,6 +132,7 @@ export function MirrorLanding(props: MirrorLandingProps): JSX.Element {
           </button>
         </div>
       </section>
+      <EntryFaq />
       <div class="mirror-sidedoor">
         <a
           class="mirror-sidedoor-link"

@@ -77,6 +77,29 @@ function structuredData(page: EntryPage): unknown[] {
   return nodes
 }
 
+/**
+ * The rooms whose documents keep their questions on screen once the room is
+ * up, under it. Two rooms are pages that scroll, and several documents open
+ * each: the Voice Mirror's four and Karaoke Night's three. Once the room
+ * mounted, the prelude that tells those documents apart was display:none,
+ * and they read as copies of each other (SEO audit, 6 Nov 2026). Their
+ * prelude is marked `data-keeps="faq"`, and the room borrows its FAQ, and
+ * nothing else of it, into its own page above its legal row or footer
+ * (src/components/EntryFaq.tsx). The studio's rooms are not pages that
+ * scroll, so their documents keep the prelude's old rule.
+ */
+const ROOMS_KEEPING_THEIR_QUESTIONS: ReadonlySet<string> = new Set([
+  '/src/features/mirror/main.tsx',
+  '/src/features/karaoke-night/main.tsx',
+])
+
+/** Whether `page`'s FAQ stays on screen in its room, above its foot (`data-keeps="faq"`). */
+export function keepsQuestionsUnderRoom(page: EntryPage): boolean {
+  return (
+    ROOMS_KEEPING_THEIR_QUESTIONS.has(page.boot) && (page.faq?.length ?? 0) > 0
+  )
+}
+
 /** A lesson's clean path, as tools/draft-lessons.ts `lessonPath` writes it: `/learn/01`. */
 const lessonHref = (n: number): string => `/learn/${String(n).padStart(2, '0')}`
 
@@ -227,7 +250,7 @@ ${JSON.stringify(node, null, 2)
   </head>
   <body>
     <div id="root"></div>
-    <div class="entry-prelude">
+    <div class="entry-prelude"${keepsQuestionsUnderRoom(page) ? ' data-keeps="faq"' : ''}>
       <div class="entry-prelude__lockup">
         <img
           class="entry-prelude__mark"

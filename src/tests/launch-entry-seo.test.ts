@@ -299,6 +299,72 @@ describe('entry document prelude', () => {
     }
   })
 
+  // Once its room is up, a document that shares the Voice Mirror or Karaoke
+  // Night with others keeps its questions under the room, and the home
+  // document keeps its h1, out of sight: until 6 Nov 2026 each read as a copy
+  // of its room's page, or as a greeting (SEO audit, H1 and H2). Every other
+  // document hides its whole prelude, as the rule above says.
+  it('marks what each document keeps once its room is up', () => {
+    const keeps = (file: string): string | null =>
+      repoHtml(file)
+        .querySelector('.entry-prelude')
+        ?.getAttribute('data-keeps') ?? null
+
+    expect(
+      Object.fromEntries(
+        ENTRY_FILES.map((file) => [file, keeps(file)]).filter(
+          ([, kept]) => kept !== null,
+        ),
+      ),
+    ).toEqual({
+      'index.html': 'h1',
+      'mirror.html': 'faq',
+      'vocal-range-test.html': 'faq',
+      'karaoke.html': 'faq',
+      'voice-type-test.html': 'faq',
+      'vocal-remover.html': 'faq',
+      'which-singer-has-my-vocal-range.html': 'faq',
+      'karaoke-app.html': 'faq',
+    })
+    const css = repoFile('src/styles/entry-prelude.css')
+    expect(css).toContain(".entry-prelude[data-keeps='h1']")
+  })
+
+  // The questions are kept inside the room, above its legal row or footer:
+  // kept after #root they drew below it, and the page ended on an answer.
+  // The room borrows the prelude's own section (EntryFaq.tsx), so it is one
+  // node either way, and the rooms that keep questions draw the slot.
+  it('sets the kept questions into the room, above its foot', () => {
+    const slot = repoFile('src/components/EntryFaq.tsx')
+    const mirror = repoFile('src/features/mirror/MirrorLanding.tsx')
+    const karaoke = repoFile('src/features/karaoke-night/KaraokeNightApp.tsx')
+
+    expect(slot).toContain(
+      `'.entry-prelude[data-keeps="faq"] > .entry-prelude__faq'`,
+    )
+    // The Mirror's side door, then its shell's legal row, follow the slot.
+    expect(mirror).toMatch(
+      /<\/section>\s*<EntryFaq \/>\s*<div class="mirror-sidedoor">/,
+    )
+    expect(karaoke).toMatch(/<EntryFaq \/>\s*<footer class="kn-footer">/)
+    expect(repoFile('src/styles/entry-prelude.css')).toMatch(
+      /\n\.entry-faq \{[^}]*background: var\(--entry-faq-ground/,
+    )
+  })
+
+  // On / the h1 is the site's subject while Home is the screen. Every other
+  // screen the home document serves heads itself, and there the kept h1 was
+  // a second one, clipped to a pixel, for a reader and for the coach's focus.
+  it("counts the home document's h1 only while Home is the screen", () => {
+    const css = repoFile('src/styles/entry-prelude.css')
+    const home = repoFile('src/pages/HomePage.tsx')
+
+    expect(css).toMatch(
+      /#root:not\(:empty\):not\(:has\(\[data-screen='home'\]\)\)\s*~ \.entry-prelude\[data-keeps='h1'\] \{\s*display: none;/,
+    )
+    expect(home).toMatch(/<div class=\{styles\.page\} data-screen="home">/)
+  })
+
   // The prelude is the loading screen, so it opens on the brand rather than on
   // a dark rectangle, and it races the bundle the way the curtain's art does.
   for (const file of ENTRY_FILES) {

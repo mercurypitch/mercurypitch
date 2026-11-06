@@ -197,3 +197,64 @@ body {
 #root:not(:empty) ~ .entry-prelude {
   display: none;
 }
+
+/* Two exceptions, each marked on the document, so every other entry keeps
+   the rule above as it was (SEO audit, 6 Nov 2026).
+
+   data-keeps="faq": the Voice Mirror's and Karaoke Night's documents
+   (render-entry-page.ts). Several documents open each of those rooms, and
+   once it is up the room's heading is the page's one h1; what is left to
+   tell the documents apart is their questions. The prelude still hides by
+   the rule above: the room borrows its FAQ section into its own page, above
+   its legal row or footer (src/components/EntryFaq.tsx), so the room's foot
+   closes the page. Kept after the room, the questions drew below that foot.
+   In the room they stand on its ground (a room sets --entry-faq-ground)
+   across the window, in its type, under the start screen or the empty stage
+   only. */
+.entry-faq {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1.5rem 3rem;
+  /* The ground runs the window's width whatever column the room sets the
+     questions in, and adds nothing to the page's scroll width. */
+  background: var(--entry-faq-ground, #0d1117);
+  box-shadow: 0 0 0 100vmax var(--entry-faq-ground, #0d1117);
+  clip-path: inset(0 -100vmax);
+  color: #c9d1d9;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* data-keeps="h1": the home document (index.html). What shows on / is First
+   Light's welcome on a first visit and Home's greeting after it, and neither
+   names the site, so the document's own h1 stays in the page once the app is
+   up: out of sight, as the native Home's own heading is, for a search engine
+   and a screen reader. Nothing a person sees changes. Only while Home is the
+   screen (HomePage.tsx marks its root): the other screens this document
+   serves head themselves, and there a second h1, 1px and clipped, was a
+   second subject, and a heading the coach could give the focus back to
+   (src/components/coach/start.ts). */
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  background: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] > :not(h1) {
+  display: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] > h1 {
+  animation: none;
+}
+#root:not(:empty):not(:has([data-screen='home']))
+  ~ .entry-prelude[data-keeps='h1'] {
+  display: none;
+}
