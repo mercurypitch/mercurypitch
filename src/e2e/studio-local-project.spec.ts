@@ -202,6 +202,17 @@ test('Studio makes a second tab read only until explicit takeover @smoke', async
     await expect(
       studio.getByRole('textbox', { name: 'Project name' }),
     ).toBeDisabled({ timeout: 15_000 })
+    // The first tab says so once, with the takeover beside it, and offers
+    // nothing to discard: none of its changes is unsaved.
+    await expect(
+      studio.getByText(/open in another tab|no longer editable in this tab/),
+    ).toHaveCount(1)
+    await expect(
+      studio.getByRole('button', { name: 'Edit in this tab' }),
+    ).toHaveCount(1)
+    await expect(
+      studio.getByRole('button', { name: 'Discard changes and reload' }),
+    ).toHaveCount(0)
   } finally {
     await second.close()
   }

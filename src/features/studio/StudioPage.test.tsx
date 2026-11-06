@@ -1,4 +1,4 @@
-// Studio page backup tests — the save picker empties the file it hands back, so everything that could refuse a backup is asked before it opens.
+// Studio page tests — the save picker empties the file it hands back, so everything that could refuse a backup is asked before it opens; and the page's one banner offers what its state can use.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
@@ -51,13 +51,17 @@ function target(): StudioBackupTarget {
 }
 
 /** A controller with `Window seat` open and `Sketch` in the list. */
-function mountPage(problem: string | null = null) {
+function mountPage(
+  problem: string | null = null,
+  overrides: Record<string, unknown> = {},
+) {
   const controller = {
     project: () => ({ id: 'one', title: 'Window seat' }),
     projects: () => [song('one', 'Window seat'), song('two', 'Sketch')],
     loading: () => false,
     busy: () => false,
     hasUnsavedChanges: () => false,
+    importing: () => false,
     problem: () => problem,
     saveState: () => 'error',
     writable: () => true,
@@ -66,6 +70,10 @@ function mountPage(problem: string | null = null) {
     openForBackup: vi.fn(async () => true),
     open: vi.fn(async () => {}),
     backup: vi.fn(async () => true),
+    takeOver: vi.fn(async () => {}),
+    fork: vi.fn(async () => {}),
+    discardAndReload: vi.fn(async () => {}),
+    ...overrides,
   }
   studio.current = controller
   render(() => <StudioPage />)
@@ -135,5 +143,49 @@ describe('Studio page backups', () => {
 
     expect(controller.canBackup).toHaveBeenCalledWith()
     expect(picker.open).not.toHaveBeenCalled()
+  })
+})
+
+describe('Studio page banner', () => {
+  const TAKEN =
+    'This project is no longer editable in this tab. Reload, make a copy, or take over editing.'
+
+  it('offers the takeover and a plain Reload once editing moved to another tab with nothing unsaved', () => {
+    // Arrange
+    const controller = mountPage(TAKEN, {
+      writable: () => false,
+      saveState: () => 'saved',
+    })
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }))
+
+    // Assert
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Edit in this tab' }),
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Discard changes and reload' }),
+    ).toBeNull()
+    expect(controller.discardAndReload).toHaveBeenCalledOnce()
+  })
+
+  it('asks before a reload that would discard unsaved changes, and offers no takeover while this tab edits', () => {
+    const controller = mountPage('Studio could not save your latest changes.', {
+      hasUnsavedChanges: () => true,
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Discard changes and reload' }),
+    )
+
+    expect(
+      screen.queryByRole('button', { name: 'Edit in this tab' }),
+    ).toBeNull()
+    expect(controller.discardAndReload).not.toHaveBeenCalled()
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(
+      'Discard changes?',
+    )
   })
 })
