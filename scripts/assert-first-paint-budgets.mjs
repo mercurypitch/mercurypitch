@@ -132,6 +132,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 174,275 with it, against 174,080 at 170. The 426 are what every lesson
   // page carries for it: Lessons 23's and 24's teases and their
   // alternatives (kit/lesson-copy.ts, 353) and Lesson 23's drafts line (73).
+  // Merc's vibrato option (kit/sound.ts, Lesson 22's) adds 397 to every
+  // lesson page: 174,705 bytes before it, 175,102 with it, 2 under 171.
   'learn/02.html': 171,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
@@ -221,7 +223,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // loads the kit's voice choice without the sung part's comfort check, so
   // the voice choice moves to a chunk of its own, and every lesson page that
   // loads both carries its glue (the other voice lessons rose by as much).
-  'learn/03.html': 139,
+  // Raised to 140 for Merc's vibrato option (kit/sound.ts), Lesson 22's:
+  // 142,032 bytes before it, 142,429 with it, against 142,336 at 139. All
+  // 397 are on every lesson page: a voice's vibrato from a rate, an extent
+  // and a grow-in, or none for a straight note, and the setter that glides
+  // a sounding one to a new rate and extent.
+  'learn/03.html': 140,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -322,7 +329,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // drafts line, on every lesson page, as on Lesson 5; the other 197 are the
   // kit's predict, quiz and glyphs in a chunk of their own again, and 137
   // can be tried once Lesson 19 loads them.
-  'learn/04.html': 138,
+  // Raised to 139 for Merc's vibrato option (kit/sound.ts), Lesson 22's:
+  // 141,005 bytes before it, 141,402 with it, against 141,312 at 138, the
+  // same 397 as on Lesson 3.
+  'learn/04.html': 139,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -437,9 +447,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
-  // (kit/season-2.ts) as a Season 2 page must; its shell: 86,821 bytes in
+  // (kit/season-2.ts) as a Season 2 page must; its shell, with Merc's
+  // vibrato option in the kit's sound (kit/sound.ts, 397): 87,218 bytes in
   // build:e2e, the smallest whole KB above, to rise as each part joins.
-  'learn/22.html': 85,
+  'learn/22.html': 86,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with

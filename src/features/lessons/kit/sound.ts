@@ -28,9 +28,35 @@ import { toast } from './toast'
 
 export type SoundState = 'unset' | 'on' | 'off'
 
+/**
+ * A voice's vibrato: a pure sine on its pitch at `rate` swings a second,
+ * `extent` cents either side, its depth grown in linearly from 0 at the
+ * voice's start over `growIn` seconds, its phase 0 there, in the demo
+ * voice's form (src/lib/demo-voice.ts). A figure that draws a voice's line
+ * draws it from these same numbers, so the drawing and the sound share one
+ * clock (Lesson 22 WEB-SPEC, Audio).
+ */
+export interface Vibrato {
+  readonly rate: number
+  readonly extent: number
+  readonly growIn: number
+}
+
+/** Merc's "ooh" as every lesson has heard it: 5.5 swings a second, ±14 cents, grown in over 0.35 s. */
+export const MERC_VIBRATO: Vibrato = { rate: 5.5, extent: 14, growIn: 0.35 }
+
+/** Seconds a sounding voice's vibrato takes to glide to a new rate and extent (`Voice.setVibrato`). */
+export const VIBRATO_GLIDE = 0.05
+
 export interface VoiceOptions {
-  /** 'merc' is Merc's "ooh": brighter partials and a 5.5 Hz vibrato. */
+  /** 'merc' is Merc's "ooh": brighter partials and his vibrato, `MERC_VIBRATO`. */
   kind?: 'soft' | 'merc'
+  /**
+   * The voice's vibrato. Absent, a voice keeps its own: Merc's "ooh" his
+   * `MERC_VIBRATO`, the soft tone none. Null, a straight note, with no
+   * modulator built. Set, that rate, extent and grow-in, on either kind.
+   */
+  vibrato?: Vibrato | null
   gain?: number
   /** Attack and release, seconds. */
   attack?: number
@@ -72,6 +98,14 @@ export interface Voice {
   readonly alive: boolean
   setFreq(f: number, timeConstant?: number): void
   setGain(v: number, timeConstant?: number): void
+  /**
+   * Glides the voice's vibrato to a new rate and extent over
+   * `VIBRATO_GLIDE`, without restarting it: a slider moved during a play
+   * (Lesson 22's Steps 2 and 3). A voice built with none, a straight note,
+   * keeps none; a voice that never swings, as a burst of noise, leaves the
+   * setter out.
+   */
+  setVibrato?(v: { readonly rate: number; readonly extent: number }): void
   stop(release?: number): void
 }
 
@@ -161,6 +195,11 @@ interface Graph {
   readonly env: GainNode
   readonly level: GainNode
   readonly parts: AudioScheduledSourceNode[]
+  /** The vibrato's modulator and its depth in cents, where the voice has one. */
+  readonly vibrato: {
+    readonly lfo: OscillatorNode
+    readonly depth: GainNode
+  } | null
   /** When it started, on the audio clock. */
   readonly t: number
   readonly merc: boolean
@@ -192,23 +231,27 @@ function build(freq: number, o: VoiceOptions): Graph | null {
   else lp.connect(env)
   env.connect(level)
   level.connect(master)
-  if (merc) {
-    // vibrato 5.5 Hz, +-14 cents, grown in over 0.35 s
+  // the vibrato: a sine on the oscillator's detune, its depth grown in from
+  // 0 at the voice's start, so its phase is 0 there
+  const vib = o.vibrato === undefined ? (merc ? MERC_VIBRATO : null) : o.vibrato
+  let vibrato: Graph['vibrato'] = null
+  if (vib !== null) {
     const lfo = context.createOscillator()
     const depth = context.createGain()
-    lfo.frequency.value = 5.5
+    lfo.frequency.value = vib.rate
     depth.gain.setValueAtTime(0, t)
-    depth.gain.linearRampToValueAtTime(14, t + 0.35)
+    depth.gain.linearRampToValueAtTime(vib.extent, t + vib.growIn)
     lfo.connect(depth)
     depth.connect(osc.detune)
     lfo.start(t)
     parts.push(lfo)
+    vibrato = { lfo, depth }
   }
   const attack = o.attack ?? (merc ? 0.09 : 0.035)
   rise(env.gain, t, 1, attack)
   osc.start(t)
   const release = o.release ?? (merc ? 0.34 : 0.22)
-  return { context, osc, env, level, parts, t, merc, attack, release }
+  return { context, osc, env, level, parts, vibrato, t, merc, attack, release }
 }
 
 /** Stops every part of the voice once a release of `rel` from `at` has died away. */
@@ -242,6 +285,19 @@ function handleOf(g: Graph): Live {
     setGain(v, timeConstant = 0.04) {
       if (alive)
         level.gain.setTargetAtTime(v, context.currentTime, timeConstant)
+    },
+    setVibrato({ rate, extent }) {
+      if (!alive || g.vibrato === null) return
+      const now = context.currentTime
+      const end = now + VIBRATO_GLIDE
+      for (const [param, to] of [
+        [g.vibrato.lfo.frequency, rate],
+        [g.vibrato.depth.gain, extent],
+      ] as const) {
+        param.cancelScheduledValues(now)
+        param.setValueAtTime(param.value, now)
+        param.linearRampToValueAtTime(to, end)
+      }
     },
     stop(release) {
       if (!alive) return
