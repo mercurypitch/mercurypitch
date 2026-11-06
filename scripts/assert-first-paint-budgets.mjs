@@ -382,7 +382,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // words and stopwatch strip, and the staff's places and glyphs), Step 5's
   // lift, the cold open's compact pads, metronome and predict, the four
   // words, the Wrap's comfort check and tease still, and the explorer's
-  // figure (kit/season-2-figures.ts): 145,641 bytes in build:e2e; a quarter
+  // figure (kit/season-2-figures.ts): 145,795 bytes in build:e2e; a quarter
   // over. The recall and quick check, the checkpoint (take, pad, clap, sung
   // bars) and free play load after first paint.
   'learn/17.html': 178,

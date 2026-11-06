@@ -335,11 +335,12 @@ describe('the stage, step by step', () => {
     expect(readings()).toEqual(['0.5 s', '0.5 s', '1 s'])
   })
 
-  it("plays Play both's two rows, and gives Step 2's bar back to Play at the slider's tempo", () => {
+  it("plays Play both's two rows, and gives Step 2's bar back to Play at the slider's tempo, the track filled to the thumb", () => {
     // Arrange
     const deck = mountSteps()
     deck.show(2)
     const slider = el<HTMLInputElement>('#tempoBar')
+    const filled = slider.style.getPropertyValue('--p')
 
     // Act
     showing('[data-rb-both]').click()
@@ -352,6 +353,11 @@ describe('the stage, step by step', () => {
     expect(both).toMatch(/^Two rows on one time axis, on one line: /)
     expect(words(el('label[for="tempoBar"]'))).toBe('Tempo 90 BPM')
     expect(slider.getAttribute('aria-valuetext')).toBe('90 beats per minute')
+    // the kit's track fill reads --p, and without it sits halfway at any tempo
+    expect([filled, slider.style.getPropertyValue('--p')]).toEqual([
+      '0%',
+      '50%',
+    ])
     expect(figure().getAttribute('aria-label')).toBe(
       'One bar of 4/4: two quarter notes and a half note, on one line',
     )

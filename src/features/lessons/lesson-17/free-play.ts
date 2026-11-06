@@ -34,7 +34,7 @@ import { lengthsWords } from '@/features/lessons/kit/rhythm-words'
 import type { Clef } from '@/features/lessons/kit/staff-places'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import { rowView, staffBars, STEP_BPM } from './rhythm-views'
-import { halvedLine, joinedLine, keptWritten, REFUSAL_HINT, restLine, STAFF_SAID, } from './steps'
+import { halvedLine, joinedLine, keptWritten, REFUSAL_HINT, restLine, showTempo, STAFF_SAID, } from './steps'
 
 export interface FreePlay {
   readonly line: RhythmBar
@@ -137,11 +137,10 @@ export function initFreePlay(): FreePlay {
     line.see({ lanes: on })
   })
   const tempoIn = q<HTMLInputElement>('[data-rb-tempo]', root)
-  const readout = tempoIn.closest('.slider-row')?.querySelector('label b')
+  showTempo(tempoIn, tempo)
   tempoIn.addEventListener('input', () => {
     tempo = Number(tempoIn.value)
-    tempoIn.setAttribute('aria-valuetext', `${tempo} beats per minute`)
-    if (readout) readout.textContent = `${tempo} BPM`
+    showTempo(tempoIn, tempo)
     // what sounds next takes the new tempo from the next beat; the readings go
     line.retempo(tempo)
   })
