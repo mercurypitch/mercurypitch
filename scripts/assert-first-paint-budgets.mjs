@@ -549,7 +549,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // rules; a quarter over.
   'learn/17.html': 116,
   // Lesson 19 (a draft, as above), with its steps, its cold open, its four
-  // words, the take and the Wrap: 86,244 bytes in build:e2e, the kit's
+  // words, the take and the Wrap: 86,737 bytes in build:e2e, the kit's
   // sheets (the rhythm bar's and the tap pad's inlined into its own by
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
