@@ -33,9 +33,10 @@ import '@/features/lessons/kit/lesson-stage.css'
 // base stylesheet); the recall loads with the page for the same reason, as
 // a chunk loaded after first paint would leave the sheet a chunk of its own
 import '@/features/lessons/kit/lesson-guide.css'
-// the voice lessons' sheet joins with Sing it, the module whose chunk it
-// shares: taken before it, it would leave its chunk for one of its own
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-23.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -51,6 +52,7 @@ import { PitchLine } from '@/features/lessons/kit/staff'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -81,6 +83,9 @@ initQuizzes(deck)
 // four words, each figure a small staff in the learner's clef, written as
 // it sounds
 initWords()
+
+// Sing it on the kit's flow, and then just listen, ti and fa
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(23)

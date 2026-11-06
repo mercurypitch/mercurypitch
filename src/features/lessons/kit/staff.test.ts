@@ -469,4 +469,52 @@ describe('a score', () => {
     expect(heads()).toEqual(['st-head', 'st-head is-amber', 'st-head'])
     expect(runs).toHaveLength(0)
   })
+
+  it("keeps a column of its own for each note on a phone's figure, so no two heads touch", () => {
+    // Arrange: do, so, then so, do (Lesson 23's) beside the pitch line, in a
+    // figure 200 px wide, as on a 344 px screen
+    PitchLine.set(true)
+    const svg = root().querySelector('svg')
+    if (svg === null) throw new Error('no figure')
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      width: 200,
+      height: 208,
+      right: 200,
+      bottom: 208,
+      toJSON: () => ({}),
+    })
+    const at = (letter: 'A' | 'D', octave: number): Spelled => ({
+      letter,
+      alter: 0,
+      octave,
+    })
+
+    // Act
+    mount({
+      ...PLACE,
+      tap: 'none',
+      score: [at('D', 4), at('A', 4), at('A', 4), at('D', 5)].map((note) => ({
+        note,
+      })),
+    })
+
+    // Assert: the heads' centres, in staff spaces apart; a head is about 1.2 wide
+    const xs = Array.from(root().querySelectorAll('.st-head'), (h) =>
+      Number(
+        /translate\(([\d.-]+)/.exec(h.getAttribute('transform') ?? '')?.[1],
+      ),
+    )
+    const lines = Array.from(root().querySelectorAll('.st-line'))
+      .filter((l) => l.getAttribute('y1') === l.getAttribute('y2'))
+      .map((l) => Number(l.getAttribute('y1')))
+      .sort((a, b) => a - b)
+    const space = lines[1] - lines[0]
+    const gaps = xs.slice(1).map((x, i) => (x - xs[i]) / space)
+    expect(gaps).toHaveLength(3)
+    expect(Math.min(...gaps)).toBeGreaterThan(1.8)
+  })
 })

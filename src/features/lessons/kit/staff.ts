@@ -8,8 +8,9 @@
 // (`StaffState`): one staff in a clef or the grand staff, what a tap does
 // (play the place, move the one note, or nothing), whether the letters stay
 // as each place plays, the key strip under the grand staff, a score written
-// before anything plays (Sing it's five notes, the house on do) and the
-// line said at the reach's end. Lessons 16 to 28 hand it their own.
+// before anything plays (Sing it's five notes, the house on do), which
+// keeps a column of its own for each note however narrow the figure, and
+// the line said at the reach's end. Lessons 16 to 28 hand it their own.
 //
 // A tap on the staff picks the nearest place in reach and plays its note,
 // its name beside it ("G4"); places are 13 px apart on a phone, so Step up
@@ -176,6 +177,16 @@ const MOVE_SEC = 0.6
 /** The narrowest a key of the strip is drawn, px (FACTS 71). */
 const KEY_MIN = 44
 
+/**
+ * The staff spaces a score asks across (staff-draw.ts `across`): the clef
+ * and the margins, and two and a quarter for each note, so its noteheads,
+ * their signs and the house under do never touch on a narrow screen; on a
+ * narrow figure the staff draws smaller instead. Never fewer than the
+ * drawing's own 9.
+ */
+export const scoreAcross = (notes: number): number =>
+  Math.max(9, 5 + 2.25 * notes)
+
 // ---------------------------------------------------------------- the toy
 
 export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
@@ -246,6 +257,8 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       room,
       marks,
       cols: state.score?.length ?? runCols,
+      across:
+        state.score === undefined ? undefined : scoreAcross(state.score.length),
       letters: [...letters],
       gold,
       lanes: PitchLine.on && state.noLanes !== true ? { lo, hi } : null,

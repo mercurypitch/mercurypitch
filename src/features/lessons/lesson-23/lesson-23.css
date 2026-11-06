@@ -248,19 +248,32 @@
 .l23-listen p {
   margin: 0 0 12px;
 }
+/* two pairs side by side: a staff no wider than they need */
+.l23-pair-staff {
+  max-width: 440px;
+}
 .l23-pair-staff .viz {
   height: 170px;
 }
+/* on a phone the staff takes the card's width, for its four notes, and the
+   still stands beside the switch under it */
 @media (max-width: 560px) {
   .l23-sing-staff {
-    grid-template-columns: minmax(0, 1fr) 64px;
+    grid-template-columns: minmax(0, 1fr) 56px;
   }
   .l23-sing-staff .viz {
+    grid-column: 1 / -1;
     height: 210px;
   }
+  .l23-sing-staff .staff-row {
+    grid-row: 2;
+    grid-column: 1;
+  }
   .l23-sing-staff .sing-merc {
-    width: 64px;
-    height: 64px;
+    grid-row: 2;
+    grid-column: 2;
+    width: 56px;
+    height: 56px;
   }
 }
 
