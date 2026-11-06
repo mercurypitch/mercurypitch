@@ -24,7 +24,11 @@
 // gutter widened to fit (`names`, band-chart-names.ts). Lesson 14 adds a
 // song: Merc's notes as bands over their own times, lit along their length
 // by their level, with the words under them, the chords, breath marks and
-// a level strip where a figure asks (band-chart-song.ts).
+// a level strip where a figure asks (band-chart-song.ts). Lesson 22 draws
+// Merc's line itself, wave and all, at its true pitch from the schedule
+// his voice plays, with no line at the band's centre (`centre`), its
+// middle dashed and a ruler from the middle to a swing's top, through a
+// painter the page passes in (`paintOver`, band-chart-wave.ts).
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it while it is on
 // screen, in each frame where what it shows differs from what it last drew:
@@ -47,6 +51,7 @@ import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } fr
 import type { RungNames } from './band-chart-names'
 import type { Rung } from './band-chart-rungs'
 import type { SongScene } from './band-chart-song-scene'
+import type { MiddleLine, WaveLine, WaveRuler } from './band-chart-wave-scene'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 import { q } from './dom'
 import { addDrawer, surface, wake, watch, watchPixelRatio } from './frame-loop'
@@ -100,6 +105,19 @@ export interface BandChartOptions {
    * passed in by the page that draws one.
    */
   readonly under?: Under
+  /**
+   * Merc's steady line at the band's centre; false for a figure that
+   * draws his line itself, wave and all (Lesson 22): no amber line marks
+   * the centre then, so nothing says where the middle is before the page
+   * does.
+   */
+  readonly centre?: boolean
+  /**
+   * A painter over the plot, after the singer's line: band-chart-wave.ts's
+   * `paintWave`, passed in by the page that draws Merc's wave, its middle
+   * and a ruler.
+   */
+  readonly paintOver?: (f: ChartFrame, scene: BandScene) => void
 }
 
 /** A painter under the plot: where the plot's top and bottom sit in a figure `h` high, and what it paints. */
@@ -148,6 +166,12 @@ export interface BandScene {
    * Merc's band, as rungs do.
    */
   song?: SongScene
+  /** Merc's own line from a play's schedule, on a chart given band-chart-wave.ts's `paintWave`. */
+  wave?: WaveLine | null
+  /** The dashed middle of a line, labelled "middle", on the same chart. */
+  middle?: MiddleLine | null
+  /** The ruler from a wave's middle to the top of a swing, with its reading. */
+  ruler?: WaveRuler | null
 }
 
 export interface BandChart {
@@ -248,7 +272,12 @@ export function mountBandChart(
   /** Merc's band, its echo and its lit edge; or the scene's rungs in their place. */
   function paintBands(f: ChartFrame): void {
     if (opts.paintRungs?.(f, scene) === true) return
-    const main: BandSpec = { c: 0, half: HIT_TOLERANCE_CENTS, glow: scene.glow }
+    const main: BandSpec = {
+      c: 0,
+      half: HIT_TOLERANCE_CENTS,
+      glow: scene.glow,
+      line: opts.centre !== false,
+    }
     drawBand(f, main)
     if (opts.echo !== undefined)
       drawBand(f, {
@@ -277,6 +306,7 @@ export function mountBandChart(
     for (const m of scene.marks) drawMark(f, m)
     if (scene.playhead !== null) drawPlayhead(f, scene.playhead)
     drawTrace(f, scene.line)
+    opts.paintOver?.(f, scene)
     const head = scene.head
     if (head !== null) {
       drawHead(f, head.t, head.c)
