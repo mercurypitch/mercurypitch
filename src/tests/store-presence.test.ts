@@ -64,6 +64,8 @@ describe('store presence, from the listings', () => {
     expect(nodes.map((node) => node.url)).toEqual([APP_STORE_URL, PLAY_URL])
     for (const node of nodes) {
       expect(node['@type']).toBe('MobileApplication')
+      // A type Google's software-app documentation lists.
+      expect(node.applicationCategory).toBe('MultimediaApplication')
       expect(node.publisher).toEqual({
         '@id': 'https://mercurypitch.com/#organization',
       })

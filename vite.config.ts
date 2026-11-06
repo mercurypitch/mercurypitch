@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { visualizer } from 'rollup-plugin-visualizer'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import type { ResolvedConfig } from 'vite'
 import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
@@ -210,13 +211,19 @@ function standaloneAliasFilesPlugin() {
 // Worker would not reach the browser. Both non-production deploys build with
 // `build:dev`, i.e. mode === 'development', which is what this keys on.
 function nonProductionNoindexPlugin(isProductionBuild: boolean) {
+  // The build's own output directory, as tools/glassworks-listing.ts reads it:
+  // a fixed `dist` here let `build:dev --outDir <dir>` ship a copy that asked
+  // to be indexed (SEO audit, 6 Nov 2026).
+  let outDir = resolve(__dirname, 'dist')
   return {
     name: 'non-production-noindex',
+    configResolved(config: ResolvedConfig) {
+      outDir = resolve(config.root, config.build.outDir)
+    },
     // After writeBundle, so it lands on top of the copied public/ files rather
     // than being overwritten by them.
     closeBundle() {
       if (isProductionBuild) return
-      const outDir = resolve(__dirname, 'dist')
       writeFileSync(
         resolve(outDir, 'robots.txt'),
         '# Not the production site. mercurypitch.com is the one to index.\n' +

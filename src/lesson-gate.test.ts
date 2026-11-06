@@ -335,7 +335,9 @@ describe('a lesson page', () => {
     expect(asked.headers.get('Range')).toBeNull()
   })
 
-  it("passes the asset layer's redirect from the other spellings through as it came", async () => {
+  // The asset layer's 307 goes out a 308 to the same address: the other
+  // spellings never move, and a temporary redirect is a weak canonical signal.
+  it("passes the asset layer's redirect from the other spellings on as a permanent one", async () => {
     for (const path of ['/learn/02.html', '/learn/02/']) {
       // Arrange
       const { ask } = gate()
@@ -344,7 +346,7 @@ describe('a lesson page', () => {
       const response = await ask(path)
 
       // Assert
-      expect(response?.status, path).toBe(307)
+      expect(response?.status, path).toBe(308)
       expect(response?.headers.get('Location'), path).toBe('/learn/02')
     }
   })
@@ -436,7 +438,7 @@ describe("a film's watch page", () => {
     expect(doc.getElementById('lesson-state')).toBeNull()
   })
 
-  it("passes the asset layer's redirect from its other spellings through as it came", async () => {
+  it("passes the asset layer's redirect from its other spellings on as a permanent one", async () => {
     for (const path of ['/learn/01/watch.html', '/learn/01/watch/']) {
       // Arrange
       const { ask } = gate()
@@ -445,7 +447,7 @@ describe("a film's watch page", () => {
       const response = await ask(path)
 
       // Assert
-      expect(response?.status, path).toBe(307)
+      expect(response?.status, path).toBe(308)
       expect(response?.headers.get('Location'), path).toBe('/learn/01/watch')
     }
   })
@@ -961,8 +963,9 @@ describe('the hub', () => {
     expect(doc.querySelector('.hub-time')).toBeNull()
     expect(head?.status).toBe(200)
     expect(await head?.text()).toBe('')
-    // the document's own address is the asset layer's redirect to the hub
-    expect(asDocument?.status).toBe(307)
+    // the document's own address is the asset layer's redirect to the hub,
+    // made permanent
+    expect(asDocument?.status).toBe(308)
     expect(asDocument?.headers.get('Location')).toBe('/learn/')
   })
 

@@ -10,7 +10,7 @@ import type { UvrInputBucket } from './lib/runpod-stem-storage'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
 import { handleOgCardRequest, ogCardExists } from './og-card-handler'
-import { decorateVoiceprintMeta } from './og-voiceprint-meta'
+import { decorateVoiceprintMeta, voiceprintMetaTags, } from './og-voiceprint-meta'
 import { handleShareRequest } from './share-handler'
 
 export { ContainerProxy }
@@ -318,6 +318,22 @@ async function routeUvr(
   }
 }
 
+/**
+ * An answer that asks search engines to leave its URL out of the index, its
+ * status and body as they were. Set here, on the Worker's own response: the
+ * paths that get it are in `assets.run_worker_first`, so this Worker answers
+ * them before the asset layer does.
+ */
+function noindexed(response: Response): Response {
+  const headers = new Headers(response.headers)
+  headers.set('X-Robots-Tag', 'noindex')
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
 /** The asset layer's answer, with `no-store` when it is an error. */
 function uncachedIfError(response: Response): Response {
   if (response.status < 400) return response
@@ -447,9 +463,14 @@ export default {
       )
       // A shared voiceprint has to unfurl as itself. Crawlers never run the
       // code that reads `?v=`, so the card has to be true in the HTML.
-      return decorateVoiceprintMeta(mirrorResp, url, (id) =>
+      const decorated = await decorateVoiceprintMeta(mirrorResp, url, (id) =>
         ogCardExists(env, id),
       )
+      // And it is one singer's card, not a page of the site: its title can
+      // carry the name they chose to share (og-voiceprint-meta.ts), and the
+      // canonical to /mirror is only a hint. An unfurl reads the tags, never
+      // this header, so the card still shows wherever the link is sent.
+      return voiceprintMetaTags(url) === null ? decorated : noindexed(decorated)
     }
 
     // Vocal range — same local analysis engine, but a distinct document whose
@@ -482,24 +503,22 @@ export default {
     if (EXERCISE_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
-      const shell = await env.ASSETS.fetch(
-        new Request(shellUrl.toString(), request),
+      return noindexed(
+        await env.ASSETS.fetch(new Request(shellUrl.toString(), request)),
       )
-      const headers = new Headers(shell.headers)
-      headers.set('X-Robots-Tag', 'noindex')
-      return new Response(shell.body, {
-        status: shell.status,
-        statusText: shell.statusText,
-        headers,
-      })
     }
 
     // Admin entries serve the shell; the client rewrites the URL to the hash
-    // route before App mounts, so the pathname never has to survive.
+    // route before App mounts, so the pathname never has to survive. The
+    // shell is the home document with its canonical, so each admin path read
+    // to a crawler as an indexable copy of /: X-Robots-Tag keeps them out,
+    // as it does the exercise links above (SEO audit, 6 Nov 2026).
     if (ADMIN_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
-      return env.ASSETS.fetch(new Request(shellUrl.toString(), request))
+      return noindexed(
+        await env.ASSETS.fetch(new Request(shellUrl.toString(), request)),
+      )
     }
 
     // Glass — alias paths serve glass.html content with the URL preserved

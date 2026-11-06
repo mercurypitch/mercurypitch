@@ -115,7 +115,7 @@ describe('an unlisted build', () => {
       const document = renderEntryPage(page, { unlisted })
       expect(document, page.slug).not.toContain('href="/glass-game"')
       expect(document, page.slug).toContain(
-        '<meta name="robots" content="index, follow" />',
+        '<meta name="robots" content="index, follow, max-image-preview:large" />',
       )
       expect(
         navLinksFor(page, unlisted).map((link) => link.label),
@@ -132,7 +132,7 @@ describe('a listed build', () => {
       const document = renderEntryPage(page, { unlisted })
       expect(document).toBe(renderEntryPage(page))
       expect(document).toContain(
-        '<meta name="robots" content="index, follow" />',
+        '<meta name="robots" content="index, follow, max-image-preview:large" />',
       )
       if (page !== glassGame)
         expect(document, page.slug).toContain('href="/glass-game"')

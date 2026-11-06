@@ -11,7 +11,8 @@
 //
 // - served, always: the page's document and the service-worker rule for its
 //   clean path, so the owner's runtime switch has an address to open;
-// - the document's robots meta: `index, follow` or `noindex, follow`;
+// - the document's robots meta: `index, follow, max-image-preview:large` or
+//   `noindex, follow`;
 // - sitemap.xml, llms.txt, and every other document's prelude nav.
 //
 // The room's code ships either way, because the owner's switch can turn it
@@ -52,7 +53,9 @@ for (const slug of SLUGS) {
     failures.push(`${page} is missing: /${slug} would not be served`)
   else {
     const robots = /<meta name="robots" content="([^"]*)"/.exec(read(page))?.[1]
-    const expected = on ? 'index, follow' : 'noindex, follow'
+    const expected = on
+      ? 'index, follow, max-image-preview:large'
+      : 'noindex, follow'
     if (robots !== expected)
       failures.push(
         `${page} robots is "${robots ?? '(none)'}", expected "${expected}"`,

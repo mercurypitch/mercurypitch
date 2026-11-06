@@ -136,13 +136,13 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   const pick = (tab: ActiveTab): void => {
     haptics.tapLight()
     setMoreOpen(false)
-    // On a phone the standalone Karaoke Night page (/karaoke) is the
+    // On a phone the standalone Karaoke Night page (/karaoke-night) is the
     // mobile-tuned experience, so send the Karaoke tab there instead of the
     // in-app studio mixer. This bar only renders on narrow viewports, so
     // desktop and landscape (wider than the breakpoint) still reach the
     // in-app Karaoke tab via the top nav.
     if (tab === TAB_KARAOKE) {
-      window.location.assign('/karaoke')
+      window.location.assign('/karaoke-night')
       return
     }
     // Same rule for the two instruments that now have two rooms: on a phone

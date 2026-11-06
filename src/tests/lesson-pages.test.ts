@@ -345,6 +345,46 @@ describe.each(draftLessons())('draft lesson %i', (n) => {
   })
 })
 
+// dateModified is the last day a lesson's words or links changed, the date
+// scripts/sitemap-fingerprints.json gave it, so it can be no earlier than the
+// day the lesson went live and no later than the day its sitemap entry says
+// the document last changed. A change to the head alone, such as the
+// dateModified line itself, moves the sitemap's date and not this one.
+describe('a lesson dated as changed', () => {
+  const article = (n: number): Record<string, unknown> | undefined =>
+    jsonLd(parse(lessonDocument(n))).find((node) => node['@type'] === 'Article')
+  const dated = DOCUMENTS.filter(
+    (n) => typeof article(n)?.dateModified === 'string',
+  )
+  const sitemapDate = (n: number): string | undefined => {
+    const loc = `<loc>https://mercurypitch.com${lessonPath(n)}</loc>`
+    const xml = repoFile('public/sitemap.xml')
+    const entry = xml.slice(
+      xml.indexOf(loc),
+      xml.indexOf('</url>', xml.indexOf(loc)),
+    )
+    return /<lastmod>([^<]+)<\/lastmod>/.exec(entry)?.[1]
+  }
+
+  it('includes the two lessons live when the date was first written', () => {
+    expect(dated).toEqual(expect.arrayContaining([1, 2]))
+  })
+
+  it.each(dated)(
+    'lesson %i changed no earlier than it went live, and no later than its sitemap date',
+    (n) => {
+      const { datePublished, dateModified } = article(n) as Record<
+        string,
+        string
+      >
+
+      expect(dateModified).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(dateModified >= datePublished).toBe(true)
+      expect(dateModified <= (sitemapDate(n) ?? '')).toBe(true)
+    },
+  )
+})
+
 // index.html links the series' first lesson by hand, which never changes:
 // each lesson links the next, so a release needs no edit there. The 404 page
 // is generated (src/error-kit/) and links every released lesson.

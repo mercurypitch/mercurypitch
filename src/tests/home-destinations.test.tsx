@@ -51,7 +51,7 @@ describe('Home destination gallery', () => {
     expect(HOME_DESTINATIONS.map((destination) => destination.target)).toEqual([
       { kind: 'tab', tab: TAB_SINGING },
       { kind: 'page', href: '/glass-game' },
-      { kind: 'page', href: '/karaoke' },
+      { kind: 'page', href: '/karaoke-night' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
       { kind: 'page', href: '/drum-night' },
@@ -225,7 +225,7 @@ describe('Home destination gallery with Glassworks unlisted', () => {
       gallery.HOME_DESTINATIONS.map((destination) => destination.target),
     ).toEqual([
       { kind: 'tab', tab: tabs.TAB_SINGING },
-      { kind: 'page', href: '/karaoke' },
+      { kind: 'page', href: '/karaoke-night' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
       { kind: 'page', href: '/drum-night' },
