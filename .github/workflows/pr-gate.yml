@@ -371,7 +371,15 @@ jobs:
     needs: scope
     if: needs.scope.outputs.root == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45, not 30, since 6 Nov 2026. With fullyParallel the shards split the
+    # suite by test order, so the Studio's 102 audio specs, the slowest in
+    # the suite, all land in shard 4: it ran 28:56 of its 30 minutes on a
+    # green run (26:35 of tests), and a few retries ran it into the limit,
+    # cancelling main's run at 9946b919 part-way through that shard. More
+    # shards would not help, since the Studio's specs stay together in the
+    # last one (`--shard=5/5 --list` holds all 102). Lower it again if the
+    # Studio's specs are split up or spread out.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
