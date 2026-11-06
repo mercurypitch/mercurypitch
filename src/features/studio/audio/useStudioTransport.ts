@@ -35,9 +35,10 @@ export interface UseStudioTransportOptions {
    */
   audioBusy?: Accessor<boolean>
   /**
-   * True while a take is armed, counting in or recording
+   * True while a take counts in, records or is being kept
    * (src/features/studio/record). No lane renders ahead and no warm-up
-   * runs meanwhile, so nothing competes with the audio thread for the take.
+   * runs meanwhile, so nothing competes with the audio thread for the take,
+   * and a hidden tab leaves the song playing under it.
    */
   recording?: Accessor<boolean>
 }
@@ -368,10 +369,13 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   function onVisibility(): void {
     // A graph Pause kept is let go sooner while nobody can press Play.
     runtime.setPageHidden(document.hidden)
-    if (document.hidden) {
-      runtime.pause()
-      stopPreview()
-    }
+    // A take goes on with its song while the singer reads the words in
+    // another tab: the take holds the microphone there (the run guard), and
+    // an audible tab's timers are not throttled. Even throttled to once a
+    // second, each tick schedules RUN_LOOKAHEAD_SECONDS (2 s) ahead.
+    if (!document.hidden || options.recording?.() === true) return
+    runtime.pause()
+    stopPreview()
   }
   if (typeof document !== 'undefined')
     document.addEventListener('visibilitychange', onVisibility)
