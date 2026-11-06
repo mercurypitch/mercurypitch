@@ -6,7 +6,7 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every lesson page, Lessons 1 to 13, 15, 17 and 19, each figure that uses one of the
+// On every lesson page, Lessons 1 to 13, 15, 17, 19 and 23, each figure that uses one of the
 // three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
@@ -50,7 +50,9 @@
 // Lesson 17's, SVG too, ask for frames only while a bar plays, so its page
 // rests at the same four places and at free play, and asks for frames
 // again only while a bar plays. Lesson 19's, the same rhythm bar, rest at
-// the hero, the steps, the take and Season 2's map.
+// the hero, the steps, the take and Season 2's map. Lesson 23's, SVG
+// again, ask for frames only while a line draws in, folds or curls, so its
+// page rests at the hero, the steps, Sing it, free play and Season 2's map.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -558,6 +560,25 @@ test("Lesson 19: the hero's pads, the rhythm bar, the take and the explorer on S
   // only while something plays; Season 2's map, with no plate on it, rests
   // too
   for (const at of ['#heroStage', '#stepsStage', '#tap', '#explorer']) {
+    await scrollTo(page, at)
+    await expectRest(page, null)
+  }
+})
+
+test("Lesson 23: the hero's pitch line, the staff toy, Sing it, free play and the explorer on Season 2's tab rest, and so does the whole page", async ({
+  page,
+}) => {
+  await open(page, 23)
+
+  // its figures draw in SVG and ask the loop for a frame only while a line
+  // draws in, folds or curls; Season 2's map, with no plate on it, rests too
+  for (const at of [
+    '#heroStage',
+    '#stepsStage',
+    '#sing',
+    '#freePlay',
+    '#explorer',
+  ]) {
     await scrollTo(page, at)
     await expectRest(page, null)
   }

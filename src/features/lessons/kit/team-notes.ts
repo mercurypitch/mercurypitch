@@ -101,4 +101,11 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   20: {
     plan: "The season plan's line. It fits and leaks nothing, but it sets up subdivision, not Lesson 20's opening, which the default says in miniature: Merc's run of nine notes at 0.2 s a note (FACTS 5).",
   },
+  23: {
+    hold: 'Lesson 22\'s planned line as it stands. It leaks nothing, but the learner holds no two notes on Lesson 23\'s page, the page holds them, so the default says "Now two notes together" (Lesson 23 FACTS 5b).',
+  },
+  24: {
+    fifths:
+      'This lesson\'s planned line, mended: "Fifths sit still" read as "a fifth does not beat", which Lesson 24 shows the piano\'s fifth does, and a voice does not hear; so it says "count as", as the convention is framed. It leaks nothing, but the default is Lesson 24\'s opening in miniature (Lesson 23 FACTS 5).',
+  },
 }

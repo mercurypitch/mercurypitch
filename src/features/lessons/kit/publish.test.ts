@@ -304,6 +304,26 @@ describe('seasonFor', () => {
     expect(isLive(19, LESSONS_2, defaultPageState(true))).toBe(true)
   })
 
+  it('holds Lesson 23 back by its draft line or by the console, and keeps its page and reading time where drafts are shown', () => {
+    // Act
+    const held = [
+      seasonFor(LESSONS_2, defaultPageState(false)),
+      seasonFor(LESSONS_2, served({ 23: { published: false } }, true)),
+    ]
+    const shown = seasonFor(LESSONS_2, defaultPageState(true))
+    const at = (season: Lesson[]) => season.find((L) => L.n === 23)
+
+    // Assert: Lesson 23's WEB-SPEC, What the kit and the app still need, item 2
+    for (const season of held)
+      expect([at(season)?.page, at(season)?.minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect([at(shown)?.page, at(shown)?.minutes]).toEqual(['/learn/23', 14])
+    expect(isLive(23, LESSONS_2, defaultPageState(false))).toBe(false)
+    expect(isLive(23, LESSONS_2, defaultPageState(true))).toBe(true)
+  })
+
   it('keeps every page where everything is published, the same objects as the season', () => {
     // Act
     const season = seasonFor(LESSONS, defaultPageState(true))
