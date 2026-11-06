@@ -76,7 +76,7 @@ export function pcm16ToFloat(pcm: Int16Array): Float32Array {
   return out
 }
 
-/** A take's file name: what its clip shows once kept, and while it records. */
+/** A take's file name, which its clip shows without the extension, as it shows it while the take records. */
 export function studioTakeFileName(title: string): string {
   return `${title}.wav`
 }
