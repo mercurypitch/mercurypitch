@@ -137,6 +137,30 @@ describe('Studio waveform resource', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
+  it("holds room for a Save space take's steps read back as floats while its peaks are built", async () => {
+    const data = await studioAssetFixture('song', 'take', 0.2, 'int16')
+    let finish!: (blob: Blob) => void
+    const read = vi.fn(
+      () =>
+        new Promise<Blob>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const resource = createStudioWaveformResource(read)
+    const request = resource.get(data.asset)
+    await vi.waitFor(() => expect(read).toHaveBeenCalled())
+
+    const { normalizedFrameCount: frames, channels } = data.asset
+    expect(studioReservedMemoryBytes()).toBe(
+      studioPeaksByteLength(frames) +
+        data.asset.canonicalPcmByteLength +
+        frames * channels * 4,
+    )
+    finish(data.canonicalPcm)
+    await request
+    resource.dispose()
+  })
+
   it('holds an active read reservation after disposal until the uncancellable read settles', async () => {
     const data = await studioAssetFixture('song')
     let finish!: (blob: Blob) => void

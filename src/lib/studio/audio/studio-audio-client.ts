@@ -103,6 +103,11 @@ function plainMetadata(metadata: CanonicalPcmMetadata): CanonicalPcmMetadata {
     normalizedFrameCount: metadata.normalizedFrameCount,
     canonicalPcmByteLength: metadata.canonicalPcmByteLength,
     canonicalPcmSha256: metadata.canonicalPcmSha256,
+    // A Save space take's format: without it the worker reads its 16-bit
+    // header as one that does not match the take.
+    ...(metadata.canonicalPcmFormat === 'int16'
+      ? { canonicalPcmFormat: 'int16' as const }
+      : {}),
   }
 }
 
