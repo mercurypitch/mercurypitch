@@ -111,6 +111,26 @@ export interface RhythmLayout {
 export const xOf = (row: RowLayout, beat: number): number =>
   row.x0 + (beat / row.beats) * (row.x1 - row.x0)
 
+/** The narrowest a pad an eighth wide is drawn, px, where its column has the room (Lesson 19 FACTS 70). */
+const EIGHTH_PAD_MIN = 44
+
+/**
+ * A pad's box across its column, `x` to `x2`: 2 px of room each side,
+ * which a pad an eighth wide gives up, down to a quarter of a pixel, before
+ * it draws under 44 px, so six to a bar stay 44 px wide on a phone from
+ * 344 px up (Lesson 19 FACTS 70). A pad a beat wide or wider keeps its 4 px.
+ */
+export function padSpan(
+  row: RowLayout,
+  x: number,
+  x2: number,
+): { x: number; w: number } {
+  const column = x2 - x
+  const room =
+    row.padEvery < 1 ? Math.min(4, Math.max(0.5, column - EIGHTH_PAD_MIN)) : 4
+  return { x: x + room / 2, w: Math.max(0, column - room) }
+}
+
 /** A row's metre: its own, or 4/4. */
 export const metreOf = (row: RhythmRow): Metre => row.metre ?? FOUR_FOUR
 

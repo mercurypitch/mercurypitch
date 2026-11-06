@@ -59,7 +59,7 @@ import { svg } from './dom'
 import type { Metrics, NoteSpot } from './rhythm-glyphs'
 import { engraveClef, engraveMetre, engraveNote, engraveRest, metrics, r, stemEnd, stemX, tiePath, } from './rhythm-glyphs'
 import type { RhythmLayout, RhythmRow, RhythmScene, RhythmStaff, RowLayout, } from './rhythm-layout'
-import { headInset, layoutRhythm, placeRow, SIDE, STAFF_A, symbolX, xOf, } from './rhythm-layout'
+import { headInset, layoutRhythm, padSpan, placeRow, SIDE, STAFF_A, symbolX, xOf, } from './rhythm-layout'
 import type { FigureCount, PlacedSymbol } from './rhythm-model'
 import { beamsOf, countsOf, GAP_S, soundsOf } from './rhythm-model'
 import { ledgersOf, midiOf, placeOf } from './staff-places'
@@ -156,12 +156,18 @@ export interface RhythmFigure {
   ticks(row: number, at: readonly RhythmTick[]): void
 }
 
-/** The figure's size: its box, or a phone's figure where nothing lays it out (jsdom). */
+/**
+ * The figure's size: the box its drawing fills, inside any border, so the
+ * drawing is made at the size it shows, never scaled to fit; or a phone's
+ * figure where nothing lays it out (jsdom).
+ */
 export function figureSize(el: Element): { w: number; h: number } {
   const b = el.getBoundingClientRect()
-  return b.width > 0 && b.height > 0
-    ? { w: b.width, h: b.height }
-    : { w: 356, h: 250 }
+  const cs = window.getComputedStyle(el)
+  const px = (v: string): number => Number.parseFloat(v) || 0
+  const w = b.width - px(cs.borderLeftWidth) - px(cs.borderRightWidth)
+  const h = b.height - px(cs.borderTopWidth) - px(cs.borderBottomWidth)
+  return w > 0 && h > 0 ? { w, h } : { w: 356, h: 250 }
 }
 
 /** A horizontal line across `x1` to `x2` at `y`. */
@@ -577,13 +583,14 @@ function drawPads(row: RowLayout, parent: Element): SVGGElement[] {
     )
     const x = xOf(row, k * row.padEvery)
     const x2 = xOf(row, (k + 1) * row.padEvery)
+    // a figure drawn at no size, in a panel not yet shown, has empty pads
+    const span = padSpan(row, x, x2)
     svg(
       'rect',
       {
-        x: r(x + 2),
+        x: r(span.x),
         y: r(row.top),
-        // a figure drawn at no size, in a panel not yet shown, has empty pads
-        width: r(Math.max(0, x2 - x - 4)),
+        width: r(span.w),
         height: r(row.bottom - row.top),
         rx: 10,
         class: 'rb-pad-box',
@@ -839,13 +846,12 @@ export function drawRhythm(
     })),
     padBox(ri, pad) {
       const row = L.rows[ri]
-      const x = xOf(row, pad * row.padEvery)
-      return {
-        x: x + 2,
-        y: row.top,
-        w: xOf(row, (pad + 1) * row.padEvery) - x - 4,
-        h: row.bottom - row.top,
-      }
+      const span = padSpan(
+        row,
+        xOf(row, pad * row.padEvery),
+        xOf(row, (pad + 1) * row.padEvery),
+      )
+      return { x: span.x, y: row.top, w: span.w, h: row.bottom - row.top }
     },
     set(states) {
       parts.forEach((p, i) => {

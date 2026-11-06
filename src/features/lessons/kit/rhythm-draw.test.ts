@@ -24,7 +24,7 @@ import './browser-doubles.test-fixtures'
 import { readRhythm } from '@/lib/ear/rhythm-notation'
 import type { Spelled } from './notes'
 import type { RhythmFigure, RowState } from './rhythm-draw'
-import { drawRhythm } from './rhythm-draw'
+import { drawRhythm, figureSize } from './rhythm-draw'
 import type { RhythmScene } from './rhythm-layout'
 import { layoutRhythm, xOf } from './rhythm-layout'
 import type { Bar, NoteValue, Written } from './rhythm-model'
@@ -560,6 +560,25 @@ describe('drawRhythm', () => {
     expect(sizes.flat().every((n) => n >= 0)).toBe(true)
   })
 
+  it("sizes a figure by the box its drawing fills, inside the stage's 1 px border, so nothing is scaled to fit; and a phone's where nothing lays it out", () => {
+    // Arrange: a step's figure at 344 px, 310 x 250 with a border above and
+    // below, as the stage's .viz has on a phone
+    const box = document.createElement('div')
+    box.style.borderStyle = 'solid'
+    box.style.borderWidth = '1px 0'
+    box.getBoundingClientRect = () => new DOMRect(0, 0, 310, 250)
+    const none = document.createElement('div')
+
+    // Act
+    const sizes = [figureSize(box), figureSize(none)]
+
+    // Assert
+    expect(sizes).toEqual([
+      { w: 310, h: 248 },
+      { w: 356, h: 250 },
+    ])
+  })
+
   it("lays a one-bar figure's pads the width of their beats, 44 px or more from 344 px up (FACTS 70)", () => {
     // Act
     const { fig } = draw([times(4, note(1))], {}, NARROW)
@@ -862,6 +881,52 @@ describe('past 4/4', () => {
     expect(fig.padBox(0, 5).x + fig.padBox(0, 5).w).toBeLessThanOrEqual(
       NARROW.w,
     )
+  })
+
+  it('draws each of six pads to a bar 44 px wide from 344 px up, giving up the room between pads to do it, keeps 4 px of room where a column has it and for pads a beat wide, and never less than half a pixel (FACTS 70)', () => {
+    // Act: the step's figure at 344 px, the hero's pads alone there (286
+    // px), the step's at 390 x 844, two bars of four pads at 344 px, and the
+    // step's on a phone 320 px wide, under FACTS 70's 344
+    const scene = {
+      rows: [{ bars: [six], bpm: 90, metre: SIX_EIGHT }],
+      padEvery: 0.5,
+    }
+    const step = draw([six], scene, NARROW)
+    const hero = draw(
+      [six],
+      { ...scene, notation: false, strip: false, compact: true },
+      { w: 286, h: 96 },
+    )
+    const wide = draw([six], scene, PHONE)
+    const quarters = times(4, note(1))
+    const eight = draw([quarters, quarters], {}, NARROW)
+    const small = draw([six], scene, { w: 280, h: 250 })
+
+    // Assert: each pad drawn as its box, the box and the room filling its column
+    const pads = (d: typeof step, n: number) =>
+      Array.from({ length: n }, (_, k) => {
+        const row = d.fig.layout.rows[0]
+        const column =
+          xOf(row, (k + 1) * row.padEvery) - xOf(row, k * row.padEvery)
+        const box = d.fig.padBox(0, k)
+        const rect = all(d.el, '.rb-pad-box')[k]
+        return { column, box, drawn: num(rect, 'width') }
+      })
+    for (const d of [step, hero])
+      for (const p of pads(d, 6)) {
+        expect(p.box.w).toBeGreaterThanOrEqual(44)
+        expect(p.box.w).toBeLessThan(p.column)
+        expect(p.drawn).toBeCloseTo(p.box.w, 1)
+      }
+    for (const [d, n] of [
+      [wide, 6],
+      [eight, 8],
+    ] as const)
+      for (const p of pads(d, n)) expect(p.box.w).toBeCloseTo(p.column - 4, 5)
+    for (const p of pads(small, 6)) {
+      expect(p.column).toBeLessThan(44.5)
+      expect(p.box.w).toBeCloseTo(p.column - 0.5, 5)
+    }
   })
 
   it('draws an arc under each group of pads, two of three in 6/8 and three of two in 3/4, each hidden until its group sounds', () => {
