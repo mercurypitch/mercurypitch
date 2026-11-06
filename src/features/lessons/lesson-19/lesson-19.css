@@ -185,12 +185,27 @@
 .l19-next {
   margin-top: 18px;
 }
-/* the tease still in the next-lesson card: Lesson 20's nine beads */
+/* the tease still in the next-lesson card: Lesson 20's nine beads on a
+   string, each in its amber band on the pitch line, nothing lit */
 .l19-tease svg {
   display: block;
   width: min(100%, 360px);
   height: auto;
   margin-top: 12px;
+}
+.l19-tease .rows {
+  stroke: var(--hair);
+}
+.l19-tease .band {
+  fill: rgba(245, 158, 11, 0.16);
+}
+.l19-tease .string {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 1.2px;
+}
+.l19-tease .bead {
+  fill: var(--amber);
 }
 /* free play: the six pads and the two tunes, on their own card */
 .l19-free > .eyebrow {

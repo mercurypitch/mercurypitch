@@ -134,8 +134,8 @@ export interface Lesson extends CuriosityCopy {
   /** The question the lesson opens with: its default hook, variant id 'default' (lesson-copy.ts). */
   readonly hook: string
   readonly pr: Practise
-  /** The figure beside its card; 'poster' shows the poster its page hands the explorer, 'rhythm' four quarter notes over four pads. */
-  readonly fig?: 'poster' | 'metronome' | 'chladni' | 'rhythm'
+  /** The figure beside its card; 'poster' shows the poster its page hands the explorer, 'rhythm' four quarter notes over four pads, 'pads' six pads in a row. */
+  readonly fig?: 'poster' | 'metronome' | 'chladni' | 'rhythm' | 'pads'
   /** The poster's alt text, for a card whose figure is the poster. */
   readonly posterAlt?: string
 }
