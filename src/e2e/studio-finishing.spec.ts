@@ -1,6 +1,7 @@
 // Studio finishing proof — real native rendering, explicit downloads and revision-safe sound controls.
 import { expect, test, type Download } from '@playwright/test'
 import { importStudioAudio, openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { followDeviceTheme, switchTheme } from './helpers/theme'
 
 async function downloadedBytes(download: Download): Promise<Buffer> {
   const stream = await download.createReadStream()
@@ -14,6 +15,7 @@ test('Studio adjusts sound as one edit and exports measured stereo PCM from the 
   page,
 }) => {
   test.setTimeout(120_000)
+  await followDeviceTheme(page)
   await openArrangement(page)
   await importStudioAudio(page, 'Harmony')
   const studio = studioRegion(page)
@@ -53,11 +55,8 @@ test('Studio adjusts sound as one edit and exports measured stereo PCM from the 
   })
   await expect(downloadButton).toBeVisible({ timeout: 90_000 })
   expect(automaticDownloads).toBe(0)
-  for (const theme of ['dark', 'light']) {
-    await page.evaluate(
-      (value) => document.documentElement.setAttribute('data-theme', value),
-      theme,
-    )
+  for (const theme of ['dark', 'light'] as const) {
+    await switchTheme(page, theme)
     await page.screenshot({
       path: test.info().outputPath(`studio-export-${theme}.png`),
       fullPage: true,
@@ -166,6 +165,7 @@ test('Studio keeps Sound and Export reachable on tablet and phone @smoke', async
     context.setDefaultTimeout(15_000)
     try {
       const page = await context.newPage()
+      await followDeviceTheme(page)
       await openArrangement(page)
       const studio = studioRegion(page)
       await studio.getByRole('button', { name: 'Sound', exact: true }).tap()
@@ -179,11 +179,8 @@ test('Studio keeps Sound and Export reachable on tablet and phone @smoke', async
       await expect
         .poll(async () => (await readStudioProject(page)).mix.macros.tone)
         .toBe(1)
-      for (const theme of ['dark', 'light']) {
-        await page.evaluate(
-          (value) => document.documentElement.setAttribute('data-theme', value),
-          theme,
-        )
+      for (const theme of ['dark', 'light'] as const) {
+        await switchTheme(page, theme)
         await page.screenshot({
           path: testInfo.outputPath(
             `studio-sound-${viewport.width}-${theme}.png`,

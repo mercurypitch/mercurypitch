@@ -40,12 +40,17 @@ const ROLE_DRAWINGS: Readonly<Record<TrackRole, () => JSX.Element>> = {
       <path d="M9.6 11.6 10.8 21a1.2 1.2 0 0 0 2.4 0l1.2-9.4" />
     </>
   ),
+  // Two of the lead's microphones, seam and taper included, one smaller and
+  // higher as if further back. Two plain balls on sticks, side by side at
+  // one height, read as a pair of shakers.
   'backing-vocals': () => (
     <>
-      <circle cx="7.75" cy="6.75" r="3.5" />
-      <circle cx="16.25" cy="6.75" r="3.5" />
-      <path d="M6.45 10 6.75 20a1 1 0 0 0 2 0l.3-10" />
-      <path d="M14.95 10 15.25 20a1 1 0 0 0 2 0l.3-10" />
+      <circle cx="6.5" cy="6.25" r="3.5" />
+      <path d="M3.13 7.2c2.2 1.25 4.54 1.25 6.74 0" />
+      <path d="M4.8 9.3 5.6 18.55a.9.9 0 0 0 1.8 0l.8-9.25" />
+      <circle cx="17.1" cy="8.25" r="4.25" />
+      <path d="M13.01 9.4c2.6 1.45 5.58 1.45 8.18 0" />
+      <path d="M15.05 11.95 16.1 21.1a1 1 0 0 0 2 0l1.05-9.15" />
     </>
   ),
   'acoustic-guitar': () => (

@@ -422,6 +422,36 @@
   body:has(:global(.app-sidebar:not(.collapsed))) .pill:not(.docked) {
     left: calc(300px + var(--safe-left, 0px) + 0.75rem);
   }
+
+  /* Collapsed, the sidebar is a rail with nothing under its expand button,
+     and the pill sits in that empty foot, centred. From the window's edge
+     it reached 51 px: 11 px past a 40 px rail, onto the page beside it (a
+     Studio lane's role plate), and flush against a 52 px one. A mouse's
+     rail is 40 px, so there the pill trims its padding and mic to 32 px. */
+  body:has(:global(.app-sidebar.collapsed)) .pill:not(.docked) {
+    left: calc(var(--safe-left, 0px) + 4px);
+    padding: 0.15rem;
+  }
+
+  body:has(:global(.app-sidebar.collapsed)) .pill:not(.docked) .toggle {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+}
+
+/* A touch screen's rail is 52 px (AppSidebar.module.css), wide enough for
+   the whole pill, 39 px, with 6 px either side. */
+@media (min-width: 769px) and (hover: none),
+  (min-width: 769px) and (pointer: coarse) {
+  body:has(:global(.app-sidebar.collapsed)) .pill:not(.docked) {
+    left: calc(var(--safe-left, 0px) + 6px);
+    padding: 0.22rem;
+  }
+
+  body:has(:global(.app-sidebar.collapsed)) .pill:not(.docked) .toggle {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
 }
 
 @media (max-width: 768px) {
