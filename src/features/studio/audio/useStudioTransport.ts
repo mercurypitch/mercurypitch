@@ -1,6 +1,6 @@
 // Studio transport hook — explicit playback and preview on the Studio's own clock on the web, or the clock a native host lends.
 import type { Accessor } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { PreviewPlayer } from '@/lib/preview-player'
 import { createPreviewPlayer } from '@/lib/preview-player'
@@ -9,17 +9,26 @@ import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { smoothHeardTime } from '@/lib/studio/playback/heard-clock'
 import { rendersWorthHolding } from '@/lib/studio/playback/lane-freeze-reuse'
 import { createStudioLaneFreezer } from '@/lib/studio/playback/lane-freezer'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { isStudioLoopRange } from '@/lib/studio/playback/loop-range'
+import { heardTime } from '@/lib/studio/playback/run'
 import type { StudioLaneDraft, StudioTransportState, } from '@/lib/studio/playback/transport'
 import { createStudioTransport } from '@/lib/studio/playback/transport'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { createStudioReadoutFrame } from './readout-frame'
 import { useStudioClock } from './studio-clock'
+import type { StudioTakeClock } from './take-clock'
+import { takeLeads, takePlayheadFrame } from './take-clock'
 import { createStudioWebLease } from './web-audio-lease'
+
+/** How often a take ticks the readouts and the line where no song does: as often as a song's run (transport.ts). */
+const TAKE_TICK_MS = 33
+/** A take that stops within this of the song's own playhead leaves it be: ten milliseconds. */
+const TAKE_SETTLE_FRAMES = 480
 
 export interface UseStudioTransportOptions {
   project: Accessor<StudioProject | null>
@@ -41,6 +50,13 @@ export interface UseStudioTransportOptions {
    * and a hidden tab leaves the song playing under it.
    */
   recording?: Accessor<boolean>
+  /**
+   * A take counting in or recording, and where it sits on the clock
+   * (take-clock.ts): one object for as long as its place holds. Where no
+   * song plays under it, an empty song or one it has played past, it moves
+   * the playhead and the clock, and the transport shows it running.
+   */
+  take?: Accessor<StudioTakeClock | null>
 }
 
 export interface StudioPreviewOptions {
@@ -114,6 +130,37 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   // line follows the clock every display frame on its own: ticks(), frameNow().
   const readout = createStudioReadoutFrame(STUDIO_SAMPLE_RATE)
   const ticks = new Set<() => void>()
+  // A running take moves the playhead where no song plays under it
+  // (take-clock.ts). Read only in effects and handlers, never in a memo
+  // made here: the Studio makes its recorder after its transport, so a read
+  // during setup reaches the recorder before it exists.
+  const take = (): StudioTakeClock | null => options.take?.() ?? null
+  const shownPlaying = () => isPlaying() || take() !== null
+  // Where a take that moved the playhead stopped, while the take is kept.
+  let heldAt: number | null = null
+
+  /** The take's frame at `time(clock)` where it leads the song's `song`; null where the song's stands. */
+  function takeFrame(
+    song: number,
+    songPlaying: boolean,
+    time: (ctx: AudioContext) => number,
+  ): number | null {
+    const clock = untrack(take)
+    const ctx = clock === null ? null : lease.ensure()
+    if (clock === null || ctx === null) return null
+    const frame = takePlayheadFrame(clock, time(ctx))
+    return takeLeads(clock, frame, song, songPlaying) ? frame : null
+  }
+
+  /** The readouts follow the song, a take where it leads, or where it stopped. */
+  function follow(value: StudioTransportState): void {
+    const lead = takeFrame(value.playheadFrame, value.playing, heardTime)
+    if (lead !== null)
+      readout.follow({ playing: true, pending: false, playheadFrame: lead })
+    else if (heldAt !== null && !value.playing)
+      readout.follow({ ...value, playheadFrame: heldAt })
+    else readout.follow(value)
+  }
   const [repeating, setRepeating] = createSignal(false)
   // The range on the ruler: Repeat plays it, Punch records in it (loop-range.ts).
   const [range, setRangeSignal] = createSignal<StudioFrameRange | null>(null)
@@ -142,11 +189,50 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       if (disposed) return
       batch(() => {
         setState(value)
-        readout.follow(value)
+        follow(value)
       })
       for (const tick of ticks) tick()
     },
   })
+
+  // Where no song runs nothing ticks, so a running take ticks the readouts
+  // and the line itself; a song that starts under it ticks them again.
+  createEffect(() => {
+    if (take() === null || isPlaying()) return
+    const timer = setInterval(() => {
+      if (disposed) return
+      follow(state())
+      for (const tick of ticks) tick()
+    }, TAKE_TICK_MS)
+    onCleanup(() => clearInterval(timer))
+  })
+
+  // A take that moved the playhead leaves it where it stopped, as a song's
+  // Pause does: held there while the take is kept, then the song's own
+  // playhead moves there, inside the song as every playhead stands.
+  function releaseHeld(): void {
+    if (heldAt === null || options.recording?.() === true) return
+    const frame = heldAt
+    heldAt = null
+    const project = options.project()
+    if (project !== null && !disposed)
+      void runtime.seek(frame, project, options.assets())
+  }
+  // Not deferred: a deferred `on` hands its first change no previous take.
+  createEffect(
+    on(take, (now, before) => {
+      const ctx = lease.ensure()
+      if (now !== null || !before || ctx === null || isPlaying()) return
+      const frame = takePlayheadFrame(before, heardTime(ctx))
+      if (Math.abs(frame - state().playheadFrame) <= TAKE_SETTLE_FRAMES) return
+      heldAt = frame
+      follow(state())
+      releaseHeld()
+    }),
+  )
+  createEffect(
+    on(() => options.recording?.() === true, releaseHeld, { defer: true }),
+  )
   let preview: {
     player: PreviewPlayer
     url: string
@@ -205,7 +291,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     stopPreview()
     setPreviewError(null)
     if (options.recording?.() !== true) freezer.resume()
-    return runtime.play(project, assets, fromFrame, notBefore)
+    const from = fromFrame ?? heldAt ?? undefined
+    heldAt = null
+    return runtime.play(project, assets, from, notBefore)
   }
 
   function previewContext(blob: Blob, prepared = false): AudioContext {
@@ -418,11 +506,18 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       if (project && repeating())
         await runtime.setSnapshot(project, options.assets())
     },
-    playing: isPlaying,
+    /** The song plays, or a take runs and moves the playhead (take-clock.ts). */
+    playing: shownPlaying,
     /** The playhead for readouts: ten times a second while the song plays. */
     playheadFrame: readout.frame,
     /** The frame heard this moment, for an action taken now, such as a split. */
-    frameNow: () => runtime.frameNow(),
+    frameNow(): number {
+      const song = runtime.frameNow()
+      const playing = untrack(isPlaying)
+      const lead = takeFrame(song, playing, smoothHeardTime)
+      if (lead !== null) return lead
+      return heldAt !== null && !playing ? heldAt : song
+    },
     /** Call `tick` on every transport tick until the returned function runs. */
     ticks(tick: () => void): () => void {
       ticks.add(tick)
@@ -478,10 +573,12 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     unlock: () => lease.unlock(),
     pause: () => runtime.pause(),
     stop() {
+      heldAt = null
       stopPreview()
       runtime.stop()
     },
     async seek(frame: number): Promise<void> {
+      heldAt = null
       const project = options.project()
       const assets = options.assets()
       if (project) await runtime.seek(frame, project, assets)

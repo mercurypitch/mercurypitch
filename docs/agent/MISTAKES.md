@@ -1084,6 +1084,13 @@ import handler, issue #813.
 **Rule:** a drawing made for an element's size takes the box it fills, the border box less its borders (`figureSize` in `kit/rhythm-draw.ts`). Measure a drawn mark as it shows, to a tenth of a pixel, so a scale cannot round away.
 **See:** `src/features/lessons/kit/rhythm-draw.ts`, `src/e2e/learn-lesson-19.spec.ts`
 
+### Read an option that names a later hook in effects only, never in a memo the hook makes
+
+**Symptom:** the Studio threw "Cannot access 'O' before initialization" as a song opened, after the transport hook took a `take: () => recorder.takeClock()` option; its unit test, which passed a signal, was green.
+**Cause:** StudioWorkspace makes the recorder after the transport, which the recorder needs. An option read by a `createMemo` in the transport runs during setup, so it reached `recorder` in its temporal dead zone; `recording: () => recorder.busy()` beside it was only read in effects, which run after setup.
+**Rule:** an accessor option that may name something made after the hook is read in effects and handlers only; give it equality where it is made (the recorder's memo), not in the hook. Test it with an option that throws until setup is over.
+**See:** `src/features/studio/audio/useStudioTransport.ts` (`take`), `src/features/studio/audio/useStudioTransport.take.test.tsx`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
