@@ -4,8 +4,11 @@
 //
 // Find Your Pitch lesson pages link the app with `?lesson=NN`. A first visit
 // that arrives that way goes straight to the room the link names; First
-// Light, the intro every other first visit meets, steps aside for good
-// (stepAsideForLesson in src/stores/onboarding-store.ts).
+// Light, the intro a first visit to the home document meets, steps aside for
+// good (stepAsideForLesson in src/stores/onboarding-store.ts). A room's own
+// document never opens the intro by itself, marker or none
+// (src/lib/first-light-landing.ts), so a marker that is not a lesson's shows
+// on the home document, where the intro would open.
 //
 // Every test here is a fresh browser profile: Playwright gives each its own
 // context, so storage starts empty, as it does for a lesson's first-time
@@ -131,26 +134,30 @@ test.describe('a lesson link to a document of its own', () => {
 })
 
 test.describe('a first visit without a lesson marker', () => {
-  test('/ear-lab opens on the intro, whose x leaves the Ear Lab on screen @smoke', async ({
+  test('/ear-lab opens on the Ear Lab, and the intro waits for the first visit to / @smoke', async ({
     page,
   }) => {
     await page.goto('/ear-lab')
 
-    await expect(intro(page)).toBeVisible()
-    const skip = page.getByRole('button', { name: 'Skip the intro' })
-    await expect(skip).toBeVisible()
-
-    await skipTheIntro(page)
-
-    await expect(intro(page)).toHaveCount(0)
     await expect(page.locator('#ear-lab-panel')).toBeVisible()
+    await settle(page)
+    await expect(intro(page)).toHaveCount(0)
+
+    await page.goto('/')
+
+    await expect(intro(page)).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Skip the intro' }),
+    ).toBeVisible()
+    await skipTheIntro(page)
+    await expect(intro(page)).toHaveCount(0)
   })
 
   for (const search of ['?lesson=29', '?lesson=2', '?lesson=']) {
-    test(`/ear-lab${search} is not a lesson's link, and opens on the intro`, async ({
+    test(`/${search} is not a lesson's link, and opens on the intro`, async ({
       page,
     }) => {
-      await page.goto(`/ear-lab${search}`)
+      await page.goto(`/${search}`)
 
       await expect(intro(page)).toBeVisible()
     })

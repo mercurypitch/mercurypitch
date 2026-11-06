@@ -392,11 +392,14 @@ describe('the one takeover per visit', () => {
 
   // First Light can be spent before the takeover's chunk lands, and a first-run
   // visitor would then read as returning (D3): the flag is read here, once.
+  // It is the flag itself, never offered, and not whether the welcome opens:
+  // on a room's document a first visit keeps the welcome shut, and would
+  // otherwise be handed the plan in its place (app-takeover-glue.test.tsx).
   it("reads First Light's flag when App sets up, beside the arrival", () => {
     const [flag] = declared('takeoverWelcomeDue')
     const [arrival] = declared('takeoverSuppressed')
 
-    expect(flag?.initializer?.getText(source)).toBe('showWelcome()')
+    expect(flag?.initializer?.getText(source)).toBe('firstLightNeverOffered()')
     expect(enclosingFunction(flag)).toBe(enclosingFunction(arrival))
   })
 
