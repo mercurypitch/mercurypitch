@@ -412,8 +412,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       const now = untrack(phase)
       if (now !== 'armed' && !RUNNING.has(now)) return
       // The Studio's input is a stream of its own (acquireFrom), apart from
-      // the shared one `active` speaks for.
-      if (state.scoped !== STUDIO_RECORD_MIC_ID) recorder.micLost()
+      // the shared one `active` speaks for. A release by the app says why.
+      if (state.scoped !== STUDIO_RECORD_MIC_ID)
+        recorder.micLost(state.released ?? null)
     }),
   )
   onCleanup(

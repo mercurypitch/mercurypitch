@@ -418,6 +418,24 @@ describe('useStudioRecorder', () => {
     expect(recorder.dispose).toHaveBeenCalledOnce()
   })
 
+  it('tells an armed lane why the app let its microphone go', () => {
+    const { dispose } = mount()
+    mocks.onChange!(view({ phase: 'armed' }))
+
+    // A background tab past its grace (mic-manager.ts) lets every hold go.
+    mocks.micListener!({
+      active: false,
+      consumers: [],
+      scoped: null,
+      released: 'background',
+    })
+
+    expect(mocks.recorder!.micLost).toHaveBeenCalledExactlyOnceWith(
+      'background',
+    )
+    dispose()
+  })
+
   it('offers a journaled take that is not in the song, and drops the rows of one that is or that holds only its count-in', async () => {
     // A second at 48 kHz, its first sample heard on the song's first frame.
     const row = (id: string, heardFirst = 0) => ({
