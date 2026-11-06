@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0d12" />
+    <title>Mercury Pitch on your TV</title>
+    <!--
+      The Cast receiver: the Karaoke room's stage on a Google Cast device,
+      loaded by the device at /cast-receiver when a sender starts a session
+      (src/cast-receiver/main.ts, docs/plans/tv-cast-and-google-tv.md, P6).
+      Plain, like delete-account.html: no fonts, no app, no analytics.
+      Google's Web Receiver SDK comes first, from the one place Google serves
+      it; the site Worker gives this page a policy that lets it load
+      (src/lib/cast-receiver/receiver-headers.ts).
+    -->
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+  </head>
+  <body>
+    <canvas id="stage" aria-label="The Karaoke room's stage"></canvas>
+    <script type="module" src="/src/cast-receiver/main.ts"></script>
+  </body>
+</html>

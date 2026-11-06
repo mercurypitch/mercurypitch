@@ -2,6 +2,8 @@ import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
 import type { WaitUntil } from './lesson-gate'
 import { handleLessonRequest } from './lesson-gate'
+import { CAST_RECEIVER_PATH } from './lib/cast-receiver/cast-config'
+import { withCastReceiverHeaders } from './lib/cast-receiver/receiver-headers'
 import { apexMirrorUrl } from './lib/mirror-subdomain'
 import { nativeAppOrigin, nativePreflight, withNativeCors, } from './lib/native-app-cors'
 import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
@@ -520,6 +522,15 @@ export default {
     // miss. An existing file keeps its year; an error is never stored.
     if (url.pathname.startsWith('/email/')) {
       return mailPicture(request, env)
+    }
+
+    // The Cast receiver (cast-receiver.html), with a policy of its own in
+    // place of the site's, which would block Google's Web Receiver SDK and
+    // the socket it opens to the Cast device
+    // (src/lib/cast-receiver/receiver-headers.ts). Asked for by its
+    // extensionless path, as the aliases above.
+    if (url.pathname === CAST_RECEIVER_PATH && method === 'GET') {
+      return withCastReceiverHeaders(await env.ASSETS.fetch(request))
     }
 
     // All other requests (static assets, SPA routes) are served by the assets
