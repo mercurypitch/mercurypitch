@@ -39,7 +39,7 @@ export interface LiftPlan {
 /** A part with nowhere to slide from. */
 const STILL: Shift = { dx: 0, dy: 0 }
 
-/** A whole rest that fills its bar sits in the bar's middle; any other symbol at its anchor (kit/rhythm-draw.ts). */
+/** A whole rest that fills its bar sits in the bar's middle; any other symbol at its anchor (kit/rhythm-engrave.ts). */
 function anchorX(row: RowLayout, p: PlacedSymbol): number {
   return p.kind === 'rest' && p.value >= 4 && p.beats >= BAR_BEATS
     ? (xOf(row, p.beat) + xOf(row, p.beat + p.beats)) / 2

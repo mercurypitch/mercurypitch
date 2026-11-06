@@ -2,19 +2,20 @@
 // Rhythm glyphs — a note, a rest, a tie, a flag, a clef and the 4/4, engraved as SVG
 // ============================================================
 //
-// The rhythm bar's engraving (kit/rhythm-draw.ts lays the bars out and
-// shows them as they sound; Lesson 17 WEB-SPEC, Toys 1 and Look), after the
-// Ear Lab's score (src/features/ear-lab/RhythmScore.tsx), whose metrics at
-// a staff space of 8 px these scale: an oval head tilted 22 degrees, open
-// for a half or a whole note; a stem three and a half spaces long, on the
-// right of an up head and the left of a down one; a flag out from the stem's
-// end and back, two for a sixteenth; a whole rest hanging under its line, a
-// half rest on it, the quarter rest's zigzag and the eighth's and
-// sixteenth's slash with its one or two knobs. A tie curves on the side away
-// from the stems, from one head to the next. A clef is Noto Music's outline,
-// as the staff toy engraves it (kit/staff-glyphs.ts, kit/glyphs.ts). A dot
-// sits right of its head, in the head's own space, or in the space above a
-// head on a line (FACTS 29).
+// The rhythm bar's engraving (kit/rhythm-engrave.ts writes the bars with it
+// and kit/rhythm-draw.ts shows them as they sound; Lesson 17 WEB-SPEC,
+// Toys 1 and Look), after the Ear Lab's score
+// (src/features/ear-lab/RhythmScore.tsx), whose metrics at a staff space of
+// 8 px these scale: an oval head tilted 22 degrees, open for a half or a
+// whole note; a stem three and a half spaces long, on the right of an up
+// head and the left of a down one; a flag out from the stem's end and back,
+// two for a sixteenth; a whole rest hanging under its line, a half rest on
+// it, the quarter rest's zigzag and the eighth's and sixteenth's slash with
+// its one or two knobs. A tie curves on the side away from the stems, from
+// one head to the next. A clef is Noto Music's outline, as the staff toy
+// engraves it (kit/staff-glyphs.ts, kit/glyphs.ts). A dot sits right of its
+// head, in the head's own space, or in the space above a head on a line
+// (FACTS 29).
 
 import { svg } from './dom'
 import { G_CLEF_PATH } from './glyphs'
