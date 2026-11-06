@@ -144,6 +144,37 @@ describe('Voice Mirror start screen', () => {
     ])
   })
 
+  // The questions the door's document keeps (EntryFaq), under the screen and
+  // above the side door, so the legal row still closes the page: kept after
+  // #root, they drew under it. The overview has the page to itself.
+  it("sets the door's questions above its foot, and gives them back for the overview", () => {
+    const prelude = document.createElement('div')
+    prelude.className = 'entry-prelude'
+    prelude.dataset.keeps = 'faq'
+    prelude.innerHTML =
+      '<section class="entry-prelude__faq"><h2>How do I find out my voice type?</h2></section>'
+    document.body.append(prelude)
+    const { container } = renderDoor('/voice-type-test')
+    const parts = [
+      'mirror-landing',
+      'entry-faq',
+      'mirror-sidedoor',
+      'mirror-legal',
+    ]
+
+    const order = [
+      ...(container.querySelector('.mirror-shell')?.children ?? []),
+    ].flatMap((child) => parts.filter((part) => child.classList.contains(part)))
+    const asked = container.querySelector('.entry-faq h2')?.textContent
+    fireEvent.click(screen.getByRole('button', { name: 'How the test works' }))
+    const givenBack = prelude.querySelector('.entry-prelude__faq h2')
+    prelude.remove()
+
+    expect(order).toEqual(parts)
+    expect(asked).toBe('How do I find out my voice type?')
+    expect(givenBack?.textContent).toBe('How do I find out my voice type?')
+  })
+
   it("puts Merc's sky behind the start screen and the plain sky behind the overview", () => {
     const { container } = renderDoor('/vocal-range-test')
 

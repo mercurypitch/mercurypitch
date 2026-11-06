@@ -69,11 +69,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
 
   // The Voice Mirror and the three pages that open it. Measured 344 -- and
   // 3149 before the broad manualChunks rules were deleted, which is the
-  // regression this table exists to catch.
-  'mirror.html': 430,
-  'vocal-range-test.html': 430,
-  'voice-type-test.html': 430,
-  'which-singer-has-my-vocal-range.html': 430,
+  // regression this table exists to catch. Grown with the rooms since, to
+  // 440,444 B on 2026-11-07, when the voice-type and singer-match doors and
+  // the questions kept in the room (#1379) took it 124 B past 430: real
+  // pages, so 440, still far under any swallowed feature.
+  'mirror.html': 440,
+  'vocal-range-test.html': 440,
+  'voice-type-test.html': 440,
+  'which-singer-has-my-vocal-range.html': 440,
 
   // Measured 331 (was 3050).
   'glass.html': 420,

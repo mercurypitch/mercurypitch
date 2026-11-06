@@ -359,3 +359,33 @@ describe("KaraokeNightApp and Merc's tour", () => {
     )
   })
 })
+
+// A landing's questions (its prelude keeps them, EntryFaq) stand between the
+// stage and the footer, so the footer still closes the page: kept after
+// #root, they drew under it.
+describe("KaraokeNightApp and its landing's questions", () => {
+  it('sets them above the footer, out of the prelude', () => {
+    const prelude = document.createElement('div')
+    prelude.className = 'entry-prelude'
+    prelude.dataset.keeps = 'faq'
+    prelude.innerHTML =
+      '<section class="entry-prelude__faq"><h2>How do I remove the vocals from a song?</h2></section>'
+    document.body.append(prelude)
+    window.history.replaceState({}, '', '/vocal-remover')
+
+    const { container } = render(() => <KaraokeNightApp />)
+    const footer = container.querySelector('.kn-footer')
+    const before = footer?.previousElementSibling
+    const kept = prelude.querySelector('.entry-prelude__faq')
+    prelude.remove()
+
+    expect(before?.className).toBe('entry-faq')
+    expect(before?.querySelector('h2')?.textContent).toBe(
+      'How do I remove the vocals from a song?',
+    )
+    expect(before?.previousElementSibling?.classList.contains('kn-body')).toBe(
+      true,
+    )
+    expect(kept).toBeNull()
+  })
+})

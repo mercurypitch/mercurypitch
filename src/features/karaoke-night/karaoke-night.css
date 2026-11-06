@@ -22,6 +22,15 @@ body {
     sans-serif;
   color: #f4ecff;
   background-color: #12081f;
+  /* The ground each landing's questions stand on, above the footer
+     (EntryFaq, entry-prelude.css): this page's, not the Mirror's. */
+  --entry-faq-ground: #12081f;
+}
+
+/* With a song on stage the stage has the page; the landing's questions,
+   between the body and the footer (EntryFaq), wait under the empty stage. */
+.kn-body--staged ~ .entry-faq {
+  display: none;
 }
 
 /* Form controls do not inherit the page's font family; the browser gives

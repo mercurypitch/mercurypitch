@@ -12,6 +12,7 @@
 
 import { createEffect, createMemo, createSignal, ErrorBoundary, For, lazy, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { ChunkErrorBoundary } from '@/components/ChunkErrorBoundary'
+import { EntryFaq } from '@/components/EntryFaq'
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import { SyncHost } from '@/components/sync/SyncHost'
@@ -969,7 +970,7 @@ export function KaraokeNightApp() {
           </Show>
         </main>
       </div>
-
+      <EntryFaq />
       <footer class="kn-footer">
         {/* Credits as a disclosure rather than a row of notices.
 

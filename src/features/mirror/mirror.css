@@ -45,6 +45,10 @@
   --ob-teal: #2dd4bf;
   --ob-violet: #bc8cff;
   --ob-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* The ground a door's questions stand on (entry-prelude.css): the
+     onboarding's, which the page itself stands on. */
+  --entry-faq-ground: var(--ob-ground);
 }
 
 * {
@@ -332,6 +336,19 @@ body {
         transparent 68%
       )
       no-repeat;
+  }
+}
+
+/* Each door's questions follow its start screen and nothing else
+   (MirrorLanding.tsx, EntryFaq), above the side door and the legal row,
+   which still close the page. On a wide screen the start screen keeps the
+   first screen to itself, its words centred as before, and the questions
+   start at the fold. Upright, the words already sit under Merc, and the
+   questions follow them. */
+@media (min-aspect-ratio: 1001/1000) {
+  .mirror-landing:has(+ .entry-faq) {
+    min-height: calc(100dvh - max(24px, env(safe-area-inset-top)));
+    justify-content: safe center;
   }
 }
 

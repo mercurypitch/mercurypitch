@@ -142,7 +142,9 @@ const HomePage: Component = () => {
   let sessionCard: HTMLDivElement | undefined
 
   return (
-    <div class={styles.page}>
+    // `data-screen`: while Home is the screen, the home document's own h1
+    // counts as the page's heading (entry-prelude.css `data-keeps`).
+    <div class={styles.page} data-screen="home">
       {/* The page's heading, and on the web the only one: the band below
           carries it. Under the shell the band is gone and this is what is
           left, read but not drawn — a page with no <h1> is a document whose
@@ -169,8 +171,12 @@ const HomePage: Component = () => {
           onboarding is Phase 2. The real Rooms layout is Phase 1b. */}
       <Show when={!IS_NATIVE_BUILD}>
         <div class={styles.head}>
+          {/* The greeting is a paragraph, drawn as before. As the page's h1
+              it was what a search engine read as the home page's subject;
+              the document's own h1, which names the site, stays in the page
+              for that (index.html, entry-prelude.css `data-keeps`). */}
           <div class={styles.headText}>
-            <h1 class={styles.greeting}>{greeting()}</h1>
+            <p class={styles.greeting}>{greeting()}</p>
             <p class={styles.date}>
               {new Date().toLocaleDateString(undefined, {
                 weekday: 'long',
