@@ -74,23 +74,24 @@ describe("the steps' plays", () => {
 })
 
 describe('the states', () => {
-  it('open each step on its top note, with the B lane and the ring in Step 4 alone, and free play with the ring and no B lane', () => {
+  it('open each step on its top note, Fold in Step 3, the B lane and the ring in Step 4, and free play with Fold and the ring and no B lane', () => {
     // Assert: WEB-SPEC, Toys 1
+    const flags = (st: (typeof STEP_STATE)[number]) => [
+      st.fold === true,
+      st.bLane === true,
+      st.ring === true,
+    ]
     expect(
       [1, 2, 3, 4].map((n) => [
         signName(STEP_STATE[n].top),
-        STEP_STATE[n].bLane === true,
-        STEP_STATE[n].ring === true,
+        ...flags(STEP_STATE[n]),
       ]),
     ).toEqual([
-      ['E4', false, false],
-      ['F4', false, false],
-      ['G4', false, false],
-      ['E4', true, true],
+      ['E4', false, false, false],
+      ['F4', false, false, false],
+      ['G4', true, false, false],
+      ['E4', false, true, true],
     ])
-    expect([FREE_STATE.bLane === true, FREE_STATE.ring === true]).toEqual([
-      false,
-      true,
-    ])
+    expect(flags(FREE_STATE)).toEqual([true, false, true])
   })
 })

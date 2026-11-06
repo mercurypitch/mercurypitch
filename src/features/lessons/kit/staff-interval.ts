@@ -65,6 +65,8 @@ export interface IntervalState {
   readonly bLane?: boolean
   /** Curl into a ring offered, and the ring drawn when curled (Step 4, free play). */
   readonly ring?: boolean
+  /** Fold offered: the staff keeps room for a fold's four notes from the start (Step 3, free play). */
+  readonly fold?: boolean
 }
 
 /** Two notes, written for the higher voice; the bass staff sounds them an octave lower. */
@@ -251,6 +253,7 @@ export function mountIntervalStaff(
       fade: reducedMotion(),
       marks: [...marks.values()],
       cols,
+      folds: state.fold === true,
     }
   }
 
@@ -484,9 +487,10 @@ export function mountIntervalStaff(
         if (mine !== plays) return
         const m = meta[i]
         const key = `${m.col}${m.hi && together ? 'h' : ''}`
-        // a new pair in the same columns writes over the one before
-        if (!fold && !together && !m.hi && m.pair > 0) {
-          marks.delete('1')
+        // a new pair is the interval shown, its notes alone named; one
+        // after the other it writes over the pair before, together beside it
+        if (!fold && !m.hi && m.pair > 0) {
+          if (!together) marks.delete('1')
           named = []
           spans = []
         }

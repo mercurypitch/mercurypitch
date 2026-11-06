@@ -24,16 +24,20 @@ export const note = (letter: Letter, alter = 0, octave = 4): Spelled => ({
 const C4 = note('C')
 const C5 = note('C', 0, 5)
 
-/** Each step's state: the top note it opens on, unwritten, and Step 4's B lane and ring (WEB-SPEC, Toys 1). */
+/** Each step's state: the top note it opens on, unwritten, Step 3's Fold and Step 4's B lane and ring (WEB-SPEC, Toys 1). */
 export const STEP_STATE: Readonly<Record<number, IntervalState>> = {
   1: { top: note('E') },
   2: { top: note('F') },
-  3: { top: note('G') },
+  3: { top: note('G'), fold: true },
   4: { top: note('E'), bLane: true, ring: true },
 }
 
-/** Free play's state: every control, the ring among them, with no B lane (WEB-SPEC, Toys 1, state 5). */
-export const FREE_STATE: IntervalState = { top: note('E'), ring: true }
+/** Free play's state: every control, Fold and the ring among them, with no B lane (WEB-SPEC, Toys 1, state 5). */
+export const FREE_STATE: IntervalState = {
+  top: note('E'),
+  ring: true,
+  fold: true,
+}
 
 /** Each step's plays, by their buttons' keys (LESSON.md; FACTS 70). */
 export const STEP_PLAYS: Readonly<Record<string, IntervalPlay>> = {

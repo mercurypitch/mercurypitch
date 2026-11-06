@@ -28,7 +28,7 @@
 import { clamp, easeInOut, lerp, svg } from './dom'
 import type { Spelled } from './notes'
 import { isBlack, signName } from './notes'
-import type { Layout, Mark } from './staff-draw'
+import type { Layout, Mark, Scene } from './staff-draw'
 import { drawScene, emptyScene, layoutScene } from './staff-draw'
 import type { Clef } from './staff-places'
 import { midiOf, placeRange, writtenOf } from './staff-places'
@@ -67,6 +67,8 @@ export interface IntervalScene {
   /** The staff's noteheads, written as they sound, and its columns. */
   readonly marks: readonly Mark[]
   readonly cols: number
+  /** The state folds: the staff keeps room for four notes side by side. */
+  readonly folds: boolean
 }
 
 /** Where the parts sit, for the toy's taps. */
@@ -316,15 +318,30 @@ function ringMarks(
 /** The places the staff keeps room for: two ledger lines past each edge, as the staff toy's. */
 export const IV_ROOM: readonly [number, number] = placeRange('treble')
 
+/**
+ * The staff spaces a figure that folds holds across: a fold writes four
+ * notes, two with their signs, side by side, and on a phone's staff, some
+ * 214 px, they would touch at the staff toy's 9.
+ */
+export const FOLD_ACROSS = 14
+
+/** The staff's own scene, empty of notes: its clef, its room, its columns. */
+const staffScene = (
+  s: Pick<IntervalScene, 'clef' | 'cols' | 'folds'>,
+): Scene => ({
+  ...emptyScene(s.clef, IV_ROOM),
+  cols: s.cols,
+  across: s.folds ? FOLD_ACROSS : undefined,
+})
+
 /** The staff's frame inside the figure, and the layout the staff is drawn to. */
 export function layoutInterval(
   w: number,
   h: number,
-  s: Pick<IntervalScene, 'lanes' | 'clef' | 'cols'>,
+  s: Pick<IntervalScene, 'lanes' | 'clef' | 'cols' | 'folds'>,
 ): IntervalLayout {
   const staffX = s.lanes ? Math.round(Math.min(w * LINE_SHARE, LINE_MAX)) : 0
-  const scene = { ...emptyScene(s.clef, IV_ROOM), cols: s.cols }
-  return { w, h, staffX, staff: layoutScene(w - staffX, h, scene) }
+  return { w, h, staffX, staff: layoutScene(w - staffX, h, staffScene(s)) }
 }
 
 /** Draws `s` into `el`, every part again, and hands back where the staff sits. */
@@ -366,14 +383,6 @@ export function drawInterval(
     },
     el,
   )
-  drawScene(
-    staff,
-    {
-      ...emptyScene(s.clef, IV_ROOM),
-      marks: s.marks,
-      cols: s.cols,
-    },
-    { w: w - L.staffX, h },
-  )
+  drawScene(staff, { ...staffScene(s), marks: s.marks }, { w: w - L.staffX, h })
   return L
 }
