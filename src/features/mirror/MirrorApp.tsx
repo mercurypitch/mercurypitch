@@ -2108,7 +2108,16 @@ export const Results: Component<{
         <p class="mirror-delta">{props.deltaLine}</p>
       </Show>
 
-      <Show when={props.entryIntent === 'vocal-range' && range() !== null}>
+      {/* The range test's result leads with the range, and the voice-type
+          test's with the same block: its closest voice-type overlap is the
+          answer that door asked for. */}
+      <Show
+        when={
+          (props.entryIntent === 'vocal-range' ||
+            props.entryIntent === 'voice-type') &&
+          range() !== null
+        }
+      >
         <VocalRangeResultSummary range={range() as RangeResult} />
       </Show>
 

@@ -5,8 +5,30 @@
 // The vocal-range route shares the local analysis engine with Voice Mirror,
 // but leads with the range result visitors asked for. Keep the distinction in
 // app state as well as static metadata so the visible H1 matches the URL.
+//
+// The voice-type test and the singer match are doors of their own for the
+// same reason. They fell through to the Mirror's own door, so once the app
+// was up all three pages read as one, word for word (SEO audit, 6 Nov 2026).
 
-export type MirrorEntryIntent = 'voice-mirror' | 'vocal-range' | 'free-sing'
+import { entryPath } from '@/lib/entry-path'
+
+export type MirrorEntryIntent =
+  | 'voice-mirror'
+  | 'vocal-range'
+  | 'voice-type'
+  | 'singer-match'
+  | 'free-sing'
+
+/** The dedicated doors, by the path their document is served at. */
+const DOORS: ReadonlyMap<string, MirrorEntryIntent> = new Map<
+  string,
+  MirrorEntryIntent
+>([
+  ['/vocal-range-test', 'vocal-range'],
+  ['/voice-type-test', 'voice-type'],
+  ['/which-singer-has-my-vocal-range', 'singer-match'],
+  ['/free-sing', 'free-sing'],
+])
 
 /** Resolve both the clean production path and Vite's explicit HTML path.
  *
@@ -15,17 +37,7 @@ export type MirrorEntryIntent = 'voice-mirror' | 'vocal-range' | 'free-sing'
  *  decision at the worst possible moment. It keeps an address so a brief or a
  *  campaign can send someone straight to it. */
 export function mirrorEntryIntent(pathname: string): MirrorEntryIntent {
-  const normalized = pathname.replace(/\/$/, '')
-  if (
-    normalized === '/vocal-range-test' ||
-    normalized === '/vocal-range-test.html'
-  ) {
-    return 'vocal-range'
-  }
-  if (normalized === '/free-sing' || normalized === '/free-sing.html') {
-    return 'free-sing'
-  }
-  return 'voice-mirror'
+  return DOORS.get(entryPath(pathname)) ?? 'voice-mirror'
 }
 
 /** The query flag Home's weekly Check-up card opens the Mirror with. */
