@@ -297,6 +297,39 @@ describe('Fold', () => {
     )
     expect(root().querySelector('.iv-fit')).toBeNull()
   })
+
+  it("keeps room for a fold's four notes in a state that folds, so on a phone's figure they never touch", () => {
+    // Arrange: the noteheads' left edges, in staff spaces apart
+    const gaps = (): number[] => {
+      const xs = Array.from(root().querySelectorAll('.st-head'))
+        .map((h) =>
+          /translate\(([\d.-]+)/.exec(h.getAttribute('transform') ?? ''),
+        )
+        .map((m) => Number(m?.[1]))
+        .sort((a, b) => a - b)
+      // the staff's five lines, not the line down its left edge
+      const lines = Array.from(root().querySelectorAll('.st-line'))
+        .filter((l) => l.getAttribute('y1') === l.getAttribute('y2'))
+        .map((l) => Number(l.getAttribute('y1')))
+        .sort((a, b) => a - b)
+      const space = lines[1] - lines[0]
+      return xs.slice(1).map((x, i) => (x - xs[i]) / space)
+    }
+    const folded = (state: IntervalOptions['state']): number[] => {
+      document.body.innerHTML = MARKUP
+      void mount({ state }).fold()
+      sound()
+      return gaps()
+    }
+
+    // Act: F sharp's fold, two of its four notes with a sharp before them
+    const roomy = folded({ top: n('F', 1), fold: true })
+    const tight = folded({ top: n('F', 1) })
+
+    // Assert: a head and a sharp take about 2.15 spaces
+    expect(Math.min(...roomy)).toBeGreaterThan(2.1)
+    expect(Math.min(...tight)).toBeLessThan(1.5)
+  })
 })
 
 describe("a page's plays", () => {
@@ -322,6 +355,27 @@ describe("a page's plays", () => {
         ],
       }),
     ).toBeCloseTo(3.0, 9)
+  })
+
+  it('name only the pair shown: after B and F together, C and E alone, both pairs written', () => {
+    // Arrange
+    const toy = mount({ clef: 'bass' })
+
+    // Act: Step 4's play, B2 and F3, then C3 and E3
+    void toy.play({
+      pairs: [
+        { lo: n('B', 0, 3), hi: n('F'), together: true },
+        { lo: n('C'), hi: n('E'), together: true },
+      ],
+    })
+    sound()
+
+    // Assert: FACTS 29; WEB-SPEC, Look: a name stays while its note is part of the interval shown
+    expect(
+      Array.from(root().querySelectorAll('.iv-name')).map((t) => t.textContent),
+    ).toEqual(['C3', 'E3'])
+    expect(root().querySelectorAll('.st-head')).toHaveLength(4)
+    expect(root().querySelectorAll('.iv-span')).toHaveLength(1)
   })
 
   it('leave the top note where the play left it, and resolve heard only when nothing cut them short', async () => {

@@ -90,6 +90,12 @@ export interface Scene {
   readonly small?: boolean
   /** Lines and spaces alone, with no clef: a staff before it says which notes. */
   readonly noClef?: boolean
+  /**
+   * The staff spaces the figure's width holds, 9 when unset: a figure that
+   * writes more columns side by side asks for more, so its notes and their
+   * signs never touch on a narrow screen.
+   */
+  readonly across?: number
 }
 
 /** A scene with nothing on it: `staff` making room for `room`. */
@@ -156,7 +162,11 @@ export function layoutScene(w: number, h: number, s: Scene): Layout {
   const spaces = (hi - lo) / 2 + 1.6
   const space = Math.max(
     MIN_SPACE,
-    Math.min(MAX_SPACE, (bottom - top) / spaces, (w - lanesW - 2 * pad) / 9),
+    Math.min(
+      MAX_SPACE,
+      (bottom - top) / spaces,
+      (w - lanesW - 2 * pad) / (s.across ?? 9),
+    ),
   )
   const mid = (top + bottom) / 2
   const midPlace = (lo + hi) / 2
