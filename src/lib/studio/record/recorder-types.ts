@@ -36,6 +36,12 @@ export interface StudioLiveTake {
   readonly count: number
   /** A punch's range, or a loop's: the lane shows only what the take keeps. */
   readonly cut?: StudioTakeCut | null
+  /**
+   * Where the take sits on the clock (take-timing.ts): as planned until the
+   * song starts under it, then the song's own. Where no song plays, the
+   * playhead follows it (features/studio/audio/take-clock.ts).
+   */
+  readonly anchor?: StudioTakeAnchor
 }
 
 export interface StudioRecorderView {

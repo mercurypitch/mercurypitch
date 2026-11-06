@@ -390,7 +390,20 @@ describe('the count-in', () => {
       title: 'Take 1',
       heardFirst: 48000 + 0.2 * RATE - 0.05 * RATE,
       fromFrame: null,
+      anchor: { frame: 48000, time: 0.9 },
     })
+  })
+
+  it('keeps its planned place on the clock with no song to start, for the playhead to follow', async () => {
+    const h = harness()
+    h.transport.canPlay.mockReturnValue(false)
+    await h.recorder.arm(null)
+
+    h.recorder.record()
+
+    expect(h.transport.play).not.toHaveBeenCalled()
+    // The playhead's frame, heard as the bar of count-in ends.
+    expect(h.view().live?.anchor).toEqual({ frame: 96000, time: 3.1 })
   })
 
   it('cancels on Stop during the count-in, keeping nothing and the lane armed', async () => {

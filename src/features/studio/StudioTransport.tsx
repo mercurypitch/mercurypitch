@@ -89,10 +89,11 @@ export function StudioTransport(props: StudioTransportProps) {
       >
         <SkipBackFilled size={18} />
       </button>
+      {/* A take in an empty song runs too: its Pause stops the take. */}
       <button
         type="button"
         class={styles.playButton}
-        disabled={props.pending || !props.hasAudio}
+        disabled={props.pending || (!props.hasAudio && !props.playing)}
         aria-label={props.playing ? 'Pause song' : 'Play song'}
         title={props.playing ? 'Pause (Space)' : 'Play (Space)'}
         onClick={() => props.onToggle()}
