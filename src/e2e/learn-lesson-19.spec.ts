@@ -248,13 +248,18 @@ test('the cold open: no number in the hero but its six pads, the groupings locke
   // Act: Play six notes heard, a choice, then each grouping heard to its end
   await page.locator('#heroPlaySix').click()
   await expect(hero.locator('.rb-pad.is-now')).toHaveCount(1)
-  await page.waitForTimeout(4300)
+  // each play heard to its end, when the predict puts its button out
+  await expect(page.locator('#heroPlaySix')).not.toHaveClass(/\bis-on\b/, {
+    timeout: 6000,
+  })
   const ungrouped = await arcs.count()
   await page.locator('#predict [data-choice="twos"]').click()
   await page.locator('#heroPlayThrees').click()
   await expect(arcs).toHaveCount(2, { timeout: 3000 })
   const once = await reveal.isHidden()
-  await page.waitForTimeout(4800)
+  await expect(page.locator('#heroPlayThrees')).not.toHaveClass(/\bis-on\b/, {
+    timeout: 7000,
+  })
   await page.locator('#heroPlayTwos').click()
   await expect(arcs).toHaveCount(3, { timeout: 3000 })
 
