@@ -47,10 +47,11 @@ const next = (page: Page) =>
 const FIRST_CHOICE = [
   [15, 'nine'],
   [19, 'threes'],
+  [23, 'g'],
 ] as const
 
 /**
- * Opens lesson `n` on a first visit: Lesson 15's and Lesson 19's cards wait
+ * Opens lesson `n` on a first visit: Lessons 15's, 19's and 23's cards wait
  * for the predict's choice (kit/tour-gate.ts `holdTour`), since a step the
  * tour shows would answer it, so there the choice comes first, made where
  * the page stands: a first visit's tour opens only at the top, and on a
@@ -656,9 +657,9 @@ for (const [n, choice] of FIRST_CHOICE) {
   test(`Lesson ${n}'s first visit holds the card until the predict's choice, and the lesson menu's tour comes at once`, async ({
     page,
   }) => {
-    // Arrange: Lesson 15's WEB-SPEC, Tests 17, and Lesson 19's, Toys 3, on a
-    // screen whose first view holds the predict, as a first visit's tour
-    // opens only at the top
+    // Arrange: Lesson 15's WEB-SPEC, Tests 17, and Lessons 19's and 23's,
+    // Toys 3, on a screen whose first view holds the predict, as a first
+    // visit's tour opens only at the top
     await page.setViewportSize(DESKTOP)
     // the tour's chunk loaded and the page quiet: a first visit's tour not
     // held would be open by now, as it opens the moment its chunk arrives

@@ -57,6 +57,61 @@
   height: 100%;
   display: block;
 }
+/* the line's drawing (cold-open.ts): a rail between its two Cs, both
+   named; a split's thirteen lanes, the white-key lanes chrome and the
+   black-key lanes fainter, as the steps' line draws them; a sounding note
+   lit in ink; the octave's size before a split, then the two leaps
+   counted, each beside its bracket */
+.hl-rail {
+  stroke: rgba(195, 204, 214, 0.45);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.hl-lane.is-white {
+  fill: rgba(195, 204, 214, 0.3);
+}
+.hl-lane.is-black {
+  fill: rgba(195, 204, 214, 0.1);
+}
+.hl-lane.is-lit {
+  fill: var(--ink);
+}
+.hl-name {
+  fill: var(--ink);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.hl-octave {
+  fill: var(--ink-2);
+  font-family: var(--f-mono);
+  font-weight: 500;
+}
+.hl-leap {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+.hl-count {
+  fill: var(--ink);
+  font-family: var(--f-mono);
+  font-weight: 600;
+}
+@media (forced-colors: active) {
+  .hl-rail,
+  .hl-leap {
+    stroke: CanvasText;
+  }
+  .hl-lane,
+  .hl-name,
+  .hl-octave,
+  .hl-count {
+    fill: CanvasText;
+  }
+  .hl-lane.is-lit {
+    fill: Highlight;
+  }
+}
 /* the three plays sit under the stage, outside the predict card */
 .l23-hero .hero-plays {
   margin-top: 14px;

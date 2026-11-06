@@ -45,6 +45,7 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { PitchLine } from '@/features/lessons/kit/staff'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -65,7 +66,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps()
+const steps = initSteps()
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -90,6 +91,11 @@ initMasthead(
   },
   { lesson: 23, deck },
 )
+// the hero's upright octave and the predict it answers; the choice offers
+// the steps' toy what it held back, and the welcome tour waits for it,
+// since the steps' stop would answer it, so this runs after the masthead
+// has started the tour, in the same task (kit/tour-gate.ts `holdTour`)
+initColdOpen(deck, () => steps.unlock())
 initReveals()
 startFrameLoop()
 // Merc celebrates with no sparkles on this page (WEB-SPEC, Merc and Tavi)
