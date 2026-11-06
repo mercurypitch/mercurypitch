@@ -12,7 +12,7 @@
 // which names the interval and the sound, never the listener.
 
 import type { EarRound } from '@/features/lessons/kit/ear-game'
-import { pair } from './examples'
+import { pair } from '@/features/lessons/kit/pair'
 import { classify } from './melody'
 
 export type StepOrLeap = 'step' | 'leap'

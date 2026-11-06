@@ -8,8 +8,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { hz } from '@/features/lessons/kit/notes'
+import { pair } from '@/features/lessons/kit/pair'
 import type { NoteEvent } from './examples'
-import { ANCHORS, bothLines, lengthOf, LINE_C, LINE_FS, pair, QUIZ_FOURTH, QUIZ_LINES, slower, swappedLine, WORD_SOUNDS, } from './examples'
+import { ANCHORS, bothLines, lengthOf, LINE_C, LINE_FS, QUIZ_FOURTH, QUIZ_LINES, slower, swappedLine, WORD_SOUNDS, } from './examples'
 import { C4 } from './melody'
 
 /** FACTS 62: every fixed example's notes, MIDI to hertz, to two decimals. */
@@ -85,12 +86,8 @@ describe('the fixed examples', () => {
     expect(fs[0].at - lengthOf(LINE_C)).toBeCloseTo(0.6, 9)
   })
 
-  it('play a pair as 0.6 s then 0.8 s, 0.15 s apart, and a missed round 1.5 times slower', () => {
-    // Assert: FACTS 64 and 67
-    expect(pair(60, 65)).toEqual([
-      { midi: 60, at: 0, dur: 0.6 },
-      { midi: 65, at: 0.75, dur: 0.8 },
-    ])
+  it("play a pair as the kit's, and a missed round 1.5 times slower", () => {
+    // Assert: FACTS 64 and 67; the pair's own lengths are kit/pair.test.ts's
     expect(QUIZ_FOURTH).toEqual(pair(60, 65))
     expect(lengthOf(slower(pair(60, 67), 1.5))).toBeCloseTo(1.55 * 1.5, 9)
   })

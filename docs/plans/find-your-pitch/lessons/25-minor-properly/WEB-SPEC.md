@@ -428,7 +428,7 @@ music bed.
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
   an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
-  (`PAIR`, `src/features/lessons/lesson-06/examples.ts:34`).
+  (`PAIR`, `src/features/lessons/kit/pair.ts:16`).
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
   clock (`src/features/lessons/kit/sound.ts:16-21`), so so, te and do join with no click.
 - **Low notes.** The page's lowest note is the lower voice's A2, 110.00 Hz, in the steps and the
@@ -576,8 +576,8 @@ first; they are listed so this page's needs are in one place.
 6. **Lesson 12's chord levels in the kit**: `NOTE_GAIN`, `CHORD_GAIN`, `UNDER_GAIN` and `MERC_GAIN`
    (`src/features/lessons/lesson-12/sounds.ts:41-48`) move into the kit's sound module, with the way
    Lesson 12's page plays chords under "ooh" on one clock, and Lesson 12's page imports them.
-7. **Lesson 6's pair in the kit**, as Lesson 23's page needs it too: `PAIR` and `pair`
-   (`src/features/lessons/lesson-06/examples.ts:34`, `src/features/lessons/lesson-06/examples.ts:80-90`).
+7. **Lesson 6's pair in the kit**, as Lesson 23's page needs it too: `PAIR` and `pair`, moved
+   there for Lesson 23's page (`src/features/lessons/kit/pair.ts:16`, `src/features/lessons/kit/pair.ts:28-38`).
 8. **The hero's stage**: `lesson-25/cold-open.ts`, new (Toys 2), on Toy 1's staircase and chord
    column.
 9. **The sing flow in the kit** (Lesson 23 WEB-SPEC, What the kit and the app still need, item 6):

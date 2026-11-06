@@ -572,8 +572,9 @@ coach's look at Sing it"`. Releasing it is deleting that line, then listing the 
    number, semitones, quality and name from two spelled notes; its upside down; which signs a letter
    takes). Lessons 25 and 27 can reuse the readout for their intervals.
 5. **Lesson 6's pair in the kit**: `PAIR` and `pair` (`src/features/lessons/lesson-06/examples.ts:34`,
-   `src/features/lessons/lesson-06/examples.ts:80-90`) move into the kit, since every interval on
-   this page plays as Lesson 6's pair, and Lesson 6's page then imports them from there.
+   `src/features/lessons/lesson-06/examples.ts:80-90` at `ff9782d38`) move into the kit (`src/features/lessons/kit/pair.ts:16`,
+   `src/features/lessons/kit/pair.ts:28-38`), since every interval on this page plays as Lesson 6's pair, and
+   Lesson 6's page then imports them from there.
 6. **The sing flow in the kit** (Lesson 15 WEB-SPEC, What the kit and the app still need, item 6):
    Lesson 12's flow (`src/features/lessons/kit/sing-flow.ts:1-47`) with Move do and the guide's
    drawing as options. This page passes no Move do and the staff toy's sing state, and adds a plain

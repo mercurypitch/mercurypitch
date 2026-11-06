@@ -9,8 +9,8 @@
 
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '@/features/lessons/kit/dom'
+import { pair } from '@/features/lessons/kit/pair'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { pair } from './examples'
 import { dealNameIt, dealStepOrLeap, FIRST_HI, FIRST_LO, NAME_IT_WORDS, nameItOrder, stepLeapWords, } from './game-rounds'
 
 const SEEDS = [1, 2, 3, 42, 20261020, 987654321]

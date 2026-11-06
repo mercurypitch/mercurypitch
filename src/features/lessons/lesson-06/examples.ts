@@ -11,9 +11,11 @@
 // the press, every note timed from that one press so nothing drifts, and
 // each note is its own voice, so "Twin-kle"'s repeated notes are heard as
 // two (WEB-SPEC, Audio). The toys and games play the kit's soft tone;
-// Merc's singing is Merc's "ooh".
+// Merc's singing is Merc's "ooh". The pair is the kit's (kit/pair.ts), moved
+// there for Lesson 23, where every interval plays as one.
 
 import { hz } from '@/features/lessons/kit/notes'
+import { pair } from '@/features/lessons/kit/pair'
 import type { VoiceOptions } from '@/features/lessons/kit/sound'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { MelodyNote } from './melody'
@@ -30,8 +32,6 @@ export interface NoteEvent {
 export const BEAT_SEC = 0.5
 /** A crotchet in Sing it's versions (FACTS 58). */
 export const SING_BEAT_SEC = 0.6
-/** A pair's two notes and the gap between them (FACTS 64). */
-export const PAIR = { first: 0.6, second: 0.8, gap: 0.15 } as const
 /** How much slower a missed round plays again (WEB-SPEC, Toys 4). */
 export const MISS_SLOWER = 1.5
 
@@ -75,18 +75,6 @@ export function swappedLine(start: number, slow = 1): NoteEvent[] {
     notes.map((x, i) => ({ midi: swapped[i], beats: x.beats })),
     BEAT_SEC * slow,
   )
-}
-
-/** Two notes one after the other, 0.6 s and 0.8 s, 0.15 s apart, times `slower`. */
-export function pair(a: number, b: number, slower = 1): NoteEvent[] {
-  return [
-    { midi: a, at: 0, dur: PAIR.first * slower },
-    {
-      midi: b,
-      at: (PAIR.first + PAIR.gap) * slower,
-      dur: PAIR.second * slower,
-    },
-  ]
 }
 
 /** `line-c`: the first line from C4, 4.0 s. */
