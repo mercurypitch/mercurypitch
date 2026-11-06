@@ -22,7 +22,7 @@ import type { MirrorResult } from '@/lib/mirror/metrics'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 // One-way: ui-store knows nothing about onboarding, so this is not a cycle.
-import { dismissWelcome, showWelcome, welcomeSeen } from '@/stores/ui-store'
+import { dismissWelcome, firstLightDeferredBefore, showWelcome, welcomeSeen, } from '@/stores/ui-store'
 
 const DONE_KEY = 'pitchperfect_onboarding_done'
 
@@ -319,10 +319,14 @@ export function stepAsideForLesson(search: string): number | null {
  * Had this device been here before this page load? What's New asks, to
  * tell a returning visitor from a first-ever one. The spent welcome flag
  * says so — unless this load's lesson link is what spent it, which says
- * nothing about having been here.
+ * nothing about having been here. So does an earlier visit to a room's own
+ * document, where the welcome stayed shut and nothing was spent.
  */
 export function returningVisitor(): boolean {
-  return welcomeSeen() !== '' && lessonArrival() === null
+  return (
+    firstLightDeferredBefore() ||
+    (welcomeSeen() !== '' && lessonArrival() === null)
+  )
 }
 
 /** Test/e2e hook: forget the flow so the next load runs it again. */

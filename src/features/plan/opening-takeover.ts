@@ -8,8 +8,10 @@
 //
 //   1. The native build: it has none of them.
 //   2. A visit that came for somewhere in particular (a link, a lesson's
-//      practice link, a return from checkout): it asked for that place.
-//   3. First Light, for someone it was never offered to.
+//      practice link, a return from checkout, a device's first visit to a
+//      room's own document): it asked for that place.
+//   3. First Light, for someone it was never offered to, on a document it
+//      opens on by itself (src/lib/first-light-landing.ts).
 //   4. The plan, for an existing user whose record says it was never put in
 //      front of them. It is their one takeover, so What's New waits for the
 //      next visit rather than arriving beside it.
@@ -30,7 +32,7 @@ export interface TakeoverState {
   native: boolean
   /** The visit came for somewhere in particular (routeSuppressesAnnouncement), so nothing takes it over. */
   routeSuppressed: boolean
-  /** First Light's welcome has not been offered to this visitor yet. */
+  /** First Light opens on this visit: its welcome was never offered, and this document is one it opens on by itself. */
   welcomeDue: boolean
   /** The plan was never put in front of this person, and nothing says an answer is on its way from another device. */
   planDue: boolean

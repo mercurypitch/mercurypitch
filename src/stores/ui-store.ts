@@ -17,8 +17,9 @@ import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exerc
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
+import { firstLightOpensOn } from '@/lib/first-light-landing'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { createPersistedSignal } from '@/lib/storage'
+import { createPersistedSignal, storageGet, storageSet } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import { provideTourDetour, provideTourSetting } from '@/lib/tour-screen'
 import type { MelodyItem } from '@/types'
@@ -340,7 +341,57 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   '',
 )
 
-const [firstLightDue, setShowWelcome] = createSignal(welcomeSeen() === '')
+// Whether First Light may open by itself on the document this page loaded
+// (first-light-landing.ts). Read once, at load: an entry document that boots
+// the studio into a room opens on that room and spends nothing, so the welcome
+// waits for a later page load of the home document. Tapping Home inside the
+// app is no new landing, and opens no takeover.
+const firstLightOpensHere = firstLightOpensOn(
+  typeof location === 'undefined' ? '/' : location.pathname,
+)
+const [firstLightDue, setShowWelcome] = createSignal(
+  welcomeSeen() === '' && firstLightOpensHere,
+)
+
+// A room's document leaves the welcome unoffered, so on a device that only ever
+// arrives on rooms nothing said it had been here before: every visit read as
+// its first, and the plan and What's New never came. First Light's gate notes
+// the room on a key of this device's own (`mp.` keys never sync), and this
+// reads it once, before that note is written.
+const FIRST_LIGHT_DEFERRED_KEY = 'mp.firstLight.deferred.v1'
+const deferredBefore =
+  typeof window !== 'undefined' &&
+  storageGet<unknown>(FIRST_LIGHT_DEFERRED_KEY) !== null
+
+/**
+ * Whether First Light has never been offered on this device, on whichever
+ * document.
+ */
+export function firstLightNeverOffered(): boolean {
+  return welcomeSeen() === ''
+}
+
+/** Did an earlier page load open a room's document before the welcome was offered? (returningVisitor) */
+export function firstLightDeferredBefore(): boolean {
+  return !IS_NATIVE_BUILD && deferredBefore
+}
+
+/**
+ * Is this page load the device's first, and on a room's document, where the
+ * welcome stays shut? A search that lands on /ear-lab asked for the Ear Lab,
+ * so the opening takeover leaves the visit to the room (App.tsx); from the
+ * next visit on, the device is an existing user like any other.
+ */
+export function firstVisitThroughRoom(): boolean {
+  return firstLightNeverOffered() && !firstLightOpensHere && !deferredBefore
+}
+
+/** First Light's gate, where the welcome stays shut on a room's document: the next page load is not a first visit. */
+export function noteFirstLightDeferred(): void {
+  if (firstLightNeverOffered() && !firstLightOpensHere) {
+    storageSet(FIRST_LIGHT_DEFERRED_KEY, '1')
+  }
+}
 
 /**
  * Whether the web's first run — First Light — is due.

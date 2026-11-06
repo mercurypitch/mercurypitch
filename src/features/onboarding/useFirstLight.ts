@@ -12,12 +12,14 @@
 //
 // A visitor a lesson's practise link sent (`?lesson=NN`) never finds the flow
 // due: index.tsx steps it aside before App mounts (stepAsideForLesson in
-// onboarding-store.ts).
+// onboarding-store.ts). Nor does one on a room's own document, where it stays
+// shut (lib/first-light-landing.ts): the gate notes that the device has been
+// here, so its next visit is not taken for a first one (ui-store.ts).
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal } from 'solid-js'
 import { flowOpen, openBeat, startOrResumeOnboarding, } from '@/stores/onboarding-store'
-import { showWelcome } from '@/stores/ui-store'
+import { noteFirstLightDeferred, showWelcome } from '@/stores/ui-store'
 
 export interface FirstLightGate {
   /** True while the flow is open as a replay of its Map (#/map). */
@@ -35,6 +37,7 @@ export function useFirstLight(held: Accessor<boolean>): FirstLightGate {
   // A replay (#/map) reopens the Map without re-running the first-run
   // bookkeeping, so closing it can't rewind anyone's seen-flag.
   const [replay, setReplay] = createSignal(false)
+  noteFirstLightDeferred()
 
   createEffect(() => {
     if (!showWelcome() || flowOpen() || held()) return
