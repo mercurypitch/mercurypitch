@@ -1023,14 +1023,36 @@ phone shows its controls; disconnecting leaves one web view.
    on a phone. An application ID is not a secret: every sender carries it.
    No test device is registered yet; the LG C2 cannot receive Cast, and the
    owner registers the Philips Google TVs next.
-   **Still needed before the spike (2026-11-03):** the owner's registered
-   Cast test device, without which an unpublished receiver will not load;
-   and a page at the registered URL. `/cast-receiver` has none yet, and
-   the site answers a path it has no page for with a real 404
-   (`not_found_handling: "404-page"`, `wrangler.jsonc`), so a Cast device
-   pointed at either receiver would load a 404.
+   **Still needed before the spike (2026-11-06):** the owner's registered
+   Cast test device, without which an unpublished receiver will not load.
+   The page at the registered URL is in (`feat/cast-receiver`, below): the
+   dev site serves it once merged, and the production site from the next
+   release tag.
 1. Spike (6.0). Stop here if the stage cannot hold its frame cap or its memory
    on the older Chromecast with Google TV.
+   **The receiver page, 2026-11-06 (`feat/cast-receiver`):**
+   - `/cast-receiver` (`cast-receiver.html`, `src/cast-receiver/main.ts`)
+     loads Google's Web Receiver SDK and draws the stage the iPhone's second
+     screen draws, through one loop the two pages now share
+     (`src/lib/tv-stage/stage-loop.ts`).
+   - Its messages come on `urn:x-cast:com.mercurypitch.stage`, the stage
+     protocol's `song`, `frame` and `idle` as they are. A frame's moment is
+     moved onto the TV's clock first, since the phone's is not the TV's
+     (`src/lib/cast-receiver/sender-clock.ts`).
+   - Three messages ask the receiver itself, so the spike needs no sender of
+     ours (`control.ts`): `probe` answers with what the device can do and
+     how its frames are going, `diagnostics` draws that over the stage, and
+     `demo` plays a demo song driven on the TV.
+   - Stopping casting closes the receiver: Google's SDK does that itself.
+     A sender that drops off instead, a phone leaving the Wi-Fi, stops the
+     song and leaves the idle screen up; with no sender for five more
+     minutes the receiver closes (`REQ-TV-116`).
+   - The site's Content-Security-Policy would have blocked the SDK and the
+     socket the SDK opens to the device (`ws://localhost:8008/v2/ipc`), so
+     the site Worker serves the page with a policy of its own
+     (`src/lib/cast-receiver/receiver-headers.ts`).
+   - How to run the spike with Google's Command and Control tool:
+     [tv-device-tests.md](tv-device-tests.md), Test 10.
 2. Receiver (6.1), then senders (6.2-6.4), then Cast Connect into G (6.5) and
    the checklist (6.6).
 3. The first release plays demo songs (decision 2). Every song follows once

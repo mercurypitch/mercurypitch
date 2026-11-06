@@ -964,14 +964,24 @@ the receiver fetches by URL (`115`). Every song follows through `034` and
 
 **WHERE** Cast is enabled, the Custom Web Receiver shall run the stage in host
 mode and take commands and frames on its own `urn:x-cast:` namespace.
-_Tests:_ `cast-receiver/receiver.test.ts` _(planned)_; the Cast Command and
-Control tool against a registered device.
+_Tests:_ `src/lib/cast-receiver/receiver.test.ts`,
+`src/lib/cast-receiver/caf-host.test.ts`, `src/e2e/cast-receiver.spec.ts`;
+the Cast Command and Control tool against a registered device
+([tv-device-tests.md](../plans/tv-device-tests.md), Test 10, waiting on one).
+_Built (2026-11-06):_ the receiver at `/cast-receiver` runs the stage on
+`urn:x-cast:com.mercurypitch.stage`. It takes the stage protocol's `song`,
+`frame` and `idle` as the iPhone's second screen does, the phone's clock moved
+onto the TV's. It plays no song's audio yet: host mode waits on the song
+sources (`REQ-TV-115`).
 
 ### REQ-TV-111 — Small messages **[open]**
 
 Each message on the custom namespace shall stay under the 64 KB point-to-point
 limit.
-_Tests:_ `src/lib/remote-pitch/protocol.test.ts` _(planned)_.
+_Tests:_ `src/lib/remote-pitch/protocol.test.ts` _(planned)_, for the
+senders. The receiver sends no reply over the limit
+(`src/lib/cast-receiver/receiver.test.ts`), and its demo song fits one message
+(`src/lib/cast-receiver/demo-song.test.ts`).
 
 ### REQ-TV-112 — Senders and the Cast button **[open]**
 
@@ -1005,14 +1015,22 @@ _Tests:_ `cast-receiver/song-source.test.ts` _(planned)_.
 
 **WHEN** the last sender disconnects, the receiver shall stop the song and show
 an idle screen.
-_Tests:_ `cast-receiver/receiver.test.ts` _(planned)_.
+_Tests:_ `src/lib/cast-receiver/receiver.test.ts`,
+`src/e2e/cast-receiver.spec.ts`.
+_Built (2026-11-06):_ a user who stops casting closes the receiver at once,
+which Google's SDK does itself. A sender that drops off instead leaves the
+idle screen up, and with no sender for five more minutes the receiver closes,
+so a TV is not left on it; a sender back in time keeps it.
 
 ### REQ-TV-117 — Older receivers **[open]**
 
 **IF** the receiver lacks `AudioContext.outputLatency` or another Web Audio
 API the stage uses, **THEN** it shall fall back to the stored per-device
 calibration rather than fail.
-_Tests:_ `cast-receiver/capabilities.test.ts` _(planned)_.
+_Tests:_ `src/lib/cast-receiver/capabilities.test.ts`.
+_Built (2026-11-06):_ the receiver's probe says where the TV's delay comes
+from: measured, the stored calibration, or none (no Web Audio). The fallback
+is used once the receiver plays the song's audio itself.
 
 ---
 
