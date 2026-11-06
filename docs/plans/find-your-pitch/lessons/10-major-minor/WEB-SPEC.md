@@ -1155,7 +1155,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:161-178`) and this one's (`:242-285`); its still inside the card holds no button.
+    card (`:167-184`) and this one's (`:248-291`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:47-49`), for the team's words (`:23-42`), and the
     alternative hook's note never reaches the page (`:79-81`).

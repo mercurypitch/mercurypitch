@@ -428,18 +428,17 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
-  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must:
-  // 173,868 bytes in build:e2e with the Wrap's free play, a second staff toy
-  // in its interval state; 173,573 with Sing it on the kit's sing flow,
-  // comfort check and voice choice, and its listening pair; 162,673 with
-  // its four words on Lesson 1's strip (kit/words-strip.ts), 159,919 with the
-  // recall's Lesson 6 questions and their plays and the quick check on the
-  // kit's quiz, loaded with the page as Lesson 15's are, so the guide's
-  // sheet stays in the quizzes' shared chunk (MISTAKES.md); 137,809 with its
-  // cold open, 130,327 with its four steps on the staff toy's interval state
-  // and 86,555 for its shell; the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/23.html': 170,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
+  // the staff toy's interval state (kit/staff-interval.ts, its drawing and
+  // kit/intervals.ts) on the steps' stage and in free play, the cold open's
+  // pitch line on the kit's predict, the recall's Lesson 6 questions and
+  // their plays and the quick check on the kit's quiz, loaded with the page
+  // as Lesson 15's are, so the guide's sheet stays in the quizzes' shared
+  // chunk (MISTAKES.md), the four words on Lesson 1's strip, and Sing it on
+  // the kit's sing flow, comfort check and voice choice, with its listening
+  // pair: 173,868 bytes in build:e2e; a quarter over. Sing it opens no
+  // microphone, so nothing of the listener comes in.
+  'learn/23.html': 213,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -582,16 +581,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e with the voice
-  // lessons' sheet in the chunk Sing it's comfort check shares, 85,741 with
-  // the line under its words' pairs, 85,683 with the guide's sheet in the
-  // chunk the quizzes share, 85,106 with its cold open's line, 84,502 with
-  // the staff toy's interval state (kit/lesson-interval.css), 83,518 for its
-  // shell: the kit's sheets (the staff toy's and its interval state's
-  // inlined into its own by @import, and the shared parts), its own, and the
-  // shared Inter and Outfit @font-face rules; the smallest whole KB above,
-  // to rise as each part joins.
-  'learn/23.html': 91,
+  // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
+  // sheets (the guide's and the voice lessons' in the chunks the quizzes and
+  // Sing it share, the staff toy's and its interval state's inlined into its
+  // own by @import, and the shared parts), its own, and the shared Inter and
+  // Outfit @font-face rules; a quarter over.
+  'learn/23.html': 113,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter
