@@ -452,6 +452,53 @@ test("Lesson 15's card sets up Lesson 16 with its tease, one line above its hook
   await expect(c).toHaveAttribute('href', '#explorer')
 })
 
+test("Lesson 17's card sets up Lesson 18 with its tease, one line above its hook, and keeps the page's tease still after its words: seven notes on the bass staff over the beat pads, written whole, nothing lit and no stopwatch", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/17')
+
+  // Assert: Lesson 18 has no page yet, so the card leads to the map (WEB-SPEC, Toys 11)
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[18]?.tease ?? 'Lesson 18 has a tease',
+  )
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l17-tease'])
+  await expect(c.locator('.l17-tease')).toHaveAttribute('aria-hidden', 'true')
+  const still = c.locator('.l17-tease svg[data-tease-staff]')
+  await expect(still).toBeVisible()
+  expect(
+    await still.evaluate((svg) => ({
+      staff: (svg as SVGSVGElement).dataset.staff,
+      heads: svg.querySelectorAll('.rb-head').length,
+      pads: svg.querySelectorAll('.rb-pad-n').length,
+      unwritten: svg.querySelectorAll('.is-hidden').length,
+      lit: svg.querySelectorAll('.is-sounding, .is-now, .is-chosen').length,
+      strip: svg.querySelectorAll('.rb-cell, .rb-read').length,
+      moving: svg.getAnimations({ subtree: true }).length,
+    })),
+  ).toEqual({
+    staff: 'bass',
+    heads: 7,
+    pads: 8,
+    unwritten: 0,
+    lit: 0,
+    strip: 0,
+    moving: 0,
+  })
+  await expect(c.locator('button')).toHaveCount(0)
+  await expect(c).toHaveAttribute('href', '#explorer')
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {

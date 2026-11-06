@@ -48,7 +48,8 @@
 // figures are SVG drawn a scene at a time, which ask for no frame, so its
 // whole page rests at the hero, the steps, Sing it and Season 2's map;
 // Lesson 17's, SVG too, ask for frames only while a bar plays, so its page
-// rests at the same four places.
+// rests at the same four places and at free play, and asks for frames
+// again only while a bar plays.
 // Lessons 1 to 5 each have drawers of their own that still draw every
 // frame (S-26 in docs/plans/find-your-pitch/RELEASE-REVIEW.md), which keep
 // their loop running whatever these three do, so there only the figures
@@ -521,18 +522,30 @@ test("Lesson 15: the hero's pitch line, the staff toy and the explorer on Season
   }
 })
 
-test("Lesson 17: the hero's pads, the rhythm bar and the explorer on Season 2's tab rest, and so does the whole page", async ({
+test("Lesson 17: the hero's pads, the rhythm bar, the checkpoint, free play and the explorer on Season 2's tab rest, and so does the whole page, which asks for frames only while a bar plays", async ({
   page,
 }) => {
   await open(page, 17)
 
-  // the rhythm bar and the hero's pads draw in SVG, and ask the loop for a
-  // frame only while a bar plays; Season 2's map, with no plate on it,
-  // rests too
-  for (const at of ['#heroStage', '#stepsStage', '#sing', '#explorer']) {
+  // the rhythm bar, the hero's pads and free play's two figures draw in
+  // SVG, and ask the loop for a frame only while a bar plays; Season 2's
+  // map, with no plate on it, rests too
+  for (const at of [
+    '#heroStage',
+    '#stepsStage',
+    '#sing',
+    '#freePlay',
+    '#explorer',
+  ]) {
     await scrollTo(page, at)
     await expectRest(page, null)
   }
+
+  // the stage's bar played: frames while it sounds, none once it has ended
+  await scrollTo(page, '#stepsStage')
+  await runRests(page, [], true, () =>
+    page.locator('#toyRhythm [data-rb-play]').filter({ visible: true }).click(),
+  )
 })
 
 test.describe('on a phone', () => {
