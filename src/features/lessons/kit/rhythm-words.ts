@@ -9,10 +9,12 @@
 // notes", "Beat 3: a quarter rest"; and once a play ends, the figure's
 // polite region says its lengths once, "Four quarter notes at 60 beats per
 // minute: 1 second each." The strip under the figure is hidden from a
-// screen reader, so these are how it hears every length (Toys 6). Pure.
+// screen reader, so these are how it hears every length (Toys 6). Past 4/4
+// (Lesson 19 WEB-SPEC, Toys 1 and 5) a figure is named in its metre, "Four
+// bars of 6/8: ...", and a triplet's notes as triplet eighths. Pure.
 
-import type { Bar, PlacedSymbol, Written } from './rhythm-model'
-import { BAR_BEATS, placeBars, stripCells } from './rhythm-model'
+import type { Bar, Metre, PlacedSymbol, Written } from './rhythm-model'
+import { BAR_BEATS, FOUR_FOUR, metreText, placeBars, stripCells, } from './rhythm-model'
 
 const NAMES: Readonly<Record<number, string>> = {
   4: 'whole',
@@ -44,10 +46,16 @@ const COUNT = [
 
 const capital = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** A symbol's name without its count: "dotted half note", "quarter rest". */
-function nameOf(w: { kind: string; value: number; dotted?: boolean }): string {
+/** A symbol's name without its count: "dotted half note", "quarter rest", "triplet eighth note". */
+function nameOf(w: {
+  kind: string
+  value: number
+  dotted?: boolean
+  triplet?: boolean
+}): string {
   const value = NAMES[w.value] ?? 'short'
-  return `${w.dotted === true ? 'dotted ' : ''}${value} ${w.kind}`
+  const dot = w.dotted === true ? 'dotted ' : ''
+  return `${dot}${w.triplet === true ? 'triplet ' : ''}${value} ${w.kind}`
 }
 
 /** "a half note", "two eighth notes": a run of equal symbols, counted. */
@@ -77,7 +85,7 @@ export function symbolWords(symbols: readonly Written[]): string {
   return andList(parts)
 }
 
-const BARS_WORDS = ['no bars', 'One bar', 'Two bars', 'Three bars']
+const BARS_WORDS = ['no bars', 'One bar', 'Two bars', 'Three bars', 'Four bars']
 
 /** Where the figure is written, or seen: one line, a staff, or the pitch line. */
 export type WordsStaff = 'line' | 'bass' | 'treble' | 'lanes'
@@ -92,9 +100,14 @@ export function staffWords(staff: WordsStaff): string {
  * The figure's name: "One bar of 4/4: four quarter notes, on one line";
  * two bars say each, "Two bars of 4/4: a half note and two quarter notes,
  * then two quarter notes and a half note, on the bass staff", and a tie
- * is said after them.
+ * is said after them. A figure in another metre says it: "Four bars of
+ * 6/8: ...".
  */
-export function figureWords(bars: readonly Bar[], staff: WordsStaff): string {
+export function figureWords(
+  bars: readonly Bar[],
+  staff: WordsStaff,
+  metre: Metre = FOUR_FOUR,
+): string {
   const what = bars.map((b) => symbolWords(b)).join(', then ')
   const count = BARS_WORDS[bars.length] ?? `${bars.length} bars`
   const across = bars.some(
@@ -105,7 +118,7 @@ export function figureWords(bars: readonly Bar[], staff: WordsStaff): string {
     : bars.some((b) => b.some((w) => w.tie === true))
       ? ', with a tie'
       : ''
-  return `${count} of 4/4: ${what}${tie}, ${staffWords(staff)}`
+  return `${count} of ${metreText(metre)}: ${what}${tie}, ${staffWords(staff)}`
 }
 
 /** What a beat holds, in words: its own notes, or the note it is part of. */

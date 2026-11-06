@@ -6,9 +6,10 @@
 // learn/19.html's body into jsdom (`loadPage`), so every selector meets the
 // markup it meets in a browser. Sound is on, as after a first tap, with
 // `soundOn`. The page's scripts never run: the test mounts what it drives.
-// Every sound on the page is one of the kit's runs, so a test that hears
-// them swaps kit/run.ts for the kit's recorder
-// (kit/run-recorder.test-fixtures.ts, whose header gives the `vi.mock`).
+// Every sound on the page goes through the kit's beat clock, so a test that
+// hears them makes the clock the kit's recorder
+// (kit/beat-clock-recorder.test-fixtures.ts, whose header gives the
+// `vi.mock`).
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
