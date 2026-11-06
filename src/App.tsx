@@ -386,7 +386,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, firstVisitThroughRoom, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, sessionLostOnLeave, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -1034,18 +1034,19 @@ const AppShell: Component<AppProps> = (props) => {
   // lesson's room. And so did a restored #/whats-new, a full-screen page the
   // visitor came back to. That one is named here and not on the announcement's
   // list, because the list also decides whether the release is marked as told
-  // (use-whats-new.ts).
+  // (use-whats-new.ts). So did a device's first visit to a room's own document,
+  // where First Light stays shut: a search that landed on /ear-lab (ui-store).
   const arrivalRoute = parseHash(window.location.hash)
   const arrivalLesson = lessonFromSearch(window.location.search)
   const takeoverSuppressed =
     routeSuppressesAnnouncement(arrivalRoute) ||
     arrivalRoute.type === 'whats-new' ||
-    arrivalLesson !== null
-  // Whether this visit began as a first run, read at the same moment and for
-  // the same reason. First Light is spent when somebody finishes or skips it,
-  // which can happen before the takeover's chunk lands, and a first-run visitor
-  // who read as "not a first run" by then would get the plan layer or What's
-  // New on top of it. `showWelcome` is settled by now: a storage read at load.
+    arrivalLesson !== null ||
+    firstVisitThroughRoom()
+  // Whether First Light opens on this visit, read at the same moment and for
+  // the same reason: it is spent when somebody finishes or skips it, maybe
+  // before the takeover's chunk lands, and a first run read as returning by
+  // then would get the plan or What's New over it. A storage read at load.
   const takeoverWelcomeDue = showWelcome()
   // Has the takeover chosen, and opened what it chose? The tour offer waits for
   // it (below). The offer writes its once-per-tab key before its toast shows,

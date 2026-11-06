@@ -58,7 +58,7 @@ export interface OpeningTakeoverDeps {
   native: boolean
   /** Did this visit come for somewhere in particular? Asked once, at the start: see above. */
   routeSuppressed: () => boolean
-  /** Has First Light's welcome not been offered to this visitor yet? Asked once, at the start: see above. */
+  /** Does First Light open on this visit (its welcome never offered, on a document it opens on)? Asked once, at the start: see above. */
   welcomeDue: () => boolean
   /** Is a release line this device has not been told about waiting? */
   whatsNewDue: () => boolean

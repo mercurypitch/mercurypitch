@@ -32,6 +32,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routeSuppressesAnnouncement } from '@/features/whats-new/whats-new-release'
 import { parseHash } from '@/lib/hash-router'
 import { lessonFromSearch } from '@/lib/lesson-marker'
+import { pickOpeningTakeover } from './opening-takeover'
 import type { PlanStoreModule } from './plan-layer-host'
 import { createPlanLayerHost } from './plan-layer-host'
 
@@ -166,6 +167,7 @@ async function staysAway(url: string, returning: boolean): Promise<boolean> {
   window.history.replaceState(null, '', url)
   vi.resetModules()
   const onboarding = await import('@/stores/onboarding-store')
+  const ui = await import('@/stores/ui-store')
   onboarding.stepAsideForLesson(window.location.search)
   // The seed took: a renamed welcome key would make every row a first visit.
   expect(onboarding.returningVisitor()).toBe(returning)
@@ -177,6 +179,7 @@ async function staysAway(url: string, returning: boolean): Promise<boolean> {
     routeSuppressesAnnouncement,
     lessonFromSearch,
     lessonArrival: onboarding.lessonArrival,
+    firstVisitThroughRoom: ui.firstVisitThroughRoom,
   }) as () => boolean
   return run()
 }
@@ -243,8 +246,126 @@ describe('the visits the takeover stays away from', () => {
       returning: true,
       away: false,
     },
+    {
+      given: "a first-ever visitor on a room's own document",
+      url: '/ear-lab#/ear-lab',
+      returning: false,
+      away: true,
+    },
+    {
+      given: "a returning visitor on a room's own document",
+      url: '/ear-lab#/ear-lab',
+      returning: true,
+      away: false,
+    },
   ])('$given: away is $away', async (row) => {
     expect(await staysAway(row.url, row.returning)).toBe(row.away)
+  })
+})
+
+// ── The welcome a visit is due ─────────────────────────────────────────
+
+/** What one page load showed and what its takeover picked, for a visitor with no plan. */
+interface Arrival {
+  opens: boolean
+  returning: boolean
+  pick: string | null
+}
+
+/**
+ * A page load at `url` over what this device holds: fresh stores, index.tsx's
+ * step-aside for a lesson's link, then App's setup, as App writes it: its lines
+ * for what the takeover stays away from and the welcome it is told opens, and
+ * First Light's own gate, which opens the welcome or, on a room's document,
+ * notes that the device has been here.
+ */
+async function arrive(url: string): Promise<Arrival> {
+  cleanup()
+  window.history.replaceState(null, '', url)
+  vi.resetModules()
+  const onboarding = await import('@/stores/onboarding-store')
+  const ui = await import('@/stores/ui-store')
+  const { useFirstLight } = await import('@/features/onboarding/useFirstLight')
+  onboarding.stepAsideForLesson(window.location.search)
+  const names = [
+    'arrivalRoute',
+    'arrivalLesson',
+    'takeoverSuppressed',
+    'takeoverWelcomeDue',
+  ]
+  const lines = names
+    .map((name) => `const ${name} = ${initializerOf(name)}`)
+    .join('\n')
+  const told = asWritten(
+    `() => {\n${lines}\nreturn [takeoverSuppressed, takeoverWelcomeDue]\n}`,
+    {
+      parseHash,
+      routeSuppressesAnnouncement,
+      lessonFromSearch,
+      lessonArrival: onboarding.lessonArrival,
+      firstVisitThroughRoom: ui.firstVisitThroughRoom,
+      firstLightNeverOffered: ui.firstLightNeverOffered,
+      showWelcome: ui.showWelcome,
+    },
+  ) as () => [boolean, boolean]
+  const [routeSuppressed, welcomeDue] = told()
+  render(() => {
+    useFirstLight(() => false)
+    return null
+  })
+  const pick = pickOpeningTakeover({
+    native: false,
+    routeSuppressed,
+    welcomeDue,
+    planDue: true,
+    whatsNewDue: false,
+  })
+  return {
+    opens: onboarding.flowOpen(),
+    returning: onboarding.returningVisitor(),
+    pick,
+  }
+}
+
+// First Light opens by itself on the home document and not on a room's entry
+// document (src/lib/first-light-landing.ts). A device's first visit there is
+// the room's: the takeover stays away, so no plan or What's New covers the room
+// a search asked for. Every visit after it is an existing user's, whichever
+// document it comes in on, so a device that only ever arrives on /jam is not
+// a first run for good, with no plan and no What's New ever.
+describe('the welcome a visit is due, by its document', () => {
+  it.each(['/ear-lab#/ear-lab', '/jam#/jam', '/pitch-training#/exercises'])(
+    'leaves the first visit to %s to its room, and takes over the next',
+    async (url) => {
+      const first = await arrive(url)
+      const next = await arrive(url)
+
+      expect(first).toEqual({ opens: false, returning: false, pick: null })
+      expect(next).toEqual({ opens: false, returning: true, pick: 'plan' })
+    },
+  )
+
+  it('opens First Light by itself on a first visit to the home document', async () => {
+    const home = await arrive('/')
+
+    expect(home).toEqual({ opens: true, returning: false, pick: 'first-light' })
+  })
+
+  it('still opens it on the home document after visits through a room', async () => {
+    await arrive('/jam#/jam')
+    await arrive('/jam#/jam')
+
+    const home = await arrive('/')
+
+    expect(home).toEqual({ opens: true, returning: true, pick: 'first-light' })
+  })
+
+  it("takes over for a returning visitor on a room's document", async () => {
+    localStorage.setItem(WELCOME_KEY, '1')
+
+    const room = await arrive('/ear-lab#/ear-lab')
+
+    expect(room).toEqual({ opens: false, returning: true, pick: 'plan' })
   })
 })
 
