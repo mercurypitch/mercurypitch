@@ -1256,12 +1256,39 @@
           <!-- the next lesson's card: the kit draws its words from the season
                (kit/next-card.ts), and keeps the tease still in its slot -->
           <div class="next-card card l19-next" data-next-card hidden>
-            <!-- the tease still (wrap.ts): Lesson 20's opening, nine beads on
-                 a string on the pitch line, do re mi so la so mi re do, each
-                 in its band, nothing lit and nothing blurred; it plays
-                 nothing (WEB-SPEC, Toys 11) -->
+            <!-- the tease still, drawn here as Lesson 10's is: Lesson 20's
+                 opening, nine beads on a string on the pitch line, do re mi
+                 so la so mi re do, each in its band, nothing lit and nothing
+                 blurred; it plays nothing (WEB-SPEC, Toys 11) -->
             <div class="l19-tease" aria-hidden="true">
-              <svg data-tease-line focusable="false"></svg>
+              <svg data-tease-line viewBox="0 0 360 128" focusable="false">
+                <path
+                  class="rows"
+                  d="M8 112H352M8 92H352M8 72H352M8 42H352M8 22H352"
+                />
+                <rect class="band" x="7" y="108" width="34" height="8" rx="4" />
+                <rect class="band" x="46" y="88" width="34" height="8" rx="4" />
+                <rect class="band" x="85" y="68" width="34" height="8" rx="4" />
+                <rect class="band" x="124" y="38" width="34" height="8" rx="4" />
+                <rect class="band" x="163" y="18" width="34" height="8" rx="4" />
+                <rect class="band" x="202" y="38" width="34" height="8" rx="4" />
+                <rect class="band" x="241" y="68" width="34" height="8" rx="4" />
+                <rect class="band" x="280" y="88" width="34" height="8" rx="4" />
+                <rect class="band" x="319" y="108" width="34" height="8" rx="4" />
+                <path
+                  class="string"
+                  d="M24 112L63 92L102 72L141 42L180 22L219 42L258 72L297 92L336 112"
+                />
+                <circle class="bead" cx="24" cy="112" r="4.5" />
+                <circle class="bead" cx="63" cy="92" r="4.5" />
+                <circle class="bead" cx="102" cy="72" r="4.5" />
+                <circle class="bead" cx="141" cy="42" r="4.5" />
+                <circle class="bead" cx="180" cy="22" r="4.5" />
+                <circle class="bead" cx="219" cy="42" r="4.5" />
+                <circle class="bead" cx="258" cy="72" r="4.5" />
+                <circle class="bead" cx="297" cy="92" r="4.5" />
+                <circle class="bead" cx="336" cy="112" r="4.5" />
+              </svg>
             </div>
           </div>
           <!-- Shown by kit/plan-back.ts, only to someone who answered the

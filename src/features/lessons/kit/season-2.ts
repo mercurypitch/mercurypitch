@@ -144,6 +144,8 @@ const ENTRIES_2: readonly Lesson[] = [
     // sung, so it waits on no vocal coach.
     minutes: 12,
     page: '/learn/19',
+    // six pads in a row, ungrouped, nothing written (season-2-figures.ts)
+    fig: 'pads',
     hook: 'Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?',
     pr: {
       needs: 'Subdivide with only 3/4 and 6/8 (an ear-drill link)',

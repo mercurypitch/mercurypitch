@@ -8,8 +8,12 @@
 // 17's is a bar of four quarter notes on one line over Lesson 8's four beat
 // pads, as its rhythm bar writes them, the 4/4 at the line's start and no
 // reading in seconds, so the card answers nothing (Lesson 17 WEB-SPEC,
-// Explorer and season data). Its look is its own <style>, whose rules only
-// its marks meet, since no stylesheet loads with the data.
+// Explorer and season data). Lesson 19's is six of Lesson 8's pads in a
+// row, numbered 1 to 6, all one size, ungrouped and with nothing written,
+// so it says neither how the six group nor into how many beats (Lesson 19
+// WEB-SPEC, Explorer and season data; its FACTS 1a). Each look is its own
+// <style>, whose rules only its marks meet, since no stylesheet loads with
+// the data.
 
 import type { SeasonFigures } from './season'
 
@@ -32,7 +36,23 @@ export function rhythmSVG(): string {
   return `<svg class="ex-rhythm" viewBox="0 0 210 104" aria-hidden="true"><style>${RHYTHM_STYLE}</style><path class="line" d="M4 40H206"/><text class="metre" x="14" y="36">4</text><text class="metre" x="14" y="56">4</text>${beats}</svg>`
 }
 
+const PADS_STYLE =
+  '.ex-pads rect{fill:rgba(195,204,214,.04);stroke:var(--hair-2)}' +
+  '.ex-pads text{fill:var(--chrome);font:600 18px/1 var(--f-display);text-anchor:middle}'
+
+/** Six numbered pads in a row, all one size: no grouping drawn and nothing written. */
+export function padsSVG(): string {
+  let pads = ''
+  for (let k = 0; k < 6; k++) {
+    const x = 6 + k * 33
+    pads += `<rect x="${x}" y="6" width="29" height="92" rx="9"/><text x="${x + 14.5}" y="58">${k + 1}</text>`
+  }
+  return `<svg class="ex-pads" viewBox="0 0 210 104" aria-hidden="true"><style>${PADS_STYLE}</style>${pads}</svg>`
+}
+
 export const SEASON_2_FIGURES: SeasonFigures = {
   rhythm: () =>
     `${rhythmSVG()}<figcaption>A bar of four quarter notes, written over Lesson 8's beat pads</figcaption>`,
+  pads: () =>
+    `${padsSVG()}<figcaption>Six of Lesson 8's beat pads in a row, with nothing written</figcaption>`,
 }

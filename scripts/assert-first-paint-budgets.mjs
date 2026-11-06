@@ -416,7 +416,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the kit's predict (2,518), the hero's sky and Merc's hop: 147,300. The
   // quizzes load after first paint, but their import brings Vite's preload
   // helper: 148,436. Its four words bring the kit's words strip: 151,022.
-  'learn/19.html': 148,
+  // The take and free play load after first paint, and the explorer's six
+  // pads come with Season 2's data (kit/season-2-figures.ts): 152,307.
+  'learn/19.html': 149,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

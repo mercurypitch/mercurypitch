@@ -1,6 +1,7 @@
 // The metronome drawing: one gradient id per copy, so copies on one page
 // never share one. Lesson 17's bar of four quarter notes over four pads,
-// reading nothing in seconds.
+// reading nothing in seconds; Lesson 19's six pads, ungrouped, with
+// nothing written.
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -66,5 +67,40 @@ describe("Lesson 17's figure", () => {
 
     // Assert
     expect(f).toBeNull()
+  })
+})
+
+describe("Lesson 19's figure", () => {
+  it('draws six numbered pads in a row, all one size and evenly spaced, ungrouped and with nothing written, captioned', () => {
+    // Arrange: Lesson 19's WEB-SPEC, Explorer and season data (FACTS 1a)
+    const L19 = LESSONS_2.find((L) => L.n === 19)
+    if (L19 === undefined) throw new Error('no Lesson 19')
+
+    // Act
+    const f = cardFigure(L19, undefined, SEASON_2.figures)
+
+    // Assert
+    const svg = f?.querySelector('svg.ex-pads')
+    expect(L19.fig).toBe('pads')
+    expect(svg?.getAttribute('aria-hidden')).toBe('true')
+    const rects = Array.from(svg?.querySelectorAll('rect') ?? [])
+    expect(rects).toHaveLength(6)
+    expect(
+      new Set(
+        rects.map(
+          (r) => `${r.getAttribute('width')} ${r.getAttribute('height')}`,
+        ),
+      ).size,
+    ).toBe(1)
+    // a wider gap anywhere would draw a grouping
+    const xs = rects.map((r) => Number(r.getAttribute('x')))
+    expect(new Set(xs.slice(1).map((x, k) => x - xs[k])).size).toBe(1)
+    expect(
+      Array.from(svg?.querySelectorAll('text') ?? [], (t) => t.textContent),
+    ).toEqual(['1', '2', '3', '4', '5', '6'])
+    expect(svg?.querySelectorAll('ellipse, path, line')).toHaveLength(0)
+    expect(f?.querySelector('figcaption')?.textContent).toBe(
+      "Six of Lesson 8's beat pads in a row, with nothing written",
+    )
   })
 })

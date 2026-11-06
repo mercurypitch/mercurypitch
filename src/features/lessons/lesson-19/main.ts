@@ -81,6 +81,14 @@ void import('./take').then(
   () => undefined,
 )
 
+// free play, the six pads and the two tunes: a chunk of its own, after
+// first paint, since nothing above the Wrap needs it (one that cannot load
+// leaves its two figures empty)
+void import('./free-play').then(
+  ({ initFreePlay }) => initFreePlay(),
+  () => undefined,
+)
+
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(19)
 createExplorer({ current: 19 })
