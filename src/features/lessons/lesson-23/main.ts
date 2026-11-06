@@ -55,6 +55,7 @@ import { initQuizzes } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -84,8 +85,10 @@ initQuizzes(deck)
 // it sounds
 initWords()
 
-// Sing it on the kit's flow, and then just listen, ti and fa
+// Sing it on the kit's flow, and then just listen, ti and fa; the Wrap's
+// card in the version its ending picks, and free play
 initSing()
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(23)
