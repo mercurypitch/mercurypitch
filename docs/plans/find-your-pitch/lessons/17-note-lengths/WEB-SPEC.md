@@ -851,3 +851,57 @@ Where this package departs from ARTICLE-PLAN.md, and why, every one argued in FA
 Kept as the plan has them, after the review: the woodblock click (FACTS 62), Step 1's five bars from
 a whole note to sixteenths, each played then written (Play the halvings), Step 3's bar of eighths
 with its fading count, and Step 5's dotted quarter, played and written (FACTS 66).
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The page keeps Step 3's Go deeper drawer (Toys 10), which Length cuts. Counted by
+  `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,309 words less the
+  32 the mix-up card gives up, with 239 more of hints, status lines, captions and the toys' labels
+  written in the open, the page is about 2,516 words, some 140 over the series' cap of 2,379, and
+  Length's two cuts, 102 words, would still leave it about 70 over. So only the second is made: the
+  mix-up card gives one piece of evidence, without its Play both, and Step 2's toy keeps Play both.
+  The drawer stays because SEASON-2 § 7 item 3, as the owner decided it, names Takadimi in Go
+  deeper. The cap is the owner's to weigh at the final look, as Lesson 8's was (Lesson 8 FACTS 4).
+- Before the first play the hero's only numbers are the beat numbers over Lesson 8's pads, which
+  Toys 2 draws: no reading, no 4/4 and no number in either bubble. The end-to-end spec reads "holds
+  no digit" that way (Tests, end-to-end 1).
+- At a new tempo the strip's readings go at once, and each comes back as its note ends at the new
+  tempo, so no reading stands under a bar at a tempo it does not read, and none shows before its
+  sound (Toys 6, When).
+- Where a run's reading, "4 × 0.25 s", has no room in the cells' row, as a beat of sixteenths at 344
+  px, it closes up to "4×0.25 s" before it moves to the second row. A second-row reading sits
+  centred on its note where it has room, and otherwise moves right of the one before it, or, at the
+  figure's right edge, moves the ones before it left; every reading stays inside the figure (Toys 6,
+  Narrow cells).
+- Step 5's lift slides each part into place: the staff's five lines move out from the one line, the
+  symbols, beams and 4/4 slide to their places on the staff, and the clef and the bar lines fade in,
+  over 0.6 s on the kit's `expoOut`, at once under reduced motion. Nothing thickens or turns: a stem
+  that points down on the bass staff points down from the start of the slide (Toys 5).
+- Each of the four words' figures runs across the top of its ticket, above the word and its
+  definition: the kit's stub, 88 px wide, has no room for a rhythm and its strip (Toys 4).
+- Again and Hear the bars first show once a take has run to its end, with its line, and stay; until
+  one has, a take stopped early leaves only Start (Toys 7, part 1).
+- The guide's hint reads "Play Merc's bars first", with no full stop, as Lessons 12 and 15 write
+  theirs (Toys 7, part 2, state 5).
+- The guide lights each note in ink, not in a singer's colour, since no voice sings it: Merc is
+  silent and the learner sings (Toys 7, part 2, state 5; Toys 1, "Written as it sounds").
+- The feeling answers lock once given, as the kit's flow locks them for Lessons 12 and 15, so after
+  Effortful or Uncomfortable the status keeps that answer's line, and "Merc can still sing the bars
+  for you.", Lesson 8's line for a changed answer, never shows (Toys 7, part 2).
+- On a phone, 560 px wide and under, the still of the Merc singing sits beside Move the note's
+  readout, above the guide, and the guide spans the card as the take's figure does, so its strip has
+  the take's room: beside the still at 390 px the guide was 260 px wide and its strip's second row
+  overlapped (Toys 7, part 2).
+- In free play a pad chooses a beat, as in Step 1, and Note · Rest is a button that silences the
+  chosen beat, and back; Halve and Join refuse a silent beat with their hint. Free play's Count
+  writes and lights the counts on every play: the fade on every second play is Step 3's (Toys 1,
+  Note · Rest and Count; Toys 8).
+- The explorer's figure for Lesson 17, four quarter notes over four beat pads, comes with Season 2's
+  data (`kit/season-2-figures.ts`, through the season's `figures`), not from the kit's own figures:
+  `kit/explorer-figures.ts` is in every lesson page's first paint, and the drawing there added about
+  1 KB to each (Explorer and season data; What the kit and the app still need, item 12).
+- The recall and the quick check, the checkpoint (the take, the pad, the claps and the sung bars)
+  and free play are chunks of their own, loaded after first paint; one that cannot load leaves its
+  part empty, never the page.
