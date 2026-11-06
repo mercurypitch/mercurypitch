@@ -579,12 +579,14 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 23 (a draft, as above), its shell: 83,518 bytes in build:e2e,
-  // the kit's sheets (the staff toy's inlined into its own by @import, and
-  // the shared parts), its own, and the shared Inter and Outfit @font-face
-  // rules; the smallest whole KB above, to rise as each part joins, the
-  // guide's and the voice lessons' sheets with the recall and Sing it.
-  'learn/23.html': 82,
+  // Lesson 23 (a draft, as above): 84,502 bytes in build:e2e with the
+  // staff toy's interval state (kit/lesson-interval.css), 83,518 for its
+  // shell: the kit's sheets (the staff toy's and its interval state's
+  // inlined into its own by @import, and the shared parts), its own, and
+  // the shared Inter and Outfit @font-face rules; the smallest whole KB
+  // above, to rise as each part joins, the guide's and the voice lessons'
+  // sheets with the recall and Sing it.
+  'learn/23.html': 83,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

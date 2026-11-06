@@ -37,8 +37,13 @@ import { F_CLEF_PATH, FLAT_PATH, NOTEHEAD_PATH, NOTO_GLYPHS, SHARP_PATH, } from 
 import type { Clef, StaffKind } from './staff-places'
 import { clefPlace, isLine, ledgersOf, LINES, midiOf, noteAt, placeOf, writtenOf, } from './staff-places'
 
-/** How a notehead is lit: at rest, sounding, the sung model, or Merc's sung note. */
-export type Tone = 'rest' | 'lit' | 'amber' | 'blue'
+/**
+ * How a notehead is lit: at rest, sounding, the sung model, Merc's sung
+ * note, or a note sounding on the treble staff in the interval state's
+ * colour for the higher voice (kit/staff-interval.ts), as blue is the
+ * lower's.
+ */
+export type Tone = 'rest' | 'lit' | 'amber' | 'blue' | 'orange'
 
 /** A notehead on the staff. */
 export interface Mark {
@@ -436,6 +441,7 @@ const TONE_CLASS: Readonly<Record<Tone, string>> = {
   lit: 'st-head is-lit',
   amber: 'st-head is-amber',
   blue: 'st-head is-blue',
+  orange: 'st-head is-orange',
 }
 
 /** One notehead with its ledger lines, its sign, its halo while it sounds, its name and its house. */
