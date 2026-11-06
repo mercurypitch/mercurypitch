@@ -12,7 +12,7 @@ afterEach(() => {
 })
 
 describe('AirPlayCheckPanel', () => {
-  it('offers the five ways, each named by its beeps', () => {
+  it('offers the seven ways, each named by its beeps', () => {
     render(() => <AirPlayCheckPanel run={vi.fn(async () => undefined)} />)
 
     const titles = screen
@@ -24,6 +24,8 @@ describe('AirPlayCheckPanel', () => {
       '3 beeps: Web Audio alone',
       '4 beeps: Web Audio beside a silent element',
       '5 beeps: Web Audio with the mic open',
+      '6 beeps: Media element through Web Audio',
+      '7 beeps: Web Audio after a paused element',
     ])
   })
 

@@ -8,7 +8,7 @@
 // AirPlay, and on an iPhone 11, whose did. The room makes its sound one way
 // only, Web Audio beside a silent element kept local, often with the mic
 // open, so a Karaoke test cannot say which part AirPlay refuses. This plays
-// five ways, each with its own number of beeps, so the owner can say which
+// seven ways, each with its own number of beeps, so the owner can say which
 // ones the TV played:
 //
 //   1  a plain <audio> of a generated WAV, allowed on AirPlay
@@ -17,18 +17,27 @@
 //   4  Web Audio while a silent element kept local plays, as the Karaoke
 //      room plays beside the lock screen's carrier
 //   5  Web Audio with the microphone open, as when singing is scored
+//   6  an element kept local, routed through createMediaElementSource into
+//      a fresh AudioContext, as First Note and the preview player play
+//   7  Web Audio after a silent element kept local played for a second and
+//      was paused, its src kept and unmuted, as most rooms leave theirs
+//
+// 6 and 7 ask what the rooms that play elements need on AirPlay alone
+// (docs/plans/airplay-element-rooms.md). Where an element only has to have
+// played (4 and 7), it plays silence, so the beeps are the context's alone.
 //
 // Each tap writes one info line, which the console keeps with routine logs
 // left out:
 //
 //   [airplay check] 3 Web Audio alone: route=airplay sessionRate=44100 contextRate=44100 pageSession=auto state=running
 //
-// with the element's word (`element=playing`) and the mic's (`mic=open`)
-// where they take part, and no port's name. Each is torn down whole once
-// its beeps have had time to reach a TV, which plays AirPlay about two
-// seconds late: the context closed, the mic let go, the element emptied and
-// its URL revoked. Everything that must start inside the tap (an element's
-// play, a context's resume) is called before the first await.
+// with the element's word (`element=playing`, `routed` for 6, `paused` for
+// 7) and the mic's (`mic=open`) where they take part, and no port's name.
+// Each is torn down whole once its beeps have had time to reach a TV, which
+// plays AirPlay about two seconds late: the context closed, the mic let go,
+// the element emptied and its URL revoked. Everything that must start inside
+// the tap (an element's play, a context's resume) is called before the first
+// await.
 //
 // Developer only: AirPlayCheckPanel.tsx is registered behind
 // VITE_PORTABLE_CONSOLE through a dynamic import (main.tsx).
@@ -40,7 +49,7 @@ import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { NativeAudioOutputReading } from '@/stores/native-shell-store'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 
-export type CheckVariant = 1 | 2 | 3 | 4 | 5
+export type CheckVariant = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 /** A variant as the Developer screen offers it. */
 export interface CheckVariantInfo {
@@ -73,6 +82,16 @@ export const CHECK_VARIANTS: readonly CheckVariantInfo[] = [
     title: 'Web Audio with the mic open',
     sub: 'As when singing is scored.',
   },
+  {
+    n: 6,
+    title: 'Media element through Web Audio',
+    sub: 'Kept local and played through a fresh AudioContext, as First Note plays.',
+  },
+  {
+    n: 7,
+    title: 'Web Audio after a paused element',
+    sub: 'A silent element plays a second, then waits paused and unmuted, as most rooms leave theirs.',
+  },
 ]
 
 /** The beeps: A5, short, a step apart, after a moment of silence. */
@@ -89,6 +108,8 @@ export const WAV_RATE = 44_100
 export const HOLD_MS = 3000
 /** The mic's name with the mic manager, and its indicator's. */
 export const CHECK_MIC_ID = 'airplay-check'
+/** How long 7's element plays its silence before it pauses, ms. */
+export const PLAYED_MS = 1000
 
 /** How long a check with `count` beeps sounds, in seconds. */
 export function beepSeconds(count: number): number {
@@ -181,6 +202,8 @@ interface Run {
   context: AudioContext | null
   resumed: Promise<void> | null
   source: AudioBufferSourceNode | null
+  /** 6's element as a node in its context. */
+  node: MediaElementAudioSourceNode | null
   releaseMic: (() => void) | null
 }
 
@@ -195,9 +218,27 @@ const wavBlob = (samples: Float32Array): Blob =>
     type: 'audio/wav',
   })
 
-/** Variants 1, 2 and 4: the element, started inside the tap. */
+/**
+ * 6's element into its context, before it plays, so no beep ever leaves it
+ * on its own. Null once routed; otherwise the line's word for why not.
+ */
+function routeElement(run: Run, element: HTMLAudioElement): string | null {
+  const context = run.context
+  if (context === null) return 'unrouted'
+  try {
+    const node = context.createMediaElementSource(element)
+    node.connect(context.destination)
+    run.node = node
+    return null
+  } catch (error) {
+    return `unrouted:${nameOf(error)}`
+  }
+}
+
+/** Variants 1, 2, 4, 6 and 7: the element, started inside the tap. */
 function startElement(run: Run, host: CheckHost): void {
-  const beeps = run.n !== 4
+  // 4's and 7's elements only have to play: they play silence, on a loop.
+  const beeps = run.n !== 4 && run.n !== 7
   const samples = beeps
     ? beepSamples(run.n, WAV_RATE)
     : new Float32Array(Math.ceil(beepSeconds(run.n) * WAV_RATE))
@@ -207,13 +248,19 @@ function startElement(run: Run, host: CheckHost): void {
   run.url = host.makeUrl(wavBlob(samples))
   element.src = run.url
   run.element = element
+  const unrouted = run.n === 6 ? routeElement(run, element) : null
+  if (unrouted !== null) {
+    run.played = Promise.resolve(unrouted)
+    return
+  }
+  const word = run.n === 6 ? 'routed' : 'playing'
   run.played = Promise.resolve(element.play()).then(
-    () => 'playing',
+    () => word,
     (error: unknown) => `refused:${nameOf(error)}`,
   )
 }
 
-/** Variants 3 to 5: the context, made and resumed inside the tap. */
+/** Variants 3 to 7: the context, made and resumed inside the tap. */
 function startContext(run: Run, host: CheckHost): void {
   const context = host.makeContext()
   run.context = context
@@ -233,6 +280,20 @@ function beepOn(run: Run): void {
   source.connect(context.destination)
   source.start(context.currentTime + 0.05)
   run.source = source
+}
+
+/**
+ * 7's element, once it has played a moment: paused, its src kept, unmuted.
+ * Its word for the line.
+ */
+async function pauseAfterPlaying(
+  run: Run,
+  host: CheckHost,
+  word: string,
+): Promise<string> {
+  await host.wait(PLAYED_MS)
+  run.element?.pause()
+  return word === 'playing' ? 'paused' : word
 }
 
 /** The mic, for variant 5: its word for the line. */
@@ -282,6 +343,7 @@ async function tearDown(run: Run, host: CheckHost): Promise<void> {
     // Already stopped.
   }
   run.source?.disconnect()
+  run.node?.disconnect()
   await run.context?.close().catch(() => undefined)
   run.releaseMic?.()
   if (run.element !== null) {
@@ -295,10 +357,14 @@ async function tearDown(run: Run, host: CheckHost): Promise<void> {
 /** After the starts: the mic, the beeps, the line, the hold, the teardown. */
 async function finish(run: Run, host: CheckHost): Promise<void> {
   try {
-    const element = (await run.played) ?? ''
+    const played = (await run.played) ?? ''
     const mic = run.n === 5 ? await openMic(run, host) : ''
     await run.resumed
-    beepOn(run)
+    const element =
+      run.n === 7 ? await pauseAfterPlaying(run, host, played) : played
+    // 6's beeps are its element's, through the context; the rest are the
+    // context's own.
+    if (run.n !== 6) beepOn(run)
     const reading = await host.readOutput().catch(() => null)
     host.say(
       checkLine(run.n, reading, {
@@ -331,9 +397,13 @@ export function runCheck(
     context: null,
     resumed: null,
     source: null,
+    node: null,
     releaseMic: null,
   }
+  // 6 routes its element into its context, so the context comes first
+  // there; 1 to 5 keep the order the owner's device runs were made in.
+  if (n === 6) startContext(run, host)
   if (n !== 3 && n !== 5) startElement(run, host)
-  if (n >= 3) startContext(run, host)
+  if (n >= 3 && n !== 6) startContext(run, host)
   return finish(run, host)
 }
