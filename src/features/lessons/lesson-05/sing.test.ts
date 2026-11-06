@@ -15,12 +15,14 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scrollIntoViewAgain, scrollOutOfView, } from '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { emptyRecord, withTake } from '@/features/lessons/kit/hold-flow'
+import { afterLines, holdNote, MAX_MOVE, phaseStatus, ringLabel, STATUS, stepStatus, } from '@/features/lessons/kit/hold-sing'
 import type { HoldReading } from '@/features/lessons/kit/hold-take'
 import { holdChartWords, holdSummary } from '@/features/lessons/kit/hold-take'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import { afterFeeling, emptyRecord, withTake } from './hold-flow'
-import { afterLines, HOLD_HEAD, holdNote, MAX_MOVE, phaseStatus, ringLabel, STATUS, stepStatus, } from './sing'
+import { afterFeeling } from './hold-flow'
+import { HOLD_HEAD } from './sing'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/05.html'), 'utf8')
 
@@ -88,11 +90,13 @@ describe('the note (FACTS 55)', () => {
 
 describe('the status line', () => {
   it('names each phase of a hold: Listen, Breathe, Sing', () => {
-    expect(phaseStatus(1, 'A3', 'listen')).toBe(
+    expect(phaseStatus(HOLD_HEAD[1], 'A3', 'listen')).toBe(
       "Hold 1: ten seconds, on A3. Listen to Merc's note.",
     )
-    expect(phaseStatus(2, 'A4', 'breathe')).toBe('Breathe in, low and quiet.')
-    expect(phaseStatus(2, 'A4', 'sing')).toBe(
+    expect(phaseStatus(HOLD_HEAD[2], 'A4', 'breathe')).toBe(
+      'Breathe in, low and quiet.',
+    )
+    expect(phaseStatus(HOLD_HEAD[2], 'A4', 'sing')).toBe(
       'Sing, and hold the note until the ring closes.',
     )
   })
@@ -130,7 +134,7 @@ describe('the status line', () => {
     expect(lines).toMatchObject({
       summary,
       closing: null,
-      hold15: false,
+      nextHold: false,
       again: true,
       done: 'done',
     })
@@ -143,8 +147,8 @@ describe('the claims check (src/lib/guided-voice/claims.ts)', () => {
     const lines = new Set<string>([
       ...Object.values(STATUS),
       ...Object.values(HOLD_HEAD),
-      phaseStatus(1, 'A3', 'listen'),
-      phaseStatus(2, 'C♯5', 'listen'),
+      phaseStatus(HOLD_HEAD[1], 'A3', 'listen'),
+      phaseStatus(HOLD_HEAD[2], 'C♯5', 'listen'),
       holdSummary(reading(8.4, 10), null) ?? '',
       holdSummary(reading(10, 10), reading(15, 15)) ?? '',
       holdChartWords('A3', reading(8.4, 10)),

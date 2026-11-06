@@ -1,20 +1,25 @@
 // ============================================================
-// Lesson 5 Sing it view — the checkpoint card's panels and lines
+// Hold Sing it view — the checkpoint card's panels and lines
 // ============================================================
 //
-// The markup holds every state's words (learn/05.html, #singCard); this
-// shows the panels a state needs and writes the lines a hold produces. The
-// status line above the card says every state in words and is announced
-// (role="status"). A button the flow does not offer is hidden, never left
-// disabled. Focus moves only to text, never to a button, so a key press
-// meant to scroll can never start a take (REQ-GVC-080).
+// The view of the kit's held-note checkpoint (hold-sing.ts), as Lessons 5
+// and 22 draw it. The markup holds every state's words (learn/05.html,
+// learn/22.html, #singCard); this shows the panels a state needs and
+// writes the lines a hold produces. The status line above the card says
+// every state in words and is announced (role="status"). A button the flow
+// does not offer is hidden, never left disabled. Focus moves only to text,
+// never to a button, so a key press meant to scroll can never start a take
+// (REQ-GVC-080).
 
-import type { BandChart } from '@/features/lessons/kit/band-chart'
-import { mountBandChart } from '@/features/lessons/kit/band-chart'
-import { q, qa } from '@/features/lessons/kit/dom'
-import { A3 } from '@/features/lessons/kit/notes'
-import type { Ring, RingStills } from '@/features/lessons/kit/sing'
-import { mountRing } from '@/features/lessons/kit/sing'
+import type { BandChart } from './band-chart'
+import { mountBandChart } from './band-chart'
+import { q, qa } from './dom'
+import type { HoldPhase } from './hold-run'
+import { A3 } from './notes'
+import type { Ring, RingStills } from './sing'
+import { mountRing } from './sing'
+
+export type { HoldPhase } from './hold-run'
 
 export type Panel =
   | 'comfort'
@@ -27,9 +32,6 @@ export type Panel =
 /** What the live area shows: a hold (chart, ring, reading), Merc's notes to listen to, or nothing. */
 export type LiveMode = 'take' | 'listen' | null
 
-/** A hold's three phases, as the ring and the line above it name them. */
-export type HoldPhase = 'listen' | 'breathe' | 'sing'
-
 /** What the card offers after the answer to "How did that feel?". */
 export interface AfterLines {
   /** The two holds' readings together: "This time your line was in the band for ...". */
@@ -38,13 +40,14 @@ export interface AfterLines {
   /** 'rest': "Rest for a few easy breaths ..."; 'gentle': "Keep it gentle ..."; 'enough': "Thanks for saying so ...". */
   readonly closing: 'rest' | 'gentle' | 'enough' | null
   readonly doctor: boolean
-  readonly hold15: boolean
+  /** The second hold's button: Lesson 5's Hold for 15 seconds, Lesson 22's Hold 2: floating. */
+  readonly nextHold: boolean
   readonly again: boolean
-  /** 'today': Done for today; 'done': the same words on the primary button, after the fifteen; null: neither. */
+  /** 'today': Done for today; 'done': the same words on the primary button, after the second hold; null: neither. */
   readonly done: 'today' | 'done' | null
 }
 
-export interface SingView {
+export interface HoldSingView {
   readonly chart: BandChart
   readonly ring: Ring
   status(text: string): void
@@ -69,7 +72,14 @@ export interface SingView {
   readonly noteEl: HTMLElement
 }
 
-export function createSingView(stills: RingStills): SingView {
+/**
+ * The card's view; `nextHold` names the second hold's button in the markup,
+ * its `data-sing`: "hold15" on Lesson 5's card.
+ */
+export function createHoldSingView(
+  stills: RingStills,
+  o: { readonly nextHold: string },
+): HoldSingView {
   const card = q('#singCard')
   const statusEl = q('#singStatus')
   const live = q('#singLive')
@@ -126,7 +136,7 @@ export function createSingView(stills: RingStills): SingView {
       }
       // a tall panel giving way to a short one can leave the card above the
       // screen (a phone, after Start): bring its top back at once, before the
-      // section's leave watch sees it gone (sing.ts)
+      // section's leave watch sees it gone (hold-sing.ts)
       const top = card.getBoundingClientRect().top
       if (top < 0 || top > window.innerHeight * 0.7)
         card.scrollIntoView({ block: 'start', behavior: 'instant' })
@@ -163,7 +173,7 @@ export function createSingView(stills: RingStills): SingView {
       for (const el of qa('[data-closing]', after))
         el.hidden = el.dataset.closing !== a.closing
       toggle(q('[data-after-doctor]', after), a.doctor)
-      toggle(q('[data-sing="hold15"]', after), a.hold15)
+      toggle(q(`[data-sing="${o.nextHold}"]`, after), a.nextHold)
       toggle(q('[data-sing="again"]', after), a.again)
       toggle(q('[data-sing="today"]', after), a.done === 'today')
       toggle(q('[data-sing="done"]', after), a.done === 'done')

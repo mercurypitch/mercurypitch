@@ -7,9 +7,10 @@
 // limit, the counted takes and when Merc celebrates.
 
 import { describe, expect, it } from 'vitest'
+import type { HoldNo, HoldRecord, TakeMark, } from '@/features/lessons/kit/hold-flow'
+import { afterTake, counted, emptyRecord, TAKES_PER_HOLD, withCelebration, withTake, } from '@/features/lessons/kit/hold-flow'
 import { MAX_TRIES } from '@/features/lessons/kit/take'
-import type { HoldNo, HoldRecord, TakeMark } from './hold-flow'
-import { afterFeeling, afterTake, counted, emptyRecord, HOLD_SEC, TAKES_PER_HOLD, withCelebration, withTake, } from './hold-flow'
+import { afterFeeling, HOLD_SEC } from './hold-flow'
 
 const read = (share: number): TakeMark => ({ kind: 'read', share })
 const unsteady: TakeMark = { kind: 'unsteady', share: 0 }
@@ -44,7 +45,11 @@ describe('after a ten-second take', () => {
 
       // Assert
       expect(step.next).toBe('rest')
-      expect(step.offers).toEqual({ hold15: true, again: true, done: 'today' })
+      expect(step.offers).toEqual({
+        nextHold: true,
+        again: true,
+        done: 'today',
+      })
       expect([step.reading, step.summary, step.restCard]).toEqual([
         true,
         false,
@@ -58,7 +63,11 @@ describe('after a ten-second take', () => {
     const step = afterFeeling(1, 'effortful', record([read(1)]))
 
     // Assert
-    expect(step.offers).toEqual({ hold15: false, again: false, done: 'today' })
+    expect(step.offers).toEqual({
+      nextHold: false,
+      again: false,
+      done: 'today',
+    })
     expect([step.next, step.celebrate, step.tricky, step.reading]).toEqual([
       'gentle',
       false,
@@ -72,7 +81,7 @@ describe('after a ten-second take', () => {
     const step = afterFeeling(1, 'uncomfortable', record([read(1)]))
 
     // Assert
-    expect(step.offers).toEqual({ hold15: false, again: false, done: null })
+    expect(step.offers).toEqual({ nextHold: false, again: false, done: null })
     expect([step.next, step.reading, step.doctor, step.restCard]).toEqual([
       'enough',
       false,
@@ -87,7 +96,7 @@ describe('after a ten-second take', () => {
     const step = afterFeeling(1, 'easy', record([unsteady]))
 
     // Assert
-    expect(step.offers.hold15).toBe(false)
+    expect(step.offers.nextHold).toBe(false)
     expect(step.offers.again).toBe(true)
   })
 
@@ -103,7 +112,7 @@ describe('after a ten-second take', () => {
     // Assert
     expect(second.offers.again).toBe(true)
     expect(third.offers.again).toBe(false)
-    expect(third.offers.hold15).toBe(true)
+    expect(third.offers.nextHold).toBe(true)
   })
 
   it("adds rule 15's line only for a take in the band for less than half of it", () => {
@@ -125,7 +134,7 @@ describe('after a fifteen-second take', () => {
     // Assert
     expect(step.next).toBe('end')
     expect([step.summary, step.reading]).toEqual([true, false])
-    expect(step.offers).toEqual({ hold15: false, again: true, done: 'done' })
+    expect(step.offers).toEqual({ nextHold: false, again: true, done: 'done' })
     expect(counted(r.takes[1])).toEqual(read(0.84))
   })
 
@@ -147,7 +156,11 @@ describe('after a fifteen-second take', () => {
     const step = afterFeeling(2, 'effortful', record([read(1)], [read(1)]))
 
     // Assert
-    expect(step.offers).toEqual({ hold15: false, again: false, done: 'today' })
+    expect(step.offers).toEqual({
+      nextHold: false,
+      again: false,
+      done: 'today',
+    })
     expect([step.summary, step.celebrate]).toEqual([true, false])
   })
 
