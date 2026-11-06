@@ -1277,6 +1277,15 @@
   min-height: 40px;
   box-shadow: 0 -10px 16px var(--studio-panel);
 }
+/* The takes scroll under it, so it shows it waits for a pick in its
+   colours, opaque: at the page's disabled opacity (0.45) the row under it
+   read through its label. */
+.sources > .primaryButton:disabled {
+  border-color: var(--studio-line-strong);
+  background: var(--studio-control);
+  color: var(--studio-muted);
+  opacity: 1;
+}
 
 /* Phone mix list */
 .phoneMix {
