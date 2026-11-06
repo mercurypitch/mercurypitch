@@ -27,10 +27,14 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
+// the recall brings Lesson 6's quiz modules onto this page, so taking this
+// sheet here keeps it in their chunk, and Lessons 2, 4, 6, 8, 9, 10, 12 and
+// 15 still link it before their own sheets (MISTAKES.md, on the lessons'
+// base stylesheet); the recall loads with the page for the same reason, as
+// a chunk loaded after first paint would leave the sheet a chunk of its own
+import '@/features/lessons/kit/lesson-guide.css'
+// the voice lessons' sheet joins with Sing it, the module whose chunk it
+// shares: taken before it, it would leave its chunk for one of its own
 import '@/features/lessons/kit/lesson-parts.css'
 import './lesson-23.css'
 import { q } from '@/features/lessons/kit/dom'
@@ -46,6 +50,7 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { PitchLine } from '@/features/lessons/kit/staff'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -68,6 +73,9 @@ const deck = createStepDeck({
 })
 const steps = initSteps()
 deck.start()
+
+// the recall from Lesson 6 and the quick check, each on the kit's quiz
+initQuizzes(deck)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(23)

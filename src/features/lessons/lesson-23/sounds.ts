@@ -9,10 +9,14 @@
 // then 0.8 s, 1.55 s in all (kit/pair.ts); two pairs are 0.5 s apart,
 // 3.6 s; two notes together sound 1.5 s, and two such pairs back to back
 // 3.0 s (FACTS 70). Each step's state and its plays are here, with the
-// plays that wait for the cold open's choice (FACTS 1a, 70).
+// plays that wait for the cold open's choice (FACTS 1a, 70) and the quick
+// check's B3 and F4 (FACTS 73).
 
 import type { Letter, Spelled } from '@/features/lessons/kit/notes'
+import type { RunNote } from '@/features/lessons/kit/run'
 import type { IntervalPlay, IntervalState, } from '@/features/lessons/kit/staff-interval'
+import { TOGETHER_SEC } from '@/features/lessons/kit/staff-interval'
+import { midiOf } from '@/features/lessons/kit/staff-places'
 
 /** A note written for the higher voice. */
 export const note = (letter: Letter, alter = 0, octave = 4): Spelled => ({
@@ -84,4 +88,10 @@ export const HELD_PLAYS: readonly string[] = [
   'fold-g',
   'fold-e',
   'b-f',
+]
+
+/** Quick check question 4's interval: B3 and F4 together, 1.5 s, for everyone, the same on every visit (FACTS 73, 78). */
+export const QUIZ_TRITONE: readonly RunNote[] = [
+  { t: 0, midi: midiOf(note('B', 0, 3)), dur: TOGETHER_SEC },
+  { t: 0, midi: midiOf(note('F')), dur: TOGETHER_SEC },
 ]
