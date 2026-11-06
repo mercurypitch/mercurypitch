@@ -291,6 +291,70 @@ describe('the TV stage', () => {
     expect(tv.stop).toHaveBeenCalledTimes(1)
   })
 
+  it('says idle as the room closes while the TV shows the stage, so the song does not run on there', async () => {
+    const tv = fakeDevice()
+    mount(tv.device, fakeMixer().controls)
+    tv.shows(true)
+    await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS * 2)
+    // The last frame before the room closes says the song is playing.
+    expect(frames(tv.sent).at(-1)?.playing).toBe(true)
+
+    dispose?.()
+    dispose = null
+    await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS * 4)
+
+    expect(tv.sent.at(-1)).toEqual({ v: 1, kind: 'idle' })
+  })
+
+  it('says idle as the room closes after the TV went back to the phone, so a TV that comes back gets no old song', async () => {
+    const tv = fakeDevice()
+    mount(tv.device, fakeMixer().controls)
+    tv.shows(true)
+    await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS)
+    // Mirroring off, or the TV switched to Lyrics: the app still keeps the
+    // song and the last frame for a stage page that loads later.
+    tv.shows(false)
+    const before = tv.sent.length
+
+    dispose?.()
+    dispose = null
+
+    expect(tv.sent.slice(before)).toEqual([{ v: 1, kind: 'idle' }])
+  })
+
+  it('keeps sending the clock when the microphone throws, and says so once', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mic?.unpublish()
+    const unpublish = publishLiveMic({
+      readings: () => {
+        throw new Error('no readings')
+      },
+      readingLagSec: () => 0.1,
+      score: () => {
+        throw new Error('no score')
+      },
+    })
+    try {
+      const tv = fakeDevice()
+      mount(tv.device, fakeMixer().controls)
+
+      tv.shows(true)
+      await vi.advanceTimersByTimeAsync(TV_STAGE_FRAME_MS * 3)
+
+      expect(frames(tv.sent)).toHaveLength(4)
+      expect(frames(tv.sent).at(-1)).toMatchObject({
+        position: 12,
+        playing: true,
+        singer: [],
+      })
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0]?.[0])).toContain('[tv stage]')
+    } finally {
+      unpublish()
+      warn.mockRestore()
+    }
+  })
+
   it('does nothing on a phone with no TV stage', async () => {
     mount({} as NativeDeviceApi, fakeMixer().controls)
 
