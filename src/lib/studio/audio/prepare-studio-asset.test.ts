@@ -54,7 +54,7 @@ describe('Studio asset preparation', () => {
     for (const [audio, message] of [
       [sampledAudio([[0], [0], [0]]), 'mono or stereo'],
       [sampledAudio([[0]], 44100), '48 kHz'],
-      [sampledAudio([[0, 0, 0]]), 'too long'],
+      [sampledAudio([[0, 0, 0]]), 'Studio import limit'],
       [sampledAudio([[NaN]]), 'invalid samples'],
     ] as const) {
       await expect(

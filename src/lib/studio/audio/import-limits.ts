@@ -2,6 +2,8 @@
 // Studio import limits — bounded preparation and explicit cancellation checkpoints
 // ============================================================
 
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+
 export interface StudioImportLimits {
   maxEncodedBytes: number
   maxFrames: number
@@ -70,6 +72,15 @@ export interface PcmAudio {
   getChannelData(channel: number): Float32Array
 }
 
+/** A length limit in words, as a refusal names it: "5-minute", "90-second", "90.5-second". */
+export function studioLengthLimitWords(frames: number): string {
+  const seconds = frames / STUDIO_SAMPLE_RATE
+  if (Number.isInteger(seconds / 60)) return `${seconds / 60}-minute`
+  return Number.isInteger(seconds)
+    ? `${seconds}-second`
+    : `${Number(seconds.toFixed(1))}-second`
+}
+
 export function validatePcmDimensions(
   audio: PcmAudio,
   limits: StudioImportLimits,
@@ -79,11 +90,11 @@ export function validatePcmDimensions(
   if (audio.numberOfChannels !== 1 && audio.numberOfChannels !== 2) {
     throw new Error('Choose mono or stereo audio.')
   }
-  if (
-    !Number.isSafeInteger(audio.length) ||
-    audio.length <= 0 ||
-    audio.length > limits.maxFrames
-  ) {
-    throw new Error('This audio is empty or too long. Choose a shorter file.')
-  }
+  if (!Number.isSafeInteger(audio.length) || audio.length <= 0)
+    throw new Error('This audio is empty. Choose another file.')
+  // Said as the size limit is ("over the 64 MB Studio import limit").
+  if (audio.length > limits.maxFrames)
+    throw new Error(
+      `This audio is over the ${studioLengthLimitWords(limits.maxFrames)} Studio import limit. Choose a shorter file.`,
+    )
 }

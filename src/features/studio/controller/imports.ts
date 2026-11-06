@@ -57,7 +57,12 @@ interface ImportControllerOptions {
   setImporting(value: boolean): void
   clearProblem(): void
   report(error: unknown): void
-  commit(command: StudioCommand, prepared: readonly StudioAssetData[]): boolean
+  /** The edit's refusal goes to `refused`, this import's own notice. */
+  commit(
+    command: StudioCommand,
+    prepared: readonly StudioAssetData[],
+    refused: (error: unknown) => void,
+  ): boolean
   flush(): Promise<unknown> | undefined
   createId(): string
   now(): Date
@@ -340,6 +345,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
       const committed = options.commit(
         commands.length === 1 ? commands[0] : { type: 'batch', commands },
         prepared,
+        options.report,
       )
       await options.flush()
       const landed = committed && options.current(epoch)

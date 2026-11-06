@@ -1,9 +1,10 @@
-// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, errors, editing elsewhere, an import, and recording. The record card floats over the lanes instead, so it mounts after the timeline.
+// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, errors, editing elsewhere, an import and why one was refused, and recording. The record card floats over the lanes instead, so it mounts after the timeline.
 import { Show } from 'solid-js'
 import { StudioRecordNotices } from './record/StudioRecordNotices'
 import type { StudioRecorderHandle } from './record/useStudioRecorder'
 import { StudioPlaybackNotice } from './sound/StudioPlaybackNotice'
 import styles from './StudioPage.module.css'
+import type { StudioController } from './useStudioController'
 
 export { StudioRecordStatus } from './record/StudioRecordNotices'
 
@@ -13,11 +14,16 @@ export interface StudioWorkspaceNoticesProps {
   onShowProgress(): void
   onShowSound(): void
   error: string | null
-  writable: boolean
-  busy: boolean
-  onTakeOver(): void
-  importing: boolean
-  onCancelImport(): void
+  studio: Pick<
+    StudioController,
+    | 'writable'
+    | 'busy'
+    | 'takeOver'
+    | 'importing'
+    | 'cancelImport'
+    | 'importRefusal'
+    | 'dismissImportRefusal'
+  >
   recorder: StudioRecorderHandle
 }
 
@@ -44,7 +50,7 @@ export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
           </p>
         )}
       </Show>
-      <Show when={!props.writable}>
+      <Show when={!props.studio.writable()}>
         <div class={styles.notice}>
           <p>
             This project is open in another tab, or editing has expired here.
@@ -52,24 +58,40 @@ export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
           <button
             type="button"
             class={styles.button}
-            disabled={props.busy}
-            onClick={() => props.onTakeOver()}
+            disabled={props.studio.busy()}
+            onClick={() => void props.studio.takeOver()}
           >
             Edit in this tab
           </button>
         </div>
       </Show>
-      <Show when={props.importing}>
+      <Show when={props.studio.importing()}>
         <div class={styles.notice} role="status">
           <p>Preparing audio…</p>
           <button
             type="button"
             class={styles.button}
-            onClick={() => props.onCancelImport()}
+            onClick={() => props.studio.cancelImport()}
           >
             Cancel import
           </button>
         </div>
+      </Show>
+      {/* A refused file or take is not a failed save: it has a notice of its
+          own, and nothing to copy, back up or reload. */}
+      <Show when={props.studio.importRefusal()}>
+        {(refusal) => (
+          <div class={styles.notice} role="alert" data-studio-import-refusal="">
+            <p>{refusal()}</p>
+            <button
+              type="button"
+              class={styles.textButton}
+              onClick={() => props.studio.dismissImportRefusal()}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
       </Show>
       <StudioRecordNotices recorder={props.recorder} />
     </>
