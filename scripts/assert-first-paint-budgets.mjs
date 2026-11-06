@@ -259,7 +259,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // of their own again, with its preload and imports, since the shell
   // loads none of them, as on Lesson 17's; they go once Lesson 19's cold
   // open and quizzes load them, but the 333 alone leave no room at 143.
-  'learn/05.html': 144,
+  // Raised to 145 for Lesson 22's page shell: 147,131 bytes on main before
+  // it, 147,565 with it, against 147,456 at 144. 238 of the 434 are on every
+  // lesson page: Lesson 22's tease and its alternative (kit/lesson-copy.ts,
+  // 179) and its drafts line (59). The other 196 are the bundler cutting the
+  // kit's shared code differently around a shell that loads the reveal but
+  // not the predict, as on Lessons 19's and 23's: bytes no module owns
+  // (139), a chunk's overhead (44) and the predict's code moved into the
+  // reveal's chunk (10), with 3 of the minifier's renaming. 144 can be tried
+  // again once Lesson 22's cold open loads the predict.
+  'learn/05.html': 145,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -426,6 +435,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // quarter over. The recall and quick check, the take (its judge and the
   // tap pad) and free play load after first paint.
   'learn/19.html': 187,
+  // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
+  // as Lesson 3 is: its own module on the kit, carrying Season 2's map
+  // (kit/season-2.ts) as a Season 2 page must; its shell: 86,821 bytes in
+  // build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/22.html': 85,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -581,6 +595,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
+  // Lesson 22 (a draft, as above), its shell: 82,325 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own, and the shared Inter and
+  // Outfit @font-face rules; the smallest whole KB above, to rise as each
+  // part joins, the guide's and the voice lessons' sheets with the recall
+  // and Sing it.
+  'learn/22.html': 81,
   // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
   // Sing it share, the staff toy's and its interval state's inlined into its

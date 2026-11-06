@@ -43,9 +43,11 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 16, 18, 20 to 22 and 24 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16, 18, 20, 21 and 24 to 28 yet: each is coming later', () => {
     // Assert
-    for (const L of LESSONS_2.filter((L) => ![15, 17, 19, 23].includes(L.n))) {
+    for (const L of LESSONS_2.filter(
+      (L) => ![15, 17, 19, 22, 23].includes(L.n),
+    )) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
       expect(L.film, `lesson ${L.n}`).toBeUndefined()
@@ -128,6 +130,32 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[19]).toEqual([17])
   })
 
+  it("gives Lesson 22 its page and its reading time, a draft with no film, and Voice Mirror's link", () => {
+    // Act
+    const L22 = LESSONS_2.find((L) => L.n === 22)
+
+    // Assert: Lesson 22's WEB-SPEC, Explorer and season data
+    expect([L22?.page, L22?.minutes, L22?.film, L22?.len]).toEqual([
+      '/learn/22',
+      15,
+      undefined,
+      undefined,
+    ])
+    expect(DRAFT_LESSONS[22]).toBe(
+      "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+    )
+    expect(L22?.pr.link).toEqual({
+      href: '/mirror?lesson=22',
+      addr: 'mercurypitch.com/mirror',
+      label: 'Voice Mirror',
+      note: 'its Hold: a vibrato reported, never scored',
+    })
+    // the drill it still needs stays the team's
+    expect(L22?.pr.needs).toMatch(/^The Vibrato exercise's copy and default/)
+    // Lesson 14 is its one way in
+    expect(SEASON_2.prereq[22]).toEqual([14])
+  })
+
   it("gives Lesson 23 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
     // Act
     const L23 = LESSONS_2.find((L) => L.n === 23)
@@ -154,7 +182,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[23]).toEqual([6])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15, 17, 19 and 23', () => {
+  it('has a page in the repository exactly where an entry has one: Lessons 15, 17, 19, 22 and 23', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -164,7 +192,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 17, 19, 23])
+    expect(pages).toEqual([15, 17, 19, 22, 23])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -275,7 +303,7 @@ describe('Season 2', () => {
     ])
   })
 
-  it('teases each of Lessons 16 to 20, 23 and 24 on the card before it, and carries no other copy of its own yet', () => {
+  it('teases each of Lessons 16 to 20 and 22 to 24 on the card before it, and carries no other copy of its own yet', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
@@ -327,6 +355,18 @@ describe('Season 2', () => {
         text: 'Squeeze three notes into a beat, then four, then more.',
       },
     ])
+    // Lesson 22 FACTS 5b: on Lesson 21's card, the cold open in miniature,
+    // and Lesson 21's plan's bridge from its fifths
+    const L22 = LESSONS_2.find((L) => L.n === 22)
+    expect(L22?.tease).toBe(
+      'Merc holds one note, and its line swings past both edges of the band.',
+    )
+    expect(L22?.teaseAlts).toEqual([
+      {
+        id: 'nudged',
+        text: 'Each fifth is nudged two cents. A held note can move far more.',
+      },
+    ])
     // Lesson 23 FACTS 5b: on Lesson 22's card, two notes held together, and
     // Lesson 22's planned line as it stands
     const L23 = LESSONS_2.find((L) => L.n === 23)
@@ -351,12 +391,12 @@ describe('Season 2', () => {
         text: 'Fifths count as settled, tritones lean. Next, a note against a drone.',
       },
     ])
-    for (const L of [L19, L20, L23, L24])
+    for (const L of [L19, L20, L22, L23, L24])
       for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
         expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if ((L.n >= 16 && L.n <= 20) || L.n === 23 || L.n === 24) continue
+      if ((L.n >= 16 && L.n <= 20) || (L.n >= 22 && L.n <= 24)) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

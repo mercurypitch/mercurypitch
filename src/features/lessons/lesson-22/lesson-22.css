@@ -1,0 +1,290 @@
+/* ============================================================
+   Lesson 22 — Vibrato: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage,
+   lesson-guide, lesson-parts and lesson-voice, imported by main.ts.
+
+   Here: Lesson 5's band chart between Merc and Tavi in the hero, with the
+   three plays under it (WEB-SPEC, Toys 1); the four words' small charts;
+   the steps' band chart with its two panels, its counter and ruler and its
+   rows of controls (Toys 2); Tavi's line in Step 3; Sing it's hold chart;
+   and the Wrap's cards, with the next card's tease still and free play. No
+   decorative staff: the section heads carry none, and the body's season-2
+   class drops the background's (kit/lesson-base.css). */
+
+/* ---------------------------------------------------------------- the hero */
+.l22-hero .hook {
+  font-size: clamp(30px, 3.3vw, 50px);
+  line-height: 1.06;
+  max-width: 15em;
+}
+/* four chips, which can wrap: rows 16 px apart keep their 44 px targets
+   from overlapping */
+.l22-hero .meta {
+  row-gap: 16px;
+}
+.l22-hero .duo {
+  --merc: clamp(120px, 13vw, 188px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  height: calc(var(--merc) * 1.32);
+}
+/* the band between Merc and Tavi, clear of Merc's bubble */
+.hero-chart {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  height: calc(var(--merc) * 1.02);
+  margin-top: calc(var(--merc) * 0.24);
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l22-hero .stage-shot {
+  padding-bottom: 22px;
+}
+.l22-hero .hero-plays {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.l22-hero .pq {
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.2;
+}
+@media (max-width: 560px) {
+  .l22-hero .hook {
+    font-size: 30px;
+    line-height: 1.08;
+  }
+  .l22-hero .duo {
+    --merc: min(31vw, 124px);
+    grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+  .l22-hero .merc-blue {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .l22-hero .merc-orange {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .hero-chart {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 200px;
+    margin-top: 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure a small band chart, as wide as the stub lets it be */
+.l22-words .word-chart {
+  position: relative;
+  height: 120px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- the band chart's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.vib-toy > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.vib-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+/* Step 4: the sung wave beside the app's mark, one above the other on a phone */
+.vib-panels.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.vib-panel {
+  min-width: 0;
+}
+.vib-tag {
+  margin: 0 0 6px;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.vib-viz {
+  position: relative;
+  height: 220px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.vib-ribbon {
+  display: grid;
+  place-items: center;
+  height: 220px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+}
+.vib-ribbon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Step 2's counter and ruler, under the chart */
+.vib-meters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 0;
+}
+.vib-meters p {
+  margin: 0;
+  font: 600 var(--fs-16) / 1.3 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.vib-count.is-peak {
+  color: var(--amber);
+}
+.vib-sliders {
+  display: grid;
+  gap: 10px;
+}
+.vib-sliders .slider-row {
+  min-width: 0;
+}
+.vib-plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.vib-toy .lock-hint {
+  margin: 12px 0 0;
+}
+@media (max-width: 560px) {
+  .vib-viz,
+  .vib-ribbon {
+    height: 160px;
+  }
+  .vib-panels.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Tavi's question in Step 3: a bubble beside her still */
+.l22-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l22-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l22-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l22-says .bubble::after {
+  display: none;
+}
+/* Step 3's own predict, in the step's text */
+.step-predict {
+  margin: 0 0 16px;
+}
+.step-plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.hold-chart {
+  height: 262px;
+}
+.sing-card .phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 14px 0 0;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sing-card .phases .is-now {
+  color: var(--aqua);
+}
+.hold-cue b {
+  color: var(--ink);
+}
+@media (max-width: 420px) {
+  .hold-chart {
+    height: 232px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l22-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l22-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l22-app a.addr {
+  text-decoration: none;
+}
+.l22-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 23's opening, an upright
+   pitch line between Merc and Tavi with only its two Cs, under a class of
+   its own, apart from .next-tease; nothing moves and nothing glows */
+.l22-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l22-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l22-tease-line {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.l22-tease-end {
+  fill: var(--chrome);
+}
+.l22-tease-name,
+.l22-tease-words {
+  font: 500 11px / 1 var(--f-mono);
+  fill: var(--ink-2);
+}
+.l22-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l22-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l22-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.free-states {
+  margin: 0 0 12px;
+}

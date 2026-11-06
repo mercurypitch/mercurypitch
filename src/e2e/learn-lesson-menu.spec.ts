@@ -270,6 +270,8 @@ const NO_FILM = [
     steps: 4,
   },
   // it teaches in four steps
+  { n: 22, title: 'Vibrato', steps: 4 },
+  // it teaches in four steps
   { n: 23, title: 'Perfect, major, minor and the tritone', steps: 4 },
 ] as const
 

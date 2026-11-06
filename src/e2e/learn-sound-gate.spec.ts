@@ -34,6 +34,7 @@ const LESSONS = [
   '15',
   '17',
   '19',
+  '22',
   '23',
 ] as const
 const VIEWPORTS = [
