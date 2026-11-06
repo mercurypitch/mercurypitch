@@ -201,9 +201,7 @@ describe('the result each door leads with', () => {
   ] as const)('%s leads with the range summary: %s', (intent, leads) => {
     const container = renderResults(intent, result)
 
-    expect(container.querySelector('.mirror-range-result') !== null).toBe(
-      leads,
-    )
+    expect(container.querySelector('.mirror-range-result') !== null).toBe(leads)
   })
 })
 
@@ -212,34 +210,34 @@ function renderResults(
   intent: MirrorEntryIntent,
   result: MirrorResult,
 ): HTMLElement {
-    const noop = (): void => {}
-    const { container } = render(() => (
-      <Results
-        entryIntent={intent}
-        result={result}
-        deltaLine={null}
-        shareStatus={null}
-        revealed={false}
-        revealMode="flip"
-        twinReady={false}
-        includeTrace={false}
-        onToggleTrace={noop}
-        cardFormat="square"
-        onToggleFormat={noop}
-        twinTrace={false}
-        onToggleTwinTrace={noop}
-        twinData={false}
-        onToggleTwinData={noop}
-        onToggleReveal={noop}
-        onShare={noop}
-        onShareTwin={noop}
-        onCopy={noop}
-        onCopyLink={noop}
-        onCosmic={noop}
-        onStartOver={noop}
-        appUrl="/"
-        voiceprintRef={noop}
-      />
-    ))
-    return container
+  const noop = (): void => {}
+  const { container } = render(() => (
+    <Results
+      entryIntent={intent}
+      result={result}
+      deltaLine={null}
+      shareStatus={null}
+      revealed={false}
+      revealMode="flip"
+      twinReady={false}
+      includeTrace={false}
+      onToggleTrace={noop}
+      cardFormat="square"
+      onToggleFormat={noop}
+      twinTrace={false}
+      onToggleTwinTrace={noop}
+      twinData={false}
+      onToggleTwinData={noop}
+      onToggleReveal={noop}
+      onShare={noop}
+      onShareTwin={noop}
+      onCopy={noop}
+      onCopyLink={noop}
+      onCosmic={noop}
+      onStartOver={noop}
+      appUrl="/"
+      voiceprintRef={noop}
+    />
+  ))
+  return container
 }

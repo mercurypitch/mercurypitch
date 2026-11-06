@@ -13,7 +13,10 @@
 
 import { entryPath } from '@/lib/entry-path'
 
-export type KaraokeEntryIntent = 'karaoke-night' | 'vocal-remover' | 'karaoke-app'
+export type KaraokeEntryIntent =
+  | 'karaoke-night'
+  | 'vocal-remover'
+  | 'karaoke-app'
 
 /** The landing at `pathname`, in its clean form or as the document Vite serves. */
 export function karaokeEntryIntent(pathname: string): KaraokeEntryIntent {

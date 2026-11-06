@@ -42,8 +42,8 @@ import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemo
 import { karaokeEntryIntent } from './entry-intent'
 import { exampleLinkSlug, findExampleBySongSlug } from './example-links'
 import { trackKaraoke } from './funnel'
-import { KaraokeHero } from './KaraokeHero'
 import { returnTourOffer, spendTourOffer, tourBelongsAt, tourOfferDue, } from './karaoke-tour-offer'
+import { KaraokeHero } from './KaraokeHero'
 import type { KaraokeSong } from './KaraokeRailPanels'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
 
