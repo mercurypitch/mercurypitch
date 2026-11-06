@@ -427,6 +427,34 @@ export interface VibratoInfo {
   extentCents: number
 }
 
+/** Cents the fitted sine must swing either side for a vibrato to count (v1.1). */
+export const VIBRATO_MIN_CENTS = 10
+
+/**
+ * Voice Mirror's rule for a vibrato in a stretch of voiced frames (v1.1):
+ * the shared detector finds a modulation, its rate lies inside the singerly
+ * band, and the sine fitted near that rate swings at least 10 cents either
+ * side. The amplitude is that fit's, by single-frequency projection: the
+ * analyzer's own depthCents is 2×RMS of the whole signal and overstates on
+ * noisy or drifting takes. Null when any of the three fails. Steadiness
+ * runs it once over a whole trimmed hold and free singing over its longest
+ * run; Lesson 22's centre-line reader runs it window by window
+ * (src/features/lessons/kit/hold-centre.ts), so all three judge a stretch
+ * of frames alike.
+ */
+export function findVibrato(
+  frames: readonly VoicedFrame[],
+): { rateHz: number; amplitude: number } | null {
+  const vib = detectVibrato(
+    frames.map((f) => ({ time: f.t, freq: 0, midi: f.cents / 100 })),
+  )
+  const singerly =
+    vib.detected && vib.rateHz >= VIBRATO_MIN_HZ && vib.rateHz <= VIBRATO_MAX_HZ
+  if (!singerly) return null
+  const fit = bestSinusoidFit(frames, vib.rateHz)
+  return fit.amplitude >= VIBRATO_MIN_CENTS ? fit : null
+}
+
 export interface SteadinessResult {
   /** The singer's own median pitch, MIDI-cents. */
   referenceCents: number
@@ -488,26 +516,18 @@ export function computeSteadiness(
     kept.reduce((s, f) => s + (f.cents - (slope * f.t + intercept)) ** 2, 0) / n
 
   // v1.1: vibrato is a feature, not wobble. The FFT detector finds the
-  // modulation RATE; the amplitude is measured here by projecting the
-  // detrended residual onto that single frequency (the analyzer's own
-  // depthCents is 2×RMS of the WHOLE signal — subtracting that would erase
-  // real wobble along with the vibrato). Broadband shakiness projects only
-  // weakly onto one frequency, so an unsteady voice stays unsteady.
-  const vib = detectVibrato(
-    kept.map((f) => ({ time: f.t, freq: 0, midi: f.cents / 100 })),
-  )
+  // modulation RATE; the amplitude is measured by projecting the
+  // detrended residual onto that single frequency (`findVibrato`; the
+  // analyzer's own depthCents is 2×RMS of the WHOLE signal — subtracting
+  // that would erase real wobble along with the vibrato). Broadband
+  // shakiness projects only weakly onto one frequency, so an unsteady
+  // voice stays unsteady.
+  const fit = findVibrato(kept)
   let vibrato: VibratoInfo | null = null
   let wobble = Math.sqrt(residualVariance)
-  if (
-    vib.detected &&
-    vib.rateHz >= VIBRATO_MIN_HZ &&
-    vib.rateHz <= VIBRATO_MAX_HZ
-  ) {
-    const fit = bestSinusoidFit(kept, vib.rateHz)
-    if (fit.amplitude >= 10) {
-      vibrato = { rateHz: fit.rateHz, extentCents: Math.round(fit.amplitude) }
-      wobble = Math.sqrt(Math.max(0, residualVariance - fit.amplitude ** 2 / 2))
-    }
+  if (fit !== null) {
+    vibrato = { rateHz: fit.rateHz, extentCents: Math.round(fit.amplitude) }
+    wobble = Math.sqrt(Math.max(0, residualVariance - fit.amplitude ** 2 / 2))
   }
 
   const referenceCents = median(kept.map((f) => f.cents))

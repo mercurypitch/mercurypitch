@@ -75,6 +75,25 @@ export interface HoldReading {
   readonly octaveLine: string | null
 }
 
+/**
+ * The held voice as a page's own line reads it (Lesson 22's centre-line
+ * reader, kit/hold-centre.ts): the run's voiced frames, from the first, up
+ * to the hold's end or an early stop; each one's distance from Merc's note,
+ * folded into his octave; and the frames' hop.
+ */
+export interface HeldRun {
+  readonly frames: readonly VoicedFrame[]
+  readonly folded: readonly number[]
+  readonly hop: number
+}
+
+/**
+ * A line to read a hold on in place of its raw distance from Merc's note:
+ * one distance a frame of the run, which the band test, the settling and
+ * the lines then read by this reader's own rules.
+ */
+export type HoldLine = (run: HeldRun) => readonly number[]
+
 /** Seconds as the page prints them: "8.4", "10", "0.5". */
 export function fmtSeconds(s: number): string {
   const r = Math.round(s * 10) / 10
@@ -260,12 +279,14 @@ function holdLine(r: Omit<HoldReading, 'line' | 'octaveLine'>): string {
 
 /**
  * Reads one hold: the raw frames of a take (time from the take opening)
- * against Merc's note (MIDI), for a hold of `length` seconds.
+ * against Merc's note (MIDI), for a hold of `length` seconds; on `lineOf`'s
+ * line where a page gives one, and on the raw distance otherwise.
  */
 export function readHold(
   frames: readonly F0Frame[],
   target: number,
   length: number,
+  lineOf?: HoldLine,
 ): HoldReading {
   const voiced = preprocess(frames)
   const opened = frames[0]?.t ?? 0
@@ -280,13 +301,15 @@ export function readHold(
   if (sung < STEADY_SEC) return blank('unsteady', length)
   const onset = run.frames[0].t
   const diffs = run.frames.map((v) => v.cents - target * 100)
-  const folded = diffs.map(foldCents)
-  // the frame after the run too, which a stall at the hold's end reaches
-  const inside = voiced
-    .slice(0, run.frames.length + 1)
-    .map(
-      (v) => Math.abs(foldCents(v.cents - target * 100)) <= HIT_TOLERANCE_CENTS,
-    )
+  const raw = diffs.map(foldCents)
+  const folded = lineOf?.({ frames: run.frames, folded: raw, hop }) ?? raw
+  // the frame after the run too, which a stall at the hold's end reaches,
+  // at its raw distance: it is past the hold's end
+  const after = voiced.slice(run.frames.length, run.frames.length + 1)
+  const inside = [
+    ...folded,
+    ...after.map((v) => foldCents(v.cents - target * 100)),
+  ].map((d) => Math.abs(d) <= HIT_TOLERANCE_CENTS)
   const held = bandSpans(spans, inside, hop)
   const inSeconds = held.reduce((a, b) => a + b, 0)
   const of = run.early ? round10(run.end - onset) : length
@@ -328,16 +351,18 @@ export function countedTake(takes: readonly HoldReading[]): HoldReading | null {
 }
 
 /**
- * After the fifteen-second hold: "This time your line was in the band for
- * 8.4 of 10 seconds, then 12.9 of 15.", or the first alone while the second
- * has no reading; null without a first.
+ * After the second hold: "This time your line was in the band for 8.4 of
+ * 10 seconds, then 12.9 of 15.", or the first alone while the second has no
+ * reading; null without a first. `subject` is what was in the band: "your
+ * line", or Lesson 22's "the middle of your line".
  */
 export function holdSummary(
   first: HoldReading | null,
   second: HoldReading | null,
+  subject = 'your line',
 ): string | null {
   if (first === null) return null
-  const one = `This time your line was in the band for ${fmtSeconds(first.inBand)} of ${fmtSeconds(first.length)} seconds`
+  const one = `This time ${subject} was in the band for ${fmtSeconds(first.inBand)} of ${fmtSeconds(first.length)} seconds`
   if (second === null) return `${one}.`
   return `${one}, then ${fmtSeconds(second.inBand)} of ${fmtSeconds(second.length)}.`
 }
