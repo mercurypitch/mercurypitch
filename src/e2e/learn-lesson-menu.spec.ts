@@ -269,6 +269,8 @@ const NO_FILM = [
     sing: 'Tap the beat',
     steps: 4,
   },
+  // it teaches in four steps
+  { n: 23, title: 'Perfect, major, minor and the tritone', steps: 4 },
 ] as const
 
 for (const entry of NO_FILM) {

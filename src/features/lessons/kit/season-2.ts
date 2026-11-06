@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15, 17 and 19 have their pages, drafts (drafts.ts); every other
+// Lessons 15, 17, 19 and 23 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -217,6 +217,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Perfect, major, minor and the tritone',
     short: 'Interval quality',
     topics: ['T13'],
+    // A draft until Lesson 6's page is live and the vocal coach has looked
+    // at Sing it (drafts.ts).
+    minutes: 14,
+    page: '/learn/23',
     hook: 'Which interval splits the octave exactly in half, and why does it want to move?',
     pr: {
       needs:

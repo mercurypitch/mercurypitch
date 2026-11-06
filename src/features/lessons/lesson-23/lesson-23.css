@@ -1,0 +1,251 @@
+/* ============================================================
+   Lesson 23 — Perfect, major, minor and the tritone: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage,
+   lesson-guide, lesson-parts and lesson-voice, imported by main.ts, and the
+   staff toy's sheet, its interval state among it, taken in here by @import
+   so it inlines into this page's own sheet and splits no chunk the other
+   lessons share (MISTAKES.md, on the lessons' base stylesheet).
+
+   Here: the hero's upright pitch line between Merc and Tavi, with the three
+   plays under it; the staff toy's stage and its rows (WEB-SPEC, Toys 1);
+   Tavi's lines in Steps 2 and 4; Sing it's staff beside the still of the
+   Merc who sings, and the listening pair's small staff; and the Wrap's
+   cards, with the next card's tease still and free play. No decorative
+   staff: the section heads carry none, and the body's season-2 class drops
+   the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-staff.css';
+
+/* ---------------------------------------------------------------- hero: the upright pitch line between Merc and Tavi */
+.l23-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(270px, 25vw, 340px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the pitch line's foot, where Merc and Tavi stand */
+.l23-duo .floor {
+  top: var(--line-h);
+}
+.l23-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l23-duo .merc-blue {
+  grid-column: 1;
+}
+.l23-duo .merc-orange {
+  grid-column: 3;
+}
+.l23-duo .hero-line {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--line-h);
+}
+.l23-duo .hero-line svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the three plays sit under the stage, outside the predict card */
+.l23-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l23-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --line-h: clamp(270px, 42vw, 360px);
+  }
+  /* Play C up to C sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width) */
+  .l23-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone the pitch line stands in the stage's middle, and Merc and Tavi stand smaller either side of its foot */
+@media (max-width: 560px) {
+  .l23-duo {
+    --merc: min(25vw, 100px);
+    --line-h: 264px;
+    margin-top: 2px;
+  }
+  .l23-duo .hero-line {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure a small staff, as wide as the stub lets it be */
+.ticket .stub svg.word-fig {
+  width: 80px;
+  height: 120px;
+}
+
+/* ---------------------------------------------------------------- the staff toy's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* Step up, Step down, the signs, Fold and Curl, then the clef and the
+   pitch-line switch, then the step's own plays, each a row straight under
+   the readout that wraps on a phone */
+.staff-toy .staff-row,
+.staff-toy .staff-plays {
+  margin-top: 10px;
+}
+.staff-toy .controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* Treble · Bass: each button a 44 px target */
+.staff-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Tavi's questions in Steps 2 and 4: a bubble beside her still */
+.l23-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l23-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l23-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l23-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l23-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l23-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l23-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l23-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l23-sing .voice-clef {
+  margin: 14px 0 12px;
+  color: var(--ink-2);
+}
+/* the learner's staff, the still of the Merc who sings beside it */
+.l23-sing-staff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+}
+.l23-sing-staff .viz {
+  height: 230px;
+}
+.l23-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.l23-sing-staff .staff-row {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+/* then just listen: its words, its small staff and its play, after the feeling question */
+.l23-listen {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+.l23-listen p {
+  margin: 0 0 12px;
+}
+.l23-pair-staff .viz {
+  height: 170px;
+}
+@media (max-width: 560px) {
+  .l23-sing-staff {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+  .l23-sing-staff .viz {
+    height: 210px;
+  }
+  .l23-sing-staff .sing-merc {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l23-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l23-app .rest-line {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l23-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l23-app a.addr {
+  text-decoration: none;
+}
+.l23-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 24's drone band on A3
+   and a thin chrome line just above it, under a class of its own, apart
+   from .next-tease; nothing moves and nothing glows */
+.l23-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l23-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l23-tease-band {
+  fill: color-mix(in srgb, var(--chrome) 16%, transparent);
+  stroke: var(--hair-2);
+}
+.l23-tease-line {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.l23-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

@@ -44,4 +44,5 @@ export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {
   15: "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
   17: "Lesson 8's page at /learn/08, and the vocal coach's look at the sung part",
   19: "Lesson 17's page at /learn/17",
+  23: "Lesson 6's page at /learn/06, and the vocal coach's look at Sing it",
 }

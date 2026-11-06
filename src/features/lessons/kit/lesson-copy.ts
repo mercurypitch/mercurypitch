@@ -162,6 +162,25 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  23: {
+    tease:
+      'One note, swinging. Now two notes together: one pair wants to move.',
+    teaseAlts: [
+      {
+        id: 'hold',
+        text: 'One note, swinging. Now hold two together: one pair wants to move.',
+      },
+    ],
+  },
+  24: {
+    tease: 'A drone, and a second note just above it, almost in tune.',
+    teaseAlts: [
+      {
+        id: 'fifths',
+        text: 'Fifths count as settled, tritones lean. Next, a note against a drone.',
+      },
+    ],
+  },
 }
 
 /**

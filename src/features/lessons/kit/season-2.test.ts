@@ -43,9 +43,9 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 16, 18 and 20 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16, 18, 20 to 22 and 24 to 28 yet: each is coming later', () => {
     // Assert
-    for (const L of LESSONS_2.filter((L) => ![15, 17, 19].includes(L.n))) {
+    for (const L of LESSONS_2.filter((L) => ![15, 17, 19, 23].includes(L.n))) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
       expect(L.film, `lesson ${L.n}`).toBeUndefined()
@@ -128,7 +128,33 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[19]).toEqual([17])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15, 17 and 19', () => {
+  it("gives Lesson 23 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+    // Act
+    const L23 = LESSONS_2.find((L) => L.n === 23)
+
+    // Assert: Lesson 23's WEB-SPEC, Explorer and season data
+    expect([L23?.page, L23?.minutes, L23?.film, L23?.len]).toEqual([
+      '/learn/23',
+      14,
+      undefined,
+      undefined,
+    ])
+    expect(DRAFT_LESSONS[23]).toBe(
+      "Lesson 6's page at /learn/06, and the vocal coach's look at Sing it",
+    )
+    expect(L23?.pr.link).toEqual({
+      href: '/ear-lab?lesson=23',
+      addr: 'mercurypitch.com/ear-lab',
+      label: 'Ear Lab',
+      note: 'then tap Leap',
+    })
+    // the drill it still needs stays the team's
+    expect(L23?.pr.needs).toMatch(/^Leap with only the perfect intervals/)
+    // a cross-season edge: Lesson 6 is its one way in
+    expect(SEASON_2.prereq[23]).toEqual([6])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lessons 15, 17, 19 and 23', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -138,7 +164,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 17, 19])
+    expect(pages).toEqual([15, 17, 19, 23])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -249,7 +275,7 @@ describe('Season 2', () => {
     ])
   })
 
-  it('teases each of Lessons 16 to 20 on the card before it, and carries no other copy of its own yet', () => {
+  it('teases each of Lessons 16 to 20, 23 and 24 on the card before it, and carries no other copy of its own yet', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
@@ -301,12 +327,36 @@ describe('Season 2', () => {
         text: 'Squeeze three notes into a beat, then four, then more.',
       },
     ])
-    for (const L of [L19, L20])
+    // Lesson 23 FACTS 5b: on Lesson 22's card, two notes held together, and
+    // Lesson 22's planned line as it stands
+    const L23 = LESSONS_2.find((L) => L.n === 23)
+    const L24 = LESSONS_2.find((L) => L.n === 24)
+    expect(L23?.tease).toBe(
+      'One note, swinging. Now two notes together: one pair wants to move.',
+    )
+    expect(L23?.teaseAlts).toEqual([
+      {
+        id: 'hold',
+        text: 'One note, swinging. Now hold two together: one pair wants to move.',
+      },
+    ])
+    // Lesson 23 FACTS 5: on Lesson 23's card, Lesson 24's opening in
+    // miniature, and the plan's line mended
+    expect(L24?.tease).toBe(
+      'A drone, and a second note just above it, almost in tune.',
+    )
+    expect(L24?.teaseAlts).toEqual([
+      {
+        id: 'fifths',
+        text: 'Fifths count as settled, tritones lean. Next, a note against a drone.',
+      },
+    ])
+    for (const L of [L19, L20, L23, L24])
       for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
         expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n >= 16 && L.n <= 20) continue
+      if ((L.n >= 16 && L.n <= 20) || L.n === 23 || L.n === 24) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }
