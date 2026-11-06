@@ -148,6 +148,18 @@ export function StudioPage() {
                 </button>
               </Show>
               <Show when={studio.project()}>
+                {/* Editing went to another tab: the way back is here, as the
+                    workspace's own notice stands aside for this banner. */}
+                <Show when={!studio.writable()}>
+                  <button
+                    type="button"
+                    class={styles.button}
+                    disabled={studio.busy()}
+                    onClick={() => void studio.takeOver()}
+                  >
+                    Edit in this tab
+                  </button>
+                </Show>
                 <button
                   type="button"
                   class={styles.button}
@@ -164,13 +176,20 @@ export function StudioPage() {
                 >
                   Save project backup
                 </button>
+                {/* Nothing unsaved: a reload has nothing to discard or ask. */}
                 <button
                   type="button"
                   class={styles.button}
                   disabled={studio.busy()}
-                  onClick={() => setConfirmation('discard')}
+                  onClick={() =>
+                    studio.hasUnsavedChanges()
+                      ? setConfirmation('discard')
+                      : void studio.discardAndReload()
+                  }
                 >
-                  Discard changes and reload
+                  {studio.hasUnsavedChanges()
+                    ? 'Discard changes and reload'
+                    : 'Reload'}
                 </button>
               </Show>
             </div>
