@@ -83,6 +83,26 @@ measured from the encoded output, including tails and processing. An unmet targe
 shall show the achieved value. Live meters shall not imply final integrated
 loudness. Project backups and rendered songs shall remain separate actions.
 
+### REQ-STU-013 — Storage quality per device
+
+**WHEN** a musician first adds a file or kept take on a device that has no
+storage choice, Studio shall ask how new audio is kept, with Full quality
+preselected, before the import is prepared, and shall offer to remember the
+answer on that device. **WHERE** Save space is chosen, Studio shall keep the
+canonical copy of new audio as 16-bit steps, exact for 16-bit 48 kHz sources,
+and shall still keep the original bytes. Playback, renders and exports shall
+run on 32-bit floats in both modes. A take shall keep the format it was
+imported with; changing the choice shall not change audio already in a song.
+A take recorded in Studio shall not wait on the question. Cancelling the
+question shall cancel the import without an error.
+
+### REQ-STU-014 — Persistent storage
+
+**WHEN** the first import or take on a device is kept, Studio shall ask the
+browser once to keep its storage from eviction, and shall say in Song options
+and the song list whether the browser keeps the songs, may clear them, or
+does not say.
+
 ### REQ-STU-012 — Scope
 
 **Ubiquitous:** v1 shall arrange existing audio and uploads. MIDI editing, tempo

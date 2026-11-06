@@ -202,6 +202,20 @@
   margin-top: 0.35rem;
 }
 
+/* Controls a caller adds before the buttons (`children`): a choice to make
+   before confirming. Their own paragraphs keep the body copy's size but not
+   its gap, which the column's gap replaces. */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: -0.5rem 0 0.25rem;
+}
+
+.content p {
+  margin: 0;
+}
+
 .stacked {
   flex-direction: column;
   align-items: stretch;

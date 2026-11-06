@@ -61,6 +61,7 @@ function mountPage(problem: string | null = null) {
     problem: () => problem,
     saveState: () => 'error',
     writable: () => true,
+    protection: () => null,
     refreshProjects: vi.fn(),
     canBackup: vi.fn(() => true),
     openForBackup: vi.fn(async () => true),
