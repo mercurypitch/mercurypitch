@@ -42,6 +42,7 @@
       content="The title card: Find Your Pitch, Lesson 02, Twelve notes, above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome notes, one of them sharp."
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mercurypitch7" />
     <meta
       name="twitter:title"
       content="Twelve notes: Find Your Pitch, Lesson 2"
@@ -63,8 +64,11 @@
          defines. Every value repeats something the page already says, so it
          changes when they do; the headline is also this lesson's link text
          in every entry document's nav (tools/lesson-links.ts). datePublished
-         is the day the lesson went live on mercurypitch.com. No VideoObject:
-         it belongs on the watch page (docs/plans/find-your-pitch/SEARCH.md).
+         is the day the lesson went live on mercurypitch.com, dateModified the
+         last day its words or links changed. A change to the head alone is
+         not one, so this can be earlier than the page's lastmod in
+         public/sitemap.xml, which counts the head too. No VideoObject: it
+         belongs on the watch page (docs/plans/find-your-pitch/SEARCH.md).
          -->
     <script type="application/ld+json">
       {
@@ -89,6 +93,7 @@
         ],
         "isAccessibleForFree": true,
         "datePublished": "2026-10-26",
+        "dateModified": "2026-11-01",
         "position": 2,
         "isPartOf": {
           "@type": "CreativeWorkSeries",

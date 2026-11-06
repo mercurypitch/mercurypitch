@@ -931,7 +931,7 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   // unlisted pilot. See the sitemap and src/tests/launch-entry-seo.test.ts.
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
-    'index, follow',
+    'index, follow, max-image-preview:large',
   )
   expect(await boundaryCounts(page)).toEqual({
     audio: 0,

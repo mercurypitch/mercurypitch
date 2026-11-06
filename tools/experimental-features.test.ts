@@ -183,7 +183,7 @@ describe('a build with experimental features on', () => {
         expect(document, page.slug).toContain('href="/studio-night"')
     }
     expect(renderEntryPage(studio, { unlisted })).toContain(
-      '<meta name="robots" content="index, follow" />',
+      '<meta name="robots" content="index, follow, max-image-preview:large" />',
     )
     expect(renderErrorPage('not-found', { unlisted })).toContain(
       'href="/studio-night"',

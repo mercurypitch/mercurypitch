@@ -107,6 +107,21 @@ describe.each(WATCHED)('watch page %i', (n) => {
     expect(meta(doc, 'description')).not.toBe(meta(lessonDoc, 'description'))
   })
 
+  // Google cuts a description near 160 characters, as it does a lesson's.
+  // Both films' ran to 167 and 199 until the SEO audit of 6 Nov 2026, and
+  // their share descriptions said the same words, so they are held too.
+  it('describes the film in words a result shows whole', () => {
+    for (const key of [
+      'description',
+      'og:description',
+      'twitter:description',
+    ]) {
+      const text = meta(doc, key) ?? ''
+      expect(text.length, key).toBeGreaterThan(80)
+      expect(text.length, key).toBeLessThanOrEqual(160)
+    }
+  })
+
   it('has one h1, the lesson title', () => {
     const h1s = doc.querySelectorAll('h1')
     expect(h1s).toHaveLength(1)

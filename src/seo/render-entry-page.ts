@@ -10,8 +10,17 @@
 import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
 import type { StoreListings } from '../lib/store-listings'
 import type { EntryPage } from './entry-pages'
-import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, ORGANIZATION_ID, SITE_ORIGIN, STUDIO_APP_ID, } from './entry-pages'
+import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, OG_IMAGE_SIZE, ORGANIZATION_ID, SITE_ORIGIN, STUDIO_APP_ID, X_SITE_HANDLE, } from './entry-pages'
 import { smartAppBannerTag } from './store-presence'
+
+/**
+ * The robots directive of an entry document this build lists. The share cards
+ * are 1200 px wide, and Search and Discover show one large only where the page
+ * allows it, as the lessons' heads already do.
+ */
+export const LISTED_ROBOTS = 'index, follow, max-image-preview:large'
+/** An entry this build serves but keeps out of discovery (`unlisted`). */
+export const UNLISTED_ROBOTS = 'noindex, follow'
 
 /** Escape for an attribute value or text node. */
 export function esc(value: string): string {
@@ -124,9 +133,7 @@ export function renderEntryPage(
   // Safari's Smart App Banner, only once the App Store listing is live
   // (src/seo/store-presence.ts).
   const banner = smartAppBannerTag(options.listings)
-  const robots = unlisted.includes(page.slug)
-    ? 'noindex, follow'
-    : 'index, follow'
+  const robots = unlisted.includes(page.slug) ? UNLISTED_ROBOTS : LISTED_ROBOTS
   const nav = navLinksFor(page, unlisted, options.lessons)
     .map((link) => `        <a href="${esc(link.href)}">${esc(link.label)}</a>`)
     .join('\n')
@@ -174,6 +181,7 @@ ${page.faq
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="${X_SITE_HANDLE}" />
     <meta name="twitter:title" content="${esc(page.twitter.title)}" />
     <meta
       name="twitter:description"

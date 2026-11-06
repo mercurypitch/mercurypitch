@@ -207,7 +207,7 @@ describe('a stop that is a page', () => {
   it("opens Karaoke Night at its tour's address when the tour is asked for", () => {
     enterStop(stopAt('karaokeNight'), true)
 
-    expect(browser.href).toBe('/karaoke?tour=first')
+    expect(browser.href).toBe('/karaoke-night?tour=first')
     expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })
 

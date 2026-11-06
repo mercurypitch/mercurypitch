@@ -10,7 +10,8 @@
 //
 // - served, always: glass-game.html, its staged assets and the service-worker
 //   rule for the clean path;
-// - the entry document's robots meta: `index, follow` or `noindex, follow`;
+// - the entry document's robots meta: `index, follow, max-image-preview:large`
+//   or `noindex, follow`;
 // - sitemap.xml, llms.txt, and every other document's prelude nav;
 // - the Home card and the Home tour step, by strings only they carry. The
 //   switch is a build constant, so an unlisted bundle has none of them.
@@ -59,7 +60,9 @@ if (existsSync(join(root, 'glass-game.html'))) {
   const robots = /<meta name="robots" content="([^"]*)"/.exec(
     read('glass-game.html'),
   )?.[1]
-  const expected = listed ? 'index, follow' : 'noindex, follow'
+  const expected = listed
+    ? 'index, follow, max-image-preview:large'
+    : 'noindex, follow'
   if (robots !== expected)
     failures.push(
       `glass-game.html robots is "${robots ?? '(none)'}", expected "${expected}"`,

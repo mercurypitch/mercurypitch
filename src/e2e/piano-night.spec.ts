@@ -154,7 +154,7 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   // an unlisted pilot. See the sitemap and src/tests/launch-entry-seo.test.ts.
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
-    'index, follow',
+    'index, follow, max-image-preview:large',
   )
 
   const fallAlignment = await page.evaluate(() => {
