@@ -1,27 +1,34 @@
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 
 const PERSISTENCE_ATTEMPT_KEY = 'mp.storage_persist_prompted.v1'
+/**
+ * The Studio's own attempt. Its songs are the largest audio the app keeps,
+ * often hundreds of megabytes, and a refusal given to stems on a first
+ * visit may be a yes once the site is used more (Chromium decides from
+ * that, without a prompt), so the Studio asks once on its own.
+ */
+const STUDIO_ATTEMPT_KEY = 'mp.storage_persist_prompted.studio.v1'
 
-let attemptedThisPage = false
+const attemptedThisPage = new Set<string>()
 
 /**
  * Claim the one persistence attempt allowed for this prompt version. The
  * in-memory guard still works when localStorage is unavailable.
  */
-function claimPersistenceAttempt(): boolean {
-  if (attemptedThisPage) return false
+function claimPersistenceAttempt(key: string): boolean {
+  if (attemptedThisPage.has(key)) return false
 
   try {
-    if (localStorage.getItem(PERSISTENCE_ATTEMPT_KEY) === '1') {
-      attemptedThisPage = true
+    if (localStorage.getItem(key) === '1') {
+      attemptedThisPage.add(key)
       return false
     }
-    localStorage.setItem(PERSISTENCE_ATTEMPT_KEY, '1')
+    localStorage.setItem(key, '1')
   } catch {
     // Storage access can be blocked in private or embedded contexts.
   }
 
-  attemptedThisPage = true
+  attemptedThisPage.add(key)
   return true
 }
 
@@ -73,7 +80,7 @@ export async function requestPersistentStorage(): Promise<boolean> {
  * Unsupported APIs, blocked storage, denials, and browser errors never fail
  * the completed separation that triggered this follow-up.
  */
-export type PersistentStorageReason = 'stems' | 'voice-takes'
+export type PersistentStorageReason = 'stems' | 'voice-takes' | 'studio'
 
 export async function ensurePersistentStorage(
   reason: PersistentStorageReason = 'stems',
@@ -90,13 +97,19 @@ export async function ensurePersistentStorage(
     }
   }
 
-  if (!claimPersistenceAttempt()) return false
+  if (
+    !claimPersistenceAttempt(
+      reason === 'studio' ? STUDIO_ATTEMPT_KEY : PERSISTENCE_ATTEMPT_KEY,
+    )
+  )
+    return false
 
   // Stems announce the request: the separation just finished and a prompt
   // out of nowhere would be a mystery. A kept take says "Take kept" on its
   // own page, and that page's rail footer carries the storage advice, so
-  // the request is silent there. The app announces nothing: it has no
-  // browser, and no prompt comes (review V2).
+  // the request is silent there, as the Studio's is: its Song options and
+  // song list say whether the songs are kept. The app announces nothing: it
+  // has no browser, and no prompt comes (review V2).
   if (reason === 'stems' && !IS_NATIVE_BUILD) {
     try {
       const { showNotification } = await import('@/stores/notifications-store')

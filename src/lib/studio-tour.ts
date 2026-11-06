@@ -44,7 +44,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Song options',
     targetSelector: '[data-tour="studio.song-options"]',
     description:
-      'Name this song, download a complete backup, make a copy, or return to your song library. Changes save in this browser.',
+      'Name this song, download a complete backup, make a copy, or return to your song library. Audio storage sets how new audio is kept on this device: Full quality, or Save space to fit more takes in a song. Changes save in this browser.',
     placement: 'bottom',
     whenPresent: true,
   },
