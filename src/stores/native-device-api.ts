@@ -58,6 +58,12 @@ export interface NativeNowPlaying {
   readonly interrupted?: boolean
 }
 
+/** Where the song is, as a TV showing the lyrics runs on from it. */
+export type NativeLyricsClock = Pick<
+  NativeNowPlaying,
+  'playing' | 'position' | 'duration' | 'rate'
+>
+
 /**
  * The system's progress bar let go at a place in the song: the notification's
  * and the shade's on Android, the lock screen's on both.
@@ -266,6 +272,16 @@ export interface NativeDeviceApi {
    * Absent where no TV can show them.
    */
   onTvLyrics?: (handler: (showing: boolean) => void) => () => void
+  /**
+   * iOS: where the song is, for a TV showing the lyrics, on the same moments
+   * as a Now Playing report (play, pause, a jump, a new speed or length).
+   * The TV and the window run on from the last report. Every Now Playing
+   * report carries this clock too, so the room tells it this way only while
+   * there are none: with "Keep playing in the background" off, the lock
+   * screen gets nothing, and without this the TV's lyrics stood still.
+   * Absent where no TV can show the lyrics.
+   */
+  tvLyricsClock?: (clock: NativeLyricsClock) => void
   /**
    * iOS: whether a screen is connected to the phone, by Screen Mirroring or
    * a cable, whatever it shows, now and on every change (TVLyrics.swift).
