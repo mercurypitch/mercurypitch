@@ -21,7 +21,6 @@
 // it, anywhere on the page, and a newer one stops them.
 
 import { q, qa, svg } from '@/features/lessons/kit/dom'
-import type { Spelled } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { pair, PAIR_SEC } from '@/features/lessons/kit/pair'
 import type { Run, RunNote } from '@/features/lessons/kit/run'
@@ -34,7 +33,7 @@ import type { Clef } from '@/features/lessons/kit/staff-places'
 import { midiOf } from '@/features/lessons/kit/staff-places'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import { bindWordPlays } from '@/features/lessons/kit/words-strip'
-import { note } from './sounds'
+import { note, voiced } from './sounds'
 import { learnerClef } from './steps'
 
 /** The four words, as their tickets' `data-word` and their buttons' `data-word-play` name them. */
@@ -91,10 +90,6 @@ const ROOM: readonly [number, number] = [-2, 10]
 
 const isWord = (w: string): w is WordId =>
   (WORD_IDS as readonly string[]).includes(w)
-
-/** A note written for the higher voice, as the learner's staff sounds it. */
-const voiced = (n: Spelled, clef: Clef): Spelled =>
-  clef === 'bass' ? { ...n, octave: n.octave - 1 } : n
 
 /** A word's figure: its staff in the learner's clef, the pair written so far, and its line. */
 function figureOf(word: WordId) {
