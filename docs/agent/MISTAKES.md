@@ -528,6 +528,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** take the sound to be on AirPlay where the route says airplay, or where the page's newest AudioContext made without a rate asked for runs at a rate other than the app session's, on the speaker or receiver, with no screen connected. A context keeps its rate for life, so read each new one as it is made.
 **See:** `src/stores/airplay-suspicion.ts`, `notePageAudioContext` in `apps/mercurypitch/src/infrastructure/native-device.ts`.
 
+### Play nothing beside Web Audio while the sound is on AirPlay alone (iOS)
+
+**Symptom:** over AirPlay (not Screen Mirroring) to an LG C2, the Karaoke song's clock ran while no sound came from the TV or the phone, and the TV showed the carrier's Now Playing with a spinner (mp-v0.8.52 to 0.8.55).
+**Cause:** the Developer screen's AirPlay sound check (6 Nov 2026): Web Audio alone reached the TV, and so did Web Audio with the mic open; Web Audio beside a silent `<audio>` kept local, the room's way of playing beside its carrier, did not. WebKit keeps its session in playback, on the long-form route, for an element that is audible and plays or has played audibly (`MediaSessionManagerCocoa::updateSessionState`), paused or not. The room's fix awaits a device run (tv-device-tests.md, Test 11).
+**Rule:** while `airPlayAlone()`, the carrier stands aside, paused by a pause of ours and muted, the unlock clip keeps quiet and muted, and nothing plays either; never set `navigator.audioSession.type` to playback there. Keeping an element off AirPlay (`x-webkit-airplay="deny"`) is not enough.
+**See:** `standCarrierAside` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `keepUnlockClipQuiet` in `src/lib/audio-unlock.ts`, `standAsideOnAirPlay` in `apps/mercurypitch/src/infrastructure/native-device.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

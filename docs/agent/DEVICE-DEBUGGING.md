@@ -273,6 +273,26 @@ to the same TV carried the room and its sound. For a test, turn on
 lines are routine), Clear log under Developer, Audio, take AirPlay, play a
 song in the Karaoke room, and copy the console.
 
+**What AirPlay plays** (Test 9, 6 Nov 2026, mp-v0.8.55): Web Audio alone
+reached the LG C2, and so did Web Audio with the mic open; Web Audio beside
+a silent element kept local, the way the room played beside the lock
+screen's carrier, did not. So on AirPlay alone nothing plays beside the
+room's Web Audio (branch `feat/airplay-room-sound`): the carrier stands
+aside, paused by a pause of ours that never pauses the song, and muted, and
+the unlock clip keeps quiet and muted too
+([`native-device.ts`](../../apps/mercurypitch/src/infrastructure/native-device.ts),
+`standAsideOnAirPlay`). WebKit keeps its session in playback, on the
+long-form route, for an element that plays, or has played audibly since
+the last interruption, while it is audible
+(`MediaSessionManagerCocoa::updateSessionState`); the mute is there for
+that. The lock screen shows no song meanwhile. When the sound leaves
+AirPlay with the song playing, the carrier takes its place again and the
+lock screen shows the song. `navigator.audioSession.type` stays unset: set
+to playback, it would likely bring button 4's case back. Whether the ring
+switch on silent mutes the room on AirPlay without the clip, and whether a
+song that was playing when AirPlay was chosen reaches the TV, is Test 11's
+to say ([tv-device-tests.md](../plans/tv-device-tests.md)).
+
 **The route may not say airplay.** It is the app's own AVAudioSession's,
 and WebKit plays the page from a session of its own. On the iPhone 13 Pro
 every route the app's session reported was the speaker at 48 kHz, before
@@ -286,7 +306,12 @@ page's newest context at a rate other than the app session's, on the
 speaker or the receiver; and never while a screen is connected. Bluetooth,
 headphones and HDMI show in the app's session, and Screen Mirroring
 connects a screen, so none of them is suspected. Either way the room's
-sound reached neither the TV nor the phone, with the clock running.
+sound reached neither the TV nor the phone, with the clock running, up to
+mp-v0.8.55. From branch `feat/airplay-room-sound` the app's session asks
+for `.allowAirPlay`
+([`AudioSession.swift`](../../packages/ios-audio-session/Sources/AudioSessionKit/AudioSession.swift)),
+which only a playAndRecord session may set, so its route should follow
+AirPlay too; the lyrics window logs its raw options as 105 where they were 41. The rate stays the fallback.
 
 No line names a port: "Viki's AirPods" names a person, and a console's lines
 are copied off the phone, the crash card's into public bug reports. The
@@ -307,6 +332,10 @@ on the singer's own screen.
 | `karaoke pause by=media-session(pause) position=2.2`                                                                   | by default | A system media control paused it: the lock screen, Control Center, a headset, or a remote such as the TV's                                                                            |
 | `[audio report 1/9] a song started on AirPlay`                                                                         | by default | A test build, once a launch, as a song starts on AirPlay alone: the Developer screen's whole audio report, in parts a console line keeps (2000 characters)                            |
 | `[airplay check] 3 Web Audio alone: route=airplay sessionRate=44100 contextRate=44100 pageSession=auto state=running`  | by default | Developer > AirPlay sound check, one line a tap: the variant, the route, both rates, the page's session type and the context's state, with `element=` and `mic=` where they take part |
+| `[now playing] the sound is on AirPlay: the carrier stands aside, so the room's sound plays alone`                     | by default | The sound went to AirPlay alone: the lock screen's carrier is paused and muted, and nothing plays it. Once per change                                                                 |
+| `[now playing] the sound has left AirPlay: the carrier takes its place again, and the lock screen shows the song`      | by default | Back from AirPlay with the song playing: the carrier plays again. `the carrier plays again with the song` when no song plays then                                                     |
+| `[now playing] WebKit played the carrier; it stays aside while the sound is on AirPlay`                                | by default | WebKit played the carrier by itself on AirPlay alone (as the app came back, say), and it was paused again                                                                             |
+| `[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone`                 | by default | The unlock clip neither plays nor sounds on AirPlay alone; `the next tap plays the unlock clip again` once the sound leaves                                                           |
 
 **To send the report from the room**: a test build writes it into the
 console as a song first starts on AirPlay alone (`[audio report n/m]`,
@@ -319,22 +348,28 @@ plays five ways of making sound, each with its own number of beeps: a media
 element allowed on AirPlay (1), kept local (2), Web Audio alone (3), Web
 Audio beside a silent element kept local (4), Web Audio with the mic open
 (5). Each is torn down whole a few seconds after its beeps
-([tv-device-tests.md](../plans/tv-device-tests.md), Test 9).
+([tv-device-tests.md](../plans/tv-device-tests.md), Test 9). On the LG C2
+(6 Nov 2026) 3 and 5 played on the TV and 4 did not; 1 and 2 were not
+reported.
 
 The room's words follow where the sound goes. On AirPlay alone (the route
 says airplay, or AirPlay is suspected, and no screen is connected), a song
 that starts shows once a launch, under the room header, with a close
-button: "AirPlay cannot carry the room's sound to a TV." and "Screen
-Mirroring can: open Control Center, tap Screen Mirroring, then choose your
-TV." ([`KaraokeAirPlayHint.tsx`](../../src/features/karaoke-room/KaraokeAirPlayHint.tsx)).
-It goes the moment a screen connects, and never shows while one is. The
-clock keeps running on AirPlay, so no stall may come to say anything. A song
-that stops by itself there says "The sound went to LG C2 over AirPlay and
-stopped." (no receiver's name where AirPlay is only suspected), the same two
-lines, and "To hear it here, choose this phone under AirPlay in Control
-Center." ("this iPad" on an iPad), with a close button. Anywhere else: "The
-sound stopped." and Play again. The same notice follows the start check and
-the return check when they stop a song.
+button: "The song is playing on LG C2 over AirPlay." ("The song is playing
+over AirPlay." where AirPlay is only suspected), "The lyrics stay on this
+phone." and "Screen Mirroring puts the stage on the TV: open Control
+Center, tap Screen Mirroring, then choose your TV."
+([`KaraokeAirPlayHint.tsx`](../../src/features/karaoke-room/KaraokeAirPlayHint.tsx)).
+AirPlay alone carries sound only: iOS gives an app a second screen with
+Screen Mirroring or a cable, never with AirPlay. The hint goes the moment a
+screen connects, and never shows while one is. A song that stops by itself
+on AirPlay says "The sound went to LG C2 over AirPlay and stopped." (no
+receiver's name where AirPlay is only suspected) and "To hear it here,
+choose this phone under AirPlay in Control Center." ("this iPad" on an
+iPad), with Play again. Anywhere else: "The sound stopped." and Play again.
+Up to mp-v0.8.55 both said "AirPlay cannot carry the room's sound to a
+TV."; Test 9 showed that was the carrier's doing. The same notice follows
+the start check and the return check when they stop a song.
 
 Reading them:
 
@@ -364,6 +399,14 @@ Reading them:
   `[now playing] the system paused the song`. A
   `[now playing] bar at ..., paused` with no `karaoke pause` line before it
   is a pause by a path that writes none: a bug to report.
+- On AirPlay the TV plays about 2 s after the phone would. The lyrics follow
+  the page's output clock (`audibleElapsed` in the stem mixer), and the
+  route's latency offset moves only the scoring, so the lyrics may run
+  ahead of the TV's sound; whether WebKit counts AirPlay's delay in that
+  clock is not measured yet (Test 11).
+- No `stands aside` line while the room's words say AirPlay: the app's
+  wiring (`standAsideOnAirPlay`, from `main.tsx`) did not run, and the
+  carrier still plays beside the song.
 - The suspicion's line can be late or stay on: a context keeps its rate for
   life, so a clock made before AirPlay was taken says nothing of it (on a
   store build only the shared clock is read), and one made on AirPlay says
