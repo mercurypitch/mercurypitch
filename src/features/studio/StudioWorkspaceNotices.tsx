@@ -17,6 +17,7 @@ export interface StudioWorkspaceNoticesProps {
   studio: Pick<
     StudioController,
     | 'writable'
+    | 'problem'
     | 'busy'
     | 'takeOver'
     | 'importing'
@@ -50,7 +51,9 @@ export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
           </p>
         )}
       </Show>
-      <Show when={!props.studio.writable()}>
+      {/* A song that lost its editing here says so in the page's banner,
+          which offers the takeover too: one banner, not two. */}
+      <Show when={!props.studio.writable() && props.studio.problem() === null}>
         <div class={styles.notice}>
           <p>
             This project is open in another tab, or editing has expired here.

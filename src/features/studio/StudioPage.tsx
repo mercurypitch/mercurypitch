@@ -21,6 +21,11 @@ export function StudioPage() {
   const clock = untrack(nativeDeviceApi) ? null : createStudioClock()
   onCleanup(() => clock?.close())
   const studio = useStudioController()
+  /** Work a reload would lose: unsaved edits, an import or a save in flight. */
+  const workAtStake = (): boolean =>
+    studio.hasUnsavedChanges() ||
+    studio.importing() ||
+    studio.saveState() === 'saving'
   const [downloadError, setDownloadError] = createSignal<string | null>(null)
   const [savedAs, setSavedAs] = createSignal<string | null>(null)
   const [library, setLibrary] = createSignal(true)
@@ -148,6 +153,18 @@ export function StudioPage() {
                 </button>
               </Show>
               <Show when={studio.project()}>
+                {/* Editing went to another tab: the way back is here, as the
+                    workspace's own notice stands aside for this banner. */}
+                <Show when={!studio.writable()}>
+                  <button
+                    type="button"
+                    class={styles.button}
+                    disabled={studio.busy()}
+                    onClick={() => void studio.takeOver()}
+                  >
+                    Edit in this tab
+                  </button>
+                </Show>
                 <button
                   type="button"
                   class={styles.button}
@@ -164,13 +181,19 @@ export function StudioPage() {
                 >
                   Save project backup
                 </button>
+                {/* Nothing unsaved, importing or saving: a reload has nothing
+                    to discard or ask. */}
                 <button
                   type="button"
                   class={styles.button}
                   disabled={studio.busy()}
-                  onClick={() => setConfirmation('discard')}
+                  onClick={() =>
+                    workAtStake()
+                      ? setConfirmation('discard')
+                      : void studio.discardAndReload()
+                  }
                 >
-                  Discard changes and reload
+                  {workAtStake() ? 'Discard changes and reload' : 'Reload'}
                 </button>
               </Show>
             </div>
