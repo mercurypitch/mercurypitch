@@ -1,9 +1,10 @@
 // Studio mixing desk, live — with a real mouse: a fader drags from where it is and ignores a click on its rail, a held fader and dial are heard before they save, sound edits keep the song playing, and a muted lane comes in without a dropout.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { center, openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { tallStudioLanes } from './helpers/studio-lanes'
 import { importSteady, openDesk, outputLevel, settled, tapOutput, traceLevel, } from './helpers/studio-output'
 
-/** The lane header's control, not the desk strip's. */
+/** The lane header's control, not the desk strip's: a tall lane's. */
 function headerSlider(page: Page, name: string): Locator {
   return studioRegion(page)
     .locator('[data-studio-track]')
@@ -16,6 +17,7 @@ const gainOf = async (page: Page, name: string) =>
 
 test.describe('Studio mixing desk, live', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
+  test.beforeEach(({ page }) => tallStudioLanes(page))
 
   test('a fader ignores a click on its rail, drags from where it was, shows the same value in the lane header, and a double-click puts it back to 0 dB @smoke', async ({
     page,

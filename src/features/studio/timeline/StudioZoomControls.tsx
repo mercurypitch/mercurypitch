@@ -1,5 +1,5 @@
 // ============================================================
-// Studio zoom controls — zoom out, the zoom level, zoom in and Fit, at the foot of the lanes or heading the dock, and a phone's pair in the ruler's corner
+// Studio zoom controls — zoom out, the zoom level, zoom in, Fit and Tall lanes, at the foot of the lanes or heading the dock, and a phone's pair in the ruler's corner
 // ============================================================
 //
 // The group sits where it always did, at the lanes' far corner, so the
@@ -9,10 +9,13 @@
 // names away in a 980 px window. In the dock, beside the open desk, the
 // group is three icons in the dock's column. A phone has no foot to spare:
 // zoom out and in sit in the ruler's corner, above the lane names, and
-// zooming out all the way is the phone's fit.
+// zooming out all the way is the phone's fit. Tall lanes is zoom's vertical
+// step: each lane grows to show its lines, fader and pan in its header
+// (lane-height.ts); a phone's lanes stay compact.
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
-import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
+import { FitWidth, LaneHeight, ZoomIn, ZoomOut } from '../studio-icons'
+import { setStudioLaneHeight, studioLaneHeight } from './lane-height'
 import styles from './StudioTimeline.module.css'
 import type { StudioZoomControl } from './zoom-control'
 import { STUDIO_ZOOM_KEYS } from './zoom-keys'
@@ -76,6 +79,24 @@ export function StudioZoomControls(props: {
           onClick={() => props.zoom.fit()}
         >
           <FitWidth size={16} />
+        </button>
+        <button
+          type="button"
+          aria-label="Tall lanes"
+          aria-pressed={studioLaneHeight() === 'tall'}
+          data-tour="studio.lane-height"
+          title={
+            studioLaneHeight() === 'tall'
+              ? 'Tall lanes show each lane’s lines, fader and pan. Press for compact lanes.'
+              : 'Tall lanes: show each lane’s lines, fader and pan in its header'
+          }
+          onClick={() =>
+            setStudioLaneHeight(
+              studioLaneHeight() === 'tall' ? 'compact' : 'tall',
+            )
+          }
+        >
+          <LaneHeight size={16} />
         </button>
       </Show>
     </div>

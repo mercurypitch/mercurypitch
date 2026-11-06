@@ -408,8 +408,8 @@ test("with Mix open, zoom and the selected clip's commands stand beside the arra
     .poll(async () => (await readStudioProject(page)).clips.length)
     .toBe(before + 1)
 
-  // A desk dragged tall leaves a short arrangement: the dock keeps every
-  // command in sight, two to a row.
+  // A desk dragged tall leaves a short arrangement, as little as one compact
+  // lane: the dock keeps every command in sight, two or four to a row.
   const edge = desk.getByRole('separator', { name: 'Mix height' })
   const grip = (await edge.boundingBox())!
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)

@@ -1,6 +1,7 @@
-// Studio lane lines — a lane's volume and pan lines take points from a click or a tap, move by drag and keys, clear, undo and stay in the song.
+// Studio lane lines — a lane's volume and pan lines open from a tall lane's header or a phone lane's details, take points from a click or a tap, move by drag and keys, clear, undo and stay in the song.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { openArrangement, readStudioProject, setStudioZoom, STUDIO_RATE, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { tallStudioLanes } from './helpers/studio-lanes'
 
 test.use({ serviceWorkers: 'block' })
 
@@ -9,13 +10,24 @@ async function savedLine(page: Page, param: 'volume' | 'pan') {
   return (await readStudioProject(page)).tracks[0].automation?.[param]
 }
 
+/** A tall lane opens its lines from its header; a phone lane, from its details. */
 async function openLines(page: Page): Promise<Locator> {
-  const toggle = studioRegion(page).getByRole('button', {
+  const studio = studioRegion(page)
+  const toggle = studio.getByRole('button', {
     name: 'Phrase volume and pan lines',
     exact: true,
   })
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  if ((await toggle.count()) > 0) {
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  } else {
+    await studio
+      .getByRole('button', { name: 'Phrase details', exact: true })
+      .click()
+    await studio
+      .getByRole('button', { name: 'Volume and pan lines', exact: true })
+      .click()
+  }
   const area = studioRegion(page).locator('[data-studio-line]')
   await expect(area).toBeVisible()
   return area
@@ -38,6 +50,7 @@ async function box(locator: Locator) {
 
 test.describe('on a computer', () => {
   test.use({ viewport: { width: 1440, height: 1000 } })
+  test.beforeEach(({ page }) => tallStudioLanes(page))
 
   test('Studio draws a volume line with clicks, drags and keys, each one undoable edit, and holds the fader to it @smoke', async ({
     page,
@@ -162,6 +175,7 @@ test.describe('on a computer', () => {
 
 test.describe('beside the ruler’s range', () => {
   test.use({ viewport: { width: 1440, height: 1000 } })
+  test.beforeEach(({ page }) => tallStudioLanes(page))
 
   test('Studio takes a point inside the range while a line is open, and the range keeps its handles', async ({
     page,
@@ -205,6 +219,7 @@ test.describe('on a tablet', () => {
     hasTouch: true,
     isMobile: true,
   })
+  test.beforeEach(({ page }) => tallStudioLanes(page))
 
   test('Studio keeps the line bar short of the zoom buttons on a tablet, with finger-sized commands', async ({
     page,

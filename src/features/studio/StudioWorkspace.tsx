@@ -288,6 +288,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     else void transport.play()
   }
 
+  function openTrackDetails(id: string): void {
+    setSelectedTrackId(id)
+    openPanel('track')
+  }
+
   /** A new empty lane, selected, so the next take lands on it. */
   function addLane(): void {
     const tracks = project().tracks
@@ -645,10 +650,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               setSelectedClipId(id)
               if (!phone()) openPanel('clip')
             }}
-            onTrackDetails={(id) => {
-              setSelectedTrackId(id)
-              openPanel('track')
-            }}
+            onTrackDetails={openTrackDetails}
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
             record={recorder.timeline()}
@@ -754,7 +756,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 track={selectedTrack()!}
                 assets={trackAssets()}
                 writable={writable()}
+                arming={phone() ? recorder.arming : undefined}
                 onCommand={props.studio.dispatch}
+                afterLines={overlay() ? closePanel : undefined}
                 onRemove={() => {
                   if (
                     props.studio.dispatch({
@@ -772,10 +776,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 writable={writable()}
                 arming={recorder.arming}
                 onCommand={props.studio.dispatch}
-                onTrackDetails={(id) => {
-                  setSelectedTrackId(id)
-                  openPanel('track')
-                }}
+                onTrackDetails={openTrackDetails}
               />
             </Show>
           </StudioPanel>

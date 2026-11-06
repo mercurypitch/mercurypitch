@@ -92,7 +92,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Each track’s part',
     targetSelector: '[data-tour="studio.role"]',
     description:
-      'The picture shows the part a track plays, from lead vocal to drums. Click the track’s name to change its part, or to switch the pictures to line icons.',
+      'The glyph shows the instrument a track plays, in its family’s colour. Studio reads it from the track’s name and part. Click the track’s name to choose another instrument, or the part that sets its sound.',
     placement: 'bottom',
     whenPresent: true,
   },
@@ -100,8 +100,16 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Balance each track',
     targetSelector: '[data-tour="studio.track-controls"]',
     description:
-      'Set the volume and left-right balance for a track. Mute leaves it out; Solo lets you hear it on its own.',
+      'Mute leaves a track out; Solo lets you hear it on its own. Set its volume and left-right balance in Mix, or here in tall lanes.',
     placement: 'bottom',
+    whenPresent: true,
+  },
+  {
+    title: 'Compact or tall lanes',
+    targetSelector: '[data-tour="studio.lane-height"]',
+    description:
+      'Compact lanes fit more of your song. Tall lanes give each track its volume and pan lines, fader and pan in its header. This device remembers which you chose.',
+    placement: 'top',
     whenPresent: true,
   },
   {
@@ -116,7 +124,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Draw volume and pan lines',
     targetSelector: '[data-tour="studio.lines"]',
     description:
-      'Lines change a track’s volume or pan as the song plays: fade a guitar in, or move a harmony left for one chorus. Open them here, then add points on the lane and drag them.',
+      'Lines change a track’s volume or pan as the song plays: fade a guitar in, or move a harmony left for one chorus. Open a track’s details from its name and choose Volume and pan lines, or press Lines in a tall lane, then add points on the lane and drag them.',
     placement: 'bottom',
     whenPresent: true,
   },
