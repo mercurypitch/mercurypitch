@@ -82,6 +82,10 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   >()
   const [writable, setWritable] = createSignal(false)
   const [problem, setProblem] = createSignal<string | null>(null)
+  // Why the last file or take was not added (too long, too large, a song
+  // out of room): said on its own until dismissed or the next import, as a
+  // refusal is no failed save and has nothing to copy, back up or reload.
+  const [importRefusal, setImportRefusal] = createSignal<string | null>(null)
   // Where a take went when its lane had no room: a fresh object per miss, so
   // the same sentence twice is still said twice.
   const [laneNotice, setLaneNotice] = createSignal<{ text: string } | null>(
@@ -150,8 +154,10 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       current,
       canEdit,
       setImporting,
-      clearProblem: () => setProblem(null),
-      report,
+      // A new import clears the last one's refusal, and only that: a save
+      // that failed, or another problem the banner holds, stays said.
+      clearProblem: () => setImportRefusal(null),
+      report: (error) => setImportRefusal(message(error)),
       commit,
       flush: () => queue?.flush(),
       createId,
@@ -329,6 +335,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     waitingPeaks.clear()
     setSaveState('saved')
     setProblem(null)
+    setImportRefusal(null)
     let claim: StudioSongClaim | null = null
     try {
       await retirement
@@ -361,9 +368,16 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     }
   }
 
+  /**
+   * Make `command` an edit, kept and saved. A refusal goes to `refused`: the
+   * page's banner by default, an import's own notice for an import's
+   * commands, so a song with no room for a file says so where every other
+   * refusal of that file is said.
+   */
   function commit(
     command: StudioCommand,
     prepared: readonly StudioAssetData[] = [],
+    refused: (error: unknown) => void = report,
   ): boolean {
     const history = editHistory()
     if (!canEdit() || !queue || history === null) return false
@@ -381,7 +395,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       void queue.flush()
       return true
     } catch (error) {
-      report(error)
+      refused(error)
       return false
     }
   }
@@ -665,6 +679,9 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     saveState,
     writable,
     problem,
+    /** Why the last import was refused, apart from save failures; null once dismissed. */
+    importRefusal,
+    dismissImportRefusal: () => setImportRefusal(null),
     laneNotice,
     hasUnsavedChanges,
     create,

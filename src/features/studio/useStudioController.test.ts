@@ -196,7 +196,8 @@ describe('Studio controller', () => {
     expect(await controller.addTakes([source('a'), source('b')], 48000)).toBe(
       false,
     )
-    expect(controller.problem()).toContain('Unreadable take')
+    expect(controller.importRefusal()).toContain('Unreadable take')
+    expect(controller.problem()).toBeNull()
     expect(controller.project()?.revision).toBe(0)
     expect(controller.project()?.clips).toEqual([])
     expect(controller.assets()).toEqual([])
@@ -308,7 +309,7 @@ describe('Studio controller', () => {
     expect(controller.project()?.clips).toEqual([])
     expect(controller.assets()).toHaveLength(128)
     // No clip plays any of the 128: removed takes fill the song.
-    expect(controller.problem()).toBe(
+    expect(controller.importRefusal()).toBe(
       "Takes you removed still count toward this song's audio limit. Make a copy, which keeps only the takes in use, and add this take there.",
     )
     expect(service.saveProject).not.toHaveBeenCalled()
@@ -346,11 +347,44 @@ describe('Studio controller', () => {
       new File(['abc'], 'New.wav', { type: 'audio/wav' }),
     )
 
-    expect(controller.problem()).toBe(
+    expect(controller.importRefusal()).toBe(
       'This project has reached its local audio limit. Add this take to another project.',
     )
+    expect(controller.problem()).toBeNull()
     expect(controller.project()?.clips).toHaveLength(128)
     expect(service.saveProject).not.toHaveBeenCalled()
+  })
+
+  it('keeps a refused file apart from save failures, until dismissed or the next import starts', async () => {
+    // Arrange: the first file is too long, the next ones fine.
+    const prepareFile = vi
+      .fn<NonNullable<StudioControllerOptions['prepareFile']>>()
+      .mockRejectedValueOnce(
+        new Error(
+          'This audio is over the 5-minute Studio import limit. Choose a shorter file.',
+        ),
+      )
+      .mockImplementation(async (_blob, info) => preparedFixture(info))
+    const { controller } = mount({ prepareFile })
+    await controller.open('one')
+    const file = () => new File(['abc'], 'Take.wav', { type: 'audio/wav' })
+
+    // Act
+    await controller.addFile(file())
+    const refused = controller.importRefusal()
+    const saveProblem = controller.problem()
+    controller.dismissImportRefusal()
+    const dismissed = controller.importRefusal()
+    await controller.addFile(file())
+
+    // Assert
+    expect(refused).toBe(
+      'This audio is over the 5-minute Studio import limit. Choose a shorter file.',
+    )
+    expect(saveProblem).toBeNull()
+    expect(dismissed).toBeNull()
+    expect(controller.importRefusal()).toBeNull()
+    expect(controller.project()?.clips).toHaveLength(1)
   })
 
   it('queues a file picked while the last import is still saving', async () => {
@@ -953,7 +987,7 @@ describe('Studio controller', () => {
 
     expect(kept).toBe(false)
     expect(controller.project()).toBe(before)
-    expect(controller.problem()).toBe('That take was too short to keep.')
+    expect(controller.importRefusal()).toBe('That take was too short to keep.')
   })
 
   it('opens locked projects read-only and takeover reloads the latest durable snapshot', async () => {
