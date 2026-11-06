@@ -1,5 +1,5 @@
 // ============================================================
-// AirPlay sound check: five ways of making sound, one button each
+// AirPlay sound check: seven ways of making sound, one button each
 // ============================================================
 //
 // The Developer screen's section for the decisive AirPlay test (owner, 3 Nov

@@ -4,7 +4,7 @@ For phase P0 and the proofs of concept of
 [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md); requirement ids are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md). Tests 1 to 3 need
 no new build: use the current TestFlight build on the iPhone and the current
-app on an Android phone. Tests 4 to 11 need the build named in each. Fill in
+app on an Android phone. Tests 4 to 12 need the build named in each. Fill in
 the tables; that is all that needs to come back.
 
 **Run Tests 4B, 5, 6 and 8 on TestFlight mp-v0.8.52 (3 Nov 2026) or later.**
@@ -20,7 +20,9 @@ AirPlay sound check, the AirPlay hint and the report the room writes.
 **Run Test 11 on the first build with branch `feat/airplay-room-sound`**:
 the app's session allows AirPlay, and on AirPlay alone the lock screen's
 carrier and the unlock clip stand aside, so the room's Web Audio plays
-alone, as Test 9's button 3 did.
+alone, as Test 9's button 3 did. **Test 12A's buttons need the first build
+tagged after branch `feat/airplay-element-rooms` merges**; 12B, and 12A's
+"4, then 3", run on mp-v0.8.56 (build 1716) or later.
 
 ## Before you start
 
@@ -386,11 +388,12 @@ so you can tell which one you heard:
 5. Do it again with Screen Mirroring instead of AirPlay, and once on the
    phone's own speaker, as the control.
 
-| Route            | 1 (element)  | 2 (kept local) | 3 (Web Audio)  | 4 (beside a silent element) | 5 (with the mic)              |
-| ---------------- | ------------ | -------------- | -------------- | --------------------------- | ----------------------------- |
-| AirPlay, LG C2   | not reported | not reported   | Yes, on the TV | No                          | Yes, on the TV; sometimes not |
-| Mirroring, LG C2 | not reported | not reported   | not reported   | not reported                | not reported                  |
-| Phone speaker    | not reported | not reported   | not reported   | not reported                | not reported                  |
+| Route                      | 1 (element)                     | 2 (kept local)                  | 3 (Web Audio)  | 4 (beside a silent element) | 5 (with the mic)                                         |
+| -------------------------- | ------------------------------- | ------------------------------- | -------------- | --------------------------- | -------------------------------------------------------- |
+| AirPlay, LG C2, mp-v0.8.55 | not reported                    | not reported                    | Yes, on the TV | No                          | Yes, on the TV; sometimes not                            |
+| AirPlay, LG C2, mp-v0.8.56 | Nothing, on the TV or the phone | Nothing, on the TV or the phone | Yes, on the TV | Never                       | Yes, on the TV, every time; three times straight after 4 |
+| Mirroring, LG C2           | not reported                    | not reported                    | not reported   | not reported                | not reported                                             |
+| Phone speaker              | not reported                    | not reported                    | not reported   | not reported                | not reported                                             |
 
 **Run on the LG C2, 6 Nov 2026 at about 17:55** (mp-v0.8.55, TestFlight
 build 1714), the TV chosen under AirPlay in Control Center. Pressing 1
@@ -407,6 +410,16 @@ not among those heard. Button 4 is how the Karaoke room plays: Web Audio
 beside the lock screen's carrier. Buttons 1 and 2 were not named either
 way, and the `[airplay check]` lines and the Screen Mirroring and speaker
 rows were not reported. What follows is Test 11.
+
+**Run again on 6 Nov 2026** (mp-v0.8.56, TestFlight build 1716, an iPhone 13
+and the LG C2), with the presses Test 11 ends with. 4 never played. 5 played
+every time, three times straight after 4 as well. 3, then 5: both played.
+1 and 2 played nothing at all, on the TV or the phone. So a 4 that has been
+emptied leaves nothing behind that keeps 5 off the TV, and the misses on
+mp-v0.8.55 fit AirPlay not yet in sync better (inference). 5 opens the mic,
+which may reset the route by itself: whether 3, without the mic, plays
+straight after 4 is Test 12A's "4, then 3". The `[airplay check]` lines and
+the Screen Mirroring and speaker rows were not reported.
 
 ## Test 10: the Cast receiver spike (branch `feat/cast-receiver`, once a Google TV is registered)
 
@@ -513,12 +526,89 @@ button 5's misses. Press 4 and then 5 straight after, three times; then 3,
 wait 5 s, and 5, three times. Say which presses of 5 the TV played, and
 where 1 and 2 play: the TV, the phone, or nowhere.
 
-| Case | Ring switch | Sound on the TV? How late? | Phone silent? | Lyrics ahead by | Lock screen shows | TV shows | Hint words right? | Back on the phone: sound, lock screen |
-| ---- | ----------- | -------------------------- | ------------- | --------------- | ----------------- | -------- | ----------------- | ------------------------------------- |
-| 11A  | ring        |                            |               |                 |                   |          |                   |                                       |
-| 11A  | silent      |                            |               |                 |                   |          |                   |                                       |
-| 11B  | ring        |                            |               |                 |                   |          |                   |                                       |
-| 11B  | silent      |                            |               |                 |                   |          |                   |                                       |
+| Case | Ring switch | Sound on the TV? How late?                                                  | Phone silent? | Lyrics ahead by                            | Lock screen shows | TV shows | Hint words right? | Back on the phone: sound, lock screen |
+| ---- | ----------- | --------------------------------------------------------------------------- | ------------- | ------------------------------------------ | ----------------- | -------- | ----------------- | ------------------------------------- |
+| 11A  | ring        | Yes, about 2 s late; play, pause and seeks each reach the TV about 2 s late | Yes           | "Maybe a bit" off; to be checked in detail |                   |          |                   |                                       |
+| 11A  | silent      |                                                                             |               |                                            |                   |          |                   |                                       |
+| 11B  | ring        | Yes                                                                         |               |                                            |                   |          |                   | Sound: yes                            |
+| 11B  | silent      |                                                                             |               |                                            |                   |          |                   |                                       |
+
+**Run on 6 Nov 2026** (mp-v0.8.56, TestFlight build 1716, an iPhone 13 and
+the LG C2). 11A: the song played on the TV and the phone stayed silent. Play,
+pause and seeking each took about 2 s to reach the TV: "not ideal, but it
+works". The lyrics felt "maybe a bit" off; the owner will check them in
+detail. 11B (filed under ring; the switch was not noted): moving the song
+to AirPlay while it played on the phone, and back again, both worked
+("there and back no problems"). So the carrier, which had played audibly
+on the phone and then stood aside paused and muted, did not keep the song
+off the TV. Not reported yet: the ring switch on silent, the lock screen,
+what the TV shows and the hint's words.
+
+## Test 12: rooms with a media element on AirPlay alone (branch `feat/airplay-element-rooms`, first build tagged after it merges)
+
+Tests 9 and 11 found Web Audio alone on the TV, and nothing at all while an
+element plays. Karaoke now plays Web Audio only there. First Note still plays
+its song as elements, routed through Web Audio, and so do the preview
+player's cues. This test says whether those are silent today, and the new
+buttons say which fix each needs
+([airplay-element-rooms.md](airplay-element-rooms.md)). 12A's buttons 6 and
+7 need the first build tagged after branch `feat/airplay-element-rooms`
+merges; 12B, and 12A's step 4, run on mp-v0.8.56 (build 1716) or later. Run
+those first: they need no new build, and may leave nothing for buttons 6
+and 7 to answer.
+
+Before each part: Developer, Debug console, "Keep routine logs" on, and Clear
+log under Developer, Audio. Ring switch on ring, phone volume up. Choose the
+TV under AirPlay in Control Center (not Screen Mirroring).
+
+**12A: the new buttons.** Settings, Developer, "AirPlay sound check":
+
+| Button  | What plays                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------- |
+| 6 beeps | An element kept local, played through Web Audio (`createMediaElementSource`), as First Note plays |
+| 7 beeps | Web Audio after an element that played, then was paused and kept, unmuted                         |
+
+1. Tap 3 and wait for it to end (about five seconds), so AirPlay has
+   connected.
+2. Tap 6, then 7 once 6 has ended. Then again in the order 7, 6.
+3. For each: did the TV play it, the phone, or nothing? How many beeps, and
+   how late?
+4. No new build needed: press 4 and then 3 straight after, three times. Say
+   which presses of 3 the TV played.
+5. Copy the `[airplay check] ...` lines into the notes, one a tap.
+6. Once on the phone's own speaker, as the control: every button should beep
+   on the phone.
+
+| Route          | 6 (element through Web Audio) | 7 (after a paused element) | 3 after 4, of three |
+| -------------- | ----------------------------- | -------------------------- | ------------------- |
+| AirPlay, LG C2 |                               |                            |                     |
+| Phone speaker  |                               |                            |                     |
+
+**12B: the rooms.** AirPlay chosen before each room opens. Run each case
+with the ring switch on ring; repeat on silent any case the TV played.
+
+1. **Karaoke, the control.** Play a song for 20 s. The TV should play it,
+   about 2 s late, as in Test 11A.
+2. **First Note, a round.** Open First Note and play one round to its end:
+   the lead-in (the band alone), then sing the line (the band and the voice
+   come back in). Does the TV play the lead-in? The line? Does the phone?
+3. **First Note, the next round.** Straight after, a second round. Its
+   lead-in follows a pause of the same two elements, which 7 is about.
+4. **A Sing exercise with an example**, if your build shows "Hear an
+   example" on one: play it.
+5. **Karaoke Studio, a stem preview**, if a finished song in the studio
+   shows its stems with a play button: play one.
+
+Copy the console after each case: the `[audio route]` line says whether the
+app thinks the sound is on AirPlay.
+
+| Case                  | Ring switch | Sound on the TV? How late? | Phone silent? | `[audio route]` says AirPlay? | Notes |
+| --------------------- | ----------- | -------------------------- | ------------- | ----------------------------- | ----- |
+| 1 Karaoke (control)   | ring        |                            |               |                               |       |
+| 2 First Note, round 1 | ring        |                            |               |                               |       |
+| 3 First Note, round 2 | ring        |                            |               |                               |       |
+| 4 Sing example        | ring        |                            |               |                               |       |
+| 5 Studio stem preview | ring        |                            |               |                               |       |
 
 ## Aside: a TestFlight Subscribe asks for the password
 
@@ -532,14 +622,14 @@ Face ID as usual.
 
 ## Results
 
-| Route                              | TV      | Sound on the TV?                                                      | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes                                               |
-| ---------------------------------- | ------- | --------------------------------------------------------------------- | ---------------------------------- | -------------------------- | ------------------ | --------------------------------------------------- |
-| iPhone, AirPlay mirroring          | LG C2   | Yes                                                                   | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    | TV lyrics and TV stage "work great" (3 Nov, Test 8) |
-| iPhone, AirPlay sound alone        | LG C2   | No: the clock runs, no sound from the TV or the phone (3 Nov, Test 8) | n/a                                |                            |                    |                                                     |
-| iPhone, AirPlay mirroring          | Samsung |                                                                       |                                    |                            |                    |                                                     |
-| iPhone, phone speaker only         | none    | n/a                                                                   | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |                                                     |
-| Android, Screen Cast               | Philips |                                                                       | n/a                                |                            |                    |                                                     |
-| Android, Screen Cast or Smart View | LG      |                                                                       | n/a                                |                            |                    |                                                     |
-| Samsung phone, Smart View          | Samsung |                                                                       | n/a                                |                            |                    |                                                     |
+| Route                              | TV      | Sound on the TV?                                     | Second copy on the TV?             | Latency, result and spread | Score feels right? | Notes                                                                          |
+| ---------------------------------- | ------- | ---------------------------------------------------- | ---------------------------------- | -------------------------- | ------------------ | ------------------------------------------------------------------------------ |
+| iPhone, AirPlay mirroring          | LG C2   | Yes                                                  | Before 0.8.40 yes; fixed in 0.8.40 | None in 0.8.41 (Test 5)    |                    | TV lyrics and TV stage "work great" (3 Nov, Test 8)                            |
+| iPhone, AirPlay sound alone        | LG C2   | Yes from mp-v0.8.56 (6 Nov, Test 11), about 2 s late | n/a                                |                            |                    | Before it the clock ran with no sound from the TV or the phone (3 Nov, Test 8) |
+| iPhone, AirPlay mirroring          | Samsung |                                                      |                                    |                            |                    |                                                                                |
+| iPhone, phone speaker only         | none    | n/a                                                  | n/a                                | 113 ms in 0.8.41 (Test 5)  |                    |                                                                                |
+| Android, Screen Cast               | Philips |                                                      | n/a                                |                            |                    |                                                                                |
+| Android, Screen Cast or Smart View | LG      |                                                      | n/a                                |                            |                    |                                                                                |
+| Samsung phone, Smart View          | Samsung |                                                      | n/a                                |                            |                    |                                                                                |
 
 Also: LG webOS version: \_\_\_ ; Samsung model year: \_\_\_ ; phones: \_\_\_ .

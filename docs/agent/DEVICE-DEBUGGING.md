@@ -277,7 +277,7 @@ song in the Karaoke room, and copy the console.
 reached the LG C2, and so did Web Audio with the mic open; Web Audio beside
 a silent element kept local, the way the room played beside the lock
 screen's carrier, did not. So on AirPlay alone nothing plays beside the
-room's Web Audio (branch `feat/airplay-room-sound`): the carrier stands
+room's Web Audio (PR #1376, mp-v0.8.56): the carrier stands
 aside, paused by a pause of ours that never pauses the song, and muted, and
 the unlock clip keeps quiet and muted too
 ([`native-device.ts`](../../apps/mercurypitch/src/infrastructure/native-device.ts),
@@ -288,10 +288,12 @@ the last interruption, while it is audible
 that. The lock screen shows no song meanwhile. When the sound leaves
 AirPlay with the song playing, the carrier takes its place again and the
 lock screen shows the song. `navigator.audioSession.type` stays unset: set
-to playback, it would likely bring button 4's case back. Whether the ring
-switch on silent mutes the room on AirPlay without the clip, and whether a
-song that was playing when AirPlay was chosen reaches the TV, is Test 11's
-to say ([tv-device-tests.md](../plans/tv-device-tests.md)).
+to playback, it would likely bring button 4's case back. Test 11 (6 Nov
+2026, mp-v0.8.56) confirmed the fix on the LG C2: the song plays on the TV
+about 2 s late, the phone silent, and a song moved to AirPlay mid-song, and
+back, plays on both. Whether the ring switch on silent mutes the room on
+AirPlay without the clip is not reported yet
+([tv-device-tests.md](../plans/tv-device-tests.md)).
 
 **The route may not say airplay.** It is the app's own AVAudioSession's,
 and WebKit plays the page from a session of its own. On the iPhone 13 Pro
@@ -344,13 +346,14 @@ copy the console there. Leaving the stage for Settings stops the song.
 
 **To find what AirPlay plays at all**: Developer > AirPlay sound check
 ([`airplay-check.ts`](../../apps/mercurypitch/src/shell/airplay-check.ts))
-plays five ways of making sound, each with its own number of beeps: a media
+plays seven ways of making sound, each with its own number of beeps: a media
 element allowed on AirPlay (1), kept local (2), Web Audio alone (3), Web
 Audio beside a silent element kept local (4), Web Audio with the mic open
-(5). Each is torn down whole a few seconds after its beeps
-([tv-device-tests.md](../plans/tv-device-tests.md), Test 9). On the LG C2
-(6 Nov 2026) 3 and 5 played on the TV and 4 did not; 1 and 2 were not
-reported.
+(5), an element kept local routed through Web Audio (6), and Web Audio after
+an element that played and was paused (7). Each is torn down whole a few
+seconds after its beeps ([tv-device-tests.md](../plans/tv-device-tests.md),
+Tests 9 and 12). On the LG C2 (6 Nov 2026, mp-v0.8.56) 3 and 5 played on
+the TV, 4 never did, and 1 and 2 played nowhere.
 
 The room's words follow where the sound goes. On AirPlay alone (the route
 says airplay, or AirPlay is suspected, and no screen is connected), a song
