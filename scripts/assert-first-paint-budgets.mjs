@@ -433,10 +433,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
-  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; its
-  // shell: 86,555 bytes in build:e2e, the smallest whole KB above, to rise
-  // as each part joins.
-  'learn/23.html': 85,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must:
+  // 130,327 bytes in build:e2e with its four steps on the staff toy's
+  // interval state, 86,555 for its shell; the smallest whole KB above, to
+  // rise as each part joins.
+  'learn/23.html': 128,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

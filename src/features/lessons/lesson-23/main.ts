@@ -43,7 +43,9 @@ import { initMasthead, initMotionSwitch, initSoundSwitch, } from '@/features/les
 import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
+import { PitchLine } from '@/features/lessons/kit/staff'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initSteps } from './steps'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -52,11 +54,18 @@ initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
-// four steps, one staff toy
+// the semitones are what the page counts: every staff toy on it follows
+// the one pitch-line switch, on before any mounts (WEB-SPEC, Toys 1)
+PitchLine.set(true)
+
+// four steps, one staff toy in its interval state, held back until the
+// cold open's choice; mounted before the deck starts, so an address that
+// names a step opens it
 const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+initSteps()
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

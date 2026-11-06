@@ -15,6 +15,11 @@ import { resolve } from 'node:path'
 import { vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
+import { PitchLine } from '@/features/lessons/kit/staff'
+import type { StepDeck } from '@/features/lessons/kit/step-deck'
+import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { Steps } from './steps'
+import { initSteps } from './steps'
 
 /** learn/23.html, as the repository has it. */
 export const PAGE = readFileSync(
@@ -50,4 +55,22 @@ export const words = (e: Element | null | undefined): string =>
 /** Lets the promises the page awaits settle. */
 export const settle = async (): Promise<void> => {
   for (let i = 0; i < 6; i++) await Promise.resolve()
+}
+
+/**
+ * The page's deck with its steps mounted, opened on step 1 as the page
+ * opens it, the pitch line on as the page turns it on, and the stage's
+ * staff toy with the choice's unlock.
+ */
+export function mountSteps(): StepDeck & { readonly steps: Steps } {
+  loadPage()
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  PitchLine.set(true)
+  const deck = createStepDeck({
+    toyFor: () => 1,
+    after: { label: 'Sing it', selector: '#sing' },
+  })
+  const steps = initSteps()
+  deck.start()
+  return Object.assign(deck, { steps })
 }
