@@ -11,13 +11,14 @@
 // its swing and its middle stood, at the middle of the voice's glide.
 
 import { describe, expect, it } from 'vitest'
+import type { WaveStretch } from '@/features/lessons/kit/band-chart-wave-scene'
 import { centsOn, middleOn } from '@/features/lessons/kit/band-chart-wave-scene'
 import { HIT_TOLERANCE_CENTS } from '@/features/lessons/kit/band-words'
 import { hz } from '@/features/lessons/kit/notes'
 import { MERC_VIBRATO, VIBRATO_GLIDE } from '@/features/lessons/kit/sound'
 import { SWELL_LEVEL } from '@/features/lessons/lesson-14/song'
 import type { Play } from './sounds'
-import { A3, answerOf, atRate, COLD, COLD_WAVE, contourOfPlay, levelAt, levelOf, lineOf, measure, OOH, playFor, retune, SIX, STRAIGHT, STRAIGHT_AT, SUNG, SWELL, SWELLED, TWO, WAVE, } from './sounds'
+import { A3, answerOf, atRate, COLD, COLD_WAVE, contourOfPlay, D3, GROW_IN, levelAt, levelOf, lineOf, measure, OOH, playFor, retune, SIX, STRAIGHT, STRAIGHT_AT, SUNG, SWELL, SWELLED, TWO, WAVE, WORDS, } from './sounds'
 
 /** Every play the steps' toy makes, at the sliders' first values. */
 const STEP_PLAYS: readonly Play[] = [
@@ -32,6 +33,89 @@ const STEP_PLAYS: readonly Play[] = [
   atRate(4, true),
   SUNG,
 ]
+
+describe('the four words (FACTS 70)', () => {
+  it('plays Vibrato on A3 at six swings a second, ±30 cents, for 2.5 s', () => {
+    // Assert
+    expect(WORDS.vibrato.midi).toBe(A3)
+    expect(WORDS.vibrato.play.sec).toBe(2.5)
+    expect(
+      WORDS.vibrato.play.lines.map((l) => [l.t, l.vibrato, l.points]),
+    ).toEqual([
+      [
+        0,
+        { rate: 6, extent: 30, growIn: 0.3 },
+        [
+          { t: 0, hz: hz(A3) },
+          { t: 2.5, hz: hz(A3) },
+        ],
+      ],
+    ])
+  })
+
+  it('plays Rate and Extent as two 2.0 s notes on A3, 0.4 s apart: five then seven swings a second at ±30, and ±20 then ±60 at six', () => {
+    // Act
+    const breaths = (w: 'rate' | 'extent') =>
+      WORDS[w].play.lines.map((l) => [l.t, l.vibrato?.rate, l.vibrato?.extent])
+
+    // Assert: each note a voice of its own, and a wave of the line's own
+    expect([WORDS.rate.play.sec, WORDS.extent.play.sec]).toEqual([4.4, 4.4])
+    expect(breaths('rate')).toEqual([
+      [0, 5, 30],
+      [2.4, 7, 30],
+    ])
+    expect(breaths('extent')).toEqual([
+      [0, 6, 20],
+      [2.4, 6, 60],
+    ])
+    expect(WORDS.extent.play.line.map((s) => [s.kind, s.from, s.to])).toEqual([
+      ['wave', 0, 2],
+      ['wave', 2.4, 4.4],
+    ])
+  })
+
+  it("keeps Extent's ±20 inside the band, and takes its ±60 past both edges", () => {
+    // Arrange: each line's reach, sampled every 10 ms
+    const reach = (s: WaveStretch, sign: 1 | -1) =>
+      Math.max(
+        ...Array.from(
+          { length: 200 },
+          (_, i) => sign * centsOn(s, s.from + i / 100),
+        ),
+      )
+    const [soft, wide] = WORDS.extent.play.line
+
+    // Assert
+    expect(reach(soft, 1)).toBeLessThanOrEqual(20)
+    expect(reach(soft, -1)).toBeLessThanOrEqual(20)
+    expect(reach(wide, 1)).toBeGreaterThan(HIT_TOLERANCE_CENTS)
+    expect(reach(wide, -1)).toBeGreaterThan(HIT_TOLERANCE_CENTS)
+  })
+
+  it('plays Straight note on D3, 146.83 Hz, the lowest sound, with no wave for 2.0 s: a level line through its band', () => {
+    // Assert
+    expect(WORDS.straight.midi).toBe(D3)
+    expect(hz(D3)).toBeCloseTo(146.83, 2)
+    expect(WORDS.straight.play.lines.map((l) => [l.t, l.vibrato])).toEqual([
+      [0, null],
+    ])
+    expect(WORDS.straight.play.line).toEqual([
+      { kind: 'level', from: 0, to: 2, c: 0 },
+    ])
+  })
+
+  it('grows every wave in over 0.3 s, none slower than five swings a second, so no word answers Step 3 (FACTS 24)', () => {
+    // Act
+    const waves = Object.values(WORDS).flatMap((w) =>
+      w.play.lines.flatMap((l) => (l.vibrato ? [l.vibrato] : [])),
+    )
+
+    // Assert
+    expect(waves).toHaveLength(5)
+    expect(waves.every((v) => v.growIn === GROW_IN)).toBe(true)
+    expect(Math.min(...waves.map((v) => v.rate))).toBe(5)
+  })
+})
 
 describe("the cold open's plays (FACTS 41, 62, 64)", () => {
   it("sings Merc's note on A3 for 3.0 s, six swings a second at ±50 cents, grown in over 0.3 s, as Step 3's six a second", () => {

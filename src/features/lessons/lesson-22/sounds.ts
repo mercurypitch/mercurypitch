@@ -53,6 +53,56 @@ export interface Play {
 /** The cold open's wave, which Step 3's Play: six a second plays again: six swings a second at ±50 cents (FACTS 64, 67). */
 export const COLD_WAVE = waveOf(6, 50)
 
+// ---------------------------------------------------------------- breaths
+
+/** One breath of a play: its seconds, its wave or none, and, for a straight note, how many cents above the play's note it sits. */
+export interface Breath {
+  readonly sec: number
+  readonly vibrato: Vibrato | null
+  readonly cents?: number
+}
+
+/** A play of one breath or more: its seconds, its voices, and its line on the chart's clock. */
+export interface Breaths {
+  readonly sec: number
+  /** Each breath a voice of its own, with its own wave or none (kit/run.ts `playLines`). */
+  readonly lines: readonly RunLine[]
+  readonly line: readonly WaveStretch[]
+}
+
+/** The breaths `parts` on `midi`, one after another, `gap` seconds of quiet between them. */
+export function breaths(
+  midi: number,
+  parts: readonly Breath[],
+  gap: number,
+): Breaths {
+  const f0 = hz(midi)
+  const lines: RunLine[] = []
+  const line: WaveStretch[] = []
+  let at = 0
+  let end = 0
+  for (const b of parts) {
+    const cents = b.cents ?? 0
+    const f = f0 * 2 ** (cents / 1200)
+    end = at + b.sec
+    lines.push({
+      t: at,
+      points: [
+        { t: 0, hz: f },
+        { t: b.sec, hz: f },
+      ],
+      vibrato: b.vibrato,
+    })
+    line.push(
+      ...(b.vibrato === null
+        ? [{ kind: 'level', from: at, to: end, c: cents } as const]
+        : lineOf({ midi, sec: b.sec, vibrato: b.vibrato }, at)),
+    )
+    at = end + gap
+  }
+  return { sec: end, lines, line }
+}
+
 // ---------------------------------------------------------------- the cold open
 
 /** The cold open's note: Merc's wave on A3 for 3.0 s, which Step 3's Play: six a second plays again (FACTS 64, 67). */
@@ -64,44 +114,62 @@ export const STRAIGHT_AT = { top: 50, middle: 0 } as const
 /** An answering play's parts, seconds: the wave, the quiet after it, then the straight note (FACTS 64). */
 export const ANSWER = { wave: 2, gap: 0.3, straight: 2 } as const
 
-/** An answering play: its seconds, its two voices, and its line on the chart's clock. */
-export interface Answer {
-  readonly sec: number
-  /** Merc's wave, then the straight note, each a voice of its own (kit/run.ts `playLines`). */
-  readonly lines: readonly RunLine[]
-  readonly line: readonly WaveStretch[]
-}
-
 /** The cold open's answering play for the straight note `cents` above A3: the wave for 2.0 s, 0.3 s of quiet, the straight note for 2.0 s, 4.3 s in all. */
-export function answerOf(cents: number): Answer {
-  const f0 = hz(A3)
-  const f = f0 * 2 ** (cents / 1200)
-  const at = ANSWER.wave + ANSWER.gap
-  return {
-    sec: at + ANSWER.straight,
-    lines: [
-      {
-        t: 0,
-        points: [
-          { t: 0, hz: f0 },
-          { t: ANSWER.wave, hz: f0 },
-        ],
-        vibrato: COLD_WAVE,
-      },
-      {
-        t: at,
-        points: [
-          { t: 0, hz: f },
-          { t: ANSWER.straight, hz: f },
-        ],
-        vibrato: null,
-      },
+export const answerOf = (cents: number): Breaths =>
+  breaths(
+    A3,
+    [
+      { sec: ANSWER.wave, vibrato: COLD_WAVE },
+      { sec: ANSWER.straight, vibrato: null, cents },
     ],
-    line: [
-      ...lineOf({ midi: A3, sec: ANSWER.wave, vibrato: COLD_WAVE }),
-      { kind: 'level', from: at, to: at + ANSWER.straight, c: cents },
-    ],
-  }
+    ANSWER.gap,
+  )
+
+// ---------------------------------------------------------------- the four words
+
+/** The Straight note word's note, D3, 146.83 Hz, the page's lowest sound: no play before the cold open's choice sets a straight note beside a wave's middle or top (FACTS 70). */
+export const D3 = 50
+
+/** Seconds of quiet between a word's two breaths (FACTS 70). */
+export const WORD_GAP = 0.4
+
+/** The four words, as their tickets' `data-word` names them. */
+export type WordId = 'vibrato' | 'rate' | 'extent' | 'straight'
+
+/** Each word's note and play (FACTS 70): every wave grown in over 0.3 s, none slower than five swings a second. */
+export const WORDS: Readonly<
+  Record<WordId, { readonly midi: number; readonly play: Breaths }>
+> = {
+  vibrato: {
+    midi: A3,
+    play: breaths(A3, [{ sec: 2.5, vibrato: waveOf(6, 30) }], WORD_GAP),
+  },
+  rate: {
+    midi: A3,
+    play: breaths(
+      A3,
+      [
+        { sec: 2, vibrato: waveOf(5, 30) },
+        { sec: 2, vibrato: waveOf(7, 30) },
+      ],
+      WORD_GAP,
+    ),
+  },
+  extent: {
+    midi: A3,
+    play: breaths(
+      A3,
+      [
+        { sec: 2, vibrato: waveOf(6, 20) },
+        { sec: 2, vibrato: waveOf(6, 60) },
+      ],
+      WORD_GAP,
+    ),
+  },
+  straight: {
+    midi: D3,
+    play: breaths(D3, [{ sec: 2, vibrato: null }], WORD_GAP),
+  },
 }
 
 // ---------------------------------------------------------------- the steps
