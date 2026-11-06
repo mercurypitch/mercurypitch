@@ -143,6 +143,21 @@ export function restLine(after: GridBar, beat: number): string {
     : `Beat ${beat + 1} sounding again: ${words}`
 }
 
+/**
+ * Shows a Tempo slider at a tempo: its place, its label, what a screen
+ * reader says, and its track filled to the thumb (the kit's CSS reads --p,
+ * and without it the fill sits halfway whatever the tempo).
+ */
+export function showTempo(input: HTMLInputElement, bpm: number): void {
+  const min = Number(input.min)
+  const max = Number(input.max)
+  input.value = String(bpm)
+  input.setAttribute('aria-valuetext', `${bpm} beats per minute`)
+  input.style.setProperty('--p', `${((bpm - min) / (max - min)) * 100}%`)
+  const readout = input.closest('.slider-row')?.querySelector('label b')
+  if (readout) readout.textContent = `${bpm} BPM`
+}
+
 /** What the steps hold for the visit. */
 interface StepsState {
   step: number
@@ -339,11 +354,10 @@ export function initSteps(): RhythmBar {
 
   // ---------------------------------------------------------------- Step 2: Tempo and Play both
   const tempo = q<HTMLInputElement>('[data-rb-tempo]', root)
-  const readout = tempo.closest('.slider-row')?.querySelector('label b')
+  showTempo(tempo, s.tempo)
   tempo.addEventListener('input', () => {
     s.tempo = Number(tempo.value)
-    tempo.setAttribute('aria-valuetext', `${s.tempo} beats per minute`)
-    if (readout) readout.textContent = `${s.tempo} BPM`
+    showTempo(tempo, s.tempo)
     // what sounds next takes the new tempo from the next beat; the readings go
     if (s.step === 2 && ownShown) bar.retempo(s.tempo)
   })

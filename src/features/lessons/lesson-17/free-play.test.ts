@@ -152,14 +152,16 @@ describe('free play', () => {
     expect(runs).toHaveLength(2)
   })
 
-  it("plays at the slider's tempo, writes the counts, draws the pitch line, and Reset puts back four quarters without a play, the changed beat unwritten", async () => {
+  it("plays at the slider's tempo, the track filled to the thumb, writes the counts, draws the pitch line, and Reset puts back four quarters without a play, the changed beat unwritten", async () => {
     // Arrange
     initFreePlay()
     const tempo = el<HTMLInputElement>('#tempoFree')
+    const filled = [tempo.style.getPropertyValue('--p')]
 
     // Act
     tempo.value = '120'
     tempo.dispatchEvent(new Event('input'))
+    filled.push(tempo.style.getPropertyValue('--p'))
     button('[data-rb-count]').click()
     linePlay().click()
     const bpm = runs[0].o.bpm()
@@ -168,6 +170,7 @@ describe('free play', () => {
     const read = lineFig().querySelectorAll('.rb-read:not(.is-hidden)').length
     tempo.value = '90'
     tempo.dispatchEvent(new Event('input'))
+    filled.push(tempo.style.getPropertyValue('--p'))
     const reread = lineFig().querySelectorAll('.rb-read:not(.is-hidden)').length
     button('[data-rb-lanes]').click()
     const lanes = lineFig().querySelector('svg')?.dataset.staff
@@ -179,6 +182,8 @@ describe('free play', () => {
     expect(bpm).toBe(120)
     expect(words(el('label[for="tempoFree"]'))).toBe('Tempo 90 BPM')
     expect(tempo.getAttribute('aria-valuetext')).toBe('90 beats per minute')
+    // the kit's track fill reads --p, and without it sits halfway at any tempo
+    expect(filled).toEqual(['0%', '100%', '50%'])
     expect(button('[data-rb-count]').getAttribute('aria-pressed')).toBe('true')
     expect(counts).toBe(4)
     // the readings go with a new tempo, to read again as each note ends
