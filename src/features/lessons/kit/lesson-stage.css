@@ -999,11 +999,13 @@
 .range:focus-visible {
   outline-offset: -4px;
 }
+/* tucked under the slider's track, so a tap there goes through to the slider */
 .ticks {
   position: relative;
   height: 18px;
   color: var(--ink-3);
   margin: -6px 13px 0;
+  pointer-events: none;
 }
 .ticks span {
   position: absolute;

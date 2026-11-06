@@ -1070,6 +1070,13 @@ import handler, issue #813.
 **Rule:** list what the borrowed module reaches before importing it, and move what the borrowing page needs into a module that reaches nothing shared with a stylesheet (Lesson 8's recall now takes Lesson 6's questions itself, and its quiz play's clicks have a module of their own). Then compare each `dist/learn/NN.html`'s stylesheet links with main's build: the same files, in the same order. A kit module the other lessons import beside a kit sheet is the same edge: Lesson 17's sung bars reach the comfort check, which shares its chunk with the voice lessons' sheet, so the page imports that sheet in `main.ts` and loads the comfort check there too (its Wrap's rest line), as Lesson 15 does, rather than taking the sheet by `@import`, which leaves the check's chunk without it.
 **See:** `src/features/lessons/lesson-08/recall.ts`, `src/features/lessons/lesson-08/play-clicks.ts`, `src/features/lessons/lesson-17/main.ts`, `src/features/lessons/lesson-17/wrap.ts`
 
+### Keep a decoration tucked over a control from taking its taps
+
+**Symptom:** the lessons' sliders (Lesson 3's Stretch, Lesson 5's Push and Lesson 17's Tempo, each in its step and in free play) measured a tap box 36 px tall in Lesson 17's layout check, though each input is 44 px tall.
+**Cause:** the kit's tick labels under a slider (`.ticks`) sit 6 px up over its track, with each label's mark 8 px above it, so wherever a label stands (the middle one right under the slider's centre) a tap on the slider's lower edge landed on the label, which does nothing.
+**Rule:** a decoration laid over a control, by however few pixels, takes `pointer-events: none`. Measure a target as the layout checks do, by `elementFromPoint` out from its centre (`expectTargets` in `src/e2e/helpers/lesson-qa.ts`), never by the control's own box.
+**See:** `src/features/lessons/kit/lesson-stage.css`, `src/e2e/learn-lesson-17.spec.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
