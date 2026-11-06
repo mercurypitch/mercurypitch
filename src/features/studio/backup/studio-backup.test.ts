@@ -59,9 +59,9 @@ describe('portable Studio backups', () => {
     vi.unstubAllGlobals()
   })
 
-  async function fixture() {
+  async function fixture(format: 'float32' | 'int16' = 'float32') {
     const empty = await service.createProject('A small song')
-    const data = await studioAssetFixture(empty.id)
+    const data = await studioAssetFixture(empty.id, 'asset-one', 0.2, format)
     const project = studioArrangementFixture(empty)
     const lease = await service.acquireLease(empty.id, 'tab-one')
     await service.saveProject(project, { ...lease, expectedRevision: 0 }, [
@@ -106,6 +106,26 @@ describe('portable Studio backups', () => {
     )
     expect(await service.loadProject(restored.id)).toEqual(restored)
     expect(await service.listProjects()).toHaveLength(1)
+  })
+
+  it("keeps a Save space take's 16-bit copy and its format through the database, a backup and a restore", async () => {
+    const { project, data, archive } = await fixture('int16')
+    const saved = await service.readAssetBytes(project.id, 'asset-one')
+    expect(saved.asset.canonicalPcmFormat).toBe('int16')
+    await db.destroy()
+    db = new DexieAdapter()
+
+    const restored = await restoreStudioBackup(archive, service)
+
+    const recovered = await service.readAssetBytes(
+      restored.id,
+      restored.clips[0].assetId,
+    )
+    expect(recovered.asset.canonicalPcmFormat).toBe('int16')
+    expect(recovered.asset.canonicalPcmByteLength).toBe(32 + 64 * 2)
+    expect(await recovered.canonicalPcm.arrayBuffer()).toEqual(
+      await data.canonicalPcm.arrayBuffer(),
+    )
   })
 
   it("backs up and restores a loop take's one audio with its passes, the heard one still heard", async () => {

@@ -49,6 +49,72 @@ describe('Studio asset preparation', () => {
     await validatePreparedStudioAsset(data)
   })
 
+  it('keeps a Save space copy as 16-bit steps in half the room, exact for a 16-bit source, and says so in the take', async () => {
+    // What Chromium decodes a 16-bit WAV into (canonical-pcm16.ts).
+    const sixteen = (whole: number) =>
+      Math.fround(whole * (whole < 0 ? 2 ** -15 : Math.fround(1 / 32_767)))
+    const audio = sampledAudio([
+      Array.from({ length: 24000 }, (_, i) =>
+        sixteen(((i * 97) % 65_536) - 32_768),
+      ),
+      Array.from({ length: 24000 }, (_, i) =>
+        sixteen(((i * 31) % 4_000) - 2_000),
+      ),
+    ])
+    const { createDecodeContext } = decoder(audio)
+    const blob = new Blob(['encoded source'], { type: 'audio/wav' })
+
+    const data = await prepareStudioAsset(blob, info, {
+      createDecodeContext,
+      canonicalFormat: 'int16',
+    })
+
+    expect(data.asset).toMatchObject({
+      canonicalPcmFormat: 'int16',
+      canonicalPcmByteLength: 32 + 24000 * 2 * 2,
+    })
+    expect(data.original).toBe(blob)
+    const canonical = await decodeCanonicalPcm(data.canonicalPcm, data.asset)
+    expect(canonical.getChannelData(0)).toEqual(audio.getChannelData(0))
+    expect(canonical.getChannelData(1)).toEqual(audio.getChannelData(1))
+    await validatePreparedStudioAsset(data)
+    // Full quality writes no format: the take looks as every take did before.
+    const full = await prepareStudioAsset(blob, info, decoder(audio))
+    expect(full.asset).not.toHaveProperty('canonicalPcmFormat')
+    expect(full.asset.canonicalPcmByteLength).toBe(32 + 24000 * 2 * 4)
+  })
+
+  it('holds room for a float copy on a Save space import, as audio no 16-bit copy can hold is kept in floats', async () => {
+    const huge = Math.fround(3.4028234663852886e38)
+
+    /** The memory held once the decoded audio is first read. */
+    async function heldFor(canonicalFormat?: 'int16') {
+      const audio = sampledAudio([[0.25, huge, -0.5, 0.125]])
+      let held = 0
+      const watched: PcmAudio = {
+        sampleRate: audio.sampleRate,
+        numberOfChannels: audio.numberOfChannels,
+        length: audio.length,
+        getChannelData: (channel) => {
+          held ||= studioReservedMemoryBytes()
+          return audio.getChannelData(channel)
+        },
+      }
+      const data = await prepareStudioAsset(new Blob(['encoded']), info, {
+        ...decoder(watched),
+        canonicalFormat,
+      })
+      return { held, data }
+    }
+
+    const full = await heldFor()
+    const compact = await heldFor('int16')
+
+    expect(compact.data.asset).not.toHaveProperty('canonicalPcmFormat')
+    expect(compact.data.asset.canonicalPcmByteLength).toBe(32 + 4 * 4)
+    expect(compact.held).toBe(full.held)
+  })
+
   it('rejects unsupported channels, rate, duration, corrupt samples and decoder failures', async () => {
     const blob = new Blob(['audio'])
     for (const [audio, message] of [

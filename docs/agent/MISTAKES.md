@@ -535,6 +535,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** while `airPlayAlone()`, the carrier stands aside, paused by a pause of ours and muted, the unlock clip keeps quiet and muted, and nothing plays either; never set `navigator.audioSession.type` to playback there. Keeping an element off AirPlay (`x-webkit-airplay="deny"`) is not enough.
 **See:** `standCarrierAside` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `keepUnlockClipQuiet` in `src/lib/audio-unlock.ts`, `standAsideOnAirPlay` in `apps/mercurypitch/src/infrastructure/native-device.ts`.
 
+### Check 16-bit exactness against the decoder's own grid, which is not x/32768
+
+**Symptom:** a check meant to tell that a decoded WAV came from 16-bit samples, so Studio's Save space could keep it exactly, failed for every positive sample; the obvious test `x * 32768` being whole held for negative ones only.
+**Cause:** Chromium's decodeAudioData maps a 16-bit value q to `q / 32768` below zero and to `q * fround(1 / 32767)` from zero up, so 32767 decodes to exactly 1.0 (measured over all 65536 values, Chromium 148; dividing by 32767 instead of multiplying by its float reciprocal misses 768 of them). Firefox divides both by 32768. The app's own writer (`floatToPcm16` in take-audio.ts) uses the same asymmetric scale.
+**Rule:** test a float for a decoder's grid by rounding back to a whole step and multiplying again in 32-bit (`Math.fround(q * step) === x`), with each browser's steps, and keep the two step sizes with the samples rather than one. Probe a decoder with a WAV of every value before trusting a mapping.
+**See:** `src/lib/studio/audio/canonical-pcm16.ts`, `src/lib/studio/record/take-audio.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

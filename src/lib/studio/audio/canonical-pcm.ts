@@ -1,17 +1,31 @@
 // ============================================================
 // Canonical Studio PCM — versioned, hash-checked, little-endian source samples
 // ============================================================
+//
+// Two versions share the 32-byte header. Version 1, every song's copy at
+// full quality, is planar 32-bit floats with bytes 24..31 reserved zeroes.
+// Version 2, Save space's (storage-quality.ts), is planar 16-bit steps with
+// the step below zero and the step above it in bytes 24..31
+// (canonical-pcm16.ts). A reader takes only the version the take's metadata
+// names, so a take cannot change format without its hash and metadata, and
+// a build from before version 2 refuses one rather than misreading it.
 
+import type { Pcm16Steps } from './canonical-pcm16'
+import { choosePcm16Steps, readPcm16Channel, validPcm16Steps, writePcm16Channel, } from './canonical-pcm16'
 import type { PcmAudio, StudioImportLimits } from './import-limits'
 import { admitWorkingBytes, checkImportCancelled, importCheckpoint, importLimits, validatePcmDimensions, } from './import-limits'
 import { sha256InPlace } from './sha256'
 
 export const CANONICAL_PCM_VERSION = 1
+/** The version that keeps 16-bit steps: Save space's copy. */
+export const CANONICAL_PCM16_VERSION = 2
 export const CANONICAL_PCM_HEADER_BYTES = 32
 export const CANONICAL_PCM_MIME = 'application/vnd.mercurypitch.pcm'
 const MAGIC = 0x4d43504d // MPCM as little-endian bytes.
+const FLOAT32_FORMAT = 1 // Planar Float32, little endian.
+const INT16_FORMAT = 2 // Planar 16-bit steps, little endian.
 const CHUNK_SAMPLES = 65_536
-// Canonical PCM is little-endian Float32, so on a little-endian platform (every
+// Canonical PCM is little-endian, so on a little-endian platform (every
 // browser in use) samples are read and written through typed views, not per value.
 const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
 
@@ -21,17 +35,117 @@ function allFinite(samples: Float32Array, from: number, to: number): boolean {
   return true
 }
 
+/** How a canonical copy keeps its samples: 32-bit floats (version 1) or 16-bit steps (version 2). */
+export type CanonicalPcmFormat = 'float32' | 'int16'
+
 export interface CanonicalPcmMetadata {
   channels: 1 | 2
   normalizedSampleRate: 48_000
   normalizedFrameCount: number
   canonicalPcmByteLength: number
   canonicalPcmSha256: string
+  /** Absent for 32-bit floats, the format every take had before Save space. */
+  canonicalPcmFormat?: 'int16'
 }
 
 export interface CanonicalPcmOptions {
   signal?: AbortSignal
   limits?: Partial<StudioImportLimits>
+}
+
+export interface CanonicalPcmEncodeOptions extends CanonicalPcmOptions {
+  /** 16-bit steps where the audio allows them; 32-bit floats when absent. */
+  format?: CanonicalPcmFormat
+}
+
+/** Where a checked header says the samples are, and how to read them. */
+export interface CanonicalPcmLayout {
+  readonly format: CanonicalPcmFormat
+  readonly bytesPerSample: 2 | 4
+  /** The steps of a 16-bit copy; null for floats. */
+  readonly steps: Pcm16Steps | null
+}
+
+export function canonicalPcmBytesPerSample(format: CanonicalPcmFormat): 2 | 4 {
+  return format === 'int16' ? 2 : 4
+}
+
+/** The size of a canonical copy of this many frames: its header and its samples. */
+export function canonicalPcmByteLength(
+  frames: number,
+  channels: number,
+  format: CanonicalPcmFormat,
+): number {
+  return (
+    CANONICAL_PCM_HEADER_BYTES +
+    frames * channels * canonicalPcmBytesPerSample(format)
+  )
+}
+
+/** The format a take's metadata names for its canonical copy. */
+export function canonicalPcmFormatOf(
+  metadata: Pick<CanonicalPcmMetadata, 'canonicalPcmFormat'>,
+): CanonicalPcmFormat {
+  return metadata.canonicalPcmFormat === 'int16' ? 'int16' : 'float32'
+}
+
+/** The layout of canonical PCM whose header was already checked. */
+export function canonicalPcmLayout(header: DataView): CanonicalPcmLayout {
+  if (header.getUint16(14, true) !== INT16_FORMAT)
+    return { format: 'float32', bytesPerSample: 4, steps: null }
+  return {
+    format: 'int16',
+    bytesPerSample: 2,
+    steps: {
+      negative: header.getFloat32(24, true),
+      positive: header.getFloat32(28, true),
+    },
+  }
+}
+
+/**
+ * Channel `channel` of checked canonical PCM as floats, into `output`: the
+ * samples themselves for a float copy, what each step stands for in a
+ * 16-bit one.
+ */
+export async function readCanonicalChannel(
+  pcm: DataView<ArrayBuffer>,
+  layout: CanonicalPcmLayout,
+  frames: number,
+  channel: number,
+  output: Float32Array,
+  signal?: AbortSignal,
+): Promise<void> {
+  const offset =
+    pcm.byteOffset +
+    CANONICAL_PCM_HEADER_BYTES +
+    channel * frames * layout.bytesPerSample
+  if (layout.steps !== null) {
+    await readPcm16Channel(
+      pcm.buffer,
+      offset,
+      frames,
+      layout.steps,
+      output,
+      signal,
+    )
+    return
+  }
+  for (let from = 0; from < frames; from += CHUNK_SAMPLES) {
+    const to = Math.min(frames, from + CHUNK_SAMPLES)
+    if (LITTLE_ENDIAN)
+      output.set(
+        new Float32Array(pcm.buffer, offset + from * 4, to - from),
+        from,
+      )
+    else
+      for (let frame = from; frame < to; frame++)
+        output[frame] = pcm.getFloat32(
+          offset - pcm.byteOffset + frame * 4,
+          true,
+        )
+    await importCheckpoint(signal)
+  }
 }
 
 export async function sha256Bytes(bytes: ArrayBuffer): Promise<string> {
@@ -73,27 +187,87 @@ async function writeChannelByValue(
   }
 }
 
+function writeHeader(
+  view: DataView,
+  audio: PcmAudio,
+  size: number,
+  steps: Pcm16Steps | null,
+): void {
+  view.setUint32(0, MAGIC, true)
+  view.setUint16(
+    4,
+    steps === null ? CANONICAL_PCM_VERSION : CANONICAL_PCM16_VERSION,
+    true,
+  )
+  view.setUint16(6, CANONICAL_PCM_HEADER_BYTES, true)
+  view.setUint32(8, 48_000, true)
+  view.setUint16(12, audio.numberOfChannels, true)
+  view.setUint16(14, steps === null ? FLOAT32_FORMAT : INT16_FORMAT, true)
+  view.setUint32(16, audio.length, true)
+  view.setUint32(20, size - CANONICAL_PCM_HEADER_BYTES, true)
+  // Version 1 leaves bytes 24..31 reserved zeroes; readers reject unknown
+  // extensions. Version 2 keeps its steps there.
+  if (steps === null) return
+  view.setFloat32(24, steps.negative, true)
+  view.setFloat32(28, steps.positive, true)
+}
+
+function channelsOf(audio: PcmAudio): Float32Array[] {
+  return Array.from({ length: audio.numberOfChannels }, (_, channel) => {
+    const samples = audio.getChannelData(channel)
+    if (samples.length !== audio.length)
+      throw new Error('Audio channel lengths do not match')
+    return samples
+  })
+}
+
+/** The 16-bit copy: steps chosen over every channel, then each written as whole steps. */
+async function encodePcm16(
+  audio: PcmAudio,
+  channels: readonly Float32Array[],
+  steps: Pcm16Steps,
+  limits: StudioImportLimits,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const size = canonicalPcmByteLength(audio.length, channels.length, 'int16')
+  admitWorkingBytes(size * 3, limits)
+  const bytes = new ArrayBuffer(size)
+  writeHeader(new DataView(bytes), audio, size, steps)
+  for (const [channel, samples] of channels.entries())
+    await writePcm16Channel(
+      samples,
+      steps,
+      bytes,
+      CANONICAL_PCM_HEADER_BYTES + channel * audio.length * 2,
+      signal,
+    )
+  return new Blob([bytes], { type: CANONICAL_PCM_MIME })
+}
+
 export async function encodeCanonicalPcm(
   audio: PcmAudio,
-  options: CanonicalPcmOptions = {},
+  options: CanonicalPcmEncodeOptions = {},
 ): Promise<Blob> {
   checkImportCancelled(options.signal)
   const limits = importLimits(options.limits)
   validatePcmDimensions(audio, limits)
-  const size =
-    CANONICAL_PCM_HEADER_BYTES + audio.length * audio.numberOfChannels * 4
+  if (options.format === 'int16') {
+    const channels = channelsOf(audio)
+    const steps = await choosePcm16Steps(channels, options.signal)
+    // Audio no 16-bit copy can hold keeps 32-bit floats; the take's
+    // metadata reads its format from what was written.
+    if (steps !== null)
+      return encodePcm16(audio, channels, steps, limits, options.signal)
+  }
+  const size = canonicalPcmByteLength(
+    audio.length,
+    audio.numberOfChannels,
+    'float32',
+  )
   admitWorkingBytes(size * 3, limits)
   const bytes = new ArrayBuffer(size)
   const view = new DataView(bytes)
-  view.setUint32(0, MAGIC, true)
-  view.setUint16(4, CANONICAL_PCM_VERSION, true)
-  view.setUint16(6, CANONICAL_PCM_HEADER_BYTES, true)
-  view.setUint32(8, 48_000, true)
-  view.setUint16(12, audio.numberOfChannels, true)
-  view.setUint16(14, 1, true) // Planar Float32, little endian.
-  view.setUint32(16, audio.length, true)
-  view.setUint32(20, size - CANONICAL_PCM_HEADER_BYTES, true)
-  // Bytes 24..31 remain reserved zeroes; readers reject unknown extensions.
+  writeHeader(view, audio, size, null)
   for (let channel = 0; channel < audio.numberOfChannels; channel++) {
     const samples = audio.getChannelData(channel)
     if (samples.length !== audio.length)
@@ -120,6 +294,25 @@ function validateHeader(
   return view
 }
 
+/** Whether a header's version, format and bytes 24..31 are those of the format its take names. */
+function supportedLayout(view: DataView, format: CanonicalPcmFormat): boolean {
+  if (format === 'float32')
+    return (
+      view.getUint16(4, true) === CANONICAL_PCM_VERSION &&
+      view.getUint16(14, true) === FLOAT32_FORMAT &&
+      view.getUint32(24, true) === 0 &&
+      view.getUint32(28, true) === 0
+    )
+  return (
+    view.getUint16(4, true) === CANONICAL_PCM16_VERSION &&
+    view.getUint16(14, true) === INT16_FORMAT &&
+    validPcm16Steps({
+      negative: view.getFloat32(24, true),
+      positive: view.getFloat32(28, true),
+    })
+  )
+}
+
 /**
  * The header of canonical PCM `byteLength` bytes long, read from its first
  * bytes: what a reader that streams the take checks before its samples.
@@ -134,13 +327,11 @@ export function checkCanonicalPcmHeader(
     throw new Error('Studio audio header is incomplete')
   const channels = view.getUint16(12, true)
   const frames = view.getUint32(16, true)
+  const format = canonicalPcmFormatOf(metadata)
   if (
     view.getUint32(0, true) !== MAGIC ||
-    view.getUint16(4, true) !== 1 ||
     view.getUint16(6, true) !== CANONICAL_PCM_HEADER_BYTES ||
-    view.getUint16(14, true) !== 1 ||
-    view.getUint32(24, true) !== 0 ||
-    view.getUint32(28, true) !== 0
+    !supportedLayout(view, format)
   ) {
     throw new Error('Studio audio format is not supported')
   }
@@ -153,7 +344,7 @@ export function checkCanonicalPcmHeader(
     },
     limits,
   )
-  const expectedSize = CANONICAL_PCM_HEADER_BYTES + frames * channels * 4
+  const expectedSize = canonicalPcmByteLength(frames, channels, format)
   if (
     view.getUint32(20, true) !== expectedSize - CANONICAL_PCM_HEADER_BYTES ||
     byteLength !== expectedSize ||
@@ -183,12 +374,17 @@ export function checkCanonicalSize(
   }
 }
 
-/** Every sample must be a finite number; the header was checked first. */
+/**
+ * Every sample must be a finite number; the header was checked first. A
+ * 16-bit copy has nothing to scan: any whole number of its checked steps is
+ * a finite float.
+ */
 async function checkSamples(
   bytes: ArrayBuffer,
   view: DataView,
   signal?: AbortSignal,
 ): Promise<void> {
+  if (canonicalPcmLayout(view).steps !== null) return
   const sampleCount = (bytes.byteLength - CANONICAL_PCM_HEADER_BYTES) / 4
   if (LITTLE_ENDIAN) {
     const samples = new Float32Array(
@@ -331,9 +527,10 @@ export async function decodeCanonicalPcm(
 ): Promise<PcmAudio> {
   const bytes = await readCanonicalPcmBytes(blob, metadata, options)
   const view = new DataView(bytes)
+  const layout = canonicalPcmLayout(view)
   const channels: Float32Array[] = []
   for (let channel = 0; channel < metadata.channels; channel++) {
-    if (LITTLE_ENDIAN) {
+    if (LITTLE_ENDIAN && layout.steps === null) {
       // Views share the bytes just read, so decoding adds no second copy.
       channels.push(
         new Float32Array(
@@ -346,19 +543,14 @@ export async function decodeCanonicalPcm(
       continue
     }
     const samples = new Float32Array(metadata.normalizedFrameCount)
-    for (let from = 0; from < samples.length; from += CHUNK_SAMPLES) {
-      for (
-        let frame = from;
-        frame < Math.min(samples.length, from + CHUNK_SAMPLES);
-        frame++
-      ) {
-        samples[frame] = view.getFloat32(
-          CANONICAL_PCM_HEADER_BYTES + (channel * samples.length + frame) * 4,
-          true,
-        )
-      }
-      await importCheckpoint(options.signal)
-    }
+    await readCanonicalChannel(
+      view,
+      layout,
+      samples.length,
+      channel,
+      samples,
+      options.signal,
+    )
     channels.push(samples)
   }
   return {

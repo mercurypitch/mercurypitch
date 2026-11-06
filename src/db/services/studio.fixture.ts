@@ -1,4 +1,5 @@
 // Studio persistence fixtures — small real canonical audio for transaction and backup tests.
+import type { CanonicalPcmFormat } from '@/lib/studio/audio/canonical-pcm'
 import { encodeCanonicalPcm, sha256Bytes, } from '@/lib/studio/audio/canonical-pcm'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioAssetData, StudioProject } from '@/lib/studio/model/types'
@@ -8,18 +9,23 @@ export async function studioAssetFixture(
   id = 'asset-one',
   /** A different level makes different audio, with its own canonical hash. */
   level = 0.2,
+  /** 'int16' keeps the canonical copy as Save space does. */
+  format: CanonicalPcmFormat = 'float32',
 ): Promise<StudioAssetData> {
   const samples = Float32Array.from(
     { length: 64 },
     (_, frame) => Math.sin(frame * 0.1) * level,
   )
   const original = new Blob(['fixture original audio'], { type: 'audio/wav' })
-  const canonicalPcm = await encodeCanonicalPcm({
-    sampleRate: 48000,
-    numberOfChannels: 1,
-    length: samples.length,
-    getChannelData: () => samples,
-  })
+  const canonicalPcm = await encodeCanonicalPcm(
+    {
+      sampleRate: 48000,
+      numberOfChannels: 1,
+      length: samples.length,
+      getChannelData: () => samples,
+    },
+    { format },
+  )
   return {
     original,
     canonicalPcm,
@@ -36,6 +42,7 @@ export async function studioAssetFixture(
       canonicalPcmId: `${id}-pcm-v1`,
       canonicalPcmSha256: await sha256Bytes(await canonicalPcm.arrayBuffer()),
       canonicalPcmByteLength: canonicalPcm.size,
+      ...(format === 'int16' ? { canonicalPcmFormat: 'int16' as const } : {}),
       preparation: { algorithmVersion: 'bs1770-48k-v1', gainDb: 3 },
       provenance: {
         kind: 'karaoke',

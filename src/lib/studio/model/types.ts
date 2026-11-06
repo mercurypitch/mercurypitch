@@ -129,6 +129,13 @@ export interface StudioAsset {
   readonly canonicalPcmId: string
   readonly canonicalPcmSha256: string
   readonly canonicalPcmByteLength: number
+  /**
+   * How the canonical copy keeps its samples: absent for 32-bit floats,
+   * 'int16' for Save space's 16-bit steps (canonical-pcm16.ts). A take keeps
+   * the format it was imported with whatever the setting is later. A build
+   * from before Save space refuses a take with this field.
+   */
+  readonly canonicalPcmFormat?: 'int16'
   readonly preparation: {
     readonly algorithmVersion: typeof STUDIO_PREPARATION_VERSION
     readonly gainDb: number

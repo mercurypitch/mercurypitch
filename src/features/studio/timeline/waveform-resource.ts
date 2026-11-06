@@ -7,6 +7,7 @@
 // and a take without one, from before peaks were kept or not yet saved, is
 // built in the Studio audio worker from its checked PCM and stored for next
 // time.
+import { canonicalPcmFormatOf } from '@/lib/studio/audio/canonical-pcm'
 import { buildStudioPeaksBytes } from '@/lib/studio/audio/studio-audio-client'
 import type { StudioPeaks } from '@/lib/studio/audio/waveform-peaks'
 import { decodeStudioPeaks, studioPeaksByteLength, } from '@/lib/studio/audio/waveform-peaks'
@@ -34,6 +35,15 @@ export type StudioWaveformEnvelope = StudioPeaks
 export interface StudioWaveformPeaksStore {
   read(asset: StudioAsset): Promise<ArrayBuffer | null>
   write(asset: StudioAsset, bytes: ArrayBuffer): Promise<void>
+}
+
+/** What the worker holds while it checks and scans a take: its copy, and a Save space take's steps as floats besides. */
+function peaksWorkingBytes(asset: StudioAsset): number {
+  const floats =
+    canonicalPcmFormatOf(asset) === 'int16'
+      ? asset.normalizedFrameCount * asset.channels * 4
+      : 0
+  return asset.canonicalPcmByteLength + floats
 }
 
 function reserve(bytes: number): () => void {
@@ -82,8 +92,7 @@ export function createStudioWaveformResource(
   }
 
   async function build(asset: StudioAsset): Promise<StudioPeaks> {
-    // The worker holds one copy of the take while it checks and scans it.
-    const releaseRead = reserve(asset.canonicalPcmByteLength)
+    const releaseRead = reserve(peaksWorkingBytes(asset))
     try {
       const blob = await read(asset.id)
       abort.signal.throwIfAborted()
