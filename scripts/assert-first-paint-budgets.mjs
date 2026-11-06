@@ -417,8 +417,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // quizzes load after first paint, but their import brings Vite's preload
   // helper: 148,436. Its four words bring the kit's words strip: 151,022.
   // The take and free play load after first paint, and the explorer's six
-  // pads come with Season 2's data (kit/season-2-figures.ts): 152,307.
-  'learn/19.html': 149,
+  // pads come with Season 2's data (kit/season-2-figures.ts): 152,307. Six
+  // pads 44 px wide at 344 px, each figure drawn inside its border: 152,574.
+  'learn/19.html': 150,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

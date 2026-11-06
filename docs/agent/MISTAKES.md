@@ -1077,6 +1077,13 @@ import handler, issue #813.
 **Rule:** a decoration laid over a control, by however few pixels, takes `pointer-events: none`. Measure a target as the layout checks do, by `elementFromPoint` out from its centre (`expectTargets` in `src/e2e/helpers/lesson-qa.ts`), never by the control's own box.
 **See:** `src/features/lessons/kit/lesson-stage.css`, `src/e2e/learn-lesson-17.spec.ts`
 
+### Size a drawing by the box it fills, inside its element's border
+
+**Symptom:** at 344 px wide Lesson 19's six pads showed 43.6 px in Step 1 and free play, though the drawing made each 44 px, and every rhythm figure in a step's stage, Lesson 17's too, showed 0.8 % small, its pad buttons about a pixel off their pads. A layout check that rounded to the pixel passed.
+**Cause:** the stage's `.viz` has a 1 px border above and below. The kit's `figureSize` read the figure's border box, 310 × 250, the drawing's viewBox took that size, and the SVG, set inside the border, is 310 × 248, so the browser scaled the whole drawing to fit.
+**Rule:** a drawing made for an element's size takes the box it fills, the border box less its borders (`figureSize` in `kit/rhythm-draw.ts`). Measure a drawn mark as it shows, to a tenth of a pixel, so a scale cannot round away.
+**See:** `src/features/lessons/kit/rhythm-draw.ts`, `src/e2e/learn-lesson-19.spec.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

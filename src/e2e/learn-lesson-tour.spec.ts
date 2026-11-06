@@ -538,6 +538,52 @@ for (const [n, name, size] of [
   })
 }
 
+for (const [name, size] of [
+  ['phone', PHONE],
+  ['desktop', DESKTOP],
+] as const) {
+  test(`on Lesson 19, a page with nothing sung, on a ${name} (${size.width} x ${size.height}) the first step says nothing of singing, and the third lights the take on #tap`, async ({
+    page,
+  }) => {
+    // Arrange: Lesson 19's WEB-SPEC, What the kit and the app still need, item 13
+    await page.setViewportSize(size)
+    await openFirstVisit(page, 19)
+    await expect(card(page)).toBeVisible(OPENED)
+    const targets = [
+      STEP_TARGETS[0],
+      STEP_TARGETS[1],
+      ['#tap'],
+      STEP_TARGETS[3],
+      STEP_TARGETS[4],
+    ]
+    const titles = [
+      TITLES[0],
+      TITLES[1],
+      'Your turn to tap',
+      TITLES[3],
+      TITLES[4],
+    ]
+    const first = await card(page).innerText()
+    const lights: boolean[] = []
+
+    // Act
+    for (const [i, t] of targets.entries()) {
+      await expect(card(page).getByRole('heading')).toHaveText(titles[i])
+      await expect.poll(() => lit(page, t)).toBe(true)
+      lights.push(await lit(page, t))
+      if (i < targets.length - 1) await next(page).click()
+    }
+
+    // Assert
+    expect(first).toContain(
+      'They teach every lesson. Listen along, then try each idea yourself.',
+    )
+    expect(first).not.toMatch(/\bsing\b/i)
+    expect(lights).toEqual([true, true, true, true, true])
+    await expect(card(page)).toContainText('5 of 5')
+  })
+}
+
 test("on Lesson 1's first visit the page holds still while Merc and Tavi land, and the card comes once they have, before the cap", async ({
   page,
 }) => {

@@ -505,6 +505,70 @@ test("Lesson 17's card sets up Lesson 18 with its tease, one line above its hook
   await expect(c).toHaveAttribute('href', '#explorer')
 })
 
+test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook, and keeps the page's tease still after its words: nine beads on a string, do re mi so la so mi re do, each in its band, nothing lit and no words", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/19')
+
+  // Assert: Lesson 20 has no page yet, so the card leads to the map (WEB-SPEC, Toys 11)
+  const c = card(page)
+  await expect(c.locator('.next-tease')).toHaveText(
+    LESSON_COPY[20]?.tease ?? 'Lesson 20 has a tease',
+  )
+  expect(
+    await c
+      .locator('.next-words > *')
+      .evaluateAll((els) => els.map((e) => e.className)),
+  ).toEqual(['eyebrow', 'next-tease', 'q2', 'chip'])
+  expect(
+    await c.evaluate((a) =>
+      Array.from(a.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l19-tease'])
+  await expect(c.locator('.l19-tease')).toHaveAttribute('aria-hidden', 'true')
+  const still = c.locator('.l19-tease svg[data-tease-line]')
+  await expect(still).toBeVisible()
+  expect(
+    await still.evaluate((svg) => {
+      const num = (e: Element, a: string): number => Number(e.getAttribute(a))
+      const beads = Array.from(svg.querySelectorAll('.bead'))
+      const bands = Array.from(svg.querySelectorAll('.band'))
+      const ys = beads.map((b) => num(b, 'cy'))
+      return {
+        beads: beads.length,
+        inBand: beads.filter((b, i) => {
+          const band = bands.at(i)
+          if (band === undefined) return false
+          const [x, y] = [num(b, 'cx'), num(b, 'cy')]
+          const [bx, by] = [num(band, 'x'), num(band, 'y')]
+          return (
+            x >= bx &&
+            x <= bx + num(band, 'width') &&
+            y >= by &&
+            y <= by + num(band, 'height')
+          )
+        }).length,
+        rises: ys.slice(1, 5).every((y, k) => y < ys[k]),
+        mirrored: ys.join() === [...ys].reverse().join(),
+        words: (svg.textContent ?? '').trim().length,
+        lit: svg.querySelectorAll('.is-sounding, .is-now, .is-lit').length,
+        moving: svg.getAnimations({ subtree: true }).length,
+      }
+    }),
+  ).toEqual({
+    beads: 9,
+    inBand: 9,
+    rises: true,
+    mirrored: true,
+    words: 0,
+    lit: 0,
+    moving: 0,
+  })
+  await expect(c.locator('button')).toHaveCount(0)
+  await expect(c).toHaveAttribute('href', '#explorer')
+})
+
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
   page,
 }) => {
