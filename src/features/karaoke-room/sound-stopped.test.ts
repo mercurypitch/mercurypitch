@@ -3,30 +3,29 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AIRPLAY_CANNOT, MIRRORING_CAN, soundStoppedNotice, STOPPED_HERE, } from './sound-stopped'
+import { soundStoppedNotice, STOPPED_HERE } from './sound-stopped'
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('soundStoppedNotice', () => {
-  it('names the receiver, says AirPlay cannot carry the sound to a TV and Screen Mirroring can, with no Play again', () => {
+  it('names the receiver the sound went to over AirPlay, and how to hear it here instead', () => {
     const notice = soundStoppedNotice(true, 'LG C2')
 
     expect(notice.lines).toEqual([
       'The sound went to LG C2 over AirPlay and stopped.',
-      "AirPlay cannot carry the room's sound to a TV.",
-      'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
       'To hear it here, choose this phone under AirPlay in Control Center.',
     ])
-    // Playing again would send the sound back to the same receiver.
-    expect(notice.playAgain).toBe(false)
-    expect(notice.closable).toBe(true)
   })
 
-  it('says how to reach Screen Mirroring: Control Center, Screen Mirroring, then the TV', () => {
-    expect(MIRRORING_CAN).toMatch(/Control Center.*Screen Mirroring.*your TV/u)
-    expect(AIRPLAY_CANNOT).toMatch(/^AirPlay cannot/u)
+  // Web Audio alone reaches an AirPlay TV (the sound check, 6 Nov 2026):
+  // the old words said AirPlay could not carry it.
+  it('never says AirPlay cannot carry the sound, or sends the singer to Screen Mirroring for it', () => {
+    const words = soundStoppedNotice(true, 'LG C2').lines.join(' ')
+
+    expect(words).not.toMatch(/cannot|can't/u)
+    expect(words).not.toContain('Screen Mirroring')
   })
 
   it('says AirPlay alone where the phone named no receiver, as for one suspected', () => {
@@ -50,14 +49,10 @@ describe('soundStoppedNotice', () => {
     )
   })
 
-  it('says the sound stopped anywhere else, and offers to play again', () => {
+  it('says the sound stopped anywhere else', () => {
     const notice = soundStoppedNotice(false, 'Speaker')
 
-    expect(notice).toEqual({
-      lines: [STOPPED_HERE],
-      playAgain: true,
-      closable: false,
-    })
+    expect(notice).toEqual({ lines: [STOPPED_HERE] })
     expect(notice.lines).toEqual(['The sound stopped.'])
   })
 })

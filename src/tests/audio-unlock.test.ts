@@ -278,4 +278,77 @@ describe('iOS audio unlock', () => {
     expect(context.suspend).not.toHaveBeenCalled()
     expect(context.resume).not.toHaveBeenCalled()
   })
+
+  // Over AirPlay, Web Audio reached the TV only with no element playing
+  // beside it (the AirPlay sound check, 6 Nov 2026).
+  describe('on AirPlay alone', () => {
+    it('neither plays nor sounds the clip on a tap, and still wakes the clock', async () => {
+      const { keepUnlockClipQuiet, unlockAudio } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext('suspended')
+      unlockAudio(context as unknown as AudioContext)
+      const clip = vi.mocked(Audio).mock.results[0]?.value as {
+        muted?: boolean
+      }
+      vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+      keepUnlockClipQuiet(true)
+      context.state = 'suspended'
+      unlockAudio(context as unknown as AudioContext)
+
+      expect(clip.muted).toBe(true)
+      expect(playSilent).toHaveBeenCalledOnce()
+      expect(context.resume).toHaveBeenCalledTimes(2)
+    })
+
+    it('starts only the clock for a press of play', async () => {
+      const { keepUnlockClipQuiet, unlockForPlayback } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext('suspended')
+      vi.spyOn(console, 'info').mockImplementation(() => undefined)
+      keepUnlockClipQuiet(true)
+
+      expect(unlockForPlayback(() => context as unknown as AudioContext)).toBe(
+        context,
+      )
+
+      expect(playSilent).not.toHaveBeenCalled()
+      expect(context.resume).toHaveBeenCalledOnce()
+    })
+
+    it('plays the clip again at the next tap once the sound leaves AirPlay', async () => {
+      const { installAudioUnlock, keepUnlockClipQuiet, unlockAudio } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext()
+      vi.spyOn(console, 'info').mockImplementation(() => undefined)
+      keepUnlockClipQuiet(true)
+      unlockAudio(context as unknown as AudioContext)
+      const uninstall = installAudioUnlock(
+        () => context as unknown as AudioContext,
+      )
+      document.dispatchEvent(new Event('pointerup'))
+      expect(playSilent).not.toHaveBeenCalled()
+
+      keepUnlockClipQuiet(false)
+      document.dispatchEvent(new Event('pointerup'))
+
+      expect(playSilent).toHaveBeenCalledOnce()
+      uninstall()
+    })
+
+    it('says each change once in the console', async () => {
+      const { keepUnlockClipQuiet } = await import('@/lib/audio-unlock')
+      const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+      keepUnlockClipQuiet(true)
+      keepUnlockClipQuiet(true)
+      keepUnlockClipQuiet(false)
+      keepUnlockClipQuiet(false)
+
+      expect(info.mock.calls.map(([line]) => String(line))).toEqual([
+        "[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone",
+        '[audio unlock] the sound has left AirPlay: the next tap plays the unlock clip again',
+      ])
+    })
+  })
 })

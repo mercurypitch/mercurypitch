@@ -114,7 +114,7 @@ import { followAirPlaySuspicion, followExternalScreen, } from '@/stores/airplay-
 import { followAudioRoute } from '@/stores/audio-route-store'
 import { nativeDeviceApi, nativeShellApi, registerNativeDevice, } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
-import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
+import { createNativeDevice, standAsideOnAirPlay, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
 import { installNativeHaptics } from './infrastructure/native-haptics'
 import { openTabFromReminders } from './infrastructure/native-reminders'
 import { installNativeShell } from './infrastructure/native-shell'
@@ -183,6 +183,10 @@ followAirPlaySuspicion()
 // The lock screen's song on iOS brings a silent element of its own; the
 // unlock clip stands aside while that element holds the playback session.
 standUnlockClipAsideForNowPlaying()
+// On AirPlay alone, Web Audio reaches the TV only with nothing playing
+// beside it: the lock screen's carrier and the unlock clip both stand aside
+// until the sound leaves AirPlay.
+standAsideOnAirPlay()
 // Lazy: the loader runs on the first sign-in press, so a session that never
 // signs in never pays for the plugin's module graph.
 registerSocialLoginBridge(() => Promise.resolve(createSocialLoginBridge()))

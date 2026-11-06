@@ -4,7 +4,7 @@ For phase P0 and the proofs of concept of
 [tv-cast-and-google-tv.md](tv-cast-and-google-tv.md); requirement ids are in
 [../specs/tv-karaoke.ears.md](../specs/tv-karaoke.ears.md). Tests 1 to 3 need
 no new build: use the current TestFlight build on the iPhone and the current
-app on an Android phone. Tests 4 to 9 need the build named in each. Fill in
+app on an Android phone. Tests 4 to 11 need the build named in each. Fill in
 the tables; that is all that needs to come back.
 
 **Run Tests 4B, 5, 6 and 8 on TestFlight mp-v0.8.52 (3 Nov 2026) or later.**
@@ -17,6 +17,10 @@ TV shows as it connects. Test 7 is Beside Cue's, which `mp-v*` tags do not
 build. **Run Test 9, then Test 8 again, on the
 first build with the AirPlay guide** (branch `feat/airplay-guide`): the
 AirPlay sound check, the AirPlay hint and the report the room writes.
+**Run Test 11 on the first build with branch `feat/airplay-room-sound`**:
+the app's session allows AirPlay, and on AirPlay alone the lock screen's
+carrier and the unlock clip stand aside, so the room's Web Audio plays
+alone, as Test 9's button 3 did.
 
 ## Before you start
 
@@ -382,11 +386,27 @@ so you can tell which one you heard:
 5. Do it again with Screen Mirroring instead of AirPlay, and once on the
    phone's own speaker, as the control.
 
-| Route            | 1 (element) | 2 (kept local) | 3 (Web Audio) | 4 (beside a silent element) | 5 (with the mic) |
-| ---------------- | ----------- | -------------- | ------------- | --------------------------- | ---------------- |
-| AirPlay, LG C2   |             |                |               |                             |                  |
-| Mirroring, LG C2 |             |                |               |                             |                  |
-| Phone speaker    |             |                |               |                             |                  |
+| Route            | 1 (element)  | 2 (kept local) | 3 (Web Audio)  | 4 (beside a silent element) | 5 (with the mic)              |
+| ---------------- | ------------ | -------------- | -------------- | --------------------------- | ----------------------------- |
+| AirPlay, LG C2   | not reported | not reported   | Yes, on the TV | No                          | Yes, on the TV; sometimes not |
+| Mirroring, LG C2 | not reported | not reported   | not reported   | not reported                | not reported                  |
+| Phone speaker    | not reported | not reported   | not reported   | not reported                | not reported                  |
+
+**Run on the LG C2, 6 Nov 2026 at about 17:55** (mp-v0.8.55, TestFlight
+build 1714), the TV chosen under AirPlay in Control Center. Pressing 1
+through 5 in turn, the owner heard button 3 (Web Audio alone, on a fresh
+AudioContext) on the TV, and button 5 (Web Audio with the mic open) too,
+though not every time. Once AirPlay had connected, 3 and then 5 both
+played. The owner's guesses for the misses: AirPlay not yet in sync, or
+something left over from the buttons before it. The second fits how WebKit
+keeps a session in playback for an element that has played audibly, and
+buttons 1, 2 and 4 each play an element that stays up for 3 s after its
+beeps; nothing has told the two apart yet (Test 11 ends with the presses
+that do). Button 4, Web Audio while a silent element kept local plays, was
+not among those heard. Button 4 is how the Karaoke room plays: Web Audio
+beside the lock screen's carrier. Buttons 1 and 2 were not named either
+way, and the `[airplay check]` lines and the Screen Mirroring and speaker
+rows were not reported. What follows is Test 11.
 
 ## Test 10: the Cast receiver spike (branch `feat/cast-receiver`, once a Google TV is registered)
 
@@ -425,6 +445,80 @@ of memory, on the older Chromecast with Google TV.
 | Philips Google TV                 |     |        |      |                   |                |              |
 | Chromecast with Google TV (older) |     |        |      |                   |                |              |
 | Google TV Streamer                |     |        |      |                   |                |              |
+
+## Test 11: the Karaoke room on AirPlay alone (branch `feat/airplay-room-sound`, next build)
+
+Test 9 found Web Audio alone on the TV, and not Web Audio beside a silent
+element. This build plays the room that way on AirPlay alone: the lock
+screen's carrier stands aside (paused and muted) and the unlock clip keeps
+quiet, until the sound leaves AirPlay. The app's own session now allows
+AirPlay too, so its route should say airplay, on the iPhone 13 Pro as well.
+How to read the console is in
+[DEVICE-DEBUGGING.md](../agent/DEVICE-DEBUGGING.md), "A song that sticks
+with its sound on a TV (AirPlay)".
+
+Before each case: Developer, Debug console, "Keep routine logs" on, and
+Clear log under Developer, Audio. Phone volume up. Run each case twice:
+ring switch on ring, then on silent.
+
+**11A: AirPlay chosen before the room opens.**
+
+1. Choose the TV under AirPlay in Control Center (not Screen Mirroring).
+2. Open Karaoke and play a song.
+3. The TV should play the song, about 2 s after Play, and the phone stay
+   quiet. The lyrics follow the page's own output clock, and no route
+   offset moves them for AirPlay, so they may run ahead of the TV's sound
+   by up to that delay; how far depends on whether WebKit counts AirPlay's
+   delay in that clock, which nothing has measured. Say how far ahead
+   they feel. Sing a line too: with the mic open, as with Test 9's button
+   5, does the TV keep playing?
+4. Under the room header, once a launch: "The song is playing on LG C2
+   over AirPlay." (the TV by the name the phone gives it; "The song is
+   playing over AirPlay." where only the page's rate says AirPlay), "The
+   lyrics stay on this phone." and "Screen Mirroring puts the stage on the
+   TV: open Control Center, tap Screen Mirroring, then choose your TV."
+5. The lock screen should show no song from the app while the sound is on
+   AirPlay, and the TV no "Unknown artist" card with a spinner. Write down
+   what each shows.
+6. The console should have
+   `[audio route] airplay, ...`,
+   `[now playing] the sound is on AirPlay: the carrier stands aside, so the room's sound plays alone`
+   and
+   `[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone`,
+   each once.
+7. With the song playing, choose this phone in Control Center. The sound
+   should come back to the phone, the console should say
+   `[now playing] the sound has left AirPlay: the carrier takes its place again, and the lock screen shows the song`,
+   and the lock screen should show the song again once the phone is locked.
+
+**11B: AirPlay chosen mid-song.**
+
+1. Play a song on the phone's speaker. Lock the phone for a moment: the
+   lock screen shows the song.
+2. Unlock, and while it plays, choose the TV under AirPlay in Control
+   Center.
+3. Does the TV play the song, and after how long? If it stays silent,
+   pause and play once in the room, and say whether that brings it.
+4. The lock screen and the TV should show as in 11A, step 5, and the
+   console the same two `stands aside` and `stays quiet` lines.
+5. Choose this phone again, as in 11A, step 7.
+
+If a song stops by itself on AirPlay, the room should say "The sound went
+to LG C2 over AirPlay and stopped." and "To hear it here, choose this phone
+under AirPlay in Control Center.", with Play again. Copy the console then,
+and Developer, Audio, Copy report.
+
+Then Test 9 once more, on AirPlay, to tell apart the two guesses for
+button 5's misses. Press 4 and then 5 straight after, three times; then 3,
+wait 5 s, and 5, three times. Say which presses of 5 the TV played, and
+where 1 and 2 play: the TV, the phone, or nowhere.
+
+| Case | Ring switch | Sound on the TV? How late? | Phone silent? | Lyrics ahead by | Lock screen shows | TV shows | Hint words right? | Back on the phone: sound, lock screen |
+| ---- | ----------- | -------------------------- | ------------- | --------------- | ----------------- | -------- | ----------------- | ------------------------------------- |
+| 11A  | ring        |                            |               |                 |                   |          |                   |                                       |
+| 11A  | silent      |                            |               |                 |                   |          |                   |                                       |
+| 11B  | ring        |                            |               |                 |                   |          |                   |                                       |
+| 11B  | silent      |                            |               |                 |                   |          |                   |                                       |
 
 ## Aside: a TestFlight Subscribe asks for the password
 

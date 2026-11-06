@@ -1,4 +1,4 @@
-/* Screen Mirroring, for a song started on AirPlay (KaraokeAirPlayHint.tsx). */
+/* Where the song and the lyrics are, on AirPlay (KaraokeAirPlayHint.tsx). */
 
 /* Always there, empty while there is nothing to say, so a screen reader
    hears the hint the moment it appears. Under the room header, which takes

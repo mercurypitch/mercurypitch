@@ -37,13 +37,17 @@
 //   [audio route] the page plays at 44100 Hz, the phone's session at 48000 Hz on Speaker: the sound is likely on AirPlay
 //
 // What follows from it, and from a route that says airplay (`airPlayAlone`):
-// a song that starts says, once a launch, that AirPlay cannot carry the
-// room's sound to a TV and Screen Mirroring can (KaraokeAirPlayHint.tsx),
-// and the stopped-song notice says the same (sound-stopped.ts). On the
-// owner's LG C2 the TV showed the song's name and a spinner, and no sound
-// came from the TV or the phone, while the song's clock ran on. An iPhone
-// 11's own session did say airplay, at 44.1 kHz like the page, where the
-// rate alone could not have told: so the route counts as well.
+// nothing plays beside the room's Web Audio, since over AirPlay to the
+// owner's LG C2 Web Audio alone reached the TV and Web Audio beside a
+// silent element did not (the AirPlay sound check, 6 Nov 2026): the lock
+// screen's carrier and the unlock clip stand aside (native-device.ts in the
+// app). A song that starts says, once a launch, that it plays over AirPlay,
+// the lyrics stay on the phone, and Screen Mirroring puts the stage on the
+// TV (KaraokeAirPlayHint.tsx); a song that stops there says where its sound
+// went (sound-stopped.ts). An iPhone 11's own session did say airplay, at
+// 44.1 kHz like the page, where the rate alone could not have told: so the
+// route counts as well, and with `.allowAirPlay` (AudioSessionKit) the
+// route should say it on more phones.
 //
 // The room says each song it starts (`noteSongStart`); on AirPlay alone,
 // whoever listens hears it (`onSongStartOnAirPlay`): a test build writes
@@ -102,9 +106,10 @@ export const airPlaySuspected = (): boolean => suspectsAirPlay(airPlayFacts())
 /**
  * Whether the page's sound goes to AirPlay alone: the route says airplay,
  * or the page's rate says it, and no screen is connected. On the owner's
- * LG C2 the room's sound reached neither the TV nor the phone that way,
- * while Screen Mirroring carried the room and its sound (3 Nov 2026): what
- * the Karaoke room says turns on this.
+ * LG C2 the room's sound reached neither the TV nor the phone that way
+ * while the lock screen's carrier played beside it (3 Nov 2026). What the
+ * Karaoke room says turns on this, and so does whether the carrier and the
+ * unlock clip stand aside (native-device.ts in the app).
  */
 export const airPlayAlone = (): boolean =>
   !screen() && (audioRoute() === 'airplay' || airPlaySuspected())

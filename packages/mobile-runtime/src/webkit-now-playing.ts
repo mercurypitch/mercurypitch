@@ -58,7 +58,10 @@
 // WebKit lets the lock screen move the song only while the carrier is the
 // sound that started last, and the song's clock starts after it. A carrier
 // that plays is played again to stay in front (carrier-in-front.ts).
+// On AirPlay alone the carrier stands aside instead (carrier-aside.ts).
 
+import type { AsideHost } from './carrier-aside'
+import { keepAside } from './carrier-aside'
 import type { InFrontHost } from './carrier-in-front'
 import { keepInFront } from './carrier-in-front'
 import type { SilenceKind } from './carrier-silence'
@@ -110,6 +113,7 @@ export type Carrier = Pick<
   | 'loop'
   | 'preload'
   | 'paused'
+  | 'muted'
   | 'disableRemotePlayback'
   | 'play'
   | 'pause'
@@ -214,6 +218,7 @@ export function webKitNowPlayingAvailable(): boolean {
  * then makes it stale: the song paused and played again in between.
  */
 function onCarrierPause(): void {
+  if (airPlay.now()) return
   if (wanted !== 'playing' || carrier?.paused !== true) return
   console.info('[now playing] the system paused the song')
   systemPaused = true
@@ -227,11 +232,12 @@ function onCarrierPause(): void {
  * app comes back: WebKit plays a carrier it suspended for the app being away
  * then, whatever paused the song. Any other play is put back, so the lock
  * screen keeps showing the song paused. Stale, as a pause can be, once the
- * carrier is paused again.
+ * carrier is paused again. Standing aside for AirPlay, it is put back.
  */
 function onCarrierPlay(): void {
   const element = carrier
-  if (wanted !== 'paused' || element?.paused !== false) return
+  if (element?.paused !== false || airPlay.putBack(element)) return
+  if (wanted !== 'paused') return
   if (systemPaused && !pageJustShown()) {
     systemPaused = false
     console.info('[now playing] the system resumed the song')
@@ -276,6 +282,7 @@ let presses = guardPresses(pressHost)
 const frontHost: InFrontHost = {
   playingCarrier: () =>
     carrier !== null &&
+    !airPlay.now() &&
     wanted === 'playing' &&
     !systemPaused &&
     !carrier.paused &&
@@ -284,6 +291,20 @@ const frontHost: InFrontHost = {
       : null,
 }
 let front = keepInFront(frontHost)
+
+const airPlayHost: AsideHost<Carrier> = {
+  carrier: () => carrier,
+  songPlays: () => wanted === 'playing' && !systemPaused,
+  letGo: () => {
+    front.stop()
+    hold(false)
+  },
+  play: (element) => {
+    if (!element.hasAttribute('src')) element.src = silenceFor(element)
+    playCarrier(element)
+  },
+}
+let airPlay = keepAside(airPlayHost)
 
 type Deliver = (action: WebKitAction, details: WebKitActionDetails) => void
 
@@ -315,10 +336,10 @@ function pageJustShown(): boolean {
  * The carrier sounding: from here it holds the playback session, and the
  * unlock clip can stand aside. Not before: muted while the carrier was still
  * loading, the clip would leave the session nothing audible, and WebKit
- * would make it mixable under the song for that moment.
+ * would make it mixable under the song for that moment. Never aside.
  */
 function onCarrierPlaying(): void {
-  if (carrier?.hasAttribute('src') === true) hold(true)
+  if (!airPlay.now() && carrier?.hasAttribute('src') === true) hold(true)
 }
 
 /**
@@ -348,7 +369,7 @@ function onCarrierError(): void {
   longRefused = true
   carrierKind = 'short'
   element.src = silence('short')
-  if (wanted === 'playing') playCarrier(element)
+  if (wanted === 'playing' && !airPlay.now()) playCarrier(element)
 }
 
 function theCarrier(): Carrier {
@@ -510,6 +531,11 @@ export function showOnWebKit(song: WebKitSong | null): void {
   )
   const element = theCarrier()
   presses.follow()
+  if (airPlay.now()) {
+    if (song.playing) systemPaused = false
+    airPlay.pause(element)
+    return
+  }
   if (!song.playing) {
     front.stop()
     if (song.interrupted === true && element.paused) {
@@ -548,7 +574,7 @@ export function claimCarrier(): void {
   // The song's own play, as the report that follows will say.
   wanted = 'playing'
   systemPaused = false
-  if (!element.paused) return
+  if (airPlay.now() || !element.paused) return
   console.info('[now playing] play pressed: the carrier takes the sound first')
   playCarrier(element)
 }
@@ -611,10 +637,11 @@ export interface TakeTheSoundOptions {
  * itself, so a carrier still paused afterwards was refused.
  *
  * True with no song on the lock screen, or a carrier already playing: the
- * press goes on as it always did.
+ * press goes on as it always did, as it does with the carrier aside.
  */
 export function takeTheSound(choice: TakeTheSoundOptions = {}): boolean {
   const element = carrier
+  if (airPlay.now()) return true
   if (element === null || !element.hasAttribute('src') || !element.paused) {
     return true
   }
@@ -734,6 +761,11 @@ export function onCarrierHolding(
   }
 }
 
+/** On AirPlay alone (true) the carrier stands aside (carrier-aside.ts). */
+export function standCarrierAside(next: boolean): void {
+  airPlay.set(next)
+}
+
 /**
  * Forgets the carrier and every report, and sets how the next carrier is
  * made. Tests only.
@@ -759,6 +791,7 @@ export function resetWebKitNowPlaying(
   listening = null
   holding = false
   holdingHeard = null
+  airPlay = keepAside(airPlayHost)
   systemPaused = false
   pageSeen = 'visible'
   pageShownAt = Number.NEGATIVE_INFINITY
