@@ -23,6 +23,20 @@ shape (l17/PLAN-B.md). Drop nothing on main; INDEX regenerated last.
   Lesson 17's halvings and Step 3's count bars on their first beat (dark until beat 2 before).
 - Teases: L19 "Same six notes, same speed. Only the accents move." + alt 'written'; L20 "Merc sings
   a run of nine notes, five every second." + alt 'plan' (FACTS 5, 5b), as the spec has them.
+- Switches never play (Toys 1), in the steps and in free play too, where Lesson 17's free play plays
+  each change: on this page a switch regroups or swaps what is shown, and Play plays it.
+- The take's figure is the second time through's beats, four bars of numbered pads over the strip
+  (rhythm bar, notation false), and nothing on it lights while a take runs: the judged pass is the
+  beat held, and a lit pad would be a click to follow.
+- The other-metre clause's N counts the taps that fell at the other metre's places (FACTS 34's
+  example lines: all the extras there); the line says either that clause or "between", never both.
+- The four words' ticket rules moved from lesson-17.css into kit/lesson-rhythm.css as .rb-words, which
+  both pages' tickets carry; Lesson 19's figures are 76 px tall (no strip). The accent's first pad
+  lights larger by a 1.08 scale (its "lit larger"). Each word says a line of its own once heard.
+- The tease still is drawn in the markup, as Lesson 10's; the explorer card's figure is a new Season 2
+  kind 'pads', six numbered pads, all one size and numbers alike, nothing written (FACTS 1a).
+- The recall's "Try Lesson 17, Step N again" links only where Lesson 17 is live (the kit's linkAway);
+  on a page that holds Lesson 17 back its words stay with no link.
 
 ## Commits, in order (each with its tests; gates per commit: pnpm check, units of what changed;
 ## build:e2e + first paint at C1, C7, C11, C14; e2e at C12)
