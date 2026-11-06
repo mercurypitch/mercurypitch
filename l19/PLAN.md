@@ -16,6 +16,11 @@ shape (l17/PLAN-B.md). Drop nothing on main; INDEX regenerated last.
   quarter-BPM (an eighth a third of a second, a 6/8 beat 1 s, a 3/4 beat 0.67 s, both bars 2 s).
 - Subdivide's bars are imported (METRE_PATTERNS 'metre:6-8:a' in threes and Step 1's 6/8,
   'metre:6-8:b' QC2); in twos and Step 1's 3/4 follow its rule, built here. Levels 1 / 0.7.
+- Held counts are drawn one under each held beat, the 3/4 tune's last bar "1 (2) (3)" where FACTS 28
+  writes "1 (2 3)" in prose: the kit writes every held beat in its own brackets (Lesson 17's whole
+  rest "(1) (2) (3) (4)").
+- Lighting moved from the clock's beats to pad hits (C4), which also lights the first pad of each of
+  Lesson 17's halvings and Step 3's count bars on their first beat (dark until beat 2 before).
 - Teases: L19 "Same six notes, same speed. Only the accents move." + alt 'written'; L20 "Merc sings
   a run of nine notes, five every second." + alt 'plan' (FACTS 5, 5b), as the spec has them.
 
