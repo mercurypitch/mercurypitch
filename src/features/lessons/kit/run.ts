@@ -7,12 +7,15 @@
 // in it, one voice from breath to breath (`playLines`); a tune, note by
 // note, each note its own voice (`playNotes`); or one note held for a moment
 // (`playNote`); each in Merc's "ooh" unless the caller picks the soft tone,
-// and a note may take a tone and a level of its own. Notes that share an
-// onset start in one timer task, so a chord's voices read one `currentTime`
-// and `onNote` hears them all in that task; even at time 0 it is never
-// called before `playNotes` returns. Several runs that play as one (a move:
-// two held notes and a line) are one run through `allOf`. Lesson 7 plays
-// its siren, "Twinkle" and its bands' notes this way (its WEB-SPEC, Audio).
+// and a note may take a tone and a level of its own. A sung line may carry
+// a vibrato of the caller's, or none, and glide it to a new rate and extent
+// as it sounds (`setVibrato`): Lesson 22's waves, its straight notes and its
+// sliders. Notes that share an onset start in one timer task, so a chord's
+// voices read one `currentTime` and `onNote` hears them all in that task;
+// even at time 0 it is never called before `playNotes` returns. Several
+// runs that play as one (a move: two held notes and a line) are one run
+// through `allOf`. Lesson 7 plays its siren, "Twinkle" and its bands' notes
+// this way (its WEB-SPEC, Audio).
 //
 // A run's promise says whether it was heard to its end: true when it ended
 // by itself, false when it was stopped, so a play cut short reveals nothing
@@ -59,6 +62,18 @@ export interface RunOptions {
   readonly timbre?: VoiceOptions['timbre']
   /** A sung line's partials, whatever its kind (kit/sound.ts): `playLine` honours it, as it does `timbre`. */
   readonly wave?: VoiceOptions['wave']
+  /**
+   * A sung line's vibrato (kit/sound.ts): absent, its kind's own; null, a
+   * straight note with no modulator; set, that wave. `playLine` honours it,
+   * as it does `timbre`.
+   */
+  readonly vibrato?: VoiceOptions['vibrato']
+}
+
+/** A sung line whose vibrato can move as it sounds: a slider moved during a play. */
+export interface LineRun extends Run {
+  /** Glides the line's vibrato to a new rate and extent (kit/sound.ts `setVibrato`); a silent or straight line has none to move. */
+  setVibrato(v: { readonly rate: number; readonly extent: number }): void
 }
 
 // The audible runs in flight, each stopped when every sound stops. One
@@ -102,16 +117,26 @@ function timed(
 }
 
 /** A sung line along `points`; `stop` ends its voice within a short release. */
-export function playLine(points: readonly ContourPoint[], o: RunOptions): Run {
+export function playLine(
+  points: readonly ContourPoint[],
+  o: RunOptions,
+): LineRun {
   const v: Voice | null = o.audible
     ? contourVoice(points, {
         kind: o.kind ?? 'merc',
         gain: o.gain,
         timbre: o.timbre,
         wave: o.wave,
+        vibrato: o.vibrato,
       })
     : null
-  return timed(contourLength(points), o.audible, () => v?.stop(0.08))
+  return Object.assign(
+    timed(contourLength(points), o.audible, () => v?.stop(0.08)),
+    {
+      setVibrato: (to: Parameters<LineRun['setVibrato']>[0]) =>
+        v?.setVibrato?.(to),
+    },
+  )
 }
 
 /** One breath's worth of a sung line: `points` sung as one voice from `t` seconds into the run. */

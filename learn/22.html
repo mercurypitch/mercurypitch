@@ -720,7 +720,7 @@
                   </p>
                   <div class="vib-panels" data-vib-panels>
                     <div class="vib-panel" data-vib-panel="sung">
-                      <p class="vib-tag" data-vib-tag hidden>sung</p>
+                      <p class="vib-tag" data-part="4" hidden>sung</p>
                       <div class="viz vib-viz band-chart" data-vib-viz>
                         <canvas
                           role="img"
@@ -728,7 +728,7 @@
                         ></canvas>
                       </div>
                     </div>
-                    <div class="vib-panel" data-vib-panel="mark" hidden>
+                    <div class="vib-panel" data-vib-panel="mark" data-part="4" hidden>
                       <p class="vib-tag">the app's mark</p>
                       <div class="vib-ribbon" data-vib-ribbon>
                         <svg
@@ -739,14 +739,14 @@
                     </div>
                   </div>
                   <p class="sr" aria-live="polite" data-vib-said></p>
-                  <div class="vib-meters" data-vib-meters hidden>
+                  <div class="vib-meters" data-vib-meters data-part="2" hidden>
                     <p class="vib-count" data-vib-count>6 swings a second</p>
                     <p class="vib-ruler" data-vib-ruler>
                       <span aria-hidden="true">±30</span
                       ><span class="sr">plus or minus 30</span> cents
                     </p>
                   </div>
-                  <div class="controls vib-plays" data-vib-for="1">
+                  <div class="controls vib-plays" data-part="1">
                     <button
                       class="btn sm primary"
                       type="button"
@@ -778,7 +778,7 @@
                       >Play a swell
                     </button>
                   </div>
-                  <div class="controls vib-sliders" data-vib-for="2" hidden>
+                  <div class="controls vib-sliders" data-part="2" hidden>
                     <div class="slider-row">
                       <label for="vibRate2"
                         >Rate <b data-vib-rate-out>6 a second</b></label
@@ -840,7 +840,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="controls vib-sliders" data-vib-for="3" hidden>
+                  <div class="controls vib-sliders" data-part="3" hidden>
                     <div class="slider-row">
                       <label for="vibRate3"
                         >Rate <b data-vib-rate-out>6 a second</b></label
@@ -883,7 +883,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="controls vib-sliders" data-vib-for="4" hidden>
+                  <div class="controls vib-sliders" data-part="4" hidden>
                     <div class="vib-plays">
                       <button
                         class="btn sm primary"
@@ -1808,7 +1808,7 @@
             </div>
             <div class="vib-panels" data-vib-panels>
               <div class="vib-panel" data-vib-panel="sung">
-                <p class="vib-tag" data-vib-tag hidden>sung</p>
+                <p class="vib-tag" data-part="4" hidden>sung</p>
                 <div class="viz vib-viz band-chart" data-vib-viz>
                   <canvas
                     role="img"
@@ -1816,7 +1816,7 @@
                   ></canvas>
                 </div>
               </div>
-              <div class="vib-panel" data-vib-panel="mark" hidden>
+              <div class="vib-panel" data-vib-panel="mark" data-part="4" hidden>
                 <p class="vib-tag">the app's mark</p>
                 <div class="vib-ribbon" data-vib-ribbon>
                   <svg
@@ -1827,14 +1827,14 @@
               </div>
             </div>
             <p class="sr" aria-live="polite" data-vib-said></p>
-            <div class="vib-meters" data-vib-meters hidden>
+            <div class="vib-meters" data-vib-meters data-part="2" hidden>
               <p class="vib-count" data-vib-count>6 swings a second</p>
               <p class="vib-ruler" data-vib-ruler>
                 <span aria-hidden="true">±30</span
                 ><span class="sr">plus or minus 30</span> cents
               </p>
             </div>
-            <div class="controls vib-plays" data-vib-for="1">
+            <div class="controls vib-plays" data-part="1">
               <button
                 class="btn sm primary"
                 type="button"
@@ -1866,7 +1866,7 @@
                 >Play a swell
               </button>
             </div>
-            <div class="controls vib-sliders" data-vib-for="2" hidden>
+            <div class="controls vib-sliders" data-part="2" hidden>
               <div class="slider-row">
                 <label for="freeRate2"
                   >Rate <b data-vib-rate-out>6 a second</b></label
@@ -1928,7 +1928,7 @@
                 </button>
               </div>
             </div>
-            <div class="controls vib-sliders" data-vib-for="3" hidden>
+            <div class="controls vib-sliders" data-part="3" hidden>
               <div class="slider-row">
                 <label for="freeRate3"
                   >Rate <b data-vib-rate-out>6 a second</b></label
@@ -1948,6 +1948,27 @@
                 />
               </div>
               <div class="vib-plays">
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-vib-play="six"
+                  disabled
+                >
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-play" /></svg
+                  >Play: six a second
+                </button>
+                <button
+                  class="btn sm"
+                  type="button"
+                  data-vib-play="two"
+                  data-held="step-3"
+                  disabled
+                >
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-play" /></svg
+                  >Play: two a second
+                </button>
                 <button
                   class="btn sm primary"
                   type="button"
@@ -1971,7 +1992,7 @@
                 </button>
               </div>
             </div>
-            <div class="controls vib-sliders" data-vib-for="4" hidden>
+            <div class="controls vib-sliders" data-part="4" hidden>
               <div class="vib-plays">
                 <button
                   class="btn sm primary"

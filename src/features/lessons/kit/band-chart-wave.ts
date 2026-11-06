@@ -26,7 +26,11 @@ const STEP_PX = 1.5
 const pin = (f: ChartFrame, c: number): number =>
   yOf(f, Math.min(Math.max(c, f.lo), f.hi))
 
-/** Merc's line, his amber, up to where the play has sounded. */
+/**
+ * Merc's line, his amber, up to where the play has sounded: one stroke a
+ * sound, so a stretch that takes over where another ends (a slider moved)
+ * carries the line on unbroken, and one after a gap starts its own.
+ */
 export function drawWave(f: ChartFrame, line: WaveLine): void {
   const { ctx } = f
   const dt = (f.window / Math.max(1, f.x1 - f.x0)) * STEP_PX
@@ -34,17 +38,25 @@ export function drawWave(f: ChartFrame, line: WaveLine): void {
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
   ctx.lineWidth = 2.4
+  // where the stroke being drawn has reached, on the window's clock
+  let end: number | null = null
   for (const s of line.stretches) {
     const a = Math.max(0, s.from)
     const b = Math.min(s.to, line.upTo, f.window)
     if (b <= a) continue
-    ctx.beginPath()
-    ctx.moveTo(xOf(f, a), pin(f, centsOn(s, a)))
+    const y = pin(f, centsOn(s, a))
+    if (end === a) ctx.lineTo(xOf(f, a), y)
+    else {
+      if (end !== null) ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(xOf(f, a), y)
+    }
     for (let t = a + dt; t < b; t += dt)
       ctx.lineTo(xOf(f, t), pin(f, centsOn(s, t)))
     ctx.lineTo(xOf(f, b), pin(f, centsOn(s, b)))
-    ctx.stroke()
+    end = b
   }
+  if (end !== null) ctx.stroke()
 }
 
 /** The dashed middle, as far as its share, labelled "middle" where it ends. */
