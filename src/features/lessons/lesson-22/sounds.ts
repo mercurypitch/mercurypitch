@@ -14,12 +14,14 @@
 // drawing and the sound share one clock (WEB-SPEC, Audio). A slider moved
 // during a play glides the voice over 50 ms (kit/sound.ts `VIBRATO_GLIDE`);
 // the line takes the change at the glide's middle, where the swing stood
-// (`retune`), so it stays unbroken. The steps' plays are FACTS 65 to 68's.
+// (`retune`), so it stays unbroken. The cold open's plays are FACTS 64's,
+// the steps' FACTS 65 to 68's.
 
 import type { LevelPoint } from '@/features/lessons/kit/band-chart-hold'
 import type { WaveStretch } from '@/features/lessons/kit/band-chart-wave-scene'
 import { middleOn, phaseAt } from '@/features/lessons/kit/band-chart-wave-scene'
 import { hz } from '@/features/lessons/kit/notes'
+import type { RunLine } from '@/features/lessons/kit/run'
 import type { ContourPoint, Vibrato } from '@/features/lessons/kit/sound'
 import { MERC_VIBRATO, VIBRATO_GLIDE } from '@/features/lessons/kit/sound'
 
@@ -50,6 +52,59 @@ export interface Play {
 
 /** The cold open's wave, which Step 3's Play: six a second plays again: six swings a second at ±50 cents (FACTS 64, 67). */
 export const COLD_WAVE = waveOf(6, 50)
+
+// ---------------------------------------------------------------- the cold open
+
+/** The cold open's note: Merc's wave on A3 for 3.0 s, which Step 3's Play: six a second plays again (FACTS 64, 67). */
+export const COLD: Play = { midi: A3, sec: 3, vibrato: COLD_WAVE }
+
+/** The straight notes the cold open asks about, cents above A3: the top, 226.45 Hz, and the middle, A3 itself (FACTS 41, 62). */
+export const STRAIGHT_AT = { top: 50, middle: 0 } as const
+
+/** An answering play's parts, seconds: the wave, the quiet after it, then the straight note (FACTS 64). */
+export const ANSWER = { wave: 2, gap: 0.3, straight: 2 } as const
+
+/** An answering play: its seconds, its two voices, and its line on the chart's clock. */
+export interface Answer {
+  readonly sec: number
+  /** Merc's wave, then the straight note, each a voice of its own (kit/run.ts `playLines`). */
+  readonly lines: readonly RunLine[]
+  readonly line: readonly WaveStretch[]
+}
+
+/** The cold open's answering play for the straight note `cents` above A3: the wave for 2.0 s, 0.3 s of quiet, the straight note for 2.0 s, 4.3 s in all. */
+export function answerOf(cents: number): Answer {
+  const f0 = hz(A3)
+  const f = f0 * 2 ** (cents / 1200)
+  const at = ANSWER.wave + ANSWER.gap
+  return {
+    sec: at + ANSWER.straight,
+    lines: [
+      {
+        t: 0,
+        points: [
+          { t: 0, hz: f0 },
+          { t: ANSWER.wave, hz: f0 },
+        ],
+        vibrato: COLD_WAVE,
+      },
+      {
+        t: at,
+        points: [
+          { t: 0, hz: f },
+          { t: ANSWER.straight, hz: f },
+        ],
+        vibrato: null,
+      },
+    ],
+    line: [
+      ...lineOf({ midi: A3, sec: ANSWER.wave, vibrato: COLD_WAVE }),
+      { kind: 'level', from: at, to: at + ANSWER.straight, c: cents },
+    ],
+  }
+}
+
+// ---------------------------------------------------------------- the steps
 
 /** Lesson 14's swell without its glide in: 0.5 for a second, up to 1.0 at 2.5 s, back to 0.5 at 4.0 s (FACTS 65). */
 export const SWELL: readonly LevelPoint[] = [
@@ -84,7 +139,7 @@ export const DRIFT_CENTS = 50
 export const WIDE = 50
 
 /** Step 3: the cold open's wave, its slow version, and the wave at Rate's value, which Drift raises (FACTS 67). */
-export const SIX: Play = { midi: A3, sec: 3, vibrato: COLD_WAVE }
+export const SIX: Play = COLD
 export const TWO: Play = { midi: A3, sec: 3, vibrato: waveOf(2, WIDE) }
 export const atRate = (rate: number, drift: boolean): Play => ({
   midi: A3,

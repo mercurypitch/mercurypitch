@@ -9,8 +9,9 @@
 // its depth grown in from 0, only as far as the play has sounded, a level
 // note at its height, a drifting middle rising; the middle is dashed, drawn
 // left to right as far as its share, amber or violet, and named "middle"
-// once whole; the ruler stands from the middle to the top of a swing with
-// its reading. Each chart is mounted on a canvas that keeps every call
+// once whole, past its end where the window has room, else above it on a
+// plate; the ruler stands from the middle to the top of a swing with its
+// reading. Each chart is mounted on a canvas that keeps every call
 // (band-chart.test-fixtures.ts) and read back through its own `pointOf`.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -257,6 +258,38 @@ describe('the middle line', () => {
       true,
     )
     expect(marks.some((m) => m.line.includes('MIDDLE'))).toBe(true)
+  })
+
+  it('sets its name just past its end where the window has room, and above it on a dark plate where it has none', async () => {
+    // Act: a middle to 2.0 s of the hero's 4.5, and one to the window's end
+    const middle = (to: number) =>
+      hero((s) => {
+        s.middle = {
+          points: [
+            { t: 0, c: 0 },
+            { t: to, c: 0 },
+          ],
+          tone: 'merc',
+          share: 1,
+        }
+      })
+    const [room, none] = await paintCharts(middle(2), middle(4.5))
+
+    // Assert
+    const named = (calls: Parameters<typeof marksOf>[0]) =>
+      marksOf(calls).find((m) => m.line.includes('MIDDLE'))
+    const roomEnd = room.chart.pointOf(2, 0).x
+    expect(Math.min(...(named(room.calls)?.xs ?? []))).toBeGreaterThan(roomEnd)
+    expect(
+      picture(room.calls).some((l) => l.startsWith('rect rgba(7,10,16,.82)')),
+    ).toBe(false)
+    const noneEnd = none.chart.pointOf(4.5, 0).x
+    expect(Math.max(...(named(none.calls)?.xs ?? []))).toBeLessThanOrEqual(
+      noneEnd,
+    )
+    expect(
+      picture(none.calls).some((l) => l.startsWith('rect rgba(7,10,16,.82)')),
+    ).toBe(true)
   })
 })
 

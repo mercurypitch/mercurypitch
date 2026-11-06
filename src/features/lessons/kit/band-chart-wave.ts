@@ -9,7 +9,8 @@
 // its schedule a pixel or two apart and drawn up to the moment the play has
 // reached; the middle is dashed, drawn left to right as far as its share,
 // in amber from Merc's schedule or violet from the centre-line reader, and
-// labelled "middle" at its end; the ruler stands upright from a dashed tick
+// labelled "middle" just past its end, or above it on a dark plate where the
+// window has no room left; the ruler stands upright from a dashed tick
 // at the middle to the top of a swing, its reading beside it. A point
 // beyond the chart is pinned to its edge, as the singer's line is.
 
@@ -22,6 +23,9 @@ import { COLOR } from './notes'
 
 /** Pixels between the line's samples. */
 const STEP_PX = 1.5
+
+/** The dark plate under a word that has no clear room (band-chart-hold.ts's LOUDNESS sits on the same). */
+const PLATE = 'rgba(7,10,16,.82)'
 
 const pin = (f: ChartFrame, c: number): number =>
   yOf(f, Math.min(Math.max(c, f.lo), f.hi))
@@ -84,11 +88,24 @@ export function drawMiddle(f: ChartFrame, m: MiddleLine): void {
   ctx.stroke()
   ctx.setLineDash([])
   if (m.share < 1) return
+  // its name just past its end, clear of the wave; with no room there,
+  // above its end on a dark plate, so a line under it never runs through it
   ctx.font = MONO
+  const word = 'MIDDLE'
+  const w = ctx.measureText(word).width
+  ctx.textBaseline = 'middle'
+  let x = end.x + 8
+  let y = end.y
+  ctx.textAlign = 'left'
+  if (x + w > f.x1) {
+    x = Math.min(end.x, f.x1)
+    y = end.y - 14
+    ctx.textAlign = 'right'
+    ctx.fillStyle = PLATE
+    ctx.fillRect(x - w - 4, y - 8, w + 8, 16)
+  }
   ctx.fillStyle = COLOR.ink2
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'bottom'
-  ctx.fillText('MIDDLE', Math.min(end.x, f.x1), end.y - 6)
+  ctx.fillText(word, x, y)
 }
 
 /** The ruler: a dashed tick at the middle, an upright to the swing's top, and its reading. */

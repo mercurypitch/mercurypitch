@@ -64,8 +64,9 @@ export interface RunOptions {
   readonly wave?: VoiceOptions['wave']
   /**
    * A sung line's vibrato (kit/sound.ts): absent, its kind's own; null, a
-   * straight note with no modulator; set, that wave. `playLine` honours it,
-   * as it does `timbre`.
+   * straight note with no modulator; set, that wave. `playLine` and
+   * `playLines` honour it, as they do `timbre`, and a breath's line may
+   * carry its own.
    */
   readonly vibrato?: VoiceOptions['vibrato']
 }
@@ -143,6 +144,8 @@ export function playLine(
 export interface RunLine {
   readonly t: number
   readonly points: readonly ContourPoint[]
+  /** Its vibrato, in place of the run's: a wave, then a straight note (Lesson 22's cold open). */
+  readonly vibrato?: VoiceOptions['vibrato']
 }
 
 /**
@@ -167,6 +170,7 @@ export function playLines(
           gain: o.gain,
           timbre: o.timbre,
           wave: o.wave,
+          vibrato: line.vibrato === undefined ? o.vibrato : line.vibrato,
         })
         if (v !== null) voices.push(v)
       }, line.t * 1000),

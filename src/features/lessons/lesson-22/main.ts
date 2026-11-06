@@ -43,6 +43,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -57,7 +58,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps(deck)
+const steps = initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -82,6 +83,9 @@ initMasthead(
   },
   { lesson: 22, deck },
 )
+// the cold open, in the masthead's task, so a first visit's tour waits for
+// its choice; the choice opens the steps' band chart and Step 3's predict
+initColdOpen(deck, () => steps.unlock())
 initReveals()
 startFrameLoop()
 // Tavi celebrates the reveal quietly, with no sparkles: the reveal calls no

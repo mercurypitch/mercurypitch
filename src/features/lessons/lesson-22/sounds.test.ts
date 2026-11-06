@@ -17,7 +17,7 @@ import { hz } from '@/features/lessons/kit/notes'
 import { MERC_VIBRATO, VIBRATO_GLIDE } from '@/features/lessons/kit/sound'
 import { SWELL_LEVEL } from '@/features/lessons/lesson-14/song'
 import type { Play } from './sounds'
-import { A3, atRate, contourOfPlay, levelAt, levelOf, lineOf, measure, OOH, playFor, retune, SIX, STRAIGHT, SUNG, SWELL, SWELLED, TWO, WAVE, } from './sounds'
+import { A3, answerOf, atRate, COLD, COLD_WAVE, contourOfPlay, levelAt, levelOf, lineOf, measure, OOH, playFor, retune, SIX, STRAIGHT, STRAIGHT_AT, SUNG, SWELL, SWELLED, TWO, WAVE, } from './sounds'
 
 /** Every play the steps' toy makes, at the sliders' first values. */
 const STEP_PLAYS: readonly Play[] = [
@@ -32,6 +32,74 @@ const STEP_PLAYS: readonly Play[] = [
   atRate(4, true),
   SUNG,
 ]
+
+describe("the cold open's plays (FACTS 41, 62, 64)", () => {
+  it("sings Merc's note on A3 for 3.0 s, six swings a second at ±50 cents, grown in over 0.3 s, as Step 3's six a second", () => {
+    // Assert
+    expect(COLD).toEqual({
+      midi: A3,
+      sec: 3,
+      vibrato: { rate: 6, extent: 50, growIn: 0.3 },
+    })
+    expect(SIX).toBe(COLD)
+  })
+
+  it('answers with the wave for 2.0 s, 0.3 s of quiet, then the straight note for 2.0 s, 4.3 s in all', () => {
+    // Act
+    const top = answerOf(STRAIGHT_AT.top)
+    const middle = answerOf(STRAIGHT_AT.middle)
+
+    // Assert: the top 50 cents above A3, 226.45 Hz; the middle A3 itself; no vibrato on either
+    expect(top.sec).toBeCloseTo(4.3, 9)
+    expect(top.lines.map((l) => [l.t, l.vibrato])).toEqual([
+      [0, COLD_WAVE],
+      [expect.closeTo(2.3, 9) as number, null],
+    ])
+    expect(top.lines[0].points.map((p) => [p.t, p.hz])).toEqual([
+      [0, hz(A3)],
+      [2, hz(A3)],
+    ])
+    expect(top.lines[1].points.map((p) => p.hz)).toEqual([
+      expect.closeTo(226.45, 2) as number,
+      expect.closeTo(226.45, 2) as number,
+    ])
+    expect(middle.lines[1].points[0].hz).toBeCloseTo(220, 9)
+  })
+
+  it("draws the straight note's level line at its height, the top 15 cents above the band's top edge", () => {
+    // Act
+    const { line } = answerOf(STRAIGHT_AT.top)
+
+    // Assert
+    expect(line).toEqual([
+      {
+        kind: 'wave',
+        from: 0,
+        to: 2,
+        rate: 6,
+        extent: 50,
+        growIn: 0.3,
+        drift: 0,
+      },
+      { kind: 'level', from: 2.3, to: 4.3, c: 50 },
+    ])
+    expect(50 - HIT_TOLERANCE_CENTS).toBe(15)
+  })
+
+  it('swings past both edges of the band in 16 of its 18 swings', () => {
+    // Arrange: each swing's top, six a second for 3.0 s, and the bottom a twelfth of a second after it
+    const [wave] = lineOf(COLD)
+    const tops = Array.from({ length: 18 }, (_, n) => (n + 0.25) / 6)
+
+    // Assert: the two swings still growing in stay inside; the rest reach past both edges
+    const past = tops.filter(
+      (t) =>
+        centsOn(wave, t) > HIT_TOLERANCE_CENTS &&
+        centsOn(wave, t + 1 / 12) < -HIT_TOLERANCE_CENTS,
+    )
+    expect(past).toHaveLength(16)
+  })
+})
 
 describe("the steps' plays (FACTS 65 to 68)", () => {
   it("sounds every one on A3, 220 Hz, in Merc's voice", () => {
