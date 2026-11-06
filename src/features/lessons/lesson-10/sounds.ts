@@ -23,6 +23,7 @@
 // is FACTS 70's.
 
 import { hz } from '@/features/lessons/kit/notes'
+import { pair } from '@/features/lessons/kit/pair'
 import type { RunNote } from '@/features/lessons/kit/run'
 import type { ContourPoint } from '@/features/lessons/kit/sound'
 import { contourLength, contourOf } from '@/features/lessons/kit/sound'
@@ -44,8 +45,6 @@ export const MOVE_SEC = MOVE.hold + MOVE.glide + MOVE.rest
 export const THIRD = { each: 0.6, together: 1 } as const
 /** A triad: each note, then the three together (FACTS 74, 75). */
 export const TRIAD = { each: 0.55, together: 1.2 } as const
-/** The Four words' Third: C4, then E4 (FACTS 74). */
-export const WORD_PAIR = { first: 0.6, second: 0.8, gap: 0.15 } as const
 /** The Four words' Quality: each chord together, and the silence between (FACTS 74). */
 export const WORD_QUALITY = { each: 1.4, gap: 0.4 } as const
 /** A scale: each note, and the last (FACTS 74, 77). */
@@ -236,14 +235,8 @@ export const WORD_IDS: readonly WordId[] = [
 export function wordSounds(): Readonly<Record<WordId, RunNote[]>> {
   const [c, e] = triadMidis(60, 'major')
   return {
-    third: [
-      { t: 0, midi: c, dur: WORD_PAIR.first },
-      {
-        t: WORD_PAIR.first + WORD_PAIR.gap,
-        midi: e,
-        dur: WORD_PAIR.second,
-      },
-    ],
+    // the Third: C4, then E4, as the kit's pair (FACTS 74)
+    third: pair(c, e).map((n) => ({ t: n.at, midi: n.midi, dur: n.dur })),
     triad: triadSound(60, 'major'),
     quality: [
       ...chordSound(60, 'major', WORD_QUALITY.each),

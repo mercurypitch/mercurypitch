@@ -280,7 +280,7 @@ gives and no `next` hint, so the locked-in hint stays until the reveal (FACTS 37
 Lesson 25's words strip (`src/features/lessons/kit/words-strip.ts:1-12`), three words, each with a
 small staff in the learner's clef that writes its notes as they play (FACTS 41). Seventh chord plays
 C, E, G and B a note every 0.4 s, then together for 1.2 s; Major seventh and Minor seventh play
-Lesson 6's interval pair (`pair`, `src/features/lessons/lesson-06/examples.ts:80-90`), C up to B and
+Lesson 6's interval pair (`pair`, `src/features/lessons/kit/pair.ts:28-38`), C up to B and
 C up to B♭, the lower note first. For the higher voice the words sound from C4, for the lower from
 C3.
 
