@@ -152,6 +152,12 @@
 .l19-tap .take-fig {
   margin: 14px 0 0;
 }
+/* the second time through's beats, four bars of pads over the strip that
+   holds the ticks */
+.l19-tap .take-strip {
+  position: relative;
+  height: 112px;
+}
 .l19-tap .take-pad {
   width: 100%;
   margin-top: 14px;

@@ -71,6 +71,15 @@ void import('./recall').then(
 
 // four words: the accent on six pads, the other three written as they play
 initWords()
+// Tap the beat: each tune twice, with the click and then without it; a
+// chunk of its own, after first paint, since the take, its judge, the tap
+// pad and the Ear Lab's judge and estimator are some 10 KB the first
+// screen never needs (one that cannot load leaves the Starts doing
+// nothing)
+void import('./take').then(
+  ({ initTake }) => initTake(q('#tapCard')),
+  () => undefined,
+)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(19)
