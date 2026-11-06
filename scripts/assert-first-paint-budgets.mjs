@@ -447,10 +447,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
-  // (kit/season-2.ts) as a Season 2 page must; its shell, with Merc's
-  // vibrato option in the kit's sound (kit/sound.ts, 397): 87,218 bytes in
+  // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in
+  // the kit's sound (kit/sound.ts, 397), and the steps' band chart in its
+  // four states (lesson-22/vib-toy.ts on the kit's band chart, its wave
+  // painter and level strip, the kit's runs and Step 3's predict), the
+  // app's ribbon in a chunk of its own after first paint: 113,103 bytes in
   // build:e2e, the smallest whole KB above, to rise as each part joins.
-  'learn/22.html': 86,
+  'learn/22.html': 111,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -606,11 +609,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 22 (a draft, as above), its shell: 82,325 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own, and the shared Inter and
-  // Outfit @font-face rules; the smallest whole KB above, to rise as each
-  // part joins, the guide's and the voice lessons' sheets with the recall
-  // and Sing it.
+  // Lesson 22 (a draft, as above), its shell and the steps' band chart:
+  // 82,386 bytes in build:e2e, the kit's sheets (the shared parts), its own,
+  // and the shared Inter and Outfit @font-face rules; the smallest whole KB
+  // above, to rise as each part joins, the guide's and the voice lessons'
+  // sheets with the recall and Sing it.
   'learn/22.html': 81,
   // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and

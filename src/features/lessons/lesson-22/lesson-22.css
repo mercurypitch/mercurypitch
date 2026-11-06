@@ -135,6 +135,12 @@
   width: 100%;
   height: 100%;
 }
+/* the app's ribbon is a mark, in chrome: never the singer's violet or Merc's amber */
+.vib-mark {
+  fill: rgba(195, 204, 214, 0.24);
+  stroke: rgba(195, 204, 214, 0.62);
+  stroke-width: 1.5;
+}
 /* Step 2's counter and ruler, under the chart */
 .vib-meters {
   display: flex;

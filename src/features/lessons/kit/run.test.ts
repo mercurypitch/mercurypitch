@@ -9,10 +9,10 @@
 // `Sound.voice`. A sung line's voice does not go through `Sound`, so it is
 // built for real on the fake AudioContext the sound tests use
 // (sound-doubles.test-fixtures.ts), and read from what that context holds:
-// its timbre, its release, and no voice at all for a silent line. A stop
-// starts nothing still to come and releases what sounds with the kit's
-// short release (CONVENTIONS.md § 5b); a silent run starts no voice, but
-// keeps the visuals' time as if it were heard.
+// its timbre, its release, its vibrato or none, and no voice at all for a
+// silent line. A stop starts nothing still to come and releases what
+// sounds with the kit's short release (CONVENTIONS.md § 5b); a silent run
+// starts no voice, but keeps the visuals' time as if it were heard.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { hz } from './notes'
@@ -240,6 +240,47 @@ describe('playLine', () => {
     // Assert: the timbre was handed the line's one voice, at its filter
     expect(timbre.mock.calls.map(([filter]) => filter)).toEqual([
       ctx.filters[0],
+    ])
+  })
+
+  it("sings the line with the caller's vibrato: none for a straight line, that wave for another", async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+
+    // Act: a straight line, then a wave of six swings a second
+    runs.playLine(LINE, { audible: true, vibrato: null })
+    const straight = ctx.oscillators.length
+    runs.playLine(LINE, {
+      audible: true,
+      vibrato: { rate: 6, extent: 50, growIn: 0.3 },
+    })
+
+    // Assert: the straight line is its tone alone; the wave's tone has its modulator at six
+    expect(straight).toBe(1)
+    expect(ctx.oscillators).toHaveLength(3)
+    expect(ctx.oscillators[2].frequency.value).toBe(6)
+  })
+
+  it("glides a sounding line's vibrato when asked, and a silent line, which has no voice, takes the call", async () => {
+    // Arrange: a wave of six swings a second, 1 s in on the fake context's clock
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+    const vibrato = { rate: 6, extent: 30, growIn: 0.3 }
+    const run = runs.playLine(LINE, { audible: true, vibrato })
+    const silent = runs.playLine(LINE, { audible: false, vibrato })
+    ctx.currentTime = 1
+
+    // Act
+    run.setVibrato({ rate: 2, extent: 50 })
+    silent.setVibrato({ rate: 2, extent: 50 })
+
+    // Assert: the modulator glides to two swings a second, and no voice was built for the silent line
+    expect(ctx.oscillators).toHaveLength(2)
+    expect(ctx.oscillators[1].frequency.events.at(-1)).toEqual([
+      'linearRampToValueAtTime',
+      2,
+      expect.closeTo(1.05, 6),
     ])
   })
 

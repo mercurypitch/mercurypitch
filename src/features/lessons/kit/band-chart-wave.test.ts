@@ -22,7 +22,7 @@ import { BAND_COLOR } from './band-chart-draw'
 import { HOLD_5, PUSH_5, SING_3 } from './band-chart-lessons.test-fixtures'
 import { paintWave } from './band-chart-wave'
 import type { WaveLine } from './band-chart-wave-scene'
-import { centsOn, middleOf, middleOn } from './band-chart-wave-scene'
+import { centsOn, middleOf, middleOn, phaseAt } from './band-chart-wave-scene'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 
 afterEach(() => {
@@ -70,6 +70,24 @@ describe('the schedule', () => {
     expect(centsOn(s, 1 / 24)).toBeCloseTo(50 * (1 / 24 / 0.3), 6)
     expect(centsOn(s, 1 + 1 / 24)).toBeCloseTo(50, 6)
     expect(centsOn(s, 1 + 3 / 24)).toBeCloseTo(-50, 6)
+  })
+
+  it('goes on from where the swing stood when a stretch takes over with a phase', () => {
+    // Arrange: six swings a second, taken over near a swing's top, 0.54 s in, by two a second at full depth
+    const six = COLD.stretches[0]
+    if (six.kind !== 'wave') throw new Error('the cold open is a wave')
+    const two = {
+      ...six,
+      from: 0.54,
+      rate: 2,
+      growIn: 0,
+      phase: phaseAt(six, 0.54),
+    }
+
+    // Assert: the line is unbroken at the change, near the top, then swings at the new rate
+    expect(centsOn(six, 0.54)).toBeGreaterThan(49)
+    expect(centsOn(two, 0.54)).toBeCloseTo(centsOn(six, 0.54), 9)
+    expect(phaseAt(two, 1.04)).toBeCloseTo(3.24 + 1, 9)
   })
 
   it("raises a drifting wave's middle by its drift, and holds a level note at its height", () => {
@@ -153,6 +171,29 @@ describe("Merc's line", () => {
     // Assert
     const line = amberStrokes(marksOf(calls))[2]
     expect(Math.max(...line.xs)).toBeCloseTo(chart.pointOf(1.25, 0).x, 6)
+  })
+
+  it('carries the line on in one stroke where a stretch takes over at the moment another ends', async () => {
+    // Act: six swings a second, taken over at 1 s by two a second where the swing stood
+    const six = COLD.stretches[0]
+    if (six.kind !== 'wave') throw new Error('the cold open is a wave')
+    const [{ chart, calls }] = await paintCharts(
+      hero((s) => {
+        s.wave = {
+          stretches: [
+            { ...six, to: 1 },
+            { ...six, from: 1, rate: 2, growIn: 0, phase: phaseAt(six, 1) },
+          ],
+          upTo: 3,
+        }
+      }),
+    )
+
+    // Assert: the band's two edges, then one line from 0 to 3 s
+    const strokes = amberStrokes(marksOf(calls))
+    expect(strokes).toHaveLength(3)
+    expect(Math.min(...strokes[2].xs)).toBeCloseTo(chart.pointOf(0, 0).x, 6)
+    expect(Math.max(...strokes[2].xs)).toBeCloseTo(chart.pointOf(3, 0).x, 6)
   })
 
   it("draws a straight note's level line at its height after the wave", async () => {

@@ -14,7 +14,9 @@
 // (sound.ts `Vibrato`: a sine whose depth grows in linearly from 0 at the
 // play's start, its phase 0 there), so the drawing and the sound share one
 // clock. A play is a run of stretches on the window's clock, each a wave or
-// a level note; the controller says how far it has sounded.
+// a level note; the controller says how far it has sounded. A slider moved
+// during a play starts a new stretch where the swing stood, its phase
+// carried on, so the line stays unbroken as the voice glides.
 
 import { TAU } from './dom'
 
@@ -29,6 +31,12 @@ export type WaveStretch =
       readonly rate: number
       readonly extent: number
       readonly growIn: number
+      /**
+       * Where its swing stands at `from`, in turns: 0 unless set. A stretch
+       * that takes over from another as a slider moves goes on from where
+       * the swing had reached, so the line stays unbroken (`phaseAt`).
+       */
+      readonly phase?: number
       /** Its middle at its start, cents from Merc's note: 0 unless set. */
       readonly base?: number
       /** Cents its middle rises a second: Step 3's Drift; 0 unless set. */
@@ -73,12 +81,18 @@ export interface WaveRuler {
   readonly text: string
 }
 
+/** How far a wave's swing has gone at `t` seconds on the window's clock, in turns from its start. */
+export const phaseAt = (
+  s: Extract<WaveStretch, { kind: 'wave' }>,
+  t: number,
+): number => (s.phase ?? 0) + s.rate * (t - s.from)
+
 /** The stretch's pitch at `t` seconds on the window's clock, cents from Merc's note. */
 export function centsOn(s: WaveStretch, t: number): number {
   if (s.kind === 'level') return s.c
   const u = t - s.from
   const depth = s.growIn > 0 ? Math.min(1, Math.max(0, u / s.growIn)) : 1
-  return middleOn(s, t) + s.extent * depth * Math.sin(TAU * s.rate * u)
+  return middleOn(s, t) + s.extent * depth * Math.sin(TAU * phaseAt(s, t))
 }
 
 /** The stretch's middle at `t`: a level note's height, or the wave's middle. */

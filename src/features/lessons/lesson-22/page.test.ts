@@ -278,12 +278,16 @@ describe("Lesson 22's page", () => {
     expect(words(d.querySelector('#freePlay [data-vib-lock3]'))).toBe(
       "Answer Step 3's question first to hear this.",
     )
-    // Step 3's Rate, its play and Drift wait for Step 3's own choice too
-    for (const root of ['#toyChart', '#freePlay'])
+    // Step 3's Rate, its play and Drift wait for Step 3's own choice too,
+    // and so does free play's slow wave (the steps' is Step 3's predict's)
+    for (const [root, held] of [
+      ['#toyChart', 3],
+      ['#freePlay', 4],
+    ] as const)
       expect(
         d.querySelectorAll(`${root} [data-held="step-3"]`),
         root,
-      ).toHaveLength(3)
+      ).toHaveLength(held)
   })
 
   it("holds Step 3's predict until the cold open's choice, asking for that choice first", () => {

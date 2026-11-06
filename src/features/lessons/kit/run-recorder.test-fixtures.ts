@@ -5,7 +5,8 @@
 // A page test that drives a lesson's toys swaps the kit's runs (kit/run.ts)
 // for these recorders, so it sees each sound the page asks for (a sung line,
 // a tune or one note), with its notes and options, and decides how it ends:
-// heard to its end (`end(true)`), or left for the page to stop. Nothing is
+// heard to its end (`end(true)`), or left for the page to stop, and what a
+// sung line's vibrato was glided to as it sounded (`setVibrato`). Nothing is
 // timed and nothing sounds. `onNote` fires only when the test says a note
 // starts (`note(i)`), so a figure that draws as a note sounds can be checked
 // note by note. `allOf` stays the kit's own: it joins any runs. Lesson 8's
@@ -25,7 +26,7 @@
 // Only types come from kit/run.ts, so the swap's factory can load this file
 // before the module it replaces.
 
-import type { Run, RunLine, RunNote, RunOptions } from './run'
+import type { LineRun, Run, RunLine, RunNote, RunOptions } from './run'
 import type { ContourPoint } from './sound'
 
 /** Which of the kit's runs the page asked for. */
@@ -47,6 +48,8 @@ export interface RecordedRun {
   /** Sung lines, each from its own moment (`playLines`); empty for any other run. */
   readonly lines: readonly RunLine[]
   readonly o: NotesOptions
+  /** Where a sung line's vibrato was glided as it sounded, in order (`setVibrato`). */
+  readonly glides: { readonly rate: number; readonly extent: number }[]
   /** True once the page stopped it, or the test ended it unheard. */
   stopped: boolean
   /** True once it has ended either way. */
@@ -84,6 +87,7 @@ function record(
     points,
     lines,
     o,
+    glides: [],
     stopped: false,
     over: false,
     end(heard) {
@@ -109,8 +113,15 @@ function record(
 
 /** The kit's four runs, as recorders: spread over kit/run.ts in a `vi.mock`. */
 export const recordedRuns = {
-  playLine: (points: readonly ContourPoint[], o: RunOptions): Run =>
-    record('line', [], points, o),
+  playLine: (points: readonly ContourPoint[], o: RunOptions): LineRun => {
+    const run = record('line', [], points, o)
+    const heard = runs[runs.length - 1]
+    return Object.assign(run, {
+      setVibrato(v: { readonly rate: number; readonly extent: number }) {
+        heard.glides.push(v)
+      },
+    })
+  },
   playLines: (
     lines: readonly RunLine[],
     o: RunOptions & { readonly length?: number },
