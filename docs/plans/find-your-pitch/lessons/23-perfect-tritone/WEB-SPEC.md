@@ -313,7 +313,7 @@ changes nothing. The reveal waits for both splits heard to their end with sound 
 order.
 
 On a first visit the welcome tour waits for the choice. Its step "One step at a time"
-(`src/features/lessons/kit/tour-copy.ts:44-46`) scrolls to the steps' stage, the hero's object at
+(`src/features/lessons/kit/tour-copy.ts:56-58`) scrolls to the steps' stage, the hero's object at
 work, so the page holds the tour until a choice is made, through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), as Lessons 15 and 19 hold theirs, with no time limit
 (FACTS 47). A visit that never chooses is offered the tour again on the next lesson page it opens at

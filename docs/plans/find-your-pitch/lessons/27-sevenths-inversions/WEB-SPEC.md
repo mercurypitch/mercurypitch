@@ -272,7 +272,7 @@ gives and no `next` hint, so the locked-in hint stays until the reveal (FACTS 37
   or "You said: E minor"; its reveal is the reveal, the text after it, the Try and Notice and the Go
   deeper drawer; its `unlocks` are Step 4's chips and Turn over, and the free play's Turn over.
 - On a first visit the welcome tour, whose "One step at a time" scrolls to the steps
-  (`src/features/lessons/kit/tour-copy.ts:44-46`), waits for the cold open's choice. Neither
+  (`src/features/lessons/kit/tour-copy.ts:56-58`), waits for the cold open's choice. Neither
   predict's choice is stored: a return visit starts both afresh.
 
 ### 4. Three words

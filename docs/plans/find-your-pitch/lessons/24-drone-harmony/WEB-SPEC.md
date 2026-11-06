@@ -278,7 +278,7 @@ no taps.
   the choice nothing it says names a beat, a rate or a stop.
 
 On a first visit the welcome tour waits for the choice. Its step "One step at a time"
-(`src/features/lessons/kit/tour-copy.ts:44-46`) scrolls to the steps' stage, which would carry a
+(`src/features/lessons/kit/tour-copy.ts:56-58`) scrolls to the steps' stage, which would carry a
 learner past the predict, so the page holds the tour until a choice is made, through the kit's
 `holdTour` (`src/features/lessons/kit/tour-gate.ts:57-69`), with no time limit, as Lessons 15, 16,
 21, 22 and 23 hold theirs. A visit that never chooses is offered the tour again on the next lesson

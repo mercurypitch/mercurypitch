@@ -407,19 +407,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/17.html': 178,
   // Lesson 19, "Threes, offbeats and syncopation", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
-  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
-  // page shell weighed 85,582 bytes in build:e2e, the budget the smallest
-  // whole KB above that, to rise as each part joins. Its four steps bring
-  // the kit's rhythm bar with its drawing, model and words, the beat clock,
-  // the app's drum voices (src/lib/drum-voices.ts, 5,284) and Subdivide's
-  // bars (src/lib/ear/metre.ts, 1,054): 141,436 bytes. Its cold open brings
-  // the kit's predict (2,518), the hero's sky and Merc's hop: 147,300. The
-  // quizzes load after first paint, but their import brings Vite's preload
-  // helper: 148,436. Its four words bring the kit's words strip: 151,022.
-  // The take and free play load after first paint, and the explorer's six
-  // pads come with Season 2's data (kit/season-2-figures.ts): 152,307. Six
-  // pads 44 px wide at 344 px, each figure drawn inside its border: 152,574.
-  'learn/19.html': 150,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
+  // the steps' rhythm bar on the beat clock (kit/rhythm-bar.ts, its drawing,
+  // model and words), the app's drum voices (src/lib/drum-voices.ts) and
+  // Subdivide's bars (src/lib/ear/metre.ts), the cold open's six pads, its
+  // predict and Merc's hop, the four words, and the explorer's six pads with
+  // Season 2's data (kit/season-2-figures.ts): 152,574 bytes in build:e2e; a
+  // quarter over. The recall and quick check, the take (its judge and the
+  // tap pad) and free play load after first paint.
+  'learn/19.html': 187,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -552,14 +548,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/17.html': 116,
-  // Lesson 19 (a draft, as above). Its page shell weighs 85,212 bytes in
-  // build:e2e: the kit's sheets (the rhythm bar's and the tap pad's inlined
-  // into its own by @import, and the shared parts), its own, and the shared
-  // Inter and Outfit @font-face rules; the budget the smallest whole KB
-  // above that, to rise as each part joins. Its four words' tickets, whose
-  // rules it shares with Lesson 17's in the rhythm bar's sheet, and the
-  // accent's light: 86,020.
-  'learn/19.html': 85,
+  // Lesson 19 (a draft, as above), with its steps, its cold open, its four
+  // words, the take and the Wrap: 86,244 bytes in build:e2e, the kit's
+  // sheets (the rhythm bar's and the tap pad's inlined into its own by
+  // @import, and the shared parts), its own, and the shared Inter and Outfit
+  // @font-face rules; a quarter over.
+  'learn/19.html': 106,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

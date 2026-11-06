@@ -186,7 +186,7 @@ until the reveal; the markup's lock hint, "Choose an answer to unlock Tavi's two
   sang G, A, B, A, G: each on its written note."
 
 On a first visit the welcome tour waits for the choice: its step "One step at a time" scrolls to the
-steps' stage (`src/features/lessons/kit/tour-copy.ts:44-46`), which would carry a learner past the
+steps' stage (`src/features/lessons/kit/tour-copy.ts:56-58`), which would carry a learner past the
 predict, so the page holds the tour until a choice through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), with no time limit, as Lessons 15, 21 and 23 do.
 The hold matters here: Step 2's text points to the answer, saying what the one note gives and that

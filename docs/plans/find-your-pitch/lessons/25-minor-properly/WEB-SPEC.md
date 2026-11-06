@@ -290,7 +290,7 @@ or by leaving the hero, counts as not heard and changes nothing. The reveal wait
 heard to their end with sound on, in either order.
 
 On a first visit the welcome tour waits for the choice. Its step "One step at a time"
-(`src/features/lessons/kit/tour-copy.ts:44-46`) scrolls to the steps' stage, so the page holds the
+(`src/features/lessons/kit/tour-copy.ts:56-58`) scrolls to the steps' stage, so the page holds the
 tour until a choice is made, through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), as Lessons 15, 19 and 23 hold theirs, with no time
 limit (FACTS 36). A visit that never chooses is offered the tour again on the next lesson page it

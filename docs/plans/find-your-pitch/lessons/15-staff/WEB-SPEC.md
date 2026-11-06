@@ -325,7 +325,7 @@ changes nothing (FACTS 38). The reveal waits for the climb on the five lines hea
 sound on.
 
 On a first visit the welcome tour waits for the choice. Its step "One step at a time"
-(`src/features/lessons/kit/tour-copy.ts:44-46`) scrolls to the steps' stage, where Step 1 counts the
+(`src/features/lessons/kit/tour-copy.ts:56-58`) scrolls to the steps' stage, where Step 1 counts the
 places (FACTS 1a), so the page holds the tour until a choice is made, through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), as Lessons 1 and 2 hold it for their opening shot
 (`:23-26`), with no time limit. A choice locks the guess, so nothing the tour then shows can change
@@ -572,7 +572,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    next-lesson card draws the lesson after the page's own wherever the data holds one, and the
    season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`),
    so once Lesson 15 is in the data, Lesson 14's page would draw Lesson 15's card in place of
-   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:148-160`), which SEASON-2
+   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:166-178`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card
    for Lesson 15 would answer nothing, but Season 1's end would be gone. `LESSONS[n].n === n` (`src/features/lessons/kit/season.ts:108-110`) and the head
    test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-211`) read one list by number;

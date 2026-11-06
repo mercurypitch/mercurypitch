@@ -223,7 +223,7 @@ is in, so Step 1's toy enables its plays (Toys 2), and settles the tour's hold (
   D." After Merc's way: "Merc read a run of steps, G, A, B, A, then do-mi-so, G, B, D, on the beat."
 
 On a first visit the welcome tour waits for the choice: its step "One step at a time" scrolls to the
-steps' stage (`src/features/lessons/kit/tour-copy.ts:44-46`), which would carry a learner past the
+steps' stage (`src/features/lessons/kit/tour-copy.ts:56-58`), which would carry a learner past the
 predict, so the page holds the tour until a choice through the kit's `holdTour`
 (`src/features/lessons/kit/tour-gate.ts:57-69`), with no time limit, as Lessons 15, 16, 21 and 23 do.
 The hold matters here: Step 1's text gives the answer, and it sits further down the page on a wide

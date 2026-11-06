@@ -519,3 +519,53 @@ Departures from [ARTICLE-PLAN.md](ARTICLE-PLAN.md), each argued in FACTS:
     feedback (FACTS 69, 76).
 12. The Wrap's lines and challenge are reworded to the page's terms; the teases are new (FACTS 5,
     5b); the chip reads 12 minutes, not 13 (FACTS 3).
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The hero draws its six pads with the kit's rhythm bar, in its compact scene with nothing written,
+  as Lesson 17's hero draws its four, not with `kit/beat-strip.ts` (What the kit and the app still
+  need, item 5).
+- The take's flow stays in the page (`lesson-19/take.ts`), as Lesson 17's does. What the two takes
+  share is already the kit's: the tap judge's lining-up and frame (`kit/tap-judge.ts`), the tap pad,
+  and the Ear Lab's `judgeTake`, imported. Item 7 asks for the flow in the kit, but two takes that
+  differ in their passes and their backing do not make one yet, so it moves when a third page taps
+  (Lesson 21's).
+- The rhythm model counts in quarter notes: a bar of 6/8 is three quarters, its beat a dotted
+  quarter of 1.5, played at 90 quarter notes a minute, so an eighth lasts a third of a second, a 6/8
+  beat 1 s, a 3/4 beat 0.67 s, and either bar 2 s.
+- Subdivide's bars are imported, not copied: `metre:6-8:a` plays In threes and Step 1's 6/8, and
+  `metre:6-8:b` the quick check's second question. In twos and Step 1's 3/4 follow its rule, built
+  here at its levels, the first hit at 1 and the rest at 0.7.
+- Held counts are drawn one under each held beat, so the 3/4 tune's last bar reads "1 (2) (3)" where
+  FACTS 28 writes "1 (2 3)" in prose: the kit writes every held beat in brackets of its own, as
+  Lesson 17's whole rest reads "(1) (2) (3) (4)".
+- The pads light on their hits, not on the clock's beats (`kit/rhythm-bar.ts`). That also lights the
+  first pad of each of Lesson 17's halvings, and of its Step 3 count bars, on their first beat,
+  where before they stayed dark until beat 2.
+- No switch plays (Toys 1), in the steps or in free play, where Lesson 17's free play plays each
+  change: on this page a switch regroups or swaps what is shown, and Play plays it.
+- The take's figure is the second time through's beats, four bars of numbered pads over the strip,
+  drawn by the rhythm bar with nothing written, and nothing on it lights while a take runs: the
+  judged pass is the beat held, and a lit pad would be a click to follow.
+- The other-metre clause counts the taps that fell at the other metre's places, as FACTS 34's
+  example lines count all of the extras there; a line says either that clause or how many taps fell
+  between the beats, never both.
+- The four words' ticket rules moved from Lesson 17's stylesheet into the kit's
+  (`kit/lesson-rhythm.css`, `.rb-words`), which both pages' tickets carry; Lesson 19's figures are
+  76 px tall, with no strip. The accent's first pad lights larger, by a scale of 1.08, and each word
+  says a line of its own once heard.
+- The tease still is drawn in the markup, as Lesson 10's is. The explorer card's figure is a new
+  Season 2 kind, `pads`: six numbered pads, all one size and evenly spaced, with nothing written
+  (FACTS 1a), drawn by Season 2's figures (`kit/season-2-figures.ts`).
+- The recall's "Try Lesson 17, Step N again" is a link only where Lesson 17's page is live; on a
+  page that holds Lesson 17 back, its words stay with no link.
+- The page taps no pad, but its six pads keep FACTS 70's 44 px as drawn, as its arithmetic reads
+  them, less the room between: a pad an eighth wide gives up that room, down to a quarter of a pixel
+  a side, before it draws under 44 px (`kit/rhythm-layout.ts` `padSpan`). At 344 px the six are 44
+  px wide as they show, nearly touching; from 390 px they keep Lesson 17's 4 px of room (Toys 1;
+  Edge cases, Narrow phones). Each rhythm figure is drawn at the box it fills, inside the stage's
+  border (`kit/rhythm-draw.ts` `figureSize`), so none is scaled to fit.
+- The recall and the quick check, the take and free play are chunks of their own, loaded after first
+  paint; one that cannot load leaves its part empty, never the page.
