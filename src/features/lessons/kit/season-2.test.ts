@@ -43,9 +43,9 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 16 and 18 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16, 18 and 20 to 28 yet: each is coming later', () => {
     // Assert
-    for (const L of LESSONS_2.filter((L) => L.n !== 15 && L.n !== 17)) {
+    for (const L of LESSONS_2.filter((L) => ![15, 17, 19].includes(L.n))) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
       expect(L.film, `lesson ${L.n}`).toBeUndefined()
@@ -104,7 +104,31 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[17]).toEqual([8])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15 and 17', () => {
+  it("gives Lesson 19 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+    // Act
+    const L19 = LESSONS_2.find((L) => L.n === 19)
+
+    // Assert: Lesson 19's WEB-SPEC, Explorer and season data
+    expect([L19?.page, L19?.minutes, L19?.film, L19?.len]).toEqual([
+      '/learn/19',
+      12,
+      undefined,
+      undefined,
+    ])
+    expect(DRAFT_LESSONS[19]).toBe("Lesson 17's page at /learn/17")
+    expect(L19?.pr.link).toEqual({
+      href: '/ear-lab?lesson=19',
+      addr: 'mercurypitch.com/ear-lab',
+      label: 'Ear Lab',
+      note: 'then tap Subdivide',
+    })
+    // the drill it still needs stays the team's
+    expect(L19?.pr.needs).toMatch(/^Subdivide with only 3\/4 and 6\/8/)
+    // Lesson 17 is its one way in
+    expect(SEASON_2.prereq[19]).toEqual([17])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lessons 15, 17 and 19', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -114,7 +138,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 17])
+    expect(pages).toEqual([15, 17, 19])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -225,11 +249,13 @@ describe('Season 2', () => {
     ])
   })
 
-  it("teases Lesson 16 on Lesson 15's card, Lesson 17 on Lesson 16's and Lesson 18 on Lesson 17's, and carries no other copy of its own yet", () => {
+  it('teases each of Lessons 16 to 20 on the card before it, and carries no other copy of its own yet', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
     const L18 = LESSONS_2.find((L) => L.n === 18)
+    const L19 = LESSONS_2.find((L) => L.n === 19)
+    const L20 = LESSONS_2.find((L) => L.n === 20)
 
     // Assert: Lesson 16 FACTS 5b; a tease lands with the page that draws it
     expect(L16?.tease).toBe(
@@ -253,9 +279,34 @@ describe('Season 2', () => {
       'Now you can read when each note comes, and where it sits.',
     )
     expect(L18?.teaseAlts).toBeUndefined()
+    // Lesson 19 FACTS 5b: on Lesson 18's card, the cold open in miniature,
+    // and an alternative that claims only what Season 2 has written
+    expect(L19?.tease).toBe(
+      'Same six notes, same speed. Only the accents move.',
+    )
+    expect(L19?.teaseAlts).toEqual([
+      {
+        id: 'written',
+        text: 'Every bar written this season has had four beats.',
+      },
+    ])
+    // Lesson 19 FACTS 5: on Lesson 19's card, Lesson 20's opening in
+    // miniature, and the season plan's line
+    expect(L20?.tease).toBe(
+      'Merc sings a run of nine notes, five every second.',
+    )
+    expect(L20?.teaseAlts).toEqual([
+      {
+        id: 'plan',
+        text: 'Squeeze three notes into a beat, then four, then more.',
+      },
+    ])
+    for (const L of [L19, L20])
+      for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
+        expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n >= 16 && L.n <= 18) continue
+      if (L.n >= 16 && L.n <= 20) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

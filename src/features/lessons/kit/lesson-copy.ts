@@ -144,6 +144,24 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
     ],
   },
   18: { tease: 'Now you can read when each note comes, and where it sits.' },
+  19: {
+    tease: 'Same six notes, same speed. Only the accents move.',
+    teaseAlts: [
+      {
+        id: 'written',
+        text: 'Every bar written this season has had four beats.',
+      },
+    ],
+  },
+  20: {
+    tease: 'Merc sings a run of nine notes, five every second.',
+    teaseAlts: [
+      {
+        id: 'plan',
+        text: 'Squeeze three notes into a beat, then four, then more.',
+      },
+    ],
+  },
 }
 
 /**

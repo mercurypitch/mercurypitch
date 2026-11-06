@@ -236,7 +236,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // lesson copy (137), Lesson 15's drafts line (73), the page state's
   // carrySeason, which Lesson 15's page is the first to call (75), and its
   // rule for a link into a season the page does not carry (63).
-  'learn/05.html': 143,
+  // Raised to 144 for Lesson 19's page shell: 146,228 bytes on main before
+  // it, 146,757 with it, against 146,432 at 143. 333 of the 529 are on
+  // every lesson page: Lesson 19's tease and Lesson 20's, each with its
+  // alternative (kit/lesson-copy.ts, 298), and Lesson 19's drafts line
+  // (35). The other 196 are the kit's predict, quiz and glyphs in a chunk
+  // of their own again, with its preload and imports, since the shell
+  // loads none of them, as on Lesson 17's; they go once Lesson 19's cold
+  // open and quizzes load them, but the 333 alone leave no room at 143.
+  'learn/05.html': 144,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -284,7 +292,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // as on Lesson 2; the other 328 are the kit's predict, quiz and glyphs in
   // a chunk of their own again (362), less 34 of the minifier's renaming,
   // and 136 can be tried once Lesson 17 loads them.
-  'learn/04.html': 137,
+  // Raised to 138 for Lesson 19's page shell: 139,811 bytes on main before
+  // it, 140,341 with it, against 140,288 at 137. 333 of the 530 are Lesson
+  // 19's and Lesson 20's teases with their alternatives and Lesson 19's
+  // drafts line, on every lesson page, as on Lesson 5; the other 197 are the
+  // kit's predict, quiz and glyphs in a chunk of their own again, and 137
+  // can be tried once Lesson 19 loads them.
+  'learn/04.html': 138,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -386,6 +400,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // over. The recall and quick check, the checkpoint (take, pad, clap, sung
   // bars) and free play load after first paint.
   'learn/17.html': 178,
+  // Lesson 19, "Threes, offbeats and syncopation", a Season 2 page and a
+  // draft, built in every mode as Lesson 3 is: its own module on the kit,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
+  // page shell weighs 85,582 bytes in build:e2e, the budget the smallest
+  // whole KB above that, to rise as each part joins.
+  'learn/19.html': 84,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -518,6 +538,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/17.html': 116,
+  // Lesson 19 (a draft, as above). Its page shell weighs 85,212 bytes in
+  // build:e2e: the kit's sheets (the rhythm bar's and the tap pad's inlined
+  // into its own by @import, and the shared parts), its own, and the shared
+  // Inter and Outfit @font-face rules; the budget the smallest whole KB
+  // above that, to rise as each part joins.
+  'learn/19.html': 84,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

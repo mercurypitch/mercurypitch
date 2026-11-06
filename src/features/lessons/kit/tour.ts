@@ -50,7 +50,7 @@
 
 import sheet from './lesson-tour.css?inline'
 import type { TourStepCopy } from './tour-copy'
-import { LISTENING_LESSONS, TOUR_STEPS, TOUR_WORDS } from './tour-copy'
+import { LISTENING_LESSONS, SILENT_LESSONS, TOUR_STEPS, TOUR_WORDS, } from './tour-copy'
 
 /** A step as this page shows it: its words, and the targets that show here. */
 export interface PageStep {
@@ -115,7 +115,11 @@ export function pageSteps(
       step.listening !== undefined && LISTENING_LESSONS.includes(lesson)
         ? ` ${step.listening}`
         : ''
-    return [{ title: step.title, body: step.body + extra, targets }]
+    const body =
+      step.silent !== undefined && SILENT_LESSONS.includes(lesson)
+        ? step.silent
+        : step.body
+    return [{ title: step.title, body: body + extra, targets }]
   })
 }
 

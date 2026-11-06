@@ -16,7 +16,12 @@
 // sing, and their pages say the voice is analysed on the device and
 // nothing is recorded, kept or sent. So Sing it's line names the
 // microphone only on the lessons in `LISTENING_LESSONS`: a new lesson
-// whose Sing it listens adds its number there.
+// whose Sing it listens adds its number there. On a page where nothing is
+// sung, Lesson 19's, the first stop's line about singing would be false, so
+// it says `silent` there instead, chosen by `SILENT_LESSONS` as the
+// microphone's line is; and a page whose solo is tapped, in `#tap`, gets a
+// stop of its own for it, which no other page shows (Lesson 19 WEB-SPEC,
+// What the kit and the app still need, item 13).
 //
 // The menu's "Tour this page", which names the question mark too, is the
 // one tour word not here: both are drawn on first paint (lesson-menu.ts),
@@ -29,16 +34,23 @@ export interface TourStepCopy {
   readonly body: string
   /** Said after `body` on a lesson in `LISTENING_LESSONS`. */
   readonly listening?: string
+  /** Said in place of `body` on a lesson in `SILENT_LESSONS`. */
+  readonly silent?: string
 }
 
 /** The lessons whose Sing it listens through the microphone, once the viewer chooses to sing. */
 export const LISTENING_LESSONS: readonly number[] = [3, 5, 7, 9]
+
+/** The lessons where nothing is sung, whose first stop says nothing of singing. */
+export const SILENT_LESSONS: readonly number[] = [19]
 
 export const TOUR_STEPS: readonly TourStepCopy[] = [
   {
     targets: ['#heroStage'],
     title: 'Meet Merc and Tavi',
     body: "They teach every lesson. Listen to them sing, then sing along with them when it's your turn.",
+    silent:
+      'They teach every lesson. Listen along, then try each idea yourself.',
   },
   {
     targets: ['#stepsStage'],
@@ -51,6 +63,11 @@ export const TOUR_STEPS: readonly TourStepCopy[] = [
     body: 'Merc sings first, then you sing, wherever your voice feels easy. Stop if anything feels uncomfortable.',
     listening:
       'If you choose to sing, it listens through your microphone and shows what it heard. Nothing is recorded, kept or sent.',
+  },
+  {
+    targets: ['#tap'],
+    title: 'Your turn to tap',
+    body: 'Tap the beat on the pad, or with Space or Enter, while a tune plays. Nothing listens: the page times your taps.',
   },
   {
     targets: ['#graph', '#exList'],

@@ -1,0 +1,190 @@
+/* ============================================================
+   Lesson 19 — Threes, offbeats and syncopation: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the rhythm bar's and the tap
+   pad's sheets, taken in here by @import so they inline into this page's
+   own sheet and split no chunk the other lessons share (MISTAKES.md, on
+   the lessons' base stylesheet).
+
+   Here: the hero's six pads between Merc and Tavi, with the three plays
+   under them; Tavi's line at the head of Step 1 and the two tunes' plays in
+   Step 2; the tap take's card; and the Wrap's cards, with the next card's
+   tease still and free play. No decorative staff: the section heads carry
+   none, and the body's season-2 class drops the background's
+   (kit/lesson-base.css). Nothing on the page is sung, so it takes no voice
+   sheet. */
+
+@import '../kit/lesson-rhythm.css';
+@import '../kit/lesson-tap-pad.css';
+
+/* ---------------------------------------------------------------- hero: the six pads between Merc and Tavi */
+.l19-duo {
+  --merc: clamp(96px, 9vw, 132px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  column-gap: 8px;
+  height: auto;
+  margin-top: 6px;
+}
+/* the floor runs under Merc and Tavi's feet and the pads */
+.l19-duo .floor {
+  top: auto;
+  bottom: calc(var(--merc) * 0.165);
+}
+.l19-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l19-duo .merc-blue {
+  grid-column: 1;
+}
+.l19-duo .merc-orange {
+  grid-column: 3;
+}
+.hero-pads {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  min-width: 0;
+  margin: 0 0 calc(var(--merc) * 0.165 + 8px);
+}
+#heroPads {
+  position: relative;
+  height: 96px;
+}
+.l19-hero .hero-plays {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l19-duo {
+    --merc: clamp(104px, 15vw, 150px);
+  }
+  /* the plays sit right under the stage, before the sound gate (the kit
+     orders the hero's parts at this width), so the first is on a phone's
+     first screen */
+  .l19-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
+/* on a phone the pads take the stage's whole width, on their own row under
+   Merc and Tavi, so each of the six keeps a pad of 44 px or more from 344 px
+   wide (FACTS 70) */
+@media (max-width: 720px) {
+  .l19-duo {
+    --merc: min(24vw, 112px);
+    grid-template-rows: var(--merc) auto;
+    row-gap: 6px;
+    margin-top: 0;
+  }
+  .l19-duo .merc {
+    align-self: start;
+  }
+  .l19-duo .floor {
+    top: calc(var(--merc) * 0.835);
+    bottom: auto;
+  }
+  .hero-pads {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- the steps */
+/* Tavi's line at the head of Step 1, as Lesson 15's Step 2 has one */
+.l19-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l19-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l19-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l19-says .bubble::after {
+  display: none;
+}
+/* Step 2's two tunes, played from the text onto the staff */
+.step-plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------------- tap the beat */
+.l19-tap {
+  max-width: 880px;
+  gap: 0;
+}
+.l19-tap .sing-part > :first-child {
+  margin-top: 0;
+}
+.l19-tap .part-head {
+  margin: 0 0 10px;
+  font: 600 var(--fs-20, 20px) / 1.3 var(--f-display);
+  color: var(--ink);
+}
+.l19-tap .take-fig {
+  margin: 14px 0 0;
+}
+.l19-tap .take-pad {
+  width: 100%;
+  margin-top: 14px;
+}
+.l19-tap .sing-status {
+  margin: 14px 0 0;
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l19-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l19-app .addr-line,
+.l19-app .also {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l19-app .also {
+  margin-top: 14px;
+}
+.l19-app a.addr {
+  text-decoration: none;
+}
+.l19-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 20's nine beads */
+.l19-tease svg {
+  display: block;
+  width: min(100%, 360px);
+  height: auto;
+  margin-top: 12px;
+}
+/* free play: the six pads and the two tunes, on their own card */
+.l19-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l19-free .controls {
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Step 2's tunes on the staff, under the six pads */
+.l19-free-staff {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
