@@ -39,6 +39,16 @@
 //  playback, for most of its life, in a speaker held nowhere near the
 //  player's ear. That reads as "no audio", not as "quiet audio".
 //
+//  A TV OR SPEAKER CHOSEN UNDER AIRPLAY needs `.allowAirPlay`, the one
+//  option Apple lets only `playAndRecord` set: "Setting this option enables
+//  the audio session to route audio output to AirPlay devices"
+//  (AVAudioSession.CategoryOptions.allowAirPlay). Without it the session
+//  stayed on the speaker at 48 kHz on an iPhone 13 Pro while an LG C2 had
+//  the sound over AirPlay (Mercury Pitch, 3 to 6 Nov 2026), so the app's
+//  route never said airplay. With it, the session can follow AirPlay as
+//  WebKit's own does once the mic opens. The lyrics window logs the raw
+//  options: 105 with it, where 41 was without (0x40 more).
+//
 //  Both were written down before any of this shipped:
 //  docs/plans/mobile-native/capacitor-readiness.md rows B2 and B3 name
 //  the earpiece routing and the cold session, and propose a plugin or "a
@@ -62,7 +72,7 @@ import Foundation
 
 public enum AudioSession {
     private static let desiredOptions: AVAudioSession.CategoryOptions = [
-        .defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers,
+        .defaultToSpeaker, .allowBluetoothA2DP, .allowAirPlay, .mixWithOthers,
     ]
     private static var isRoutingToSpeaker = false
 
@@ -86,8 +96,10 @@ public enum AudioSession {
     /// `playAndRecord` rather than `playback` because the mic is core to
     /// the app; `.defaultToSpeaker` is the half that actually fixes the
     /// earpiece; `.allowBluetoothA2DP` so headphones and speakers still
-    /// win when they are connected; `.mixWithOthers` so a player humming
-    /// along to their own music is not silenced by us.
+    /// win when they are connected; `.allowAirPlay` so a TV or speaker
+    /// chosen under AirPlay gets the sound, and the route says so (the
+    /// header); `.mixWithOthers` so a player humming along to their own
+    /// music is not silenced by us.
     @discardableResult
     private static func applyIfNeeded(_ session: AVAudioSession) -> Bool {
         guard categoryNeedsRepair(session) else { return false }

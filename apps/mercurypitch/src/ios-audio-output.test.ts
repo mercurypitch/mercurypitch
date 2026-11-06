@@ -278,3 +278,41 @@ describe('the Xcode project', () => {
     expect(PROJECT).toContain('/* AudioSessionKit in Frameworks */')
   })
 })
+
+// The app's own session follows AirPlay only with `.allowAirPlay`, which
+// Apple lets a playAndRecord session set. Without it, an iPhone 13 Pro's
+// session said the speaker for as long as an LG C2 had the sound over
+// AirPlay (3 Nov 2026), so the room's route never said airplay. Beside Cue
+// launches through the same kit.
+describe('the session the kit asks for', () => {
+  /** The option set the kit keeps the session at, alone. */
+  const desired =
+    /private static let desiredOptions: AVAudioSession\.CategoryOptions = \[([\s\S]*?)\]/u.exec(
+      KIT,
+    )?.[1] ?? ''
+  const options = desired
+    .split(',')
+    .map((option) => option.trim())
+    .filter((option) => option !== '')
+
+  it('allows AirPlay, so the route can say a TV or speaker has the sound', () => {
+    expect(options).toContain('.allowAirPlay')
+  })
+
+  it('keeps the speaker, Bluetooth speakers and other apps’ sound as before', () => {
+    expect([...options].sort()).toEqual(
+      [
+        '.allowAirPlay',
+        '.allowBluetoothA2DP',
+        '.defaultToSpeaker',
+        '.mixWithOthers',
+      ].sort(),
+    )
+  })
+
+  it('sets them on a playAndRecord session, the one category that may allow AirPlay', () => {
+    expect(KIT).toMatch(
+      /setCategory\(\s*\.playAndRecord,\s*mode: \.default,\s*options: desiredOptions\s*\)/u,
+    )
+  })
+})
