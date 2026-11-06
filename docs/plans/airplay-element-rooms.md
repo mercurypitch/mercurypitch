@@ -1,6 +1,8 @@
 # AirPlay alone: the rooms whose sound is a media element
 
-Status: a plan for the owner to approve room by room. Nothing in it is built.
+Status: a plan for the owner to approve room by room. Buttons 6 and 7 of the
+AirPlay sound check are built (`apps/mercurypitch/src/shell/airplay-check.ts`);
+no room work is.
 Read from `origin/main` at `57f3d4e83` (6 Nov 2026), which carries PR #1376
 (`bb2df9ba3`, the commit tagged `mp-v0.8.56`).
 
@@ -36,14 +38,20 @@ screen's carrier stands aside, paused and muted
 stays quiet (`src/lib/audio-unlock.ts:119-127`, `:209-213`), both wired
 app-wide by `standAsideOnAirPlay()`
 (`apps/mercurypitch/src/infrastructure/native-device.ts:174-188`). The owner
-heard Karaoke on the TV, the phone quiet, about 2 s late.
+heard Karaoke on the TV, the phone quiet, about 2 s late (Test 11A), and a
+song moved to AirPlay mid-song, and back to the phone, played on both
+(Test 11B).
 
 Muted as well as paused because `carrier-aside.ts:10-14` reads WebKit's
 `MediaSessionManagerCocoa::updateSessionState` as keeping the session in
 playback for an element that is audible and has played audibly since the
-last interruption, playing or not. **That reading comes from WebKit's source
-and has not been verified on a device.** Every "stays around" finding below
-leans on it.
+last interruption, playing or not. That reading comes from WebKit's source.
+Test 11B (6 Nov 2026, mp-v0.8.56) settled the half the carrier needs: the
+carrier had played audibly on the phone, stood aside paused and muted as
+AirPlay was chosen mid-song, and the TV took the song. So muting is enough
+(check 8, below). The other half, that a paused element left unmuted holds
+AirPlay, **has not been verified on a device**. Every "stays around" finding
+below leans on it, and button 7 asks it.
 
 A caveat on button 1 (inference): its URL is a `blob:` URL, which a TV could
 not fetch if WebKit handed the URL over. Button 2, kept local, played nowhere
@@ -102,10 +110,12 @@ its studio, Piano, Guitar and Progress (every `goToTab`/`setActiveTab` in
 (`apps/mercurypitch/src/shell/premium-exercise-wiring.ts:56`). Its Guitar is
 the in-app Guitar tab (`src/pages/GuitarPage.tsx`), which plays no element
 (no element in `src/pages/GuitarPage.tsx`, `src/features/guitar-practice` or
-`src/features/session-drummer`). Nothing in the shell opens Jam, Hear Yourself
-(Voice History) or the Lab, though all three are in the document; the web's
-own ways in (a Jam link, `src/features/routing/useHashRouter.ts:320-323`; a
-guided check's return, `src/App.tsx:750`) were not tried in the app.
+`src/features/session-drummer`). maff (6 Nov 2026): Guitar Night, Drum Night
+and Piano Night are web only, and the app shows the old Guitar page. Nothing
+in the shell opens Jam, Hear Yourself (Voice History) or the Lab, though all
+three are in the document; the web's own ways in (a Jam link,
+`src/features/routing/useHashRouter.ts:320-323`; a guided check's return,
+`src/App.tsx:750`) were not tried in the app.
 
 On the web there is no `airPlayAlone()` worth keying on (inference): the
 route and the session's rate it reads come from the native shell
@@ -329,19 +339,20 @@ TV, and how sure it is to be silent there.
 
 - Test 12B's First Note rounds play two elements kept local, routed through
   Web Audio, with the mic open: check 6 in a real room.
-- Test 11B, AirPlay chosen mid-song in Karaoke, asks check 8 of the carrier:
-  it played audibly on the phone, then stands aside paused and muted. If the
-  TV takes the song, muting is enough.
+- Test 11B, AirPlay chosen mid-song in Karaoke, answered check 8 for the
+  carrier (6 Nov 2026): it played audibly on the phone, then stood aside
+  paused and muted, and the TV took the song. Muting is enough.
 - 4, then 3 straight after, needs no new button.
 
-Build checks 6 to 8 only for what those leave open. If routed elements play
-on the TV, every room below that routes its elements already plays on
-AirPlay alone, and the work shrinks to what 7 and 8 say about stopped
-elements.
+Buttons 6 and 7 are built for what those leave open; 8 and 9 are not (see
+"Checks before any room work"). If routed elements play on the TV, every
+room below that routes its elements already plays on AirPlay alone, and the
+work shrinks to what 7 says about stopped elements: if they count, mute them
+while `airPlayAlone()` holds, which 11B shows is enough.
 
 | Order | Room                         | If check 6 plays                             | If check 6 plays nothing                                              | Rough cost                            |
 | ----- | ---------------------------- | -------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------- |
-| 1     | First Note                   | Nothing, or empty/mute between rounds (7, 8) | (b) over Karaoke's streaming voice; (d) where AudioDecoder is missing | (b) about 2 days; (d) half a day      |
+| 1     | First Note                   | Nothing, or mute between rounds if 7 says so | (b) over Karaoke's streaming voice; (d) where AudioDecoder is missing | (b) about 2 days; (d) half a day      |
 | 2     | Karaoke Studio stem previews | Nothing                                      | (d), or nothing until the list is seen in the app                     | Half a day                            |
 | 3     | Zen example cue              | Nothing                                      | (a): decode the cue                                                   | Half a day                            |
 | 4     | Jam song room                | (d) for peers, if 9 says so                  | (d)                                                                   | Half a day, only if Jam joins the app |
@@ -386,10 +397,12 @@ context.
 
 ## Checks before any room work
 
-New buttons for the AirPlay sound check, described here and not built. Each
-beeps its own number, as 1 to 5 do, writes its `[airplay check]` line and is
-torn down whole afterwards. Where an element only has to have played, it
-plays silence, so the count is the Web Audio's alone.
+New buttons for the AirPlay sound check. 6 and 7 are built
+(`apps/mercurypitch/src/shell/airplay-check.ts`) and run in Test 12A; 8 and 9
+are not, and each says why. Each beeps its own number, as 1 to 5 do, writes
+its `[airplay check]` line and is torn down whole afterwards. Where an
+element only has to have played, it plays silence, so the count is the Web
+Audio's alone.
 
 **6: an element through Web Audio.** A `<audio>` of the beeps WAV, kept
 local, routed through `createMediaElementSource` into a fresh AudioContext
@@ -397,7 +410,7 @@ resumed in the tap, played in the tap. This is how First Note, the preview
 player and Jam's instrumental play.
 
 - The TV plays 6: (c) works. Every room that routes its elements already
-  plays on AirPlay alone, and only 7 and 8 are left to answer.
+  plays on AirPlay alone, and only 7 is left to answer (8 is answered).
 - Nothing anywhere: a routed element still counts as an element. (c) is out,
   and the rooms take (a), (b) or (d) as recommended above.
 - The phone plays it and the TV does not: the routed element stays local
@@ -412,21 +425,22 @@ emptied. Then a fresh context plays the beeps.
 - The TV plays 7: a stopped element does not hold AirPlay, and the table of
   elements that stay around is harmless.
 - Nothing: every stopped element must be muted or emptied on AirPlay alone.
-  8 says which.
+  Muting is enough (8, which Test 11B answered).
 
-**8: played, paused, then muted.** As 7, with the element muted before the
-beeps. Test 11B already asks this of the carrier: if the TV takes a song
-moved to AirPlay mid-song, the answer is the first one below.
+**8: played, paused, then muted. Not built: Test 11B answered it.** As 7,
+with the element muted before the beeps. On 6 Nov 2026 (mp-v0.8.56) a
+Karaoke song moved to AirPlay mid-song reached the TV, and came back to the
+phone. The carrier had played audibly on the phone and then stood aside
+paused and muted, and it did not hold AirPlay. So an element that played
+audibly, then is paused and muted, does not hold AirPlay: muting is enough,
+as the carrier and the unlock clip do it. If 7 says stopped elements count,
+that is one line in each stop path while `airPlayAlone()` holds.
 
-- The TV plays 8: muting is enough, as the carrier and the unlock clip do
-  it. One line in each stop path while `airPlayAlone()` holds.
-- Nothing: only emptying works (`removeAttribute('src')`, then `load()`).
-  The carrier's aside mutes and pauses but does not empty, so a carrier that
-  played before AirPlay was chosen (Test 11B) may then keep the room silent.
-
-**9 (only if Jam joins the app): a MediaStream element.** An `<audio>` whose
-`srcObject` is a `MediaStreamAudioDestinationNode`'s stream from a second
-context, playing silence, beside a fresh context's beeps.
+**9: a MediaStream element. Not built: nothing in the app's shell opens
+Jam** (see "Which rooms the native app can reach"), so no room in the app
+has a peer's element. If Jam joins the app: an `<audio>` whose `srcObject`
+is a `MediaStreamAudioDestinationNode`'s stream from a second context,
+playing silence, beside a fresh context's beeps.
 
 - The TV plays 9: a peer's element does not silence the room.
 - Nothing: a Jam room with a peer is silent on AirPlay alone whatever its
@@ -437,72 +451,13 @@ If 3 plays, emptying alone frees the TV and the mic had nothing to do with
 it. If 3 stays silent while 5 played, opening the mic is what freed the TV,
 and "5 after 4" said nothing about emptying.
 
-## Test 12: rooms with a media element on AirPlay alone (draft for tv-device-tests.md)
+## Test 12: rooms with a media element on AirPlay alone
 
-Tests 9 and 11 found Web Audio alone on the TV, and nothing at all while an
-element plays. Karaoke now plays Web Audio only there. First Note still plays
-its song as elements, routed through Web Audio, and so do the preview
-player's cues. This test says whether those are silent today, and the new
-buttons say which fix each needs (this plan,
-[airplay-element-rooms.md](airplay-element-rooms.md)). 12A needs the first
-build with buttons 6 to 8; 12B runs on mp-v0.8.56 (build 1716) or later.
-Run 12B and step 4 of 12A first: they need no new build, and may leave
-nothing for buttons 6 to 8 to answer.
-
-Before each part: Developer, Debug console, "Keep routine logs" on, and Clear
-log under Developer, Audio. Ring switch on ring, phone volume up. Choose the
-TV under AirPlay in Control Center (not Screen Mirroring).
-
-**12A: the new buttons.** Settings, Developer, "AirPlay sound check":
-
-| Button  | What plays                                                                                        |
-| ------- | ------------------------------------------------------------------------------------------------- |
-| 6 beeps | An element kept local, played through Web Audio (`createMediaElementSource`), as First Note plays |
-| 7 beeps | Web Audio after an element that played, then was paused and kept, unmuted                         |
-| 8 beeps | The same, with the element muted first                                                            |
-
-1. Tap 3 and wait for it to end (about five seconds), so AirPlay has
-   connected.
-2. Tap 6, 7 and 8, each once the one before has ended. Then again in the
-   order 8, 7, 6.
-3. For each: did the TV play it, the phone, or nothing? How many beeps, and
-   how late?
-4. Press 4 and then 3 straight after, three times. Say which presses of 3
-   the TV played.
-5. Copy the `[airplay check] ...` lines into the notes, one a tap.
-6. Once on the phone's own speaker, as the control: every button should beep
-   on the phone.
-
-| Route          | 6 (element through Web Audio) | 7 (after a paused element) | 8 (after a muted one) | 3 after 4, of three |
-| -------------- | ----------------------------- | -------------------------- | --------------------- | ------------------- |
-| AirPlay, LG C2 |                               |                            |                       |                     |
-| Phone speaker  |                               |                            |                       |                     |
-
-**12B: the rooms.** AirPlay chosen before each room opens. Run each case
-with the ring switch on ring; repeat on silent any case the TV played.
-
-1. **Karaoke, the control.** Play a song for 20 s. The TV should play it,
-   about 2 s late, as in Test 11A.
-2. **First Note, a round.** Open First Note and play one round to its end:
-   the lead-in (the band alone), then sing the line (the band and the voice
-   come back in). Does the TV play the lead-in? The line? Does the phone?
-3. **First Note, the next round.** Straight after, a second round. Its
-   lead-in follows a pause of the same two elements, which 7 is about.
-4. **A Sing exercise with an example**, if your build shows "Hear an
-   example" on one: play it.
-5. **Karaoke Studio, a stem preview**, if a finished song in the studio
-   shows its stems with a play button: play one.
-
-Copy the console after each case: the `[audio route]` line says whether the
-app thinks the sound is on AirPlay.
-
-| Case                  | Ring switch | Sound on the TV? How late? | Phone silent? | `[audio route]` says AirPlay? | Notes |
-| --------------------- | ----------- | -------------------------- | ------------- | ----------------------------- | ----- |
-| 1 Karaoke (control)   | ring        |                            |               |                               |       |
-| 2 First Note, round 1 | ring        |                            |               |                               |       |
-| 3 First Note, round 2 | ring        |                            |               |                               |       |
-| 4 Sing example        | ring        |                            |               |                               |       |
-| 5 Studio stem preview | ring        |                            |               |                               |       |
+The device test is Test 12 in [tv-device-tests.md](tv-device-tests.md). 12A
+runs buttons 6 and 7, which need the first build tagged after this branch
+merges, and "4, then 3", which needs none. 12B runs First Note, a Sing
+example and a studio stem preview on AirPlay alone, on mp-v0.8.56
+(build 1716) or later.
 
 ## Found on the way, outside this plan
 
