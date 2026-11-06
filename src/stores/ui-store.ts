@@ -365,10 +365,11 @@ const deferredBefore =
 
 /**
  * Whether First Light has never been offered on this device, on whichever
- * document.
+ * document: what a lesson's link spends (stepAsideForLesson). Never under the
+ * native build, for the reason `showWelcome` gives.
  */
 export function firstLightNeverOffered(): boolean {
-  return welcomeSeen() === ''
+  return !IS_NATIVE_BUILD && welcomeSeen() === ''
 }
 
 /** Did an earlier page load open a room's document before the welcome was offered? (returningVisitor) */

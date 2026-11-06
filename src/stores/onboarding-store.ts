@@ -22,7 +22,7 @@ import type { MirrorResult } from '@/lib/mirror/metrics'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 // One-way: ui-store knows nothing about onboarding, so this is not a cycle.
-import { dismissWelcome, firstLightDeferredBefore, showWelcome, welcomeSeen, } from '@/stores/ui-store'
+import { dismissWelcome, firstLightDeferredBefore, firstLightNeverOffered, welcomeSeen, } from '@/stores/ui-store'
 
 const DONE_KEY = 'pitchperfect_onboarding_done'
 
@@ -300,6 +300,11 @@ export { lessonArrival }
  * a password reset) already spend the welcome flag the same way. Nothing
  * is lost: Settings' "Replay the intro" and #/map still open it.
  *
+ * Whether the flow was ever offered decides, not whether it would open on
+ * this document: a room's own document keeps it shut by itself
+ * (lib/first-light-landing.ts), and a lesson's link to that room steps it
+ * aside for good all the same.
+ *
  * Not counted as `onboarding_skipped`: nobody saw the flow, and that event
  * is the skip rate of the people who did.
  *
@@ -309,7 +314,7 @@ export { lessonArrival }
  */
 export function stepAsideForLesson(search: string): number | null {
   const lesson = lessonFromSearch(search)
-  if (lesson === null || !showWelcome()) return null
+  if (lesson === null || !firstLightNeverOffered()) return null
   setLessonArrival(lesson)
   finishOnboarding()
   return lesson
