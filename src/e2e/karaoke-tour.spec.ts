@@ -388,8 +388,11 @@ test('the vocal remover keeps its page to itself @smoke', async ({ page }) => {
   await localKaraokeDemo(page)
   await page.goto('/vocal-remover?tour=first')
 
+  // Its own heading, not Karaoke Night's (KaraokeHero.tsx).
   await expect(
-    page.getByRole('heading', { name: 'Your stage is set' }),
+    page.getByRole('heading', {
+      name: 'Vocal remover: take the voice out, keep the song',
+    }),
   ).toBeVisible()
   await page.waitForLoadState('networkidle')
   expect(new URL(page.url()).searchParams.has('tour')).toBe(false)
