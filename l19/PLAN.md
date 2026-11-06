@@ -37,6 +37,14 @@ shape (l17/PLAN-B.md). Drop nothing on main; INDEX regenerated last.
   kind 'pads', six numbered pads, all one size and numbers alike, nothing written (FACTS 1a).
 - The recall's "Try Lesson 17, Step N again" links only where Lesson 17 is live (the kit's linkAway);
   on a page that holds Lesson 17 back its words stay with no link.
+- FACTS 70's 44 px is the drawn pad's width, as its arithmetic reads ("a pad, less the gaps"), though
+  the page taps no pad: a pad an eighth wide gives up its 4 px of room, to half a pixel, before it
+  draws under 44 (kit/rhythm-layout.ts padSpan), so the six are 44 px from 344 px up; C3's test
+  had measured the column (46 px there), and the pads drew 41.6 (found by C11's 344 px check).
+- The kit's figureSize measures inside the figure's border: the stage's .viz has 1 px above and below,
+  so every rhythm figure there (Lesson 17's too) was drawn 2 px too tall and scaled 0.992 to fit,
+  its pads 43.6 px at 344 px. Lesson 15's staff-draw.ts figureSize reads the border box too: left
+  as a follow-up (Lesson 15's page), named in the PR.
 
 ## Commits, in order (each with its tests; gates per commit: pnpm check, units of what changed;
 ## build:e2e + first paint at C1, C7, C11, C14; e2e at C12)
