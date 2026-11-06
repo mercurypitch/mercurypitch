@@ -14,12 +14,23 @@
 // heard to its end, never when it is stopped; and the bar seen on the
 // pitch line or with its counts, or redrawn at a new tempo, keeping what
 // was heard, its readings gone until each note ends again.
+//
+// Past 4/4 (Lesson 19 WEB-SPEC, Toys 1 and 2): 6/8 and 3/4 cut into bars of
+// three quarters, the click on the metre's beats and a count-in in them;
+// six pads lit eighth by eighth, the arcs as each group starts, kept after
+// the play and cleared by the next; drums struck in place of notes through
+// the page's own; a cue booked its seconds ahead of the sounds it picks,
+// the first before the part's first beat; the time signature from the
+// start where the scene asks; and a part with a view of its own lighting
+// its first pad on its first beat.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type * as BeatClockModule from './beat-clock'
 import type { Spot } from './beat-clock'
-import type { Bar, NoteValue, Written } from './rhythm-model'
+import type { DrumHit } from './drum-hits'
+import type { Bar, Metre, NoteValue, Written } from './rhythm-model'
+import { SIX_EIGHT, THREE_FOUR } from './rhythm-model'
 import type * as SoundAheadModule from './sound-ahead'
 import type * as WoodblockModule from './woodblock'
 
@@ -30,6 +41,8 @@ interface FakeRun {
     ) => { beats: number; hits: { beat: number; data: unknown }[] } | null
     bpm: () => number
     audible: boolean
+    lead?: number
+    early?: number
     book?: (data: unknown, when: number, bus: unknown) => void
     onHit?: (data: unknown, spot: Spot) => void
     onBeat?: (spot: Spot) => void
@@ -114,6 +127,7 @@ const viewOf = (
 function mount(
   onPad?: (beat: number) => void,
   onFrame?: (beats: number | null) => void,
+  drum?: (hit: DrumHit) => void,
 ) {
   document.body.innerHTML =
     '<div class="rb-toy"><div class="viz wide rb" data-rb role="group"><p class="sr" aria-live="polite" data-rb-said></p></div><div class="rb-pads" data-rb-pads></div></div>'
@@ -132,6 +146,7 @@ function mount(
     owner,
     onPad,
     onFrame,
+    drum,
   })
   return { bar, figure, pads, said, owner }
 }
@@ -698,5 +713,267 @@ describe('mountRhythmBar', () => {
       'false',
     ])
     expect(document.activeElement).toBe(buttons()[2])
+  })
+})
+
+/** Six eighths a bar of `metre` at 90 quarter-BPM, six pads to a bar under arcs, Lesson 19's Step 1. */
+const sixView = (
+  metre: Metre,
+  bars = 1,
+  more: { metreFirst?: boolean } = {},
+) => ({
+  scene: {
+    staff: 'line' as const,
+    rows: [
+      {
+        bars: Array.from({ length: bars }, () => times(6, note(0.5))),
+        bpm: 90,
+        metre,
+      },
+    ],
+    padEvery: 0.5,
+    arcs: true,
+    ...more,
+  },
+  label: 'Six eighths',
+  pads: null,
+})
+
+const KICK: DrumHit = { voice: 'kick', level: 1 }
+const HAT: DrumHit = { voice: 'hh-closed', level: 0.7 }
+const SNARE: DrumHit = { voice: 'snare', level: 0.7 }
+const THREES = [KICK, HAT, HAT, SNARE, HAT, HAT]
+
+describe('past 4/4', () => {
+  it("cuts 6/8 and 3/4 into bars of three quarters, knocking on the metre's beats, each bar's first higher", () => {
+    // Act
+    const plan = (metre: Metre) =>
+      planPlay([{ view: sixView(metre, 2), bpm: () => 90 }])
+    const clicks = (metre: Metre) =>
+      plan(metre).map((p) =>
+        p.bar.hits
+          .filter((h) => h.data.k === 'click')
+          .map((h) => [h.beat, (h.data as { high: boolean }).high]),
+      )
+
+    // Assert: two bars of 2 s at 90, then the last readings (FACTS 18)
+    expect(plan(SIX_EIGHT).map((p) => [p.bar.beats, p.from])).toEqual([
+      [3, 0],
+      [3, 3],
+      [1, -1],
+    ])
+    expect(clicks(SIX_EIGHT)).toEqual([
+      [
+        [0, true],
+        [1.5, false],
+      ],
+      [
+        [0, true],
+        [1.5, false],
+      ],
+      [],
+    ])
+    expect(clicks(THREE_FOUR).slice(0, 2)).toEqual([
+      [
+        [0, true],
+        [1, false],
+        [2, false],
+      ],
+      [
+        [0, true],
+        [1, false],
+        [2, false],
+      ],
+    ])
+  })
+
+  it("counts in with the metre's beats, a bar either way: 6/8's two a dotted quarter apart, 3/4's three", () => {
+    // Act
+    const countIn = (metre: Metre, beats: number) =>
+      planPlay([{ view: sixView(metre), bpm: () => 90, countIn: beats }])[0]
+
+    // Assert: 2 s of count-in at 90 either way (FACTS 36)
+    const six = countIn(SIX_EIGHT, 2)
+    const three = countIn(THREE_FOUR, 3)
+    expect([six.bar.beats, six.from, three.bar.beats, three.from]).toEqual([
+      3, -1, 3, -1,
+    ])
+    expect(six.bar.hits.map((h) => h.beat)).toEqual([0, 1.5])
+    expect(three.bar.hits.map((h) => h.beat)).toEqual([0, 1, 2])
+  })
+
+  it('lights each of six pads as its eighth is heard, and each arc as its group starts, kept after the play and cleared by the next', async () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = sixView(SIX_EIGHT)
+    bar.show(view)
+    const lit = () =>
+      figure.querySelector('.rb-pad.is-now')?.getAttribute('data-pad')
+    const arcs = () =>
+      Array.from(
+        figure.querySelectorAll('.rb-arc'),
+        (a) => !a.classList.contains('is-hidden'),
+      )
+    const before = arcs()
+
+    // Act: the first quarter, the second, then to the end, and again
+    void bar.play([{ view, bpm: () => 90, click: false }])
+    drive(1)
+    const first = { lit: lit(), arcs: arcs() }
+    drive(1)
+    const second = { lit: lit(), arcs: arcs() }
+    drive()
+    await finish()
+    const after = { lit: lit(), arcs: arcs() }
+    void bar.play([{ view, bpm: () => 90, click: false }])
+
+    // Assert: eighths 1 and 2, then 3 and 4 and the second group (FACTS 1a)
+    expect(before).toEqual([false, false])
+    expect(first).toEqual({ lit: '1', arcs: [true, false] })
+    expect(second).toEqual({ lit: '3', arcs: [true, true] })
+    expect(after).toEqual({ lit: undefined, arcs: [true, true] })
+    expect(arcs()).toEqual([false, false])
+  })
+
+  it("draws 3/4's three arcs of two, and none for a figure whose pads are its beats", () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const view = sixView(THREE_FOUR)
+    bar.show(view)
+
+    // Act
+    void bar.play([{ view, bpm: () => 90, click: false }])
+    drive()
+
+    // Assert
+    const shownArcs = () =>
+      figure.querySelectorAll('.rb-arc:not(.is-hidden)').length
+    expect(shownArcs()).toBe(3)
+    const fours = viewOf([times(4, note(1))], null)
+    expect(
+      planPlay([
+        {
+          view: { ...fours, scene: { ...fours.scene, arcs: true } },
+          bpm: () => 60,
+        },
+      ]).flatMap((p) => p.bar.hits.filter((h) => h.data.k === 'arc')),
+    ).toEqual([])
+  })
+
+  it("strikes a part's drums in place of its notes, one a sound, through the page's own, and plays it without the click", () => {
+    // Arrange
+    const struck: DrumHit[] = []
+    const { bar } = mount(undefined, undefined, (hit) => struck.push(hit))
+    const view = sixView(SIX_EIGHT)
+    bar.show(view)
+
+    // Act: Subdivide's 6/8, its last eighth striking nothing
+    void bar.play([
+      {
+        view,
+        bpm: () => 90,
+        click: false,
+        drums: [KICK, HAT, HAT, SNARE, HAT, null],
+      },
+    ])
+    drive()
+
+    // Assert (FACTS 18, 63)
+    expect(struck).toEqual([KICK, HAT, HAT, SNARE, HAT])
+    expect(notes).toEqual([])
+    expect(knocks).toEqual([])
+  })
+
+  it("books a cue its seconds ahead of each sound it picks, the first before the part's first beat, and runs it as heard", () => {
+    // Arrange: Merc's hop on the kick and the snare (FACTS 57)
+    const fired: number[] = []
+    const cue = {
+      early: 0.53,
+      on: (d: DrumHit | null) => d === KICK || d === SNARE,
+      fire: () => fired.push(fired.length),
+    }
+    const view = sixView(SIX_EIGHT)
+    const part = { view, bpm: () => 90, click: false, drums: THREES }
+
+    // Act
+    const plan = planPlay([part, part], cue)
+    const { bar } = mount()
+    bar.show(view)
+    void bar.play([part], { lead: 0.6, cue })
+    const run = runs[runs.length - 1]
+    drive()
+
+    // Assert: 0.53 s is 0.795 of a beat at 90, so the kick's before its bar
+    expect(
+      plan.map((p) =>
+        p.bar.hits
+          .filter((h) => h.data.k === 'cue')
+          .map((h) => Number(h.beat.toFixed(3))),
+      ),
+    ).toEqual([[-0.795, 0.705], [-0.795, 0.705], []])
+    expect([run.o.lead, run.o.early]).toEqual([0.6, 0.53])
+    expect(fired).toEqual([0, 1])
+  })
+
+  it('shows the time signature before anything is heard where the scene asks, and with the first note otherwise', () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const hidden = () =>
+      figure.querySelector('.rb-metre')?.classList.contains('is-hidden')
+
+    // Act
+    bar.show(sixView(SIX_EIGHT, 1, { metreFirst: true }))
+    const first = hidden()
+    bar.show(sixView(SIX_EIGHT))
+
+    // Assert (Lesson 19 WEB-SPEC, Toys 5)
+    expect(first).toBe(false)
+    expect(hidden()).toBe(true)
+  })
+
+  it('sounds each note of a row that gives its notes at its own pitch, as a tune on the staff does (FACTS 61)', () => {
+    // Arrange: do re mi so on the bass staff, C3 D3 E3 G3
+    const { bar } = mount()
+    const tune = (['C', 'D', 'E', 'G'] as const).map((letter) => ({
+      letter,
+      alter: 0,
+      octave: 3,
+    }))
+    const v = viewOf([times(4, note(1))])
+    const view = {
+      ...v,
+      scene: { ...v.scene, rows: [{ ...v.scene.rows[0], notes: tune }] },
+    }
+    bar.show(view)
+
+    // Act
+    void bar.play([{ view, bpm: () => 60, click: false }])
+    drive()
+
+    // Assert
+    expect(notes.map((n) => Number(n.freq.toFixed(2)))).toEqual([
+      130.81, 146.83, 164.81, 196,
+    ])
+  })
+
+  it("lights the first pad of a part with a view of its own on its first beat, as each of Play the halvings' bars does", () => {
+    // Arrange
+    const { bar, figure } = mount()
+    const whole = viewOf([[note(4)]])
+    const halves = viewOf([[note(2), note(2)]])
+    bar.show(whole)
+
+    // Act: into the second bar's first beat
+    void bar.play([
+      { view: whole, bpm: () => 60, fresh: true },
+      { view: halves, bpm: () => 60, fresh: true },
+    ])
+    drive(5)
+
+    // Assert: drawn afresh, and its first beat lit
+    expect(bar.view).toBe(halves)
+    expect(
+      figure.querySelector('.rb-pad.is-now')?.getAttribute('data-beat'),
+    ).toBe('0')
   })
 })

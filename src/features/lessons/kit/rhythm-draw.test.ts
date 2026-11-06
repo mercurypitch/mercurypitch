@@ -1008,6 +1008,39 @@ describe('past 4/4', () => {
     expect(all(el, '.rb-metre')).toHaveLength(1)
   })
 
+  it('draws a tune on the pitch line with a lane at each of its pitches and each band at its own, the higher above (Toys 5)', () => {
+    // Arrange: do re mi so, C3 D3 E3 G3
+    const tune: Spelled[] = (['C', 'D', 'E', 'G'] as const).map((letter) => ({
+      letter,
+      alter: 0,
+      octave: 3,
+    }))
+    const el = figure()
+    const fig = drawRhythm(
+      el,
+      {
+        staff: 'bass',
+        lanes: true,
+        rows: [{ bars: [times(4, note(1))], bpm: 60, notes: tune }],
+      },
+      PHONE,
+    )
+    fig.set([written(fig)])
+
+    // Act
+    const ys = all(el, '.rb-band').map(
+      (b) => num(b, 'y') + num(b, 'height') / 2,
+    )
+
+    // Assert: a whole tone a lane apart, E to G a lane and a half
+    expect(all(el, '.rb-lane')).toHaveLength(4)
+    expect(ys[0]).toBeGreaterThan(ys[1])
+    expect(ys[1]).toBeGreaterThan(ys[2])
+    expect(ys[2]).toBeGreaterThan(ys[3])
+    expect(ys[0] - ys[1]).toBeCloseTo(ys[1] - ys[2], 0)
+    expect((ys[2] - ys[3]) / (ys[0] - ys[1])).toBeCloseTo(1.5, 1)
+  })
+
   it('draws pads alone, the figure their whole height, with nothing written and no time signature', () => {
     // Act
     const { el, fig } = draw(
