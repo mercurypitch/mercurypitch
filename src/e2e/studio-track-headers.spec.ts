@@ -1,4 +1,4 @@
-// Studio lane headers — one press of Record arms the selected lane and records it on a computer or tablet, an armed phone lane records on one press too, and the lane stays armed until its own arm button disarms it; the arm moves between lanes; role pictures turn into line icons and stay that way on this device; every header fits its controls, with readable text, in both themes.
+// Studio lane headers — one press of Record arms the selected lane and records it on a computer or tablet, a phone lane armed from its details records on one press too, and the lane stays armed until its own arm button disarms it; the arm moves between lanes; a lane's instrument is picked in its details apart from its role and kept; every compact header fits its controls, with readable text and an instrument chip, in both themes.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { audioClock, captureStudioOutput, untilAudioClock, } from './helpers/studio-output-capture'
@@ -11,31 +11,43 @@ test.use({
   permissions: ['microphone'],
 })
 
-// A tablet's lines toggle stays 32 px wide, as it was; under a phone lane's
-// name it shares the row with the arm, 44 px each.
+// Compact lanes: a header's instrument chip, its name and its arm, Mute and
+// Solo; a phone's, the glyph and the name, its arm and lines in its details.
+// A header stands its lane's row less the row's 1 px rule: 64, 96 and at
+// least 56 px rows.
 const LAYOUTS = [
   {
     name: 'desktop',
     viewport: { width: 1440, height: 900 },
     touch: false,
-    linesWidth: 26,
+    header: { width: 240, height: 63 },
   },
   {
     name: 'tablet',
     viewport: { width: 1024, height: 768 },
     touch: true,
-    linesWidth: 32,
+    header: { width: 224, height: 95 },
   },
   {
     name: 'phone',
     viewport: { width: 390, height: 844 },
     touch: true,
-    linesWidth: 44,
+    header: { width: 88, height: 55 },
   },
 ] as const
 
 function recordButton(page: Page): Locator {
   return studioRegion(page).locator('[data-studio-record]:visible')
+}
+
+/** A phone lane's arm is in its details: open them first. */
+async function openLaneDetails(page: Page, lane: string): Promise<void> {
+  await studioRegion(page)
+    .getByRole('button', { name: `${lane} details`, exact: true })
+    .click()
+  await expect(
+    studioRegion(page).getByRole('combobox', { name: 'Sound role' }),
+  ).toBeVisible()
 }
 
 function armButton(page: Page, lane: string): Locator {
@@ -102,92 +114,85 @@ interface HeaderReading {
   readonly small: readonly string[]
   readonly nameContrast: number
   readonly sourceContrast: number | null
-  readonly picture: boolean
+  readonly chip: boolean
+  readonly clipped: boolean
+  readonly size: readonly [number, number]
 }
 
 /**
- * Each lane header: what pokes out of it, touch targets under 44 px (the
- * lines toggle under `linesWidth` wide), and its text's contrast.
+ * Each lane header: what pokes out of it, touch targets under 44 px, its
+ * text's contrast, its instrument chip, whether its name runs out sideways,
+ * and its size.
  */
 async function readHeaders(
   page: Page,
   touch: boolean,
-  linesWidth = 44,
 ): Promise<HeaderReading[]> {
-  return page.evaluate(
-    ([touchLayout, linesWide]) => {
-      const channels = (color: string): number[] => {
-        const srgb = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/.exec(color)
-        if (srgb) return [srgb[1], srgb[2], srgb[3]].map((v) => Number(v) * 255)
-        const rgb = /rgba?\(([\d.]+),? ([\d.]+),? ([\d.]+)/.exec(color)
-        return rgb ? [rgb[1], rgb[2], rgb[3]].map(Number) : [Number.NaN]
-      }
-      const luminance = (color: string) => {
-        const [r, g, b] = channels(color).map((v) => {
-          const s = v / 255
-          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-        })
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b
-      }
-      const contrast = (a: string, b: string) => {
-        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-        return (hi + 0.05) / (lo + 0.05)
-      }
-      return [
-        ...document.querySelectorAll<HTMLElement>('[data-studio-track]'),
-      ].map((lane) => {
-        const header = lane.firstElementChild as HTMLElement
-        const box = header.getBoundingClientRect()
-        const ground = getComputedStyle(header).backgroundColor
-        const name = header.querySelector<HTMLElement>(
-          '[data-studio-track-header]',
-        )!
-        const [text, source] = [...name.children] as HTMLElement[]
-        const outside = [...header.querySelectorAll<HTMLElement>('*')]
-          .filter((element) => {
-            const at = element.getBoundingClientRect()
-            return (
-              at.width > 0 &&
-              (at.left < box.left - 0.5 ||
-                at.right > box.right + 0.5 ||
-                at.top < box.top - 0.5 ||
-                at.bottom > box.bottom + 0.5)
-            )
-          })
-          .map(
-            (element) => element.getAttribute('aria-label') ?? element.tagName,
-          )
-        const small = touchLayout
-          ? [...header.querySelectorAll<HTMLElement>('button')]
-              .filter((button) => {
-                const at = button.getBoundingClientRect()
-                const wide = button.hasAttribute('data-studio-lines-toggle')
-                  ? linesWide
-                  : 44
-                return at.height < 44 || at.width < wide
-              })
-              .map((button) => button.getAttribute('aria-label') ?? '')
-          : []
-        const picture = header.querySelector<HTMLImageElement>(
-          '[data-studio-role-plate] img',
-        )
-        return {
-          lane: text.textContent ?? '',
-          outside,
-          small,
-          nameContrast: contrast(getComputedStyle(text).color, ground),
-          sourceContrast: source
-            ? contrast(getComputedStyle(source).color, ground)
-            : null,
-          picture:
-            picture !== null &&
-            picture.complete &&
-            picture.naturalWidth === 128,
-        }
+  return page.evaluate((touchLayout) => {
+    const channels = (color: string): number[] => {
+      const srgb = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/.exec(color)
+      if (srgb) return [srgb[1], srgb[2], srgb[3]].map((v) => Number(v) * 255)
+      const rgb = /rgba?\(([\d.]+),? ([\d.]+),? ([\d.]+)/.exec(color)
+      return rgb ? [rgb[1], rgb[2], rgb[3]].map(Number) : [Number.NaN]
+    }
+    const luminance = (color: string) => {
+      const [r, g, b] = channels(color).map((v) => {
+        const s = v / 255
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
       })
-    },
-    [touch, linesWidth] as const,
-  )
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const contrast = (a: string, b: string) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+      return (hi + 0.05) / (lo + 0.05)
+    }
+    return [
+      ...document.querySelectorAll<HTMLElement>('[data-studio-track]'),
+    ].map((lane) => {
+      const header = lane.firstElementChild as HTMLElement
+      const box = header.getBoundingClientRect()
+      const ground = getComputedStyle(header).backgroundColor
+      const text = header.querySelector<HTMLElement>(
+        '[data-studio-track-name]',
+      )!
+      const source = header.querySelector<HTMLElement>(
+        '[data-studio-track-source]',
+      )
+      const outside = [...header.querySelectorAll<HTMLElement>('*')]
+        .filter((element) => {
+          const at = element.getBoundingClientRect()
+          return (
+            at.width > 0 &&
+            (at.left < box.left - 0.5 ||
+              at.right > box.right + 0.5 ||
+              at.top < box.top - 0.5 ||
+              at.bottom > box.bottom + 0.5)
+          )
+        })
+        .map((element) => element.getAttribute('aria-label') ?? element.tagName)
+      const small = touchLayout
+        ? [...header.querySelectorAll<HTMLElement>('button')]
+            .filter((button) => {
+              const at = button.getBoundingClientRect()
+              return at.height < 44 || at.width < 44
+            })
+            .map((button) => button.getAttribute('aria-label') ?? '')
+        : []
+      const chip = header.querySelector('[data-instrument-chip] svg')
+      return {
+        lane: text.textContent ?? '',
+        outside,
+        small,
+        nameContrast: contrast(getComputedStyle(text).color, ground),
+        sourceContrast: source
+          ? contrast(getComputedStyle(source).color, ground)
+          : null,
+        chip: chip !== null && chip.getBoundingClientRect().width > 0,
+        clipped: text.scrollWidth > text.clientWidth + 1,
+        size: [Math.round(box.width), Math.round(box.height)] as const,
+      }
+    })
+  }, touch)
 }
 
 for (const layout of LAYOUTS) {
@@ -218,11 +223,15 @@ for (const layout of LAYOUTS) {
 
       for (const theme of ['dark', 'light'] as const) {
         await setTheme(page, theme)
-        const headers = await readHeaders(page, layout.touch, layout.linesWidth)
+        const headers = await readHeaders(page, layout.touch)
         expect(headers.map((header) => header.lane)).toEqual(['Phrase', lane])
         for (const header of headers) {
           expect(header.outside, `${theme} ${header.lane}`).toEqual([])
           expect(header.small, `${theme} ${header.lane}`).toEqual([])
+          expect(header.chip, `${theme} ${header.lane} chip`).toBe(true)
+          expect(header.clipped, `${theme} ${header.lane} name`).toBe(false)
+          expect(header.size[0]).toBe(layout.header.width)
+          expect(header.size[1]).toBeGreaterThanOrEqual(layout.header.height)
           expect(
             header.nameContrast,
             `${theme} ${header.lane} name`,
@@ -233,23 +242,18 @@ for (const layout of LAYOUTS) {
               `${theme} ${header.lane} source`,
             ).toBeGreaterThanOrEqual(4.5)
         }
-        // The phone's header has no room for the plate; its Mix sheet has.
-        if (layout.name !== 'phone')
-          await expect
-            .poll(async () =>
-              (await readHeaders(page, layout.touch)).every(
-                (header) => header.picture,
-              ),
-            )
-            .toBe(true)
       }
 
       // A keyboard focus ring on the name stays clear of the arm beside it.
-      expect(await focusRingClearance(page, 'Phrase')).toBeGreaterThanOrEqual(4)
+      if (!phone)
+        expect(await focusRingClearance(page, 'Phrase')).toBeGreaterThanOrEqual(
+          4,
+        )
 
       const record = recordButton(page)
       await expect(record).toHaveAttribute('data-phase', 'idle')
       if (phone) {
+        await openLaneDetails(page, lane)
         await armButton(page, lane).click()
         await expect(record).toHaveAttribute('data-phase', 'armed', {
           timeout: 15_000,
@@ -262,10 +266,11 @@ for (const layout of LAYOUTS) {
         timeout: 15_000,
       })
       await expect(laneRow(page, lane)).toHaveAttribute('data-armed', '')
-      await expect(armButton(page, lane)).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      )
+      if (!phone)
+        await expect(armButton(page, lane)).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        )
       await untilAudioClock(page, (await audioClock(page)) + 1)
       await record.click()
 
@@ -288,6 +293,8 @@ for (const layout of LAYOUTS) {
       }
       await expect(laneRow(page, lane)).toHaveAttribute('data-armed', '')
 
+      if (phone && !(await armButton(page, lane).isVisible()))
+        await openLaneDetails(page, lane)
       await armButton(page, lane).click()
       await expect(record).toHaveAttribute('data-phase', 'idle')
       await expect(laneRow(page, lane)).not.toHaveAttribute('data-armed', '')
@@ -352,43 +359,45 @@ test.describe('Studio lane arming', () => {
     )
   })
 
-  test('role pictures turn into line icons from Track details and stay off after a reload', async ({
+  test('picks a lane’s instrument in its details, apart from its role, and keeps it after a reload', async ({
     page,
   }) => {
     await openArrangement(page)
     const studio = studioRegion(page)
+    // An uploaded file nothing describes is plain audio.
+    await expect(
+      studio.getByRole('img', { name: 'Audio', exact: true }),
+    ).toBeVisible()
     await studio
       .getByRole('button', { name: 'Phrase details', exact: true })
       .click()
+
+    await studio.getByRole('button', { name: /^Instrument/ }).click()
     await studio
-      .getByRole('combobox', { name: 'Sound role' })
-      .selectOption('acoustic-guitar')
-    const plate = studio.getByRole('img', {
-      name: 'Acoustic guitar',
-      exact: true,
-    })
-    await expect(plate.locator('img')).toHaveAttribute(
-      'src',
-      '/studio/roles/acoustic-guitar.webp',
-    )
+      .getByRole('searchbox', { name: 'Find an instrument' })
+      .fill('trum')
+    await studio.getByRole('button', { name: 'Trumpet', exact: true }).click()
 
-    const pictures = studio.getByRole('checkbox', { name: 'Role pictures' })
-    await expect(pictures).toBeChecked()
-    await pictures.uncheck()
-    await expect(plate.locator('img')).toHaveCount(0)
-    await expect(plate.locator('svg')).toHaveCount(1)
-
+    await expect(
+      studio.getByRole('img', { name: 'Trumpet', exact: true }),
+    ).toBeVisible()
+    await expect(
+      studio.getByRole('combobox', { name: 'Sound role' }),
+    ).toHaveValue('other')
     await expect(
       studio.getByText('Saved in this browser', { exact: true }),
     ).toBeVisible()
+    const song = await readStudioProject(page)
+    expect(song.tracks[0]).toMatchObject({
+      role: 'other',
+      instrument: 'trumpet',
+    })
+
     await page.reload()
     await studio.getByRole('button', { name: /^Untitled song/ }).click()
-    const reloaded = studio.getByRole('img', {
-      name: 'Acoustic guitar',
-      exact: true,
-    })
-    await expect(reloaded.locator('svg')).toHaveCount(1)
-    await expect(reloaded.locator('img')).toHaveCount(0)
+    await expect(
+      studio.getByRole('img', { name: 'Trumpet', exact: true }),
+    ).toBeVisible()
   })
 })
 
@@ -399,7 +408,7 @@ test.describe('Studio lane lines on a phone', () => {
     isMobile: true,
   })
 
-  test('open while a lane is armed, in the record card’s place, and Record closes them and starts the take', async ({
+  test('open from an armed lane’s details, in the record card’s place, and Record closes them and starts the take', async ({
     page,
   }) => {
     test.setTimeout(120_000)
@@ -408,6 +417,7 @@ test.describe('Studio lane lines on a phone', () => {
     const studio = studioRegion(page)
     await importStudioAudio(page, 'Bass', 2)
     const record = recordButton(page)
+    await openLaneDetails(page, 'Bass')
     await armButton(page, 'Bass').click()
     await expect(record).toHaveAttribute('data-phase', 'armed', {
       timeout: 15_000,
@@ -415,14 +425,16 @@ test.describe('Studio lane lines on a phone', () => {
     const card = studio.locator('[data-studio-record-status]')
     await expect(card).toHaveAttribute('data-studio-record-status', 'armed')
 
+    // The details sheet steps aside for the lines it opens.
     const lines = studio.getByRole('button', {
-      name: 'Bass volume and pan lines',
+      name: 'Volume and pan lines',
       exact: true,
     })
     const bar = studio.getByRole('toolbar', { name: 'Bass lines' })
     await expect(lines).toBeEnabled()
     await lines.click()
     await expect(bar).toBeVisible()
+    await expect(lines).toHaveCount(0)
     await expect(card).toHaveCount(0)
 
     await record.click()
@@ -431,16 +443,17 @@ test.describe('Studio lane lines on a phone', () => {
     })
     await expect(bar).toHaveCount(0)
     await expect(card).toHaveAttribute('data-studio-record-status', 'recording')
+    await openLaneDetails(page, 'Bass')
     await expect(lines).toBeDisabled()
     await untilAudioClock(page, (await audioClock(page)) + 1)
     await record.click()
 
-    // The take is kept and the lane stays armed; its lines stay closed.
+    // The take is kept and the lane stays armed; its lines can open again.
     await expect(record).toHaveAttribute('data-phase', 'armed', {
       timeout: 30_000,
     })
     await expect(card).toHaveAttribute('data-studio-record-status', 'armed')
-    await expect(lines).toHaveAttribute('aria-pressed', 'false')
+    await expect(bar).toHaveCount(0)
     await expect(lines).toBeEnabled()
   })
 })

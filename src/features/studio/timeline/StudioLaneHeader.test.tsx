@@ -1,86 +1,66 @@
-// Studio lane header pieces — the role plate shows the role's picture or its line icon, the choice is kept on this device, and the arm button arms, moves and disarms through the recorder.
+// Studio lane header pieces — the lane's instrument chip says what the lane plays (its pick, else its name and role) on its family's hue, and the arm button arms, moves and disarms through the recorder.
 import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { createSignal } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
-import { TRACK_ROLES } from '@/lib/studio-fx/role-chains'
-import { reloadStudioRolePictures, setStudioRolePictures, studioRolePicture, studioRolePictures, } from './role-pictures'
-import { StudioArmButton, StudioRolePlate } from './StudioLaneHeader'
+import { StudioArmButton, StudioLaneInstrument } from './StudioLaneHeader'
 
-const KEY = 'mercurypitch.studio.role-pictures'
+describe('Studio lane instrument', () => {
+  it('names what a lane’s name says it plays, on its family’s hue', () => {
+    render(() => (
+      <StudioLaneInstrument
+        track={{ name: 'Kick_In', role: 'other' }}
+        size={28}
+      />
+    ))
 
-afterEach(() => {
-  localStorage.clear()
-  reloadStudioRolePictures()
-})
-
-describe('Studio role plate', () => {
-  it('shows the role’s picture, named for its role, while pictures are on', () => {
-    render(() => <StudioRolePlate role="acoustic-guitar" />)
-
-    const plate = screen.getByRole('img', { name: 'Acoustic guitar' })
-    const picture = plate.querySelector('img')
-    expect(picture).toHaveAttribute('src', '/studio/roles/acoustic-guitar.webp')
-    expect(picture).toHaveAttribute('alt', '')
-    expect(picture).toHaveAttribute('loading', 'lazy')
-    expect(plate.querySelector('svg')).toBeNull()
-  })
-
-  it('shows the line icon with pictures off, and keeps that choice on this device', () => {
-    render(() => <StudioRolePlate role="drums" />)
-    const plate = screen.getByRole('img', { name: 'Drums' })
-
-    setStudioRolePictures(false)
-
-    expect(plate.querySelector('img')).toBeNull()
-    expect(plate.querySelector('svg')).not.toBeNull()
-    expect(localStorage.getItem(KEY)).toBe('off')
-    setStudioRolePictures(true)
-    reloadStudioRolePictures()
-    expect(studioRolePictures()).toBe(true)
-    expect(localStorage.getItem(KEY)).toBeNull()
-  })
-
-  it('starts with pictures off when this device chose that before', () => {
-    localStorage.setItem(KEY, 'off')
-    reloadStudioRolePictures()
-
-    render(() => <StudioRolePlate role="bass" />)
-
-    expect(
-      screen.getByRole('img', { name: 'Bass' }).querySelector('img'),
-    ).toBeNull()
-  })
-
-  it('falls back to the icon when a picture does not load, until the role changes', () => {
-    const [role, setRole] = createSignal<'voice' | 'keys'>('voice')
-    render(() => <StudioRolePlate role={role()} />)
-    const plate = screen.getByRole('img', { name: 'Lead vocal' })
-
-    fireEvent.error(plate.querySelector('img')!)
-    expect(plate.querySelector('img')).toBeNull()
-    expect(plate.querySelector('svg')).not.toBeNull()
-
-    setRole('keys')
-    expect(
-      screen.getByRole('img', { name: 'Keys and synths' }).querySelector('img'),
-    ).toHaveAttribute('src', '/studio/roles/keys.webp')
-  })
-
-  it('has a picture on disk for every role', () => {
-    const missing = TRACK_ROLES.filter(
-      (role) =>
-        !existsSync(
-          resolve(
-            __dirname,
-            '../../../../public',
-            studioRolePicture(role).slice(1),
-          ),
-        ),
+    const chip = screen.getByRole('img', { name: 'Kick drum' })
+    expect(chip.querySelector('svg')).toHaveAttribute('data-instrument', 'kick')
+    expect(chip.style.getPropertyValue('--chip-hue')).toBe(
+      'var(--studio-hue-violet)',
     )
-    expect(missing).toEqual([])
+  })
+
+  it('draws the instrument the singer picked, and follows a change of it', () => {
+    const [instrument, setInstrument] = createSignal<string | undefined>(
+      'trumpet',
+    )
+    render(() => (
+      <StudioLaneInstrument
+        track={{ instrument: instrument(), name: 'Vox', role: 'voice' }}
+        size={32}
+      />
+    ))
+    expect(screen.getByRole('img', { name: 'Trumpet' })).toBeInTheDocument()
+
+    setInstrument(undefined)
+
+    expect(screen.getByRole('img', { name: 'Vocal' })).toHaveAttribute(
+      'title',
+      'Vocal',
+    )
+  })
+
+  it('goes neutral on a silent lane, and stands bare where a phone has no room for a chip', () => {
+    render(() => (
+      <>
+        <StudioLaneInstrument
+          track={{ name: 'Bass DI', role: 'bass' }}
+          size={28}
+          silent
+        />
+        <StudioLaneInstrument
+          track={{ name: 'Bass DI', role: 'bass' }}
+          size="bare"
+        />
+      </>
+    ))
+    const [chip, bare] = screen.getAllByRole('img', { name: 'Bass guitar' })
+
+    expect(chip).toHaveAttribute('data-silent', '')
+    expect(bare).not.toHaveAttribute('data-silent')
+    expect(bare.querySelector('svg')).toHaveAttribute('data-size', '16')
+    expect(bare.style.getPropertyValue('--chip-hue')).toBe('')
   })
 })
 
@@ -144,6 +124,26 @@ describe('Studio arm button', () => {
     expect(vocals).toBeDisabled()
     expect(bass).toBeDisabled()
     expect(bass.title).toBe('Stop the take to arm another lane')
+  })
+
+  it('says its word beside the dot in a lane’s details, keeping its name', () => {
+    const lanes = arming({ phase: 'idle', armed: null })
+    render(() => (
+      <StudioArmButton
+        trackId="lane-1"
+        name="Vocals"
+        arming={lanes.handle}
+        caption="Arm"
+        touch
+      />
+    ))
+
+    const button = screen.getByRole('button', {
+      name: 'Arm Vocals for recording',
+    })
+    expect(button).toHaveTextContent('Arm')
+    fireEvent.click(button)
+    expect(lanes.toggle).toHaveBeenCalledExactlyOnceWith('lane-1')
   })
 
   it('waits while the song cannot take a recording, unless its lane is the armed one', () => {

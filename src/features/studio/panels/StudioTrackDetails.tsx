@@ -1,22 +1,61 @@
-// Studio track details — name and musical role stay separate from audio provenance; role pictures are this device's choice for every lane.
-import { For } from 'solid-js'
+// Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument and mix role, apart from where its audio came from.
+import { For, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
-import { setStudioRolePictures, studioRolePictures, } from '../timeline/role-pictures'
+import { StudioInstrumentPicker } from '../instruments/StudioInstrumentPicker'
+import { studioTakeRunning } from '../record/take-running'
+import { requestStudioLaneLines } from '../timeline/lane-lines-request'
+import { LaneLine } from '../timeline/line-icons'
+import { StudioArmButton } from '../timeline/StudioLaneHeader'
+import type { StudioLaneArming } from '../timeline/types'
 
 interface StudioTrackDetailsProps {
   track: StudioTrack
   assets: readonly StudioAsset[]
   writable: boolean
+  /** A phone's lane headers have no arm: its details have, as its Mix sheet does. */
+  arming?: StudioLaneArming
   onCommand(command: StudioCommand): boolean
+  /** After the lane's lines open in the arrangement: an overlaid panel steps out of their way. */
+  afterLines?(): void
   onRemove(): void
 }
 
 export function StudioTrackDetails(props: StudioTrackDetailsProps) {
   return (
     <div class={styles.detailsFields}>
+      <div class={styles.laneActions}>
+        <Show when={props.arming}>
+          {(arming) => (
+            <StudioArmButton
+              trackId={props.track.id}
+              name={props.track.name}
+              arming={arming()}
+              caption="Arm"
+              touch
+            />
+          )}
+        </Show>
+        <button
+          type="button"
+          class={styles.laneAction}
+          disabled={studioTakeRunning()}
+          title={
+            studioTakeRunning()
+              ? 'Stop the take to draw lines'
+              : 'Draw this track’s volume and pan lines'
+          }
+          onClick={() => {
+            requestStudioLaneLines(props.track.id)
+            props.afterLines?.()
+          }}
+        >
+          <LaneLine size={18} />
+          Volume and pan lines
+        </button>
+      </div>
       <label class={styles.stackedField}>
         <span>Track name</span>
         <input
@@ -35,6 +74,11 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           }}
         />
       </label>
+      <StudioInstrumentPicker
+        track={props.track}
+        writable={props.writable}
+        onCommand={props.onCommand}
+      />
       <label class={styles.stackedField}>
         <span>Sound role</span>
         <select
@@ -55,20 +99,9 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           </For>
         </select>
       </label>
-      <p class={styles.help}>Choose the part this track plays in your song.</p>
-      <label class={styles.checkField}>
-        <input
-          type="checkbox"
-          checked={studioRolePictures()}
-          onChange={(event) =>
-            setStudioRolePictures(event.currentTarget.checked)
-          }
-        />
-        <span>Role pictures</span>
-      </label>
       <p class={styles.help}>
-        Each lane header shows its instrument as a picture, or as a line icon
-        when this is off. Saved on this device.
+        The part this track plays sets its sound. The instrument is only its
+        picture.
       </p>
       <div class={styles.fieldDivider} />
       <h3>Audio in this track</h3>

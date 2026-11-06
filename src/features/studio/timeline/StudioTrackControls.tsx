@@ -1,4 +1,4 @@
-// Studio track controls — the lane's name beside its arm, mute and solo, then its lines, a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
+// Studio track controls — a lane header's identity beside its arm, mute and solo (on a tablet, under it), and in a tall lane its lines, a fader and a pan knob; a moving control is heard at once and saves as one edit when it stops.
 // A lane that follows a volume or pan line (lib/studio/model/automation.ts) holds that control still and says so.
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
@@ -10,11 +10,19 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioTrack } from '@/lib/studio/model/types'
 import styles from './StudioTimeline.module.css'
 
-/** The lane's name, and where its audio came from: a button to the lane's details. */
+/**
+ * The lane's name, and where its audio came from: a button to the lane's
+ * details. The name takes two lines when it needs them; the source shows on
+ * the second only when the name fits on one, and is always in the title.
+ */
 export function StudioTrackName(props: {
   id: string
   name: string
   source?: string
+  /** A phone header's glyph, inside the button so the whole header opens the details. */
+  lead?: JSX.Element
+  /** A tour hook: a compact lane's lines open from its details. */
+  tour?: string
   onDetails(id: string): void
 }) {
   return (
@@ -22,14 +30,28 @@ export function StudioTrackName(props: {
       type="button"
       class={styles.trackName}
       data-studio-track-header={props.id}
-      title={`${props.name} details`}
+      data-tour={props.tour}
+      title={
+        props.source === undefined
+          ? `${props.name} details`
+          : `${props.name} details. ${props.source}`
+      }
       aria-label={`${props.name} details`}
       onClick={() => props.onDetails(props.id)}
     >
-      <span class={styles.trackNameText}>{props.name}</span>
-      <Show when={props.source}>
-        {(source) => <span class={styles.sourceLabel}>{source()}</span>}
-      </Show>
+      {props.lead}
+      <span class={styles.trackNameLines}>
+        <span class={styles.trackNameText} data-studio-track-name="">
+          {props.name}
+        </span>
+        <Show when={props.source}>
+          {(source) => (
+            <span class={styles.sourceLabel} data-studio-track-source="">
+              {source()}
+            </span>
+          )}
+        </Show>
+      </span>
     </button>
   )
 }
@@ -43,6 +65,8 @@ export interface StudioTrackControlsProps {
   strip?: boolean
   /** The lane's name and source: a lane header puts it first, then the arm, Mute and Solo. */
   identity?: JSX.Element
+  /** A tall lane header: its lines, fader and knob in a row of their own. */
+  tall?: boolean
   /** A lane header's arm button, between the name and Mute. */
   arm?: JSX.Element
   /** A lane header's lines toggle, before the fader it draws for. */
@@ -345,6 +369,13 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
       S
     </button>
   )
+  const switches = () => (
+    <>
+      {props.arm}
+      {muteButton()}
+      {soloButton()}
+    </>
+  )
   const volume = () => (
     <div
       class={styles.volume}
@@ -521,18 +552,24 @@ export function StudioTrackControls(props: StudioTrackControlsProps) {
               </>
             }
           >
-            {/* A lane header: who it is and its switches, then how it sounds. */}
+            {/* A lane header: who it is and its switches, beside it or on a
+                tablet under it; a tall one adds how it sounds. */}
             <div class={styles.headerRow}>
               <div class={styles.identityCell}>{props.identity}</div>
-              {props.arm}
-              {muteButton()}
-              {soloButton()}
+              <Show when={props.tablet !== true}>{switches()}</Show>
             </div>
-            <div class={styles.headerRow}>
-              {props.lines}
-              {volume()}
-              {knob()}
-            </div>
+            <Show when={props.tablet === true}>
+              <div class={`${styles.headerRow} ${styles.switchRow}`}>
+                {switches()}
+              </div>
+            </Show>
+            <Show when={props.tall === true}>
+              <div class={`${styles.headerRow} ${styles.soundRow}`}>
+                {props.lines}
+                {volume()}
+                {knob()}
+              </div>
+            </Show>
           </Show>
         }
       >

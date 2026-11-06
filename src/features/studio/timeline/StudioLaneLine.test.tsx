@@ -1,4 +1,4 @@
-// Studio lane line tests — a lane's line opens from its header, takes points from a press, a drag, keys and its bar, and saves each gesture once.
+// Studio lane line tests — a lane's line opens from a tall lane's header or from the lane's details, takes points from a press, a drag, keys and its bar, and saves each gesture once.
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -9,12 +9,15 @@ import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAutomationPoint, StudioProject, } from '@/lib/studio/model/types'
 import { studioRecordCardAside } from '../record/record-card-aside'
 import { setStudioTakeRunning } from '../record/take-running'
+import { setStudioLaneHeight } from './lane-height'
+import { requestStudioLaneLines } from './lane-lines-request'
 import { StudioTimeline } from './StudioTimeline'
 import type { StudioTimelineRecording } from './types'
 
 afterEach(() => {
   cleanup()
   setStudioTakeRunning(false)
+  setStudioLaneHeight('compact')
 })
 
 /** The lane's line box: 60 s across at 20 px a second, 84 px high. */
@@ -47,6 +50,8 @@ function mount(
     )
     return true
   })
+  // A tall lane's header has the Lines toggle; a phone lane opens them from its details.
+  setStudioLaneHeight('tall')
   render(() => (
     <StudioTimeline
       project={project()}
@@ -66,10 +71,16 @@ function mount(
       readCanonicalAsset={() => Promise.reject(new Error('Not in this test'))}
     />
   ))
-  const toggle = screen.getByRole('button', {
+  const toggle = screen.queryByRole('button', {
     name: 'Guitar volume and pan lines',
-  })
+  })!
   return { project, setProject, commands, toggle, setSelectedClipId }
+}
+
+/** A phone lane's lines, opened from its details as its sheet's button does. */
+function openFromDetails(): HTMLElement | null {
+  requestStudioLaneLines('track-1')
+  return document.querySelector<HTMLElement>('[data-studio-line]')
 }
 
 /** Open the lane's line and give its box a size, as a browser lays it out. */
@@ -345,42 +356,36 @@ describe('Studio lane line', () => {
       expect(within(bar).getByRole('button', { name })).toBeDisabled()
   })
 
-  it('opens from a phone lane’s header too, with the bar across the lanes’ foot', () => {
+  it('opens a phone lane’s lines from its details, with the bar across the lanes’ foot', () => {
     // Arrange
-    const { toggle } = mount({ phone: true })
+    mount({ phone: true })
 
     // Act
-    openLine(toggle)
+    const area = openFromDetails()
 
     // Assert
     const bar = screen.getByRole('toolbar', { name: 'Guitar lines' })
+    expect(area).not.toBeNull()
     expect(bar.style.left).toBe('12px')
     expect(bar.style.right).toBe('12px')
     expect(within(bar).getByRole('button', { name: 'Done' })).toBeVisible()
   })
 
-  it('stands a phone lane’s lines toggle under its name while the lanes have room, and beside it when they do not', () => {
+  it('keeps a phone lane’s header to its glyph and name, which open its details', () => {
     // Arrange
-    const { toggle, setProject } = mount({ phone: true })
-    const roomy = toggle.textContent
+    mount({ phone: true })
 
     // Act
-    setProject((current) => ({
-      ...current,
-      tracks: [
-        ...current.tracks,
-        ...[2, 3, 4].map((n) => ({
-          ...current.tracks[0],
-          id: `track-${n}`,
-          name: `Take ${n}`,
-        })),
-      ],
-    }))
+    const header = screen.getByRole('button', { name: 'Guitar details' })
 
     // Assert
-    expect(roomy).toBe('Lines')
-    expect(toggle.textContent).toBe('')
-    expect(toggle).toHaveAccessibleName('Guitar volume and pan lines')
+    expect(
+      screen.queryByRole('button', { name: 'Guitar volume and pan lines' }),
+    ).toBeNull()
+    expect(header.querySelector('[data-instrument-chip]')).toHaveAttribute(
+      'data-instrument-chip',
+      'acoustic-guitar',
+    )
   })
 
   it('holds an open line while a take runs and shows it again once the take is kept', () => {
@@ -412,45 +417,38 @@ describe('Studio lane line', () => {
 
   it('opens a phone lane’s lines while a lane is armed, and the record card steps aside for its bar', () => {
     // Arrange
-    const { toggle } = mount({
+    mount({
       phone: true,
       record: { trackId: 'track-1', live: null, level: 0, listening: true },
     })
 
     // Act
-    openLine(toggle)
+    openFromDetails()
 
     // Assert
-    expect(toggle).toBeEnabled()
-    expect(toggle).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('toolbar', { name: 'Guitar lines' })).toBeTruthy()
     expect(studioRecordCardAside()).toBe(true)
   })
 
-  it('closes a phone’s lines when the armed lane’s take starts, so the record card comes back', () => {
+  it('closes a phone’s lines when the armed lane’s take starts, and opens none while it runs', () => {
     // Arrange
-    const { toggle } = mount({
+    mount({
       phone: true,
       record: { trackId: 'track-1', live: null, level: 0, listening: true },
     })
-    openLine(toggle)
+    openFromDetails()
 
     // Act
     setStudioTakeRunning(true)
     const during = {
-      disabled: (toggle as HTMLButtonElement).disabled,
-      title: toggle.title,
+      line: document.querySelector('[data-studio-line]'),
       aside: studioRecordCardAside(),
+      asked: openFromDetails(),
     }
     setStudioTakeRunning(false)
 
     // Assert
-    expect(during).toEqual({
-      disabled: true,
-      title: 'Stop the take to draw lines',
-      aside: false,
-    })
-    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(during).toEqual({ line: null, aside: false, asked: null })
     expect(document.querySelector('[data-studio-line]')).toBeNull()
     expect(studioRecordCardAside()).toBe(false)
   })

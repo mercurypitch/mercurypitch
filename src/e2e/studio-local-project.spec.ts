@@ -260,6 +260,8 @@ test('Studio shows both themes and edits a real take with one set of track contr
   await expect(
     studio.getByRole('button', { name: 'Solo Vocal', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true')
+  // A compact lane keeps its fader and pan in Mix; Tall lanes bring them in.
+  await studio.getByRole('button', { name: 'Tall lanes', exact: true }).click()
   const pan = studio.getByRole('slider', { name: 'Vocal pan', exact: true })
   await pan.focus()
   await pan.press('ArrowRight')
@@ -372,6 +374,11 @@ test('Studio keeps tablet controls and phone mixing reachable with touch @smoke'
       await expect(
         studio.getByRole('button', { name: 'Solo Keys' }),
       ).toHaveAttribute('aria-pressed', 'true')
+      // A tablet's compact lane keeps its fader in Mix; Tall lanes bring it in.
+      if (viewport.width >= 600)
+        await studio
+          .getByRole('button', { name: 'Tall lanes', exact: true })
+          .tap()
       await expect(
         studio.getByRole('slider', { name: 'Keys volume', exact: true }),
       ).toHaveCount(1)

@@ -7,6 +7,8 @@ import { setStudioRecordCardAside } from '../record/record-card-aside'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { studioTakeRunning } from '../record/take-running'
 import { StudioViewControls } from '../StudioViewControls'
+import { studioLaneHeight } from './lane-height'
+import { studioLaneLinesRequest } from './lane-lines-request'
 import { attachStudioLaneNavigation } from './lane-navigation'
 import { createStudioLineEditor } from './line-editor'
 import { createStudioPlayheadMotion } from './playhead-motion'
@@ -41,10 +43,14 @@ export function StudioTimeline(props: StudioTimelineProps) {
   const [scroll, setScroll] = createSignal(0)
   const [snap, setSnap] = createSignal(true)
   let lastFillerTap = -Infinity
-  // A header holds its role plate, then the name, the arm, Mute and Solo
-  // over the lines, the fader and the knob; a phone's, the name and lines.
+  // A header holds the lane's instrument chip, its name, the arm, Mute and
+  // Solo, on a tablet under the name; a tall lane adds its lines, fader and
+  // knob, which want a wider tablet header. A phone's holds the glyph and name.
+  // The ruler's corner is as wide: a tablet's needs 224 px for Snap, Time and
+  // Beats and the tempo, each 44 px wide.
+  const tall = () => !props.phone && studioLaneHeight() === 'tall'
   const headerWidth = () =>
-    props.phone ? 104 : props.tablet === true ? 320 : 328
+    props.phone ? 88 : props.tablet === true ? (tall() ? 256 : 224) : 240
   // With the desk open, zoom and the clip bar leave the lanes for a dock.
   const docked = () => !props.phone && props.deskOpen === true
   const contentWidth = createMemo(() => Math.max(1, width() - headerWidth()))
@@ -236,10 +242,24 @@ export function StudioTimeline(props: StudioTimelineProps) {
     if (lines.view() && !lineTrack()) untrack(lines.close)
   })
   createEffect(on(projectId, () => lines.close(), { defer: true }))
+  // A lane's details open its lines when its header has no toggle for them.
+  createEffect(
+    on(
+      studioLaneLinesRequest,
+      (request) => {
+        const track = request ? tracks().get(request.trackId) : undefined
+        if (!track || lines.held()) return
+        props.onSelectClip(null)
+        props.onSelectTrack?.(track.id)
+        lines.open(track)
+      },
+      { defer: true },
+    ),
+  )
   // A phone overview shares its height among the lanes.
   const phoneRow = () =>
     Math.max(
-      64,
+      56,
       Math.min(
         112,
         Math.floor((height() - 48) / Math.max(1, props.project.tracks.length)),
@@ -257,19 +277,23 @@ export function StudioTimeline(props: StudioTimelineProps) {
     pointer,
     resource,
     lines,
-    // Two 44 px targets and the header's padding: 44 + 4 + 44 + 12.
-    stackHeader: () => props.phone && phoneRow() >= 104,
+    tall,
     status: showStatus,
   }
-  // The docked buttons, zoom's three and the clip bar's four or the line
-  // bar's five, stack in one column when the arrangement is tall enough
-  // (the sizes in .dock), and go two to a row when it is not.
+  // The docked buttons, zoom's four (with Tall lanes) and the clip bar's four
+  // or the line bar's five, stack in one column when the arrangement is tall
+  // enough (the sizes in .dock), go two to a row when it is not, and four
+  // beside as little as one compact lane, where the desk can leave it.
   const dockColumns = () => {
-    const buttons = 3 + (lineTrack() ? 5 : 4)
-    return height() + floor() >=
-      (props.tablet === true ? buttons * 44 + 4 : buttons * 32 + 12)
-      ? 1
-      : 2
+    const bar = lineTrack() ? 5 : 4
+    const fits = (columns: number) => {
+      const rows = Math.ceil(4 / columns) + Math.ceil(bar / columns)
+      return (
+        height() + floor() >=
+        (props.tablet === true ? rows * 44 + 4 : rows * 32 + 12)
+      )
+    }
+    return fits(1) ? 1 : fits(2) ? 2 : 4
   }
   const measure = () => {
     setWidth(viewport.clientWidth)
@@ -435,6 +459,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       classList={{
         [styles.phone]: props.phone,
         [styles.tablet]: !props.phone && props.tablet === true,
+        [styles.tall]: tall(),
         [styles.editing]: pointer.active(),
         [styles.docking]: docked(),
         [styles.armed]: props.record != null,
@@ -721,7 +746,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       >
         <div
           class={styles.dock}
-          classList={{ [styles.dockPaired]: dockColumns() === 2 }}
+          classList={{ [styles.dockPaired]: dockColumns() > 1 }}
           data-studio-dock=""
           style={{ '--studio-dock-columns': dockColumns() }}
         >
