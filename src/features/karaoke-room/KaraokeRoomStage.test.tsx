@@ -2691,7 +2691,7 @@ describe('who paused or played the song', () => {
 })
 
 describe('a song started with its sound on AirPlay alone', () => {
-  it('says Screen Mirroring is the way to the TV, over the stage', async () => {
+  it('says the song plays over AirPlay and the lyrics stay here, over the stage', async () => {
     const { resetAirPlayHintForTests } = await import('./KaraokeAirPlayHint')
     const suspicion = await import('@/stores/airplay-suspicion')
     const routes = await import('@/stores/audio-route-store')
@@ -2710,8 +2710,11 @@ describe('a song started with its sound on AirPlay alone', () => {
 
       current().setPlaying(true)
 
-      expect(screen.getByTestId('karaoke-airplay-hint')).toHaveTextContent(
-        'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
+      const hint = screen.getByTestId('karaoke-airplay-hint')
+      expect(hint).toHaveTextContent('The song is playing over AirPlay.')
+      expect(hint).toHaveTextContent('The lyrics stay on this phone.')
+      expect(hint).toHaveTextContent(
+        'Screen Mirroring puts the stage on the TV: open Control Center, tap Screen Mirroring, then choose your TV.',
       )
       expect(started).toHaveBeenCalledTimes(1)
     } finally {

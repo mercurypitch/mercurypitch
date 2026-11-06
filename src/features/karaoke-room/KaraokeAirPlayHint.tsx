@@ -1,23 +1,27 @@
 // ============================================================
-// KaraokeAirPlayHint — Screen Mirroring, for a song started on AirPlay
+// KaraokeAirPlayHint — where the song and the lyrics are, on AirPlay
 // ============================================================
 //
-// On AirPlay alone the room's sound reaches nowhere. The owner took AirPlay
-// as iOS offered it at launch, and the LG C2 showed the song's name and a
-// timeline; on Play the song's clock ran on the phone, no sound came from
-// the TV or the phone, and the TV showed a spinner (an iPhone 13 Pro, 3 Nov
-// 2026). Screen Mirroring to the same TV carried the room and its sound,
-// the TV stage and the TV lyrics alike: "works great". The clock keeps
-// running, so no stall comes to say anything; the room says it as the song
-// starts instead, in the stopped-song notice's own words (sound-stopped.ts):
-// AirPlay cannot carry the room's sound to a TV, Screen Mirroring can, and
-// how.
+// On AirPlay alone the song plays on the TV and nothing else does. AirPlay
+// carries sound only: iOS gives an app a second screen with Screen
+// Mirroring or a cable, never with AirPlay alone, so the lyrics stay on
+// the phone. So as a song starts there, the room says where the song plays
+// (the receiver by the name the route gives it, and none where AirPlay is
+// only suspected), that the lyrics stay on this phone, and that Screen
+// Mirroring puts the stage on the TV, and how.
+//
+// Until mp-v0.8.55 it said AirPlay could not carry the room's sound to a
+// TV: on the owner's LG C2 the TV showed the song's name and a spinner, and
+// no sound came from the TV or the phone. The Developer screen's AirPlay
+// sound check (6 Nov 2026) found Web Audio alone on the TV, and not Web
+// Audio beside a silent element, so the lock screen's carrier and the
+// unlock clip now stand aside on AirPlay (native-device.ts in the app).
 //
 // On AirPlay alone (airplay-suspicion.ts): the route says airplay, or the
-// room suspects it, the app's own session being blind to it. Once a launch,
-// and never while a screen is connected: a hint that is up goes the moment
-// mirroring starts. It closes from its button (44 px) and asks nothing
-// else: no focus moves to it, and the song plays on under it.
+// room suspects it. Once a launch, and never while a screen is connected:
+// a hint that is up goes the moment mirroring starts. It closes from its
+// button (44 px) and asks nothing else: no focus moves to it, and the song
+// plays on under it.
 //
 // Like the premium rooms' volume hint (RoomVolumeHint.tsx), its status
 // region is always there, empty, so a screen reader hears the hint the
@@ -29,12 +33,28 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import { Tv, X } from '@/components/icons'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { airPlayAlone } from '@/stores/airplay-suspicion'
+import { audioRoute, audioRoutePort } from '@/stores/audio-route-store'
 import styles from './KaraokeAirPlayHint.module.css'
-import { AIRPLAY_CANNOT, CLOSE_NOTICE, MIRRORING_CAN } from './sound-stopped'
+import { CLOSE_NOTICE } from './sound-stopped'
 
-/** What the hint says, a line each: the notice's own words. */
-export const AIRPLAY_HINT_LINES = [AIRPLAY_CANNOT, MIRRORING_CAN] as const
+/** Where the stage goes, and how: Screen Mirroring, from Control Center. */
+export const MIRRORING_STAGE =
+  'Screen Mirroring puts the stage on the TV: open Control Center, tap Screen Mirroring, then choose your TV.'
+
+/**
+ * What the hint says, a line each: where the song plays, by the name the
+ * route gives the receiver (null where AirPlay is only suspected), where
+ * the lyrics are, and what Screen Mirroring adds.
+ */
+export function airPlayHintLines(receiver: string | null): readonly string[] {
+  const where =
+    receiver === null || receiver.trim() === ''
+      ? 'The song is playing over AirPlay.'
+      : `The song is playing on ${receiver} over AirPlay.`
+  return [where, `The lyrics stay on ${thisDeviceLower()}.`, MIRRORING_STAGE]
+}
 
 /** Once a launch: this module lives as long as the app does. */
 let shownThisLaunch = false
@@ -57,6 +77,10 @@ export function KaraokeAirPlayHint(props: KaraokeAirPlayHintProps) {
   )
   // Followed while it is up: mirroring starting takes it away.
   const up = (): boolean => shown() && airPlayAlone()
+  // Only a route that says airplay names the receiver: suspected, the port
+  // the app's session gives is its own speaker.
+  const lines = (): readonly string[] =>
+    airPlayHintLines(audioRoute() === 'airplay' ? audioRoutePort() : null)
   return (
     <div class={styles.slot} role="status" data-testid="karaoke-airplay-slot">
       <Show when={up()}>
@@ -65,7 +89,7 @@ export function KaraokeAirPlayHint(props: KaraokeAirPlayHintProps) {
             <Tv />
           </span>
           <div class={styles.words}>
-            <For each={AIRPLAY_HINT_LINES}>{(line) => <p>{line}</p>}</For>
+            <For each={lines()}>{(line) => <p>{line}</p>}</For>
           </div>
           <button
             type="button"

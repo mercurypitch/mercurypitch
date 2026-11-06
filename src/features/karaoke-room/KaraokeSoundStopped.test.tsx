@@ -46,13 +46,11 @@ describe('KaraokeSoundStopped', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('names the receiver the sound went to over AirPlay, with no Play again', () => {
+  it('names the receiver the sound went to over AirPlay, and plays again from its button', () => {
     setAudioRouteForTests('airplay', 'LG C2')
     const m = mixer()
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
-
     m.setStalled(true)
-
     const status = screen.getByRole('status')
     expect(status).toHaveTextContent(
       'The sound went to LG C2 over AirPlay and stopped.',
@@ -60,26 +58,28 @@ describe('KaraokeSoundStopped', () => {
     expect(status).toHaveTextContent(
       'To hear it here, choose this phone under AirPlay in Control Center.',
     )
-    expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
+
+    expect(m.play).toHaveBeenCalledTimes(1)
+    expect(m.playedBy).toEqual(['notice'])
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('closes the AirPlay notice from its button, until the route or the stop changes', () => {
+  // Web Audio alone reaches an AirPlay TV (the sound check, 6 Nov 2026):
+  // the old notice said AirPlay could not carry it, and offered no play.
+  it('never says AirPlay cannot carry the sound', () => {
     setAudioRouteForTests('airplay', 'LG C2')
     const m = mixer()
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
+
     m.setStalled(true)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
-    // The phone chosen in Control Center: a notice with something to press.
-    setAudioRouteForTests('speaker', 'Speaker')
-    expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
-    // Back on AirPlay and a new stop: said again.
-    setAudioRouteForTests('airplay', 'LG C2')
-    m.setStalled(false)
-    m.setStalled(true)
-    expect(screen.getByRole('status')).toHaveTextContent('over AirPlay')
+    const status = screen.getByRole('status')
+    expect(status).not.toHaveTextContent('cannot')
+    expect(status).not.toHaveTextContent('Screen Mirroring')
+    // Play again is the one thing to press; nothing to close.
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
   })
 
   it('says the sound stopped on the phone, and plays again from its button', () => {
@@ -87,7 +87,6 @@ describe('KaraokeSoundStopped', () => {
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
     m.setStalled(true)
     expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
 
@@ -97,7 +96,7 @@ describe('KaraokeSoundStopped', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('says AirPlay and Screen Mirroring where the room suspects AirPlay, though the route says the speaker', () => {
+  it('says AirPlay where the room suspects it, though the route says the speaker, without naming the speaker', () => {
     // The page's clock made on AirPlay: 44.1 kHz, the app's session at 48.
     notePageAudioContext({ sampleRate: 44100 })
     const m = mixer()
@@ -107,16 +106,9 @@ describe('KaraokeSoundStopped', () => {
 
     const status = screen.getByRole('status')
     expect(status).toHaveTextContent('The sound went over AirPlay and stopped.')
-    expect(status).toHaveTextContent(
-      "AirPlay cannot carry the room's sound to a TV.",
-    )
-    expect(status).toHaveTextContent(
-      'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
-    )
     // The port the app's session names is its own speaker, never the TV.
     expect(status).not.toHaveTextContent('Speaker')
-    expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
   })
 
   it('says the sound stopped, with Play again, while a screen is connected: mirroring is not AirPlay alone', () => {
@@ -133,34 +125,35 @@ describe('KaraokeSoundStopped', () => {
     m.setStalled(true)
 
     expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
+    expect(screen.getByRole('status')).not.toHaveTextContent('AirPlay')
     expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
     stop()
   })
 
-  it('turns a closed suspected notice into Play again once the page’s rate is back', () => {
+  it('says the sound stopped once the page’s rate is back, AirPlay no longer suspected', () => {
     notePageAudioContext({ sampleRate: 44100 })
     const m = mixer()
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
     m.setStalled(true)
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(screen.getByRole('status')).toHaveTextContent('over AirPlay')
 
     notePageAudioContext({ sampleRate: 48000 })
 
     expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
-    expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
+    expect(screen.getByRole('status')).not.toHaveTextContent('AirPlay')
   })
 
-  it('turns into Play again once the singer chooses the phone in Control Center', () => {
+  it('changes its words once the singer chooses the phone in Control Center', () => {
     setAudioRouteForTests('airplay', 'LG C2')
     const m = mixer()
     render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
     m.setStalled(true)
-    expect(screen.queryByRole('button', { name: 'Play again' })).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('LG C2')
 
     setAudioRouteForTests('speaker', 'Speaker')
 
     expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
+    expect(screen.getByRole('status')).not.toHaveTextContent('LG C2')
     expect(screen.getByRole('button', { name: 'Play again' })).toBeVisible()
   })
 

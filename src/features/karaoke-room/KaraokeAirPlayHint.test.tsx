@@ -1,5 +1,5 @@
 // ============================================================
-// KaraokeAirPlayHint: Screen Mirroring, once, for a song started on AirPlay
+// KaraokeAirPlayHint: where the song and the lyrics are, once, on AirPlay
 // ============================================================
 //
 // AirPlay is suspected as the store has it (airplay-suspicion.ts): the app's
@@ -8,11 +8,11 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { followExternalScreen, notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
-import { AIRPLAY_HINT_LINES, KaraokeAirPlayHint, resetAirPlayHintForTests, } from './KaraokeAirPlayHint'
+import { airPlayHintLines, KaraokeAirPlayHint, resetAirPlayHintForTests, } from './KaraokeAirPlayHint'
 
 function mixer() {
   const [playing, setPlaying] = createSignal(false)
@@ -44,10 +44,11 @@ afterEach(() => {
   cleanup()
   resetAirPlaySuspicionForTests()
   setAudioRouteForTests(null)
+  vi.unstubAllGlobals()
 })
 
 describe('KaraokeAirPlayHint', () => {
-  it('says plainly, as a song starts on AirPlay, that AirPlay cannot carry its sound to a TV and Screen Mirroring can', () => {
+  it('says, as a song starts on AirPlay, that it plays there, the lyrics stay on the phone, and Screen Mirroring puts the stage on the TV', () => {
     onAirPlay()
     const m = mixer()
     render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
@@ -55,18 +56,18 @@ describe('KaraokeAirPlayHint', () => {
 
     m.setPlaying(true)
 
-    const status = screen.getByRole('status')
-    expect(status).toHaveTextContent(
-      "AirPlay cannot carry the room's sound to a TV.",
-    )
-    expect(status).toHaveTextContent(
-      'Screen Mirroring can: open Control Center, tap Screen Mirroring, then choose your TV.',
-    )
-    expect(AIRPLAY_HINT_LINES).toHaveLength(2)
+    const lines = screen
+      .getAllByRole('paragraph')
+      .map((line) => line.textContent)
+    expect(lines).toEqual([
+      'The song is playing over AirPlay.',
+      'The lyrics stay on this phone.',
+      'Screen Mirroring puts the stage on the TV: open Control Center, tap Screen Mirroring, then choose your TV.',
+    ])
     expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
   })
 
-  it('says it too where the route itself says airplay', () => {
+  it('names the TV where the route itself says airplay', () => {
     setAudioRouteForTests('airplay', 'LG C2', 44100)
     const m = mixer()
     render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
@@ -74,8 +75,33 @@ describe('KaraokeAirPlayHint', () => {
     m.setPlaying(true)
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      "AirPlay cannot carry the room's sound to a TV.",
+      'The song is playing on LG C2 over AirPlay.',
     )
+  })
+
+  // Web Audio alone reaches an AirPlay TV (the sound check, 6 Nov 2026):
+  // the old hint said AirPlay could not carry the room's sound.
+  it('never says AirPlay cannot carry the sound', () => {
+    setAudioRouteForTests('airplay', 'LG C2', 44100)
+    const m = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+
+    m.setPlaying(true)
+
+    expect(screen.getByRole('status')).not.toHaveTextContent('cannot')
+  })
+
+  it('names the iPad on an iPad, and no receiver for a blank port name', () => {
+    vi.stubGlobal('navigator', {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+      maxTouchPoints: 5,
+    })
+
+    const lines = airPlayHintLines('  ')
+
+    expect(lines[0]).toBe('The song is playing over AirPlay.')
+    expect(lines[1]).toBe('The lyrics stay on this iPad.')
   })
 
   it('takes no focus from the room as it shows', () => {
@@ -138,7 +164,7 @@ describe('KaraokeAirPlayHint', () => {
     const m = mixer()
     render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
     m.setPlaying(true)
-    expect(screen.getByRole('status')).toHaveTextContent('Screen Mirroring can')
+    expect(screen.getByRole('status')).toHaveTextContent('Screen Mirroring')
 
     screenLink.connect(true)
 
@@ -154,7 +180,9 @@ describe('KaraokeAirPlayHint', () => {
 
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
     m.setPlaying(true)
-    expect(screen.getByRole('status')).toHaveTextContent('AirPlay cannot')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
   })
 
   it('shows nothing between songs, when there is no mixer', () => {
