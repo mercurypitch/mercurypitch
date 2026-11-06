@@ -3,7 +3,7 @@
 // ============================================================
 //
 // What the move into the kit added to Lesson 5's take (whose own test,
-// lesson-05/sing-hold.test.ts, runs it on the page's frame loop): the
+// hold-sing-take.test.ts, runs it on the page's frame loop): the
 // page's demonstration is Merc's Listen phase, its seconds on the ring; one
 // cut short ends the take before it opens, with the microphone never read
 // and no sound held off; and `onSung` hears the seconds since the first
@@ -144,5 +144,62 @@ describe('the seconds sung', () => {
 
     // Assert
     expect(sung).toEqual([0, 0.5, 2.25])
+  })
+})
+
+describe("the band state while a take runs (Lesson 22's `live: false`)", () => {
+  it('lights the edge, glows during the Listen phase and names the band state, as Lesson 5 shows it', async () => {
+    // Arrange
+    const { c } = context()
+    const glows: number[] = []
+    const play = c.listen.play
+    const watched: HoldContext = {
+      ...c,
+      listen: {
+        sec: c.listen.sec,
+        play: async (audible) => {
+          glows.push(c.view.chart.scene.glow)
+          return play(audible)
+        },
+      },
+    }
+
+    // Act
+    const reading = holdOne(watched)
+    await vi.advanceTimersByTimeAsync(1000)
+    await reading
+
+    // Assert
+    expect(glows).toEqual([1])
+    expect(c.view.chart.scene.lit).toBe(true)
+    expect(c.view.now).toHaveBeenLastCalledWith('in the band')
+  })
+
+  it('keeps it to itself with `live: false`: no lit edge, no glow and no band words, the line still drawn', async () => {
+    // Arrange
+    const { c } = context({ live: false })
+    const glows: number[] = []
+    const play = c.listen.play
+    const watched: HoldContext = {
+      ...c,
+      listen: {
+        sec: c.listen.sec,
+        play: async (audible) => {
+          glows.push(c.view.chart.scene.glow)
+          return play(audible)
+        },
+      },
+    }
+
+    // Act
+    const reading = holdOne(watched)
+    await vi.advanceTimersByTimeAsync(1000)
+    await reading
+
+    // Assert
+    expect(glows).toEqual([0])
+    expect(c.view.chart.scene.lit).toBe(false)
+    expect(c.view.now).not.toHaveBeenCalledWith('in the band')
+    expect(c.view.chart.scene.line).toHaveLength(3)
   })
 })

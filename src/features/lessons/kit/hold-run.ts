@@ -22,7 +22,11 @@
 // (`Sound.hush`). The reading comes from the kit's hold reader
 // (hold-take.ts), loaded with the listener after Start; `onSung` hears the
 // seconds since the first voiced frame on each frame, for a page that
-// paces cues by them (Lesson 13's vowel names).
+// paces cues by them (Lesson 13's vowel names). A page may keep the band
+// state to itself while the take runs (`live: false`, Lesson 22, whose
+// vibrato would flip it on every swing): from the Listen phase to the
+// take's end the band's edge does not light, it does not glow and nothing
+// names where the voice is against it.
 
 import type { BandChart } from './band-chart'
 import { HIT_TOLERANCE_CENTS } from './band-words'
@@ -72,6 +76,8 @@ export interface HoldContext {
   readonly length: number
   /** The ring's label: "A3 · 220 Hz". */
   readonly label: string
+  /** Whether the band lights, glows and is named as the take runs: on unless false. */
+  readonly live?: boolean
   readonly listen: HoldListen
   readonly cancelled: () => boolean
   /** Each phase as it begins. */
@@ -105,6 +111,7 @@ function drawFrame(
   const folded = c.mod.foldCents(c.mod.hzToCents(frame.f0) - c.midi * 100)
   s.line.push({ t, c: folded })
   s.head = { t, c: folded }
+  if (c.live === false) return
   s.lit = Math.abs(folded) <= HIT_TOLERANCE_CENTS
   c.view.now(bandWords(folded))
 }
@@ -116,7 +123,7 @@ async function lead(c: HoldContext, chart: BandChart): Promise<boolean> {
   c.onPhase('listen')
   mercSing(c.which, c.midi, true)
   mercListen(other, true)
-  chart.scene.glow = 1
+  if (c.live !== false) chart.scene.glow = 1
   void c.view.ring.run({
     which: c.which,
     label: c.label,

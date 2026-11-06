@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 5 one hold on the page's frame loop — a steady note counts in full
+// One hold on the page's frame loop — a steady note counts in full
 // ============================================================
 //
 // A hold's seconds are the microphone's frames. The pitch stream polls its
@@ -15,12 +15,12 @@
 // frames, not how a pitch is found in them.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import type { BandChart } from '@/features/lessons/kit/band-chart'
-import { handLoop } from '@/features/lessons/kit/frame-loop.test-fixtures'
-import type { HoldReading } from '@/features/lessons/kit/hold-take'
-import type { Listener } from '@/features/lessons/kit/listen'
-import type { HoldPhase, SingView } from './sing-view'
+import './browser-doubles.test-fixtures'
+import type { BandChart } from './band-chart'
+import { handLoop } from './frame-loop.test-fixtures'
+import type { HoldPhase, HoldSingView } from './hold-sing-view'
+import type { HoldReading } from './hold-take'
+import type { Listener } from './listen'
 
 vi.mock('@/lib/pitch-detector', () => ({
   PitchDetector: class {
@@ -76,11 +76,11 @@ describe('a hold on the page frame loop', () => {
     const h = await handLoop()
     // the loop's own frame, asked for as it starts
     const loopFrame = h.asked[0]
-    const { mountRing } = await import('@/features/lessons/kit/sing')
-    const mod = await import('@/features/lessons/kit/listen')
-    const reader = await import('@/features/lessons/kit/hold-take')
+    const { mountRing } = await import('./sing')
+    const mod = await import('./listen')
+    const reader = await import('./hold-take')
     const { createF0Stream } = await import('@/lib/pitch-f0-stream')
-    const { holdOne } = await import('./sing-hold')
+    const { holdOne } = await import('./hold-sing')
     const el = ringEl()
     const ring = mountRing(el, { stills: STILLS })
     h.see(el)
@@ -99,7 +99,11 @@ describe('a hold on the page frame loop', () => {
       setTarget: () => undefined,
       setWindow: () => undefined,
     } as unknown as BandChart
-    const view = { chart, ring, now: () => undefined } as unknown as SingView
+    const view = {
+      chart,
+      ring,
+      now: () => undefined,
+    } as unknown as HoldSingView
     const phases: HoldPhase[] = []
     let reading: HoldReading | null | undefined
     void holdOne({

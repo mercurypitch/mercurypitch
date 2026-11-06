@@ -61,7 +61,7 @@ export const OCTAVES_3: Figure = {
 }
 
 /**
- * Lesson 5's hold, mounted as lesson-05/sing-view.ts mounts it: a fixed
+ * Lesson 5's hold, mounted as kit/hold-sing-view.ts mounts it: a fixed
  * frame of 10 seconds named under the plot, a hold settled in the band.
  */
 export const HOLD_5: Figure = {
