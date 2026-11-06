@@ -243,8 +243,8 @@ left, 780 bytes.
   targets at 390x844 and 1440x900, and Lesson 19 its five there, the first saying nothing of singing and the
   third, "Your turn to tap", lighting the take on `#tap`; on Lesson 1's first visit the wheel and
   the keys leave the page at the top with no scrollbar, and the card comes with nothing moving,
-  before the cap, as the hold lifts; Lesson 3 never holds; Lessons 15's and 19's first visits hold
-  the card until the predict's choice, and their lesson menus' tours come at once; under reduced
+  before the cap, as the hold lifts; Lesson 3 never holds; Lessons 15's, 19's and 23's first visits
+  hold the card until the predict's choice, and their lesson menus' tours come at once; under reduced
   motion nothing glides.
 - Each test added on 25 October was checked by mutation: with the behaviour it covers taken out,
   it fails.
