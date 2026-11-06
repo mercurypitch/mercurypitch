@@ -3,17 +3,16 @@
 // ============================================================
 //
 // A Season 2 voice lesson, a draft until the vocal coach's sign-off. Every
-// build
-// carries its document, and the e2e bundle shows drafts (`build:e2e` sets
-// VITE_DRAFT_LESSONS=1); on mercurypitch.com the site worker answers its
-// address with the 404 page until the admin console publishes it
+// build carries its document, and the e2e bundle shows drafts (`build:e2e`
+// sets VITE_DRAFT_LESSONS=1); on mercurypitch.com the site worker answers
+// its address with the 404 page until the admin console publishes it
 // (src/lesson-gate.ts). Like every lesson it must load as itself, never as
-// the 404 page or the studio's cached app shell, and its module must boot: at
-// a phone's size and a desktop's, no AudioContext before the first tap, and
-// nothing plays before a play button; and a visitor with the studio
-// installed still gets the lesson, not the shell. It carries Season 2, so
-// its masthead and its map are Season 2's, and it draws no staff for show
-// (WEB-SPEC, Look).
+// the 404 page or the studio's cached app shell, and its module must boot:
+// at a phone's size and a desktop's, no AudioContext before the first tap,
+// and nothing plays before a play button; quick check 3's play waits for
+// Step 3's choice; and a visitor with the studio installed still gets the
+// lesson, not the shell. It carries Season 2, so its masthead and its map
+// are Season 2's, and it draws no staff for show (WEB-SPEC, Look).
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -150,6 +149,33 @@ for (const viewport of [
     })
   })
 }
+
+test("quick check 3's play waits for Step 3's choice under its lock line, then sounds (WEB-SPEC, Toys 5)", async ({
+  page,
+}) => {
+  // Arrange: sound on from the gate, the cold open's choice made, on Step 3
+  await watchSound(page)
+  await page.goto('/learn/22#step-3')
+  await page.locator('#gateBtn').click()
+  await page.locator('#predict [data-choice="middle"]').click()
+  const play = page.locator('#qs [data-quiz-play="slow"]')
+  const line = page.locator('#qs [data-quiz-held]')
+  await expect(play).toBeDisabled()
+  await expect(line).toHaveText("Answer Step 3's question first to hear this.")
+
+  // Act: Step 3's choice, then the play
+  await page.locator('#predict3 [data-choice="moves"]').click()
+  await expect(play).toBeEnabled()
+  const before = await heard(page)
+  await play.click()
+
+  // Assert
+  await expect(line).toBeHidden()
+  await expect(play).toHaveClass(/is-on/)
+  await expect
+    .poll(async () => (await heard(page)).sources)
+    .toBeGreaterThan(before.sources)
+})
 
 test('a visitor with the studio installed still gets the lesson, not the shell @smoke', async ({
   page,

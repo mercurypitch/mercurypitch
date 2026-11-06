@@ -26,11 +26,14 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+// the voice lessons' sheet joins with Sing it, the module whose chunk it
+// shares: taken before it, it would leave that chunk for one of its own,
+// which every voice lesson's page would then link after its own sheet
+// (MISTAKES.md, on the lessons' base stylesheet). The recall's questions,
+// Lessons 5 and 14's, share no chunk with a sheet, so the slide guide's
+// sheet, which Lesson 23 takes beside Lesson 6's questions, stays off
+// this page: taken here, it would leave the chunk it shares with them
 import './lesson-22.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -44,6 +47,7 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -58,7 +62,11 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-const steps = initSteps(deck)
+// the recall from Lessons 5 and 14 and the quick check, each on the kit's
+// quiz; the quick check's question 3 plays Step 3's slow wave, so Step 3's
+// choice lets it sound
+const quizzes = initQuizzes(deck)
+const steps = initSteps(deck, { onHeld: () => quizzes.unlockSlow() })
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
