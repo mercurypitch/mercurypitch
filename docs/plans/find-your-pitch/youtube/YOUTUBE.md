@@ -1,8 +1,9 @@
 # Find Your Pitch on YouTube: the upload guide
 
-Everything to fill in YouTube Studio for **Lesson 1, "What is a note?"** (master `rc-07`, 5:14)
-and **Lesson 2, "Twelve notes"** (master `rc-04`, 7:11), plus the channel setup, packaging for the
-other Season 1 lessons and the trailer, Shorts ideas and the thumbnails. Prepared 19 October 2026.
+Everything to fill in YouTube Studio for **Lesson 1, "What is a note?"** (master `rc-09`, 5:35)
+and **Lesson 2, "Twelve notes"** (master `rc-06`, 7:19), plus the channel setup, packaging for the
+other Season 1 lessons and the trailer, Shorts ideas and the thumbnails. Prepared 19 October 2026;
+files, chapters and times moved to `rc-09` and `rc-06` on 3 November 2026.
 Every YouTube rule here was checked against YouTube's help pages that day (see [Sources](#sources)).
 
 The plan is the authority: `docs/plans/find-your-pitch/` (MASTER-PLAN § 4.1 for packaging, § 12
@@ -118,10 +119,12 @@ this package.
 
 ## B. Upload sheets
 
-### B1. Lesson 1, "What is a note?" (`rc-07`)
+### B1. Lesson 1, "What is a note?" (`rc-09`)
 
-**Upload this file:** `output/motion/lesson-01/renders/rc-07-60fps.mp4` (1920x1080, 60 fps, H.264,
-AAC 48 kHz, 314.23 s by ffprobe). Not the `-music-only` copy.
+**Upload this file:** `rc-09-60fps.mp4` from the film project's renders (disjoint-colliders,
+`packages/learn/series/find-your-pitch/01-what-is-a-note/film/renders/`; 1920x1080, 60 fps, H.264,
+AAC 48 kHz, 335.53 s by ffprobe). Not the `-music-only` copy. It is the cut the lesson page plays
+(critic round 10: SHIP, 23 October 2026), with the re-voiced lines and the 13 s end card.
 
 #### Titles (up to 100 characters; front-loaded for phones)
 
@@ -132,7 +135,7 @@ AAC 48 kHz, 314.23 s by ffprobe). Not the `-music-only` copy.
 | 3                   | `What is a musical note? Pitch and octaves for beginners` | 55         | Search-style, in the audience's words (§ 4.1)                                            | C                   |
 
 Claims: 440 Hz is twice 220 Hz and both are called A (FACTS 7, 9, 15); "the same note" is the
-film's own phrase ("The same note, one octave up!", 4:47); pitch and octaves are what the lesson
+film's own phrase ("The same note, one octave up!", 4:59); pitch and octaves are what the lesson
 teaches (FACTS 1, 3, 7). Put title 1 first: it is the fallback if a test is inconclusive.
 
 #### Description (paste as is; replace the two bracketed links)
@@ -147,16 +150,16 @@ Find Your Pitch, Lesson 1: What is a note? Blue Merc teaches and orange Merc ask
 
 Chapters
 00:00 The puzzle
-00:26 A note is something shaking
-01:05 Faster, not louder
-01:28 Twice as fast
-02:04 The simplest fit
-02:36 The octave ladder
-02:55 Pitch is a spiral
-03:25 Names, numbers and the piano
-03:52 Sing it
-04:32 Quick check
-05:01 Next time
+00:37 A note is something shaking
+01:16 Faster, not louder
+01:40 Twice as fast
+02:15 The simplest fit
+02:47 The octave ladder
+03:06 Pitch is a spiral
+03:36 Names, numbers and the piano
+04:03 Sing it
+04:45 Quick check
+05:14 Next time
 
 Practise
 Sing a note back in Voice Mirror. It is free, needs no account, and counts a match in any octave: https://mercurypitch.com/mirror
@@ -196,7 +199,7 @@ a "View corrections" card ([57404](https://support.google.com/youtube/answer/574
 | Tags                                                     | `find your pitch, mercurypitch, what is a note, what is pitch, music theory for beginners, octave explained, what is an octave, frequency and pitch, hertz, 440 hz, note names, middle c, scientific pitch notation, learn to sing, singing for beginners` | 260 of 500 characters (`paste/lesson-01-tags.txt`). YouTube says tags play a minimal role ([146402](https://support.google.com/youtube/answer/146402))                                                                                                  |
 | Language and captions certification                      | Video language: English (United Kingdom). Caption certification: This content has never aired on television in the U.S.                                                                                                                                    |                                                                                                                                                                                                                                                         |
 | Title and description language                           | English (United Kingdom)                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                         |
-| Recording date and location                              | Optional: 17 October 2026 (rc-07's render date); location blank                                                                                                                                                                                            |                                                                                                                                                                                                                                                         |
+| Recording date and location                              | Optional: 23 October 2026 (rc-09's render date); location blank                                                                                                                                                                                            |                                                                                                                                                                                                                                                         |
 | Licence                                                  | Standard YouTube Licence                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                         |
 | Distribution                                             | Allow embedding: on. Publish to subscriptions feed and notify subscribers: on                                                                                                                                                                              |                                                                                                                                                                                                                                                         |
 | Shorts remixing                                          | Allow (default)                                                                                                                                                                                                                                            | Owner decision 9                                                                                                                                                                                                                                        |
@@ -246,7 +249,7 @@ the expanded description. Owner decision 5.
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------- | --- |
 | The first timestamp is 00:00                                        | 00:00 The puzzle                                                          | Yes |
 | At least three timestamps, ascending                                | 11, ascending                                                             | Yes |
-| Each chapter at least 10 s                                          | Shortest: 05:01 to the end (5:14.23), 13.2 s                              | Yes |
+| Each chapter at least 10 s                                          | Shortest: 02:47 to 03:06, 19.0 s                                          | Yes |
 | The same chapters as the film's own                                 | Identical to `captions/chapters.json` in the plan and in the film project | Yes |
 
 Chapters need Advanced features on the channel (same page, and [9890437](https://support.google.com/youtube/answer/9890437)).
@@ -255,19 +258,21 @@ Chapters need Advanced features on the channel (same page, and [9890437](https:/
 
 YouTube allows elements only in the **last 5 to 20 seconds**, up to four on a 16:9 video, each with
 its own start time; a video or playlist element may be public or unlisted
-([6388789](https://support.google.com/youtube/answer/6388789)). In this film the earliest start is
-4:54.2. The film's own end card starts at **5:09.0** and is only 5.2 s long, with the practise address
-from 5:10.2, so the end screen starts on "Next time" and every element stays off the film's words.
+([6388789](https://support.google.com/youtube/answer/6388789)). In `rc-09` (5:35.53) the earliest start
+is 5:15.5, just after Blue's "Next time." (5:14.6), so the end screen starts on Blue's question for
+Lesson 2 (5:15.8). The film's own end card starts at **5:22.5** and runs 13.0 s, with the practise
+address just after it; every element stays off the film's words.
 
-| #   | Element                      | Shows                    | From                                  | To         | Where (drag in the editor; see `end-screen-lesson-01.png`)                                                                                           |
-| --- | ---------------------------- | ------------------------ | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Video: Choose specific video | Lesson 2, "Twelve notes" | **5:02.0** (blue: "Next time.")       | 5:14 (end) | Bottom-left, as far left and down as the editor allows: about 1 % to 33 % across, 60 % to 92 % down. Its right edge then just meets blue Merc's glow |
-| 2   | Subscribe                    | The channel              | **5:08.0** (orange: "See you there.") | 5:14 (end) | Bottom-right, centred about 83 % across and 71 % down, clear of orange Merc                                                                          |
+| #   | Element                      | Shows                    | From                                                                                     | To         | Where (drag in the editor; see `end-screen-lesson-01.png`)                                                                                           |
+| --- | ---------------------------- | ------------------------ | ---------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Video: Choose specific video | Lesson 2, "Twelve notes" | **5:16.0** (blue: "Seven letters, but twelve notes. Where do the other five come from?") | 5:35 (end) | Bottom-left, as far left and down as the editor allows: about 1 % to 33 % across, 60 % to 92 % down. Its right edge then just meets blue Merc's glow |
+| 2   | Subscribe                    | The channel              | **5:20.7** (orange: "Between the letters, maybe?")                                       | 5:35 (end) | Bottom-right, centred about 83 % across and 71 % down, clear of orange Merc                                                                          |
 
-- **Keep clear:** from 5:02 the "Next: Seven letters, twelve notes." title and the keyboard (top half);
-  from 5:09 the MercuryPitch lockup, "Find your pitch." and "Practise it free:
+- **Keep clear:** from 5:14.6 the "Next: Seven letters, twelve notes." title and the keyboard (top half);
+  from 5:22.5 the MercuryPitch lockup, "Find your pitch." and "Practise it free:
   mercurypitch.com/mirror" (everything above about 51 % of the frame's height). Both elements sit below it.
-- End screen length: 5:02.0 to 5:14.2 is 12.2 s, inside 5 to 20 s.
+  The positions were measured on `rc-07`'s frames; confirm them on the editor's preview of `rc-09`.
+- End screen length: 5:16.0 to 5:35.5 is 19.5 s, inside 5 to 20 s.
 - YouTube publishes no element sizes. The map uses the sizes a third-party guide measured, about
   613x343 px for a video and 298 px across for Subscribe on a 1920x1080 frame
   ([CollabPals](https://www.collabpals.com/tools/youtube-end-screen-previewer)), so check the
@@ -282,8 +287,8 @@ from 5:10.2, so the end screen starts on "Next time" and every element stays off
 | Time | Card                                                                 | Teaser text (optional)                 | The moment                                                                                                                             |
 | ---- | -------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 0:24 | Playlist: Find Your Pitch, Season 1                                  | The whole season, in order             | The title sting names the series and the lesson                                                                                        |
-| 3:22 | Video: Lesson 2, "Twelve notes"                                      | Where do the other five come from?     | Blue: "The other five are next time's story."                                                                                          |
-| 4:05 | Link (YouTube Partner Program only): https://mercurypitch.com/mirror | Try it: Voice Mirror counts any octave | Blue: "So when you match a note, an octave up or down still counts", beside the film's own "Voice Mirror counts any octave" (FACTS 19) |
+| 3:33 | Video: Lesson 2, "Twelve notes"                                      | Where do the other five come from?     | Blue: "The other five are next time's story."                                                                                          |
+| 4:17 | Link (YouTube Partner Program only): https://mercurypitch.com/mirror | Try it: Voice Mirror counts any octave | Blue: "So when you match a note, an octave up or down still counts", beside the film's own "Voice Mirror counts any octave" (FACTS 19) |
 
 Source: [6140493](https://support.google.com/youtube/answer/6140493). Card teasers are suppressed during
 the end screen ([6388789](https://support.google.com/youtube/answer/6388789)).
@@ -297,10 +302,12 @@ Want to try your own voice? Voice Mirror is free, needs no account and counts a 
 
 ---
 
-### B2. Lesson 2, "Twelve notes" (`rc-04`)
+### B2. Lesson 2, "Twelve notes" (`rc-06`)
 
-**Upload this file:** `output/motion/lesson-02/renders/rc-04-60fps.mp4` (1920x1080, 60 fps, H.264,
-AAC 48 kHz, 431.08 s by ffprobe). Not the `-music-only` copy.
+**Upload this file:** `rc-06-60fps.mp4` from the film project's renders (disjoint-colliders,
+`packages/learn/series/find-your-pitch/02-twelve-notes/film/renders/`; 1920x1080, 60 fps, H.264,
+AAC 48 kHz, 439.08 s by ffprobe). Not the `-music-only` copy. It is the cut the lesson page plays
+(critic round 17: SHIP, 23 October 2026): `rc-04`'s chapters and captions with a 13 s end card.
 
 #### Titles
 
@@ -377,7 +384,7 @@ BRIEF and DECISIONS 72 and 73 say. Never write "Ear Lab needs no account": it is
 | Tags                                | `find your pitch, mercurypitch, twelve notes, why are there 12 notes, semitone, tone and semitone, half step and whole step, sharps and flats, enharmonic notes, black keys on piano, no black key between b and c, cents in music, piano keyboard layout, music theory for beginners, ear training` | 302 of 500 characters (`paste/lesson-02-tags.txt`)                                                                                                                                                                      |
 | Language and captions certification | Video language: English (United Kingdom). Caption certification: This content has never aired on television in the U.S.                                                                                                                                                                              |                                                                                                                                                                                                                         |
 | Title and description language      | English (United Kingdom)                                                                                                                                                                                                                                                                             |                                                                                                                                                                                                                         |
-| Recording date and location         | Optional: 18 October 2026 (rc-04's render date); location blank                                                                                                                                                                                                                                      |                                                                                                                                                                                                                         |
+| Recording date and location         | Optional: 23 October 2026 (rc-06's render date); location blank                                                                                                                                                                                                                                      |                                                                                                                                                                                                                         |
 | Licence                             | Standard YouTube Licence                                                                                                                                                                                                                                                                             |                                                                                                                                                                                                                         |
 | Distribution                        | Allow embedding: on. Publish to subscriptions feed and notify subscribers: on                                                                                                                                                                                                                        |                                                                                                                                                                                                                         |
 | Shorts remixing                     | Allow (default)                                                                                                                                                                                                                                                                                      | Owner decision 9                                                                                                                                                                                                        |
@@ -400,25 +407,26 @@ BRIEF and DECISIONS 72 and 73 say. Never write "Ear Lab needs no account": it is
 
 #### End screen
 
-The earliest start is **6:51.1** (20 s before 7:11.08). Until 7:05.6 the frame holds Lesson 3's hook
-figures, "59 %" asked and "10–16 %" tested; the film's end card runs from **7:05.9** to the end, 5.2 s,
-with the practise address from 7:07.1 and the Leap legend between the hosts. **There is no clear
-16:9 slot in this ending**: the Mercs stand at 29 % and 71 % across, leaving about 420 px at each side,
-and a video or playlist element is about 613 px wide.
+The earliest start is **6:59.1** (20 s before 7:19.08). Until 7:05.6 the frame holds Lesson 3's hook
+figures, "59 %" asked and "10–16 %" tested; the film's end card runs from **7:05.9** to the end, 13.2 s
+in `rc-06` (5.2 s in `rc-04`), with the practise address from 7:07.1 and the Leap legend between the
+hosts. In `rc-04` there was **no clear 16:9 slot**: the Mercs stood at 29 % and 71 % across, leaving
+about 420 px at each side, and a video or playlist element is about 613 px wide. Check on the editor's
+preview whether `rc-06`'s longer card leaves one.
 
-| #   | Element   | Shows                     | From                                            | To         | Where (see `end-screen-lesson-02.png`)                                                                                             |
-| --- | --------- | ------------------------- | ----------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Subscribe | The channel               | **7:04.0** (orange: "So what's going on?")      | 7:11 (end) | Bottom-right, centred about 90 % across and 71 % down, clear of orange Merc                                                        |
-| 2   | Playlist  | Find Your Pitch, Season 1 | **7:06.0** (the end card; 5.1 s before the end) | 7:11 (end) | Bottom-left, as far left and down as allowed. **It covers most of blue Merc for the last 5 s**; it covers none of the film's words |
+| #   | Element   | Shows                     | From                                             | To         | Where (see `end-screen-lesson-02.png`)                                                                                        |
+| --- | --------- | ------------------------- | ------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Subscribe | The channel               | **7:04.0** (orange: "So what's going on?")       | 7:19 (end) | Bottom-right, centred about 90 % across and 71 % down, clear of orange Merc                                                   |
+| 2   | Playlist  | Find Your Pitch, Season 1 | **7:06.0** (the end card; 13.1 s before the end) | 7:19 (end) | Bottom-left, as far left and down as allowed. **In `rc-04` it covered most of blue Merc**; it covers none of the film's words |
 
-- End screen length: 7:04.0 to 7:11.1 is 7.1 s, inside 5 to 20 s.
+- End screen length: 7:04.0 to 7:19.1 is 15.1 s, inside 5 to 20 s.
 - **Keep clear:** the "59 %" and "10–16 %" figures (to 7:05.6), then the lockup, "Find your
   pitch.", "Practise it free: mercurypitch.com/ear-lab" and the Leap legend "In Leap: m2 = semitone ·
   M2 = tone".
-- The owner chose this over Subscribe alone (owner decision 8). The real fix is a film change for the next
-  render, which both films already have polish items for: hold the end card 12 to 15 s with the
-  hosts to one side and the lower left third kept empty, as the production research proposed (a
-  12 to 15 s end slate with video slots and a subscribe zone).
+- The owner chose this over Subscribe alone (owner decision 8). `rc-06` made the film change this
+  note asked for, holding the end card 13.2 s (the production research proposed a 12 to 15 s end
+  slate with video slots and a subscribe zone). Whether its hosts moved aside to free the lower left
+  third was not checked here.
 - When Lesson 3 is out, swap the playlist element for "Video: Lesson 3": the film ends on its hook.
 
 #### Cards
@@ -463,11 +471,10 @@ ends ([9080341](https://support.google.com/youtube/answer/9080341),
 [13861714](https://support.google.com/youtube/answer/13861714)). A Premiere suits the Season 1
 trailer later, when there are subscribers to remind; Premieres take 1080p, which both masters are.
 
-**Lesson 1's planned re-voice.** The Phase 1 Voices track re-voices Lesson 1 ("Hum it back" becomes
-"Sing it back, or hum along", plus a spoken promise after the title sting; MASTER-PLAN § 7). YouTube
-cannot swap the file under a published video, and the plan uploads a re-cut "only as a new video,
-when retrieval lags badly" (§ 7, Phase 4). Publishing `rc-07` now means the re-voiced cut would
-replace it only on the lesson page, not on YouTube (owner decision 1).
+**Lesson 1's re-voice is in.** `rc-09` already has both changes the Phase 1 Voices track planned
+("Sing it back, or hum along" in place of "Hum it back", and the spoken promise after the title sting
+at 0:27; MASTER-PLAN § 7), and it is the cut the lesson page plays. YouTube cannot swap the file
+under a published video, so upload `rc-09`, never `rc-07` (owner decision 1).
 
 ---
 
@@ -502,7 +509,8 @@ coach signs them off (§ 7).
 
 The plan wants two Shorts per episode, the cold-open puzzle (30 to 60 s, ending on the question) and
 a sing-along, **recomposed as 9:16 sibling projects, never letterboxed**, with captions burned in
-(MASTER-PLAN § 4.1, D11). These five are cut from the masters' own timings (the cue sheets). Keep
+(MASTER-PLAN § 4.1, D11). These five are cut from the masters' own timings (the cue sheets); the times are `rc-09`'s and
+`rc-06`'s. Keep
 each under 60 s: a Short over one minute with any copyright claim is blocked worldwide
 ([15424877](https://support.google.com/youtube/answer/15424877)); these carry no third-party audio,
 but staying under a minute removes the risk. Link each Short to its lesson as the Related Video
@@ -510,8 +518,8 @@ but staying under a minute removes the risk. Link each Short to its lesson as th
 
 | #   | From                        | Cut (film time)                                                                                     | Length | Hook text on screen / Short title                                                       | 9:16 framing                                                                                                                                                                                                                                                                                                                                                                   |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Lesson 1, cold-open puzzle  | 0:00.0 to 0:18.6, then 1:41.0 to 1:55.6 (the predict and the listen; it stops before "Higher, yes") | 33 s   | **"220 Hz and 440 Hz: same note?"** / Title: Twice as fast. Same note?                  | Stack the hosts, orange and "440 Hz" in the upper half, blue and "220 Hz" lower: pitch is height. For the predict, the two waves stacked as in the film, cropped to about two cycles of the slow wave so each fills the width; the "Predict" card centred. Burned-in captions at about 60 to 70 % of the height, clear of the Shorts title and buttons at the bottom and right |
-| 2   | Lesson 1, sing-along        | 4:10.5 to 4:32.2 ("Let's try. I'll sing an A" to "Keep it gentle. Never push.")                     | 22 s   | **"Hum this A back. Any octave counts."** / Title: Hum along with Merc                  | Blue Merc large in the upper middle, the sung A as one line across; a plain ring timer for the 3.4 s hum gap; orange enters lower for "I hummed it higher". Keep "Keep it gentle. Never push." as a caption. Note: the Phase 1 re-voice changes "Hum it back"                                                                                                                  |
+| 1   | Lesson 1, cold-open puzzle  | 0:00.0 to 0:18.8, then 1:52.4 to 2:07.0 (the predict and the listen; it stops before "Higher, yes") | 33 s   | **"220 Hz and 440 Hz: same note?"** / Title: Twice as fast. Same note?                  | Stack the hosts, orange and "440 Hz" in the upper half, blue and "220 Hz" lower: pitch is height. For the predict, the two waves stacked as in the film, cropped to about two cycles of the slow wave so each fills the width; the "Predict" card centred. Burned-in captions at about 60 to 70 % of the height, clear of the Shorts title and buttons at the bottom and right |
+| 2   | Lesson 1, sing-along        | 4:21.9 to 4:44.8 ("Let's try. I'll sing an A" to "Keep it gentle. Never push.")                     | 23 s   | **"Sing this A back. Any octave counts."** / Title: Sing along with Merc                | Blue Merc large in the upper middle, the sung A as one line across; a plain ring timer for the 3.4 s hum gap; orange enters lower for "I hummed it higher". Keep "Keep it gentle. Never push." as a caption. In `rc-09` the line is "Sing it back, or hum along"                                                                                                               |
 | 3   | Lesson 2, cold-open puzzle  | 0:00.0 to 0:23.2 (ends on "Then where do the other five come from?")                                | 23 s   | **"7 letters. 12 notes. Where are the other 5?"** / Title: Seven letters, twelve notes? | The spiral with its five dim beads fills the upper 55 %; the Mercs side by side beneath it, smaller; "7 letters" and "12 notes" set beside the spiral                                                                                                                                                                                                                          |
 | 4   | Lesson 2, the B to C reveal | 1:48.0 to 2:21.5 ("Look at B and C" to "B to C is the smallest step a piano has.")                  | 33.5 s | **"Why is there no black key between B and C?"** / Title: the same question             | The keyboard close-up, A3 to E4, scaled to the full 1080 px width, the gap between B and C centred; orange Merc above for the question; the three predict pills stacked vertically                                                                                                                                                                                             |
 | 5   | Lesson 2, sing-along        | 5:06.0 to 5:20.8, then 5:32.8 to 5:57.2 (both slides, then the safety line and the viewer's turn)   | 39 s   | **"Slide up one semitone, and back."** / Title: Can you sing one semitone?              | The pitch lanes as a horizontal strip in the upper half, about a 5 s window; the Mercs below; for the viewer's turn, the film's plain chrome guide across the frame with its ring timer. Nothing listens: no microphone, no app drawing over the viewer's turn (Lesson 2 BRIEF)                                                                                                |
@@ -531,8 +539,8 @@ the files.
 | File                    | Words                        | Picture (all from the films)                                                                                                         | Pick              |
 | ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
 | `lesson-01-thumb-a.jpg` | Same note? · 440 Hz · 220 Hz | Both hosts singing (passes m18-blue at 6.00 s and m01-orange at 4.25 s); 440 stacked above 220 in the hosts' colours                 | **Lesson 1 pick** |
-| `lesson-01-thumb-b.jpg` | Same note?                   | The film's frame at 1:39.5: 440 Hz over 220 Hz with the gold ×2 bracket; orange celebrating ("Ha! Same note.", m01-orange at 7.25 s) | Strong challenger |
-| `lesson-01-thumb-c.jpg` | Pitch is a spiral?           | The film's spiral at 3:04 (A 880, A 440, A 220); blue pointing (m03-blue at 1.50 s)                                                  | Weakest at 168 px |
+| `lesson-01-thumb-b.jpg` | Same note?                   | The film's frame at 1:50.9: 440 Hz over 220 Hz with the gold ×2 bracket; orange celebrating ("Ha! Same note.", m01-orange at 7.25 s) | Strong challenger |
+| `lesson-01-thumb-c.jpg` | Pitch is a spiral?           | The film's spiral at 3:15 (A 880, A 440, A 220); blue pointing (m03-blue at 1.50 s)                                                  | Weakest at 168 px |
 | `lesson-02-thumb-a.jpg` | 7 letters, 12 notes?         | The film's row of equal tiles at 3:25 with a "?" on each dark tile; orange asking (m01-orange at 21.25 s)                            | Strong challenger |
 | `lesson-02-thumb-b.jpg` | No black key?                | The film's keyboard at 1:51.5 with the dashed key between B3 and C4; a "?" in it; orange asking (m08-orange at 1.50 s)               | **Lesson 2 pick** |
 | `lesson-02-thumb-c.jpg` | The other 5?                 | The film's five dark tiles lifted out of the row at 3:09, rimmed in gold; blue pointing (m01-blue at 18.75 s)                        | Busiest           |
@@ -660,8 +668,8 @@ captions); `output/motion/lesson-01/` and `lesson-02/` (DELIVERY.md, `cues.json`
 
 Decided on 19 October 2026: 4, 5, 8 (the playlist element) and 9. The owner uploads the films.
 
-1. **Publish `rc-07` now, or wait for Lesson 1's Phase 1 re-voice?** A re-voiced Lesson 1 cannot
-   replace the YouTube video; it would be a new upload (B3).
+1. **Which Lesson 1 cut:** settled by the film. `rc-09` already has the Phase 1 re-voice and is the
+   cut the lesson page plays; upload it (B3).
 2. **The listen-and-watch gate** in both DELIVERY.md files, before either goes public.
 3. **Lesson pages:** settled. Both are built and on `main`, and go live with the next release after
    v0.9.21: make the films public after it (section 0).
