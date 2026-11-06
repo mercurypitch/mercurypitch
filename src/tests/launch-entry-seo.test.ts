@@ -298,6 +298,38 @@ describe('entry document prelude', () => {
     }
   })
 
+  // Once its room is up, a document that shares the Voice Mirror or Karaoke
+  // Night with others keeps its questions under the room, and the home
+  // document keeps its h1, out of sight: until 6 Nov 2026 each read as a copy
+  // of its room's page, or as a greeting (SEO audit, H1 and H2). Every other
+  // document hides its whole prelude, as the rule above says.
+  it('marks what each document keeps once its room is up', () => {
+    const keeps = (file: string): string | null =>
+      repoHtml(file)
+        .querySelector('.entry-prelude')
+        ?.getAttribute('data-keeps') ?? null
+
+    expect(
+      Object.fromEntries(
+        ENTRY_FILES.map((file) => [file, keeps(file)]).filter(
+          ([, kept]) => kept !== null,
+        ),
+      ),
+    ).toEqual({
+      'index.html': 'h1',
+      'mirror.html': 'faq',
+      'vocal-range-test.html': 'faq',
+      'karaoke.html': 'faq',
+      'voice-type-test.html': 'faq',
+      'vocal-remover.html': 'faq',
+      'which-singer-has-my-vocal-range.html': 'faq',
+      'karaoke-app.html': 'faq',
+    })
+    const css = repoFile('src/styles/entry-prelude.css')
+    expect(css).toContain(".entry-prelude[data-keeps='faq']")
+    expect(css).toContain(".entry-prelude[data-keeps='h1']")
+  })
+
   // The prelude is the loading screen, so it opens on the brand rather than on
   // a dark rectangle, and it races the bundle the way the curtain's art does.
   for (const file of ENTRY_FILES) {

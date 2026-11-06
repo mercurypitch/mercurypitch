@@ -22,6 +22,16 @@ body {
     sans-serif;
   color: #f4ecff;
   background-color: #12081f;
+  /* The ground each landing's questions stand on, under the stage
+     (entry-prelude.css `data-keeps`): this page's, not the Mirror's. */
+  --entry-faq-ground: #12081f;
+}
+
+/* With a song on stage the stage has the page; the questions wait under the
+   empty stage only. As specific as the rule that keeps them, and one more,
+   so the order the two sheets load in never decides. */
+#root:not(:empty):has(.kn-body--staged) ~ .entry-prelude[data-keeps='faq'] {
+  display: none;
 }
 
 /* Form controls do not inherit the page's font family; the browser gives

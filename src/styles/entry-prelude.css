@@ -197,3 +197,59 @@ body {
 #root:not(:empty) ~ .entry-prelude {
   display: none;
 }
+
+/* Two exceptions, each marked on the document, so every other entry keeps
+   the rule above as it was (SEO audit, 6 Nov 2026).
+
+   data-keeps="faq": the Voice Mirror's and Karaoke Night's documents
+   (render-entry-page.ts). Several documents open each of those rooms, and
+   once it is up the room's heading is the page's one h1; what is left to
+   tell the documents apart is their questions. So the prelude stays, as its
+   FAQ alone, under the room, on the room's own ground (a room sets
+   --entry-faq-ground) and in its type. Each room hides it while a take, a
+   result or a song has the page. */
+#root:not(:empty) ~ .entry-prelude[data-keeps='faq'] {
+  display: flex;
+  min-height: 0;
+  padding: 1rem 1.5rem calc(3rem + env(safe-area-inset-bottom, 0px));
+  background: var(--entry-faq-ground, #0d1117);
+  font-family: inherit;
+  text-align: left;
+}
+#root:not(:empty)
+  ~ .entry-prelude[data-keeps='faq']
+  > :not(.entry-prelude__faq) {
+  display: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='faq'] > .entry-prelude__faq {
+  animation: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='faq']::before {
+  content: none;
+}
+
+/* data-keeps="h1": the home document (index.html). What shows on / is First
+   Light's welcome on a first visit and Home's greeting after it, and neither
+   names the site, so the document's own h1 stays in the page once the app is
+   up: out of sight, as the native Home's own heading is, for a search engine
+   and a screen reader. Nothing a person sees changes. */
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  background: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] > :not(h1) {
+  display: none;
+}
+#root:not(:empty) ~ .entry-prelude[data-keeps='h1'] > h1 {
+  animation: none;
+}
