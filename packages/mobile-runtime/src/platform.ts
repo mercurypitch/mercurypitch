@@ -68,6 +68,7 @@ export {
   setPictureInPictureLyrics,
   setTvLyricsEnabled,
   setTvStageEnabled,
+  tellTheWindowTheClock,
 } from './picture-in-picture'
 export type { Reminder, ReminderPermission, ReminderTap } from './reminders'
 export {

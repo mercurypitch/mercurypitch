@@ -1128,6 +1128,80 @@ describe('behind another app', () => {
   })
 })
 
+describe('a TV showing the lyrics', () => {
+  /** An iPhone whose connected TV the test puts the lyrics on. */
+  const withTv = () => {
+    const handlers = new Set<(showing: boolean) => void>()
+    const tvLyricsClock = vi.fn()
+    device.onTvLyrics = (handler) => {
+      handlers.add(handler)
+      return () => {
+        handlers.delete(handler)
+      }
+    }
+    device.tvLyricsClock = tvLyricsClock
+    return {
+      tvLyricsClock,
+      shows: (showing: boolean) => {
+        for (const handler of [...handlers]) handler(showing)
+      },
+    }
+  }
+
+  it('is told the clock itself with background play off, on play, pause and a jump', async () => {
+    setKaraokeBackgroundPlay(false)
+    const tv = withTv()
+    await mountRoom()
+    tv.shows(true)
+    current().setLoading(false)
+
+    current().setPlaying(true)
+    expect(tv.tvLyricsClock).toHaveBeenLastCalledWith({
+      playing: true,
+      position: 0,
+      duration: 246,
+      rate: 1,
+    })
+
+    current().jump(30)
+    expect(tv.tvLyricsClock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 30 }),
+    )
+
+    controls().pause()
+    expect(tv.tvLyricsClock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: false, position: 30 }),
+    )
+    // The lock screen still gets nothing with the setting off.
+    expect(device.nowPlaying).not.toHaveBeenCalled()
+  })
+
+  it('leaves the clock to the Now Playing reports with background play on', async () => {
+    const tv = withTv()
+    await mountRoom()
+    tv.shows(true)
+    current().setLoading(false)
+
+    current().setPlaying(true)
+
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true }),
+    )
+    expect(tv.tvLyricsClock).not.toHaveBeenCalled()
+  })
+
+  it('tells nothing while the TV shows something else', async () => {
+    setKaraokeBackgroundPlay(false)
+    const tv = withTv()
+    await mountRoom()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+
+    expect(tv.tvLyricsClock).not.toHaveBeenCalled()
+  })
+})
+
 describe('in the small window (Android)', () => {
   const playSong = async (): Promise<() => void> => {
     const unmount = await mountRoom()

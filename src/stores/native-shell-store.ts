@@ -44,6 +44,7 @@ export type {
   NativeAudioLease,
   NativeAudioLeaseOptions,
   NativeNowPlaying,
+  NativeLyricsClock,
   NativeMediaSeek,
   NativeMediaSkip,
   NativeMediaAction,

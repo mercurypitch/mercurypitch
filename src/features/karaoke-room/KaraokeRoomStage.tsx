@@ -63,10 +63,13 @@
 //   run as the lock screen's do. Coming back to the app closes it
 //   (docs/plans/mobile-native/ios-lyrics-window.md).
 //
-//   ON A TV (iOS, a test build's switch). With AirPlay screen mirroring and
-//   "Stage on a connected TV" on, the TV draws the room's stage in its own
-//   landscape from what the room sends it, while the phone stays the room
-//   (useKaraokeTvStage.ts).
+//   ON A TV (iOS). With Screen Mirroring or a cable, the TV shows what the
+//   singer chose for it (the TV chooser): the room's stage, drawn in the TV's
+//   own landscape from what the room sends it while the phone stays the room
+//   (useKaraokeTvStage.ts), or the lyrics full screen, from the window's
+//   script and the lock screen's clock. With "Keep playing in the
+//   background" off the lock screen is told nothing, so the room tells the
+//   TV that clock itself.
 //
 //   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
 //   songs on their way ("Separating 2") and opens the library, where they
@@ -93,6 +96,7 @@ import { noteSongStart } from '@/stores/airplay-suspicion'
 import type { NativeNowPlaying } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { arrivalCue, arrivalSong } from './karaoke-arrival'
+import { karaokeClockReport } from './karaoke-clock-report'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
 import { createMediaButtons } from './karaoke-media-buttons'
 import { createKaraokeNotesOption } from './karaoke-notes-option'
@@ -113,6 +117,7 @@ import { KaraokeSoundStopped } from './KaraokeSoundStopped'
 import { isMissing, sayMissingSong } from './missing-song'
 import { useKaraokeNotesReading } from './useKaraokeNotesReading'
 import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
+import { useKaraokeTvLyricsClock } from './useKaraokeTvLyricsClock'
 import { useKaraokeTvStage } from './useKaraokeTvStage'
 
 /** The owner name the room holds the shared AudioContext under. */
@@ -631,30 +636,24 @@ export const KaraokeRoomStage: Component = () => {
     // The system's player always names an artist, as other music players do:
     // a song without one says so rather than leaving the line blank.
     const artist = entry.song.credit ?? entry.song.artist
-    // Between two songs there is no mixer yet: no length, so no bar, rather
-    // than the last song's.
     const controls = mixer()
-    const playing = isPlaying()
-    controls?.jumps()
-    // The clock starting puts it in front of the lock screen's carrier, and
-    // the bar and skips stop working on iOS until the carrier is played
-    // again, which a report does (carrier-in-front.ts).
-    controls?.clockStarts()
+    const clock = karaokeClockReport(controls)
     announce({
       title: entry.song.title,
       artist: artist === null || artist.trim() === '' ? UNKNOWN_ARTIST : artist,
-      playing,
-      position: controls === null ? 0 : untrack(controls.audibleElapsed),
-      duration: controls?.duration() ?? 0,
-      rate: controls?.speed() ?? 1,
+      ...clock,
       // Paused for a call or another app, not by a press: iOS may bring it
       // back when a call ends (webkit-now-playing).
-      interrupted: !playing && controls?.interrupted() === true,
+      interrupted: !clock.playing && controls?.interrupted() === true,
     })
   })
   onCleanup(() => {
     announce(null)
   })
+
+  // A TV showing the lyrics runs on the clock those reports carry, so while
+  // there are none the room tells it the clock itself.
+  useKaraokeTvLyricsClock({ device, mixer, reported: systemPlayback, runOn })
 
   // The notification's buttons, the lock screen's, a headset's, a remote's
   // and the lyrics window's, and the system's progress bar, each said as

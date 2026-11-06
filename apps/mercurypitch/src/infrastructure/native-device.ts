@@ -13,7 +13,7 @@
 
 import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, tellTheWindowTheClock, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { notePageAudioContext } from '@/stores/airplay-suspicion'
@@ -122,10 +122,14 @@ export function createNativeDevice(): NativeDeviceApi {
         }
       : null,
     // A TV showing the same lyrics, on the phone whose window draws them,
-    // and a screen connected at all: mirroring, which is not AirPlay alone.
+    // its clock for when no Now Playing report carries one, and a screen
+    // connected at all: mirroring, which is not AirPlay alone.
     ...(pictureInPictureNeedsLyrics()
       ? {
           onTvLyrics: watchTv((state) => state.showing),
+          tvLyricsClock: (clock) => {
+            tellTheWindowTheClock(clock)
+          },
           onExternalScreen: watchTv((state) => state.connected),
         }
       : {}),
