@@ -82,6 +82,10 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   >()
   const [writable, setWritable] = createSignal(false)
   const [problem, setProblem] = createSignal<string | null>(null)
+  // Why the last file or take was not added (too long, too large, a song
+  // out of room): said on its own until dismissed or the next import, as a
+  // refusal is no failed save and has nothing to copy, back up or reload.
+  const [importRefusal, setImportRefusal] = createSignal<string | null>(null)
   // Where a take went when its lane had no room: a fresh object per miss, so
   // the same sentence twice is still said twice.
   const [laneNotice, setLaneNotice] = createSignal<{ text: string } | null>(
@@ -150,8 +154,11 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       current,
       canEdit,
       setImporting,
-      clearProblem: () => setProblem(null),
-      report,
+      clearProblem: () => {
+        setProblem(null)
+        setImportRefusal(null)
+      },
+      report: (error) => setImportRefusal(message(error)),
       commit,
       flush: () => queue?.flush(),
       createId,
@@ -329,6 +336,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     waitingPeaks.clear()
     setSaveState('saved')
     setProblem(null)
+    setImportRefusal(null)
     let claim: StudioSongClaim | null = null
     try {
       await retirement
@@ -665,6 +673,9 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     saveState,
     writable,
     problem,
+    /** Why the last import was refused, apart from save failures; null once dismissed. */
+    importRefusal,
+    dismissImportRefusal: () => setImportRefusal(null),
     laneNotice,
     hasUnsavedChanges,
     create,
