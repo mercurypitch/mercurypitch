@@ -11,17 +11,24 @@
 // (FACTS 29); a sounding note's whole tied run lit; the pitch-line view's
 // bands and gaps; the counts; no reading before its cells are read; and
 // every state's bars at 390 x 844 and at 344 px with no two readings
-// overlapping and none cut off.
+// overlapping and none cut off. Past 4/4 (Lesson 19 WEB-SPEC, Tests 1):
+// 6/8 and 3/4 written with their digits, beamed 3 + 3 and 2 + 2 + 2, a bar
+// line a bar apart; six pads to a bar, each 44 px or more from 344 px
+// (FACTS 70); an arc under each group, hidden until its group sounds; the
+// triplet's 3 over its beam and no bracket (FACTS 41); a beamed group's
+// stems in one direction on the staff, reaching their beam (FACTS 30); a
+// system that carries on with no time signature; and pads alone.
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { readRhythm } from '@/lib/ear/rhythm-notation'
+import type { Spelled } from './notes'
 import type { RhythmFigure, RowState } from './rhythm-draw'
 import { drawRhythm } from './rhythm-draw'
 import type { RhythmScene } from './rhythm-layout'
 import { layoutRhythm, xOf } from './rhythm-layout'
 import type { Bar, NoteValue, Written } from './rhythm-model'
-import { FOUR_QUARTERS, placeBars, toggleRest, writeGrid } from './rhythm-model'
+import { FOUR_QUARTERS, placeBars, SIX_EIGHT, THREE_FOUR, toggleRest, TWO_FOUR, writeGrid, } from './rhythm-model'
 
 /** The figure at 390 x 844 (the card's inner width) and at 344 px. */
 const PHONE = { w: 356, h: 250 }
@@ -758,5 +765,266 @@ describe('the placed symbols', () => {
 
     // Assert
     expect(fig.rows[0].placed).toEqual(placeBars(bars))
+  })
+})
+
+describe('past 4/4', () => {
+  const six = times(6, note(0.5))
+  const pitch = (letter: Spelled['letter'], octave: number): Spelled => ({
+    letter,
+    alter: 0,
+    octave,
+  })
+
+  /** Each beam's members, as the drawing groups them. */
+  const beamed = (el: Element): number[][] =>
+    all(el, '.rb-beam').map((b) => {
+      const at = b.querySelectorAll('rect')[0]
+      return all(el, '.rb-stem')
+        .map((stem, i) => [stem, i] as const)
+        .filter(([stem]) => {
+          const x = num(stem, 'x1')
+          return (
+            x >= num(at, 'x') - 1 && x <= num(at, 'x') + num(at, 'width') + 1
+          )
+        })
+        .map(([, i]) => i)
+    })
+
+  it('writes 6/8 with its digits and its eighths beamed 3 + 3, and 3/4 beamed 2 + 2 + 2 (FACTS 15)', () => {
+    // Act
+    const a = draw([six, six], {
+      rows: [{ bars: [six, six], bpm: 90, metre: SIX_EIGHT }],
+    })
+    const sixEight = {
+      digits: all(a.el, '.rb-metre-digit').map((d) => d.textContent),
+      beams: beamed(a.el),
+      barlines: all(a.el, '.rb-barline').length,
+    }
+    const b = draw([six], {
+      rows: [{ bars: [six], bpm: 90, metre: THREE_FOUR }],
+    })
+
+    // Assert
+    expect(sixEight).toEqual({
+      digits: ['6', '8'],
+      beams: [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [9, 10, 11],
+      ],
+      barlines: 2,
+    })
+    expect(all(b.el, '.rb-metre-digit').map((d) => d.textContent)).toEqual([
+      '3',
+      '4',
+    ])
+    expect(beamed(b.el)).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 5],
+    ])
+  })
+
+  it('lays six pads to a bar, numbered 1 to 6, the first larger, each column 44 px or more from 344 px up (FACTS 70)', () => {
+    // Act
+    const { el, fig } = draw(
+      [six],
+      { rows: [{ bars: [six], bpm: 90, metre: SIX_EIGHT }], padEvery: 0.5 },
+      NARROW,
+    )
+
+    // Assert
+    const pads = all(el, '.rb-pad')
+    expect(pads.map((p) => p.querySelector('.rb-pad-n')?.textContent)).toEqual([
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+    ])
+    expect(pads.map((p) => p.classList.contains('one'))).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ])
+    const row = fig.layout.rows[0]
+    const widths = [0, 1, 2, 3, 4, 5].map(
+      (k) => xOf(row, (k + 1) * 0.5) - xOf(row, k * 0.5),
+    )
+    for (const w of widths) expect(w).toBeGreaterThanOrEqual(44)
+    expect(new Set(widths.map((w) => w.toFixed(3))).size).toBe(1)
+    expect(fig.padBox(0, 5).x + fig.padBox(0, 5).w).toBeLessThanOrEqual(
+      NARROW.w,
+    )
+  })
+
+  it('draws an arc under each group of pads, two of three in 6/8 and three of two in 3/4, each hidden until its group sounds', () => {
+    // Arrange
+    const scene = (metre = SIX_EIGHT) => ({
+      rows: [{ bars: [six], bpm: 90, metre }],
+      padEvery: 0.5,
+      arcs: true,
+    })
+
+    // Act
+    const a = draw([six], scene())
+    const b = draw([six], scene(THREE_FOUR))
+    a.fig.set([written(a.fig, 0, { arcs: [true, false] })])
+
+    // Assert
+    const arcs = all(a.el, '.rb-arc')
+    expect(arcs).toHaveLength(2)
+    expect(arcs.map((r) => r.classList.contains('is-hidden'))).toEqual([
+      false,
+      true,
+    ])
+    expect(a.fig.rows[0].arcs).toBe(2)
+    expect(all(b.el, '.rb-arc')).toHaveLength(3)
+    // a bar of 4/4 over its four beats' pads has no groups to draw
+    expect(
+      all(draw([times(4, note(1))], { arcs: true }).el, '.rb-arc'),
+    ).toHaveLength(0)
+  })
+
+  it('writes a triplet of eighths under one beam with its 3 over it and no bracket, shown with the beam (FACTS 41)', () => {
+    // Arrange: Step 3's bar, beat 3 a triplet
+    const triplet: Bar = [
+      note(1),
+      note(0.5),
+      note(0.5),
+      ...times(3, note(0.5, { triplet: true })),
+      note(1),
+    ]
+
+    // Act
+    const { el, fig } = draw([triplet])
+    const before = el.querySelector('.rb-tuplet')?.closest('.rb-beam')
+    const hidden = before?.classList.contains('is-hidden')
+    fig.set([written(fig)])
+
+    // Assert
+    const marks = all(el, '.rb-tuplet')
+    expect(marks.map((t) => t.textContent)).toEqual(['3'])
+    expect(hidden).toBe(true)
+    expect(marks[0].closest('.rb-beam')?.classList.contains('is-hidden')).toBe(
+      false,
+    )
+    expect(beamed(el)).toEqual([
+      [1, 2],
+      [3, 4, 5],
+    ])
+    // above the beam, which sits over the line
+    const beam = marks[0].closest('.rb-beam')?.querySelector('rect')
+    expect(num(marks[0], 'y')).toBeLessThan(num(beam, 'y'))
+  })
+
+  it("writes the 2/4 bar of the four words' triplet with its digits", () => {
+    // Act
+    const bar2: Bar = [
+      note(0.5),
+      note(0.5),
+      ...times(3, note(0.5, { triplet: true })),
+    ]
+    const { el } = draw([bar2], {
+      rows: [{ bars: [bar2], bpm: 60, metre: TWO_FOUR }],
+    })
+
+    // Assert
+    expect(all(el, '.rb-metre-digit').map((d) => d.textContent)).toEqual([
+      '2',
+      '4',
+    ])
+    expect(all(el, '.rb-tuplet')).toHaveLength(1)
+  })
+
+  it("on the bass staff turns a beamed group's stems one way from its highest and lowest notes, every stem reaching the beam (FACTS 30)", () => {
+    // Arrange: the 6/8 tune's first bar, do re mi then so, at C3
+    const bar1: Bar = [
+      note(0.5),
+      note(0.5),
+      note(0.5),
+      note(1, { dotted: true }),
+    ]
+    const notes = [pitch('C', 3), pitch('D', 3), pitch('E', 3), pitch('G', 3)]
+
+    // Act
+    const { el } = draw([bar1], {
+      staff: 'bass',
+      rows: [{ bars: [bar1], bpm: 90, metre: SIX_EIGHT, notes }],
+    })
+
+    // Assert: C3 and E3 average the middle line, D3, so all three stem down
+    const stems = all(el, '.rb-stem')
+    const heads = all(el, '.rb-head')
+    const down = stems.map((st, i) => num(st, 'y2') > num(heads[i], 'cy'))
+    expect(down).toEqual([true, true, true, true])
+    const beam = el.querySelector('.rb-beam rect')
+    const beamEdge = num(beam, 'y') + num(beam, 'height')
+    for (const st of stems.slice(0, 3))
+      expect(Math.abs(num(st, 'y2') - beamEdge)).toBeLessThan(2.5)
+  })
+
+  it('on the treble staff stems every note of the tunes up, C4 to G4 all under the middle line', () => {
+    // Arrange
+    const bar1: Bar = [
+      note(0.5),
+      note(0.5),
+      note(0.5),
+      note(1, { dotted: true }),
+    ]
+    const notes = [pitch('C', 4), pitch('D', 4), pitch('E', 4), pitch('G', 4)]
+
+    // Act
+    const { el } = draw([bar1], {
+      staff: 'treble',
+      rows: [{ bars: [bar1], bpm: 90, metre: SIX_EIGHT, notes }],
+    })
+
+    // Assert
+    const heads = all(el, '.rb-head')
+    expect(
+      all(el, '.rb-stem').map((st, i) => num(st, 'y2') < num(heads[i], 'cy')),
+    ).toEqual([true, true, true, true])
+  })
+
+  it('writes a system that carries on another with its clef and no time signature again', () => {
+    // Act
+    const { el } = draw([six], {
+      staff: 'bass',
+      rows: [
+        { bars: [six], bpm: 90, metre: SIX_EIGHT },
+        { bars: [six], bpm: 90, metre: SIX_EIGHT, continues: true },
+      ],
+    })
+
+    // Assert
+    expect(all(el, '.rb-clef')).toHaveLength(2)
+    expect(all(el, '.rb-metre')).toHaveLength(1)
+  })
+
+  it('draws pads alone, the figure their whole height, with nothing written and no time signature', () => {
+    // Act
+    const { el, fig } = draw(
+      [six],
+      {
+        rows: [{ bars: [six], bpm: 90, metre: SIX_EIGHT }],
+        padEvery: 0.5,
+        notation: false,
+        strip: false,
+        compact: true,
+      },
+      { w: 300, h: 96 },
+    )
+
+    // Assert
+    expect(all(el, '.rb-pad')).toHaveLength(6)
+    expect(all(el, '.rb-sym, .rb-line, .rb-metre, .rb-staff')).toHaveLength(0)
+    expect(fig.padBox(0, 0).h).toBeGreaterThanOrEqual(80)
   })
 })

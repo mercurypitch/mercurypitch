@@ -35,21 +35,33 @@
 // the checkpoint draws each tap as a tick where it fell, gold where it met
 // its note (`ticks`).
 //
+// Past 4/4 (Lesson 19 WEB-SPEC, Toys 1): a row's metre writes its time
+// signature, 6/8, 3/4 or 2/4, its bar lines a bar apart and its beams by
+// the metre's beat, 3 + 3 in 6/8 and 2 + 2 + 2 in 3/4; a beamed triplet
+// carries its 3 over the beam, with no bracket, shown with the beam (FACTS
+// 41); a system that carries on another writes its clef and no time
+// signature. On a staff a beamed group's stems take one direction, from
+// its highest and lowest notes, down from the middle line (FACTS 30). A
+// row's pads may span an eighth each, six to a bar of 6/8 or 3/4, every
+// bar's first numbered larger; a grouped row draws an arc under each beat's
+// pads, hidden until the group's first note sounds; and a figure of pads
+// alone, the hero's, writes nothing above them.
+//
 // The pitch-line view is Season 1's picture: time left to right, pitch up,
 // each sound a band as long as it is held, rests as dashed gaps, the beat
 // lines under it (WEB-SPEC, Look). Ink and chrome are the page's tokens; a
 // sounding note takes its singer's colour, Merc's blue or Tavi's orange
 // (lesson-rhythm.css).
 
-import type { BeamGroup } from '@/lib/ear/rhythm-notation'
-import { beamGroups } from '@/lib/ear/rhythm-notation'
+import type { BeamGroup, TupletSpan } from '@/lib/ear/rhythm-notation'
+import { tupletSpans } from '@/lib/ear/rhythm-notation'
 import { svg } from './dom'
 import type { Metrics, NoteSpot } from './rhythm-glyphs'
 import { engraveClef, engraveMetre, engraveNote, engraveRest, metrics, r, stemEnd, stemX, tiePath, } from './rhythm-glyphs'
 import type { RhythmLayout, RhythmRow, RhythmScene, RhythmStaff, RowLayout, } from './rhythm-layout'
 import { headInset, layoutRhythm, placeRow, SIDE, STAFF_A, symbolX, xOf, } from './rhythm-layout'
 import type { FigureCount, PlacedSymbol } from './rhythm-model'
-import { BAR_BEATS, countsOf, GAP_S, soundsOf } from './rhythm-model'
+import { beamsOf, countsOf, GAP_S, soundsOf } from './rhythm-model'
 import { ledgersOf, placeOf } from './staff-places'
 import type { StripPlan } from './stopwatch-strip'
 import { planStrip } from './stopwatch-strip'
@@ -69,6 +81,8 @@ interface RowParts {
   readonly placed: readonly PlacedSymbol[]
   readonly symbols: readonly SVGGElement[]
   readonly beams: readonly { group: BeamGroup; el: SVGGElement }[]
+  /** Each arc under a group of pads, by its group, from 0. */
+  readonly arcs: readonly SVGPathElement[]
   readonly ties: readonly { from: number; to: number; el: SVGPathElement }[]
   readonly barlines: readonly { after: number; el: SVGLineElement }[]
   readonly metre: SVGGElement | null
@@ -95,8 +109,10 @@ export interface RowState {
   readonly sounding?: number | null
   /** The 4/4 at the line's start. */
   readonly metre: boolean
-  /** The beat lit now, from 0. */
+  /** The pad lit now, from 0: a beat's, or an eighth's where a pad spans one. */
   readonly lit?: number | null
+  /** Per arc under a group of pads: drawn yet. */
+  readonly arcs?: readonly boolean[]
   /** The pad chosen for Halve and Join. */
   readonly chosen?: number | null
   /** Per strip cell: its reading shown. */
@@ -126,14 +142,15 @@ export interface RhythmTick {
 /** A drawn figure: where everything is, and how to show a moment of it. */
 export interface RhythmFigure {
   readonly layout: RhythmLayout
-  /** Each row's placed symbols, strip plan and counts. */
+  /** Each row's placed symbols, strip plan, counts and arcs. */
   readonly rows: readonly {
     readonly placed: readonly PlacedSymbol[]
     readonly strip: StripPlan
     readonly counts: readonly FigureCount[]
+    readonly arcs: number
   }[]
-  /** Where a row's pad for a beat is. */
-  padBox(row: number, beat: number): PadBox
+  /** Where a row's pad is, by its place from 0: a beat's, or an eighth's where a pad spans one. */
+  padBox(row: number, pad: number): PadBox
   set(states: readonly RowState[]): void
   /** Draws taps as ticks across a row's strip, gold where one met its note, in place of the ticks before. */
   ticks(row: number, at: readonly RhythmTick[]): void
@@ -167,11 +184,11 @@ function barlines(
   const top = staffed ? yAt(row, 8) : row.y - row.space * 1.3
   const bottom = staffed ? yAt(row, 0) : row.y + row.space * 1.3
   const out: { after: number; el: SVGLineElement }[] = []
-  for (let b = 0; (b + 1) * BAR_BEATS <= row.beats; b++) {
+  for (let b = 0; (b + 1) * row.bar <= row.beats + 1e-6; b++) {
     const last = placed.reduce((at, p, i) => (p.bar === b ? i : at), -1)
     if (last === -1) continue
-    const end = (b + 1) * BAR_BEATS
-    const x = end >= row.beats ? row.x1 : xOf(row, end)
+    const end = (b + 1) * row.bar
+    const x = end >= row.beats - 1e-6 ? row.x1 : xOf(row, end)
     const el = svg(
       'line',
       {
@@ -209,6 +226,31 @@ function spotsOf(
   })
 }
 
+/**
+ * On a staff, each beamed group's stems in one direction, from its highest
+ * and lowest notes: down when their middle is on or above the middle line
+ * (Lesson 19 FACTS 30). On one line every stem stays up.
+ */
+function beamDirections(
+  spots: readonly (NoteSpot | null)[],
+  groups: readonly BeamGroup[],
+): (NoteSpot | null)[] {
+  const out = [...spots]
+  for (const g of groups) {
+    const places = g.members
+      .map((k) => spots[k])
+      .filter((s): s is NoteSpot => s !== null)
+      .map((s) => s.place)
+    if (places.length === 0) continue
+    const down = (Math.min(...places) + Math.max(...places)) / 2 >= 4
+    for (const k of g.members) {
+      const spot = out[k]
+      if (spot !== null) out[k] = { ...spot, down }
+    }
+  }
+  return out
+}
+
 /** Each tie, from its note to the next. */
 function ties(
   placed: readonly PlacedSymbol[],
@@ -238,13 +280,14 @@ function ties(
   return out
 }
 
-/** Each beat's beam, over the stems' ends of the notes it joins. */
+/** Each beat's beam, over the stems' ends of the notes it joins, a beamed triplet's 3 with it. */
 function beams(
   groups: readonly BeamGroup[],
   spots: readonly (NoteSpot | null)[],
   m: Metrics,
   space: number,
   parent: Element,
+  tuplets: readonly TupletSpan[] = [],
 ): { group: BeamGroup; el: SVGGElement }[] {
   return groups.map((group) => {
     const el = svg(
@@ -279,6 +322,28 @@ function beams(
         el,
       )
     }
+    // a triplet's 3 sits over its beam, the side away from the heads (FACTS 41)
+    const first = group.members[0]
+    const last = group.members[group.members.length - 1]
+    const span = tuplets.find(
+      (t) => t.beamed && t.from === first && t.to === last,
+    )
+    const a = spots[first]
+    const b = spots[last]
+    if (span !== undefined && a !== null && b !== null)
+      svg(
+        'text',
+        {
+          x: r((stemX(a, m) + stemX(b, m)) / 2),
+          y: r(down ? end + space * 1.9 : end - space * 0.7),
+          'text-anchor': 'middle',
+          'font-size': r(space * 1.45),
+          class: 'rb-tuplet',
+          'data-part': 'tuplet',
+          text: String(span.number),
+        },
+        el,
+      )
     return { group, el }
   })
 }
@@ -305,7 +370,7 @@ function notation(
   if (staff !== 'line')
     engraveClef(staff, SIDE + row.space * 0.5, yAt(row, 0), row.space, parent)
   const metre =
-    scene.bare === true
+    scene.bare === true || rowScene.continues === true
       ? null
       : engraveMetre(
           row.x0 - row.space * (staffed ? 1.4 : 1.35),
@@ -313,10 +378,24 @@ function notation(
           row.space,
           staffed,
           parent,
+          [row.metre.top, row.metre.bottom],
         )
-  const spots = spotsOf(scene, rowScene, row, placed)
-  const groups = beamGroups(placed)
+  const groups = beamsOf(placed, row.metre)
+  const spots = staffed
+    ? beamDirections(spotsOf(scene, rowScene, row, placed), groups)
+    : spotsOf(scene, rowScene, row, placed)
   const beamed = new Set(groups.flatMap((g) => g.members))
+  // a beam lies at its group's furthest stem end, and every stem reaches it
+  const beamAt = new Map<number, number>()
+  for (const g of groups) {
+    const members = g.members
+      .map((k) => spots[k])
+      .filter((s): s is NoteSpot => s !== null)
+    if (members.length === 0) continue
+    const ends = members.map((s) => stemEnd(s, m))
+    const at = members[0].down ? Math.max(...ends) : Math.min(...ends)
+    for (const k of g.members) beamAt.set(k, at)
+  }
   const symbols = placed.map((p, i) => {
     const g = svg(
       'g',
@@ -330,7 +409,7 @@ function notation(
     )
     const spot = spots[i]
     if (spot === null) {
-      const whole = p.value >= 4 && p.beats >= BAR_BEATS
+      const whole = p.value >= 4 && p.beats >= row.bar
       const cx = whole
         ? (xOf(row, p.beat) + xOf(row, p.beat + p.beats)) / 2
         : symbolX(row, p)
@@ -342,7 +421,14 @@ function notation(
           : ledgersOf(spot.place, staff).map((place) => yAt(row, place))
       engraveNote(
         p,
-        { spot, m, space: row.space, ledgers, beamable: beamed.has(i) },
+        {
+          spot,
+          m,
+          space: row.space,
+          ledgers,
+          beamable: beamed.has(i),
+          stemTo: beamAt.get(i),
+        },
         g,
       )
     }
@@ -351,7 +437,14 @@ function notation(
   return {
     symbols,
     ties: ties(placed, spots, m, row.space, parent),
-    beams: beams(groups, spots, m, row.space, parent),
+    beams: beams(
+      groups,
+      spots,
+      m,
+      row.space,
+      parent,
+      tupletSpans(placed, groups),
+    ),
     barlines: scene.bare === true ? [] : barlines(row, placed, staffed, parent),
     metre,
   }
@@ -373,7 +466,10 @@ function lanes(
       k === 0 ? 'rb-lane is-note' : 'rb-lane',
       parent,
     )
-  for (let b = 0; b <= row.beats; b++)
+  // a line on each of the metre's beats, a bar's first marked
+  for (let k = 0; k * row.beat <= row.beats + 1e-6; k++) {
+    const b = k * row.beat
+    const onBar = Math.abs(b / row.bar - Math.round(b / row.bar)) < 1e-6
     svg(
       'line',
       {
@@ -381,10 +477,11 @@ function lanes(
         x2: r(xOf(row, b)),
         y1: r(row.y - 2.5 * lane),
         y2: r(row.y + 2.5 * lane),
-        class: b % BAR_BEATS === 0 ? 'rb-beatline is-bar' : 'rb-beatline',
+        class: onBar ? 'rb-beatline is-bar' : 'rb-beatline',
       },
       parent,
     )
+  }
   // a band ends where its sound is let go, its gap at the tempo (FACTS 63)
   const gap = (beats: number): number =>
     (Math.min(GAP_S, (beats * 60) / bpm / 4) * bpm) / 60
@@ -427,25 +524,34 @@ function lanes(
   })
 }
 
-/** A row's pads, numbered 1 to 4 a bar, beat 1's number larger. */
+/** A row's pads, how many, and how many to a bar. */
+const padsOf = (row: RowLayout): { count: number; perBar: number } => ({
+  count: Math.round(row.beats / row.padEvery),
+  perBar: Math.round(row.bar / row.padEvery),
+})
+
+/** A row's pads, numbered from 1 in each bar, a beat a pad (4/4's four) or an eighth (six to a bar of 6/8 or 3/4), each bar's first numbered larger. */
 function drawPads(row: RowLayout, parent: Element): SVGGElement[] {
-  return Array.from({ length: row.beats }, (_, b) => {
+  const { count, perBar } = padsOf(row)
+  return Array.from({ length: count }, (_, k) => {
     const pad = svg(
       'g',
       {
-        class: b % BAR_BEATS === 0 ? 'rb-pad one' : 'rb-pad',
-        'data-beat': b,
+        class: k % perBar === 0 ? 'rb-pad one' : 'rb-pad',
+        'data-beat': k * row.padEvery,
+        'data-pad': k,
       },
       parent,
     )
-    const x = xOf(row, b)
+    const x = xOf(row, k * row.padEvery)
+    const x2 = xOf(row, (k + 1) * row.padEvery)
     svg(
       'rect',
       {
         x: r(x + 2),
         y: r(row.top),
         // a figure drawn at no size, in a panel not yet shown, has empty pads
-        width: r(Math.max(0, xOf(row, b + 1) - x - 4)),
+        width: r(Math.max(0, x2 - x - 4)),
         height: r(row.bottom - row.top),
         rx: 10,
         class: 'rb-pad-box',
@@ -455,15 +561,42 @@ function drawPads(row: RowLayout, parent: Element): SVGGElement[] {
     svg(
       'text',
       {
-        x: r((x + xOf(row, b + 1)) / 2),
+        x: r((x + x2) / 2),
         y: r(row.numberY),
         'text-anchor': 'middle',
         class: 'rb-pad-n',
-        text: String((b % BAR_BEATS) + 1),
+        text: String((k % perBar) + 1),
       },
       pad,
     )
     return pad
+  })
+}
+
+/**
+ * An arc under each group of pads, a group a beat of the row's metre: two
+ * of three in 6/8, three of two in 3/4, each hidden until its group's
+ * first note sounds (Lesson 19 WEB-SPEC, Toys 1). A row whose pads are its
+ * beats has no groups to draw.
+ */
+function drawArcs(row: RowLayout, parent: Element): SVGPathElement[] {
+  const per = Math.round(row.beat / row.padEvery)
+  if (per < 2) return []
+  const groups = Math.round(row.beats / row.beat)
+  return Array.from({ length: groups }, (_, g) => {
+    const from = xOf(row, g * row.beat) + 6
+    const to = xOf(row, (g + 1) * row.beat) - 6
+    const y = row.arcY
+    return svg(
+      'path',
+      {
+        d: `M${r(from)} ${r(y)}Q${r((from + to) / 2)} ${r(y + row.arcH * 2)} ${r(to)} ${r(y)}`,
+        class: 'rb-arc is-hidden',
+        'data-part': 'arc',
+        'data-group': g,
+      },
+      parent,
+    )
   })
 }
 
@@ -473,7 +606,7 @@ function drawCounts(
   placed: readonly PlacedSymbol[],
   parent: Element,
 ): RowParts['counts'] {
-  return countsOf(placed).map((count) => {
+  return countsOf(placed, row.metre).map((count) => {
     const of = placed.findIndex(
       (p) => p.beat <= count.at + 1e-6 && count.at < p.beat + p.beats - 1e-6,
     )
@@ -555,16 +688,20 @@ function drawRow(
   const placed = placeRow(rowScene)
   const g = svg('g', { class: 'rb-row', 'data-row': index }, parent)
   const pads = scene.pads === false ? [] : drawPads(row, g)
+  const arcs = scene.arcs === true ? drawArcs(row, g) : []
+  const unwritten = {
+    symbols: [],
+    beams: [],
+    ties: [],
+    barlines: [],
+    metre: null,
+  }
   const drawn =
-    scene.lanes === true
-      ? {
-          symbols: lanes(row, placed, rowScene.bpm, g),
-          beams: [],
-          ties: [],
-          barlines: [],
-          metre: null,
-        }
-      : notation(scene, rowScene, row, placed, g)
+    scene.notation === false
+      ? unwritten
+      : scene.lanes === true
+        ? { ...unwritten, symbols: lanes(row, placed, rowScene.bpm, g) }
+        : notation(scene, rowScene, row, placed, g)
   const counts = scene.counts === true ? drawCounts(row, placed, g) : []
   const reads = rowScene.reads
   const plan = planStrip(placed, rowScene.bpm, {
@@ -581,6 +718,7 @@ function drawRow(
     placed,
     ...drawn,
     pads,
+    arcs,
     counts,
     ...strip,
     plan,
@@ -623,6 +761,9 @@ function showTime(p: RowParts, st: RowState): void {
     pad.classList.toggle('is-now', st.lit === b)
     pad.classList.toggle('is-chosen', st.chosen === b)
   })
+  p.arcs.forEach((arc, g) =>
+    arc.classList.toggle('is-hidden', st.arcs?.[g] !== true),
+  )
   p.counts.forEach((c, k) => {
     c.el.classList.toggle('is-hidden', st.written[c.of] !== true)
     c.el.classList.toggle('is-lit', st.countLit === k && st.faint !== true)
@@ -662,14 +803,15 @@ export function drawRhythm(
       placed: p.placed,
       strip: p.plan,
       counts: p.counts.map((c) => c.count),
+      arcs: p.arcs.length,
     })),
-    padBox(ri, beat) {
+    padBox(ri, pad) {
       const row = L.rows[ri]
-      const x = xOf(row, beat)
+      const x = xOf(row, pad * row.padEvery)
       return {
         x: x + 2,
         y: row.top,
-        w: xOf(row, beat + 1) - x - 4,
+        w: xOf(row, (pad + 1) * row.padEvery) - x - 4,
         h: row.bottom - row.top,
       }
     },
