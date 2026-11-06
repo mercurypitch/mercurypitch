@@ -347,7 +347,7 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
 // waits for a later page load of the home document. Tapping Home inside the
 // app is no new landing, and opens no takeover.
 const firstLightOpensHere = firstLightOpensOn(
-  typeof location === 'undefined' ? '/' : location.pathname,
+  typeof window === 'undefined' ? '/' : window.location.pathname,
 )
 const [firstLightDue, setShowWelcome] = createSignal(
   welcomeSeen() === '' && firstLightOpensHere,
