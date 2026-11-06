@@ -137,9 +137,25 @@
 }
 
 /* ---------------------------------------------------------------- tap the beat */
+/* the card's own look, its room, its lines and its status box, as the voice
+   lessons' sheet gives their take cards (kit/lesson-voice.css, .sing-card
+   and .sing-status), which this page does not load */
 .l19-tap {
   max-width: 880px;
-  gap: 0;
+  padding: clamp(16px, 2.6vw, 26px);
+  scroll-margin-top: calc(var(--mast) + 12px);
+}
+.l19-tap p {
+  margin: 0 0 12px;
+}
+.l19-tap .sing-btns {
+  margin: 14px 0 0;
+}
+.l19-tap .btn {
+  white-space: normal;
+  line-height: 1.25;
+  padding-block: 9px;
+  text-align: center;
 }
 .l19-tap .sing-part > :first-child {
   margin-top: 0;
@@ -164,6 +180,13 @@
 }
 .l19-tap .sing-status {
   margin: 14px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--aqua);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: color-mix(in srgb, var(--aqua) 6%, transparent);
+  font-size: var(--fs-16);
+  line-height: 1.45;
+  color: var(--ink);
 }
 
 /* ---------------------------------------------------------------- the wrap */

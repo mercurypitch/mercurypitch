@@ -20,8 +20,9 @@
 // schedule from Start's own click, reads its every-beat line; the page never
 // asks for the microphone, sends nothing away and keeps only its own keys;
 // and at 390 and 344 px every target is 44 px square or more, none overlaps
-// another, each of the six pads is 44 px wide or more, and nothing scrolls
-// sideways.
+// another, each of the six pads is 44 px wide or more, nothing scrolls
+// sideways, and the take card has a take card's padding and status box,
+// though the page loads no voice sheet (kit/lesson-voice.css).
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -522,6 +523,34 @@ for (const width of [390, 344]) {
         take: 3,
         free: 9,
       })
+    })
+
+    test("the take card keeps a take card's look: its words 16 px or more inside its edge and its status in a box with a 3 px edge, though the page loads no voice sheet", async ({
+      page,
+    }) => {
+      // Arrange
+      await page.goto('/learn/19#tap')
+
+      // Act
+      const take = await page.locator('#tapCard').evaluate((card) => {
+        const head = card.querySelector('#takeHead')
+        const status = card.querySelector('#takeStatus')
+        return {
+          inset:
+            head === null
+              ? 0
+              : head.getBoundingClientRect().left -
+                card.getBoundingClientRect().left,
+          edge:
+            status === null
+              ? ''
+              : window.getComputedStyle(status).borderLeftWidth,
+        }
+      })
+
+      // Assert
+      expect(take.inset).toBeGreaterThanOrEqual(16)
+      expect(take.edge).toBe('3px')
     })
   })
 }
