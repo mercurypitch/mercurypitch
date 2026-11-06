@@ -41,7 +41,7 @@ import { artworkDataUrl } from './artwork-data'
 import type { Unsubscribe } from './native-calls'
 import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-calls'
 import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
-import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, standCarrierAside, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 export type {
   AudioOutputPort,
@@ -580,6 +580,19 @@ export function onNowPlayingHoldsAudio(
 export function claimNowPlaying(): void {
   if (!isIos() || !webKitNowPlayingAvailable()) return
   claimCarrier()
+}
+
+/**
+ * iOS: the page's sound goes to AirPlay alone (true), as the app takes it
+ * to, or no longer (false). Meanwhile the lock screen's carrier stands
+ * aside, so nothing plays beside the song's Web Audio, and when the sound
+ * leaves AirPlay with the song playing, it takes its place again (see
+ * webkit-now-playing.ts, `standCarrierAside`). Nothing on Android or the
+ * web.
+ */
+export function standNowPlayingAside(aside: boolean): void {
+  if (!isIos() || !webKitNowPlayingAvailable()) return
+  standCarrierAside(aside)
 }
 
 /**

@@ -214,6 +214,7 @@ describe('on the web', () => {
     ['setTvLyricsEnabled', (p: Platform) => p.setTvLyricsEnabled(true)],
     ['readTvLyrics', (p: Platform) => p.readTvLyrics()],
     ['claimNowPlaying', (p: Platform) => p.claimNowPlaying()],
+    ['standNowPlayingAside', (p: Platform) => p.standNowPlayingAside(true)],
     ['reminderPermission', (p: Platform) => p.reminderPermission()],
     ['askForReminders', (p: Platform) => p.askForReminders()],
     [
@@ -998,6 +999,7 @@ describe('on a phone', () => {
       loop = false
       preload = ''
       disableRemotePlayback = false
+      muted = false
       paused = true
       private source: string | null = null
       readonly play = vi.fn(async () => {
@@ -1181,6 +1183,28 @@ describe('on a phone', () => {
 
       platform.claimNowPlaying()
 
+      expect(carrier.play).toHaveBeenCalledTimes(2)
+    })
+
+    // Over AirPlay, Web Audio reached the TV only with no element playing
+    // beside it (the AirPlay sound check, 6 Nov 2026).
+    it('stands the carrier aside while the sound is on AirPlay alone, and plays it again after', async () => {
+      const platform = await loadOnIos()
+      const handler = vi.fn()
+      platform.onMediaAction(handler)
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+
+      platform.standNowPlayingAside(true)
+
+      expect(carrier.paused).toBe(true)
+      expect(carrier.muted).toBe(true)
+      // A pause of ours: the song plays on.
+      expect(handler).not.toHaveBeenCalled()
+
+      platform.standNowPlayingAside(false)
+
+      expect(carrier.paused).toBe(false)
+      expect(carrier.muted).toBe(false)
       expect(carrier.play).toHaveBeenCalledTimes(2)
     })
 

@@ -23,12 +23,17 @@
 // when the tab becomes visible again (iOS suspends/interrupts contexts on
 // tab switch and screen lock). standUnlockClipAside() hands the clip's job
 // to an element that does it already: the iOS app's lock-screen carrier.
+// keepUnlockClipQuiet() keeps it from playing at all while the sound goes to
+// AirPlay alone, where Web Audio reaches the TV only with no element playing
+// beside it.
 
 import { keepMediaLocal } from './local-media'
 
 let silentEl: HTMLAudioElement | null = null
 let sessionPrimed = false
 let standingAside = false
+/** The sound goes to AirPlay alone: the clip neither plays nor sounds. */
+let quietForAirPlay = false
 /** What takes the session for a press of play while the clip stands aside. */
 let sessionTaker: (() => void) | null = null
 
@@ -112,8 +117,10 @@ function resumeClock(ctx: AudioContext | null | undefined): void {
  *  context. Must be called from inside a user gesture to have effect;
  *  calling it anywhere else is harmless. */
 export function unlockAudio(ctx?: AudioContext | null): void {
-  if (standingAside) {
-    // Another element holds the session (see standUnlockClipAside).
+  if (standingAside || quietForAirPlay) {
+    // Another element holds the session (see standUnlockClipAside), or the
+    // sound is on AirPlay, where nothing plays beside Web Audio
+    // (keepUnlockClipQuiet).
     sessionPrimed = true
   } else {
     playClip()
@@ -140,6 +147,9 @@ export function unlockForPlayback(
   if (standingAside) {
     sessionPrimed = true
     sessionTaker?.()
+  } else if (quietForAirPlay) {
+    // The clock alone: on AirPlay a clip beside it keeps it off the TV.
+    sessionPrimed = true
   } else {
     playClip()
   }
@@ -176,6 +186,41 @@ export function standUnlockClipAside(aside: boolean, take?: () => void): void {
   }
   // Nothing holds the session now: the next tap plays the clip again.
   sessionPrimed = false
+}
+
+/**
+ * Keep the clip quiet while the page's sound goes to AirPlay alone (true),
+ * and let it play again after (false). The app says which, from where it
+ * takes the sound to go.
+ *
+ * Over AirPlay to an LG C2, Web Audio alone reached the TV, and Web Audio
+ * beside a silent element kept local did not (the Developer screen's AirPlay
+ * sound check, 6 Nov 2026). The clip is such an element, so while quiet an
+ * unlock does not play it, and it is muted: WebKit keeps its session in
+ * playback for an element that played audibly, even one that has stopped
+ * (the lock screen's carrier stands aside the same way, in mobile-runtime's
+ * webkit-now-playing). Back, it stays muted until the next unlock plays it,
+ * as after standing aside. Each change is one line.
+ *
+ * The cost: the clip is what lifts Web Audio past the ring switch. Whether
+ * the switch on silent mutes Web Audio on AirPlay is not known yet; the
+ * device test runs both ways (docs/plans/tv-device-tests.md, Test 11).
+ */
+export function keepUnlockClipQuiet(quiet: boolean): void {
+  if (quiet === quietForAirPlay) return
+  quietForAirPlay = quiet
+  if (quiet) {
+    if (silentEl !== null) silentEl.muted = true
+    console.info(
+      "[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone",
+    )
+    return
+  }
+  // The next tap plays the clip again, unless the carrier holds the session.
+  sessionPrimed = false
+  console.info(
+    '[audio unlock] the sound has left AirPlay: the next tap plays the unlock clip again',
+  )
 }
 
 /**

@@ -28,6 +28,7 @@ const platform = vi.hoisted(() => ({
     vi.fn(),
   ),
   claimNowPlaying: vi.fn(),
+  standNowPlayingAside: vi.fn((_aside: boolean) => undefined),
   micStopsOtherApps: vi.fn(() => false),
   readAudioOutput: vi.fn(async () => Promise.resolve(null as unknown)),
   onAudioOutput: vi.fn((_handler: (reading: unknown) => void) => vi.fn()),
@@ -57,6 +58,7 @@ const unlock = vi.hoisted(() => ({
   standUnlockClipAside: vi.fn(
     (_aside: boolean, _take?: () => void) => undefined,
   ),
+  keepUnlockClipQuiet: vi.fn((_quiet: boolean) => undefined),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
@@ -67,7 +69,7 @@ import { airPlaySuspected, resetAirPlaySuspicionForTests, } from '@/stores/airpl
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 // @ts-expect-error -- a plain .mjs manifest with no types, read as is.
 import { globToRegExp, NATIVE_ASSETS } from '../../native-assets.mjs'
-import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './native-device'
+import { createNativeDevice, standAsideOnAirPlay, standUnlockClipAsideForNowPlaying, } from './native-device'
 
 function fakeContext() {
   return {
@@ -424,6 +426,33 @@ describe('the device a room reaches through the bridge', () => {
       [false, platform.claimNowPlaying],
     ])
     expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  // Over AirPlay, Web Audio reached the TV only with no element playing
+  // beside it (the AirPlay sound check, 6 Nov 2026).
+  it('stands the carrier and the unlock clip aside while the sound is on AirPlay alone, and back after', () => {
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    const stop = standAsideOnAirPlay()
+    // Nothing to say on the speaker: both stay as they are.
+    expect(platform.standNowPlayingAside.mock.calls).toEqual([[false]])
+
+    setAudioRouteForTests('airplay', 'LG C2', 44100)
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    stop()
+
+    expect(platform.standNowPlayingAside.mock.calls).toEqual([
+      [false],
+      [true],
+      [false],
+      [false],
+    ])
+    expect(unlock.keepUnlockClipQuiet.mock.calls).toEqual([
+      [false],
+      [true],
+      [false],
+      [false],
+    ])
+    setAudioRouteForTests(null)
   })
 })
 

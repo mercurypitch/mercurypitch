@@ -13,10 +13,11 @@
 
 import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, tellTheWindowTheClock, } from '@irchiinnuss/mobile-runtime/platform'
-import { standUnlockClipAside } from '@/lib/audio-unlock'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, standNowPlayingAside, tellTheWindowTheClock, } from '@irchiinnuss/mobile-runtime/platform'
+import { createEffect, createRoot, on, onCleanup } from 'solid-js'
+import { keepUnlockClipQuiet, standUnlockClipAside } from '@/lib/audio-unlock'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
-import { notePageAudioContext } from '@/stores/airplay-suspicion'
+import { airPlayAlone, notePageAudioContext } from '@/stores/airplay-suspicion'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { createNativeReminders } from './native-reminders'
 import { createTvStage } from './native-tv-stage'
@@ -157,5 +158,31 @@ export function standUnlockClipAsideForNowPlaying(): () => void {
   return onNowPlayingHoldsAudio((holds) => {
     // Aside, a press of play has the carrier take the session instead.
     standUnlockClipAside(holds, claimNowPlaying)
+  })
+}
+
+/**
+ * While the page's sound goes to AirPlay alone (airplay-suspicion.ts),
+ * nothing plays beside the room's Web Audio: the lock screen's carrier
+ * stands aside, and the unlock clip keeps quiet. Over AirPlay to the
+ * owner's LG C2, Web Audio alone reached the TV, and Web Audio beside a
+ * silent element kept local did not (the Developer screen's AirPlay sound
+ * check, 6 Nov 2026). Both come back as the sound leaves AirPlay, and with
+ * the song playing the carrier puts it back on the lock screen. Once, from
+ * `main.tsx`; the stop puts both back.
+ */
+export function standAsideOnAirPlay(): () => void {
+  return createRoot((dispose) => {
+    createEffect(
+      on(airPlayAlone, (alone) => {
+        keepUnlockClipQuiet(alone)
+        standNowPlayingAside(alone)
+      }),
+    )
+    onCleanup(() => {
+      keepUnlockClipQuiet(false)
+      standNowPlayingAside(false)
+    })
+    return dispose
   })
 }
