@@ -1,4 +1,5 @@
 // Studio keyboard editor — focus-scoped shortcuts and cancellable held nudges share immutable commands.
+import { studioAdjacentLaneClip } from './clip-focus'
 import { createEditorActions } from './editor-actions'
 import { studioEditorFocus } from './key-scope'
 import { createKeyboardNudge } from './keyboard-nudge'
@@ -51,6 +52,21 @@ export function createStudioEditor(options: StudioEditorOptions) {
     return finishStudioKey(event)
   }
 
+  /** Up and Down on a focused clip: the focus moves to the nearest clip in the lane above or below (clip-focus.ts). */
+  function laneKey(event: KeyboardEvent, clipId: string): boolean {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return false
+    if (event.altKey || event.shiftKey) return false
+    const project = options.project()
+    const next =
+      project &&
+      studioAdjacentLaneClip(project, clipId, event.key === 'ArrowUp' ? -1 : 1)
+    // Past the first or the last lane with a clip, the key is the page's.
+    if (!next) return false
+    nudge.cancel()
+    options.focusClip?.(next.id, next.trackId)
+    return finishStudioKey(event)
+  }
+
   function keyDown(event: KeyboardEvent): boolean {
     if (disposed || event.defaultPrevented) return false
     sync()
@@ -63,6 +79,7 @@ export function createStudioEditor(options: StudioEditorOptions) {
     if (!focus) return false
     if (event.ctrlKey || event.metaKey) return modifiedKey(event, focus)
     if (focus.clipId !== null && nudge.keyDown(event, focus.clipId)) return true
+    if (focus.clipId !== null && laneKey(event, focus.clipId)) return true
     return plainKey(event, focus)
   }
 
