@@ -1,4 +1,6 @@
 // Studio commands — atomic non-destructive edits with monotonic save revisions.
+import type { InstrumentGlyphId } from '@/lib/studio/instruments/glyph-catalog'
+import { isInstrumentGlyph } from '@/lib/studio/instruments/glyph-catalog'
 import type { TrackRole } from '@/lib/studio-fx/role-chains'
 import { isTrackRole } from '@/lib/studio-fx/role-chains'
 import type { StudioAutomationEdit } from './automation'
@@ -33,6 +35,12 @@ export type StudioEdit =
       readonly type: 'set-track-role'
       readonly trackId: string
       readonly role: TrackRole
+    }
+  | {
+      /** The lane's picture, apart from the role that picks its chain; null goes back to automatic. */
+      readonly type: 'set-track-instrument'
+      readonly trackId: string
+      readonly instrument: InstrumentGlyphId | null
     }
   | {
       readonly type: 'update-track'
@@ -159,6 +167,29 @@ function duplicateClip(
     ...project,
     tracks: conflict ? [...project.tracks, newTrack] : project.tracks,
     clips: [...project.clips, next],
+  }
+}
+
+function setTrackInstrument(
+  project: StudioProject,
+  edit: Extract<StudioEdit, { type: 'set-track-instrument' }>,
+): StudioProject {
+  const target = getTrack(project, edit.trackId)
+  requireValue(
+    edit.instrument === null || isInstrumentGlyph(edit.instrument),
+    `track.${target.id}.instrument`,
+    'Unsupported instrument',
+  )
+  const next: { -readonly [K in keyof StudioTrack]: StudioTrack[K] } = {
+    ...target,
+  }
+  if (edit.instrument === null) delete next.instrument
+  else next.instrument = edit.instrument
+  return {
+    ...project,
+    tracks: project.tracks.map((track) =>
+      track.id === target.id ? next : track,
+    ),
   }
 }
 
@@ -297,6 +328,8 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
         ),
       }
     }
+    case 'set-track-instrument':
+      return setTrackInstrument(project, edit)
     case 'update-track': {
       const target = getTrack(project, edit.trackId)
       return {

@@ -61,6 +61,13 @@ export interface StudioTrack {
   }
   /** Volume and pan lines over the song (automation.ts); absent, the faders hold still. */
   readonly automation?: StudioLaneAutomation
+  /**
+   * The instrument the singer picked, a glyph id (lib/studio/instruments).
+   * Absent, the lane draws what its name and role say; saved only when picked,
+   * so a song nobody picked for opens in a Studio from before the field. An
+   * id this build does not draw is kept and passed over.
+   */
+  readonly instrument?: string
 }
 
 /** A point on a lane's line: the control's value at this frame of the song. */
