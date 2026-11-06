@@ -10,24 +10,31 @@
 // 22); Halve and Join from four quarters, a whole note and sixteenths with
 // every refusal, every bar they reach at four beats with its half notes on
 // beats 1 and 3; the halvings (FACTS 66); and Note · Rest, its rests placed
-// as 4/4 places them (FACTS 26a), its notes kept for the way back.
+// as 4/4 places them (FACTS 26a), its notes kept for the way back. Past
+// 4/4 (Lesson 19 WEB-SPEC, Tests 1): the metres' bars and beats, 6/8's
+// eighths beamed 3 + 3 and 3/4's 2 + 2 + 2, the two tunes' counts (Lesson
+// 19 FACTS 30), the triplet's tuplet and beamed 3 as the Ear Lab reads its
+// starts (FACTS 41), its count "trip-let" (FACTS 40), and Step 4's eighth
+// tied to a quarter at beat 3 (FACTS 43), held counts in brackets (FACTS
+// 28).
 
 import { describe, expect, it } from 'vitest'
 import type { RhythmSymbol } from '@/lib/ear/rhythm-notation'
-import { beamGroups, readRhythm } from '@/lib/ear/rhythm-notation'
-import type { Bar, GridBar, GridChange, NoteValue, PlacedSymbol, } from './rhythm-model'
-import { barLength, countsOf, fillsBars, FOUR_QUARTERS, fromStarts, halve, HALVINGS, heldSeconds, join, placeBars, runText, secondsText, soundsOf, stripCells, stripRuns, toggleRest, writeGrid, } from './rhythm-model'
+import { beamGroups, readRhythm, tupletSpans } from '@/lib/ear/rhythm-notation'
+import type { Bar, GridBar, GridChange, Metre, NoteValue, PlacedSymbol, } from './rhythm-model'
+import { barLength, barQuarters, beamsOf, beatQuarters, countsOf, fillsBars, FOUR_FOUR, FOUR_QUARTERS, fromStarts, halve, HALVINGS, heldSeconds, isCompound, join, lengthOf, metreText, placeBars, runText, secondsText, SIX_EIGHT, soundsOf, stripCells, stripRuns, THREE_FOUR, toggleRest, TWO_FOUR, writeGrid, } from './rhythm-model'
 
 const VALUES: Record<string, NoteValue> = { w: 4, h: 2, q: 1, e: 0.5, s: 0.25 }
 const LETTERS = new Map(Object.entries(VALUES).map(([k, v]) => [v, k]))
 
-/** A bar from its symbols: w, h, q, e or s, then "r" for a rest, "." for a dot, "~" for a tie to the next note. */
+/** A bar from its symbols: w, h, q, e or s, then "r" for a rest, "." for a dot, "3" for one of a triplet, "~" for a tie to the next note. */
 const bar = (line: string): Bar =>
   line.split(' ').map((t) => ({
     kind: t.includes('r') ? 'rest' : 'note',
     value: VALUES[t[0]],
     dotted: t.includes('.'),
     tie: t.includes('~'),
+    triplet: t.includes('3'),
   }))
 
 /** A bar's symbols as a line, the same way. */
@@ -469,5 +476,165 @@ describe('Note · Rest', () => {
     expect(quiet.silent).toEqual([false, false, true, true])
     expect(written(toggleRest(HALVINGS[0], 1))).toBe('wr')
     expect(toggleRest(quiet, 2)).toEqual(half)
+  })
+})
+
+describe('past 4/4', () => {
+  /** A figure's counts, by its metre, as one line. */
+  const countLine = (bars: Bar[], m: Metre) =>
+    countsOf(placeBars(bars, barQuarters(m)), m)
+      .map((c) => c.text)
+      .join(' ')
+
+  /** Each beam's members, as the indices of the symbols it joins. */
+  const beamed = (b: Bar, m: Metre) =>
+    beamsOf(placeBars([b], barQuarters(m)), m).map((g) => g.members)
+
+  it("gives each metre its bar and its beat in quarter notes: 6/8's beat a dotted quarter, the others' the bottom number's note", () => {
+    // Act
+    const read = [FOUR_FOUR, THREE_FOUR, TWO_FOUR, SIX_EIGHT].map((m) => [
+      metreText(m),
+      barQuarters(m),
+      beatQuarters(m),
+      isCompound(m),
+    ])
+
+    // Assert: Lesson 19 FACTS 12 to 14 and 17
+    expect(read).toEqual([
+      ['4/4', 4, 1, false],
+      ['3/4', 3, 1, false],
+      ['2/4', 2, 1, false],
+      ['6/8', 3, 1.5, true],
+    ])
+  })
+
+  it('writes the same six eighths as a bar of 6/8 or of 3/4, three quarters long, beamed 3 + 3 or 2 + 2 + 2 (FACTS 15)', () => {
+    // Arrange
+    const six = bar('e e e e e e')
+
+    // Act
+    const placed = placeBars([six, six], barQuarters(SIX_EIGHT))
+
+    // Assert
+    expect(fillsBars([six], false, barQuarters(SIX_EIGHT))).toBe(true)
+    expect(placed.map((p) => [p.beat, p.bar])).toEqual([
+      [0, 0],
+      [0.5, 0],
+      [1, 0],
+      [1.5, 0],
+      [2, 0],
+      [2.5, 0],
+      [3, 1],
+      [3.5, 1],
+      [4, 1],
+      [4.5, 1],
+      [5, 1],
+      [5.5, 1],
+    ])
+    expect(beamed(six, SIX_EIGHT)).toEqual([
+      [0, 1, 2],
+      [3, 4, 5],
+    ])
+    expect(beamed(six, THREE_FOUR)).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 5],
+    ])
+    // 4/4's and 2/4's are the Ear Lab's own, by the quarter
+    const four = placeBars([bar('e e e e e e e e')])
+    expect(beamsOf(four, FOUR_FOUR)).toEqual(beamGroups(four))
+    expect(beamed(bar('e e q'), TWO_FOUR)).toEqual([[0, 1]])
+  })
+
+  it('counts the six eighths "1 and a 2 and a" in 6/8 and "1 and 2 and 3 and" in 3/4 (FACTS 22, 24)', () => {
+    expect(countLine([bar('e e e e e e')], SIX_EIGHT)).toBe('1 and a 2 and a')
+    expect(countLine([bar('e e e e e e')], THREE_FOUR)).toBe(
+      '1 and 2 and 3 and',
+    )
+  })
+
+  it("counts the 6/8 tune's bars and the 3/4 tune's, each held beat in brackets (FACTS 28, 30)", () => {
+    // Arrange: the tunes' rhythms, bar by bar
+    const sixEight = ['e e e q.', 'e e e q.', 'e e e e e e', 'h.'].map(bar)
+    const threeFour = ['q q q', 'h q', 'e e e e e e', 'h.'].map(bar)
+
+    // Act
+    const each = (bars: Bar[], m: Metre) => bars.map((b) => countLine([b], m))
+
+    // Assert
+    expect(each(sixEight, SIX_EIGHT)).toEqual([
+      '1 and a 2',
+      '1 and a 2',
+      '1 and a 2 and a',
+      '1 (2)',
+    ])
+    expect(each(threeFour, THREE_FOUR)).toEqual([
+      '1 2 3',
+      '1 (2) 3',
+      '1 and 2 and 3 and',
+      '1 (2) (3)',
+    ])
+    expect(fillsBars(sixEight, false, 3)).toBe(true)
+    expect(fillsBars(threeFour, false, 3)).toBe(true)
+    // the 6/8 tune's last bar is one dotted half, two beats of 6/8
+    expect(beamed(bar('e e e q.'), SIX_EIGHT)).toEqual([[0, 1, 2]])
+  })
+
+  it("writes Step 3's triplet as the Ear Lab reads its starts: three eighths in a quarter's time, one beam and its 3 (FACTS 41)", () => {
+    // Arrange: a quarter, two eighths, a triplet of eighths, a quarter
+    const triplet = bar('q e e e3 e3 e3 q')
+
+    // Act
+    const placed = placeBars([triplet])
+    const groups = beamsOf(placed)
+    const round = (p: RhythmSymbol) => ({
+      ...p,
+      beat: Number(p.beat.toFixed(6)),
+      beats: Number(p.beats.toFixed(6)),
+    })
+
+    // Assert
+    expect(fillsBars([triplet])).toBe(true)
+    expect(lengthOf(triplet[3])).toBeCloseTo(1 / 3)
+    expect(placed.map(earLab).map(round)).toEqual(
+      readRhythm([0, 1, 1.5, 2, 2 + 1 / 3, 2 + 2 / 3, 3], 4).map(round),
+    )
+    expect(groups.map((g) => g.members)).toEqual([
+      [1, 2],
+      [3, 4, 5],
+    ])
+    expect(tupletSpans(placed, groups)).toEqual([
+      { number: 3, from: 3, to: 5, beamed: true },
+    ])
+  })
+
+  it('counts the triplet "trip-let" after its beat\'s number: "1, 2 and, 3 trip-let, 4" (FACTS 40)', () => {
+    expect(countLine([bar('q e e e3 e3 e3 q')], FOUR_FOUR)).toBe(
+      '1 2 and 3 trip let 4',
+    )
+    // the four words' triplet, in a bar of 2/4
+    expect(countLine([bar('e e e3 e3 e3')], TWO_FOUR)).toBe('1 and 2 trip let')
+  })
+
+  it('writes Step 4\'s note on "2 and" as an eighth tied to a quarter, sounding once through beat 3, counted "1, 2 and (3) 4" (FACTS 43, 45)', () => {
+    // Arrange
+    const moved = bar('q e e~ q q')
+
+    // Act
+    const placed = placeBars([moved])
+
+    // Assert
+    expect(fillsBars([moved])).toBe(true)
+    expect(
+      soundsOf(placed).map((s) => [s.at, s.beats, s.first, s.last]),
+    ).toEqual([
+      [0, 1, 0, 0],
+      [1, 0.5, 1, 1],
+      [1.5, 1.5, 2, 3],
+      [3, 1, 4, 4],
+    ])
+    // the tie lands on beat 3, which stays in sight
+    expect(placed[3].beat).toBe(2)
+    expect(countLine([moved], FOUR_FOUR)).toBe('1 2 and (3) 4')
   })
 })

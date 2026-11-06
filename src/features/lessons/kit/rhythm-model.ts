@@ -6,9 +6,21 @@
 // more of written symbols, each a note or a rest of 4, 2, 1, 0.5 or 0.25
 // beats with the quarter note on the beat, a dot adding half its value,
 // and on a note a tie to the next note, across a bar line if need be. A
-// bar adds up to its beats, four in 4/4, the only metre written here; a
-// figure may stop short on the next bar's first note, as the rest examples
-// do. From the model come:
+// bar adds up to its beats, four in 4/4; a figure may stop short on the
+// next bar's first note, as the rest examples do.
+//
+// Lesson 19 writes past 4/4 (its WEB-SPEC, Toys 1; What the kit and the
+// app still need, item 3). A metre is a time signature's two numbers, and
+// the model's beat stays the quarter note: a bar of 3/4 or of 6/8 is three
+// quarters long, one of 2/4 two. A metre's own beat is the quarter in
+// 2/4, 3/4 and 4/4, and in compound metre, 6/8, the dotted quarter, three
+// eighths, so 6/8 beams its eighths in threes and 3/4 in twos, each beat's
+// notes under one beam (FACTS 15), and counts "1 and a 2 and a" where 3/4
+// counts "1 and 2 and 3 and" (FACTS 22, 24). A triplet note is two thirds
+// of its value, three eighths in the time of two, marked with a 3, as
+// the Ear Lab writes one (`tuplet: 3`), so its beam takes the 3 and no
+// bracket (FACTS 41); its count is "trip" and "let" after the beat's
+// number (FACTS 40). From the model come:
 //
 // - the symbols in place, in the shape of the Ear Lab's notation
 //   (`RhythmSymbol`, src/lib/ear/rhythm-notation.ts), so its beaming
@@ -22,7 +34,7 @@
 //   each held for its length less a short gap (FACTS 63);
 // - the stopwatch strip's cells and readings (WEB-SPEC, Toys 6);
 // - the counts, "1", "and", "e" and "a", the ones not said in brackets
-//   (FACTS 20 to 22).
+//   (FACTS 20 to 22), by the metre.
 //
 // Halve and Join make bars of their own, a grid: a whole note, half notes
 // on beats 1 and 3, or a beat of one quarter, two eighths or four
@@ -30,8 +42,8 @@
 // way back, and a grid bar is written with its rests placed as 4/4 places
 // them (FACTS 26a). Beats count from 0 in here: beat 0 is the page's beat 1.
 
-import type { RhythmSymbol } from '@/lib/ear/rhythm-notation'
-import { readRhythm, WRITTEN_BAR } from '@/lib/ear/rhythm-notation'
+import type { BeamGroup, RhythmSymbol } from '@/lib/ear/rhythm-notation'
+import { beamGroups, readRhythm, WRITTEN_BAR } from '@/lib/ear/rhythm-notation'
 
 /** A written value in beats, the quarter note on the beat: whole, half, quarter, eighth and sixteenth. */
 export type NoteValue = 4 | 2 | 1 | 0.5 | 0.25
@@ -44,6 +56,8 @@ export interface Written {
   readonly dotted?: boolean
   /** On a note, a tie to the next note, so the two sound as one. */
   readonly tie?: boolean
+  /** One of a triplet: two thirds of its value, three in the time of two. */
+  readonly triplet?: boolean
 }
 
 /** A bar's symbols, in order. */
@@ -54,9 +68,35 @@ export const BAR_BEATS = WRITTEN_BAR
 
 const EPSILON = 1e-6
 
-/** A symbol's length in beats, its dot included. */
+/** A time signature: its top number, and its bottom one, the note it counts. */
+export interface Metre {
+  readonly top: number
+  readonly bottom: 4 | 8
+}
+
+export const FOUR_FOUR: Metre = { top: 4, bottom: 4 }
+export const THREE_FOUR: Metre = { top: 3, bottom: 4 }
+export const TWO_FOUR: Metre = { top: 2, bottom: 4 }
+export const SIX_EIGHT: Metre = { top: 6, bottom: 8 }
+
+/** Whether a metre is compound, each beat a dotted note split in three, as 6/8 is (FACTS 14). */
+export const isCompound = (m: Metre): boolean =>
+  m.bottom === 8 && m.top > 3 && m.top % 3 === 0
+
+/** A bar's length in the model's beats, quarter notes: 4 in 4/4, 3 in 3/4 and in 6/8, 2 in 2/4. */
+export const barQuarters = (m: Metre): number => (m.top * 4) / m.bottom
+
+/** The metre's own beat, in quarter notes: a dotted quarter in compound metre, the bottom number's note otherwise (FACTS 13). */
+export const beatQuarters = (m: Metre): number =>
+  isCompound(m) ? 1.5 : 4 / m.bottom
+
+/** How a metre is written: "6/8". */
+export const metreText = (m: Metre): string => `${m.top}/${m.bottom}`
+
+/** A symbol's length in beats, its dot and its triplet included. */
 export const lengthOf = (w: Written): number =>
-  w.dotted === true ? w.value * 1.5 : w.value
+  (w.dotted === true ? w.value * 1.5 : w.value) *
+  (w.triplet === true ? 2 / 3 : 1)
 
 /** The beats a bar's symbols add up to. */
 export const barLength = (bar: Bar): number =>
@@ -114,7 +154,7 @@ export function placeBars(
         beats: lengthOf(w),
         value: w.value,
         dotted: w.dotted === true,
-        tuplet: null,
+        tuplet: w.triplet === true ? 3 : null,
         flags: flagsOf(w.value),
         onset: note && !tied ? onset++ : null,
         bar: b,
@@ -137,6 +177,21 @@ export function fromStarts(
     bar: Math.floor((s.beat + EPSILON) / WRITTEN_BAR),
     tie: false,
   }))
+}
+
+/**
+ * The beams, by the metre's beat (FACTS 15): the Ear Lab's beaming, which
+ * joins the flagged notes inside one quarter, read in the metre's own
+ * beats, so 6/8's eighths join in threes and 3/4's in twos; 4/4's and
+ * 2/4's are the Ear Lab's unchanged. A triplet's three eighths fill one
+ * quarter, so they join under one beam that takes the 3 (FACTS 41).
+ */
+export function beamsOf(
+  placed: readonly PlacedSymbol[],
+  m: Metre = FOUR_FOUR,
+): BeamGroup[] {
+  const beat = beatQuarters(m)
+  return beamGroups(placed.map((p) => ({ ...p, beat: p.beat / beat })))
 }
 
 /** A sound the figure makes: its start and length in beats, and the placed symbols it spans, one note or a tied run. */
@@ -252,34 +307,49 @@ export interface FigureCount {
 
 const PARTS = ['', 'e', 'and', 'a'] as const
 
-/** The word for a place on the sixteenth grid: the beat's number on the beat, then "e", "and" and "a". */
-function countWord(at: number, beatsPerBar: number): string {
-  const beat = Math.floor(at + EPSILON)
-  const part = Math.round((at - beat) * 4) % 4
-  return part === 0 ? String((beat % beatsPerBar) + 1) : PARTS[part]
+/**
+ * The word for a place in a bar: the beat's number on the metre's beat;
+ * in simple metre "e", "and" and "a" on the sixteenth grid, and "trip"
+ * and "let" on a triplet's thirds (FACTS 40); in compound metre "and"
+ * and "a" on the beat's second and third eighths, "1 and a" (FACTS 22).
+ */
+function countWord(at: number, m: Metre): string {
+  const bar = barQuarters(m)
+  const unit = beatQuarters(m)
+  const inBar = at - Math.floor((at + EPSILON) / bar) * bar
+  const beat = Math.floor((inBar + EPSILON) / unit)
+  const part = (inBar - beat * unit) / unit
+  if (part < EPSILON) return String(beat + 1)
+  if (isCompound(m)) return Math.round(part * 3) === 1 ? 'and' : 'a'
+  const thirds = part * 3
+  if (Math.abs(thirds - Math.round(thirds)) < 1e-4)
+    return Math.round(thirds) === 1 ? 'trip' : 'let'
+  return PARTS[Math.round(part * 4) % 4]
 }
 
 /**
  * The counts under the figure (FACTS 20 to 22): a note that starts a sound
  * says its word; any other symbol, a rest or a tied-to note, holds its word
- * in brackets, as does every beat a symbol holds over. So a half note on
- * beat 3 counts "3 (4)", and the checkpoint's bars "1, 2, 3 (4), 1 and 2,
- * 3 and 4".
+ * in brackets, as does every one of the metre's beats a symbol holds over.
+ * So a half note on beat 3 of 4/4 counts "3 (4)", and the checkpoint's bars
+ * "1, 2, 3 (4), 1 and 2, 3 and 4"; a dotted half in 6/8 counts "1 (2)", and
+ * one in 3/4 "1 (2) (3)" (Lesson 19 FACTS 28).
  */
 export function countsOf(
   placed: readonly PlacedSymbol[],
-  beatsPerBar = BAR_BEATS,
+  m: Metre = FOUR_FOUR,
 ): FigureCount[] {
   const counts: FigureCount[] = []
+  const unit = beatQuarters(m)
   for (const p of placed) {
     const said = p.kind === 'note' && p.onset !== null
-    const word = countWord(p.beat, beatsPerBar)
+    const word = countWord(p.beat, m)
     counts.push({ at: p.beat, text: said ? word : `(${word})`, said })
     const end = p.beat + p.beats - EPSILON
-    for (let beat = Math.floor(p.beat + EPSILON) + 1; beat < end; beat++)
+    for (let k = Math.floor((p.beat + EPSILON) / unit) + 1; k * unit < end; k++)
       counts.push({
-        at: beat,
-        text: `(${countWord(beat, beatsPerBar)})`,
+        at: k * unit,
+        text: `(${countWord(k * unit, m)})`,
         said: false,
       })
   }
