@@ -63,7 +63,8 @@ export function mobileApplicationNodes(
     name: 'MercuryPitch',
     alternateName: 'Mercury Pitch',
     operatingSystem: os,
-    applicationCategory: 'MusicApplication',
+    // A type Google lists, as the rooms' nodes use (entry-pages.ts AppCategory).
+    applicationCategory: 'MultimediaApplication',
     url,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     publisher: { '@id': ORGANIZATION_ID },

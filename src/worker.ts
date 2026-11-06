@@ -4,6 +4,7 @@ import type { WaitUntil } from './lesson-gate'
 import { handleLessonRequest } from './lesson-gate'
 import { CAST_RECEIVER_PATH } from './lib/cast-receiver/cast-config'
 import { withCastReceiverHeaders } from './lib/cast-receiver/receiver-headers'
+import { VOICEPRINT_PARAM } from './lib/mirror/shared-voiceprint'
 import { apexMirrorUrl } from './lib/mirror-subdomain'
 import { nativeAppOrigin, nativePreflight, withNativeCors, } from './lib/native-app-cors'
 import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
@@ -320,6 +321,45 @@ async function routeUvr(
   }
 }
 
+// `HTMLRewriter` is a Workers runtime global with no value export; as in
+// og-voiceprint-meta.ts, only the surface used here is declared.
+interface CanonicalRewriter {
+  on(
+    selector: string,
+    handlers: { element(element: { remove(): void }): void },
+  ): CanonicalRewriter
+  transform(response: Response): Response
+}
+declare const HTMLRewriter: { new (): CanonicalRewriter }
+
+/**
+ * An answer that asks search engines to leave its URL out of the index, its
+ * status and body as they were, less the document's canonical link. Set
+ * here, on the Worker's own response: the paths that get it are in
+ * `assets.run_worker_first`, so this Worker answers them before the asset
+ * layer does. A canonical to another URL beside noindex says two contrary
+ * things, and a search engine may carry the noindex over to that URL: the
+ * home page for the shell, /mirror for a shared card.
+ */
+function noindexed(response: Response): Response {
+  const headers = new Headers(response.headers)
+  headers.set('X-Robots-Tag', 'noindex')
+  const answer = new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+  const html = (headers.get('Content-Type') ?? '').includes('text/html')
+  if (response.status !== 200 || !html) return answer
+  return new HTMLRewriter()
+    .on('link[rel="canonical"]', {
+      element(link) {
+        link.remove()
+      },
+    })
+    .transform(answer)
+}
+
 /** The asset layer's answer, with `no-store` when it is an error. */
 function uncachedIfError(response: Response): Response {
   if (response.status < 400) return response
@@ -449,9 +489,16 @@ export default {
       )
       // A shared voiceprint has to unfurl as itself. Crawlers never run the
       // code that reads `?v=`, so the card has to be true in the HTML.
-      return decorateVoiceprintMeta(mirrorResp, url, (id) =>
+      const decorated = await decorateVoiceprintMeta(mirrorResp, url, (id) =>
         ogCardExists(env, id),
       )
+      // And a link that carries one is one singer's card, not a page of the
+      // site: its title can carry the name they chose to share
+      // (og-voiceprint-meta.ts). An unfurl reads the tags, never this header,
+      // so the card still shows wherever the link is sent.
+      return url.searchParams.has(VOICEPRINT_PARAM)
+        ? noindexed(decorated)
+        : decorated
     }
 
     // Vocal range — same local analysis engine, but a distinct document whose
@@ -484,24 +531,22 @@ export default {
     if (EXERCISE_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
-      const shell = await env.ASSETS.fetch(
-        new Request(shellUrl.toString(), request),
+      return noindexed(
+        await env.ASSETS.fetch(new Request(shellUrl.toString(), request)),
       )
-      const headers = new Headers(shell.headers)
-      headers.set('X-Robots-Tag', 'noindex')
-      return new Response(shell.body, {
-        status: shell.status,
-        statusText: shell.statusText,
-        headers,
-      })
     }
 
     // Admin entries serve the shell; the client rewrites the URL to the hash
-    // route before App mounts, so the pathname never has to survive.
+    // route before App mounts, so the pathname never has to survive. The
+    // shell is the home document with its canonical, so each admin path read
+    // to a crawler as an indexable copy of /: X-Robots-Tag keeps them out,
+    // as it does the exercise links above (SEO audit, 6 Nov 2026).
     if (ADMIN_PATH.test(url.pathname) && method === 'GET') {
       const shellUrl = new URL(request.url)
       shellUrl.pathname = '/'
-      return env.ASSETS.fetch(new Request(shellUrl.toString(), request))
+      return noindexed(
+        await env.ASSETS.fetch(new Request(shellUrl.toString(), request)),
+      )
     }
 
     // Glass — alias paths serve glass.html content with the URL preserved

@@ -113,7 +113,7 @@ export const ROOMS: readonly Room[] = [
     id: 'karaoke',
     title: 'Karaoke',
     line: 'Your own songs turned into karaoke: the vocal split out, with lyrics and scoring.',
-    target: { kind: 'page', href: '/karaoke' },
+    target: { kind: 'page', href: '/karaoke-night' },
     cover: cover('karaoke', '52% 50%'),
   },
   {

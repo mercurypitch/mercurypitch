@@ -117,7 +117,7 @@ export const PLAN_DESTS = {
   karaokeNight: {
     room: 'Karaoke Night',
     cover: mapCover('karaoke'),
-    target: pageTarget('/karaoke'),
+    target: pageTarget('/karaoke-night'),
   },
   lesson1: {
     room: 'Lesson 1',

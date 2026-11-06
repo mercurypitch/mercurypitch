@@ -81,7 +81,7 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
       ]
     : []),
   {
-    target: { kind: 'page', href: '/karaoke' },
+    target: { kind: 'page', href: '/karaoke-night' },
     visual: 'karaoke',
     eyebrow: 'Your song, your stage',
     title: 'Karaoke',

@@ -5,6 +5,7 @@ import { EXERCISE_SLUGS } from '@/features/exercises/slug-map'
 import { ADMIN_ENTRY_PATHS, adminHashForPath } from '@/lib/admin-entry-route'
 import type { Env } from '@/worker'
 import worker from '@/worker'
+import { HtmlRewriterDouble } from '../html-rewriter.test-fixtures'
 
 vi.mock('@cloudflare/containers', () => ({
   Container: class Container {
@@ -288,6 +289,7 @@ describe('a shared voiceprint link', () => {
   function sharedEnv(stored: string[]) {
     const asked: string[] = []
     const written = new Map<string, string>()
+    const removed: string[] = []
     class Rewriter {
       on(
         selector: string,
@@ -295,12 +297,14 @@ describe('a shared voiceprint link', () => {
           element: (el: {
             setAttribute: (name: string, value: string) => void
             setInnerContent: (content: string) => void
+            remove: () => void
           }) => void
         },
       ): this {
         handlers.element({
           setAttribute: (_name, value) => written.set(selector, value),
           setInnerContent: (content) => written.set(selector, content),
+          remove: () => removed.push(selector),
         })
         return this
       }
@@ -323,7 +327,7 @@ describe('a shared voiceprint link', () => {
         },
       },
     } as unknown as Env
-    return { env, asked, written }
+    return { env, asked, written, removed }
   }
 
   it('unfurls as the stored card, looked up under the og: prefix', async () => {
@@ -363,6 +367,63 @@ describe('a shared voiceprint link', () => {
 
     expect(asked).toEqual([])
     expect(written.size).toBe(0)
+  })
+
+  // One singer's card, with a title that can carry the name they shared, is
+  // not a page of the site. Its canonical to /mirror is only a hint; the
+  // header keeps it out of the index, and an unfurl never reads it.
+  it('asks search engines not to index a shared card, and leaves /mirror indexable', async () => {
+    const { env, removed } = sharedEnv([`og:${CARD}`])
+    const shared = await worker.fetch(
+      new Request(`https://mercurypitch.test/mirror?v=${PAYLOAD}&og=${CARD}`),
+      env,
+    )
+    const ordinary = await worker.fetch(
+      new Request('https://mercurypitch.test/mirror?utm_source=ad'),
+      env,
+    )
+    vi.unstubAllGlobals()
+
+    expect(shared.status).toBe(200)
+    expect(shared.headers.get('X-Robots-Tag')).toBe('noindex')
+    expect(shared.headers.get('Content-Type')).toContain('text/html')
+    // Its canonical to /mirror goes, so the noindex cannot carry over there.
+    expect(removed).toEqual(['link[rel="canonical"]'])
+    expect(ordinary.headers.get('X-Robots-Tag')).toBeNull()
+  })
+})
+
+// A canonical to another URL beside noindex says two contrary things, and a
+// search engine may carry the noindex over to that URL: for the shell these
+// paths serve, the home page. A document kept out of the index names none.
+describe('a document kept out of the index', () => {
+  it('names no canonical URL, so its noindex cannot carry over to the home page', async () => {
+    vi.stubGlobal('HTMLRewriter', HtmlRewriterDouble)
+    const shell =
+      '<html><head><link rel="canonical" href="https://mercurypitch.com/"><title>MercuryPitch</title></head><body></body></html>'
+    const env = {
+      ASSETS: {
+        fetch: async () =>
+          new Response(shell, {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          }),
+      },
+    } as unknown as Env
+    try {
+      for (const path of ['/admin', '/exercises/speed-scales']) {
+        const response = await worker.fetch(
+          new Request(`https://mercurypitch.test${path}`),
+          env,
+        )
+        const body = await response.text()
+
+        expect(response.headers.get('X-Robots-Tag'), path).toBe('noindex')
+        expect(body, path).not.toContain('rel="canonical"')
+        expect(body, path).toContain('<title>MercuryPitch</title>')
+      }
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
@@ -448,6 +509,22 @@ describe('admin entry paths', () => {
       )
 
       await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  // The shell is the home document with its canonical and `index, follow`,
+  // so every admin path read as an indexable copy of /, as the exercise
+  // links did before they got the same header.
+  it('asks search engines not to index the shell it serves', async () => {
+    for (const path of [...ADMIN_ENTRY_PATHS, '/admin/']) {
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test${path}`),
+        env,
+      )
+
+      expect(response.status, path).toBe(200)
+      expect(response.headers.get('X-Robots-Tag'), path).toBe('noindex')
     }
   })
 
