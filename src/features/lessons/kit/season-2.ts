@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15 and 17 have their pages, drafts (drafts.ts); every other
+// Lessons 15, 17 and 19 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -140,6 +140,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Threes, offbeats and syncopation',
     short: 'Threes and offbeats',
     topics: ['T08'],
+    // A draft until Lesson 17's page is live (drafts.ts); nothing on it is
+    // sung, so it waits on no vocal coach.
+    minutes: 12,
+    page: '/learn/19',
     hook: 'Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?',
     pr: {
       needs: 'Subdivide with only 3/4 and 6/8 (an ear-drill link)',

@@ -261,11 +261,20 @@ const NO_FILM = [
   { n: 15, title: 'The staff: where notes sit' },
   // its sung part is a tapped checkpoint first, so its anchor says so
   { n: 17, title: 'How long is a note?', sing: 'Tap it' },
+  // nothing on it is sung: its solo is tapped, so its anchor says so; and
+  // it teaches in four steps, not five
+  {
+    n: 19,
+    title: 'Threes, offbeats and syncopation',
+    sing: 'Tap the beat',
+    steps: 4,
+  },
 ] as const
 
 for (const entry of NO_FILM) {
   const { n, title } = entry
   const sing = 'sing' in entry ? entry.sing : 'Sing'
+  const steps = 'steps' in entry ? entry.steps : 5
   const path = `/learn/${String(n).padStart(2, '0')}`
 
   test.describe(`on Lesson ${n}, a page with no film`, () => {
@@ -284,10 +293,10 @@ for (const entry of NO_FILM) {
         )
         await trigger(page).tap()
         await expect(hereRow(page)).toBeFocused()
-        // the page's five steps, each its own link
+        // the page's steps, each its own link
         await expect(
           menu(page).getByRole('link', { name: /^Step \d: / }),
-        ).toHaveCount(5)
+        ).toHaveCount(steps)
 
         // Act
         await menu(page)

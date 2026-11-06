@@ -94,4 +94,11 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
     shapes:
       "The season plan's line, cut to fit and made true: it sets up the page changing while the tempo stays, which Step 2's Play both pays off, not the cold open, whose answer is that the page stays the same; so it is the alternative, and the default says what the cold open does (FACTS 5b).",
   },
+  19: {
+    written:
+      "Lesson 18's plan's line, \"Every bar so far has walked in twos and fours.\", made true: Lesson 8's bars of three came before it, so it claims only what Season 2 has written, Lessons 17 and 18's bars of 4/4. It leaks nothing, but the default is the cold open in miniature (FACTS 5b).",
+  },
+  20: {
+    plan: "The season plan's line. It fits and leaks nothing, but it sets up subdivision, not Lesson 20's opening, which the default says in miniature: Merc's run of nine notes at 0.2 s a note (FACTS 5).",
+  },
 }

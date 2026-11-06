@@ -31,7 +31,8 @@ page in four more steps, with an X and a Skip for people who know their way arou
 
 One list serves every lesson. A step whose targets are all missing or hidden on a page is left out
 there, and the count follows ("1 of 4"). Every target of a step that shows is lit together. All
-sixteen pages show all five steps, at 390 px and at 1440 px.
+seventeen pages show five steps, at 390 px and at 1440 px: sixteen show the five below, and Lesson
+19, where nothing is sung, shows "Your turn to tap" in place of step 3.
 
 | #   | Lights                                                                                                             | Title              | Words                                                                                                                                                                                                              |
 | --- | ------------------------------------------------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -44,6 +45,12 @@ sixteen pages show all five steps, at 390 px and at 1440 px.
 On Lessons 3, 5, 7 and 9, whose Sing it listens once the viewer chooses to sing, step 3 adds: "If
 you choose to sing, it listens through your microphone and shows what it heard. Nothing is recorded,
 kept or sent."
+
+On Lesson 19, where nothing is sung (`SILENT_LESSONS`), step 1 says "They teach every lesson. Listen
+along, then try each idea yourself." in place of its line about singing, and its solo, `#tap`, has a
+stop of its own between the steps and the map, which shows on no other page: "Your turn to tap",
+"Tap the beat on the pad, or with Space or Enter, while a tune plays. Nothing listens: the page
+times your taps." (Lesson 19 WEB-SPEC, What the kit and the app still need, item 13).
 
 The card's own words: "1 of 5", Back, Next (Done on the last step), Skip tour, and the X, named
 "Close tour". All of the tour's words are in `src/features/lessons/kit/tour-copy.ts`, except the

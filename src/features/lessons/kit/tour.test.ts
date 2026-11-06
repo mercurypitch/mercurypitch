@@ -165,6 +165,64 @@ describe('pageSteps', () => {
   })
 })
 
+describe('a page where nothing is sung', () => {
+  it("says nothing of singing on Lesson 19's first stop, and every other lesson keeps the sung line", () => {
+    // Arrange
+    page()
+    const first = (lesson: number): string | undefined =>
+      pageSteps(lesson)[0]?.body
+
+    // Act
+    const silent = first(19)
+    const sung = [1, 8, 15, 17].map(first)
+
+    // Assert: Lesson 19 WEB-SPEC, What the kit and the app still need, item 13
+    expect(silent).toBe(
+      'They teach every lesson. Listen along, then try each idea yourself.',
+    )
+    expect(sung).toEqual(Array(4).fill(TOUR_STEPS[0].body))
+    expect(silent).not.toMatch(/sing/i)
+  })
+
+  it('lights the tapped solo in a stop of its own where #tap shows, in place of Sing it', () => {
+    // Arrange: Lesson 19's page, its solo tapped
+    page()
+    const sing = document.getElementById('sing') as HTMLElement
+    const tap = document.createElement('section')
+    tap.id = 'tap'
+    sing.replaceWith(tap)
+    draw(tap)
+
+    // Act
+    const steps = pageSteps(19)
+
+    // Assert
+    expect(steps.map((s) => s.title)).toEqual([
+      'Meet Merc and Tavi',
+      'One step at a time',
+      'Your turn to tap',
+      'The season, mapped',
+      'Find your way',
+    ])
+    expect(steps[2]?.targets).toEqual([tap])
+    expect(steps[2]?.body).toBe(
+      'Tap the beat on the pad, or with Space or Enter, while a tune plays. Nothing listens: the page times your taps.',
+    )
+  })
+
+  it('shows no tap stop on a page whose solo is sung', () => {
+    // Arrange
+    page()
+
+    // Act
+    const titles = pageSteps(17).map((s) => s.title)
+
+    // Assert
+    expect(titles).not.toContain('Your turn to tap')
+    expect(titles).toContain('Your turn to sing')
+  })
+})
+
 describe('runTour', () => {
   it('opens on Merc and Tavi as step 1 of five, with the focus in the card', () => {
     // Arrange
