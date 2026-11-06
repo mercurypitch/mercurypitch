@@ -1,0 +1,15 @@
+/* The Cast receiver's page: the stage's canvas, filling the TV's screen on
+   the stage's own ground, with nothing to scroll. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0d12;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}

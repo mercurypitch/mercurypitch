@@ -215,6 +215,10 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // place would be the studio where somebody came to delete their account.
   '/delete-account',
   '/delete-account.html',
+  // The Cast receiver, the stage on a Cast device: the shell in its place
+  // would be the whole studio on a TV with no way to use it.
+  '/cast-receiver',
+  '/cast-receiver.html',
   // Find Your Pitch's hub (learn/index.html), a plain document like the one
   // above: the shell in its place would be the studio where the season's
   // map should be. /learn is its address in dev and preview, and a redirect

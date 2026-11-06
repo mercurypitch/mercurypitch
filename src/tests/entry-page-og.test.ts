@@ -36,6 +36,9 @@ const pages = readdirSync(repo)
   // the privacy links send somebody who wants to leave, and a marketing card
   // for it would say the opposite of what the page is for.
   .filter((name) => name !== 'delete-account.html')
+  // Nor the Cast receiver: a Cast device loads it, nobody shares it, and it
+  // is kept out of search (src/lib/cast-receiver/receiver-headers.ts).
+  .filter((name) => name !== 'cast-receiver.html')
   .sort()
 
 function read(name: string): string {

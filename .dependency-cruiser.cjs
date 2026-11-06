@@ -120,7 +120,7 @@ module.exports = {
         pathNot: [
           '(^|/)\\.[^/]+\\.(js|cjs|mjs|ts|json)$',
           '\\.d\\.ts$',
-          '^src/(index|worker|share-handler|uvr-container)',
+          '^src/(index|worker|share-handler|uvr-container|cast-receiver/main)',
           '(^|/)vite\\.config\\.ts$',
         ],
       },

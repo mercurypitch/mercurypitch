@@ -95,6 +95,11 @@
       // (src/worker.ts), so a picture fetched before its deploy lands is not
       // cached as missing for a year.
       "/email/*",
+      // The Cast receiver HAS a file behind it. It is listed so the Worker
+      // can serve it with a policy of its own in place of public/_headers':
+      // the site's would block Google's Web Receiver SDK and the socket the
+      // SDK opens to the Cast device (src/lib/cast-receiver/receiver-headers.ts).
+      "/cast-receiver",
       // Find Your Pitch. Every build carries every lesson page, so whether
       // one is live is the Worker's to answer from the admin console's
       // lesson state (src/lesson-gate.ts): a lesson held back answers with

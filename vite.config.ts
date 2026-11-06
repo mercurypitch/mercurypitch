@@ -77,6 +77,15 @@ const TONE_DEAF_PATH = '/tone-deaf-test'
 // service worker must leave it alone (STANDALONE_DOCUMENT_PATHS).
 const DELETE_ACCOUNT_PATH = '/delete-account'
 
+// The Cast receiver (cast-receiver.html): the Karaoke room's stage on a
+// Google Cast device, at the path both registered receiver applications
+// point at (src/lib/cast-receiver/cast-config.ts). Production serves it
+// through the site worker, which gives it a policy of its own
+// (`run_worker_first` in wrangler.jsonc); the dev and preview servers need
+// the rewrite below, and the service worker must leave it alone
+// (STANDALONE_DOCUMENT_PATHS).
+const CAST_RECEIVER_PAGE_PATH = '/cast-receiver'
+
 // The web lessons (Find Your Pitch, docs/plans/find-your-pitch/): each lesson
 // is its own hand-written document under learn/, like delete-account.html,
 // with the whole lesson in its markup and a module that adds the sound and
@@ -145,6 +154,9 @@ function standaloneEntryRewritePlugin(lessonPaths: readonly string[]) {
         }
         if (path === DELETE_ACCOUNT_PATH) {
           req.url = `${DELETE_ACCOUNT_PATH}.html${search}`
+        }
+        if (path === CAST_RECEIVER_PAGE_PATH) {
+          req.url = `${CAST_RECEIVER_PAGE_PATH}.html${search}`
         }
         if (lessons.has(path)) {
           req.url = `${path}.html${search}`
@@ -499,6 +511,9 @@ export default defineConfig(({ command, mode }) => {
           notFound: resolve(__dirname, '404.html'),
           // Plain, like the 404, but answered with a 200 at its clean path.
           deleteAccount: resolve(__dirname, 'delete-account.html'),
+          // The Cast receiver: the stage on a Cast device, loading nothing
+          // of the app (src/cast-receiver/main.ts).
+          castReceiver: resolve(__dirname, 'cast-receiver.html'),
           // Find Your Pitch's lesson pages, learn/NN.html at /learn/NN
           // (lesson01, lesson02, lesson03): every one, in every mode, the
           // lessons still waiting on a sign-off included. Whether one is

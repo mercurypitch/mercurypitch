@@ -156,7 +156,7 @@ These are the rules that break things when ignored.
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |
-| `tv-stage` | [lane-paint.ts](../../src/lib/tv-stage/lane-paint.ts) | 4.0k | TV stage lane paint — the lane's glass, as sprites What the lane is made of, painted once per screen size (sprites.ts): the glass panel t... |
+| `tv-stage` | [lane-paint.ts](../../src/lib/tv-stage/lane-paint.ts) | 4.1k | TV stage lane paint — the lane's glass, as sprites What the lane is made of, painted once per screen size (sprites.ts): the glass panel t... |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.3k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.6k | Voice Mirror — pure metrics over F0 frame streams. |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
@@ -165,6 +165,7 @@ These are the rules that break things when ignored.
 | `glide` | [glide-engine.ts](../../src/lib/glide/glide-engine.ts) | 1.9k | Glide engine — a voice following a moving target: the lit share of each arch Ng slides' engine, and Lip roll's. |
 | `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.9k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.7k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
+| `cast-receiver` | [receiver.ts](../../src/lib/cast-receiver/receiver.ts) | 1.1k | Cast receiver — the stage on a Cast device, run by its senders REQ-TV-110: on a Google Cast device the stage is a Custom Web Receiver tha... |
 | `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.1k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |

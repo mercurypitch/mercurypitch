@@ -61,6 +61,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'piano-night.html': 375,
   'drum-night.html': 640,
 
+  // The Cast receiver, the stage on a Cast device: the stage's renderer and
+  // the receiver, nothing of the app. Measured 40 on 2026-11-06. Google's
+  // Web Receiver SDK, which it also loads, comes from gstatic and is not
+  // weighed here.
+  'cast-receiver.html': 50,
+
   // The Voice Mirror and the three pages that open it. Measured 344 -- and
   // 3149 before the broad manualChunks rules were deleted, which is the
   // regression this table exists to catch.
@@ -447,6 +453,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
  * no script, and `measureFirstPaint` only weighs documents that run one.
  */
 export const FIRST_PAINT_CSS_BUDGETS_KB = {
+  // The Cast receiver. Measured 1: its own sheet, which lays the canvas over
+  // the whole screen on the stage's ground. The floor.
+  'cast-receiver.html': 40,
+
   // The Voice Mirror and its three doors, and the glass room. Measured 26,
   // 26, 26, 26 and 24 -- nearly all of it one page-scoped sheet.
   'mirror.html': 40,
