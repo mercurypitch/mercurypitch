@@ -252,12 +252,14 @@ export function createStudioImporter(options: ImportControllerOptions) {
   let active: AbortController | null = null
   let cancels = 0
 
-  function cancelImport(): void {
-    cancels++
+  /** Stops the import in flight; `queued` also drops the imports waiting their turn. */
+  function stop(queued: boolean): void {
+    if (queued) cancels++
     active?.abort()
     active = null
     options.setImporting(false)
   }
+  const cancelImport = () => stop(true)
 
   // A file picked while the last import is still saving waits its turn; it
   // used to be dropped without a word.
@@ -491,5 +493,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
       trackId: string | null = null,
     ) => addTakes([entry], startFrame, trackId),
     cancelImport,
+    /** Stops only the import in flight: one queued behind it, a take included, still runs. */
+    cancelCurrentImport: () => stop(false),
   }
 }

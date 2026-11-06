@@ -6,6 +6,8 @@ import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { createStudioClock, StudioClockContext } from './audio/studio-clock'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
+import { createStudioStorageAsk } from './storage/studio-storage-ask'
+import { StudioStorageAsk } from './storage/StudioStorageAsk'
 import styles from './StudioPage.module.css'
 import { StudioProjectList } from './StudioProjectList'
 import { StudioWorkspace } from './StudioWorkspace'
@@ -20,7 +22,9 @@ export function StudioPage() {
   // native app lends its own.
   const clock = untrack(nativeDeviceApi) ? null : createStudioClock()
   onCleanup(() => clock?.close())
-  const studio = useStudioController()
+  // The first import on a device asks how its audio is kept.
+  const storageAsk = createStudioStorageAsk()
+  const studio = useStudioController({ askStorage: storageAsk.request })
   /** Work a reload would lose: unsaved edits, an import or a save in flight. */
   const workAtStake = (): boolean =>
     studio.hasUnsavedChanges() ||
@@ -214,6 +218,7 @@ export function StudioPage() {
             <StudioProjectList
               projects={studio.projects()}
               activeId={studio.project()?.id}
+              protection={studio.protection()}
               blocked={blocked()}
               onCreate={() => void create()}
               onOpen={(id) => void open(id)}
@@ -268,6 +273,7 @@ export function StudioPage() {
           else void studio.discardAndReload()
         }}
       />
+      <StudioStorageAsk ask={storageAsk} />
     </section>
   )
 }

@@ -1,0 +1,100 @@
+/* Studio storage — the first-import ask (inside the app's confirm dialog,
+   portalled, so it reads the app's own tokens) and Song options' Audio
+   storage (inside the Studio, on its tokens). */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin: 0 0 0.25rem;
+  padding: 0;
+  color: var(--fg-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-tertiary));
+}
+
+.choice input {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
+
+.choice input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.choiceText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.choiceText strong {
+  color: var(--fg-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.choiceText span {
+  color: var(--fg-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.note {
+  color: var(--fg-secondary);
+}
+
+/* Song options: the choice, then the readout under it. */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.readout {
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.readout[data-studio-protection='unprotected'],
+.readout[data-studio-protection='unknown'] {
+  color: var(--studio-text-2);
+}
+
+/* The song list's note: on a line of its own under the backup advice. */
+.listProtection {
+  display: block;
+  margin-top: 4px;
+}

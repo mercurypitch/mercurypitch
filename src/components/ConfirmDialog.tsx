@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, For, Show } from 'solid-js'
+import { children, createEffect, createSignal, createUniqueId, For, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { isolateKeys } from '@/lib/keyboard-isolation'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -53,6 +53,13 @@ interface ConfirmDialogProps {
   /** Lines listed under the message, outside its paragraph, and read with
    *  it as the dialog's description. None, or an empty list, shows nothing. */
   details?: readonly string[]
+  /**
+   * Controls between the message and the buttons, for a choice made before
+   * confirming (the Studio's storage ask: two radios and a remember tick).
+   * They sit inside the trap, so a key handler in them must be native
+   * (`on:keydown`), as `isolateKeyboard` says.
+   */
+  children?: JSX.Element
   /**
    * Every key stays at the dialog unless this is false, so the app's shortcuts
    * on the window cannot act behind it: a Space would play the tab behind and
@@ -103,6 +110,8 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   // The trap is read as `isolateKeyboard: isolateKeys` unless a caller passes false.
   const isolated = (): boolean => props.isolateKeyboard !== false
   const listed = (): boolean => (props.details?.length ?? 0) > 0
+  // Resolved once: reading `props.children` again would build them again.
+  const content = children(() => props.children)
 
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
@@ -147,6 +156,9 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                 <ul id={detailsId} class={styles.details}>
                   <For each={props.details}>{(line) => <li>{line}</li>}</For>
                 </ul>
+              </Show>
+              <Show when={content()}>
+                <div class={styles.content}>{content()}</div>
               </Show>
               <Show when={props.confirmPhrase != null}>
                 <label class={styles.phraseLabel} for={phraseId}>

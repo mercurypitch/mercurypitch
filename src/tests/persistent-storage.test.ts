@@ -122,6 +122,29 @@ describe('ensurePersistentStorage', () => {
     vi.doUnmock('@/lib/native-build')
   })
 
+  it("asks once on this device for the Studio's songs, on its own, even after stems spent theirs", async () => {
+    const storage = {
+      persist: vi.fn().mockResolvedValue(false),
+      persisted: vi.fn().mockResolvedValue(false),
+    }
+    stubStorageApi(storage)
+    const first = await loadSubject()
+    await first.ensurePersistentStorage('stems')
+    await first.ensurePersistentStorage('studio')
+    await first.ensurePersistentStorage('studio')
+    // A reload: the page's own guard is gone, the device's record stays.
+    vi.resetModules()
+    const reloaded = await loadSubject()
+
+    await expect(reloaded.ensurePersistentStorage('studio')).resolves.toBe(
+      false,
+    )
+
+    expect(storage.persist).toHaveBeenCalledTimes(2)
+    // Silent: the Studio's own readouts say whether the songs are kept.
+    expect(mocks.showNotification).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps browser request failures non-fatal', async () => {
     const storage = {
       persist: vi.fn().mockRejectedValue(new Error('permission error')),

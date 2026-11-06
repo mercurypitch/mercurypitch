@@ -1,5 +1,6 @@
-// Studio song options — local project identity, copies, backups and deletion.
+// Studio song options — local project identity, copies, backups, how new audio is kept, and deletion.
 import { ChevronDown, Copy, Download, MusicLibrary, Trash2, } from '@/components/icons'
+import { StudioStorageSettings } from '../storage/StudioStorageSettings'
 import styles from '../StudioPage.module.css'
 import type { StudioController } from '../useStudioController'
 
@@ -62,6 +63,11 @@ export function StudioSongPanel(props: Props) {
         A backup holds your arrangement and copied audio. Saved projects stay in
         this browser.
       </p>
+      <div class={styles.fieldDivider} />
+      <StudioStorageSettings
+        assets={props.studio.assets()}
+        protection={props.studio.protection()}
+      />
       <div class={styles.fieldDivider} />
       <button
         type="button"

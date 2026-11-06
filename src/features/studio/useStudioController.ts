@@ -4,7 +4,7 @@ import type { StudioEditorLease, StudioService, } from '@/db/services/studio-ser
 import { createStudioService } from '@/db/services/studio-service'
 import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
-import type { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
@@ -19,9 +19,13 @@ import { defaultEditorPresence } from './controller/editor-presence'
 import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
 import { createStudioSaveQueue } from './controller/save-queue'
-import type { prepareStudioSource } from './integration/prepare-source'
+import { prepareStudioSource } from './integration/prepare-source'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { listStudioSources, readStudioSourceBlob, } from './integration/source-catalog'
+import { createStudioStorageImports } from './storage/storage-imports'
+import type { StudioPersistence } from './storage/studio-persistence'
+import { createStudioPersistence } from './storage/studio-persistence'
+import type { StudioStorageAnswer } from './storage/studio-storage-ask'
 
 /**
  * How long a song switch for a picked backup waits for a save in flight. An
@@ -52,6 +56,15 @@ export interface StudioControllerOptions {
   readSource?: typeof readStudioSourceBlob
   /** Which live tab edits a project: Web Locks where the browser has them. */
   presence?: EditorPresenceSource
+  /**
+   * Asks how new audio is kept, the first time a file or take is imported on
+   * this device without a choice (StudioStorageAsk); null when the person
+   * cancels, which cancels the import. Without it, audio is kept as the
+   * setting stands: Full quality until a choice is made.
+   */
+  askStorage?: (signal?: AbortSignal) => Promise<StudioStorageAnswer | null>
+  /** Whether the browser keeps this device's songs (studio-persistence.ts). */
+  persistence?: StudioPersistence
 }
 
 function message(error: unknown): string {
@@ -146,27 +159,41 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     untrack(() => !disposed() && generation === epoch)
   const report = (error: unknown) => setProblem(message(error))
 
-  const { addFile, addFiles, addRecording, addTake, addTakes, cancelImport } =
-    createStudioImporter({
-      project,
-      assets,
-      epoch: () => generation,
-      current,
-      canEdit,
-      setImporting,
-      // A new import clears the last one's refusal, and only that: a save
-      // that failed, or another problem the banner holds, stays said.
-      clearProblem: () => setImportRefusal(null),
-      report: (error) => setImportRefusal(message(error)),
-      commit,
-      flush: () => queue?.flush(),
-      createId,
-      now,
-      prepareFile: options.prepareFile,
-      prepareTake: options.prepareTake,
-      onMissedLane: (miss) =>
-        setLaneNotice({ text: studioMissedLaneText(miss) }),
-    })
+  // Each import keeps its audio as the storage choice says, asking first on
+  // a device that has none; the first take kept asks the browser to keep
+  // the songs.
+  const persistence = options.persistence ?? createStudioPersistence()
+  const storage = createStudioStorageImports({
+    ask: options.askStorage,
+    cancelImport: () => importer.cancelCurrentImport(),
+  })
+  const importer = createStudioImporter({
+    project,
+    assets,
+    epoch: () => generation,
+    current,
+    canEdit,
+    setImporting,
+    // A new import clears the last one's refusal, and only that: a save
+    // that failed, or another problem the banner holds, stays said.
+    clearProblem: () => setImportRefusal(null),
+    report: (error) => setImportRefusal(message(error)),
+    commit,
+    flush: () => queue?.flush(),
+    createId,
+    now,
+    prepareFile: storage.prepareFile(options.prepareFile ?? prepareStudioAsset),
+    prepareTake: storage.prepareTake(
+      options.prepareTake ?? prepareStudioSource,
+    ),
+    onMissedLane: (miss) => setLaneNotice({ text: studioMissedLaneText(miss) }),
+  })
+  const { cancelImport } = importer
+  const addFile = persistence.keeping(importer.addFile)
+  const addFiles = persistence.keeping(importer.addFiles)
+  const addRecording = persistence.keeping(importer.addRecording)
+  const addTake = persistence.keeping(importer.addTake)
+  const addTakes = persistence.keeping(importer.addTakes)
 
   /** Stop editing here: nothing more is written, and what is not saved waits. */
   function suspendEditor(error: unknown): void {
@@ -695,6 +722,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     addTakes,
     readCanonicalAsset,
     assetPeaks,
+    /** Whether the browser keeps this device's songs; null until it answers. */
+    protection: persistence.protection,
     readSourcePreview,
     canUndo,
     canRedo,

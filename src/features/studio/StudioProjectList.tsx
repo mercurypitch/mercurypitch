@@ -2,12 +2,17 @@
 import { For, Show } from 'solid-js'
 import { Download, Plus, WaveformBars } from '@/components/icons'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
+import { studioProtectionText } from './storage/storage-copy'
+import type { StudioProtection } from './storage/studio-persistence'
+import storage from './storage/StudioStorage.module.css'
 import { ArchiveDown } from './studio-icons'
 import styles from './StudioPage.module.css'
 
 interface StudioProjectListProps {
   projects: readonly StudioProjectSummary[]
   activeId?: string
+  /** Whether the browser keeps the songs; null before it has said. */
+  protection?: StudioProtection | null
   blocked: boolean
   onCreate(): void
   onOpen(id: string): void
@@ -125,6 +130,16 @@ export function StudioProjectList(props: StudioProjectListProps) {
       </Show>
       <p class={styles.localNote} data-tour="studio.local-note">
         Saved in this browser. Download a song backup to keep a copy elsewhere.
+        <Show when={studioProtectionText(props.protection ?? null)}>
+          {(text) => (
+            <span
+              class={storage.listProtection}
+              data-studio-protection={props.protection ?? undefined}
+            >
+              {text()}
+            </span>
+          )}
+        </Show>
       </p>
     </div>
   )

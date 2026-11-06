@@ -410,6 +410,34 @@ describe('ConfirmDialog as a way to stay', () => {
     )
   })
 
+  it('puts a caller’s controls between the message and the buttons, outside its paragraph, and opens on the first', async () => {
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        title="Choose"
+        message="Pick one."
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      >
+        <label>
+          <input type="radio" name="pick" checked /> First
+        </label>
+      </ConfirmDialog>
+    ))
+
+    const radio = screen.getByRole('radio', { name: 'First' })
+    expect(radio.closest('p')).toBeNull()
+    expect(
+      radio.compareDocumentPosition(
+        screen.getByRole('button', { name: 'Cancel' }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    // Built once: a second copy would be a second radio.
+    expect(screen.getAllByRole('radio')).toHaveLength(1)
+    await Promise.resolve()
+    expect(radio).toHaveFocus()
+  })
+
   it('shows no list, and describes by the message alone, without details', () => {
     render(() => (
       <ConfirmDialog
