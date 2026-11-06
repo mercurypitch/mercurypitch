@@ -1554,6 +1554,15 @@ textarea {
   .kn-footer-links {
     margin-left: 0;
   }
+
+  /* A search landing leads with its own hero on one column (KaraokeHero.tsx):
+     the vocal remover's and the karaoke app's visitors came for that page,
+     and under the rail its heading and its call to action, the tour's first
+     stop, sat a screen and a half down a phone. Karaoke Night's own page
+     keeps the rail first, its opener card the first thing on it. */
+  .kn-body:has(.kn-hero:not([data-intent='karaoke-night'])) .kn-stage {
+    order: -1;
+  }
 }
 
 @media (max-width: 560px) {
