@@ -499,6 +499,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         sampleRate: current.sampleRate,
         count: current.peaks.count,
         cut: current.cut,
+        anchor: current.anchor,
       },
     })
     if (current.started) current.journal.place(heardFirst)

@@ -1098,6 +1098,13 @@ import handler, issue #813.
 **Rule:** a kit module whose imports reach `src/lib/mirror/` or `src/lib/pitch-measurements` loads with the listener, by `import()` on Start (`Mic.load` in `lesson-24/sing.ts`, the reader in `kit/hold-sing.ts`), and the words and numbers a page shows before then sit in a module that imports nothing (`kit/quiet-words.ts`). After wiring a part, read the budget's heaviest chunks, not only its verdict.
 **See:** `src/features/lessons/kit/quiet-words.ts`, `src/features/lessons/kit/quiet-check.ts`, `src/features/lessons/lesson-24/sing.ts`, `scripts/assert-first-paint-budgets.mjs`
 
+### Read an option that names a later hook in effects only, never in a memo the hook makes
+
+**Symptom:** the Studio threw "Cannot access 'O' before initialization" as a song opened, after the transport hook took a `take: () => recorder.takeClock()` option; its unit test, which passed a signal, was green.
+**Cause:** StudioWorkspace makes the recorder after the transport, which the recorder needs. An option read by a `createMemo` in the transport runs during setup, so it reached `recorder` in its temporal dead zone; `recording: () => recorder.busy()` beside it was only read in effects, which run after setup.
+**Rule:** an accessor option that may name something made after the hook is read in effects and handlers only; give it equality where it is made (the recorder's memo), not in the hook. Test it with an option that throws until setup is over.
+**See:** `src/features/studio/audio/useStudioTransport.ts` (`take`), `src/features/studio/audio/useStudioTransport.take.test.tsx`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

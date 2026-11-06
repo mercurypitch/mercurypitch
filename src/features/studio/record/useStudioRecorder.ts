@@ -49,6 +49,8 @@ import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
 import { studioRoundTrip } from '@/lib/studio/record/take-timing'
 import { micLatencyPathMsForDevice } from '@/stores/mic-latency-path-store'
 import { micLatencyMsForDevice } from '@/stores/mic-latency-store'
+import type { StudioTakeClock } from '../audio/take-clock'
+import { sameTakeClock } from '../audio/take-clock'
 import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
@@ -554,6 +556,19 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     },
   )
 
+  // A take counting in or recording, and where it sits on the clock: the
+  // playhead follows it where no song plays under it (take-clock.ts).
+  const takeClock = createMemo(
+    (): StudioTakeClock | null => {
+      const current = running() ? live() : null
+      if (current?.anchor === undefined) return null
+      const loop = current.cut?.mode === 'loop' ? current.cut.range : null
+      return { anchor: current.anchor, loop }
+    },
+    null,
+    { equals: sameTakeClock },
+  )
+
   // Export, Compare, Auto-balance, Repeat and the range wait for the take.
   const busy = () => running() || phase() === 'finishing'
   createEffect(() => setStudioTakeRunning(busy()))
@@ -571,6 +586,8 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     live,
     /** The armed lane's level and the take growing in it, for the timeline. */
     timeline: timelineRecord,
+    /** A running take's place on the clock, for the transport (take-clock.ts). */
+    takeClock,
     /** A lane's name, or null for one that is not in the song. */
     laneName: (trackId: string | null): string | null =>
       project()?.tracks.find((track) => track.id === trackId)?.name ?? null,
