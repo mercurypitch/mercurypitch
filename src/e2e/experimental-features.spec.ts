@@ -48,6 +48,20 @@ function studio(page: Page) {
   return page.getByRole('region', { name: 'Studio', exact: true })
 }
 
+/**
+ * A visit, on the production build's default, that hears the owner's
+ * switch on: this browser keeps it for the next visit.
+ */
+async function heardStudioOn(page: Page): Promise<void> {
+  await boot(page, { buildDefault: false, switches: { studio: true } })
+  await page.goto('/')
+  await waitForNav(page, 30_000)
+  await dismissOverlays(page)
+  await expectNavTabOffered(page, STUDIO_TAB)
+  // The next visit's read: the test answers it its own way.
+  await page.unroute('**/api/features')
+}
+
 async function expectHome(page: Page): Promise<void> {
   await expect(page.locator('#tab-home')).toHaveAttribute(
     'aria-current',
@@ -134,6 +148,41 @@ test.describe('Studio as an experimental feature', () => {
     // No switch set: the default holds, and the address goes Home.
     answer()
     await expectHome(page)
+  })
+
+  // The Studio audit's E1: a slow or failed read used to put the default
+  // back, so Studio and the songs it keeps in this browser were out of
+  // reach for the visit, and its address went Home.
+  test('a browser that heard Studio switched on keeps it through a read that fails, deep link included', async ({
+    page,
+  }) => {
+    await heardStudioOn(page)
+    await page.route('**/api/features', (route) =>
+      route.abort('internetdisconnected'),
+    )
+
+    await page.goto('/studio-night')
+    await waitForNav(page, 30_000)
+
+    await expect(studio(page)).toBeVisible()
+    await expect(page).toHaveURL(/#\/studio-night$/)
+    await expectNavTabOffered(page, STUDIO_TAB)
+  })
+
+  test('a browser that heard Studio switched on keeps it through a read that never answers', async ({
+    page,
+  }) => {
+    await heardStudioOn(page)
+    await page.route('**/api/features', () => {
+      // Held past the page's 2.5 s wait, and never answered.
+    })
+
+    await page.goto('/studio-night')
+    await waitForNav(page, 30_000)
+    await page.waitForFunction(() => performance.now() > 3500)
+
+    await expect(studio(page)).toBeVisible()
+    await expect(page).toHaveURL(/#\/studio-night$/)
   })
 
   test('switching Studio off and on again keeps its projects', async ({
