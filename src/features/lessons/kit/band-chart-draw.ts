@@ -151,9 +151,11 @@ export interface BandSpec {
   /** Where it starts and ends across the canvas, px: a rung over its time slot. Default the plot's full width. */
   readonly x0?: number
   readonly x1?: number
+  /** Merc's steady line at its centre: false for none (a chart that draws his own line, Lesson 22). */
+  readonly line?: boolean
 }
 
-/** Merc's band: an amber strip, its two edges, and Merc's steady line at its centre. */
+/** Merc's band: an amber strip, its two edges, and Merc's steady line at its centre, unless `line` is false. */
 export function drawBand(f: ChartFrame, b: BandSpec): void {
   const { ctx } = f
   const { x0 = f.x0, x1 = f.x1 } = b
@@ -174,6 +176,10 @@ export function drawBand(f: ChartFrame, b: BandSpec): void {
     ctx.stroke()
   }
   // Merc's line, steady: the vibrato of his "ooh" is never drawn
+  if (b.line === false) {
+    ctx.setLineDash([])
+    return
+  }
   ctx.strokeStyle = BAND_COLOR.target
   ctx.globalAlpha = dashed ? 0.55 : 0.75 + 0.25 * glow
   ctx.lineWidth = 2 + glow
