@@ -40,9 +40,10 @@
   background: rgba(7, 10, 16, 0.62);
   overflow: hidden;
 }
-/* the chart's canvas fills its frame: the voice lessons' sheet, which sizes
-   it on Lesson 5's page, comes to this one with Sing it */
-.hero-chart > canvas {
+/* a band chart's canvas fills its frame, the hero's and each word's: the
+   voice lessons' sheet, which sizes it on Lesson 5's page, comes to this
+   one with Sing it */
+.band-chart > canvas {
   display: block;
   width: 100%;
   height: 100%;
@@ -87,10 +88,35 @@
 }
 
 /* ---------------------------------------------------------------- four words */
-/* each figure a small band chart, as wide as the stub lets it be */
+/* each figure across the top of its ticket, as the rhythm lessons' words
+   are (kit/lesson-rhythm.css): a wave's swings need more room than the
+   kit's stub, 88 px wide, gives them */
+.l22-words .ticket {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+.l22-words .ticket .stub {
+  border-right: 0;
+  border-bottom: 1px dashed var(--hair-2);
+  padding: 12px 14px 10px;
+}
+/* the ticket's notches move to the ends of its dashed line */
+.l22-words .ticket .stub::before,
+.l22-words .ticket .stub::after {
+  top: auto;
+  bottom: -10px;
+}
+.l22-words .ticket .stub::before {
+  left: -10px;
+  right: auto;
+}
+.l22-words .ticket .stub::after {
+  right: -10px;
+}
+/* each figure a small band chart, as wide as its ticket */
 .l22-words .word-chart {
-  position: relative;
-  height: 120px;
+  width: 100%;
+  height: 104px;
   border-radius: var(--r-sm);
   border: 1px solid var(--hair);
   background: rgba(7, 10, 16, 0.62);

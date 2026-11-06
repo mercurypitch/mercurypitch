@@ -120,6 +120,17 @@ export function rulerOf(
   return null
 }
 
+/** A play drawn on a figure of its own, the hero's or a word's: its seconds, when it started, and where it reached once it ended. */
+export interface Drawn {
+  readonly sec: number
+  readonly t0: number
+  ended: number | null
+}
+
+/** How far a drawn play's line reaches at `now`: whole when `whole` (reduced motion), else as far as it has sounded, or where it ended. */
+export const drawnTo = (d: Drawn, now: number, whole: boolean): number =>
+  whole ? d.sec : (d.ended ?? Math.min(d.sec, now - d.t0))
+
 /**
  * What the chart shows in state `n` of play `p`, whose line (on the play's
  * clock) has sounded for `el` seconds; `whole`, under reduced motion, lands

@@ -46,6 +46,8 @@ import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { stillSky } from '@/features/lessons/kit/still-sky'
 import { holdTour } from '@/features/lessons/kit/tour-gate'
 import { A3, answerOf, COLD, contourOfPlay, lineOf, STRAIGHT_AT, } from './sounds'
+import type { Drawn } from './vib-picture'
+import { drawnTo } from './vib-picture'
 
 /** The hero's axis, cents either side of Merc's note: the wave and the top's straight note, with room above. */
 export const HERO_RANGE = 80
@@ -79,11 +81,8 @@ export const HERO_SAID = {
 } as const
 
 /** One play on the hero's chart: its line, its seconds, when it started, and where it reached once it ended. */
-interface Drawing {
+interface Drawing extends Drawn {
   readonly line: readonly WaveStretch[]
-  readonly sec: number
-  readonly t0: number
-  ended: number | null
 }
 
 export interface ColdOpen {
@@ -149,11 +148,10 @@ export function initColdOpen(
   })
 
   function paint(): void {
-    const d = drawing
-    const upTo = reducedMotion()
-      ? d.sec
-      : (d.ended ?? Math.min(d.sec, now() - d.t0))
-    const wave = { stretches: d.line, upTo }
+    const wave = {
+      stretches: drawing.line,
+      upTo: drawnTo(drawing, now(), reducedMotion()),
+    }
     chart.scene.wave = wave
     const share = middleShare()
     chart.scene.middle =

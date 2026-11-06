@@ -241,7 +241,7 @@ describe('the answering plays', () => {
     expect(middle.lines[1].points[0].hz).toBeCloseTo(hz(A3), 9)
   })
 
-  it("draws the straight note's level line at its height after the wave", () => {
+  it("draws the straight note's level line at its height after the wave, the whole line at once under reduced motion", () => {
     // Arrange
     const { hero } = mountHero()
     choose('top')
@@ -256,6 +256,7 @@ describe('the answering plays', () => {
       to: 4.3,
       c: 50,
     })
+    expect(hero.chart.scene.wave?.upTo).toBe(4.3)
     expect(said()).toBe(HERO_SAID.top)
   })
 })

@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { centsOn } from '@/features/lessons/kit/band-chart-wave-scene'
 import { lineOf, measure, retune, SUNG, SWELLED, TWO, WAVE } from './sounds'
-import { BLANK, peaksBy, pictureOf, rulerOf, stillOf, WINDOW, } from './vib-picture'
+import { BLANK, drawnTo, peaksBy, pictureOf, rulerOf, stillOf, WINDOW, } from './vib-picture'
 
 const SETTINGS = { rate2: 6, extent2: 30, rate3: 6 }
 
@@ -181,5 +181,18 @@ describe('the ruler', () => {
     expect(r?.t).toBeCloseTo(0.05, 9)
     expect(r?.to).toBeCloseTo(centsOn(line[0], 0.05), 9)
     expect(r?.to).toBeCloseTo(40, 9)
+  })
+})
+
+describe('a play drawn on a figure of its own (the hero, the words)', () => {
+  it('reaches as far as it has sounded, where it ended once it has, and whole under reduced motion', () => {
+    // Arrange: a 3.0 s play started at 10 s
+    const d = { sec: 3, t0: 10, ended: null }
+
+    // Assert
+    expect(drawnTo(d, 11.2, false)).toBeCloseTo(1.2, 9)
+    expect(drawnTo(d, 14, false)).toBe(3)
+    expect(drawnTo({ ...d, ended: 1.5 }, 14, false)).toBe(1.5)
+    expect(drawnTo(d, 10, true)).toBe(3)
   })
 })

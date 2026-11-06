@@ -452,11 +452,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the hero's band chart, its predict and its sky), the steps' band chart
   // in its four states (lesson-22/vib-toy.ts on the kit's band chart, its
   // wave painter and level strip, the kit's runs and Step 3's predict), the
-  // app's ribbon in a chunk of its own after first paint, and the recall
-  // and quick check on the kit's quiz (Lessons 5 and 14's question modules
-  // whole, as the recall asks their own objects): 131,010 bytes in
-  // build:e2e, the smallest whole KB above, to rise as each part joins.
-  'learn/22.html': 128,
+  // app's ribbon in a chunk of its own after first paint, the recall and
+  // quick check on the kit's quiz (Lessons 5 and 14's question modules
+  // whole, as the recall asks their own objects), and the four words' band
+  // charts on the kit's words strip: 133,216 bytes in build:e2e, the
+  // smallest whole KB above, to rise as each part joins.
+  'learn/22.html': 131,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -613,10 +614,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
   // Lesson 22 (a draft, as above), its shell, the cold open, the steps'
-  // band chart and the two quizzes, which add no sheet: 82,442 bytes in
-  // build:e2e, the kit's sheets (the shared parts), its own, and the shared
-  // Inter and Outfit @font-face rules; the smallest whole KB above, to rise
-  // as each part joins, the voice lessons' sheet with Sing it.
+  // band chart, the two quizzes and the four words, which add no sheet:
+  // 82,442 bytes in build:e2e, the kit's sheets (the shared parts), its
+  // own, and the shared Inter and Outfit @font-face rules; the smallest
+  // whole KB above, to rise as each part joins, the voice lessons' sheet
+  // with Sing it.
   'learn/22.html': 81,
   // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
