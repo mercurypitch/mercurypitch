@@ -42,6 +42,7 @@ function mount(gainDb = 0, volume: readonly StudioAutomationPoint[] = []) {
         track={project().tracks[0]}
         writable
         identity={<span>Keys</span>}
+        tall
         onCommand={command}
       />
       <StudioTrackControls

@@ -1,0 +1,149 @@
+/* Studio instrument picker — the current instrument, and the grid of chips by family under it. */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  color: var(--studio-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+button.current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 10px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.current > svg {
+  flex: none;
+  color: var(--studio-text-2);
+  transition: transform 0.15s ease-out;
+}
+.current[aria-expanded='true'] > svg {
+  transform: rotate(180deg);
+}
+.currentText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.currentText strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.currentText small,
+.automatic small {
+  color: var(--studio-muted);
+  font-size: 11.5px;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-list);
+}
+.search {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font: inherit;
+}
+button.automatic {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.family h4 {
+  margin: 0 0 6px;
+  color: var(--studio-text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+}
+button.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 6px 2px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+.choice span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (hover: hover) {
+  button.current:hover:not(:disabled),
+  button.automatic:hover:not(:disabled, [aria-pressed='true']),
+  button.choice:hover:not(:disabled, [aria-pressed='true']) {
+    background: var(--studio-hover);
+  }
+}
+button.automatic[aria-pressed='true'],
+button.choice[aria-pressed='true'] {
+  border-color: var(--studio-accent);
+  background: var(--studio-accent-soft);
+}
+.none {
+  margin: 0;
+  color: var(--studio-muted);
+}
+@media (pointer: coarse) {
+  /* Under 16 px, a phone zooms the page to the field. */
+  .search {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .current > svg {
+    transition: none;
+  }
+}

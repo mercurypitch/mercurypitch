@@ -1,5 +1,13 @@
 # Studio role pictures
 
+> **Retired on 2026-11-06.** Lane headers now show the Studio's own
+> instrument glyphs in family-tinted chips
+> ([studio-instrument-glyphs.md](studio-instrument-glyphs.md)), and the
+> "Role pictures" setting, `role-pictures.ts`, `role-icons.tsx` and the ten
+> WebP files are gone. This page stays as the record of how the pictures were
+> made and why they were dropped: at 56 px on a 64 px plate they cost a fifth
+> of the header, and at the 20 px a compact lane has they did not read.
+
 One picture per track role for the role plate at the left of each Studio lane
 header (`src/features/studio/timeline/StudioLaneHeader.tsx`), also shown in the
 phone's Mix sheet. With **Role pictures** off in Track details, the plate shows

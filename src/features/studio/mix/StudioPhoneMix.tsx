@@ -1,9 +1,9 @@
-// Studio phone mix — the Mix sheet's lane list: each lane's role plate, name and arm button, then its compact mix controls.
+// Studio phone mix — the Mix sheet's lane list: each lane's instrument chip, name and arm button, then its compact mix controls.
 import { createMemo, For, Show } from 'solid-js'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import styles from '../StudioPage.module.css'
-import { StudioArmButton, StudioRolePlate } from '../timeline/StudioLaneHeader'
+import { StudioArmButton, StudioLaneInstrument, } from '../timeline/StudioLaneHeader'
 import { StudioTrackControls } from '../timeline/StudioTrackControls'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
 import type { StudioLaneArming } from '../timeline/types'
@@ -23,12 +23,17 @@ export function StudioPhoneMix(props: StudioPhoneMixProps) {
       .sort((a, b) => a.order - b.order)
       .map((track) => track.id),
   )
+  const anySolo = createMemo(() =>
+    props.project.tracks.some((track) => track.solo),
+  )
   return (
     <div class={styles.phoneMix}>
       <For each={trackIds()}>
         {(id, index) => {
           const track = () =>
             props.project.tracks.find((item) => item.id === id)!
+          // Silent as its timeline header says: muted, or another lane soloed.
+          const silent = () => track().mute || (anySolo() && !track().solo)
           return (
             <div
               class={styles.phoneTrack}
@@ -41,7 +46,11 @@ export function StudioPhoneMix(props: StudioPhoneMixProps) {
               }}
             >
               <div class={styles.phoneTrackHead}>
-                <StudioRolePlate role={track().role} list />
+                <StudioLaneInstrument
+                  track={track()}
+                  size={32}
+                  silent={silent()}
+                />
                 <button
                   type="button"
                   class={styles.textButton}
