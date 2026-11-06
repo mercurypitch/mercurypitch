@@ -307,6 +307,41 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------------------------------------------------------------- the four words' tickets */
+/* each figure across the top of its ticket, since the kit's stub, 88 px
+   wide, has no room for one (Lesson 17 WEB-SPEC, Toys 4) */
+.rb-words .ticket {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+.rb-words .ticket .stub {
+  border-right: 0;
+  border-bottom: 1px dashed var(--hair-2);
+  padding: 10px 14px 6px;
+}
+/* the ticket's notches move to the ends of its dashed line */
+.rb-words .ticket .stub::before,
+.rb-words .ticket .stub::after {
+  top: auto;
+  bottom: -10px;
+}
+.rb-words .ticket .stub::before {
+  left: -10px;
+  right: auto;
+}
+.rb-words .ticket .stub::after {
+  right: -10px;
+}
+.rb-words .word-fig {
+  position: relative;
+  width: 100%;
+  height: 104px;
+}
+.rb-words .ticket .stub svg {
+  width: 100%;
+  height: 100%;
+}
+
 /* ---------------------------------------------------------------- still, when asked */
 .motion-paused .rb .rb-sym,
 .motion-paused .rb .rb-tie,
