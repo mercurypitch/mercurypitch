@@ -206,7 +206,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // as on Lesson 2; the other 322 are the kit's predict, quiz and glyphs in
   // a chunk of their own again (356), less 34 of the minifier's renaming,
   // and 137 can be tried once Lesson 17 loads them.
-  'learn/03.html': 138,
+  // Raised to 139 for Lesson 19's steps: 141,228 bytes before them, 141,376
+  // with them, against 141,312 at 138. All 148 are the bundler's: Lesson 19
+  // loads the kit's voice choice without the sung part's comfort check, so
+  // the voice choice moves to a chunk of its own, and every lesson page that
+  // loads both carries its glue (the other voice lessons rose by as much).
+  'learn/03.html': 139,
   // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
@@ -403,9 +408,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 19, "Threes, offbeats and syncopation", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must. Its
-  // page shell weighs 85,582 bytes in build:e2e, the budget the smallest
-  // whole KB above that, to rise as each part joins.
-  'learn/19.html': 84,
+  // page shell weighed 85,582 bytes in build:e2e, the budget the smallest
+  // whole KB above that, to rise as each part joins. Its four steps bring
+  // the kit's rhythm bar with its drawing, model and words, the beat clock,
+  // the app's drum voices (src/lib/drum-voices.ts, 5,284) and Subdivide's
+  // bars (src/lib/ear/metre.ts, 1,054): 141,436 bytes.
+  'learn/19.html': 139,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

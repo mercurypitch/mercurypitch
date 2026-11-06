@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Bar, NoteValue, Written } from './rhythm-model'
-import { placeBars } from './rhythm-model'
+import { placeBars, SIX_EIGHT } from './rhythm-model'
 import { andList, figureWords, lengthsWords, padWords, secondsWords, symbolWords, } from './rhythm-words'
 
 const note = (value: NoteValue, more: Partial<Written> = {}): Written => ({
@@ -118,5 +118,38 @@ describe('rhythm words', () => {
     )
     expect(secondsWords(1, 60)).toBe('1 second')
     expect(secondsWords(1, 120)).toBe('0.5 seconds')
+  })
+})
+
+describe('past 4/4', () => {
+  it("names a figure in its metre, four bars of 6/8, and a triplet's notes as triplet eighths (Lesson 19 WEB-SPEC, Toys 1 and 5)", () => {
+    // Arrange
+    const e = { kind: 'note', value: 0.5 } as const
+    const t = { ...e, triplet: true }
+    const dq = { kind: 'note', value: 1, dotted: true } as const
+
+    // Act
+    const tune = figureWords(
+      [
+        [e, e, e, dq],
+        [e, e, e, dq],
+        [e, e, e, e, e, e],
+        [{ kind: 'note', value: 2, dotted: true }],
+      ],
+      'bass',
+      SIX_EIGHT,
+    )
+    const triplet = figureWords(
+      [[{ kind: 'note', value: 1 }, e, e, t, t, t, { kind: 'note', value: 1 }]],
+      'line',
+    )
+
+    // Assert
+    expect(tune).toBe(
+      'Four bars of 6/8: three eighth notes and a dotted quarter note, then three eighth notes and a dotted quarter note, then six eighth notes, then a dotted half note, on the bass staff',
+    )
+    expect(triplet).toBe(
+      'One bar of 4/4: a quarter note, two eighth notes, three triplet eighth notes and a quarter note, on one line',
+    )
   })
 })
