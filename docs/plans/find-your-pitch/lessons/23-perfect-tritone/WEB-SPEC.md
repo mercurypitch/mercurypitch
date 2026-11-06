@@ -787,3 +787,41 @@ production:
 - No faint staff shows behind the page at any width, and no section head carries one (Tests, 16).
 - The app-check sweep at phone and desktop width, with Sing it open in each state, the steps' toy
   folded and curled, and the cold open before and after its reveal.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The interval state is a toy of its own in the kit (`kit/staff-interval.ts`, drawn by
+  `kit/staff-interval-draw.ts`), not an option of the staff toy: it mounts on the same figure, with
+  the staff toy's engraving (`kit/staff-draw.ts`) and its one pitch-line switch (`PitchLine`), and
+  the pure helpers are `kit/intervals.ts`. Lessons 25 and 27 can mount it as this page does.
+- A fold writes four notes side by side, so its scene asks the drawing for fourteen staff spaces
+  across where a staff asks for nine (`staff-draw.ts` `across`): on a phone the staff draws smaller
+  and the four notes and their signs never touch. In a play of two pairs, the second pair's first
+  note clears the first pair's names and spans, so Step 4 names B and F, then C and E, never all
+  four at once.
+- Play C up to C lights its two ends as lanes of their own, C4's and C5's, the only lanes the hero
+  draws before a split.
+- The four words' figures are two columns wide, so Quality writes its minor third over its major
+  one and Inversion its second pair over its first, each pair's line under it as its second note is
+  written; a note lights in its singer's colour while it sounds, blue on the bass staff and orange
+  on the treble, as on the stage.
+- The recall and the quick check load with the page, as Lesson 15's do, and `main.ts` takes the
+  guide's sheet (`kit/lesson-guide.css`) before the page's own: a recall loaded after first paint
+  took the sheet out of the quizzes' shared chunk, and Lessons 2, 4, 6, 8, 9, 10, 12 and 15 then
+  linked it after their own sheets (MISTAKES.md). Every page links the same sheets as on main.
+- Sing it writes the house under each do, D3 and D4 on the bass staff or D4 and D5 on the treble,
+  and Merc's notes go dark through the breath between the two halves.
+- The staff toy's score keeps a column of its own for each note (`kit/staff.ts` `scoreAcross`), so
+  on a narrow phone the staff draws smaller instead of crowding its notes: this page's two As no
+  longer merge into one, and Lesson 15's five notes stop touching at 390 and 344 px. A desktop's
+  staff is unchanged, bound by its height. On a phone this page's sing-along staff takes the card's
+  width, and the still of the Merc who sings stands beside the switch under it.
+- Then just listen shows with Your turn once a voice is chosen, and stays in every ending. Its staff
+  is a figure of its own drawn by the staff toy's engraving, with the staff toy's room, at most
+  440 px wide; each pair is written as it sounds, lit in ink, and rests once the next one starts.
+  Its live line says the four notes in words as the play starts: "Ti and fa together, C sharp 3 and
+  G3, then do and mi, D3 and F sharp 3." A change of voice stops it and writes the staff afresh.
+- Free play's Sharp and Flat follow their rule from the start, as the steps' do after the choice:
+  on its first note, E, Flat is offered and Sharp is not.
