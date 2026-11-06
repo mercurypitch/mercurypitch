@@ -1,6 +1,7 @@
-// Studio Add takes on a phone — the sticky Add takes button stays opaque while nothing is picked, so no kept take reads through it.
+// Studio Add takes on a phone — the sticky Add takes button stays opaque while nothing is picked, so no kept take reads through it, and every take-source chip takes a 44 px press.
 import { expect, type Page, test } from '@playwright/test'
 import { audioFixture, studioRegion } from './helpers/dedicatedstudio-fixture'
+import { bringToMiddle, hitArea } from './helpers/hit-area'
 import { dismissOverlays, waitForNav } from './helpers/ui'
 
 test.use({
@@ -115,5 +116,25 @@ test.describe('Studio Add takes on a phone', () => {
 
     expect(painted.opacity, 'the button and every box above it').toBe(1)
     expect(painted.fillAlpha, `its fill ${painted.fill}`).toBe(1)
+  })
+
+  test('takes a 44 px press on every take-source chip, All included @smoke', async ({
+    page,
+  }) => {
+    await openAddTakes(page)
+    const chips = studioRegion(page)
+      .getByRole('group', { name: 'Take source', exact: true })
+      .getByRole('button')
+    const presses: Record<string, [number, number]> = {}
+    for (const chip of await chips.all()) {
+      await bringToMiddle(chip)
+      presses[(await chip.textContent()) ?? '?'] = (await hitArea(chip)).hit
+    }
+
+    expect(Object.keys(presses)).toContain('All')
+    for (const [name, [width, height]] of Object.entries(presses)) {
+      expect(width, `${name} width`).toBeGreaterThanOrEqual(44)
+      expect(height, `${name} height`).toBeGreaterThanOrEqual(44)
+    }
   })
 })
