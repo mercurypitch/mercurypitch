@@ -79,8 +79,8 @@ done
 for f in s2pkg/shared-rest/NOTES.md s2pkg/shared-rest/apply_shared.py s2pkg/shared-rest/findings-before.txt s2pkg/shared-rest/COMMIT-MSG.txt; do
   [ -f "$S/$f" ] && FILES+=("$f")
 done
-# The lead's own page builds (Lessons 17, 19 and 23).
-for f in l17/PLAN-B.md l19/PLAN.md l19/SPEC-NOTES.md l23/PLAN.md; do
+# The lead's own page builds (Lessons 17, 19, 22 and 23).
+for f in l17/PLAN-B.md l19/PLAN.md l19/SPEC-NOTES.md l23/PLAN.md l22/PLAN.md; do
   [ -f "$S/$f" ] && FILES+=("$f")
 done
 
