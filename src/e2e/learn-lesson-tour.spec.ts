@@ -515,6 +515,8 @@ for (const [n, name, size] of [
   [15, 'desktop', DESKTOP],
   [17, 'phone', PHONE],
   [17, 'desktop', DESKTOP],
+  [22, 'phone', PHONE],
+  [22, 'desktop', DESKTOP],
   [23, 'phone', PHONE],
   [23, 'desktop', DESKTOP],
 ] as const) {

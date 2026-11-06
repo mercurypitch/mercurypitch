@@ -162,6 +162,16 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  22: {
+    tease:
+      'Merc holds one note, and its line swings past both edges of the band.',
+    teaseAlts: [
+      {
+        id: 'nudged',
+        text: 'Each fifth is nudged two cents. A held note can move far more.',
+      },
+    ],
+  },
   23: {
     tease:
       'One note, swinging. Now two notes together: one pair wants to move.',

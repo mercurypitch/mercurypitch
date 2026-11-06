@@ -299,6 +299,34 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 22's page on its own card, Ready, with Voice Mirror's link", async () => {
+    // Arrange: Lesson 22's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 22 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 22's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Vibrato')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 22')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/mirror?lesson=22"]'),
+    ).not.toBeNull()
+  })
+
   it("opens Lesson 23's page on its own card, Ready, with the Ear Lab's link", async () => {
     // Arrange: Lesson 23's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
