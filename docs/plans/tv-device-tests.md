@@ -393,14 +393,20 @@ so you can tell which one you heard:
 | Phone speaker    | not reported | not reported   | not reported   | not reported                | not reported                  |
 
 **Run on the LG C2, 6 Nov 2026 at about 17:55** (mp-v0.8.55, TestFlight
-build 1714), the TV chosen under AirPlay in Control Center. The owner heard
-button 3 (Web Audio alone, on a fresh AudioContext) on the TV, and button 5
-(Web Audio with the mic open) too, though sometimes not, probably while
-AirPlay was still connecting. Button 4, Web Audio while a silent element
-kept local plays, did not play. Button 4 is how the Karaoke room plays:
-Web Audio beside the lock screen's carrier. Buttons 1 and 2, the
-`[airplay check]` lines, and the Screen Mirroring and speaker rows were not
-reported. What follows is Test 11.
+build 1714), the TV chosen under AirPlay in Control Center. Pressing 1
+through 5 in turn, the owner heard button 3 (Web Audio alone, on a fresh
+AudioContext) on the TV, and button 5 (Web Audio with the mic open) too,
+though not every time. Once AirPlay had connected, 3 and then 5 both
+played. The owner's guesses for the misses: AirPlay not yet in sync, or
+something left over from the buttons before it. The second fits how WebKit
+keeps a session in playback for an element that has played audibly, and
+buttons 1, 2 and 4 each play an element that stays up for 3 s after its
+beeps; nothing has told the two apart yet (Test 11 ends with the presses
+that do). Button 4, Web Audio while a silent element kept local plays, was
+not among those heard. Button 4 is how the Karaoke room plays: Web Audio
+beside the lock screen's carrier. Buttons 1 and 2 were not named either
+way, and the `[airplay check]` lines and the Screen Mirroring and speaker
+rows were not reported. What follows is Test 11.
 
 ## Test 10: the Cast receiver spike (branch `feat/cast-receiver`, once a Google TV is registered)
 
@@ -464,7 +470,8 @@ ring switch on ring, then on silent.
    offset moves them for AirPlay, so they may run ahead of the TV's sound
    by up to that delay; how far depends on whether WebKit counts AirPlay's
    delay in that clock, which nothing has measured. Say how far ahead
-   they feel.
+   they feel. Sing a line too: with the mic open, as with Test 9's button
+   5, does the TV keep playing?
 4. Under the room header, once a launch: "The song is playing on LG C2
    over AirPlay." (the TV by the name the phone gives it; "The song is
    playing over AirPlay." where only the page's rate says AirPlay), "The
@@ -500,6 +507,11 @@ If a song stops by itself on AirPlay, the room should say "The sound went
 to LG C2 over AirPlay and stopped." and "To hear it here, choose this phone
 under AirPlay in Control Center.", with Play again. Copy the console then,
 and Developer, Audio, Copy report.
+
+Then Test 9 once more, on AirPlay, to tell apart the two guesses for
+button 5's misses. Press 4 and then 5 straight after, three times; then 3,
+wait 5 s, and 5, three times. Say which presses of 5 the TV played, and
+where 1 and 2 play: the TV, the phone, or nowhere.
 
 | Case | Ring switch | Sound on the TV? How late? | Phone silent? | Lyrics ahead by | Lock screen shows | TV shows | Hint words right? | Back on the phone: sound, lock screen |
 | ---- | ----------- | -------------------------- | ------------- | --------------- | ----------------- | -------- | ----------------- | ------------------------------------- |
