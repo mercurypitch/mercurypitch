@@ -22,6 +22,7 @@
 // also journaled as it records (studio-take-journal.ts), so a closed tab
 // leaves the take to be kept on the next visit.
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
+import type { MicReleaseReason } from '@/lib/mic-manager'
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { frameTime, wholeFrameAtOrAfter } from '../playback/whole-frame'
@@ -76,6 +77,19 @@ export const MIC_LOST_BEFORE_TAKE =
   'The microphone went away before the take began, so nothing was recorded. Plug it back in, then press Record again.'
 export const MIC_LOST_ARMED =
   'The microphone went away. Plug it back in, then press Record again.'
+/** An armed lane's microphone, let go by the app as the tab stayed in the background (mic-manager.ts). */
+export const MIC_RELEASED_IN_BACKGROUND =
+  'Studio let the microphone go while this tab was in the background. Arm the lane again.'
+/** An armed lane's microphone, handed to another MercuryPitch tab that asked for it. */
+export const MIC_TAKEN_BY_OTHER_TAB =
+  'Another MercuryPitch tab took the microphone. Close it there, then arm the lane again.'
+
+/** What an armed lane says when its microphone goes: the release's own reason, else a lost device. */
+function lostWhileArmed(reason: MicReleaseReason | null): string {
+  if (reason === 'background') return MIC_RELEASED_IN_BACKGROUND
+  if (reason === 'other-tab') return MIC_TAKEN_BY_OTHER_TAB
+  return MIC_LOST_ARMED
+}
 const AUDIO_DID_NOT_START = "Studio's audio didn't start. Press Record again."
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
 const BEFORE_THE_IN_POINT =
@@ -656,8 +670,11 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   // ── Losses ───────────────────────────────────────────────────
 
-  /** The microphone went away: an armed lane disarms, a take keeps what it has. */
-  function micLost(): void {
+  /**
+   * The microphone went away: an armed lane disarms, saying why when the
+   * app let it go (`reason`), and a take keeps what it has.
+   */
+  function micLost(reason: MicReleaseReason | null = null): void {
     if (view.phase === 'arming' || view.phase === 'idle') return
     if (view.phase === 'armed') {
       closeArmed()
@@ -665,7 +682,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         phase: 'idle',
         level: 0,
         targetTrackId: null,
-        error: MIC_LOST_ARMED,
+        error: lostWhileArmed(reason),
       })
       return
     }
@@ -676,7 +693,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         phase: 'idle',
         level: 0,
         targetTrackId: null,
-        error: MIC_LOST_ARMED,
+        error: lostWhileArmed(reason),
       })
       return
     }
