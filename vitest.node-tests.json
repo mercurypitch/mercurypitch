@@ -206,6 +206,7 @@
   "src/lib/studio-fx/presets.test.ts",
   "src/lib/studio-fx/role-chains.test.ts",
   "src/lib/studio/audio/canonical-pcm.test.ts",
+  "src/lib/studio/audio/canonical-pcm16.test.ts",
   "src/lib/studio/audio/preparation-gain.test.ts",
   "src/lib/studio/audio/prepare-studio-asset.test.ts",
   "src/lib/studio/model/arrangement-plan.test.ts",

@@ -37,7 +37,7 @@ export function validateStudioAsset(raw: unknown): StudioAsset {
       'preparation',
       'provenance',
     ],
-    ['originalName'],
+    ['originalName', 'canonicalPcmFormat'],
   )
   idValue(value.id, 'asset.id')
   idValue(value.projectId, 'asset.projectId')
@@ -63,8 +63,15 @@ export function validateStudioAsset(raw: unknown): StudioAsset {
     'asset.canonicalPcmByteLength',
     1,
   )
+  // Only Save space's 16-bit steps are named; 32-bit floats, every take's
+  // format before it, leave the field out, so one format has one shape.
+  let bytesPerSample = 4
+  if (Object.hasOwn(value, 'canonicalPcmFormat')) {
+    enumValue(value.canonicalPcmFormat, ['int16'], 'asset.canonicalPcmFormat')
+    bytesPerSample = 2
+  }
   requireValue(
-    bytes > frames * channels * 4,
+    bytes > frames * channels * bytesPerSample,
     'asset.canonicalPcmByteLength',
     'PCM payload and header do not fit',
   )

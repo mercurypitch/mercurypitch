@@ -1,5 +1,9 @@
 // Studio PCM cache — immutable shared buffers with pinned ownership and admitted transient copies.
-import { CANONICAL_PCM_HEADER_BYTES, readCanonicalPcmBytes, } from '../audio/canonical-pcm'
+//
+// Every buffer holds 32-bit floats, whatever its take's canonical copy
+// keeps: a Save space take's 16-bit steps become the floats they stand for
+// as they load, so playback, renders and exports all read floats.
+import { CANONICAL_PCM_HEADER_BYTES, canonicalPcmLayout, readCanonicalChannel, readCanonicalPcmBytes, } from '../audio/canonical-pcm'
 import { importCheckpoint } from '../audio/import-limits'
 import { registerStudioMemoryReclaimer, reserveStudioMemory, StudioMemoryError, } from '../memory-budget'
 import type { StudioAsset } from '../model/types'
@@ -22,7 +26,21 @@ async function copyCanonicalSamples(
   buffer: AudioBuffer,
   signal: AbortSignal,
 ): Promise<void> {
+  const layout = canonicalPcmLayout(pcm)
   for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    if (layout.steps !== null) {
+      // Written straight into the buffer's own channel: no float copy of
+      // the take is made on the way.
+      await readCanonicalChannel(
+        pcm,
+        layout,
+        buffer.length,
+        channel,
+        buffer.getChannelData(channel),
+        signal,
+      )
+      continue
+    }
     if (LITTLE_ENDIAN) {
       buffer.copyToChannel(
         new Float32Array(

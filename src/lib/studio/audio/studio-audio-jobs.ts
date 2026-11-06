@@ -5,7 +5,7 @@
 // bytes a restore read from its backup (transferred), and answers with
 // buffers to transfer back.
 import type { CanonicalPcmMetadata } from './canonical-pcm'
-import { CANONICAL_PCM_HEADER_BYTES, checkCanonicalPcm, checkCanonicalPcmHash, validateCanonicalPcmBytes, } from './canonical-pcm'
+import { CANONICAL_PCM_HEADER_BYTES, canonicalPcmLayout, checkCanonicalPcm, checkCanonicalPcmHash, readCanonicalChannel, validateCanonicalPcmBytes, } from './canonical-pcm'
 import { sha256InPlace } from './sha256'
 import { buildStudioPeaks, encodeStudioPeaks } from './waveform-peaks'
 
@@ -60,18 +60,33 @@ export async function answerStudioAudioJob(
     await checkCanonicalPcm(bytes, metadata)
     return [bytes]
   }
-  await checkCanonicalPcmHash(bytes, metadata)
+  const view = await checkCanonicalPcmHash(bytes, metadata)
   // Building the peaks scans every sample, and refuses one that is not finite.
-  const channels = Array.from(
-    { length: metadata.channels },
-    (_, channel) =>
-      new Float32Array(
-        bytes,
-        CANONICAL_PCM_HEADER_BYTES +
-          channel * metadata.normalizedFrameCount * 4,
-        metadata.normalizedFrameCount,
-      ),
-  )
+  const layout = canonicalPcmLayout(view)
+  const frames = metadata.normalizedFrameCount
+  const channels: Float32Array[] = []
+  for (let channel = 0; channel < metadata.channels; channel++) {
+    if (layout.steps === null) {
+      channels.push(
+        new Float32Array(
+          bytes,
+          CANONICAL_PCM_HEADER_BYTES + channel * frames * 4,
+          frames,
+        ),
+      )
+      continue
+    }
+    // A Save space take's steps, as the floats they stand for.
+    const samples = new Float32Array(frames)
+    await readCanonicalChannel(
+      new DataView(bytes),
+      layout,
+      frames,
+      channel,
+      samples,
+    )
+    channels.push(samples)
+  }
   return [
     encodeStudioPeaks(
       buildStudioPeaks(channels, metadata.normalizedFrameCount),

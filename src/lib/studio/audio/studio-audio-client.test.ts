@@ -94,6 +94,38 @@ describe('Studio audio client', () => {
     uninstall()
   })
 
+  it("reads a Save space take and builds its peaks in the worker, which is told the take's format", async () => {
+    const { installStudioAudioWorker, buildStudioPeaksBytes } = await load()
+    const { readCanonicalPcmBytes, decodeCanonicalPcm } =
+      await import('./canonical-pcm')
+    const peaksModule = await import('./waveform-peaks')
+    const data = await studioAssetFixture('song', 'take', 0.2, 'int16')
+    const uninstall = installStudioAudioWorker()
+
+    const bytes = await readCanonicalPcmBytes(data.canonicalPcm, data.asset)
+    const peaks = await buildStudioPeaksBytes(data.canonicalPcm, data.asset)
+
+    expect(FakeWorker.received.map((request) => request.kind)).toEqual([
+      'verify',
+      'peaks',
+    ])
+    expect(
+      FakeWorker.received.map((request) => request.metadata.canonicalPcmFormat),
+    ).toEqual(['int16', 'int16'])
+    expect(await sha256Bytes(bytes)).toBe(data.asset.canonicalPcmSha256)
+    // The peaks of the floats the steps stand for, as a check here builds them.
+    uninstall()
+    const floats = await decodeCanonicalPcm(data.canonicalPcm, data.asset)
+    expect(new Uint8Array(peaks)).toEqual(
+      new Uint8Array(
+        peaksModule.encodeStudioPeaks(
+          peaksModule.buildStudioPeaks([floats.getChannelData(0)], 64),
+          data.asset.canonicalPcmSha256,
+        ),
+      ),
+    )
+  })
+
   it('refuses a damaged take in the worker with the message a check here gives', async () => {
     const { installStudioAudioWorker, checkPreparedStudioBytes } = await load()
     const uninstall = installStudioAudioWorker()
