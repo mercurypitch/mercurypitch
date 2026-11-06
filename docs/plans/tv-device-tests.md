@@ -388,6 +388,44 @@ so you can tell which one you heard:
 | Mirroring, LG C2 |             |                |               |                             |                  |
 | Phone speaker    |             |                |               |                             |                  |
 
+## Test 10: the Cast receiver spike (branch `feat/cast-receiver`, once a Google TV is registered)
+
+Before any sender of ours exists, Google's own tool can start the receiver on
+a TV and talk to it. This needs two things:
+
+- a Cast test device registered in the Cast SDK Developer Console
+  ([tv-cast-and-google-tv.md](tv-cast-and-google-tv.md), P6, step 0);
+- the dev site serving `/cast-receiver`, which it does once the branch is
+  merged.
+
+1. Register the Philips Google TV, or a Chromecast with Google TV, in the
+   Cast SDK Developer Console by its Cast serial number. Registration can
+   take about 15 minutes; restart the TV after it.
+2. On a computer on the TV's Wi-Fi, open Google's Cast Command and Control
+   tool in Chrome: https://casttool.appspot.com/cactool/. Enter the dev
+   receiver's application ID, `01A75FA0`, press Set App ID, then press the
+   Cast icon and choose the TV.
+3. The TV shows "Mercury Pitch" and "Choose a song on your phone".
+4. In the tool's custom message tab, with the namespace
+   `urn:x-cast:com.mercurypitch.stage`, send these in turn:
+   - `{"v":1,"kind":"diagnostics","on":true}`: a panel appears top left.
+   - `{"v":1,"kind":"demo"}`: the demo song plays on the stage, with no
+     sound: the lane, the singer's trail, the lyrics and a score.
+5. After two minutes, photograph the panel. Then send
+   `{"v":1,"kind":"probe"}` and copy the reply from the tool's log.
+6. Stop casting in the tool: the receiver closes, and the TV goes back to
+   where it was. (A phone that drops off the Wi-Fi instead leaves the idle
+   screen up for five minutes; that waits for a sender of ours.)
+
+**The spike's stop sign:** the stage cannot hold its frame rate, or runs out
+of memory, on the older Chromecast with Google TV.
+
+| Device                            | fps | p95 ms | late | heap MB, of limit | output latency | data channel |
+| --------------------------------- | --- | ------ | ---- | ----------------- | -------------- | ------------ |
+| Philips Google TV                 |     |        |      |                   |                |              |
+| Chromecast with Google TV (older) |     |        |      |                   |                |              |
+| Google TV Streamer                |     |        |      |                   |                |              |
+
 ## Aside: a TestFlight Subscribe asks for the password
 
 In a TestFlight build Apple's purchase sheet asks for the Apple Account
