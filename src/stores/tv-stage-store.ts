@@ -26,8 +26,18 @@ const isOffset = (value: unknown): value is number =>
   Number.isFinite(value) &&
   Math.abs(value) <= TV_STAGE_OFFSET_LIMIT_MS
 
+/**
+ * Kept on this device only, under an `mp_` key the settings sync never
+ * carries: an offset is tuned for one phone and the TV it plays to. It was
+ * kept under a `pitchperfect_` key until 6 Nov 2026, which the sync carried
+ * to the account's other phones, store builds among them, which have no
+ * control to set it back; a new key leaves every copy of the old one, here
+ * and on those phones, read by nothing.
+ */
+export const TV_STAGE_OFFSET_KEY = 'mp_tv_stage_offset_ms'
+
 export const [tvStageOffsetMs, setTvStageOffsetMs] =
-  createPersistedSignal<number>('pitchperfect_tv_stage_offset_ms', 0, {
+  createPersistedSignal<number>(TV_STAGE_OFFSET_KEY, 0, {
     validator: isOffset,
   })
 
