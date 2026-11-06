@@ -43,8 +43,8 @@ shape (l17/PLAN-B.md). Drop nothing on main; INDEX regenerated last.
   had measured the column (46 px there), and the pads drew 41.6 (found by C11's 344 px check).
 - The kit's figureSize measures inside the figure's border: the stage's .viz has 1 px above and below,
   so every rhythm figure there (Lesson 17's too) was drawn 2 px too tall and scaled 0.992 to fit,
-  its pads 43.6 px at 344 px. Lesson 15's staff-draw.ts figureSize reads the border box too: left
-  as a follow-up (Lesson 15's page), named in the PR.
+  its pads 43.6 px at 344 px. Lesson 15's staff toy already shows at scale 1 (356 x 308 drawn and
+  shown, probed on the production build), so nothing follows for it.
 
 ## Commits, in order (each with its tests; gates per commit: pnpm check, units of what changed;
 ## build:e2e + first paint at C1, C7, C11, C14; e2e at C12)
