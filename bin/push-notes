@@ -79,6 +79,10 @@ done
 for f in s2pkg/shared-rest/NOTES.md s2pkg/shared-rest/apply_shared.py s2pkg/shared-rest/findings-before.txt s2pkg/shared-rest/COMMIT-MSG.txt; do
   [ -f "$S/$f" ] && FILES+=("$f")
 done
+# The lead's own page builds (Lessons 17 and 19).
+for f in l17/PLAN-B.md l19/PLAN.md l19/SPEC-NOTES.md; do
+  [ -f "$S/$f" ] && FILES+=("$f")
+done
 
 # The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
 L4=/home/user/mercurypitch/output/motion/lesson-04
