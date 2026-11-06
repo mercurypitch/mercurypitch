@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { micLockStatus, releaseMicLock } from '../lib/mic-lock'
 import type { MicState } from '../lib/mic-manager'
-import { MicManager } from '../lib/mic-manager'
+import { MicManager, micManager } from '../lib/mic-manager'
 
 interface MockTrack {
   stop: ReturnType<typeof vi.fn>
@@ -760,6 +760,43 @@ describe('MicManager input for one hold', () => {
         expect(mgr.getScopedHold()).toBeNull()
         expect(studio.track.stop).toHaveBeenCalled()
       })
+
+      it('lets an idle hold go once the grace is over, and says the background was why', async () => {
+        // Arrange: the app's own manager, which the page's visibility drives.
+        openEach()
+        const states: MicState[] = []
+        const unsubscribe = micManager.subscribe((state) => states.push(state))
+        const hold = await micManager.acquireFrom('studio', 'usb-1')
+
+        // Act
+        setHidden(true)
+        await vi.advanceTimersByTimeAsync(20_000)
+        unsubscribe()
+        hold.release()
+
+        // Assert
+        expect(states.filter((state) => state.released)).toEqual([
+          expect.objectContaining({ scoped: null, released: 'background' }),
+        ])
+      })
+    })
+
+    it('says why in the change that lets every hold go, and in no other', async () => {
+      // Arrange
+      openEach()
+      const states: MicState[] = []
+      mgr.subscribe((state) => states.push(state))
+      await mgr.acquireFrom('studio', 'usb-1')
+
+      // Act: another tab asks for the microphone, then a consumer opens it again.
+      await mgr.forceReleaseAll('other-tab')
+      await mgr.acquire('voice')
+
+      // Assert
+      expect(states.filter((state) => state.released)).toEqual([
+        expect.objectContaining({ scoped: null, released: 'other-tab' }),
+      ])
+      expect(states.at(-1)?.released).toBeNull()
     })
   })
 })

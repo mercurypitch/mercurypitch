@@ -682,6 +682,27 @@ describe('losses while armed', () => {
     expect(h.releaseMic).toHaveBeenCalledOnce()
   })
 
+  it('says the app let the microphone go in the background, or another tab took it, rather than to plug it in', async () => {
+    const background = harness()
+    const otherTab = harness()
+    await background.recorder.arm(null)
+    await otherTab.recorder.arm(null)
+
+    background.recorder.micLost('background')
+    otherTab.recorder.micLost('other-tab')
+
+    expect(background.view()).toMatchObject({
+      phase: 'idle',
+      error:
+        'Studio let the microphone go while this tab was in the background. Arm the lane again.',
+    })
+    expect(otherTab.view()).toMatchObject({
+      phase: 'idle',
+      error:
+        'Another MercuryPitch tab took the microphone. Close it there, then arm the lane again.',
+    })
+  })
+
   it('drops a count-in and disarms when the clock stops', async () => {
     const h = harness()
     await h.recorder.arm(null)
