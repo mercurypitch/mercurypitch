@@ -10,8 +10,9 @@
 // - a lesson page, /learn/NN, /learn/NN.html or /learn/NN/ (GET or HEAD). A
 //   lesson that is not published answers with the 404 page: status 404,
 //   `X-Robots-Tag: noindex`, never stored. A published one is the asset
-//   layer's answer, which a redirect (the .html and slash spellings) or any
-//   answer that is not a whole HTML page passes through as it came. A whole
+//   layer's answer, which a redirect (the .html and slash spellings, made a
+//   308 from the asset layer's 307) or any answer that is not a whole HTML
+//   page passes through as it came. A whole
 //   page is rewritten: the state goes into its head as
 //   `<script type="application/json" id="lesson-state">`, which the page's
 //   script reads (src/features/lessons/kit/page-state.ts); the picked hook
@@ -357,6 +358,19 @@ const isHtml = (response: Response): boolean =>
 const isWholePage = (response: Response): boolean =>
   response.status === 200 && isHtml(response)
 
+/**
+ * The asset layer's answer to a page that is not a whole one, passed on, with
+ * its 307 made a 308. The asset layer redirects a page's other spellings
+ * (`.html`, a trailing slash, the hub's index.html) to its address with a
+ * 307, and those spellings never move: a temporary redirect is a weak
+ * canonical signal, a permanent one with the same Location is the one meant
+ * (SEO audit, 6 Nov 2026). A 308 keeps the method, as the 307 did.
+ */
+function passedOn(asset: Response): Response {
+  if (asset.status !== 307 || !asset.headers.has('Location')) return asset
+  return new Response(asset.body, { status: 308, headers: asset.headers })
+}
+
 /** `page` rewritten, with its validators dropped, as `status`; only headers for a HEAD. */
 function rewrite(
   page: Response,
@@ -400,7 +414,7 @@ async function gatedPage(
     )
   }
   const asset = await env.ASSETS.fetch(unconditional(request))
-  if (!isWholePage(asset)) return asset
+  if (!isWholePage(asset)) return passedOn(asset)
   return rewrite(asset, rewriterFor(state), request.method, {
     status: 200,
     cacheControl: REVALIDATE,
@@ -652,7 +666,7 @@ async function hubPage(
   ctx: WaitUntil | undefined,
 ): Promise<Response> {
   const asset = await env.ASSETS.fetch(unconditional(request))
-  if (!isWholePage(asset)) return asset
+  if (!isWholePage(asset)) return passedOn(asset)
   const state = await pageStateFor(request, env, ctx)
   return rewrite(asset, hubRewriter(state), request.method, {
     status: 200,

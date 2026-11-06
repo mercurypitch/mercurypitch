@@ -1440,7 +1440,7 @@ describe('where the stops go', () => {
       hearYourself: 'voice-history',
       guitarNight: '/guitar-night',
       pianoNight: '/piano-night',
-      karaokeNight: '/karaoke',
+      karaokeNight: '/karaoke-night',
       lesson1: '/learn/01',
       lesson2: '/learn/02',
     })

@@ -364,6 +364,27 @@ describe('a shared voiceprint link', () => {
     expect(asked).toEqual([])
     expect(written.size).toBe(0)
   })
+
+  // One singer's card, with a title that can carry the name they shared, is
+  // not a page of the site. Its canonical to /mirror is only a hint; the
+  // header keeps it out of the index, and an unfurl never reads it.
+  it('asks search engines not to index a shared card, and leaves /mirror indexable', async () => {
+    const { env } = sharedEnv([`og:${CARD}`])
+    const shared = await worker.fetch(
+      new Request(`https://mercurypitch.test/mirror?v=${PAYLOAD}&og=${CARD}`),
+      env,
+    )
+    const ordinary = await worker.fetch(
+      new Request('https://mercurypitch.test/mirror?utm_source=ad'),
+      env,
+    )
+    vi.unstubAllGlobals()
+
+    expect(shared.status).toBe(200)
+    expect(shared.headers.get('X-Robots-Tag')).toBe('noindex')
+    expect(shared.headers.get('Content-Type')).toContain('text/html')
+    expect(ordinary.headers.get('X-Robots-Tag')).toBeNull()
+  })
 })
 
 describe('exercise deep links', () => {
@@ -448,6 +469,22 @@ describe('admin entry paths', () => {
       )
 
       await expect(response.text()).resolves.toBe('/')
+    }
+  })
+
+  // The shell is the home document with its canonical and `index, follow`,
+  // so every admin path read as an indexable copy of /, as the exercise
+  // links did before they got the same header.
+  it('asks search engines not to index the shell it serves', async () => {
+    for (const path of [...ADMIN_ENTRY_PATHS, '/admin/']) {
+      const { env } = entryEnv()
+      const response = await worker.fetch(
+        new Request(`https://mercurypitch.test${path}`),
+        env,
+      )
+
+      expect(response.status, path).toBe(200)
+      expect(response.headers.get('X-Robots-Tag'), path).toBe('noindex')
     }
   })
 

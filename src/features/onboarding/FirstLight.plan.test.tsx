@@ -400,7 +400,7 @@ describe('the four questions and the plan in the flow', () => {
     )
 
     // Assert
-    expect(location.href).toBe('/karaoke')
+    expect(location.href).toBe('/karaoke-night')
     expect(flowOpen()).toBe(false)
     expect(planEvents()).toContain('plan_stop_play')
   })

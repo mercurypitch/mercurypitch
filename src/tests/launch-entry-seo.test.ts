@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { CONTACT_FORM_URL } from '@/lib/contact-links'
 import { DELETE_ACCOUNT_URL } from '@/lib/legal-links'
 import { STORE_LISTINGS, storeLinks } from '@/lib/store-listings'
-import { canonicalPath, ENTRY_PAGES } from '@/seo/entry-pages'
+import { canonicalPath, ENTRY_PAGES, LEARN_HUB_LINK, X_SITE_HANDLE, } from '@/seo/entry-pages'
+import { LISTED_ROBOTS } from '@/seo/render-entry-page'
 
 function repoFile(path: string): string {
   return readFileSync(resolve(process.cwd(), path), 'utf8')
@@ -131,7 +132,7 @@ describe('launch entry documents', () => {
       ).toBe(url)
       expect(
         document.querySelector('meta[name="robots"]')?.getAttribute('content'),
-      ).toBe('index, follow')
+      ).toBe('index, follow, max-image-preview:large')
       // The pilot heads carried a one-line description and no keywords, which
       // is thin for a page asking to be crawled.
       expect(
@@ -556,6 +557,97 @@ describe('entry document prelude', () => {
     expect(vite).toContain('nonProductionNoindexPlugin')
     expect(vite).toContain('X-Robots-Tag: noindex, nofollow')
     expect(vite).toContain("nonProductionNoindexPlugin(mode === 'production')")
+    // Into the build's own output directory, which `--outDir` can move: a
+    // fixed `dist` left such a build asking to be indexed.
+    expect(vite).toMatch(
+      /outDir = resolve\(config\.root, config\.build\.outDir\)/,
+    )
+  })
+})
+
+// ── What every document's head and nav carry ──────────────────
+//
+// The SEO audit of 6 Nov 2026, section 2: small things each document was
+// missing, held here so none of them comes back off.
+describe('every entry document', () => {
+  const navHrefs = (file: string): (string | null)[] =>
+    Array.from(
+      repoHtml(file).querySelectorAll(
+        'nav[aria-label="More from MercuryPitch"] a',
+      ),
+    ).map((a) => a.getAttribute('href'))
+  const metaOf = (file: string, name: string): string | null | undefined =>
+    repoHtml(file)
+      .querySelector(`meta[name="${name}"]`)
+      ?.getAttribute('content')
+
+  // /learn/ is the page for "free singing and music theory lessons", and the
+  // lessons and their films were the only pages that linked it: the home page
+  // passed it nothing.
+  it.each([...ENTRY_FILES, '404.html'])(
+    'links the lessons hub from %s',
+    (file) => {
+      expect(navHrefs(file)).toContain(LEARN_HUB_LINK.href)
+    },
+  )
+
+  it('links both live lessons from the hand-written home document', () => {
+    expect(navHrefs('index.html')).toEqual(
+      expect.arrayContaining(['/learn/', '/learn/01', '/learn/02']),
+    )
+  })
+
+  // Search and Discover show a share card large only where the page allows
+  // it. The lessons' heads always did; the rooms' and the home page's did not.
+  it.each(ENTRY_FILES)('lets %s show its share card large', (file) => {
+    expect(metaOf(file, 'robots')).toBe(LISTED_ROBOTS)
+  })
+
+  // A shared link is credited to the account the organization's structured
+  // data lists, on every document a share starts from.
+  it.each([
+    ...ENTRY_FILES,
+    'learn/index.html',
+    'learn/01.html',
+    'learn/02.html',
+    'learn/01/watch.html',
+    'learn/02/watch.html',
+  ])('credits a share of %s to the organization on X', (file) => {
+    expect(metaOf(file, 'twitter:site')).toBe(X_SITE_HANDLE)
+  })
+
+  it("names the account the organization's sameAs lists", () => {
+    const organization = Array.from(
+      repoHtml('index.html').querySelectorAll(
+        'script[type="application/ld+json"]',
+      ),
+    )
+      .map((node) => JSON.parse(node.textContent ?? '{}'))
+      .find((data) => data['@type'] === 'Organization')
+
+    expect(organization.sameAs).toContain(
+      `https://x.com/${X_SITE_HANDLE.slice(1)}`,
+    )
+  })
+
+  // Google's software-app documentation lists the app types it reads, and
+  // MusicApplication, which twelve rooms and the home page used, is not one.
+  it('gives every app node a type Google lists', () => {
+    const categories = ENTRY_FILES.flatMap((file) =>
+      Array.from(
+        repoHtml(file).querySelectorAll('script[type="application/ld+json"]'),
+      )
+        .map((node) => JSON.parse(node.textContent ?? '{}'))
+        .filter((data) => data['@type'] === 'WebApplication')
+        .map((data) => [file, data.applicationCategory] as const),
+    )
+
+    // The home page's studio and every room with an app node.
+    expect(categories.length).toBeGreaterThan(ENTRY_PAGES.length / 2)
+    for (const [file, category] of categories)
+      expect(['MultimediaApplication', 'GameApplication'], file).toContain(
+        category,
+      )
   })
 })
 

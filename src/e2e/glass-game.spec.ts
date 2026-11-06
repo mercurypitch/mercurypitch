@@ -109,7 +109,7 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
   expect(campaignDocument).not.toBe(legacyDocument)
   expect(campaignDocument).toContain(
     (await glassworksListed(page.request))
-      ? '<meta name="robots" content="index, follow" />'
+      ? '<meta name="robots" content="index, follow, max-image-preview:large" />'
       : '<meta name="robots" content="noindex, follow" />',
   )
 

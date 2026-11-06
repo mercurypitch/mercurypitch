@@ -66,7 +66,7 @@ export interface EntryPage {
   /** The paragraph under the h1. The first thing a crawler reads as prose. */
   lede: string
   /** Emits WebApplication JSON-LD with a free Offer. */
-  app?: { name: string; category: string; description: string }
+  app?: { name: string; category: AppCategory; description: string }
   /**
    * The Find Your Pitch lessons this room practises, by number: the table in
    * docs/plans/find-your-pitch/SEARCH.md § 8. The document links each one
@@ -82,6 +82,13 @@ export interface EntryPage {
    *  Mirror's documents use the ground their start screen stands on. */
   themeColor?: string
 }
+
+/**
+ * A room's `applicationCategory`, from the app types Google's software-app
+ * documentation lists. `MusicApplication` is not one of them, and it named
+ * twelve rooms and the home page until the SEO audit of 6 Nov 2026.
+ */
+export type AppCategory = 'MultimediaApplication' | 'GameApplication'
 
 export const DEFAULT_THEME_COLOR = '#0b1026'
 /** The onboarding's ground (--ob-ground in src/features/mirror/mirror.css). */
@@ -110,6 +117,23 @@ export const OG_IMAGE = ogImage('og-image.png')
 /** What every generated card measures, unless its entry says otherwise. */
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const
 export const ABOUT_URL = 'https://about.mercurypitch.com/'
+
+/**
+ * Find Your Pitch's hub, the page for "free singing and music theory
+ * lessons". Every entry document and the 404 page link it after Home: until
+ * the SEO audit of 6 Nov 2026 only the lessons and their films did.
+ */
+export const LEARN_HUB_LINK = {
+  href: '/learn/',
+  label: 'Free lessons',
+} as const
+
+/**
+ * The organization's account on X, as the organization's `sameAs` in
+ * index.html names it (https://x.com/mercurypitch7). Every document's
+ * `twitter:site`.
+ */
+export const X_SITE_HANDLE = '@mercurypitch7'
 
 /**
  * The structured-data identities the documents share. index.html defines the
@@ -177,7 +201,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [1, 3, 7],
     app: {
       name: 'Voice Mirror',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser vocal check: two sirens and one held note give back your vocal range, pitch accuracy in cents and steadiness as a shareable voiceprint, with a broad voice type.',
     },
@@ -225,7 +249,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [1, 3, 7],
     app: {
       name: 'MercuryPitch Vocal Range Test',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser vocal range test: a glide from the lowest comfortable note to the highest gives both notes, the span in semitones and a broad voice-type guide.',
     },
@@ -272,7 +296,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [14],
     app: {
       name: 'Karaoke Night',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'Browser karaoke from songs the singer owns or the free example songs: vocal separation, synced lyrics, live pitch scoring against the original melody, key change and playlists.',
     },
@@ -406,7 +430,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [10],
     app: {
       name: 'Piano Night',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser piano room: slow a phrase down, loop the bar that will not sit, and read it as falling notes, a staff or hands on the keys.',
     },
@@ -438,7 +462,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [10],
     app: {
       name: 'Guitar Night',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser guitar rehearsal room that listens through mic, interface or MIDI and reads the bar back to you as tab.',
     },
@@ -470,7 +494,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [8],
     app: {
       name: 'Drum Night',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser drum room for touch, keys and e-kits that follows imported MIDI or Guitar Pro percussion and shows where every hit lands against the beat.',
     },
@@ -503,7 +527,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [2, 6, 10, 12],
     app: {
       name: 'Ear Lab',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser ear-training bench measured in cents, milliseconds and notes — real units rather than a grade.',
     },
@@ -537,7 +561,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [14],
     app: {
       name: 'Jam Rooms',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'Peer-to-peer browser rooms for singing together, with a live pitch lane for every singer and one shared transport.',
     },
@@ -591,7 +615,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [3, 4, 5, 9, 12],
     app: {
       name: 'MercuryPitch Pitch Training',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'Browser pitch-training exercises with live feedback: sustained notes, sirens, slides, intervals, scales, staccato and vibrato, each finished run scored out of 100, with the furthest drift from the target shown in cents.',
     },
@@ -639,7 +663,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [7, 11],
     app: {
       name: 'MercuryPitch Voice Type Test',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A browser voice-type test: measures your sung range and shows the standard voice type whose range it overlaps most, presented as a guide rather than a classification.',
     },
@@ -733,7 +757,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lessonsPractised: [7, 11],
     app: {
       name: 'MercuryPitch Singer Match',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'Measures a vocal range in the browser, places it in one of six broad voice types and pairs it with a famous singer of that type, producing a shareable card.',
     },
@@ -779,7 +803,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     lede: 'MercuryPitch is a free karaoke app that runs in your browser on a phone, a tablet or a computer, with nothing to install. Sing one of the example songs, or bring a song you own: the original vocal is separated out, synced lyrics are looked up for it, and every note you sing is scored live against the original melody. Change the key, slow a hard line down, and line up a whole night of songs in a playlist.',
     app: {
       name: 'MercuryPitch Karaoke',
-      category: 'MusicApplication',
+      category: 'MultimediaApplication',
       description:
         'A free browser karaoke app: example songs or songs the singer owns, vocal separation, synced lyrics, live pitch scoring against the original melody, key change, playlists with a singer per song, and Jam Rooms for singing together.',
     },
@@ -821,10 +845,11 @@ export function allEntryPaths(): string[] {
 }
 
 /**
- * The cross-links shown on `page`: Home, the released lessons, every other
- * entry, then About. The lessons come from the build (tools/lesson-links.ts),
- * which reads them off learn/; this file stays free of the file system.
- * With no page (the error pages, src/error-kit/), every entry is linked.
+ * The cross-links shown on `page`: Home, the lessons' hub, the released
+ * lessons, every other entry, then About. The lessons come from the build
+ * (tools/lesson-links.ts), which reads them off learn/; this file stays free
+ * of the file system. With no page (the error pages, src/error-kit/), every
+ * entry is linked.
  *
  * `unlisted` names entries this build serves but does not advertise — today
  * only Glassworks on the production web build (tools/glassworks-listing.ts).
@@ -837,6 +862,7 @@ export function navLinksFor(
 ): { href: string; label: string }[] {
   return [
     { href: '/', label: 'Home' },
+    { ...LEARN_HUB_LINK },
     ...lessons,
     ...ENTRY_PAGES.filter(
       (other) => other.slug !== page?.slug && !unlisted.includes(other.slug),
