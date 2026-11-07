@@ -30,10 +30,12 @@ import '@/features/lessons/kit/lesson-stage.css'
 // the recall brings Lesson 6's quiz modules onto this page, through Lesson
 // 10's questions and Lesson 23's, so taking the guide's sheet here keeps
 // it in their chunk, which the other lessons link before their own sheets
-// (MISTAKES.md, on the lessons' base stylesheet); the voice lessons' sheet
-// joins with Sing it, whose comfort check shares its chunk with it
+// (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-24.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -46,10 +48,14 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -67,7 +73,19 @@ const deck = createStepDeck({
 // quiz; the quick check's question 4 plays a pure fifth, which rings
 // still, so it waits for the cold open's choice
 const quizzes = initQuizzes(deck)
-const steps = initSteps(deck)
+// Sing it: do, so and mi over a drone, then so and mi for longer; "Just
+// listen today"'s play, Merc's so and mi over the drone, waits for Step
+// 2's choice
+const sing = initSing({ blue: mercBlue, orange: mercOrange })
+// the Wrap's practise card and free play, the steps' drone chart again on
+// a card of its own, held back as the steps' is until the same two choices
+const free = initWrap()
+const steps = initSteps(deck, {
+  onStep2: () => {
+    sing.unlockListen()
+    free.unlockStep2()
+  },
+})
 deck.start()
 
 // four words, each with a small figure that draws its play as it sounds;
@@ -98,12 +116,14 @@ initMasthead(
 )
 // the cold open, in the masthead's task, so a first visit's tour waits for
 // its choice; the choice opens the steps' drone chart, Step 2's predict, the
-// Pure word's play and quick check 4's, and the reveal shows Step 1's text
+// Pure word's play, quick check 4's and free play, and the reveal shows
+// Step 1's text
 initColdOpen(deck, {
   onChoice: () => {
     steps.unlock()
     quizzes.unlockPure()
     words.unlockPure()
+    free.unlock()
   },
   onReveal: () => {
     steps.revealStep1()
