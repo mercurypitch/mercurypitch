@@ -243,25 +243,20 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: Lessons 3, 4 and 5 are drafts, each with its page and no film
-      const [L3, L4, L5] = [3, 4, 5].map((n) => season.LESSONS[n])
-      expect([L3.page, L3.minutes, L3.film], drafts).toEqual([
-        '/learn/03',
-        16,
-        undefined,
-      ])
-      expect([L4.page, L4.minutes, L4.film], drafts).toEqual([
-        '/learn/04',
-        14,
-        undefined,
-      ])
+      // Assert: Lessons 5 and 6 are drafts, each with its page and no film
+      const [L5, L6] = [5, 6].map((n) => season.LESSONS[n])
       expect([L5.page, L5.minutes, L5.film], drafts).toEqual([
         '/learn/05',
         18,
         undefined,
       ])
-      expect(L4.pr.link?.href, drafts).toBe('/pitch-training?lesson=04')
+      expect([L6.page, L6.minutes, L6.film], drafts).toEqual([
+        '/learn/06',
+        17,
+        undefined,
+      ])
       expect(L5.pr.link?.href, drafts).toBe('/mirror?lesson=05')
+      expect(L6.pr.link?.href, drafts).toBe('/ear-lab?lesson=06')
     }
   })
 
@@ -270,7 +265,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film
+      // Assert: a draft, as Lesson 5 is, with no film
       const L8 = season.LESSONS[8]
       expect([L8.page, L8.minutes, L8.film], drafts).toEqual([
         '/learn/08',
@@ -288,7 +283,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film
+      // Assert: a draft, as Lesson 5 is, with no film
       const L9 = season.LESSONS[9]
       expect([L9.page, L9.minutes, L9.film], drafts).toEqual([
         '/learn/09',
@@ -304,7 +299,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film; Ear Lab's Stack needs no voice
+      // Assert: a draft, as Lesson 5 is, with no film; Ear Lab's Stack needs no voice
       const L10 = season.LESSONS[10]
       expect([L10.page, L10.minutes, L10.film], drafts).toEqual([
         '/learn/10',
@@ -324,7 +319,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film (WEB-SPEC, Tests 12)
+      // Assert: a draft, as Lesson 5 is, with no film (WEB-SPEC, Tests 12)
       const L11 = season.LESSONS[11]
       expect([L11.page, L11.minutes, L11.film], drafts).toEqual([
         '/learn/11',
@@ -351,7 +346,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film; Ear Lab's Cadence needs no voice
+      // Assert: a draft, as Lesson 5 is, with no film; Ear Lab's Cadence needs no voice
       const L12 = season.LESSONS[12]
       expect([L12.page, L12.minutes, L12.film], drafts).toEqual([
         '/learn/12',
@@ -379,7 +374,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film; Voice Mirror reads pitch only
+      // Assert: a draft, as Lesson 5 is, with no film; Voice Mirror reads pitch only
       const L13 = season.LESSONS[13]
       expect([L13.page, L13.minutes, L13.film], drafts).toEqual([
         '/learn/13',
@@ -402,7 +397,7 @@ describe('a draft lesson (drafts.ts)', () => {
       // Act
       const season = await seasonBuilt(drafts)
 
-      // Assert: a draft, as Lesson 3 is, with no film and no figure on its card
+      // Assert: a draft, as Lesson 5 is, with no film and no figure on its card
       const L14 = season.LESSONS[14]
       expect([L14.page, L14.minutes, L14.film, L14.fig], drafts).toEqual([
         '/learn/14',

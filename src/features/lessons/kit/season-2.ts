@@ -199,7 +199,7 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Vibrato',
     short: 'Vibrato',
     topics: ['S19'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 15,
     page: '/learn/22',
     hook: "If a singer's held note swings up and down six times a second, why do we still hear one note?",

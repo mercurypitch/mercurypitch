@@ -379,7 +379,7 @@ main's.
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
   they are there (`:144-145`).
 - `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list): Lesson 4's entry, at its release.
-  Held back as a draft (`kit/drafts.ts`), it is in neither; the site worker lists it while published.
+  Both list it since its release on the owner's word on 7 November 2026.
 - `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
   it is a still of the hero: the title over the staircase on C, do's house glyph lit.
 - The page's head, as Lesson 1's (`learn/01.html:9-60`):

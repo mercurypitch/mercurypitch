@@ -394,7 +394,7 @@ describe("the Map's lessons", () => {
 
   it('has no lesson to name once every released one is done, and its door opens the hub', () => {
     // Arrange
-    window.localStorage.setItem(LESSON_DONE_KEY, '[1,2]')
+    window.localStorage.setItem(LESSON_DONE_KEY, '[1,2,3,4]')
     const onEnter = vi.fn()
     const map = renderMap(onEnter)
 

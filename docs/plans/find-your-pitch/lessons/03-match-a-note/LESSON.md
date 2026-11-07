@@ -1,6 +1,7 @@
 # Lesson 3: Match a note (written lesson)
 
-Status: Awaiting the vocal coach's sign-off before publishing (MASTER-PLAN § 12 item 8)
+Status: Released on the owner's word on 7 November 2026 (MASTER-PLAN § 12 item 8 leaves publishing
+to the owner)
 
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5). Each step names its toy

@@ -151,7 +151,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // predict, took 43 of them back: 175,490, still 386 over 171.
   'learn/02.html': 172,
 
-  // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
+  // Lesson 3, released on the owner's word on 7 November 2026 and built in
   // every mode like the rest: the site worker decides where it is live
   // (src/lesson-gate.ts). Measured 117 with the lesson menu and the
   // next-lesson card (100 before them), and 124 once the page read the state
@@ -244,7 +244,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and a grow-in, or none for a straight note, and the setter that glides
   // a sounding one to a new rate and extent.
   'learn/03.html': 140,
-  // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
+  // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
+  // mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
   // The listener and the hold reader arrive when Sing it's Start is pressed,
@@ -583,7 +584,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // Lesson 2. Measured 75: the kit's sheets, its own and the slide guide's.
   'learn/02.html': 95,
 
-  // Lesson 3 (a draft, as above). Measured 77: the kit's sheets, the voice
+  // Lesson 3 (released, as above). Measured 77: the kit's sheets, the voice
   // lessons' sheet and its own, and the shared Inter and Outfit @font-face
   // rules.
   'learn/03.html': 96,

@@ -51,7 +51,7 @@ _[After the cold open since 20 October 2026, as on Lesson 2's page (MASTER-PLAN 
 § 12 item 13).]_
 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
-questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
+questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's recall asks the
 other two (FACTS 30). Their feedback is Lesson 2's, except that "Try Step N again" reads "Try
 Lesson 2, Step N again" and is a plain link to Lesson 2's page, not to a step on this one. The kit's
 quiz has `QuizQuestion.id`, and since #1193 these answers are sent and count as the delayed score

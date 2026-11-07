@@ -456,13 +456,13 @@ describe('createExplorer', () => {
 // A page no worker served (`pnpm dev`, the e2e bundle) carries no state, so
 // its map reads drafts as its build does (page-state.ts).
 describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.ts)", () => {
-  /** Lesson 1's explorer as a build with drafts shown ("1") or held back ("0") draws it, Lesson 3 selected. */
-  async function lessonThreeFromLessonOne(drafts: '1' | '0'): Promise<void> {
+  /** Lesson 1's explorer as a build with drafts shown ("1") or held back ("0") draws it, Lesson 8 selected. */
+  async function lessonEightFromLessonOne(drafts: '1' | '0'): Promise<void> {
     vi.stubEnv('VITE_DRAFT_LESSONS', drafts)
     vi.resetModules()
     const { createExplorer: explorerBuilt } = await import('./explorer')
     explorerPage()
-    explorerBuilt({ current: 1 }).select(3, false)
+    explorerBuilt({ current: 1 }).select(8, false)
   }
 
   afterEach(() => {
@@ -472,28 +472,30 @@ describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.t
 
   it('links a shown draft to its own page, to read and never to watch', async () => {
     // Act
-    await lessonThreeFromLessonOne('1')
+    await lessonEightFromLessonOne('1')
 
     // Assert
     expect(document.querySelector('#exCardHost h3')?.textContent).toBe(
-      'Match a note',
+      'Beat, tempo and the backbeat',
     )
-    expect(cardLinks()).toEqual(['/learn/03'])
+    expect(cardLinks()).toEqual(['/learn/08'])
   })
 
   it('shows a draft held back as coming later, with no link to its page', async () => {
     // Arrange: a step kept from a visit to a build that showed it
-    localStorage.setItem('fyp-pos', JSON.stringify({ 3: { step: 3, of: 6 } }))
+    localStorage.setItem('fyp-pos', JSON.stringify({ 8: { step: 3, of: 6 } }))
 
     // Act
-    await lessonThreeFromLessonOne('0')
+    await lessonEightFromLessonOne('0')
 
     // Assert
     const card = document.querySelector('#exCardHost .ex-card')
-    expect(card?.querySelector('h3')?.textContent).toBe('Match a note')
+    expect(card?.querySelector('h3')?.textContent).toBe(
+      'Beat, tempo and the backbeat',
+    )
     expect(card?.querySelector('.chip')?.textContent).toBe('Coming later')
     expect(card?.querySelectorAll('a.btn, [data-done]')).toHaveLength(0)
-    expect(card?.innerHTML).not.toContain('/learn/03')
+    expect(card?.innerHTML).not.toContain('/learn/08')
   })
 
   it('treats Lesson 5, a draft too, the same way either side of the switch', async () => {

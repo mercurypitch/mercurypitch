@@ -148,15 +148,15 @@ describe('publishQuestion, for a lesson its recall asks', () => {
   })
 
   it('asks a draft once, naming its sign-off and the lesson its recall asks', () => {
-    // Arrange: Lesson 3's drafts line stands; Lesson 2 is not published.
+    // Arrange: Lesson 5's drafts line stands; Lesson 3 is not published.
 
     // Act
-    const question = publishQuestion('Lesson 3', SIGN_OFF, ahead([], [2]))
+    const question = publishQuestion('Lesson 5', SIGN_OFF, ahead([], [3]))
 
     // Assert
     expect(question).toEqual({
-      title: 'Publish Lesson 3 before its sign-off and before Lesson 2?',
-      message: `Lesson 3 waits on ${SIGN_OFF}. Its recall also asks Lesson 2's questions, and Lesson 2 is not published here. Publish it anyway?`,
+      title: 'Publish Lesson 5 before its sign-off and before Lesson 3?',
+      message: `Lesson 5 waits on ${SIGN_OFF}. Its recall also asks Lesson 3's questions, and Lesson 3 is not published here. Publish it anyway?`,
     })
   })
 
@@ -210,7 +210,7 @@ describe('defaultGoesLive', () => {
 
   it('holds for a draft unpublished here on a site that shows drafts', () => {
     // Arrange
-    const view = publishView(rowOf(3), { published: false }, null, true)
+    const view = publishView(rowOf(5), { published: false }, null, true)
 
     // Act
     const live = defaultGoesLive(view)
@@ -221,7 +221,7 @@ describe('defaultGoesLive', () => {
 
   it('does not hold for a draft unpublished here on a site that leaves drafts out', () => {
     // Arrange: going back to the default leaves it unpublished.
-    const view = publishView(rowOf(3), { published: false }, null, false)
+    const view = publishView(rowOf(5), { published: false }, null, false)
 
     // Act
     const live = defaultGoesLive(view)
@@ -232,7 +232,7 @@ describe('defaultGoesLive', () => {
 
   it('does not hold for a draft published here on a site that leaves drafts out', () => {
     // Arrange: going back to the default unpublishes it.
-    const view = publishView(rowOf(3), { published: true }, null, false)
+    const view = publishView(rowOf(5), { published: true }, null, false)
 
     // Act
     const live = defaultGoesLive(view)

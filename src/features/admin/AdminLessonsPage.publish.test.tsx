@@ -37,7 +37,7 @@ function seasonLesson(test: (lesson: Lesson) => boolean, what: string): Lesson {
   return lesson
 }
 
-/** The first draft that waits on a sign-off: Lesson 3 as the season stands. */
+/** The first draft that waits on a sign-off: Lesson 5 as the season stands. */
 const DRAFT = Number(Object.keys(DRAFT_LESSONS)[0])
 
 const FOLLOWS = 'The site follows within about a minute.'

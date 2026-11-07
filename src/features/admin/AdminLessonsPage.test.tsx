@@ -139,23 +139,25 @@ describe('AdminLessonsPage', () => {
   })
 
   it("opens a lesson's card from its row, with the release steps it still needs", async () => {
-    stubLessonSite({ '/learn/03': { status: 200 } })
+    stubLessonSite({ '/learn/05': { status: 200 } })
     render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
     await settled()
-    expect(card(3)).not.toHaveAttribute('open')
+    expect(card(5)).not.toHaveAttribute('open')
 
     fireEvent.click(
-      within(seasonRows()[3]).getByRole('button', { name: /Match a note/ }),
+      within(seasonRows()[5]).getByRole('button', {
+        name: /Breath and a steady note/,
+      }),
     )
 
-    expect(card(3)).toHaveAttribute('open')
-    const steps = within(card(3))
+    expect(card(5)).toHaveAttribute('open')
+    const steps = within(card(5))
       .getAllByRole('listitem')
       .map((item) => item.textContent)
     expect(steps).toContain(
-      `To do: Its line is deleted from src/features/lessons/kit/drafts.tsWaiting on ${DRAFT_LESSONS[3]}. It can be published here before then.`,
+      `To do: Its line is deleted from src/features/lessons/kit/drafts.tsWaiting on ${DRAFT_LESSONS[5]}. It can be published here before then.`,
     )
-    expect(steps).toContain('Done: /learn/03 answers 200 on this site')
+    expect(steps).toContain('Done: /learn/05 answers 200 on this site')
   })
 
   it("keeps each lesson's team fields: what its drill still needs, its Signature and its topic codes", async () => {

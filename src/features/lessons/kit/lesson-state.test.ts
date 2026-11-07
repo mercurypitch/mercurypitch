@@ -148,15 +148,16 @@ describe('a lesson held back (publish.ts)', () => {
     // Arrange: drafts held back, as on mercurypitch.com, and a step kept from a dev visit
     const season = seasonFor(LESSONS, defaultPageState(false))
 
-    // Act
-    const L3 = lessonViews(season, viewer(1, [1], { 3: { step: 3, of: 6 } }))[3]
+    // Act: Lesson 5, a draft
+    const L5 = lessonViews(season, viewer(1, [1], { 5: { step: 3, of: 6 } }))[5]
 
     // Assert
-    expect([L3.state, L3.step, L3.action]).toEqual(['later', null, null])
+    expect([L5.state, L5.step, L5.action]).toEqual(['later', null, null])
   })
 
   it('is never up next, a released lesson the console holds back as much as a draft', () => {
-    // Arrange: Lesson 2 held back; Lesson 1 done, so Lessons 2 and 3 are open to it
+    // Arrange: Lesson 2 held back; Lesson 1 done, so Lessons 2, 3 and 8 are
+    // open to it, and Lesson 8 is a draft
     const season = seasonFor(LESSONS, {
       ...defaultPageState(false),
       lessons: { 2: { published: false } },
@@ -169,6 +170,7 @@ describe('a lesson held back (publish.ts)', () => {
     // Assert
     expect([views[2].state, views[2].action]).toEqual(['later', null])
     expect(next).not.toBe(2)
-    expect(next).not.toBe(3)
+    expect(next).not.toBe(8)
+    expect(next).toBe(3)
   })
 })
