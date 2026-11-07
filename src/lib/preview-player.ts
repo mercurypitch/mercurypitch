@@ -53,16 +53,19 @@ const SILENCE_FLOOR = 0.0001
 const RAMP_SLACK_MS = 60
 
 /** Open a gain envelope: exponential rise from the silence floor to 1.
- *  Perceptually even (constant dB/s), so starts swell instead of snap. */
+ *  Perceptually even (constant dB/s), so starts swell instead of snap.
+ *  `at` is the clock time it rises from: now, or later for a sound
+ *  scheduled ahead (First note's Web Audio player). */
 export function openEnvelope(
   gain: GainNode,
   ctx: BaseAudioContext,
   seconds: number,
+  at: number = ctx.currentTime,
 ): void {
-  const now = ctx.currentTime
-  gain.gain.cancelScheduledValues(now)
-  gain.gain.setValueAtTime(Math.max(gain.gain.value, SILENCE_FLOOR), now)
-  gain.gain.exponentialRampToValueAtTime(1, now + seconds)
+  const from = Math.max(at, ctx.currentTime)
+  gain.gain.cancelScheduledValues(from)
+  gain.gain.setValueAtTime(Math.max(gain.gain.value, SILENCE_FLOOR), from)
+  gain.gain.exponentialRampToValueAtTime(1, from + seconds)
 }
 
 /** Close a gain envelope: exponential decay toward 0. After `seconds`
