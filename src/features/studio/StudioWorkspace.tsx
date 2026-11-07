@@ -604,11 +604,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         onShowProgress={() => openPanel(exporter.busy() ? 'export' : 'sound')}
         onShowSound={() => openPanel('sound')}
         error={transport.error() ?? (deskOpen() ? sound.error() : null)}
-        writable={props.studio.writable()}
-        busy={props.studio.busy()}
-        onTakeOver={() => void props.studio.takeOver()}
-        importing={props.studio.importing()}
-        onCancelImport={() => props.studio.cancelImport()}
+        studio={props.studio}
         recorder={recorder}
       />
       <div class={styles.editor}>

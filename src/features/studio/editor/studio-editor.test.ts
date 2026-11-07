@@ -303,4 +303,31 @@ describe('Studio keyboard edits', () => {
     expect(f.state().present.clips).toHaveLength(3)
     expect(f.state().present.clips[0].sourceOutFrame).toBe(50)
   })
+
+  it('moves the focus from a clip to the nearest clip in the lane below with Down, and leaves Up at the top lane to the page', () => {
+    // Arrange: a second lane under the first, its clip across the focused one's start.
+    const f = editorFixture()
+    const below = createStudioTrack({ id: 'track-2', name: 'Below', order: 1 })
+    // `f.clip` is the clip's button; the song's clip is the model's.
+    const [focused] = f.project.clips
+    f.replace({
+      ...f.project,
+      tracks: [...f.project.tracks, below],
+      clips: [
+        focused,
+        { ...focused, id: 'clip-below', trackId: below.id, startFrame: 0 },
+      ],
+    })
+
+    // Act
+    const down = f.key(f.clip, 'keydown', 'ArrowDown')
+    const up = f.key(f.clip, 'keydown', 'ArrowUp')
+
+    // Assert: focus only, and no edit.
+    expect(f.focus).toHaveBeenCalledExactlyOnceWith('clip-below', 'track-2')
+    expect(down.defaultPrevented).toBe(true)
+    expect(up.defaultPrevented).toBe(false)
+    expect(f.selection).not.toHaveBeenCalled()
+    expect(f.dispatch).not.toHaveBeenCalled()
+  })
 })

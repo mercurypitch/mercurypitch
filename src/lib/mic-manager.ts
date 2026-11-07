@@ -24,6 +24,13 @@ import { claimMicLock, micLockStatus, releaseMicLock, requestMicHandoff, setMicY
 
 export type { MicError, MicErrorKind } from './mic-errors'
 
+/**
+ * Why this tab let go of every hold at once (forceReleaseAll): it stayed in
+ * the background past its grace, or another MercuryPitch tab asked for the
+ * microphone.
+ */
+export type MicReleaseReason = 'background' | 'other-tab'
+
 export interface MicState {
   /** True while the device is open and at least one consumer holds it. */
   active: boolean
@@ -39,6 +46,12 @@ export interface MicState {
    * shared stream's `active` says nothing about it.
    */
   scoped?: string | null
+  /**
+   * Why, in the change a release of every hold makes, when its caller said:
+   * a consumer that hears its hold end can say why. Null (or absent) in
+   * every other change.
+   */
+  released?: MicReleaseReason | null
 }
 
 type Listener = (state: MicState) => void
@@ -157,6 +170,8 @@ export class MicManager {
   private lingerTimer: ReturnType<typeof setTimeout> | null = null
   private blockedBy: MicLockRecord | null = null
   private readonly runGuards = new Map<string, () => boolean>()
+  // Why the release of every hold under way was made, while it runs.
+  private releasing: MicReleaseReason | null = null
 
   /** Subscribe to mic state changes. Fires immediately with the current state.
    *  Returns an unsubscribe function. */
@@ -562,16 +577,22 @@ export class MicManager {
    * that is still in flight sits ahead of us on the queue, and releasing the
    * lock first would let the other tab open a second handle behind it. An
    * input of its own a re-arm replaced closes here too, not in the re-arm's
-   * open queued behind this.
+   * open queued behind this. `reason`, when given, is the state's
+   * `released` in the change this makes.
    */
-  forceReleaseAll(): Promise<void> {
+  forceReleaseAll(reason: MicReleaseReason | null = null): Promise<void> {
     return this.enqueue(async () => {
-      this.cancelLinger()
-      this.consumers.clear()
-      const holds = [...this.replaced, this.scoped]
-      this.replaced.clear()
-      for (const hold of holds) if (hold !== null) this.endScoped(hold)
-      this.teardown()
+      this.releasing = reason
+      try {
+        this.cancelLinger()
+        this.consumers.clear()
+        const holds = [...this.replaced, this.scoped]
+        this.replaced.clear()
+        for (const hold of holds) if (hold !== null) this.endScoped(hold)
+        this.teardown()
+      } finally {
+        this.releasing = null
+      }
     })
   }
 
@@ -657,6 +678,7 @@ export class MicManager {
       consumers: [...this.consumers],
       blockedBy: micLockStatus() === 'other' ? this.blockedBy : null,
       scoped: this.getScopedHold()?.consumerId ?? null,
+      released: this.releasing,
     }
   }
 
@@ -672,7 +694,7 @@ export const micManager = new MicManager()
 // When another tab asks for the mic, stop capturing before the lock moves —
 // otherwise the hand-off hands over a name while this tab keeps the device.
 // Returning the promise is what makes "before" true: mic-lock waits on it.
-setMicYieldHandler(() => micManager.forceReleaseAll())
+setMicYieldHandler(() => micManager.forceReleaseAll('other-tab'))
 
 /**
  * How long a backgrounded tab may keep the microphone.
@@ -720,7 +742,7 @@ if (typeof document !== 'undefined') {
     // mic until it finishes, however long the singer stays on another tab.
     if (micManager.isRunInProgress()) return 'waiting'
     console.info('[MicManager] Tab backgrounded — releasing the microphone')
-    void micManager.forceReleaseAll()
+    void micManager.forceReleaseAll('background')
     stopWatching()
     return 'settled'
   }
