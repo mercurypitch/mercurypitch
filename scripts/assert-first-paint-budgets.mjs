@@ -501,10 +501,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Season 2's map (kit/season-2.ts) as a Season 2 page must, with the
   // steps' drone chart (kit/band-chart.ts with kit/band-chart-drone.ts, its
   // brightness from kit/drone-beats.ts), the cold open's on the same chart,
-  // both predicts on the kit's, and the recall and the quick check on the
-  // kit's quiz, with Lesson 10's and Lesson 23's questions: 146,323 bytes
-  // in build:e2e, the smallest whole KB above, to rise as each part joins.
-  'learn/24.html': 143,
+  // both predicts on the kit's, the recall and the quick check on the
+  // kit's quiz, with Lesson 10's and Lesson 23's questions, and the words'
+  // pictures, two on the same chart: 150,817 bytes in build:e2e, the
+  // smallest whole KB above, to rise as each part joins.
+  'learn/24.html': 148,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

@@ -38,6 +38,12 @@ export interface DroneMark {
   readonly as: 'band' | 'line'
   /** "drone · A3", "drone × 2 · 440 Hz", "drone". */
   readonly label: string
+  /**
+   * Seconds across the window a band reaches, drawn from the left as the
+   * drone sounds (Lesson 24's Drone word): nothing, label and all, before
+   * it starts; the whole window when unset.
+   */
+  readonly upTo?: number
 }
 
 /** A tick at the chart's right edge: the piano's note, solid chrome; the pure one, dashed ink. */
