@@ -999,6 +999,11 @@
 .range:focus-visible {
   outline-offset: -4px;
 }
+/* a slider a page holds back looks held, as a held play does */
+.range:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
 /* tucked under the slider's track, so a tap there goes through to the slider */
 .ticks {
   position: relative;

@@ -318,15 +318,15 @@ its patterns with it.
   "Claps on 1 and 3" or "Claps moved to 2 and 4" as each version starts. Its cells light as Merc
   sings them, Merc or Tavi.
 - **Layout and targets** (FACTS 80). The figure is 250 px tall at every width, the kit's height on
-  the narrowest phones (`lesson-stage.css:1102-1118`), set by this page's stylesheet, because the
+  the narrowest phones (`lesson-stage.css:1107-1123`), set by this page's stylesheet, because the
   tallest drawing, the grid with its number strip and bar labels, is 182 px; the morph keeps that
   height in every state. On phones (below 961 px, where the stage sits above the text) the figure
-  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1291-1301`), 356 px at 390 x 844.
+  spans the card's inner width (`.viz.wide`, `lesson-stage.css:1296-1306`), 356 px at 390 x 844.
   The grid's four beat columns sit beside the 56 px label column with 4 px between, so a cell is 72
   px wide at 390 px, 60.5 px at 344 px and never under 44 px at any width from 344 to 1440 px, and
   each lane is 44 px tall: every cell is a target of at least 44 x 44 px, and none overlaps
   another. Where the kit caps the figure under 182 px, on a phone held sideways (162 px at 844 x
-  390, `lesson-stage.css:1119-1136`), the bar labels go and the numbers move into the cells' top
+  390, `lesson-stage.css:1124-1141`), the bar labels go and the numbers move into the cells' top
   corners, so the grid needs 140 px (FACTS 80). On touch the figure keeps the kit's `touch-action:
 pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a button.
 - **The stuck stage** (FACTS 80). Beside the text the kit gives the stage the room the window

@@ -308,12 +308,12 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   stairs in place, as the compact window does, so a scale on B4 shows B4 to B5. The page's
   stylesheet sets that height on the figure's own class at every width, since the kit's figures are
   330 px on a desktop, 280 px in the deck and 250 px up to 420 px wide, or 380, 340 and 310 for a
-  tall one (`lesson-stage.css:788-806`, `:1092-1097`, `:1102-1108`), as Lesson 6's 350 px figure is
+  tall one (`lesson-stage.css:788-806`, `:1097-1102`, `:1107-1113`), as Lesson 6's 350 px figure is
   taller than the kit's own. Across the narrowest figure, 310 px at 344 px wide, a row of the
   bracket (60 px), the names (56 px), a bead's target (44 px) and the gap buttons (120 px), with
   their spaces, takes 300 px. On phones (up to 960 px wide, where the stage sits above the text) the
   figure spans the card's inner width (`.viz.wide`,
-  `src/features/lessons/kit/lesson-stage.css:1290-1301`), 356 px at 390 x 844. In the scale state no
+  `src/features/lessons/kit/lesson-stage.css:1295-1306`), 356 px at 390 x 844. In the scale state no
   stair is a target: the plays are the predict's buttons, so the eight stairs share the figure's
   width, 38.8 px each at 344 px. On touch the figure keeps the kit's `touch-action: pan-y`
   (`lesson-stage.css:788-796`), so a swipe still scrolls the page; every action is a button.
@@ -324,7 +324,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:695-712`),
   so the page sets `--viz-min: 340px` on the stuck stage only, under
   `@media (min-width: 961px) and (min-height: 561px)`, the stage's stuck condition and the opposite
-  of the deck's query (`lesson-stage.css:1045-1101`). The stage, with its head, the 342 px figure,
+  of the deck's query (`lesson-stage.css:1050-1106`). The stage, with its head, the 342 px figure,
   its rows of 44 px controls and the card's padding, measures 514 px with one row (Steps 1 and 2)
   and 568 px with two (Steps 3 to 5), so it fits the rooms of 604 and 581 px; in the rooms of 564
   and 555 px, at 1024 x 640 and 1133 x 631, Steps 3 to 5's card is capped at the room and scrolls
@@ -334,7 +334,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   what keeps every step to two rows of controls beside the text.
 - **The compact layout** (FACTS 82). On a phone held sideways the kit caps the deck's figure so that
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
-  lesson's stylesheet sets more (`lesson-stage.css:1119-1136`): 162 px at 844 x 390, and 150 px on
+  lesson's stylesheet sets more (`lesson-stage.css:1124-1141`): 162 px at 844 x 390, and 150 px on
   the shortest phones. The page leaves that floor alone, and the toy reads its figure's height
   whenever it changes and, below 340 px, draws its compact layout. Its window is the chord's own
   eight rows, root to fifth, 105 px, with 22 px above and below for the targets, 149 px in all, so

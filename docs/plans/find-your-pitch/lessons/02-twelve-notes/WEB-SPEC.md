@@ -275,9 +275,9 @@ step 4's; step 5's; and free play's.
 
 Measured from Lesson 1's stage CSS at 390 x 844, the page's phone check: the stage card is 358 px
 wide inside the 16 px gutters (`kit/lesson-base.css:96-97`, `:231-236`); its 1 px borders
-(`:456-463`), its 12 px side padding below 960 px (`kit/lesson-stage.css:1098-1100`) and a figure's
+(`:456-463`), its 12 px side padding below 960 px (`kit/lesson-stage.css:1103-1105`) and a figure's
 own 1 px border (`kit/lesson-stage.css:788-796`) leave Lesson 1's canvas 330 px wide, 308 px tall in
-the tall figure (`:1102-1108`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the
+the tall figure (`:1107-1113`). That is too narrow for eight 44 px keys, so steps 3 to 5 widen the
 figure.
 
 - **The figure**, steps 3 to 5: it spans the card's inner width, 356 px (`margin-inline: -12px`,

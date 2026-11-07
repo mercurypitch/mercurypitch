@@ -205,7 +205,7 @@ the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
   (FACTS 42): the tallest bar, then the tallest bar above it that stands at least one segment over
   both its neighbours, each with the cap and the chevron (Look).
 - **Heights.** The figure is the kit's `.viz.tall`, 380 px beside the text, 340 px in the deck and
-  310 px at 420 px wide and under (`kit/lesson-stage.css:804-806`, `:1095-1097`, `:1106-1108`). The
+  310 px at 420 px wide and under (`kit/lesson-stage.css:804-806`, `:1100-1102`, `:1111-1113`). The
   plot takes 30 % of it, rounded, the bar numbers an 18 px row, and 28 px go to the insets, 12 above
   the plot, 8 between plot and strip and 8 under the numbers; the strip takes the rest: at 380 px a
   114 px plot and a 220 px strip, a segment every 18.3 px (16.3 lit); at 340 px, 102 and 192, every
