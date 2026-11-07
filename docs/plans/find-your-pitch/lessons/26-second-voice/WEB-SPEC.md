@@ -523,23 +523,23 @@ music bed (FACTS 75 to 79).
 
 - **Two parts note against note.** Every two-part play outside a take, the cold open's, the steps',
   the words' and quick check 4's, is one `playNotes` run holding both parts' notes, which share their
-  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:10-11`);
-  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:39-40`).
+  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:13-14`);
+  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:42-43`).
   Nothing new is needed for these (FACTS 26).
 - **Timbres.** The cold open, the words, the steps but for Merc and Tavi, and quick check 4 play in
   the kit's soft tone; Step 3's Merc and Tavi, the models, the other part in a run, "Just listen
   today"'s play and the sing-along in Merc's "ooh", Tavi's an octave above Merc's; the count-in is the
   woodblock (FACTS 79).
 - **A part under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:574-582`). The other part is the one exception: one voice along
-  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:322-354`), each note a held point at
+  (`src/features/lessons/kit/sound.ts:630-638`). The other part is the one exception: one voice along
+  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:378-410`), each note a held point at
   its pitch, joined to the next by a glide of 0.05 s, built before the take opens and booked on the
   audio clock to start on bar 1's first beat through the voice's `at`
-  (`src/features/lessons/kit/sound.ts:40-44`), the hush leaving it sounding, as Lesson 24's item 5
+  (`src/features/lessons/kit/sound.ts:66-70`), the hush leaving it sounding, as Lesson 24's item 5
   keeps its drone. Its release ends it as its last note ends. Two notes on one pitch in a row, which
   this page's parts never have and Lesson 28's song may, are struck again by a dip in the contour's
   level, to a quarter for 0.08 s between them (What the kit and the app still need, item 6).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:188`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:227`); a
   two-part play at the note level for each part. In a run the other part sits at a level the lab
   sets, under Merc's model, so the singer's own voice stays clear in the headphones (FACTS 79).
 - **Low notes.** The page's lowest sounds are C3, 130.81 Hz, Step 4's chord root and Merc's do in
@@ -677,7 +677,7 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
    (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:743-747`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
-   contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:40-44`),
+   contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:66-70`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a
    helper turns a part's notes into its contour, each note a held point with a 0.05 s glide to the
    next and a dip in level to a quarter for 0.08 s between two notes on one pitch, so Lesson 28 can

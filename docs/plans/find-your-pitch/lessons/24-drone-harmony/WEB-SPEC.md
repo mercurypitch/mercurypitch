@@ -85,7 +85,7 @@ Five things move: the Merc idle loops; a line drawing as its play sounds; the br
 beat rate; the top note sinking into the band during the slide; and the ring in Sing it. Only Merc
 and Tavi move on their own. Under `prefers-reduced-motion` Merc and Tavi hold a still frame, a
 play's line lands whole as it starts, and the brightness holds still, the readout and the figure's
-spoken summary saying whether the pair is beating and how fast (`src/features/lessons/kit/band-chart.ts:36-38`);
+spoken summary saying whether the pair is beating and how fast (`src/features/lessons/kit/band-chart.ts:40-42`);
 what the viewer starts still sounds. For everyone else the masthead's Pause animations toggle stops
 the same things.
 
@@ -596,10 +596,10 @@ music bed (FACTS 67 to 73).
   is a straight tone with harmonics: Merc's "ooh" partials with no modulator, through Lesson 22's
   vibrato option set to null (its item 4,
   `docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:684-697`; `src/lib/demo-voice.ts:33-37`;
-  `src/features/lessons/kit/sound.ts:31-53`), since the kit's soft tone carries the third's beating
+  `src/features/lessons/kit/sound.ts:51-79`), since the kit's soft tone carries the third's beating
   harmonics 26 to 32 dB down (FACTS 72). Which timbre makes the fifth's slow beat and the third's
   fast one audible on phone speakers and on headphones, through the master compressor
-  (`src/features/lessons/kit/sound.ts:118-125`), is the lab's to choose before any beat rate goes
+  (`src/features/lessons/kit/sound.ts:152-159`), is the lab's to choose before any beat rate goes
   on screen (What the kit and the app still need, item 7).
 - **Exact frequencies.** Each tone's partials sit at exact multiples of its frequency, so every beat
   is the arithmetic of FACTS 11 to 21; nothing is detuned to make a beat louder or slower. The slide
@@ -607,7 +607,7 @@ music bed (FACTS 67 to 73).
   (`src/features/lessons/kit/sound.ts:16-21`).
 - **One audio time.** The drone and every note set against it start together, on one audio time,
   each partial at phase 0 (the kit starts a voice at its own time, `build`,
-  `src/features/lessons/kit/sound.ts:172-207`): two notes on one frequency add by their phase, and
+  `src/features/lessons/kit/sound.ts:211-250`): two notes on one frequency add by their phase, and
   at 180° the fundamental and every odd harmonic cancel. So the slide ends 13° from in phase and
   its still pair sounds whole, and Step 1's snap restarts the top note on a whole period of the
   drone's (Toys 2; FACTS 44, 69).
@@ -615,13 +615,13 @@ music bed (FACTS 67 to 73).
   cents either side, grown in over 0.3 s, its phase 0 at the voice's start
   (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:196`), through Lesson 22's vibrato
   option on the top note only; the drone stays straight. Merc's usual wave, 5.5 swings at 14 cents
-  (`src/features/lessons/kit/sound.ts:195-206`), would leave 78 % of the slow throb, so it is not
+  (`src/features/lessons/kit/sound.ts:234-249`), would leave 78 % of the slow throb, so it is not
   the demonstration (FACTS 38).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:188`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:227`); a
   drone pair at the note level for each tone. In Sing it the drone sits below Merc's notes, at a
   level the lab sets so the singer's own voice stays clear in the headphones (FACTS 54).
 - **A drone under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:574-582`); Sing it's drone is the one exception, started
+  (`src/features/lessons/kit/sound.ts:630-638`); Sing it's drone is the one exception, started
   before the take opens and kept through it, with every other source still hushed (What the kit and
   the app still need, item 5).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the lower voice's drone and do, which a
@@ -740,7 +740,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    this page's holds; and its item 7, Lesson 5's hold flow in the kit
    (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:732`), with this page's options
    (item 8). The page is not published without them.
-5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:574-582`)
+5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:630-638`)
    gains one kept source, a drone voice started before the hush, which the hush leaves sounding while
    it stops and silences everything else; the drone's own release ends it. Tests: during a take a
    play of any other source sounds nothing and says nothing; the kept drone sounds until its release;
@@ -778,14 +778,14 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      states and the holds for the chip (SEASON-2 § 1.3), and checks the brightness against the
      luminance cap.
 8. **Lesson 5's hold flow, this page's options**: holds of 5 seconds as well as 10 and 15 (`HOLD_SEC`,
-   `src/features/lessons/lesson-05/hold-flow.ts:31-32`; the hold reader's length,
+   `src/features/lessons/lesson-05/hold-flow.ts:15-16`; the hold reader's length,
    `src/features/lessons/kit/hold-take.ts:56`); a set of three notes, each with its own model note,
    then a set of two, with the set's rules (Toys 6): a take is one run of a set, Again sings the
    whole set, a hold with no voice ends the set, the celebration needs every hold read; the drone
    under each take (item 5); no live band state; `restAfterEffort` on; the second set's button;
    Move do's reach, five higher and none lower, moving the drone too; and the summary's subject per
    note, "on so", "on mi", with a line for a hold it could not read (`holdSummary`,
-   `src/features/lessons/kit/hold-take.ts:330-343`). Lesson 5's page keeps its behaviour.
+   `src/features/lessons/kit/hold-take.ts:353-368`). Lesson 5's page keeps its behaviour.
 9. **The drone chart's states** on the band chart (`src/features/lessons/kit/band-chart.ts`), code with
    tests: the drone as a narrow amber band or as a chrome line or a pinned marker; the top note's
    line from a schedule, the slide's and the wave's included; the brightness from the envelope of

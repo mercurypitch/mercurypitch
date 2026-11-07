@@ -964,11 +964,11 @@ and First Light does not step aside. Item 21 fixes it.
     (`src/tests/entry-page-model.test.ts:497-529`); Lesson 28's links split the shared Karaoke
     Night and Jam row (Lesson 28 WEB-SPEC item 15).
 22. **A hold read on its middle** (kit code with tests, small): the kit's hold reader counts frames
-    inside the band (`src/features/lessons/kit/hold-take.ts:285-291`), on frames that Voice Mirror's
+    inside the band (`src/features/lessons/kit/hold-take.ts:308-314`), on frames that Voice Mirror's
     preprocessing has median-filtered over 5 frames. On the kit's 16 ms frames a held vibrato of ±50
     cents at six swings a second reads about 6.1 to 6.4 of 10 seconds in the band, by how the frames
     fall on the wave, and ±60 at 5.5 a second about 4, although its middle never leaves the band.
-    Voice Mirror's wave finding (`src/lib/mirror/metrics.ts:496-511`) moves into one exported
+    Voice Mirror's wave finding (`src/lib/mirror/metrics.ts:445-456`) moves into one exported
     function, which its steadiness calls once on the whole trimmed hold, as now, and the new reader
     calls on 3-second windows every half second, so a vibrato that comes late or whose rate wanders
     is found too. Where a window finds one, the reader takes it out with a running mean one swing
@@ -1035,7 +1035,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
 6. **Vibrato as the app draws it.** Two drawings, labelled apart: a sung or measured wave (a pitch
    trace whose rate and extent are the real ones), and the app's ribbon for a vibrato note, whose
    wave count follows the note's width (`src/lib/effect-renderer.ts:216-241`, :226). The kit's Merc
-   voice has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:196-205`); Lesson
+   voice has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:45-46`); Lesson
    22's examples need rate and extent as parameters, which the demo voice already takes
    (`src/lib/demo-voice.ts:37`).
 7. **Merc performances.** New passes for reading, conducting and a two-host duet, priced by the
@@ -1051,7 +1051,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    (`src/features/lessons/kit/season.ts:1-3`) with Season 1's topics (:50-83) and its lessons
    indexed by number (`LESSONS[n].n === n`, :109); the masthead's season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`); the season's end card says "End of Season 1"
-   (`src/features/lessons/kit/lesson-copy.ts:191-197`); the explorer is "Season 1 as a map"
+   (`src/features/lessons/kit/lesson-copy.ts:201-207`); the explorer is "Season 1 as a map"
    (`src/features/lessons/kit/explorer.ts:2` at `ad0a099f7`); the hub says Season 1 (`learn/index.html:265`). The kit
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page
@@ -1070,9 +1070,9 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    it generalised (code with tests).
 4. **A circle-of-fifths toy** (Lesson 21).
 5. **Two-voice playback**: the demo voice plays one line per call (`src/lib/demo-voice.ts:244`) and
-   `allOf` starts runs together (`src/features/lessons/kit/run.ts:217`); two independent parts need
+   `allOf` starts runs together (`src/features/lessons/kit/run.ts:246`); two independent parts need
    one scheduler for both lines. Two parts note against note already play together through
-   `playNotes`, whose notes that share an onset start in one timer task (`run.ts:10-11`); what is
+   `playNotes`, whose notes that share an onset start in one timer task (`run.ts:13-14`); what is
    missing is a part under a take, which Lesson 26 specifies as Lesson 24's kept source widened to
    a sung contour voice, booked on the audio clock, with a level dip for repeated notes (Lesson 26
    WEB-SPEC item 6), for Lesson 28 too.

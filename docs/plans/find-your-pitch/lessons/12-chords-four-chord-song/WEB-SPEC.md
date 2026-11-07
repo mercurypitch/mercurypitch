@@ -217,7 +217,7 @@ minute. Free play in the Wrap is not counted.
 | 2. The hero's ring        | The kit's spiral, the hero's own copy seen from above, as Lesson 2's copy looks down (`lesson-02/spiral-copy.ts:13-14`) and as Lesson 10's hero takes it                                                                                                                                                                                                                        | The four rooms, faint, and the tunes' walk, drawn in its overlay                                                                                                                                                              |
 | 3. Predict widget         | The kit's predict (`kit/predict.ts`), with a free play before the choice and a reveal after both of two plays                                                                                                                                                                                                                                                                   | Nothing                                                                                                                                                                                                                       |
 | 4. Four words             | The words strip of Lessons 1 to 10, a ticket per word with its figure and play button, each page keeping its own figures (`lesson-04/words.ts`)                                                                                                                                                                                                                                 | Four new figures                                                                                                                                                                                                              |
-| 5. The tune toy           | Toys 1's ring; the kit's Merc voice (`kind: 'merc'`, `kit/sound.ts:30-44`)                                                                                                                                                                                                                                                                                                      | Two tunes over the loop, and tune 2 with even notes                                                                                                                                                                           |
+| 5. The tune toy           | Toys 1's ring; the kit's Merc voice (`kind: 'merc'`, `kit/sound.ts:51-70`)                                                                                                                                                                                                                                                                                                      | Two tunes over the loop, and tune 2 with even notes                                                                                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); the kit's slide guide and breathing ring (`kit/slide-guide.ts`, `kit/sing.ts`); Move do and its count-in note, Lesson 4's, which Lesson 10's spec moves into the kit; the guide's breath mark, from Lesson 6's page; Lesson 6's rest card after "Effortful" | A path of five roots with the chords under it; Move do stopping at three higher; the Easy and Workable line                                                                                                                   |
 | 7. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                                                                                                     | Three items in two drawers                                                                                                                                                                                                    |
 | 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:59-65`); Lesson 10's questions                                                                                                                                                                                                                   | Ids and keys; spoken numerals                                                                                                                                                                                                 |
@@ -437,7 +437,7 @@ further:
   `kit/predict.ts:179`): a tap on another of the hero's three does nothing until the first ends, so
   the predict's own plays never cut each other short, and they carry no Stop, unlike the steps' tune
   toy (Toys 5). Only a stop (the page hidden, or sound turned off: the kit then stops every voice,
-  `sound.ts:516-518`, `:548`), a bead tap on the hero's ring or leaving the hero for a step ends a
+  `sound.ts:572-574`, `:604`), a bead tap on the hero's ring or leaving the hero for a step ends a
   tune early. Two more kit parts, from Lesson 6's page (PR #1149), make that safe, and this page
   uses both. A page's `play` may resolve `false` for a play cut short, and the predict then skips
   its hint and its reveal, so that play reveals nothing and the hint stays as it was
@@ -718,26 +718,26 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), as one of the kit's runs
-  (`playNotes`, `src/features/lessons/kit/run.ts:164`), which can be stopped, where `playTone`
-  (`src/features/lessons/kit/sound.ts:602`) resolves only once its note has ended; the visuals run
+  (`playNotes`, `src/features/lessons/kit/run.ts:193`), which can be stopped, where `playTone`
+  (`src/features/lessons/kit/sound.ts:658`) resolves only once its note has ended; the visuals run
   even when sound is off.
 - **A loop or a tune** is timed from one start, as Lessons 2 and 4 time their examples (`schedule`,
   `src/features/lessons/lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`): every chord
   and every sung note starts on its own timer, counted from the play's start, and a chord and the
   tune's note that begins with it start in the same callback, so they share one start on the audio
   clock and never drift apart, and the drawing hears the same callback. A voice's `dur` counts from
-  the moment it starts (`sound.ts:269-274`). The play decides once, at its press, whether it sounds
-  (`audible`, `ToneOptions`, `sound.ts:596-599`), so it is all sound or all silent. Those two
+  the moment it starts (`sound.ts:325-330`). The play decides once, at its press, whether it sounds
+  (`audible`, `ToneOptions`, `sound.ts:652-655`), so it is all sound or all silent. Those two
   pages' `schedule` keeps no handle on its timers; this page's must, so that stopping a play clears
   every timer not yet fired and stops every voice still sounding: the kit's `playNotes`
-  (`kit/run.ts:164-205`) does both (What the kit and the app still need, item 8).
+  (`kit/run.ts:193-234`) does both (What the kit and the app still need, item 8).
 - **Levels**: a tapped note and Step 4's roots at the soft tone's 0.13; a chord's voices at 0.075
-  each, or 0.05 under Merc; Merc's "ooh" at the kit's 0.2 (`sound.ts:188`); the count-in at 0.065
+  each, or 0.05 under Merc; Merc's "ooh" at the kit's 0.2 (`sound.ts:227`); the count-in at 0.065
   (FACTS 73, 74).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:551-563`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:607-619`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:516-518`).
+  hidden (`sound.ts:572-574`).
 
 ## Merc and Tavi
 
@@ -909,10 +909,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
    for a play cut short (`kit/predict.ts:31-41`, `:187-188`). A `schedule` that can be stopped is
    built too: the kit's runs (`kit/run.ts`, Lesson 7's, moved into the kit), whose `playNotes`
-   (`:164-205`) starts every note on its own timer from the play's start, the notes that share an
+   (`:193-234`) starts every note on its own timer from the play's start, the notes that share an
    onset in one timer task, so a chord and the tune's note that begins with it share one start, and
    whose `stop` clears every timer not yet fired and stops every voice still sounding, for the owner
-   to call (`Run`, `:46-49`). Lessons 2 and 4 keep their own, which cannot be stopped
+   to call (`Run`, `:49-52`). Lessons 2 and 4 keep their own, which cannot be stopped
    (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`), and may take the kit's later.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
    `lessonPageHref` (`:141-143`, `:137-139`), as Lesson 10's spec proposed (its item 9), and Lessons
@@ -978,10 +978,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:466`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:512`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:873-876`, and for CSS `:906-909`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:926-929`, and for CSS `:959-962`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and
@@ -1082,7 +1082,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    and soprano presets keep one at the bottom.
 9. **The chords under the voice.** At 0.05 a voice under Merc's "ooh" and under the guide (FACTS
    74), the page's own choice, for the owner's ear on a real phone (Contract). The review: fine,
-   since the chord's three voices sum to 0.15, less than Merc's 0.2 (`sound.ts:188`). Listen for
+   since the chord's three voices sum to 0.15, less than Merc's 0.2 (`sound.ts:227`). Listen for
    testers singing louder over them.
 10. **The coach's volume line.** "Sing at about speaking volume." stays, the series' line; "or a
     little softer, never a whisper" is a safe addition for the coach to make (LESSON.md, For the
@@ -1302,7 +1302,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     (`:38-111`), with the eyebrow "Next lesson 13 · Resonance and vowels Coming later", the link
     `#explorer` and "See it on the map" while Lesson 13 has no page, as Lesson 7's row reads for
     Lesson 8; its `.next-tease` reads Lesson 13's tease, one line above its hook, as the spec checks
-    Lesson 1's card (`:167-184`); its still inside the card holds no button.
+    Lesson 1's card (`:173-190`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:47-49`), for the team's words (`:23-42`), and the
     alternative hook's note never reaches the page (`:79-81`).

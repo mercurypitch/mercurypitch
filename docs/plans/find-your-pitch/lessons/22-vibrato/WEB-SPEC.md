@@ -70,7 +70,7 @@ Four things move: the Merc idle loops; a line drawing as its play sounds; the mi
 itself (0.6 s); and the ring in Sing it. Only Merc and Tavi move on their own. Under
 `prefers-reduced-motion` Merc and Tavi hold a still frame, a play's line lands whole as the play
 starts, and the middle line appears at once, as the kit's chart lands a figure in its end state
-(`src/features/lessons/kit/band-chart.ts:36-38`); what the viewer starts still sounds. For everyone
+(`src/features/lessons/kit/band-chart.ts:40-42`); what the viewer starts still sounds. For everyone
 else the masthead's Pause animations toggle stops the same things.
 
 ## Sections
@@ -410,7 +410,7 @@ States:
 4. **Warm-up**, optional, with Skip: Lesson 3's two cards and words as Lesson 5's page has them,
    with "Copy the way Merc's voice slides, not the exact notes." and the stop line (FACTS 50);
    nothing listens and nothing is scored. Its Skip is remembered as `fyp-l22-warmup`, so a return
-   visit opens it folded, as Lesson 5's own key does (`src/features/lessons/lesson-05/sing.ts:53-54`).
+   visit opens it folded, as Lesson 5's own key does (`src/features/lessons/lesson-05/sing.ts:30`).
 5. **The note**: Merc's A in the chosen voice, with **Lower** and **Higher**, a semitone a tap, up to
    four either way, F3 to C♯4 or F4 to C♯5 (FACTS 51, 55); each tap plays the note for 1.0 s in
    Merc's usual "ooh". The move lasts for the visit and is not stored. It comes before Start: finding
@@ -427,11 +427,11 @@ States:
    frame, folded into Merc's octave, and Merc and Tavi both listen. The take opens 0.4 s after
    Merc's note ends, waits up to 6 s for the first voiced frame, then runs exactly 10 s from it, or
    less if the voice stops for more than a second
-   (`src/features/lessons/lesson-05/sing-hold.ts:5-20`; `HOLD_QUIET_SEC`,
+   (`src/features/lessons/kit/hold-run.ts:15-21`; `HOLD_QUIET_SEC`,
    `src/features/lessons/kit/hold-take.ts:39-42`). Nothing plays while it is open. **No live band
    state**: during the take the band's edge does not light, the band does not glow and no line names
    where the voice is against the band, since a wave wider than the band would flip it on every
-   swing; Lesson 5's take shows its state live (`src/features/lessons/kit/hold-run.ts:83-110`;
+   swing; Lesson 5's take shows its state live (`src/features/lessons/kit/hold-run.ts:89-117`;
    FACTS 57). The microphone is released when the take ends.
 8. **After the take**: the centre-line reader reads it (below). The learner's line stays drawn.
    Where the reader found a vibrato, the line's middle draws itself over it as a dashed violet line
@@ -495,7 +495,7 @@ still need, item 6):
   long, the first at the trimmed start and one every 0.5 s after it, the last ending at the trimmed
   end; a trimmed span of 3.0 s or less is one window. Judge each by Voice Mirror's rule: the shared
   detector finds a modulation, its rate lies between 3.5 and 8.5 swings a second, and the sine
-  fitted near that rate reaches 10 cents (`src/lib/mirror/metrics.ts:496-511`). The rule moves into
+  fitted near that rate reaches 10 cents (`src/lib/mirror/metrics.ts:445-456`). The rule moves into
   one exported function that Voice Mirror's steadiness and this reader both call, so the two judge a
   stretch of frames alike; Voice Mirror still runs it once on the whole trimmed hold, and its results
   and tests stay as they are. A finding window covers its own span, and one at the trimmed start or
@@ -511,7 +511,7 @@ still need, item 6):
   reader's own rules: the band test at 35 cents, the time in the band rounded down to 0.1 s,
   settling at 0.5 s unbroken, a stall between two frames in the band counted as in it, and its lines
   (`src/features/lessons/kit/hold-take.ts:16-26`; `holdLine`,
-  `src/features/lessons/kit/hold-take.ts:231-259`).
+  `src/features/lessons/kit/hold-take.ts:250-278`).
 - **Why windows, and why one swing.** Hold 2's cue invites a vibrato that comes part-way through,
   and a singer's rate wanders. Voice Mirror's rule run once over the whole hold misses a vibrato that
   starts 8 s in, and its one sine slips out of phase as the rate wanders (FACTS 44). A running mean
@@ -519,7 +519,7 @@ still need, item 6):
   drift unchanged, so a middle that drifts still leaves the band; when the rate wanders the leftover
   is small, ±7.8 cents of a ±50 wave at 7.2 swings a second in a window set for 6 (FACTS 44). Voice
   Mirror takes the fitted wave's share out of its wobble figure, not out of the line
-  (`src/lib/mirror/metrics.ts:507-510`), so the middle line is this reader's own work.
+  (`src/lib/mirror/metrics.ts:528-531`), so the middle line is this reader's own work.
 - **The description**: the rate is the median of the finding windows' rates, to 0.1. The extent is
   √2 times the RMS of the raw distance less the middle line, over the frames where that difference's
   RMS over one swing reaches 10/√2 cents, in whole cents: for a sine, its swing either side. These
@@ -537,7 +537,7 @@ still need, item 6):
   46).
 - **The summary** takes its subject from the page, "the middle of your line" here where Lesson 5's
   says "your line", as an option of the kit's summary (`holdSummary`,
-  `src/features/lessons/kit/hold-take.ts:330-343`).
+  `src/features/lessons/kit/hold-take.ts:353-368`).
 
 On a phone the chart and its lines fit Sing it's card at 344 to 390 px, the 10-second frame with its
 seconds named under it, as Lesson 5's (`src/features/lessons/kit/band-chart.ts:16-18`).
@@ -583,10 +583,10 @@ Sing it's notes in the chosen voice's octave, each with the vibrato its play nam
 - **Drift and the swell are contours.** Drift glides the voice's pitch from the note to 50 cents
   above over 3.0 s, and the swell holds a straight note while its level moves through its three
   points, both scheduled on the audio clock (`src/features/lessons/kit/sound.ts:16-21`; `contourVoice`,
-  `src/features/lessons/kit/sound.ts:328-354`).
+  `src/features/lessons/kit/sound.ts:384-410`).
 - **Merc's model notes** in Sing it are timed notes with the default vibrato, before both holds, as
-  Lesson 5's are (`playTone`, `src/features/lessons/kit/sound.ts:596-604`;
-  `src/features/lessons/lesson-05/sing-hold.ts:52`).
+  Lesson 5's are (`playTone`, `src/features/lessons/kit/sound.ts:652-660`;
+  `src/features/lessons/kit/hold-sing.ts:216`).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the Straight note word, which a
   phone's speaker carries through the "ooh"'s overtones, as Lesson 14's D3 does (FACTS, Layout).
 
@@ -682,16 +682,16 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    then names Season 2, where today its season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`).
 4. **Merc's voice with its vibrato as a parameter** (SEASON-2 § 6.1 item 6), code with tests:
-   - `VoiceOptions` (`src/features/lessons/kit/sound.ts:31-53`) gains a `vibrato` option of a rate,
+   - `VoiceOptions` (`src/features/lessons/kit/sound.ts:51-79`) gains a `vibrato` option of a rate,
      an extent either side and a grow-in time, or null, in the demo voice's form
      (`src/lib/demo-voice.ts:33-37`). Absent, a voice keeps today's, Merc's "ooh" its 5.5 swings a
      second at ±14 cents over 0.35 s and the soft tone none
-     (`src/features/lessons/kit/sound.ts:195-206`); null, a straight note, with no modulator built;
+     (`src/features/lessons/kit/sound.ts:234-249`); null, a straight note, with no modulator built;
      set, that rate, extent and grow-in, its phase 0 at the voice's start.
    - The voice's handle gains a vibrato setter that glides the modulator's rate and depth to new
      values over 50 ms, for Step 2's and Step 3's sliders.
    - The timed note, the sung line and the contour pass the option through
-     (`src/features/lessons/kit/sound.ts:328-354`, `:602-625`).
+     (`src/features/lessons/kit/sound.ts:384-410`, `:658-681`).
    - Tests: a voice built with null has no modulator; one with 6, 50 and 0.3 has a modulator at 6 Hz
      whose depth reaches 50 cents at 0.3 s; with no option every Season 1 play builds what it builds
      today; the setter moves rate and depth within 50 ms without restarting the voice.
@@ -716,7 +716,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      68).
 6. **The centre-line reader**, code with tests (Toys 6; FACTS 43, 44, 46), for SEASON-2 § 5:
    - In Voice Mirror's metrics, the wave finding lifted out of its steadiness
-     (`src/lib/mirror/metrics.ts:496-511`) into one exported function, which the steadiness then
+     (`src/lib/mirror/metrics.ts:445-456`) into one exported function, which the steadiness then
      calls on the whole trimmed hold, as now, its results and Voice Mirror's tests unchanged.
    - `kit/hold-centre.ts`, pure, beside the hold reader: that function on 3-second windows every
      half second across the trimmed hold; the running mean one swing long wherever a window found a
@@ -724,16 +724,16 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      the vibrato's rate from its windows and extent from the line less its middle, returned with the
      reading.
    - The vibrato line, and the summary's subject as an option (`holdSummary`,
-     `src/features/lessons/kit/hold-take.ts:330-343`).
+     `src/features/lessons/kit/hold-take.ts:353-368`).
    - Its tests are Tests 8 to 10.
    - The page is not published without it, as the lead answered on 2 November 2026: today's reader
      counts frames, so on the kit's 16 ms frames a vibrato of ±50 cents at six swings a second reads
      about 6 of 10 seconds in the band, and ±60 about 4 (FACTS 43).
 7. **Lesson 5's hold flow in the kit**, code with tests: Lesson 5's take
-   (`src/features/lessons/lesson-05/sing-hold.ts:1-20`), its flow rule
+   (`src/features/lessons/kit/hold-run.ts:1-24`), its flow rule
    (`src/features/lessons/kit/hold-flow.ts:1-25`) and its Sing it move into the kit with
    options: the holds' lengths, 10 and 15 there, 10 and 10 here (`HOLD_SEC`,
-   `src/features/lessons/lesson-05/hold-flow.ts:31-32`); the listening notes, a 10-second and a
+   `src/features/lessons/lesson-05/hold-flow.ts:15-16`); the listening notes, a 10-second and a
    15-second note there, one 10-second note here; the reader, today's or the centre-line reader;
    the live band state, on there and off here; `restAfterEffort`, off there and on here; Hold 2's
    button; and the summary's subject. Lesson 5's page keeps its behaviour, and its tests move with
@@ -954,3 +954,55 @@ production:
   close to Voice Mirror's, and both extents read below the sung one (FACTS 46).
 - On a real phone at 390 px, the band chart, the two panels of Step 4 and the holds' lines fit their
   cards, and D3 is heard through the speaker.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,229 words
+  with about 250 more written in the open (the two predicts' hints and "You said" lines, 55; the
+  steps' and quick check 3's lock lines, 18; Sing it's status lines and the stored voice's line, 83;
+  the figures' captions and the toys' labels, 96; free play and the sound-off lines left out, as the
+  counter leaves them), the page is about 2,480 words, some 100 over the series' cap of 2,379. So
+  both of Length's cuts are made: Step 3 has no Go deeper drawer, and Sing it opens on its status
+  line. That leaves about 2,435, still some 55 over: the cap is the owner's to weigh at the final
+  look, as Lesson 8's was and Lesson 17's is (Lesson 8 FACTS 4). FACTS 19 keeps the drawer's
+  numbers.
+- Lesson 5's whole Sing it moved into the kit, not its hold flow alone: `kit/hold-sing.ts`, the
+  checkpoint a page mounts with its plan (`HoldSingPlan`); `kit/hold-sing-view.ts`, its card; and
+  `kit/hold-run.ts`'s `live` option, which keeps the band state to itself through a take. The plan
+  takes the holds' lengths, their names and Hold 2's button, the reader, the live band state and the
+  summary's subject. The listening notes are the markup's (`data-listen-len`), and this page carries
+  the 10-second one alone. Four hooks serve this page, and Lesson 5 passes none: a painter over the
+  hold chart (`paintOver`), a word before Start asks for anything (`mayStart`), the take's window
+  opening and closing (`onTake`), and a turn after each reading (`onReading`).
+- Voice Mirror's rule is `findVibrato` (`src/lib/mirror/metrics.ts`), which free singing's longest
+  run calls too. The centre-line reader hands the hold reader its middle line through a new last
+  argument to `readHold`. A finding whose line never swings 10 cents either side once its middle is
+  taken out describes nothing, and the hold reads as today's.
+- Every dashed middle is drawn on a dark edge first, so its dashes part from a line of their own
+  colour under them: Merc's amber wave under his middle in the hero and Step 3, the learner's violet
+  line under theirs in Sing it. Its word, "middle", sits just past the wave's end where the window
+  has room, and above its end on a dark plate where it has none, as the level strip's LOUDNESS sits.
+- Step 4's ribbon comes in a chunk of its own as the toy mounts, after first paint: the app's
+  effects are one module (`src/lib/effect-renderer.ts`, 4,317 bytes in build:e2e).
+- The four words' figures run across the top of each ticket, as the rhythm lessons' words do, not in
+  the ticket's stub: at its 88 px, Rate's two notes drew 24 swings in 70 px, and five a second could
+  not be told from seven. A band stands empty until its first press, and a line stays as it last
+  drew.
+- Quick check 3's play shows "Play" and is named "Play the question's wave", so its name holds what
+  it shows and never matches Step 3's plays.
+- With sound off, Start says why under itself, as above, and the kit's toast says the take can't
+  play, "Sound is off, so this one can't play. Turn it on to start.", as Lesson 17's Start says it.
+- With no live band state, the Now readout beside the ring stays hidden through every take, where it
+  would stand at its placeholder.
+- Free play's four states are a switch of four buttons (`data-free-state`), one pressed at a time,
+  held with every other control until the cold open's choice. Where the screen is 620 px or
+  narrower, the switch takes two rows of two pills, 8 px apart: as one joined pill it ran 512 px
+  wide.
+- The tease still's words take two lines beside its pitch line, "an octave:" over "12 semitones", in
+  a still drawn 240 units wide: on one line they ran 450 px across.
+- `main.ts` takes the voice lessons' sheet before the page's own, so the sheet stays in the chunk
+  Sing it shares with the comfort check and the voice choice; the slide guide's sheet stays off the
+  page, since taken here it left the chunk Lesson 2's questions share and was linked after the
+  page's own sheet on nine lessons (MISTAKES.md). Every other page links the same sheets as on main.
