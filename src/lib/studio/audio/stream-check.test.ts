@@ -119,4 +119,49 @@ describe('Studio stream checks', () => {
       'checksum failed',
     )
   })
+
+  // A mono take of an odd frame count ends on a slice that is no multiple of
+  // four bytes, which a float copy can never do.
+  it('passes a Save space take of an odd length and fails one changed by a bit', async () => {
+    const frames = 20_001
+    const samples = Float32Array.from({ length: frames }, (_, i) =>
+      Math.sin(i / 5),
+    )
+    const pcm = await encodeCanonicalPcm(
+      {
+        sampleRate: 48_000,
+        numberOfChannels: 1,
+        length: frames,
+        getChannelData: () => samples,
+      },
+      { format: 'int16' },
+    )
+    const canonical = new Uint8Array(await pcm.arrayBuffer())
+    const { asset: float } = await take()
+    const asset: StudioAsset = {
+      ...float,
+      channels: 1,
+      normalizedFrameCount: frames,
+      canonicalPcmFormat: 'int16',
+      canonicalPcmByteLength: canonical.byteLength,
+      canonicalPcmSha256: await sha256Bytes(canonical.slice().buffer),
+    }
+    expect(canonical.byteLength % 4).toBe(2)
+
+    expect(() =>
+      stream(checkCanonicalStream(new Blob([canonical]), asset), canonical),
+    ).not.toThrow()
+    const changed = canonical.slice()
+    changed[40_000] ^= 1
+    expect(() =>
+      stream(checkCanonicalStream(new Blob([changed]), asset), changed),
+    ).toThrow('checksum failed')
+    // Read as a float copy, its header does not match.
+    const asFloat = { ...asset, canonicalPcmFormat: undefined }
+    expect(() =>
+      checkCanonicalStream(new Blob([canonical]), asFloat).update(
+        canonical.slice(0, 16_384),
+      ),
+    ).toThrow()
+  })
 })

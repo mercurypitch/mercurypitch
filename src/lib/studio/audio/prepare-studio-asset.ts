@@ -5,7 +5,8 @@
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, } from '@/lib/studio/model/types'
 import { validateStudioAsset } from '@/lib/studio/model/validation'
-import { CANONICAL_PCM_HEADER_BYTES, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, validateCanonicalPcmBytes, } from './canonical-pcm'
+import type { CanonicalPcmFormat } from './canonical-pcm'
+import { CANONICAL_PCM_HEADER_BYTES, canonicalPcmByteLength, canonicalPcmLayout, encodeCanonicalPcm, sha256Bytes, validateCanonicalPcm, validateCanonicalPcmBytes, } from './canonical-pcm'
 import type { PcmAudio, StudioImportLimits } from './import-limits'
 import { admitWorkingBytes, checkImportCancelled, importLimits, validatePcmDimensions, } from './import-limits'
 import { PREPARATION_ANALYSIS_BYTES, sourcePreparation, } from './preparation-gain'
@@ -30,6 +31,12 @@ export interface PrepareStudioAssetOptions {
   createDecodeContext?: () => StudioDecodeContext
   /** Known kept-source size permits admission before reading its stored payload. */
   encodedByteLength?: number
+  /**
+   * How the canonical copy keeps its samples: Save space asks for 16-bit
+   * steps (storage-quality.ts). Absent, 32-bit floats, as every take had
+   * before. Audio no 16-bit copy can hold keeps floats either way.
+   */
+  canonicalFormat?: CanonicalPcmFormat
 }
 
 let activePreparation = false
@@ -91,10 +98,19 @@ function reservePreparation(
 }
 
 /** The decoded channels, the canonical encode and its hash copy. */
-function reserveDecoded(audio: PcmAudio): () => void {
+function reserveDecoded(
+  audio: PcmAudio,
+  format: CanonicalPcmFormat = 'float32',
+): () => void {
+  const canonical = canonicalPcmByteLength(
+    audio.length,
+    audio.numberOfChannels,
+    format,
+  )
   return reserveStudioMemory(
-    (audio.length * audio.numberOfChannels * 4 + CANONICAL_PCM_HEADER_BYTES) *
-      3,
+    audio.length * audio.numberOfChannels * 4 +
+      CANONICAL_PCM_HEADER_BYTES +
+      canonical * 2,
   )
 }
 
@@ -124,15 +140,23 @@ async function prepareSelectedBlob(
   }
   checkImportCancelled(options.signal)
   validatePcmDimensions(decoded, limits)
-  const releaseDecoded = reserveDecoded(decoded)
+  const releaseDecoded = reserveDecoded(decoded, options.canonicalFormat)
   let preparation: StudioAsset['preparation']
   let canonicalPcm: Blob
   let canonicalPcmSha256: string
+  let int16: boolean
   try {
     preparation = await sourcePreparation(decoded, options.signal)
-    canonicalPcm = await encodeCanonicalPcm(decoded, options)
+    canonicalPcm = await encodeCanonicalPcm(decoded, {
+      signal: options.signal,
+      limits: options.limits,
+      format: options.canonicalFormat,
+    })
     checkImportCancelled(options.signal)
-    canonicalPcmSha256 = await sha256Bytes(await canonicalPcm.arrayBuffer())
+    const canonicalBytes = await canonicalPcm.arrayBuffer()
+    canonicalPcmSha256 = await sha256Bytes(canonicalBytes)
+    // What was written, which is floats for audio no 16-bit copy can hold.
+    int16 = canonicalPcmLayout(new DataView(canonicalBytes)).format === 'int16'
     checkImportCancelled(options.signal)
   } finally {
     releaseDecoded()
@@ -153,6 +177,7 @@ async function prepareSelectedBlob(
     canonicalPcmId: globalThis.crypto.randomUUID(),
     canonicalPcmSha256,
     canonicalPcmByteLength: canonicalPcm.size,
+    ...(int16 ? { canonicalPcmFormat: 'int16' } : {}),
     preparation,
     provenance: {
       kind: info.provenance.kind,

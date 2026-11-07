@@ -199,6 +199,30 @@ describe('strict Studio persistence validation', () => {
       }),
     ).toThrow(/Unknown field/)
   })
+
+  it("takes a Save space take's 16-bit copy at its own size, and no other format", () => {
+    const { asset } = studioFixture()
+    // 1000 mono frames: a 32-byte header and 2 bytes a sample.
+    const saved = {
+      ...asset,
+      canonicalPcmFormat: 'int16',
+      canonicalPcmByteLength: 2032,
+    }
+
+    expect(validateStudioAsset(saved).canonicalPcmFormat).toBe('int16')
+    // The same size without the format is too small for floats.
+    expect(() =>
+      validateStudioAsset({ ...asset, canonicalPcmByteLength: 2032 }),
+    ).toThrow(/payload/)
+    expect(() =>
+      validateStudioAsset({ ...saved, canonicalPcmByteLength: 2000 }),
+    ).toThrow(/payload/)
+    // Floats are the field left out, never named: one format, one shape.
+    for (const format of ['float32', 'int24', 16])
+      expect(() =>
+        validateStudioAsset({ ...saved, canonicalPcmFormat: format }),
+      ).toThrow(/version/)
+  })
 })
 
 describe('Studio defaults', () => {

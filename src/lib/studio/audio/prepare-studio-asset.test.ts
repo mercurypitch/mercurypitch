@@ -49,6 +49,41 @@ describe('Studio asset preparation', () => {
     await validatePreparedStudioAsset(data)
   })
 
+  it('keeps a Save space copy as 16-bit steps in half the room, exact for a 16-bit source, and says so in the take', async () => {
+    // What Chromium decodes a 16-bit WAV into (canonical-pcm16.ts).
+    const sixteen = (whole: number) =>
+      Math.fround(whole * (whole < 0 ? 2 ** -15 : Math.fround(1 / 32_767)))
+    const audio = sampledAudio([
+      Array.from({ length: 24000 }, (_, i) =>
+        sixteen(((i * 97) % 65_536) - 32_768),
+      ),
+      Array.from({ length: 24000 }, (_, i) =>
+        sixteen(((i * 31) % 4_000) - 2_000),
+      ),
+    ])
+    const { createDecodeContext } = decoder(audio)
+    const blob = new Blob(['encoded source'], { type: 'audio/wav' })
+
+    const data = await prepareStudioAsset(blob, info, {
+      createDecodeContext,
+      canonicalFormat: 'int16',
+    })
+
+    expect(data.asset).toMatchObject({
+      canonicalPcmFormat: 'int16',
+      canonicalPcmByteLength: 32 + 24000 * 2 * 2,
+    })
+    expect(data.original).toBe(blob)
+    const canonical = await decodeCanonicalPcm(data.canonicalPcm, data.asset)
+    expect(canonical.getChannelData(0)).toEqual(audio.getChannelData(0))
+    expect(canonical.getChannelData(1)).toEqual(audio.getChannelData(1))
+    await validatePreparedStudioAsset(data)
+    // Full quality writes no format: the take looks as every take did before.
+    const full = await prepareStudioAsset(blob, info, decoder(audio))
+    expect(full.asset).not.toHaveProperty('canonicalPcmFormat')
+    expect(full.asset.canonicalPcmByteLength).toBe(32 + 24000 * 2 * 4)
+  })
+
   it('rejects unsupported channels, rate, duration, corrupt samples and decoder failures', async () => {
     const blob = new Blob(['audio'])
     for (const [audio, message] of [

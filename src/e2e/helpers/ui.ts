@@ -40,6 +40,15 @@ export async function dismissOverlays(page: Page) {
     localStorage.setItem('pitchperfect_onboarding_done', '1')
     localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
+    // Studio's first import asks how audio is kept (StudioStorageAsk), and
+    // the question holds the import until it is answered. Settled at Full
+    // quality, as every spec before it imported; a spec that seeded its own
+    // answer keeps it, and studio-storage-quality.spec.ts removes it to be asked.
+    if (localStorage.getItem('mercurypitch.studio.storage') === null)
+      localStorage.setItem(
+        'mercurypitch.studio.storage',
+        JSON.stringify({ quality: 'full', remembered: true }),
+      )
 
     // Also update app state via bridge if available to ensure signals are synced
     const pp = (window as any).__pp

@@ -9,7 +9,7 @@
 // slice instead of the take is what keeps a backup's memory to one batch.
 import type { StudioAsset } from '../model/types'
 import { validateStudioAsset } from '../model/validation'
-import { CANONICAL_PCM_HEADER_BYTES, checkCanonicalPcmHeader, checkCanonicalSize, } from './canonical-pcm'
+import { CANONICAL_PCM_HEADER_BYTES, canonicalPcmBytesPerSample, canonicalPcmFormatOf, checkCanonicalPcmHeader, checkCanonicalSize, } from './canonical-pcm'
 import type { StudioImportLimits } from './import-limits'
 import { importLimits } from './import-limits'
 import { createStudioSha256 } from './sha256'
@@ -55,7 +55,11 @@ export function checkOriginalStream(
   }
 }
 
-/** Canonical PCM as it streams: the header first, then finite samples and the hash. */
+/**
+ * Canonical PCM as it streams: the header first, then finite samples and
+ * the hash. A Save space take's 16-bit steps are always finite, so its
+ * header and hash are the whole check.
+ */
 export function checkCanonicalStream(
   canonicalPcm: Blob | ArrayBuffer,
   asset: StudioAsset,
@@ -64,12 +68,14 @@ export function checkCanonicalStream(
   const limits = importLimits(overrides)
   const size = sizeOf(canonicalPcm)
   checkCanonicalSize(size, asset, limits)
+  const format = canonicalPcmFormatOf(asset)
+  const sample = canonicalPcmBytesPerSample(format)
   const hash = createStudioSha256()
   let read = 0
   return {
     update(bytes) {
-      // The header is 32 bytes and every slice but the last a multiple of 4,
-      // so samples never straddle two slices.
+      // The header is 32 bytes and every slice but the last a multiple of a
+      // sample, so samples never straddle two slices.
       if (read === 0)
         checkCanonicalPcmHeader(
           new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength),
@@ -77,9 +83,10 @@ export function checkCanonicalStream(
           asset,
           limits,
         )
-      if (read % 4 !== 0 || bytes.byteLength % 4 !== 0)
+      if (read % sample !== 0 || bytes.byteLength % sample !== 0)
         throw new Error('Studio audio does not match its saved metadata')
-      checkFinite(bytes, read === 0 ? CANONICAL_PCM_HEADER_BYTES : 0)
+      if (format === 'float32')
+        checkFinite(bytes, read === 0 ? CANONICAL_PCM_HEADER_BYTES : 0)
       read += bytes.byteLength
       hash.update(bytes)
     },

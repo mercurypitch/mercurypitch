@@ -81,6 +81,39 @@ describe('Studio buffer ownership', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
+  it('loads a Save space take as the floats its 16-bit steps stand for, within half a step of the source', async () => {
+    const { asset } = studioFixture()
+    const pcm = toneAudio(1000)
+    const blob = await encodeCanonicalPcm(pcm, { format: 'int16' })
+    const bytes = await blob.arrayBuffer()
+    const step = new DataView(bytes).getFloat32(24, true)
+    const metadata = {
+      ...asset,
+      canonicalPcmFormat: 'int16' as const,
+      canonicalPcmByteLength: blob.size,
+      canonicalPcmSha256: await sha256Bytes(bytes),
+    }
+    const cache = createStudioBufferCache()
+
+    const lease = await cache.acquire(
+      [metadata],
+      new PlaybackContext().asContext,
+      vi.fn().mockResolvedValue(blob),
+      new AbortController().signal,
+    )
+
+    const loaded = lease.buffers.get(asset.id)!.getChannelData(0)
+    const source = pcm.getChannelData(0)
+    let worst = 0
+    for (let frame = 0; frame < source.length; frame++)
+      worst = Math.max(worst, Math.abs(loaded[frame] - source[frame]))
+    // Released first: a failed check must not leave the budget held for the next case.
+    lease.release()
+    cache.dispose()
+    expect(worst).toBeGreaterThan(0)
+    expect(worst).toBeLessThanOrEqual(step / 2 + 2 ** -26)
+  })
+
   it('retains pending read reservations until an aborted read settles and never caches stale data', async () => {
     const { asset } = studioFixture()
     const ctx = new PlaybackContext()

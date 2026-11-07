@@ -153,3 +153,80 @@ describe('canonical Studio PCM', () => {
     )
   })
 })
+
+async function int16Fixture() {
+  const audio = sampledAudio([
+    [0, 0.25, -0.5, 1, 0.3],
+    [-1, 0, 0.75, -0.25, -0.3],
+  ])
+  const blob = await encodeCanonicalPcm(audio, { format: 'int16' })
+  const metadata: CanonicalPcmMetadata = {
+    channels: 2,
+    normalizedSampleRate: 48_000,
+    normalizedFrameCount: 5,
+    canonicalPcmByteLength: blob.size,
+    canonicalPcmSha256: await sha256Bytes(await blob.arrayBuffer()),
+    canonicalPcmFormat: 'int16',
+  }
+  return { audio, blob, metadata }
+}
+
+describe("Save space's canonical PCM", () => {
+  it('reads back through the same checks once its metadata names its format', async () => {
+    const { audio, blob, metadata } = await int16Fixture()
+
+    const decoded = await decodeCanonicalPcm(blob, metadata)
+
+    expect(blob.size).toBe(32 + 5 * 2 * 2)
+    // 0.3 is on no 16-bit grid, so the take is scaled to its peak of 1.
+    const halfStep = Math.fround(1 / 32_767) / 2
+    for (const channel of [0, 1]) {
+      const read = decoded.getChannelData(channel)
+      const source = audio.getChannelData(channel)
+      for (let frame = 0; frame < 5; frame++)
+        expect(Math.abs(read[frame] - source[frame])).toBeLessThanOrEqual(
+          halfStep + 2 ** -24,
+        )
+    }
+    await expect(
+      validateCanonicalPcmBytes(await blob.arrayBuffer(), metadata),
+    ).resolves.toBeUndefined()
+  })
+
+  it('is refused under the metadata of the other format, either way round', async () => {
+    const { blob, metadata } = await int16Fixture()
+    const asFloat: CanonicalPcmMetadata = {
+      ...metadata,
+      canonicalPcmFormat: undefined,
+    }
+    await expect(validateCanonicalPcm(blob, asFloat)).rejects.toThrow()
+
+    const float = await fixture()
+    await expect(
+      validateCanonicalPcm(float.blob, {
+        ...float.metadata,
+        canonicalPcmFormat: 'int16',
+      }),
+    ).rejects.toThrow()
+  })
+
+  it.each([
+    ['a zero step', 24, 0],
+    ['a negative step', 28, -1],
+    ['a step that is not a number', 24, NaN],
+    ['a step whose multiples leave the float range', 28, 3e34],
+  ])(
+    'rejects %s even when its checksum is recomputed',
+    async (_, offset, value) => {
+      const { blob, metadata } = await int16Fixture()
+      const bytes = await blob.arrayBuffer()
+      new DataView(bytes).setFloat32(offset, value, true)
+      await expect(
+        validateCanonicalPcm(new Blob([bytes]), {
+          ...metadata,
+          canonicalPcmSha256: await sha256Bytes(bytes),
+        }),
+      ).rejects.toThrow('not supported')
+    },
+  )
+})
