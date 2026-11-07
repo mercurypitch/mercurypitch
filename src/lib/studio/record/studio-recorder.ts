@@ -21,6 +21,10 @@
 // and the store, and mirrors the view into signals. The take's audio is
 // also journaled as it records (studio-take-journal.ts), so a closed tab
 // leaves the take to be kept on the next visit.
+//
+// A lane can take one channel of its input: a guitar on input 2 of an
+// interface. The arm hands the take and the monitor the same node, that
+// channel alone (lane-channel.ts), and so does every capture it opens after.
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicReleaseReason } from '@/lib/mic-manager'
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
@@ -30,6 +34,8 @@ import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
 import { createStudioClickScheduler } from './click-track'
 import type { StudioInputMonitor } from './input-monitor'
+import type { StudioLaneChannel } from './lane-channel'
+import { openStudioLaneChannel } from './lane-channel'
 import type { StudioCaptureStop } from './pcm-capture'
 import type { StudioRecordSettings } from './record-settings'
 import type { StudioCapturedTake, StudioMicHold, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
@@ -104,6 +110,8 @@ interface Armed {
   readonly mic: StudioMicHold
   readonly stream: MediaStream
   readonly source: AudioNode
+  /** What the lane records and hears, its one channel or the whole source: every capture of the arm listens on its `input`. */
+  readonly lane: StudioLaneChannel
   readonly capture: StudioCaptureHandle
   readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
   readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
@@ -196,7 +204,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     set({ phase: 'arming', error: null, notice: null, targetTrackId: trackId })
     // Both start before anything is awaited: the press must still be current.
     const unlocked = deps.unlock().catch(() => false)
-    const mic = deps.acquireMic()
+    const mic = deps.acquireMic(trackId)
     let held: StudioMicHold
     try {
       held = await mic
@@ -244,14 +252,23 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
   ): Armed {
     const stream = mic.stream
     const source = deps.createSource(context, stream)
-    const capture = deps.openCapture(context, source, captureEvents())
-    const monitor = deps.createMonitor(context, source)
+    const lane = openStudioLaneChannel(
+      context,
+      source,
+      stream,
+      mic.channel ?? null,
+    )
+    const capture = deps.openCapture(context, lane.input, captureEvents())
+    const monitor = deps.createMonitor(context, lane.input)
     monitor.set(deps.monitorLevel(trackId))
+    const { channels, channel, missingChannel } = lane
+    deps.inputOpened?.({ stream, channels, channel, missingChannel })
     return {
       context,
       mic,
       stream,
       source,
+      lane,
       capture,
       monitor,
       clicks: deps.createClicks(context),
@@ -266,6 +283,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     closing.capture.dispose()
     closing.monitor.dispose()
     closing.clicks.stop()
+    closing.lane.split?.close()
     try {
       closing.source.disconnect()
     } catch {
@@ -574,13 +592,17 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     set({ phase: 'armed', countBeat: null, live: null })
   }
 
-  /** A capture takes one start; the armed lane listens on through a fresh one. */
+  /** A capture takes one start; the armed lane listens on through a fresh one, on the same channel. */
   function listenAgain(): void {
     if (armed === null) return
     armed.capture.dispose()
     armed = {
       ...armed,
-      capture: deps.openCapture(armed.context, armed.source, captureEvents()),
+      capture: deps.openCapture(
+        armed.context,
+        armed.lane.input,
+        captureEvents(),
+      ),
     }
   }
 
