@@ -199,3 +199,52 @@ export function takeFrames(
     soon(tick)
   })
 }
+
+/**
+ * Whether `sec` seconds of frames are in, on their own clock, or the wall
+ * clock has run half a second past them: a stream that stopped sending
+ * frames, as a hidden tab's does.
+ */
+export function heardFor(
+  frames: readonly F0Frame[],
+  waited: number,
+  sec: number,
+): boolean {
+  const first = frames[0]?.t
+  const last = frames[frames.length - 1]?.t
+  if (first !== undefined && last !== undefined && last - first >= sec)
+    return true
+  return waited >= sec + 0.5
+}
+
+/**
+ * Every frame of `sec` seconds, voiced or not, timed on the frames' own
+ * clock: the quiet check's two seconds under the drone (kit/quiet-check.ts),
+ * which no voice starts and none ends. Resolves with the raw frames, or null
+ * if it was cancelled.
+ */
+export function framesFor(
+  l: Listener,
+  sec: number,
+  cancelled: () => boolean,
+): Promise<PitchFrame[] | null> {
+  const stream = (l as Listener & { stream: F0Stream }).stream
+  stream.startTask()
+  const t0 = performance.now()
+  return new Promise((resolve) => {
+    const tick = (): void => {
+      if (cancelled() || !l.holding) {
+        stream.takeFrames()
+        resolve(null)
+        return
+      }
+      const waited = (performance.now() - t0) / 1000
+      if (heardFor(stream.peekFrames(), waited, sec)) {
+        resolve(stream.takeFrames())
+        return
+      }
+      soon(tick)
+    }
+    soon(tick)
+  })
+}
