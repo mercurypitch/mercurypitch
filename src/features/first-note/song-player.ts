@@ -28,6 +28,11 @@
 // into a suspended context that is silence (lib/jam/jam-song-transport.ts).
 // The room makes its player only once the microphone has opened its
 // running context, and makes a new one each run.
+//
+// This is the web's player, and the app's where the phone cannot stream a
+// stem. In the app, wherever it can, the room plays through
+// web-audio-song-player.ts instead: over AirPlay alone an element plays
+// nothing, routed through Web Audio or not.
 
 import { roomOutput } from '@/components/room-kit/room-output'
 import { keepMediaLocal } from '@/lib/local-media'
