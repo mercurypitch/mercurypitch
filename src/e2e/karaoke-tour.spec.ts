@@ -147,7 +147,37 @@ const ring = (page: Page) => page.getByTestId('coach-ring')
 const heading = (page: Page, name: string) =>
   bubble(page).getByRole('heading', { name })
 
-/** The ring holds `target`, fits the window, and the bubble stays off it. */
+/** Longer than the layer's 300 ms look again (TRACK_MS) and the bubble's 160 ms slide. */
+const REST_CHECK_MS = 400
+
+const sameBox = (a: Box, b: Box): boolean =>
+  a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+
+/**
+ * Merc's bubble where it comes to rest: the same box twice, REST_CHECK_MS
+ * apart. It slides to its place (160 ms, CoachLayer.module.css) and the layer
+ * looks again every TRACK_MS, so as the ring settles the bubble can still be
+ * on its way across the target. Read once at that moment, it overlapped Add
+ * a song in about half the runs at 1440x900, on main and on the 0.9.29
+ * release commit alike (7 Nov 2026).
+ */
+async function restingBubble(page: Page): Promise<Box> {
+  let last: Box | null = null
+  await expect
+    .poll(
+      async () => {
+        const now = await boxOf(bubble(page))
+        const still = last !== null && sameBox(now, last)
+        last = now
+        return still
+      },
+      { intervals: [REST_CHECK_MS], message: "Merc's bubble comes to rest" },
+    )
+    .toBe(true)
+  return boxOf(bubble(page))
+}
+
+/** The ring holds `target`, fits the window, and the bubble rests off it. */
 async function ringsTarget(
   page: Page,
   target: Locator,
@@ -159,8 +189,8 @@ async function ringsTarget(
     .toBe(true)
   const held = await boxOf(target)
   expect(held.height).toBeLessThanOrEqual(viewport.height * 0.7)
-  expect(overlaps(await boxOf(bubble(page)), held)).toBe(false)
-  const shown = await boxOf(bubble(page))
+  const shown = await restingBubble(page)
+  expect(overlaps(shown, await boxOf(target))).toBe(false)
   expect(shown.y).toBeGreaterThanOrEqual(0)
   expect(shown.y + shown.height).toBeLessThanOrEqual(viewport.height)
 }
