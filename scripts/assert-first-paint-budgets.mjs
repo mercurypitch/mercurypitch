@@ -149,7 +149,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // predict's code moved into the reveal's chunk (6), less 2 of the
   // minifier's renaming. Lesson 24's steps and cold open, loading the
   // predict, took 43 of them back: 175,490, still 386 over 171.
-  'learn/02.html': 172,
+  // Raised to 173 for Lesson 3's film: 175,978 bytes in build:e2e on main
+  // before it, 176,322 with it, against 176,128 at 172. All 344 are on
+  // every lesson page: Lesson 3's sources in kit/films.ts (139) and its
+  // film, running time and poster figure in kit/season.ts (205).
+  'learn/02.html': 173,
 
   // Lesson 3, released on the owner's word on 7 November 2026 and built in
   // every mode like the rest: the site worker decides where it is live
@@ -243,7 +247,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 397 are on every lesson page: a voice's vibrato from a rate, an extent
   // and a grow-in, or none for a straight note, and the setter that glides
   // a sounding one to a new rate and extent.
-  'learn/03.html': 140,
+  // Raised to 158 for Lesson 3's film, which plays under Watch as Lessons 2
+  // and 4's do: 143,319 bytes in build:e2e before it, 160,998 with it,
+  // 16,639 of them the film's two chunks, kit/episode.ts (4,994) and
+  // lesson-03/film.ts with its chapters and captions (11,645).
+  'learn/03.html': 158,
   // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
   // mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
@@ -526,9 +534,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
   // 2026-11-01; the film itself is the markup's, so a quarter over holds.
   // Lesson 4's, with longer captions, measured 20 (19,972 bytes) on
-  // 2026-11-07.
+  // 2026-11-07, and Lesson 3's, with longer ones still, 22 (21,664 bytes)
+  // the same day.
   'learn/01/watch.html': 24,
   'learn/02/watch.html': 24,
+  'learn/03/watch.html': 27,
   'learn/04/watch.html': 25,
 
   // The main app, and the crawlable doors that are the main app. Measured
@@ -689,6 +699,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // over.
   'learn/01/watch.html': 45,
   'learn/02/watch.html': 45,
+  'learn/03/watch.html': 45,
   'learn/04/watch.html': 45,
 
   // The main app and the crawlable doors that are the main app. Measured

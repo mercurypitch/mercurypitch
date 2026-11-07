@@ -207,10 +207,11 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Match a note',
     short: 'Match a note',
     topics: ['S01', 'S05'],
-    // Released on the owner's word on 7 November 2026. Its film is still
-    // being made, so it has no `film` or `len` until films.ts lists it.
+    // Released on the owner's word on 7 November 2026, with its film.
     minutes: 16,
+    len: '9:32',
     page: '/learn/03',
+    film: filmState(3),
     hook: "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
     pr: {
       needs: 'Pitch Hold (a slug)',
@@ -220,6 +221,9 @@ const ENTRIES: readonly Lesson[] = [
         label: 'Voice Mirror',
       },
     },
+    fig: 'poster',
+    posterAlt:
+      'The title card: Find Your Pitch, Lesson 03, Match a note, above a glowing five-line staff with a blue note, an orange note and chrome notes, one of them sharp',
   },
   {
     n: 4,

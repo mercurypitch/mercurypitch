@@ -412,7 +412,7 @@ describe('a lesson page', () => {
   })
 })
 
-// Lessons 1, 2 and 4 have films with watch pages (kit/watch-pages.ts); Lesson 5
+// Lessons 1 to 4 have films with watch pages (kit/watch-pages.ts); Lesson 5
 // is a draft with none.
 describe("a film's watch page", () => {
   it("serves a released lesson's watch page at its address, settled, with no validators", async () => {
@@ -1252,6 +1252,7 @@ describe('the sitemap and llms.txt', () => {
       '/learn/04',
       '/learn/01/watch',
       '/learn/02/watch',
+      '/learn/03/watch',
       '/learn/04/watch',
     ])
     expect(locs(xml)).toEqual([
@@ -1260,6 +1261,7 @@ describe('the sitemap and llms.txt', () => {
       '/learn/03',
       '/learn/04',
       '/learn/02/watch',
+      '/learn/03/watch',
       '/learn/04/watch',
     ])
     expect(text).not.toContain('/learn/01')

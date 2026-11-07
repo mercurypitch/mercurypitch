@@ -142,6 +142,36 @@ describe.each([1, 2])('Lesson %i', (n) => {
   })
 })
 
+describe('Lesson 3', () => {
+  it('gives Tavi the question the lesson opens with, at 00:13, as the film does', () => {
+    // Arrange
+    openPage(3)
+
+    // Act
+    episode(SOURCES, captionsOf(3))
+
+    // Assert: both hosts speak, no label is left in the words, and Tavi
+    // asks the hook's question where the film has her ask it
+    const paragraphs = transcript()
+    expect([...new Set(paragraphs.map(([who]) => who))].sort()).toEqual([
+      '',
+      'Merc',
+      'Tavi',
+    ])
+    expect(
+      paragraphs.filter(([, words]) => /^[A-Z]{2,}(?: MERC)?:/.test(words)),
+    ).toEqual([])
+    const asked = Array.from(document.querySelectorAll('#tx p')).find(
+      (p) => p.lastChild?.textContent?.startsWith('So what happened') === true,
+    )
+    expect(asked?.querySelector('.t')?.textContent).toBe('00:13')
+    expect(asked?.querySelector('.who')?.textContent).toBe('Tavi')
+    expect(asked?.lastChild?.textContent).toBe(
+      'So what happened when researchers tested it?',
+    )
+  })
+})
+
 describe('Lesson 4', () => {
   it('gives Tavi the question that follows her sung step, as the film does', () => {
     // Arrange: the captions name a speaker only when the speaker changes,

@@ -77,6 +77,8 @@ test('a hard load of /learn/03 answers 200 with the lesson @smoke', async ({
     'What happened when researchers tested it?',
   )
   await expect(page.locator('#root')).toHaveCount(0)
+  // its film's Watch section is in the markup, for the module to show
+  await expect(page.locator('#watch')).toHaveCount(1)
 })
 
 test('the lesson boots: the predict reveals, a step unlocks its sound, the explorer opens on Lesson 3 @smoke', async ({
@@ -100,9 +102,10 @@ test('the lesson boots: the predict reveals, a step unlocks its sound, the explo
   await page.locator('#octaveToy [data-choice="yes"]').click()
   await expect(playBoth).toBeEnabled()
 
-  // the explorer opens on this page's own lesson, with no film, and goes on
-  // from the furthest step the viewer reached (kit/position.ts): Step 4, or
-  // Step 5 where the scroll down to the map passed it
+  // the explorer opens on this page's own lesson and goes on from the
+  // furthest step the viewer reached (kit/position.ts): Step 4, or Step 5
+  // where the scroll down to the map passed it; its Watch the episode goes
+  // to this page's own film
   await page.locator('#explorer').scrollIntoViewIfNeeded()
   await expect(page.locator('#exCardHost h3')).toHaveText('Match a note')
   const resume = page.locator('#exCardHost a.btn.primary')
@@ -113,7 +116,12 @@ test('the lesson boots: the predict reveals, a step unlocks its sound, the explo
     page
       .locator('#exCardHost')
       .getByRole('link', { name: 'Watch the episode' }),
-  ).toHaveCount(0)
+  ).toHaveAttribute('href', '#watch')
+  // the film shows, and the masthead numbers its four anchors without a gap
+  await expect(page.locator('#watch')).toBeVisible()
+  await expect(
+    page.locator('#mastNav a:visible b').filter({ hasText: /^[IVX]+$/ }),
+  ).toHaveText(['I', 'II', 'III', 'IV'])
 
   expect(errors).toEqual([])
 })

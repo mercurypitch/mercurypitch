@@ -62,7 +62,7 @@ describe('the watch pages', () => {
     expect(WATCHED).toEqual(expect.arrayContaining([1, 2]))
     // a film with no sources has nothing to watch, so no watch page
     expect(hasWatchPage(1, WATCH_PAGES, { 1: null })).toBe(false)
-    expect(hasWatchPage(3, { 3: WATCH_PAGES[1]! }, FILMS)).toBe(false)
+    expect(hasWatchPage(5, { 5: WATCH_PAGES[1]! }, FILMS)).toBe(false)
   })
 
   it('each have their document, learn/NN/watch.html, beside a lesson document', () => {

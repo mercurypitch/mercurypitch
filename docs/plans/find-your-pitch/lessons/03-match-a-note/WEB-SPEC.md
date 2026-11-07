@@ -1,8 +1,10 @@
 # Lesson 3 web page: spec
 
 The Lesson 3 page is the web lesson for "Match a note": written steps, live toys, two predicts, the
-first sung checkpoint that listens, and a quiz. There is no episode yet, so this is a text-only
-page. Copy is in [LESSON.md](LESSON.md); every claim is in [FACTS.md](FACTS.md). It is the third
+first sung checkpoint that listens, and a quiz. It was written as a text-only page, with no
+episode; its film came later and was released with the page on 7 November 2026, so the page now
+has a Watch section ("The film", below). Copy is in [LESSON.md](LESSON.md); every claim is in
+[FACTS.md](FACTS.md). It is the third
 page on the Phase 1 toy kit (`src/features/lessons/kit/`) and the first with a microphone, so it
 adds three kit parts every later voice lesson needs: the band chart, the listener and the comfort
 check. Where a part exists only in Lesson 1's page (`src/features/lessons/lesson-01/`), it is
@@ -36,9 +38,11 @@ animations toggle stops the Merc loops (WCAG 2.2.2).
 
 The page anatomy (MASTER-PLAN § 4.2), with Lesson 2's departures kept: the step toys double as the
 Playground, the mix-up card sits inside the step whose toy refutes it, and the practise link is in
-the Wrap. New: there is no Watch section until a film exists, and the checkpoint listens.
+the Wrap. New: the checkpoint listens. The page was built without a Watch section (§ 4.2 item
+10), while the package had no film; it gained one with the film ("The film", below).
 
-1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 03" and the anchors Lesson, Sing and Explorer.
+1. **Masthead**: Lesson 1's, with "Season 1 · Lesson 03" and the anchors Lesson, Sing, Watch and
+   Explorer, Watch hidden until kit/episode.ts shows it.
 2. **Hero**: kicker, title, LESSON.md's meta as chips ("16 minutes", FACTS 61; the Lesson 1 chip,
    a link to `/learn/01`; "Also useful: Lesson 2"; Sound on; Microphone optional), the promise, and
    Merc and Tavi either side of the hook stage (Toys, 1).
@@ -61,11 +65,13 @@ the Wrap. New: there is no Watch section until a film exists, and the checkpoint
    here: the folds, the slider match with its rounds on C4 and F3, and the band chart in drag mode
    on one stage (playbook rule 17).
 10. **Lesson explorer**: Lesson 1's, with Lesson 3 current and marked done when its quick check is
-    finished (the recall marks nothing). Its card reads "Ready · read", with a Length of 16 min
-    (`minutes: 16`), and offers "Start lesson" with no film (New engineering, 4); its practise link
-    is already `season.ts`'s (`/mirror?lesson=03`).
+    finished (the recall marks nothing). Its card reads "Ready · watch and read", with a Length of
+    16 min (`minutes: 16`), and offers "Start lesson" and, since the film, "Watch the episode"
+    ("The film", below); its practise link is already `season.ts`'s (`/mirror?lesson=03`).
 11. **Footer**: the practise link, the font credits, and "Every sound on this page is synthesised in
-    your browser" (FACTS, Labels).
+    your browser" (FACTS, Labels). With the film the line reads "The episode: made by MercuryPitch,
+    with Merc and Tavi voiced with ElevenLabs. Outside the episode, every sound on this page is
+    synthesised in your browser."
 
 ## Toys: what each reuses, and what is new
 
@@ -429,6 +435,31 @@ motion or Pause animations each Merc holds a still frame and skips the reactions
 7. The tests in Toys 7 and the page QA below.
 8. For the Pitch Hold link: the slug, `durationSec`, a zone field and the octave-folded option
    (Practise link).
+
+## The film
+
+"Match a note", 9:32 (572.10 s), released with the page on 7 November 2026. It is wired as Lessons
+2 and 4's are:
+
+- `kit/films.ts`: Lesson 3's sources, `learn/03/v1/` on media.mercurypitch.com, the 1080p and the
+  720p MP4. `season.ts` gives the lesson `len: '9:32'`, `film: filmState(3)` and the poster as its
+  card's figure.
+- `lesson-03/film.ts` hands the sources, the chapters and the captions to `kit/episode.ts`, which
+  shows the Watch section, between the Wrap and the explorer, and its masthead link (both `hidden`
+  in the markup, as on Lessons 2 and 4) and numbers the anchors I to IV. The hero links the watch
+  page: "Watch the film 9:32".
+- `lesson-03/assets/`: `poster.jpg`, the frame 1.6 s into the title scene (19.97 s), cut as the
+  film kit's `web-video.sh` cuts Lesson 2's; `lesson-03.en.vtt` and `chapters.json`, the film's
+  own (151 captions, and twelve chapters from 00:00 I can't sing to 09:00 Next time), equal to the
+  copies in `captions/` here (`lesson-03/film-sync.test.ts`).
+- The footer credits the episode and its ElevenLabs voices (Merc is "Merc V1 Gentle Whimsical D2",
+  Tavi "Tavi - Orange Merc (recreated)"); every other sound on the page is still made in the
+  browser.
+- `learn/03/watch.html`, served at `/learn/03/watch`: the film as the page's main content, with its
+  VideoObject (`kit/watch-pages.ts`: `PT9M32S` measured, and the day it went live), listed in the
+  sitemap, `llms.txt`, the service worker's list and the hub's "Watch the film".
+- `public/learn/lesson-03-og.jpg`, the share card drawn before the film existed, stays the share
+  card and the watch page's thumbnail; the film's title card is its poster.
 
 ## Contract and page QA
 
