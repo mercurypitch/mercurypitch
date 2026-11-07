@@ -40,14 +40,6 @@
   background: rgba(7, 10, 16, 0.62);
   overflow: hidden;
 }
-/* a band chart's canvas fills its frame, the hero's and each word's: the
-   voice lessons' sheet, which sizes it on Lesson 5's page, comes to this
-   one with Sing it */
-.band-chart > canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
 .l22-hero .stage-shot {
   padding-bottom: 22px;
 }
@@ -266,6 +258,19 @@
 }
 .hold-cue b {
   color: var(--ink);
+}
+/* the vibrato line, the learner's own, in their violet as the octave line is */
+.vibrato-line {
+  color: var(--singer);
+}
+/* why Start asked for nothing, with sound off, under it */
+.sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.sing-card .guide-hint:empty {
+  display: none;
 }
 @media (max-width: 420px) {
   .hold-chart {

@@ -120,6 +120,9 @@ export function rulerOf(
   return null
 }
 
+/** Seconds a middle line takes to draw itself, the cold open's at its reveal and the learner's after a hold (FACTS 42). */
+export const MIDDLE_SEC = 0.6
+
 /** A play drawn on a figure of its own, the hero's or a word's: its seconds, when it started, and where it reached once it ended. */
 export interface Drawn {
   readonly sec: number

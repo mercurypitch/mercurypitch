@@ -29,8 +29,13 @@
 // sent: a take's frames are read and dropped (REQ-GVC-003, 004), and only
 // the voice choice and the warm-up's Skip are stored. The checkpoint's
 // ending picks the Wrap's card for the visit (comfort.ts `VisitEnding`),
-// in memory only.
+// in memory only. A page may add to it through its plan: a painter over
+// the chart, a word before Start asks for anything, word of a take's
+// window opening and closing, and a turn after each reading (Lesson 22's
+// sound-off hint, its other plays held during a take, and the line's
+// middle and vibrato line).
 
+import type { BandChartOptions } from './band-chart'
 import type { Feeling } from './comfort'
 import { mountComfort, mountFeelings, VisitEnding } from './comfort'
 import { clamp, q, qa, store, wait } from './dom'
@@ -72,6 +77,14 @@ export interface HoldSingPlan {
   readonly liveBand?: boolean
   /** What the summary says was in the band: "your line" unless a page says otherwise. */
   readonly subject?: string
+  /** A painter over the hold chart's plot: band-chart-wave.ts's `paintWave` where a page draws the line's middle (Lesson 22). */
+  readonly paintOver?: BandChartOptions['paintOver']
+  /** Asked as Start is pressed: false and Start asks for nothing and plays nothing (Lesson 22, sound off). */
+  readonly mayStart?: () => boolean
+  /** A take's window opening, from Start or Again, and closing as the take ends: Lesson 22 holds the page's other plays meanwhile. */
+  readonly onTake?: (open: boolean) => void
+  /** After a take's reading is shown: Lesson 22 draws the line's middle and says its vibrato. */
+  readonly onReading?: (reading: HoldReading, view: HoldSingView) => void
 }
 
 /** Semitones Lower and Higher may move the note either way (Lesson 5 FACTS 55). */
@@ -220,6 +233,7 @@ export function holdSummaryFor(
 export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
   const view: HoldSingView = createHoldSingView(stills, {
     nextHold: plan.nextHold,
+    paintOver: plan.paintOver,
   })
   const card = q('#singCard')
   const warmup = q<HTMLDetailsElement>('#warmup')
@@ -237,6 +251,14 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
 
   const voiceNow = (): Voice => VoiceChoice.voice ?? 'lower'
 
+  // a take's window, from Start until the take ends, told to the page once each way
+  let open = false
+  const opening = (on: boolean): void => {
+    if (on === open) return
+    open = on
+    plan.onTake?.(on)
+  }
+
   function showListening(): void {
     const v = VoiceChoice.voice
     view.listenWhy(mode === 'nomic' ? 'nomic' : 'listen')
@@ -251,6 +273,7 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
   function toListening(why: 'listen' | 'nomic'): void {
     if (take !== null) take.cancelled = true
     take = null
+    opening(false)
     mic.release()
     mode = why
     showListening()
@@ -303,6 +326,7 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
       share: reading.share,
     })
     view.reading(reading.line, reading.octaveLine)
+    plan.onReading?.(reading, view)
     view.chart.describe(holdSummaryFor(reader, r.midi, reading))
     view.chart.scene.marks =
       reading.settled === null ? [] : [{ t: reading.settled, label: 'settled' }]
@@ -333,6 +357,7 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
     view.focusText(view.headEl)
     const me = { cancelled: false }
     take = me
+    opening(true)
     const ok = await mic.open(Sound.context())
     const { mods, listener } = mic
     if (!ok || mods === null || listener === null) {
@@ -368,6 +393,7 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
     view.phase(null)
     if (take !== me) return
     take = null
+    opening(false)
     if (reading !== null) recordTake(r, reading, mods.reader)
     else {
       view.status(STATUS.stopped)
@@ -384,7 +410,9 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
       toVoice()
       return
     }
+    if (plan.mayStart?.() === false) return
     asking = true
+    opening(true)
     view.status(STATUS.asking)
     const ok = await mic.open(context)
     asking = false
@@ -397,6 +425,7 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
     const hidden = document.hidden
     if (hidden || left) {
       leave(hidden)
+      opening(false)
       view.status(STATUS.stopped)
       return
     }

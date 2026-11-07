@@ -1442,12 +1442,19 @@
                     class="btn primary lg"
                     type="button"
                     data-sing="start"
+                    aria-describedby="startHint"
                   >
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-mic" /></svg
                     >Start
                   </button>
                 </div>
+                <p
+                  class="guide-hint"
+                  id="startHint"
+                  data-start-hint
+                  aria-live="polite"
+                ></p>
               </div>
 
               <!-- 6 and 7, 10. a hold: Listen · Breathe · Sing, then the reading -->
@@ -1513,7 +1520,8 @@
                       ><span class="ring-state" data-ring-state>Ready</span>
                     </div>
                   </div>
-                  <div class="sing-readout">
+                  <!-- no live band state during a take (FACTS 57): nothing to read here -->
+                  <div class="sing-readout" hidden>
                     <p class="k">Now</p>
                     <p class="v" data-sing-now>&#8211;</p>
                   </div>

@@ -275,7 +275,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // (139), a chunk's overhead (44) and the predict's code moved into the
   // reveal's chunk (10), with 3 of the minifier's renaming. 144 can be tried
   // again once Lesson 22's cold open loads the predict.
-  'learn/05.html': 145,
+  // Raised to 147 for Lesson 22's Sing it: 148,317 bytes before it, 149,581
+  // with it, against 149,504 at 146. 122 of the 1,264 are the kit's
+  // checkpoint, its hooks for a page's part in a take (kit/hold-sing.ts, 99)
+  // and the band chart's painter passed to its view (23). The rest is the
+  // bundler cutting the checkpoint's parts, which Lesson 22 now shares, out
+  // of Lesson 5's chunk into chunks of their own, each with its imports:
+  // bytes no module owns (1,150) and a chunk's overhead (47), with 55 fewer
+  // of the minifier's renaming in Lesson 5's own modules.
+  'learn/05.html': 147,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -454,10 +462,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // wave painter and level strip, the kit's runs and Step 3's predict), the
   // app's ribbon in a chunk of its own after first paint, the recall and
   // quick check on the kit's quiz (Lessons 5 and 14's question modules
-  // whole, as the recall asks their own objects), and the four words' band
-  // charts on the kit's words strip: 133,216 bytes in build:e2e, the
-  // smallest whole KB above, to rise as each part joins.
-  'learn/22.html': 131,
+  // whole, as the recall asks their own objects), the four words' band
+  // charts on the kit's words strip, and Sing it on the kit's held-note
+  // checkpoint (kit/hold-sing.ts, its view, the hold flow and the hold run,
+  // which it shares with Lesson 5), comfort check, voice choice and warm-up,
+  // with the page's part in a take (lesson-22/sing.ts); the centre-line
+  // reader and the listener load after Start: 155,503 bytes in build:e2e,
+  // the smallest whole KB above, to rise as each part joins.
+  'learn/22.html': 152,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -614,12 +626,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
   // Lesson 22 (a draft, as above), its shell, the cold open, the steps'
-  // band chart, the two quizzes and the four words, which add no sheet:
-  // 82,442 bytes in build:e2e, the kit's sheets (the shared parts), its
-  // own, and the shared Inter and Outfit @font-face rules; the smallest
-  // whole KB above, to rise as each part joins, the voice lessons' sheet
-  // with Sing it.
-  'learn/22.html': 81,
+  // band chart, the two quizzes, the four words and Sing it: 89,465 bytes
+  // in build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it
+  // shares with them, and the shared parts), its own, and the shared Inter
+  // and Outfit @font-face rules; the smallest whole KB above, to rise as
+  // each part joins.
+  'learn/22.html': 88,
   // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
   // Sing it share, the staff toy's and its interval state's inlined into its
