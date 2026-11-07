@@ -134,6 +134,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // alternatives (kit/lesson-copy.ts, 353) and Lesson 23's drafts line (73).
   // Merc's vibrato option (kit/sound.ts, Lesson 22's) adds 397 to every
   // lesson page: 174,705 bytes before it, 175,102 with it, 2 under 171.
+  // Lesson 22's steps took 76 back, the bundler's renaming in the kit's
+  // chunk this page shares: 175,026, 78 under.
   'learn/02.html': 171,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
@@ -469,9 +471,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // with the page's part in a take (lesson-22/sing.ts), and the Wrap's
   // practise card and free play, the steps' band chart again
   // (lesson-22/wrap.ts); the centre-line reader and the listener load after
-  // Start: 155,899 bytes in build:e2e, the smallest whole KB above, to rise
-  // as each part joins.
-  'learn/22.html': 153,
+  // Start: 155,899 bytes in build:e2e; a quarter over.
+  'learn/22.html': 191,
   // Lesson 23, "Perfect, major, minor and the tritone", a Season 2 page and
   // a draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -627,13 +628,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 22 (a draft, as above), its shell, the cold open, the steps'
-  // band chart, the two quizzes, the four words, Sing it and the Wrap:
-  // 89,809 bytes in build:e2e, the kit's sheets (the voice lessons' in the
-  // chunk Sing it shares with them, and the shared parts), its own, and the
-  // shared Inter and Outfit @font-face rules; the smallest whole KB above,
-  // to rise as each part joins.
-  'learn/22.html': 88,
+  // Lesson 22 (a draft, as above), with its steps, its cold open, its two
+  // quizzes, its four words, Sing it and the Wrap: 89,809 bytes in
+  // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it
+  // shares with them, and the shared parts), its own, and the shared Inter
+  // and Outfit @font-face rules; a quarter over.
+  'learn/22.html': 110,
   // Lesson 23 (a draft, as above): 92,408 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
   // Sing it share, the staff toy's and its interval state's inlined into its

@@ -200,7 +200,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   kit as data (`kit/twinkle.ts`, proposed, What the kit and the app still need, 6), with the five
   breath marks at 5.7, 11.7, 17.7, 23.7 and 29.7 s (85).
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:58-72`), with its 40
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:63-77`), with its 40
   px gutter on the left. Only the song's six rows are named, by syllable alone, "do", "re", "mi",
   "fa", "so" and "la", through Lesson 9's rung-names option (two letters fit the gutter; the chart's
   summary gives the spelled note), since the kit's grid letters every natural row (`drawNotesGrid`,
@@ -215,7 +215,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
 - **The light.** Each band brightens while its note sounds, by the note's level: Merc's lines are at
   level 1, take 2's "star" goes from 0.5 to 1 and back (83). Today a band's glow is one number, "0
   at rest, 1 while Merc's note sounds" (`kit/band-chart-draw.ts:149-150`), which brightens its fill
-  and Merc's line and adds a halo (`drawBand`, `:156-191`). The song line needs it along a band's
+  and Merc's line and adds a halo (`drawBand`, `:158-197`). The song line needs it along a band's
   length: each moment of the band as bright as the note's level then, kept once it has sounded, so a
   still holds the take's shape in light. That is what "Brighter means louder." points at (16).
   Nothing else is drawn for loudness on the plot; level as height is only ever in Step 3's strip.
@@ -341,7 +341,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (Audio). While a take sounds the predict ignores its own two buttons (`:179`), so in the cold open
   a take is cut short only from outside it: another source taking the page's one "now playing" owner
   (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
-  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:517`, `:548`)
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:573`, `:604`)
   without telling the source. The page's `play` resolves `false` in each of the three cases, so it
   must notice the last two itself (Audio).
 - The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
@@ -420,7 +420,7 @@ States:
    the slide, in the chosen voice (`warmUpContour`, `kit/warm-up.ts:24-36`), with "Copy the way
    Merc's voice slides, not the exact notes." and the stop line (66, 63). Nothing listens and
    nothing is scored (REQ-GVC-074, REQ-GVC-075). The Skip is stored as `fyp-l14-warmup`, as Lessons
-   3 and 5 store theirs (`lesson-03/sing.ts:48`, `lesson-05/sing.ts:54`).
+   3 and 5 store theirs (`lesson-03/sing.ts:48`, `lesson-05/sing.ts:30`).
 5. **Your turn and briefing**: LESSON.md's Your turn text with its control; the stop line on its own
    line; the "What this does" box (REQ-GVC-002, REQ-GVC-003, REQ-GVC-012, REQ-GVC-026; 79, 52);
    **Play Merc's phrase** and **Start take 1**, the only control that asks for the microphone
@@ -577,7 +577,7 @@ Recording (`kit/record.ts`, proposed; 51, 52):
 - Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
   same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
   never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
-  past the master bus's compressor (`kit/sound.ts:116-125`), and through no automatic gain, so a swell
+  past the master bus's compressor (`kit/sound.ts:150-159`), and through no automatic gain, so a swell
   keeps its shape.
 - The stream it records is the listener's, the mic manager's analysis stream, with the browser's
   echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
@@ -641,7 +641,7 @@ Every tone is synthesised in the page with Web Audio at the frequencies in 82, t
 sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`), and started only
 by a tap: Merc's takes, phrases and the song in Merc's "ooh"; the chords and the count-in in the
 soft tone (83 to 90). A sung line is one voice from breath to breath, the kit's `contourVoice`
-(`kit/sound.ts:321-354`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
+(`kit/sound.ts:377-410`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
 dips to 0.6 of its level for about 0.06 s, never to silence, so two notes are heard as two within
 one voice; a chord is three soft voices at 0.05 each, held for its minim (87). A breath is a 0.3 s
 gap, not a sound, because the kit's noise cannot be stopped once started (84). The one recorded
@@ -830,8 +830,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:127-214`,
-   `:311-319`; `:499-502`, `:512-516`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:874-878`), so without them the Browser jobs fail before any spec
+   `:311-319`; `:545-548`, `:558-562`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:927-931`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
    quarter, the tables' rule (`:47-58`, `:422-432`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
@@ -881,10 +881,10 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:191-197`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:201-207`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
-13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:446-514`),
+13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:502-570`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into

@@ -151,7 +151,7 @@ widens it.
 - How did that feel? Lesson 3's four answers and endings, the rest card after Effortful.
 - Works today, and what waits: the kit's hold reader (`kit/hold-take.ts:13-25`) scores every frame
   against ±35 cents, so it would mark a wide vibrato as partly outside (R17). Until a centre-line
-  reading exists (remove the fitted wave as Voice Mirror's steadiness does, `src/lib/mirror/metrics.ts:499-509`;
+  reading exists (remove the fitted wave as Voice Mirror's steadiness does, `src/lib/mirror/metrics.ts:525-531`;
   code with tests, not yet in SEASON-2 § 5), the page either (a) ships with today's reader and
   Hold 2's line drops "counts in full", or (b) waits. Recommended: (b), a small kit item; the
   vibrato description also needs the vibrato view (SEASON-2 § 6.2 item 6).

@@ -219,8 +219,8 @@ to sound nervous") are aesthetic judgements of operatic singing. Not used.
 - Voice Mirror's hold reports a vibrato as a feature: it shows the rate in hertz and the extent in
   cents, then "That's a feature, not scored against you" (`src/features/mirror/MirrorApp.tsx:2194-2199`).
   It counts a vibrato only between 3.5 and 8.5 Hz (`src/lib/mirror/metrics.ts:72-74`) and only when the fitted
-  wave reaches 10 cents (`:507`), and it takes the wave out of the "wobble" before reporting
-  steadiness (`:499-509`).
+  wave reaches 10 cents (`:455`), and it takes the wave out of the "wobble" before reporting
+  steadiness (`:525-531`).
 - Its extent is the fitted sine's amplitude, the swing either side of the centre: the projection
   `return (2 * Math.hypot(re, im)) / n` (`src/lib/mirror/metrics.ts:91-116`), described as
   "Modulation amplitude in cents — shown as "vibrato: 5.6 Hz, ±38 c"" (`:424-428`). That matches
@@ -250,10 +250,10 @@ long the line sat inside the band". A ±50-cent vibrato centred on the note woul
 every wave, so time in the band would fall. The checkpoint the card wants ("scored only on the
 note's centre", "a vibrato inside the band counts in full") needs the hold reader to score a centre
 line, for instance by removing the fitted wave as Voice Mirror's steadiness already does
-(`src/lib/mirror/metrics.ts:499-509`). Read: code. This is engineering, not yet planned in SEASON-2 § 5.
+(`src/lib/mirror/metrics.ts:525-531`). Read: code. This is engineering, not yet planned in SEASON-2 § 5.
 
 **R18. Merc has sung with a small vibrato all season.** The kit's Merc "ooh" adds a 5.5 Hz vibrato
-of ±14 cents, grown in over 0.35 s (`src/features/lessons/kit/sound.ts:195-205`, comment at :189;
+of ±14 cents, grown in over 0.35 s (`src/features/lessons/kit/sound.ts:234-248`, comment at :189;
 Lesson 5 FACTS 42). The demo voice takes a vibrato as `{ hz, cents, rampSec }`, "`cents` either
 side at `hz`" (`src/lib/demo-voice.ts:33-37`), so the lesson's examples can set rate and extent.
 Read: code.
