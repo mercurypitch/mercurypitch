@@ -172,3 +172,59 @@ export const startPlay = (p: Play, audible: boolean): Run =>
     gain: NOTE_GAIN,
     vibrato: null,
   })
+
+/** The four words (WEB-SPEC, Toys 4). */
+export type WordId = 'drone' | 'harmonic' | 'pure' | 'tempered'
+
+/** A word's play: its length, its voices and their tone. */
+export interface WordSound {
+  readonly sec: number
+  readonly lines: readonly RunLine[]
+  /** The drone's "ooh" for Drone and Pure; the kit's soft tone, a plain one, for the rungs. */
+  readonly kind: 'merc' | 'soft'
+}
+
+/** Notes one at a time from 0, each `each` seconds and the last `last`: a rung figure's tones. */
+function oneAtATime(
+  freqs: readonly number[],
+  each: number,
+  last: number,
+): RunLine[] {
+  return freqs.map((f, i) => ({
+    t: Math.round(i * each * 1000) / 1000,
+    points: contourOf(f, [{ hold: i === freqs.length - 1 ? last : each }]),
+    vibrato: null,
+  }))
+}
+
+/** Drone's play and Pure's: the drone alone, and the drone with E4 at exactly 330 Hz, 3.0 s each (FACTS 68). */
+export const WORD_DRONE: Play = { sec: 3, notes: [] }
+export const WORD_PURE: Play = { sec: 3, notes: [level(PURE.so)] }
+
+/** A3's first six harmonics, 220 to 1,320 Hz: Harmonic's rungs. */
+export const HARMONICS: readonly number[] = [1, 2, 3, 4, 5, 6].map(
+  (k) => k * DRONE_HZ,
+)
+
+/** A3 up to A4 in semitones: Equal-tempered's rungs. */
+export const SEMITONES: readonly number[] = Array.from({ length: 13 }, (_, i) =>
+  hz(A3 + i),
+)
+
+/**
+ * The four words' plays, each once (FACTS 68): Drone, A3 alone, 3.0 s;
+ * Harmonic, A3's six harmonics as plain tones, one at a time, 0.9 s each,
+ * 5.4 s; Pure, A3 with E4 at exactly 330 Hz, 3.0 s; Equal-tempered, the
+ * thirteen notes from A3 up to A4, 0.3 s each with the last held 0.6 s,
+ * 4.2 s. None sets two close notes together (FACTS 71).
+ */
+export const WORDS: Readonly<Record<WordId, WordSound>> = {
+  drone: { sec: 3, lines: linesOf(WORD_DRONE), kind: 'merc' },
+  harmonic: { sec: 5.4, lines: oneAtATime(HARMONICS, 0.9, 0.9), kind: 'soft' },
+  pure: { sec: 3, lines: linesOf(WORD_PURE), kind: 'merc' },
+  tempered: { sec: 4.2, lines: oneAtATime(SEMITONES, 0.3, 0.6), kind: 'soft' },
+}
+
+/** Starts a word's play at the note level, every voice straight. */
+export const startWord = (w: WordSound, audible: boolean): Run =>
+  playLines(w.lines, { audible, kind: w.kind, gain: NOTE_GAIN, vibrato: null })

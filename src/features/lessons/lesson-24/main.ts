@@ -49,6 +49,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -68,6 +69,10 @@ const deck = createStepDeck({
 const quizzes = initQuizzes(deck)
 const steps = initSteps(deck)
 deck.start()
+
+// four words, each with a small figure that draws its play as it sounds;
+// Pure's pure fifth rings still, so it waits for the cold open's choice
+const words = initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(24)
@@ -92,12 +97,13 @@ initMasthead(
   { lesson: 24, deck },
 )
 // the cold open, in the masthead's task, so a first visit's tour waits for
-// its choice; the choice opens the steps' drone chart, Step 2's predict and
-// quick check 4's play, and the reveal shows Step 1's text
+// its choice; the choice opens the steps' drone chart, Step 2's predict, the
+// Pure word's play and quick check 4's, and the reveal shows Step 1's text
 initColdOpen(deck, {
   onChoice: () => {
     steps.unlock()
     quizzes.unlockPure()
+    words.unlockPure()
   },
   onReveal: () => {
     steps.revealStep1()

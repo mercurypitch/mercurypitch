@@ -189,6 +189,34 @@ describe("the drone's band (the hero, Steps 1 and 2)", () => {
     expect(doName.xs[1]).toBeLessThan(label.xs[0])
   })
 
+  it('draws a band that sounds from the left as far as it has reached, and nothing, label and all, before it starts', async () => {
+    // Act: a band 4 s into a 10 s window, and one not started
+    const [part, none] = await paintCharts(
+      droneChart(HERO_SPAN, {
+        ...HERO,
+        drone: { ...HERO.drone, upTo: 4 },
+        tops: [],
+      }),
+      droneChart(HERO_SPAN, {
+        ...HERO,
+        drone: { ...HERO.drone, upTo: 0 },
+        tops: [],
+      }),
+    )
+
+    // Assert
+    const x = part.chart.pointOf(4, 0).x
+    const [strip] = ofColour(marksOf(part.calls), AMBER, 'rect')
+    expect(strip.xs).toEqual([PLOT.x0, x])
+    const edges = ofColour(marksOf(part.calls), AMBER, 'stroke')
+    expect(edges.map((m) => m.xs)).toEqual([
+      [PLOT.x0, x],
+      [PLOT.x0, x],
+    ])
+    expect(words(marksOf(part.calls), 'drone · A3')).toHaveLength(1)
+    expect(marksOf(none.calls).filter((m) => m.rgb === AMBER)).toEqual([])
+  })
+
   it("names the drone's second harmonic in the octave view", async () => {
     // Act
     const [{ calls }] = await paintCharts(

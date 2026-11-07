@@ -14,7 +14,7 @@
 import { describe, expect, it } from 'vitest'
 import { hz } from '@/features/lessons/kit/notes'
 import type { PlayKey } from './sounds'
-import { DRONE_HZ, linesOf, NOTE_GAIN, PIANO, playFor, PURE, QUIZ_PURE, schedulesOf, SLIDE, WIDE_WAVE, } from './sounds'
+import { DRONE_HZ, linesOf, NOTE_GAIN, PIANO, playFor, PURE, QUIZ_PURE, schedulesOf, SLIDE, WIDE_WAVE, WORDS, } from './sounds'
 
 /** Each play's length, and its notes' frequencies at the start (FACTS 41, 44, 69). */
 const PLAYS: readonly [PlayKey, number, readonly number[]][] = [
@@ -135,5 +135,30 @@ describe("each voice's schedule", () => {
     // the wave swings about the piano's E4, 50 cents at a swing's top
     expect(wave[1].centre(1)).toBe(hz(64))
     expect(1200 * Math.log2(wave[1].hz(1 + 1 / 24) / hz(64))).toBeCloseTo(50, 6)
+  })
+})
+
+describe('the four words', () => {
+  it("sound each word's play for its own length, and set no two close notes together", () => {
+    for (const [id, w] of Object.entries(WORDS)) {
+      // Act
+      const spans = w.lines.map((l) => ({
+        from: l.t,
+        to: l.t + (l.points.at(-1)?.t ?? 0),
+        hz: l.points[0].hz,
+      }))
+
+      // Assert: FACTS 68, 71; voices that sound at once are a fifth or more apart
+      expect(Math.max(...spans.map((s) => s.to)), id).toBeCloseTo(w.sec, 9)
+      for (const a of spans)
+        for (const b of spans) {
+          const together =
+            a !== b && a.from < b.to - 1e-9 && b.from < a.to - 1e-9
+          if (together)
+            expect(Math.abs(1200 * Math.log2(a.hz / b.hz)), id).toBeGreaterThan(
+              700,
+            )
+        }
+    }
   })
 })

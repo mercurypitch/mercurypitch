@@ -69,33 +69,40 @@ export function haloAlpha(b: Brightness | null): number {
 const pin = (f: ChartFrame, c: number): number =>
   yOf(f, Math.min(Math.max(c, f.lo), f.hi))
 
-/** A band's strip and its two edges, at the alphas given, with no line at its centre. */
+/** A band's strip and its two edges, at the alphas given, with no line at its centre, from the plot's left to `x1`. */
 function drawStrip(
   f: ChartFrame,
   c: number,
   half: number,
   a: { readonly fill: number; readonly edge: number },
+  x1 = f.x1,
 ): void {
   const { ctx } = f
   const yTop = yOf(f, c + half)
   const yBot = yOf(f, c - half)
   ctx.fillStyle = rgba(BAND_COLOR.target, a.fill)
-  ctx.fillRect(f.x0, yTop, f.x1 - f.x0, yBot - yTop)
+  ctx.fillRect(f.x0, yTop, x1 - f.x0, yBot - yTop)
   ctx.strokeStyle = rgba(BAND_COLOR.target, a.edge)
   ctx.lineWidth = 1
   for (const y of [yTop, yBot]) {
     ctx.beginPath()
     ctx.moveTo(f.x0, y)
-    ctx.lineTo(f.x1, y)
+    ctx.lineTo(x1, y)
     ctx.stroke()
   }
 }
 
-/** The drone's amber band and its label: inside it, at its lower left, or above its top edge where it is short. */
+/**
+ * The drone's amber band and its label: inside it, at its lower left, or
+ * above its top edge where it is short; as far across as it has sounded,
+ * for a band drawn as it sounds.
+ */
 function drawDroneBand(f: ChartFrame, s: DroneScene): void {
   const { ctx } = f
   const d = s.drone
-  drawStrip(f, d.c, DRONE_HALF_CENTS, bandAlphas(s.bright))
+  if (d.upTo !== undefined && d.upTo <= 0) return
+  const x1 = d.upTo === undefined ? f.x1 : xOf(f, d.upTo)
+  drawStrip(f, d.c, DRONE_HALF_CENTS, bandAlphas(s.bright), x1)
   const yTop = yOf(f, d.c + DRONE_HALF_CENTS)
   const yBot = yOf(f, d.c - DRONE_HALF_CENTS)
   // the label starts clear of the beads and their names
