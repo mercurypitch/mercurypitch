@@ -6,11 +6,13 @@
 // with `quiet`, the voice stopped. Lesson 7's siren adds `quietAfter`: a
 // silence ends the take only once two seconds of voice have been heard
 // (its WEB-SPEC, Toys 4, state 6). Without it every take ends as before.
+// Lesson 24's quiet check listens for a fixed two seconds, whatever it
+// hears (`heardFor`).
 
 import { describe, expect, it } from 'vitest'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import type { TakeOptions } from './listen'
-import { takeOver } from './listen'
+import { heardFor, takeOver } from './listen'
 
 const HOP = 0.016
 
@@ -73,5 +75,28 @@ describe('takeOver', () => {
     const sung = (t: number): boolean => t >= 0.5 && t < 1
     expect(takeOver(frames(3.4, sung), 0.5, 3.4, run)).toBe(false)
     expect(takeOver(frames(3.6, sung), 0.5, 3.6, run)).toBe(true)
+  })
+})
+
+describe('heardFor', () => {
+  it("ends the quiet check's listening once two seconds of frames are in, voiced or not", () => {
+    // Arrange: a voice through the middle neither starts nor ends it
+    const sung = (t: number): boolean => t > 0.5 && t < 1
+    const short = frames(1.9, sung)
+    const whole = frames(2.1, sung)
+
+    // Assert
+    expect(heardFor(short, 1.9, 2)).toBe(false)
+    expect(heardFor(whole, 2.1, 2)).toBe(true)
+  })
+
+  it('ends it half a second past its time on the wall clock when the frames stop coming', () => {
+    // Arrange: a stream that sent a second of frames, then nothing
+    const stalled = frames(1, () => false)
+
+    // Assert
+    expect(heardFor(stalled, 2.4, 2)).toBe(false)
+    expect(heardFor(stalled, 2.5, 2)).toBe(true)
+    expect(heardFor([], 2.5, 2)).toBe(true)
   })
 })
