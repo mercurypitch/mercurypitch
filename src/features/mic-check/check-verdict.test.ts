@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import type { RosterInput } from '@/lib/audio-input/mic-roster'
 import type { VerdictFacts } from './check-verdict'
 import { decideVerdict } from './check-verdict'
-import type { RosterInput } from './mic-roster'
 
 const device = (deviceId: string, name: string): RosterInput => ({
   deviceId,

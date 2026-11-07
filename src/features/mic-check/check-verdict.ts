@@ -13,9 +13,9 @@
 // muted track reads as silence too, and the mute is the better explanation),
 // which outranks a merely quiet room.
 
+import type { RosterInput } from '@/lib/audio-input/mic-roster'
 import type { InputHealth } from '@/lib/input-health'
 import type { MicErrorKind } from '@/lib/mic-manager'
-import type { RosterInput } from './mic-roster'
 
 export type VerdictKind =
   | 'idle'

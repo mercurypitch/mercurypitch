@@ -9,11 +9,13 @@
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
+import { audioInput, fakeMediaDevices, fakeStream, fakeTrack, } from '@/lib/audio-input/fake-devices.fixture'
 import type { MicState } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
-import type { FakeCapture, FakeMediaDevices } from './fake-capture.fixture'
-import { audioInput, fakeCapture, fakeMediaDevices, fakeStream, fakeTrack, sine, } from './fake-capture.fixture'
+import type { FakeCapture } from './fake-capture.fixture'
+import { fakeCapture, sine } from './fake-capture.fixture'
 import type { MicCheckController } from './useMicCheckController'
 import { MIC_CHECK_ID, useMicCheckController } from './useMicCheckController'
 

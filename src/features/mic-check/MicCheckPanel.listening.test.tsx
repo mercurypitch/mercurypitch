@@ -7,11 +7,12 @@
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
+import { audioInput, fakeMediaDevices, fakeStream, fakeTrack, } from '@/lib/audio-input/fake-devices.fixture'
 import type { MicState } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
-import type { FakeMediaDevices } from './fake-capture.fixture'
-import { audioInput, fakeCapture, fakeMediaDevices, fakeStream, fakeTrack, } from './fake-capture.fixture'
+import { fakeCapture } from './fake-capture.fixture'
 import { MicCheckPanel } from './MicCheckPanel'
 
 const voice = vi.hoisted(() => ({

@@ -15,8 +15,8 @@
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FakeMediaDevices } from '@/features/mic-check/fake-capture.fixture'
-import { audioInput, fakeMediaDevices, fakeStream, fakeTrack, } from '@/features/mic-check/fake-capture.fixture'
+import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
+import { audioInput, fakeMediaDevices, fakeStream, fakeTrack, } from '@/lib/audio-input/fake-devices.fixture'
 import { micManager } from '@/lib/mic-manager'
 import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
 import { FIRST_LIGHT_DEAD_EYEBROW, FIRST_LIGHT_DEAD_INPUT, FIRST_LIGHT_NUDGE, FIRST_LIGHT_PICK_FAILED, FIRST_LIGHT_SILENT_PICK, } from '../copy'

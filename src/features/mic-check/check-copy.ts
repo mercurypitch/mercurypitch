@@ -6,7 +6,7 @@
 // tests all read one source, and so a change of wording is a change to one
 // file.
 
-import type { InputKind, RosterChange, RosterInput } from './mic-roster'
+import type { InputKind, RosterChange, RosterInput, } from '@/lib/audio-input/mic-roster'
 
 export type CheckTone = 'info' | 'good' | 'warn' | 'bad'
 
