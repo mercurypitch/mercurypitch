@@ -337,17 +337,22 @@ test.describe('the jam lyric sheet, with a brush in hand', () => {
     // 32px for as long as a singer is picked.
     const hint = page.getByText('Drag down their lines. Done to scroll again.')
     await expect(hint).toBeVisible()
-    const hintBox = await hint.boundingBox()
-    const doneBox = await page
-      .getByRole('button', { name: 'Done', exact: true })
-      .boundingBox()
-    expect(
-      Math.abs(
-        (hintBox?.y ?? 0) +
-          (hintBox?.height ?? 0) / 2 -
-          ((doneBox?.y ?? 0) + (doneBox?.height ?? 0) / 2),
-      ),
-    ).toBeLessThanOrEqual(10)
+    // Both middles from one layout, once the bar has settled. Read in two
+    // calls on a loaded runner, the hint came from the bar as it armed and
+    // Done from the bar at rest, 108 ms later: 20 px apart, then 19, and in
+    // line on the third try (PR Gate run 42395058435, 7 Nov 2026).
+    const done = page.getByRole('button', { name: 'Done', exact: true })
+    const apart = () =>
+      hint.or(done).evaluateAll((nodes) => {
+        const [first, second] = nodes.map((node) => {
+          const rect = node.getBoundingClientRect()
+          return rect.top + rect.height / 2
+        })
+        return first === undefined || second === undefined
+          ? Number.POSITIVE_INFINITY
+          : Math.abs(first - second)
+      })
+    await expect.poll(apart).toBeLessThanOrEqual(10)
 
     const middleOf = async (line: number) => {
       const row = await page.locator(`[data-line="${line}"]`).boundingBox()
