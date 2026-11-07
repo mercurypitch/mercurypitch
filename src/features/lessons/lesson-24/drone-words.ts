@@ -68,21 +68,24 @@ export function readoutOf(
   return against(firstHz(playing.play.notes[0]))
 }
 
+/** Fig. 1's summary: the band, and where the top note's line sits against it. */
+function closeWords(s: Settings): string {
+  const ref = s.octave ? 2 * DRONE_HZ : DRONE_HZ
+  const cents = Math.round(centsAbove(s.top, ref))
+  const where =
+    cents === 0
+      ? 'on it'
+      : `${Math.abs(cents)} cents ${cents > 0 ? 'above' : 'below'} it`
+  const band = s.octave
+    ? "The band marks the drone's second harmonic, 440 Hz"
+    : "The drone's band on A3"
+  return `${band}, and the top note's line at ${hzWords(s.top)}, ${where}.`
+}
+
 /** The canvas's spoken summary of a state's still. */
 export function stillWords(n: DroneState, s: Settings, c: Choices): string {
   if (heldBack(n, c)) return HELD_WORDS
-  if (n === 1) {
-    const ref = s.octave ? 2 * DRONE_HZ : DRONE_HZ
-    const cents = Math.round(centsAbove(s.top, ref))
-    const where =
-      cents === 0
-        ? 'on it'
-        : `${Math.abs(cents)} cents ${cents > 0 ? 'above' : 'below'} it`
-    const band = s.octave
-      ? "The band marks the drone's second harmonic, 440 Hz"
-      : "The drone's band on A3"
-    return `${band}, and the top note's line at ${hzWords(s.top)}, ${where}.`
-  }
+  if (n === 1) return closeWords(s)
   if (n === 2) {
     const tuning = s.tuning === 'pure' ? 'pure' : "the piano's"
     const ticks = c.step2 ? ' Dashed ticks mark the pure mi and so.' : ''
