@@ -9,12 +9,13 @@
 // (src/lesson-gate.ts). Like every lesson it must load as itself, never as
 // the 404 page or the studio's cached app shell, and its module must boot:
 // at a phone's size and a desktop's, no AudioContext before the first tap,
-// and nothing plays before a play button, and the page fits a phone's
-// width with no sideways scroll; quick check 3's play and free play's slow
-// wave wait for Step 3's choice, and the steps' band chart and all of free
-// play for the cold open's; and a visitor with the studio installed still
-// gets the lesson, not the shell. It carries Season 2, so its masthead and
-// its map are Season 2's, and it draws no staff for show (WEB-SPEC, Look).
+// and nothing plays before a play button, the hero's plays sit under its
+// stage, and the page fits a phone's width with no sideways scroll; quick
+// check 3's play and free play's slow wave wait for Step 3's choice, and
+// the steps' band chart and all of free play for the cold open's; and a
+// visitor with the studio installed still gets the lesson, not the shell.
+// It carries Season 2, so its masthead and its map are Season 2's, and it
+// draws no staff for show (WEB-SPEC, Look).
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -133,6 +134,23 @@ for (const viewport of [
       // Assert
       expect(after.contexts).toBe(1)
       expect(await heard(page)).toEqual(after)
+    })
+
+    test("the hero's two plays sit right under the stage, before the predict card", async ({
+      page,
+    }) => {
+      // Act
+      await page.goto('/learn/22')
+      const box = async (sel: string) =>
+        (await page.locator(sel).boundingBox()) ?? { y: 0, height: 0 }
+      const stage = await box('#heroStage')
+      const plays = await box('.hero-plays')
+      const predict = await box('#predict')
+
+      // Assert: under 1080 px the kit orders the hero's parts, and the plays
+      // go with the stage, never to the top of the hero
+      expect(plays.y).toBeGreaterThanOrEqual(stage.y + stage.height - 1)
+      expect(plays.y + plays.height).toBeLessThanOrEqual(predict.y)
     })
 
     test('fits the screen across: no sideways scroll, the Wrap included', async ({
