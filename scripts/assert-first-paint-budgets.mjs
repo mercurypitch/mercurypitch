@@ -500,10 +500,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
   // Season 2's map (kit/season-2.ts) as a Season 2 page must, with the
   // steps' drone chart (kit/band-chart.ts with kit/band-chart-drone.ts, its
-  // brightness from kit/drone-beats.ts) and Step 2's predict on the kit's:
-  // 120,816 bytes in build:e2e, the smallest whole KB above, to rise as
-  // each part joins.
-  'learn/24.html': 118,
+  // brightness from kit/drone-beats.ts), the cold open's on the same chart,
+  // both predicts on the kit's, and the recall and the quick check on the
+  // kit's quiz, with Lesson 10's and Lesson 23's questions: 146,323 bytes
+  // in build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/24.html': 143,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -658,11 +659,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own by @import, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/23.html': 113,
-  // Lesson 24 (a draft, as above), its shell: 82,102 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own, and the shared Inter and
-  // Outfit @font-face rules; the smallest whole KB above, to rise as each
-  // part joins, the guide's and the voice lessons' sheets with the recall
-  // and Sing it.
+  // Lesson 24 (a draft, as above): 82,679 bytes in build:e2e, the kit's
+  // sheets (the guide's in the chunk the recall's questions share, and the
+  // shared parts), its own, and the shared Inter and Outfit @font-face
+  // rules; the smallest whole KB above, to rise as each part joins, the
+  // voice lessons' sheet with Sing it.
   'learn/24.html': 81,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
