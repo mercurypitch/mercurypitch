@@ -53,6 +53,7 @@ import { initQuizzes } from './recall'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -70,7 +71,15 @@ const deck = createStepDeck({
 // quiz; the quick check's question 3 plays Step 3's slow wave, so Step 3's
 // choice lets it sound
 const quizzes = initQuizzes(deck)
-const steps = initSteps(deck, { onHeld: () => quizzes.unlockSlow() })
+// the Wrap's practise card and free play, the steps' band chart again on a
+// card of its own, held back as the steps' is until the same two choices
+const free = initWrap()
+const steps = initSteps(deck, {
+  onHeld: () => {
+    quizzes.unlockSlow()
+    free.unlockHeld()
+  },
+})
 deck.start()
 
 // four words, each figure a small band chart that draws its play's line,
@@ -104,8 +113,12 @@ initMasthead(
   { lesson: 22, deck },
 )
 // the cold open, in the masthead's task, so a first visit's tour waits for
-// its choice; the choice opens the steps' band chart and Step 3's predict
-initColdOpen(deck, () => steps.unlock())
+// its choice; the choice opens the steps' band chart, Step 3's predict and
+// free play
+initColdOpen(deck, () => {
+  steps.unlock()
+  free.unlock()
+})
 initReveals()
 startFrameLoop()
 // Tavi celebrates the reveal quietly, with no sparkles: the reveal calls no

@@ -9,10 +9,12 @@
 // (src/lesson-gate.ts). Like every lesson it must load as itself, never as
 // the 404 page or the studio's cached app shell, and its module must boot:
 // at a phone's size and a desktop's, no AudioContext before the first tap,
-// and nothing plays before a play button; quick check 3's play waits for
-// Step 3's choice; and a visitor with the studio installed still gets the
-// lesson, not the shell. It carries Season 2, so its masthead and its map
-// are Season 2's, and it draws no staff for show (WEB-SPEC, Look).
+// and nothing plays before a play button, and the page fits a phone's
+// width with no sideways scroll; quick check 3's play and free play's slow
+// wave wait for Step 3's choice, and all of free play for the cold open's;
+// and a visitor with the studio installed still gets the lesson, not the
+// shell. It carries Season 2, so its masthead and its map are Season 2's,
+// and it draws no staff for show (WEB-SPEC, Look).
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -133,6 +135,25 @@ for (const viewport of [
       expect(await heard(page)).toEqual(after)
     })
 
+    test('fits the screen across: no sideways scroll, the Wrap included', async ({
+      page,
+    }) => {
+      // Arrange
+      await page.goto('/learn/22')
+      await expect(page.locator('#wrap a.next-card')).toBeVisible()
+
+      // Act: every section met, free play's state switch and the next-lesson still among them
+      for (const id of ['#predict', '#words', '#lesson', '#sing', '#wrap'])
+        await page.locator(id).scrollIntoViewIfNeeded()
+      const widths = await page.evaluate(() => ({
+        page: document.documentElement.scrollWidth,
+        screen: document.documentElement.clientWidth,
+      }))
+
+      // Assert
+      expect(widths.page).toBeLessThanOrEqual(widths.screen)
+    })
+
     test('draws no staff for show: no background staff behind the page, and none on a section head (WEB-SPEC, Look)', async ({
       page,
     }) => {
@@ -172,6 +193,45 @@ test("quick check 3's play waits for Step 3's choice under its lock line, then s
   // Assert
   await expect(line).toBeHidden()
   await expect(play).toHaveClass(/is-on/)
+  await expect
+    .poll(async () => (await heard(page)).sources)
+    .toBeGreaterThan(before.sources)
+})
+
+test("free play holds back as the steps' band chart does: all of it until the cold open's choice, its slow wave until Step 3's (WEB-SPEC, Toys 2)", async ({
+  page,
+}) => {
+  // Arrange: sound on from the gate, on Step 3
+  await watchSound(page)
+  await page.goto('/learn/22#step-3')
+  await page.locator('#gateBtn').click()
+  const free = page.locator('#freePlay')
+  const middle = free.locator('[data-free-state="3"]')
+  const two = free.locator('[data-vib-play="two"]')
+  await expect(middle).toBeDisabled()
+  await expect(free.locator('[data-vib-lock]')).toBeVisible()
+
+  // Act: the cold open's choice, then free play's middle
+  await page.locator('#predict [data-choice="middle"]').click()
+  await middle.click()
+
+  // Assert: open, but the slow wave held under its own line
+  await expect(free.locator('[data-vib-lock]')).toBeHidden()
+  await expect(middle).toHaveAttribute('aria-pressed', 'true')
+  await expect(free.locator('[data-vib-play="six"]')).toBeEnabled()
+  await expect(two).toBeDisabled()
+  await expect(free.locator('[data-vib-lock3]')).toHaveText(
+    "Answer Step 3's question first to hear this.",
+  )
+
+  // Act: Step 3's choice, then free play's slow wave
+  await page.locator('#predict3 [data-choice="moves"]').click()
+  await expect(two).toBeEnabled()
+  const before = await heard(page)
+  await two.click()
+
+  // Assert
+  await expect(free.locator('[data-vib-lock3]')).toBeHidden()
   await expect
     .poll(async () => (await heard(page)).sources)
     .toBeGreaterThan(before.sources)
