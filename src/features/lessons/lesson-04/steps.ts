@@ -14,10 +14,10 @@ import { q } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import type { NamesMode } from '@/features/lessons/kit/names-modes'
 import { mountPredict } from '@/features/lessons/kit/predict'
+import type { StairsStep, StairsToy } from '@/features/lessons/kit/stairs-toy'
+import { mountStairsToy } from '@/features/lessons/kit/stairs-toy'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
-import type { StairsStep, StairsToy } from './stairs-toy'
-import { mountStairsToy } from './stairs-toy'
 
 const D4 = 62
 

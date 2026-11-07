@@ -16,9 +16,9 @@ import { mercsReady } from '@/features/lessons/kit/merc-duo'
 import { COLOR } from '@/features/lessons/kit/notes'
 import { singAlong } from '@/features/lessons/kit/sing-along'
 import { Sound } from '@/features/lessons/kit/sound'
-import { scaleUp } from './examples'
-import type { StairsCore } from './stairs-core'
-import { mountStairs } from './stairs-core'
+import type { StairsCore } from '@/features/lessons/kit/stairs-core'
+import { mountStairs } from '@/features/lessons/kit/stairs-core'
+import { scaleUp } from '@/features/lessons/kit/stairs-plays'
 
 /** The stars, painted once per size. */
 export function stillSky(stage: HTMLElement): void {

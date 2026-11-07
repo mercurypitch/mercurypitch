@@ -722,7 +722,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   (`src/features/lessons/kit/sound.ts:683`) resolves only once its note has ended; the visuals run
   even when sound is off.
 - **A loop or a tune** is timed from one start, as Lessons 2 and 4 time their examples (`schedule`,
-  `src/features/lessons/lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`): every chord
+  `src/features/lessons/lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:30-41`): every chord
   and every sung note starts on its own timer, counted from the play's start, and a chord and the
   tune's note that begins with it start in the same callback, so they share one start on the audio
   clock and never drift apart, and the drawing hears the same callback. A voice's `dur` counts from
@@ -890,7 +890,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    and `setTurning` were there already (`kit/spiral.ts:103-141`, `:154-187`); `setTurning(false)`
    stops only the drift, so the rooms follow the beads (Toys 1).
 4. `lesson-12/cold-open.ts`, new (Toys 2): the hero's ring, its rooms and the tunes' walk.
-5. The names switch (Toys 1): Lesson 4's (`lesson-04/stairs-words.ts`), with a choice of modes, as
+5. The names switch (Toys 1): Lesson 4's (`kit/stairs-words.ts`), with a choice of modes, as
    Lesson 10's spec moves it into the kit (its What the kit and the app still need, item 5). If
    Lesson 10's page lands first, this page takes the kit's; if this page lands first, it moves the
    switch into the kit in that form, with Lesson 6's modes, and Lesson 10's page takes it. This page
@@ -913,7 +913,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    onset in one timer task, so a chord and the tune's note that begins with it share one start, and
    whose `stop` clears every timer not yet fired and stops every voice still sounding, for the owner
    to call (`Run`, `:51-54`). Lessons 2 and 4 keep their own, which cannot be stopped
-   (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:81-92`), and may take the kit's later.
+   (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:30-41`), and may take the kit's later.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
    `lessonPageHref` (`:141-143`, `:137-139`), as Lesson 10's spec proposed (its item 9), and Lessons
    3, 4 and 5 take it from there (`lesson-03/quiz-questions.ts:24`,

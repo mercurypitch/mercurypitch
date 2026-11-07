@@ -1,31 +1,31 @@
 // ============================================================
-// Lesson 4 staircase core — one drawing, its moves and its lights
+// Staircase core — one drawing, its moves and its lights
 // ============================================================
 //
-// The object the lesson transforms is one object on the page: every copy of
-// the staircase (the hero's, the cold open's compact one, the steps' stage
-// and free play) is this core on its own canvas. It keeps the scene, eases
-// each move (a slide's travel, Group's brackets, the white keys' overlay,
-// the arrow from ti, the top stair's house) and lights a stair and its key
-// while its note sounds. Under reduced motion every move lands at once; a
-// played scale still sounds and lights its stairs in turn. Sound and words
-// belong to whoever calls `play`: the core only draws.
+// Lesson 4's staircase (Lesson 4 WEB-SPEC, Toys 1), the one object its page
+// transforms: every copy of it (the hero's, the cold open's compact one, the
+// steps' stage and free play) is this core on its own canvas. It keeps the
+// scene, eases each move (a slide's travel, Group's brackets, the white
+// keys' overlay, the arrow from ti, the top stair's house) and lights a
+// stair and its key while its note sounds. Under reduced motion every move
+// lands at once; a played scale still sounds and lights its stairs in turn.
+// Sound and words belong to whoever calls `play`: the core only draws.
 
-import { clamp } from '@/features/lessons/kit/dom'
-import type { Surface } from '@/features/lessons/kit/frame-loop'
-import { addDrawer, surface } from '@/features/lessons/kit/frame-loop'
-import { scaleNotes, whiteKeysFrom } from '@/features/lessons/kit/major-scale'
-import { reducedMotion } from '@/features/lessons/kit/motion-switch'
-import type { NamesMode } from '@/features/lessons/kit/names-modes'
-import { COLOR, hz } from '@/features/lessons/kit/notes'
-import type { Voice, VoiceOptions } from '@/features/lessons/kit/sound'
-import { Sound } from '@/features/lessons/kit/sound'
-import type { NoteEvent } from './examples'
-import { lengthOf } from './examples'
+import { clamp } from './dom'
+import type { Surface } from './frame-loop'
+import { addDrawer, surface } from './frame-loop'
+import { scaleNotes, whiteKeysFrom } from './major-scale'
+import { reducedMotion } from './motion-switch'
+import type { NamesMode } from './names-modes'
+import { COLOR, hz } from './notes'
+import type { Voice, VoiceOptions } from './sound'
+import { Sound } from './sound'
 import type { StairLight, StairsScene } from './stairs-draw'
 import { paintStairs } from './stairs-draw'
 import type { StairsLayout, StairsMode } from './stairs-geometry'
 import { fullMode, stairsLayout } from './stairs-geometry'
+import type { NoteEvent } from './stairs-plays'
+import { lengthOf } from './stairs-plays'
 import { START_HI, START_LO } from './stairs-words'
 
 export interface StairsCoreOptions {

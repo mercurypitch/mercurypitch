@@ -29,7 +29,7 @@ and so is Lesson 10's package, as merged (`lessons/10-major-minor/`), which this
 and recalls. Facts carried from Lessons 1 to 10 cite their number there. Where a carried fact cites
 the app, its lines were read again at `75eeddc40`: Lesson 10's citations at `85e23a1af` and
 `d59c00ad6` hold there, since from `d59c00ad6` to `6f8081804` the only code that changed is
-`learn/05.html` and `src/features/lessons/lesson-04/stairs-toy.ts` with its test, none of it cited
+`learn/05.html` and `src/features/lessons/kit/stairs-toy.ts` with its test, none of it cited
 here (`git diff --stat`). Lesson 6's page, PR #1149, merged on 21 October 2026, and the kit parts it
 added are cited at `75eeddc40` like the rest. Web sources were fetched and read on 21 October 2026: ten pages of Ableton's _Learning Music_,
 five sections of _Open Music Theory_ on LibreTexts, the free first chapter of Hooktheory I, and one

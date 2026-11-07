@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase words — what each stair, the readout and the slider say
+// Staircase words — what each stair, the readout and the slider say
 // ============================================================
 //
 // Pure text, from the scale the staircase stands on. A stair shows its name
@@ -10,11 +10,11 @@
 // every ♯ and ♭ is spoken: in words here, and as markup where a line is
 // shown (`signsHtml`).
 
-import { blackKeysOf, MAJOR_STEPS, majorScale, stepSizes, whiteKeysFrom, } from '@/features/lessons/kit/major-scale'
-import type { NamesMode } from '@/features/lessons/kit/names-modes'
-import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
-import type { Spelled } from '@/features/lessons/kit/notes'
-import { signName, signsHtml, wordName } from '@/features/lessons/kit/notes'
+import { blackKeysOf, MAJOR_STEPS, majorScale, stepSizes, whiteKeysFrom, } from './major-scale'
+import type { NamesMode } from './names-modes'
+import { MAJOR_SOLFEGE } from './names-modes'
+import type { Spelled } from './notes'
+import { signName, signsHtml, wordName } from './notes'
 
 /** The starts the staircase slides through: C4 to B4. */
 export const START_LO = 60

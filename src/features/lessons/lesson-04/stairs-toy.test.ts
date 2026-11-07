@@ -12,9 +12,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { createModeStore } from '@/features/lessons/kit/names'
 import { NAMES_MODES } from '@/features/lessons/kit/names-modes'
-import type { StairsToy } from './stairs-toy'
-import { mountStairsToy, startFromKey } from './stairs-toy'
-import { summary } from './stairs-words'
+import type { StairsToy } from '@/features/lessons/kit/stairs-toy'
+import { mountStairsToy, startFromKey } from '@/features/lessons/kit/stairs-toy'
+import { summary } from '@/features/lessons/kit/stairs-words'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/04.html'), 'utf8')
 

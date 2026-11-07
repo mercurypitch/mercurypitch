@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase words tests — the stairs, the readout, the slider and the lines
+// Staircase words tests — the stairs, the readout, the slider and the lines
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
@@ -67,7 +67,7 @@ describe('stairName', () => {
 })
 
 describe('stairLabel', () => {
-  it("says each stair's number, its sung name and its note in words (WEB-SPEC, Toys 1)", () => {
+  it("says each stair's number, its sung name and its note in words (Lesson 4 WEB-SPEC, Toys 1)", () => {
     expect(stairLabel(2, 62)).toBe('Stair 3, mi, F sharp 4')
     expect(stairLabel(6, 66)).toBe('Stair 7, ti, E sharp 5')
   })
@@ -103,7 +103,7 @@ describe('the readout and the slider', () => {
 })
 
 describe("the staircase's lines", () => {
-  it('sums up the scale with its notes and steps (WEB-SPEC, Toys 1)', () => {
+  it('sums up the scale with its notes and steps (Lesson 4 WEB-SPEC, Toys 1)', () => {
     expect(summary(62)).toBe(
       'D major: D, E, F sharp, G, A, B, C sharp, D. Tone, tone, semitone, tone, tone, tone, semitone.',
     )

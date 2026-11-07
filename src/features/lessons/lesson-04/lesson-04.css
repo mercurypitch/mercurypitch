@@ -2,10 +2,12 @@
    Lesson 4 — The major scale and home: the page's own figures and cards
    ============================================================
    Everything else is the kit's (lesson-base, lesson-sections, lesson-stage,
-   lesson-guide and lesson-parts). Here: the hero's staircase between Merc
-   and Tavi, the cold open's card, the staircase stage with its buttons laid
-   over the drawing, the start slider, Sing it's guide and lines, the
-   practice card's figure and the free-play stage. */
+   lesson-guide and lesson-parts, and the staircase toy's lesson-stairs,
+   taken in below). Here: the hero's staircase between Merc and Tavi, the
+   cold open's card, the steps' stage beside the text, Sing it's guide and
+   lines, the practice card's figure and the free-play stage. */
+
+@import '../kit/lesson-stairs.css';
 
 /* ---------------------------------------------------------------- hero: the staircase between Merc and Tavi */
 .l4-duo {
@@ -139,10 +141,7 @@
 }
 
 /* ---------------------------------------------------------------- the staircase stage */
-/* free play, and the steps' stage while it sits above the text */
-.stairs-viz {
-  height: 476px;
-}
+/* The toy's own look is the kit's (kit/lesson-stairs.css, imported above). */
 /* Beside the text (over 960 px) the steps' stage is sticky and keeps to about
    550 px at 1024 px wide, figure and controls together: the figure takes the
    270 px the tallest step's controls leave, in the 13-row layout. It is set
@@ -151,123 +150,6 @@
   .steps-stage .stairs-viz {
     --viz-max: 270px;
     height: var(--viz-max);
-  }
-}
-/* on a phone each step's stage fits under the masthead at 390 x 844 (step 4's
-   with its names switch is the tallest, 774 px) */
-@media (max-width: 560px) {
-  .stairs-viz {
-    height: 424px;
-  }
-}
-.stairs-toy .controls {
-  margin-top: 10px;
-}
-.stairs-toy .names-bar {
-  margin-bottom: 8px;
-}
-/* the stairs and Group's brackets are buttons laid over the drawing, each on its tap zone */
-.stair-hits {
-  position: absolute;
-  inset: 0;
-}
-.stair-hit {
-  position: absolute;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.stair-hit:focus-visible {
-  outline: 2px solid var(--aqua);
-  outline-offset: -2px;
-}
-/* the readout sits in the drawing's top margin, clear of the stairs */
-.stairs-status {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 9px;
-  display: grid;
-  gap: 2px;
-  justify-items: start;
-  pointer-events: none;
-}
-.stairs-readout {
-  font: 600 var(--fs-16)/1.35 var(--f-display);
-  color: var(--ink);
-}
-.white-note,
-.white-hint {
-  font-size: var(--fs-14);
-  line-height: 1.4;
-  color: var(--ink-2);
-}
-.white-hint {
-  margin: 8px 0 0;
-  color: var(--ink-3);
-}
-.slide-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-.start-slider {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 44px;
-  display: grid;
-  place-items: center;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px dashed var(--hair-2);
-  font: 600 var(--fs-16)/1 var(--f-display);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.start-slider:focus-visible {
-  outline: 2px solid var(--aqua);
-  outline-offset: 2px;
-}
-/* on a narrow phone the two buttons keep their words and give up their arrows, so the slider can show its note */
-@media (max-width: 420px) {
-  .slide-row {
-    gap: 8px;
-  }
-  .slide-row .btn {
-    padding: 0 10px;
-  }
-  .slide-row .btn .ico {
-    display: none;
-  }
-}
-/* At 320 px the row has 262 px, and with both buttons' words the slider had
-   51: "Do is C4" ran 19 px past it, "Do is D♭4" 28, and at 344 px the flat
-   and sharp starts still ran up to 4 px past. Under 360 px the buttons keep
-   their arrows and give up their words, which stay their names, so the
-   slider has 158 px at 320 and every start's words fit in it; from 360 px
-   nothing changes. Lesson 6's slide row does the same. */
-@media (max-width: 359px) {
-  .slide-row .btn {
-    flex: none;
-    width: 44px;
-    padding: 0;
-  }
-  .slide-row .btn .ico {
-    display: block;
-  }
-  .slide-row .slide-word {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 }
 

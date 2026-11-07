@@ -1,32 +1,33 @@
 // ============================================================
-// Lesson 4 staircase toy — the steps' stage, and free play's
+// Staircase toy — Lesson 4's steps' stage, and free play's
 // ============================================================
 //
-// The full staircase in five states and free play (WEB-SPEC, Toys 1). Over
-// the drawing sit real buttons, one per stair, so every stair plays by
-// keyboard and says its name ("Stair 3, mi, F sharp 4"); Group's brackets
-// are buttons too. The start is a slider (C4 to B4, arrow keys a semitone,
-// Home and End to C and B) between Start lower and Start higher. One action
-// per tap: a stair plays its note; a key of the strip plays in steps 1 and
-// 2 and, from step 3 on, makes that key do. With a mouse or pen a vertical
-// drag on the staircase slides it, and a pointer that moves more than 6 px
-// is a drag, not a tap. On touch the figure keeps `touch-action: pan-y`, so
-// a vertical swipe scrolls the page and the buttons and keys slide instead.
-// A slide is silent; Play up plays the scale from the new start.
+// The full staircase in Lesson 4's five states and free play (Lesson 4
+// WEB-SPEC, Toys 1). Over the drawing sit real buttons, one per stair, so
+// every stair plays by keyboard and says its name ("Stair 3, mi, F sharp
+// 4"); Group's brackets are buttons too. The start is a slider (C4 to B4,
+// arrow keys a semitone, Home and End to C and B) between Start lower and
+// Start higher. One action per tap: a stair plays its note; a key of the
+// strip plays in steps 1 and 2 and, from step 3 on, makes that key do. With
+// a mouse or pen a vertical drag on the staircase slides it, and a pointer
+// that moves more than 6 px is a drag, not a tap. On touch the figure keeps
+// `touch-action: pan-y`, so a vertical swipe scrolls the page and the
+// buttons and keys slide instead. A slide is silent; Play up plays the
+// scale from the new start.
 
-import { clamp, q, qa, wait } from '@/features/lessons/kit/dom'
-import { stripHit } from '@/features/lessons/kit/key-strip'
-import { majorScale, scaleNotes, whiteKeysFrom, } from '@/features/lessons/kit/major-scale'
-import type { ModeStore } from '@/features/lessons/kit/names'
-import { bindModeToggle } from '@/features/lessons/kit/names'
-import type { NamesMode } from '@/features/lessons/kit/names-modes'
-import { isBlack, signName } from '@/features/lessons/kit/notes'
-import { Sound } from '@/features/lessons/kit/sound'
-import { groupOf, landOnDo, scaleDown, scaleUp, stopOnTi, whiteKeysRun, } from './examples'
+import { clamp, q, qa, wait } from './dom'
+import { stripHit } from './key-strip'
+import { majorScale, scaleNotes, whiteKeysFrom } from './major-scale'
+import type { ModeStore } from './names'
+import { bindModeToggle } from './names'
+import type { NamesMode } from './names-modes'
+import { isBlack, signName } from './notes'
+import { Sound } from './sound'
 import type { StairsCore } from './stairs-core'
 import { mountStairs } from './stairs-core'
 import type { StairsLayout } from './stairs-geometry'
 import { findParts, groupName, place } from './stairs-parts'
+import { groupOf, landOnDo, scaleDown, scaleUp, stopOnTi, whiteKeysRun, } from './stairs-plays'
 import { readout, sliderText, stairLabel, START_HI, START_LO, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
 
 /** A step of the deck, or the Wrap's free play, which has every control. */
