@@ -59,6 +59,9 @@ const unlock = vi.hoisted(() => ({
     (_aside: boolean, _take?: () => void) => undefined,
   ),
   keepUnlockClipQuiet: vi.fn((_quiet: boolean) => undefined),
+  checkBeforeEachStart: vi.fn(
+    (_check: ((start: 'play' | 'tap') => boolean) | null) => undefined,
+  ),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
@@ -67,6 +70,7 @@ vi.mock('@/lib/audio-unlock', () => unlock)
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io'
 import { airPlaySuspected, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
+import { checkForStart } from '@/stores/output-check'
 // @ts-expect-error -- a plain .mjs manifest with no types, read as is.
 import { globToRegExp, NATIVE_ASSETS } from '../../native-assets.mjs'
 import { createNativeDevice, standAsideOnAirPlay, standUnlockClipAsideForNowPlaying, } from './native-device'
@@ -451,6 +455,11 @@ describe('the device a room reaches through the bridge', () => {
       [true],
       [false],
       [false],
+    ])
+    // Each start asks first while it stands guard, and nothing asks after.
+    expect(unlock.checkBeforeEachStart.mock.calls).toEqual([
+      [checkForStart],
+      [null],
     ])
     setAudioRouteForTests(null)
   })
