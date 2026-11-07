@@ -8,9 +8,9 @@
 // Missing recorder pages and input states that make pitch untrustworthy become
 // skipped targets, never invented mistakes.
 
+import type { GuitarInputHealth, GuitarInputHealthReading, } from '@/lib/audio-input/level-health'
 import type { GuitarInputProfileKind } from './guitar-input-profile'
 import type { GuitarTakeEvent, GuitarTakeSnapshot, } from './guitar-take-recorder'
-import type { GuitarInputHealth, GuitarInputHealthReading, } from './input-events'
 import { PITCH_ATTACH_WINDOW_MS } from './input-events'
 
 export const GUITAR_LIVE_SCORE_MATCH_TOLERANCE_MS = 180

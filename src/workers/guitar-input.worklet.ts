@@ -15,8 +15,8 @@
 // there against real waveforms. This file is the deliberately thin shell that
 // feeds it.
 
+import { createNoiseFloorFollower } from '@/lib/audio-input/level-health'
 import { createAttackDetector } from '@/lib/guitar/attack-detector'
-import { createNoiseFloorFollower } from '@/lib/guitar/input-events'
 
 declare const currentFrame: number
 declare const sampleRate: number

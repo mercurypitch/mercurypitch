@@ -9,8 +9,8 @@
 
 import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
+import type { GuitarInputHealthReading } from '@/lib/audio-input/level-health'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
-import type { GuitarInputHealthReading } from '@/lib/guitar/input-events'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarTimingSource } from './useGuitarListeningController'
 

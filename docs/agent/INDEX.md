@@ -171,7 +171,7 @@ These are the rules that break things when ignored.
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
-| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 800 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
+| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 900 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `check-up` | [then-and-now.ts](../../src/lib/check-up/then-and-now.ts) | 500 | Weekly Check-up — then and now, from the voiceprint history What moved between a singer's first week of Check-ups and their latest, said... |
