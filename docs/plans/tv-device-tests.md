@@ -610,6 +610,74 @@ app thinks the sound is on AirPlay.
 | 4 Sing example        | ring        |                            |               |                               |       |
 | 5 Studio stem preview | ring        |                            |               |                               |       |
 
+## Test 14: First Note on AirPlay (branch `feat/first-note-web-audio`, first build tagged after it merges)
+
+On mp-v0.8.57 (7 Nov 2026) First Note's round came from the phone's speaker
+over AirPlay, never from the TV, and button 6 (an element through Web Audio,
+as First Note played) was silent everywhere. This build plays First Note
+through Web Audio alone in the app wherever the phone can stream a stem,
+which needs Safari's AudioDecoder (iOS 26 and later), on every route: the
+way button 5 played (Web Audio with the mic open), which the TV played every
+time. A phone that cannot stream (iOS 16 to 18) keeps the elements, and on
+AirPlay alone the room says so under its head: "Over AirPlay this room plays
+nothing. Screen Mirroring carries its sound: open Control Center, tap Screen
+Mirroring, then choose your TV."
+[airplay-element-rooms.md](airplay-element-rooms.md), "First Note: what was
+built", has the why.
+
+Before each part: Developer, Debug console, "Keep routine logs" on, and
+Clear log under Developer, Audio. Ring switch on ring, phone volume up.
+Write down each phone's iOS version, and whether Developer, Karaoke audio
+says it has AudioDecoder. "Force the no-streaming path" off until 14D.
+
+**14A: AirPlay chosen before the room opens.**
+
+1. Choose the TV under AirPlay in Control Center (not Screen Mirroring).
+2. Open First Note and play a round to its end: the lead-in (the band
+   alone), your entry, and the line (the band and the voice).
+3. Does the TV play the lead-in? The line? Is the phone silent? How late is
+   the TV against the phone's countdown (Karaoke was about 2 s)?
+4. The turn opens as the phone's countdown ends, while the TV may still be
+   playing the band's last two seconds. Say whether the round took the
+   TV's band for your entry: the chip says "Came in high" or "Came in low",
+   or the round ends, before you sang. Sing the entry too, and say whether
+   it was judged as on the phone.
+5. With "Show the words" on (the Songs sheet), say how far the words run
+   ahead of the TV's band.
+6. Play the next round straight after: its lead-in, and the line.
+7. No notice under the room's head: a phone that streams plays on AirPlay.
+
+**14B: AirPlay chosen mid-round.** Start a round on the phone's speaker,
+and during its lead-in choose the TV under AirPlay. Does the band move to
+the TV within the round, or only from the next one? Then choose this phone
+again mid-round: does the sound come back?
+
+**14C: the control.** One round on the phone's speaker, and one each on
+headphones and Bluetooth if you have them. The band and the line should
+play as on mp-v0.8.57, the countdown with the band, and your entries be
+judged as before.
+
+**14D: the notice.** On iOS 18 or earlier the room keeps its elements by
+itself; on iOS 26, turn on Developer, Karaoke audio, "Force the no-streaming
+path". With the TV chosen under AirPlay, open First Note: the notice should
+be under the room's head, at rest and during a round, and the round play
+nothing on the TV. Then choose Screen Mirroring: the notice goes. Back to
+AirPlay: it comes back. Choose this phone: it goes. Turn the switch off
+afterwards.
+
+Copy the console after each part: the `[audio route]` line says whether the
+app thinks the sound is on AirPlay, and a stem that would not stream says
+`[first-note] a stem would not open to stream`.
+
+| Case                     | Phone, iOS | AudioDecoder | Sound on the TV? How late? | Phone silent? | Entry heard right? | Notice | Notes |
+| ------------------------ | ---------- | ------------ | -------------------------- | ------------- | ------------------ | ------ | ----- |
+| 14A round 1              |            |              |                            |               |                    |        |       |
+| 14A round 2              |            |              |                            |               |                    |        |       |
+| 14B AirPlay mid-round    |            |              |                            |               |                    |        |       |
+| 14C speaker              |            |              |                            |               |                    |        |       |
+| 14C headphones/Bluetooth |            |              |                            |               |                    |        |       |
+| 14D notice               |            |              |                            |               |                    |        |       |
+
 ## Aside: a TestFlight Subscribe asks for the password
 
 In a TestFlight build Apple's purchase sheet asks for the Apple Account

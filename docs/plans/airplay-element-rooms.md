@@ -1,10 +1,13 @@
 # AirPlay alone: the rooms whose sound is a media element
 
 Status: a plan for the owner to approve room by room. Buttons 6 and 7 of the
-AirPlay sound check are built (`apps/mercurypitch/src/shell/airplay-check.ts`);
-no room work is.
+AirPlay sound check are built (`apps/mercurypitch/src/shell/airplay-check.ts`)
+and answered (7 Nov 2026, below). First Note is built, on branch
+`feat/first-note-web-audio`: it plays through Web Audio in the app wherever
+the phone can stream ("First Note: what was built"). No other room work is.
 Read from `origin/main` at `57f3d4e83` (6 Nov 2026), which carries PR #1376
-(`bb2df9ba3`, the commit tagged `mp-v0.8.56`).
+(`bb2df9ba3`, the commit tagged `mp-v0.8.56`); First Note's part from
+`fb51e24d9` (7 Nov 2026).
 
 Over plain AirPlay (the TV chosen under AirPlay in Control Center, not Screen
 Mirroring) the native iOS app's Karaoke room was silent until PR #1376 kept its
@@ -30,6 +33,27 @@ TestFlight mp-v0.8.56 build 1716, 6 Nov 2026, the TV chosen under AirPlay:
 | 3      | Web Audio alone, a fresh AudioContext                                       | The TV                                           |
 | 4      | Web Audio while a silent element kept local plays                           | Never                                            |
 | 5      | Web Audio with the mic open                                                 | The TV, every time, three times straight after 4 |
+
+The owner ran 12A's buttons and 12B's First Note on 7 Nov 2026 (TestFlight
+mp-v0.8.57, an iPhone 11 Pro and an iPhone 13 Pro, the LG C2 chosen under
+AirPlay in Control Center):
+
+| What played                                                                                 | Heard                                       |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Button 3, Web Audio alone                                                                   | The TV                                      |
+| Button 6, an element kept local, routed through `createMediaElementSource`, as First Note's | Nothing, every time, on the TV or the phone |
+| Button 7, Web Audio after an element that played, then was paused and kept, unmuted         | The TV                                      |
+| First Note's round (12B): its two elements through Web Audio, the mic open                  | The phone's speaker; nothing on the TV      |
+
+Check 6 has answered "plays nothing": an element routed through Web Audio
+still counts as an element, and option (c) is out. Check 7 has answered too:
+an element that played and then sits paused, `src` kept and unmuted, does
+not keep a later Web Audio sound off the TV. First Note's round differs
+from button 6 in the microphone it opens, and in its clock, the app's shared
+one: its sound came from the phone's speaker rather than from nowhere. Why
+is not known (inference: the mic moves WebKit's session to play and record).
+Either way it never reached the TV, and Web Audio with the mic open
+(button 5, Test 9) did, every time.
 
 So while an element plays on AirPlay alone, nothing is heard, the element's
 own sound included. PR #1376 keeps Karaoke Web Audio only there: the lock
@@ -123,20 +147,21 @@ route and the session's rate it reads come from the native shell
 
 ## The rooms
 
-| Room                                 | In the native app                                           | Main sound on iOS                                                                                                                                                | AirPlay alone today                                 |
-| ------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Karaoke                              | Yes                                                         | Web Audio only                                                                                                                                                   | Fine: the owner heard it on the TV                  |
-| First Note                           | Yes, a premium room                                         | Two `<audio>` a run, band and voice, through `createMediaElementSource`                                                                                          | Unknown: check 6 decides                            |
-| Preview player: Karaoke Studio stems | Maybe: whether the result list shows natively is unverified | One `<audio>` through `createMediaElementSource`                                                                                                                 | Unknown: check 6                                    |
-| Preview player: Zen example cue      | Not traced                                                  | The same                                                                                                                                                         | Unknown: check 6                                    |
-| Jam song room                        | In the document, no way in from the shell                   | Instrumental `<audio>` through `createMediaElementSource` once the context runs, plain before; guide vocal decoded; each peer a plain `<audio>` of a MediaStream | Likely silent with a peer (inference), else check 6 |
-| Hear Yourself (Voice History)        | In the document, no way in from the shell                   | A decoded AudioBuffer for webm, mp4 and m4a takes; `<audio>` through `createMediaElementSource` otherwise                                                        | Fine for a take recorded on iOS (inference)         |
-| Lab, offline pitch canvas            | In the document, hidden                                     | `<audio>` through `createMediaElementSource`                                                                                                                     | Unknown; nobody puts it on a TV                     |
-| Guitar Night                         | No: a standalone page                                       | Web only: decoded AudioBuffers, or one `<audio>` a stem through `createMediaElementSource`                                                                       | Not in the app                                      |
-| Glass                                | No: a standalone page                                       | Web only: decoded AudioBuffer, element only if the decode fails                                                                                                  | Not in the app                                      |
+| Room                                 | In the native app                                           | Main sound on iOS                                                                                                                                                | AirPlay alone today                                          |
+| ------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Karaoke                              | Yes                                                         | Web Audio only                                                                                                                                                   | Fine: the owner heard it on the TV                           |
+| First Note                           | Yes, a premium room                                         | Web Audio where the phone streams (`feat/first-note-web-audio`); else two `<audio>` a run, band and voice, through `createMediaElementSource`                    | Not on the TV on mp-v0.8.57 (12B); Test 14 checks the branch |
+| Preview player: Karaoke Studio stems | Maybe: whether the result list shows natively is unverified | One `<audio>` through `createMediaElementSource`                                                                                                                 | Silent: check 6 played nothing                               |
+| Preview player: Zen example cue      | Not traced                                                  | The same                                                                                                                                                         | Silent: check 6 played nothing                               |
+| Jam song room                        | In the document, no way in from the shell                   | Instrumental `<audio>` through `createMediaElementSource` once the context runs, plain before; guide vocal decoded; each peer a plain `<audio>` of a MediaStream | Silent: check 6 played nothing                               |
+| Hear Yourself (Voice History)        | In the document, no way in from the shell                   | A decoded AudioBuffer for webm, mp4 and m4a takes; `<audio>` through `createMediaElementSource` otherwise                                                        | Fine for a take recorded on iOS (inference)                  |
+| Lab, offline pitch canvas            | In the document, hidden                                     | `<audio>` through `createMediaElementSource`                                                                                                                     | Unknown; nobody puts it on a TV                              |
+| Guitar Night                         | No: a standalone page                                       | Web only: decoded AudioBuffers, or one `<audio>` a stem through `createMediaElementSource`                                                                       | Not in the app                                               |
+| Glass                                | No: a standalone page                                       | Web only: decoded AudioBuffer, element only if the decode fails                                                                                                  | Not in the app                                               |
 
 ### First Note
 
+The element player, as read at `57f3d4e83` (line numbers from then):
 `src/features/first-note/song-player.ts`, made by
 `useFirstNoteController.ts:104` for each run.
 
@@ -153,6 +178,57 @@ route and the session's rate it reads come from the native shell
 - The stems are Karaoke's examples at the app's origin, or the singer's own
   split songs from the phone's store (`first-note-songs.ts:75-76`).
   Karaoke's stems are m4a and mp3 (`src/features/stem-mixer/streaming-stem-voice.ts:28-29`).
+
+### First Note: what was built (7 Nov 2026)
+
+Option (b) where the phone can stream, (d) where it cannot, on branch
+`feat/first-note-web-audio`. Line numbers are that branch's.
+
+- **A second `SongPlayer`,** `src/features/first-note/web-audio-song-player.ts`.
+  Each stem's file is fetched (`asset-fetch.ts`'s status-0 rule, `:180-193`)
+  and opened with Karaoke's `openStemStream`, then played by Karaoke's
+  `createStreamingStemVoice` from the round's `from`, on the mic's context,
+  through a gain of its own into the room's output (`:211-235`). The lead-in
+  is the band alone from `from`, the line both stems from `at`, as before;
+  each gain rises on the house attack where its first frame plays and falls
+  on the house release (`openEnvelope` takes a start time now,
+  `src/lib/preview-player.ts:59-69`). The fade starts on the frame the band
+  reaches `to` less the fade, and `done` settles after it (`:261-296`), as
+  the element player's did; a stop, the band running out or iOS stopping
+  the clock settles it false.
+- **The band's place** is read off the context's clock: `from` until the
+  first frame, then `from` plus the clock since (`:256-259`). A sound starts
+  `START_LEAD_SECONDS`, 0.25 s, after its stems are open (`:115`), so its
+  first window can be decoded in time. The controller reads it, and `done`,
+  exactly as before: the countdown, the turn's opening and its
+  `outputLatency` gate are unchanged (`useFirstNoteController.ts:330-343`,
+  `:312-327`).
+- **Memory.** No stem is decoded whole: the voice holds two windows of 4 s a
+  stem (`stem-memory.ts`), and the player holds the compressed files of the
+  song its rounds play, letting them go for the next song and at the run's
+  end (`:325-344`).
+- **Which player** (`songPlayerFor`, `:137-153`, chosen as each run's mic
+  opens, `useFirstNoteController.ts:105-108`): Web Audio in the app
+  wherever `canStreamStems()` says yes, on every route, so the room never
+  depends on telling AirPlay apart; elements on the web and where the phone
+  cannot stream. The app is told from the web by its device
+  (`nativeDeviceApi()`, registered by the app before its first render, never
+  on the web), the test `useExerciseCapture.ts` already makes for the shared
+  clock.
+- **Karaoke's streaming is handed in,** as Merc's voice is: the app's screen
+  passes `canStreamStems`, `openStemStream` and `createStreamingStemVoice`
+  to the room (`apps/mercurypitch/src/shell/FirstNoteScreen.tsx:54-58`), so
+  `src/features/first-note` gains no import from another feature.
+- **Where the phone cannot stream,** on AirPlay alone, the room says under
+  its head: "Over AirPlay this room plays nothing. Screen Mirroring carries
+  its sound: open Control Center, tap Screen Mirroring, then choose your
+  TV." (`FirstNoteAirPlayNotice.tsx`). It follows `airPlayAlone()` live and
+  waits while the result or the demo has the head of the room.
+
+The round now plays as button 5 did: Web Audio alone, with the mic open. On
+mp-v0.8.56 the TV played that every time (Test 9). Test 14 in
+[tv-device-tests.md](tv-device-tests.md) checks First Note itself, and the
+lyrics' and the turn's timing against AirPlay's delay.
 
 ### The preview player
 
@@ -242,7 +318,9 @@ For the record, since neither is in the app:
 
 By the WebKit reading above (from source, **unverified on a device**), each of
 these could keep AirPlay silent after it stops, until it is emptied or muted.
-Check 7 says whether that matters at all.
+Check 7 says whether that matters at all. It answered on 7 Nov 2026: the TV
+played 7, so an element paused with its `src` kept does not hold AirPlay,
+and this table is harmless.
 
 | Element                                | Where                                                   | After it stops                                   | Emptied                                      |
 | -------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------- |
@@ -371,6 +449,8 @@ band element's. First Note already walks stems this way on the phone to read
 a song (`src/features/first-note/own-song-read.ts:17-35`). Not (a): two whole
 stems decoded is the 180 MB that killed Karaoke. Where `canStreamStems()`
 answers no, (d). About two days with tests for (b), half a day for (d) alone.
+Check 6 failed (7 Nov 2026), and (b) and (d) are built: see "First Note:
+what was built".
 
 **2. Karaoke Studio's stem previews.** Few would preview a stem on a TV. If
 check 6 fails, (d) in the studio, or nothing until someone sees the result
@@ -418,6 +498,11 @@ player and Jam's instrumental play.
 - If 6 plays nothing, the same with the mic open (as First Note plays) says
   whether First Note differs; button 5 suggests the mic does no harm.
 
+Answered on 7 Nov 2026 (mp-v0.8.57, an iPhone 11 Pro and an iPhone 13 Pro,
+the LG C2): nothing anywhere, every time. First Note itself, with the mic
+open, played on the phone's speaker and never on the TV (12B), so the
+mic variant needs no button: it fails too.
+
 **7: played, then paused and kept.** A kept-local element plays a second of
 silence, unmuted, and is paused with its `src` kept, neither muted nor
 emptied. Then a fresh context plays the beeps.
@@ -426,6 +511,8 @@ emptied. Then a fresh context plays the beeps.
   elements that stay around is harmless.
 - Nothing: every stopped element must be muted or emptied on AirPlay alone.
   Muting is enough (8, which Test 11B answered).
+
+Answered on 7 Nov 2026 (mp-v0.8.57): the TV plays 7.
 
 **8: played, paused, then muted. Not built: Test 11B answered it.** As 7,
 with the element muted before the beeps. On 6 Nov 2026 (mp-v0.8.56) a
@@ -458,6 +545,16 @@ runs buttons 6 and 7, which need the first build tagged after this branch
 merges, and "4, then 3", which needs none. 12B runs First Note, a Sing
 example and a studio stem preview on AirPlay alone, on mp-v0.8.56
 (build 1716) or later.
+
+## Test 14: First Note on AirPlay
+
+Test 14 in [tv-device-tests.md](tv-device-tests.md) runs First Note through
+Web Audio, on the first build tagged after branch
+`feat/first-note-web-audio` merges: a round on the TV with AirPlay chosen
+before the room opens and mid-round, the same round on the phone as the
+control, the notice on a phone made to take the element player (the
+Developer screen's "Force the no-streaming path"), and how late the TV is
+against the countdown and the singer's turn.
 
 ## Found on the way, outside this plan
 
