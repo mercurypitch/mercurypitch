@@ -255,6 +255,10 @@ describe("Lesson 24's page", () => {
       expect(words(d.querySelector(`${root} [data-drone-lock2]`))).toBe(
         "Answer Step 2's question first to use this figure.",
       )
+      // the readout names no rate, and no "still", before the choice
+      const readout = d.querySelector(`${root} [data-drone-readout]`)
+      expect(readout?.hasAttribute('hidden'), root).toBe(true)
+      expect(words(readout), root).toBe('')
     }
   })
 

@@ -498,10 +498,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/23.html': 213,
   // Lesson 24, "Harmony against a drone", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
-  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell:
-  // 87,582 bytes in build:e2e, the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/24.html': 86,
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must, with the
+  // steps' drone chart (kit/band-chart.ts with kit/band-chart-drone.ts, its
+  // brightness from kit/drone-beats.ts) and Step 2's predict on the kit's:
+  // 120,816 bytes in build:e2e, the smallest whole KB above, to rise as
+  // each part joins.
+  'learn/24.html': 118,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
