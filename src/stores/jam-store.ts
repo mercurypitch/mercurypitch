@@ -4,6 +4,7 @@
 
 import { batch, createMemo, createRoot, createSignal } from 'solid-js'
 import { getStemBlob } from '@/db/services/uvr-service'
+import { resolveDeviceId } from '@/lib/audio-input/saved-input'
 import { deterministicFreeJamBackground } from '@/lib/backgrounds/background-access'
 import { getBackgroundDefinition, isBackgroundPerkId, } from '@/lib/backgrounds/background-catalog'
 import { BackgroundRequestError, mintJamBackgroundCapability, } from '@/lib/backgrounds/background-runtime'
@@ -12,7 +13,7 @@ import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamB
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import type { JamAudioProfile, JamCaptureReport, } from '@/lib/jam/jam-audio-source'
 import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
-import { listJamAudioInputs, resolveDeviceId } from '@/lib/jam/jam-audio-source'
+import { listJamAudioInputs } from '@/lib/jam/jam-audio-source'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamInputMonitor } from '@/lib/jam/jam-input-monitor'
 import { createJamInputMonitor } from '@/lib/jam/jam-input-monitor'

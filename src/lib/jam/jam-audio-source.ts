@@ -22,6 +22,9 @@
 //
 // Tests: src/tests/jam-audio-source.test.ts.
 
+import { listAudioInputDevices } from '@/lib/audio-input/device-watch'
+import { isLoopbackLabel } from '@/lib/audio-input/saved-input'
+
 export type JamAudioProfile = 'voice' | 'instrument'
 
 /**
@@ -208,6 +211,9 @@ function joinWords(words: readonly string[]): string {
 }
 
 // ── Devices ──────────────────────────────────────────────────────────
+// Listing the inputs, spotting a loopback by its name and finding a saved
+// input again (id, then name) are shared with every room that names inputs:
+// @/lib/audio-input/device-watch.ts and saved-input.ts.
 
 export interface JamAudioInput {
   deviceId: string
@@ -233,27 +239,6 @@ export interface JamAudioInput {
 }
 
 /**
- * Spot a monitor source by its name, which is all we have.
- *
- * The device id is hashed per origin, so the `.monitor` suffix PulseAudio
- * uses internally never reaches us, and `PA_PROP_DEVICE_CLASS=monitor`
- * is not surfaced by the MediaDevices API either. The human label is
- * genuinely the best available signal.
- *
- * It is a better signal than it looks: both servers build the string with
- * a plain format call and NOT through gettext -- pipewire-pulse does
- * `snprintf(monitor_desc, size, "Monitor of %s", desc)` and PulseAudio
- * does the same in `pa_sink_new`. So it is English on every locale.
- *
- * Still used to SORT and WARN rather than to hide. "Monitor" alone is an
- * ordinary word for studio hardware, and burying somebody's real input
- * would be worse than the footgun this prevents.
- */
-export function isLoopbackLabel(label: string): boolean {
-  return /\bmonitor of\b|\bloopback\b/i.test(label)
-}
-
-/**
  * The input devices worth offering, with usable names.
  *
  * Labels are empty until a capture has been permitted at least once, so a
@@ -265,64 +250,27 @@ export function isLoopbackLabel(label: string): boolean {
  * list whose first useful row is an interface they do not own.
  */
 export async function listJamAudioInputs(): Promise<JamAudioInput[]> {
-  if (typeof navigator.mediaDevices?.enumerateDevices !== 'function') return []
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    const inputs = devices
-      .filter((d) => d.kind === 'audioinput')
-      .map((d, index) => {
-        // NOT "Input N". Guitar Night names CHANNELS that way -- its
-        // picker renders "Input 1 · Mono" -- so using the same words for
-        // a device the browser has not named yet reads as a channel list
-        // to anyone who has used both. It was, and the guitarist looking
-        // for their interface picked from the wrong kind of thing.
-        const label = d.label !== '' ? d.label : `Device ${index + 1}`
-        return {
-          deviceId: d.deviceId,
-          label,
-          isLoopback: isLoopbackLabel(label),
-        }
-      })
-    // Real inputs first, monitors last, each group in the order the
-    // browser gave them -- which on every platform puts the default first.
-    return [
-      ...inputs.filter((d) => !d.isLoopback),
-      ...inputs.filter((d) => d.isLoopback),
-    ]
-  } catch {
-    // Enumeration can reject in a cross-origin frame or with media blocked.
-    return []
-  }
-}
-
-/**
- * Turn a remembered input into one that exists right now.
- *
- * A `deviceId` is not a hardware key. On Linux it is derived from the
- * PulseAudio source name, which carries the USB serial -- so it survives
- * reboots and even a different port -- but it also carries the PROFILE
- * suffix (`.pro-audio`, `.analog-stereo`). Switch a Scarlett from stereo
- * to Pro Audio and the id changes, the `exact` constraint fails, and the
- * room silently falls back to a laptop microphone. Clearing site data
- * does the same, because the per-origin salt resets.
- *
- * So the label is remembered alongside the id and used as the second key.
- * Exact id first; then the same label; then nothing, and let the caller
- * take the default.
- */
-export function resolveDeviceId(
-  savedId: string | null,
-  savedLabel: string | null,
-  devices: readonly JamAudioInput[],
-): string | null {
-  if (savedId !== null && devices.some((d) => d.deviceId === savedId)) {
-    return savedId
-  }
-  if (savedLabel !== null && savedLabel !== '') {
-    const byLabel = devices.find((d) => d.label === savedLabel && !d.isLoopback)
-    if (byLabel !== undefined) return byLabel.deviceId
-  }
-  return null
+  // Enumeration can reject in a cross-origin frame or with media blocked;
+  // the shared listing answers that with no inputs.
+  const inputs = (await listAudioInputDevices()).map((d, index) => {
+    // NOT "Input N". Guitar Night names CHANNELS that way -- its
+    // picker renders "Input 1 · Mono" -- so using the same words for
+    // a device the browser has not named yet reads as a channel list
+    // to anyone who has used both. It was, and the guitarist looking
+    // for their interface picked from the wrong kind of thing.
+    const label = d.label !== '' ? d.label : `Device ${index + 1}`
+    return {
+      deviceId: d.deviceId,
+      label,
+      isLoopback: isLoopbackLabel(label),
+    }
+  })
+  // Real inputs first, monitors last, each group in the order the
+  // browser gave them -- which on every platform puts the default first.
+  return [
+    ...inputs.filter((d) => !d.isLoopback),
+    ...inputs.filter((d) => d.isLoopback),
+  ]
 }
 
 export const PROFILE_COPY: Record<
