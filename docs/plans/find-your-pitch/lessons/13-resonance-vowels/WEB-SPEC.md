@@ -192,7 +192,7 @@ its columns from Merc's vowel model (`lesson-13/vowels.ts`, needs 7), a pure mod
 the strip draws is the one `verify13.py` asserted (FACTS 40 to 42).
 
 - **Drawing.** The band chart's plot on top: Merc's note as the band's centre, the band 35 cents
-  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:64-83`) with only
+  either side, a cents axis of ±100 (`axis: { range: 100 }`, `kit/band-chart.ts:71-92`) with only
   the ±35 ticks named, and Merc's amber line drawn left to right as it sounds and level at the
   centre, its vibrato left out as on Lessons 3 and 5 (`kit/band-chart.ts:5-12`; FACTS 43). Under
   it, the strip: one column for each harmonic of the note up to 4,000 Hz, the k-th centred at
@@ -358,7 +358,7 @@ that file's unless it says otherwise.
   (`kit/predict.ts:187-188`). The predict's own two plays never cut each other short: a tap on one
   while the other plays does nothing (`busy`, `:179`). So a play here is cut short only by another
   source taking the page's sound (a Four words play, a step toy: Audio), or by sound turned off or
-  the page hidden, which stop every voice (`kit/sound.ts:572-574`, `:604`).
+  the page hidden, which stop every voice (`kit/sound.ts:585-587`, `:617`).
 
 - The tests that hold each state. The kit's own (`src/features/lessons/kit/predict.test.ts`): a
   free play that works before a choice and never reveals (`:288-302`), the lock hint back after a
@@ -488,7 +488,7 @@ States:
    lights up."; the ring turns from the first voiced frame and closes over the ten seconds; the
    violet line draws on the fixed frame, folded into Merc's octave; Merc and Tavi both `listen`; the
    strip stays dark. The take opens 0.4 s after Merc's demonstration ends, during the Breathe ring,
-   with every sound held off while it is open (`Sound.hush`, `kit/sound.ts:635-638`). It waits up to
+   with every sound held off while it is open (`Sound.hush`, `kit/sound.ts:655-662`). It waits up to
    6 s from opening for the first voiced frame, then runs exactly 10 s from it, timed on the frames'
    own clock; it ends sooner only if the voice stops for more than 1 s, so a breath of under a
    second between vowels does not end it, though its silence counts as time out of the band
@@ -563,7 +563,7 @@ The dose and the retries, all in the flow rule below (FACTS 53, 54):
 The flow is a pure rule, Lesson 5's `lesson-05/hold-flow.ts`, moved into the kit as
 `kit/hold-flow.ts` with the hold lengths as data (Lesson 5 passes ten seconds then fifteen, this
 page ten alone), `TAKES_PER_HOLD` 3, `CELEBRATE_SHARE` 0.8 and `TRICKY_SHARE` 0.5 unchanged
-(`kit/hold-flow.ts:37-43`; needs 8). From the comfort answer, the voice, whether sound and Web
+(`kit/hold-flow.ts:48-54`; needs 8). From the comfort answer, the voice, whether sound and Web
 Audio are on, the takes so far (how many, and for each whether it had voice, whether it was
 abandoned and its share in the band), and the answers so far (the latest, and whether "Effortful" or
 "Uncomfortable" was ever answered), it gives the state, the controls shown, the lines, whether Merc
@@ -571,7 +571,7 @@ celebrates and the Wrap's card, so every branch above is unit-tested without a m
 6).
 
 Listening: Lesson 3's `kit/listen.ts` unchanged, through Lesson 5's hold runner moved into the kit
-(`holdOne`, `kit/hold-run.ts:149-204`; needs 9) with Merc's Listen phase passed in, so
+(`holdOne`, `kit/hold-run.ts:164-223`; needs 9) with Merc's Listen phase passed in, so
 Lesson 5's passes its two-second note and this page its ten seconds of vowels:
 `micManager.acquire('lesson-13')` for each take (`kit/listen.ts:64`), released when it ends, on
 leaving the section, on `pagehide` and when the tab is hidden (`:18-22`); the YIN-only F0 stream;
@@ -628,9 +628,9 @@ nothing plays while a take is open, and the page has no music bed.
 
 The vowel model (FACTS 40), Merc's model, labelled so on the figure:
 
-- Each sung line is one of the kit's contour voices (`contourVoice`, `kit/sound.ts:384-410`) in
+- Each sung line is one of the kit's contour voices (`contourVoice`, `kit/sound.ts:397-423`) in
   Merc's kind (`kind: 'merc'`), so it keeps his vibrato, 5.5 Hz and ±14 cents grown in over 0.35 s,
-  his attack and release, and his gain, 0.2 (`:221-248`; FACTS 43). The page's own timbre
+  his attack and release, and his gain, 0.2 (`:234-261`; FACTS 43). The page's own timbre
   (`kit/sound.ts`'s `timbre` option; `lesson-13/vowel-voice.ts`, `vowelTimbre`) changes what it is
   made of, as built in place of the two options needs 5 proposed: the voice's oscillator, which the
   kit hands a timbre as `parts[0]`, takes a periodic wave of the source, every harmonic of the
@@ -649,8 +649,8 @@ The vowel model (FACTS 40), Merc's model, labelled so on the figure:
   from 0.28 to 0.71 in the lower voice and from 0.11 to 2.64 in the higher, over every note Move
   reaches (FACTS 67). A play's `gain` is Merc's 0.2 times the largest factor among the vowels it
   sings on its note, and each point's `level` is its vowel's factor over that largest, so every
-  level is at most 1, as `ContourPoint.level` asks (`kit/sound.ts:334-341`), and the level glides
-  with the resonances. The master gain and compressor stay as they are (`:150-159`). The voice's
+  level is at most 1, as `ContourPoint.level` asks (`kit/sound.ts:347-354`), and the level glides
+  with the resonances. The master gain and compressor stay as they are (`:163-172`). The voice's
   overall loudness is matched by ear to Merc's "ooh" on Lessons 3 and 5 before publishing, on a
   phone's speaker and on headphones (Decisions 2; Contract).
 - The source alone (Step 1, free play's All harmonics) is the same voice with the source's wave
@@ -685,8 +685,8 @@ that runs to its end (Toys 2; `kit/predict.ts:31-41`, `:184-188`). Both parts ca
 Lesson 6's page, and are on main.
 
 A sequence decides once, at the tap, whether it sounds (`ToneOptions.audible`,
-`kit/sound.ts:652-655`), so a step's later vowels never ask `Sound.canPlay()` from a timer, which
-would show the sound-off toast with no tap (`:611-619`). A play pressed again while it runs stops
+`kit/sound.ts:677-680`), so a step's later vowels never ask `Sound.canPlay()` from a timer, which
+would show the sound-off toast with no tap (`:624-632`). A play pressed again while it runs stops
 it; a play pressed while another runs stops the other and starts. The predict's two plays are the
 exception: the kit ignores a tap on either while one runs (Toys 2). While a take is open every play
 on the page is silent, as the kit's hush makes it. A live line is written to its region only when
@@ -873,18 +873,18 @@ and the four-words strip in the kit.
    (`lesson-06/page.test.ts:126-141`); the shared test makes a page test of this page's own
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:233`, `:335`;
-   `:536`, `:546`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:904`, `:937`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:422-432`),
+   JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:243`, `:350`;
+   `:563`, `:573`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:936`, `:969`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:437-447`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
-   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:260-262`). The vowel model
+   alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:270-272`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold
    reader arrive through a dynamic import when Start is pressed, as on Lesson 5
-   (`assert-first-paint-budgets.mjs:222-225`), and the ceiling holds only while that boundary does.
+   (`assert-first-paint-budgets.mjs:232-235`), and the ceiling holds only while that boundary does.
 5. `kit/sound.ts`: no new option. The two options first proposed here, `partials` and
    `resonators`, and a `res` on `ContourPoint`, are built instead as the page's own timbre on the
-   `timbre` option Lesson 7's page added (`:71-72`, `:224`), as its "ng" and lip trill are
+   `timbre` option Lesson 7's page added (`:73-74`, `:237`), as its "ng" and lip trill are
    (`kit/timbre.ts`): the kit hands a timbre the voice's parts, `parts[0]` its oscillator, which
    the page's timbre gives the source's wave (`lesson-13/vowel-voice.ts`, `vowelTimbre`); the
    resonators' values ride on the page's own contour points (`lesson-13/plays.ts`, `VowelPoint`),
@@ -893,7 +893,7 @@ and the four-words strip in the kit.
    proposes a `wave` and a `lowpass` option for its gears (its needs 6); a timbre carries both.
 6. `kit/spectrum-strip.ts`, new: the LED strip as a painter under the band chart's plot, as
    `kit/band-chart-hold.ts`'s level strip is (`:1-13`, `:37-42`), behind a `spectrum` option on
-   `BandChartOptions` (`kit/band-chart.ts:79-121`), off by default, with a scene field holding the
+   `BandChartOptions` (`kit/band-chart.ts:88-132`), off by default, with a scene field holding the
    columns (each its harmonic number and its lit segments), the labelled peaks, the curves (each a
    resonance frequency and its points) and the caption. It draws only what the scene gives it, takes
    no audio input, and is pure but for the canvas calls, with its layout (column centres and widths,
@@ -903,12 +903,12 @@ and the four-words strip in the kit.
    segments, the labelled peaks, the in-between resonances of a change, and the equal-power factors,
    unit-tested against `verify13.py`'s numbers (Tests, 1 and 2).
 8. `kit/hold-flow.ts`, built: Lesson 5's hold flow moved into the kit (Toys 6), with the holds'
-   lengths as data (`HoldPlan`, `kit/hold-flow.ts:30-34`), so Lesson 5 keeps ten seconds then
+   lengths as data (`HoldPlan`, `kit/hold-flow.ts:39-43`), so Lesson 5 keeps ten seconds then
    fifteen (`lesson-05/hold-flow.ts:15-19`) and this page has ten alone, and with the Wrap's rest
    card after effort (`restAfterEffort`, item 10). Lesson 5's own tests stay beside its plan and
    pass unchanged through the kit; the kit's test covers one hold and the rest card after effort.
 9. `kit/hold-run.ts`, built: Lesson 5's `holdOne` and its lead moved into the kit (`GAP_SEC` and
-   `BREATHE_SEC`, `kit/hold-run.ts:48-49`; `lead` and `holdOne`, `:119-204`), with Merc's Listen
+   `BREATHE_SEC`, `kit/hold-run.ts:54-55`; `lead` and `holdOne`, `:131-223`), with Merc's Listen
    phase passed in as a demonstration that resolves `false` when it was cut short, and `onSung`,
    which hears each frame's seconds since the first voiced frame, for the vowel cues. Lesson 5
    passes its two-second note (`MERC_SEC`, `kit/hold-sing.ts:95`), unchanged.
@@ -951,7 +951,7 @@ tease (`kit/next-card.ts`, its copy from `kit/lesson-copy.ts`), the step deck th
 an address names (`kit/step-deck.ts`), Watch only with a published film (`kit/season.ts:23-25`),
 learner-only explorer cards, the band chart and its hold frame (`kit/band-chart.ts`,
 `kit/band-chart-hold.ts`), the hold reader (`kit/hold-take.ts`), the contour voices (`contourVoice`,
-`playContour`, `kit/sound.ts:384-410`, `:672-681`), the warm-up (`kit/warm-up.ts`), the voice choice
+`playContour`, `kit/sound.ts:397-423`, `:697-706`), the warm-up (`kit/warm-up.ts`), the voice choice
 (`kit/voice-choice.ts`) and the comfort check (`kit/comfort.ts`). Released lessons need no edit when
 this page goes live, since every lesson page draws the season as its state shows it
 (`kit/page-state.ts:54-57`): Lesson 12's next card turns from "Coming later" to "Start lesson" and
@@ -1174,10 +1174,10 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 9. Every practice link carries `?lesson=13`; opening `/mirror?lesson=13` in a fresh profile boots
    Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
-    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:503`); its
+    as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:509`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above
     the hook, the card's words in the order eyebrow, tease, hook and way on, then the figure, as
-    that spec checks Lessons 1 and 2's cards (`:173-190`, `:437-453`).
+    that spec checks Lessons 1 and 2's cards (`:179-196`, `:443-459`).
 11. With reduced motion emulated, a column jumps to its height, a vowel change lands at once, the
     ring holds still, and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.

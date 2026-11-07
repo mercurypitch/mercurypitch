@@ -546,7 +546,7 @@ music bed.
   as Lesson 17's runs sound (FACTS 76). The four words' and Step 4's short figures are runs too, in
   quarter notes at 60 BPM, with no count-in and no click (FACTS 77, 81).
 - **Merc's and Tavi's tunes** (the cold open's two reads, the start's do, Merc's tunes) are one voice
-  along a contour, held and glided on the audio clock (`src/features/lessons/kit/sound.ts:16-21`),
+  along a contour, held and glided on the audio clock (`src/features/lessons/kit/sound.ts:18-23`),
   each note held its written length less the gap, with a dip in level between repeated notes. In the
   note-by-note read each sung note starts on the beat after its name, beats 2, 4, 6 and 8 (FACTS 35,
   38).
@@ -704,7 +704,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - the pitch line drawn after a take on the bars' time axis: Lesson 17's pitch-line view of a rhythm
      (its item 8) given a take's frames.
 8. **Dynamics, staccato, slurs and breaths in the kit's runs**: a run's note takes a level, which a
-   contour already carries (`src/features/lessons/kit/sound.ts:333-341`), a sounding length shorter
+   contour already carries (`src/features/lessons/kit/sound.ts:346-354`), a sounding length shorter
    than its value, a join to the next note with no gap, and a silence taken from its end, all booked
    on the beat clock.
 9. **No decorative staff** (Lesson 15's item 7).

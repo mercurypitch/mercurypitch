@@ -427,7 +427,7 @@ plays in the soft tone; Merc's and Tavi's singing in Merc's "ooh", Tavi's an oct
   the drawing and the sound share one clock. Hear it inside's silent beat is part of that schedule,
   each note lit 1.0 s before its onset.
 - **Merc's and Tavi's lines** (the cold open's tries, the start, Merc's phrases) are one voice along
-  a contour, held and glided on the audio clock (`src/features/lessons/kit/sound.ts:16-21`), with
+  a contour, held and glided on the audio clock (`src/features/lessons/kit/sound.ts:18-23`), with
   their notes 0.6 s apart.
 - **No low notes.** The page's lowest sound is G3, 196 Hz, which a phone's speaker carries.
 

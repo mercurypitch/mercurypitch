@@ -683,9 +683,9 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 - **What it plays through.** Every play is one of the kit's runs
   (`src/features/lessons/kit/run.ts`), which a stop, leaving the step or the page's one-sound owner
   ends where it stands: `playTone` and `playContour` give no way to stop a sound once it starts
-  (`src/features/lessons/kit/sound.ts:657-681`). Chords, thirds, triads, the pattern, scales, the
+  (`src/features/lessons/kit/sound.ts:682-706`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
-  `playNotes` (`run.ts:192-234`), whose visuals run to their end with sound off. The count-in is
+  `playNotes` (`run.ts:206-248`), whose visuals run to their end with sound off. The count-in is
   one voice the page keeps and stops (`countIn`, `kit/move-do.ts:69-74`), and a bead tapped on the
   hero's spiral plays the spiral's own note, through the same owner (Toys 2).
 - **A chord** is three voices that share one onset, so they start in one task and share one start
@@ -695,14 +695,14 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   contour, `contourOf(329.63, [{ hold: 1.2 }, { glide: 0.4, to: 311.13 }, { hold: 1.5 }])` for mi,
   or from 392.00 to 369.99 for so: the held notes through `playNotes` and the line through
   `playLine`, one run through `allOf` (`run.ts:120-141`, `:194-216`; `contourOf`,
-  `sound.ts:348-371`), whose pitch glides on the audio clock (`:377-410`; FACTS 73). The bead's
+  `sound.ts:361-384`), whose pitch glides on the audio clock (`:390-423`; FACTS 73). The bead's
   slide is timed from the same start, so it lands as the note lands.
 - **Levels**: a tapped note at the soft tone's 0.13; a chord's voices at 0.075 each; Merc's "ooh" at
   the kit's level; the count-in at 0.065 (FACTS 80, 81).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:607-619`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:620-632`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:572-574`).
+  hidden (`sound.ts:585-587`).
 
 ## Merc and Tavi
 
@@ -1155,7 +1155,7 @@ bundle, which no site worker serves and which shows drafts: `build:e2e` sets `VI
     Coming later", the link `#explorer` and "See it on the map", as that row was Lesson 9's on main
     while this page had none. Lesson 9's row reads "Start lesson" and links this page. Its
     `.next-tease` reads Lesson 11's tease, one line above its hook, as the spec checks Lesson 1's
-    card (`:173-190`) and this one's (`:254-297`); its still inside the card holds no button.
+    card (`:179-196`) and this one's (`:260-303`); its still inside the card holds no button.
 12. No planning words: the kit's `src/e2e/learn-no-planning-text.spec.ts` reads every lesson page,
     this one included (`lessonPages`, `:47-49`), for the team's words (`:23-42`), and the
     alternative hook's note never reaches the page (`:79-81`).

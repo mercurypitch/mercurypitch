@@ -333,7 +333,7 @@ the guide drawn on the staff and no Move do. In order:
    buttons. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as two contours a breath
    apart, each one voice: so held 1.15 s and a 0.05 s glide, te the same, do held 1.8 s; 1.0 s of
    quiet; then so, ti and do the same way; 9.4 s in all (FACTS 45, 65; `contourOf`,
-   `src/features/lessons/kit/sound.ts:353`; `playContour`, `src/features/lessons/kit/sound.ts:672`),
+   `src/features/lessons/kit/sound.ts:366`; `playContour`, `src/features/lessons/kit/sound.ts:697`),
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
    sound on, with Lesson 12's two hints (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
@@ -421,16 +421,16 @@ music bed.
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
   `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
-  `src/features/lessons/kit/run.ts:246`), so a chord change falls on its melody note. A chord heard
+  `src/features/lessons/kit/run.ts:260`), so a chord change falls on its melody note. A chord heard
   alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
   (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
-  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:193`), so they share one clock
+  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:207`), so they share one clock
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
   an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
   (`PAIR`, `src/features/lessons/kit/pair.ts:16`).
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
-  clock (`src/features/lessons/kit/sound.ts:16-21`), so so, te and do join with no click.
+  clock (`src/features/lessons/kit/sound.ts:18-23`), so so, te and do join with no click.
 - **Low notes.** The page's lowest note is the lower voice's A2, 110.00 Hz, in the steps and the
   answering plays' first chord, faint on a phone's speaker; the soft tone's upper partials carry it
   (FACTS 58). The owner's ear on a real phone decides whether it needs more level (Contract).

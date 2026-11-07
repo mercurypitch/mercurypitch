@@ -144,8 +144,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // shell that loads the reveal but not the predict, as Lesson 22's shell
   // did: bytes no module owns (141), a chunk's overhead (44) and the
   // predict's code moved into the reveal's chunk (6), less 2 of the
-  // minifier's renaming. 171 can be tried again once Lesson 24's cold open
-  // loads the predict.
+  // minifier's renaming. Lesson 24's steps and cold open, loading the
+  // predict, took 43 of them back: 175,490, still 386 over 171.
   'learn/02.html': 172,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
@@ -510,9 +510,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // kit's quiz, with Lesson 10's and Lesson 23's questions, the words'
   // pictures, two on the same chart, Sing it on the kit's hold flow,
   // comfort check, voice choice, headphones check and ring, and free play:
-  // 178,410 bytes in build:e2e, the smallest whole KB above, to rise as
-  // each part joins. The quiet check and the listener load on Start.
-  'learn/24.html': 175,
+  // 178,435 bytes in build:e2e; a quarter over. The quiet check and the
+  // listener load on Start, so nothing of the pitch code comes in.
+  'learn/24.html': 218,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -670,9 +670,8 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // Lesson 24 (a draft, as above): 89,648 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the recall's
   // questions and Sing it share, and the shared parts), its own, and the
-  // shared Inter and Outfit @font-face rules; the smallest whole KB above,
-  // to rise as each part joins.
-  'learn/24.html': 88,
+  // shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/24.html': 110,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

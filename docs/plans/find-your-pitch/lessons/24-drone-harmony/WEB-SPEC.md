@@ -85,7 +85,7 @@ Five things move: the Merc idle loops; a line drawing as its play sounds; the br
 beat rate; the top note sinking into the band during the slide; and the ring in Sing it. Only Merc
 and Tavi move on their own. Under `prefers-reduced-motion` Merc and Tavi hold a still frame, a
 play's line lands whole as it starts, and the brightness holds still, the readout and the figure's
-spoken summary saying whether the pair is beating and how fast (`src/features/lessons/kit/band-chart.ts:40-42`);
+spoken summary saying whether the pair is beating and how fast (`src/features/lessons/kit/band-chart.ts:46-48`);
 what the viewer starts still sounds. For everyone else the masthead's Pause animations toggle stops
 the same things.
 
@@ -427,7 +427,7 @@ Lesson 5's Sing it, moved into the kit with options (Lesson 22's item 7,
 holds over a drone, then a set of two of ten, read by Lesson 22's centre-line reader (The reader,
 below). Every state has a visible status line that is also announced (`aria-live="polite"`). Each
 set allows up to three takes in a visit, as each of Lesson 5's holds does (`TAKES_PER_HOLD`,
-`src/features/lessons/kit/hold-flow.ts:37-38`); the set's rules follow the states.
+`src/features/lessons/kit/hold-flow.ts:48-49`); the set's rules follow the states.
 
 States:
 
@@ -542,7 +542,7 @@ States:
 - **A hold with no voice within 6 s** ends the set there. The readings so far stay, and the kit's
   no-start line shows (`NO_START_LINE`, `src/features/lessons/kit/hold-take.ts:48-49`). If a hold
   of the set was sung before it, "How did that feel?" follows, since Lesson 5's flow asks it
-  whenever anything was sung (`afterTake`, `src/features/lessons/kit/hold-flow.ts:89-103`) and
+  whenever anything was sung (`afterTake`, `src/features/lessons/kit/hold-flow.ts:123-137`) and
   a singer who stops partway may have stopped for discomfort; then Easy or Workable offers **Again**,
   while the set has takes left, and **Done for today**, never the next set, and Effortful and
   Uncomfortable end as in state 9. If none was sung, **Again**, while the set has takes left, and
@@ -596,18 +596,18 @@ music bed (FACTS 67 to 73).
   is a straight tone with harmonics: Merc's "ooh" partials with no modulator, through Lesson 22's
   vibrato option set to null (its item 4,
   `docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:684-697`; `src/lib/demo-voice.ts:33-37`;
-  `src/features/lessons/kit/sound.ts:51-79`), since the kit's soft tone carries the third's beating
+  `src/features/lessons/kit/sound.ts:53-81`), since the kit's soft tone carries the third's beating
   harmonics 26 to 32 dB down (FACTS 72). Which timbre makes the fifth's slow beat and the third's
   fast one audible on phone speakers and on headphones, through the master compressor
-  (`src/features/lessons/kit/sound.ts:152-159`), is the lab's to choose before any beat rate goes
+  (`src/features/lessons/kit/sound.ts:165-172`), is the lab's to choose before any beat rate goes
   on screen (What the kit and the app still need, item 7).
 - **Exact frequencies.** Each tone's partials sit at exact multiples of its frequency, so every beat
   is the arithmetic of FACTS 11 to 21; nothing is detuned to make a beat louder or slower. The slide
   is one voice along a contour, gliding exponentially on the audio clock
-  (`src/features/lessons/kit/sound.ts:16-21`).
+  (`src/features/lessons/kit/sound.ts:18-23`).
 - **One audio time.** The drone and every note set against it start together, on one audio time,
   each partial at phase 0 (the kit starts a voice at its own time, `build`,
-  `src/features/lessons/kit/sound.ts:211-250`): two notes on one frequency add by their phase, and
+  `src/features/lessons/kit/sound.ts:224-263`): two notes on one frequency add by their phase, and
   at 180° the fundamental and every odd harmonic cancel. So the slide ends 13° from in phase and
   its still pair sounds whole, and Step 1's snap restarts the top note on a whole period of the
   drone's (Toys 2; FACTS 44, 69).
@@ -615,13 +615,13 @@ music bed (FACTS 67 to 73).
   cents either side, grown in over 0.3 s, its phase 0 at the voice's start
   (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:196`), through Lesson 22's vibrato
   option on the top note only; the drone stays straight. Merc's usual wave, 5.5 swings at 14 cents
-  (`src/features/lessons/kit/sound.ts:234-249`), would leave 78 % of the slow throb, so it is not
+  (`src/features/lessons/kit/sound.ts:247-262`), would leave 78 % of the slow throb, so it is not
   the demonstration (FACTS 38).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:227`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:240`); a
   drone pair at the note level for each tone. In Sing it the drone sits below Merc's notes, at a
   level the lab sets so the singer's own voice stays clear in the headphones (FACTS 54).
 - **A drone under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:630-638`); Sing it's drone is the one exception, started
+  (`src/features/lessons/kit/sound.ts:643-662`); Sing it's drone is the one exception, started
   before the take opens and kept through it, with every other source still hushed (What the kit and
   the app still need, item 5).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the lower voice's drone and do, which a
@@ -740,7 +740,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    this page's holds; and its item 7, Lesson 5's hold flow in the kit
    (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:732`), with this page's options
    (item 8). The page is not published without them.
-5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:630-638`)
+5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:643-662`)
    gains one kept source, a drone voice started before the hush, which the hush leaves sounding while
    it stops and silences everything else; the drone's own release ends it. Tests: during a take a
    play of any other source sounds nothing and says nothing; the kept drone sounds until its release;
@@ -991,3 +991,36 @@ production:
   the coach.
 - On a real phone at 390 px, the drone chart's four states, the beads' labels and the holds' lines
   fit their cards, and D3 is heard through the speaker.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The whole page is built, the scored holds and the rates included, and held back as a draft until
+  the lab's two tests and the vocal coach's sign-off: mercurypitch.com answers `/learn/24` with the
+  404 page, and dev and the previews show it, so the lab runs its tests on the page itself (What the
+  kit and the app still need, item 7). Its line in `kit/drafts.ts` names both, where item 2 named
+  the sign-off alone.
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,137 words
+  with about 305 more written in the open (the two predicts' hints and "You said" lines, 48; the
+  nine lock, held and status lines Length names, 89; Sing it's other status lines, 81; the figures'
+  captions and the toys' labels and readouts, about 87; free play, the series' own chrome and the
+  sound-off lines left out, as the counter leaves them), the page is about 2,442 words, some 63 over
+  the series' cap of 2,379. So Length's next cut is made: Step 3 names no quintet, and FACTS 31
+  keeps its thirds. That leaves about 2,426, still some 47 over: the cap is the owner's to weigh at
+  the final look, as Lessons 8's, 17's and 22's were.
+- The kit's `playLines` (`src/features/lessons/kit/run.ts`) starts every line that shares an onset
+  in one timer task, as `playNotes` starts a chord's notes, so a drone and the notes set against it
+  begin on one audio time, every partial at phase 0, which the beats and the unisons in phase rely
+  on (FACTS 44, 69).
+- The quiet check's length and its two lines live in `kit/quiet-words.ts`, which imports nothing.
+  The check itself, `kit/quiet-check.ts`, reads through Voice Mirror's preprocessing, which brings
+  the pitch code, so it loads with the listener on Start and first paint carries none of it.
+- Where the text gives no number, Sing it waits 1.5 s between one hold's reading and the next note's
+  model, and plays the drone at 0.1, half the level of Merc's notes, for the lab to set at its first
+  test.
+- Move do sits beside the headphones question, before Start and the sing-along. After a set, or
+  after a quiet check that opens the sing-along, the page does not offer it again: its one Move do
+  group lives in that panel, where the text above lets do change between sets too.
+- With sound off, Start says why on the status line as well as under itself, so the Start under the
+  sing-along, which has no hint line of its own, says it too.

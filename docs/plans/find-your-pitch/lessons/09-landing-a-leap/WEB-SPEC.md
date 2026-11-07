@@ -165,8 +165,8 @@ One component, the kit's band chart (`kit/band-chart.ts`) on a notes axis, in se
 step, hear, ladder, order, landing and free play, plus live mode at the checkpoint (Toys 4).
 
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
-  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:63-77`), with its 40
-  px gutter on the left (`:251`). Only the rungs' rows are named, each by its syllable and its
+  through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:70-86`), with its 40
+  px gutter on the left (`:270`). Only the rungs' rows are named, each by its syllable and its
   spelled note in Lesson 4's spelling ("so · A3"), through a new rung-names option beside `named`,
   since the kit's grid letters every natural row and names its `named` notes in full
   (`drawNotesGrid`, `kit/band-chart-draw.ts:113-141`; FACTS 22). Time runs left to right. Each of
@@ -520,7 +520,7 @@ kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playb
 started only by a tap: Merc's notes, leaps, paths and ladders in Merc's "ooh"; the illustrated
 landing, the recall's two notes and the rung taps in free play in the soft tone (FACTS 90 to 96). A
 leap is two notes, each its own voice, so a repeated note is heard as two; Step 5's slide is one
-voice that glides, the kit's `contourVoice` (`kit/sound.ts:384`). Nothing autoplays, nothing plays
+voice that glides, the kit's `contourVoice` (`kit/sound.ts:397`). Nothing autoplays, nothing plays
 while a take is open, and the page has no music bed.
 
 One sound plays at a time, page-wide. Every source, the cold open, the Four words, the step toys,
@@ -707,19 +707,19 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:127-175`, `:529-532`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:863-867`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-243`, `:556-559`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:895-899`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:422-432`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:437-447`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
-   (`scripts/assert-first-paint-budgets.mjs:138-141`), and the ceiling holds only while that
+   (`scripts/assert-first-paint-budgets.mjs:156-159`), and the ceiling holds only while that
    boundary does.
 5. `kit/band-chart.ts` and `kit/band-chart-draw.ts`: rungs in the scene, each a band at its cents
    from do, over a time slot or across the plot, each with its glow and its lit edge; Merc's arcs,
    with an optional number; and a rung-names option on the notes axis beside `named`
-   (`band-chart.ts:63-77`), which names the given rows ("so · A3") and leaves the rest unnamed (Toys
+   (`band-chart.ts:70-86`), which names the given rows ("so · A3") and leaves the rest unnamed (Toys
    1). The existing single band is the one-rung case, so Lessons 3 and 5's figures see no change; a
    unit test proves it.
 6. The folds strip: the kit's folds (`kit/folds.ts`), in a 64 px canvas under the band chart inside
@@ -971,7 +971,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,
     Lesson 10's line, sits one line above the hook, the card's words in the order eyebrow, tease,
-    hook and way on, as that spec checks Lesson 1's card (`:173-190`).
+    hook and way on, as that spec checks Lesson 1's card (`:179-196`).
 11. With reduced motion emulated, an arc and a trace draw at once, the guide's bands light in place,
     and nothing moves on its own.
 12. After a full run, storage holds only the keys in the Contract.
