@@ -1,0 +1,42 @@
+diff --git a/src/index.js b/src/index.js
+index 564f012381ca0ff0381280ff83416516268728c8..092e9c1f38f1d03866482fb90f62b268e4bd76d8 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -21,6 +21,16 @@ const errorTemplate = require('./error');
+ 
+ const etags = new Map();
+ 
++// Destroys a file's stream once its response has closed: every response
++// emits 'close', when sent, ended without a body, or left by the client.
++const closeWith = (response, stream) => {
++	if (response.destroyed) {
++		stream.destroy();
++	} else {
++		response.once('close', () => stream.destroy());
++	}
++};
++
+ const calculateSha = (handlers, absolutePath) =>
+ 	new Promise((resolve, reject) => {
+ 		const hash = createHash('sha1');
+@@ -504,6 +514,7 @@ const sendError = async (absolutePath, response, acceptsJSON, current, handlers,
+ 
+ 		try {
+ 			stream = await handlers.createReadStream(errorPage);
++			closeWith(response, stream);
+ 
+ 			const headers = await getHeaders(handlers, config, current, errorPage, stats);
+ 
+@@ -743,6 +754,12 @@ module.exports = async (request, response, config = {}, methods = {}) => {
+ 		return internalError(absolutePath, response, acceptsJSON, current, handlers, config, err);
+ 	}
+ 
++	// The file goes when the response does, however it ends: sent, answered
++	// 304 below, or left by the client before the file ends, when pipe()
++	// would only unpipe it. Otherwise its descriptor stays open for good, and
++	// enough of them end the server with EMFILE.
++	closeWith(response, stream);
++
+ 	const headers = await getHeaders(handlers, config, current, absolutePath, stats);
+ 
+ 	// eslint-disable-next-line no-undefined

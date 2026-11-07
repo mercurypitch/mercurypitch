@@ -10,6 +10,7 @@ overrides:
   immutable@>=5.0.0 <5.1.8: 5.1.9
 
 patchedDependencies:
+  serve-handler@6.1.7: 4cb6cdb132acc8203b19fcac373105df860c44f4b0ffdcdf5421d4d45f0268c8
   three@0.185.1: 1de360c127afb52667e50b5de2841335924d07041eba76557781202a07180942
 
 importers:
@@ -11755,7 +11756,7 @@ snapshots:
 
   seroval@1.6.9: {}
 
-  serve-handler@6.1.7:
+  serve-handler@6.1.7(patch_hash=4cb6cdb132acc8203b19fcac373105df860c44f4b0ffdcdf5421d4d45f0268c8):
     dependencies:
       bytes: 3.0.0
       content-disposition: 0.5.2
@@ -11776,7 +11777,7 @@ snapshots:
       clipboardy: 3.0.0
       compression: 1.8.2
       is-port-reachable: 4.0.0
-      serve-handler: 6.1.7
+      serve-handler: 6.1.7(patch_hash=4cb6cdb132acc8203b19fcac373105df860c44f4b0ffdcdf5421d4d45f0268c8)
       update-check: 1.5.4
     transitivePeerDependencies:
       - supports-color
