@@ -14,6 +14,7 @@ import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
 import { AdminDemoSongPage } from './AdminDemoSongPage'
 import { AdminExercisesPage } from './AdminExercisesPage'
+import { AdminFeaturesPage } from './AdminFeaturesPage'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import { AdminPremiumPerksPage } from './AdminPremiumPerksPage'
 
@@ -83,6 +84,13 @@ const SECTIONS: readonly SectionMeta[] = [
     shortLabel: 'Lessons',
     description:
       'Publish or unpublish each lesson, choose its hook and tease, and see what the site serves.',
+  },
+  {
+    id: 'features',
+    label: 'Experimental Features',
+    shortLabel: 'Features',
+    description:
+      'Switch a feature still being built, Studio first, on or off for this environment, or back to the build default.',
   },
 ] as const
 
@@ -467,6 +475,12 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                     </Match>
                     <Match when={props.section === 'lessons'}>
                       <AdminLessonsPage
+                        adminKey={verifiedKey()}
+                        onChangeKey={changeKey}
+                      />
+                    </Match>
+                    <Match when={props.section === 'features'}>
+                      <AdminFeaturesPage
                         adminKey={verifiedKey()}
                         onChangeKey={changeKey}
                       />

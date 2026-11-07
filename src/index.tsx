@@ -121,9 +121,10 @@ normalizeAdminEntryRoute()
 // first run. Before /exercises/<slug> cleans the address, too.
 stepAsideForLesson(window.location.search)
 // The owner's switches for experimental features, asked once and never
-// waited on: the page renders on this build's default and follows the
-// answer when it lands. Only this entry asks; the native app stays on its
-// build's default (src/stores/experimental-features-store.ts).
+// waited on: the page renders on the switches this browser heard last, or
+// on this build's default, and follows the answer when it lands. Only this
+// entry asks; the native app stays on its build's default
+// (src/stores/experimental-features-store.ts).
 //
 // The tabs learn which features are on from the store, connected here
 // before the first render. src/features/tabs/constants.ts cannot import the

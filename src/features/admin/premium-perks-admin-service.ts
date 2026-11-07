@@ -9,9 +9,13 @@
 
 import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
-import { API_BASE_URL, DEV_DOMAIN, PROD_DOMAIN } from '@/lib/defaults'
+import { API_BASE_URL } from '@/lib/defaults'
 import type { SupporterFeaturePerk, SupporterFeaturePerkId, } from '@/lib/supporter-feature-catalog'
 import { isSupporterFeaturePerkId, SUPPORTER_FEATURE_PERKS, } from '@/lib/supporter-feature-catalog'
+import type { AdminEnvironment } from './admin-environment'
+import { adminEnvironment } from './admin-environment'
+
+export type { AdminEnvironment }
 
 export const PREMIUM_BACKGROUND_VARIANTS = [
   'landscape-2k',
@@ -23,11 +27,6 @@ export type PremiumBackgroundVariant =
   (typeof PREMIUM_BACKGROUND_VARIANTS)[number]
 export type PremiumBackgroundLifecycle = 'draft' | 'published' | 'retired'
 export type SupporterGroupKind = 'automatic' | 'manual'
-
-export interface AdminEnvironment {
-  kind: 'development' | 'preview' | 'production' | 'unknown'
-  label: string
-}
 
 export interface AdminBackgroundVariant {
   id: string
@@ -236,31 +235,6 @@ function encode(value: string): string {
   return encodeURIComponent(value)
 }
 
-function inferEnvironment(): AdminEnvironment {
-  if (base() === '') return { kind: 'unknown', label: 'No API configured' }
-  try {
-    const host = new URL(base()).hostname
-    if (
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host === DEV_DOMAIN ||
-      host.endsWith(`.${DEV_DOMAIN}`) ||
-      host.includes('api-dev')
-    ) {
-      return { kind: 'development', label: `Development · ${host}` }
-    }
-    if (host.includes('preview') || host.includes('.workers.dev')) {
-      return { kind: 'preview', label: `Preview · ${host}` }
-    }
-    if (host === PROD_DOMAIN || host.endsWith(`.${PROD_DOMAIN}`)) {
-      return { kind: 'production', label: `Production · ${host}` }
-    }
-    return { kind: 'unknown', label: host }
-  } catch {
-    return { kind: 'unknown', label: base() }
-  }
-}
-
 function normalizeVersion(row: AssetRevisionResponse): AdminBackgroundVersion {
   const variants: Partial<
     Record<PremiumBackgroundVariant, AdminBackgroundVariant>
@@ -397,7 +371,7 @@ export async function loadPremiumPerks(
       ),
       groups,
       capabilities: capabilitiesResult.value,
-      environment: inferEnvironment(),
+      environment: adminEnvironment(base()),
       featurePerks: SUPPORTER_FEATURE_PERKS,
     },
   }
