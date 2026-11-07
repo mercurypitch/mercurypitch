@@ -1,4 +1,6 @@
 // Guitar capture borrows an existing input and context, keeping a bounded dry side branch off the monitor path.
+import type { ChannelSplit } from '@/lib/audio-input/input-channels'
+import { isAvailableChannel, splitChannels, } from '@/lib/audio-input/input-channels'
 import RecordingWorker from '@/workers/guitar-recorder.worker.ts?worker'
 import type { GuitarCaptureMessage, GuitarRecordedNote, GuitarRecordingChunk, GuitarRecordingPreview, GuitarRecordingSummary, GuitarRecordingWorkerMessage, } from './recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS, GUITAR_RECORDING_MAX_BUFFERED_SECONDS, GUITAR_RECORDING_PCM_FRAMES, GUITAR_RECORDING_POOL_LOW_WATER, GUITAR_RECORDING_POOL_SIZE, } from './recording-types'
@@ -25,18 +27,22 @@ interface GuitarCaptureOptions {
   ): Promise<void>
 }
 
-function createCaptureBranch(context: AudioContext, channelCount: number) {
-  let splitter: ChannelSplitterNode | undefined
+function createCaptureBranch(
+  context: AudioContext,
+  source: AudioNode,
+  channelCount: number,
+) {
+  let split: ChannelSplit | undefined
   let node: AudioWorkletNode | undefined
   let silence: GainNode | undefined
   try {
-    splitter = context.createChannelSplitter(channelCount)
+    split = splitChannels(context, source, channelCount)
     node = createGuitarPcmNode(context)
     silence = context.createGain()
     silence.gain.value = 0
-    return { splitter, node, silence, worker: new RecordingWorker() }
+    return { split, node, silence, worker: new RecordingWorker() }
   } catch (error) {
-    splitter?.disconnect()
+    split?.close()
     node?.disconnect()
     node?.port.close()
     silence?.disconnect()
@@ -56,17 +62,13 @@ export async function startGuitarRecordingCapture(
       'Recording needs AudioWorklet and Web Workers. Live monitoring is still available.',
     )
   }
-  if (
-    !Number.isInteger(channel) ||
-    channel < 0 ||
-    channel >= channelCount ||
-    channelCount > 32
-  )
+  if (!isAvailableChannel(channel, channelCount))
     throw new Error('Choose an available input channel before recording.')
   await prepareGuitarPcmWorklet(context)
   options.signal.throwIfAborted()
-  const { worker, splitter, node, silence } = createCaptureBranch(
+  const { worker, split, node, silence } = createCaptureBranch(
     context,
+    source,
     channelCount,
   )
   let disposed = false
@@ -137,12 +139,9 @@ export async function startGuitarRecordingCapture(
     clearTimeout(timer)
     options.signal.removeEventListener('abort', abort)
     context.removeEventListener('statechange', stateChange)
-    try {
-      source.disconnect(splitter)
-    } catch {
-      /* The input owner may already have released its node. */
-    }
-    splitter.disconnect()
+    // The input owner may already have released its node; the split
+    // tolerates that.
+    split.close()
     node.disconnect()
     silence.disconnect()
     node.port.onmessage = null
@@ -292,8 +291,8 @@ export async function startGuitarRecordingCapture(
       allocated++
       sendBuffer(new ArrayBuffer(GUITAR_RECORDING_PCM_FRAMES * 4))
     }
-    source.connect(splitter)
-    splitter.connect(node, channel, 0)
+    split.open()
+    split.send(channel, node)
     node.connect(silence)
     silence.connect(context.destination)
     options.signal.addEventListener('abort', abort, { once: true })

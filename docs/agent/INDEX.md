@@ -151,7 +151,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 19.6k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept Arming a lane opens... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 11.0k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.0k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
@@ -171,9 +171,9 @@ These are the rules that break things when ignored.
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
+| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 800 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
-| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 650 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `check-up` | [then-and-now.ts](../../src/lib/check-up/then-and-now.ts) | 500 | Weekly Check-up — then and now, from the voiceprint history What moved between a singer's first week of Check-ups and their latest, said... |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 300 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
