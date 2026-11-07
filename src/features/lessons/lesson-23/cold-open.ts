@@ -253,7 +253,15 @@ export function initColdOpen(
   let lit: number[] = []
   let run: Run | null = null
   let plays = 0
+  // each lit note's return to rest, until its note ends: a play that ends,
+  // heard or cut short, clears its own, so none fires after the play, or
+  // after a page (or a test's document) has gone
   let timers: number[] = []
+
+  function clearTimers(): void {
+    timers.forEach((id) => window.clearTimeout(id))
+    timers = []
+  }
 
   function lanes(now: number): number {
     if (!lanesIn) return 0
@@ -276,12 +284,11 @@ export function initColdOpen(
     new ResizeObserver(() => draw()).observe(el)
 
   function stop(): void {
+    clearTimers()
     if (run === null) return
     plays += 1
     run.stop()
     run = null
-    timers.forEach((id) => window.clearTimeout(id))
-    timers = []
     lit = []
     NowPlaying.release(stop)
     mercListen('blue', false)
@@ -316,13 +323,13 @@ export function initColdOpen(
           said.textContent = HERO_SAID[what === 'g' ? 'g' : 'fs']
         }
         lit = [...lit, n.midi]
-        timers.push(
-          window.setTimeout(() => {
-            if (mine !== plays) return
-            lit = lit.filter((x) => x !== n.midi)
-            draw()
-          }, n.dur * 1000),
-        )
+        const rest = window.setTimeout(() => {
+          timers = timers.filter((id) => id !== rest)
+          if (mine !== plays) return
+          lit = lit.filter((x) => x !== n.midi)
+          draw()
+        }, n.dur * 1000)
+        timers.push(rest)
         draw()
       },
     })
@@ -331,6 +338,7 @@ export function initColdOpen(
     return going.done.then((heard) => {
       if (mine !== plays) return false
       run = null
+      clearTimers()
       lit = []
       NowPlaying.release(stop)
       mercListen('blue', false)
