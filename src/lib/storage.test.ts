@@ -118,3 +118,50 @@ describe('persisted write ownership boundary', () => {
     expect(localStorage.getItem('ordinary-setting')).toBe('new')
   })
 })
+
+describe('a string kept under a default that is not one', () => {
+  // The Jam room's chosen input: a device id or a label, or null.
+  const isText = (value: unknown): value is string | null =>
+    value === null || typeof value === 'string'
+  const pick = () =>
+    createPersistedSignal<string | null>('pick-test', null, {
+      validator: isText,
+    })
+
+  it('comes back after a reload', () => {
+    const [, setPick] = pick()
+    setPick('a1b2c3d4')
+
+    expect(localStorage.getItem('pick-test')).toBe('"a1b2c3d4"')
+    expect(pick()[0]()).toBe('a1b2c3d4')
+  })
+
+  it('takes back one saved bare before, where the validator accepts it', () => {
+    localStorage.setItem('pick-test', 'Scarlett 2i2 USB')
+
+    expect(pick()[0]()).toBe('Scarlett 2i2 USB')
+  })
+
+  it('keeps the default for text it cannot read and nothing vouches for', () => {
+    localStorage.setItem('pick-test', 'Scarlett 2i2 USB')
+    const [value] = createPersistedSignal<string | null>('pick-test', null)
+
+    expect(value()).toBeNull()
+  })
+
+  it('takes a synced value saved either way', () => {
+    const [value] = pick()
+
+    applyPersistedValue('pick-test', '"from-json"')
+    expect(value()).toBe('from-json')
+    applyPersistedValue('pick-test', 'saved-bare')
+    expect(value()).toBe('saved-bare')
+  })
+
+  it('still keeps a string under a string default as it is', () => {
+    const [, setMode] = createPersistedSignal('mode-test', 'voice')
+    setMode('instrument')
+
+    expect(localStorage.getItem('mode-test')).toBe('instrument')
+  })
+})

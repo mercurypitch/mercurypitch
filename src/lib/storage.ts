@@ -62,25 +62,42 @@ export function createPersistedSignal<T>(
     onExternalApply?: (value: T) => void
   },
 ): Signal<T> {
+  // A string default keeps its strings bare; any other default keeps JSON,
+  // strings included. Until November 2026 a string under a null default was
+  // written bare and read back as JSON, which threw, so it fell back to the
+  // default on every load: the Jam room never remembered the input it was
+  // given (mp_jam_input_device, mp_jam_input_label).
+  const bare = typeof defaultValue === 'string'
   const deserialize =
     options?.deserializer ??
-    ((item: string): T => {
-      if (typeof defaultValue === 'string') return item as unknown as T
-      return JSON.parse(item) as T
-    })
+    ((item: string): T => (bare ? item : JSON.parse(item)) as T)
 
   const serialize =
     options?.serializer ??
-    ((val: T): string => {
-      if (typeof val === 'string') return val
-      return JSON.stringify(val)
-    })
+    ((val: T): string =>
+      bare && typeof val === 'string' ? val : JSON.stringify(val))
+
+  // The stored text as a value. One written bare by the old serializer is
+  // not JSON: it is taken as it is where the validator vouches for it, so a
+  // choice saved before the fix comes back. Without a validator nothing
+  // vouches for it, and it fails as it always has.
+  const read = (item: string): T => {
+    try {
+      return deserialize(item)
+    } catch (e) {
+      const vouch = options?.validator
+      if (options?.deserializer === undefined && vouch !== undefined) {
+        if (vouch(item)) return item
+      }
+      throw e
+    }
+  }
 
   let initialValue = defaultValue
   try {
     const item = localStorage.getItem(key)
     if (item != null && item !== '') {
-      const parsed = deserialize(item)
+      const parsed = read(item)
       if (!options?.validator || options.validator(parsed)) {
         initialValue = parsed
       }
@@ -93,7 +110,7 @@ export function createPersistedSignal<T>(
 
   persistedSetters.set(key, (serialized) => {
     try {
-      const parsed = deserialize(serialized)
+      const parsed = read(serialized)
       if (!options?.validator || options.validator(parsed)) {
         setValue(() => parsed)
         options?.onExternalApply?.(parsed)
