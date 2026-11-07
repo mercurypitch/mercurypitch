@@ -17,24 +17,16 @@
 // unsure and smooths each voiced run), and split into runs where the voice
 // breaks for longer than Voice Mirror's own gap. The page plays the drone
 // and gathers the frames (kit/listen.ts, `framesFor`); Lesson 26 asks the
-// same.
+// same. Preprocessing brings the pitch code, so a page loads this with the
+// listener, on Start, and takes the check's length and its two lines from
+// kit/quiet-words.ts at first paint.
 
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { preprocess } from '@/lib/mirror/metrics'
 import { DEFAULT_VOICED_RUN_GAP_SEC, estimateFrameHop, } from '@/lib/pitch-measurements'
 
-/** Seconds of the drone the check listens over. */
-export const QUIET_SEC = 2
 /** A voiced run this long, or longer, fails the check. */
 export const HEARD_RUN_SEC = 0.3
-
-/** The check's line before it runs, the learner's cue to stay quiet. */
-export const QUIET_LINE =
-  "First, stay quiet for two seconds while the drone plays: the page checks that the microphone can't hear it."
-
-/** The check's line when it heard a note: what it heard, and what to do. */
-export const HEARD_LINE =
-  'The microphone heard a note during the drone. Check your headphones, then press Start again and stay quiet.'
 
 /** The longest voiced run among the frames, seconds: from its first frame to its last, and a frame's hop; and that hop. */
 export function longestRun(frames: readonly F0Frame[]): {

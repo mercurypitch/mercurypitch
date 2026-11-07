@@ -1091,6 +1091,13 @@ import handler, issue #813.
 **Rule:** a drawing made for an element's size takes the box it fills, the border box less its borders (`figureSize` in `kit/rhythm-draw.ts`). Measure a drawn mark as it shows, to a tenth of a pixel, so a scale cannot round away.
 **See:** `src/features/lessons/kit/rhythm-draw.ts`, `src/e2e/learn-lesson-19.spec.ts`
 
+### A lesson page takes a microphone module's words from a module that imports nothing
+
+**Symptom:** wiring Lesson 24's Sing it took its JavaScript before first paint from 148 KB to 316 KB: the pitch core, Solid, the hash router and the app's account and billing services, on a page whose microphone waits for Start. Every test passed; only the first-paint budget caught it.
+**Cause:** the page imported the quiet check (`kit/quiet-check.ts`) for its two lines and its length. The check reads frames through Voice Mirror's preprocessing (`src/lib/mirror/metrics.ts`), whose imports reach most of the app, and a static import of any one export brings the whole module's static graph. Loading the check again on Start changes nothing while the static import stands.
+**Rule:** a kit module whose imports reach `src/lib/mirror/` or `src/lib/pitch-measurements` loads with the listener, by `import()` on Start (`Mic.load` in `lesson-24/sing.ts`, the reader in `kit/hold-sing.ts`), and the words and numbers a page shows before then sit in a module that imports nothing (`kit/quiet-words.ts`). After wiring a part, read the budget's heaviest chunks, not only its verdict.
+**See:** `src/features/lessons/kit/quiet-words.ts`, `src/features/lessons/kit/quiet-check.ts`, `src/features/lessons/lesson-24/sing.ts`, `scripts/assert-first-paint-budgets.mjs`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

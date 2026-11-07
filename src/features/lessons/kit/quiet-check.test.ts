@@ -12,7 +12,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { HEARD_LINE, HEARD_RUN_SEC, heardNothing, longestRun, QUIET_LINE, QUIET_SEC, } from './quiet-check'
+import { HEARD_RUN_SEC, heardNothing, longestRun } from './quiet-check'
+import { HEARD_LINE, QUIET_LINE, QUIET_SEC } from './quiet-words'
 
 const HOP = 0.016
 /** The lower voice's drone and do, D3. */
