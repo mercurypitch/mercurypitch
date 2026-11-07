@@ -2,9 +2,10 @@
 // Lesson 4 staircase toy tests — its buttons, slider and switches, in the page's markup
 // ============================================================
 //
-// The toy mounts on learn/04.html's own steps stage, so the markup the page
-// ships is the markup these tests drive. The browser doubles turn reduced
-// motion on, so every slide lands at once; no drawer is ever active.
+// The kit's toy mounts on learn/04.html's own steps stage in the page's
+// states (stairs-states.ts), so the markup the page ships is the markup these
+// tests drive. The browser doubles turn reduced motion on, so every slide
+// lands at once; no drawer is ever active.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -15,11 +16,13 @@ import { NAMES_MODES } from '@/features/lessons/kit/names-modes'
 import type { StairsToy } from '@/features/lessons/kit/stairs-toy'
 import { mountStairsToy, startFromKey } from '@/features/lessons/kit/stairs-toy'
 import { summary } from '@/features/lessons/kit/stairs-words'
+import type { StairsStep } from './stairs-states'
+import { STARTS, STATES } from './stairs-states'
 
 const PAGE = readFileSync(resolve(process.cwd(), 'learn/04.html'), 'utf8')
 
 let root: HTMLElement
-let toy: StairsToy
+let toy: StairsToy<StairsStep>
 
 beforeEach(() => {
   const doc = new DOMParser().parseFromString(PAGE, 'text/html')
@@ -30,6 +33,9 @@ beforeEach(() => {
   toy = mountStairsToy(root, {
     active: () => false,
     names: createModeStore(NAMES_MODES, 'letters'),
+    range: STARTS,
+    states: STATES,
+    initial: 1,
   })
 })
 
@@ -50,9 +56,9 @@ const stairLabels = (): (string | null)[] =>
 
 describe('startFromKey', () => {
   it("makes a key of C4 to B4 do, and a higher key the same letter's start below it", () => {
-    expect(startFromKey(62)).toBe(62)
-    expect(startFromKey(74)).toBe(62)
-    expect(startFromKey(84)).toBe(60)
+    expect(startFromKey(62, STARTS)).toBe(62)
+    expect(startFromKey(74, STARTS)).toBe(62)
+    expect(startFromKey(84, STARTS)).toBe(60)
   })
 })
 
@@ -72,7 +78,7 @@ describe('the staircase toy', () => {
 
   it('keeps the slider and the later switches out of steps 1 and 2', () => {
     // Act
-    toy.setStep(2)
+    toy.setState(2)
 
     // Assert
     expect(root.querySelector<HTMLElement>('[data-slide-row]')?.hidden).toBe(
@@ -88,7 +94,7 @@ describe('the staircase toy', () => {
 
   it('moves the slider a semitone per arrow key, and to C and B with Home and End', () => {
     // Arrange
-    toy.setStep(3)
+    toy.setState(3)
 
     // Act and assert
     press('ArrowRight')
@@ -109,7 +115,7 @@ describe('the staircase toy', () => {
   it('says the new start 700 ms after a slide', () => {
     // Arrange
     vi.useFakeTimers()
-    toy.setStep(3)
+    toy.setState(3)
     const said = root.querySelector<HTMLElement>('[data-stairs-said]')!
 
     // Act
@@ -123,7 +129,7 @@ describe('the staircase toy', () => {
   it('drops the summary a slide has queued when it stops', () => {
     // Arrange
     vi.useFakeTimers()
-    toy.setStep(3)
+    toy.setState(3)
     const said = root.querySelector<HTMLElement>('[data-stairs-said]')!
     press('ArrowRight')
     const before = said.textContent
@@ -138,7 +144,7 @@ describe('the staircase toy', () => {
 
   it('names the slider within C4 to B4 and disables the button at each end', () => {
     // Arrange
-    toy.setStep(3)
+    toy.setState(3)
     const lower = root.querySelector<HTMLButtonElement>('[data-slide="-1"]')!
     const higher = root.querySelector<HTMLButtonElement>('[data-slide="1"]')!
 
@@ -154,7 +160,7 @@ describe('the staircase toy', () => {
 
   it('turns White keys only off on a black start, still focusable, with its hint', () => {
     // Arrange
-    toy.setStep(3)
+    toy.setState(3)
     const white = root.querySelector<HTMLButtonElement>('[data-stairs-white]')!
     const hint = root.querySelector<HTMLElement>('[data-white-hint]')!
 
@@ -173,7 +179,7 @@ describe('the staircase toy', () => {
 
   it('spells F sharp major with E sharp on stair 7', () => {
     // Arrange
-    toy.setStep(4)
+    toy.setState(4)
 
     // Act
     for (let k = 0; k < 6; k++) press('ArrowUp')
@@ -187,11 +193,11 @@ describe('the staircase toy', () => {
 
   it('stands steps 1 and 2 back on C', () => {
     // Arrange
-    toy.setStep(5)
+    toy.setState(5)
     press('End')
 
     // Act
-    toy.setStep(1)
+    toy.setState(1)
 
     // Assert
     expect(toy.core.tonic).toBe(60)
@@ -200,7 +206,7 @@ describe('the staircase toy', () => {
 
   it("names both of Group's brackets, shown only while Group is on", () => {
     // Arrange
-    toy.setStep(2)
+    toy.setState(2)
     const group = root.querySelector<HTMLButtonElement>('[data-stairs-group]')!
     const brackets = [
       ...root.querySelectorAll<HTMLButtonElement>('[data-bracket]'),

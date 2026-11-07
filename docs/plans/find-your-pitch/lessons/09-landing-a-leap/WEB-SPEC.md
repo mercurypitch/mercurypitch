@@ -491,7 +491,7 @@ live (`:186-190`).
   under their Lesson 6 ids, `l06-q2` and `l06-q3`, with the prefix `rc-`, as Lessons 3 and 5's
   recalls have (`lesson-05/recall.ts:17-22`), shown to everyone (Lesson 6 is a prerequisite).
   Reshuffled from a seed of its own (keys `fyp-l09-recall-seed` and `fyp-l09-recall-v1`, as Lessons
-  4 and 5's are, `lesson-04/main.ts:61`); earlier answers are never shown, so the answers measure
+  4 and 5's are, `lesson-04/main.ts:68`); earlier answers are never shown, so the answers measure
   delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Question 2's
   slot holds a Play button for Lesson 6's sound, C4 then F4 (FACTS 96), handled by a listener on the
   quiz's host, since the kit builds each slot once and keeps it across answers (`quiz.ts:237-244`).
@@ -504,7 +504,7 @@ live (`:186-190`).
   `/learn/06#lesson`, and the kit's step deck opens at the step an address names
   (`kit/step-deck.ts:18-23`, `:298-306`).
 - **Quick check**: LESSON.md's four questions, ids `l09-q1` to `l09-q4`, keys `fyp-l09-seed` and
-  `fyp-l09-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 9`, so answering all four marks Lesson 9
+  `fyp-l09-quiz-v1` (`lesson-04/main.ts:91`), and `lesson: 9`, so answering all four marks Lesson 9
   done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
   "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with

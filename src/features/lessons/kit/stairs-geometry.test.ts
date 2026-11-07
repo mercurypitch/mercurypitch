@@ -3,16 +3,18 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { fullMode, overlaps, stairAt, stairsLayout, stripWindow, TARGET, } from './stairs-geometry'
+import { floorOf, fullMode, overlaps, stairAt, stairsLayout, stripWindow, TARGET, } from './stairs-geometry'
 
-const STARTS = Array.from({ length: 12 }, (_, k) => 60 + k)
+/** Lesson 4's floor, under its starts C4 to B4. */
+const C4 = 60
+const STARTS = Array.from({ length: 12 }, (_, k) => C4 + k)
 
 /** The desktop stage's figure, and the phone's at 390 x 844 (Lesson 4 WEB-SPEC, Contract). */
-const wide = (start: number) => stairsLayout('wide', 650, 476, start)
-const narrow = (start: number) => stairsLayout('narrow', 356, 424, start)
+const wide = (start: number) => stairsLayout('wide', 650, 476, start, C4)
+const narrow = (start: number) => stairsLayout('narrow', 356, 424, start, C4)
 /** The steps' stage beside the text, which keeps the whole stage to about 550 px: at 1024 and at 1366 px wide. */
-const short = (start: number) => stairsLayout('narrow', 479, 270, start)
-const shortWide = (start: number) => stairsLayout('narrow', 651, 270, start)
+const short = (start: number) => stairsLayout('narrow', 479, 270, start, C4)
+const shortWide = (start: number) => stairsLayout('narrow', 651, 270, start, C4)
 
 describe('fullMode', () => {
   it('takes the narrow layout on a phone, on a touch screen too narrow for fifteen 44 px keys, and on a short canvas', () => {
@@ -77,9 +79,9 @@ describe('the narrow layout', () => {
     for (const start of STARTS)
       for (const d of [0, 2, 4, 5, 7, 9, 11, 12])
         expect(keysOf(start), `${start}`).toContain(start + d)
-    expect(stripWindow(62)).toBe(1)
-    expect(stripWindow(66)).toBe(3.5)
-    expect(stripWindow(62.5)).toBe(1.25)
+    expect(stripWindow(62, C4)).toBe(1)
+    expect(stripWindow(66, C4)).toBe(3.5)
+    expect(stripWindow(62.5, C4)).toBe(1.25)
   })
 })
 
@@ -167,13 +169,40 @@ describe('the short narrow layout', () => {
 describe('the compact layout', () => {
   it('fits a scale on C and one on D in its fifteen rows, C4 to D5, with no strip', () => {
     // Act
-    const onC = stairsLayout('compact', 320, 220, 60)
-    const onD = stairsLayout('compact', 320, 220, 62)
+    const onC = stairsLayout('compact', 320, 220, 60, C4)
+    const onD = stairsLayout('compact', 320, 220, 62, C4)
 
     // Assert
     expect(onC.rows).toEqual(Array.from({ length: 15 }, (_, k) => 60 + k))
     expect(onC.strip).toBeNull()
     expect(onD.stairs[7].top).toBeCloseTo(onC.rowsTop, 9)
     expect(onC.stairs[0].bottom).toBeCloseTo(220 - 6, 9)
+  })
+})
+
+describe('a staircase on other starts', () => {
+  it('stands on the C at or below its lowest start, and takes no range wider than that octave', () => {
+    expect(floorOf({ lo: 60, hi: 71 })).toBe(60)
+    expect(floorOf({ lo: 48, hi: 59 })).toBe(48)
+    expect(floorOf({ lo: 43, hi: 43 })).toBe(36)
+    expect(floorOf({ lo: 67, hi: 67 })).toBe(60)
+    expect(() => floorOf({ lo: 43, hi: 50 })).toThrow()
+    expect(() => floorOf({ lo: 62, hi: 60 })).toThrow()
+  })
+
+  it('draws G2 on two octaves from C2, the strip from C2 to C4 under it', () => {
+    // Act
+    const L = stairsLayout('wide', 650, 476, 43, 36)
+
+    // Assert: the rows and the strip start on C2, and the top do, G3, sits on its own row
+    expect(L.rows).toEqual(Array.from({ length: 25 }, (_, k) => 36 + k))
+    const keys = (L.strip?.keys ?? []).map((k) => k.midi)
+    expect([Math.min(...keys), Math.max(...keys)]).toEqual([36, 60])
+    expect(L.stairs[7].top).toBeCloseTo(L.yOfRow(55) - L.rowH / 2, 9)
+  })
+
+  it('pans the narrow strip from its own floor, as from C4', () => {
+    expect(stripWindow(43, 36)).toBe(stripWindow(67, C4))
+    expect(stripWindow(50, 48)).toBe(stripWindow(62, C4))
   })
 })

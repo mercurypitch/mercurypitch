@@ -14,10 +14,12 @@ import { q } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import type { NamesMode } from '@/features/lessons/kit/names-modes'
 import { mountPredict } from '@/features/lessons/kit/predict'
-import type { StairsStep, StairsToy } from '@/features/lessons/kit/stairs-toy'
+import type { StairsToy } from '@/features/lessons/kit/stairs-toy'
 import { mountStairsToy } from '@/features/lessons/kit/stairs-toy'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { registerToy } from '@/features/lessons/kit/step-deck'
+import type { StairsStep } from './stairs-states'
+import { STARTS, STATES } from './stairs-states'
 
 const D4 = 62
 
@@ -35,7 +37,7 @@ const GUESS: Readonly<Record<string, string>> = {
   changes: 'You said: it changes',
 }
 
-function initPredict(toy: StairsToy): void {
+function initPredict(toy: StairsToy<StairsStep>): void {
   mountPredict(q('#predictD'), {
     play: async (what, audible) => {
       await toy.slideTo(D4)
@@ -58,13 +60,19 @@ function initPredict(toy: StairsToy): void {
 export function initSteps(
   deck: StepDeck,
   names: ModeStore<NamesMode>,
-): StairsToy {
+): StairsToy<StairsStep> {
   const root = q('#toyStairs')
-  const toy = mountStairsToy(root, { active: deck.toyActive(1), names })
+  const toy = mountStairsToy(root, {
+    active: deck.toyActive(1),
+    names,
+    range: STARTS,
+    states: STATES,
+    initial: 1,
+  })
   const label = q('[data-fig-label]', root)
   registerToy({
     onStep(n) {
-      toy.setStep(n as StairsStep)
+      toy.setState(n as StairsStep)
       label.innerHTML = FIG[n] ?? FIG[1]
     },
   })

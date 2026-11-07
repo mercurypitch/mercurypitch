@@ -616,7 +616,7 @@ the link where that lesson is not live (`:186-190`).
   their Lesson 5 ids, `l05-q2` and `l05-q4`, with the prefix `rc-`, as Lessons 3 and 5's recalls
   have (`lesson-05/recall.ts:17-22`), shown to everyone (Lesson 5 is a prerequisite). Reshuffled
   from a seed of its own (keys `fyp-l14-recall-seed` and `fyp-l14-recall-v1`, as Lessons 4 and 5's
-  are, `lesson-04/main.ts:61`); earlier answers are never shown, so the answers measure delayed
+  are, `lesson-04/main.ts:68`); earlier answers are never shown, so the answers measure delayed
   retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Neither question
   plays a sound. The kit turns "Try Step 1 again" and "Try Step 5 again" into "Try Lesson 5, Step 1
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
@@ -627,7 +627,7 @@ the link where that lesson is not live (`:186-190`).
   `recallStepHref` (`:141-143`) in place of the default `/learn/05#lesson`, and the kit's step deck
   opens at the step an address names (`kit/step-deck.ts:18-23`, `:298-306`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
-  `fyp-l14-quiz-v1` (`lesson-04/main.ts:84`), and `lesson: 14`, so answering all four marks Lesson
+  `fyp-l14-quiz-v1` (`lesson-04/main.ts:91`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
   "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with
