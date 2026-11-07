@@ -197,6 +197,12 @@
 .vib-toy .lock-hint {
   margin: 12px 0 0;
 }
+/* a slider the toy still holds looks it, as a held play does (Lesson 8's
+   Step 5 row): the kit's slider has no look of its own for that */
+.vib-toy .range:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
 @media (max-width: 560px) {
   .vib-viz,
   .vib-ribbon {
