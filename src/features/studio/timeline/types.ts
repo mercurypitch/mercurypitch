@@ -2,6 +2,7 @@
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
+import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
 import type { StudioLiveTake, StudioRecordPhase, } from '@/lib/studio/record/studio-recorder'
 import type { StudioPlayheadClock } from './playhead-motion'
 import type { StudioWaveformPeaksStore } from './waveform-resource'
@@ -25,6 +26,12 @@ export interface StudioLaneArming {
   /** Whether a press can arm a lane now: the song takes edits and its audio is free. */
   canArm(): boolean
   toggle(trackId: string): void
+}
+
+/** Each lane's own input, kept on this device, and the name of the Studio's that the others follow. */
+export interface StudioTimelineLaneInputs {
+  of(trackId: string): StudioLaneInput
+  studioInputName(): string
 }
 
 /** A sentence for the timeline's status pill; a new object shows it again. */
@@ -69,7 +76,14 @@ export interface StudioTimelineProps {
   onAddTakes?(): void
   onCommand(command: StudioCommand): boolean
   onClipDetails(id: string): void
-  onTrackDetails(id: string): void
+  /** A lane's details; at its input when its header's input chip asks. */
+  onTrackDetails(id: string, at?: 'input'): void
+  /**
+   * Each lane's own input and channel, for its header's chip on a computer
+   * or tablet (lane-input-badge.ts); a lane on all of the Studio's input
+   * shows none.
+   */
+  laneInputs?: StudioTimelineLaneInputs
   readCanonicalAsset(assetId: string): Promise<Blob>
   /** Where each take's waveform peaks are kept between visits. */
   assetPeaks?: StudioWaveformPeaksStore

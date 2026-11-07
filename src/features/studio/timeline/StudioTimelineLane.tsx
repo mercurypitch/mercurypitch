@@ -3,6 +3,7 @@ import type { Accessor } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
 import type { StudioAsset, StudioClip, StudioTrack, } from '@/lib/studio/model/types'
+import { studioLaneInputBadge } from '../record/lane-input-badge'
 import { StudioLaneTake } from '../record/StudioLaneTake'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
@@ -84,6 +85,12 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
   const touch = () => props.timeline.phone || props.timeline.tablet === true
   const armed = () =>
     props.timeline.arming?.armedTrackId() === props.id ? '' : undefined
+  const laneInput = () => {
+    const inputs = props.timeline.laneInputs
+    return inputs === undefined
+      ? null
+      : studioLaneInputBadge(inputs.of(props.id), inputs.studioInputName())
+  }
 
   const armButton = () => (
     <Show when={props.timeline.arming}>
@@ -149,7 +156,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
     />
   )
 
-  /** The chip, the name and its source, and a mark while the lane follows a line its header does not show. */
+  /** The chip, the name and its source, the lane's own input where it has one, and a mark while the lane follows a line its header does not show. */
   const identity = () => (
     <>
       <StudioLaneInstrument
@@ -165,6 +172,21 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         tour={props.view.tall() ? undefined : 'studio.lines'}
         onDetails={props.timeline.onTrackDetails}
       />
+      <Show when={laneInput()}>
+        {(input) => (
+          <button
+            type="button"
+            class={styles.inputChip}
+            classList={{ [styles.touchInputChip]: touch() }}
+            data-studio-lane-input-chip={props.id}
+            aria-label={`${props.track.name} records from ${input().full}`}
+            title={`Records from ${input().full}. Press for this lane's input.`}
+            onClick={() => props.timeline.onTrackDetails(props.id, 'input')}
+          >
+            {input().short}
+          </button>
+        )}
+      </Show>
       <Show when={!props.view.tall() && hasStudioAutomation(props.track)}>
         <span
           class={styles.linesMark}

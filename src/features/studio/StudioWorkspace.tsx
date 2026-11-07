@@ -79,6 +79,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   const [selectedTrackId, setSelectedTrackId] = createSignal<string | null>(
     null,
   )
+  const [inputFocusFor, setInputFocusFor] = createSignal<string | null>(null)
   const [zoom, setZoom] = createSignal(40)
   const [previewEpoch, setPreviewEpoch] = createSignal(0)
   let workspace!: HTMLDivElement
@@ -289,9 +290,10 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     else void transport.play()
   }
 
-  function openTrackDetails(id: string): void {
+  function openTrackDetails(id: string, at?: 'input'): void {
     setSelectedTrackId(id)
     openPanel('track')
+    setInputFocusFor(at === 'input' ? id : null)
   }
 
   /** A new empty lane, selected, so the next take lands on it. */
@@ -648,6 +650,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               if (!phone()) openPanel('clip')
             }}
             onTrackDetails={openTrackDetails}
+            laneInputs={recorder.laneInputs}
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
             record={recorder.timeline()}
@@ -754,6 +757,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 assets={trackAssets()}
                 writable={writable()}
                 arming={phone() ? recorder.arming : undefined}
+                input={recorder}
+                focusInput={inputFocusFor() === selectedTrack()!.id}
+                onInputFocused={() => setInputFocusFor(null)}
                 onCommand={props.studio.dispatch}
                 afterLines={overlay() ? closePanel : undefined}
                 onRemove={() => {

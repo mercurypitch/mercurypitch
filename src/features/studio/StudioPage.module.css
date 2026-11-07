@@ -1042,6 +1042,16 @@ button.laneAction {
   margin: 4px 0;
   background: var(--studio-line);
 }
+/* A lane's input and its channel, with what they say, spaced as the
+   details' own fields. */
+.laneInput {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.laneInput .help {
+  margin: 0;
+}
 /* The chevron's room, after the field's own padding. */
 .stackedField select {
   padding-right: 30px;
