@@ -227,9 +227,11 @@ const ENTRIES: readonly Lesson[] = [
     title: 'The major scale and home',
     short: 'Major scale',
     topics: ['T09', 'T10'],
-    // Released on the owner's word on 7 November 2026.
+    // Released on the owner's word on 7 November 2026, with its film.
     minutes: 14,
+    len: '9:11',
     page: '/learn/04',
+    film: filmState(4),
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
     pr: {
       needs: 'Scale Runner at a beginner tempo (a data-only slug)',
@@ -240,6 +242,9 @@ const ENTRIES: readonly Lesson[] = [
         note: 'then tap Scale Runner',
       },
     },
+    fig: 'poster',
+    posterAlt:
+      'The title card: Find Your Pitch, Lesson 04, The major scale and home, above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome notes, one of them sharp',
   },
   {
     n: 5,

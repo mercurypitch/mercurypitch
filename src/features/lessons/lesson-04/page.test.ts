@@ -2,12 +2,14 @@
 // Lesson 4's page document — the house in its sprite, and its spoken signs
 // ============================================================
 //
-// learn/04.html is hand-written markup, so two of its promises are held
+// learn/04.html is hand-written markup, so three of its promises are held
 // here: the sprite's `#i-home` is the very house the canvas draws
-// (kit/home-glyph.ts), and every ♯ and ♭ its text prints is followed by its
-// spoken name, the sign itself hidden from a screen reader. Mounted, its
-// Move do marks the button at an end aria-disabled, and only that one, and
-// a press there keeps the keyboard's place and leaves do where it is.
+// (kit/home-glyph.ts), every ♯ and ♭ its text prints is followed by its
+// spoken name, the sign itself hidden from a screen reader, and its film's
+// Watch section waits hidden for kit/episode.ts, as Lesson 2's does.
+// Mounted, its Move do marks the button at an end aria-disabled, and only
+// that one, and a press there keeps the keyboard's place and leaves do where
+// it is.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -49,9 +51,32 @@ describe("Lesson 4's page", () => {
     expect(bare).toEqual([])
   })
 
-  it('carries no Watch section: Lesson 4 has no film', () => {
-    expect(PAGE).not.toMatch(/id="watch"/)
-    expect(PAGE).not.toMatch(/<video/)
+  it('carries its film in a Watch section, hidden with its masthead link until kit/episode.ts shows them', () => {
+    // Arrange
+    document.body.innerHTML = PAGE.slice(
+      PAGE.indexOf('<body>') + 6,
+      PAGE.indexOf('</body>'),
+    )
+
+    // Act
+    const watch = document.querySelector<HTMLElement>('section#watch')
+    const link = document.querySelector<HTMLAnchorElement>(
+      '.mast-nav a[href="#watch"]',
+    )
+
+    // Assert
+    expect(watch?.hidden).toBe(true)
+    expect(link?.hidden).toBe(true)
+    expect(watch?.querySelector('video#ep')?.getAttribute('poster')).toBe(
+      '/src/features/lessons/lesson-04/assets/poster.jpg',
+    )
+    expect(watch?.querySelector('track')?.getAttribute('src')).toBe(
+      '/src/features/lessons/lesson-04/assets/lesson-04.en.vtt',
+    )
+    // the explorer after it, as on Lesson 2's page
+    expect(PAGE.indexOf('id="watch"')).toBeLessThan(
+      PAGE.indexOf('id="explorer"'),
+    )
   })
 
   it('opens on the cold open, the recall after it and before the four words', () => {

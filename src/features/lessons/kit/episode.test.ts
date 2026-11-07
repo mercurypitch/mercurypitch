@@ -142,6 +142,37 @@ describe.each([1, 2])('Lesson %i', (n) => {
   })
 })
 
+describe('Lesson 4', () => {
+  it('gives Tavi the question that follows her sung step, as the film does', () => {
+    // Arrange: the captions name a speaker only when the speaker changes,
+    // and count a sung run as a turn, so the line after "[Tavi sings the
+    // last step, up to do]" carries its own TAVI label
+    openPage(4)
+
+    // Act
+    episode(SOURCES, captionsOf(4))
+
+    // Assert
+    const paragraphs = transcript()
+    expect([...new Set(paragraphs.map(([who]) => who))].sort()).toEqual([
+      '',
+      'Merc',
+      'Tavi',
+    ])
+    expect(
+      paragraphs.filter(([, words]) => /^[A-Z]{2,}(?: MERC)?:/.test(words)),
+    ).toEqual([])
+    expect(
+      paragraphs.find(([, words]) =>
+        words.startsWith('So home moved with the start.'),
+      ),
+    ).toEqual([
+      'Tavi',
+      'So home moved with the start. Then why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
+    ])
+  })
+})
+
 describe('a transcript from captions cut before 24 October 2026', () => {
   it('still names the hosts from the colour labels', () => {
     // Arrange

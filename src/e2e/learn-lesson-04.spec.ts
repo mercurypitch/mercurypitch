@@ -105,8 +105,8 @@ test('a hard load of /learn/04 answers 200 with the lesson @smoke', async ({
     'Why does do-re-mi sound finished when it lands on do',
   )
   await expect(page.locator('#root')).toHaveCount(0)
-  // a written lesson: no film, so no Watch section
-  await expect(page.locator('#watch')).toHaveCount(0)
+  // its film's Watch section is in the markup, for the module to show
+  await expect(page.locator('#watch')).toHaveCount(1)
 })
 
 test('the lesson boots: a guess unlocks Play from D, and Merc stops on ti @smoke', async ({
@@ -137,17 +137,23 @@ test('the lesson boots: a guess unlocks Play from D, and Merc stops on ti @smoke
   await expect(page.locator('#predict .reveal')).toContainText(
     'Still unfinished, and landing on do finishes it, this time on D.',
   )
-  // the explorer opens on this lesson: ready to read, with no film to watch
+  // the explorer opens on this lesson: ready to watch and read, and its
+  // Watch the episode goes to this page's own film
   await page.locator('#explorer').scrollIntoViewIfNeeded()
   const card = page.locator('#exCardHost')
   await expect(card.locator('h3')).toHaveText('The major scale and home')
-  await expect(card).toContainText('Ready · read')
+  await expect(card).toContainText('Ready · watch and read')
   await expect(
     card.getByRole('link', { name: 'Start lesson' }),
   ).toHaveAttribute('href', '#top')
   await expect(
     card.getByRole('link', { name: 'Watch the episode' }),
-  ).toHaveCount(0)
+  ).toHaveAttribute('href', '#watch')
+  // the film shows, and the masthead numbers its four anchors without a gap
+  await expect(page.locator('#watch')).toBeVisible()
+  await expect(
+    page.locator('#mastNav a:visible b').filter({ hasText: /^[IVX]+$/ }),
+  ).toHaveText(['I', 'II', 'III', 'IV'])
 
   expect(errors).toEqual([])
 })

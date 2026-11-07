@@ -2,10 +2,11 @@
 
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English, as MASTER-PLAN § 12 item 5 decides; the app's screens stay American. Each step names its
-toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is
-a text-only package: Lesson 4 has no film yet, so the page has no Watch section. It is a theory
-lesson, but its sing-along spans an octave, so its voice lines are listed for the vocal coach at
-the end.
+toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). It was
+written as a text-only package; its film came later, 9:11 long and released with the page on 7
+November 2026, and plays in the page's Watch section, with its captions in [captions/](captions/).
+It is a theory lesson, but its sing-along spans an octave, so its voice lines are listed for the
+vocal coach at the end.
 
 ---
 
