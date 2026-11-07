@@ -520,6 +520,8 @@ for (const [n, name, size] of [
   [22, 'desktop', DESKTOP],
   [23, 'phone', PHONE],
   [23, 'desktop', DESKTOP],
+  [24, 'phone', PHONE],
+  [24, 'desktop', DESKTOP],
 ] as const) {
   test(`on Lesson ${n}, a written lesson's page, on a ${name} (${size.width} x ${size.height}) each of the five steps lights its targets`, async ({
     page,

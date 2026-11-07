@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15, 17, 19, 22 and 23 have their pages, drafts (drafts.ts); every other
+// Lessons 15, 17, 19, 22, 23 and 24 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -242,6 +242,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Harmony against a drone',
     short: 'Drone harmony',
     topics: ['S20a'],
+    // A draft until the lab's two tests and the vocal coach's sign-off
+    // (drafts.ts).
+    minutes: 16,
+    page: '/learn/24',
     hook: 'Hold a note against a drone: how can you hear when the two are in tune?',
     pr: {
       needs:
