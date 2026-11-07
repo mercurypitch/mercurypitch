@@ -16,8 +16,9 @@
 // voice ends the set; what follows each answer to "How did that feel?",
 // the celebration once, the summary after the second set, the rest card;
 // from Start until a set ends every other play waits; the sing-along sings
-// each note alone, then the drone, Again once a visit; and "Just listen
-// today"'s play waits for Step 2's choice.
+// each note alone, then the drone, Again once a visit, and cut short goes
+// back to its own line; and "Just listen today"'s play waits for Step 2's
+// choice.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -554,6 +555,25 @@ describe('the sing-along', { timeout: 15_000 }, () => {
     expect(again).toBe(true)
     expect(el('[data-closing="along"]').hidden).toBe(false)
     expect(el('[data-sing="along-again"]').hidden).toBe(true)
+  })
+
+  it('goes back to its own line when cut short, since nothing listened, with Start the sing-along to sing it again', async () => {
+    // Arrange
+    const { NowPlaying } = await loadCard()
+    el('[data-comfort="sing"]').click()
+    el('[data-phones="off"]').click()
+
+    // Act: another sound, a second in
+    el('[data-sing="along"]').click()
+    await vi.advanceTimersByTimeAsync(1000)
+    NowPlaying.claim(() => undefined)
+    await vi.advanceTimersByTimeAsync(100)
+
+    // Assert
+    expect(played.runs[0].stopped).toBe(true)
+    expect(shown('along')).toBe(true)
+    expect(status()).toBe(STATUS.along)
+    expect(el('[data-sing="along"]').hidden).toBe(false)
   })
 })
 
