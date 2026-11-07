@@ -630,8 +630,10 @@ export function initSing(stills: RingStills): Sing {
     view.phase(null)
     view.ring.stop()
     if (!whole) {
+      // cut short by another sound: nothing was listening, so its own line
+      // again, with Start the sing-along to sing it from the top
       view.show(['along'], false)
-      view.status(STATUS.stopped)
+      view.status(STATUS.along)
       return
     }
     view.show(['feel'], true)
