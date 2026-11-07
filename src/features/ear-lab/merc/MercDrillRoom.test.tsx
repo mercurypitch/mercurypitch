@@ -15,6 +15,8 @@ import { BeatPendulums } from '@/features/ear-lab/BeatPendulums'
 import { ConsoleStack, Pads, PlayPad, StagePad, } from '@/features/ear-lab/EarStage'
 import { FieldBookPage } from '@/features/ear-lab/FieldBookPage'
 import type { RoomBeat, StageRoom } from '@/features/ear-lab/stage-room'
+import { notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
+import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { askRoomBack } from '@/stores/native-shell-store'
 import { MercDrillRoom } from './MercDrillRoom'
 
@@ -116,6 +118,9 @@ beforeEach(() => {
 })
 afterEach(() => {
   cleanup()
+  resetAirPlaySuspicionForTests()
+  setAudioRouteForTests(null)
+  vi.restoreAllMocks()
 })
 
 describe('the drill room', () => {
@@ -232,6 +237,35 @@ describe('the drill room', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect(h.room.resume).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('merc-sound-stopped')).toBeNull()
+  })
+
+  // An iPhone whose own session says its speaker while the sound is on
+  // AirPlay (airplay-suspicion.ts): the page's newest context at 44.1 kHz.
+  it('says Resume plays through the phone speaker only where the sound is there, never on AirPlay alone', () => {
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    notePageAudioContext({ sampleRate: 44100 })
+    const h = mount()
+    h.setBeat('listen')
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    })
+    const stopped = screen.getByTestId('merc-sound-stopped')
+    expect(stopped).toHaveTextContent('Your answers so far are kept.')
+    expect(stopped).not.toHaveTextContent('phone speaker')
+
+    // A check finds the sound back on the speaker.
+    notePageAudioContext({ sampleRate: 48000 })
+
+    expect(stopped).toHaveTextContent(
+      'Your answers so far are kept. Resume plays through the phone speaker; headphones give a truer reading.',
+    )
   })
 
   it("draws a drill's instrument its own lit way, with the drill's props", () => {

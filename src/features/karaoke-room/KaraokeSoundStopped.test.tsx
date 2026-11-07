@@ -9,6 +9,8 @@ import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { playbackCause } from '@/lib/playback-cause'
 import { followExternalScreen, notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
+import type { NativeAudioRoute } from '@/stores/native-shell-store'
+import { CHECK_SETTLE_MS, followOutputChecks, resetOutputCheckForTests, } from '@/stores/output-check'
 import { KaraokeSoundStopped } from './KaraokeSoundStopped'
 
 /** The part of the mixer the notice reads: whether it stalled, and play. */
@@ -32,9 +34,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  resetOutputCheckForTests()
   setAudioRouteForTests(null)
   resetAirPlaySuspicionForTests()
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe('KaraokeSoundStopped', () => {
@@ -161,5 +165,52 @@ describe('KaraokeSoundStopped', () => {
     render(() => <KaraokeSoundStopped mixer={() => null} />)
 
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  // An iPhone 11's own session said airplay, at 44.1 kHz, and the page's
+  // clock was made there. Chosen in Control Center, the phone's route came
+  // back to the speaker at 48 kHz while the page's newest context still
+  // said 44.1, so the notice went on saying AirPlay. The route's change has
+  // the output read again (output-check.ts), and the words follow it.
+  it('says the sound stopped here once the phone is chosen, as the route’s change reads the output again', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    setAudioRouteForTests('airplay', 'LG C2', 44100)
+    notePageAudioContext({ sampleRate: 44100 })
+    let output = 44100
+    let routeChanged: (route: NativeAudioRoute) => void = () => undefined
+    const stop = followOutputChecks({
+      host: {
+        makeProbe: () => ({
+          sampleRate: output,
+          close: async () => Promise.resolve(),
+        }),
+        inGesture: () => null,
+        now: () => Date.now(),
+        say: () => undefined,
+      },
+      output: {
+        read: async () => null,
+        watch: () => () => undefined,
+        watchRoute: (handler) => {
+          routeChanged = handler
+          return () => undefined
+        },
+      },
+    })
+    const m = mixer()
+    render(() => <KaraokeSoundStopped mixer={() => m.controls} />)
+    m.setStalled(true)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The sound went to LG C2 over AirPlay and stopped.',
+    )
+
+    output = 48000
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    routeChanged('speaker')
+    vi.advanceTimersByTime(CHECK_SETTLE_MS)
+
+    expect(screen.getByRole('status')).toHaveTextContent('The sound stopped.')
+    expect(screen.getByRole('status')).not.toHaveTextContent('AirPlay')
+    stop()
   })
 })

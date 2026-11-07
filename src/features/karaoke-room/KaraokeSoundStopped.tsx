@@ -10,7 +10,12 @@
 // never while a screen is connected (airplay-suspicion.ts). Every notice
 // offers Play again (44 px, as every control here); on AirPlay it also says
 // how to hear the song on this phone instead, and a singer who chooses the
-// phone in Control Center sees the words change without leaving the room.
+// phone in Control Center sees the words change without leaving the room:
+// the change of route, and the app coming back in front as Control Center
+// closes, each read the output again (output-check.ts). Up to mp-v0.8.57 a
+// route back on the speaker left the page's AirPlay rate standing, and the
+// notice went on saying AirPlay. The receiver is named only where the route
+// itself names it (`airPlayReceiver`).
 //
 // Like the premium rooms' volume hint (RoomVolumeHint.tsx), the status
 // region is always there, empty while the song is fine, so a screen reader
@@ -23,8 +28,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { VolumeX } from '@/components/icons'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
 import { asPlaybackCause } from '@/lib/playback-cause'
-import { airPlayAlone } from '@/stores/airplay-suspicion'
-import { audioRoute, audioRoutePort } from '@/stores/audio-route-store'
+import { airPlayAlone, airPlayReceiver } from '@/stores/airplay-suspicion'
 import styles from './KaraokeSoundStopped.module.css'
 import { PLAY_AGAIN, soundStoppedNotice } from './sound-stopped'
 
@@ -37,10 +41,7 @@ export function KaraokeSoundStopped(props: KaraokeSoundStoppedProps) {
   const stalled = (): boolean => props.mixer()?.stalled() === true
   const notice = createMemo(() => {
     if (!stalled()) return null
-    // Only a route that says airplay names the receiver: suspected, the
-    // port the app's session gives is its own speaker.
-    const said = audioRoute() === 'airplay' ? audioRoutePort() : null
-    return soundStoppedNotice(airPlayAlone(), said)
+    return soundStoppedNotice(airPlayAlone(), airPlayReceiver())
   })
   return (
     <div class={styles.slot} role="status" data-testid="karaoke-sound-slot">
