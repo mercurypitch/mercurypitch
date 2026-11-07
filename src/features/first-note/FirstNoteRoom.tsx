@@ -35,6 +35,12 @@
 // over the mic in the singer's turn, and "Sing on in Karaoke" there after
 // a landing.
 //
+// In the app the song plays through Web Audio alone wherever the phone can
+// stream a stem (web-audio-song-player.ts, with the streams the app's
+// screen hands in), so it plays over AirPlay alone too. Where the phone
+// cannot, the stems are elements, which play nothing there, and the room
+// says so under its head (FirstNoteAirPlayNotice.tsx).
+//
 // In the Warm-up (`routine`, room-kit routine-stop.ts) a run is two entries
 // (WARM_UP_ENTRIES), kept in the history but never as a best (a best is a
 // whole run's, first-note-run.ts), with no way off to the Karaoke room
@@ -77,6 +83,7 @@ import type { FirstNoteSummary, SongResult } from './first-note-run'
 import { foundLine, ON_NOTE_DETAIL, resultsBySong } from './first-note-run'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 import { singOnFrom } from './first-note-songs'
+import { FirstNoteAirPlayNotice } from './FirstNoteAirPlayNotice'
 import { FirstNoteHelp } from './FirstNoteHelp'
 import { FirstNoteLevel } from './FirstNoteLevel'
 import styles from './FirstNoteRoom.module.css'
@@ -398,6 +405,11 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
           </p>
         )}
       </Show>
+
+      <FirstNoteAirPlayNotice
+        streams={props.streams}
+        show={!demoOn() && phase() !== 'result'}
+      />
 
       <ShellBubble
         shell={shell}
