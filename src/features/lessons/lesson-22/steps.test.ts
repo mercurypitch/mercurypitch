@@ -296,8 +296,6 @@ describe("Step 3's predict", () => {
       'You said: still one note',
     )
     expect(runs[1].o.vibrato).toEqual({ rate: 2, extent: 50, growIn: 0.3 })
-    // the Go deeper drawer stays shown throughout
-    expect(el('#step-3 details.deeper').hidden).toBe(false)
   })
 
   it('never reveals on Play: six a second, even after the choice', async () => {

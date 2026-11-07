@@ -25,8 +25,9 @@
 // (`onHeld`), so the slow wave cannot sound anywhere before it; the reveal
 // shows its four parts once the slow wave has been heard to its end with
 // sound on: the reveal, Tavi's line, the mix-up card, and Try with Notice.
-// The Go deeper drawer stays shown. No Merc reacts to it: Merc and Tavi live
-// in the hero.
+// No Merc reacts to it: Merc and Tavi live in the hero. The step has no Go
+// deeper drawer: its one item, "Which middle?", is Length's first cut
+// (WEB-SPEC, Length), and FACTS 19 keeps its numbers.
 
 import { clamp, q, qa } from '@/features/lessons/kit/dom'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'

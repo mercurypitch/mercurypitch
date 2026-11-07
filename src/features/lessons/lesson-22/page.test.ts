@@ -337,6 +337,20 @@ describe("Lesson 22's page", () => {
     expect(d.body.classList.contains('season-2')).toBe(true)
   })
 
+  it("makes Length's two cuts: no Go deeper drawer in Step 3, and no opening line above Sing it's status", () => {
+    // Arrange
+    const d = doc()
+    const copy = d.querySelector('#sing .sing3-copy')
+
+    // Assert: WEB-SPEC, Length, cuts 1 and 2; FACTS 19 keeps the drawer's numbers
+    expect(d.querySelectorAll('details.deeper')).toHaveLength(0)
+    expect(words(d.body)).not.toContain('Which middle?')
+    expect(words(d.body)).not.toContain('Your turn')
+    expect(Array.from(copy?.children ?? [], (el) => el.id)).toEqual([
+      'singStatus',
+    ])
+  })
+
   it("holds Sing it's series lines, its two holds' cues and one listening note", () => {
     // Arrange
     const sing = doc().getElementById('sing')
@@ -344,7 +358,6 @@ describe("Lesson 22's page", () => {
 
     // Assert: LESSON.md, Sing it; FACTS 47 to 60
     for (const line of [
-      'Your turn: one note, ten seconds, twice.',
       'Sore, hoarse or unwell today? Just listen along.',
       "I'm comfortable: let's sing",
       'Just listen today',
