@@ -10,7 +10,9 @@
 // capture every channel the interface exposes, split them, and let a
 // player see and hear one. `createGuitarInputMonitor` does it with an amp
 // stage in the path because Guitar Night is playing through an amp
-// simulation; this is deliberately the plain version.
+// simulation; this is deliberately the plain version. The split itself,
+// the channel count and the loudest channel are shared with every input
+// (@/lib/audio-input/input-channels.ts).
 //
 // TWO THINGS, DELIBERATELY SEPARATE. The METER runs whenever the monitor
 // exists, because "can the browser see my guitar" is a question you want
@@ -29,8 +31,7 @@
 //
 // Tests: src/tests/jam-input-monitor.test.ts.
 
-/** Web Audio's own ceiling for a splitter, and Guitar Night's too. */
-export const MAX_MONITOR_CHANNELS = 32
+import { captureChannelCount, splitChannels, } from '@/lib/audio-input/input-channels'
 
 export interface JamInputMonitor {
   /** How many channels this capture actually exposes. */
@@ -61,43 +62,6 @@ export interface JamInputMonitorOptions {
   /** Injected in tests; a real one is created when absent. */
   context?: AudioContext
   channel?: number
-}
-
-/** The channel count a capture really has, clamped to what we can address. */
-export function monitorChannelCount(
-  trackChannelCount: unknown,
-  sourceChannelCount: unknown,
-): number {
-  const fromTrack = Number(trackChannelCount)
-  const fromSource = Number(sourceChannelCount)
-  const exposed =
-    Number.isFinite(fromTrack) && fromTrack > 0
-      ? Math.floor(fromTrack)
-      : Number.isFinite(fromSource) && fromSource > 0
-        ? Math.floor(fromSource)
-        : 1
-  // Clamped rather than thrown on. Guitar Night refuses to truncate
-  // because it is analysing for pitch and a missing channel is a wrong
-  // answer; here a channel past 32 costs you the ability to monitor it,
-  // which is worth strictly less than a room that will not open.
-  return Math.min(Math.max(1, exposed), MAX_MONITOR_CHANNELS)
-}
-
-/** Loudest channel, for "your guitar is on input 2". Null when all silent. */
-export function loudestChannel(
-  levels: readonly number[],
-  floor = 0.005,
-): number | null {
-  let best: number | null = null
-  let bestLevel = floor
-  for (let i = 0; i < levels.length; i += 1) {
-    const level = levels[i] ?? 0
-    if (level > bestLevel) {
-      best = i
-      bestLevel = level
-    }
-  }
-  return best
 }
 
 function rms(data: Float32Array): number {
@@ -140,7 +104,7 @@ export function createJamInputMonitor(
     return null
   }
 
-  const channelCount = monitorChannelCount(
+  const channelCount = captureChannelCount(
     track.getSettings?.().channelCount,
     source.channelCount,
   )
@@ -148,8 +112,8 @@ export function createJamInputMonitor(
   let isEnabled = false
   let disposed = false
 
-  const splitter = context.createChannelSplitter(channelCount)
-  source.connect(splitter)
+  const split = splitChannels(context, source, channelCount)
+  split.open()
 
   // One analyser per channel. This is what makes "which input is my guitar
   // on" answerable by looking rather than by unplugging things.
@@ -166,7 +130,7 @@ export function createJamInputMonitor(
     const analyser = context.createAnalyser()
     analyser.fftSize = 2048
     analyser.smoothingTimeConstant = 0
-    splitter.connect(analyser, i, 0)
+    split.send(i, analyser)
     analyser.connect(sink)
     analysers.push(analyser)
     buffers.push(new Float32Array(analyser.fftSize))
@@ -180,11 +144,7 @@ export function createJamInputMonitor(
 
   const connectPicked = (): void => {
     picked?.disconnect()
-    picked = context.createGain()
-    picked.channelCount = 1
-    picked.channelCountMode = 'explicit'
-    picked.channelInterpretation = 'discrete'
-    splitter.connect(picked, channel, 0)
+    picked = split.alone(channel)
     picked.connect(monitorGain)
   }
   connectPicked()
@@ -236,7 +196,7 @@ export function createJamInputMonitor(
         monitorGain.disconnect()
         for (const a of analysers) a.disconnect()
         sink.disconnect()
-        splitter.disconnect()
+        split.close()
         source.disconnect()
       } catch {
         // Already torn down by a closing context; nothing to undo.

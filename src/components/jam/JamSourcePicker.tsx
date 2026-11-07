@@ -19,9 +19,9 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
 import { jamNetworkPanelAvailable } from '@/components/jam/JamNetworkPanel'
+import { loudestChannel } from '@/lib/audio-input/input-channels'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
-import { loudestChannel } from '@/lib/jam/jam-input-monitor'
 import { jamAudioProfile, jamCaptureReport, jamInputAudible, jamInputBaseLatencyMs, jamInputChannelCount, jamInputChecking, jamInputDeviceId, jamInputDevices, jamInputLevels, jamMonitorChannel, refreshJamInputDevices, selectJamMonitorChannel, setJamAudioProfile, setJamHearYourself, setJamInputDeviceId, setJamInputDeviceLabel, startJamInputCheck, stopJamInputCheck, switchJamAudioSource, } from '@/stores/jam-store'
 import styles from './JamSourcePicker.module.css'
 

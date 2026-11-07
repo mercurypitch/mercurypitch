@@ -7,7 +7,7 @@
 // a missing meter must never be a room that does not open.
 
 import { describe, expect, it, vi } from 'vitest'
-import { createJamInputMonitor, loudestChannel, monitorChannelCount, } from '@/lib/jam/jam-input-monitor'
+import { createJamInputMonitor } from '@/lib/jam/jam-input-monitor'
 
 /** A Web Audio stand-in that records the graph it was asked to build. */
 function fakeContext(opts: { baseLatency?: number } = {}) {
@@ -67,44 +67,6 @@ const streamWith = (channelCount: number | undefined) =>
   ({
     getAudioTracks: () => [{ getSettings: () => ({ channelCount }) }],
   }) as unknown as MediaStream
-
-describe('monitorChannelCount', () => {
-  it('takes what the track reports', () => {
-    expect(monitorChannelCount(4, 2)).toBe(4)
-  })
-
-  it('falls back to the source when the track will not say', () => {
-    // Safari omits most of the settings block.
-    expect(monitorChannelCount(undefined, 2)).toBe(2)
-    expect(monitorChannelCount(0, 6)).toBe(6)
-  })
-
-  it('is one channel when nothing says otherwise, never zero', () => {
-    expect(monitorChannelCount(undefined, undefined)).toBe(1)
-    expect(monitorChannelCount(Number.NaN, -1)).toBe(1)
-  })
-
-  it('clamps rather than throwing on an absurd count', () => {
-    // Guitar Night throws here because a missing channel is a wrong pitch
-    // answer. A monitor losing a channel it cannot address is worth much
-    // less than a room that will not open.
-    expect(monitorChannelCount(64, 1)).toBe(32)
-  })
-})
-
-describe('loudestChannel', () => {
-  it('names the channel the signal is actually on', () => {
-    // The whole question a guitarist has: which input am I plugged into.
-    expect(loudestChannel([0.001, 0.4, 0.002])).toBe(1)
-  })
-
-  it('says nothing rather than guessing when everything is silent', () => {
-    // A guess here points somebody at the wrong cable.
-    expect(loudestChannel([0, 0, 0])).toBeNull()
-    expect(loudestChannel([0.001, 0.002])).toBeNull()
-    expect(loudestChannel([])).toBeNull()
-  })
-})
 
 describe('createJamInputMonitor', () => {
   it('splits every channel the capture exposes', () => {
