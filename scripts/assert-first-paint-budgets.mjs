@@ -656,7 +656,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
   // Lesson 22 (a draft, as above), with its steps, its cold open, its two
-  // quizzes, its four words, Sing it and the Wrap: 89,865 bytes in
+  // quizzes, its four words, Sing it and the Wrap: 89,937 bytes in
   // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it
   // shares with them, and the shared parts), its own, and the shared Inter
   // and Outfit @font-face rules; a quarter over.

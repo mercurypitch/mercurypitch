@@ -48,6 +48,14 @@
   border-top: 0;
   padding-top: 0;
 }
+/* both plays sit right under the stage, before the sound gate (the kit
+   orders the hero's parts at this width), as on Lessons 17 and 19 */
+@media (max-width: 1080px) {
+  .l22-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
 .l22-hero .pq {
   font-size: clamp(20px, 2vw, 26px);
   line-height: 1.2;
