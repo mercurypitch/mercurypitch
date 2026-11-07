@@ -542,6 +542,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** test a float for a decoder's grid by rounding back to a whole step and multiplying again in 32-bit (`Math.fround(q * step) === x`), with each browser's steps, and keep the two step sizes with the samples rather than one. Probe a decoder with a WAV of every value before trusting a mapping.
 **See:** `src/lib/studio/audio/canonical-pcm16.ts`, `src/lib/studio/record/take-audio.ts`
 
+### Sum an interface's channels yourself: the speaker rules mix only 2, 4 and 6
+
+**Symptom:** measured while adding lane channels to the Studio (Nov 2026): an eight-channel capture into the recorder keeps Input 1 alone, though the recorder reads as folding its input to mono and the lane picker calls that row "All inputs, mixed".
+**Cause:** a node with `channelCount: 1`, `'explicit'` and `'speakers'` mixes only stereo (half each), quad (a quarter each) and 5.1 (the front pair at √½, the centre whole, the surrounds at half, the LFE dropped). Any other count, 3, 5, 7, 8 or more, falls back to `'discrete'` and keeps channel 0, as the Web Audio spec says (Chrome for Testing 153).
+**Rule:** where every input must be heard, split the channels and sum them with gains of your own; where a mono node takes a capture of unknown width, say which channels it keeps. Pin a fold on an `OfflineAudioContext` with a different level on each channel.
+**See:** `src/lib/studio/record/capture-input.ts`, the fold test in `src/e2e/studio-lane-input.spec.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
