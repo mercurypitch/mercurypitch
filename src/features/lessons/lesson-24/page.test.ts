@@ -328,6 +328,20 @@ describe("Lesson 24's page", () => {
     expect(d.body.classList.contains('season-2')).toBe(true)
   })
 
+  it("makes Length's cut: Step 3 names no quintet, its band paragraph ending on the pure fifth", () => {
+    // Arrange
+    const d = doc()
+    const band = Array.from(d.querySelectorAll('#step-3 p[data-reveal2]')).find(
+      (p) => words(p).startsWith('Either lands'),
+    )
+
+    // Assert: WEB-SPEC, Length, the next cut; FACTS 31 keeps the quintet's thirds
+    expect(words(d.body)).not.toContain('quintet')
+    expect(words(band)).toBe(
+      "Either lands in Sing it's band, 35 cents either side of the piano's note. A pure major third is 386 cents, 14 below the piano's 400; a pure fifth is 2 above the piano's 700.",
+    )
+  })
+
   it("holds Sing it's series lines, the headphones check, the quiet check's line, the holds' cues and the sing-along", () => {
     // Arrange
     const sing = doc().getElementById('sing')
