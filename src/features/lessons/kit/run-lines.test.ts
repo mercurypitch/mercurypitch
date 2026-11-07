@@ -6,7 +6,9 @@
 // Audio): each breath's worth one voice, started on its own timer, nothing
 // sounding between them, the run lasting to its last voice's end or to the
 // breath it ends on, and each breath's line with its own vibrato where it
-// carries one (Lesson 22's wave, then its straight note). Its voices are
+// carries one (Lesson 22's wave, then its straight note); lines that start
+// together start in one task, on one audio time (Lesson 24's drone and its
+// notes). Its voices are
 // built for real on the fake AudioContext the sound tests use
 // (sound-doubles.test-fixtures.ts) and read from what that context holds,
 // as kit/run.test.ts reads `playLine`'s.
@@ -68,6 +70,38 @@ describe('playLines', () => {
     expect(ctx.oscillators).toHaveLength(5)
     expect(ctx.oscillators[1].frequency.value).toBe(6)
     expect(ctx.oscillators[4].frequency.value).toBe(5)
+  })
+
+  it('starts lines that share an onset in one timer task, so they begin on one audio time', async () => {
+    // Arrange: the audio clock moves on between any two timer tasks
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const { runs, ctx } = await soundOn()
+    const fake = window.setTimeout
+    vi.spyOn(window, 'setTimeout').mockImplementation(((
+      fn: () => void,
+      ms?: number,
+    ) =>
+      fake(() => {
+        ctx.currentTime += 0.01
+        fn()
+      }, ms)) as unknown as typeof window.setTimeout)
+
+    // Act: a drone and a note against it, from the start
+    runs.playLines(
+      [
+        { t: 0, points: contourOf(220, [{ hold: 1 }]), vibrato: null },
+        { t: 0, points: contourOf(222, [{ hold: 1 }]), vibrato: null },
+      ],
+      { audible: true },
+    )
+    await vi.advanceTimersByTimeAsync(10)
+
+    // Assert: both tones set their pitch at one moment
+    const starts = ctx.oscillators.map(
+      (o) => o.frequency.events.find(([m]) => m === 'setValueAtTime')?.[2],
+    )
+    expect(starts).toHaveLength(2)
+    expect(starts[0]).toBe(starts[1])
   })
 
   it('lasts until its last voice ends, or to the breath it ends on', async () => {

@@ -12,10 +12,12 @@
 // as it sounds (`setVibrato`): Lesson 22's waves, its straight notes and its
 // sliders. Notes that share an onset start in one timer task, so a chord's
 // voices read one `currentTime` and `onNote` hears them all in that task;
-// even at time 0 it is never called before `playNotes` returns. Several
-// runs that play as one (a move: two held notes and a line) are one run
-// through `allOf`. Lesson 7 plays its siren, "Twinkle" and its bands' notes
-// this way (its WEB-SPEC, Audio).
+// even at time 0 it is never called before `playNotes` returns. Sung lines
+// that share an onset start in one task too, so a drone and the notes set
+// against it begin on one audio time, every partial at phase 0 (Lesson 24's
+// plays, its WEB-SPEC, Audio). Several runs that play as one (a move: two
+// held notes and a line) are one run through `allOf`. Lesson 7 plays its
+// siren, "Twinkle" and its bands' notes this way (its WEB-SPEC, Audio).
 //
 // A run's promise says whether it was heard to its end: true when it ended
 // by itself, false when it was stopped, so a play cut short reveals nothing
@@ -151,9 +153,11 @@ export interface RunLine {
 /**
  * A sung line with breaths in it: each breath's worth one voice along its
  * contour, started on its own timer as `playNotes` starts its notes, and
- * nothing sounding between them (Lesson 14's phrases, its WEB-SPEC, Audio).
- * It lasts until its last voice ends, or `length` seconds where the line
- * ends on a breath; `stop` ends every voice within a short release.
+ * nothing sounding between them (Lesson 14's phrases, its WEB-SPEC, Audio);
+ * or lines sung together, those that share an onset started in one timer
+ * task (Lesson 24's drone and its notes). It lasts until its last voice
+ * ends, or `length` seconds where the line ends on a breath; `stop` ends
+ * every voice within a short release.
  */
 export function playLines(
   lines: readonly RunLine[],
@@ -161,20 +165,30 @@ export function playLines(
 ): Run {
   const timers: number[] = []
   const voices: Voice[] = []
-  for (const line of lines)
+  // one timer task for each onset, its lines in the list's order
+  const onsets = new Map<number, RunLine[]>()
+  for (const line of lines) {
+    const at = onsets.get(line.t)
+    if (at === undefined) onsets.set(line.t, [line])
+    else at.push(line)
+  }
+  onsets.forEach((at, t) => {
     timers.push(
       window.setTimeout(() => {
         if (!o.audible) return
-        const v = contourVoice(line.points, {
-          kind: o.kind ?? 'merc',
-          gain: o.gain,
-          timbre: o.timbre,
-          wave: o.wave,
-          vibrato: line.vibrato === undefined ? o.vibrato : line.vibrato,
-        })
-        if (v !== null) voices.push(v)
-      }, line.t * 1000),
+        for (const line of at) {
+          const v = contourVoice(line.points, {
+            kind: o.kind ?? 'merc',
+            gain: o.gain,
+            timbre: o.timbre,
+            wave: o.wave,
+            vibrato: line.vibrato === undefined ? o.vibrato : line.vibrato,
+          })
+          if (v !== null) voices.push(v)
+        }
+      }, t * 1000),
     )
+  })
   const end = lines.reduce(
     (at, line) => Math.max(at, line.t + contourLength(line.points)),
     0,
