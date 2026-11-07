@@ -32,7 +32,7 @@
 import { roomOutput } from '@/components/room-kit/room-output'
 import { keepMediaLocal } from '@/lib/local-media'
 import { closeEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
-import { BAND_RELEASE_SECONDS } from './first-note-rules'
+import { BAND_RELEASE_SECONDS, LINE_RELEASE_SECONDS, RELEASE_SLACK_MS, STOP_RELEASE_SECONDS, } from './first-note-rules'
 import type { FirstNoteEntry, FirstNoteSong } from './first-note-songs'
 
 /** One of the player's sounds. */
@@ -56,12 +56,6 @@ export interface SongPlayer {
 
 export type SongPlayerFactory = (ctx: AudioContext) => SongPlayer
 
-/** The line's fade at its end, s. */
-const LINE_RELEASE_SECONDS = 0.4
-/** A quick fade for a stop, s. */
-const STOP_RELEASE_SECONDS = 0.06
-/** Wall-clock headroom after a fade before the element pauses, ms. */
-const PAUSE_SLACK_MS = 60
 /** A stem that has not loaded by now has failed, ms. */
 const LOAD_TIMEOUT_MS = 10_000
 
@@ -171,7 +165,7 @@ export const createSongPlayer: SongPlayerFactory = (ctx) => {
           }
           settle(played)
         },
-        fade * 1000 + PAUSE_SLACK_MS,
+        fade * 1000 + RELEASE_SLACK_MS,
       )
     }
     // The system can stop the band short of its place (headphones pulled

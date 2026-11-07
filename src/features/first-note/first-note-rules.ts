@@ -55,6 +55,15 @@ export const ENTRY_RUN_GAP_SEC = 0.3
 
 /** The band fades out over this, ending where the singer comes in, s. */
 export const BAND_RELEASE_SECONDS = 0.12
+/** The line's fade at its end, s. */
+export const LINE_RELEASE_SECONDS = 0.4
+/** A quick fade for a stop, s. */
+export const STOP_RELEASE_SECONDS = 0.06
+/**
+ * Headroom after a fade before its sound stops (the element pauses, the
+ * windows stop) and the sound settles, wall clock ms.
+ */
+export const RELEASE_SLACK_MS = 60
 /** Merc's note after a miss, s. */
 export const MERC_NOTE_SECONDS = 1.0
 /** A breath between Merc's note and the singer coming in, s. */
