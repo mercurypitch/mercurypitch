@@ -14,11 +14,11 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
-import { listDevices, trackIdentity, watchDeviceChanges, } from '@/features/mic-check/device-watch'
 import type { MicAnalysis, MicCheckLive, } from '@/features/mic-check/live-analysis'
 import { createMicAnalysis, createMicLive, quietMicLive, UNVOICED, } from '@/features/mic-check/live-analysis'
-import type { MicRoster } from '@/features/mic-check/mic-roster'
-import { buildRoster, EMPTY_ROSTER } from '@/features/mic-check/mic-roster'
+import { listDevices, trackIdentity, watchDeviceChanges, } from '@/lib/audio-input/device-watch'
+import type { MicRoster } from '@/lib/audio-input/mic-roster'
+import { buildRoster, EMPTY_ROSTER } from '@/lib/audio-input/mic-roster'
 import { micManager } from '@/lib/mic-manager'
 import type { VoiceSession } from '@/lib/voice-session'
 

@@ -3,7 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { Cpu, Headphones, Loop, Mic } from '@/components/icons'
-import type { InputKind } from './mic-roster'
+import type { InputKind } from '@/lib/audio-input/mic-roster'
 
 export const INPUT_KIND_ICON: Record<InputKind, Component> = {
   'built-in': Mic,

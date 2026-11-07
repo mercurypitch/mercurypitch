@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { RosterInput } from '@/lib/audio-input/mic-roster'
 import { describeFormat, describeSwitch, holderName, processingNames, } from './check-copy'
-import type { RosterInput } from './mic-roster'
 
 const HEADSET: RosterInput = {
   deviceId: 'headset',

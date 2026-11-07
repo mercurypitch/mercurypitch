@@ -11,16 +11,17 @@
 // only one input listed there is nothing to switch to, and the fixes open
 // instead.
 //
-// The roles come from the Settings mic check's roster (mic-check/
-// mic-roster.ts), so both surfaces call the same input by the same name.
+// The roles come from the input roster the Settings mic check reads too
+// (@/lib/audio-input/mic-roster.ts), so both surfaces call the same input by
+// the same name.
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, Show, untrack } from 'solid-js'
 import { ChevronDown, HelpCircle, Mic } from '@/components/icons'
 import { formatWarnings, INPUT_KIND_HINT, INPUT_KIND_LABEL, } from '@/features/mic-check/check-copy'
 import { INPUT_KIND_ICON } from '@/features/mic-check/input-kind-icon'
-import type { MicRoster } from '@/features/mic-check/mic-roster'
-import { listeningInput } from '@/features/mic-check/mic-roster'
+import type { MicRoster } from '@/lib/audio-input/mic-roster'
+import { listeningInput } from '@/lib/audio-input/mic-roster'
 import { FIRST_LIGHT_FIX_APPS, FIRST_LIGHT_FIX_LIMIT, FIRST_LIGHT_FIX_MUTED, FIRST_LIGHT_FIX_PICK, FIRST_LIGHT_SILENT_PICK, } from '../copy'
 import styles from './FirstLightMic.module.css'
 

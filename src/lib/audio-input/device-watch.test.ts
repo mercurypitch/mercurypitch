@@ -3,8 +3,8 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEVICE_SETTLE_MS, listDevices, trackIdentity, watchDeviceChanges, } from './device-watch'
-import type { FakeMediaDevices } from './fake-capture.fixture'
-import { audioInput, fakeMediaDevices, fakeTrack } from './fake-capture.fixture'
+import type { FakeMediaDevices } from './fake-devices.fixture'
+import { audioInput, fakeMediaDevices, fakeTrack } from './fake-devices.fixture'
 
 let devices: FakeMediaDevices | null = null
 

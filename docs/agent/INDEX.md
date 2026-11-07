@@ -107,8 +107,8 @@ These are the rules that break things when ignored.
 | `warm-up` | [warm-up-store.ts](../../src/features/warm-up/warm-up-store.ts) | 4.0k | The Warm-up's store: today's run, on this device The path screen is gone while a room is up (ShellScreens draws only the top screen), so... |
 | `lip-roll` | [useLipController.ts](../../src/features/lip-roll/useLipController.ts) | 3.9k | useLipController: one Lip roll run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `home-note` | [home-note-band.ts](../../src/features/home-note/home-note-band.ts) | 3.7k | Home note's band — the intro's chords, Merc's home note, the resolve The band is a soft organ: each chord a bass and a close triad (home-... |
-| `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.6k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in tabGroups(), so it never appears in the tab bar. |
+| `mic-check` | [useMicCheckController.ts](../../src/features/mic-check/useMicCheckController.ts) | 3.2k | useMicCheckController — one mic check, from Start to cleanup Owns the check's capture and everything it watches. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `ng-slides` | [useNgController.ts](../../src/features/ng-slides/useNgController.ts) | 3.0k | useNgController: one Ng slides run, from the tap to the result The glide rooms' core (room-kit glide/useGlideRoom.ts) runs the run: the m... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
@@ -173,6 +173,7 @@ These are the rules that break things when ignored.
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
+| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 500 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `check-up` | [then-and-now.ts](../../src/lib/check-up/then-and-now.ts) | 500 | Weekly Check-up — then and now, from the voiceprint history What moved between a singer's first week of Check-ups and their latest, said... |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 300 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |

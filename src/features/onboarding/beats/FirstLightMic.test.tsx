@@ -4,9 +4,9 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { audioInput } from '@/features/mic-check/fake-capture.fixture'
-import type { MicRoster } from '@/features/mic-check/mic-roster'
-import { buildRoster, EMPTY_ROSTER } from '@/features/mic-check/mic-roster'
+import { audioInput } from '@/lib/audio-input/fake-devices.fixture'
+import type { MicRoster } from '@/lib/audio-input/mic-roster'
+import { buildRoster, EMPTY_ROSTER } from '@/lib/audio-input/mic-roster'
 import { FIRST_LIGHT_FIX_MUTED, FIRST_LIGHT_FIX_PICK, FIRST_LIGHT_SILENT_PICK, } from '../copy'
 import { FirstLightMic } from './FirstLightMic'
 
