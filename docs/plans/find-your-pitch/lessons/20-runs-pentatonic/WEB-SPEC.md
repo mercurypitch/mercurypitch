@@ -197,7 +197,7 @@ need, item 4), on C in the learner's octave: C3 for the lower voice, C4 for the 
 It plays as Lesson 4's does, the soft tone at 0.45 s a note with the last note 0.9 s
 (`src/features/lessons/kit/stairs-plays.ts:20-21`), each stair lighting as it sounds, and each
 stair is a real button that plays its note and says its syllable and name on focus ("Stair 3, mi, E
-3"), as Lesson 4's do (`src/features/lessons/kit/stairs-toy.ts:5-8`).
+3"), as Lesson 4's do (`src/features/lessons/kit/stairs-toy.ts:9-11`).
 
 - **What each stair shows**: its syllable, and under it its letter, both printed, with no names
   switch. Lesson 4's stairs show one name in the page's names mode, Letters, Numbers or Do-re-mi

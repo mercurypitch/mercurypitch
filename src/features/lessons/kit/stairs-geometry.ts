@@ -6,8 +6,10 @@
 // each one row per semitone above do (0, 2, 4, 5, 7, 9, 11, 12), on faint
 // semitone rows. Three layouts of the one drawing:
 //
-// - wide: the stage on a desktop. All 25 rows from C4 to C6 stay put and the
-//   staircase climbs them as it slides; the keyboard strip below is C4 to C6.
+// - wide: the stage on a desktop. All 25 rows from the floor, the C at or
+//   below the lowest start, stay put and the staircase climbs them as it
+//   slides; the keyboard strip below spans the same two octaves. On Lesson
+//   4, whose starts run C4 to B4, both are C4 to C6.
 // - narrow: a phone, and any stage too narrow for the wide strip's keys or
 //   too short for its rows. The scale's own thirteen rows, the staircase
 //   fixed in them while the pitch ruler at the left scrolls; the strip shows
@@ -17,14 +19,15 @@
 //   keeps the whole stage to about 550 px) takes tighter margins, and a
 //   figure wider than eight 64 px columns centres the stairs and their keys,
 //   so the staircase keeps its slope.
-// - compact: the cold open and the hero. Fifteen rows, C4 to D5, so a scale
-//   on C and one on D both fit unscaled; no strip, nothing that takes taps.
+// - compact: Lesson 4's cold open and hero. Fifteen rows from the floor, C4
+//   to D5 there, so a scale on C and one on D both fit unscaled; no strip,
+//   nothing that takes taps.
 //
 // Every stair is a block from its tread down to a foot below do, and its
 // tap zone is its column, at least 44 px tall: columns never overlap, so no
 // two stairs' zones do. Group's two bracket zones sit above their stairs,
-// clear of every stair's zone. All of it is a function of the canvas size
-// and the start, which is fractional while a slide is travelling.
+// clear of every stair's zone. All of it is a function of the canvas size,
+// the floor and the start, which is fractional while a slide is travelling.
 
 import type { Strip } from './key-strip'
 import { stripLayout, whiteRange } from './key-strip'
@@ -32,6 +35,12 @@ import { MAJOR_DEGREES } from './major-scale'
 import { isBlack } from './notes'
 
 export type StairsMode = 'wide' | 'narrow' | 'compact'
+
+/** The starts a staircase takes, do's lowest and highest: Lesson 4's run C4 to B4. */
+export interface StairsRange {
+  readonly lo: number
+  readonly hi: number
+}
 
 export interface Rect {
   readonly x: number
@@ -92,7 +101,7 @@ interface ModeSpec {
   readonly drop: number
   readonly stripH: number
   readonly pad: number
-  /** Rows shown: 25 (C4 to C6), the scale's 13, or 15 (C4 to D5). */
+  /** Rows shown: 25 (two octaves from the floor), the scale's 13, or 15 (a ninth from the floor). */
   readonly rows: number
 }
 
@@ -158,8 +167,19 @@ function spanOf(mode: StairsMode, W: number): { x0: number; x1: number } {
   return { x0, x1: x0 + span }
 }
 
-/** The lowest row of a layout that does not scroll, and the strip's lowest key. */
-const FLOOR = 60
+/**
+ * A range's floor, the C at or below its lowest start: the lowest row of a
+ * layout that does not scroll, and the strip's lowest key. Every start sits
+ * in the octave above it, so a scale's top do keeps to the 25 rows.
+ */
+export function floorOf(range: StairsRange): number {
+  const floor = range.lo - (range.lo % 12)
+  if (range.hi < range.lo || range.hi > floor + 11)
+    throw new Error(
+      `A staircase's starts run within one octave from C: not ${range.lo} to ${range.hi}`,
+    )
+  return floor
+}
 
 /**
  * Which layout a full staircase takes on a W by H canvas: narrow below 520
@@ -175,23 +195,23 @@ export function fullMode(
   return coarse && W < 15 * TARGET ? 'narrow' : 'wide'
 }
 
-/** A key's centre, counted in white keys from C4's left edge. */
-function keyCentre(midi: number): number {
-  const whites = whiteRange(FLOOR, midi).length
+/** A key's centre, counted in white keys from the floor's left edge. */
+function keyCentre(midi: number, floor: number): number {
+  const whites = whiteRange(floor, midi).length
   // a white key's centre is half a key in; a black key sits on the join above it
   return isBlack(midi) ? whites : whites - 0.5
 }
 
 /**
- * The narrow strip's window, in white keys from C4: the scale's octave at
- * full width, do's key centred half a white key in, so a black do shows
- * whole. A fractional start (a pan in flight) interpolates.
+ * The narrow strip's window, in white keys from the floor: the scale's
+ * octave at full width, do's key centred half a white key in, so a black do
+ * shows whole. A fractional start (a pan in flight) interpolates.
  */
-export function stripWindow(start: number): number {
+export function stripWindow(start: number, floor: number): number {
   const lo = Math.floor(start)
   const u = start - lo
-  const centre = keyCentre(lo) + (keyCentre(lo + 1) - keyCentre(lo)) * u
-  return centre - 0.5
+  const at = (m: number): number => keyCentre(m, floor)
+  return at(lo) + (at(lo + 1) - at(lo)) * u - 0.5
 }
 
 function stripFor(
@@ -199,38 +219,40 @@ function stripFor(
   W: number,
   H: number,
   start: number,
+  floor: number,
 ): Strip | null {
   if (mode === 'compact') return null
   const s = specFor(mode, H)
   const wide = mode === 'wide'
   const { x0, x1 } = spanOf(mode, W)
   return stripLayout({
-    lo: FLOOR,
-    hi: 84,
+    lo: floor,
+    hi: floor + 24,
     x0: wide ? 4 : x0,
     x1: wide ? W - 4 : x1,
     top: H - s.pad - s.stripH,
     height: s.stripH,
-    window: wide ? undefined : { from: stripWindow(start), keys: 8 },
+    window: wide ? undefined : { from: stripWindow(start, floor), keys: 8 },
   })
 }
 
 /**
  * The staircase on a W by H canvas, standing on `start` (do; fractional
- * while a slide travels). In narrow mode the stairs never move: `start`
- * scrolls the rows and pans the strip instead.
+ * while a slide travels) over `floor` (`floorOf`). In narrow mode the
+ * stairs never move: `start` scrolls the rows and pans the strip instead.
  */
 export function stairsLayout(
   mode: StairsMode,
   W: number,
   H: number,
   start: number,
+  floor: number,
 ): StairsLayout {
   const s = specFor(mode, H)
   const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / s.rows
   const narrow = mode === 'narrow'
   // the pitch at the top row's centre
-  const high = narrow ? start + 12 : FLOOR + s.rows - 1
+  const high = narrow ? start + 12 : floor + s.rows - 1
   const yOfRow = (midi: number): number =>
     s.top + rowH / 2 + (high - midi) * rowH
   const yOfStair = (deg: number): number =>
@@ -276,7 +298,7 @@ export function stairsLayout(
     x1,
     stairs,
     brackets,
-    strip: stripFor(mode, W, H, start),
+    strip: stripFor(mode, W, H, start, floor),
   }
 }
 

@@ -1,19 +1,23 @@
 // ============================================================
-// Staircase toy — Lesson 4's steps' stage, and free play's
+// Staircase toy — the staircase with its buttons, switches and slider
 // ============================================================
 //
-// The full staircase in Lesson 4's five states and free play (Lesson 4
-// WEB-SPEC, Toys 1). Over the drawing sit real buttons, one per stair, so
-// every stair plays by keyboard and says its name ("Stair 3, mi, F sharp
-// 4"); Group's brackets are buttons too. The start is a slider (C4 to B4,
-// arrow keys a semitone, Home and End to C and B) between Start lower and
-// Start higher. One action per tap: a stair plays its note; a key of the
-// strip plays in steps 1 and 2 and, from step 3 on, makes that key do. With
-// a mouse or pen a vertical drag on the staircase slides it, and a pointer
-// that moves more than 6 px is a drag, not a tap. On touch the figure keeps
-// `touch-action: pan-y`, so a vertical swipe scrolls the page and the
-// buttons and keys slide instead. A slide is silent; Play up plays the
-// scale from the new start.
+// Lesson 4's staircase as a toy (Lesson 4 WEB-SPEC, Toys 1), in the states
+// its page hands in (`StairsState`): which switches and plays show, what a
+// key of the strip does, whether Play up earns the gold on the two short
+// steps, and a start a state stands on (Lesson 4's five steps and free play,
+// lesson-04/stairs-states.ts). Over the drawing sit real buttons, one per
+// stair, so every stair plays by keyboard and says its name ("Stair 3, mi, F
+// sharp 4"); Group's brackets are buttons too. The start is a slider through
+// the page's starts (Lesson 4's C4 to B4; arrow keys a semitone, Home and
+// End to the lowest and the highest) between Start lower and Start higher.
+// One action per tap: a stair plays its note; a key of the strip plays, or
+// in a state with the slide makes that key do. With a mouse or pen a
+// vertical drag on the staircase slides it, and a pointer that moves more
+// than 6 px is a drag, not a tap. On touch the figure keeps `touch-action:
+// pan-y`, so a vertical swipe scrolls the page and the buttons and keys
+// slide instead. A slide is silent; Play up plays the scale from the new
+// start.
 
 import { clamp, q, qa, wait } from './dom'
 import { stripHit } from './key-strip'
@@ -25,47 +29,29 @@ import { isBlack, signName } from './notes'
 import { Sound } from './sound'
 import type { StairsCore } from './stairs-core'
 import { mountStairs } from './stairs-core'
-import type { StairsLayout } from './stairs-geometry'
+import type { StairsLayout, StairsRange } from './stairs-geometry'
 import { findParts, groupName, place } from './stairs-parts'
 import { groupOf, landOnDo, scaleDown, scaleUp, stopOnTi, whiteKeysRun, } from './stairs-plays'
-import { readout, sliderText, stairLabel, START_HI, START_LO, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
+import { readout, sliderText, stairLabel, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
 
-/** A step of the deck, or the Wrap's free play, which has every control. */
-export type StairsStep = 1 | 2 | 3 | 4 | 5 | 'free'
-
-interface Features {
+/** What the staircase offers in one state of its page: a step of a deck, or free play. */
+export interface StairsState {
+  /** Group, with its two brackets. */
   readonly group: boolean
+  /** White keys only. */
   readonly white: boolean
+  /** The slide: the start slider, Start lower and Start higher, and a drag. */
   readonly slide: boolean
+  /** The names switch. */
   readonly names: boolean
+  /** Stop on ti and Land on do. */
   readonly stop: boolean
-  /** A key of the strip plays its note (steps 1 and 2) rather than becoming do. */
+  /** A key of the strip plays its note, rather than becoming do. */
   readonly keysPlay: boolean
-}
-
-const NONE: Features = {
-  group: false,
-  white: false,
-  slide: false,
-  names: false,
-  stop: false,
-  keysPlay: true,
-}
-
-const FEATURES: Readonly<Record<string, Features>> = {
-  1: NONE,
-  2: { ...NONE, group: true },
-  3: { ...NONE, white: true, slide: true, keysPlay: false },
-  4: { ...NONE, names: true, slide: true, keysPlay: false },
-  5: { ...NONE, stop: true, slide: true, keysPlay: false },
-  free: {
-    group: true,
-    white: true,
-    slide: true,
-    names: true,
-    stop: true,
-    keysPlay: false,
-  },
+  /** Play up lights the gold on the two short steps, kept while the page stays in such a state. */
+  readonly gold: boolean
+  /** A start the staircase stands on as the state opens. */
+  readonly standOn?: number
 }
 
 /** How far a pointer moves before a tap becomes a drag (as on Lesson 1's spiral). */
@@ -73,9 +59,10 @@ const DRAG_PX = 6
 /** A tapped stair's or key's note, seconds. */
 const TAP_SEC = 0.6
 
-export interface StairsToy {
+export interface StairsToy<K extends PropertyKey> {
   readonly core: StairsCore
-  setStep(step: StairsStep): void
+  /** Opens one of the page's states. */
+  setState(key: K): void
   /** Slides to `midi` and waits for the travel to land. */
   slideTo(midi: number): Promise<void>
   /** Play up, from the current start. */
@@ -86,25 +73,31 @@ export interface StairsToy {
   stop(): void
 }
 
-export interface StairsToyOptions {
+export interface StairsToyOptions<K extends PropertyKey> {
   readonly active: () => boolean
   readonly names: ModeStore<NamesMode>
+  /** The starts the staircase takes, do's lowest and highest. */
+  readonly range: StairsRange
+  /** The page's states, by the key it opens each with. */
+  readonly states: Readonly<Record<K, StairsState>>
+  /** The state it opens in: one of `states`, which alone says what the keys are. */
+  readonly initial: NoInfer<K>
 }
 
 /** The start a key of the strip makes: its own pitch if it can be a start, else the same letter an octave or two down. */
-export function startFromKey(midi: number): number {
+export function startFromKey(midi: number, range: StairsRange): number {
   let m = midi
-  while (m > START_HI) m -= 12
+  while (m > range.hi) m -= 12
   return m
 }
 
-export function mountStairsToy(
+export function mountStairsToy<K extends PropertyKey>(
   root: HTMLElement,
-  opts: StairsToyOptions,
-): StairsToy {
+  opts: StairsToyOptions<K>,
+): StairsToy<K> {
   const p = findParts(root)
-  let features: Features = FEATURES[1]
-  let step: StairsStep = 1
+  const { lo, hi } = opts.range
+  let state: StairsState = opts.states[opts.initial]
   let slow = false
   let goldEarned = false
   let summaryTimer = 0
@@ -112,6 +105,7 @@ export function mountStairsToy(
     canvas: q<HTMLCanvasElement>('canvas', p.viz),
     compact: false,
     active: opts.active,
+    range: opts.range,
     names: () => opts.names.mode,
     onLayout: layOut,
   })
@@ -149,7 +143,7 @@ export function mountStairsToy(
       p.sliderValue.textContent = `Do is ${signName(majorScale(t)[0])}`
     qa<HTMLButtonElement>('[data-slide]', root).forEach((b) => {
       const d = Number(b.dataset.slide)
-      b.disabled = (d < 0 && t <= START_LO) || (d > 0 && t >= START_HI)
+      b.disabled = (d < 0 && t <= lo) || (d > 0 && t >= hi)
     })
     syncWhite()
   }
@@ -161,14 +155,14 @@ export function mountStairsToy(
     if (black && core.switches.white) core.set({ white: false })
     btn?.setAttribute('aria-disabled', String(black))
     btn?.setAttribute('aria-pressed', String(core.switches.white))
-    if (p.whiteHint !== null) p.whiteHint.hidden = !(features.white && black)
+    if (p.whiteHint !== null) p.whiteHint.hidden = !(state.white && black)
     if (p.whiteNote !== null)
       p.whiteNote.hidden = !(core.switches.white && core.tonic % 12 === 0)
   }
 
   function slide(midi: number): void {
-    if (!features.slide) return
-    const next = clamp(midi, START_LO, START_HI)
+    if (!state.slide) return
+    const next = clamp(midi, lo, hi)
     if (next === core.tonic) return
     core.stop()
     core.set({ waiting: false, home: false })
@@ -181,7 +175,7 @@ export function mountStairsToy(
   async function playUp(audible: boolean): Promise<void> {
     core.set({ waiting: false, home: false })
     await core.play(scaleUp(core.tonic, speed()), audible)
-    if (step === 1 || step === 2) {
+    if (state.gold) {
       goldEarned = true
       core.set({ gold: true })
     }
@@ -298,8 +292,8 @@ export function mountStairsToy(
         ArrowRight: core.tonic + 1,
         ArrowDown: core.tonic - 1,
         ArrowLeft: core.tonic - 1,
-        Home: START_LO,
-        End: START_HI,
+        Home: lo,
+        End: hi,
       }
       const next = to[e.key]
       if (next === undefined) return
@@ -329,10 +323,10 @@ export function mountStairsToy(
       if (!dragged && Math.hypot(at.x - down.x, dy) <= DRAG_PX) return
       if (!dragged) {
         dragged = true
-        if (e.pointerType !== 'touch' && features.slide)
+        if (e.pointerType !== 'touch' && state.slide)
           p.viz.setPointerCapture(e.pointerId)
       }
-      if (e.pointerType === 'touch' || !features.slide) return
+      if (e.pointerType === 'touch' || !state.slide) return
       const rowH = core.layout?.rowH ?? 12
       slide(down.tonic - Math.round(dy / rowH))
     })
@@ -367,11 +361,11 @@ export function mountStairsToy(
     const strip = core.layout?.strip ?? null
     const midi = strip === null ? null : stripHit(strip, x, y)
     if (midi === null) return
-    if (features.keysPlay) {
+    if (state.keysPlay) {
       void core.play([{ midi, at: 0, dur: TAP_SEC }], Sound.canPlay())
       return
     }
-    slide(startFromKey(midi))
+    slide(startFromKey(midi, opts.range))
   }
 
   function show(selector: string, on: boolean): void {
@@ -380,28 +374,24 @@ export function mountStairsToy(
     })
   }
 
-  function setStep(next: StairsStep): void {
-    step = next
-    features = FEATURES[String(next)]
+  function setState(key: K): void {
+    state = opts.states[key]
     core.stop()
-    if (next === 1 || next === 2) {
-      // steps 1 and 2 stand on C
-      core.setTonic(START_LO)
-    }
-    if (!features.group) {
+    if (state.standOn !== undefined) core.setTonic(state.standOn)
+    if (!state.group) {
       core.set({ group: false })
       p.bracketBtns.forEach((b) => {
         b.hidden = true
       })
     }
-    if (!features.white) core.set({ white: false })
-    if (!features.stop) core.set({ waiting: false, home: false })
-    core.set({ gold: goldEarned && (next === 1 || next === 2) })
-    show('[data-stairs-group]', features.group)
-    show('[data-stairs-white]', features.white)
-    show('[data-stairs-play="stop"], [data-stairs-play="land"]', features.stop)
-    show('[data-slide-row]', features.slide)
-    show('[data-names-bar]', features.names)
+    if (!state.white) core.set({ white: false })
+    if (!state.stop) core.set({ waiting: false, home: false })
+    core.set({ gold: goldEarned && state.gold })
+    show('[data-stairs-group]', state.group)
+    show('[data-stairs-white]', state.white)
+    show('[data-stairs-play="stop"], [data-stairs-play="land"]', state.stop)
+    show('[data-slide-row]', state.slide)
+    show('[data-names-bar]', state.names)
     root
       .querySelector('[data-stairs-group]')
       ?.setAttribute('aria-pressed', String(core.switches.group))
@@ -414,16 +404,16 @@ export function mountStairsToy(
   bindPointer()
   const namesBar = root.querySelector<HTMLElement>('[data-names-bar]')
   if (namesBar !== null) bindModeToggle(namesBar, opts.names, 'data-names')
-  setStep(1)
+  setState(opts.initial)
 
   return {
     core,
-    setStep,
+    setState,
     async slideTo(midi) {
-      const was = features
-      features = { ...features, slide: true }
+      const was = state
+      state = { ...state, slide: true }
       slide(midi)
-      features = was
+      state = was
       await wait(core.travel)
     },
     playUp,

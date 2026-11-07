@@ -110,7 +110,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 12", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
    `initMasthead` (`src/features/lessons/kit/page-chrome.ts:127-159`) with Lesson 4's map of
-   sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:108-119`), which draws the lesson menu,
+   sections and `{ lesson: 12, deck }` (`lesson-04/main.ts:131-143`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:131`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
@@ -133,7 +133,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 4. **Four words you'll meet**: diatonic, Roman numeral, diminished and augmented, each with its
    definition, a small figure and a play button (Toys 4).
 5. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step on
-   the one ring-of-rooms toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:73-76`), in
+   the one ring-of-rooms toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:80-83`), in
    five states (Toys 1):
    1. Where do a key's chords come from? The seven chips of C major.
    2. How do Roman numerals name them? The chips with their numerals, and the key switch C · G; the
@@ -156,7 +156,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    links open in a new tab. The two versions sit in one `#practiseCard`, shown by the visit's
    ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:126-149`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(12)` before
-   `createExplorer({ current: 12 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:105`;
+   `createExplorer({ current: 12 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:118-121`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
    "Next lesson 13 · Resonance and vowels" with "Coming later"; then Lesson 13's tease, "Same note,
    two vowels: ‘ee’, then ‘ah’.", above Lesson 13's hook, and "See it on the map" while Lesson 13
@@ -220,7 +220,7 @@ minute. Free play in the Wrap is not counted.
 | 5. The tune toy           | Toys 1's ring; the kit's Merc voice (`kind: 'merc'`, `kit/sound.ts:53-72`)                                                                                                                                                                                                                                                                                                      | Two tunes over the loop, and tune 2 with even notes                                                                                                                                                                           |
 | 6. Sing it                | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); the kit's slide guide and breathing ring (`kit/slide-guide.ts`, `kit/sing.ts`); Move do and its count-in note, Lesson 4's, which Lesson 10's spec moves into the kit; the guide's breath mark, from Lesson 6's page; Lesson 6's rest card after "Effortful" | A path of five roots with the chords under it; Move do stopping at three higher; the Easy and Workable line                                                                                                                   |
 | 7. Go deeper drawers      | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                                                                                                     | Three items in two drawers                                                                                                                                                                                                    |
-| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:59-65`); Lesson 10's questions                                                                                                                                                                                                                   | Ids and keys; spoken numerals                                                                                                                                                                                                 |
+| 8. Recall and quick check | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:66-72`); Lesson 10's questions                                                                                                                                                                                                                   | Ids and keys; spoken numerals                                                                                                                                                                                                 |
 | 9. Tease still            | The kit's next-lesson card and its slot (`kit/next-card.ts`), as Lesson 2's figures sit in it                                                                                                                                                                                                                                                                                   | One still: a level pitch line over a strip of bars whose peaks carry only "?"                                                                                                                                                 |
 
 ### 1. The ring of rooms
@@ -289,7 +289,7 @@ the stage-fit test reach every action.
   Letters · Do-re-mi, is Lesson 4's (`kit/names-modes.ts:15-22`), which Lesson 10's spec
   moves into the kit with a choice of modes (What the kit and the app still need, item 5), on a
   page-wide `createModeStore` (`kit/names.ts:27`), as Lesson 4's page keeps its own
-  (`lesson-04/main.ts:69-70`). Under Do-re-mi the seven scale notes carry their syllables beside
+  (`lesson-04/main.ts:76-77`). Under Do-re-mi the seven scale notes carry their syllables beside
   their beads, do on C in C major and on G in G major, and the chips' second lines change with them;
   the black keys carry no syllable. The syllables are the major scale's, Lesson 4's (`MAJOR_SOLFEGE`,
   `kit/names-modes.ts:32-42`), with do on the key's tonic: the chord on la reads "la do mi", and no
@@ -303,7 +303,7 @@ the stage-fit test reach every action.
   each play is one round, and Play again is the same button.
 - **Tunes** (Step 5): the tune toy (Toys 5) on this ring.
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
-  (`lesson-04/main.ts:90-92`), with every control: the seven chips, the key switch, the names
+  (`lesson-04/main.ts:97-105`), with every control: the seven chips, the key switch, the names
   switch, Play I, then vi, Play the loop, Play the roots, Tune 1, Tune 2, Even notes and Slow. In G
   the loop, the roots and the tunes play a fourth lower than in C, all by the same five semitones,
   so every chord and every sung note keeps its place against the others: the loop is G3 B3 D4, D3
@@ -650,7 +650,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   filtered by id, as Lesson 4's page takes Lesson 2's (`lesson-04/quiz-questions.ts:28-29`);
   otherwise they are written into this page's `lesson-12/quiz-questions.ts` as Lesson 3 writes
   Lesson 2's (`lesson-03/quiz-questions.ts:116`), and give way to the import when Lesson 10's lands.
-  Shown to everyone, as Lesson 4's recall is (`lesson-04/main.ts:59-65`), since Lesson 10 is a
+  Shown to everyone, as Lesson 4's recall is (`lesson-04/main.ts:66-72`), since Lesson 10 is a
   prerequisite (CURRICULUM § 3.3). Prefix `recall-`, keys `fyp-l12-recall-seed` and
   `fyp-l12-recall-v1`; earlier answers are never shown, so the answers measure delayed retrieval
   (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing done. Its links open Lesson 10's page

@@ -23,6 +23,7 @@ import { mountPredict } from '@/features/lessons/kit/predict'
 import { singAlong } from '@/features/lessons/kit/sing-along'
 import { mountStairs } from '@/features/lessons/kit/stairs-core'
 import { landOnDo, stopOnTi } from '@/features/lessons/kit/stairs-plays'
+import { STARTS } from './stairs-states'
 
 const C4 = 60
 const D4 = 62
@@ -45,6 +46,7 @@ export function initColdOpen(): void {
     canvas: q<HTMLCanvasElement>('canvas', box),
     compact: true,
     active: watch(box),
+    range: STARTS,
   })
 
   async function climb(tonic: number, audible: boolean): Promise<void> {

@@ -469,7 +469,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    already takes.
 6. **Lesson 4's staircase into the kit**, with its White keys only and its strip, and a start
    outside Lesson 4's C4 to B4 (G2 and G4 here); Lesson 4's page then imports it from there
-   (`src/features/lessons/kit/stairs-toy.ts:1-17`).
+   (`src/features/lessons/kit/stairs-toy.ts:1-21`).
 7. **This page's own parts**, new in `src/features/lessons/lesson-21/`: Find do on the staff toy,
    its six rounds, eleven places and lines (Toys 4); the small staircase under each of the predict's
    A major plays (Toys 5); and the four words' figures, a small ring, a staff with G major's sharp, a

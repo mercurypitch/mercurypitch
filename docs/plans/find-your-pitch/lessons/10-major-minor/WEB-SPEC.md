@@ -98,7 +98,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 1. **Masthead**: Lesson 4's (wordmark, "Season 1 · Lesson 10", anchors Lesson, Sing and Explorer,
    the Sound toggle off by default, Pause animations with its reduced-motion lock), through
    `initMasthead` (`src/features/lessons/kit/page-chrome.ts:127-159`) with Lesson 4's map of
-   sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:109-119`), which draws the lesson menu,
+   sections and `{ lesson: 10, deck }` (`lesson-04/main.ts:132-143`), which draws the lesson menu,
    remembers the steps the viewer reaches and first settles the page's links to other lessons for
    the state it was served with (`followPageState`, `src/features/lessons/kit/page-chrome.ts:131`).
 2. **Hero, with the cold open**, laid out as Lesson 2's (`learn/02.html:333-506`). Its copy holds
@@ -121,7 +121,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 4. **Four words you'll meet**: third, triad, quality and natural minor, each with its definition, a
    small figure and a play button (Toys 4).
 5. **The steps**: Lesson 1's sticky stage and step deck ("N of 5", Previous and Next), every step on
-   the one chord-bead toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:72-76`), in
+   the one chord-bead toy (`toyFor: () => 1`, as Lesson 4's deck, `lesson-04/main.ts:79-83`), in
    five states (Toys 1), with the ear game and Step 5's predict in the step text (Toys 3, 5):
    1. How big is a third? Two beads, C and E, with Play the third, Slow and Major · Minor; Major or
       minor? on thirds under the Notice.
@@ -147,7 +147,7 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
    one `#practiseCard`, shown by the visit's
    ending, as Lesson 5's are (`lesson-05/wrap.ts:23-25`; `comfort.ts:126-149`). The next lesson's
    card is the kit's, drawn from the season by `createNextCard(10)` before
-   `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:95`, `:105`;
+   `createExplorer({ current: 10 })`, as Lesson 4's page draws its own (`lesson-04/main.ts:108`, `:112`;
    `kit/next-card.ts:181-209`, from the season as the page's state shows it). Its eyebrow reads
    "Next lesson 11 · Registers and the break" with "Coming later"; then Lesson 11's tease, "Slide up
    slowly, and your voice may flip.", above Lesson 11's hook, and "See it on the map" while Lesson
@@ -209,7 +209,7 @@ about a minute.
 | 5. Major or minor?                      | The kit's ear game, from Lesson 6's page: Lesson 2's (`lesson-02/ear-game.ts`), generalised to N answers, with a fresh seed each run                                                                                                                                                                                                                                                                   | Two modes, thirds and chords; a deal that gives each answer half the rounds                                                                                                                                                                                       |
 | 6. Sing it                              | Lesson 3's comfort check, voice choice and feeling question (`kit/comfort.ts`, `kit/voice-choice.ts`, `fyp-voice`); the kit's slide guide and breathing ring (`kit/slide-guide.ts`, `kit/sing.ts`); Lesson 4's count-in note and Move do, in the kit since #1192 (`kit/move-do.ts`), Lesson 6's Move do with it; the guide's breath mark, from Lesson 6's page; Lesson 6's rest card after "Effortful" | A path of two chords with a gap; the Easy and Workable line                                                                                                                                                                                                       |
 | 7. Go deeper drawers                    | Lesson 2's `details` drawer                                                                                                                                                                                                                                                                                                                                                                            | Five items in three drawers                                                                                                                                                                                                                                       |
-| 8. Recall and quick check               | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:58-65`); Lesson 6's questions                                                                                                                                                                                                                                           | Ids and keys                                                                                                                                                                                                                                                      |
+| 8. Recall and quick check               | The kit's quiz (`kit/quiz.ts`), with its prefix, slot and away links; Lesson 4's recall, shown to everyone (`lesson-04/main.ts:65-72`); Lesson 6's questions                                                                                                                                                                                                                                           | Ids and keys                                                                                                                                                                                                                                                      |
 | 9. Tease still                          | The kit's next-lesson card and its slot (`kit/next-card.ts`), as Lesson 2's figures sit in it                                                                                                                                                                                                                                                                                                          | One still: a siren's line crossing a grey seam                                                                                                                                                                                                                    |
 
 ### 1. The chord beads
@@ -276,7 +276,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   of modes since #1206 (`kit/names-modes.ts:15-22`; What the kit and the app still need, item 5),
   and shows two of its three modes, Letters ·
   Do-re-mi, as Lesson 6's page does, on a page-wide `createModeStore` (`kit/names.ts:27`), as Lesson
-  4's page keeps its own (`lesson-04/main.ts:69-70`). Lesson 4's syllables are the major scale's
+  4's page keeps its own (`lesson-04/main.ts:76-77`). Lesson 4's syllables are the major scale's
   (`MAJOR_SOLFEGE`, `kit/names-modes.ts:32-42`), so this page gives the switch its own: under Minor, do re me
   fa so le te do, the do-based minor the series sings (FACTS 8, 26). The letters come from
   `spellScale` (`notes.ts:165-177`; FACTS 27). Major · Minor waits for the predict's choice: in Step
@@ -285,7 +285,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   predict first. The scale state draws no name strip: Drawing gives it to Steps 1 to 4 only
   (`STRIP_IN`, `lesson-10/chord-layout.ts:86-92`).
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
-  (`lesson-04/main.ts:90-92`), with every control: Root lower and Root higher, Major · Minor, Chord
+  (`lesson-04/main.ts:97-105`), with every control: Root lower and Root higher, Major · Minor, Chord
   · Scale, **Play** (the chord, note by note and together, or the scale, whichever shows), **Play
   the pattern**, **Slow** (doubling Play's lengths, and playing the pattern at Step 4's slow tempo
   rather than its fast one) and the names switch. Spread into a scale on a root slid to B4, it
@@ -638,7 +638,7 @@ keeps a link's words and drops the link wherever that lesson is not live.
   from its `lesson-06/quiz-questions.ts` and filtered by id (`RECALL_QUESTIONS`,
   `lesson-10/quiz-questions.ts:32-34`), as Lesson 4's page takes Lesson 2's
   (`lesson-04/quiz-questions.ts:28-29`). Shown to everyone, as Lesson 4's recall is
-  (`lesson-04/main.ts:58-65`), since Lesson 6 is a prerequisite (CURRICULUM § 3.3). Prefix
+  (`lesson-04/main.ts:65-72`), since Lesson 6 is a prerequisite (CURRICULUM § 3.3). Prefix
   `recall-`, keys `fyp-l10-recall-seed` and `fyp-l10-recall-v1`; earlier answers are never shown, so
   the answers measure delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing
   done. Its links open Lesson 6's page at the step, `/learn/06#step-5` and `/learn/06#step-2`, in a

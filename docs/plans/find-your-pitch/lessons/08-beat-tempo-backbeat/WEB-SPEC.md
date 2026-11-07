@@ -685,7 +685,7 @@ lesson is not live where the page is served, the words stay with no link, which 
   answers measure delayed retrieval (MASTER-PLAN § 9). It takes no `lesson`, so it marks nothing
   done. Its links open Lesson 6's page at the step, `/learn/06#step-3` and `/learn/06#step-4`, in a
   new tab, through `away: { href: recallStepHref }`, as Lessons 3, 4 and 5 pass theirs
-  (`lesson-03/recall.ts:47`; `lesson-04/main.ts:64`; `lesson-05/recall.ts:21`); the kit's step deck
+  (`lesson-03/recall.ts:47`; `lesson-04/main.ts:71`; `lesson-05/recall.ts:21`); the kit's step deck
   opens a page at the step its address names (`kit/step-deck.ts:19-23`). Question 1's slot is Lesson
   6's own, a "Play" button with `data-quiz-play="lines"` (on #1149,
   `lesson-06/quiz-questions.ts:37-38`, `:46`), which plays `line-c`, 0.6 s of silence, then
@@ -921,7 +921,7 @@ was built on.
 10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:141-143`, `:137-139`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
-    used at `lesson-04/main.ts:43` and `:64`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
+    used at `lesson-04/main.ts:50` and `:65`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
     (`kit/quiz.ts:80-104`, `:186-216`).

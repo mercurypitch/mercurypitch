@@ -50,6 +50,7 @@ import { drawLadderFigure } from './ladder-figure'
 import { QUIZ_QUESTIONS, RECALL_QUESTIONS, recallStepHref, } from './quiz-questions'
 import { bindQuizStop } from './quiz-stop'
 import { initSing } from './sing'
+import { STARTS, STATES } from './stairs-states'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -95,7 +96,13 @@ bindQuizStop(quiz.host)
 drawLadderFigure()
 // free play: every staircase control, on one stage
 const freePlay = q('#freePlay')
-mountStairsToy(freePlay, { active: watch(freePlay), names }).setStep('free')
+mountStairsToy(freePlay, {
+  active: watch(freePlay),
+  names,
+  range: STARTS,
+  states: STATES,
+  initial: 'free',
+})
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(4)

@@ -361,7 +361,7 @@ main's.
   published (`kit/explorer.ts:167-174`).
 - `kit/explorer.ts`, the current lesson: it selected Lesson 1 when it opened (`let sel = 1`).
   Lesson 2's page added the option, `current` (`kit/explorer.ts:65-66`, `:262-266`), and this page
-  passes 4 (`lesson-04/main.ts:96`).
+  passes 4 (`lesson-04/main.ts:108`).
 - `kit/explorer.ts`, links between pages: a ready card's actions were the same-page anchors
   `#watch` and `#lesson`, right only for the page's own lesson, so a card for another ready lesson
   links to that lesson's page, `/learn/NN` (Lesson 2 lists the same gap). On main it does

@@ -19,6 +19,7 @@ import { Sound } from '@/features/lessons/kit/sound'
 import type { StairsCore } from '@/features/lessons/kit/stairs-core'
 import { mountStairs } from '@/features/lessons/kit/stairs-core'
 import { scaleUp } from '@/features/lessons/kit/stairs-plays'
+import { STARTS } from './stairs-states'
 
 /** The stars, painted once per size. */
 export function stillSky(stage: HTMLElement): void {
@@ -41,6 +42,7 @@ export function initHero(): StairsCore {
     canvas: q<HTMLCanvasElement>('#heroStairs canvas'),
     compact: true,
     active: watch(stage),
+    range: STARTS,
   })
   const play = q<HTMLButtonElement>('#heroPlay')
   play.addEventListener('click', () => {

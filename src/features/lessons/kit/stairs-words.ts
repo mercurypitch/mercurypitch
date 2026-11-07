@@ -16,10 +16,6 @@ import { MAJOR_SOLFEGE } from './names-modes'
 import type { Spelled } from './notes'
 import { signName, signsHtml, wordName } from './notes'
 
-/** The starts the staircase slides through: C4 to B4. */
-export const START_LO = 60
-export const START_HI = 71
-
 const COUNT = ['no', 'one', 'two', 'three', 'four', 'five']
 
 const STEP_WORD = { T: 'tone', S: 'semitone' } as const

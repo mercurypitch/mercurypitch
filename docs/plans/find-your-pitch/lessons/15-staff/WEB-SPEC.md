@@ -409,7 +409,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
 - **Recall**: Lesson 2's questions 2 and 3 (FACTS 7), imported from Lesson 2's page and filtered by
   id, `l02-q2` and `l02-q3`, as Lesson 4's page takes Lesson 2's questions 1 and 3
   (`src/features/lessons/lesson-04/quiz-questions.ts:27-29`), so one question reports under one id
-  on every page. Shown to everyone, as Lesson 4's recall is (`src/features/lessons/lesson-04/main.ts:58-65`),
+  on every page. Shown to everyone, as Lesson 4's recall is (`src/features/lessons/lesson-04/main.ts:65-72`),
   since Lesson 2 is a prerequisite. Prefix `recall-`, keys `fyp-l15-recall-seed` and
   `fyp-l15-recall-v1`; no `lesson`, so it marks nothing done. Its step links read "Try Lesson 2,
   Step 3 again" and "Try Lesson 2, Step 5 again" and open `/learn/02#step-3` and `/learn/02#step-5`

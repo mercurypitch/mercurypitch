@@ -22,11 +22,10 @@ import type { Voice, VoiceOptions } from './sound'
 import { Sound } from './sound'
 import type { StairLight, StairsScene } from './stairs-draw'
 import { paintStairs } from './stairs-draw'
-import type { StairsLayout, StairsMode } from './stairs-geometry'
-import { fullMode, stairsLayout } from './stairs-geometry'
+import type { StairsLayout, StairsMode, StairsRange } from './stairs-geometry'
+import { floorOf, fullMode, stairsLayout } from './stairs-geometry'
 import type { NoteEvent } from './stairs-plays'
 import { lengthOf } from './stairs-plays'
-import { START_HI, START_LO } from './stairs-words'
 
 export interface StairsCoreOptions {
   readonly canvas: HTMLCanvasElement
@@ -34,6 +33,8 @@ export interface StairsCoreOptions {
   readonly compact: boolean
   /** When it draws: on screen, and on its step. */
   readonly active: () => boolean
+  /** The starts it takes, do's lowest and highest (`floorOf`); it opens on the lowest. */
+  readonly range: StairsRange
   /** The names on the stairs (the compact staircase always shows do-re-mi). */
   readonly names?: () => NamesMode
   /** Hears every new layout, for the controls laid over the drawing. */
@@ -55,7 +56,7 @@ export interface StairsCore {
   readonly tonic: number
   readonly busy: boolean
   readonly layout: StairsLayout | null
-  /** A slide: silent, the staircase keeping its shape. Starts run C4 to B4. */
+  /** A slide: silent, the staircase keeping its shape, kept within its starts. */
   setTonic(midi: number): void
   /** Seconds a slide's travel takes (none under reduced motion). */
   readonly travel: number
@@ -124,9 +125,11 @@ const smoothstep = (u: number): number => u * u * (3 - 2 * u)
 export function mountStairs(opts: StairsCoreOptions): StairsCore {
   const cv: Surface = surface(opts.canvas)
   const coarse = window.matchMedia('(pointer: coarse)').matches
-  let tonic = START_LO
-  let view = START_LO
-  let travelFrom = START_LO
+  const { lo, hi } = opts.range
+  const floor = floorOf(opts.range)
+  let tonic = lo
+  let view = lo
+  let travelFrom = lo
   let travelU = 1
   let sw: SceneSwitches = OFF
   const eased = { group: 0, white: 0, arrow: 0, home: 0 }
@@ -198,7 +201,7 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
   function draw(_now: number, dt: number): void {
     step(dt)
     const { ctx, w, h } = cv.fit()
-    layout = stairsLayout(modeFor(w, h), w, h, view)
+    layout = stairsLayout(modeFor(w, h), w, h, view, floor)
     const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)}`
     if (key !== lastKey) {
       lastKey = key
@@ -246,7 +249,7 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       return reducedMotion() ? 0 : TRAVEL_SEC
     },
     setTonic(midi) {
-      const next = clamp(Math.round(midi), START_LO, START_HI)
+      const next = clamp(Math.round(midi), lo, hi)
       if (next === tonic) return
       travelFrom = view
       travelU = 0
