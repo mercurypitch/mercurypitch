@@ -11,10 +11,10 @@
 // at a phone's size and a desktop's, no AudioContext before the first tap,
 // and nothing plays before a play button, and the page fits a phone's
 // width with no sideways scroll; quick check 3's play and free play's slow
-// wave wait for Step 3's choice, and all of free play for the cold open's;
-// and a visitor with the studio installed still gets the lesson, not the
-// shell. It carries Season 2, so its masthead and its map are Season 2's,
-// and it draws no staff for show (WEB-SPEC, Look).
+// wave wait for Step 3's choice, and the steps' band chart and all of free
+// play for the cold open's; and a visitor with the studio installed still
+// gets the lesson, not the shell. It carries Season 2, so its masthead and
+// its map are Season 2's, and it draws no staff for show (WEB-SPEC, Look).
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -193,6 +193,31 @@ test("quick check 3's play waits for Step 3's choice under its lock line, then s
   // Assert
   await expect(line).toBeHidden()
   await expect(play).toHaveClass(/is-on/)
+  await expect
+    .poll(async () => (await heard(page)).sources)
+    .toBeGreaterThan(before.sources)
+})
+
+test("the steps' band chart holds every control under its lock line until the cold open's choice, then plays (WEB-SPEC, Toys 2)", async ({
+  page,
+}) => {
+  // Arrange: sound on from the gate, on Step 1
+  await watchSound(page)
+  await page.goto('/learn/22')
+  await page.locator('#gateBtn').click()
+  const toy = page.locator('#toyChart')
+  const wave = toy.locator('[data-vib-play="wave"]')
+  await expect(toy.locator('[data-vib-lock]')).toBeVisible()
+  await expect(wave).toBeDisabled()
+
+  // Act: the cold open's choice, then Step 1's wave
+  await page.locator('#predict [data-choice="top"]').click()
+  await expect(wave).toBeEnabled()
+  const before = await heard(page)
+  await wave.click()
+
+  // Assert
+  await expect(toy.locator('[data-vib-lock]')).toBeHidden()
   await expect
     .poll(async () => (await heard(page)).sources)
     .toBeGreaterThan(before.sources)
