@@ -210,11 +210,13 @@ test("the steps' band chart holds every control under its lock line until the co
   await expect(toy.locator('[data-vib-lock]')).toBeVisible()
   await expect(wave).toBeDisabled()
 
-  // Act: the cold open's choice, then Step 1's wave
+  // Act: the cold open's choice, then Step 1's wave, pressed where it
+  // stands: a scroll to it could carry the wide page's deck on to Step 2,
+  // which hides Step 1's controls
   await page.locator('#predict [data-choice="top"]').click()
   await expect(wave).toBeEnabled()
   const before = await heard(page)
-  await wave.click()
+  await wave.dispatchEvent('click')
 
   // Assert
   await expect(toy.locator('[data-vib-lock]')).toBeHidden()
