@@ -9,7 +9,11 @@
 // the thirteen lanes and counts the two leaps; the reveal waits for both
 // splits heard to their end, a play cut short changing nothing; the choice
 // reaches the steps' toy and the tour waits for it (FACTS 47); and a step
-// change stops the hero's play.
+// change stops the hero's play. Each lit note's return to rest is a timer of
+// the hero's own, which a play that ends or stops clears: one left pending
+// fired after the file's document had gone ("document is not defined", a
+// failed run with every test passed), so each test also stops every cold
+// open it mounted.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -20,6 +24,7 @@ import { Sound } from '@/features/lessons/kit/sound'
 import type { StepDeck } from '@/features/lessons/kit/step-deck'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import type * as TourGateModule from '@/features/lessons/kit/tour-gate'
+import type { ColdOpen } from './cold-open'
 import { COLD_PREDICT, HERO_SAID, initColdOpen, MIDDLE, OCTAVE_NOTES, splitNotes, } from './cold-open'
 import { el, loadPage, settle, soundOn, words } from './page-dom.test-fixtures'
 
@@ -52,12 +57,23 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // the test stops what it started, before its timers are real again
+  for (const cold of mounted.splice(0)) cold.stop()
+  vi.useRealTimers()
   vi.restoreAllMocks()
   window.location.hash = ''
   document.body.textContent = ''
 })
 
 let unlocked = 0
+
+/** Every cold open a test mounted, for its cleanup to stop. */
+const mounted: ColdOpen[] = []
+
+/** The timers the hero sets, faked, so a test can count and advance them. */
+const fakeTimers = (): void => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+}
 
 /** The hero on the page's own markup and deck, as main.ts mounts it. */
 function mountHero(): StepDeck {
@@ -69,9 +85,11 @@ function mountHero(): StepDeck {
   })
   deck.start()
   unlocked = 0
-  initColdOpen(deck, () => {
-    unlocked += 1
-  })
+  mounted.push(
+    initColdOpen(deck, () => {
+      unlocked += 1
+    }),
+  )
   return deck
 }
 
@@ -267,5 +285,55 @@ describe('the predict', () => {
     // Assert
     expect(held).toHaveLength(1)
     expect([before, settled]).toEqual([false, true])
+  })
+})
+
+describe("the hero's timers", () => {
+  const litNotes = () => line().querySelectorAll('.hl-lane.is-lit').length
+
+  it('puts each lit note back to rest as its note ends', async () => {
+    // Arrange
+    fakeTimers()
+    mountHero()
+    play('octave').click()
+    await settle()
+    last().note(0)
+    const lit = litNotes()
+
+    // Act
+    vi.advanceTimersByTime(OCTAVE_NOTES[0].dur * 1000)
+
+    // Assert
+    expect([lit, litNotes()]).toEqual([1, 0])
+  })
+
+  it('leaves no timer pending once a play has been heard to its end', async () => {
+    // Arrange
+    fakeTimers()
+    mountHero()
+
+    // Act
+    await hear('octave')
+
+    // Assert: nothing of the play fires after it, or after the page
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('leaves no timer pending when stopped mid-play, and no note lit', async () => {
+    // Arrange
+    fakeTimers()
+    mountHero()
+    play('octave').click()
+    await settle()
+    last().note(0)
+    last().note(1)
+
+    // Act
+    mounted[mounted.length - 1].stop()
+
+    // Assert
+    expect(last().stopped).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(litNotes()).toBe(0)
   })
 })
