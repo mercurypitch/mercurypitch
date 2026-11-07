@@ -112,13 +112,27 @@ export interface StudioRecorderTransport {
 /** The microphone an arm opened, and the one way to give that one back (MicManager.acquireFrom). */
 export interface StudioMicHold {
   readonly stream: MediaStream
+  /** One channel of the input for the lane to record alone, 0-based; null or absent for all of them, mixed. */
+  readonly channel?: number | null
   release(): void
+}
+
+/** What an arm opened: the input's channels, and the one the lane records. */
+export interface StudioInputOpened {
+  readonly stream: MediaStream
+  /** The input's channels as its track reports them; null where the browser does not say. */
+  readonly channels: number | null
+  /** The channel the lane records alone, 0-based; null when it records all of them, mixed. */
+  readonly channel: number | null
+  /** The channel the lane asked for that the input does not have, or does not say it has, so all of it records, mixed; null when none was missing. */
+  readonly missingChannel: number | null
 }
 
 export interface StudioRecorderDeps {
   unlock(): Promise<boolean>
   clock(): AudioContext | null
-  acquireMic(): Promise<StudioMicHold>
+  /** Open the input `trackId` records from: its own, or the Studio's (null: a new lane). */
+  acquireMic(trackId: string | null): Promise<StudioMicHold>
   prepareWorklet(context: AudioContext): Promise<void>
   openCapture(
     context: AudioContext,
@@ -134,6 +148,8 @@ export interface StudioRecorderDeps {
     input: AudioNode,
   ): Pick<StudioInputMonitor, 'set' | 'dispose'>
   monitorLevel(trackId: string | null): StudioMonitorLevel
+  /** The input an arm opened: how many channels it has, and whether the lane's one was there. */
+  inputOpened?(opened: StudioInputOpened): void
   transport: StudioRecorderTransport
   settings(): StudioRecordSettings
   /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */
