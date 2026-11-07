@@ -7,7 +7,9 @@ import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
   onChange: null as null | ((view: StudioRecorderView) => void),
-  acquireMic: null as null | (() => Promise<{ stream: MediaStream }>),
+  acquireMic: null as
+    | null
+    | ((trackId: string | null) => Promise<{ stream: MediaStream }>),
   roundTrip: null as
     | null
     | ((context: AudioContext, stream: MediaStream) => number),
@@ -27,7 +29,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
-    acquireMic: () => Promise<{ stream: MediaStream }>
+    acquireMic: (trackId: string | null) => Promise<{ stream: MediaStream }>
     roundTrip: (context: AudioContext, stream: MediaStream) => number
   }) => {
     mocks.onChange = deps.onChange
@@ -593,8 +595,13 @@ describe('useStudioRecorder input', () => {
     const held = { stream: {} as MediaStream, missing: true, release: vi.fn() }
     mocks.acquireFrom.mockResolvedValueOnce(held)
 
-    // MicManager's hold as it is: the recorder gives it back through itself.
-    await expect(mocks.acquireMic!()).resolves.toBe(held)
+    // MicManager's stream, given back through the hold's own release, and
+    // the lane's channel: none, for a lane that follows the Studio's input.
+    await expect(mocks.acquireMic!(null)).resolves.toEqual({
+      stream: held.stream,
+      channel: null,
+      release: held.release,
+    })
 
     expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'usb-mic')
     expect(hook.inputMissing()).toBe(true)

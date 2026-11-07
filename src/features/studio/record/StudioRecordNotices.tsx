@@ -53,6 +53,36 @@ function recordingWords(recorder: StudioRecorderHandle, lane: string): string {
     : `Recording on ${lane} from ${formatStudioMoment(cut.range.startFrame)}`
 }
 
+/**
+ * The armed card's words: ready, or which input the lane records from when
+ * it is not the one asked for (a lane's own input that is not connected
+ * leaves it on the Studio's; one gone as it opened, on the default), and a
+ * channel the input does not have.
+ */
+export function armedWords(
+  recorder: Pick<StudioRecorderHandle, 'armedInput'>,
+  lane: string,
+): string {
+  const input = recorder.armedInput()
+  const device =
+    input.defaultInstead !== null
+      ? input.laneMissing !== null
+        ? `Armed on ${lane} with the default input: ${input.laneMissing} and ${input.defaultInstead} are not connected.`
+        : `Armed on ${lane} with the default input: ${input.defaultInstead} is not connected.`
+      : input.laneMissing !== null
+        ? `Armed on ${lane} with the Studio's input: ${input.laneMissing} is not connected.`
+        : null
+  const channel =
+    input.channelMissing === null
+      ? null
+      : `The input has no Input ${input.channelMissing + 1}, so all of it records, mixed.`
+  if (device === null && channel === null)
+    return `Armed on ${lane}. Press Record to start.`
+  return channel === null
+    ? device!
+    : `${device ?? `Armed on ${lane}.`} ${channel}`
+}
+
 function ArmedHint(props: { recorder: StudioRecorderHandle }) {
   const settings = () => props.recorder.settings()
   return (
@@ -166,11 +196,7 @@ export function StudioRecordStatus(props: StudioRecordNoticesProps) {
                 <MicSmall />
               </span>
               <p class={styles.statusText}>
-                <span>
-                  {recorder().inputMissing()
-                    ? `Armed on ${lane()} with the default input: ${recorder().settings().inputLabel ?? 'the input you chose'} is not connected.`
-                    : `Armed on ${lane()}. Press Record to start.`}
-                </span>
+                <span>{armedWords(recorder(), lane())}</span>
                 <ArmedHint recorder={recorder()} />
               </p>
               <button
