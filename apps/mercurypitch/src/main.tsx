@@ -81,6 +81,8 @@
 //                                  to <body>, so wrapping would buy nothing
 //                                  and cost a stacking context.
 
+import { Capacitor } from '@capacitor/core'
+import { onAppState } from '@irchiinnuss/mobile-runtime/platform'
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
 // Self-hosted, so the first frame draws with the network off. The web app
@@ -113,6 +115,7 @@ import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/l
 import { followAirPlaySuspicion, followExternalScreen, } from '@/stores/airplay-suspicion'
 import { followAudioRoute } from '@/stores/audio-route-store'
 import { nativeDeviceApi, nativeShellApi, registerNativeDevice, } from '@/stores/native-shell-store'
+import { followOutputChecks } from '@/stores/output-check'
 import { initTheme } from '@/stores/theme-store'
 import { createNativeDevice, standAsideOnAirPlay, standUnlockClipAsideForNowPlaying, } from './infrastructure/native-device'
 import { installNativeHaptics } from './infrastructure/native-haptics'
@@ -121,6 +124,7 @@ import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
 import { NativeShell } from './shell/NativeShell'
+import { onRoomShown } from './shell/room-shown'
 import { currentTab } from './shell/run-shell-store'
 import { goToTab } from './shell/shell-navigation'
 
@@ -180,12 +184,26 @@ followAudioRoute(nativeDeviceApi()?.audioOutput)
 // (airplay-suspicion.ts), and each change is a line in the console.
 followExternalScreen(nativeDeviceApi()?.onExternalScreen)
 followAirPlaySuspicion()
+// A context keeps the rate it was made at, so the shared clock made at launch
+// says nothing of AirPlay taken later: the output is read again with a
+// throwaway context as a room is shown, as the app comes back in front (and
+// Control Center closes), at every change of route, and inside each start's
+// gesture, where only a check that says the sound stays here lets the lock
+// screen's carrier or the unlock clip play (output-check.ts). iOS only:
+// AirPlay is iOS's, and Android's session gives no rate to set against.
+if (Capacitor.getPlatform() === 'ios') {
+  followOutputChecks({
+    output: nativeDeviceApi()?.audioOutput,
+    appState: onAppState,
+    roomShown: onRoomShown,
+  })
+}
 // The lock screen's song on iOS brings a silent element of its own; the
 // unlock clip stands aside while that element holds the playback session.
 standUnlockClipAsideForNowPlaying()
 // On AirPlay alone, Web Audio reaches the TV only with nothing playing
 // beside it: the lock screen's carrier and the unlock clip both stand aside
-// until the sound leaves AirPlay.
+// until the sound leaves AirPlay, and at a start whose check cannot tell.
 standAsideOnAirPlay()
 // Lazy: the loader runs on the first sign-in press, so a session that never
 // signs in never pays for the plugin's module graph.

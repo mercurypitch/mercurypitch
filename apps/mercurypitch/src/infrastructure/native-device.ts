@@ -15,10 +15,11 @@ import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
 import { claimNowPlaying, keepAwake, micStopsOtherApps, onAudioOutput, onAudioRoute, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, onTvLyrics, pictureInPictureNeedsLyrics, readAudioOutput, readTvLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, standNowPlayingAside, tellTheWindowTheClock, } from '@irchiinnuss/mobile-runtime/platform'
 import { createEffect, createRoot, on, onCleanup } from 'solid-js'
-import { keepUnlockClipQuiet, standUnlockClipAside } from '@/lib/audio-unlock'
+import { checkBeforeEachStart, keepUnlockClipQuiet, standUnlockClipAside, } from '@/lib/audio-unlock'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
-import { airPlayAlone, notePageAudioContext } from '@/stores/airplay-suspicion'
+import { notePageAudioContext } from '@/stores/airplay-suspicion'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { checkForStart, webAudioAlone } from '@/stores/output-check'
 import { createNativeReminders } from './native-reminders'
 import { createTvStage } from './native-tv-stage'
 import { logClockStates } from './shared-clock-log'
@@ -69,7 +70,10 @@ function watchTv(
  * first, in the same gesture, so it is watched before it is resumed. The
  * clock's rate goes to the AirPlay guess as it is first seen: made without
  * a rate of its own, it runs at the rate of the output WebKit's session had
- * then, which the app's own session cannot see (airplay-suspicion.ts).
+ * then, which the app's own session cannot see (airplay-suspicion.ts). Then
+ * only: the clock is never closed, so a clock made at launch keeps the rate
+ * it had then, and the output is read again with a context made for the
+ * purpose whenever it matters (output-check.ts).
  */
 function sayingClockStates(lease: SharedAudioLease): SharedAudioLease {
   const watch = (context: AudioContext | null): AudioContext | null => {
@@ -168,18 +172,29 @@ export function standUnlockClipAsideForNowPlaying(): () => void {
  * owner's LG C2, Web Audio alone reached the TV, and Web Audio beside a
  * silent element kept local did not (the Developer screen's AirPlay sound
  * check, 6 Nov 2026). Both come back as the sound leaves AirPlay, and with
- * the song playing the carrier puts it back on the lock screen. Once, from
- * `main.tsx`; the stop puts both back.
+ * the song playing the carrier puts it back on the lock screen.
+ *
+ * Fail safe at each start: a press of play, or a tap that would play the
+ * clip, checks where the sound goes first, inside its gesture, and only a
+ * check that says it stays here lets either play (output-check.ts,
+ * `checkForStart`). Where the check says AirPlay, or cannot run, both stand
+ * aside (`webAudioAlone`) until a check says otherwise: the song is heard,
+ * and the lock screen may go without it. A cold start with AirPlay already
+ * on, its clock made at launch on the speaker, played neither on the TV nor
+ * on the phone without this (mp-v0.8.57). Once, from `main.tsx`; the stop
+ * puts both back and takes the check away.
  */
 export function standAsideOnAirPlay(): () => void {
   return createRoot((dispose) => {
+    checkBeforeEachStart(checkForStart)
     createEffect(
-      on(airPlayAlone, (alone) => {
+      on(webAudioAlone, (alone) => {
         keepUnlockClipQuiet(alone)
         standNowPlayingAside(alone)
       }),
     )
     onCleanup(() => {
+      checkBeforeEachStart(null)
       keepUnlockClipQuiet(false)
       standNowPlayingAside(false)
     })

@@ -95,6 +95,7 @@ import { asPlaybackCause } from '@/lib/playback-cause'
 import { noteSongStart } from '@/stores/airplay-suspicion'
 import type { NativeNowPlaying } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { checkOutputSoon, SONG_SETTLE_MS } from '@/stores/output-check'
 import { arrivalCue, arrivalSong } from './karaoke-arrival'
 import { karaokeClockReport } from './karaoke-clock-report'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
@@ -288,6 +289,9 @@ export const KaraokeRoomStage: Component = () => {
       setRunOn(true)
       // On AirPlay alone, a test build writes its audio report then.
       noteSongStart()
+      // Where the sound goes, read again once WebKit's session is up on its
+      // route: the press's own check may have read it idle (output-check.ts).
+      checkOutputSoon('song', SONG_SETTLE_MS)
       const entry = untrack(cue)
       if (entry === null) return
       rememberSungSong(entry.song.sessionId)

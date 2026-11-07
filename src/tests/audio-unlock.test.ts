@@ -351,4 +351,78 @@ describe('iOS audio unlock', () => {
       ])
     })
   })
+
+  // The app checks where the sound goes before each start (output-check.ts):
+  // a clock made at launch on the speaker says nothing of AirPlay taken
+  // later, and the clip, or the carrier in its place, beside the song kept
+  // it off the TV and the phone alike (owner, mp-v0.8.57).
+  describe('with a check before each start', () => {
+    it('asks the check first, and plays the clip before the clock where the sound stays here', async () => {
+      const { checkBeforeEachStart, unlockForPlayback } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext('suspended')
+      const check = vi.fn((_start: 'play' | 'tap') => true)
+      checkBeforeEachStart(check)
+
+      unlockForPlayback(() => context as unknown as AudioContext)
+
+      expect(check.mock.calls).toEqual([['play']])
+      expect(check).toHaveBeenCalledBefore(playSilent)
+      expect(playSilent).toHaveBeenCalledBefore(context.resume)
+    })
+
+    it('starts the clock alone, with neither the clip nor the carrier, where the check says no', async () => {
+      const { checkBeforeEachStart, standUnlockClipAside, unlockForPlayback } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext('suspended')
+      const take = vi.fn()
+      standUnlockClipAside(true, take)
+      checkBeforeEachStart(() => false)
+
+      unlockForPlayback(() => context as unknown as AudioContext)
+
+      expect(take).not.toHaveBeenCalled()
+      expect(playSilent).not.toHaveBeenCalled()
+      expect(context.resume).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the clip from a tap the check says no to, and still wakes the clock', async () => {
+      const { checkBeforeEachStart, unlockAudio } =
+        await import('@/lib/audio-unlock')
+      const context = createAudioContext('suspended')
+      const check = vi.fn((_start: 'play' | 'tap') => false)
+      checkBeforeEachStart(check)
+
+      unlockAudio(context as unknown as AudioContext)
+
+      expect(check.mock.calls).toEqual([['tap']])
+      expect(playSilent).not.toHaveBeenCalled()
+      expect(context.resume).toHaveBeenCalledOnce()
+    })
+
+    it('asks nothing of a tap while the clip keeps quiet anyway', async () => {
+      const { checkBeforeEachStart, keepUnlockClipQuiet, unlockAudio } =
+        await import('@/lib/audio-unlock')
+      vi.spyOn(console, 'info').mockImplementation(() => undefined)
+      const check = vi.fn((_start: 'play' | 'tap') => true)
+      checkBeforeEachStart(check)
+      keepUnlockClipQuiet(true)
+
+      unlockAudio(createAudioContext('suspended') as unknown as AudioContext)
+
+      expect(check).not.toHaveBeenCalled()
+      expect(playSilent).not.toHaveBeenCalled()
+    })
+
+    it('plays the clip as it always has where nothing checks, as on the web', async () => {
+      const { checkBeforeEachStart, unlockForPlayback } =
+        await import('@/lib/audio-unlock')
+      checkBeforeEachStart(() => false)
+      checkBeforeEachStart(null)
+
+      unlockForPlayback(() => null)
+
+      expect(playSilent).toHaveBeenCalledOnce()
+    })
+  })
 })

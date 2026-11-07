@@ -26,6 +26,15 @@
 // keepUnlockClipQuiet() keeps it from playing at all while the sound goes to
 // AirPlay alone, where Web Audio reaches the TV only with no element playing
 // beside it.
+//
+// checkBeforeEachStart() is the iOS app's check of where the sound goes
+// (src/stores/output-check.ts), asked inside the gesture before the clip, or
+// the carrier in its place, plays: a press of play, and a tap that would
+// play the clip. A clock made at launch on the speaker says nothing of
+// AirPlay taken since, and with the clip beside it the song reached neither
+// the TV nor the phone (mp-v0.8.57). Only a yes plays either; the clock
+// starts alone otherwise. The web sets none and plays the clip as it always
+// has.
 
 import { keepMediaLocal } from './local-media'
 
@@ -36,6 +45,16 @@ let standingAside = false
 let quietForAirPlay = false
 /** What takes the session for a press of play while the clip stands aside. */
 let sessionTaker: (() => void) | null = null
+
+/** A start, as the app's check before it hears it. */
+export type UnlockStart = 'play' | 'tap'
+
+/** The app's check before each start, or null (the web). */
+let startCheck: ((start: UnlockStart) => boolean) | null = null
+
+/** Whether the clip, or the carrier in its place, may play for this start. */
+const mayPlayBeside = (start: UnlockStart): boolean =>
+  startCheck?.(start) ?? true
 
 interface AudioActivationTarget {
   getAudioContext: () => AudioContext | null
@@ -117,10 +136,11 @@ function resumeClock(ctx: AudioContext | null | undefined): void {
  *  context. Must be called from inside a user gesture to have effect;
  *  calling it anywhere else is harmless. */
 export function unlockAudio(ctx?: AudioContext | null): void {
-  if (standingAside || quietForAirPlay) {
+  if (standingAside || quietForAirPlay || !mayPlayBeside('tap')) {
     // Another element holds the session (see standUnlockClipAside), or the
     // sound is on AirPlay, where nothing plays beside Web Audio
-    // (keepUnlockClipQuiet).
+    // (keepUnlockClipQuiet), or the app's check before this tap says so, or
+    // cannot tell (checkBeforeEachStart).
     sessionPrimed = true
   } else {
     playClip()
@@ -144,7 +164,11 @@ export function unlockAudio(ctx?: AudioContext | null): void {
 export function unlockForPlayback(
   ensure: () => AudioContext | null,
 ): AudioContext | null {
-  if (standingAside) {
+  if (!mayPlayBeside('play')) {
+    // The app's check says AirPlay, or could not tell: the clock alone,
+    // neither the clip nor the carrier beside it (checkBeforeEachStart).
+    sessionPrimed = true
+  } else if (standingAside) {
     sessionPrimed = true
     sessionTaker?.()
   } else if (quietForAirPlay) {
@@ -221,6 +245,18 @@ export function keepUnlockClipQuiet(quiet: boolean): void {
   console.info(
     '[audio unlock] the sound has left AirPlay: the next tap plays the unlock clip again',
   )
+}
+
+/**
+ * Have the app check where the sound goes before each start, inside its
+ * gesture and before the clip or the carrier plays: true lets them play,
+ * false starts the clock alone. Null takes the check away (the web never
+ * sets one). The iOS app's is output-check.ts's `checkForStart`.
+ */
+export function checkBeforeEachStart(
+  check: ((start: UnlockStart) => boolean) | null,
+): void {
+  startCheck = check
 }
 
 /**
