@@ -5,8 +5,8 @@
 // The browser half of the roster; mic-roster.ts is the pure half. Reading
 // `enumerateDevices()`, following `devicechange`, and reading which device a
 // live capture track says it opened, for every surface that names inputs:
-// the Settings mic check, First Light's waiting screen and Studio's input
-// list.
+// the Settings mic check, First Light's waiting screen, and Studio's and
+// Jam's input lists.
 
 import type { ListeningTrack } from './mic-roster'
 
