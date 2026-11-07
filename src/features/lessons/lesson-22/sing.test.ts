@@ -5,15 +5,16 @@
 // WEB-SPEC, Toys 6 and Audio: Lesson 22's plan for the kit's held-note
 // checkpoint (two ten-second holds, Hold 2 after an easy first, the rest
 // card after "Effortful", no live band state, the centre-line reader and
-// the summary's subject); and on learn/22.html's own markup, with the
-// listener a double: with sound off Start asks for nothing and says why
-// under itself; from Start until the take ends every other play on the
-// page waits, the sound before it stopped, and a play enabled meanwhile
-// still waits; no Now readout, with no band state to name; after a hold
-// with a vibrato the vibrato line joins the reading, and after a straight
-// one it does not. The middle line itself, on a view double: violet, on
-// the line's own clock, whole at once under reduced motion and drawn over
-// 0.6 s with motion on, and never over a take that came after it.
+// the summary's subject); the note's reach against every preset of its
+// voice (Tests 3); and on learn/22.html's own markup, with the listener a
+// double: with sound off Start asks for nothing and says why under itself;
+// from Start until the take ends every other play on the page waits, the
+// sound before it stopped, and a play enabled meanwhile still waits; no
+// Now readout, with no band state to name; after a hold with a vibrato the
+// vibrato line joins the reading, and after a straight one it does not.
+// The middle line itself, on a view double: violet, on the line's own
+// clock, whole at once under reduced motion and drawn over 0.6 s with
+// motion on, and never over a take that came after it.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -23,14 +24,18 @@ import type * as BandChartModule from '@/features/lessons/kit/band-chart'
 import type { BandChartOptions, BandScene, } from '@/features/lessons/kit/band-chart'
 import type { CentredReading } from '@/features/lessons/kit/hold-centre'
 import { readCentredHold, vibratoLine, } from '@/features/lessons/kit/hold-centre'
+import { holdNote, MAX_MOVE } from '@/features/lessons/kit/hold-sing'
 import type { HoldSingView } from '@/features/lessons/kit/hold-sing-view'
 import * as holdTake from '@/features/lessons/kit/hold-take'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type * as MotionModule from '@/features/lessons/kit/motion-switch'
 import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import type * as SoundModule from '@/features/lessons/kit/sound'
+import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type * as WordsStripModule from '@/features/lessons/kit/words-strip'
 import type { F0Frame } from '@/lib/mirror/metrics'
+import type { VocalRangePreset } from '@/stores/settings-store'
+import { VOCAL_RANGES } from '@/stores/settings-store'
 import { HOLD_HEAD, middlePoints, singPlan, START_SOUND_OFF } from './sing'
 import { MIDDLE_SEC } from './vib-picture'
 
@@ -172,6 +177,44 @@ describe("Lesson 22's plan", () => {
     expect(reader?.readHold).toBe(readCentredHold)
     expect(reader?.holdChartWords).toBe(holdTake.holdChartWords)
     expect(reader?.holdSummary).toBe(holdTake.holdSummary)
+  })
+})
+
+describe('the note (FACTS 55)', () => {
+  /** Each voice's presets, as the table names them. */
+  const PRESETS: Readonly<Record<Voice, readonly VocalRangePreset[]>> = {
+    lower: ['bass', 'baritone', 'tenor'],
+    higher: ['alto', 'mezzo-soprano', 'soprano'],
+  }
+
+  it("keeps every preset of its voice at least two semitones inside, Merc's A moved four either way, with the table's numbers", () => {
+    // Act: semitones to spare under the lowest note and over the highest, for each preset
+    const spare = (voice: Voice): number[][] =>
+      PRESETS[voice].map((preset) => {
+        const range = VOCAL_RANGES[preset]
+        return [
+          holdNote(voice, -MAX_MOVE) - range.lowMidi,
+          range.highMidi - holdNote(voice, MAX_MOVE),
+        ]
+      })
+
+    // Assert: F3 to C sharp 4, and F4 to C sharp 5
+    expect(MAX_MOVE).toBe(4)
+    expect([holdNote('lower', -4), holdNote('lower', 4)]).toEqual([53, 61])
+    expect([holdNote('higher', -4), holdNote('higher', 4)]).toEqual([65, 73])
+    expect(spare('lower')).toEqual([
+      [13, 3],
+      [10, 6],
+      [5, 11],
+    ])
+    expect(spare('higher')).toEqual([
+      [12, 4],
+      [8, 8],
+      [5, 11],
+    ])
+    for (const voice of ['lower', 'higher'] as const)
+      for (const room of spare(voice).flat())
+        expect(room, voice).toBeGreaterThanOrEqual(2)
   })
 })
 
