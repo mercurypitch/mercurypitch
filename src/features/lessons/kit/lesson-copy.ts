@@ -191,6 +191,15 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  25: {
+    tease: 'A minor tune, played twice. The second ending changes one note.',
+    teaseAlts: [
+      {
+        id: 'plan',
+        text: 'Do, mi and so made a major chord. Minor keys hide another change.',
+      },
+    ],
+  },
 }
 
 /**

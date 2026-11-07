@@ -136,7 +136,17 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // lesson page: 174,705 bytes before it, 175,102 with it, 2 under 171.
   // Lesson 22's steps took 76 back, the bundler's renaming in the kit's
   // chunk this page shares: 175,026, 78 under.
-  'learn/02.html': 171,
+  // Raised to 172 for Lesson 24's page shell: 175,026 bytes on main before
+  // it, 175,533 with it, against 175,104 at 171. 318 of the 507 are on
+  // every lesson page: Lesson 25's tease and its alternative
+  // (kit/lesson-copy.ts, 174) and Lesson 24's drafts line (144). The other
+  // 189 are the bundler cutting the kit's shared code differently around a
+  // shell that loads the reveal but not the predict, as Lesson 22's shell
+  // did: bytes no module owns (141), a chunk's overhead (44) and the
+  // predict's code moved into the reveal's chunk (6), less 2 of the
+  // minifier's renaming. 171 can be tried again once Lesson 24's cold open
+  // loads the predict.
+  'learn/02.html': 172,
 
   // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
   // every mode like the rest: the site worker decides where it is live
@@ -486,6 +496,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // pair: 173,868 bytes in build:e2e; a quarter over. Sing it opens no
   // microphone, so nothing of the listener comes in.
   'learn/23.html': 213,
+  // Lesson 24, "Harmony against a drone", a Season 2 page and a draft,
+  // built in every mode as Lesson 3 is: its own module on the kit, carrying
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell:
+  // 87,582 bytes in build:e2e, the smallest whole KB above, to rise as each
+  // part joins.
+  'learn/24.html': 86,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -640,6 +656,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own by @import, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/23.html': 113,
+  // Lesson 24 (a draft, as above), its shell: 82,102 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own, and the shared Inter and
+  // Outfit @font-face rules; the smallest whole KB above, to rise as each
+  // part joins, the guide's and the voice lessons' sheets with the recall
+  // and Sing it.
+  'learn/24.html': 81,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

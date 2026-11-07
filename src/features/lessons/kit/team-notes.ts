@@ -112,4 +112,7 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
     fifths:
       'This lesson\'s planned line, mended: "Fifths sit still" read as "a fifth does not beat", which Lesson 24 shows the piano\'s fifth does, and a voice does not hear; so it says "count as", as the convention is framed. It leaks nothing, but the default is Lesson 24\'s opening in miniature (Lesson 23 FACTS 5).',
   },
+  25: {
+    plan: "Lesson 24's planned line. It is true of Lesson 24's page, whose Step 2 plays do, mi and so together over the drone, Lesson 10's major chord, but it sets \"a major chord\" one line above \"another change\" in a minor key, a soft lean on Lesson 25's predict, which asks whether a raised note turns a minor chord major; so the default is the lead's line, Lesson 25's opening in miniature (Lesson 24 FACTS 5b).",
+  },
 }

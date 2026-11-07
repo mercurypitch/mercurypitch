@@ -43,10 +43,10 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 16, 18, 20, 21 and 24 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 16, 18, 20, 21 and 25 to 28 yet: each is coming later', () => {
     // Assert
     for (const L of LESSONS_2.filter(
-      (L) => ![15, 17, 19, 22, 23].includes(L.n),
+      (L) => ![15, 17, 19, 22, 23, 24].includes(L.n),
     )) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
@@ -182,7 +182,35 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[23]).toEqual([6])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15, 17, 19, 22 and 23', () => {
+  it("gives Lesson 24 its page and its reading time, a draft with no film, and Drone Intonation's link", () => {
+    // Act
+    const L24 = LESSONS_2.find((L) => L.n === 24)
+
+    // Assert: Lesson 24's WEB-SPEC, Explorer and season data
+    expect([L24?.page, L24?.minutes, L24?.film, L24?.len]).toEqual([
+      '/learn/24',
+      16,
+      undefined,
+      undefined,
+    ])
+    // the lab's two tests come first, then the coach (Lesson 24's WEB-SPEC,
+    // What the kit and the app still need, items 2 and 7)
+    expect(DRAFT_LESSONS[24]).toBe(
+      "the lab's two tests (its WEB-SPEC, What the kit and the app still need, item 7), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+    )
+    expect(L24?.pr.link).toEqual({
+      href: '/exercises/thirds-on-a-drone?lesson=24',
+      addr: 'mercurypitch.com/exercises/thirds-on-a-drone',
+      label: 'Drone Intonation',
+      note: 'the two thirds',
+    })
+    // the drill it still needs stays the team's
+    expect(L24?.pr.needs).toMatch(/^The fifth, third and octave slug/)
+    // Lessons 5 and 10 from Season 1, and Lesson 23
+    expect(SEASON_2.prereq[24]).toEqual([5, 10, 23])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lessons 15, 17, 19, 22, 23 and 24', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -192,7 +220,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 17, 19, 22, 23])
+    expect(pages).toEqual([15, 17, 19, 22, 23, 24])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -303,7 +331,7 @@ describe('Season 2', () => {
     ])
   })
 
-  it('teases each of Lessons 16 to 20 and 22 to 24 on the card before it, and carries no other copy of its own yet', () => {
+  it('teases each of Lessons 16 to 20 and 22 to 25 on the card before it, and carries no other copy of its own yet', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
@@ -391,12 +419,24 @@ describe('Season 2', () => {
         text: 'Fifths count as settled, tritones lean. Next, a note against a drone.',
       },
     ])
-    for (const L of [L19, L20, L22, L23, L24])
+    // Lesson 24 FACTS 5b: on Lesson 24's card, Lesson 25's opening in
+    // miniature, and Lesson 24's planned line, which leans softly
+    const L25 = LESSONS_2.find((L) => L.n === 25)
+    expect(L25?.tease).toBe(
+      'A minor tune, played twice. The second ending changes one note.',
+    )
+    expect(L25?.teaseAlts).toEqual([
+      {
+        id: 'plan',
+        text: 'Do, mi and so made a major chord. Minor keys hide another change.',
+      },
+    ])
+    for (const L of [L19, L20, L22, L23, L24, L25])
       for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
         expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if ((L.n >= 16 && L.n <= 20) || (L.n >= 22 && L.n <= 24)) continue
+      if ((L.n >= 16 && L.n <= 20) || (L.n >= 22 && L.n <= 25)) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

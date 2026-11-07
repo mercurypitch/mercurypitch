@@ -1,0 +1,278 @@
+/* ============================================================
+   Lesson 24 — Harmony against a drone: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage,
+   lesson-guide, lesson-parts and lesson-voice, imported by main.ts.
+
+   Here: the drone chart between Merc and Tavi in the hero, with the two
+   plays under it (WEB-SPEC, Toys 1); the four words' small figures; the
+   steps' drone chart with its readout and its rows of controls (Toys 2);
+   the held lines and Tavi's line in the steps' text; Sing it's hold chart,
+   Move do and the headphones check; and the Wrap's cards, with the next
+   card's tease still and free play. No decorative staff: the section heads
+   carry none, and the body's season-2 class drops the background's
+   (kit/lesson-base.css). */
+
+/* ---------------------------------------------------------------- the hero */
+.l24-hero .hook {
+  font-size: clamp(30px, 3.3vw, 50px);
+  line-height: 1.06;
+  max-width: 15em;
+}
+/* seven chips, which wrap: rows 16 px apart keep their 44 px targets from
+   overlapping */
+.l24-hero .meta {
+  row-gap: 16px;
+}
+.l24-hero .duo {
+  --merc: clamp(120px, 13vw, 188px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  height: calc(var(--merc) * 1.32);
+}
+/* the drone chart between Merc and Tavi, clear of Merc's bubble */
+.hero-chart {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  height: calc(var(--merc) * 1.02);
+  margin-top: calc(var(--merc) * 0.24);
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l24-hero .stage-shot {
+  padding-bottom: 22px;
+}
+.l24-hero .hero-plays {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.l24-hero .pq {
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.2;
+}
+@media (max-width: 560px) {
+  .l24-hero .hook {
+    font-size: 30px;
+    line-height: 1.08;
+  }
+  .l24-hero .duo {
+    --merc: min(31vw, 124px);
+    grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+  .l24-hero .merc-blue {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .l24-hero .merc-orange {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .hero-chart {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 200px;
+    margin-top: 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure as wide as the stub lets it be: a small drone chart, or rungs */
+.l24-words .word-chart,
+.l24-words .word-rungs {
+  position: relative;
+  height: 120px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.l24-words .word-rungs canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.l24-words .lock-hint {
+  margin: 8px 0 0;
+}
+
+/* ---------------------------------------------------------------- the drone chart's stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.drone-toy > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.drone-viz {
+  position: relative;
+  height: 220px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+/* the rate in Beat Hunt's words, under the chart */
+.drone-readout {
+  margin: 10px 0 0;
+  font: 600 var(--fs-16) / 1.3 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.drone-controls {
+  display: grid;
+  gap: 10px;
+}
+.drone-controls .slider-row {
+  min-width: 0;
+}
+.drone-plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.drone-toy .lock-hint {
+  margin: 12px 0 0;
+}
+/* a held slider looks held, as a held play does: the kit's range has no
+   disabled look of its own (Lesson 8's and Lesson 22's rule) */
+.drone-toy .range:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+@media (max-width: 560px) {
+  .drone-viz {
+    height: 180px;
+  }
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Steps 1 and 3 hold their words under a line until a predict's reveal */
+.step-held {
+  margin: 0 0 12px;
+}
+/* Tavi's question in Step 3: a bubble beside her still */
+.l24-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l24-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l24-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l24-says .bubble::after {
+  display: none;
+}
+/* Step 2's own predict, in the step's text */
+.step-predict {
+  margin: 0 0 16px;
+}
+.step-plays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.hold-chart {
+  height: 262px;
+}
+.sing-card .phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 14px 0 0;
+  font: 500 var(--fs-12) / 1.3 var(--f-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sing-card .phases .is-now {
+  color: var(--aqua);
+}
+.move-pick,
+.phones-check {
+  margin: 0 0 18px;
+}
+.move-pick p,
+.phones-check p {
+  margin: 0 0 10px;
+}
+.quiet-line {
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+@media (max-width: 420px) {
+  .hold-chart {
+    height: 232px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l24-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l24-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l24-app a.addr {
+  text-decoration: none;
+}
+.l24-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 25's opening, Lesson 10's
+   minor staircase on A at rest between Merc and Tavi, under a class of its
+   own, apart from .next-tease; nothing moves and nothing glows */
+.l24-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l24-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l24-tease-stairs {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+.l24-tease-house {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+.l24-tease-name {
+  font: 500 10px / 1 var(--f-mono);
+  fill: var(--ink-2);
+  text-anchor: middle;
+}
+.l24-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l24-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l24-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.free-states {
+  margin: 0 0 12px;
+}
