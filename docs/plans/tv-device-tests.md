@@ -22,7 +22,10 @@ the app's session allows AirPlay, and on AirPlay alone the lock screen's
 carrier and the unlock clip stand aside, so the room's Web Audio plays
 alone, as Test 9's button 3 did. **Test 12A's buttons need the first build
 tagged after branch `feat/airplay-element-rooms` merges**; 12B, and 12A's
-"4, then 3", run on mp-v0.8.56 (build 1716) or later.
+"4, then 3", run on mp-v0.8.56 (build 1716) or later. **Test 13 needs the
+first build tagged after branch `feat/airplay-route-check` merges**: the
+app checks where its sound goes with a fresh context whenever it matters,
+and the room's words follow what it finds.
 
 ## Before you start
 
@@ -609,6 +612,107 @@ app thinks the sound is on AirPlay.
 | 3 First Note, round 2 | ring        |                            |               |                               |       |
 | 4 Sing example        | ring        |                            |               |                               |       |
 | 5 Studio stem preview | ring        |                            |               |                               |       |
+
+## Test 13: AirPlay from a cold start, and notices that follow the route (branch `feat/airplay-route-check`, first build tagged after it merges)
+
+On mp-v0.8.57 (an iPhone 11 Pro and a 13 Pro, the LG C2, AirPlay chosen in
+Control Center), a Karaoke song after a cold start with AirPlay already on
+played on neither the TV nor the phone. After a tap on the AirPlay sound
+check's button 3 and the way back, it played on the TV. The cause: the app's
+one AudioContext, made at launch on the speaker, runs at 48 kHz for life,
+so nothing said AirPlay, and the lock screen's carrier and the unlock clip
+played beside the song. Button 3 made a fresh context, which ran at
+AirPlay's 44.1 kHz.
+
+This build makes a fresh context, reads its rate and closes it at once,
+whenever it matters: a room shown (a tab, the way back from Settings or the
+Developer screen, a premium room's door), the app back in front (closing
+Control Center counts), each change of route, each press of play, and once
+more 1.5 s after a song starts. Only a check that says the sound stays on
+the phone lets the carrier or the clip play beside the song; one that says
+AirPlay, or cannot run, keeps both aside for that song (the lock screen
+then shows no song). The Karaoke hint shows while a song plays on AirPlay
+alone, goes the moment that stops, and its close holds until AirPlay ends
+and begins again. How to read the lines is in
+[DEVICE-DEBUGGING.md](../agent/DEVICE-DEBUGGING.md), "A song that sticks
+with its sound on a TV (AirPlay)".
+
+Before each part: Developer, Debug console, "Keep routine logs" on, and
+Clear log under Developer, Audio. Ring switch on ring, phone volume up. Run
+it on both phones if you can: the iPhone 11's own session says airplay, and
+the 13 Pro's may not.
+
+**13A: a cold start with AirPlay already on.**
+
+1. Choose the TV under AirPlay in Control Center (not Screen Mirroring).
+   Close the app from the app switcher.
+2. Open the app, go to Karaoke and press Play. Does the TV play the song,
+   and how long after Play? Is the phone silent? If the TV plays it only
+   after a silence of a second or two, say so: that is the check 1.5 s into
+   the song catching what the press's check missed.
+3. Under the room header, while the song plays: "The song is playing over
+   AirPlay." ("on LG C2 over AirPlay" where the phone names the TV), "The
+   lyrics stay on this phone." and the Screen Mirroring line. Pause: the
+   hint goes. Play: it comes back.
+4. Copy the console from launch to here. Every `[audio route] check (...)`
+   line, in particular the one for `a room shown` as Karaoke opened and the
+   one for `play`: their rates, and whether each says `in a gesture` or
+   `outside a gesture`. Whether a context made outside a gesture, before
+   anything has played, reads AirPlay's 44.1 kHz is not known yet; these
+   two lines tell.
+5. Developer, AirPlay sound check: write down the readout's three rows
+   (The guess, Last check, Beside the sound).
+
+**13B: AirPlay chosen mid-song, and dropped mid-song.**
+
+1. On the phone's speaker, play a song. No hint. Lock the phone a moment:
+   the lock screen shows the song.
+2. While it plays, choose the TV under AirPlay in Control Center and close
+   Control Center. Does the TV take the song, and after how long? The hint
+   should show, and the console have a check for `the app in front` or `a
+route change` that says `AirPlay alone`, then
+   `[now playing] the sound is on AirPlay: the carrier stands aside, ...`.
+3. While it plays on the TV, choose this phone in Control Center. Within a
+   second the sound should be on the phone and the hint gone; the console
+   should have a check that says `local`, then
+   `[now playing] the sound has left AirPlay: the carrier takes its place again, ...`.
+   Lock the phone: the lock screen shows the song again.
+4. Choose the TV once more: the hint comes back.
+
+**13C: the hint's close, for one AirPlay connection.**
+
+1. With a song on AirPlay and the hint up, tap its close. Pause and play,
+   then Next: it stays closed.
+2. Choose this phone, then the TV again, a song playing: the hint should
+   come back, because this is a new connection.
+
+**13D: leaving Karaoke and coming back.**
+
+1. A song on AirPlay, the hint up. Go to another tab and back to Karaoke,
+   and play: the hint shows (unless closed for this connection).
+2. Go to the Developer screen and back. The console should have a check
+   for `a room shown` as Karaoke shows again.
+3. On another tab, choose this phone in Control Center. Back in Karaoke,
+   play: the song on the phone, no hint, and the lock screen shows it.
+4. If a song ever stops by itself on AirPlay, choose this phone with its
+   notice up: its words should turn into "The sound stopped." within a
+   second.
+
+| Part | Phone  | Sound on the TV? How late? | Phone silent? | Hint right, and gone when it should be? | Readout's rows | `check` lines: moment, gesture, rate, verdict |
+| ---- | ------ | -------------------------- | ------------- | --------------------------------------- | -------------- | --------------------------------------------- |
+| 13A  | 11 Pro |                            |               |                                         |                |                                               |
+| 13A  | 13 Pro |                            |               |                                         |                |                                               |
+| 13B  |        |                            |               |                                         |                |                                               |
+| 13C  |        |                            |               |                                         |                |                                               |
+| 13D  |        |                            |               |                                         |                |                                               |
+
+Lines to copy, each part: every `[audio route] check (...)`, every
+`[audio route] the page plays at ...` and `... AirPlay no longer suspected`,
+every `[now playing] ...` and `[audio unlock] ...`, and the
+`karaoke play by=...` and `karaoke pause by=...` lines around them. A check
+that could not make a context ends `unknown, so nothing plays beside the
+room's sound`; the carrier's and the clip's lines after it say AirPlay all
+the same.
 
 ## Test 14: First Note on AirPlay (branch `feat/first-note-web-audio`, first build tagged after it merges)
 

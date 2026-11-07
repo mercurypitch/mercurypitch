@@ -239,6 +239,7 @@ These are the rules that break things when ignored.
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 500 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 500 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
+| [output-check.ts](../../src/stores/output-check.ts) | 450 | The output check: where the page's sound goes now, read fresh A context runs for life at the rate WebKit's output had as it was made, and... |
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [launch-gift-store.ts](../../src/stores/launch-gift-store.ts) | 400 | launch-gift-store — the launch gift, as this browser sees it The server claims the featured promo code the moment an account's email is c... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 350 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
@@ -248,8 +249,8 @@ These are the rules that break things when ignored.
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 300 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [native-device-api.ts](../../src/stores/native-device-api.ts) | 300 | The device, as the native app lends it to rooms: its types What `registerNativeDevice()` (native-shell-store.ts) takes: the app's one Aud... |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
+| [airplay-suspicion.ts](../../src/stores/airplay-suspicion.ts) | 250 | AirPlay suspected — where the page's sound likely goes, from its rate The route (audio-route-store.ts) is the app's own AVAudioSession's,... |
 | [jam-picker-store.ts](../../src/stores/jam-picker-store.ts) | 250 | ── What a room can sing, and the act of picking it The picker used to live inside JamPanel: its shelves, the fetches that fill them, the... |
-| [airplay-suspicion.ts](../../src/stores/airplay-suspicion.ts) | 200 | AirPlay suspected — where the page's sound likely goes, from its rate The route (audio-route-store.ts) is the app's own AVAudioSession's,... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [audio-route-store.ts](../../src/stores/audio-route-store.ts) | 200 | Audio Route Store — where the app's sound goes, as the phone says The route the phone plays the app's sound on (the speaker, headphones,... |
 | [free-taste-store.ts](../../src/stores/free-taste-store.ts) | 200 | The premium rooms' free taste, as it stands on this phone: the runs each room has given, whether the gate is on, and whether a room may o... |

@@ -406,7 +406,10 @@ runs in test builds only), and a context keeps its rate for life
 nothing of it, and only the route can (inference: the iPhone 13 Pro's route
 never said airplay on 3 Nov, `airplay-suspicion.ts:5-10`). A room that plays
 on a context of its own can tell the guess about it with
-`notePageAudioContext()` (`airplay-suspicion.ts:141-148`), one line.
+`notePageAudioContext()` (`airplay-suspicion.ts:141-148`), one line. Since
+branch `feat/airplay-route-check` the app also reads the rate off a fresh
+context whenever it matters, a room shown and each press of play among them
+(`src/stores/output-check.ts`), so the guess no longer rests on the clock.
 
 ## Per room: recommendation and order
 

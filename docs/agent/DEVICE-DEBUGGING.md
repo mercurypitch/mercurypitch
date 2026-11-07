@@ -315,29 +315,59 @@ for `.allowAirPlay`
 which only a playAndRecord session may set, so its route should follow
 AirPlay too; the lyrics window logs its raw options as 105 where they were 41. The rate stays the fallback.
 
+**The rate is read fresh when it matters.** A context keeps its rate for
+life, and the app's one shared clock is never closed. On mp-v0.8.57 a cold
+start with AirPlay already on (iPhone 11 Pro and 13 Pro, the LG C2) played
+the song on neither the TV nor the phone: the clock, made at launch on the
+speaker, read 48 kHz, a store build read no other context, so nothing said
+AirPlay, and the carrier and the unlock clip played beside the song. A tap
+on the sound check's button 3 made a fresh context at 44.1 kHz, and Karaoke
+played on the TV after it. And once AirPlay went, the guess stayed on it
+until a new context was made. From branch `feat/airplay-route-check` the
+app makes a throwaway context, reads its rate, closes it at once and hands
+the rate to the guess
+([`output-check.ts`](../../src/stores/output-check.ts)), at each moment
+that matters: a room shown (a tab, the way back from a pushed screen, a
+premium room's door), the app back in front (closing Control Center
+counts), each change of route, each start (a press of play, or a tap that
+would play the unlock clip), and 1.5 s after a Karaoke song starts, when
+WebKit's session is surely up on its route. iOS only; one context at a
+time, never resumed. **Fail safe at a start**: the carrier and the clip
+play beside the song only where the start's own check says the sound stays
+here, or a screen is connected; where it says AirPlay, or cannot make a
+context, both stand aside until a check says otherwise
+([`native-device.ts`](../../apps/mercurypitch/src/infrastructure/native-device.ts),
+`standAsideOnAirPlay`; [`audio-unlock.ts`](../../src/lib/audio-unlock.ts),
+`checkBeforeEachStart`). The song is always heard; the lock screen may go
+without it. Whether a context made outside a gesture, with WebKit's session
+idle, reads the output's rate is not verified on a device: each check's
+line says which it was (Test 13 in
+[tv-device-tests.md](../plans/tv-device-tests.md)).
+
 No line names a port: "Viki's AirPods" names a person, and a console's lines
 are copied off the phone, the crash card's into public bug reports. The
 route's kind is enough to read a test by; the Developer > Audio report still
 names the port in its `output change` lines, and the room's notice names it
 on the singer's own screen.
 
-| Line                                                                                                                   | Shown      | What it says                                                                                                                                                                          |
-| ---------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[audio route] airplay, iOS: new device, was Speaker`                                                                  | routine    | Each route the phone reports: its kind, iOS's reason and the kinds of output before it. One `at launch`; otherwise only when the route moved, or iOS gave a reason                    |
-| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                            | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                                             |
-| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay feeding=yes queued=2.4 ... stoodMs=1500`         | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                                           |
-| `karaoke clock-moving ... stoodMs=2100`                                                                                | by default | It moved again, and the song plays on                                                                                                                                                 |
-| `karaoke clock-stall-stop ...`                                                                                         | by default | Still standing after the restart: the song paused where it was, and the room says why                                                                                                 |
-| `[audio route] the page plays at 44100 Hz, the phone's session at 48000 Hz on Speaker: the sound is likely on AirPlay` | by default | AirPlay suspected: the page's newest context runs at a rate other than the app session's, on the speaker or receiver, with no screen connected. Once per change                       |
-| `[audio route] a screen is connected (Screen Mirroring or a cable): AirPlay no longer suspected`                       | by default | No longer suspected, and why: a screen, a route the session sees (`the phone's session plays on bluetooth`), or the rates agreeing again (`as the phone's session does`)              |
-| `karaoke play by=button clockWas=suspended position=0`                                                                 | by default | Each play, pause and stop of the song, with who asked (`by=`, the table above) and where it was                                                                                       |
-| `karaoke pause by=media-session(pause) position=2.2`                                                                   | by default | A system media control paused it: the lock screen, Control Center, a headset, or a remote such as the TV's                                                                            |
-| `[audio report 1/9] a song started on AirPlay`                                                                         | by default | A test build, once a launch, as a song starts on AirPlay alone: the Developer screen's whole audio report, in parts a console line keeps (2000 characters)                            |
-| `[airplay check] 3 Web Audio alone: route=airplay sessionRate=44100 contextRate=44100 pageSession=auto state=running`  | by default | Developer > AirPlay sound check, one line a tap: the variant, the route, both rates, the page's session type and the context's state, with `element=` and `mic=` where they take part |
-| `[now playing] the sound is on AirPlay: the carrier stands aside, so the room's sound plays alone`                     | by default | The sound went to AirPlay alone: the lock screen's carrier is paused and muted, and nothing plays it. Once per change                                                                 |
-| `[now playing] the sound has left AirPlay: the carrier takes its place again, and the lock screen shows the song`      | by default | Back from AirPlay with the song playing: the carrier plays again. `the carrier plays again with the song` when no song plays then                                                     |
-| `[now playing] WebKit played the carrier; it stays aside while the sound is on AirPlay`                                | by default | WebKit played the carrier by itself on AirPlay alone (as the app came back, say), and it was paused again                                                                             |
-| `[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone`                 | by default | The unlock clip neither plays nor sounds on AirPlay alone; `the next tap plays the unlock clip again` once the sound leaves                                                           |
+| Line                                                                                                                               | Shown      | What it says                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `[audio route] airplay, iOS: new device, was Speaker`                                                                              | routine    | Each route the phone reports: its kind, iOS's reason and the kinds of output before it. One `at launch`; otherwise only when the route moved, or iOS gave a reason                                                                                                                                                                                                                   |
+| `[audio clock] shared: running -> interrupted, at 61.504 s`                                                                        | routine    | Each state of the app's one AudioContext, from the first room that makes it; `[hidden]` when the page was                                                                                                                                                                                                                                                                            |
+| `[audio] 21:31:05.120 karaoke clock-stall state=running route=airplay feeding=yes queued=2.4 ... stoodMs=1500`                     | by default | The song's clock stood still 1.5 s while it played; `clock-restart` follows                                                                                                                                                                                                                                                                                                          |
+| `karaoke clock-moving ... stoodMs=2100`                                                                                            | by default | It moved again, and the song plays on                                                                                                                                                                                                                                                                                                                                                |
+| `karaoke clock-stall-stop ...`                                                                                                     | by default | Still standing after the restart: the song paused where it was, and the room says why                                                                                                                                                                                                                                                                                                |
+| `[audio route] check (play, in a gesture): a fresh context at 44100 Hz, the phone's session at 48000 Hz on speaker: AirPlay alone` | by default | One output check: the moment (`play`, `a tap`, `a room shown`, `the page shown`, `the app in front`, `a route change`, `a song playing`), whether inside a gesture, the fresh context's rate or why none was made, the app session's rate and route kind, and what it says: `AirPlay alone`, `local`, or `unknown` (at a start, `unknown, so nothing plays beside the room's sound`) |
+| `[audio route] the page plays at 44100 Hz, the phone's session at 48000 Hz on Speaker: the sound is likely on AirPlay`             | by default | AirPlay suspected: the page's newest context runs at a rate other than the app session's, on the speaker or receiver, with no screen connected. Once per change                                                                                                                                                                                                                      |
+| `[audio route] a screen is connected (Screen Mirroring or a cable): AirPlay no longer suspected`                                   | by default | No longer suspected, and why: a screen, a route the session sees (`the phone's session plays on bluetooth`), or the rates agreeing again (`as the phone's session does`)                                                                                                                                                                                                             |
+| `karaoke play by=button clockWas=suspended position=0`                                                                             | by default | Each play, pause and stop of the song, with who asked (`by=`, the table above) and where it was                                                                                                                                                                                                                                                                                      |
+| `karaoke pause by=media-session(pause) position=2.2`                                                                               | by default | A system media control paused it: the lock screen, Control Center, a headset, or a remote such as the TV's                                                                                                                                                                                                                                                                           |
+| `[audio report 1/9] a song started on AirPlay`                                                                                     | by default | A test build, once a launch, as a song starts on AirPlay alone: the Developer screen's whole audio report, in parts a console line keeps (2000 characters)                                                                                                                                                                                                                           |
+| `[airplay check] 3 Web Audio alone: route=airplay sessionRate=44100 contextRate=44100 pageSession=auto state=running`              | by default | Developer > AirPlay sound check, one line a tap: the variant, the route, both rates, the page's session type and the context's state, with `element=` and `mic=` where they take part                                                                                                                                                                                                |
+| `[now playing] the sound is on AirPlay: the carrier stands aside, so the room's sound plays alone`                                 | by default | The sound went to AirPlay alone: the lock screen's carrier is paused and muted, and nothing plays it. Once per change                                                                                                                                                                                                                                                                |
+| `[now playing] the sound has left AirPlay: the carrier takes its place again, and the lock screen shows the song`                  | by default | Back from AirPlay with the song playing: the carrier plays again. `the carrier plays again with the song` when no song plays then                                                                                                                                                                                                                                                    |
+| `[now playing] WebKit played the carrier; it stays aside while the sound is on AirPlay`                                            | by default | WebKit played the carrier by itself on AirPlay alone (as the app came back, say), and it was paused again                                                                                                                                                                                                                                                                            |
+| `[audio unlock] the sound is on AirPlay: the unlock clip stays quiet, so the room's sound plays alone`                             | by default | The unlock clip neither plays nor sounds on AirPlay alone; `the next tap plays the unlock clip again` once the sound leaves                                                                                                                                                                                                                                                          |
 
 **To send the report from the room**: a test build writes it into the
 console as a song first starts on AirPlay alone (`[audio report n/m]`,
@@ -353,19 +383,29 @@ Audio beside a silent element kept local (4), Web Audio with the mic open
 an element that played and was paused (7). Each is torn down whole a few
 seconds after its beeps ([tv-device-tests.md](../plans/tv-device-tests.md),
 Tests 9 and 12). On the LG C2 (6 Nov 2026, mp-v0.8.56) 3 and 5 played on
-the TV, 4 never did, and 1 and 2 played nowhere.
+the TV, 4 never did, and 1 and 2 played nowhere. Above the buttons, a
+readout follows the app as it runs
+([`airplay-readout.ts`](../../apps/mercurypitch/src/shell/airplay-readout.ts)):
+the guess now and what says so, the last check (its rate, when it ran, why
+and whether inside a gesture), and whether anything may play beside the
+room's sound.
 
 The room's words follow where the sound goes. On AirPlay alone (the route
 says airplay, or AirPlay is suspected, and no screen is connected), a song
-that starts shows once a launch, under the room header, with a close
-button: "The song is playing on LG C2 over AirPlay." ("The song is playing
-over AirPlay." where AirPlay is only suspected), "The lyrics stay on this
-phone." and "Screen Mirroring puts the stage on the TV: open Control
-Center, tap Screen Mirroring, then choose your TV."
+that plays shows, under the room header, with a close button: "The song is
+playing on LG C2 over AirPlay." ("The song is playing over AirPlay." where
+AirPlay is only suspected: the receiver is named only where the route
+itself names it), "The lyrics stay on this phone." and "Screen Mirroring
+puts the stage on the TV: open Control Center, tap Screen Mirroring, then
+choose your TV."
 ([`KaraokeAirPlayHint.tsx`](../../src/features/karaoke-room/KaraokeAirPlayHint.tsx)).
 AirPlay alone carries sound only: iOS gives an app a second screen with
-Screen Mirroring or a cable, never with AirPlay. The hint goes the moment a
-screen connects, and never shows while one is. A song that stops by itself
+Screen Mirroring or a cable, never with AirPlay. The hint is up only while
+a song plays there: it goes the moment the song pauses, AirPlay goes, or a
+screen connects, and a room left and opened again shows where the sound
+goes then. Its close holds until AirPlay alone ends and begins again
+(`airPlayConnection`). Up to mp-v0.8.57 it was judged once as a song
+started and shown once a launch. A song that stops by itself
 on AirPlay says "The sound went to LG C2 over AirPlay and stopped." (no
 receiver's name where AirPlay is only suspected) and "To hear it here,
 choose this phone under AirPlay in Control Center." ("this iPad" on an
@@ -410,16 +450,23 @@ Reading them:
 - No `stands aside` line while the room's words say AirPlay: the app's
   wiring (`standAsideOnAirPlay`, from `main.tsx`) did not run, and the
   carrier still plays beside the song.
-- The suspicion's line can be late or stay on: a context keeps its rate for
-  life, so a clock made before AirPlay was taken says nothing of it (on a
-  store build only the shared clock is read), and one made on AirPlay says
-  it until a newer context is made.
+- The suspicion's line follows the checks: a context keeps its rate for
+  life, so the guess moves only with a check (or, on a test build, a new
+  context the census sees). A check outside a gesture, before anything has
+  played, may read the rate WebKit's idle session had; the check 1.5 s into
+  a song reads it with the session up. A `play` check that says `local`
+  followed by a `a song playing` check that says `AirPlay alone` is that
+  case, and the song reaches the TV a moment late.
+- After a check that ends `unknown, so nothing plays beside the room's
+sound`, the carrier's and the unlock clip's lines still say AirPlay: they
+  stand aside as though it were, until a check says `local`.
 
 A test build's audio record has the long form beside these: `output change
 route=airplay ... routeReason=...` (with the app session's `sampleRate`) and
 `census context-made ... rate=...`. Sources:
 [`audio-route-store.ts`](../../src/stores/audio-route-store.ts),
 [`airplay-suspicion.ts`](../../src/stores/airplay-suspicion.ts),
+[`output-check.ts`](../../src/stores/output-check.ts),
 [`karaoke-media-buttons.ts`](../../src/features/karaoke-room/karaoke-media-buttons.ts),
 [`shared-clock-log.ts`](../../apps/mercurypitch/src/infrastructure/shared-clock-log.ts),
 [`clock-watchdog.ts`](../../src/features/stem-mixer/clock-watchdog.ts),
