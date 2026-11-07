@@ -8,7 +8,6 @@
 import { createEffect, createMemo, Show } from 'solid-js'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioLiveTake } from '@/lib/studio/record/studio-recorder'
-import { studioTakeFileName } from '@/lib/studio/record/take-audio'
 import { studioPassTitle } from '@/lib/studio/record/take-passes'
 import { MicSmall } from '../studio-icons'
 import { frameToPixel } from '../timeline/timeline-geometry'
@@ -72,11 +71,13 @@ export function liveTakeSpan(live: StudioLiveTake): {
   }
 }
 
-/** The live take's name as its clip will show it: a loop's with the pass it records. */
+/**
+ * The live take's name as its clip will show it, without the file's
+ * extension ("Take 3", not "Take 3.wav"): a loop's with the pass it records.
+ */
 export function liveTakeName(live: StudioLiveTake): string {
-  if (live.cut?.mode !== 'loop') return studioTakeFileName(live.title)
-  const { pass } = liveTakeSpan(live)
-  return studioTakeFileName(studioPassTitle(live.title, pass))
+  if (live.cut?.mode !== 'loop') return live.title
+  return studioPassTitle(live.title, liveTakeSpan(live).pass)
 }
 
 export function StudioLaneTake(props: StudioLaneTakeProps) {

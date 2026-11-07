@@ -102,6 +102,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
     audioBusy: () => finishing(),
     recording: () => recorder.busy(),
+    take: () => recorder.takeClock(),
   })
   const recorder = useStudioRecorder({
     project: () => props.studio.project(),

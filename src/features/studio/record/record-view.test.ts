@@ -1,8 +1,8 @@
-// Studio record view helpers — the input meter's fill in decibels, and the live take's span from its clip start to what has arrived.
+// Studio record view helpers — the input meter's fill in decibels, and the live take's span from its clip start to what has arrived, and its name.
 import { describe, expect, it } from 'vitest'
 import { createStudioLivePeaks } from '@/lib/studio/record/take-audio'
 import { studioInputMeterFill } from './StudioInputMeter'
-import { liveTakeSpan } from './StudioLaneTake'
+import { liveTakeName, liveTakeSpan } from './StudioLaneTake'
 
 describe('studioInputMeterFill', () => {
   it('maps -60 dBFS and below to empty and full scale to full', () => {
@@ -104,5 +104,22 @@ describe('liveTakeSpan', () => {
       origin: 90000 - 96000,
       pass: 2,
     })
+  })
+
+  it('names the take as its kept clip will, without the file’s extension', () => {
+    const take = live({
+      heardFirst: 90000,
+      fromFrame: 96000,
+      sampleRate: 48000,
+      count: 250,
+    })
+    const loop = {
+      mode: 'loop' as const,
+      range: { startFrame: 96000, endFrame: 144000 },
+    }
+
+    expect(liveTakeName(take)).toBe('Take 1')
+    // Two whole passes of the 1 s range are behind it: it records the third.
+    expect(liveTakeName({ ...take, cut: loop })).toBe('Take 1, pass 3')
   })
 })
