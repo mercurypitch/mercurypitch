@@ -15,7 +15,9 @@
 //   every step is on screen, or gets there with the stage's own scroll, which
 //   may be at most 60 px (more is a toy over budget, to fix in the toy);
 // - on a phone held sideways, the deck's figure and its toy's first control
-//   share the screen;
+//   share the screen; a toy that is a figure alone in a step, its plays in
+//   the step's text (Lesson 24's Step 4, the wave), has its figure on screen,
+//   and one that shows none of the controls its markup gives the step fails;
 // - every control is at least 44 px each way, and nothing scrolls sideways.
 //
 // Reduced motion keeps every scroll instant. It is also the taller stage:
@@ -69,8 +71,12 @@ interface StuckFit {
 interface SharedScreen {
   deck: boolean
   figure: boolean
-  firstControl: string
-  firstControlOnScreen: boolean
+  /** The toy's first control on show, or null where it shows none. */
+  firstControl: string | null
+  /** Whether it is on screen with the figure; null where there is none. */
+  firstControlOnScreen: boolean | null
+  /** The controls the toy's markup gives this step, where none of them shows. */
+  notShown: string[]
   small: string[]
   sideways: number
 }
@@ -162,29 +168,46 @@ function stuckStageFit(): StuckFit {
 /**
  * Scrolls the active toy's figure and its first control (in reading order)
  * up under the masthead together, and says whether both are then on screen.
+ * A toy that shows no control is either a figure alone in this step (no
+ * control in its markup is this step's) or a toy hiding the controls its
+ * markup gives the step, which `notShown` names.
  */
 function figureAndFirstControl(): SharedScreen {
   const toy = document.querySelector('#stepsStage .toy.is-active')
   const mast = document.querySelector('#mast')?.getBoundingClientRect().bottom
+  const step = document.querySelector('#stepNow')?.textContent?.trim() ?? ''
   if (!toy || mast === undefined) throw new Error('no toy')
-  const controls = Array.from(
+  const all = Array.from(
     toy.querySelectorAll<HTMLElement>('button, input, [role="slider"]'),
-  ).filter((el) => {
+  )
+  const controls = all.filter((el) => {
     const r = el.getBoundingClientRect()
     return r.width > 0 && getComputedStyle(el).visibility !== 'hidden'
   })
-  const first = controls[0]
+  const name = (el: HTMLElement): string =>
+    (el.getAttribute('aria-label') || el.textContent?.trim() || `#${el.id}`)
+      .replace(/\s+/g, ' ')
+      .slice(0, 40)
+  // a toy the steps share marks each control with the steps it shows on
+  // (`data-part="3 4"`, kit/step-parts.ts); a control in no part is every
+  // step's
+  const givenThisStep = (el: HTMLElement): boolean => {
+    const part = el.closest('[data-part]')
+    if (part === null || !toy.contains(part)) return true
+    return (part.getAttribute('data-part') ?? '').split(/\s+/).includes(step)
+  }
+  const first = controls.at(0)
   // the figure on show: a toy with two views (Lesson 5's breath gauge and
   // breath figure) keeps the other one's figure in its markup, hidden
   const figure =
     Array.from(toy.querySelectorAll('.viz')).find(
       (el) => el.getClientRects().length > 0,
     ) ?? first
-  const top = Math.min(
-    figure.getBoundingClientRect().top,
-    first.getBoundingClientRect().top,
-  )
-  window.scrollBy({ top: top - mast, behavior: 'instant' })
+  const tops = [figure, first]
+    .filter((el): el is Element => el !== undefined)
+    .map((el) => el.getBoundingClientRect().top)
+  if (tops.length > 0)
+    window.scrollBy({ top: Math.min(...tops) - mast, behavior: 'instant' })
   const onScreen = (el: Element): boolean => {
     const r = el.getBoundingClientRect()
     return r.top >= mast - 0.5 && r.bottom <= window.innerHeight + 0.5
@@ -193,15 +216,10 @@ function figureAndFirstControl(): SharedScreen {
   return {
     deck:
       document.querySelector('#lesson')?.classList.contains('is-deck') ?? false,
-    figure: onScreen(figure),
-    firstControl: (
-      first.getAttribute('aria-label') ||
-      first.textContent?.trim() ||
-      `#${first.id}`
-    )
-      .replace(/\s+/g, ' ')
-      .slice(0, 40),
-    firstControlOnScreen: onScreen(first),
+    figure: figure !== undefined && onScreen(figure),
+    firstControl: first === undefined ? null : name(first),
+    firstControlOnScreen: first === undefined ? null : onScreen(first),
+    notShown: first === undefined ? all.filter(givenThisStep).map(name) : [],
     small: controls
       .filter((el) => {
         const r = el.getBoundingClientRect()
@@ -274,11 +292,18 @@ test.describe('at 844 x 390, a phone held sideways', () => {
       for (let step = 1; step <= count; step++) {
         await openStep(page, step)
         const shared = await page.evaluate(figureAndFirstControl)
+        expect(
+          shared.notShown,
+          `Lesson ${n}, step ${step}: the toy shows none of this step's controls`,
+        ).toEqual([])
+        // a toy that is a figure alone in this step has no control to share
+        // the screen with: its figure is on screen
         expect(shared, `Lesson ${n}, step ${step}`).toEqual({
           deck: true,
           figure: true,
           firstControl: shared.firstControl,
-          firstControlOnScreen: true,
+          firstControlOnScreen: shared.firstControl === null ? null : true,
+          notShown: [],
           small: [],
           sideways: 0,
         })
