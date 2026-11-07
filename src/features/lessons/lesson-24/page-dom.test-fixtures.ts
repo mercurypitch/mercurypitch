@@ -4,7 +4,8 @@
 //
 // A test that drives Lesson 24's modules as the page does loads
 // learn/24.html's body into jsdom (`loadPage`), so every selector meets the
-// markup it meets in a browser. Sound is on, as after a first tap, with
+// markup it meets in a browser, and `mountSteps` adds the deck and the
+// steps as main.ts mounts them. Sound is on, as after a first tap, with
 // `soundOn`. The page's scripts never run: the test mounts what it drives.
 // Every sound on the page is one of the kit's runs, so a test that hears
 // them swaps kit/run.ts for the kit's recorder
@@ -15,6 +16,10 @@ import { resolve } from 'node:path'
 import { vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
+import type { StepDeck } from '@/features/lessons/kit/step-deck'
+import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { Steps, StepsOptions } from './steps'
+import { initSteps } from './steps'
 
 /** learn/24.html, as the repository has it. */
 export const PAGE = readFileSync(
@@ -28,6 +33,21 @@ export function loadPage(): void {
   if (body === null) throw new Error('learn/24.html has no body')
   document.body.innerHTML = body[1]
   document.body.className = 'season-2'
+}
+
+/** The page with its deck and its steps, as main.ts mounts them, on Step 1. */
+export function mountSteps(
+  o: StepsOptions = {},
+): StepDeck & { readonly steps: Steps } {
+  loadPage()
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  const deck = createStepDeck({
+    toyFor: () => 1,
+    after: { label: 'Sing it', selector: '#sing' },
+  })
+  const steps = initSteps(deck, o)
+  deck.start()
+  return Object.assign(deck, { steps })
 }
 
 /** Sound on, as after the first tap. */
