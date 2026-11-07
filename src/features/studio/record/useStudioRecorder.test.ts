@@ -56,7 +56,6 @@ vi.mock('@/db/services/studio-take-journal', () => ({
   createStudioTakeJournal: () => mocks.journal,
 }))
 vi.mock('@/lib/mic-manager', () => ({
-  listAudioInputs: () => Promise.resolve([]),
   micManager: {
     acquire: vi.fn(),
     acquireFrom: mocks.acquireFrom,

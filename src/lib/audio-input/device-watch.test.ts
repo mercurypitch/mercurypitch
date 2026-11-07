@@ -2,7 +2,7 @@
 // changes settles, and what a capture track says it opened.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEVICE_SETTLE_MS, listDevices, trackIdentity, watchDeviceChanges, } from './device-watch'
+import { DEVICE_SETTLE_MS, listAudioInputDevices, listDevices, trackIdentity, watchDeviceChanges, } from './device-watch'
 import type { FakeMediaDevices } from './fake-devices.fixture'
 import { audioInput, fakeMediaDevices, fakeTrack } from './fake-devices.fixture'
 
@@ -58,7 +58,54 @@ describe('listDevices', () => {
   })
 })
 
+describe('listAudioInputDevices', () => {
+  it('lists the audio inputs and leaves the outputs out', async () => {
+    // Arrange
+    const usb = audioInput('usb', 'Scarlett 4i4 USB')
+    const speakers = {
+      ...audioInput('speakers', 'Speakers'),
+      kind: 'audiooutput',
+    } as MediaDeviceInfo
+    devices = fakeMediaDevices([usb, speakers])
+
+    // Act
+    const listed = await listAudioInputDevices()
+
+    // Assert
+    expect(listed).toEqual([usb])
+  })
+
+  it('lists no inputs when the browser refuses to list them', async () => {
+    // Arrange
+    devices = fakeMediaDevices([audioInput('usb', 'Scarlett 4i4 USB')])
+    vi.spyOn(navigator.mediaDevices, 'enumerateDevices').mockRejectedValue(
+      new DOMException('Not allowed', 'NotAllowedError'),
+    )
+
+    // Act
+    const listed = await listAudioInputDevices()
+
+    // Assert
+    expect(listed).toEqual([])
+  })
+})
+
 describe('watchDeviceChanges', () => {
+  it('reads every change as it comes when asked not to wait for a settle', () => {
+    // Arrange
+    vi.useFakeTimers()
+    devices = fakeMediaDevices()
+    const onChange = vi.fn()
+    watchDeviceChanges(onChange, 0)
+
+    // Act
+    devices.change()
+    devices.change()
+
+    // Assert
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
   it('reads a burst of device changes once, after it settles', () => {
     // Arrange
     vi.useFakeTimers()
