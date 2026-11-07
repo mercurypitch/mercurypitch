@@ -12,6 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FirstNoteRoomProps } from '@/features/first-note/FirstNoteRoom'
 import { karaokeLibraryRequest, karaokeStagedSong, resetKaraokeRoomForTests, takeKaraokeSongRequest, } from '@/features/karaoke-room/karaoke-room-store'
 import { resetLastExerciseForTests } from '@/features/premium-exercises/last-exercise'
+import { canStreamStems, openStemStream, } from '@/features/stem-mixer/stem-stream-source'
+import { createStreamingStemVoice } from '@/features/stem-mixer/streaming-stem-voice'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { FirstNoteScreen } from './FirstNoteScreen'
 import type { RenderedShell } from './render-for-test'
@@ -73,5 +75,17 @@ describe('FirstNoteScreen', () => {
 
     expect(karaokeLibraryRequest()).toBe(true)
     expect(navigation.goToTab).toHaveBeenCalledWith(TAB_KARAOKE)
+  })
+
+  // Without them the room's stems are elements, and over AirPlay alone an
+  // element plays nothing (the AirPlay sound check's button 6, 7 Nov 2026).
+  it("hands the room the Karaoke room's way of streaming a stem, so its rounds can play through Web Audio", () => {
+    view = renderShell(() => <FirstNoteScreen />)
+
+    expect(room.props?.streams).toEqual({
+      canStream: canStreamStems,
+      open: openStemStream,
+      voice: createStreamingStemVoice,
+    })
   })
 })
