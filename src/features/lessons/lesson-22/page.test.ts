@@ -263,11 +263,13 @@ describe("Lesson 22's page", () => {
     const controls = (root: string): Element[] =>
       Array.from(
         d.querySelectorAll(
-          `${root} :is([data-vib-play], input, [data-vib-drift])`,
+          `${root} :is([data-vib-play], input, [data-vib-drift], [data-free-state])`,
         ),
       )
 
-    // Assert: WEB-SPEC, Toys 2, "Before the choice nothing on the page plays its answer"
+    // Assert: WEB-SPEC, Toys 2, "Before the choice nothing on the page plays
+    // its answer"; free play's state switch is held with the rest
+    expect(d.querySelectorAll('#freePlay [data-free-state]')).toHaveLength(4)
     for (const root of ['#toyChart', '#freePlay']) {
       expect(controls(root).length, root).toBeGreaterThan(8)
       for (const c of controls(root)) expect(usable(c), root).toBe(false)
