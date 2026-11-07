@@ -101,6 +101,10 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   20: {
     plan: "The season plan's line. It fits and leaks nothing, but it sets up subdivision, not Lesson 20's opening, which the default says in miniature: Merc's run of nine notes at 0.2 s a note (FACTS 5).",
   },
+  21: {
+    'lesson-4':
+      "Lesson 20's plan's line, cut to fit. It leaks nothing, since it says what the title says, but it recalls Lesson 4 rather than setting up this page's opening, D major's seven notes and two black keys, which the default says in miniature (FACTS 5b).",
+  },
   22: {
     nudged:
       "Lesson 21's plan's line, a bridge from its fifths, each nudged two cents, to a held note's wave. It leaks nothing, but the default is the cold open in miniature: Merc's A3, its line past both edges of the band before anything marks the band's centre (FACTS 5b).",

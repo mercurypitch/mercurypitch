@@ -344,6 +344,26 @@ describe('seasonFor', () => {
     expect(isLive(23, LESSONS_2, defaultPageState(true))).toBe(true)
   })
 
+  it('holds Lesson 21 back by its draft line or by the console, and keeps its page and reading time where drafts are shown', () => {
+    // Act
+    const held = [
+      seasonFor(LESSONS_2, defaultPageState(false)),
+      seasonFor(LESSONS_2, served({ 21: { published: false } }, true)),
+    ]
+    const shown = seasonFor(LESSONS_2, defaultPageState(true))
+    const at = (season: Lesson[]) => season.find((L) => L.n === 21)
+
+    // Assert: Lesson 21's WEB-SPEC, What the kit and the app still need, item 3
+    for (const season of held)
+      expect([at(season)?.page, at(season)?.minutes]).toEqual([
+        undefined,
+        undefined,
+      ])
+    expect([at(shown)?.page, at(shown)?.minutes]).toEqual(['/learn/21', 15])
+    expect(isLive(21, LESSONS_2, defaultPageState(false))).toBe(false)
+    expect(isLive(21, LESSONS_2, defaultPageState(true))).toBe(true)
+  })
+
   it('holds Lesson 24 back by its draft line or by the console, and keeps its page and reading time where drafts are shown', () => {
     // Act
     const held = [

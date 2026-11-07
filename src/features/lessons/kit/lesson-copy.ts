@@ -162,6 +162,16 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  21: {
+    tease:
+      'D major: seven notes, two black keys, F♯ and C♯. Now step up a fifth.',
+    teaseAlts: [
+      {
+        id: 'lesson-4',
+        text: 'Lesson 4 slid the scale to G, with one sharp, and to D, with two.',
+      },
+    ],
+  },
   22: {
     tease:
       'Merc holds one note, and its line swings past both edges of the band.',

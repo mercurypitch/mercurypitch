@@ -686,7 +686,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      Lesson 14's page would draw Lesson 15's card, and Lesson 28's draws nothing until it is in the
      list;
    - a close per season: `SEASON_END` is one, "End of Season 1"
-     (`src/features/lessons/kit/lesson-copy.ts:205-216`); Season 2's is LESSON.md's, its eyebrow,
+     (`src/features/lessons/kit/lesson-copy.ts:215-226`); Season 2's is LESSON.md's, its eyebrow,
      its line and its rest line, with the same two ways on, kept free of the team's words as the
      copy's test asks;
    - the rest-aware close Lesson 14's item 12 requires, for both seasons: after "Effortful",

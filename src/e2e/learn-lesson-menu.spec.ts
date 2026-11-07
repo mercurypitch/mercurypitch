@@ -269,6 +269,8 @@ const NO_FILM = [
     sing: 'Tap the beat',
     steps: 4,
   },
+  // it teaches in five steps
+  { n: 21, title: 'Keys and the circle of fifths', steps: 5 },
   // it teaches in four steps
   { n: 22, title: 'Vibrato', steps: 4 },
   // it teaches in four steps

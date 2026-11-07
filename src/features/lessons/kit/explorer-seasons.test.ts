@@ -355,6 +355,34 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 21's page on its own card, Ready, with Compose's link", async () => {
+    // Arrange: Lesson 21's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 21 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 21's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Keys and the circle of fifths')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 21')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/?lesson=21#/compose"]'),
+    ).not.toBeNull()
+  })
+
   it("opens Lesson 24's page on its own card, Ready, with Drone Intonation's link", async () => {
     // Arrange: Lesson 24's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
