@@ -153,6 +153,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // before it, 176,322 with it, against 176,128 at 172. All 344 are on
   // every lesson page: Lesson 3's sources in kit/films.ts (139) and its
   // film, running time and poster figure in kit/season.ts (205).
+  // Lesson 21's page shell added 496 bytes on main before the film (175,978
+  // to 176,474). 311 of them are on every lesson page: Lesson 21's tease
+  // and its alternative (kit/lesson-copy.ts, 188) and its drafts line
+  // (123). The other 185 are the bundler cutting the kit's shared code
+  // differently around a shell that loads the reveal but not the predict,
+  // as Lesson 24's shell did; they come back once Lesson 21's cold open
+  // loads the predict. 173 holds the film and the shell.
   'learn/02.html': 173,
 
   // Lesson 3, released on the owner's word on 7 November 2026 and built in
@@ -251,6 +258,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and 4's do: 143,319 bytes in build:e2e before it, 160,998 with it,
   // 16,639 of them the film's two chunks, kit/episode.ts (4,994) and
   // lesson-03/film.ts with its chapters and captions (11,645).
+  // Lesson 21's page shell added 499 bytes on main before the film (143,319
+  // to 143,818): 311 of them Lesson 21's tease, its alternative and its
+  // drafts line, on every lesson page, as on Lesson 2; the other 188 are the
+  // bundler's, as on Lesson 2, and come back with Lesson 21's cold open.
+  // 158 holds the film and the shell.
   'learn/03.html': 158,
   // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
   // mode as Lesson 3 is. Measured 122
@@ -486,6 +498,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // quarter over. The recall and quick check, the take (its judge and the
   // tap pad) and free play load after first paint.
   'learn/19.html': 187,
+  // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
+  // draft, built in every mode as Lesson 3 is: its own module on the kit,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; its
+  // shell: 88,379 bytes in build:e2e, the smallest whole KB above, to rise
+  // as each part joins.
+  'learn/21.html': 87,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
   // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in
@@ -676,6 +694,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
+  // Lesson 21 (a draft, as above), its shell: 86,021 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own with the staff toy's and
+  // the staircase's taken in by @import, and the shared Inter and Outfit
+  // @font-face rules; the smallest whole KB above, to rise as each part
+  // joins, the guide's and the voice lessons' sheets with the recall and
+  // Sing it.
+  'learn/21.html': 85,
   // Lesson 22 (a draft, as above), with its steps, its cold open, its two
   // quizzes, its four words, Sing it and the Wrap: 89,928 bytes in
   // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it

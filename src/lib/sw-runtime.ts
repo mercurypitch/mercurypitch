@@ -195,6 +195,9 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   // Lesson 19, a draft as Lesson 17 is, for the same reason.
   '/learn/19',
   '/learn/19.html',
+  // Lesson 21, a draft as Lesson 15 is, for the same reason.
+  '/learn/21',
+  '/learn/21.html',
   // Lesson 22, a draft as Lesson 5 is, for the same reason.
   '/learn/22',
   '/learn/22.html',

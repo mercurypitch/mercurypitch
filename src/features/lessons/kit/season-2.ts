@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15, 17, 19, 22, 23 and 24 have their pages, drafts (drafts.ts); every other
+// Lessons 15, 17, 19, 21, 22, 23 and 24 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -181,6 +181,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Keys and the circle of fifths',
     short: 'Circle of fifths',
     topics: ['T17', 'T18', 'T29'],
+    // A draft until Lessons 6 and 15 are live and the vocal coach's look at
+    // Sing it (drafts.ts).
+    minutes: 15,
+    page: '/learn/21',
     hook: 'G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?',
     pr: {
       needs:
