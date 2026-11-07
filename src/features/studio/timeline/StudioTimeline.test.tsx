@@ -7,6 +7,7 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import { reloadStudioLaneHeight, setStudioLaneHeight } from './lane-height'
 import { StudioTimeline } from './StudioTimeline'
 import { StudioTrackControls } from './StudioTrackControls'
 
@@ -108,6 +109,50 @@ describe('Studio timeline', () => {
     onTrackDetails: vi.fn(),
     readCanonicalAsset: vi.fn(() => Promise.reject(new Error('Missing'))),
   }
+
+  it('keeps a lane’s header compact, its lines toured through its name, and brings its lines, fader and pan back in tall lanes kept on this device', () => {
+    // "Lead vocal" is an other lane, but its name says a vocal.
+    const { container } = render(() => <StudioTimeline {...base} />)
+    const header = container.querySelector<HTMLElement>(
+      '[data-studio-track] > *',
+    )!
+    const compact = {
+      instrument: within(header).getByRole('img').getAttribute('aria-label'),
+      buttons: within(header)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label')),
+      fader: within(header).queryByRole('slider', {
+        name: 'Lead vocal volume',
+      }),
+      width: container.firstElementChild!.getAttribute('style'),
+      linesTour: container
+        .querySelector('[data-tour="studio.lines"]')
+        ?.getAttribute('aria-label'),
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tall lanes' }))
+    reloadStudioLaneHeight()
+
+    expect(compact).toEqual({
+      instrument: 'Vocal',
+      buttons: ['Lead vocal details', 'Mute Lead vocal', 'Solo Lead vocal'],
+      fader: null,
+      width: expect.stringContaining('--studio-header-width: 240px'),
+      linesTour: 'Lead vocal details',
+    })
+    expect(screen.getByRole('button', { name: 'Tall lanes' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(
+      within(header).getByRole('slider', { name: 'Lead vocal volume' }),
+    ).toBeInTheDocument()
+    expect(
+      container.querySelector('[data-tour="studio.lines"]'),
+    ).toHaveAccessibleName('Lead vocal volume and pan lines')
+    expect(localStorage.getItem('mercurypitch.studio.lane-height')).toBe('tall')
+    setStudioLaneHeight('compact')
+  })
 
   it("names the pass a loop take's clip plays, and picks another from its toolbar", () => {
     const command = vi.fn(() => true)
@@ -466,7 +511,7 @@ describe('Studio timeline', () => {
 
   it('fits a song to the width to a tenth of a pixel per second, filling a narrow window', () => {
     const zoom = vi.fn()
-    // 141 s of song plus a second of room, across 448 px of lane: 3.15 px/s.
+    // 141 s of song plus a second of room, across 536 px of lane: 3.77 px/s.
     const song = {
       ...project,
       clips: [{ ...project.clips[0], sourceOutFrame: 140 * 48000 }],
@@ -475,7 +520,7 @@ describe('Studio timeline', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Fit song to width' }))
 
-    expect(zoom).toHaveBeenCalledWith(3.1)
+    expect(zoom).toHaveBeenCalledWith(3.7)
   })
 
   it('reads the zoom level between its steps, and zooms with = and - from the Studio', () => {
@@ -561,7 +606,7 @@ describe('Studio timeline', () => {
     ).not.toHaveAttribute('aria-orientation')
   })
 
-  it('keeps the dock to the seven icon commands it has room for: Range and the pass list stay on the floating bar', () => {
+  it('keeps the dock to the eight icon commands it has room for: Range and the pass list stay on the floating bar', () => {
     const looped = {
       ...project,
       clips: [
@@ -584,8 +629,9 @@ describe('Studio timeline', () => {
       />
     ))
     const dock = container.querySelector<HTMLElement>('[data-studio-dock]')!
-    // Zoom out, Zoom in, Fit song to width, Split, Duplicate, Delete, Details.
-    expect(within(dock).getAllByRole('button')).toHaveLength(7)
+    // Zoom out, Zoom in, Fit song to width, Tall lanes, Split, Duplicate,
+    // Delete, Details.
+    expect(within(dock).getAllByRole('button')).toHaveLength(8)
     expect(within(dock).queryByRole('button', { name: 'Range' })).toBeNull()
     expect(within(dock).queryByRole('combobox')).toBeNull()
     setDeskOpen(false)

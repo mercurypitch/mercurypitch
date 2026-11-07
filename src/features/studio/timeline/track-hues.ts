@@ -1,28 +1,13 @@
-// Studio track hues — one colour per lane, chosen by musical role so a vocal reads as a vocal everywhere.
+// Studio track hues — one colour per lane, the hue of the instrument's family, so a vocal reads as a vocal everywhere.
+import type { InstrumentHue } from '@/lib/studio/instruments/glyph-catalog'
+import { instrumentFamily } from '@/lib/studio/instruments/glyph-catalog'
+import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioTrack } from '@/lib/studio/model/types'
-import type { TrackRole } from '@/lib/studio-fx/role-chains'
 
-export type StudioTrackHue =
-  | 'rose'
-  | 'amber'
-  | 'teal'
-  | 'violet'
-  | 'green'
-  | 'orange'
+export type StudioTrackHue = InstrumentHue
 
-const ROLE_HUES: Partial<Record<TrackRole, StudioTrackHue>> = {
-  voice: 'rose',
-  'backing-vocals': 'rose',
-  'acoustic-guitar': 'amber',
-  'electric-guitar': 'orange',
-  bass: 'orange',
-  piano: 'teal',
-  keys: 'teal',
-  drums: 'violet',
-  backing: 'green',
-}
-
-// Tracks without a known role (uploaded files) take turns so neighbours differ.
+// Lanes nothing describes (an uploaded file no name rule reads) take turns
+// through the six lane hues, so neighbours differ.
 const ROTATION: readonly StudioTrackHue[] = [
   'teal',
   'amber',
@@ -33,10 +18,13 @@ const ROTATION: readonly StudioTrackHue[] = [
 ]
 
 export function studioTrackHue(
-  track: Pick<StudioTrack, 'role'>,
+  track: Pick<StudioTrack, 'role' | 'name' | 'instrument'>,
   index: number,
 ): StudioTrackHue {
-  return ROLE_HUES[track.role] ?? ROTATION[index % ROTATION.length]
+  const lane = studioLaneInstrument(track)
+  return lane.from === 'unknown'
+    ? ROTATION[index % ROTATION.length]
+    : instrumentFamily(lane.family).hue
 }
 
 /** The CSS colour for a hue; the Studio stylesheet defines it per theme. */

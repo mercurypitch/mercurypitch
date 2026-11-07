@@ -73,6 +73,11 @@
   --studio-hue-violet: #a991f7;
   --studio-hue-green: #5cc271;
   --studio-hue-orange: #ec8a4f;
+  /* Instrument families beyond the six lane hues (lib/studio/instruments). */
+  --studio-hue-sky: #5aaef0;
+  --studio-hue-lime: #a9c94b;
+  --studio-hue-fuchsia: #dc7fe0;
+  --studio-hue-slate: #9aa6b2;
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
@@ -107,6 +112,10 @@
   --studio-hue-violet: #7552d6;
   --studio-hue-green: #2c8a43;
   --studio-hue-orange: #c05621;
+  --studio-hue-sky: #1f6bb0;
+  --studio-hue-lime: #587510;
+  --studio-hue-fuchsia: #9c3897;
+  --studio-hue-slate: #59636e;
 }
 /* The Studio fills the content area edge to edge; phones keep room for the tab bar. */
 @media (min-width: 769px) {
@@ -997,23 +1006,34 @@
   color: var(--studio-text);
   font: inherit;
 }
-/* A setting that is on or off: its box, then its name. */
-.checkField {
+/* A lane's details open with what its compact header leaves out: its lines,
+   and on a phone its arm. */
+.laneActions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+button.laneAction {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 36px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 12px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-weight: 600;
   cursor: pointer;
 }
-.checkField input {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--studio-accent);
+@media (hover: hover) {
+  button.laneAction:hover:not(:disabled) {
+    background: var(--studio-hover);
+  }
 }
 @media (pointer: coarse) {
-  .checkField {
+  button.laneAction {
     min-height: 44px;
   }
 }

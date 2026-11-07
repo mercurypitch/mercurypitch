@@ -98,6 +98,27 @@ export const FitWidth: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// Bars above and below, arrows pushing them apart: taller lanes.
+export const LaneHeight: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M5 3h14" />
+    <path d="M5 21h14" />
+    <path d="M12 7v10" />
+    <path d="m9 10 3-3 3 3" />
+    <path d="m9 14 3 3 3-3" />
+  </svg>
+)
+
 // Filled play and pause — the transport's main button reads at a glance.
 export const PlayFilled: Component<{ size?: number }> = (p) => (
   <svg

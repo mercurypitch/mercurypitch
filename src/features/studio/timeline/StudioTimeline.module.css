@@ -1,11 +1,9 @@
 /* Studio arrangement — one coordinate surface. Lanes carry a track hue; the app's tokens carry the theme. */
 .timeline {
-  --studio-row-height: 96px;
+  /* Compact lanes; tall ones (lane-height.ts) bring back the fader row. */
+  --studio-row-height: 64px;
   --studio-clip-inset: 6px;
   --studio-ruler-height: 36px;
-  /* The role plate down a lane header's left edge (StudioLaneHeader.tsx). */
-  --studio-plate-width: 64px;
-  --studio-plate-picture: 56px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -69,7 +67,8 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  padding: 0 8px 0 16px;
+  /* As narrow as a lane header: Snap, Time and Beats and the tempo fit 240. */
+  padding: 0 6px 0 12px;
   background: var(--studio-bar);
   border-right: 1px solid var(--studio-line);
 }
@@ -187,7 +186,7 @@
 }
 .segmented button {
   height: 22px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -294,6 +293,10 @@
   opacity: 0.4;
   cursor: default;
 }
+.zoom button[aria-pressed='true'] {
+  background: var(--studio-accent-soft);
+  color: var(--studio-accent-text);
+}
 
 /* Lanes */
 .lane {
@@ -325,7 +328,8 @@
   justify-content: center;
   gap: 8px;
   min-width: 0;
-  padding: 8px 12px 8px 16px;
+  /* The 3 px hue edge, then 10 px to the chip. */
+  padding: 0 10px 0 13px;
   background: var(--studio-bar);
   border-right: 1px solid var(--studio-line);
   transition: background-color 0.15s ease-out;
@@ -337,18 +341,8 @@
   width: 3px;
   background: var(--studio-track);
 }
-/* A header with a role plate (StudioLaneHeader.tsx): the plate carries the
-   hue down the left edge, and the controls start past it. A selected lane
-   keeps its accent edge, drawn over the plate. */
-.withPlate {
-  padding-left: calc(var(--studio-plate-width) + 10px);
-}
-.withPlate::before {
-  z-index: 1;
-  width: 0;
-}
-/* The armed lane: a red ring round its header, over the plate, beside the
-   lit arm button and the level in its lane. */
+/* The armed lane: a red ring round its header, beside the lit arm button
+   and the level in its lane. */
 .lane[data-armed] .trackHeader::after {
   content: '';
   position: absolute;
@@ -393,18 +387,17 @@
     inset 0 1px 0 color-mix(in srgb, var(--studio-accent) 55%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--studio-accent) 55%, transparent);
 }
-/* The name and its source form one button that opens the track's details. */
+/* The name and its source form one button that opens the track's details.
+   Its padding sets the text 8 px past the chip. */
 .timeline button.trackName {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 1px;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 6px;
   box-sizing: border-box;
-  width: calc(100% + 6px);
   min-width: 0;
-  min-height: 30px;
-  margin: 0 0 0 -6px;
+  min-height: 36px;
+  margin: 0;
   padding: 2px 6px;
   border: 0;
   border-radius: 6px;
@@ -414,14 +407,27 @@
   text-align: left;
   cursor: pointer;
 }
+/* Two lines at most: the name's, or the name's and its source's. A name on
+   two lines pushes the source out of sight; the title still says it. */
+.trackNameLines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 32px;
+  overflow: hidden;
+}
 .trackNameText {
+  display: -webkit-box;
   max-width: 100%;
+  overflow: hidden;
   font-size: 13px;
   font-weight: 600;
-  line-height: 18px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 16px;
+  /* Break between words, hyphenating one too long for its line. */
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 @media (hover: hover) {
   .timeline button.trackName:hover {
@@ -435,13 +441,21 @@
   outline-offset: -2px;
 }
 .sourceLabel {
+  flex: none;
   max-width: 100%;
   color: var(--studio-muted);
   font-size: 11px;
-  line-height: 14px;
+  line-height: 16px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* A compact lane following a line says so after its name. */
+.linesMark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  color: var(--studio-text-2);
 }
 
 /* Track controls: Mute, Solo, the fader and the pan knob; in a lane header
@@ -466,8 +480,20 @@
   gap: 4px;
   min-width: 0;
 }
-.headerRow + .headerRow {
+/* A header's chip and name, then the switches 8 px on; a desk strip's name
+   stays centred over its fader. */
+.headerRow > .identityCell {
+  gap: 2px;
+  margin-right: 4px;
+}
+/* A tall lane's lines, fader and knob. */
+.soundRow {
   gap: 6px;
+}
+/* A tablet's arm, Mute and Solo stand under the name, past the chip. */
+.switchRow {
+  gap: 6px;
+  padding-left: 40px;
 }
 /* The name and the fader take what the buttons leave; a long name ends in
    an ellipsis and never squeezes a button. */
@@ -494,8 +520,8 @@
 .controls button.mixButton {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--studio-line-strong);
@@ -511,8 +537,8 @@
     color 0.12s ease-out;
 }
 .mixButton svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 /* A pressed Mute or Solo keeps its colour under the pointer. */
 @media (hover: hover) {
@@ -661,6 +687,10 @@
   height: 28px;
   overflow: visible;
 }
+.soundRow .knobDial {
+  width: 24px;
+  height: 24px;
+}
 .knobFace {
   fill: var(--studio-control);
   stroke: var(--studio-line-strong);
@@ -710,7 +740,7 @@
   column-gap: 8px;
 }
 .touchControls.withIdentity {
-  gap: 6px;
+  gap: 4px;
 }
 .touchControls button.mixButton {
   width: 44px;
@@ -1455,9 +1485,12 @@
   transform: translate(-50%, 0);
 }
 
-/* Tablet and phone */
+/* Tall lanes, tablet and phone */
+.tall {
+  --studio-row-height: 96px;
+}
 .tablet {
-  --studio-row-height: 132px;
+  --studio-row-height: 96px;
   --studio-clip-inset: 8px;
   --studio-ruler-height: 48px;
 }
@@ -1497,32 +1530,60 @@
   height: 44px;
 }
 .tablet .corner {
-  padding: 0 6px 0 16px;
+  padding: 0 4px 0 12px;
 }
+/* A finger-sized name that lays out at its text's height: it reaches up into
+   the header's padding, so its focus ring keeps 4 px from the switches. */
 .timeline.tablet button.trackName {
   min-height: 44px;
+  margin-block: -4px 0;
+  /* The text stays centred on the chip below the reach. */
+  padding-block: 4px 0;
+}
+.tablet .trackNameText {
+  font-size: 15px;
+  line-height: 20px;
+}
+.tablet .trackNameLines {
+  max-height: 40px;
+}
+.tablet .sourceLabel {
+  font-size: 12px;
+  line-height: 16px;
+}
+/* The name's two lines, the switches, the sound row: 4 + 40 + 4 + 44 + 4 + 44 + 4. */
+.tablet.tall {
+  --studio-row-height: 144px;
+}
+.tablet .trackHeader {
+  padding-block: 4px;
+}
+.tablet.tall .soundRow {
+  margin-left: -2px;
 }
 .phone {
-  --studio-row-height: 64px;
+  --studio-row-height: 56px;
   --studio-clip-inset: 5px;
   /* Tall enough for zoom's two buttons in the corner. */
   --studio-ruler-height: 44px;
 }
 .phone .trackHeader {
-  padding: 6px 8px 6px 12px;
+  padding: 4px 2px 4px 6px;
 }
+/* The glyph and the name: one button, the header's whole height, leaving the
+   name 56 px a line. */
 .timeline.phone button.trackName {
-  width: calc(100% + 6px);
+  gap: 4px;
   min-height: 44px;
+  height: 100%;
+  padding: 2px;
+}
+.phone .trackNameLines {
+  max-height: 30px;
 }
 .phone .trackNameText {
   font-size: 12px;
   line-height: 15px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 .phone .corner {
   justify-content: center;

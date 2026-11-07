@@ -22,7 +22,7 @@ export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
       'solo',
       'fx',
     ],
-    ['automation'],
+    ['automation', 'instrument'],
   )
   idValue(value.id, `${path}.id`)
   textValue(value.name, `${path}.name`)
@@ -43,6 +43,15 @@ export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
   numberValue(fx.spaceOffset, `${path}.fx.spaceOffset`, -100, 100)
   if (value.automation !== undefined)
     validateStudioLaneAutomation(value.automation, `${path}.automation`)
+  // Any well-formed glyph id: a newer pack's instrument survives a save here.
+  if (Object.hasOwn(value, 'instrument'))
+    requireValue(
+      typeof value.instrument === 'string' &&
+        /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(value.instrument) &&
+        value.instrument.length <= 40,
+      `${path}.instrument`,
+      'Expected a glyph id',
+    )
   return structuredClone(raw) as StudioTrack
 }
 

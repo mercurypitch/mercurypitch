@@ -1,0 +1,73 @@
+/* Instrument glyphs and chips — optical sizes by stroke, and the family-tinted ground in every theme. */
+
+/* One drawing serves every size: the stroke is set per size class so the
+   line stays near 1.5 to 2 px on screen, and the fine detail drops at 16. */
+.glyph {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+.glyph[data-size='16'] {
+  stroke-width: 2.25;
+}
+.glyph[data-size='16'] [data-fine] {
+  display: none;
+}
+.glyph[data-size='32'] {
+  stroke-width: 1.5;
+}
+
+/* The chip: measured ink on ground 6.3 to 7.2 : 1 in the dark themes and 4.6
+   to 5.7 : 1 in light, for every family hue (docs/studio-instrument-glyphs.md). */
+.chip {
+  --chip-ground: color-mix(in srgb, var(--chip-hue) 20%, var(--studio-bar));
+  --chip-ink: color-mix(in srgb, var(--chip-hue) 62%, var(--studio-text));
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--chip-ground);
+  color: var(--chip-ink);
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+:global(html[data-theme='light']) .chip {
+  --chip-ground: color-mix(in srgb, var(--chip-hue) 14%, var(--studio-bar));
+  --chip-ink: color-mix(in srgb, var(--chip-hue) 70%, var(--studio-text));
+}
+.chip[data-size='24'] {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.chip[data-size='32'] {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+.chip[data-size='40'] {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+/* A silent lane's chip goes neutral, as its clips dim. */
+.chip[data-silent],
+:global(html[data-theme='light']) .chip[data-silent] {
+  --chip-ground: var(--studio-chip);
+  --chip-ink: var(--studio-muted);
+}
+/* Without its tint the chip keeps its shape; the glyph follows CanvasText. */
+@media (forced-colors: active) {
+  .chip {
+    border: 1px solid CanvasText;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip {
+    transition: none;
+  }
+}

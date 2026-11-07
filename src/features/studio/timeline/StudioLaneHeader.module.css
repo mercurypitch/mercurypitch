@@ -1,109 +1,23 @@
-/* Studio lane header pieces — the role plate in the lane's hue, and the arm button in the record red. */
+/* Studio lane header pieces — a phone lane's bare instrument glyph, and the arm button in the record red. */
 
-/* The plate: the lane's instrument on its own hue, down the header's left
-   edge, where the 3 px hue edge was. A picture, or with pictures off the
-   role's line icon in a deeper shade of the hue. */
-.plate {
-  --plate-ground: color-mix(
-    in srgb,
-    var(--studio-track) 24%,
-    var(--studio-bar)
-  );
-  --plate-ink: color-mix(in srgb, var(--studio-track) 62%, var(--studio-text));
-  position: absolute;
-  inset: 0 auto 0 0;
-  display: grid;
-  place-items: center;
-  width: var(--studio-plate-width, 64px);
-  overflow: hidden;
-  background: var(--plate-ground);
-  color: var(--plate-ink);
-  /* The plate is decoration with a name: a press on it goes to the header. */
-  pointer-events: none;
-}
-:global(html[data-theme='light']) .plate {
-  --plate-ground: color-mix(
-    in srgb,
-    var(--studio-track) 16%,
-    var(--studio-bar)
-  );
-  --plate-ink: color-mix(in srgb, var(--studio-track) 78%, var(--studio-text));
-}
-.plate img,
-.listPlate img {
-  display: block;
-  width: var(--studio-plate-picture, 56px);
-  height: var(--studio-plate-picture, 56px);
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-.plate svg {
-  width: var(--studio-plate-icon, 36px);
-  height: var(--studio-plate-icon, 36px);
-}
-/* Dark theme: a soft light in the lane's hue behind the picture, so its dark
-   parts (a black handle, a navy body) stand off the deep plate. It reaches
-   the picture's corners, where the diagonal instruments end, and keeps the
-   hue, so the lanes stay apart by colour. A light plate needs none.
-   Measured in docs/studio-role-art.md. */
-.plate[data-picture],
-.listPlate[data-picture] {
-  --plate-light: color-mix(
-    in srgb,
-    color-mix(in srgb, var(--studio-track) 50%, var(--studio-text)) 45%,
-    var(--plate-ground)
-  );
-}
-.plate[data-picture] {
-  background-image: radial-gradient(
-    circle,
-    var(--plate-light) 30px,
-    var(--plate-ground) 60px
-  );
-}
-
-/* The phone's Mix sheet: the same plate as a rounded tile beside the name. */
-.listPlate {
-  --plate-ground: color-mix(
-    in srgb,
-    var(--studio-track) 24%,
-    var(--studio-bar)
-  );
-  --plate-ink: color-mix(in srgb, var(--studio-track) 62%, var(--studio-text));
-  --studio-plate-picture: 36px;
+/* A phone lane has no room for a chip: the glyph stands alone in its lane's
+   ink, as the chip's would be. Decoration with a name: a press on it goes to
+   the header. */
+.bareGlyph {
   display: grid;
   flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
-  background: var(--plate-ground);
-  color: var(--plate-ink);
+  width: 16px;
+  height: 16px;
+  color: color-mix(in srgb, var(--studio-track) 62%, var(--studio-text));
+  pointer-events: none;
 }
-:global(html[data-theme='light']) .listPlate {
-  --plate-ground: color-mix(
-    in srgb,
-    var(--studio-track) 16%,
-    var(--studio-bar)
-  );
-  --plate-ink: color-mix(in srgb, var(--studio-track) 78%, var(--studio-text));
+:global(html[data-theme='light']) .bareGlyph {
+  color: color-mix(in srgb, var(--studio-track) 70%, var(--studio-text));
 }
-.listPlate svg {
-  width: 28px;
-  height: 28px;
-}
-/* The same light, scaled to the 36 px picture. */
-.listPlate[data-picture] {
-  background-image: radial-gradient(
-    circle,
-    var(--plate-light) 19px,
-    var(--plate-ground) 39px
-  );
-}
-:global(html[data-theme='light']) .plate[data-picture],
-:global(html[data-theme='light']) .listPlate[data-picture] {
-  background-image: none;
+.bareGlyph[data-silent],
+:global(html[data-theme='light']) .bareGlyph[data-silent] {
+  color: var(--studio-muted);
 }
 
 /* The arm button: a red dot in a square like Mute and Solo; armed, a red
@@ -114,8 +28,8 @@ button.arm {
   display: grid;
   flex: none;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--studio-line-strong);
@@ -129,8 +43,8 @@ button.arm {
     color 0.12s ease-out;
 }
 .arm svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 @media (hover: hover) {
   /* Hover lights the dot on the controls' own hover, so a red ring and
@@ -183,4 +97,13 @@ button.touchArm {
 .touchArm svg {
   width: 20px;
   height: 20px;
+}
+/* In a lane's details: the dot and its word, as wide as they need. */
+button.captioned {
+  display: inline-flex;
+  gap: 8px;
+  width: auto;
+  padding: 0 14px 0 12px;
+  font: inherit;
+  font-weight: 600;
 }
