@@ -1,18 +1,33 @@
-.surface {
+.surface,
+.page {
   --constellation-gold: #f2c978;
   --constellation-violet: #a892ff;
   --constellation-blue: #6cc7ff;
   --constellation-ink: #f5f2ff;
   --constellation-muted: #aaa7ba;
+  background: #07070d;
+  color: var(--constellation-ink);
+  isolation: isolate;
+}
+
+.surface {
   position: fixed;
   inset: 0;
   z-index: 12000;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: #07070d;
-  color: var(--constellation-ink);
-  isolation: isolate;
+}
+
+/* The same map inside a host's own screen (VoiceConstellationPage): the
+   native app's page, under the shell's bar and in the shell's scroller. It
+   is the night sky in either app theme, as the route is. A phone on its side
+   keeps the notch's side clear. */
+.page {
+  position: relative;
+  min-height: 100%;
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+  overflow-x: clip;
 }
 
 .surface:focus {
@@ -58,6 +73,17 @@
     83px 83px,
     121px 121px;
   mask-image: linear-gradient(to bottom, #000, transparent 70%);
+}
+
+/* The route's sky is fixed to the window. Inside a host's screen it stays
+   put the same way, but within the host's scroller: stuck to its top and
+   taking no room in the flow, so it never paints over the host's bar. */
+.pageSky {
+  position: sticky;
+  inset: auto;
+  top: 0;
+  height: 100dvh;
+  margin-bottom: -100dvh;
 }
 
 .topbar {
@@ -845,6 +871,16 @@
   outline: none;
 }
 
+/* In a host drawn under the status bar and the home indicator (the native
+   app), the dialog keeps its Close and its foot clear of both. With no
+   inset these are the plain paddings below, per width. */
+.detailBackdrop.detailBackdropSafe {
+  padding-top: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 24px);
+  padding-bottom: calc(
+    var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 24px
+  );
+}
+
 .detailPanel {
   position: relative;
   display: grid;
@@ -1151,7 +1187,8 @@
   }
 }
 
-.surface :is(a, button):focus-visible {
+.surface :is(a, button):focus-visible,
+.page :is(a, button):focus-visible {
   outline: 2px solid var(--constellation-blue);
   outline-offset: 3px;
 }
@@ -1246,6 +1283,13 @@
     place-items: start center;
   }
 
+  .detailBackdrop.detailBackdropSafe {
+    padding-top: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 12px);
+    padding-bottom: calc(
+      var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 12px
+    );
+  }
+
   .detailPanel {
     max-height: none;
     grid-template-columns: 1fr;
@@ -1297,6 +1341,13 @@
 
   .detailBackdrop {
     padding: 8px;
+  }
+
+  .detailBackdrop.detailBackdropSafe {
+    padding-top: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 8px);
+    padding-bottom: calc(
+      var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 8px
+    );
   }
 
   .detailPanel {
