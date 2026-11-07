@@ -5,7 +5,9 @@
 // One AudioContext, made on the first tap that asks for sound; nothing plays
 // before a play button is pressed. A page that listens through the
 // microphone hands the same context to its analysis (`Sound.context()`),
-// and holds every sound off while a take is open (`Sound.hush`). The page
+// and holds every sound off while a take is open (`Sound.hush`), bar one
+// drone a page started before it, which sounds under the take until its
+// own release (Lesson 24's drone, held under each hold). The page
 // boots no framework, so it keeps its own small graph rather than the app's
 // audio engine, and follows the
 // house envelope rules (.claude/memory/audio-pop-free-playback.md): every
@@ -118,8 +120,11 @@ let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let state: SoundState = 'unset'
 // While a microphone take is open nothing may sound, or the take would hear
-// the page instead of the singer (`Sound.hush`).
+// the page instead of the singer (`Sound.hush`); nothing but the one voice
+// the take keeps, a drone the page started before it (`kept`), which its
+// own stop ends.
 let hushed = false
+let kept: Voice | null = null
 const waves: { soft?: PeriodicWave; merc?: PeriodicWave } = {}
 const listeners = new Set<(s: SoundState) => void>()
 const live = new Set<Voice>()
@@ -172,8 +177,11 @@ function emit(): void {
   listeners.forEach((fn) => fn(state))
 }
 
-function stopAll(): void {
-  live.forEach((v) => v.stop(0.06))
+/** Stops every voice, run and bus, but `spare`: the drone a take keeps. */
+function stopAll(spare: Voice | null = null): void {
+  live.forEach((v) => {
+    if (v !== spare) v.stop(0.06)
+  })
   stoppers.forEach((fn) => fn())
 }
 
@@ -631,10 +639,21 @@ export const Sound = {
    * Holds every sound off while `on`: a microphone take is open, and the
    * page must play nothing into it. Anything sounding stops at once; plays
    * meanwhile run their visuals silently, as with sound off, but say nothing.
+   * A take may keep one voice sounding (`keep`): a drone the page started
+   * before the take opened, left playing under it while everything else
+   * stops, until its own stop releases it (Lesson 24 WEB-SPEC, What the kit
+   * and the app still need, item 5). Only one: while a kept voice still
+   * sounds, a hush that would keep another is refused, false, and changes
+   * nothing. The Sound switch turned off and a hidden page stop the kept
+   * voice with the rest.
    */
-  hush(on: boolean): void {
+  hush(on: boolean, keep: Voice | null = null): boolean {
+    if (on && keep !== null && kept !== null && kept !== keep && kept.alive)
+      return false
     hushed = on
-    if (on) stopAll()
+    kept = on && keep?.alive === true ? keep : null
+    if (on) stopAll(kept)
+    return true
   },
   get hushed(): boolean {
     return hushed
@@ -642,7 +661,8 @@ export const Sound = {
   voice,
   pluck,
   tick,
-  stopAll,
+  /** Stops everything sounding: every voice, run and bus. */
+  stopAll: (): void => stopAll(),
   subscribe(fn: (s: SoundState) => void): void {
     listeners.add(fn)
     fn(state)
