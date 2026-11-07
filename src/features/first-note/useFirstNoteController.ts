@@ -24,8 +24,9 @@
 // the tap and closes at the result.
 //
 // One capture window per round, opened as its lead-in starts. The band's
-// end is the player's, on the element's own clock, so the turn opens when
-// the lead-in has faded out, and the engine hears nothing before then plus
+// end is the player's, on its element's own clock, or in the app on the
+// room's (web-audio-song-player.ts), so the turn opens when the lead-in has
+// faded out, and the engine hears nothing before then plus
 // RESPONSE_GATE_SECONDS (the band's tail through the speaker reaches the
 // mic). The engine is ticked once per CAPTURED frame, on the frames' own
 // clock, never once per screen frame.
@@ -76,7 +77,7 @@ import { FIRST_SPOKEN } from './merc-spoken'
 import type { FirstNoteDemoMark, ScriptedFirstTake } from './scripted-take'
 import { createScriptedRoom } from './scripted-take'
 import type { SongPlayer, SongSound } from './song-player'
-import { createSongPlayer } from './song-player'
+import { songPlayerFor } from './web-audio-song-player'
 
 /** Merc's voice while he sings the note (demo-voice's held level). */
 const SUNG_LEVEL = 0.8
@@ -101,7 +102,10 @@ export function useFirstNoteController(
     return typeof given === 'function' ? given() : given
   }
   const playable = options.playable ?? playableSong
-  const makePlayer = options.player ?? createSongPlayer
+  // Chosen as each run's mic opens: Web Audio in the app wherever the phone
+  // streams, elements elsewhere (web-audio-song-player.ts).
+  const makePlayer = (ctx: AudioContext): SongPlayer =>
+    (options.player ?? songPlayerFor(options.streams))(ctx)
   const random = options.random ?? Math.random
   const lines = createFirstLines(random)
   // His lines at rest, aloud through the room's clock (merc-speech.ts).
@@ -308,8 +312,8 @@ export function useFirstNoteController(
   const toTurn = (): void => {
     sound = null
     dispatch({ type: 'turn' })
-    // The band's tail leaves the speaker its output latency after the
-    // element stops: a Bluetooth speaker's must not be heard as the singer.
+    // The band's tail leaves the speaker its output latency after the band
+    // stops: a Bluetooth speaker's must not be heard as the singer.
     // A demo's take listens when its script says, on its own clock.
     const latency = audio === null ? 0 : outputLatency(audio)
     turn.open(

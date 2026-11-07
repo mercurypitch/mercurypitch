@@ -83,6 +83,7 @@ import styles from './FirstNoteRoom.module.css'
 import { FirstNoteSongsButton, FirstNoteSongsSheet } from './FirstNoteSongs'
 import { StageScene } from './StageScene'
 import { useFirstNoteController } from './useFirstNoteController'
+import type { SongStreams } from './web-audio-song-player'
 
 export interface FirstNoteRoomProps {
   /** Leave the room (Done). */
@@ -91,6 +92,12 @@ export interface FirstNoteRoomProps {
   voice?: RoundVoice
   /** What that voice needs loaded before the demo sings (his sampled set). */
   voiceReady?: () => Promise<unknown>
+  /**
+   * How Karaoke streams a stem: the app's screen's. A run in the app plays
+   * through it wherever the phone can stream (web-audio-song-player.ts).
+   * Read once.
+   */
+  streams?: SongStreams
   /**
    * A stop of the Warm-up (room-kit routine-stop.ts): the room in warm-up
    * mode. Read once.
@@ -170,6 +177,7 @@ export function FirstNoteRoom(props: FirstNoteRoomProps): JSX.Element {
     useFirstNoteController({
       voice: props.voice,
       ready: props.voiceReady,
+      streams: props.streams,
       onNoSongs: () => setSongsOpen(true),
       ...(stop === undefined ? {} : { routine: true, rounds: WARM_UP_ENTRIES }),
     })

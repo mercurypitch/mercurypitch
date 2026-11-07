@@ -18,6 +18,7 @@ import type { FirstNoteSummary } from './first-note-run'
 import type { FirstNoteRound, FirstNoteSong } from './first-note-songs'
 import type { FirstNoteScript } from './scripted-take'
 import type { SongPlayerFactory } from './song-player'
+import type { SongStreams } from './web-audio-song-player'
 
 /** The chip while the singer sings, before their entry. */
 export const YOUR_TURN = 'Your turn'
@@ -65,8 +66,17 @@ export interface FirstNoteControllerOptions {
    * yet): the room shows where the songs come from instead of starting.
    */
   readonly onNoSongs?: () => void
-  /** The song player (a test's); the streamed one by default. */
+  /**
+   * The song player (a test's). By default the run chooses as its mic
+   * opens: Web Audio in the app wherever the phone streams, elements
+   * elsewhere (web-audio-song-player.ts, `songPlayerFor`).
+   */
   readonly player?: SongPlayerFactory
+  /**
+   * How Karaoke streams a stem, handed in by the app's screen, which the
+   * Web Audio player plays the stems with. Absent, the stems are elements.
+   */
+  readonly streams?: SongStreams
   readonly random?: () => number
   /** Entries a run plans; FIRST_NOTE_ROUNDS by default, WARM_UP_ENTRIES in the Warm-up. */
   readonly rounds?: number
