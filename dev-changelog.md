@@ -9,6 +9,817 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.29] - 2026-11-07
+
+519 commits since `v0.9.28` (5a41440bf) before these notes, from 75 PRs:
+#1328 (31 commits), #1360 (28), #1322 (25), #1303 (24), #1341 (24), #1362
+(20), #1366 (19), #1382 (19), #1342 (18), #1358 (18), #1368 (18), #1378 (17),
+#1305 (16), #1323 (14), #1352 (14), #1375 (14), #1359 (13), #1353 (12), #1343
+(9), #1320 (8), #1325 (7), #1349 (7), #1380 (7), #1310 (6), #1348 (6), #1365
+(6), #1376 (6), #1309 (5), #1321 (5), #1333 (5), #1336 (5), #1344 (5), #1350
+(5), #1316 (4), #1331 (4), #1332 (4), #1339 (4), #1347 (4), #1372 (4), #1377
+(4), #1300 (3), #1318 (3), #1338 (3), #1346 (3), #1367 (3), #1369 (3), #1306
+(2), #1308 (2), #1311 (2), #1314 (2), #1326 (2), #1327 (2), #1330 (2), #1371
+(2), #1383 (2), and one each from #1299, #1301, #1302, #1304, #1307, #1312,
+#1313, #1315, #1317, #1319, #1324, #1335, #1337, #1345, #1355, #1357, #1361,
+#1364 and #1373. #1329 brought none of its own: its one commit landed inside
+#1330, which carried it to keep the native tests green, so #1329 merged with
+nothing left to add. Every commit came through a PR. All were rebased onto
+`main` except #1376 and #1377, which came in with merge commits (counted
+above: 5 commits and a merge, 3 and a merge).
+
+Then on release day, after that count: #1374 (3 commits), #1370 (2),
+#1381 (6), #1384 (3) and #1379 (7), each rebased onto `main` and merged
+once its own checks passed.
+
+On the web:
+
+- **Practice: Scale Runner and Drone Intonation grade up to 100, and the
+  help says what the drill does** (#1320, its Exercises half; eight fixes
+  found while writing Season 2's lesson plans, one commit each).
+  - Richness left both grades on 25 Oct without a reweighting, so a flawless
+    run has graded 80 since: under the level step-up at an average of 90,
+    the A and S grades and Elite, the Immaculate and Perfect Run goals and
+    the 85-point Subwoofer Sound challenge. The weights are now divided by
+    their sum, so the relative weighting holds, and both drills move to
+    scoring version 2, as the Siren and Arpeggio Jumper did: older runs
+    leave the averages, the level and the weak list. The same singing reads
+    25% higher, and both drills can level up.
+  - Staccato's help no longer says it scores timing; it scores pitch (how in
+    tune each note is, how close to pitch it starts, the best round).
+  - Chord Stacker's demo notes play in full (each was cut to half its length,
+    and the last ran 200 ms into the first singing window), and its help
+    describes the drill as it runs: a chord one note at a time, each note
+    sung back on its own, five rounds of one chord each.
+  - The lesson pages' planning-text guard also catches lettered topic codes
+    such as S11a. No page has one.
+- **A drill stopped before its end passes no bar** (#1323). #1320's review
+  found that a run stopped after one perfect round graded like a flawless
+  full run, so one round could pass a challenge, a goal or the level step-up.
+  - Marked when stopped early: Scale Runner, Drone Intonation, Siren, Chord
+    Stacker, Interval Trainer, Call & Response, Dynamic Swell, Mirror
+    Melody, Staccato Precision, Routine Runner, Pitch Pursuit, Guided
+    Warm-up, and Long Note, Pitch Hold and Vibrato when a timer is set. A
+    Manual run, a run the timer ends, and a Stop while the countdown reads
+    "1s" are whole. With a timer set, the button reads "Stop", not "Stop &
+    Score".
+  - A marked run moves no challenge or weekly attempt (both stay armed), no
+    goal, level, weak list, trend, best, Home's week, leaderboard, league or
+    Progress thread. Its minutes, the streak and routine reps still count; it
+    reads "Stopped" in Recent Sessions and its card says it was not scored.
+    Runs recorded before this carry no mark and count as before.
+  - Pitch Pursuit ends after its planned notes; it never ended on its own.
+    The level scales the count from 8 to 17 and the window from about 66
+    cents to 30, and the card and counter show them (they said 12 notes and
+    50 cents at every level). Routines budget Chord Stacker at 90 s (was 45;
+    a run has taken 81.5 s since #1320) and Pitch Pursuit at 45 s (was 60).
+  - The trade-off, taken fail-closed: the server has no column for the mark,
+    so a stopped run is not sent to the account at all. On a signed-in
+    account it is missing from the calendar, Progress rows and time, board
+    counts, participation goals (Drill Sergeant, Early Bird, Weekend Voice),
+    other devices and analytics, and a day of stopped runs only reads "No
+    practice" while the streak stays lit. A nullable column can follow if
+    stopped practice should reach the calendar; it fails open, since one
+    missed reader reopens the hole.
+- **Whole runs and whole sessions only, and Session mode records again**
+  (#1333, the follow-ups #1323 left open).
+  - On Manual, Long Note, Pitch Hold and Vibrato score a run only once five
+    seconds are sung (one second held in tune scored about 85 and cleared the
+    basics challenges, since length is 15% of the grade). A shorter run is
+    practice; its card says "Sing for at least 5 seconds for a score." and
+    Recent Sessions lists it as "Too short".
+  - A Stop in a timer's last second still ends a whole run but scores at
+    most its share of the length: a steady 4 s Long Note at the 5 s preset
+    scored 97 (over Immaculate's 95 and the step-up's 90) and now scores 80.
+  - A run pins its timer length as it starts, so a settings sync mid-run no
+    longer puts the countdown and the mark out of step.
+  - Session mode had recorded no session at all, however it ended: each item
+    was banked from the result that only a single run's Stop sets and every
+    Play clears. Each item that plays to its end is now graded from its own
+    notes, and a session is scored only when its last item plays to its end
+    with none skipped. A stopped or skipped session is practice (its time,
+    skipped items' singing included, is credited) with a notice saying why.
+    A Stop or End with only rests, or a deleted melody's items, left finishes
+    it with its summary, and skipping a rest skips nothing.
+  - Recorded sessions count only notes that were sung. The engine grades a
+    note it heard no pitch for as "off" at 0 cents, which read as a
+    dead-centre hit, in notes landed, the heatmap, the weak-note list, the
+    analysis page's in-tune share and range and the vocal range Auto-detect.
+    A session's time is its own clock, Play to end less pauses.
+  - A stopped Sight-Singing run is marked like the drills' and its Stop
+    reads "Stop". A weekly Legend attempt is not: like the Legend stage it
+    scores an early end itself, and a failed save leaves the attempt armed.
+  - A run that ends unscored sends `session_stopped`, a new funnel event (see
+    Release steps). No scoring version changes; bumping Long Note, Pitch
+    Hold and Vibrato would restart every singer's progress thread for them.
+- **Untimed lyrics are timed to the singing** (#1301). The owner asked for
+  pasted lyrics to be mapped when LRCLIB finds no timings. Untimed lyrics (a
+  paste, a .txt, or an LRCLIB record with plain lyrics) were spread evenly
+  over the song, a line typically 5 to 15 s out.
+  - `src/lib/lyrics-automap.ts` (pure) places the lines on the vocal's
+    analysed notes in one dynamic programme: a line starts after a clear
+    silence; where the voice runs on, the lines' syllables against the
+    singing decide; a blank line or a section label starts a stanza; singing
+    in no line can be left out; labels as lyrics sites write them
+    (`[Chorus]`, `Chorus x2`, `Verse 2 - Artist`, `{Bridge}`, `***`) are read
+    as labels; a work budget bands a long song and leaves one too dense
+    untimed. It reads the analysis's own notes (`offlineMergedNotes`, a new
+    `vocalNotes` dep), not the display's, which join a phrase and lose the
+    breaths between lines.
+  - The lyrics controller keeps the result as a version, **Auto-timed**,
+    over the untimed **Original**, with a "Lines timed to the singing"
+    toast. It is a rule, not an import step: it runs whenever untimed lyrics
+    and the notes are both in, on this visit or a later one, and never over
+    anything that timed the lyrics, a mapping or edit under way, a
+    tap-along left part-way, or a singer's deletion of Auto-timed or of
+    their own timing (that no is kept with the lyrics and travels in an
+    archive). A pasted LRC whose first line is a tag keeps its own times.
+  - Within 1 s of the hand-timed lines on the three example songs: 81, 82
+    and 64% (74% with blank lines between sections), against 12, 10 and 5%
+    for the even spread; median errors 0.19 to 0.26 s; 12 to 43 ms a song.
+    Most misses are lines sung straight on from the one before.
+  - Session archives now import a lyric version kind this build does not
+    know by falling back to another version, instead of failing the whole
+    session. #1307 fixed the "deleted Auto-timed" test's wait, which failed
+    13 times in 30 runs on `main` (test only).
+- **The melody matcher places a take an octave or a key away** (#1302, its
+  shared half). `melody-matcher.ts` placed a take by its absolute pitches
+  alone, so a first chorus hummed an octave up was placed at the song's last.
+  It now also aligns the take an octave up and down, and by its intervals
+  where they fit better. Placed within 2 s: an octave up 2.5 to 72.5%, an
+  octave down 3.1 to 72.7%, three semitones up 13.8 to 51.2%, five down 3.4
+  to 41.4%, in the record's octave unchanged at 68.8%. Scores and ranking
+  are untouched (not one difference over 1,407 cases), and a tick costs what
+  it did. The web's Mercury Sing and Shazam Sing start a found song from that
+  place. Which songs, how one is fingerprinted and how one opens moved
+  behind a host (`mercury-sing-host.ts`); the web's host behaves as before,
+  except that it skips the pitch walk for a stage closed while the vocal
+  decoded. The native room's half is under the native app.
+- **Stereo tails kept in Piano and key shift** (#1327). Chromium resets a
+  DelayNode, a biquad or IIR filter and an oversampled WaveShaper when their
+  input's channel count changes, and a stereo path drops to one channel a
+  quantum after its last source ends. The stereo hold Studio took in #1310 is
+  now shared (`createStereoHold`, `src/lib/audio/stereo-hold.ts`) and heads
+  Piano's reflections (up to 151 ms of them; -18.5, -27.0 and -32.8 dBFS of
+  difference for hall, studio and close) and key shift's unpitched delay (the
+  stem's last 50 ms, -6.0 dBFS). Mono paths are unchanged and playback is
+  bit-exact. Drum Night's per-hit filter stays: it loses at most -170 dBFS,
+  and a hold per hit would cost about 42% more render time.
+- **Karaoke Night's phone-stage ribbon eases at any frame rate** (#1339, its
+  shared fix). `ZenPitchRibbon` eased its band by `0.1 * 60 / fps`, and a
+  capable device's `presentationFps()` is Infinity, so the band never left
+  G3 to G5 and a low or high voice sat on its edge. `ribbonBandEase` follows
+  the time each frame took, the same at 30, 60 or 120 Hz, and the first frame
+  takes the band whole. The native Karaoke room's ribbon is the same
+  component.
+- **Media that only feeds Web Audio is kept off AirPlay** (#1321, its shared
+  half). `keepMediaLocal` (`src/lib/local-media.ts`) sets
+  `disableRemotePlayback` and `x-webkit-airplay="deny"` on every element
+  handed to Web Audio, the web's included: the preview player, the guitar
+  room's streamed stems, the jam backing track, the Glass take's and Hear
+  Yourself's fallbacks and the Lab canvas's player. A test reading `src/`,
+  `apps/mercurypitch/src` and `packages/*/src` fails a new
+  `createMediaElementSource` that skips it. The rest of #1321 is native.
+- **Jam: a late joiner gets the room's song, drill and mode** (#1320, its
+  Jam half). The host sent them before the newcomer's channel opened, so
+  they never arrived, and the song re-send reset every guest's line scores
+  whenever someone joined. The host now sends to the newcomer alone once
+  their channel opens; checked with two real peers in a local room. Harmony
+  Stack names a harmony note by its own pitch (a third above C4 was drawn
+  "C4"). #1323 also corrects a stale comment: a fourth singer in Harmony
+  Stack sings the root.
+- **Report and Block from every board that names a singer** (#1316, slice 4b
+  of `docs/plans/native-more-and-community.md`; the worker's half, 4a,
+  shipped in 0.9.27). App Store guideline 1.2 and Play's user-generated
+  content policy ask for a report, a block and published contact wherever
+  other people's posts show, and the store build already shows names
+  (Progress's league card opens the web Leaderboard), so this ships in every
+  build; only the native Leagues and Legend rows stay behind `NATIVE_LEAGUES`.
+  - A 44 px "..." on every row that names another singer opens one sheet
+    (`SingerSheet.tsx`): Report with the worker's six reasons and a note
+    counted to 500, Block saying what it does first, and a worded answer for
+    sent, already open, blocked, offline, server error, refused session,
+    suspended account and signed out. The contact line opens the contact form
+    on its support topic until the landing gains a reports topic.
+  - Rows: the web Leaderboard's League, Friends and Global (podium, table,
+    friend requests) and Legends (the live top three and the past podiums);
+    on the phone, the Leagues screen and the Legend room. None on the
+    singer's own row, a stand-in, the Founder's or an older worker's row.
+  - `blocked-singers-store.ts` hides a blocked singer at once with places
+    kept, then reads again; Global and Friends read from the top as deep as
+    loaded, so Load more skips nobody. Zones and medals read rank, not list
+    position (`league-board.ts`, now shared with the web Leaderboard;
+    `leaderboard-podium.ts`). The focus goes back to the "..." that opened
+    the sheet, or the one now at its place (WCAG 2.4.3).
+  - Blocked singers in Settings, web and phone, with Unblock and every
+    signed-out, refused and suspended state.
+  - Worker, additive: `named` on each league standings row (REQ-RB-040),
+    `userId` on the running Legend's non-Founder entries (REQ-RB-041), and
+    the Legend archive read with a session withholds the names and ids of
+    singers in a block with the reader, places and scores kept (REQ-RB-014;
+    `private, no-store`, and `Vary: Authorization` on every archive answer).
+    Until the worker deploys, league rows and the Legend's board show no
+    "...".
+- **The known-bug list, settled** (#1358). `docs/agent/BUGS.md` still called
+  24 entries "reported". 16 are fixed here, each with a test that fails
+  without its fix; 3 were already fixed on `main` (streaks in UTC days, now
+  with a pinned clock; Drive backup; the OAuth state); 3 wait on the owner
+  (PitchCanvas drawing four times a frame; a lyrics outage reading as "no
+  lyrics found"; a tolerance band 0.1 cent wide); 1 was not reproduced and 1
+  stays unconfirmed (the iPadOS tablet report).
+  - High: the Lab, behind its grant, analyses every waveform at the rate its
+    detectors were built for (a 440 Hz stem decoded at 48 kHz read 146.6
+    cents flat, uploads landed 8% early); settings sync leaves a local value
+    over the push's 8 KB ceiling alone on a pull (150 annotations became
+    20), each account keeping its own copy on a shared phone; a jam song
+    share stops waiting on a full send buffer when the peer goes or Stop is
+    pressed.
+  - Medium: PitchCanvas catches a refused AudioContext instead of raising
+    the crash screen; a retried signed-out badge flush writes each badge
+    once; a separation records its chunk count by writing that session's row
+    alone (it saved the whole library, deleting rows the page had not
+    loaded, such as another tab's new song); undoing a deleted melody puts it
+    back in its playlists at its old places; the spectral worker measures
+    timbre from the whole buffer under the whole window (frame 0 was half
+    zero-padding: a clean tone read 9.2 dB "breathy", now 40 dB, so the
+    Analysis dashboard reads less breathy, correctly).
+  - Low: a refused editor share copy says so; a stem-mixer canvas drawn
+    again lets the old one and its listeners go; a trace point's octave comes
+    from its MIDI number (C0 was octave 4); a failed lyrics lookup clears its
+    timeout and abort listener (offline, each search left two 25 s timers);
+    `computeHNR` holds at -40 dB instead of -Infinity.
+  - DB worker: the device-link poll token hash is compared in constant time,
+    and a test reading `auth.ts` with the TypeScript parser refuses `===` on
+    a secret hash; a malformed path segment on five routes, or an `offset`
+    of `abc`, `undefined`, `1.5` or below 0, answers 400, not 500.
+  - Found in its own CI: `auth-service.test.ts` passed by luck, leaning on
+    the test before it; it now verifies its own token.
+  - Left, worth a look: eight other callers save the whole UVR library the
+    same way, and annotations over 8 KB are kept but still do not sync.
+- **The SEO audit's quick wins** (#1370). Section 2 of the
+  technical SEO audit of 6 Nov: ten mechanical fixes that change no page's
+  words or address, and no lesson's content, draft state or publication.
+  - `/learn/` ("Free lessons") after Home in every generated entry
+    document's nav and the 404 page's (`navLinksFor()`), and in
+    `index.html`'s, which still names no lesson after the first. Before,
+    only the lessons and their films linked the hub. The entry documents'
+    nav sits in the pre-boot prelude, which hides once the app mounts, so
+    it is for crawlers and the loading moment; review also removed a hard
+    link to Lesson 2 from the home page, which bypassed the lesson gate.
+  - `max-image-preview:large` in every listed entry's robots meta;
+    `twitter:site` `@mercurypitch7` on every entry, the hub, Lessons 1 and 2
+    and their watch pages; `applicationCategory: MultimediaApplication` in
+    place of `MusicApplication`, which Google does not list, on 12 rooms and
+    the home page, with the model typed to listed types; a `dateModified` of
+    2026-11-01 on Lessons 1 and 2's Article, held by a test between
+    `datePublished` and the sitemap date; watch-page descriptions of 154 and
+    159 characters (were 167 and 199) in og, twitter and the VideoObject.
+  - `src/worker.ts` sends `X-Robots-Tag: noindex` for `/admin` and its
+    sections and for a Mirror answer carrying a shared voiceprint (`?v=`,
+    whose title can carry the sharer's display name), and drops the canonical
+    link from every document it marks noindex, the exercise links' included.
+  - The app links `/karaoke-night`, the canonical address, not the
+    `/karaoke` alias. `src/lesson-gate.ts` turns the asset layer's 307 for a
+    lesson's, a film's and the hub's other spellings into a 308 to the same
+    address with `Cache-Control: public, max-age=86400`. The non-production
+    noindex plugin writes into the build's own `outDir`.
+  - All 22 sitemap URLs re-dated 2026-11-07 with their new fingerprints.
+    Left: the other entries' 307s, which need every entry worker-first, and
+    `/learn` without its slash, which needs a `wrangler.jsonc` route.
+- **Each landing its own page once the room is up, and no welcome takeover
+  on rooms** (#1379). The audit rendered the landings as a
+  crawler that runs scripts does. H1: once booted, `/voice-type-test` and
+  `/which-singer-has-my-vocal-range` drew the Mirror's start screen word for
+  word, and `/vocal-remover` and `/karaoke-app` Karaoke Night's hero (text
+  similarity 1.00 and 0.99), since `entry-prelude.css` hides each
+  document's own heading and FAQ as `#root` fills. H2: First Light took the
+  whole screen on `/`, `/ear-lab`, `/jam` and `/pitch-training` for every
+  first visit, crawlers included.
+  - First Light opens by itself only on the home document
+    (`src/lib/first-light-landing.ts`), never on an entry that boots into a
+    room or tab (every `bootHash` entry: `/studio-night`, `/ear-lab`, `/jam`,
+    `/jam-rooms`, `/pitch-training`), decided by address alone, never user
+    agent. A visitor who landed on a room meets it on a later page load of
+    `/`, never on an in-app tap of Home; Settings' replay and `#/map` still
+    open it anywhere, and a lesson link's `?lesson=NN` still spends it for
+    good on a room's page. A device's first visit through a room gets no
+    opening takeover at all (`firstVisitThroughRoom`, a device-only key), so
+    a newcomer or a crawler never meets the plan layer there; from its next
+    visit the plan and What's New run as on any return. The night rooms
+    never load First Light.
+  - The Mirror gains `voice-type` and `singer-match` doors with their own
+    h1, lede and button ("Find your voice type.", "Which singer has your
+    vocal range?"); the voice-type result leads with the range and its
+    closest voice type. Karaoke Night's empty-stage hero becomes
+    `KaraokeHero`, with "Vocal remover: take the voice out, keep the song"
+    and "A free karaoke app with lyrics and live scoring" for those two
+    landings and "Your stage is set" as before.
+  - Mirror and Karaoke Night documents with an FAQ (`data-keeps="faq"`)
+    lend it to the room (`EntryFaq`), which sets the same node above its
+    foot, so the legal row or footer still closes the page; it hides while
+    a take, a result, a shared card or a staged song is up. `index.html`
+    keeps its brand h1, visually hidden and only while Home shows
+    (`data-keeps="h1"`), and Home's greeting becomes a paragraph. At 900 px
+    and narrower `/vocal-remover` and `/karaoke-app` lead with their hero,
+    which puts "Sing this song" on a phone's first screen. One `entryPath()`
+    cleans a path for First Light and both rooms' doors.
+  - Duplicate ratios: /mirror against /voice-type-test 1.00 to 0.02, Karaoke
+    Night against its two siblings 0.99 and 1.00 to 0.42 and 0.37. No
+    sitemap change. First paint: the Mirror's four documents reached
+    440,444 B of script, 124 B over their 430 KB ceiling, which rises to
+    440 KB for the new doors and the questions' mover. Follow-up: `/jam` and `/pitch-training` render with
+    no visible h1 of their own.
+
+Lessons. Every page built here is a draft: served on the dev site and PR
+previews, answered with the 404 page on mercurypitch.com until the Content
+Studio publishes it, and kept out of the sitemap and llms.txt; `kit/drafts.ts`
+names what each waits on. `RELEASED_LESSONS` still holds Lessons 1 and 2,
+and the only change a visitor to them sees is the explorer's season tabs.
+Each page registers its drafts line, season entry, service-worker paths,
+first-paint tables, page tour and browser specs, and writes its hidden
+reading time and Start link into `/learn/`.
+
+- **Season 2 written** (#1322, docs only): `SEASON-2.md` (the arc from
+  reading notes to a second voice, the owner's decisions, what each lesson
+  practises in the app and what it still needs) and fourteen lesson packages
+  (LESSON, FACTS, WEB-SPEC, ARTICLE-PLAN, RESEARCH) under
+  `docs/plans/find-your-pitch/lessons/`, within the season's word budget:
+  15 the staff, 16 sight-singing, 17 note lengths, 18 a whole line, 19
+  threes and syncopation, 20 runs and the pentatonic scale, 21 keys and the
+  circle of fifths, 22 vibrato, 23 interval quality, 24 harmony against a
+  drone, 25 minor, 26 a second voice, 27 sevenths and inversions, 28
+  cadences, form and a two-part song. The plans stop calling #1320's fixed
+  bugs open, Season 1's mentions of the 80 cap included.
+- **The ground for Season 2** (#1352). Season 2's map in a module of its own
+  (`kit/season-2.ts`: lanes, titles, topics, practice links, edges into
+  Season 1), with `kit/seasons.ts` gathering both seasons for the hub, the
+  site worker, the listings, the admin console and tests; a first-paint rule
+  fails any Lesson 1 to 14 document that carries Season 2's data. Each
+  season closes on its own last lesson (14 and 28), following the visit's
+  ending. The explorer leads with "Season 1" and "Season 2" tabs (a page
+  opens on its own season; Season 2's map draws the Season 1 lessons its
+  edges start from), and the masthead names a Season 2 page's season. The
+  hub lists "Season 2: Read it, harmonise it" with fourteen "Coming" rows
+  and "New to the series? Start with Season 1's Lessons 1, 2 and 4." as
+  plain text. The `?lesson=` marker reads 01 to 28, the DB worker takes
+  lesson answers for 1 to 28, and Admin > Lessons lists both seasons,
+  Season 2 planned with no publish control. First paint: 3,518 B more script
+  and 192 B more CSS on every lesson page; Lessons 2, 3, 4, 5 and 12's
+  ceilings move to 168, 137, 135, 142 and 114 KB.
+- **Lesson 11, "Registers and the break"** (#1342): the range chart in five
+  steps with Merc's two gears and the seam where they overlap, a cold open of
+  two sirens, recall from Lesson 7, and Sing it as one slow siren. Lesson
+  7's siren flow becomes a kit part. Waits on the vocal coach.
+- **Lesson 12, "Chords and the four-chord song", whole** (#1353): Step 5's
+  tune toy, the cold open on the hero's ring, the recall and quick check,
+  Sing it and the Wrap, on the shell and Steps 1 to 4 of #1242. Waits on
+  Lesson 10's page and the coach's look at the sung checkpoint.
+- **Lesson 13, "Resonance and vowels"** (#1341): the vowel figure over a new
+  kit spectrum strip, Merc's "ooh" through three resonances as the page's
+  timbre, and Sing it as one note through five vowels; nothing on the page
+  reads the mic but pitch frames, and no copy claims to hear a vowel.
+  Lesson 5's hold flow and run become kit parts. Waits on the coach.
+- **Lesson 14, "Phrasing: sing a whole song"** (#1360), Season 1's last: the
+  song line in five steps, Sing it, and the Wrap that closes the season.
+  Waits on the coach.
+- **Lesson 15, "The staff: where notes sit"** (#1362), Season 2's first: the
+  kit's staff toy (`kit/staff.ts`, `staff-draw.ts`, `staff-places.ts`, for
+  Lessons 16 to 28) in five steps and free play, recall from Lesson 2 with
+  Lesson 2's own question objects, and Sing it on the learner's staff. Waits
+  on the coach's look at Sing it.
+- **Lesson 17, "How long is a note?"** (#1366): the kit's rhythm toy
+  (`rhythm-model.ts`, `rhythm-bar.ts`, `rhythm-draw.ts`,
+  `stopwatch-strip.ts`), one bar in five steps, a cold open at 60 and 120
+  BPM, a tapped take and sung bars. Waits on Lesson 8's page and the coach.
+- **Lesson 19, "Threes, offbeats and syncopation"** (#1368): six notes
+  grouped in threes and twos, one bar past 4/4 and a tapped take on each
+  tune's beat; nothing is sung. Waits on Lesson 17's page.
+- **Lesson 22, "Vibrato"** (#1378): a cold open on a wave of six swings a
+  second, 50 cents each way, rate and extent on one band chart, recall from
+  Lessons 5 and 14. Waits on the coach.
+- **Lesson 23, "Perfect, major, minor and the tritone"** (#1375): the staff
+  toy's interval state, a cold open that splits the octave two ways, recall
+  from Lesson 6. Waits on Lesson 6's page and the coach.
+- **Lesson 24, "Harmony against a drone"** (#1382): a drone chart with scored
+  holds and beat rates, and a cold open that slides 224 Hz into an A3 drone.
+  Waits on the lab's two tests and the coach.
+- **Button labels in one piece, and the kit's held slider** (#1383). A sign
+  in a span of its own took the button's 9 px gap on both sides, so a sharp
+  stood apart from its note on Lessons 12 and 23 and a comma from its
+  numeral on Lesson 12; each label is one span now, and a test on every
+  lesson document refuses a loose sign. The kit's `.range` has a disabled
+  look, replacing the same rule on Lessons 8, 22 and 24.
+
+Admin:
+
+- **The owner's switches for experimental features, and a switched-on
+  Studio that survives a slow read** (#1371). The owner wants to switch
+  Studio on in production from the app after this release; the DB worker
+  already served the switches, but nothing called them.
+  - A Features section in the Content Studio (`#/admin/features` and
+    `/admin/features`): a card per feature the worker lists, with what it is,
+    what visitors in this environment get, whether a switch or the build's
+    default stands and what that default is in the environment the console
+    reaches (off in production, on for dev and previews), and when it last
+    changed. On, Off and Build default call `PUT /api/admin/features/:name`
+    with `X-Admin-Key`. Anywhere but development, an address the console
+    cannot place included, it asks before every switch, and it says a
+    change reaches visitors on their next load, within about 30 s.
+    `admin-environment.ts` now holds the address rule the Premium Perks
+    console kept privately.
+  - The Studio audit's enable blocker E1: with production's default off and
+    the switch on, a visit whose one `/api/features` read took over 2.5 s
+    or failed fell back to the default, so Studio vanished, `/studio-night`
+    went Home and its songs were out of reach. `experimental-features-store`
+    keeps the last switches heard in localStorage (`mp_experimental_features`,
+    with the address read from), starts every page from them, lets only a
+    server answer change them, and keeps an answer that arrives after 2.5 s
+    (up to 30 s) for the next page. Accepted cost: after a switch-off, a
+    browser that last heard "on" shows Studio for about a third of a second
+    on its next load. No worker change.
+
+Studio, switched off on mercurypitch.com (on for the dev deploy, PR previews,
+`build:e2e` and the unit tests, and in production only when an admin sets its
+switch, which #1371 makes a button):
+
+- **Record a take straight into a lane, with count-in, click and line-up**
+  (#1305). Capture runs in an AudioWorklet on the Studio's own 48 kHz clock,
+  through `MicManager`, opened on the Record press and released after each
+  take. Each take is trimmed at its start by the measured round trip plus a
+  manual offset, in whole frames; the count-in and click follow the tempo,
+  and the click never reaches the take. A take is kept like an import (16-bit
+  mono WAV, provenance `recording`, undo) and journaled about once a second
+  in two new device-only Dexie tables (v14, `studioTakeJournals` and
+  `studioTakeChunks`), so a closed tab loses at most a second and the next
+  visit offers it back. Trap found: a worklet's `currentFrame` goes stale
+  while the page holds the audio graph, which ended takes in their count-in
+  under load; every `process()` call now counts as the next quantum
+  (MISTAKES.md). Main-thread time 8 to 12 ms/s idle, 24 to 28 armed, 69 to 79
+  recording, with no frame requests.
+- **Recording follow-ups** (#1310). The practice controller's 60 fps loop
+  runs only when its own engine holds the mic (armed 23.1 to 20.7 ms/s,
+  recording 71.8 to 63.5). Offline renders start clips on whole frames. A
+  lane's last clip plays out to its end, live, frozen and exported, behind a
+  bit-exact zero DelayNode that holds the chain stereo (`LANE_FREEZE_VERSION`
+  2). Export plays the lane renders that match the song (12 lanes 34.5 to
+  9.5 s, 24 lanes 66.1 to 10.5 s). Meter numbers update eight times a second.
+- **Lighter meters and render reuse** (#1325). Meters without clip-path
+  (main-thread time 506 to 398 ms per 10 s, paint 352 to 152); Compare and
+  auto-balance play the lanes' renders (auto-balance on 24 lanes 60.4 to
+  13.4 s, Compare 166.7 to 60.2 s); a render is held for a job only where it
+  costs no more than twice the lane live, and frozen lanes' decode buffers
+  count in the graph's memory, for 512 MiB phones; the stereo hold enters the
+  cost model (`LANE_HOLD_COST` 0.045).
+- **Punch in, loop recording with passes, and an input picker** (#1328).
+  Punch records only inside a range, with 5 ms fades, from a bar of pre-roll;
+  Repeat records each pass onto the take's clip, the newest whole pass
+  playing and a Pass list picking another (undoable); Sound > Recording >
+  Input is remembered per device and falls back to the default input with a
+  notice. Recording costs 22% less main-thread time, armed 44% less. Export,
+  Compare and auto-balance wait while a take records.
+- **Volume and pan lines on each lane** (#1343): -60 to +12 dB and left to
+  right, up to 256 points, through one stage after the faders and sends for
+  Play, Export, frozen lanes and Compare (worst Play against Export
+  difference -127.6 dBFS); a fader under a line reads "Line". New tour step.
+- **The mic manager's last races** (#1344, from #1328's third review): ride
+  the app's stream only on the input it was opened for; a forced release
+  closes a replaced input before letting the lock go; the half-second mute
+  rule pauses while the page is hidden (WebKit mutes capture there), so a
+  take on another tab keeps going; the output-path lookup reads the default
+  by the latency measurement's alias; the mic check names Studio and will
+  not switch inputs under its take.
+- **Wheel, pinch and zoom over the lanes, a clock that scrubs, and a REAPER
+  ruler** (#1348). Ctrl or Cmd and wheel, a trackpad pinch (Safari's gesture
+  events too) and two fingers zoom the timeline about the pointer; zoom
+  buttons and `=`, `-` and `Z`; the transport's clock scrubs by wheel, drag
+  and arrows; a click on the ruler seeks and a drag draws the A to B range
+  that Repeat loops and Punch records.
+- **Arm a track from its header, record in one press** (#1349). An arm
+  button per lane, one armed at a time; Record arms the selected lane, else
+  the first empty or a new one, and starts; the lane stays armed after a
+  take. Role pictures (64 KB for ten roles) and a two-row header came with
+  it; #1381 retires the pictures.
+- **Five measured fixes** (#1350): the top bar folds before its actions reach
+  the transport (nothing under 16 px from 820 to 1,600 px); Repeat and Punch
+  stay pressed under the pointer (4.7:1 light, 7.5:1 dark, from 1.2:1); a
+  take's Stop stays reachable beside a tablet's Export drawer; the range's
+  start grip is whole at 0:00; the Sound role list draws its chevron.
+- **Two Studio specs that failed on a loaded runner** (#1361, #1364, tests
+  only): `studio-play-start.spec.ts` times each Play from the clock it read,
+  not a press sent in two round trips; `studio-edit-while-playing.spec.ts`
+  records the output in the page, so a span outlasts a slow action.
+- **A take keeps its song** (#1372, from the 6 Nov audit on the way to
+  switching Studio on). E2, an enable blocker: moving to another tab
+  mid-take paused the backing while the take recorded on; the song now plays
+  on under a take that counts in or records (the transport schedules 2 s
+  ahead, so a hidden tab's once-a-second timers do not starve it). B1: the
+  clock and playhead run with a take where no song plays
+  (`audio/take-clock.ts`). The live take reads "Take 1", or "Take 1, pass 3".
+- **What the Studio says** (#1380, the same audit): import refusals get a
+  notice of their own with Dismiss, not the save-failure banner, and the
+  long-file one names the 5-minute limit; `MicManager` says why it released
+  (`background`, `other-tab`), so an armed lane no longer tells the singer
+  to plug a microphone back in; Up and Down move to the nearest clip in the
+  next lane; one banner after another tab takes over; the phone's Add takes
+  button stays opaque while waiting, and its All chip is 44 px wide.
+- **Save space storage, asked on a device's first import, and persistent
+  storage** (#1374). A song held only three 4-minute stereo
+  stems (audit E3): the 480 MiB budget counts each take's original plus a
+  float canonical copy, about 132 MiB a stem. Canonical PCM version 2 keeps
+  16-bit steps, half the room, chosen per take (a 16-bit 48 kHz WAV reads
+  back bit for bit; anything else is scaled to its peak, within half a step);
+  the original file is kept whole and every reader decodes to floats. The
+  first Studio import asks, in the app's confirm dialog, Full quality
+  preselected and a "Remember my choice" box; a take recorded in the Studio
+  never waits on it. Song options > Audio storage shows the choice and how
+  full the song is. The first kept import or take asks
+  `navigator.storage.persist()` once (audit B7). An older tab refuses a song
+  holding a Save space take ("The saved audio metadata is damaged."), which
+  widens audit B8 for those songs only. REQ-STU-013 and REQ-STU-014. No
+  Dexie change.
+- **Compact lane headers with the Studio's own instrument glyphs** (#1381,
+  merging today). 58 glyphs in 13 families on the app's 24-unit grid,
+  drawn over eight review rounds; a resolver maps all 128 General MIDI
+  programs, the drum kits, 47 percussion keys, 8 stem types, 10 roles and 59
+  name rules (`Kick_In.wav`, `OH L`, `BGV 2`) to a glyph, the singer's pick
+  first. `StudioTrack.instrument` is optional and saved only when picked (an
+  older Studio refuses a song that has it). Headers become 240 x 64 on
+  desktop, 224 x 96 on tablet and 88 x 56 on a phone, with a remembered Tall
+  lanes toggle for the fader, pan and Lines row. #1349's role pictures, their
+  setting and ten WebP files go. THIRD-PARTY-NOTICES.md now credits Lucide
+  (ISC) and Feather (MIT), whose icons `src/components/icons.tsx` copies.
+
+In the native app only. TestFlight carried this window as it landed:
+`mp-v0.8.50` (00875a69f) up to #1310, `mp-v0.8.51` (334aff73e) to #1315,
+`mp-v0.8.52` (5184a0221) to #1322, `mp-v0.8.53` (ad0a099f7) to #1342,
+`mp-v0.8.54` (5d40a1b43) to #1357, `mp-v0.8.55` (66b74b39b) to #1369,
+`mp-v0.8.56` (bb2df9ba3) to #1376 and `mp-v0.8.57` (1fe27af08) to #1377.
+Nothing merged after #1377 touches `apps/mercurypitch` or
+`packages/mobile-runtime`. The owner confirmed on 3 Nov that the Ear rooms
+stay native only for now (#1330).
+
+- **Leap, the third Ear room** (#1299). Merc stands on a ledge at his note's
+  height, names a leap with the public-domain song that opens on it, and
+  sings his note; the singer sings it back, then leaps to the far ledge,
+  where a lantern lights on a held landing. Learning: fourths and fifths up,
+  both notes sung first, 50 cents. Singer: sixths too, his note alone, 35
+  cents. Professional: thirds to the octave, up and down, named by interval
+  alone, 25 cents. Judged by Echo's engine as a two-note phrase in free time,
+  never folded to an octave. The result counts leaps landed and the time from
+  Merc's note to the target, keeps a best per level, and replays each leap.
+  A card in the Ear Lab's Ear rooms row and the Sing room's picker; it rides
+  `PREMIUM_EXERCISES`, and `assert-bundle.mjs` holds a store build to none
+  of it.
+- **Harmony, the fourth Ear room** (#1314). Merc sings a short line from a
+  jetty, each note a teal lamp across a lake; the singer sings it a third
+  above (the key's own third), each note a gold lamp, and at Professional
+  two of six lines sit a third below. Take turns on the speaker (free time)
+  or Together in headphones (timed, with room for late headphones), kept for
+  next time. Levels run from three notes by step to five with a leap. Merc's
+  singer moves into the room kit and the sung window into
+  `lib/sequence/sung-window.ts`.
+- **Merc speaks** (#1300, #1306, #1311, #1315). Lines recorded in his
+  ElevenLabs voice ("Merc V1 Gentle Whimsical D2", eleven_v4), two takes a
+  line, each heard back word for word by Whisper and levelled to -18 LUFS,
+  as placeholders for real recordings. He speaks only at rest: the Ear
+  rooms' opening lines (#1300), their result lines and Echo's openings
+  (#1306), Long note's, Lip roll's and Ng slides' openings, rewritten so
+  they no longer name the note (#1311), and Harmony's nine (#1315). Result
+  lines lose their counts ("A good run."), since a recording cannot say a
+  number. Start, a played note or the demo hushes him, and the app going
+  away or a dying mic leaves him silent. Since #1306 he never starts the
+  clock: the shell starts it on the tap that opens a speaking room
+  (`SPEAKS_AS_IT_OPENS`). The voices fold out of the store build
+  (`PREMIUM_VOICES`). #1300 also puts each Ear room's best on its card on
+  the Ear Lab tab.
+- **"How it works" in every Ear room** (#1312 Leap, #1317 Harmony, #1324
+  Home note, #1326 First note). A first visit opens on a demo and "?" plays
+  it again: Merc's call, then the answer sung back twice through the room's
+  own engine as a scripted take ("Not like this", then "Like this"), with
+  tooltips cued by moments the room really reached. A demo never opens the
+  mic, fires a haptic, says a line or keeps a result.
+  First note's plays the first eight seconds of Josephine's lead-in as a
+  bundled 97 KB clip, and its "?" opens the help sheet, which offers See how
+  it works.
+- **Leap's valley and Harmony's lake, painted** (#1319), in Home note's
+  harbour style: 4K plates with landscape twins, the cliffs and the jetty as
+  keyed columns that move as the drawn ones did, seven WebP files of about
+  1.4 MB (GPT Image 2.5 on Higgsfield, 37 credits; prompts in
+  `docs/plans/ear-rooms.md`). A room keeps its drawing until every part has
+  loaded, and for good if one fails. The art folds out of the store build.
+- **The Ear rooms' bests follow the account** (#1330). Home note, First
+  note, Leap and Harmony kept bests on the phone only; they now sync under
+  `pitchperfect_` keys, a pull keeping the better best per level by each
+  room's rule, and an old `mp_` table is adopted once. The rules live in
+  `src/lib/ear-room-bests.ts` on a shared per-level table. It carries #1329's
+  fix: the fixture Legend in `legend-store.test.ts` closed three days after
+  its `NOW`, turning the native tests red from noon UTC on 3 Nov.
+- **Each premium room's free taste, then the Cloud offer** (#1357), built
+  and off until `PREMIUM_GATE` flips for V1: the Ear rooms give three runs,
+  Long note, Echo, Lip roll and Ng slides one each, and the Warm-up one of
+  its own; only a run that reached its end counts. Then a card or Start opens
+  "Keep training with Merc". Developer > Free taste turns it on for one
+  phone. New `room_tap_*`, `room_open_*`, `room_offer_*` and `room_trial_*`
+  events (see Release steps).
+- **First note as the Warm-up's fifth stop** (#1337): Lip roll, Ng slides,
+  Long note, Echo, First note, then the song; two entries a stop, kept in the
+  history but never as a best. The path's smallest scale goes to 0.6 so six
+  stops fit a 375 x 667 phone.
+- **The Ear Report in the room's light** (#1355): the native bench draws its
+  own report (`merc/MercReport.tsx`, Merc's line built from the numbers, a
+  range switch); the web keeps its brass plates, both reading
+  `report-data.ts`.
+- **The onboarding, walked as a new singer** (#1303). Eleven defects from a
+  walk at 320 to 430 wide in both themes, then a review's findings. The voice
+  twin is on the card from the start and lands as a beat of its own; the
+  Cloud offer opens only with a price to show; no flash of the Sing room on
+  the way in; every beat fits from 320 x 568; Merc points a new singer to
+  the Sing room; note names are explained; the sung line says whose turn it
+  is; a refused mic is Merc's to explain, with Open Settings first. The
+  review caught that four unguarded calls would have put the onboarding in
+  a store build; `onboarding-fold.test.ts` now fails any use outside a
+  guarded branch. Three files split to stay under 800 lines.
+- **Find by singing in the Karaoke room** (#1302, #1309, #1313). The owner
+  asked for Shazam-style search; ShazamKit recognises recordings, not a
+  sung or hummed melody, so the web's Mercury Sing engine came over. Find by
+  singing heads the room's Songs sheet, lists the songs it listens for and
+  the closest, and a tap (or 80% held for 2 s) cues the song where the singer
+  has got to, less a 2 s run-in. It fingerprints from the notes each song
+  keeps, never by decoding a vocal, which a phone cannot afford (#1302).
+  The room reads a new song's notes once after separation, and every song,
+  the examples included, once Find by singing is opened, one at a time and
+  only at real rest, under a lock shared with First note (#1309). Settings >
+  Karaoke gains "Get songs ready to find by singing" (#1313).
+- **First note reads more songs** (#1308, #1304). A song that gives fewer than
+  two entries from its long breaths has its lyric lines after a breath of
+  at least 0.6 s read too (rules version 4; a read by rules 3 that plays
+  still stands). "?" says how the room works and "i" why a song sits out.
+  #1304 sorts the test builds' console by errors, warnings and logs with a
+  Copy of what is shown, turns routine `log` and `debug` lines off by
+  default (Developer: Keep routine logs), and has First note log why a song
+  sits out; the console is test builds only (`VITE_PORTABLE_CONSOLE`).
+- **Native polish** (#1313, #1359). #1313: Try again keeps its focus on the
+  Devices and Account screens, the Warm-up's "3 min" shows on a 320 x 568
+  phone, the console's handle takes a 44 px press, the Account screen draws
+  the voiceprint, and `native-shell-store.ts` drops to 570 lines. #1359, a
+  sweep of 352 views at four phone sizes in both themes: the Sing room's
+  words on its photograph, the rail, the More circle and the transport, the
+  Find clock and the Ear Lab's button line readable in the light theme; 44 px
+  targets for Account's switch and Karaoke's options; Settings' Sign in
+  whole at 320; the tab under a pushed screen `inert`; focus rings inside
+  rows; focused rows clear of the rail; the TV's "Ready to sing" draws a play
+  mark.
+- **Community on the phone** (#1318, slice 4c), behind `NATIVE_COMMUNITY`
+  (on in test builds, off in the store build): a row in More's Together
+  group, the singer's profile, public melodies and results with a Shared
+  result screen, Report and Block on every share by another singer, and
+  plain states for loading, empty, failure and offline. A melody has no
+  Open, since the phone has no Compose.
+- **Leagues and the Legend room in every build** (#1345). `NATIVE_LEAGUES` is
+  `true`, so a store build carries More's Together group with Leagues and
+  the Legend room and the Sing room's Legend card; `assert-bundle.mjs` drops
+  their nine markers. Community stays behind its switch.
+- **A native Progress page** (#1365), behind `NATIVE_PROGRESS` (test builds),
+  from the owner's mock-up boards: moments that swipe, thirteen weeks of
+  rhythm that open in a sheet, skill threads, the voice card, paths,
+  milestones and the league. On the web, `useProgressRecord` now holds what
+  `ProgressRoute` owned, with no change in behaviour.
+- **Sing room covers** (#1338, #1346). Two free covers ship in the app, the
+  Rehearsal Attic and the Choir Room (eight WebP files, about 2.0 MB), and
+  three supporter rooms (Echo Cistern, Snowfall Pavilion, Ghost Light Stage)
+  join the catalog through migration 0073, assigned to `active-supporters`,
+  their art uploaded through Premium Studio; the Retro Analog Studio stays
+  the default. The Studio's surface filter gains Sing. `background-catalog.ts`
+  reaches 1,561 lines (`size.filesOver1500` 45 to 46), and Drum Night's web
+  first paint, which carries the catalog for its backdrop, grows to 522,388
+  B, so its ceiling moves from 521,000 to 523,000. #1346 names the room for
+  its cover and gives the Choir Room more light.
+- **The TV stage** (#1331, #1332, #1339, #1347), drawn on a TV over Screen
+  Mirroring. A long sung line wraps onto two rows at 72 px per 1,080 lines,
+  never under 32 (REQ-TV-022), breaking between words, or between characters
+  for Chinese and Japanese, and the lane keeps inside the 5% overscan margin
+  (#1331). Every number in a stage message is checked before it goes, a bad
+  note or reading dropped rather than moved to 0, and the TV draws the notes
+  the phone's lane draws, the singer's edits in the key heard (#1332). The
+  lane becomes the phone's ribbon in yellow glass, with a paused screen
+  (#1339). On a TV connect a sheet asks Stage, Lyrics or Keep mirroring once
+  per TV, remembered on the phone under `mp:tv-choices`, never synced, with
+  Settings > Karaoke > TV to change or forget it, in every build; the route
+  store sets the route and its port in one batch (#1347).
+- **The TV follows the room** (#1367). Leaving Karaoke mid-song left the TV
+  scrolling the song in silence for as long as it stayed connected; the room
+  now sends idle as it closes, which also replaces the song the native side
+  keeps for a page that loads later. The stage stands the lane at the song's
+  end once it knows the length. With background play off, the TV's Lyrics
+  view gets its own clock (`tvLyricsClock`) and moves. The Developer
+  screen's picture offset moves to `mp_tv_stage_offset_ms`, which sync never
+  carries: an offset tuned before starts again at 0 on its phone, once.
+- **A Google Cast receiver at `/cast-receiver`** (#1369), for the two Custom
+  Receiver applications registered on 23 Oct (`01A75FA0` for test builds on
+  the dev site, `D7DF12C6` for store builds on production). The page loads
+  Google's Web Receiver SDK and draws the iPhone's stage at the TV's pixels,
+  loading nothing else of the app; the stage loop moves to
+  `src/lib/tv-stage/stage-loop.ts` for both pages. Spike controls (`probe`,
+  `diagnostics`, `demo`) answer Google's Command and Control tool; a dropped
+  sender leaves the idle screen, and five minutes without one closes the
+  receiver. The site worker serves the page with a policy of its own (the
+  site's would block the SDK's script and its local socket) and with
+  `X-Robots-Tag: noindex`, and `wrangler.jsonc` adds it to
+  `run_worker_first`. No sender in the app yet.
+- **AirPlay** (#1321, #1336, #1376, #1377), from the owner's tests with an
+  LG C2. #1321: the Karaoke room logs the audio route and the clock's states
+  as routine lines, and a native watch on its clock warns after 1.5 s
+  standing, restarts it once, then pauses the song with a notice saying why
+  ("The sound stopped.", with Play again). #1336: every play, pause and stop
+  logs who asked (`playback-cause.ts`); AirPlay alone is seen from the route
+  or suspected from a sample-rate mismatch (`airplay-suspicion.ts`); a hint
+  pointed to Screen Mirroring; and Developer > AirPlay sound check got five
+  buttons. #1376: Test 9 showed Web Audio alone reaches the TV and a media
+  element beside it stops that, so the app's audio session allows AirPlay
+  (`.allowAirPlay`, options 41 to 105), and on AirPlay alone the lock
+  screen's carrier stands aside, paused and muted (`carrier-aside.ts`), and
+  the unlock clip keeps quiet, both coming back when the sound leaves
+  AirPlay; the hint now says where the song plays, and every stop offers
+  Play again. #1377: sound check buttons 6 and 7 for the rooms that play
+  elements, and the owner's 6 Nov results: AirPlay sound alone on the LG C2
+  works from `mp-v0.8.56`, about 2 s late. Not verified on a device: the
+  ring switch on silent while on AirPlay, and the lyrics' timing there.
+
+Builds, tests and docs only:
+
+- **#1335:** `.claude/hooks/session-start.sh` sets the repo's git identity
+  to the owner's in the owner's own cloud sessions (`CLAUDE_CODE_REMOTE` and
+  the account), so commits stop carrying the container's default author;
+  AGENTS.md rule 5 names it.
+- **#1373:** the full browser suite's shards get 45 minutes, not 30. With
+  `fullyParallel` all 102 Studio specs land in shard 4, which took 28:56 of
+  its 30 minutes on a green run and was cut off at 9946b919; a fifth shard
+  would not move them.
+- **Main green again** (#1384). PR Gate's push runs on `main` had failed
+  since about 10:00 on 7 Nov, out of a pull request's smoke tier's sight.
+  - Shard 3, every retry: `learn-stage-fit.spec.ts` read the first control
+    of every step's toy, but Lesson 24's Step 4, the wave, keeps its two
+    plays in the step's text by design, so the toy has none. A toy with no
+    control of this step's is now checked on its figure alone, and one that
+    hides the controls its markup gives the step fails naming them.
+  - Shard 4, on three of four runs: the test server, `serve dist`, died with
+    EMFILE about 24 minutes in. `serve-handler` 6.1.7 never closed a file
+    after a 304 or a request the browser left mid-transfer, and every test
+    that loads the app leaves part of the service worker's 591-file
+    precache that way. `patches/serve-handler@6.1.7.patch` (the repo's
+    second pnpm patch, after `three`'s) closes each file with its response;
+    `scripts/serve-file-streams.test.mjs` fails unpatched and waits for
+    every stream it destroyed to close before its folder goes.
+  - Unit tests, now and then: Lesson 15's cold open set a 500 ms timer per
+    lit note that nothing cleared, and one fired after jsdom was gone. The
+    cold open clears them when its run ends or stops.
+  - A full PR Gate dispatch on the branch passed all four browser shards
+    before the merge.
+- #1307 (the Auto-timed test), #1329 (the Legend test, inside #1330) and
+  #1361 and #1364 (Studio specs) are described above.
+
+### Release steps
+
+1. **Migrations:** `0073_sing_rooms_background_pack.sql` (#1338), additive:
+   seeds the three supporter Sing rooms in a `sing-rooms` edition and assigns
+   them to `active-supporters`. `deploy-db.yml` applies it on the `v*` tag,
+   before the DB worker deploys; it is not to be applied by hand first. The
+   rooms appear only once their art ships through Premium Studio (#1338's
+   "For the owner").
+2. **Secrets, variables and bindings:** none new; the changed worker code
+   reads only `env.DB` and `env.ASSETS`. `wrangler.jsonc` adds
+   `/cast-receiver` to `run_worker_first` (#1369).
+3. **Worker code.** DB worker: league rows' `named`, the Legend board's
+   `userId` and the archive's withholding (#1316); lesson answers for 1 to 28
+   (#1352); constant-time token compare and 400s for malformed requests
+   (#1358); the Sing rooms in the background catalog (#1338); the funnel
+   catalogue it validates events against gains `session_stopped` (#1333) and
+   the `room_*` events (#1357), so those count from this deploy. Site worker:
+   the Cast receiver's headers (#1369), and from #1370 the `X-Robots-Tag`
+   and canonical changes in `src/worker.ts` and the 308s in
+   `src/lesson-gate.ts`. Jam worker: unchanged.
+4. **Local database:** Dexie v14 adds `studioTakeJournals` and
+   `studioTakeChunks` (#1305), device-only Studio tables.
+5. **Links into about.mercurypitch.com** (prod-upd step 0c): none new.
+   Reports open the landing's contact form on its existing support topic.
+6. **Social cards:** `pnpm run og:versions` on the release PR stamped all
+   13 cards with no change.
+7. **What's New** is untouched: 0.9.29 is a patch.
+8. **Version files:** `package.json` goes from 0.9.28 to 0.9.29.
+9. **Tag gate:** PR Gate on `main` was red from e3e8b49f8 until #1384. The
+   tag goes on a `main` commit whose own push run passed, after Release
+   Tours passes on it.
+10. **After the deploy:** the Search Console checks in #1370's and #1379's
+    "For the owner" (the hub's internal links, robots and the
+    MultimediaApplication node, the 308s, `/admin` and `?v=` noindex, the
+    four sibling landings' canonicals); IndexNow announces the 22 re-dated
+    URLs. The owner can switch Studio on in production from
+    `/admin/features` (#1371). Tag this release before submitting a store
+    build with Leagues in it (#1345): its boards read the production worker.
+11. **Native:** the app ships on its own `mp-v*` tags; `mp-v0.8.57` already
+    carries everything native in this window, and the next tag is
+    `mp-v0.8.58`.
+
 ## [0.9.28] - 2026-11-01
 
 7 commits since `v0.9.27` (135ee60b3) before these notes, from 5 PRs:

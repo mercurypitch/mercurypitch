@@ -5,6 +5,61 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.29] - 2026-11-07
+
+Pasted lyrics follow the singing, a drill you stop early no longer passes a
+bar, and you can report or block a singer from the Leaderboard.
+
+### Added
+
+- **Pasted lyrics follow the singing.** Lyrics without timings are placed on
+  the song's vocal, so each line lights as it is sung. The untimed Original
+  is kept.
+- **Report or block a singer.** A "..." on every Leaderboard row that names
+  another singer offers both. Settings lists who you blocked, with Unblock.
+- **Season 2 on Learn.** The lessons page lists Season 2's fourteen lessons
+  as coming, and each lesson's map has a tab for each season.
+
+### Changed
+
+- **A drill you stop early passes no bar.** It still keeps your streak
+  going, but no longer counts toward a level, a goal, a challenge or the
+  boards.
+- **Scale Runner and Drone Intonation can grade 100.** A flawless run graded
+  80 before. Both drills start a fresh history and can now level up.
+- **Manual holds need five seconds.** On Manual, Long Note, Pitch Hold and
+  Vibrato give a score once you have sung for five seconds.
+- **Pitch Pursuit ends on its own.** A run stops after its planned notes, 8
+  to 17 by level, and its card shows that level's numbers.
+- **Rooms open on the room.** A link to Ear Lab, Jam or Pitch Training no
+  longer opens the welcome first. It waits for the home page.
+- **Landing pages say what they are.** The voice type test, singer match,
+  vocal remover and karaoke app pages keep their own title once the room
+  loads.
+- **The help says what the drill does.** Staccato scores pitch, not timing,
+  and Chord Stacker's help describes the drill as it runs, its demo notes
+  sounding in full.
+
+### Fixed
+
+- **Session mode records again.** Sessions were not being saved. One sung to
+  its end is scored on the notes you sang; a stopped one counts as practice.
+- **Jam catches a late joiner up.** Someone who joins after the host picked
+  a drill, a mode or a song now gets them, and nobody else's scores restart.
+- **The phone stage's ribbon fits the song.** In Karaoke Night on a phone,
+  the pitch ribbon now follows each song's notes instead of pinning low and
+  high voices to its edges.
+- **Found songs start where you were.** Mercury Sing now starts a song sung
+  an octave up or down, or in another key, at the part you were singing.
+- **Stereo sounds end whole.** Piano's reflections and key shift no longer
+  cut the last moments of a stereo sound.
+- **Breathiness reads true.** The Analysis page no longer reads a clean tone
+  as breathy.
+- **Smaller things.** Settings sync no longer overwrites a large local
+  value. Undoing a deleted melody restores its playlists. A separation no
+  longer deletes another tab's new song. A refused audio start no longer
+  shows the error screen. Harmony Stack names its notes by their own pitch.
+
 ## [0.9.28] - 2026-11-01
 
 Each lesson film gets a page of its own, warm-ups start inside your voice,
