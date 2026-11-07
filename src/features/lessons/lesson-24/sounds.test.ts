@@ -14,7 +14,7 @@
 import { describe, expect, it } from 'vitest'
 import { hz } from '@/features/lessons/kit/notes'
 import type { PlayKey } from './sounds'
-import { DRONE_HZ, linesOf, NOTE_GAIN, PIANO, playFor, PURE, schedulesOf, SLIDE, WIDE_WAVE, } from './sounds'
+import { DRONE_HZ, linesOf, NOTE_GAIN, PIANO, playFor, PURE, QUIZ_PURE, schedulesOf, SLIDE, WIDE_WAVE, } from './sounds'
 
 /** Each play's length, and its notes' frequencies at the start (FACTS 41, 44, 69). */
 const PLAYS: readonly [PlayKey, number, readonly number[]][] = [
@@ -51,6 +51,23 @@ describe('the plays', () => {
       ).toEqual([DRONE_HZ, ...notes])
       for (const l of lines) expect(l.points.at(-1)?.t, key).toBe(sec)
     }
+  })
+
+  it("plays quick check 4's pair as a pure fifth over A3: 330 Hz for 4.0 s", () => {
+    // Act
+    const lines = linesOf(QUIZ_PURE)
+
+    // Assert: FACTS 70, 77
+    expect(lines.map((l) => l.points.map((p) => [p.t, p.hz]))).toEqual([
+      [
+        [0, DRONE_HZ],
+        [4, DRONE_HZ],
+      ],
+      [
+        [0, 330],
+        [4, 330],
+      ],
+    ])
   })
 
   it("tunes mi, so and the chord by Step 2's switch: the piano's C sharp 4 and E4, or 275 and 330", () => {

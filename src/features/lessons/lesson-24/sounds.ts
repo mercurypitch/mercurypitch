@@ -117,6 +117,9 @@ export function playFor(key: PlayKey, tuning: Tuning = 'piano'): Play {
   }
 }
 
+/** Quick check 4's pair, by ear only: A3 with E4 at exactly 330 Hz, a pure fifth, 4.0 s, the same for everyone (FACTS 70, 77). */
+export const QUIZ_PURE: Play = { sec: 4, notes: [level(PURE.so)] }
+
 /** A note's frequency at the play's start. */
 export const firstHz = (n: PlayNote): number =>
   n.kind === 'slide' ? n.parts.from : n.hz
