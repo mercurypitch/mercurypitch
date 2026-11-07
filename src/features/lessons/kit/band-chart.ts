@@ -28,7 +28,13 @@
 // Merc's line itself, wave and all, at its true pitch from the schedule
 // his voice plays, with no line at the band's centre (`centre`), its
 // middle dashed and a ruler from the middle to a swing's top, through a
-// painter the page passes in (`paintOver`, band-chart-wave.ts).
+// painter the page passes in (`paintOver`, band-chart-wave.ts). Lesson 24
+// draws a drone under the chart: the drone as a narrow amber band or a
+// chrome line, Lesson 5's band on the note to tune, the top notes from
+// their schedules, Lesson 10's beads and the piano's and the pure ticks,
+// with the beats as brightness, in place of Merc's band (`paintRungs`,
+// band-chart-drone.ts), on a window that need not sit even about the note
+// (`span`) and changes with each of the figure's states (`setAxis`).
 // Each figure is a controller that writes the chart's `scene` (the line, the
 // marks, the glow, the lit edge) and the chart paints it while it is on
 // screen, in each frame where what it shows differs from what it last drew:
@@ -46,6 +52,7 @@
 import type { Arc } from './band-chart-arcs'
 import type { BandSpec, CentsTick, ChartFrame, ChartMark, SpectrumScene, TracePoint, } from './band-chart-draw'
 import { BAND_COLOR, centsAt, drawBand, drawCentsGrid, drawHandle, drawHead, drawLineLabel, drawLitEdge, drawMark, drawNotesGrid, drawOctaveBracket, drawPlayhead, drawTrace, xOf, yOf, } from './band-chart-draw'
+import type { DroneScene } from './band-chart-drone-scene'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
 import type { RungNames } from './band-chart-names'
@@ -60,9 +67,11 @@ export type { CentsTick, ChartMark, TracePoint } from './band-chart-draw'
 export type { LevelPoint } from './band-chart-hold'
 export { BAND_COLOR }
 
-/** The chart's vertical axis: cents either side of Merc's note, or a span of notes. */
+/** The chart's vertical axis: cents either side of Merc's note, cents from it to either end, or a span of notes. */
 export type BandAxis =
   | { readonly range: number }
+  /** Cents from Merc's note at the bottom and the top: a window that need not sit even about it (Lesson 24's drone chart). */
+  | { readonly span: readonly [lo: number, hi: number] }
   | {
       /** The lowest and highest notes on the axis, MIDI. */
       readonly notes: readonly [lo: number, hi: number]
@@ -95,8 +104,10 @@ export interface BandChartOptions {
   readonly timeTicks?: boolean
   /**
    * Paints the scene's `rungs` in place of Merc's band: band-chart-rungs.ts's
-   * `paintRungs`, passed in by the page that has rungs. False for a scene
-   * with none, which keeps the band.
+   * `paintRungs`, passed in by the page that has rungs; or a song
+   * (band-chart-song.ts's `paintSong`), or a drone chart
+   * (band-chart-drone.ts's `paintDrone`). False for a scene with none,
+   * which keeps the band.
    */
   readonly paintRungs?: (f: ChartFrame, scene: BandScene) => boolean
   /**
@@ -172,6 +183,13 @@ export interface BandScene {
   middle?: MiddleLine | null
   /** The ruler from a wave's middle to the top of a swing, with its reading. */
   ruler?: WaveRuler | null
+  /**
+   * A drone under the chart, its band or line, the note's band, the top
+   * notes, the beads and the ticks, with the beats as brightness, on a
+   * chart given band-chart-drone.ts's `paintDrone`: it takes the place of
+   * Merc's band, as rungs do.
+   */
+  drone?: DroneScene | null
 }
 
 export interface BandChart {
@@ -181,6 +199,8 @@ export interface BandChart {
   readonly target: number
   /** Moves the band to another note (a round on C4): the line is cleared. */
   setTarget(midi: number): void
+  /** Gives the axis another reach, a figure's next state (Lesson 24's drone chart): the scene stays. */
+  setAxis(axis: BandAxis): void
   /** Seconds across the chart: a hold's fixed frame, 10 or 15. */
   readonly window: number
   setWindow(seconds: number): void
@@ -217,6 +237,7 @@ const PAD = 14
 /** The axis in cents from Merc's note. */
 function reach(axis: BandAxis, target: number): [number, number] {
   if ('range' in axis) return [-axis.range, axis.range]
+  if ('span' in axis) return [axis.span[0], axis.span[1]]
   return [(axis.notes[0] - target) * 100, (axis.notes[1] - target) * 100]
 }
 
@@ -226,9 +247,7 @@ export function mountBandChart(
 ): BandChart {
   const canvas = q<HTMLCanvasElement>('canvas', root)
   const cv = surface(canvas)
-  const axis: BandAxis = opts.axis ?? { range: 150 }
-  const notesAxis = !('range' in axis)
-  const names = 'names' in axis ? axis.names : undefined
+  let axis: BandAxis = opts.axis ?? { range: 150 }
   let window = opts.window ?? 4
   let target = opts.target
   let [lo, hi] = reach(axis, target)
@@ -248,7 +267,7 @@ export function mountBandChart(
     ctx,
     w,
     h,
-    x0: notesAxis ? Math.max(40, names?.gutter(ctx) ?? 0) : 12,
+    x0: 'notes' in axis ? Math.max(40, axis.names?.gutter(ctx) ?? 0) : 12,
     x1: w - 12,
     top: opts.under?.top(h) ?? PAD,
     bottom: opts.under?.bottom(h) ?? h - PAD - below(h),
@@ -291,12 +310,12 @@ export function mountBandChart(
 
   /** The grid: the notes axis's rows, lettered or named, or the cents ticks. */
   function paintGrid(f: ChartFrame): void {
-    if (!notesAxis) {
+    if (!('notes' in axis)) {
       drawCentsGrid(f, opts.ticks)
       return
     }
-    const named = 'named' in axis ? (axis.named ?? []) : []
-    drawNotesGrid(f, target, named, names === undefined)
+    const names = axis.names
+    drawNotesGrid(f, target, axis.named ?? [], names === undefined)
     names?.paint(f, target)
   }
 
@@ -320,13 +339,16 @@ export function mountBandChart(
   }
 
   // what the chart shows now, and what its last frame drew, as one string
-  // each: the scene, Merc's note, the window, the canvas's size and ratio
+  // each: the scene, Merc's note, the axis's reach, the window, the canvas's
+  // size and ratio
   let shown = ''
   let drawn = ''
   const showing = (): string =>
     JSON.stringify([
       scene,
       target,
+      lo,
+      hi,
       window,
       canvas.clientWidth,
       canvas.clientHeight,
@@ -372,6 +394,11 @@ export function mountBandChart(
       target = midi
       ;[lo, hi] = reach(axis, target)
       scene = blankScene()
+      wake()
+    },
+    setAxis(next) {
+      axis = next
+      ;[lo, hi] = reach(axis, target)
       wake()
     },
     get window() {
