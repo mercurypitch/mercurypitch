@@ -10,13 +10,21 @@
 //
 // One at a time: the buttons wait while a check plays and is torn down.
 //
+// Above them, a readout that follows the app as it runs: the AirPlay guess
+// now, the last output check (its rate, when it ran, why, and whether inside
+// a gesture) and what may play beside the room's sound (airplay-readout.ts).
+// Test 13 reads it after a cold start and as AirPlay comes and goes.
+//
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
 import type { Component } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Index } from 'solid-js'
+import { airPlayFacts } from '@/stores/airplay-suspicion'
+import { lastOutputCheck, webAudioAlone } from '@/stores/output-check'
 import type { CheckVariant } from './airplay-check'
 import { CHECK_VARIANTS, runCheck } from './airplay-check'
+import { airPlayReadout } from './airplay-readout'
 
 export interface AirPlayCheckPanelProps {
   /** Test seam: the check a tap runs. */
@@ -40,8 +48,24 @@ export const AirPlayCheckPanel: Component<AirPlayCheckPanelProps> = (props) => {
       .catch(() => undefined)
       .finally(() => setPlaying(null))
   }
+  const rows = () =>
+    airPlayReadout({
+      facts: airPlayFacts(),
+      check: lastOutputCheck(),
+      alone: webAudioAlone(),
+    })
   return (
     <div class="mp-dev__audio" data-testid="dev-airplay-check">
+      <dl class="mp-dev__readout" data-testid="dev-airplay-readout">
+        <Index each={rows()}>
+          {(row) => (
+            <div class="mp-dev__readout-row">
+              <dt>{row().label}</dt>
+              <dd>{row().value}</dd>
+            </div>
+          )}
+        </Index>
+      </dl>
       <p class="mp-dev__row-sub">
         Choose the TV under AirPlay in Control Center, then tap each one and
         note which ones the TV plays. Each beeps its own number of times.
