@@ -27,6 +27,11 @@
 // vibrato would flip it on every swing): from the Listen phase to the
 // take's end the band's edge does not light, it does not glow and nothing
 // names where the voice is against it.
+//
+// A take may sound one thing: a drone the page starts in the Listen phase
+// (Lesson 24's do, 2.0 s before the in-breath, both Mercs listening), kept
+// through the take while every other sound is held off (`kept`,
+// `Sound.hush`), and released over 0.3 s as the take ends.
 
 import type { BandChart } from './band-chart'
 import { HIT_TOLERANCE_CENTS } from './band-words'
@@ -38,6 +43,7 @@ import type { Listener, PitchFrame } from './listen'
 import type { Which } from './merc-duo'
 import { mercListen, mercSing } from './merc-duo'
 import type { Ring } from './sing'
+import type { Voice } from './sound'
 import { Sound } from './sound'
 
 /** The listener chunk and the hold reader, loaded when Start is pressed. */
@@ -47,6 +53,8 @@ export type HoldModule = typeof HoldKit
 /** Seconds of the gap before the take opens, and of the in-breath. */
 export const GAP_SEC = 0.4
 export const BREATHE_SEC = 2
+/** Seconds a kept drone releases over as the take ends. */
+export const DRONE_RELEASE_SEC = 0.3
 
 /** A hold's three phases, as the ring and the line above it name them. */
 export type HoldPhase = 'listen' | 'breathe' | 'sing'
@@ -63,6 +71,8 @@ export interface HoldView {
 export interface HoldListen {
   readonly sec: number
   play(audible: boolean): Promise<boolean>
+  /** Whether the singing Merc sings in it: false, and both listen (Lesson 24's drone). */
+  readonly mercSings?: boolean
 }
 
 export interface HoldContext {
@@ -84,6 +94,8 @@ export interface HoldContext {
   readonly onPhase: (p: HoldPhase) => void
   /** Each frame once the voice has come: the seconds since its first voiced frame. */
   readonly onSung?: (t: number) => void
+  /** The drone the Listen phase started, kept sounding through the take and released as it ends (Lesson 24). */
+  readonly kept?: () => Voice | null
 }
 
 /** The band state in words, for the line beside the chart: never colour alone (REQ-GVC-082). */
@@ -119,9 +131,11 @@ function drawFrame(
 /** Merc's demonstration and the in-breath, up to the take's opening: false if it was cut short or the viewer left meanwhile. */
 async function lead(c: HoldContext, chart: BandChart): Promise<boolean> {
   const other: Which = c.which === 'blue' ? 'orange' : 'blue'
+  const sings = c.listen.mercSings !== false
   const audible = Sound.canPlay()
   c.onPhase('listen')
-  mercSing(c.which, c.midi, true)
+  if (sings) mercSing(c.which, c.midi, true)
+  else mercListen(c.which, true)
   mercListen(other, true)
   if (c.live !== false) chart.scene.glow = 1
   void c.view.ring.run({
@@ -135,7 +149,8 @@ async function lead(c: HoldContext, chart: BandChart): Promise<boolean> {
   })
   const heard = await c.listen.play(audible)
   chart.scene.glow = 0
-  mercSing(c.which, c.midi, false)
+  if (sings) mercSing(c.which, c.midi, false)
+  else mercListen(c.which, false)
   mercListen(other, false)
   if (!heard) {
     c.view.ring.stop()
@@ -152,7 +167,10 @@ export async function holdOne(c: HoldContext): Promise<HoldReading | null> {
   chart.setTarget(c.midi)
   chart.setWindow(c.length)
   c.view.now('–')
-  if (!(await lead(c, chart))) return null
+  if (!(await lead(c, chart))) {
+    c.kept?.()?.stop()
+    return null
+  }
   const seen = new Set<number>()
   let singing = false
   let turning = false
@@ -163,7 +181,7 @@ export async function holdOne(c: HoldContext): Promise<HoldReading | null> {
   }
   // the in-breath ends 2 s after Merc's demonstration: the cue to sing, if the voice has not come already
   const cue = window.setTimeout(sing, (BREATHE_SEC - GAP_SEC) * 1000)
-  Sound.hush(true)
+  Sound.hush(true, c.kept?.() ?? null)
   mercListen('blue', true)
   mercListen('orange', true)
   try {
@@ -194,6 +212,7 @@ export async function holdOne(c: HoldContext): Promise<HoldReading | null> {
     return frames === null ? null : c.reader.readHold(frames, c.midi, c.length)
   } finally {
     window.clearTimeout(cue)
+    c.kept?.()?.stop(DRONE_RELEASE_SEC)
     Sound.hush(false)
     mercListen('blue', false)
     mercListen('orange', false)

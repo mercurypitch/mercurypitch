@@ -7,7 +7,9 @@
 // page's demonstration is Merc's Listen phase, its seconds on the ring; one
 // cut short ends the take before it opens, with the microphone never read
 // and no sound held off; and `onSung` hears the seconds since the first
-// voiced frame, on the frames' clock.
+// voiced frame, on the frames' clock. Lesson 24's drone: started in the
+// Listen phase, kept under the take while everything else is held off, and
+// released over 0.3 s as the take ends; both Mercs listen to it.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -17,7 +19,9 @@ import { holdOne } from './hold-run'
 import type { HoldReading } from './hold-take'
 import type { Listener, PitchFrame } from './listen'
 import type * as MercDuo from './merc-duo'
+import { mercListen, mercSing } from './merc-duo'
 import type { Ring } from './sing'
+import type { Voice } from './sound'
 import { Sound } from './sound'
 
 vi.mock('./merc-duo', async (actual) => ({
@@ -201,5 +205,79 @@ describe("the band state while a take runs (Lesson 22's `live: false`)", () => {
     expect(c.view.chart.scene.lit).toBe(false)
     expect(c.view.now).not.toHaveBeenCalledWith('in the band')
     expect(c.view.chart.scene.line).toHaveLength(3)
+  })
+})
+
+describe("a drone under the take (Lesson 24's `kept`)", () => {
+  /** A drone's handle, recording its stop. */
+  function drone(): Voice & { stop: ReturnType<typeof vi.fn> } {
+    return {
+      alive: true,
+      setFreq: vi.fn(),
+      setGain: vi.fn(),
+      setVibrato: vi.fn(),
+      stop: vi.fn(),
+    } as unknown as Voice & { stop: ReturnType<typeof vi.fn> }
+  }
+
+  it('keeps the drone sounding through the take while it holds every other sound off, then releases it over 0.3 s', async () => {
+    // Arrange
+    const d = drone()
+    const hush = vi.spyOn(Sound, 'hush').mockReturnValue(true)
+    const { c } = context({ kept: () => d })
+
+    // Act
+    const reading = holdOne(c)
+    await vi.advanceTimersByTimeAsync(1000)
+    await reading
+
+    // Assert: kept as the take opens, released before the hush lifts
+    expect(hush.mock.calls).toEqual([[true, d], [false]])
+    expect(d.stop).toHaveBeenCalledWith(0.3)
+    expect(d.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      hush.mock.invocationCallOrder[1],
+    )
+  })
+
+  it('stops the drone when the Listen phase is cut short, and opens no take', async () => {
+    // Arrange
+    const d = drone()
+    const hush = vi.spyOn(Sound, 'hush')
+    const { c, takeFrames } = context({
+      kept: () => d,
+      listen: { sec: 2, play: async () => false },
+    })
+
+    // Act
+    const reading = await holdOne(c)
+
+    // Assert
+    expect(reading).toBeNull()
+    expect(d.stop).toHaveBeenCalledOnce()
+    expect(hush).not.toHaveBeenCalled()
+    expect(takeFrames).not.toHaveBeenCalled()
+  })
+
+  it('has both Mercs listen to the drone when the Listen phase is not sung', async () => {
+    // Arrange
+    vi.mocked(mercSing).mockClear()
+    vi.mocked(mercListen).mockClear()
+    const { c } = context({
+      listen: { sec: 2, play: async () => true, mercSings: false },
+    })
+
+    // Act
+    const reading = holdOne(c)
+    await vi.advanceTimersByTimeAsync(1000)
+    await reading
+
+    // Assert: nobody sings in it; each listens, then stops listening
+    expect(mercSing).not.toHaveBeenCalled()
+    expect(vi.mocked(mercListen).mock.calls.slice(0, 4)).toEqual([
+      ['blue', true],
+      ['orange', true],
+      ['blue', false],
+      ['orange', false],
+    ])
   })
 })

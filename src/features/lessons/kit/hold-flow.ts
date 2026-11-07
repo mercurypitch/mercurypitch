@@ -23,6 +23,15 @@
 // the band for at least 80 % of its length: never because a hold was
 // longer. Each hold allows three takes, as Lesson 3 allows three tries a
 // note (Lesson 5 FACTS 52: more would add singing, not learning).
+//
+// A plan's hold may be a set of notes sung in one take (`sets`, Lesson 24's
+// do, so and mi for five seconds each, then so and mi for ten): each note is
+// read on its own, and the take's mark is the set's (`setMark`). A note with
+// no voice ends the set there; Merc celebrates only a set whose every note
+// was read and in the band for 80 % of its length; the tricky line reads the
+// take alone; a set a silent note ended offers no next set; and "Effortful"
+// keeps each note's reading, with no summary (Lesson 24 WEB-SPEC, Toys 6,
+// the set's rules).
 
 import type { Feeling } from './comfort'
 
@@ -32,6 +41,8 @@ export type HoldNo = 1 | 2
 export interface HoldPlan {
   readonly lengths: readonly [number] | readonly [number, number]
   readonly restAfterEffort?: boolean
+  /** Each hold a set of notes sung in one take, each read on its own (Lesson 24). */
+  readonly sets?: boolean
 }
 
 /** Takes a hold allows, as take.ts's MAX_TRIES allows a note (Lesson 3). */
@@ -46,8 +57,12 @@ export const TRICKY_SHARE = 0.5
 export interface TakeMark {
   /** 'silent': no voice came; 'unsteady': too little to read; 'read': a reading. */
   readonly kind: 'silent' | 'unsteady' | 'read'
-  /** Seconds in the band over the hold's length, 0 to 1 (0 unless read). */
+  /** Seconds in the band over the hold's length, 0 to 1 (0 unless read); a set's, its lowest read note's. */
   readonly share: number
+  /** A set's take: false where a note of it had no reading. */
+  readonly whole?: boolean
+  /** A set's take that a note with no voice ended there. */
+  readonly ended?: boolean
 }
 
 /** Every take so far, by hold, and the holds Merc has celebrated. */
@@ -60,6 +75,25 @@ export const emptyRecord = (): HoldRecord => ({
   takes: { 1: [], 2: [] },
   celebrated: { 1: false, 2: false },
 })
+
+/**
+ * A set's take as the flow reads it, from its notes' marks in the order
+ * sung, `size` notes to the set: silent if no note was sung; read if any
+ * note was, its share the lowest read note's; whole only if every note was
+ * read; ended if a note with no voice ended it.
+ */
+export function setMark(notes: readonly TakeMark[], size: number): TakeMark {
+  const read = notes.filter((m) => m.kind === 'read')
+  const ended = notes.some((m) => m.kind === 'silent')
+  if (notes.every((m) => m.kind === 'silent'))
+    return { kind: 'silent', share: 0, whole: false, ended }
+  return {
+    kind: read.length > 0 ? 'read' : 'unsteady',
+    share: read.length > 0 ? Math.min(...read.map((m) => m.share)) : 0,
+    whole: read.length === size,
+    ended,
+  }
+}
 
 /** The record with one more take on `hold`. */
 export function withTake(
@@ -139,6 +173,7 @@ function earns(hold: HoldNo, r: HoldRecord): boolean {
   return (
     last?.kind === 'read' &&
     last.share >= CELEBRATE_SHARE &&
+    last.whole !== false &&
     !r.celebrated[hold]
   )
 }
@@ -157,13 +192,18 @@ function easyStep(plan: HoldPlan, hold: HoldNo, r: HoldRecord): FlowStep {
     reading: !second,
     summary: second,
     celebrate: earns(hold, r),
-    tricky: second
-      ? under(counted(r.takes[1])) || under(counted(r.takes[2]))
-      : under(last),
+    // a second hold's summary reads both holds, a second set's its own two notes
+    tricky:
+      second && plan.sets !== true
+        ? under(counted(r.takes[1])) || under(counted(r.takes[2]))
+        : under(last),
     doctor: false,
     restCard: false,
     offers: {
-      nextHold: hold < plan.lengths.length && counted(takes) !== null,
+      nextHold:
+        hold < plan.lengths.length &&
+        counted(takes) !== null &&
+        last?.ended !== true,
       again: againAllowed(takes),
       done: second ? 'done' : 'today',
     },
@@ -191,8 +231,9 @@ export function afterFeeling(
   if (feeling === 'effortful')
     return {
       next: 'gentle',
-      reading: !isSecond(plan, hold),
-      summary: isSecond(plan, hold),
+      // a set keeps each note's reading and gives no summary
+      reading: !isSecond(plan, hold) || plan.sets === true,
+      summary: isSecond(plan, hold) && plan.sets !== true,
       celebrate: false,
       tricky: false,
       doctor: false,
