@@ -126,6 +126,14 @@ let state: SoundState = 'unset'
 let hushed = false
 let kept: Voice | null = null
 const waves: { soft?: PeriodicWave; merc?: PeriodicWave } = {}
+/**
+ * Merc's "ooh": each harmonic's level against the first, the timbre every
+ * note sung or set against a drone sounds in; the drone chart's beats are
+ * worked out from the same levels (kit/drone-beats.ts).
+ */
+export const MERC_PARTIALS: readonly number[] = [
+  1, 0.62, 0.38, 0.24, 0.14, 0.08, 0.045, 0.025,
+]
 const listeners = new Set<(s: SoundState) => void>()
 const live = new Set<Voice>()
 // What else stops with every voice (`onStopAll`): kit/sound-ahead.ts's buses, kit/run.ts's runs.
@@ -164,10 +172,7 @@ function ensure(): AudioContext | null {
     comp.connect(ctx.destination)
     // a soft, triangle-ish tone, and Merc's "ooh"
     waves.soft = periodicWave(ctx, [1, 0.3, 0.11, 0.05, 0.024, 0.012])
-    waves.merc = periodicWave(
-      ctx,
-      [1, 0.62, 0.38, 0.24, 0.14, 0.08, 0.045, 0.025],
-    )
+    waves.merc = periodicWave(ctx, [...MERC_PARTIALS])
   }
   if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
   return ctx

@@ -19,7 +19,8 @@
 // colour's channels, how opaque it is drawn, a stroke's width and the points
 // it reaches, for a test that asks where and how strongly something is drawn.
 // Words are measured in the double's own font, `CHAR_PX` a character, so a
-// mark knows where its words end. Every canvas measures 300 by 190 px. The
+// mark knows where its words end; a gradient keeps its stops as calls, and
+// a fill in it writes no colour. Every canvas measures 300 by 190 px. The
 // test file imports './browser-doubles.test-fixtures' first, and calls
 // `vi.useRealTimers()` and `vi.restoreAllMocks()` after each test.
 
@@ -47,9 +48,18 @@ function recordingContext(calls: Call[]): CanvasRenderingContext2D {
         ? target[key]
         : (...args: unknown[]): unknown => {
             calls.push([String(key), ...args])
-            return key === 'measureText'
-              ? { width: String(args[0]).length * CHAR_PX }
-              : undefined
+            if (key === 'measureText')
+              return { width: String(args[0]).length * CHAR_PX }
+            // a gradient keeps its stops among the calls
+            if (
+              key === 'createRadialGradient' ||
+              key === 'createLinearGradient'
+            )
+              return {
+                addColorStop: (...stop: unknown[]) =>
+                  calls.push(['addColorStop', ...stop]),
+              }
+            return undefined
           },
     set: (target, key, value: unknown) => {
       calls.push([`${String(key)}=`, value])
