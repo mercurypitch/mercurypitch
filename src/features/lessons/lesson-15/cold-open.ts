@@ -96,6 +96,7 @@ export interface ColdOpen {
   readonly predict: Predict
   /** Whether the pitch line has folded into the staff. */
   readonly folded: boolean
+  /** Ends what the hero plays: its run, and every timer the run set. */
   stop(): void
 }
 
@@ -182,6 +183,15 @@ export function initColdOpen(deck: Pick<StepDeck, 'subscribe'>): ColdOpen {
   let marks: Mark[] = []
   let run: Run | null = null
   let plays = 0
+  // each lit note's return to rest, until its note ends: a run that ends or
+  // is stopped clears its own, so none fires after the run, or after a page
+  // (or a test's document) has gone
+  const rests = new Set<number>()
+
+  function clearRests(): void {
+    for (const id of rests) window.clearTimeout(id)
+    rests.clear()
+  }
 
   function scene(): Scene {
     return {
@@ -239,6 +249,7 @@ export function initColdOpen(deck: Pick<StepDeck, 'subscribe'>): ColdOpen {
     plays += 1
     run.stop()
     run = null
+    clearRests()
     if (foldFrom !== null) settle()
     marks = marks.map((m) => ({ ...m, tone: 'rest' }))
     NowPlaying.release(stop)
@@ -278,13 +289,15 @@ export function initColdOpen(deck: Pick<StepDeck, 'subscribe'>): ColdOpen {
           next[i] = { note: at.note, col: i, tone: 'lit' }
           marks = next
           draw()
-          window.setTimeout(() => {
+          const rest = window.setTimeout(() => {
+            rests.delete(rest)
             if (mine !== plays) return
             const back = marks.slice()
             if (back[i] !== undefined) back[i] = { ...back[i], tone: 'rest' }
             marks = back
             draw()
           }, at.dur * 1000)
+          rests.add(rest)
         },
       },
     )
@@ -293,6 +306,7 @@ export function initColdOpen(deck: Pick<StepDeck, 'subscribe'>): ColdOpen {
     return r.done.then((heard) => {
       if (mine !== plays) return false
       run = null
+      clearRests()
       NowPlaying.release(stop)
       mercListen('blue', false)
       mercListen('orange', false)

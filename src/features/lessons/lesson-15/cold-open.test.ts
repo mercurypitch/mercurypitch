@@ -8,7 +8,11 @@
 // revealing nothing; Play it on the five lines waits for a choice, folds
 // the pitch line into a staff and plays the climb on it, and the reveal
 // waits for that climb heard to its end with sound on. A play cut short
-// changes nothing, and the welcome tour waits for the choice.
+// changes nothing, and the welcome tour waits for the choice. Each lit
+// lane's return to rest is a timer of the hero's own, which a run that ends
+// or stops clears: one left pending fired after the file's document had
+// gone ("document is not defined", a failed run with every test passed), so
+// each test also stops every cold open it mounted.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -16,6 +20,7 @@ import type * as MotionModule from '@/features/lessons/kit/motion-switch'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
+import type { ColdOpen } from './cold-open'
 import { CLIMB_NOTES, COLD_PREDICT, HERO_SAID, initColdOpen, LINES_NOTES, } from './cold-open'
 import { el, loadPage, settle, soundOn, words } from './page-dom.test-fixtures'
 
@@ -42,6 +47,21 @@ vi.mock('@/features/lessons/kit/motion-switch', async (actual) => ({
 
 const deck = { subscribe: () => () => undefined }
 
+/** Every cold open the test mounted, for its cleanup to stop. */
+const mounted: ColdOpen[] = []
+
+/** Mounts the cold open on the page's hero, as the page does. */
+function mount(): ColdOpen {
+  const cold = initColdOpen(deck)
+  mounted.push(cold)
+  return cold
+}
+
+/** The timers the hero sets, faked, so a test can count and advance them. */
+const fakeTimers = (): void => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+}
+
 beforeEach(() => {
   loadPage()
   resetRuns()
@@ -51,6 +71,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // the test stops what it started, before its timers are real again
+  for (const cold of mounted.splice(0)) cold.stop()
+  vi.useRealTimers()
   vi.restoreAllMocks()
   document.body.textContent = ''
 })
@@ -77,7 +100,7 @@ async function hearAll(i: number): Promise<void> {
 describe('the hero before a choice', () => {
   it('draws the pitch line alone, D4 to G5, with nothing that counts the places', () => {
     // Act
-    initColdOpen(deck)
+    mount()
 
     // Assert: FACTS 1a, 33
     expect(count('.st-lane')).toBe(18)
@@ -91,7 +114,7 @@ describe('the hero before a choice', () => {
 
   it('plays the climb, E4 up to F5, each lane lit only while its note sounds, and reveals nothing', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
 
     // Act
     climb().click()
@@ -116,7 +139,7 @@ describe('the hero before a choice', () => {
 describe('the climb on the pitch line, after a choice', () => {
   it('reveals nothing, heard to its end with sound on: only the five lines answer', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
     choose('nine')
 
     // Act
@@ -134,7 +157,7 @@ describe('the climb on the five lines', () => {
   it('waits for a choice, then folds the pitch line into a staff as its first note sounds', async () => {
     // Arrange
     motion.reduced = false
-    initColdOpen(deck)
+    mount()
     choose('five')
 
     // Act
@@ -158,7 +181,7 @@ describe('the climb on the five lines', () => {
 
   it('reveals once heard to its end with sound on, with the guess in its own words', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
     choose('nine')
     lines().click()
     await settle()
@@ -177,7 +200,7 @@ describe('the climb on the five lines', () => {
 
   it('reveals nothing when another sound cuts it short, and keeps the staff drawn', async () => {
     // Arrange
-    const cold = initColdOpen(deck)
+    const cold = mount()
     choose('five')
     lines().click()
     await settle()
@@ -194,7 +217,7 @@ describe('the climb on the five lines', () => {
 
   it('plays the climb on the staff, the pitch line beside it, once folded', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
     choose('five')
     lines().click()
     await settle()
@@ -214,7 +237,7 @@ describe('the climb on the five lines', () => {
   it('folds the pitch line itself with motion on, the staff drawn as the fold ends', async () => {
     // Arrange
     motion.reduced = false
-    initColdOpen(deck)
+    mount()
     choose('five')
 
     // Act
@@ -228,7 +251,7 @@ describe('the climb on the five lines', () => {
 
   it('cross-fades the pitch line and the staff with motion reduced', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
     choose('five')
 
     // Act
@@ -241,10 +264,60 @@ describe('the climb on the five lines', () => {
   })
 })
 
+describe("the hero's timers", () => {
+  it('puts each lane back to rest as its note ends', async () => {
+    // Arrange
+    fakeTimers()
+    mount()
+    climb().click()
+    await settle()
+    runs[0].note(0)
+    const lit = count('.st-lane.is-lit')
+
+    // Act
+    vi.advanceTimersByTime(CLIMB_NOTES[0].dur * 1000)
+
+    // Assert
+    expect([lit, count('.st-lane.is-lit')]).toEqual([1, 0])
+  })
+
+  it('leaves no timer pending once the climb has been heard to its end', async () => {
+    // Arrange
+    fakeTimers()
+    mount()
+    climb().click()
+    await settle()
+
+    // Act
+    await hearAll(0)
+
+    // Assert: nothing of the run fires after it, or after the page
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('leaves no timer pending when stopped mid-climb, and no lane lit', async () => {
+    // Arrange
+    fakeTimers()
+    const cold = mount()
+    climb().click()
+    await settle()
+    runs[0].note(0)
+    runs[0].note(1)
+
+    // Act
+    cold.stop()
+
+    // Assert
+    expect(runs[0].stopped).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(count('.st-lane.is-lit')).toBe(0)
+  })
+})
+
 describe('the welcome tour', () => {
   it('waits for the choice', async () => {
     // Arrange
-    initColdOpen(deck)
+    mount()
     let settled = false
     void tour.held[0]?.then(() => {
       settled = true
