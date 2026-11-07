@@ -709,6 +709,20 @@ button {
 .mast-nav a.on b {
   color: var(--aqua);
 }
+/* Four sections (a lesson with both Sing and a film, Lesson 4 the first)
+   need about 75 px more than three at 821 px, and run short of room in
+   bands up to 1262 px. There the links drop their numerals, 89 px on
+   Lesson 4, and keep their words; under 821 px the lesson menu's sheet
+   carries the sections, as it does for three. */
+@media (max-width: 1280px) {
+  .mast-nav:has(
+      > a:not([hidden]) ~ a:not([hidden]) ~ a:not([hidden]) ~ a:not([hidden])
+    )
+    a
+    b {
+    display: none;
+  }
+}
 .sound-switch {
   display: inline-flex;
   align-items: center;

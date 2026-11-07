@@ -51,7 +51,10 @@ headings").
    Explorer, Watch hidden until kit/episode.ts shows it, the
    Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
    takes any map of anchors, and the page's lesson and step deck for the lesson menu
-   (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`).
+   (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`). Four
+   anchors are the first the kit has carried: from 821 to 1280 px they drop their numerals and
+   keep their words (`kit/lesson-base.css`), or the row runs past the screen's edge by up to
+   43 px; under 821 px the lesson menu's sheet carries them, as it does three.
 2. **Hero**: kicker; the hook question as the title; the meta as three chips (14 minutes; "After
    Lesson 2: Twelve notes", the prerequisite chip, a link to `/learn/02`; Sound on); the promise;
    the sound gate from LESSON.md, in the hero copy as Lesson 1's is; Merc and Tavi live on the
