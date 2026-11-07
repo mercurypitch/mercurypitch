@@ -16,7 +16,7 @@
 // gets the lesson, not the shell. It carries Season 2, so its masthead and
 // its map are Season 2's, and it draws no staff for show (WEB-SPEC, Look).
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
 
 // 60 characters at most (src/tests/lesson-pages.test.ts)
@@ -221,6 +221,31 @@ test("the steps' band chart holds every control under its lock line until the co
   await expect
     .poll(async () => (await heard(page)).sources)
     .toBeGreaterThan(before.sources)
+})
+
+test('a held slider looks held, as a held play does, until its choice opens it (WEB-SPEC, Toys 2)', async ({
+  page,
+}) => {
+  // Arrange: on Step 3, before either choice
+  await page.goto('/learn/22#step-3')
+  const toy = page.locator('#toyChart')
+  const rate = toy.locator('#vibRate3')
+  const atRate = toy.locator('[data-vib-play="at-rate"]')
+  const opacity = (l: Locator): Promise<string> =>
+    l.evaluate((e) => getComputedStyle(e).opacity)
+  await expect(rate).toBeDisabled()
+
+  // Assert: as dim as the held play beside it
+  expect(await opacity(rate)).toBe(await opacity(atRate))
+  expect(Number(await opacity(rate))).toBeLessThan(1)
+
+  // Act: the cold open's choice, then Step 3's
+  await page.locator('#predict [data-choice="middle"]').click()
+  await page.locator('#predict3 [data-choice="moves"]').click()
+
+  // Assert
+  await expect(rate).toBeEnabled()
+  expect(await opacity(rate)).toBe('1')
 })
 
 test("free play holds back as the steps' band chart does: all of it until the cold open's choice, its slow wave until Step 3's (WEB-SPEC, Toys 2)", async ({
