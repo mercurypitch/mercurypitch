@@ -1024,3 +1024,5 @@ Where the page differs from the text above, the page as built is the reference:
   group lives in that panel, where the text above lets do change between sets too.
 - With sound off, Start says why on the status line as well as under itself, so the Start under the
   sing-along, which has no hint line of its own, says it too.
+- The Drone and Pure words' figures name the drone's band "A3": "drone · A3", the name the hero
+  and the steps give it, runs off a stub's figure, about 86 px wide.
