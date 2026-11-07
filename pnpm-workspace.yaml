@@ -22,4 +22,5 @@ overrides:
   'immutable@>=5.0.0 <5.1.8': 5.1.9
 
 patchedDependencies:
+  serve-handler@6.1.7: patches/serve-handler@6.1.7.patch
   three@0.185.1: patches/three@0.185.1.patch
