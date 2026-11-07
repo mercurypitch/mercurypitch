@@ -49,6 +49,14 @@
   border-top: 0;
   padding-top: 0;
 }
+/* both plays sit right under the stage, before the sound gate (the kit
+   orders the hero's parts at this width), as on Lessons 17 and 19 */
+@media (max-width: 1080px) {
+  .l24-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+}
 .l24-hero .pq {
   font-size: clamp(20px, 2vw, 26px);
   line-height: 1.2;
@@ -275,4 +283,24 @@
 }
 .free-states {
   margin: 0 0 12px;
+}
+/* the four states' joined pill is 430 px wide: where the card is narrower,
+   two rows of their own pills, 8 px apart, each with the kit's ring, as on
+   Lesson 22 (lesson-parts.css, `.seg`, whose sheet comes after this one, so
+   these rules name the switch twice over to win) */
+@media (max-width: 560px) {
+  .l24-free .seg.free-states {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .l24-free .seg.free-states .btn {
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--hair-2);
+  }
+  .l24-free .seg.free-states .btn[aria-pressed='true'] {
+    box-shadow: inset 0 0 0 2px var(--aqua);
+  }
 }

@@ -667,7 +667,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // own by @import, and the shared parts), its own, and the shared Inter and
   // Outfit @font-face rules; a quarter over.
   'learn/23.html': 113,
-  // Lesson 24 (a draft, as above): 89,242 bytes in build:e2e, the kit's
+  // Lesson 24 (a draft, as above): 89,648 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the recall's
   // questions and Sing it share, and the shared parts), its own, and the
   // shared Inter and Outfit @font-face rules; the smallest whole KB above,
