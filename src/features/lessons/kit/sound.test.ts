@@ -635,3 +635,111 @@ describe("a voice's vibrato (Lesson 22 WEB-SPEC, What the kit and the app still 
     expect(ctx.oscillators.map((o) => o.stops)).toEqual(stops)
   })
 })
+
+describe('a drone under a take (Lesson 24 WEB-SPEC, What the kit and the app still need, item 5)', () => {
+  /** The page's toast, so a test can see that a hushed play says nothing. */
+  function mountToast(): HTMLElement {
+    document.body.innerHTML =
+      '<div id="toast"><p id="toastText"></p><button id="toastBtn" hidden></button></div>'
+    const text = document.getElementById('toastText')
+    if (text === null) throw new Error('no toast')
+    return text
+  }
+
+  afterEach(() => {
+    document.body.textContent = ''
+  })
+
+  it('keeps the drone it is given sounding while it stops everything else, and plays nothing and says nothing until it lifts', async () => {
+    // Arrange: the drone on D3 and a note, both started before the take
+    const { kit, ctx } = await soundOn()
+    const text = mountToast()
+    const drone = kit.Sound.voice(146.83, { kind: 'merc', vibrato: null })
+    const note = kit.Sound.voice(220)
+    ctx.currentTime = 2
+
+    // Act
+    const hushed = kit.Sound.hush(true, drone)
+    const made = ctx.oscillators.length
+    const play = kit.Sound.voice(330)
+    const noise = kit.playNoise({ dur: 0.35 })
+    const may = kit.Sound.canPlay()
+
+    // Assert: the note is stopped, the drone is not, and nothing new sounds
+    expect(hushed).toBe(true)
+    expect(note?.alive).toBe(false)
+    expect(drone?.alive).toBe(true)
+    expect(ctx.oscillators[0].stops).toEqual([])
+    expect(ctx.oscillators[1].stops.length).toBeGreaterThan(0)
+    expect([play, noise, may]).toEqual([null, null, false])
+    expect(ctx.oscillators).toHaveLength(made)
+    expect(text.textContent).toBe('')
+  })
+
+  it('lets the drone sound until its own release, which ends it below audibility', async () => {
+    // Arrange
+    const { kit, ctx } = await soundOn()
+    const drone = kit.Sound.voice(146.83, { kind: 'merc', vibrato: null })
+    kit.Sound.hush(true, drone)
+    ctx.currentTime = 9
+
+    // Act: the take ends, and the drone releases over 0.3 s
+    drone?.stop(0.3)
+    kit.Sound.hush(false)
+
+    // Assert
+    const stopAt = ctx.oscillators[0].stops.at(-1) ?? 0
+    expect(stopAt).toBeCloseTo(9 + 0.3 + kit.SLACK, 6)
+    const env = ctx.gains.find((g) =>
+      g.gain.events.some(([m, , t]) => m === 'setTargetAtTime' && t === 9),
+    )
+    expect(valueAt(env?.gain.events ?? [], stopAt, 1)).toBeLessThan(AUDIBLE)
+    expect(drone?.alive).toBe(false)
+  })
+
+  it('refuses a second kept voice while the first still sounds, and changes nothing', async () => {
+    // Arrange: two drones before the take; the first is kept
+    const { kit, ctx } = await soundOn()
+    const first = kit.Sound.voice(146.83, { kind: 'merc', vibrato: null })
+    const second = kit.Sound.voice(196, { kind: 'merc', vibrato: null })
+    kit.Sound.hush(true, first)
+    const stopsBefore = ctx.oscillators[0].stops.length
+
+    // Act
+    const again = kit.Sound.hush(true, second)
+
+    // Assert: the first drone sounds on, still the take's, and the hush holds
+    expect(again).toBe(false)
+    expect(first?.alive).toBe(true)
+    expect(ctx.oscillators[0].stops).toHaveLength(stopsBefore)
+    expect(kit.Sound.hushed).toBe(true)
+    expect(kit.Sound.voice(330)).toBeNull()
+  })
+
+  it('stops the kept drone with the rest when the page is hidden', async () => {
+    // Arrange
+    const { kit } = await soundOn()
+    const drone = kit.Sound.voice(146.83, { kind: 'merc', vibrato: null })
+    kit.Sound.hush(true, drone)
+
+    // Act
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    // Assert
+    expect(drone?.alive).toBe(false)
+  })
+
+  it('keeps nothing for a take that names no drone, as every take before Lesson 24 opens', async () => {
+    // Arrange
+    const { kit } = await soundOn()
+    const note = kit.Sound.voice(220)
+
+    // Act
+    const hushed = kit.Sound.hush(true)
+
+    // Assert
+    expect(hushed).toBe(true)
+    expect(note?.alive).toBe(false)
+  })
+})
