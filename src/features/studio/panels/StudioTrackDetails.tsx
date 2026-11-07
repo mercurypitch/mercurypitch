@@ -1,10 +1,12 @@
-// Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument and mix role, apart from where its audio came from.
+// Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument, mix role and the input it records from, apart from where its audio came from.
 import { For, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
 import { StudioInstrumentPicker } from '../instruments/StudioInstrumentPicker'
+import type { StudioLaneInputRecorder } from '../record/StudioLaneInputField'
+import { StudioLaneInputField } from '../record/StudioLaneInputField'
 import { studioTakeRunning } from '../record/take-running'
 import { requestStudioLaneLines } from '../timeline/lane-lines-request'
 import { LaneLine } from '../timeline/line-icons'
@@ -17,6 +19,11 @@ interface StudioTrackDetailsProps {
   writable: boolean
   /** A phone's lane headers have no arm: its details have, as its Mix sheet does. */
   arming?: StudioLaneArming
+  /** The lane's own input and channel, on this device; absent where nothing records. */
+  input?: StudioLaneInputRecorder
+  /** The lane header's input chip opened the details: the input takes the focus. */
+  focusInput?: boolean
+  onInputFocused?(): void
   onCommand(command: StudioCommand): boolean
   /** After the lane's lines open in the arrangement: an overlaid panel steps out of their way. */
   afterLines?(): void
@@ -103,6 +110,17 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
         The part this track plays sets its sound. The instrument is only its
         picture.
       </p>
+      <Show when={props.input}>
+        {(input) => (
+          <StudioLaneInputField
+            trackId={props.track.id}
+            trackName={props.track.name}
+            recorder={input()}
+            focus={props.focusInput}
+            onFocused={props.onInputFocused}
+          />
+        )}
+      </Show>
       <div class={styles.fieldDivider} />
       <h3>Audio in this track</h3>
       <ul class={styles.assetList}>

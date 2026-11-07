@@ -450,6 +450,47 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A lane with an input or a channel of its own says which after its name,
+   as small as Mute and Solo beside it; on touch as large as they are. A
+   press opens it in the lane's details. */
+.timeline button.inputChip {
+  flex: none;
+  box-sizing: border-box;
+  max-width: 64px;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text-2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 22px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.timeline button.inputChip.touchInputChip {
+  min-width: 44px;
+  height: 44px;
+  max-width: 72px;
+  border-radius: 8px;
+  line-height: 42px;
+}
+@media (hover: hover) {
+  .timeline button.inputChip:hover {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
+}
+.timeline button.inputChip:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
 /* A compact lane following a line says so after its name. */
 .linesMark {
   display: grid;
