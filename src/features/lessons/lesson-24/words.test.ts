@@ -74,7 +74,7 @@ const voices = () =>
   ])
 
 describe('at rest', () => {
-  it("stands Drone's chart empty, 3 s across, and Pure's band and its line at 330 Hz still", () => {
+  it("stands Drone's chart empty, 3 s across, and Pure's band and its line at 330 Hz still, each band named A3 alone", () => {
     // Act
     const { charts } = mountWords()
 
@@ -84,7 +84,7 @@ describe('at rest', () => {
     expect(drone.scene.drone?.drone).toEqual({
       c: 0,
       as: 'band',
-      label: 'drone · A3',
+      label: 'A3',
       upTo: 0,
     })
     expect(drone.scene.drone?.bright).toBeNull()
@@ -93,7 +93,7 @@ describe('at rest', () => {
     expect(pure.scene.drone?.drone).toEqual({
       c: 0,
       as: 'band',
-      label: 'drone · A3',
+      label: 'A3',
     })
     expect(pure.scene.drone?.tops).toEqual([
       {

@@ -510,7 +510,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // kit's quiz, with Lesson 10's and Lesson 23's questions, the words'
   // pictures, two on the same chart, Sing it on the kit's hold flow,
   // comfort check, voice choice, headphones check and ring, and free play:
-  // 178,435 bytes in build:e2e; a quarter over. The quiet check and the
+  // 178,425 bytes in build:e2e; a quarter over. The quiet check and the
   // listener load on Start, so nothing of the pitch code comes in.
   'learn/24.html': 218,
 

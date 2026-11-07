@@ -45,6 +45,8 @@ import { paintWordRungs } from './word-rungs'
 export const DRONE_SPAN = [-40, 40] as const
 /** Pure's chart: from under A3 to over E4, the band at its foot and 330 Hz near its top. */
 export const PURE_SPAN = [-60, 760] as const
+/** The drone's band named by its note alone: the steps' "drone · A3" runs off a stub's figure, about 86 px wide. */
+export const BAND_NAME = 'A3'
 
 /** The rung figures' names for their lowest rung and their highest. */
 const ENDS: Readonly<
@@ -155,7 +157,7 @@ function mountDrone(stub: HTMLElement): Figure & { chart: BandChart } {
     const upTo =
       s === null ? 0 : reducedMotion() ? word.sec : sounded(s, word.sec, t)
     const scene: DroneScene = {
-      drone: { c: 0, as: 'band', label: 'drone · A3', upTo },
+      drone: { c: 0, as: 'band', label: BAND_NAME, upTo },
       band: null,
       ticks: [],
       beads: [],
@@ -189,7 +191,7 @@ function mountPure(stub: HTMLElement): Figure & { chart: BandChart } {
 
   function paint(): void {
     chart.scene.drone = {
-      drone: { c: 0, as: 'band', label: 'drone · A3' },
+      drone: { c: 0, as: 'band', label: BAND_NAME },
       band: null,
       ticks: [],
       beads: [],
