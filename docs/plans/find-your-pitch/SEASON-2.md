@@ -1035,7 +1035,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
 6. **Vibrato as the app draws it.** Two drawings, labelled apart: a sung or measured wave (a pitch
    trace whose rate and extent are the real ones), and the app's ribbon for a vibrato note, whose
    wave count follows the note's width (`src/lib/effect-renderer.ts:216-241`, :226). The kit's Merc
-   voice has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:45-46`); Lesson
+   voice has a fixed 5.5 Hz, ±14 cent vibrato (`src/features/lessons/kit/sound.ts:47-48`); Lesson
    22's examples need rate and extent as parameters, which the demo voice already takes
    (`src/lib/demo-voice.ts:37`).
 7. **Merc performances.** New passes for reading, conducting and a two-host duet, priced by the
@@ -1051,7 +1051,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    (`src/features/lessons/kit/season.ts:1-3`) with Season 1's topics (:50-83) and its lessons
    indexed by number (`LESSONS[n].n === n`, :109); the masthead's season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`); the season's end card says "End of Season 1"
-   (`src/features/lessons/kit/lesson-copy.ts:201-207`); the explorer is "Season 1 as a map"
+   (`src/features/lessons/kit/lesson-copy.ts:210-216`); the explorer is "Season 1 as a map"
    (`src/features/lessons/kit/explorer.ts:2` at `ad0a099f7`); the hub says Season 1 (`learn/index.html:265`). The kit
    gains a season per lesson, a season's end card per season, an explorer with a tab per season and
    cross-season prerequisite lines, and "Season 2 · Lesson 15" in the masthead. Every lesson page
@@ -1070,7 +1070,7 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    it generalised (code with tests).
 4. **A circle-of-fifths toy** (Lesson 21).
 5. **Two-voice playback**: the demo voice plays one line per call (`src/lib/demo-voice.ts:244`) and
-   `allOf` starts runs together (`src/features/lessons/kit/run.ts:246`); two independent parts need
+   `allOf` starts runs together (`src/features/lessons/kit/run.ts:260`); two independent parts need
    one scheduler for both lines. Two parts note against note already play together through
    `playNotes`, whose notes that share an onset start in one timer task (`run.ts:13-14`); what is
    missing is a part under a take, which Lesson 26 specifies as Lesson 24's kept source widened to

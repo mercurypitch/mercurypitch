@@ -290,7 +290,7 @@ joining bead to bead. The window runs from a semitone under do to a semitone ove
 the time axis is fixed, 6.75 s across, so each tempo draws the same nine beads over a shorter span,
 closer together, their heights unchanged (FACTS 39). It sings in the learner's voice: Merc from D3,
 or Tavi from D4 (FACTS 8), the kit's contour voice, held on each note and glided between them over
-50 ms (`src/features/lessons/kit/sound.ts:15-20`).
+50 ms (`src/features/lessons/kit/sound.ts:17-22`).
 
 - **Step 3**: **Tempo**, a segmented control with five notches, "0.75 s", "0.6 s", "0.45 s", "0.3
   s" and "0.2 s" (a note), at 0.6 s at first; moving it is silent and redraws the slots. **Play the
