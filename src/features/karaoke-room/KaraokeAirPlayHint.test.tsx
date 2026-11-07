@@ -1,16 +1,17 @@
 // ============================================================
-// KaraokeAirPlayHint: where the song and the lyrics are, once, on AirPlay
+// KaraokeAirPlayHint: where the song and the lyrics are, while on AirPlay
 // ============================================================
 //
 // AirPlay is suspected as the store has it (airplay-suspicion.ts): the app's
-// session on its speaker at 48 kHz, and the page's clock made on AirPlay at
-// 44.1. The mixer is the part the hint reads: whether the song plays.
+// session on its speaker at 48 kHz, and the page's newest context at 44.1,
+// as a fresh output check reads it (output-check.ts); back at 48, AirPlay is
+// gone. The mixer is the part the hint reads: whether the song plays.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HostedMixerControls } from '@/components/stem-mixer-hosting'
-import { followExternalScreen, notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
+import { followAirPlaySuspicion, followExternalScreen, notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { airPlayHintLines, KaraokeAirPlayHint, resetAirPlayHintForTests, } from './KaraokeAirPlayHint'
 
@@ -30,21 +31,35 @@ function mirroring() {
   return { connect: (connected: boolean) => heard(connected), stop }
 }
 
+/** A check reads a fresh context at AirPlay's 44.1 kHz. */
 const onAirPlay = (): void => {
   notePageAudioContext({ sampleRate: 44100 })
 }
+
+/** A check reads a fresh context at the speaker's 48 kHz: AirPlay gone. */
+const offAirPlay = (): void => {
+  notePageAudioContext({ sampleRate: 48000 })
+}
+
+let stopFollowing: () => void = () => undefined
 
 beforeEach(() => {
   resetAirPlayHintForTests()
   resetAirPlaySuspicionForTests()
   setAudioRouteForTests('speaker', 'Speaker', 48000)
+  vi.spyOn(console, 'info').mockImplementation(() => undefined)
+  // As the app follows the guess from its entry: each stretch of AirPlay
+  // alone counted, which a close holds for.
+  stopFollowing = followAirPlaySuspicion()
 })
 
 afterEach(() => {
   cleanup()
+  stopFollowing()
   resetAirPlaySuspicionForTests()
   setAudioRouteForTests(null)
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('KaraokeAirPlayHint', () => {
@@ -126,7 +141,7 @@ describe('KaraokeAirPlayHint', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('closes from its button, and shows once a launch, the next room included', () => {
+  it('closes from its button for as long as the sound stays on AirPlay, the next room included', () => {
     onAirPlay()
     const m = mixer()
     const first = render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
@@ -142,6 +157,90 @@ describe('KaraokeAirPlayHint', () => {
     const next = mixer()
     render(() => <KaraokeAirPlayHint mixer={() => next.controls} />)
     next.setPlaying(true)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  it('comes back, once closed, the next time the sound goes to AirPlay', () => {
+    onAirPlay()
+    const m = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+    m.setPlaying(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    offAirPlay()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    onAirPlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
+  })
+
+  it('goes the moment AirPlay is gone under a playing song, and comes back with it', () => {
+    onAirPlay()
+    const m = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+    m.setPlaying(true)
+    expect(screen.getByRole('status')).toHaveTextContent('over AirPlay')
+
+    offAirPlay()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    onAirPlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
+  })
+
+  it('shows the moment a check finds AirPlay under a song already playing', () => {
+    const m = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+    m.setPlaying(true)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+
+    onAirPlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
+  })
+
+  it('says nothing while the song is paused, and says it again as it plays', () => {
+    onAirPlay()
+    const m = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+    m.setPlaying(true)
+
+    m.setPlaying(false)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    m.setPlaying(true)
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
+  })
+
+  it('shows where the sound goes now in a room left and opened again', () => {
+    onAirPlay()
+    const m = mixer()
+    const first = render(() => <KaraokeAirPlayHint mixer={() => m.controls} />)
+    m.setPlaying(true)
+    first.unmount()
+
+    const again = mixer()
+    const second = render(() => (
+      <KaraokeAirPlayHint mixer={() => again.controls} />
+    ))
+    again.setPlaying(true)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The song is playing over AirPlay.',
+    )
+    second.unmount()
+
+    offAirPlay()
+    const later = mixer()
+    render(() => <KaraokeAirPlayHint mixer={() => later.controls} />)
+    later.setPlaying(true)
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 

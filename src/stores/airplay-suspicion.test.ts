@@ -12,7 +12,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import type { AirPlayFacts } from './airplay-suspicion'
-import { airPlayAlone, airPlayLine, airPlaySuspected, followAirPlaySuspicion, followExternalScreen, notePageAudioContext, noteSongStart, onSongStartOnAirPlay, resetAirPlaySuspicionForTests, suspectsAirPlay, } from './airplay-suspicion'
+import { airPlayAlone, airPlayConnection, airPlayLine, airPlayReceiver, airPlaySuspected, followAirPlaySuspicion, followExternalScreen, notePageAudioContext, noteSongStart, onSongStartOnAirPlay, resetAirPlaySuspicionForTests, suspectsAirPlay, } from './airplay-suspicion'
 
 /** The phone's speaker at 48 kHz, the page's contexts made on AirPlay. */
 const ON_AIRPLAY: AirPlayFacts = {
@@ -170,6 +170,32 @@ describe('AirPlay alone, which the room’s words turn on', () => {
     screen.connect(true)
 
     expect(airPlayAlone()).toBe(false)
+  })
+
+  // The Karaoke hint's close holds for one stretch (KaraokeAirPlayHint.tsx).
+  it('counts each stretch of it while the guess is followed, however it begins', () => {
+    stops.push(followAirPlaySuspicion())
+    expect(airPlayConnection()).toBe(0)
+
+    notePageAudioContext({ sampleRate: 44100 })
+    notePageAudioContext({ sampleRate: 44100 })
+    expect(airPlayConnection()).toBe(1)
+    notePageAudioContext({ sampleRate: 48000 })
+    setAudioRouteForTests('airplay', 'LG C2', 44100)
+
+    expect(airPlayConnection()).toBe(2)
+  })
+
+  it('names the receiver only where the route itself says airplay', () => {
+    setAudioRouteForTests('airplay', 'LG C2', 44100)
+    expect(airPlayReceiver()).toBe('LG C2')
+
+    setAudioRouteForTests('speaker', 'Speaker', 48000)
+    notePageAudioContext({ sampleRate: 44100 })
+
+    // Suspected: the port the app's session gives is its own speaker.
+    expect(airPlayAlone()).toBe(true)
+    expect(airPlayReceiver()).toBeNull()
   })
 })
 

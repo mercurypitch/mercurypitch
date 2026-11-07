@@ -27,10 +27,14 @@
 //
 // The newest context the page made at the output's rate is the one read
 // (`notePageAudioContext`): the shared clock, the moment the app makes it,
-// and on a test build every context the census sees made without a rate
-// asked for. A context keeps its rate for life, so a clock made before
-// AirPlay was taken says nothing of it, and one made on AirPlay says it
-// until a newer context is made.
+// a throwaway context the app makes and closes whenever it matters
+// (output-check.ts: a room shown, a press of play, the app back in front, a
+// change of route), and on a test build every context the census sees made
+// without a rate asked for. A context keeps its rate for life, so a clock
+// made before AirPlay was taken says nothing of it: up to mp-v0.8.57 a store
+// build read the clock alone, and a cold start with AirPlay already on was
+// never suspected; and after AirPlay went, the guess stayed on it until a
+// newer context was made.
 //
 // Each change is one line, shown by default (console.info):
 //
@@ -41,21 +45,23 @@
 // owner's LG C2 Web Audio alone reached the TV and Web Audio beside a
 // silent element did not (the AirPlay sound check, 6 Nov 2026): the lock
 // screen's carrier and the unlock clip stand aside (native-device.ts in the
-// app). A song that starts says, once a launch, that it plays over AirPlay,
-// the lyrics stay on the phone, and Screen Mirroring puts the stage on the
-// TV (KaraokeAirPlayHint.tsx); a song that stops there says where its sound
-// went (sound-stopped.ts). An iPhone 11's own session did say airplay, at
-// 44.1 kHz like the page, where the rate alone could not have told: so the
-// route counts as well, and with `.allowAirPlay` (AudioSessionKit) the
-// route should say it on more phones.
+// app). A song that plays there says so, the lyrics stay on the phone, and
+// Screen Mirroring puts the stage on the TV (KaraokeAirPlayHint.tsx), for as
+// long as it plays there; its close holds for one stretch of AirPlay alone
+// (`airPlayConnection`, counted while the guess is followed). A song that
+// stops there says where its sound went (sound-stopped.ts). Both name the
+// receiver only where the route itself names it (`airPlayReceiver`). An
+// iPhone 11's own session did say airplay, at 44.1 kHz like the page, where
+// the rate alone could not have told: so the route counts as well, and with
+// `.allowAirPlay` (AudioSessionKit) the route should say it on more phones.
 //
 // The room says each song it starts (`noteSongStart`); on AirPlay alone,
 // whoever listens hears it (`onSongStartOnAirPlay`): a test build writes
 // its audio report into the console then (audio-report.ts in the app),
 // since leaving the room for the Developer screen stops the song.
 
-import { createEffect, createRoot, createSignal } from 'solid-js'
-import { audioRoute, audioSessionRate } from '@/stores/audio-route-store'
+import { createEffect, createRoot, createSignal, on } from 'solid-js'
+import { audioRoute, audioRoutePort, audioSessionRate, } from '@/stores/audio-route-store'
 import type { NativeAudioRoute } from '@/stores/native-shell-store'
 
 /** What the guess is made from. */
@@ -72,6 +78,7 @@ export interface AirPlayFacts {
 
 const [pageRate, setPageRate] = createSignal<number | null>(null)
 const [screen, setScreen] = createSignal(false)
+const [connection, setConnection] = createSignal(0)
 let seen = new WeakSet<object>()
 const startListeners = new Set<() => void>()
 
@@ -113,6 +120,23 @@ export const airPlaySuspected = (): boolean => suspectsAirPlay(airPlayFacts())
  */
 export const airPlayAlone = (): boolean =>
   !screen() && (audioRoute() === 'airplay' || airPlaySuspected())
+
+/**
+ * Which stretch of AirPlay alone this is: one more each time the sound goes
+ * there, however it does (the route, the rate), while the guess is followed
+ * (`followAirPlaySuspicion`). 0 before the first. The Karaoke room's hint
+ * keeps a close for one stretch.
+ */
+export const airPlayConnection = connection
+
+/**
+ * The receiver's name, where the route itself names it: the port of a route
+ * that says airplay ("LG C2"). Null where AirPlay is only suspected, whose
+ * port is the phone's own speaker, never the TV. For the singer's own
+ * screen only, as the port is (audio-route-store.ts).
+ */
+export const airPlayReceiver = (): string | null =>
+  audioRoute() === 'airplay' ? audioRoutePort() : null
 
 /** Hear each Karaoke song that starts on AirPlay alone. Returns the stop. */
 export function onSongStartOnAirPlay(listener: () => void): () => void {
@@ -190,7 +214,8 @@ export function followExternalScreen(
 
 /**
  * Say each change of the guess in the console, from now on: one line as
- * AirPlay comes to be suspected, and one as it stops being. Returns the stop.
+ * AirPlay comes to be suspected, and one as it stops being. And count each
+ * stretch of AirPlay alone (`airPlayConnection`). Returns the stop.
  */
 export function followAirPlaySuspicion(): () => void {
   return createRoot((dispose) => {
@@ -202,6 +227,11 @@ export function followAirPlaySuspicion(): () => void {
       said = now
       console.info(airPlayLine(facts, now))
     })
+    createEffect(
+      on(airPlayAlone, (alone, before) => {
+        if (alone && before !== true) setConnection((n) => n + 1)
+      }),
+    )
     return dispose
   })
 }
@@ -210,6 +240,7 @@ export function followAirPlaySuspicion(): () => void {
 export function resetAirPlaySuspicionForTests(): void {
   setPageRate(null)
   setScreen(false)
+  setConnection(0)
   seen = new WeakSet<object>()
   startListeners.clear()
 }

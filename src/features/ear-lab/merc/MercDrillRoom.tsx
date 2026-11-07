@@ -24,7 +24,8 @@
 // Close mid-run asks first ("End the run?") and keeps nothing; so do a
 // swipe down and Android's back. Sound taken away before a question is
 // answered (a call, headphones out, the app put away) pauses the run,
-// and Resume plays that question again from its start.
+// and Resume plays that question again from its start. The card names
+// the phone speaker only where the sound is there, never on AirPlay alone.
 //
 // A slip on a rated plate can start a pair practice on its two items
 // (pair-practice.ts): a practice run, named in Merc's first line, that
@@ -45,6 +46,7 @@ import type { RoomBeat, RoomCompare, RoomPlate, ThresholdPlate, } from '@/featur
 import { requestRoomStart } from '@/features/ear-lab/stage-room'
 import { FACULTY_LABEL, findThresholdDrill } from '@/lib/ear/drills'
 import { haptics } from '@/lib/haptics'
+import { airPlayAlone } from '@/stores/airplay-suspicion'
 import { audioRoute } from '@/stores/audio-route-store'
 import { armSprintSegment, earToday, latestCalibration, sprintProgress, todaysSprint, } from '@/stores/ear-lab-store'
 import { registerRoomBack, setExerciseFocus } from '@/stores/native-shell-store'
@@ -497,7 +499,8 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     return soundStoppedWords({
       cause: now?.cause ?? 'interrupted',
       voided: now?.voided === true,
-      onSpeaker: audioRoute() === 'speaker',
+      // The app's own route can say the speaker while the sound is on AirPlay.
+      onSpeaker: audioRoute() === 'speaker' && !airPlayAlone(),
       pair: PAIR_DRILLS.has(props.drillId),
     })
   }
