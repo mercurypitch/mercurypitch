@@ -144,12 +144,6 @@
 .drone-toy .lock-hint {
   margin: 12px 0 0;
 }
-/* a held slider looks held, as a held play does: the kit's range has no
-   disabled look of its own (Lesson 8's and Lesson 22's rule) */
-.drone-toy .range:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-}
 @media (max-width: 560px) {
   .drone-viz {
     height: 180px;

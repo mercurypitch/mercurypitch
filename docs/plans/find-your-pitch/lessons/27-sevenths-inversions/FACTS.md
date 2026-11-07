@@ -148,7 +148,7 @@ Full references. The facts below use the short names in bold, with the section.
 
 ## Layout
 
-79. The page's layout is Lesson 25's: the step deck with the ring and the staff stuck beside each step's text on a wide screen and above it on a phone, one step at a time; the hero's ring in a tall stage | Lesson 25 FACTS (layout, carried); the stage's height (`src/features/lessons/kit/lesson-stage.css:1124-1130`) | carried; every section
+79. The page's layout is Lesson 25's: the step deck with the ring and the staff stuck beside each step's text on a wide screen and above it on a phone, one step at a time; the hero's ring in a tall stage | Lesson 25 FACTS (layout, carried); the stage's height (`src/features/lessons/kit/lesson-stage.css:1129-1135`) | carried; every section
 
 ## Illustrations without claims
 

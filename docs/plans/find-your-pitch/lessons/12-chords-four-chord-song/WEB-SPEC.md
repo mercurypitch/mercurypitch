@@ -315,8 +315,8 @@ the stage-fit test reach every action.
   centre's label, Step 4's moves and Step 5's count, so no status line takes height.
 - **Layout and targets** (FACTS 75). The steps figure is the kit's tall figure, `.viz.tall`: 380 px
   tall on a desktop, 340 px in the deck and 310 px up to 420 px wide
-  (`src/features/lessons/kit/lesson-stage.css:788-806`, `:1092-1097`, `:1102-1108`), as wide as the
-  stage card's inner width on phones (`.viz.wide`, `lesson-stage.css:1290-1301`). At 344, 360, 375
+  (`src/features/lessons/kit/lesson-stage.css:788-806`, `:1097-1102`, `:1107-1113`), as wide as the
+  stage card's inner width on phones (`.viz.wide`, `lesson-stage.css:1295-1306`). At 344, 360, 375
   and 390 px the figure is 310, 326, 341 and 356 px wide, the ring's radius 83.7, 88.0, 89.9 and
   89.9 px, and neighbouring beads sit 43.3, 45.6, 46.5 and 46.5 px apart. A bead tap snaps to the
   nearest bead within 22 px (`spiral.ts:8-10`), so every point of the ring belongs to one bead, but
@@ -332,7 +332,7 @@ the stage-fit test reach every action.
   below its `--viz-min`, 180 px unless a lesson's stylesheet sets more (`lesson-stage.css:695-712`).
   The page sets `--viz-min: 300px` on the stuck stage only, under
   `@media (min-width: 961px) and (min-height: 561px)`, outside the deck's query,
-  `(max-width: 960px), (max-height: 560px)` (`lesson-stage.css:1045-1046`): at 300 px the ring's
+  `(max-width: 960px), (max-height: 560px)` (`lesson-stage.css:1050-1051`): at 300 px the ring's
   radius is at least 87 px and its beads at least 45 px apart. The stage, with its head, the figure,
   one row of chips, one row of the step's own buttons and the card's padding, is about 580 px with
   the 380 px figure, so in the smallest room, 555 px, the kit shrinks the figure to about 355 px,
@@ -340,7 +340,7 @@ the stage-fit test reach every action.
   step to two rows of controls there.
 - **The compact layout** (FACTS 75). On a phone held sideways the kit caps the deck's figure so that
   it and its toy's first row of controls share the screen, down to its `--viz-min`, 150 px unless a
-  lesson's stylesheet sets more (`lesson-stage.css:1119-1136`): 162 px at 844 x 390, and 150 px on
+  lesson's stylesheet sets more (`lesson-stage.css:1124-1141`): 162 px at 844 x 390, and 150 px on
   the shortest phones. The page leaves that floor alone. Below 240 px of height the toy draws its
   compact layout: the ring's beads carry letters only (`setLabels('letter')`, `spiral.ts:176`), the
   centre's label moves into the figure's top-left corner, and the syllables under Do-re-mi move onto

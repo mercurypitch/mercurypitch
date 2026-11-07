@@ -124,9 +124,9 @@
   text-transform: uppercase;
   color: var(--ink-3);
 }
-/* Step 5's row waits for its predict, and looks it, as a locked play button does */
-.bm-toy .btn:disabled,
-.bm-toy .range:disabled {
+/* Step 5's row waits for its predict, and looks it, as a locked play button
+   does (its slider by the kit's own rule) */
+.bm-toy .btn:disabled {
   cursor: not-allowed;
   opacity: 0.42;
 }
