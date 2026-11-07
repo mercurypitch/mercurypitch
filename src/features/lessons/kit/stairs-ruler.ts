@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase ruler — the semitone rows and the pitch ruler beside them
+// Staircase ruler — the semitone rows and the pitch ruler beside them
 // ============================================================
 //
 // Pitch is height: a faint row a semitone, behind the stairs, and a ruler
@@ -8,7 +8,7 @@
 // with the start, and a C's name gives way where do's name and house sit
 // low at the left.
 
-import { COLOR, isBlack, nameOf, rgba } from '@/features/lessons/kit/notes'
+import { COLOR, isBlack, nameOf, rgba } from './notes'
 import type { StairsLayout } from './stairs-geometry'
 
 const MONO_11 = '500 11px "JetBrains Mono", monospace'

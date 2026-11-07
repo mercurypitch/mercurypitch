@@ -1,0 +1,132 @@
+/* ============================================================
+   Staircase toy — its figure, the buttons over the drawing, the start slider
+   ============================================================
+   The staircase toy's look (stairs-toy.ts, stairs-core.ts; Lesson 4's
+   WEB-SPEC, Toys 1). A page that mounts the toy takes this sheet into its
+   own by @import, so it inlines there and no chunk the other lessons share
+   changes (MISTAKES.md, on the lessons' base stylesheet). The figure's two
+   heights are the ones its wide and narrow layouts are drawn for
+   (stairs-geometry.ts); a stage that sits beside its text sets its own, as
+   Lesson 4's steps' stage does. */
+
+/* the figure: free play, and a steps' stage while it sits above the text */
+.stairs-viz {
+  height: 476px;
+}
+/* on a phone Lesson 4's step stages fit under the masthead at 390 x 844 (its
+   step 4's, with the names switch, is the tallest, 774 px) */
+@media (max-width: 560px) {
+  .stairs-viz {
+    height: 424px;
+  }
+}
+.stairs-toy .controls {
+  margin-top: 10px;
+}
+.stairs-toy .names-bar {
+  margin-bottom: 8px;
+}
+/* the stairs and Group's brackets are buttons laid over the drawing, each on its tap zone */
+.stair-hits {
+  position: absolute;
+  inset: 0;
+}
+.stair-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stair-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
+}
+/* the readout sits in the drawing's top margin, clear of the stairs */
+.stairs-status {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 9px;
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  pointer-events: none;
+}
+.stairs-readout {
+  font: 600 var(--fs-16)/1.35 var(--f-display);
+  color: var(--ink);
+}
+.white-note,
+.white-hint {
+  font-size: var(--fs-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.white-hint {
+  margin: 8px 0 0;
+  color: var(--ink-3);
+}
+.slide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.start-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--hair-2);
+  font: 600 var(--fs-16)/1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.start-slider:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+/* on a narrow phone the two buttons keep their words and give up their arrows, so the slider can show its note */
+@media (max-width: 420px) {
+  .slide-row {
+    gap: 8px;
+  }
+  .slide-row .btn {
+    padding: 0 10px;
+  }
+  .slide-row .btn .ico {
+    display: none;
+  }
+}
+/* At 320 px the row has 262 px, and with both buttons' words the slider had
+   51: "Do is C4" ran 19 px past it, "Do is D♭4" 28, and at 344 px the flat
+   and sharp starts still ran up to 4 px past. Under 360 px the buttons keep
+   their arrows and give up their words, which stay their names, so the
+   slider has 158 px at 320 and every start's words fit in it; from 360 px
+   nothing changes. Lesson 6's slide row does the same. */
+@media (max-width: 359px) {
+  .slide-row .btn {
+    flex: none;
+    width: 44px;
+    padding: 0;
+  }
+  .slide-row .btn .ico {
+    display: block;
+  }
+  .slide-row .slide-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

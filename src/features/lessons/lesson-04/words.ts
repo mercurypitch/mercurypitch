@@ -12,8 +12,9 @@
 import { q, qa, svg } from '@/features/lessons/kit/dom'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
 import { Sound } from '@/features/lessons/kit/sound'
-import type { NoteEvent } from './examples'
-import { FIRST_THREE, playNotes, scaleUp, TONIC_NOTE } from './examples'
+import type { NoteEvent } from '@/features/lessons/kit/stairs-plays'
+import { scaleUp } from '@/features/lessons/kit/stairs-plays'
+import { FIRST_THREE, playNotes, TONIC_NOTE } from './examples'
 
 /** One part of a figure that lights while its note sounds. */
 interface Lamp {

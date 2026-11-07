@@ -266,7 +266,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
 - **Scale** (Step 5): it opens on the chord, C major. **Chord · Scale**, a segmented switch, spreads
   the chord into its scale: the three beads move apart left to right while five more stairs rise
   between them, C4 to C5, one stair per note climbing left to right as Lesson 4 draws a scale
-  (`lesson-04/stairs-draw.ts`), drawn by this toy in its own colours, in 0.6 s on the kit's
+  (`kit/stairs-draw.ts`), drawn by this toy in its own colours, in 0.6 s on the kit's
   `expoOut` curve (`src/features/lessons/kit/reveal.ts:17-18`); Chord folds it back. The predict's
   two plays spread the chord first if it is folded, since they play on the staircase (Toys 3). The
   chord's notes keep their beads, do, mi and so, with mi's stair gold, and me's under Minor; the

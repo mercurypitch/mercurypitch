@@ -21,8 +21,8 @@ import { mercCelebrate } from '@/features/lessons/kit/merc-duo'
 import { COLOR } from '@/features/lessons/kit/notes'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import { singAlong } from '@/features/lessons/kit/sing-along'
-import { landOnDo, stopOnTi } from './examples'
-import { mountStairs } from './stairs-core'
+import { mountStairs } from '@/features/lessons/kit/stairs-core'
+import { landOnDo, stopOnTi } from '@/features/lessons/kit/stairs-plays'
 
 const C4 = 60
 const D4 = 62

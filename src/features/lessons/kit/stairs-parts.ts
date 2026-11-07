@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase parts — the stage's elements, and the buttons over the drawing
+// Staircase parts — the stage's elements, and the buttons over the drawing
 // ============================================================
 //
 // What the staircase toy finds in its stage's markup (the figure, its live
@@ -8,9 +8,9 @@
 // bracket, each placed on its tap zone as the layout changes. The brackets
 // start hidden, since only Group shows them.
 
-import { q } from '@/features/lessons/kit/dom'
-import { majorScale } from '@/features/lessons/kit/major-scale'
-import { signName } from '@/features/lessons/kit/notes'
+import { q } from './dom'
+import { majorScale } from './major-scale'
+import { signName } from './notes'
 import type { Rect } from './stairs-geometry'
 
 export interface StairsParts {

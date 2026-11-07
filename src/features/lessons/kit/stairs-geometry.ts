@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase geometry — where the rows, the stairs and the keys sit
+// Staircase geometry — where the rows, the stairs and the keys sit
 // ============================================================
 //
 // Pitch is height (playbook rule 20): eight stairs, do to do, left to right,
@@ -26,10 +26,10 @@
 // clear of every stair's zone. All of it is a function of the canvas size
 // and the start, which is fractional while a slide is travelling.
 
-import type { Strip } from '@/features/lessons/kit/key-strip'
-import { stripLayout, whiteRange } from '@/features/lessons/kit/key-strip'
-import { MAJOR_DEGREES } from '@/features/lessons/kit/major-scale'
-import { isBlack } from '@/features/lessons/kit/notes'
+import type { Strip } from './key-strip'
+import { stripLayout, whiteRange } from './key-strip'
+import { MAJOR_DEGREES } from './major-scale'
+import { isBlack } from './notes'
 
 export type StairsMode = 'wide' | 'narrow' | 'compact'
 

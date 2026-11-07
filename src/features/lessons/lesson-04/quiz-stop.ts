@@ -9,7 +9,8 @@
 // press while it plays waits for it.
 
 import { Sound } from '@/features/lessons/kit/sound'
-import { playNotes, stopOnTi } from './examples'
+import { stopOnTi } from '@/features/lessons/kit/stairs-plays'
+import { playNotes } from './examples'
 
 export function bindQuizStop(host: HTMLElement): void {
   let playing = false

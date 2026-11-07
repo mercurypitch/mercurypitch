@@ -1,5 +1,5 @@
 // ============================================================
-// Lesson 4 staircase geometry tests — rows, stairs, tap zones and the strip
+// Staircase geometry tests — rows, stairs, tap zones and the strip
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import { fullMode, overlaps, stairAt, stairsLayout, stripWindow, TARGET, } from 
 
 const STARTS = Array.from({ length: 12 }, (_, k) => 60 + k)
 
-/** The desktop stage's figure, and the phone's at 390 x 844 (WEB-SPEC, Contract). */
+/** The desktop stage's figure, and the phone's at 390 x 844 (Lesson 4 WEB-SPEC, Contract). */
 const wide = (start: number) => stairsLayout('wide', 650, 476, start)
 const narrow = (start: number) => stairsLayout('narrow', 356, 424, start)
 /** The steps' stage beside the text, which keeps the whole stage to about 550 px: at 1024 and at 1366 px wide. */

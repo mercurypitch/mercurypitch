@@ -2,11 +2,13 @@
 // Lesson 4 examples — every sound on the page, at FACTS 56 to 63's timings
 // ============================================================
 //
-// A scale plays at 0.45 s a note, its last note 0.9 s (FACTS 57); Stop on ti
-// holds ti 1.2 s, and Land on do plays ti for 0.45 s, then do for 1.2 s
-// (FACTS 58 and 59); Slow doubles every length. Times are seconds from the
-// press, every note timed from that one press so nothing drifts. The tapped
-// and played notes are the kit's soft tone; Merc's singing is Merc's "ooh".
+// The staircase's scales are the kit's (kit/stairs-plays.ts): 0.45 s a note,
+// the last 0.9 s (FACTS 57), Stop on ti and Land on do (FACTS 58 and 59), and
+// Slow doubling every length. Here are the words strip's notes, the player
+// every example sounds through and Sing it's model. Times are seconds from
+// the press, every note timed from that one press so nothing drifts. The
+// tapped and played notes are the kit's soft tone; Merc's singing is Merc's
+// "ooh".
 //
 // Sing it's model (FACTS 63) is three sung phrases: do re mi fa so fa mi re
 // do at 0.8 s a note, the last 1.2 s; a 2 s rest; do re mi fa so la ti, ti
@@ -14,69 +16,16 @@
 // sings each phrase as one voice, gliding 50 ms into each new note, and the
 // guide draws the same line, silent through the rests.
 
-import { scaleNotes, whiteKeysFrom } from '@/features/lessons/kit/major-scale'
 import { hz } from '@/features/lessons/kit/notes'
 import type { GuidePoint } from '@/features/lessons/kit/slide-guide'
 import type { ContourPoint, VoiceOptions } from '@/features/lessons/kit/sound'
 import { contourVoice, Sound } from '@/features/lessons/kit/sound'
-
-/** One note of an example: its MIDI number, its onset and its length, seconds. */
-export interface NoteEvent {
-  readonly midi: number
-  readonly at: number
-  readonly dur: number
-}
-
-/** A scale's pace (FACTS 57). */
-export const NOTE_SEC = 0.45
-export const LAST_SEC = 0.9
-/** Ti held after Stop on ti, and do after Land on do (FACTS 58). */
-export const HOLD_SEC = 1.2
-
-/** Notes in turn, `NOTE_SEC` apart, the last one `last` long; `slow` 2 doubles every length. */
-export function run(
-  midis: readonly number[],
-  last = LAST_SEC,
-  slow = 1,
-): NoteEvent[] {
-  return midis.map((midi, i) => ({
-    midi,
-    at: i * NOTE_SEC * slow,
-    dur: (i === midis.length - 1 ? last : NOTE_SEC) * slow,
-  }))
-}
-
-/** Play up and Play down: do to do, and back (FACTS 57). */
-export const scaleUp = (tonic: number, slow = 1): NoteEvent[] =>
-  run(scaleNotes(tonic), LAST_SEC, slow)
-export const scaleDown = (tonic: number, slow = 1): NoteEvent[] =>
-  run([...scaleNotes(tonic)].reverse(), LAST_SEC, slow)
-
-/** Stop on ti: do up to ti, ti held (FACTS 58 and 59). */
-export const stopOnTi = (tonic: number, slow = 1): NoteEvent[] =>
-  run(scaleNotes(tonic).slice(0, 7), HOLD_SEC, slow)
-
-/** Land on do: ti, then do an octave above the start. */
-export const landOnDo = (tonic: number, slow = 1): NoteEvent[] =>
-  run([tonic + 11, tonic + 12], HOLD_SEC, slow)
-
-/** A Group bracket's four notes: the first group (0) or the second (1). */
-export const groupOf = (tonic: number, group: 0 | 1, slow = 1): NoteEvent[] =>
-  run(scaleNotes(tonic).slice(group * 4, group * 4 + 4), LAST_SEC, slow)
-
-/** White keys only: the white keys up an octave from a white start (FACTS 60), none from a black one. */
-export function whiteKeysRun(start: number, slow = 1): NoteEvent[] {
-  const keys = whiteKeysFrom(start)
-  return keys === null ? [] : run(keys, LAST_SEC, slow)
-}
+import type { NoteEvent } from '@/features/lessons/kit/stairs-plays'
+import { lengthOf, run } from '@/features/lessons/kit/stairs-plays'
 
 /** The words strip (FACTS 61): Tonic is C4 for a second; Scale degree and Solfège, C4, D4, E4. */
 export const TONIC_NOTE: readonly NoteEvent[] = [{ midi: 60, at: 0, dur: 1 }]
 export const FIRST_THREE: readonly NoteEvent[] = run([60, 62, 64])
-
-/** Seconds from an example's start to the end of its last note. */
-export const lengthOf = (events: readonly NoteEvent[]): number =>
-  events.reduce((end, e) => Math.max(end, e.at + e.dur), 0)
 
 /** Runs `onNote` at each note's onset; resolves when the last note has ended. */
 export function schedule(

@@ -1,22 +1,22 @@
 // ============================================================
-// Lesson 4 staircase painter — rows, blocks, names, marks and the strip
+// Staircase painter — rows, blocks, names, marks and the strip
 // ============================================================
 //
 // Paints one frame of the staircase from its layout (stairs-geometry.ts)
 // and a scene the toy keeps. The colour code is the series': every stair
 // and key is chrome until a voice lights it, blue where Merc sings it
-// and orange where Tavi does; gold marks only the two semitone
-// steps, in steps 1 and 2 (WEB-SPEC, Look); do, home, is a house glyph,
-// never a colour. Tavi's guess in step 3, the white keys from the start,
-// is dashed ink-2 with a "?", since violet belongs to the singer on this
-// page. Each part draws in its own small function, in paint order.
+// and orange where Tavi does; gold marks only the two semitone steps, in
+// Lesson 4's steps 1 and 2 (Lesson 4 WEB-SPEC, Look); do, home, is a house
+// glyph, never a colour. Tavi's guess, the white keys from the start, is
+// dashed ink-2 with a "?", since violet belongs to the singer in the
+// lessons. Each part draws in its own small function, in paint order.
 
-import { drawHome } from '@/features/lessons/kit/home-glyph'
-import { drawStrip } from '@/features/lessons/kit/key-strip'
-import type { StepSize } from '@/features/lessons/kit/major-scale'
-import { MAJOR_STEPS, nameInScale, scaleNotes, stepSizes, whiteKeysFrom, } from '@/features/lessons/kit/major-scale'
-import type { NamesMode } from '@/features/lessons/kit/names-modes'
-import { COLOR, rgba } from '@/features/lessons/kit/notes'
+import { drawHome } from './home-glyph'
+import { drawStrip } from './key-strip'
+import type { StepSize } from './major-scale'
+import { MAJOR_STEPS, nameInScale, scaleNotes, stepSizes, whiteKeysFrom, } from './major-scale'
+import type { NamesMode } from './names-modes'
+import { COLOR, rgba } from './notes'
 import type { StairBox, StairsLayout } from './stairs-geometry'
 import { BLOCK_GAP } from './stairs-geometry'
 import { paintRows, paintRuler } from './stairs-ruler'
