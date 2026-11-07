@@ -118,6 +118,7 @@
   "src/lib/__tests__/scale-snap.test.ts",
   "src/lib/audio-buffer-wav.test.ts",
   "src/lib/audio-chunker.test.ts",
+  "src/lib/audio-input/level-health.test.ts",
   "src/lib/audio-upload-contract.test.ts",
   "src/lib/backgrounds/background-access.test.ts",
   "src/lib/backgrounds/background-catalog.test.ts",

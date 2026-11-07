@@ -2,10 +2,11 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import type { GuitarInputHealthReading } from '@/lib/audio-input/level-health'
 import type { GuitarPhraseAssessmentWindow, GuitarPhraseTargetInput, } from './guitar-phrase-review'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from './guitar-phrase-review'
 import type { GuitarTakeEvent, GuitarTakeSnapshot, } from './guitar-take-recorder'
-import type { GuitarInputHealthReading, GuitarInputSource, } from './input-events'
+import type { GuitarInputSource } from './input-events'
 
 const SAMPLE_RATE = 1_000
 const STARTED_AT_SECONDS = 10

@@ -6,8 +6,9 @@
 // latency and primary timing source are copied at start so a calibration or
 // device change cannot rewrite the meaning of evidence already in flight.
 
+import type { GuitarInputHealth } from '@/lib/audio-input/level-health'
 import type { GuitarInputProfileSnapshot } from './guitar-input-profile'
-import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealth, GuitarInputTimingSource, } from './input-events'
+import type { GuitarInputCapture, GuitarInputEvent, GuitarInputTimingSource, } from './input-events'
 
 export type GuitarTakeLifecycle = 'recording' | 'completed' | 'cancelled'
 

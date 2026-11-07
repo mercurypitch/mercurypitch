@@ -1,9 +1,9 @@
 // Guitar Night phrase-review copy turns measured facts into one calm next step.
 // ============================================================
 
+import type { GuitarInputHealthReading } from '@/lib/audio-input/level-health'
 import type { GuitarPhraseReview, GuitarPhraseUnavailableMetric, } from '@/lib/guitar/guitar-phrase-review'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
-import type { GuitarInputHealthReading } from '@/lib/guitar/input-events'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, } from './useGuitarNightScoreRoomController'
 

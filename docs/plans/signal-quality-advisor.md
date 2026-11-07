@@ -91,7 +91,9 @@ Signals:
   periodicity). Compare against the active preset's RMS gate, not an
   absolute: `floor > GATE_HEADROOM (1.5) × currentMinAmplitudeRms` means the
   room is crowding the gate. Precedent for "room nearly as loud as source":
-  guitar's `noisy` rule (`src/lib/guitar/input-events.ts:206`).
+  guitar's `noisy` rule (`describeInputHealth` in
+  `src/lib/audio-input/level-health.ts`, moved there from
+  `src/lib/guitar/input-events.ts`).
 - **clarity crowding** — median accepted clarity within 0.1 of the active
   `minConfidence` floor: detections are barely clearing the bar.
 
@@ -178,7 +180,7 @@ Routing the preset into them is a behavior change to flag to the owner, not
 sneak in.
 
 Guitar Night is excluded — it has its own worklet health system with a
-`noisy` verdict already (`input-events.ts:171-217`).
+`noisy` verdict already (`src/lib/audio-input/level-health.ts`).
 
 ## 6. Tests / verification
 

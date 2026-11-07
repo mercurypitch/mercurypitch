@@ -6,8 +6,8 @@
 // later setting change cannot rewrite what the take meant. Unsupported claims
 // remain explicit unavailable metrics instead of silently becoming zeroes.
 
+import type { GuitarInputHealthReading } from '@/lib/audio-input/level-health'
 import type { GuitarTakeEvent, GuitarTakeSnapshot, } from './guitar-take-recorder'
-import type { GuitarInputHealthReading } from './input-events'
 import { PITCH_ATTACH_WINDOW_MS } from './input-events'
 
 export const GUITAR_PHRASE_REVIEW_SCHEMA_VERSION = 1
