@@ -12,7 +12,7 @@ import type { ProgressActionView, ProgressEvidenceView, ProgressSourceKind, } fr
 import { registerRoomBack } from '@/stores/native-shell-store'
 import { CalendarIcon, ChevronIcon, CloseIcon, MicIcon, PrintIcon, PulseIcon, RefreshIcon, SparkleIcon, TargetIcon, TrophyIcon, } from '../icons'
 import type { MomentGlyph } from './progress-lines'
-import { leadNumber } from './progress-lines'
+import { leadNumber, linkHref } from './progress-lines'
 
 /** The glyph a kind of run wears, beside its word: never its tint alone. */
 export function SourceIcon(props: {
@@ -109,7 +109,8 @@ export interface ActionRowProps {
 
 /**
  * A row that leads somewhere in the app: a link where the step has a
- * place (a hash route), a button where it has none.
+ * place (a hash route), a button where it has none or where the phone
+ * pushes a screen of its own for it (progress-lines.ts linkHref).
  */
 export function ActionRow(props: ActionRowProps): JSX.Element {
   const body = (): JSX.Element => (
@@ -132,7 +133,7 @@ export function ActionRow(props: ActionRowProps): JSX.Element {
   )
   return (
     <Show
-      when={props.action.href}
+      when={linkHref(props.action)}
       fallback={
         <button
           type="button"

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ProgressHistoryItemView, ProgressWeekView, } from '@/features/progress/ProgressPage'
-import { historyDays, historyLine, historyWhere, inAppAction, keyboardSpan, leadNumber, measuredRange, momentGlyph, pagerOrder, pathTag, weekLabel, } from './progress-lines'
+import { historyDays, historyLine, historyWhere, inAppAction, keyboardSpan, leadNumber, linkHref, measuredRange, momentGlyph, pagerOrder, pathTag, pushedScreenFor, weekLabel, } from './progress-lines'
 
 function week(over: Partial<ProgressWeekView> = {}): ProgressWeekView {
   return {
@@ -95,6 +95,30 @@ describe('the steps the phone can follow', () => {
       inAppAction({ id: 'voice-map', label: 'Map my voice', href: '/mirror' }),
     ).toBeUndefined()
     expect(inAppAction(undefined)).toBeUndefined()
+  })
+})
+
+describe('a place the phone draws as its own screen', () => {
+  const constellation = {
+    id: 'voice-constellation',
+    label: 'Explore constellation',
+    href: '#/voice-constellation',
+  }
+
+  it('pushes Voice Constellation, from the voice card and from a moment', () => {
+    expect(pushedScreenFor(constellation)).toBe('voice-constellation')
+    expect(
+      pushedScreenFor({ ...constellation, id: 'continue:voiceprint-growth' }),
+    ).toBe('voice-constellation')
+    // A button, not a link: the web route would open over the whole shell.
+    expect(linkHref(constellation)).toBeUndefined()
+  })
+
+  it('leaves every other place a link, and a step with none a button', () => {
+    const hash = { id: 'x', label: 'Open Exercises', href: '#/exercises' }
+    expect(pushedScreenFor(hash)).toBeUndefined()
+    expect(linkHref(hash)).toBe('#/exercises')
+    expect(linkHref({ id: 'y', label: 'Retry' })).toBeUndefined()
   })
 })
 

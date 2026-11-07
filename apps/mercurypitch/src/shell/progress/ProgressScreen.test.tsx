@@ -17,6 +17,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/progress/progress-data', () => ({
   loadProgressModel: mocks.loadProgressModel,
 }))
+// A native test build, which draws Voice Constellation as its own screen.
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  NATIVE_PROGRESS: true,
+}))
 vi.mock('@/lib/analytics', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   trackEvent: mocks.trackEvent,
@@ -29,6 +34,7 @@ vi.mock('@/features/progress/share-card', async (importOriginal) => ({
 }))
 
 import type { SessionRecord } from '@/db/entities'
+import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { ProgressModel } from '@/features/progress/model'
 import { buildProgressModel } from '@/features/progress/model'
 import type { RenderedShell } from '../render-for-test'
@@ -63,7 +69,22 @@ function run(
   }
 }
 
-function record(): ProgressModel {
+/** A saved Voice Mirror print with a legend twin, as the Mirror keeps one. */
+const VOICEPRINT: VoiceprintRecord = {
+  id: 'print',
+  twin: 'Freddie Mercury',
+  takenAt: '2026-11-02T18:00:00.000Z',
+  source: 'mirror',
+  summary: {
+    lowMidi: 43,
+    highMidi: 72,
+    semitones: 29,
+    accuracy: 82,
+    steadiness: 76,
+  },
+}
+
+function record(voiceprints: readonly VoiceprintRecord[] = []): ProgressModel {
   return buildProgressModel(
     {
       records: [
@@ -71,7 +92,7 @@ function record(): ProgressModel {
         run('song', 'practice', 'C major scale', '2026-11-03T18:00:00.000Z'),
         run('task', 'challenge', 'Octave Leap', '2026-10-28T18:00:00.000Z'),
       ],
-      voiceprints: [],
+      voiceprints,
       badgeDefinitions: [],
       userBadges: [],
       achievementDefinitions: [],
@@ -186,6 +207,28 @@ describe('the native Progress page, over the record', () => {
       .querySelector<HTMLButtonElement>('[data-testid="progress-league"]')
       ?.click()
     expect(pushed()).toBe('leagues')
+  })
+
+  it('opens Voice Constellation as its own screen, not the web route', async () => {
+    mocks.loadProgressModel.mockResolvedValue(record([VOICEPRINT]))
+    window.location.hash = '#/progress'
+    const page = await open()
+    const row = page.querySelector<HTMLElement>(
+      '[data-testid="progress-voice"] [data-action="voice-constellation"]',
+    )
+    expect(row?.textContent).toContain('Explore constellation')
+    expect(row?.textContent).toContain('Closest voice: Freddie Mercury')
+    // A button: as a link it went to #/voice-constellation, whose web route
+    // covered the shell, notch and all.
+    expect(row?.tagName).toBe('BUTTON')
+    expect(row?.getAttribute('href')).toBeNull()
+
+    row?.click()
+    expect(pushed()).toBe('voice-constellation')
+    expect(window.location.hash).toBe('#/progress')
+    expect(mocks.trackEvent).toHaveBeenCalledWith(
+      'progress_next_action_clicked',
+    )
   })
 
   it('opens the share studio in a sheet, in place, for the moment in view', async () => {

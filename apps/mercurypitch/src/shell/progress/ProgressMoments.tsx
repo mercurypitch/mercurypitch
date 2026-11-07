@@ -16,7 +16,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import type { ProgressActionView, ProgressMomentOptionView, ProgressMomentView, } from '@/features/progress/ProgressPage'
 import { PlayIcon, ShareIcon } from '../icons'
-import { inAppAction, momentGlyph, pagerOrder } from './progress-lines'
+import { inAppAction, linkHref, momentGlyph, pagerOrder, } from './progress-lines'
 import { MomentIcon, Tiles } from './progress-parts'
 
 /** How long a pager must be still before the page it shows is chosen. */
@@ -57,7 +57,7 @@ function MomentAction(props: {
   )
   return (
     <Show
-      when={props.action.href}
+      when={linkHref(props.action)}
       fallback={
         <button
           type="button"

@@ -11,6 +11,7 @@
 
 import type { ProgressActionView, ProgressHistoryItemView, ProgressSourceKind, ProgressWeekView, } from '@/features/progress/ProgressPage'
 import { noteToMidi } from '@/lib/frequency-to-note'
+import type { PushedScreen } from '../pushed-screen-ids'
 
 /** A tile's figure and its words, from one label: "3 active days". */
 export interface TileParts {
@@ -119,6 +120,30 @@ export function inAppAction(
   return action.href === undefined || action.href.startsWith('#')
     ? action
     : undefined
+}
+
+/**
+ * The web routes the phone draws as a screen of its own, pushed over the
+ * page rather than opened in the web app: Voice Constellation, whose web
+ * route is a full-screen dialog that covers the shell and its Back.
+ */
+const PUSHED_PLACES: Readonly<Record<string, PushedScreen>> = {
+  '#/voice-constellation': 'voice-constellation',
+}
+
+/** The screen an action pushes, when the phone has its own for its place. */
+export function pushedScreenFor(
+  action: ProgressActionView,
+): PushedScreen | undefined {
+  return action.href === undefined ? undefined : PUSHED_PLACES[action.href]
+}
+
+/**
+ * Where an action's link goes, or nothing where it is a button: a step
+ * with no place, or a place the phone pushes as its own screen.
+ */
+export function linkHref(action: ProgressActionView): string | undefined {
+  return pushedScreenFor(action) === undefined ? action.href : undefined
 }
 
 /** One day of the history list, under its date. */

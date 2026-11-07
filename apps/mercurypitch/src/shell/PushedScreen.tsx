@@ -27,10 +27,15 @@
 // is pushed, so a screen reader starts at the top of what just opened
 // rather than on the page. The screen under it may move the focus on
 // afterwards: its own mount runs after this one's.
+//
+// A screen that asks (`swipeBack`) is also left by a swipe in from the left
+// edge, as an iPhone's pushed screens are (edge-swipe.ts): the whole screen
+// follows the finger, and a release far enough along is the same Back.
 
 import type { Component, JSX } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import { registerPushedBarEnd } from '@/stores/native-shell-store'
+import { installEdgeSwipe } from './edge-swipe'
 import { BackIcon } from './icons'
 
 export interface PushedScreenProps {
@@ -40,18 +45,28 @@ export interface PushedScreenProps {
   bleed?: boolean
   /** Hand the focus to the title as the screen is pushed. */
   focusTitle?: boolean
+  /** Leave by a swipe in from the left edge, as well as by Back. */
+  swipeBack?: boolean
   children: JSX.Element
 }
 
 export const PushedScreen: Component<PushedScreenProps> = (props) => {
+  let root: HTMLDivElement | undefined
   let title: HTMLSpanElement | undefined
   onMount(() => {
     if (props.focusTitle === true) title?.focus({ preventScroll: true })
+    if (props.swipeBack === true && root !== undefined) {
+      onCleanup(installEdgeSwipe(root, { onBack: () => props.onBack() }))
+    }
   })
   return (
     <div
+      ref={root}
       class="mp-pushed"
-      classList={{ 'mp-pushed--bleed': props.bleed === true }}
+      classList={{
+        'mp-pushed--bleed': props.bleed === true,
+        'mp-pushed--swipe': props.swipeBack === true,
+      }}
       role="group"
       aria-label={props.title}
       data-testid="shell-pushed"

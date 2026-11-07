@@ -1,0 +1,17 @@
+/* ============================================================
+   Voice Constellation, pushed over the Progress tab (ConstellationScreen)
+   ============================================================
+
+   The map's own stylesheet is the web's (VoiceConstellationSurface.module.css).
+   All this adds is the foot: the screen keeps itself clear of the dock with
+   the pushed screen's clearance (`--pushed-foot`, shell.css), which would
+   otherwise show the app's ground under the night sky, light in the light
+   theme. The page takes the clearance into its own box, so its sky runs to
+   the bottom of the scroll and the last line still clears the dock.
+
+   Loaded by the screen's lazy chunk alone, so a store build carries none. */
+
+.mp-constellation {
+  margin-bottom: calc(-1 * var(--pushed-foot, 0px));
+  padding-bottom: var(--pushed-foot, 0px);
+}

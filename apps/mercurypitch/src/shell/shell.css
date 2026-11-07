@@ -890,24 +890,42 @@
    The scroll padding is the padding's twin: a control the keyboard or a
    screen reader moves the focus to is scrolled clear of the dock as well,
    not only reachable by hand. Without it the focus stopped on rows under
-   the rail (Leagues' and Community's last rows, at 390 x 844). */
+   the rail (Leagues' and Community's last rows, at 390 x 844).
+
+   The clearance is a token, `--pushed-foot`, so a screen that paints its own
+   ground (Voice Constellation's night sky) can carry it into its own box and
+   paint the strip under the dock too, instead of leaving the app's ground
+   there (progress/constellation.css). */
 .mp-pushed__body {
+  --pushed-foot: calc(var(--tabbar-total) + 16px);
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: calc(var(--tabbar-total) + 16px);
-  scroll-padding-bottom: calc(var(--tabbar-total) + 16px);
+  padding-bottom: var(--pushed-foot);
+  scroll-padding-bottom: var(--pushed-foot);
 }
 
 /* The dock is over this screen, the session pill with it while a run is
    parked (mobile-kit.css, `data-shell-pill`): Storage's Start fresh sat
    under the pill with no scroll to lift it out (TestFlight 0.7.1). */
 :root[data-shell-pill='on'] .mp-pushed__body {
-  padding-bottom: calc(var(--tabbar-total) + 16px + var(--touch-target) + 8px);
-  scroll-padding-bottom: calc(
-    var(--tabbar-total) + 16px + var(--touch-target) + 8px
-  );
+  --pushed-foot: calc(var(--tabbar-total) + 16px + var(--touch-target) + 8px);
+  padding-bottom: var(--pushed-foot);
+  scroll-padding-bottom: var(--pushed-foot);
+}
+
+/* A screen left by a swipe from the edge (edge-swipe.ts): its scroller pans
+   only up and down, so a sideways drag stays with the page rather than
+   being taken as a scroll. While it follows the finger, its left edge casts
+   a shadow over the tab it is uncovering. */
+.mp-pushed--swipe .mp-pushed__body {
+  touch-action: pan-y pinch-zoom;
+}
+
+.mp-pushed--swipe[data-swiping='on'] {
+  box-shadow: -12px 0 32px rgb(0 0 0 / 28%);
+  will-change: transform;
 }
 
 /* ---------- a premium room, full-bleed (premium-rooms.ts, D1) ---------- */

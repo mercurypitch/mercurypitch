@@ -240,6 +240,19 @@ const ProgressScreen: Component = NATIVE_PROGRESS
     )
   : () => null
 
+/**
+ * Voice Constellation, pushed over the Progress page from its voice card:
+ * on the same switch as the page and the same ternary, so a build without
+ * the page keeps no chunk of it, and its Progress tab opens the web route.
+ */
+const ConstellationScreen: Component = NATIVE_PROGRESS
+  ? lazy(async () =>
+      import('./progress/ConstellationScreen').then((module) => ({
+        default: module.ConstellationScreen,
+      })),
+    )
+  : () => null
+
 /** The two, for ShellScreens: none at all on a build without them. */
 const COMMUNITY_SCREENS: Pick<
   ShellScreensProps,
@@ -600,6 +613,9 @@ export const NativeShell: Component = () => {
             harmony={PREMIUM_EXERCISES ? HarmonyScreen : undefined}
             leagues={NATIVE_LEAGUES ? LeaguesScreen : undefined}
             legend={NATIVE_LEAGUES ? LegendScreen : undefined}
+            voiceConstellation={
+              NATIVE_PROGRESS ? ConstellationScreen : undefined
+            }
             {...COMMUNITY_SCREENS}
           />
 

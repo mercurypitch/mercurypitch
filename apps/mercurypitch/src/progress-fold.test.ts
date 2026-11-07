@@ -79,6 +79,13 @@ describe('the native Progress page, in the sources', () => {
     expect(shell).toMatch(
       /\.\.\.\(NATIVE_PROGRESS \? \{ progressPage: ProgressScreen \} : \{\}\)/u,
     )
+    // Voice Constellation, which the page pushes, on the same switch.
+    expect(shell).toMatch(
+      /const ConstellationScreen: Component = NATIVE_PROGRESS\s*\?\s*lazy\(async \(\) =>\s*import\('\.\/progress\/ConstellationScreen'\)/u,
+    )
+    expect(shell).toMatch(
+      /voiceConstellation=\{\s*NATIVE_PROGRESS \? ConstellationScreen : undefined\s*\}/u,
+    )
   })
 
   it('is drawn in the tab by the same switch, the web page folded out with it', () => {
@@ -122,6 +129,7 @@ describe('the native Progress page, in the sources', () => {
       'progress-week-sheet',
       'Tap a week',
       'Your progress starts with one run.',
+      'native-constellation',
     ]) {
       expect(assert).toMatch(
         new RegExp(`\\[\\s*'${marker.replace(/[.?]/gu, '\\$&')}',`, 'u'),
@@ -142,6 +150,7 @@ describe('the native Progress page, in the sources', () => {
       'progress-week-sheet',
       'Tap a week',
       'Your progress starts with one run.',
+      'native-constellation',
     ]) {
       expect(page, marker).toContain(marker)
       expect(elsewhere.includes(marker), marker).toBe(false)

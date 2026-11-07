@@ -17,6 +17,8 @@
  * Legend room beside it, a premium room drawn full-bleed (premium-rooms.ts).
  * Community stands there too (NATIVE_COMMUNITY), with a shared result
  * opened from its list pushed over it, so Back leaves the result first.
+ * Voice Constellation is pushed over the Progress tab, from its voice card
+ * (NATIVE_PROGRESS).
  */
 export type PushedScreen =
   | 'settings'
@@ -47,6 +49,7 @@ export type PushedScreen =
   | 'legend'
   | 'community'
   | 'community-result'
+  | 'voice-constellation'
 
 /** A screen that is only ever reached through Settings. */
 export type SettingsChild = Exclude<
@@ -63,4 +66,5 @@ export type SettingsChild = Exclude<
   | 'legend'
   | 'community'
   | 'community-result'
+  | 'voice-constellation'
 >

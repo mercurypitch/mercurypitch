@@ -9,7 +9,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
 import { openColumn, openMore, pushed, pushedStack, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, returnToRun, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, registerPushedBack, resolveBack, returnToRun, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
 // Everything about leaving the room is driven through the real host below:
@@ -205,6 +205,56 @@ describe('a room or a sheet drawn over its tab', () => {
     // is for Settings, not the sheet it hides.
     const answer = vi.fn(() => true)
     unregister = registerRoomBack(answer)
+    pushScreen('settings')
+
+    expect(performBack(host(true))).toBe('pushed')
+    expect(answer).not.toHaveBeenCalled()
+  })
+})
+
+describe("a pushed screen's own overlay", () => {
+  // Voice Constellation's portrait details, over the map it is pushed with.
+  it('takes the press and leaves the screen up', () => {
+    const answer = vi.fn(() => true)
+    unregister = registerPushedBack(answer)
+    pushScreen('settings')
+    const back = host(true)
+
+    expect(performBack(back)).toBe('room-overlay')
+    expect(answer).toHaveBeenCalledTimes(1)
+    expect(pushed()).toBe('settings')
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('lets the press pop the screen once nothing is open', () => {
+    unregister = registerPushedBack(() => false)
+    pushScreen('settings')
+
+    expect(performBack(host(true))).toBe('pushed')
+    expect(pushed()).toBeNull()
+  })
+
+  it('is not asked while a sheet of the shell is over the screen', () => {
+    const answer = vi.fn(() => true)
+    unregister = registerPushedBack(answer)
+    pushScreen('settings')
+    openMore()
+
+    expect(performBack(host(true))).toBe('sheet')
+    expect(answer).not.toHaveBeenCalled()
+  })
+
+  it('is not asked with no screen pushed', () => {
+    const answer = vi.fn(() => true)
+    unregister = registerPushedBack(answer)
+
+    expect(performBack(host(true))).toBe('history')
+    expect(answer).not.toHaveBeenCalled()
+  })
+
+  it('is not asked once it has unregistered', () => {
+    const answer = vi.fn(() => true)
+    registerPushedBack(answer)()
     pushScreen('settings')
 
     expect(performBack(host(true))).toBe('pushed')

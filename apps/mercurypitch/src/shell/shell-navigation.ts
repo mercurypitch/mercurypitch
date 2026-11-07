@@ -145,6 +145,27 @@ export function registerOnboardingBack(back: () => boolean): () => void {
   }
 }
 
+// ── A pushed screen's own overlay ────────────────────────────
+//
+// A screen pushed over the tab can lay something of its own over itself:
+// Voice Constellation opens a portrait's details over the map. Back closes
+// that first and leaves the screen up, as Close does; only the next press
+// pops the screen. Without this the press popped the screen from under its
+// own dialog.
+
+let pushedBack: (() => boolean) | null = null
+
+/**
+ * Register the pushed screen's own Back. It answers true when it had
+ * something open and has closed it; the returned function unregisters it.
+ */
+export function registerPushedBack(back: () => boolean): () => void {
+  pushedBack = back
+  return () => {
+    if (pushedBack === back) pushedBack = null
+  }
+}
+
 /**
  * Go to a tab, parking a run on the way out if this is the room it belongs
  * to. Sound stops and the microphone is released on the same frame, with
@@ -305,6 +326,11 @@ export function performBack(host: BackHost): BackOutcome {
   // shell's over it, as for the door: a screen pushed over the tab is
   // what the press is for, not the sheet it hides.
   if (!shellOverlayOpen() && pushed() === null && askRoomBack()) {
+    return 'room-overlay'
+  }
+  // The pushed screen's own overlay, over the screen and under every sheet
+  // of the shell's: the press closes it, and the screen stays.
+  if (!shellOverlayOpen() && pushed() !== null && pushedBack?.() === true) {
     return 'room-overlay'
   }
   const outcome = resolveBack(host.canGoBack)

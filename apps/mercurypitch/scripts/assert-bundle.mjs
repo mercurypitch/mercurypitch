@@ -568,6 +568,9 @@ const KARAOKE_STAGE_2 = [
     'Your progress starts with one run.',
     "the native Progress page's first visit",
   ],
+  // Voice Constellation as the phone's own screen, pushed over that page
+  // (ConstellationScreen.tsx): a lazy chunk on the same switch.
+  ['native-constellation', "the native Progress page's Voice Constellation"],
 ]
 
 /**

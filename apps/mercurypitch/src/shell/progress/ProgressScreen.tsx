@@ -12,8 +12,11 @@
 //
 // Share opens the web's studio in a sheet (ProgressShareStudio, inline):
 // the sheet is the dialog, its trap and its scroll. The league card opens
-// the phone's own Leagues screen. A moment the pager swipes to is drawn in
-// full from the same view model (progressMomentToView).
+// the phone's own Leagues screen, and Explore constellation the phone's own
+// Voice Constellation (ConstellationScreen.tsx), pushed over the page rather
+// than the web route's dialog over the whole shell. A moment the pager
+// swipes to is drawn in full from the same view model
+// (progressMomentToView).
 //
 // Behind NATIVE_PROGRESS, as a lazy chunk the shell lends the app through
 // the bridge (NativeShell.tsx, App.tsx): a build without the switch has
@@ -30,6 +33,7 @@ import type { ProgressMomentView } from '@/features/progress/ProgressPage'
 import { ProgressShareStudio } from '@/features/progress/ProgressShareStudio'
 import { useProgressRecord } from '@/features/progress/useProgressRecord'
 import { pushScreen } from '../run-shell-store'
+import { pushedScreenFor } from './progress-lines'
 import { useSheetBack } from './progress-parts'
 import { ProgressView } from './ProgressView'
 
@@ -55,7 +59,11 @@ export function ProgressScreen(): JSX.Element {
       emptyAction={record.emptyAction}
       momentFor={momentFor}
       onRetry={record.retry}
-      onAction={record.recordAction}
+      onAction={(action) => {
+        record.recordAction(action)
+        const screen = pushedScreenFor(action)
+        if (screen !== undefined) pushScreen(screen)
+      }}
       onShareMoment={record.openShare}
       onPeriodChange={record.changePeriod}
       onMomentSelect={record.selectMoment}

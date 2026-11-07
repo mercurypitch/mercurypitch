@@ -80,6 +80,12 @@ export interface ShellScreensProps {
    */
   community?: Component
   communityResult?: Component
+  /**
+   * Voice Constellation, opened from the native Progress page, on a build
+   * with it (NATIVE_PROGRESS): passed in as Developer is, so a store build
+   * carries no chunk for it.
+   */
+  voiceConstellation?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -110,17 +116,27 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   legend: 'Legend',
   community: 'Community',
   'community-result': 'Shared result',
+  'voice-constellation': 'Voice constellation',
 }
 
 /**
  * The screens that hand the focus to their title as they are pushed
- * (PushedScreen.tsx): Community's two, so a screen reader starts at the top
- * of what opened. The others keep the focus rules they were built with.
+ * (PushedScreen.tsx): Community's two and Voice Constellation, so a screen
+ * reader starts at the top of what opened. The others keep the focus rules
+ * they were built with.
  */
 const TITLE_FOCUS: ReadonlySet<PushedScreenId> = new Set([
   'community',
   'community-result',
+  'voice-constellation',
 ])
+
+/**
+ * The screens a swipe in from the left edge takes off, as Back does
+ * (edge-swipe.ts). Voice Constellation for now: a page to look through and
+ * leave, with nothing on it that drags sideways.
+ */
+const SWIPE_BACK: ReadonlySet<PushedScreenId> = new Set(['voice-constellation'])
 
 /** The device's own screen is named for what it is: "This iPad" on an iPad. */
 function titleOf(screen: PushedScreenId): string {
@@ -194,6 +210,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return drawn(props.community)
       case 'community-result':
         return drawn(props.communityResult)
+      case 'voice-constellation':
+        return drawn(props.voiceConstellation)
     }
   }
 
@@ -205,6 +223,7 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
           onBack={popScreen}
           bleed={isFullBleed(screen)}
           focusTitle={TITLE_FOCUS.has(screen)}
+          swipeBack={SWIPE_BACK.has(screen)}
         >
           {/* One iOS volume from the door to the way out (room-visit.ts):
               before the room, so its first sound already has it. */}
