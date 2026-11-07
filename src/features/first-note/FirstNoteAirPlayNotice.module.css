@@ -1,0 +1,71 @@
+/* Over AirPlay alone, where this room plays nothing (FirstNoteAirPlayNotice.tsx). */
+
+/* Always there, empty while there is nothing to say, so a screen reader
+   hears the notice the moment it appears. Under the room's head, over the
+   song's name (FirstNoteRoom.module.css, .song): above the stage, the song
+   line and the countdown, below the bar and the demo's Skip (z-index 5).
+   The sheets are portalled to the body, over everything. The slot takes no
+   taps, and nor does the notice: it has nothing to press. */
+.slot {
+  position: absolute;
+  top: calc(var(--pushed-top, 0px) + 56px);
+  left: max(12px, var(--safe-left, 0px));
+  right: max(12px, var(--safe-right, 0px));
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* The rooms' dark glass, as Karaoke's AirPlay hint: the stage under it is
+   dark in either app theme, so its ink is the dark stage's. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(10, 18, 44, 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #e6edf3;
+  font: 500 13px/1.35 var(--font-body, sans-serif);
+  overflow-wrap: anywhere;
+  animation: arrive 220ms ease-out both;
+}
+
+.icon {
+  flex: none;
+  display: flex;
+  margin-top: 1px;
+  color: #ffd166;
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* A short phone (360 x 640, 375 x 667): where the song's name sits there. */
+@media (max-height: 700px) {
+  .slot {
+    top: calc(var(--pushed-top, 0px) + 48px);
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none;
+  }
+}
