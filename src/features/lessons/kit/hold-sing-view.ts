@@ -11,7 +11,7 @@
 // never to a button, so a key press meant to scroll can never start a take
 // (REQ-GVC-080).
 
-import type { BandChart } from './band-chart'
+import type { BandChart, BandChartOptions } from './band-chart'
 import { mountBandChart } from './band-chart'
 import { q, qa } from './dom'
 import type { HoldPhase } from './hold-run'
@@ -74,11 +74,15 @@ export interface HoldSingView {
 
 /**
  * The card's view; `nextHold` names the second hold's button in the markup,
- * its `data-sing`: "hold15" on Lesson 5's card.
+ * its `data-sing`: "hold15" on Lesson 5's card; `paintOver`, a painter over
+ * the chart's plot, where the page draws the line's middle (Lesson 22).
  */
 export function createHoldSingView(
   stills: RingStills,
-  o: { readonly nextHold: string },
+  o: {
+    readonly nextHold: string
+    readonly paintOver?: BandChartOptions['paintOver']
+  },
 ): HoldSingView {
   const card = q('#singCard')
   const statusEl = q('#singStatus')
@@ -98,6 +102,7 @@ export function createHoldSingView(
     target: A3,
     window: 10,
     timeTicks: true,
+    paintOver: o.paintOver,
   })
   const ring = mountRing(q('#ring', live), {
     stills,

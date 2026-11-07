@@ -8,11 +8,12 @@
 // its centre; Merc's line follows its schedule's sine at its true pitch,
 // its depth grown in from 0, only as far as the play has sounded, a level
 // note at its height, a drifting middle rising; the middle is dashed, drawn
-// left to right as far as its share, amber or violet, and named "middle"
-// once whole, past its end where the window has room, else above it on a
-// plate; the ruler stands from the middle to the top of a swing with its
-// reading. Each chart is mounted on a canvas that keeps every call
-// (band-chart.test-fixtures.ts) and read back through its own `pointOf`.
+// left to right as far as its share, amber or violet on a dark edge, and
+// named "middle" once whole, past its end where the window has room, else
+// above it on a plate; the ruler stands from the middle to the top of a
+// swing with its reading. Each chart is mounted on a canvas that keeps
+// every call (band-chart.test-fixtures.ts) and read back through its own
+// `pointOf`.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -235,6 +236,28 @@ describe('the middle line', () => {
     expect(middle?.ys).toEqual([chart.pointOf(0, 0).y, chart.pointOf(1.5, 0).y])
     expect(middle?.xs[1]).toBeCloseTo(chart.pointOf(1.5, 0).x, 6)
     expect(marksOf(calls).some((m) => m.line.includes('MIDDLE'))).toBe(false)
+  })
+
+  it('draws its dashes on a dark edge first, so they part from the line of their own colour under them', async () => {
+    // Act
+    const [{ calls }] = await paintCharts(
+      hero((s) => {
+        s.wave = COLD
+        s.middle = { points: middleOf(COLD), tone: 'merc', share: 1 }
+      }),
+    )
+
+    // Assert: the edge, wider, on the same path, then the amber dashes
+    const marks = marksOf(calls)
+    const dashes = marks.findIndex(
+      (m) => m.rgb === AMBER && m.line.includes('dash'),
+    )
+    const edge = marks[dashes - 1]
+    expect(edge.rgb).toBe(channels('rgba(7,10,16,.82)').rgb)
+    expect(edge.line).toContain('dash 6 5')
+    expect(edge.width).toBe(6)
+    expect(marks[dashes].width).toBe(2)
+    expect([edge.xs, edge.ys]).toEqual([marks[dashes].xs, marks[dashes].ys])
   })
 
   it('names itself "middle" once whole, and draws violet from the reader', async () => {

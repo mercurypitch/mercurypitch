@@ -27,13 +27,13 @@ import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-parts.css'
-// the voice lessons' sheet joins with Sing it, the module whose chunk it
-// shares: taken before it, it would leave that chunk for one of its own,
-// which every voice lesson's page would then link after its own sheet
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them
 // (MISTAKES.md, on the lessons' base stylesheet). The recall's questions,
 // Lessons 5 and 14's, share no chunk with a sheet, so the slide guide's
 // sheet, which Lesson 23 takes beside Lesson 6's questions, stays off
 // this page: taken here, it would leave the chunk it shares with them
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-22.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -46,8 +46,11 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
 
@@ -73,6 +76,10 @@ deck.start()
 // four words, each figure a small band chart that draws its play's line,
 // wave and all, as it sounds
 initWords()
+
+// Sing it on the kit's held-note checkpoint: two ten-second holds, read on
+// the middle of the line
+initSing({ blue: mercBlue, orange: mercOrange })
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(22)

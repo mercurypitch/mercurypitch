@@ -47,16 +47,13 @@ import { stillSky } from '@/features/lessons/kit/still-sky'
 import { holdTour } from '@/features/lessons/kit/tour-gate'
 import { A3, answerOf, COLD, contourOfPlay, lineOf, STRAIGHT_AT, } from './sounds'
 import type { Drawn } from './vib-picture'
-import { drawnTo } from './vib-picture'
+import { drawnTo, MIDDLE_SEC } from './vib-picture'
 
 /** The hero's axis, cents either side of Merc's note: the wave and the top's straight note, with room above. */
 export const HERO_RANGE = 80
 
 /** The hero's window, seconds across (WEB-SPEC, Toys 1). */
 export const HERO_WINDOW = 4.5
-
-/** Seconds the middle line takes to draw itself at the reveal (FACTS 42). */
-export const MIDDLE_SEC = 0.6
 
 /** The predict's words (LESSON.md; WEB-SPEC, Toys 1); there is no `next` hint. */
 export const COLD_PREDICT = {

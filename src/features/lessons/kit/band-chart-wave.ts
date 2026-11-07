@@ -8,7 +8,8 @@
 // downloads it. Merc's line is his amber at its true pitch, sampled from
 // its schedule a pixel or two apart and drawn up to the moment the play has
 // reached; the middle is dashed, drawn left to right as far as its share,
-// in amber from Merc's schedule or violet from the centre-line reader, and
+// in amber from Merc's schedule or violet from the centre-line reader, on a
+// dark edge that parts it from the line of its own colour under it, and
 // labelled "middle" just past its end, or above it on a dark plate where the
 // window has no room left; the ruler stands upright from a dashed tick
 // at the middle to the top of a swing, its reading beside it. A point
@@ -70,8 +71,6 @@ export function drawMiddle(f: ChartFrame, m: MiddleLine): void {
   const { ctx } = f
   const first = pts[0].t
   const until = first + (pts[pts.length - 1].t - first) * Math.min(1, m.share)
-  ctx.strokeStyle = m.tone === 'merc' ? BAND_COLOR.target : BAND_COLOR.singer
-  ctx.lineWidth = 2
   ctx.setLineDash([6, 5])
   ctx.beginPath()
   let end = { x: xOf(f, first), y: pin(f, pts[0].c) }
@@ -85,6 +84,13 @@ export function drawMiddle(f: ChartFrame, m: MiddleLine): void {
     end = { x: xOf(f, t), y: pin(f, q.c + (p.c - q.c) * k) }
     ctx.lineTo(end.x, end.y)
   }
+  // a dark edge under the dashes first, so they read over a line of their
+  // own colour: Merc's wave under his middle, the singer's under theirs
+  ctx.strokeStyle = PLATE
+  ctx.lineWidth = 6
+  ctx.stroke()
+  ctx.strokeStyle = m.tone === 'merc' ? BAND_COLOR.target : BAND_COLOR.singer
+  ctx.lineWidth = 2
   ctx.stroke()
   ctx.setLineDash([])
   if (m.share < 1) return
