@@ -392,9 +392,13 @@ describe("the hub's Season 2", () => {
     )
     const unwritten = items.filter(
       (li) =>
-        !['lesson-15', 'lesson-17', 'lesson-19', 'lesson-22', 'lesson-23'].includes(
-          li.querySelector('h4')?.id ?? '',
-        ),
+        ![
+          'lesson-15',
+          'lesson-17',
+          'lesson-19',
+          'lesson-22',
+          'lesson-23',
+        ].includes(li.querySelector('h4')?.id ?? ''),
     )
     expect(unwritten).toHaveLength(9)
     for (const li of unwritten) {
