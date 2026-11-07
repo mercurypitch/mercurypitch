@@ -95,6 +95,9 @@ episode where the lesson has one. Each episode also has a page of its own.
 - [Lesson 2 film: Twelve notes](https://mercurypitch.com/learn/02/watch): Lesson
   2 (Twelve notes) as a film, with captions, chapters to jump between and a
   transcript. It links back to the lesson.
+- [Lesson 3 film: Match a note](https://mercurypitch.com/learn/03/watch): Lesson
+  3 (Match a note) as a film, with captions, chapters to jump between and a
+  transcript. It links back to the lesson.
 - [Lesson 4 film: The major scale and home](https://mercurypitch.com/learn/04/watch):
   Lesson 4 (The major scale and home) as a film, with captions, chapters to jump
   between and a transcript. It links back to the lesson.

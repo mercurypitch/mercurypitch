@@ -6,9 +6,10 @@ to the owner)
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English, as the owner decided on 16 October 2026 (MASTER-PLAN § 12 item 5). Each step names its toy
 (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md), which also
-holds the rules behind the checkpoint's lines. This is the first voice lesson and, for now, a
-text-only package: there is no film yet. Each step's heading is Tavi's question (playbook
-rule 4). The page publishes only after Lesson 2's page, `/learn/02`, is live, because its recall
+holds the rules behind the checkpoint's lines. This is the first voice lesson. It was written as a
+text-only package; its film came later, 9:32 long and released with the page on 7 November 2026,
+and plays in the page's Watch section, with its captions in [captions/](captions/). Each step's
+heading is Tavi's question (playbook rule 4). The page publishes only after Lesson 2's page, `/learn/02`, is live, because its recall
 check links there. What the vocal coach signs off is listed at the end.
 
 ---

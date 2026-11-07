@@ -148,6 +148,8 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/learn/01/watch.html',
   '/learn/02/watch',
   '/learn/02/watch.html',
+  '/learn/03/watch',
+  '/learn/03/watch.html',
   '/learn/04/watch',
   '/learn/04/watch.html',
   // A draft lesson too (src/features/lessons/kit/drafts.ts). Where it is not

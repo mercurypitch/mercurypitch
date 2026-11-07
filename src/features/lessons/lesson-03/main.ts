@@ -4,10 +4,11 @@
 //
 // learn/03.html carries every word of the lesson; this module adds what the
 // markup cannot: the sound, the five step toys, Merc and Tavi, the recall and
-// the quick check, the checkpoint that listens, the Wrap's free play and the
-// season map. The renderer for Merc and Tavi loads last, as its own chunk, and
-// the listener only when Sing it's Start is pressed, so the page reads and
-// plays before either arrives. A draft until the vocal coach signs it off
+// the quick check, the checkpoint that listens, the Wrap's free play, the
+// episode and the season map. The masthead's anchors are Lesson, Sing, Watch
+// and Explorer. The renderer for Merc and Tavi loads last, as its own chunk,
+// and the listener only when Sing it's Start is pressed, so the page reads
+// and plays before either arrives. A draft until the vocal coach signs it off
 // (kit/drafts.ts).
 
 import '@fontsource-variable/inter'
@@ -19,6 +20,7 @@ import '@/features/lessons/kit/lesson-stage.css'
 import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-03.css'
 import { q } from '@/features/lessons/kit/dom'
+import { createEpisode } from '@/features/lessons/kit/episode'
 import { createExplorer } from '@/features/lessons/kit/explorer'
 import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
@@ -33,6 +35,12 @@ import { createStepDeck, registerToy } from '@/features/lessons/kit/step-deck'
 import { bindVoiceButtons } from '@/features/lessons/kit/voice-choice'
 import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
 import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
+import posterLesson1 from '@/features/lessons/lesson-01/assets/poster.jpg'
+import posterLesson2 from '@/features/lessons/lesson-02/assets/poster.jpg'
+import posterLesson4 from '@/features/lessons/lesson-04/assets/poster.jpg'
+import vttUrl from './assets/lesson-03.en.vtt?url'
+import poster from './assets/poster.jpg'
+import { FILM_CAPTIONS_TEXT, FILM_CHAPTERS, FILM_SOURCES } from './film'
 import { initHook } from './hook'
 import { QUIZ_QUESTIONS } from './quiz-questions'
 import { initRecall } from './recall'
@@ -98,7 +106,17 @@ createQuiz({
 initWrap()
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(3)
-createExplorer({ current: 3 })
+const explorer = createExplorer({
+  current: 3,
+  posters: { 1: posterLesson1, 2: posterLesson2, 3: poster, 4: posterLesson4 },
+})
+createEpisode({
+  film: FILM_SOURCES,
+  captions: vttUrl,
+  vtt: FILM_CAPTIONS_TEXT,
+  chapters: FILM_CHAPTERS,
+  onDuration: (len) => explorer.setLength(3, len),
+})
 
 // the last screen's way back to the plan, for someone who answered its
 // questions: a chunk of its own, after first paint (one that cannot load
@@ -109,11 +127,13 @@ void import('@/features/lessons/kit/plan-back').then(
 )
 
 engraveClefs(G_CLEF_PATH)
+// Lesson, Sing, Watch and Explorer
 initMasthead(
   {
     words: '#lesson',
     lesson: '#lesson',
     sing: '#sing',
+    watch: '#watch',
     explorer: '#explorer',
   },
   { lesson: 3, deck },

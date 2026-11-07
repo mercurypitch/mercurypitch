@@ -710,9 +710,11 @@ describe("Lesson 1's map on a page the worker served (page-state.ts)", () => {
     // Act
     explorerBuilt({ current: 1 }).select(3, false)
 
-    // Assert
-    expect(openCard()?.querySelector('.chip')?.textContent).toBe('Ready · read')
-    expect(cardLinks()).toEqual(['/learn/03'])
+    // Assert: its page, and its film there
+    expect(openCard()?.querySelector('.chip')?.textContent).toBe(
+      'Ready · watch and read',
+    )
+    expect(cardLinks()).toEqual(['/learn/03', '/learn/03#watch'])
   })
 
   it('shows a released lesson the state holds back as coming later, with no link', () => {

@@ -55,6 +55,11 @@ export const FILMS: FilmRegistry = {
     hd: 'https://media.mercurypitch.com/learn/02/v1/lesson-02-1080p.mp4',
     sd: 'https://media.mercurypitch.com/learn/02/v1/lesson-02-720p.mp4',
   },
+  // "Match a note", 9:32, master master-10
+  3: {
+    hd: 'https://media.mercurypitch.com/learn/03/v1/lesson-03-1080p.mp4',
+    sd: 'https://media.mercurypitch.com/learn/03/v1/lesson-03-720p.mp4',
+  },
   // "The major scale and home", 9:11, master film-06
   4: {
     hd: 'https://media.mercurypitch.com/learn/04/v1/lesson-04-1080p.mp4',
