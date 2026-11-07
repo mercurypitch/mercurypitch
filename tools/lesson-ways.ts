@@ -31,8 +31,8 @@
 // lesson that is not live goes from a nav, by the site worker
 // (src/lesson-gate.ts `followState`) and by the page's own script for a
 // page no worker served (kit/page-state.ts `followPageState`). So on
-// mercurypitch.com, where drafts are held back, Lesson 2's foot keeps
-// Lesson 1 and loses Lesson 3; where drafts are shown it keeps both.
+// mercurypitch.com, where drafts are held back, Lesson 4's foot keeps
+// Lesson 3 and loses Lesson 5; where drafts are shown it keeps both.
 
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'

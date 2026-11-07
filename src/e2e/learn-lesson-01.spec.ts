@@ -112,11 +112,11 @@ test("Home's Lessons link opens the visitor's next lesson, never a draft", async
     '/learn/02',
   )
 
-  // Lessons 1 and 2 done: this bundle serves Lesson 3, a draft, and Home
+  // Lessons 1 to 4 done: this bundle serves Lesson 5, a draft, and Home
   // still offers the hub, as every environment serves it.
   // Init scripts run in the order they were added, so this one wins.
   await page.addInitScript(() => {
-    window.localStorage.setItem('fyp-done', '[1,2]')
+    window.localStorage.setItem('fyp-done', '[1,2,3,4]')
   })
   await page.reload()
   await page.waitForSelector('#app-tabs', { timeout: 10_000 })

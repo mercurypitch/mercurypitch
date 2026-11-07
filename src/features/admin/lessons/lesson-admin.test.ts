@@ -379,8 +379,8 @@ describe('readListing', () => {
 describe('releaseChecklist', () => {
   const released = rowFor(1, lessonRows(LESSONS, {}, { 1: SOURCES }))
   const hiddenDraft = rowFor(
-    3,
-    lessonRows([withoutPage(LESSONS[3])], DRAFT_LESSONS),
+    5,
+    lessonRows([withoutPage(LESSONS[5])], DRAFT_LESSONS),
   )
 
   it('marks a released, filmed lesson the site serves and lists done, bar the steps done by hand', () => {
@@ -429,20 +429,20 @@ describe('releaseChecklist', () => {
       ['release-day', 'by-hand'],
     ])
     expect(steps.find((step) => step.id === 'release')?.detail).toBe(
-      `Waiting on ${DRAFT_LESSONS[3]}. It can be published here before then.`,
+      `Waiting on ${DRAFT_LESSONS[5]}. It can be published here before then.`,
     )
   })
 
   it('flags a draft the site serves, or lists, where this site leaves drafts out, whether or not this build carries its page', () => {
     const site = {
       page: answered(200),
-      sitemap: read('/learn/03'),
+      sitemap: read('/learn/05'),
       llms: read(),
     }
     const problems = (steps: readonly ReleaseStep[]) =>
       siteSteps(steps).filter(([, state]) => state === 'problem')
 
-    for (const draft of [hiddenDraft, rowFor(3)]) {
+    for (const draft of [hiddenDraft, rowFor(5)]) {
       expect(problems(releaseChecklist(draft, site, HELD))).toEqual([
         [
           'sitemap',
@@ -457,7 +457,7 @@ describe('releaseChecklist', () => {
       ])
     }
     // Where drafts are shown, serving and listing it is what the site should do.
-    expect(siteSteps(releaseChecklist(rowFor(3), site, SHOWN))).toEqual([
+    expect(siteSteps(releaseChecklist(rowFor(5), site, SHOWN))).toEqual([
       ['sitemap', 'done', undefined],
       ['llms', 'todo', undefined],
       ['live', 'done', undefined],
@@ -492,10 +492,10 @@ describe('releaseChecklist', () => {
   })
 
   it('holds a draft published here to being listed and served, and says when the site has not followed yet', () => {
-    const shownDraft = rowFor(3)
+    const shownDraft = rowFor(5)
     const shown = releaseChecklist(
       shownDraft,
-      { page: answered(200), sitemap: read('/learn/03'), llms: read() },
+      { page: answered(200), sitemap: read('/learn/05'), llms: read() },
       { ...SHOWN, published: true },
     )
     const hidden = releaseChecklist(

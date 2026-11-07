@@ -682,8 +682,11 @@ describe('every entry document', () => {
     'learn/index.html',
     'learn/01.html',
     'learn/02.html',
+    'learn/03.html',
+    'learn/04.html',
     'learn/01/watch.html',
     'learn/02/watch.html',
+    'learn/04/watch.html',
   ])('credits a share of %s to the organization on X', (file) => {
     expect(metaOf(file, 'twitter:site')).toBe(X_SITE_HANDLE)
   })

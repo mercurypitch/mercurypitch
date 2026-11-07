@@ -84,9 +84,13 @@ describe('readPageState', () => {
     const lessons = built.pageLessons(servedDocument(undefined))
 
     // Assert
-    expect([lessons[3].page, lessons[5].page]).toEqual([undefined, undefined])
-    expect(lessons[2].page).toBe('/learn/02')
-    expect(built.lessonLive(3, servedDocument(undefined))).toBe(false)
+    expect([lessons[5].page, lessons[6].page]).toEqual([undefined, undefined])
+    expect([lessons[2].page, lessons[3].page, lessons[4].page]).toEqual([
+      '/learn/02',
+      '/learn/03',
+      '/learn/04',
+    ])
+    expect(built.lessonLive(5, servedDocument(undefined))).toBe(false)
   })
 })
 
@@ -169,12 +173,12 @@ describe('followPageState', () => {
     expect(readings?.querySelector('[data-if-live="x"]')).not.toBeNull()
   })
 
-  describe("on Lesson 2's foot, as the build writes it", () => {
+  describe("on Lesson 4's foot, as the build writes it", () => {
     const ROOT = resolve(__dirname, '../../../..')
     const built = new DOMParser().parseFromString(
       fillLessonWays(
-        readFileSync(resolve(ROOT, lessonDocument(2)), 'utf8'),
-        lessonWays(ROOT, 2),
+        readFileSync(resolve(ROOT, lessonDocument(4)), 'utf8'),
+        lessonWays(ROOT, 4),
       ),
       'text/html',
     )
@@ -185,16 +189,16 @@ describe('followPageState', () => {
       )
 
     it('takes out the next lesson where drafts are held back, keeping the one before', () => {
-      // Arrange: Lesson 3 a draft, with no override, as on mercurypitch.com
+      // Arrange: Lesson 5 a draft, with no override, as on mercurypitch.com
       const doc = servedDocument(STATE({}, false), FOOT)
 
       // Act
       followPageState(doc)
 
       // Assert
-      expect(ways(doc)).toEqual(['/learn/01'])
+      expect(ways(doc)).toEqual(['/learn/03'])
       expect(doc.querySelector('.foot-ways')?.textContent).not.toContain(
-        'Lesson 3',
+        'Lesson 5',
       )
     })
 
@@ -206,7 +210,7 @@ describe('followPageState', () => {
       followPageState(doc)
 
       // Assert
-      expect(ways(doc)).toEqual(['/learn/01', '/learn/03'])
+      expect(ways(doc)).toEqual(['/learn/03', '/learn/05'])
     })
   })
 

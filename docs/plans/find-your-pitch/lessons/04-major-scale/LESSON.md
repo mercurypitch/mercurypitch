@@ -2,10 +2,11 @@
 
 The web lesson's copy, step by step. Every claim is in [FACTS.md](FACTS.md). Written in British
 English, as MASTER-PLAN § 12 item 5 decides; the app's screens stay American. Each step names its
-toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). This is
-a text-only package: Lesson 4 has no film yet, so the page has no Watch section. It is a theory
-lesson, but its sing-along spans an octave, so its voice lines are listed for the vocal coach at
-the end.
+toy (the interactive visual it sits beside); the page spec is [WEB-SPEC.md](WEB-SPEC.md). It was
+written as a text-only package; its film came later, 9:11 long and released with the page on 7
+November 2026, and plays in the page's Watch section, with its captions in [captions/](captions/).
+It is a theory lesson, but its sing-along spans an octave, so its voice lines are listed for the
+vocal coach at the end.
 
 ---
 
@@ -51,7 +52,7 @@ _[After the cold open since 20 October 2026, as on Lesson 2's page (MASTER-PLAN 
 § 12 item 13).]_
 
 Two questions from Lesson 2, asked afresh (no earlier answers are shown). They are Lesson 2's quiz
-questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's draft asks the
+questions 1 and 3, word for word, under their ids `l02-q1` and `l02-q3`; Lesson 3's recall asks the
 other two (FACTS 30). Their feedback is Lesson 2's, except that "Try Step N again" reads "Try
 Lesson 2, Step N again" and is a plain link to Lesson 2's page, not to a step on this one. The kit's
 quiz has `QuizQuestion.id`, and since #1193 these answers are sent and count as the delayed score

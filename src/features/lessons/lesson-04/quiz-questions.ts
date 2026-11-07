@@ -12,7 +12,7 @@
 //
 // The recall asks Lesson 2's quick-check questions 1 and 3, the very
 // objects Lesson 2's page asks, under their ids `l02-q1` and `l02-q3`
-// (FACTS 30); Lesson 3's draft asks the other two. The kit's quiz turns
+// (FACTS 30); Lesson 3's recall asks the other two. The kit's quiz turns
 // their "Try Step N again" into "Try Lesson 2, Step N again", a plain link
 // to Lesson 2's page that opens there at the step, in a new tab.
 

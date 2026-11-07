@@ -49,24 +49,30 @@ describe('currentLessonHref', () => {
     expect(href).toBe('/learn/02')
   })
 
-  it('opens the hub once Lessons 1 and 2 are done', () => {
+  it('opens Lesson 3 once Lessons 1 and 2 are done', () => {
     markDone('[2,1]')
+
+    expect(currentLessonHref()).toBe('/learn/03')
+  })
+
+  it('opens the hub once Lessons 1 to 4 are done', () => {
+    markDone('[2,1,4,3]')
 
     expect(currentLessonHref()).toBe(LESSONS_HUB)
     expect(LESSONS_HUB).toBe('/learn/')
   })
 
   it('never opens a draft, even when it is the next number', () => {
-    // Arrange: Lesson 3 has a page and comes next, but waits on a sign-off.
-    const lesson3 = LESSONS.find((L) => L.n === 3)
-    markDone('[1,2]')
+    // Arrange: Lesson 5 has a page and comes next, but waits on a sign-off.
+    const lesson5 = LESSONS.find((L) => L.n === 5)
+    markDone('[1,2,3,4]')
 
     // Act
     const href = currentLessonHref()
 
     // Assert
-    expect(lesson3?.page).toBe('/learn/03')
-    expect(DRAFT_LESSONS[3]).toBeDefined()
+    expect(lesson5?.page).toBe('/learn/05')
+    expect(DRAFT_LESSONS[5]).toBeDefined()
     expect(href).toBe('/learn/')
   })
 
@@ -109,7 +115,7 @@ describe('currentLessonHref', () => {
       title: 'Twelve notes',
       page: '/learn/02',
     })
-    expect(currentLesson([1, 2])).toBeNull()
+    expect(currentLesson([1, 2, 3, 4])).toBeNull()
   })
 })
 

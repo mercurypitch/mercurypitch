@@ -49,6 +49,14 @@ export function stretchText(f: number): string {
   return `${n} hertz${name}: the folds open and close ${n} times a second`
 }
 
+/** The slowed rate as a sentence says it: "once a second", "twice a second", "1.1 times a second". */
+export function slowRateSaid(f: number): string {
+  const r = slowRate(f)
+  if (r === '1') return 'once a second'
+  if (r === '2') return 'twice a second'
+  return `${r} times a second`
+}
+
 /** The readout: "220 Hz: 220 swings a second", or slowed, "slowed 220 times: 1 a second". */
 export function foldsReadout(f: number, slow: boolean): string {
   return slow
@@ -97,7 +105,7 @@ export function mountFolds(root: HTMLElement, opts: FoldsOptions = {}): Folds {
   function say(): void {
     if (!singing) live.textContent = 'Breathing: the folds are apart.'
     else if (slow)
-      live.textContent = `Singing, slowed 220 times: the folds open and close ${slowRate(f)} a second.`
+      live.textContent = `Singing, slowed 220 times: the folds open and close ${slowRateSaid(f)}.`
     else
       live.textContent = `Singing: the folds open and close ${Math.round(f)} times a second.`
   }

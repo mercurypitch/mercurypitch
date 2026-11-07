@@ -81,12 +81,23 @@ episode where the lesson has one. Each episode also has a page of its own.
 - [Lesson 2: Twelve notes](https://mercurypitch.com/learn/02): Where the other
   five notes come from. The twelve notes on a keyboard, a semitone and a tone by
   ear, why one key has two names, and what a cent is.
+- [Lesson 3: Match a note](https://mercurypitch.com/learn/03): What happened
+  when students who said they couldn't copy a tune were tested. How your voice
+  makes a note, how to look after it, what "in tune" means, and three notes to
+  sing back.
+- [Lesson 4: The major scale and home](https://mercurypitch.com/learn/04): Why
+  do-re-mi sounds finished on do and restless on ti. The major scale's pattern
+  of steps, starting it on any note, naming its notes do to ti, and hearing ti
+  lean towards home.
 - [Lesson 1 film: What is a note?](https://mercurypitch.com/learn/01/watch):
   Lesson 1 (What is a note?) as a film, with captions, chapters to jump between
   and a transcript. It links back to the lesson.
 - [Lesson 2 film: Twelve notes](https://mercurypitch.com/learn/02/watch): Lesson
   2 (Twelve notes) as a film, with captions, chapters to jump between and a
   transcript. It links back to the lesson.
+- [Lesson 4 film: The major scale and home](https://mercurypitch.com/learn/04/watch):
+  Lesson 4 (The major scale and home) as a film, with captions, chapters to jump
+  between and a transcript. It links back to the lesson.
 
 ## Where it runs
 

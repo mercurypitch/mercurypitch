@@ -138,59 +138,56 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/learn/01.html',
   '/learn/02',
   '/learn/02.html',
+  '/learn/03',
+  '/learn/03.html',
+  '/learn/04',
+  '/learn/04.html',
   // Each film's own page (learn/01/watch.html), which the site worker holds
   // back with its lesson (src/lesson-gate.ts): its 404 page, never the shell.
   '/learn/01/watch',
   '/learn/01/watch.html',
   '/learn/02/watch',
   '/learn/02/watch.html',
+  '/learn/04/watch',
+  '/learn/04/watch.html',
   // A draft lesson too (src/features/lessons/kit/drafts.ts). Where it is not
   // published, the site worker answers its path with the 404 page
   // (src/lesson-gate.ts), and that is the right answer, never the shell.
-  '/learn/03',
-  '/learn/03.html',
-  // Lesson 4, a draft as Lesson 3 is, for the same reason.
-  '/learn/04',
-  '/learn/04.html',
-  // Lesson 5, a draft as Lesson 3 is, for the same reason.
   '/learn/05',
   '/learn/05.html',
-  // Lesson 6, a draft as Lessons 3 and 5 are, for the same reason.
+  // Lesson 6, a draft as Lesson 5 is, for the same reason.
   '/learn/06',
   '/learn/06.html',
-  // Lesson 7, a draft as Lessons 3, 5 and 6 are, for the same reason.
+  // Lesson 7, a draft as Lessons 5 and 6 are, for the same reason.
   '/learn/07',
   '/learn/07.html',
-  // Lesson 8, a draft as Lessons 3, 5, 6 and 7 are, for the same reason.
+  // Lesson 8, a draft as Lessons 5, 6 and 7 are, for the same reason.
   '/learn/08',
   '/learn/08.html',
-  // Lesson 9, a draft as Lessons 3, 5, 6, 7 and 8 are, for the same reason.
+  // Lesson 9, a draft as Lessons 5, 6, 7 and 8 are, for the same reason.
   '/learn/09',
   '/learn/09.html',
-  // Lesson 10, a draft as Lessons 3, 5, 6, 7, 8 and 9 are, for the same reason.
+  // Lesson 10, a draft as Lessons 5 to 9 are, for the same reason.
   '/learn/10',
   '/learn/10.html',
-  // Lesson 11, a draft as Lessons 3, 5, 6, 7, 8, 9 and 10 are, for the same
-  // reason.
+  // Lesson 11, a draft as Lessons 5 to 10 are, for the same reason.
   '/learn/11',
   '/learn/11.html',
-  // Lesson 12, a draft as Lessons 3, 5, 6, 7, 8, 9 and 10 are, for the same
-  // reason.
+  // Lesson 12, a draft as Lessons 5 to 10 are, for the same reason.
   '/learn/12',
   '/learn/12.html',
-  // Lesson 13, a draft as Lessons 3, 5, 6, 7, 8, 9, 10 and 12 are, for the
-  // same reason.
+  // Lesson 13, a draft as Lessons 5 to 10 and 12 are, for the same reason.
   '/learn/13',
   '/learn/13.html',
-  // Lesson 14, a draft as Lessons 3, 5, 6, 7, 8, 9, 10, 12 and 13 are, for
-  // the same reason.
+  // Lesson 14, a draft as Lessons 5 to 10, 12 and 13 are, for the same
+  // reason.
   '/learn/14',
   '/learn/14.html',
-  // Lesson 15, Season 2's first, a draft as Lessons 3 and 5 to 14 are, for
-  // the same reason.
+  // Lesson 15, Season 2's first, a draft as Lessons 5 to 14 are, for the
+  // same reason.
   '/learn/15',
   '/learn/15.html',
-  // Lesson 17, a draft as Lessons 3, 5 to 14 and 15 are, for the same reason.
+  // Lesson 17, a draft as Lessons 5 to 15 are, for the same reason.
   '/learn/17',
   '/learn/17.html',
   // Lesson 19, a draft as Lesson 17 is, for the same reason.

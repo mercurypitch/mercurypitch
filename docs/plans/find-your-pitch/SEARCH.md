@@ -16,10 +16,10 @@ It sits beside two other documents:
 
 ## 0. The short version
 
-1. **No lesson is on mercurypitch.com yet.** Lessons 1 and 2 are released on
-   `main`, and Lesson 3 is a draft (`src/features/lessons/kit/drafts.ts`), but
-   no release tag carries them; v0.9.21 predates all three. They can therefore
-   launch search-ready, and #1109 did that (§1).
+1. **Lessons 1 and 2 are on mercurypitch.com,** live with v0.9.22 (26 October
+   2026). Lessons 3 and 4 were released on `main` on the owner's word on 7
+   November 2026, so the next release tag carries them. Each goes out
+   search-ready, as #1109 set up for the first two (§1).
 2. **The lessons answer informational questions.** "What is a note", "how to
    match pitch", "intervals explained": AI Overviews already answer the generic
    form of each. Google's advice for its AI features is "valuable,

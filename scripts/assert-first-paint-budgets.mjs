@@ -151,7 +151,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // predict, took 43 of them back: 175,490, still 386 over 171.
   'learn/02.html': 172,
 
-  // Lesson 3, a draft lesson (src/features/lessons/kit/drafts.ts), built in
+  // Lesson 3, released on the owner's word on 7 November 2026 and built in
   // every mode like the rest: the site worker decides where it is live
   // (src/lesson-gate.ts). Measured 117 with the lesson menu and the
   // next-lesson card (100 before them), and 124 once the page read the state
@@ -244,7 +244,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and a grow-in, or none for a straight note, and the setter that glides
   // a sounding one to a new rate and extent.
   'learn/03.html': 140,
-  // Lesson 5, a draft too, built in every mode as Lesson 3 is. Measured 122
+  // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
+  // mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
   // with the page state.
   // The listener and the hold reader arrive when Sing it's Start is pressed,
@@ -360,7 +361,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 139 for Merc's vibrato option (kit/sound.ts), Lesson 22's:
   // 141,005 bytes before it, 141,402 with it, against 141,312 at 138, the
   // same 397 as on Lesson 3.
-  'learn/04.html': 139,
+  // Raised to 155 for Lesson 4's film, which plays under Watch as Lesson 2's
+  // does: 157,694 bytes in build:e2e with it, 15,086 of them the film's two
+  // chunks, kit/episode.ts (4,994) and lesson-04/film.ts with its chapters
+  // and captions (10,092).
+  'learn/04.html': 155,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -520,8 +525,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
   // 2026-11-01; the film itself is the markup's, so a quarter over holds.
+  // Lesson 4's, with longer captions, measured 20 (19,972 bytes) on
+  // 2026-11-07.
   'learn/01/watch.html': 24,
   'learn/02/watch.html': 24,
+  'learn/04/watch.html': 25,
 
   // The main app, and the crawlable doors that are the main app. Measured
   // 4669. It is eager by design today, so this is a ceiling on growth rather
@@ -583,7 +591,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // Lesson 2. Measured 75: the kit's sheets, its own and the slide guide's.
   'learn/02.html': 95,
 
-  // Lesson 3 (a draft, as above). Measured 77: the kit's sheets, the voice
+  // Lesson 3 (released, as above). Measured 77: the kit's sheets, the voice
   // lessons' sheet and its own, and the shared Inter and Outfit @font-face
   // rules.
   'learn/03.html': 96,
@@ -681,6 +689,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // over.
   'learn/01/watch.html': 45,
   'learn/02/watch.html': 45,
+  'learn/04/watch.html': 45,
 
   // The main app and the crawlable doors that are the main app. Measured
   // 1009, of which 871 is the single `index` sheet that src/index.tsx

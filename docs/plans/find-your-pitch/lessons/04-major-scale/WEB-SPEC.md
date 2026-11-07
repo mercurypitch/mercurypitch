@@ -3,8 +3,9 @@
 The Lesson 4 page is the web lesson for "The major scale and home": written steps, one main toy
 in five states and a compact one, two predicts, an unscored sing-along, two quizzes (the recall
 and the quick check) and the lesson explorer. Copy is in [LESSON.md](LESSON.md); every claim is in
-[FACTS.md](FACTS.md). It is a text-only package: no film exists for Lesson 4, so the page has no
-Watch section and the masthead's anchors are Lesson and Explorer. It is the third page built on
+[FACTS.md](FACTS.md). It was written as a text-only package, with no Watch section; its film came
+later and was released with the page on 7 November 2026, so the page now has one ("The film",
+below) and the masthead's anchors are Lesson, Sing, Watch and Explorer. It is the third page built on
 the kit (`src/features/lessons/kit/`), and like Lesson 2's it reuses and never copies: a part that
 still lives in Lesson 1's module (`src/features/lessons/lesson-01/`), or that Lesson 2 plans to
 promote (its [WEB-SPEC](../02-twelve-notes/WEB-SPEC.md), in build), moves into the kit first.
@@ -42,14 +43,18 @@ same two (WCAG 2.2.2).
 
 The page anatomy (MASTER-PLAN § 4.2) with Lesson 2's departures kept: the step toys double as the
 Playground, unlocked in the Wrap; the mix-up card sits in the step whose toy refutes it; the
-practice card sits in the Wrap. One more departure: no Watch section (§ 4.2 item 10), because the
-package has no film. Each section's heading, and the line above it, are in LESSON.md ("Section
+practice card sits in the Wrap. The page was built without a Watch section (§ 4.2 item 10), while
+the package had no film; it gained one with the film ("The film", below). Each section's heading, and the line above it, are in LESSON.md ("Section
 headings").
 
-1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 04", anchors Lesson and Explorer, the
+1. **Masthead**: Lesson 1's (wordmark, "Season 1 · Lesson 04", anchors Lesson, Sing, Watch and
+   Explorer, Watch hidden until kit/episode.ts shows it, the
    Sound toggle off by default, Pause animations with its reduced-motion lock). `initMasthead`
    takes any map of anchors, and the page's lesson and step deck for the lesson menu
-   (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`).
+   (`{ lesson: 4, deck }`), so dropping Watch needs no kit change (`kit/page-chrome.ts`). Four
+   anchors are the first the kit has carried: from 821 to 1280 px they drop their numerals and
+   keep their words (`kit/lesson-base.css`), or the row runs past the screen's edge by up to
+   43 px; under 821 px the lesson menu's sheet carries them, as it does three.
 2. **Hero**: kicker; the hook question as the title; the meta as three chips (14 minutes; "After
    Lesson 2: Twelve notes", the prerequisite chip, a link to `/learn/02`; Sound on); the promise;
    the sound gate from LESSON.md, in the hero copy as Lesson 1's is; Merc and Tavi live on the
@@ -91,8 +96,9 @@ headings").
 11. **Footer**: Lesson 1's, with "Season 1 · Lesson 04 · The major scale and home"; the practice
     link, printed `mercurypitch.com/pitch-training` and linking `/pitch-training?lesson=04`, with
     "Scale Runner is free: tap it in the exercises"; and the credits: Lesson 1's fonts line and
-    "Every sound on this page is synthesised in your browser" (FACTS 33a). With no film there are
-    no voices to credit.
+    "Every sound on this page is synthesised in your browser" (FACTS 33a). With the film the line
+    reads "The episode: made by MercuryPitch, with Merc and Tavi voiced with ElevenLabs. Outside the
+    episode, every sound on this page is synthesised in your browser."
 
 ## Toys: what each reuses, and what is new
 
@@ -379,9 +385,10 @@ main's.
   `/learn/01` is (`sw-runtime.ts:131-135`), so the service worker leaves the lesson alone. On main
   they are there (`:144-145`).
 - `public/sitemap.xml` and `public/llms.txt` (its "Lessons" list): Lesson 4's entry, at its release.
-  Held back as a draft (`kit/drafts.ts`), it is in neither; the site worker lists it while published.
-- `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. With no film to cut a frame from,
-  it is a still of the hero: the title over the staircase on C, do's house glyph lit.
+  Both list it since its release on the owner's word on 7 November 2026.
+- `public/learn/lesson-04-og.jpg`: the share card, 1200 x 630. Drawn before the film existed, it
+  is a still of the hero: the title over the staircase on C, do's house glyph lit. It stays the
+  share card and the watch page's thumbnail; the film's title card is its poster ("The film").
 - The page's head, as Lesson 1's (`learn/01.html:9-60`):
   - title: "The major scale: do-re-mi and the home note | MercuryPitch";
   - meta description: "Why does do-re-mi sound finished when it lands on do, and restless when it
@@ -392,6 +399,24 @@ main's.
     alt text naming what it shows.
 - Lessons 1 and 2's pages, when this one goes live: nothing to edit in their explorers, which read
   each lesson's state from the season (`kit/season.ts`; LESSON.md, Section headings).
+
+## The film
+
+"The major scale and home", 9:11 (551.23 s, master `film-06`), released with the page on 7
+November 2026. It is wired as Lesson 2's is:
+
+- `kit/films.ts`: Lesson 4's sources, `learn/04/v1/` on media.mercurypitch.com, the 1080p and the
+  720p MP4. `season.ts` gives the lesson `len: '9:11'`, `film: filmState(4)` and the poster as its
+  card's figure.
+- `lesson-04/film.ts` hands the sources, the chapters and the captions to `kit/episode.ts`, which
+  shows the Watch section and its masthead link (both `hidden` in the markup, as on Lesson 2) and
+  numbers the anchors I to IV. The hero links the watch page: "Watch the film 9:11".
+- `lesson-04/assets/`: `poster.jpg`, the frame 1.6 s into the title scene (41.07 s), cut as the
+  film kit's `web-video.sh` cuts Lesson 2's; `lesson-04.en.vtt` and `chapters.json`, byte-equal to
+  the copies in `captions/` here (`lesson-04/film-sync.test.ts`).
+- `learn/04/watch.html`, served at `/learn/04/watch`: the film as the page's main content, with its
+  VideoObject (`kit/watch-pages.ts`: `PT9M11S` measured, and the day it went live), listed in the
+  sitemap, `llms.txt`, the service worker's list and the hub's "Watch the film".
 
 ## Contract
 

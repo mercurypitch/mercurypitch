@@ -177,19 +177,21 @@ describe('a lesson held back (publish.ts)', () => {
     // Arrange: drafts held back, as on mercurypitch.com, and a step kept from a dev visit
     const season = seasonFor(LESSONS, defaultPageState(false))
 
-    // Act: on Lesson 2's page, the card for Lesson 3
-    const c = lessonCard(nextCard(season, [1], { 3: { step: 3, of: 6 } }, 2))
+    // Act: on Lesson 4's page, the card for Lesson 5, a draft
+    const c = lessonCard(
+      nextCard(season, [1, 2, 3], { 5: { step: 3, of: 6 } }, 4),
+    )
 
     // Assert
     expect([c?.n, c?.title, ...way(c)]).toEqual([
-      3,
-      'Match a note',
+      5,
+      'Breath and a steady note',
       'Coming later',
       'See it on the map',
       'map',
       '#explorer',
     ])
-    expect(JSON.stringify(c)).not.toContain('/learn/03')
+    expect(JSON.stringify(c)).not.toContain('/learn/05')
   })
 })
 

@@ -227,17 +227,17 @@ describe('a lesson held back (publish.ts)', () => {
     const season = seasonFor(LESSONS, defaultPageState(false))
 
     // Act
-    const m = menuModel(season, [1], { 3: { step: 3, of: 6 } }, 1, DECK)
+    const m = menuModel(season, [1], { 5: { step: 3, of: 6 } }, 1, DECK)
 
-    // Assert
-    const L3 = row(m, 3)
-    expect([L3?.state, L3?.meta, L3?.href, L3?.fill]).toEqual([
+    // Assert: Lesson 5, a draft
+    const L5 = row(m, 5)
+    expect([L5?.state, L5?.meta, L5?.href, L5?.fill]).toEqual([
       'later',
       'Coming later',
       null,
       0,
     ])
-    expect(rows(m).map((r) => r.href)).not.toContain('/learn/03#step-3')
+    expect(rows(m).map((r) => r.href)).not.toContain('/learn/05#step-3')
   })
 })
 

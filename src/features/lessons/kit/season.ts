@@ -207,8 +207,8 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Match a note',
     short: 'Match a note',
     topics: ['S01', 'S05'],
-    // A draft until its sign-off (drafts.ts): built in every mode, and live
-    // where the page state publishes it (publish.ts).
+    // Released on the owner's word on 7 November 2026. Its film is still
+    // being made, so it has no `film` or `len` until films.ts lists it.
     minutes: 16,
     page: '/learn/03',
     hook: "Asked, most students said they couldn't copy a tune. What happened when researchers tested it?",
@@ -227,9 +227,11 @@ const ENTRIES: readonly Lesson[] = [
     title: 'The major scale and home',
     short: 'Major scale',
     topics: ['T09', 'T10'],
-    // A draft until the owner's go-ahead (drafts.ts); no film yet
+    // Released on the owner's word on 7 November 2026, with its film.
     minutes: 14,
+    len: '9:11',
     page: '/learn/04',
+    film: filmState(4),
     hook: 'Why does do-re-mi sound finished when it lands on do, and restless when it stops on ti?',
     pr: {
       needs: 'Scale Runner at a beginner tempo (a data-only slug)',
@@ -240,6 +242,9 @@ const ENTRIES: readonly Lesson[] = [
         note: 'then tap Scale Runner',
       },
     },
+    fig: 'poster',
+    posterAlt:
+      'The title card: Find Your Pitch, Lesson 04, The major scale and home, above a glowing five-line staff with a blue note, an orange note, a chrome bead and chrome notes, one of them sharp',
   },
   {
     n: 5,
@@ -247,7 +252,8 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Breath and a steady note',
     short: 'Steady note',
     topics: ['S02', 'S03', 'S04', 'S06'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts): built in every mode, and live
+    // where the page state publishes it (publish.ts).
     minutes: 18,
     page: '/learn/05',
     hook: "Singers are told to “support” a long note. If that doesn't mean pushing, what keeps it steady?",
@@ -306,7 +312,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Beat, tempo and the backbeat',
     short: 'Beat and tempo',
     topics: ['T05', 'T06'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 16,
     page: '/learn/08',
     hook: 'Why does the same song feel different when you clap on 2 and 4 instead of 1 and 3?',
@@ -328,7 +334,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Landing a leap',
     short: 'Landing a leap',
     topics: ['S09', 'S10'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 16,
     page: '/learn/09',
     hook: 'How do you land a note you have to leap to?',
@@ -348,7 +354,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Major and minor',
     short: 'Major and minor',
     topics: ['T14', 'T15', 'T19'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 17,
     page: '/learn/10',
     hook: 'Which single note turns a major chord into a minor one?',
@@ -368,7 +374,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Registers and the break',
     short: 'Registers',
     topics: ['S12'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 16,
     page: '/learn/11',
     hook: 'Why does your voice sometimes flip as you slide up?',
@@ -388,7 +394,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Chords and the four-chord song',
     short: 'Chords',
     topics: ['T19', 'T20', 'T21'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 15,
     page: '/learn/12',
     hook: 'How can two songs share the same four chords and still sound different?',
@@ -430,7 +436,7 @@ const ENTRIES: readonly Lesson[] = [
     title: 'Phrasing: sing a whole song',
     short: 'Phrasing',
     topics: ['S16', 'S17', 'T22'],
-    // A draft until its sign-off (drafts.ts), as Lesson 3 is.
+    // A draft until its sign-off (drafts.ts), as Lesson 5 is.
     minutes: 18,
     page: '/learn/14',
     hook: 'If every note of a song is in tune, what is left to shape?',

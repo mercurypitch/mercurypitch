@@ -34,6 +34,8 @@ export interface ReleasedLesson {
 export const RELEASED_LESSONS: readonly ReleasedLesson[] = [
   { n: 1, title: 'What is a note?', page: '/learn/01' },
   { n: 2, title: 'Twelve notes', page: '/learn/02' },
+  { n: 3, title: 'Match a note', page: '/learn/03' },
+  { n: 4, title: 'The major scale and home', page: '/learn/04' },
 ]
 
 /** The lessons' hub, the door once every released lesson is done. */

@@ -46,7 +46,7 @@ function buildingOnOne(build: LessonRow['build']): [number, number] {
 /** A released lesson and the one it builds on: Lessons 2 and 1 as the season stands. */
 const [RELEASED, RELEASED_ON] = buildingOnOne('released')
 
-/** A draft and the one it builds on: Lessons 3 and 1 as the season stands. */
+/** A draft and the one it builds on: Lessons 6 and 4 as the season stands. */
 const [DRAFT, DRAFT_ON] = buildingOnOne('draft')
 
 /** An API where each of `lessons` is unpublished here. */

@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import { foldsReadout, mountFolds, noteAt, stretchHz, stretchText, } from './toy-folds'
+import { foldsReadout, mountFolds, noteAt, slowRateSaid, stretchHz, stretchText, } from './toy-folds'
 
 /** The toy's markup, as learn/03.html has it. */
 function foldsRoot(): HTMLElement {
@@ -52,6 +52,13 @@ describe("the folds' words", () => {
     expect(foldsReadout(440, true)).toBe('slowed 220 times: 2 a second')
   })
 
+  it('say a slowed rate as a sentence would: once, twice, or a number of times a second (L3-03)', () => {
+    expect(slowRateSaid(220)).toBe('once a second')
+    expect(slowRateSaid(440)).toBe('twice a second')
+    expect(slowRateSaid(242)).toBe('1.1 times a second')
+    expect(slowRateSaid(330)).toBe('1.5 times a second')
+  })
+
   it('speak a black key by its sharp, and leave a pitch between notes unnamed', () => {
     expect(stretchText(233.08)).toBe(
       '233 hertz, A sharp 3: the folds open and close 233 times a second',
@@ -83,6 +90,24 @@ describe('mountFolds', () => {
     expect(sing.getAttribute('aria-pressed')).toBe('false')
     expect(el(root, '[data-folds-live]').textContent).toBe(
       'Breathing: the folds are apart.',
+    )
+  })
+
+  it('says the slowed rate in words while Sing is held in slow motion (L3-03)', () => {
+    // Arrange
+    const root = foldsRoot()
+    mountFolds(root)
+    el(root, '[data-folds="slow"]').click()
+    const sing = el(root, '[data-folds="sing"]')
+
+    // Act
+    sing.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+    const whileHeld = el(root, '[data-folds-live]').textContent
+    sing.dispatchEvent(new KeyboardEvent('keyup', { key: ' ' }))
+
+    // Assert
+    expect(whileHeld).toBe(
+      'Singing, slowed 220 times: the folds open and close once a second.',
     )
   })
 

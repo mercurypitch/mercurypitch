@@ -224,21 +224,21 @@ for (const { name, viewport } of VIEWPORTS) {
     test('asks before publishing a draft early, and gives the focus back when the owner backs out', async ({
       page,
     }) => {
-      const api = await serveLessonApi(page, { '3': { published: false } })
+      const api = await serveLessonApi(page, { '5': { published: false } })
       const lessons = await openLessonsPage(page)
-      const toggle = rowOf(lessons, 3).getByRole('button', {
-        name: /^(Unpublish|Publish) Lesson 3$/,
+      const toggle = rowOf(lessons, 5).getByRole('button', {
+        name: /^(Unpublish|Publish) Lesson 5$/,
       })
-      await expect(toggle).toHaveAccessibleName('Publish Lesson 3')
-      await expect(rowOf(lessons, 3)).toContainText('Set here by owner@example')
+      await expect(toggle).toHaveAccessibleName('Publish Lesson 5')
+      await expect(rowOf(lessons, 5)).toContainText('Set here by owner@example')
 
       await toggle.focus()
       await page.keyboard.press('Enter')
       const dialog = page.getByRole('alertdialog', {
-        name: 'Publish Lesson 3 before its sign-off?',
+        name: 'Publish Lesson 5 before its sign-off?',
       })
       await expect(dialog).toHaveAccessibleDescription(
-        /^Lesson 3 waits on .+\. Publish it anyway\?$/,
+        /^Lesson 5 waits on .+\. Publish it anyway\?$/,
       )
       await page.keyboard.press('Escape')
 
@@ -249,9 +249,9 @@ for (const { name, viewport } of VIEWPORTS) {
       await toggle.click()
       await dialog.getByRole('button', { name: 'Publish anyway' }).click()
 
-      await expect(toggle).toHaveAccessibleName('Unpublish Lesson 3')
+      await expect(toggle).toHaveAccessibleName('Unpublish Lesson 5')
       await expect(toggle).toBeFocused()
-      expect(api.saves).toEqual([{ n: 3, body: { published: true } }])
+      expect(api.saves).toEqual([{ n: 5, body: { published: true } }])
     })
 
     test("puts a lesson back to the code's default from its card, and says what that is", async ({

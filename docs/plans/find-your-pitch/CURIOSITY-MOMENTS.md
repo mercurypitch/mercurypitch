@@ -91,7 +91,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   other five?" by 0:24, the payoff at about 2:58 of 7:11, a violet line edging to the band for Lesson 3. **Re-cut
   only:** a 12 to 15 s end card, lower-left third clear (YOUTUBE.md owner decision 8, open), for Lesson 3's video.
 
-### Lesson 3 · Match a note · voice; page built, a draft until the coach signs off
+### Lesson 3 · Match a note · voice; page built, released on the owner's word on 7 November 2026
 
 - **Opening (exists):** Tavi "I can't sing." Merc "Lots of people say that. So two researchers tested it."; the
   two figures; Play: on the note and Play: a semitone off; the predict on 39 students who said they couldn't copy a
@@ -107,7 +107,7 @@ Each entry gives the **Opening** (the first 10 to 30 s; it plants the predict's 
   which at 163 characters was the season's longest.
 - **Facts:** FACTS 1 to 8, 13 to 15; the tease, L4 FACTS 17, 22, 23 and 58.
 
-### Lesson 4 · The major scale and home · page built, a draft until the owner's go-ahead · hook kept
+### Lesson 4 · The major scale and home · page built, released on the owner's word on 7 November 2026 · hook kept
 
 - **Opening (exists, placed too low):** the hero has the hook, a staircase on C and Play the scale; the cold open
   (Play from C, Land on do; Tavi "It just hangs there, waiting. Is that because we started on C?"; the predict
@@ -787,8 +787,9 @@ seam and gear change (11), the four rooms (12), the spectrum strip and vowels (1
 2. **Live pages:** Lesson 1 (the tease line and five "?" beads; the optional "× 2"), Lesson 2 (nothing: its figures
    already tease Lesson 3) and Lesson 4 (the cold-open order once §5 item 1 is settled; the Lesson 5 still). Fix what
    the fold spec flags, then enforce it for these three.
-3. **Drafts:** Lesson 3 (the staircase still; the hook, if approved) and Lesson 5 (the recall order; the "Twinkle"
-   beads). Both stay behind `drafts.ts` until the coach signs off; this work need not wait for that.
+3. **Lesson 3 and the draft Lesson 5:** Lesson 3 (the staircase still; the hook, if approved), released on the
+   owner's word on 7 November 2026, and Lesson 5 (the recall order; the "Twinkle" beads), which stays behind
+   `drafts.ts` until the coach signs off; this work need not wait for that.
 4. **Lessons 6 and 7:** write §2 into LESSON.md and WEB-SPEC.md first (Lesson 6's predict, the page order, the
    teases, Lesson 7's hook), then build.
 5. **Lessons 8 to 14,** as each script is written: §2's entry is the starting point, and FACTS.md settles every

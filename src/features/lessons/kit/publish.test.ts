@@ -16,14 +16,14 @@ const served = (lessons: PageState['lessons'], drafts = false): PageState => ({
   lessons,
 })
 
-// Lesson 3 waits on a sign-off (drafts.ts); Lessons 1 and 2 are released.
+// Lesson 5 waits on a sign-off (drafts.ts); Lessons 1 to 4 are released.
 describe('isPublished', () => {
   it('publishes a released lesson and holds a draft back where drafts are', () => {
     // Act + Assert
-    expect(DRAFT_LESSONS[3]).toBeDefined()
+    expect(DRAFT_LESSONS[5]).toBeDefined()
     expect(isPublished(2, defaultPageState(false))).toBe(true)
-    expect(isPublished(3, defaultPageState(false))).toBe(false)
-    expect(isPublished(3, defaultPageState(true))).toBe(true)
+    expect(isPublished(5, defaultPageState(false))).toBe(false)
+    expect(isPublished(5, defaultPageState(true))).toBe(true)
   })
 
   it("takes the console's override over either default", () => {
@@ -38,7 +38,7 @@ describe('isPublished', () => {
   })
 
   it('reads an override that sets only the hook as no word on publishing', () => {
-    expect(isPublished(3, served({ 3: { hook: 'figures' } }))).toBe(false)
+    expect(isPublished(5, served({ 5: { hook: 'steady' } }))).toBe(false)
     expect(isPublished(2, served({ 2: { hook: 'figures' } }))).toBe(true)
   })
 })
@@ -61,16 +61,16 @@ describe('seasonFor', () => {
     // Act
     const season = seasonFor(LESSONS, served({ 2: { published: false } }))
 
-    // Assert
-    const [L2, L3] = [season[2], season[3]]
-    expect([L2.page, L2.minutes, L3.page, L3.minutes]).toEqual([
+    // Assert: Lesson 2 by the console, Lesson 5 by its draft line
+    const [L2, L5] = [season[2], season[5]]
+    expect([L2.page, L2.minutes, L5.page, L5.minutes]).toEqual([
       undefined,
       undefined,
       undefined,
       undefined,
     ])
     expect(L2.title).toBe('Twelve notes')
-    expect(L3.pr).toBe(LESSONS[3].pr)
+    expect(L5.pr).toBe(LESSONS[5].pr)
     expect(season[1]).toBe(LESSONS[1])
   })
 
@@ -492,13 +492,13 @@ describe("a page's readings of another lesson's state", () => {
   })
 
   it('holds "live" while the lesson is live and "planned" otherwise', () => {
-    // Arrange: Lesson 3 held back, Lesson 2 live
+    // Arrange: Lesson 5 held back, Lesson 2 live
     const state = defaultPageState(false)
 
     // Act + Assert
     expect(readingHolds('live', 2, LESSONS, state)).toBe(true)
     expect(readingHolds('planned', 2, LESSONS, state)).toBe(false)
-    expect(readingHolds('live', 3, LESSONS, state)).toBe(false)
-    expect(readingHolds('planned', 3, LESSONS, state)).toBe(true)
+    expect(readingHolds('live', 5, LESSONS, state)).toBe(false)
+    expect(readingHolds('planned', 5, LESSONS, state)).toBe(true)
   })
 })

@@ -25,7 +25,7 @@
     <meta property="og:url" content="https://mercurypitch.com/learn/04" />
     <meta
       property="og:title"
-      content="The major scale and home · Find Your Pitch, Lesson 4"
+      content="The major scale and home: Find Your Pitch, Lesson 4"
     />
     <meta
       property="og:description"
@@ -42,9 +42,10 @@
       content="The title card: Find Your Pitch, Lesson 04, The major scale and home, above a staircase of eight stairs on C, do to do, the house on its top stair lit, between Merc and Tavi."
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mercurypitch7" />
     <meta
       name="twitter:title"
-      content="The major scale and home · Find Your Pitch, Lesson 4"
+      content="The major scale and home: Find Your Pitch, Lesson 4"
     />
     <meta
       name="twitter:description"
@@ -64,7 +65,8 @@
          changes when they do; the headline is also this lesson's link text
          in every entry document's nav (tools/lesson-links.ts). No
          datePublished until the release that puts the lesson on
-         mercurypitch.com, and no VideoObject: Lesson 4 has no film
+         mercurypitch.com sets it, as 0.9.22's did for Lessons 1 and 2. No
+         VideoObject: it belongs on the watch page
          (docs/plans/find-your-pitch/SEARCH.md). -->
     <script type="application/ld+json">
       {
@@ -280,6 +282,7 @@
         <nav class="mast-nav" id="mastNav" aria-label="Sections">
           <a href="#lesson"><b aria-hidden="true">I</b>Lesson</a>
           <a href="#sing"><b aria-hidden="true">II</b>Sing</a>
+          <a href="#watch" hidden><b aria-hidden="true">III</b>Watch</a>
           <a href="#explorer"><b aria-hidden="true">III</b>Explorer</a>
         </nav>
         <button
@@ -343,6 +346,18 @@
               </li>
               <li class="chip"><i style="--c: var(--orange)"></i>Sound on</li>
             </ul>
+            <!-- The film's own page (kit/watch-pages.ts), where Search can
+                 list it as a video; it plays here too, under Watch. -->
+            <p class="hero-film">
+              <a
+                class="btn sm tint"
+                href="/learn/04/watch"
+                style="--c: var(--aqua)"
+                ><svg class="ico fill" aria-hidden="true">
+                  <use href="#i-play" /></svg
+                >Watch the film<small class="dur">9:11</small></a
+              >
+            </p>
             <p class="promise">
               By the end you'll build a major scale from its pattern of steps,
               start it on any note, name its notes do to ti, and hear ti lean
@@ -1631,6 +1646,70 @@
         </div>
       </section>
 
+      <!-- ============================================================ WATCH -->
+      <!-- Hidden, with its masthead link, until the film has its sources in
+           kit/films.ts; kit/episode.ts shows both then. -->
+      <section class="mv" id="watch" aria-labelledby="watch-title" hidden>
+        <div class="wrap">
+          <header class="mv-head">
+            <p class="mv-tempo">
+              The same lesson, as a film:
+              <span><span class="dur">9:11</span>, captions on</span>
+            </p>
+            <h2 class="mv-title" id="watch-title">Watch the episode</h2>
+          </header>
+          <div class="player-grid" id="playerGrid">
+            <div class="player" id="player">
+              <video
+                id="ep"
+                playsinline
+                preload="none"
+                poster="/src/features/lessons/lesson-04/assets/poster.jpg"
+                aria-label="Find Your Pitch, Lesson 04: The major scale and home"
+              >
+                <track
+                  kind="captions"
+                  srclang="en"
+                  label="English"
+                  src="/src/features/lessons/lesson-04/assets/lesson-04.en.vtt"
+                  default
+                />
+              </video>
+              <button
+                class="big-play"
+                id="bigPlay"
+                type="button"
+                data-state="ready"
+                aria-label="Play the episode"
+              >
+                <span class="disc"
+                  ><svg class="ico fill" aria-hidden="true">
+                    <use href="#i-play" /></svg></span
+                ><span class="cap"
+                  ><b id="bigPlayCap">Play the episode</b
+                  ><small id="bigPlaySub"
+                    ><span class="dur">9:11</span> · captions on</small
+                  ></span
+                >
+              </button>
+            </div>
+            <div class="card chap-card">
+              <p class="eyebrow">
+                <span class="fig">Chapters</span> tap to jump
+              </p>
+              <ol class="chapters" id="chapters"></ol>
+            </div>
+          </div>
+          <details class="transcript" id="transcript">
+            <summary>
+              <svg class="ico" aria-hidden="true"><use href="#i-right" /></svg
+              >Read the transcript<small>from the captions</small>
+            </summary>
+            <div class="tx" id="tx"></div>
+          </details>
+        </div>
+      </section>
+
       <!-- ============================================================ EXPLORER -->
       <section class="mv" id="explorer" aria-labelledby="explorer-title">
         <div class="wrap">
@@ -1708,8 +1787,9 @@
           <h4>Credits</h4>
           <p>
             Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto
-            Music, all SIL OFL 1.1. Every sound on this page is synthesised in
-            your browser.
+            Music, all SIL OFL 1.1. The episode: made by MercuryPitch, with Merc
+            and Tavi voiced with ElevenLabs. Outside the episode, every sound on
+            this page is synthesised in your browser.
           </p>
         </div>
       </div>

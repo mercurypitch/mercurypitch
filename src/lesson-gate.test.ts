@@ -247,7 +247,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-// Lesson 3 waits on the vocal coach (drafts.ts); Lesson 2 is released.
+// Lesson 5 waits on the vocal coach (drafts.ts); Lessons 1 to 4 are released.
 describe('a lesson page', () => {
   it('answers a lesson held back with the 404 page, at every spelling of its address', async () => {
     for (const path of ['/learn/02', '/learn/02.html', '/learn/02/']) {
@@ -412,7 +412,7 @@ describe('a lesson page', () => {
   })
 })
 
-// Lessons 1 and 2 have films with watch pages (kit/watch-pages.ts); Lesson 3
+// Lessons 1, 2 and 4 have films with watch pages (kit/watch-pages.ts); Lesson 5
 // is a draft with none.
 describe("a film's watch page", () => {
   it("serves a released lesson's watch page at its address, settled, with no validators", async () => {
@@ -484,8 +484,8 @@ describe("a film's watch page", () => {
     const shown = gate({ drafts: '1' })
 
     // Act
-    const there = await held.ask('/learn/03/watch')
-    const none = await shown.ask('/learn/03/watch')
+    const there = await held.ask('/learn/05/watch')
+    const none = await shown.ask('/learn/05/watch')
 
     // Assert: held back, it is the lesson's 404; shown, the draft has no
     // film, so the asset layer has no page for it either
@@ -543,7 +543,7 @@ describe("an environment's default for drafts", () => {
       const { ask } = gate({ drafts })
 
       // Act
-      const response = await ask('/learn/03')
+      const response = await ask('/learn/05')
 
       // Assert
       expect(response?.status, String(drafts)).toBe(404)
@@ -555,12 +555,12 @@ describe("an environment's default for drafts", () => {
     const { ask } = gate({ drafts: '1' })
 
     // Act
-    const response = await ask('/learn/03')
+    const response = await ask('/learn/05')
 
     // Assert
     expect(response?.status).toBe(200)
     expect(words((await page(response)).getElementById('hook'))).toBe(
-      LESSONS[3].hook,
+      LESSONS[5].hook,
     )
   })
 
@@ -586,11 +586,11 @@ describe("the console's overrides", () => {
     // Arrange
     const { ask } = gate({
       drafts: '0',
-      state: stateOf({ 3: { published: true } }),
+      state: stateOf({ 5: { published: true } }),
     })
 
     // Act
-    const response = await ask('/learn/03')
+    const response = await ask('/learn/05')
 
     // Assert
     expect(response?.status).toBe(200)
@@ -598,22 +598,22 @@ describe("the console's overrides", () => {
 
   it('hold back a draft where drafts are shown, and a released lesson anywhere', async () => {
     // Arrange
-    const state = stateOf({ 3: { published: false }, 2: { published: false } })
+    const state = stateOf({ 5: { published: false }, 2: { published: false } })
     const { ask } = gate({ drafts: '1', state })
 
     // Act + Assert
-    expect((await ask('/learn/03'))?.status).toBe(404)
+    expect((await ask('/learn/05'))?.status).toBe(404)
     expect((await ask('/learn/02'))?.status).toBe(404)
     expect((await ask('/learn/01'))?.status).toBe(200)
   })
 
   it("write the page's state into its head, for the page's script", async () => {
     // Arrange
-    const state = stateOf({ 3: { published: true, hook: 'figures' } })
+    const state = stateOf({ 5: { published: true, hook: 'steady' } })
     const { ask } = gate({ drafts: '0', state })
 
     // Act
-    const doc = await page(await ask('/learn/03'))
+    const doc = await page(await ask('/learn/05'))
 
     // Assert
     const tags = doc.head.querySelectorAll('script#lesson-state')
@@ -807,8 +807,8 @@ describe("a page's links and readings", () => {
   })
 
   it('lose their link to a lesson that is not: a chip stays a plain chip, a nav link goes, other words stay', async () => {
-    // Act: Lesson 3 held back, as production holds drafts
-    const doc = await lessonFive({})
+    // Act: Lesson 3 held back by the console
+    const doc = await lessonFive({ 3: { published: false } })
 
     // Assert
     expect(doc.querySelector('a[href^="/learn/03"]')).toBeNull()
@@ -858,18 +858,21 @@ describe("a lesson page's ways to the lessons either side", () => {
     }))
   }
 
-  it("keep Lesson 1's link to Lesson 2, and take Lesson 3 out of Lesson 2's foot, where drafts are held back, as on mercurypitch.com", async () => {
+  it("keep Lesson 3's links to Lessons 2 and 4, and take Lesson 5 out of Lesson 4's foot, where drafts are held back, as on mercurypitch.com", async () => {
     // Arrange: no override, and LESSON_DRAFTS unset
     const { ask } = gate()
 
     // Act
-    const one = await page(await ask('/learn/01'))
-    const two = await page(await ask('/learn/02'))
+    const three = await page(await ask('/learn/03'))
+    const four = await page(await ask('/learn/04'))
 
     // Assert
-    expect(footWays(one)).toEqual([{ rel: 'next', href: '/learn/02' }])
-    expect(footWays(two)).toEqual([{ rel: 'prev', href: '/learn/01' }])
-    expect(two.querySelector('a[href^="/learn/03"]')).toBeNull()
+    expect(footWays(three)).toEqual([
+      { rel: 'prev', href: '/learn/02' },
+      { rel: 'next', href: '/learn/04' },
+    ])
+    expect(footWays(four)).toEqual([{ rel: 'prev', href: '/learn/03' }])
+    expect(four.querySelector('a[href^="/learn/05"]')).toBeNull()
   })
 
   it('keep both where drafts are shown, as on the dev site, previews and local', async () => {
@@ -877,14 +880,17 @@ describe("a lesson page's ways to the lessons either side", () => {
     const { ask } = gate({ drafts: '1' })
 
     // Act
-    const one = await page(await ask('/learn/01'))
-    const two = await page(await ask('/learn/02'))
+    const three = await page(await ask('/learn/03'))
+    const four = await page(await ask('/learn/04'))
 
     // Assert
-    expect(footWays(one)).toEqual([{ rel: 'next', href: '/learn/02' }])
-    expect(footWays(two)).toEqual([
-      { rel: 'prev', href: '/learn/01' },
-      { rel: 'next', href: '/learn/03' },
+    expect(footWays(three)).toEqual([
+      { rel: 'prev', href: '/learn/02' },
+      { rel: 'next', href: '/learn/04' },
+    ])
+    expect(footWays(four)).toEqual([
+      { rel: 'prev', href: '/learn/03' },
+      { rel: 'next', href: '/learn/05' },
     ])
   })
 
@@ -895,9 +901,9 @@ describe("a lesson page's ways to the lessons either side", () => {
     // Act
     const two = await page(await ask('/learn/02'))
 
-    // Assert
-    expect(footWays(two)).toEqual([])
-    expect(two.querySelector('footer .foot-ways')).not.toBeNull()
+    // Assert: Lesson 3, after it, stays
+    expect(footWays(two)).toEqual([{ rel: 'next', href: '/learn/03' }])
+    expect(two.querySelector('a[href^="/learn/01"]')).toBeNull()
   })
 })
 
@@ -1006,30 +1012,28 @@ describe('the hub', () => {
     // Assert
     expect(doc.querySelector('a[href^="/learn/02"]')).toBeNull()
     expect(words(item(doc, 2)?.querySelector('.hub-go') ?? null)).toBe('Coming')
-    expect(words(item(doc, 3)?.querySelector('.hub-go') ?? null)).toBe('Coming')
+    // Lesson 5 a draft, held back as built
+    expect(words(item(doc, 5)?.querySelector('.hub-go') ?? null)).toBe('Coming')
     const one = item(doc, 1)
     expect(one?.querySelector('a')?.getAttribute('href')).toBe('/learn/01')
     const name = words(one?.querySelector('h4') ?? null)
     expect(words(one?.querySelector('.hub-go') ?? null)).toBe(
       `${LESSONS[1]?.minutes} minutes Start lesson: Lesson 1, ${name} Watch the film: Lesson 1, ${name}`,
     )
-    // the time is Lesson 1's alone, the one lesson live
-    expect(time(doc)).toBe(timeFor([1]))
-    expect(time(doc)).toBe(
-      `Each lesson takes about ${LESSONS[1]?.minutes} minutes.`,
-    )
+    // the time is the live lessons' alone
+    expect(time(doc)).toBe(timeFor([1, 3, 4]))
     // every reading settled: none left to mark, none hidden by the build
     expect(
       doc.querySelectorAll('[data-if-live], [data-if-planned]'),
     ).toHaveLength(0)
     expect(doc.querySelectorAll('#season [hidden]')).toHaveLength(0)
-    expect(parts(doc)).toEqual([1])
+    expect(parts(doc)).toEqual([1, 3, 4])
   })
 
   it('links a published draft and names it in the series; a lesson held back leaves both', async () => {
-    // Arrange: drafts held back, Lesson 3 published and Lesson 2 held back
+    // Arrange: drafts held back, Lesson 5 published and Lesson 2 held back
     const { ask } = gate({
-      state: stateOf({ 3: { published: true }, 2: { published: false } }),
+      state: stateOf({ 5: { published: true }, 2: { published: false } }),
       drafts: '0',
     })
 
@@ -1037,15 +1041,15 @@ describe('the hub', () => {
     const doc = await page(await ask('/learn/'))
 
     // Assert
-    expect(item(doc, 3)?.querySelector('a')?.getAttribute('href')).toBe(
-      '/learn/03',
+    expect(item(doc, 5)?.querySelector('a')?.getAttribute('href')).toBe(
+      '/learn/05',
     )
-    expect(words(item(doc, 3)?.querySelector('.hub-go') ?? null)).not.toContain(
+    expect(words(item(doc, 5)?.querySelector('.hub-go') ?? null)).not.toContain(
       'Coming',
     )
     expect(doc.querySelector('a[href^="/learn/02"]')).toBeNull()
-    expect(parts(doc)).toEqual([1, 3])
-    expect(time(doc)).toBe(timeFor([1, 3]))
+    expect(parts(doc)).toEqual([1, 3, 4, 5])
+    expect(time(doc)).toBe(timeFor([1, 3, 4, 5]))
     // the trail is left as it was
     const trail = blocks(doc).find((node) => node['@type'] === 'BreadcrumbList')
     expect(
@@ -1172,23 +1176,23 @@ describe('the sitemap and llms.txt', () => {
   it("list a published draft in lesson order, in each file's own form", () => {
     // Act: two drafts published, the later one named first
     const state = asPage({
-      4: { published: true },
-      3: { published: true, hook: 'figures' },
+      6: { published: true },
+      5: { published: true, hook: 'steady' },
     })
     const xml = editSitemap(sitemap, state)
     const text = editLlms(llms, state)
 
-    // Assert: the sitemap entries after Lesson 2 and in order, with the day of the change
+    // Assert: the sitemap entries after Lesson 4 and in order, with the day of the change
     expect(xml).toContain(
-      '  <url>\n    <loc>https://mercurypitch.com/learn/03</loc>\n    <lastmod>2026-10-20</lastmod>\n  </url>\n',
+      '  <url>\n    <loc>https://mercurypitch.com/learn/05</loc>\n    <lastmod>2026-10-20</lastmod>\n  </url>\n',
     )
     const locs = [...xml.matchAll(/<loc>[^<]*\/learn\/(\d{2})<\/loc>/g)].map(
       (m) => m[1],
     )
-    expect(locs).toEqual(['01', '02', '03', '04'])
+    expect(locs).toEqual(['01', '02', '03', '04', '05', '06'])
     expect(
       xml.replace(
-        / {2}<url>\n {4}<loc>https:\/\/mercurypitch\.com\/learn\/0[34]<\/loc>\n[^]*?<\/url>\n/g,
+        / {2}<url>\n {4}<loc>https:\/\/mercurypitch\.com\/learn\/0[56]<\/loc>\n[^]*?<\/url>\n/g,
         '',
       ),
     ).toBe(sitemap)
@@ -1197,13 +1201,14 @@ describe('the sitemap and llms.txt', () => {
     const items = [...text.matchAll(/^- \[Lesson (\d+): [^\]]+\]/gm)].map(
       (m) => m[1],
     )
-    expect(items).toEqual(['1', '2', '3', '4'])
+    expect(items).toEqual(['1', '2', '3', '4', '5', '6'])
     const item =
-      /^- \[Lesson 3: Match a note\]\(https:\/\/mercurypitch\.com\/learn\/03\): [^]*?(?=\n- )/m.exec(
+      /^- \[Lesson 5: Breath and a steady note\]\(https:\/\/mercurypitch\.com\/learn\/05\):\s[^]*?(?=\n- )/m.exec(
         text,
       )?.[0] ?? ''
+    expect(LESSON_COPY[5]?.hookAlts?.[0]?.id).toBe('steady')
     expect(item.replace(/\n {2}/g, ' ')).toBe(
-      `- [Lesson 3: Match a note](https://mercurypitch.com/learn/03): ${LESSON_COPY[3]?.hookAlts?.[0]?.text}`,
+      `- [Lesson 5: Breath and a steady note](https://mercurypitch.com/learn/05): ${LESSON_COPY[5]?.hookAlts?.[0]?.text}`,
     )
     for (const line of item.split('\n'))
       expect(line.length, line).toBeLessThanOrEqual(80)
@@ -1243,10 +1248,20 @@ describe('the sitemap and llms.txt', () => {
       '/learn/',
       '/learn/01',
       '/learn/02',
+      '/learn/03',
+      '/learn/04',
       '/learn/01/watch',
       '/learn/02/watch',
+      '/learn/04/watch',
     ])
-    expect(locs(xml)).toEqual(['/learn/', '/learn/02', '/learn/02/watch'])
+    expect(locs(xml)).toEqual([
+      '/learn/',
+      '/learn/02',
+      '/learn/03',
+      '/learn/04',
+      '/learn/02/watch',
+      '/learn/04/watch',
+    ])
     expect(text).not.toContain('/learn/01')
     expect(text).toContain('](https://mercurypitch.com/learn/02/watch):')
   })
@@ -1279,9 +1294,9 @@ describe('the sitemap and llms.txt', () => {
 
     // Assert
     expect(xml).toContain(
-      '  <url>\n    <loc>https://mercurypitch.com/learn/03</loc>\n  </url>\n',
+      '  <url>\n    <loc>https://mercurypitch.com/learn/05</loc>\n  </url>\n',
     )
-    expect(xml).toContain('<loc>https://mercurypitch.com/learn/05</loc>')
+    expect(xml).toContain('<loc>https://mercurypitch.com/learn/06</loc>')
   })
 
   it('answer through the worker with no validators, and a HEAD with no body', async () => {
@@ -1353,12 +1368,12 @@ describe('the sitemap and llms.txt', () => {
 describe('reading the state', () => {
   it("asks the db-worker once, then answers from the data centre's copy for thirty seconds", async () => {
     // Arrange
-    const state = stateOf({ 3: { published: true } })
+    const state = stateOf({ 5: { published: true } })
     const { ask, api, cache } = gate({ drafts: '0', state })
 
     // Act
-    const first = await ask('/learn/03')
-    const second = await ask('/learn/03')
+    const first = await ask('/learn/05')
+    const second = await ask('/learn/05')
 
     // Assert
     expect([first?.status, second?.status]).toEqual([200, 200])
@@ -1391,14 +1406,14 @@ describe('reading the state', () => {
 
   it('keeps the last good state in KV, written only when it changes', async () => {
     // Arrange
-    const state = stateOf({ 3: { published: true } })
+    const state = stateOf({ 5: { published: true } })
     const kv = memoryKv()
     const first = gate({ kv, state })
-    await first.ask('/learn/03')
+    await first.ask('/learn/05')
 
     // Act: a second data centre reads the same state
     const second = gate({ kv, state })
-    await second.ask('/learn/03')
+    await second.ask('/learn/05')
 
     // Assert
     expect(kv.put).toHaveBeenCalledOnce()
@@ -1413,16 +1428,16 @@ describe('reading the state', () => {
         throw new TypeError('network down')
       },
     ]) {
-      // Arrange: the last good copy holds Lesson 3 published
+      // Arrange: the last good copy holds Lesson 5 published
       const kv = memoryKv({
         [`lesson-state:last-good:${API}`]: JSON.stringify(
-          stateOf({ 3: { published: true } }),
+          stateOf({ 5: { published: true } }),
         ),
       })
       const { ask, cache } = gate({ kv, drafts: '0', state: failure })
 
       // Act
-      const response = await ask('/learn/03')
+      const response = await ask('/learn/05')
 
       // Assert
       expect(response?.status).toBe(200)
@@ -1435,13 +1450,13 @@ describe('reading the state', () => {
   it('reads a body it cannot use as a failure: not JSON, or a version it does not know', async () => {
     for (const body of [
       '<html>oops</html>',
-      '{"version":2,"lessons":{"3":{"published":true}}}',
+      '{"version":2,"lessons":{"5":{"published":true}}}',
     ]) {
       // Arrange: no KV copy either, so the state is empty
       const { ask } = gate({ drafts: '0', state: body })
 
-      // Act + Assert: Lesson 3 is a draft, held back by default
-      expect((await ask('/learn/03'))?.status, body).toBe(404)
+      // Act + Assert: Lesson 5 is a draft, held back by default
+      expect((await ask('/learn/05'))?.status, body).toBe(404)
       expect((await ask('/learn/02'))?.status, body).toBe(200)
     }
   })
@@ -1464,7 +1479,7 @@ describe('reading the state', () => {
     vi.stubGlobal('fetch', hanging)
 
     // Act: the time runs out while the page waits
-    const answered = ask('/learn/03')
+    const answered = ask('/learn/05')
     await vi.waitFor(() => expect(hanging).toHaveBeenCalledOnce())
     timeout.abort(new DOMException('timed out', 'TimeoutError'))
     const response = await answered
@@ -1484,7 +1499,7 @@ describe('reading the state', () => {
     })
 
     // Act + Assert
-    expect((await ask('/learn/03'))?.status).toBe(200)
+    expect((await ask('/learn/05'))?.status).toBe(200)
     expect(api).not.toHaveBeenCalled()
   })
 })

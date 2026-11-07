@@ -3,7 +3,7 @@
 // ============================================================
 //
 // A Find Your Pitch lesson can be finished and still wait on a sign-off:
-// Lesson 3 waits on the vocal coach (MASTER-PLAN § 12 item 8). The list of
+// Lesson 5 waits on the vocal coach (MASTER-PLAN § 12 item 8). The list of
 // drafts is src/features/lessons/kit/drafts.ts. Whether a lesson is live is
 // no longer the build's to say: the admin console publishes and unpublishes
 // lessons at run time, and the site worker answers an unpublished lesson's

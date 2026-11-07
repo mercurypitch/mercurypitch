@@ -83,24 +83,24 @@ async function mapCard(page: Page, n: number): Promise<Locator> {
 test('a draft the console publishes is linked where drafts are held back @smoke', async ({
   page,
 }) => {
-  // Arrange: mercurypitch.com's default, and Lesson 3 published; Lesson 5 not
-  await serveWith(page, '/learn/02', {
+  // Arrange: mercurypitch.com's default, and Lesson 5 published; Lesson 6 not
+  await serveWith(page, '/learn/04', {
     drafts: false,
-    lessons: { 3: { published: true } },
+    lessons: { 5: { published: true } },
   })
 
   // Assert: the Wrap's card, the map's card and the lesson menu all link it
-  await expect(nextCard(page)).toHaveAttribute('href', '/learn/03')
+  await expect(nextCard(page)).toHaveAttribute('href', '/learn/05')
   await expect(nextCard(page).locator('.chip')).toHaveText('Start lesson')
-  const card = await mapCard(page, 3)
-  await expect(card.locator('a.btn')).toHaveAttribute('href', '/learn/03')
-  const three = await menuRow(page, 3)
-  await expect(three).toHaveAttribute('href', '/learn/03')
-  const five = page.locator('#lessonMenu .lm-row', {
-    has: page.locator('.sr', { hasText: /^Lesson 5, / }),
+  const card = await mapCard(page, 5)
+  await expect(card.locator('a.btn')).toHaveAttribute('href', '/learn/05')
+  const five = await menuRow(page, 5)
+  await expect(five).toHaveAttribute('href', '/learn/05')
+  const six = page.locator('#lessonMenu .lm-row', {
+    has: page.locator('.sr', { hasText: /^Lesson 6, / }),
   })
-  await expect(five).toHaveClass(/\blater\b/)
-  await expect(five).not.toHaveAttribute('href', /./)
+  await expect(six).toHaveClass(/\blater\b/)
+  await expect(six).not.toHaveAttribute('href', /./)
 })
 
 test('a released lesson the console holds back is linked from nowhere on the page', async ({
@@ -245,17 +245,21 @@ test('Lesson 8, a draft, is coming later where drafts are held back, and linked 
   await expect(shown).toHaveAttribute('href', '/learn/08')
 })
 
-test("Lesson 9, published while Lesson 6 is held back and Lesson 3 is a draft, keeps both chips plain, links neither, and its recall's step link keeps its words", async ({
+test("Lesson 9, published while Lessons 6 and 3 are held back, keeps both chips plain, links neither, and its recall's step link keeps its words", async ({
   page,
 }) => {
   // Arrange
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
 
-  // Act: mercurypitch.com's default, Lesson 9 published and Lesson 6 not
+  // Act: mercurypitch.com's default, Lesson 9 published and Lessons 6 and 3 not
   await serveWith(page, '/learn/09', {
     drafts: false,
-    lessons: { 9: { published: true }, 6: { published: false } },
+    lessons: {
+      9: { published: true },
+      6: { published: false },
+      3: { published: false },
+    },
   })
 
   // Assert: each chip stays, as a plain chip, and nothing links its lesson

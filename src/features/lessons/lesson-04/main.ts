@@ -5,10 +5,10 @@
 // learn/04.html carries every word of the lesson; this module adds what the
 // markup cannot: the sound, the staircase in all its copies (the hero's,
 // the cold open's, the steps' stage and free play's), the recall check
-// after the cold open, the four words, the scale guide, the quick check
-// and the season map. A written lesson with no film, so there is no Watch
-// section and the masthead's anchors are Lesson and Explorer. Every part is
-// the shared kit's, mounted per root, or this lesson's own toy built on it.
+// after the cold open, the four words, the scale guide, the quick check,
+// the episode and the season map. The masthead's anchors are Lesson, Sing,
+// Watch and Explorer. Every part is the shared kit's, mounted per root, or
+// this lesson's own toy built on it.
 // Merc and Tavi's renderer loads last, as its own chunk, so the page reads and
 // plays before it arrives.
 
@@ -22,6 +22,7 @@ import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
 import './lesson-04.css'
 import { q } from '@/features/lessons/kit/dom'
+import { createEpisode } from '@/features/lessons/kit/episode'
 import { createExplorer } from '@/features/lessons/kit/explorer'
 import { startFrameLoop, watch } from '@/features/lessons/kit/frame-loop'
 import { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
@@ -37,7 +38,12 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
 import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
+import posterLesson1 from '@/features/lessons/lesson-01/assets/poster.jpg'
+import posterLesson2 from '@/features/lessons/lesson-02/assets/poster.jpg'
+import vttUrl from './assets/lesson-04.en.vtt?url'
+import poster from './assets/poster.jpg'
 import { initColdOpen } from './cold-open'
+import { FILM_CAPTIONS_TEXT, FILM_CHAPTERS, FILM_SOURCES } from './film'
 import { initHero } from './hero'
 import { drawLadderFigure } from './ladder-figure'
 import { QUIZ_QUESTIONS, RECALL_QUESTIONS, recallStepHref, } from './quiz-questions'
@@ -102,10 +108,20 @@ void import('@/features/lessons/kit/plan-back').then(
   () => undefined,
 )
 
-createExplorer({ current: 4 })
+const explorer = createExplorer({
+  current: 4,
+  posters: { 1: posterLesson1, 2: posterLesson2, 4: poster },
+})
+createEpisode({
+  film: FILM_SOURCES,
+  captions: vttUrl,
+  vtt: FILM_CAPTIONS_TEXT,
+  chapters: FILM_CHAPTERS,
+  onDuration: (len) => explorer.setLength(4, len),
+})
 
 engraveClefs(G_CLEF_PATH)
-// Lesson 3's masthead: Lesson, Sing and Explorer
+// Lesson 3's masthead, with Watch: Lesson, Sing, Watch and Explorer
 initMasthead(
   {
     recall: '#lesson',
@@ -113,6 +129,7 @@ initMasthead(
     words: '#lesson',
     lesson: '#lesson',
     sing: '#sing',
+    watch: '#watch',
     explorer: '#explorer',
   },
   { lesson: 4, deck },
