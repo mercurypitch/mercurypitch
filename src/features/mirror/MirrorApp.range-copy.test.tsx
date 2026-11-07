@@ -19,6 +19,7 @@ import { saveCheckpoint } from '@/lib/mirror/checkpoint'
 import type { MatchBand, MirrorResult, RangeResult } from '@/lib/mirror/metrics'
 import { markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import { singerForRange } from '@/lib/mirror/singer-match'
+import type { MirrorEntryIntent } from './entry-intent'
 import { MirrorApp, Results } from './MirrorApp'
 
 const f0 = vi.hoisted(() => ({
@@ -163,35 +164,7 @@ describe('the Voice Mirror accuracy note', () => {
   }
 
   function accuracyNote(result: MirrorResult): string | null | undefined {
-    const noop = (): void => {}
-    const { container } = render(() => (
-      <Results
-        entryIntent="vocal-range"
-        result={result}
-        deltaLine={null}
-        shareStatus={null}
-        revealed={false}
-        revealMode="flip"
-        twinReady={false}
-        includeTrace={false}
-        onToggleTrace={noop}
-        cardFormat="square"
-        onToggleFormat={noop}
-        twinTrace={false}
-        onToggleTwinTrace={noop}
-        twinData={false}
-        onToggleTwinData={noop}
-        onToggleReveal={noop}
-        onShare={noop}
-        onShareTwin={noop}
-        onCopy={noop}
-        onCopyLink={noop}
-        onCosmic={noop}
-        onStartOver={noop}
-        appUrl="/"
-        voiceprintRef={noop}
-      />
-    ))
+    const container = renderResults('vocal-range', result)
     return container.querySelector('.mirror-notecard-left > p')?.textContent
   }
 
@@ -209,3 +182,62 @@ describe('the Voice Mirror accuracy note', () => {
     )
   })
 })
+
+// The range test and the voice-type test asked for the range and the voice
+// type it overlaps most, so their result leads with that block; the Mirror's
+// own door and the singer match lead with the card and its twin.
+describe('the result each door leads with', () => {
+  const result: MirrorResult = {
+    range: RANGE,
+    accuracy: null,
+    steadiness: null,
+  }
+
+  it.each([
+    ['vocal-range', true],
+    ['voice-type', true],
+    ['voice-mirror', false],
+    ['singer-match', false],
+  ] as const)('%s leads with the range summary: %s', (intent, leads) => {
+    const container = renderResults(intent, result)
+
+    expect(container.querySelector('.mirror-range-result') !== null).toBe(leads)
+  })
+})
+
+/** The results screen for `result`, as the door `intent` opened it. */
+function renderResults(
+  intent: MirrorEntryIntent,
+  result: MirrorResult,
+): HTMLElement {
+  const noop = (): void => {}
+  const { container } = render(() => (
+    <Results
+      entryIntent={intent}
+      result={result}
+      deltaLine={null}
+      shareStatus={null}
+      revealed={false}
+      revealMode="flip"
+      twinReady={false}
+      includeTrace={false}
+      onToggleTrace={noop}
+      cardFormat="square"
+      onToggleFormat={noop}
+      twinTrace={false}
+      onToggleTwinTrace={noop}
+      twinData={false}
+      onToggleTwinData={noop}
+      onToggleReveal={noop}
+      onShare={noop}
+      onShareTwin={noop}
+      onCopy={noop}
+      onCopyLink={noop}
+      onCosmic={noop}
+      onStartOver={noop}
+      appUrl="/"
+      voiceprintRef={noop}
+    />
+  ))
+  return container
+}

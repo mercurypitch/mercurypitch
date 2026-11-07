@@ -17,6 +17,7 @@ import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exerc
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
+import { firstLightOpensOn } from '@/lib/first-light-landing'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -340,7 +341,26 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   '',
 )
 
-const [firstLightDue, setShowWelcome] = createSignal(welcomeSeen() === '')
+// Due by itself only where First Light may open on its own: an entry document
+// that boots the studio into a room opens on that room, and spends nothing,
+// so the welcome waits for the visitor's first visit to / (first-light-landing).
+const [firstLightDue, setShowWelcome] = createSignal(
+  welcomeSeen() === '' &&
+    firstLightOpensOn(
+      typeof window === 'undefined' ? '/' : window.location.pathname,
+    ),
+)
+
+/**
+ * Whether First Light has never been offered on this device, on whichever
+ * document: what the opening takeover asks (App.tsx), so a first visit on a
+ * room's document, where the welcome stays shut, is not handed the plan
+ * layer in its place, and what a lesson's link spends (stepAsideForLesson).
+ * Never under the native build, for the reason `showWelcome` gives.
+ */
+export function firstLightNeverOffered(): boolean {
+  return !IS_NATIVE_BUILD && welcomeSeen() === ''
+}
 
 /**
  * Whether the web's first run — First Light — is due.

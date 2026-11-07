@@ -335,6 +335,14 @@ body {
   }
 }
 
+/* Once the room is up, each door's questions stay under the start screen
+   (entry-prelude.css `data-keeps`). A take, a result or someone's shared
+   card has the page to itself, so they go while one is on screen. */
+#root:has(.mirror-shell:not([data-screen='landing']))
+  ~ .entry-prelude[data-keeps='faq'] {
+  display: none;
+}
+
 /* ── Privacy "i" ──────────────────────────────────────────────
    The reassurance ("Only you can hear you.") has to stay one gesture
    away without spending two lines of body copy on every screen. Opens on

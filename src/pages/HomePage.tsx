@@ -169,8 +169,12 @@ const HomePage: Component = () => {
           onboarding is Phase 2. The real Rooms layout is Phase 1b. */}
       <Show when={!IS_NATIVE_BUILD}>
         <div class={styles.head}>
+          {/* The greeting is a paragraph, drawn as before. As the page's h1
+              it was what a search engine read as the home page's subject;
+              the document's own h1, which names the site, stays in the page
+              for that (index.html, entry-prelude.css `data-keeps`). */}
           <div class={styles.headText}>
-            <h1 class={styles.greeting}>{greeting()}</h1>
+            <p class={styles.greeting}>{greeting()}</p>
             <p class={styles.date}>
               {new Date().toLocaleDateString(undefined, {
                 weekday: 'long',

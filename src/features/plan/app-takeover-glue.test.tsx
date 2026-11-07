@@ -32,6 +32,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { routeSuppressesAnnouncement } from '@/features/whats-new/whats-new-release'
 import { parseHash } from '@/lib/hash-router'
 import { lessonFromSearch } from '@/lib/lesson-marker'
+import { pickOpeningTakeover } from './opening-takeover'
 import type { PlanStoreModule } from './plan-layer-host'
 import { createPlanLayerHost } from './plan-layer-host'
 
@@ -246,6 +247,67 @@ describe('the visits the takeover stays away from', () => {
   ])('$given: away is $away', async (row) => {
     expect(await staysAway(row.url, row.returning)).toBe(row.away)
   })
+})
+
+// ── The welcome a visit is due ─────────────────────────────────────────
+
+/**
+ * A page load of the stores at `url`, then App's own line for the welcome the
+ * takeover is told is due. What First Light itself does on that document is
+ * the store's `showWelcome`, which opens it.
+ */
+async function arrive(
+  url: string,
+  returning: boolean,
+): Promise<{ opens: boolean; welcomeDue: boolean }> {
+  if (returning) localStorage.setItem(WELCOME_KEY, '1')
+  window.history.replaceState(null, '', url)
+  vi.resetModules()
+  const ui = await import('@/stores/ui-store')
+  const welcomeDue = asWritten(initializerOf('takeoverWelcomeDue'), {
+    firstLightNeverOffered: ui.firstLightNeverOffered,
+  }) as boolean
+  return { opens: ui.showWelcome(), welcomeDue }
+}
+
+// First Light opens by itself on the home document and not on a room's entry
+// document (src/lib/first-light-landing.ts). The takeover still treats a first
+// visit there as a first run, so neither the plan layer nor What's New takes
+// the welcome's place over the room the visitor came for.
+describe('the welcome a first visit is due, by its document', () => {
+  it.each<{ url: string; returning: boolean; opens: boolean; pick: string }>([
+    { url: '/', returning: false, opens: true, pick: 'first-light' },
+    {
+      url: '/ear-lab#/ear-lab',
+      returning: false,
+      opens: false,
+      pick: 'first-light',
+    },
+    { url: '/jam#/jam', returning: false, opens: false, pick: 'first-light' },
+    {
+      url: '/pitch-training#/exercises',
+      returning: false,
+      opens: false,
+      pick: 'first-light',
+    },
+    { url: '/ear-lab#/ear-lab', returning: true, opens: false, pick: 'plan' },
+  ])(
+    '$url, returning $returning: opens $opens, the takeover picks $pick',
+    async (row) => {
+      const { opens, welcomeDue } = await arrive(row.url, row.returning)
+
+      expect(opens).toBe(row.opens)
+      expect(
+        pickOpeningTakeover({
+          native: false,
+          routeSuppressed: false,
+          welcomeDue,
+          planDue: true,
+          whatsNewDue: true,
+        }),
+      ).toBe(row.pick)
+    },
+  )
 })
 
 // ── The tour offer ─────────────────────────────────────────────────────

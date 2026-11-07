@@ -1,11 +1,12 @@
 // ============================================================
-// First Light's gate: a lesson's link steps it aside, nothing else does
+// First Light's gate: it opens on the home document, a lesson's link steps it aside
 // ============================================================
 //
 // Each `load` is a page load: fresh stores over whatever localStorage the
 // last one left, then what index.tsx does before the render (the lesson
 // step-aside), then what App does (the gate). Nothing under test is mocked
-// but the build flag, for the native case.
+// but the build flag, for the native case. A room's own document keeps the
+// welcome shut by itself and spends nothing (lib/first-light-landing.ts).
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -71,19 +72,41 @@ afterEach(() => {
 })
 
 describe('a fresh visitor', () => {
-  it('meets First Light on its welcome when no lesson sent them', async () => {
-    const { onboarding, steppedAside } = await load('/ear-lab#/ear-lab')
+  it('meets First Light on its welcome on the home document when no lesson sent them', async () => {
+    const { onboarding, steppedAside } = await load('/#/ear-lab')
 
     expect(steppedAside).toBeNull()
     expect(onboarding.flowOpen()).toBe(true)
     expect(onboarding.currentBeat()).toBe('sky')
   })
 
+  // A room's own document opens on its room (lib/first-light-landing.ts),
+  // and spends nothing: the welcome waits for the first visit to /.
   it.each([
-    ['/ear-lab?lesson=29#/ear-lab'],
-    ['/ear-lab?lesson=2#/ear-lab'],
-    ['/ear-lab?lesson=#/ear-lab'],
-    ['/ear-lab?lessons=02#/ear-lab'],
+    ['/ear-lab#/ear-lab'],
+    ['/jam#/jam'],
+    ['/pitch-training#/exercises'],
+  ])(
+    'gets the room at %s, and the welcome on the next visit to /',
+    async (url) => {
+      const { onboarding, ui } = await load(url)
+      const shutHere = !onboarding.flowOpen() && !ui.showWelcome()
+      const spent = localStorage.getItem(WELCOME_KEY)
+
+      const home = await load('/')
+
+      expect(shutHere).toBe(true)
+      expect(spent).toBeNull()
+      expect(home.onboarding.flowOpen()).toBe(true)
+      expect(home.onboarding.currentBeat()).toBe('sky')
+    },
+  )
+
+  it.each([
+    ['/?lesson=29#/ear-lab'],
+    ['/?lesson=2#/ear-lab'],
+    ['/?lesson=#/ear-lab'],
+    ['/?lessons=02#/ear-lab'],
     ['/#/ear-lab?lesson=02'],
   ])('meets it too behind a marker the app does not read: %s', async (url) => {
     const { onboarding, steppedAside } = await load(url)
