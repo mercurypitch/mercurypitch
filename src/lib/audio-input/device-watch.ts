@@ -5,44 +5,60 @@
 // The browser half of the roster; mic-roster.ts is the pure half. Reading
 // `enumerateDevices()`, following `devicechange`, and reading which device a
 // live capture track says it opened, for every surface that names inputs:
-// the Settings mic check and First Light's waiting screen.
+// the Settings mic check, First Light's waiting screen and Studio's input
+// list.
 
 import type { ListeningTrack } from './mic-roster'
 
 /** `devicechange` arrives in bursts while a device settles; read once after. */
 export const DEVICE_SETTLE_MS = 250
 
+/** The browser's device list, where there is a browser to ask. */
+const mediaDevices = (): MediaDevices | undefined =>
+  typeof navigator === 'undefined' ? undefined : navigator.mediaDevices
+
 /** The connected devices, or null where the browser will not list them. */
 export async function listDevices(): Promise<MediaDeviceInfo[] | null> {
-  const mediaDevices = navigator.mediaDevices
-  if (typeof mediaDevices?.enumerateDevices !== 'function') return null
+  const media = mediaDevices()
+  if (typeof media?.enumerateDevices !== 'function') return null
   try {
-    return await mediaDevices.enumerateDevices()
+    return await media.enumerateDevices()
   } catch {
     return null
   }
 }
 
 /**
- * Call `onChange` once a burst of `devicechange` events has settled.
- * Returns the unsubscribe.
+ * The audio inputs alone. A browser that will not list them (no device
+ * list, or enumeration refused in a cross-origin frame or with media
+ * blocked) lists none, rather than failing the picker that asked.
+ */
+export async function listAudioInputDevices(): Promise<MediaDeviceInfo[]> {
+  const devices = await listDevices()
+  return devices === null
+    ? []
+    : devices.filter((device) => device.kind === 'audioinput')
+}
+
+/**
+ * Call `onChange` once a burst of `devicechange` events has settled; with a
+ * settle of 0, at every event as it comes. Returns the unsubscribe.
  */
 export function watchDeviceChanges(
   onChange: () => void,
   settleMs = DEVICE_SETTLE_MS,
 ): () => void {
+  const media = mediaDevices()
   let timer: ReturnType<typeof setTimeout> | undefined
   const onDeviceChange = (): void => {
     clearTimeout(timer)
-    timer = setTimeout(onChange, settleMs)
+    if (settleMs > 0) timer = setTimeout(onChange, settleMs)
+    else onChange()
   }
-  navigator.mediaDevices?.addEventListener?.('devicechange', onDeviceChange)
+  media?.addEventListener?.('devicechange', onDeviceChange)
   return () => {
     clearTimeout(timer)
-    navigator.mediaDevices?.removeEventListener?.(
-      'devicechange',
-      onDeviceChange,
-    )
+    media?.removeEventListener?.('devicechange', onDeviceChange)
   }
 }
 

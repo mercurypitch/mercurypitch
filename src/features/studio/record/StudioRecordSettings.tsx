@@ -1,10 +1,10 @@
 // Studio record settings — the input, count-in, click, monitoring and the line-up offset, in the Sound panel; kept on this device.
 import { For, Show } from 'solid-js'
+import { inputChoices, inputsNamed } from '@/lib/audio-input/input-choices'
 import type { StudioCountInBars } from '@/lib/studio/record/record-settings'
 import { MAX_RECORD_OFFSET_MS } from '@/lib/studio/record/take-timing'
 import sound from '../sound/StudioSound.module.css'
 import common from '../StudioPage.module.css'
-import { studioInputChoices, studioInputsNamed } from './studio-inputs'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
 
@@ -32,7 +32,7 @@ export function StudioRecordSettings(props: {
     return `Studio already moves each take ${ms} ms earlier for the delay between the song and your voice (${source}). Line-up adds to that: raise it if takes still land late, lower it if they land early.`
   }
   const choices = () =>
-    studioInputChoices(props.recorder.inputs(), {
+    inputChoices(props.recorder.inputs(), {
       id: settings().inputDeviceId,
       label: settings().inputLabel,
     })
@@ -76,7 +76,7 @@ export function StudioRecordSettings(props: {
           Takes record from the default input until it is back.
         </p>
       </Show>
-      <Show when={!studioInputsNamed(props.recorder.inputs())}>
+      <Show when={!inputsNamed(props.recorder.inputs())}>
         <p class={common.help}>
           Your inputs are listed by name once Studio may use the microphone. Arm
           a lane once to see them.

@@ -85,7 +85,10 @@ export const EMPTY_ROSTER: MicRoster = {
 const DEFAULT_ID = 'default'
 const COMMUNICATIONS_ID = 'communications'
 
-const isPseudo = (device: DeviceInfoLike): boolean =>
+/** One of Chromium's role entries (`default`, `communications`), not a device of its own. */
+export const isPseudoEntry = (
+  device: Pick<DeviceInfoLike, 'deviceId'>,
+): boolean =>
   device.deviceId === DEFAULT_ID || device.deviceId === COMMUNICATIONS_ID
 
 // Order matters. Each name is tested against the rules top to bottom and the
@@ -225,7 +228,7 @@ function resolveRoles(listed: readonly DeviceInfoLike[]): RoleRows {
   const callsEntry = listed.find(
     (device) => device.deviceId === COMMUNICATIONS_ID,
   )
-  const physical = listed.filter((device) => !isPseudo(device))
+  const physical = listed.filter((device) => !isPseudoEntry(device))
   if (defaultEntry === undefined) {
     return {
       rows: physical,
@@ -244,7 +247,7 @@ function resolveRoles(listed: readonly DeviceInfoLike[]): RoleRows {
 
 /** A row's name: a pseudo-entry kept as a row loses its role prefix. */
 const rowName = (device: DeviceInfoLike): string =>
-  isPseudo(device) ? nameAfterRole(device.label) : device.label
+  isPseudoEntry(device) ? nameAfterRole(device.label) : device.label
 
 /** One readable list from `enumerateDevices()` and the live track. */
 export function buildRoster(
