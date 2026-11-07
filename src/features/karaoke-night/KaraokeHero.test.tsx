@@ -63,7 +63,7 @@ describe('KaraokeHero', () => {
     expect(onSingDemo).toHaveBeenCalledTimes(1)
   })
 
-  it('offers no song to sing while the example cannot be played', () => {
+  it('keeps its heading and offers no song while the example cannot be played', () => {
     render(() => (
       <KaraokeHero
         intent="karaoke-app"
@@ -72,8 +72,9 @@ describe('KaraokeHero', () => {
       />
     ))
 
-    expect(
-      screen.queryByRole('button', { name: 'Sing this song' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      'A free karaoke app with lyrics and live scoring',
+    )
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 })
