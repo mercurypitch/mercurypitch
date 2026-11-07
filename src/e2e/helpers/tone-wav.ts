@@ -16,28 +16,34 @@ import path from 'node:path'
 export const TONE_HZ = 220
 export const TONE_NOTE = 'A3'
 
-/** 16-bit mono PCM at 48 kHz, from a level per sample (−1 to 1 of 26000). */
+/**
+ * 16-bit PCM at 48 kHz, from a level per frame for each channel (−1 to 1 of
+ * 26000): one level for mono, a level per side for stereo, interleaved.
+ */
 const RATE = 48000
 
-function wavOf(samples: number, level: (i: number) => number): Buffer {
-  const buf = Buffer.alloc(44 + samples * 2)
+function wavOf(frames: number, ...levels: ((i: number) => number)[]): Buffer {
+  const channels = levels.length
+  const bytes = frames * channels * 2
+  const buf = Buffer.alloc(44 + bytes)
   buf.write('RIFF', 0)
-  buf.writeUInt32LE(36 + samples * 2, 4)
+  buf.writeUInt32LE(36 + bytes, 4)
   buf.write('WAVE', 8)
   buf.write('fmt ', 12)
   buf.writeUInt32LE(16, 16)
   buf.writeUInt16LE(1, 20) // PCM
-  buf.writeUInt16LE(1, 22) // mono
+  buf.writeUInt16LE(channels, 22)
   buf.writeUInt32LE(RATE, 24)
-  buf.writeUInt32LE(RATE * 2, 28)
-  buf.writeUInt16LE(2, 32)
+  buf.writeUInt32LE(RATE * channels * 2, 28)
+  buf.writeUInt16LE(channels * 2, 32)
   buf.writeUInt16LE(16, 34)
   buf.write('data', 36)
-  buf.writeUInt32LE(samples * 2, 40)
-  for (let i = 0; i < samples; i++) {
-    const s = Math.max(-32768, Math.min(32767, Math.round(level(i) * 26000)))
-    buf.writeInt16LE(s, 44 + i * 2)
-  }
+  buf.writeUInt32LE(bytes, 40)
+  for (let i = 0; i < frames; i++)
+    levels.forEach((level, channel) => {
+      const s = Math.max(-32768, Math.min(32767, Math.round(level(i) * 26000)))
+      buf.writeInt16LE(s, 44 + (i * channels + channel) * 2)
+    })
   return buf
 }
 
@@ -81,6 +87,28 @@ export function writeToneWav(hz: number = TONE_HZ, seconds = 5): string {
   // the 20-second file `guided-voice-check` had already pinned, so its capture
   // ran out of microphone mid-take and failed the task-completion gate.
   return place(`mercurypitch-e2e-tone-${hz}-${seconds}s.wav`, buf)
+}
+
+/**
+ * Two plain sines, one on each side, 16-bit stereo PCM at 48 kHz: a guitar
+ * on input 1 of an interface and a microphone on input 2, as far as a page
+ * can tell. With the browser's voice processing off, Chromium's fake capture
+ * hands it over as two channels, each tone on its own side: measured in
+ * Chrome for Testing 153 (Nov 2026), `getSettings().channelCount` 2 and the
+ * other side's tone more than 100 dB down. Chromium loops the file.
+ */
+export function writeStereoToneWav(
+  leftHz: number,
+  rightHz: number,
+  seconds = 5,
+): string {
+  const side = (hz: number) => (i: number) =>
+    0.5 * Math.sin((2 * Math.PI * hz * i) / RATE)
+  const buf = wavOf(RATE * seconds, side(leftHz), side(rightHz))
+  return place(
+    `mercurypitch-e2e-stereo-${leftHz}-${rightHz}-${seconds}s.wav`,
+    buf,
+  )
 }
 
 /**
