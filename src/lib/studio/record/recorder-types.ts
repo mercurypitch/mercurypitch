@@ -73,6 +73,8 @@ export interface StudioCapturedTake {
   readonly fromFrame: number | null
   /** A punch keeps its range, a loop every pass of it (take-passes.ts); absent for a plain take. */
   readonly cut?: StudioTakeCut | null
+  /** The clock time of its first sample, to place what was played into it (take-notes.ts); absent for a take kept from the journal. */
+  readonly capturedFrom?: number
 }
 
 /** What the journal keeps about a take, so a closed tab can still keep it. */
@@ -118,6 +120,27 @@ export interface StudioMicHold {
   release(): void
 }
 
+/** An instrument a MIDI lane plays in place of a microphone: its sound is made in the page, and no microphone opens for it. */
+export interface StudioInstrumentHold {
+  readonly kind: 'instrument'
+  /** Make the instrument's sound on the clock: the node the lane records and hears. */
+  play(context: AudioContext): AudioNode
+  /** Its input is still there: the port connected. */
+  connected(): boolean
+  /** Stop its sound and let its input go. */
+  release(): void
+}
+
+/** What an arm opened for a lane: a microphone, or an instrument. */
+export type StudioInputHold = StudioMicHold | StudioInstrumentHold
+
+/** What a lane says when its input goes: while armed, mid-take, and before the take began. */
+export interface StudioInputLostWords {
+  readonly armed: string
+  readonly midTake: string
+  readonly beforeTake: string
+}
+
 /** What an arm opened: the input's channels, and what the lane records of them. */
 export interface StudioInputOpened {
   readonly stream: MediaStream
@@ -134,6 +157,10 @@ export interface StudioRecorderDeps {
   clock(): AudioContext | null
   /** Open the input `trackId` records from: its own, or the Studio's (null: a new lane). */
   acquireMic(trackId: string | null): Promise<StudioMicHold>
+  /** A MIDI lane's instrument, asked first and inside the press, opened in place of a microphone; null for a lane that records one. */
+  acquireInstrument?(
+    trackId: string | null,
+  ): Promise<StudioInstrumentHold> | null
   prepareWorklet(context: AudioContext): Promise<void>
   openCapture(
     context: AudioContext,
@@ -156,8 +183,8 @@ export interface StudioRecorderDeps {
   /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */
   takeCut?(): StudioTakeCut | null
   tempoBpm(): number
-  /** The round trip new takes are trimmed by, in seconds. */
-  roundTrip(context: AudioContext, stream: MediaStream): number
+  /** What a new take is moved earlier by, in seconds: a microphone's round trip, or an instrument's (`stream` null) output path. */
+  roundTrip(context: AudioContext, stream: MediaStream | null): number
   reserveMemory(bytes: number): () => void
   journal?: StudioTakeJournalWriter
   /** Store the take; true once it is kept. */

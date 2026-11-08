@@ -119,6 +119,18 @@ export function studioRoundTrip(
   }
 }
 
+/**
+ * What an instrument's take is moved earlier by: the output path, and
+ * nothing more. The player plays along with the song as they hear it, late
+ * by the output path, and the instrument's sound reaches the take inside
+ * the page, with no input path, no measured round trip and no line-up of the
+ * singer's: so a note lands on the song frame the player heard as they
+ * played it.
+ */
+export function studioInstrumentShift(pathSeconds: number): number {
+  return Math.min(MAX_ROUND_TRIP_SECONDS, reportedLatency(pathSeconds))
+}
+
 /** What a finished capture knows about where it sits. */
 export interface StudioTakeCapture {
   readonly anchor: StudioTakeAnchor

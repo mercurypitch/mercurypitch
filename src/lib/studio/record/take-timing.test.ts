@@ -1,9 +1,19 @@
 // Studio take timing — the round trip a take is trimmed by, where its clip lands, and the beat grid its count-in and click follow.
 import { describe, expect, it } from 'vitest'
 import type { StudioTakeCapture } from './take-timing'
-import { DEFAULT_INPUT_SECONDS, placeStudioTake, studioBeatFrames, studioClickBeats, studioCountInSeconds, studioRoundTrip, takeFrameAt, takeTimeOf, } from './take-timing'
+import { DEFAULT_INPUT_SECONDS, MAX_ROUND_TRIP_SECONDS, placeStudioTake, studioBeatFrames, studioClickBeats, studioCountInSeconds, studioInstrumentShift, studioRoundTrip, takeFrameAt, takeTimeOf, } from './take-timing'
 
 const RATE = 48000
+
+describe('studioInstrumentShift', () => {
+  it("moves an instrument's take by the output path alone, within what is believed", () => {
+    // Arrange, Act, Assert: no input path, no measured round trip, no line-up.
+    expect(studioInstrumentShift(0.0213 + 0.072)).toBeCloseTo(0.0933, 9)
+    expect(studioInstrumentShift(Number.NaN)).toBe(0)
+    expect(studioInstrumentShift(-0.5)).toBe(0)
+    expect(studioInstrumentShift(4)).toBe(MAX_ROUND_TRIP_SECONDS)
+  })
+})
 
 describe('studioRoundTrip', () => {
   it('estimates the output path plus the reported input path when nothing was measured', () => {

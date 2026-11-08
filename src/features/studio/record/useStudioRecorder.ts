@@ -52,7 +52,7 @@ import { pcm16ToFloat } from '@/lib/studio/record/take-audio'
 import { studioTakeClip } from '@/lib/studio/record/take-passes'
 import type { StudioTakeCut } from '@/lib/studio/record/take-plan'
 import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
-import { studioRoundTrip } from '@/lib/studio/record/take-timing'
+import { studioInstrumentShift, studioRoundTrip, } from '@/lib/studio/record/take-timing'
 import { micLatencyPathMsForDevice } from '@/stores/mic-latency-path-store'
 import { micLatencyMsForDevice } from '@/stores/mic-latency-store'
 import type { StudioTakeClock } from '../audio/take-clock'
@@ -185,7 +185,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     }
   }
 
-  function measureRoundTrip(context: AudioContext, stream: MediaStream) {
+  function measureRoundTrip(context: AudioContext, stream: MediaStream | null) {
+    // An instrument's take: the output path alone, and the line-up beside
+    // the offset keeps speaking of the voice's round trip.
+    if (stream === null)
+      return studioInstrumentShift(audioOutputPathSeconds(context))
     const reported = stream.getAudioTracks?.()[0]?.getSettings?.() as
       | { latency?: number; deviceId?: string }
       | undefined

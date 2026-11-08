@@ -23,22 +23,24 @@
 // leaves the take to be kept on the next visit.
 //
 // A lane records one input of its capture, or an aligned pair mixed to
-// mono (lane-channel.ts): the arm hands the take and the monitor the same
-// node, and so does every capture it opens after.
+// mono (lane-channel.ts), or, on a MIDI lane, an instrument's sound with no
+// microphone at all (armed-input.ts): the arm hands the take and the
+// monitor the same node, and so does every capture it opens after.
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicReleaseReason } from '@/lib/mic-manager'
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { frameTime, wholeFrameAtOrAfter } from '../playback/whole-frame'
+import type { StudioArmedInput } from './armed-input'
+import { openStudioArmedInput } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
 import { createStudioClickScheduler } from './click-track'
 import type { StudioInputMonitor } from './input-monitor'
-import type { StudioInputTap, StudioLaneChannel } from './lane-channel'
-import { openStudioLaneChannel, studioInputTap } from './lane-channel'
+import type { StudioInputTap } from './lane-channel'
 import type { StudioCaptureStop } from './pcm-capture'
 import type { StudioRecordSettings } from './record-settings'
-import type { StudioCapturedTake, StudioMicHold, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
+import type { StudioCapturedTake, StudioInputHold, StudioInputLostWords, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
 import type { StudioLivePeaks } from './take-audio'
 import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
 import type { StudioTakeJournalFeed } from './take-journal-feed'
@@ -106,12 +108,8 @@ const TOO_SOON_IN_RANGE =
 
 interface Armed {
   readonly context: AudioContext
-  /** Given back through itself only: a late release from an earlier arm cannot end it. */
-  readonly mic: StudioMicHold
-  readonly stream: MediaStream
-  readonly source: AudioNode
-  /** What the lane records and hears, its one channel or the whole source: every capture of the arm listens on its `input`. */
-  readonly lane: StudioLaneChannel
+  /** What the lane records and hears, given back through itself only: every capture of the arm listens on its node. */
+  readonly input: StudioArmedInput
   readonly capture: StudioCaptureHandle
   readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
   readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
@@ -144,6 +142,8 @@ interface Take {
   /** Finishes the take if the worklet never says it stopped. */
   watchdog: ReturnType<typeof setTimeout> | null
   readonly journal: StudioTakeJournalFeed
+  /** The input went mid-take, in these words. */
+  lost: StudioInputLostWords | null
 }
 
 /** The take's length in the 48 kHz frames its import keeps. */
@@ -167,9 +167,10 @@ function endNotice(
   cut: StudioTakeCut | null,
   /** The capture ran past the range's start. */
   inRange: boolean,
+  lost: StudioInputLostWords | null,
 ): string | null {
   if (kept) return named ?? STOP_NOTICES[reason] ?? null
-  if (named === MIC_LOST_MID_TAKE) return MIC_LOST_BEFORE_TAKE
+  if (lost !== null && named === lost.midTake) return lost.beforeTake
   const early = inRange ? TOO_SOON_IN_RANGE : BEFORE_THE_IN_POINT
   const stopped = cut !== null && reason === 'stopped' ? early : null
   return ENDED_BEFORE_THE_TAKE[reason] ?? stopped ?? TAKE_TOO_SHORT
@@ -203,11 +204,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     const token = ++armToken
     set({ phase: 'arming', error: null, notice: null, targetTrackId: trackId })
     // Both start before anything is awaited: the press must still be current.
+    // A MIDI lane's instrument opens in place of a microphone, never beside one.
     const unlocked = deps.unlock().catch(() => false)
-    const mic = deps.acquireMic(trackId)
-    let held: StudioMicHold
+    const input = deps.acquireInstrument?.(trackId) ?? deps.acquireMic(trackId)
+    let held: StudioInputHold
     try {
-      held = await mic
+      held = await input
     } catch (error) {
       if (token === armToken)
         set({ phase: 'idle', error: deps.describeError(error) })
@@ -247,35 +249,24 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   function open(
     context: AudioContext,
-    mic: StudioMicHold,
+    held: StudioInputHold,
     trackId: string | null,
   ): Armed {
-    const stream = mic.stream
-    const source = deps.createSource(context, stream)
-    const lane = openStudioLaneChannel(
-      context,
-      source,
-      stream,
-      mic.pick ?? null,
-    )
-    const capture = deps.openCapture(context, lane.input, captureEvents())
-    const monitor = deps.createMonitor(context, lane.input)
+    const input = openStudioArmedInput(context, held, deps.createSource)
+    const capture = deps.openCapture(context, input.node, captureEvents())
+    const monitor = deps.createMonitor(context, input.node)
     monitor.set(deps.monitorLevel(trackId))
-    const { channels, pick, missing } = lane
-    deps.inputOpened?.({ stream, channels, pick, missing })
+    if (input.opened !== null) deps.inputOpened?.(input.opened)
     return {
       context,
-      mic,
-      stream,
-      source,
-      lane,
+      input,
       capture,
       monitor,
       clicks: deps.createClicks(context),
     }
   }
 
-  /** Close everything the arm opened and give the microphone back. */
+  /** Close everything the arm opened and give the input back. */
   function closeArmed(): void {
     const closing = armed
     armed = null
@@ -283,13 +274,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     closing.capture.dispose()
     closing.monitor.dispose()
     closing.clicks.stop()
-    closing.lane.split?.close()
-    try {
-      closing.source.disconnect()
-    } catch {
-      // Already apart.
-    }
-    closing.mic.release()
+    closing.input.close()
   }
 
   function disarm(): void {
@@ -375,7 +360,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     const id = deps.createId()
     const title = deps.title()
     // Read now, so an offset changed while armed is in this take.
-    const roundTrip = deps.roundTrip(context, armed.stream)
+    const roundTrip = deps.roundTrip(context, armed.input.stream)
     take = {
       id,
       title,
@@ -406,6 +391,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         heardFirst: studioHeardFirst(anchor, startTime, roundTrip),
         cut,
       }),
+      lost: null,
     }
     armed.capture.start(take.startFrame, maxFrames)
     if (countIn > 0) countInClicks(take, countIn)
@@ -600,7 +586,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       ...armed,
       capture: deps.openCapture(
         armed.context,
-        armed.lane.input,
+        armed.input.node,
         captureEvents(),
       ),
     }
@@ -608,18 +594,12 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   /**
    * Whether the lane stays armed after a take that ended for `reason`: not
-   * when the microphone or the clock went with it, or the Studio closed.
+   * when its input or the clock went with it, or the Studio closed.
    */
   function staysArmed(reason: StudioCaptureStop): boolean {
     if (disposed || armed === null) return false
     if (reason === 'input-lost' || reason === 'interrupted') return false
-    if (armed.context.state !== 'running') return false
-    const tracks = armed.stream.getAudioTracks?.()
-    return (
-      tracks === undefined ||
-      tracks.length === 0 ||
-      tracks.some((track) => track.readyState === 'live')
-    )
+    return armed.context.state === 'running' && armed.input.live()
   }
 
   /** The worklet stopped: by Stop, or on its own (a limit, the input gone). */
@@ -663,6 +643,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         current.cut,
         current.cut !== null &&
           heardFirst + takeFrames(current) > current.cut.range.startFrame,
+        current.lost,
       )
       if (!reached || frames <= 0) {
         current.journal.discard()
@@ -678,6 +659,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
         heardFirst,
         fromFrame: current.fromFrame,
         cut: current.cut,
+        capturedFrom: frameTime(current.startFrame, current.sampleRate),
       }
       current.buffer.clear()
       const kept = await deps.keep(captured).catch(() => false)
@@ -692,37 +674,31 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   // ── Losses ───────────────────────────────────────────────────
 
-  /**
-   * The microphone went away: an armed lane disarms, saying why when the
-   * app let it go (`reason`), and a take keeps what it has.
-   */
-  function micLost(reason: MicReleaseReason | null = null): void {
+  /** The lane's input went away: an armed lane disarms and says so in `words`, and a take keeps what it has. */
+  function inputLost(words: StudioInputLostWords): void {
     if (view.phase === 'arming' || view.phase === 'idle') return
-    if (view.phase === 'armed') {
+    if (view.phase === 'armed' || view.phase === 'counting') {
+      if (view.phase === 'counting') cancel()
       closeArmed()
-      set({
-        phase: 'idle',
-        level: 0,
-        targetTrackId: null,
-        error: lostWhileArmed(reason),
-      })
-      return
-    }
-    if (view.phase === 'counting') {
-      cancel()
-      closeArmed()
-      set({
-        phase: 'idle',
-        level: 0,
-        targetTrackId: null,
-        error: lostWhileArmed(reason),
-      })
+      set({ phase: 'idle', level: 0, targetTrackId: null, error: words.armed })
       return
     }
     if (view.phase !== 'recording' || armed === null) return
     armed.capture.stop(null, 'input-lost')
-    if (take !== null) endSound(take, 'input-lost')
-    set({ phase: 'finishing', notice: MIC_LOST_MID_TAKE })
+    if (take !== null) {
+      take.lost = words
+      endSound(take, 'input-lost')
+    }
+    set({ phase: 'finishing', notice: words.midTake })
+  }
+
+  /** The microphone went away, saying why when the app let it go (`reason`). */
+  function micLost(reason: MicReleaseReason | null = null): void {
+    inputLost({
+      armed: lostWhileArmed(reason),
+      midTake: MIC_LOST_MID_TAKE,
+      beforeTake: MIC_LOST_BEFORE_TAKE,
+    })
   }
 
   /** The clock stopped running (an interruption): a take keeps what it has. */
@@ -760,6 +736,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     record,
     stop,
     micLost,
+    inputLost,
     clockStopped,
     /** Move the arm to another lane before the take starts; the microphone stays open. */
     retarget(trackId: string | null): void {
@@ -774,7 +751,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     },
     /** The armed input, for meters beside the take on the arm's own split; null while nothing is armed. */
     inputTap(): StudioInputTap | null {
-      return armed === null ? null : studioInputTap(armed)
+      return armed?.input.tap() ?? null
     },
     clearMessages(): void {
       if (view.error !== null || view.notice !== null)
