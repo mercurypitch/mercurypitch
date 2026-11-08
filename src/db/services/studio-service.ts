@@ -521,6 +521,8 @@ export function createStudioService(
                 STUDIO_STORES.blobs,
                 studioPeaksRowId(id, asset.canonicalPcmSha256),
               )
+            // A MIDI take's notes go with its audio (studio-take-notes.ts).
+            await db.deleteByIdStrict(STUDIO_STORES.notes, asset.id)
             await db.deleteByIdStrict(STUDIO_STORES.assets, asset.id)
           }
           return assets.filter((asset) => used.has(asset.id))
@@ -591,6 +593,7 @@ export function createStudioService(
             id,
           )
           await db.deleteByIndexStrict(STUDIO_STORES.takes, 'projectId', id)
+          await db.deleteByIndexStrict(STUDIO_STORES.notes, 'projectId', id)
         })
       }),
   }

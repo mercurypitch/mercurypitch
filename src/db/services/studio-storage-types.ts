@@ -14,6 +14,8 @@ export const STUDIO_STORES = {
   /** A take journaled while it records, until it is stored (studio-take-journal.ts). */
   takes: 'studioTakeJournals',
   takeChunks: 'studioTakeChunks',
+  /** The notes played into a MIDI lane's take, by the take's id (studio-take-notes.ts). */
+  notes: 'studioTakeNotes',
 } as const
 
 export type StudioStorageErrorCode =
