@@ -507,17 +507,18 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
-  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; its
-  // shell: 88,379 bytes in build:e2e, the smallest whole KB above, to rise
-  // as each part joins. Raised to 151 with the five steps on their four
-  // toys (the staircase, the circle and the staff, Find do and the walk):
-  // 153,766 bytes. Raised to 179 with the cold open and the two quizzes,
-  // the recall from Lessons 6 and 15 and the quick check: 183,134 bytes, of
-  // which the kit's quiz, the three lessons' questions and Lesson 15's
-  // recall, the slot that plays its three notes, are 19,556. Raised to 193
-  // with the four words, Sing it and the Wrap: 197,268 bytes, of which the
-  // kit's comfort check, sing flow, count-in and words strip are 5,866.
-  'learn/21.html': 193,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
+  // the steps' four toys (the kit's staircase, moved from Lesson 4, the
+  // staff toy with its key signatures, kit/staff-key.ts, the circle of
+  // fifths with its house and walk, kit/circle.ts, and Find do on the staff
+  // toy), the cold open's ring, keyboard and small staircases on the kit's
+  // predict, the recall's questions from Lessons 6 and 15, with the slot
+  // that plays Lesson 15's three notes, and the quick check on the kit's
+  // quiz, the four words on the kit's words strip, Sing it on the kit's
+  // sing flow, comfort check, voice choice and count-in, and free play on
+  // the circle: 197,268 bytes in build:e2e; a quarter over. Sing it opens
+  // no microphone, so nothing of the listener comes in.
+  'learn/21.html': 241,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
   // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in
@@ -708,18 +709,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 21 (a draft, as above), its shell: 86,021 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own with the staff toy's and
-  // the staircase's taken in by @import, and the shared Inter and Outfit
-  // @font-face rules; the smallest whole KB above, to rise as each part
-  // joins, the guide's and the voice lessons' sheets with the recall and
-  // Sing it. Raised to 86 with the circle toy's sheet and the staff toy's
-  // key signatures and outlines: 87,228 bytes. Raised to 87 with the
-  // guide's sheet, which joins with the recall, and the cold open's small
-  // staircases and phone row: 88,611 bytes. Raised to 94 with the voice
-  // lessons' sheet, which joins with Sing it, the words' tiles and the
-  // tease still: 95,645 bytes.
-  'learn/21.html': 94,
+  // Lesson 21 (a draft, as above): 95,757 bytes in build:e2e, the kit's
+  // sheets (the guide's and the voice lessons' in the chunks the quizzes and
+  // Sing it share, the staff toy's, the staircase's and the circle's
+  // inlined into its own by @import, and the shared parts), its own, and the
+  // shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/21.html': 117,
   // Lesson 22 (a draft, as above), with its steps, its cold open, its two
   // quizzes, its four words, Sing it and the Wrap: 89,928 bytes in
   // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it
