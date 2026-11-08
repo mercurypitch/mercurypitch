@@ -549,6 +549,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** take what a mono signal hears of a capture with a split of your own: one channel, or an aligned pair summed at half each, as a DAW's record input does (`splitChannels(...).take(pick)`), and a default chosen by the count (`defaultChannelPick`). The Studio no longer relies on the fold, which is left only for a browser that does not say how many channels it opened. Pin routing on an `OfflineAudioContext` with a different level on each channel.
 **See:** `src/lib/audio-input/input-channels.ts`, `src/lib/studio/record/lane-channel.ts`, the routing test in `src/e2e/studio-lane-input.spec.ts`.
 
+### Expect a live note's sound up to one audio callback after the time it was started at
+
+**Symptom:** a Studio MIDI take's note sat 12.8 to 24.8 ms before its sound in the take, run to run, though the note was logged at the exact time its sound was started at (headless Chromium, Nov 2026). In two runs, the sound began on the same frame while the notes differed by 256 frames.
+**Cause:** the audio thread renders a whole callback at a time. A note whose MIDI message is already past is started at `currentTime`, and sounds from the next callback, up to one callback (about 12 ms there) after that time. The piano's 8 ms rise and its limiter's 6 ms lookahead add the rest.
+**Rule:** compare a live note with its recorded sound to within one callback plus the instrument's own delay, and never expect the sound before the note. Exact alignment needs every live note started a fixed time ahead, which the player hears as latency.
+**See:** `src/features/studio/record/midi/studio-midi-arm.ts`, `src/e2e/studio-midi-lanes.spec.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
