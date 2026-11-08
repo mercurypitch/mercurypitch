@@ -1,6 +1,7 @@
 // Studio track details — the lane's own sheet: its lines (and on a phone its arm), name, instrument, mix role and the input it records from, apart from where its audio came from.
 import { For, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
+import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioTrack } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
@@ -121,6 +122,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
             focus={props.focusInput}
             onFocused={props.onInputFocused}
             onAllInputs={props.onInputs}
+            instrument={studioLaneInstrument(props.track)}
           />
         )}
       </Show>

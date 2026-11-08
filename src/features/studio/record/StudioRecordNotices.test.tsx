@@ -96,4 +96,24 @@ describe('the armed card', () => {
       'Armed on Guitar. The browser does not say which inputs Scarlett 2i2 USB has, so all of it records.',
     )
   })
+
+  it('names the port a MIDI lane opened, whatever a microphone arm before it said', () => {
+    // Arrange, Act
+    const said = armedWords(
+      {
+        armedInput: () => ({ ...nothing, records: records({}) }),
+        midiArmed: () => ({
+          port: 'Keystation 49',
+          sound: 'piano',
+          words: 'Plays the piano.',
+        }),
+      },
+      'Keys',
+    )
+
+    // Assert
+    expect(said).toBe(
+      'Armed on Keys with Keystation 49. Press Record to start.',
+    )
+  })
 })

@@ -10,6 +10,7 @@
 // audio inputs. Before the browser names its inputs there is one thing to
 // do, so the view offers that alone rather than a list of numbered devices.
 import { Index, Show } from 'solid-js'
+import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioLaneInputRecorder } from '../record/StudioLaneInputField'
 import { StudioLaneInputField } from '../record/StudioLaneInputField'
@@ -93,6 +94,7 @@ export function StudioInputsPanel(props: StudioInputsPanelProps) {
                   trackName={track().name}
                   recorder={props.recorder}
                   inInputsView
+                  instrument={studioLaneInstrument(track())}
                 />
               </div>
             )}
