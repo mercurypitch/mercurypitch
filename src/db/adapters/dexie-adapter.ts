@@ -136,6 +136,12 @@ class DexieDatabase extends DexieDB {
       studioTakeJournals: 'id, projectId',
       studioTakeChunks: 'id, takeId, projectId',
     })
+    // v15: the notes a Studio MIDI lane's player played into a take, kept
+    // by the take's id beside its audio for a later notes viewer, and gone
+    // with it. Device-only; never cloud entities, never in the song.
+    this.version(15).stores({
+      studioTakeNotes: 'id, projectId',
+    })
     // Two tabs on one origin disagree about the schema after every deploy that
     // raises it. Dexie's own defaults yield and then let this tab reopen at the
     // old version, which deadlocks the upgrading tab rather than delaying it.
