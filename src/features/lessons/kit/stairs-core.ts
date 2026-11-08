@@ -9,11 +9,15 @@
 // keys' overlay, the arrow from ti, the top stair's house) and lights a
 // stair and its key while its note sounds. Under reduced motion every move
 // lands at once; a played scale still sounds and lights its stairs in turn.
-// Sound and words belong to whoever calls `play`: the core only draws.
+// Sound and words belong to whoever calls `play`: the core only draws, and
+// only while something it shows moves or has changed, so a still staircase
+// asks the page's frame loop for nothing (frame-loop.ts, `wants`). A page
+// whose staircase changes octave hands it new starts (`setRange`): Lesson
+// 21's stands on G2 or G4 by the learner's clef.
 
 import { clamp } from './dom'
 import type { Surface } from './frame-loop'
-import { addDrawer, surface } from './frame-loop'
+import { addDrawer, surface, wake } from './frame-loop'
 import { scaleNotes, whiteKeysFrom } from './major-scale'
 import { reducedMotion } from './motion-switch'
 import type { NamesMode } from './names-modes'
@@ -58,6 +62,8 @@ export interface StairsCore {
   readonly layout: StairsLayout | null
   /** A slide: silent, the staircase keeping its shape, kept within its starts. */
   setTonic(midi: number): void
+  /** New starts: what plays stops, and the staircase stands on the lowest at once. */
+  setRange(range: StairsRange): void
   /** Seconds a slide's travel takes (none under reduced motion). */
   readonly travel: number
   /** The scene's switches. */
@@ -125,8 +131,8 @@ const smoothstep = (u: number): number => u * u * (3 - 2 * u)
 export function mountStairs(opts: StairsCoreOptions): StairsCore {
   const cv: Surface = surface(opts.canvas)
   const coarse = window.matchMedia('(pointer: coarse)').matches
-  const { lo, hi } = opts.range
-  const floor = floorOf(opts.range)
+  let { lo, hi } = opts.range
+  let floor = floorOf(opts.range)
   let tonic = lo
   let view = lo
   let travelFrom = lo
@@ -144,6 +150,10 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
   let busy = false
   let layout: StairsLayout | null = null
   let lastKey = ''
+  // what the last frame drew from: its size and names, and whether a change
+  // since asks for another
+  let drawn = { w: 0, h: 0, names: '' }
+  let dirty = true
 
   const now = (): number => performance.now() / 1000
 
@@ -198,22 +208,63 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
     eased.home = approach(eased.home, sw.home ? 1 : 0, dt, FADE_SEC)
   }
 
+  /** Something it shows is on its way somewhere: a slide, a switch easing, a lit stair, a flash or a key's pulse. */
+  function moving(t: number = now()): boolean {
+    return (
+      travelU < 1 ||
+      eased.group !== (sw.group ? 1 : 0) ||
+      eased.white !== (sw.white ? 1 : 0) ||
+      eased.arrow !== (sw.waiting ? 1 : 0) ||
+      eased.home !== (sw.home ? 1 : 0) ||
+      lits.length > 0 ||
+      (flashAt >= 0 && t - flashAt < FLASH_SEC * 2) ||
+      [...pulses.values()].some((at) => t - at < 0.7)
+    )
+  }
+
+  /** Whether the next frame draws: something moves, or changed since the last frame. */
+  function wants(): boolean {
+    if (dirty || moving()) return true
+    const box = opts.canvas.getBoundingClientRect()
+    const names = opts.compact ? 'solfege' : (opts.names?.() ?? 'letters')
+    // sized as `fit` sizes the canvas: a whole pixel, never under one
+    return (
+      Math.max(1, Math.round(box.width)) !== drawn.w ||
+      Math.max(1, Math.round(box.height)) !== drawn.h ||
+      names !== drawn.names
+    )
+  }
+
+  /** Something it shows changed: the next frame draws it. */
+  function changed(): void {
+    dirty = true
+    wake()
+  }
+
   function draw(_now: number, dt: number): void {
     step(dt)
     const { ctx, w, h } = cv.fit()
+    drawn = {
+      w,
+      h,
+      names: opts.compact ? 'solfege' : (opts.names?.() ?? 'letters'),
+    }
     layout = stairsLayout(modeFor(w, h), w, h, view, floor)
-    const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)}`
+    const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)} ${floor}`
     if (key !== lastKey) {
       lastKey = key
       opts.onLayout?.(layout)
     }
-    paintStairs(ctx, layout, scene(now()), view)
-    // the lights a run has finished with
     const t = now()
+    paintStairs(ctx, layout, scene(t), view)
+    // the lights a run has finished with
     lits = lits.filter((l) => t < l.to + AFTERGLOW_SEC)
+    // a frame that showed something on its way asks for the next, so the
+    // last frame drawn shows everything at rest
+    dirty = moving(t)
   }
 
-  addDrawer({ active: opts.active, draw })
+  addDrawer({ active: opts.active, draw, wants })
 
   function clearRun(): void {
     timers.forEach((id) => window.clearTimeout(id))
@@ -225,6 +276,7 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
     const done = finish
     finish = null
     done?.()
+    changed()
   }
 
   function stairOf(midi: number, overlay: boolean): number {
@@ -256,14 +308,30 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       tonic = next
       // the overlay follows a slide (the toy turns it off for a black start)
       if (sw.white) whiteFrom = tonic
+      changed()
+    },
+    setRange(range) {
+      const next = floorOf(range)
+      clearRun()
+      lo = range.lo
+      hi = range.hi
+      floor = next
+      tonic = lo
+      view = lo
+      travelFrom = lo
+      travelU = 1
+      if (sw.white) whiteFrom = tonic
+      changed()
     },
     set(patch) {
       sw = { ...sw, ...patch }
       if (patch.white === true) whiteFrom = tonic
       if (patch.white === false) whiteFrom = null
+      changed()
     },
     flashBrackets() {
       flashAt = reducedMotion() ? -1 : now()
+      changed()
     },
     play(events, audible, look = {}) {
       clearRun()
@@ -292,6 +360,7 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
               color,
             })
         })
+        changed()
         timers.push(
           window.setTimeout(
             () => {
