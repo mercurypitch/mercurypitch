@@ -79,6 +79,28 @@ describe('splitChannels', () => {
     expect(graph.splitter.connect).toHaveBeenCalledExactlyOnceWith(mono, 1, 0)
   })
 
+  it('takes a target off the one channel it was sent from, and shrugs at one that was not', () => {
+    // Arrange
+    const graph = fakeGraph()
+    const split = graph.split(4)
+    const target = new FakeNode()
+    split.send(2, target as unknown as AudioNode)
+
+    // Act
+    split.unsend(2, target as unknown as AudioNode)
+    graph.splitter.disconnect.mockImplementation(() => {
+      throw new DOMException('Not connected', 'InvalidAccessError')
+    })
+
+    // Assert
+    expect(graph.splitter.disconnect).toHaveBeenCalledExactlyOnceWith(
+      target,
+      2,
+      0,
+    )
+    expect(() => split.unsend(3, target as unknown as AudioNode)).not.toThrow()
+  })
+
   it('takes one channel exactly as it came, at its own level', () => {
     // Arrange
     const graph = fakeGraph()
