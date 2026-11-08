@@ -1,6 +1,6 @@
 // Studio workspace — arrangement view state, contextual panels and the shared audio transport.
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { CheckSmall, ChevronDown, Download, Plus, RotateCcw, SlidersHorizontal, } from '@/components/icons'
+import { Plus } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -15,10 +15,10 @@ import { useStudioExport } from './export/useStudioExport'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
-import { installStudioMixShortcut, STUDIO_MIX_SHORTCUT, } from './mix/mix-shortcut'
+import { installStudioMixShortcut } from './mix/mix-shortcut'
 import { StudioMixDesk } from './mix/StudioMixDesk'
 import { StudioPhoneMix } from './mix/StudioPhoneMix'
-import { createStudioPanels } from './panels/studio-panels'
+import { createStudioPanels, STUDIO_PANEL_TITLES } from './panels/studio-panels'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
 import { StudioSongPanel } from './panels/StudioSongPanel'
@@ -29,9 +29,9 @@ import { useStudioRecorder } from './record/useStudioRecorder'
 import { StudioSoundPanel } from './sound/StudioSoundPanel'
 import { useStudioComparison } from './sound/useStudioComparison'
 import { useStudioSound } from './sound/useStudioSound'
-import { MixingDesk, RotateCw } from './studio-icons'
 import styles from './StudioPage.module.css'
 import { StudioSourcePicker } from './StudioSourcePicker'
+import { StudioTopBar } from './StudioTopBar'
 import { StudioTransport } from './StudioTransport'
 import { StudioRecordStatus, StudioWorkspaceNotices, } from './StudioWorkspaceNotices'
 import { StudioTimeline } from './timeline/StudioTimeline'
@@ -193,25 +193,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     project().tracks.find((track) => track.id === selectedTrackId())
   const selectedAsset = () =>
     props.studio.assets().find((asset) => asset.id === selectedClip()?.assetId)
-  const panelTitle = () =>
-    ({
-      sources: 'Add takes',
-      song: 'Song',
-      clip: 'Clip details',
-      track: 'Track details',
-      mix: 'Mix',
-      sound: 'Sound',
-      export: 'Export',
-    })[panel() ?? 'song']
-  const status = () =>
-    !props.studio.writable()
-      ? 'Read only'
-      : {
-          saved: 'Saved in this browser',
-          unsaved: 'Changes not saved',
-          saving: 'Saving…',
-          error: 'Changes not saved',
-        }[props.studio.saveState()]
   const trackAssets = createMemo(() => {
     const ids = new Set(
       project()
@@ -493,115 +474,18 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
           <Plus size={18} /> Drop on a lane, or below the lanes for a new one
         </div>
       </Show>
-      <div class={styles.topBar} data-studio-top-bar>
-        <div class={styles.topBarRow}>
-          <div class={styles.songIdentity}>
-            <button
-              type="button"
-              class={styles.songTitle}
-              title="Song options"
-              aria-label="Song options"
-              data-tour="studio.song-options"
-              aria-expanded={panel() === 'song'}
-              onClick={() => togglePanel('song')}
-            >
-              <span>{project().title}</span>
-              <ChevronDown size={14} />
-            </button>
-            <span
-              class={styles.saveStatus}
-              data-state={
-                props.studio.writable() ? props.studio.saveState() : 'read-only'
-              }
-              role="status"
-            >
-              <Show
-                when={
-                  props.studio.writable() &&
-                  props.studio.saveState() === 'saved'
-                }
-              >
-                <CheckSmall size={12} />
-              </Show>
-              {status()}
-            </span>
-          </div>
+      <StudioTopBar
+        studio={props.studio}
+        writable={writable()}
+        panel={panel()}
+        onPanel={togglePanel}
+        onHistory={historyAction}
+        transport={
           <Show when={!phone()}>
             <Transport />
           </Show>
-          <div class={styles.topActions}>
-            <div class={styles.historyButtons} data-tour="studio.history">
-              <button
-                type="button"
-                class={styles.iconButton}
-                aria-label={props.studio.undoLabel() ?? 'Undo'}
-                title={`${props.studio.undoLabel() ?? 'Undo'} (Ctrl+Z)`}
-                disabled={!writable() || !props.studio.canUndo()}
-                onClick={() => historyAction('undo')}
-              >
-                <RotateCcw size={17} />
-              </button>
-              <button
-                type="button"
-                class={styles.iconButton}
-                aria-label={props.studio.redoLabel() ?? 'Redo'}
-                title={`${props.studio.redoLabel() ?? 'Redo'} (Ctrl+Shift+Z)`}
-                disabled={!writable() || !props.studio.canRedo()}
-                onClick={() => historyAction('redo')}
-              >
-                <RotateCw size={17} />
-              </button>
-            </div>
-            <span class={styles.divider} aria-hidden="true" />
-            <button
-              type="button"
-              class={styles.button}
-              disabled={!writable()}
-              aria-expanded={panel() === 'sources'}
-              data-tour="studio.add-takes"
-              title="Add takes"
-              onClick={() => togglePanel('sources')}
-            >
-              <Plus size={16} />
-              <span class={styles.label}>Add takes</span>
-            </button>
-            <button
-              type="button"
-              class={styles.button}
-              aria-expanded={panel() === 'mix'}
-              data-tour="studio.mix"
-              title={`Mix (${STUDIO_MIX_SHORTCUT})`}
-              aria-keyshortcuts={STUDIO_MIX_SHORTCUT}
-              onClick={() => togglePanel('mix')}
-            >
-              <MixingDesk size={16} />
-              <span class={styles.label}>Mix</span>
-            </button>
-            <button
-              type="button"
-              class={styles.button}
-              data-tour="studio.sound"
-              aria-expanded={panel() === 'sound'}
-              title="Sound"
-              onClick={() => togglePanel('sound')}
-            >
-              <SlidersHorizontal />
-              <span class={styles.label}>Sound</span>
-            </button>
-            <button
-              type="button"
-              class={styles.primaryButton}
-              data-tour="studio.export"
-              title="Export"
-              aria-expanded={panel() === 'export'}
-              onClick={() => togglePanel('export')}
-            >
-              <Download />
-              <span class={styles.exportLabel}>Export</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        }
+      />
       <StudioWorkspaceNotices
         preparing={
           finishing() &&
@@ -676,7 +560,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         </div>
         <Show when={panel() !== null && !deskOpen()}>
           <StudioPanel
-            title={panelTitle()}
+            title={STUDIO_PANEL_TITLES[panel() ?? 'song']}
             onClose={closePanel}
             footer={
               <Show when={phone()}>

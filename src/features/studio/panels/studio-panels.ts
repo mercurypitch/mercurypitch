@@ -17,6 +17,17 @@ export type StudioPanelName =
   | 'sound'
   | 'export'
 
+/** Each panel's heading, which also names it to assistive tech. */
+export const STUDIO_PANEL_TITLES: Readonly<Record<StudioPanelName, string>> = {
+  sources: 'Add takes',
+  song: 'Song',
+  clip: 'Clip details',
+  track: 'Track details',
+  mix: 'Mix',
+  sound: 'Sound',
+  export: 'Export',
+}
+
 export interface StudioPanelsOptions {
   /** Before every change, with the panel about to open, or null when closing. */
   beforeChange?(next: StudioPanelName | null): void
