@@ -1052,6 +1052,10 @@ button.laneAction {
 .laneInput .help {
   margin: 0;
 }
+/* Its way to every input sits under the fields, as wide as its words. */
+.laneInput .textButton {
+  align-self: flex-start;
+}
 /* The chevron's room, after the field's own padding. */
 .stackedField select {
   padding-right: 30px;

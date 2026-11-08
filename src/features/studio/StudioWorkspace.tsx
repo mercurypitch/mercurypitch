@@ -12,6 +12,7 @@ import { useStudioTransport } from './audio/useStudioTransport'
 import { createStudioEditor } from './editor/studio-editor'
 import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
+import { StudioInputsPanel } from './inputs/StudioInputsPanel'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
@@ -275,6 +276,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     setSelectedTrackId(id)
     openPanel('track')
     setInputFocusFor(at === 'input' ? id : null)
+  }
+
+  /** The Studio's clock for a check in Inputs: started inside the press, as an arm's is. */
+  async function inputsClock(): Promise<AudioContext | null> {
+    if (!(await transport.unlock().catch(() => false))) return null
+    const context = transport.clock()
+    return context?.state === 'running' ? context : null
   }
 
   /** A new empty lane, selected, so the next take lands on it. */
@@ -591,7 +599,19 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                   </>
                 }
                 onCommand={props.studio.dispatch}
-                recording={<StudioRecordSettings recorder={recorder} />}
+                recording={
+                  <StudioRecordSettings
+                    recorder={recorder}
+                    onInputs={() => openPanel('inputs')}
+                  />
+                }
+              />
+            </Show>
+            <Show when={panel() === 'inputs'}>
+              <StudioInputsPanel
+                recorder={recorder}
+                project={project()}
+                clock={inputsClock}
               />
             </Show>
             <Show when={panel() === 'export'}>
@@ -644,6 +664,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 input={recorder}
                 focusInput={inputFocusFor() === selectedTrack()!.id}
                 onInputFocused={() => setInputFocusFor(null)}
+                onInputs={() => openPanel('inputs')}
                 onCommand={props.studio.dispatch}
                 afterLines={overlay() ? closePanel : undefined}
                 onRemove={() => {

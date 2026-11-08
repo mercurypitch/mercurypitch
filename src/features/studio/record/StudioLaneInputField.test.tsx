@@ -24,6 +24,8 @@ function mount(
     lane?: StudioLaneInput
     channels?: number | null
     focus?: boolean
+    inInputsView?: boolean
+    onAllInputs?: () => void
   } = {},
 ) {
   const [lanes, setLanes] = createSignal<ReadonlyMap<string, StudioLaneInput>>(
@@ -52,6 +54,8 @@ function mount(
       recorder={recorder}
       focus={options.focus}
       onFocused={onFocused}
+      inInputsView={options.inInputsView}
+      onAllInputs={options.onAllInputs}
     />
   ))
   return { choose, setBusy, onFocused }
@@ -136,13 +140,39 @@ describe('Studio lane input field', () => {
     // Assert
     expect(screen.queryByRole('combobox', { name: 'Channel' })).toBeNull()
     expect(
-      screen.getByText("Arm this lane once to see this input's channels."),
+      screen.getByText(
+        "Arm this lane once, or check its input in Inputs, to see this input's channels.",
+      ),
     ).toBeVisible()
     cleanup()
 
     mount({ channels: 1 })
     expect(screen.queryByRole('combobox', { name: 'Channel' })).toBeNull()
     expect(screen.queryByText(/Arm this lane once/)).toBeNull()
+    cleanup()
+
+    // The Inputs view offers the check on the input's own card.
+    mount({ channels: null, inInputsView: true })
+    expect(screen.queryByText(/Arm this lane once/)).toBeNull()
+  })
+
+  it('offers the way to every input where its host asks', async () => {
+    // Arrange
+    const onAllInputs = vi.fn()
+    mount({ onAllInputs })
+
+    // Act
+    await fireEvent.click(
+      screen.getByRole('button', {
+        name: 'See every input, its channels and levels',
+      }),
+    )
+
+    // Assert
+    expect(onAllInputs).toHaveBeenCalledOnce()
+    cleanup()
+    mount()
+    expect(screen.queryByRole('button', { name: /See every input/ })).toBeNull()
   })
 
   it("names the lane's input that is gone, and says the Studio's records until it is back", () => {

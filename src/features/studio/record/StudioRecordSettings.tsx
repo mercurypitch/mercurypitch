@@ -1,9 +1,10 @@
-// Studio record settings — the input, count-in, click, monitoring and the line-up offset, in the Sound panel; kept on this device.
+// Studio record settings — the input, the way to every input in Inputs, count-in, click, monitoring and the line-up offset, in the Sound panel; kept on this device.
 import { For, Show } from 'solid-js'
 import { inputChoices, inputsNamed } from '@/lib/audio-input/input-choices'
 import type { StudioCountInBars } from '@/lib/studio/record/record-settings'
 import { MAX_RECORD_OFFSET_MS } from '@/lib/studio/record/take-timing'
 import sound from '../sound/StudioSound.module.css'
+import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
@@ -16,6 +17,8 @@ const COUNT_INS: readonly { bars: StudioCountInBars; label: string }[] = [
 
 export function StudioRecordSettings(props: {
   recorder: StudioRecorderHandle
+  /** Open the Inputs view: every input with its channels, levels and lanes. */
+  onInputs?(): void
 }) {
   const settings = () => props.recorder.settings()
   const update = (change: Partial<ReturnType<typeof settings>>) =>
@@ -81,6 +84,17 @@ export function StudioRecordSettings(props: {
           Your inputs are listed by name once Studio may use the microphone. Arm
           a lane once to see them.
         </p>
+      </Show>
+      <Show when={props.onInputs !== undefined}>
+        <button
+          type="button"
+          class={`${common.button} ${styles.inputsLink}`}
+          data-studio-open-inputs=""
+          onClick={() => props.onInputs?.()}
+        >
+          <MicSmall size={16} />
+          Inputs and channels
+        </button>
       </Show>
       <div class={sound.presets} role="radiogroup" aria-label="Count-in">
         <For each={COUNT_INS}>

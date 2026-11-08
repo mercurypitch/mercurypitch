@@ -16,6 +16,7 @@ export type StudioPanelName =
   | 'mix'
   | 'sound'
   | 'export'
+  | 'inputs'
 
 /** Each panel's heading, which also names it to assistive tech. */
 export const STUDIO_PANEL_TITLES: Readonly<Record<StudioPanelName, string>> = {
@@ -26,6 +27,7 @@ export const STUDIO_PANEL_TITLES: Readonly<Record<StudioPanelName, string>> = {
   mix: 'Mix',
   sound: 'Sound',
   export: 'Export',
+  inputs: 'Inputs',
 }
 
 export interface StudioPanelsOptions {
