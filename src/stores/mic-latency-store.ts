@@ -126,7 +126,7 @@ export function currentLatencyKey(): string {
 }
 
 /** The key `deviceId`'s measurement is kept under on the route the sound takes now (null for the default). */
-function latencyKeyForDevice(deviceId: string | null): string {
+export function latencyKeyForDevice(deviceId: string | null): string {
   const route = currentLatencyRoute()
   const deviceKey = deviceId ?? DEFAULT_DEVICE_KEY
   return route === null ? deviceKey : routeKey(route, deviceKey)
@@ -234,7 +234,13 @@ export function micLatencySpreadMs(): number | null {
  * offset, and for an input never measured at all.
  */
 export function micLatencyMeasuredOnRoute(): boolean {
-  const deviceId = currentMicDeviceKey()
+  return micLatencyMeasuredOnRouteForDevice(currentMicDeviceKey())
+}
+
+/** Whether `deviceId`'s offset (null for the default) was measured on the route the sound takes now. */
+export function micLatencyMeasuredOnRouteForDevice(
+  deviceId: string | null,
+): boolean {
   const route = currentLatencyRoute()
   return route === null
     ? valueForDevice(micLatencyByDevice(), deviceId) !== undefined
@@ -301,7 +307,12 @@ export function setMicLatencyMeasurementForDevice(
  * offset for the phone's outputs to keep.
  */
 export function clearMicLatency(): void {
-  const keys = keysFor(currentMicDeviceKey())
+  clearMicLatencyForDevice(currentMicDeviceKey())
+}
+
+/** Forget `deviceId`'s offset (null for the default) as clearMicLatency does the current input's. */
+export function clearMicLatencyForDevice(deviceId: string | null): void {
+  const keys = keysFor(deviceId)
   const route = currentLatencyRoute()
   const own = route === null ? keys : keys.map((key) => routeKey(route, key))
   const forget = (prev: LatencyByDevice): LatencyByDevice => {

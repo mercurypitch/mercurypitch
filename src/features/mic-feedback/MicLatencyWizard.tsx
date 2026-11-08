@@ -28,6 +28,12 @@
 // threshold of its own, up to a second kept and a longer delay named
 // (REQ-TV-096), with words of its own (latency-route-copy.ts).
 //
+// It measures the app's input, unless its host names one (deviceId): the
+// Studio's Inputs view measures each input it lists. That one opens as an
+// input of its own (MicManager.acquireFrom), and its number is kept under
+// the id its track names, which is the id the Studio looks a take's round
+// trip up by.
+//
 // The math is in @/lib/mic-latency and @/lib/mic-latency-route; this file is
 // capture, playback and copy.
 
@@ -38,9 +44,9 @@ import type { RouteLatencyResult } from '@/lib/mic-latency-route'
 import { measureRouteLatency, ROUTE_TAIL_SEC, routeClickSchedule, } from '@/lib/mic-latency-route'
 import { micManager } from '@/lib/mic-manager'
 import { buildClickSchedule } from '@/lib/tap-calibration'
-import { setMicLatencyPathMs } from '@/stores/mic-latency-path-store'
+import { setMicLatencyPathMs, setMicLatencyPathMsForDevice, } from '@/stores/mic-latency-path-store'
 import type { LatencyRoute } from '@/stores/mic-latency-store'
-import { clearMicLatency, currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
+import { clearMicLatency, clearMicLatencyForDevice, currentLatencyRoute, LATENCY_ROUTE_NAMES, micLatencyMeasuredOnRoute, micLatencyMeasuredOnRouteForDevice, micLatencyMs, micLatencyMsForDevice, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
 import { isTvRoute, routeFailureCopy, TV_RUN_NOTE } from './latency-route-copy'
 import styles from './MicLatencyWizard.module.css'
@@ -115,6 +121,13 @@ export interface MicLatencyWizardProps {
   onApplied?: (latencyMs: number) => void
   /** After the offset is cleared. */
   onCleared?: () => void
+  /**
+   * Measure this input, not the app's: its id, or null for the system
+   * default, opened as an input of its own (MicManager.acquireFrom) and kept
+   * under the id its track names, as the Studio looks a take's round trip up.
+   * Absent, the wizard measures the app's input, as it always has.
+   */
+  deviceId?: string | null
 }
 
 export function MicLatencyWizard(props: MicLatencyWizardProps) {
@@ -130,6 +143,18 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
   let sink: GainNode | null = null
   let finishTimer: ReturnType<typeof setTimeout> | undefined
   let holdsMic = false
+  /** Gives back an input of its own (props.deviceId), once opened. */
+  let releaseInput: (() => void) | null = null
+  /** The key the run is kept under: the id the opened input's track names. */
+  let runKey: string | null = null
+  const ownInput = (): boolean => props.deviceId !== undefined
+  /** The offset in use for the input measured. */
+  const inUseMs = (): number =>
+    ownInput() ? micLatencyMsForDevice(props.deviceId ?? null) : micLatencyMs()
+  const measuredHere = (): boolean =>
+    ownInput()
+      ? micLatencyMeasuredOnRouteForDevice(props.deviceId ?? null)
+      : micLatencyMeasuredOnRoute()
 
   let chunks: Float32Array[] = []
   let captureStartSec: number | null = null
@@ -159,6 +184,8 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
       holdsMic = false
       micManager.release(MIC_OWNER)
     }
+    releaseInput?.()
+    releaseInput = null
   }
 
   onCleanup(teardown)
@@ -173,7 +200,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
   const currentWhere = (): string => {
     const name = routeName()
     if (name === null) return ' for this input.'
-    return micLatencyMeasuredOnRoute()
+    return measuredHere()
       ? ` for this input on ${name}.`
       : ` for this input, not yet measured on ${name}. A run now keeps one for ${name} alone.`
   }
@@ -233,8 +260,16 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
     let stream: MediaStream
     try {
-      stream = await micManager.acquire(MIC_OWNER)
-      holdsMic = true
+      if (props.deviceId === undefined) {
+        stream = await micManager.acquire(MIC_OWNER)
+        holdsMic = true
+      } else {
+        const held = await micManager.acquireFrom(MIC_OWNER, props.deviceId)
+        stream = held.stream
+        releaseInput = held.release
+        const named = stream.getAudioTracks()[0]?.getSettings().deviceId
+        runKey = named !== undefined && named !== '' ? named : props.deviceId
+      }
     } catch {
       setError(
         'The microphone could not be opened. Allow microphone access and try again.',
@@ -301,8 +336,17 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
       setPhase('idle')
       return
     }
-    setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
-    setMicLatencyPathMs(runPathMs)
+    if (ownInput()) {
+      setMicLatencyMeasurementForDevice(
+        runKey,
+        measured,
+        measurement?.spreadMs ?? null,
+      )
+      setMicLatencyPathMsForDevice(runKey, runPathMs)
+    } else {
+      setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
+      setMicLatencyPathMs(runPathMs)
+    }
     const name = routeName()
     showNotification(
       name === null
@@ -316,7 +360,8 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
   const clear = (): void => {
     const name = routeName()
-    clearMicLatency()
+    if (ownInput()) clearMicLatencyForDevice(props.deviceId ?? null)
+    else clearMicLatency()
     showNotification(
       name === null
         ? 'Microphone latency offset cleared.'
@@ -381,9 +426,9 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
         <Show when={isTvRoute(currentLatencyRoute())}>
           <p class={styles.note}>{TV_RUN_NOTE}</p>
         </Show>
-        <Show when={micLatencyMs() > 0}>
+        <Show when={inUseMs() > 0}>
           <p class={styles.current}>
-            Currently set to <strong>{micLatencyMs()} ms</strong>
+            Currently set to <strong>{inUseMs()} ms</strong>
             {currentWhere()}
           </p>
         </Show>
@@ -400,7 +445,7 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
           >
             Start
           </button>
-          <Show when={micLatencyMs() > 0 && micLatencyMeasuredOnRoute()}>
+          <Show when={inUseMs() > 0 && measuredHere()}>
             <button type="button" class={styles.secondary} onClick={clear}>
               Clear offset
             </button>

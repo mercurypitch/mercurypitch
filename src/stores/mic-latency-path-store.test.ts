@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
-import { micLatencyPathMs, micLatencyPathMsForDevice, setMicLatencyPathByKey, setMicLatencyPathMs, } from '@/stores/mic-latency-path-store'
+import { micLatencyPathMs, micLatencyPathMsForDevice, setMicLatencyPathByKey, setMicLatencyPathMs, setMicLatencyPathMsForDevice, } from '@/stores/mic-latency-path-store'
 
 describe('mic latency path store', () => {
   beforeEach(() => {
@@ -49,6 +49,19 @@ describe('mic latency path store', () => {
     setAudioRouteForTests('bluetooth')
     setMicLatencyPathByKey({ default: 48, 'bluetooth:default': 190 })
     expect(micLatencyPathMsForDevice('built-in-input')).toBe(190)
+  })
+
+  it("keeps a named input's path under its own key, on the route the sound takes now, whatever input the app is on", () => {
+    setMicLatencyPathMsForDevice('desk-mic', 31.04)
+    setMicLatencyPathMsForDevice(null, 47)
+    setAudioRouteForTests('bluetooth')
+    setMicLatencyPathMsForDevice('desk-mic', 190)
+
+    expect(micLatencyPathMsForDevice('desk-mic')).toBe(190)
+    setAudioRouteForTests(null)
+    expect(micLatencyPathMsForDevice('desk-mic')).toBe(31)
+    expect(micLatencyPathMsForDevice(null)).toBe(47)
+    expect(micLatencyPathMs()).toBeNull()
   })
 
   it('forgets the path when a measurement comes without one', () => {

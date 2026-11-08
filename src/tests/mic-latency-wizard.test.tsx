@@ -10,7 +10,9 @@
 // over AirPlay the number is the route's own once measured there, and the
 // wizard says which number it shows and clears only the route's own.
 // A run there is measured its own way (REQ-TV-096): unevenly spaced clicks,
-// a longer wait, and words of its own when it fails.
+// a longer wait, and words of its own when it fails. A host can also name
+// the input to measure (the Studio's Inputs view): it opens as an input of
+// its own, and its number is kept under the id its track names.
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,6 +23,7 @@ import { LATENCY_LEAD_IN_SEC } from '@/lib/mic-latency'
 import type * as MicLatencyRoute from '@/lib/mic-latency-route'
 import type { RouteLatencyResult } from '@/lib/mic-latency-route'
 import { measureRouteLatency, routeClickSchedule, } from '@/lib/mic-latency-route'
+import { micManager } from '@/lib/mic-manager'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { micLatencyByDevice, micLatencyByRoute, micLatencyMs, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
 
@@ -32,11 +35,24 @@ const fake = vi.hoisted(() => ({
   clicks: [] as number[],
   /** What the route's measurement answers, a TV's 240 ms unless a test says. */
   routeResult: null as null | RouteLatencyResult,
+  /** The id an input of its own's track names as it opens. */
+  openedId: 'scarlett',
+  /** Its hold's own release. */
+  releaseInput: null as null | ((...args: unknown[]) => void),
 }))
 
 vi.mock('@/lib/mic-manager', () => ({
   micManager: {
     acquire: vi.fn(async () => ({}) as MediaStream),
+    acquireFrom: vi.fn(async () => ({
+      stream: {
+        getAudioTracks: () => [
+          { getSettings: () => ({ deviceId: fake.openedId }) },
+        ],
+      },
+      missing: false,
+      release: () => fake.releaseInput?.(),
+    })),
     release: vi.fn(),
     getResolvedDevice: () => null,
     getPreferredDevice: () => null,
@@ -156,6 +172,10 @@ beforeEach(() => {
   fake.clicks = []
   fake.routeResult = null
   vi.mocked(measureRouteLatency).mockClear()
+  vi.mocked(micManager.acquire).mockClear()
+  vi.mocked(micManager.acquireFrom).mockClear()
+  fake.releaseInput = null
+  fake.openedId = 'scarlett'
 })
 
 afterEach(() => {
@@ -216,6 +236,66 @@ describe('what the host hears', () => {
 
     expect(onCleared).toHaveBeenCalledTimes(1)
     expect(micLatencyMs()).toBe(0)
+  })
+})
+
+describe('an input of its own', () => {
+  it('measures the input it is given on a hold of its own, and keeps the number under the id its track names', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('AudioContext', FakeAudioContext)
+    const release = vi.fn()
+    fake.releaseInput = release
+    fake.openedId = 'scarlett'
+    render(() => <MicLatencyWizard onClose={vi.fn()} deviceId="scarlett" />)
+
+    fireEvent.click(screen.getByText('Start'))
+    await vi.advanceTimersByTimeAsync(0)
+    fake.processor?.onaudioprocess?.({
+      inputBuffer: { getChannelData: () => new Float32Array(512) },
+    })
+    await vi.advanceTimersByTimeAsync(10_000)
+    fireEvent.click(screen.getByText('Use this'))
+
+    expect(vi.mocked(micManager.acquireFrom)).toHaveBeenCalledWith(
+      'mic-latency-wizard',
+      'scarlett',
+    )
+    expect(vi.mocked(micManager.acquire)).not.toHaveBeenCalled()
+    expect(micLatencyByDevice()).toEqual({ scarlett: 18 })
+    // The app's own input keeps its number, none here.
+    expect(micLatencyMs()).toBe(0)
+    expect(release).toHaveBeenCalled()
+  })
+
+  it('opens the system default for null, and keeps its number under the id its track names', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('AudioContext', FakeAudioContext)
+    fake.openedId = 'default'
+    render(() => <MicLatencyWizard onClose={vi.fn()} deviceId={null} />)
+
+    fireEvent.click(screen.getByText('Start'))
+    await vi.advanceTimersByTimeAsync(0)
+    fake.processor?.onaudioprocess?.({
+      inputBuffer: { getChannelData: () => new Float32Array(512) },
+    })
+    await vi.advanceTimersByTimeAsync(10_000)
+    fireEvent.click(screen.getByText('Use this'))
+
+    expect(vi.mocked(micManager.acquireFrom)).toHaveBeenCalledWith(
+      'mic-latency-wizard',
+      null,
+    )
+    expect(micLatencyByDevice()).toEqual({ default: 18 })
+  })
+
+  it("says and clears that input's number, not the app's", () => {
+    setMicLatencyByDevice({ scarlett: 25, default: 18 })
+    render(() => <MicLatencyWizard onClose={vi.fn()} deviceId="scarlett" />)
+
+    expect(paragraphs()).toContain('Currently set to 25 ms for this input.')
+    fireEvent.click(screen.getByText('Clear offset'))
+
+    expect(micLatencyByDevice()).toEqual({ default: 18 })
   })
 })
 
