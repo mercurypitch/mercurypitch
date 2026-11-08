@@ -7,7 +7,8 @@
 // and the bottom three's two names; on the ring by semitones a black key's
 // bead small and unnamed unless the key holds it; the thread through each
 // bead in turn, the house inside the ring by its bead, and the walk's gap,
-// a short arc past C with its label.
+// a short arc past C with its label; and a word's small figure, its twelve
+// beads apart in 88 px and its names inside the beads.
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -171,5 +172,78 @@ describe('drawCircle', () => {
     expect(radii.filter((r) => r < L.bead * 0.6)).toHaveLength(3)
     expect(el.querySelectorAll('circle.ci-bead.is-key')).toHaveLength(2)
     expect(texts(el)).toHaveLength(9)
+  })
+})
+
+/** Each bead's centre and radius, in drawing order. */
+const circles = (el: Element) =>
+  Array.from(el.querySelectorAll('circle.ci-bead'), (c) => ({
+    x: Number(c.getAttribute('cx')),
+    y: Number(c.getAttribute('cy')),
+    r: Number(c.getAttribute('r')),
+  }))
+
+describe("a word's small figure", () => {
+  const WORD = { w: 88, h: 120 }
+
+  it('keeps the ring by semitones apart in 88 px: no bead touches the next, F sharp and its neighbours large', () => {
+    // Arrange: G major's ring, F sharp's bead large
+    const beads: BeadView[] = Array.from({ length: 12 }, (_, pc) => ({
+      pc,
+      angle: angleOf(pc),
+      look: 'rest',
+      names: [],
+      big: ![1, 3, 8, 10].includes(pc),
+    }))
+    const el = figure()
+
+    // Act
+    drawCircle(
+      el,
+      { beads, fifths: false, house: null, thread: [], gap: null, small: true },
+      WORD,
+    )
+
+    // Assert
+    const c = circles(el)
+    c.forEach((a, i) => {
+      const b = c[(i + 1) % 12]
+      expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.r + b.r)
+    })
+    expect(texts(el)).toHaveLength(0)
+  })
+
+  it('names its beads inside them, on the circle of fifths too, each clear of the next', () => {
+    // Arrange: four keys a fifth apart, C at the top
+    const beads: BeadView[] = ['C', 'G', 'D', 'A'].map((name, seat) => ({
+      pc: FIFTHS[seat],
+      angle: angleOf(seat),
+      look: 'rest',
+      names: [name],
+      big: true,
+    }))
+    const el = figure()
+
+    // Act
+    const L = drawCircle(
+      el,
+      { beads, fifths: true, house: 0, thread: [], gap: null, small: true },
+      WORD,
+    )
+
+    // Assert
+    const names = Array.from(el.querySelectorAll('text.ci-name'))
+    expect(names.map((t) => t.textContent)).toEqual(['C', 'G', 'D', 'A'])
+    names.forEach((t, seat) => {
+      const at = L.at(angleOf(seat))
+      expect(Number(t.getAttribute('x'))).toBeCloseTo(at.x, 1)
+      expect(Number(t.getAttribute('y'))).toBeCloseTo(at.y, 1)
+      expect(t.classList.contains('is-out')).toBe(false)
+    })
+    const c = circles(el)
+    for (let i = 1; i < 4; i++)
+      expect(
+        Math.hypot(c[i].x - c[i - 1].x, c[i].y - c[i - 1].y),
+      ).toBeGreaterThanOrEqual(c[i].r + c[i - 1].r)
   })
 })

@@ -14,7 +14,9 @@
 // three's two names, the sharp name over the flat; a bead past the page's
 // reading is dimmed. Chrome at rest and ink lit, as the staff's noteheads
 // are; the house marks do, never a colour; the gap is a short dashed arc in
-// ink-2 with its label. Pure drawing: the toy keeps the scene.
+// ink-2 with its label. A word's figure is small: thinner margins, beads
+// small enough that twelve keep apart in its 88 px, and any name inside its
+// bead, on the circle of fifths too. Pure drawing: the toy keeps the scene.
 
 import type { PitchClass } from './circle-geometry'
 import { onRing } from './circle-geometry'
@@ -46,7 +48,7 @@ export interface CircleScene {
   readonly thread: readonly PitchClass[]
   /** The walk's overshoot: a dashed arc clockwise past the thread's end, its sweep in radians and its label. */
   readonly gap: { readonly sweep: number; readonly label: string } | null
-  /** A small figure (a word's): no names, thinner margins. */
+  /** A small figure (a word's): thinner margins, smaller beads, and any name inside its bead. */
   readonly small?: boolean
 }
 
@@ -79,9 +81,11 @@ export function layoutCircle(
   const out = s.fifths && s.small !== true ? NAMES_OUT : 0
   // the semitone ring's large beads and their halos sit inside the figure
   const r0 = half - out
+  // a word's figure lets the ring's beads shrink, so twelve keep apart
+  const least = s.small === true ? 5 : 9
   const bead = s.fifths
     ? Math.max(8, Math.min(15, r0 * 0.12))
-    : Math.max(9, Math.min(22, r0 * 0.17))
+    : Math.max(least, Math.min(22, r0 * 0.17))
   const r = r0 - bead * (s.fifths ? 1.1 : 1.45)
   const cx = w / 2
   const cy = h / 2
@@ -163,10 +167,13 @@ function bead(
   if (b.look === 'lit' || b.look === 'key')
     svg('circle', { cx: n(x), cy: n(y), r: n(r * 1.42), class: 'ci-halo' }, g)
   svg('circle', { cx: n(x), cy: n(y), r: n(r), class: LOOK_CLASS[b.look] }, g)
-  if (s.small === true || b.names.length === 0) return
-  const size = Math.max(11, Math.min(17, L.bead * (s.fifths ? 1.05 : 0.8)))
-  const cls = `ci-name is-${b.look}${s.fifths ? ' is-out' : ''}`
-  if (!s.fifths) {
+  if (b.names.length === 0) return
+  // outside the ring on the circle of fifths, but inside the bead in a
+  // word's small figure, which has no room round it
+  const out = s.fifths && s.small !== true
+  const size = Math.max(11, Math.min(17, L.bead * (out ? 1.05 : 0.8)))
+  const cls = `ci-name is-${b.look}${out ? ' is-out' : ''}`
+  if (!out) {
     svg(
       'text',
       {

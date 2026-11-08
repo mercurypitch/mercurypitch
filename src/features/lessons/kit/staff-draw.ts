@@ -19,7 +19,8 @@
 // places (staff-key.ts), each sign its own width and a tenth of a space
 // after the last, as the app's notation library spaces them; a note whose
 // letter it covers is written with no sign of its own. A sign that has just
-// joined it fades in, or travels there from the note that carried it. A
+// joined it fades in, or travels there from the note that carried it, and a
+// sign lights with a note it covers while that note sounds, in its tone. A
 // note an F major written with A sharp would need a natural sign under a
 // signature is never written: a page drops the signature first (Lesson
 // 21's white keys). An outlined note, one a step has just changed, is ringed
@@ -118,6 +119,8 @@ export interface Scene {
   readonly keyFrom?: number | null
   /** The signs the staff keeps room for past the clef, so its notes stay put as a signature grows. */
   readonly keyRoom?: number
+  /** A sign lit with the note it covers as that note sounds: its place in the order, and the note's tone. */
+  readonly keyLit?: { readonly sign: number; readonly tone: Tone } | null
 }
 
 /** A scene with nothing on it: `staff` making room for `room`. */
@@ -498,14 +501,9 @@ function keySig(s: Scene, L: Layout, parent: Element): void {
           )
         : undefined
     if (from === undefined) {
-      glyph(
-        d,
-        x,
-        y,
-        L.space,
-        joining ? 'st-sign st-keysign is-fresh' : 'st-sign st-keysign',
-        g,
-      )
+      const lit = s.keyLit?.sign === i ? ` is-${s.keyLit.tone}` : ''
+      const fading = joining ? ' is-fresh' : ''
+      glyph(d, x, y, L.space, `st-sign st-keysign${fading}${lit}`, g)
       return
     }
     const holder = svg('g', { class: 'st-keysign-move' }, g)

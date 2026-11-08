@@ -49,6 +49,7 @@ import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
 import { initSteps, TOYS } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -68,6 +69,10 @@ initSteps(deck)
 // quiz; the recall's Play the three notes is Lesson 15's own
 initQuizzes(deck)
 deck.start()
+
+// four words, each figure lit as its sound plays: a small ring, a staff in
+// the learner's clef, four keys round a small circle and thirteen tiles
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(21)

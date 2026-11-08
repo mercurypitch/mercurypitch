@@ -6,7 +6,8 @@
 // of sharps and flats, each sign's line or space in the treble and bass
 // clefs, the signature drawn just past the clef and spaced as the app's
 // notation library spaces it, a note its letter covers written with no sign
-// of its own, and the words a reader hears.
+// of its own, a sign lit with the note it covers, and the words a reader
+// hears.
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -219,6 +220,28 @@ describe('a signature drawn', () => {
     expect(plain.querySelectorAll('.st-sign').length).toBe(1)
     expect(keyed.querySelectorAll('.st-sign:not(.st-keysign)').length).toBe(0)
     expect(flat.querySelectorAll('.st-sign:not(.st-keysign)').length).toBe(1)
+  })
+
+  it("lights the sign a sounding note takes from the signature, in that note's tone, and no other", () => {
+    // Arrange: D major's two sharps, its C sharp sounding
+    const cSharp: Mark = { note: note('C', 1, 5), col: 0, tone: 'orange' }
+    const el = figure()
+
+    // Act
+    drawScene(
+      el,
+      staff('treble', [cSharp], {
+        key: sharps(2),
+        keyLit: { sign: 1, tone: 'orange' },
+      }),
+      SIZE,
+    )
+
+    // Assert
+    const lit = Array.from(el.querySelectorAll('.st-keysign'), (s) =>
+      s.classList.contains('is-orange'),
+    )
+    expect(lit).toEqual([false, true])
   })
 
   it('starts the notes past the signature, and keeps them put as it grows within the room asked for', () => {
