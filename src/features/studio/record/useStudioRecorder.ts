@@ -15,10 +15,10 @@
 // the lane shows its level), moves the arm from another lane, or disarms
 // it. One lane is armed at a time, as one take records at a time, and the
 // arm stays put when another lane is selected and after a take. A lane can
-// have an input and a channel of its own, kept on this device
-// (studio-lane-input-state.ts): its arm opens that input, and the arm
-// moves to another lane with the microphone open only when both hear the
-// same input and channel; otherwise it opens the other lane's.
+// record from an input of its own, and one of its channels or an aligned
+// pair (studio-lane-input-state.ts): its arm opens that input, and the
+// arm moves to another lane with the microphone open only when both hear
+// the same input and channels; otherwise it opens the other lane's.
 //
 // Keys: Record and R start a take on the armed lane in one press; with no
 // lane armed they arm the selected lane, else the first lane with no clips,
@@ -232,12 +232,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
         STUDIO_RECORD_MIC_ID,
         plan.deviceId,
       )
-      const channel = lanes.held(trackId, plan, held.missing)
+      const pick = lanes.held(trackId, plan, held.missing)
       // The page may use the microphone now, so the browser names its inputs.
       void inputs.refresh()
       // Given back through itself, never by the Studio's id: a late release
       // from an earlier arm cannot end this one (MicManager.acquireFrom).
-      return { stream: held.stream, channel, release: held.release }
+      return { stream: held.stream, pick, release: held.release }
     },
     inputOpened: lanes.opened,
     prepareWorklet: prepareStudioRecorderWorklet,
@@ -347,7 +347,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       const armedLane = view().targetTrackId
       if (armedLane === trackId) recorder.disarm()
       // The arm moves with the microphone open only to a lane that hears
-      // the same input and channel; another one is opened for the lane.
+      // the same input and channels; another one is opened for the lane.
       else if (sameStudioLaneInput(lanes.of(armedLane), lanes.of(trackId)))
         recorder.retarget(trackId)
       else {
@@ -650,7 +650,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       channels: lanes.channels,
       studioInputName: lanes.studioInputName,
     },
-    /** What the last arm opened in place of what its lane asked for. */
+    /** What the last arm opened: what records, and what opened in place of what its lane asked for. */
     armedInput: lanes.armed,
     /** Punch, on the transport: Record keeps only the range. */
     punch: {

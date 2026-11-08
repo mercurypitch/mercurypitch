@@ -315,13 +315,14 @@ test.describe('Studio lane arming', () => {
     await studio.getByRole('button', { name: 'New lane', exact: true }).click()
     const record = recordButton(page)
 
+    // Ready, whatever the card says the input records.
     await armButton(page, 'Phrase').click()
     await expect(
-      studio.getByText('Armed on Phrase. Press Record to start.'),
+      studio.getByText(/^Armed on Phrase\b.*\. Press Record to start\.$/),
     ).toBeVisible({ timeout: 15_000 })
     await armButton(page, 'Lane 2').click()
     await expect(
-      studio.getByText('Armed on Lane 2. Press Record to start.'),
+      studio.getByText(/^Armed on Lane 2\b.*\. Press Record to start\.$/),
     ).toBeVisible()
     await expect(armButton(page, 'Phrase')).toHaveAttribute(
       'aria-pressed',

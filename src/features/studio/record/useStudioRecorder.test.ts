@@ -596,10 +596,10 @@ describe('useStudioRecorder input', () => {
     mocks.acquireFrom.mockResolvedValueOnce(held)
 
     // MicManager's stream, given back through the hold's own release, and
-    // the lane's channel: none, for a lane that follows the Studio's input.
+    // the lane's pick: none, for a lane that follows the Studio's input.
     await expect(mocks.acquireMic!(null)).resolves.toEqual({
       stream: held.stream,
-      channel: null,
+      pick: null,
       release: held.release,
     })
 

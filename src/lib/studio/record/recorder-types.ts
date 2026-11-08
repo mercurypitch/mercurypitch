@@ -5,6 +5,7 @@
 // Kept apart from the recorder (studio-recorder.ts) so the hook that wires
 // it, the journal that keeps its takes and the views that draw it name one
 // set of shapes, and the recorder stays a readable length.
+import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
 import type { StudioInputMonitor, StudioMonitorLevel } from './input-monitor'
@@ -112,20 +113,20 @@ export interface StudioRecorderTransport {
 /** The microphone an arm opened, and the one way to give that one back (MicManager.acquireFrom). */
 export interface StudioMicHold {
   readonly stream: MediaStream
-  /** One channel of the input for the lane to record alone, 0-based; null or absent for all of them, mixed. */
-  readonly channel?: number | null
+  /** The input or aligned pair of it the lane records; null or absent for the default its channel count makes. */
+  readonly pick?: ChannelPick | null
   release(): void
 }
 
-/** What an arm opened: the input's channels, and the one the lane records. */
+/** What an arm opened: the input's channels, and what the lane records of them. */
 export interface StudioInputOpened {
   readonly stream: MediaStream
   /** The input's channels as its track reports them; null where the browser does not say. */
   readonly channels: number | null
-  /** The channel the lane records alone, 0-based; null when it records all of them, mixed. */
-  readonly channel: number | null
-  /** The channel the lane asked for that the input does not have, or does not say it has, so all of it records, mixed; null when none was missing. */
-  readonly missingChannel: number | null
+  /** What the lane records: one input, or an aligned pair mixed to mono; null where the count is not known and the input goes as it is. */
+  readonly pick: ChannelPick | null
+  /** The lane's pick that the input does not have, or does not say it has, so the default records in its place; null when none was missing. */
+  readonly missing: ChannelPick | null
 }
 
 export interface StudioRecorderDeps {
@@ -148,7 +149,7 @@ export interface StudioRecorderDeps {
     input: AudioNode,
   ): Pick<StudioInputMonitor, 'set' | 'dispose'>
   monitorLevel(trackId: string | null): StudioMonitorLevel
-  /** The input an arm opened: how many channels it has, and whether the lane's one was there. */
+  /** The input an arm opened: how many channels it has, what the lane records of them, and whether its pick was there. */
   inputOpened?(opened: StudioInputOpened): void
   transport: StudioRecorderTransport
   settings(): StudioRecordSettings

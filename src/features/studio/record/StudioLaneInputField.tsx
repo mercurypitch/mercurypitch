@@ -1,16 +1,29 @@
 // ============================================================
-// Studio lane input field — a lane's own input and channel in its Track details, kept on this device
+// Studio lane input field — a lane's own input and its channels in its Track details, kept on this device
 // ============================================================
 //
 // The first row follows the Studio's input from the Sound panel, named, as
 // every lane did before; any other is the lane's own. An interface's
 // channels show once the lane's input has opened (an arm says how many it
-// has: lane-inputs.ts), so a guitar on input 2 records alone. A choice
-// changes nothing in the song, and the lane armed now opens it at once.
+// has: lane-inputs.ts), as a DAW's record input lists them: the default,
+// named for what it takes, then each input, then each aligned pair mixed to
+// mono, so a guitar on input 2 records alone. A choice changes nothing in
+// the song, and the lane armed now opens it at once.
 import { createEffect, For, on, Show } from 'solid-js'
+import type { ChannelPick } from '@/lib/audio-input/input-channels'
+import { samePick } from '@/lib/audio-input/input-channels'
 import { channelChoices, inputChoices, inputsNamed, } from '@/lib/audio-input/input-choices'
+import { laneChannelPick } from '@/lib/studio/record/lane-inputs'
 import styles from '../StudioPage.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
+
+/** A channel row's value, by its jacks: '' for the default, "2" for input 2, "1+2" for a pair. */
+const pickValue = (pick: ChannelPick | null) =>
+  pick === null
+    ? ''
+    : pick.pair
+      ? `${pick.channel + 1}+${pick.channel + 2}`
+      : `${pick.channel + 1}`
 
 /** What the field reads from the recorder: the lanes' inputs, the browser's, and whether a take holds them. */
 export type StudioLaneInputRecorder = Pick<
@@ -37,8 +50,9 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
       `Studio's input (${props.recorder.laneInputs.studioInputName()})`,
     )
   const count = () => props.recorder.laneInputs.channels(props.trackId)
-  const channels = () => channelChoices(count() ?? 0, lane().channel)
-  const choosesChannels = () => (count() ?? 0) > 1 || lane().channel !== null
+  const pick = () => laneChannelPick(lane())
+  const channels = () => channelChoices(count(), pick())
+  const choosesChannels = () => (count() ?? 0) > 1 || pick() !== null
   const busy = () => props.recorder.busy()
   const held = () => (busy() ? 'Stop the take to change the input' : undefined)
 
@@ -70,11 +84,12 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
           onChange={(event) => {
             const choice = devices()[event.currentTarget.selectedIndex]
             if (choice === undefined) return
-            // A channel is a jack of its input: another input starts on all of it.
+            // A channel is a jack of its input: another input starts on its default.
             props.recorder.laneInputs.choose(props.trackId, {
               deviceId: choice.id,
               label: choice.id === null ? null : choice.label,
               channel: null,
+              pair: false,
             })
           }}
         >
@@ -102,15 +117,16 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
               if (choice === undefined) return
               props.recorder.laneInputs.choose(props.trackId, {
                 ...lane(),
-                channel: choice.channel,
+                channel: choice.pick?.channel ?? null,
+                pair: choice.pick?.pair ?? false,
               })
             }}
           >
             <For each={channels()}>
               {(choice) => (
                 <option
-                  value={choice.channel ?? ''}
-                  selected={choice.channel === lane().channel}
+                  value={pickValue(choice.pick)}
+                  selected={samePick(choice.pick, pick())}
                 >
                   {choice.label}
                 </option>

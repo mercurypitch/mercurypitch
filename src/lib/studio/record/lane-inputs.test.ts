@@ -1,6 +1,6 @@
-// Studio lane inputs — a lane's input and channel come back as kept, per song, sanitized, at most two hundred, and forgotten with a lane that is gone; an input's channel count is found by its id or its name; and an arm opens the lane's own input where it is listed, else the Studio's, saying so.
+// Studio lane inputs — a lane's input, channel and pair come back as kept, per song, sanitized (a row from before pairs is one input), at most two hundred, and forgotten with a lane that is gone; an input's channel count is found by its id or its name; and an arm opens the lane's own input and pick where it is listed, else the Studio's and its default, saying so.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { FOLLOW_STUDIO_INPUT, knownInputChannels, laneInputChannels, MAX_INPUT_CHANNEL_COUNTS, MAX_LANE_INPUTS, planStudioLaneInput, pruneStudioLaneInputs, readInputChannelCounts, readStudioLaneInputs, rememberInputChannels, sameStudioLaneInput, sanitizeStudioLaneInput, writeStudioLaneInput, } from './lane-inputs'
+import { FOLLOW_STUDIO_INPUT, knownInputChannels, laneChannelPick, laneInputChannels, MAX_INPUT_CHANNEL_COUNTS, MAX_LANE_INPUTS, planStudioLaneInput, pruneStudioLaneInputs, readInputChannelCounts, readStudioLaneInputs, rememberInputChannels, sameStudioLaneInput, sanitizeStudioLaneInput, writeStudioLaneInput, } from './lane-inputs'
 
 const LANES_KEY = 'mercurypitch.studio.lane-inputs'
 
@@ -13,17 +13,26 @@ const scarlett = {
   deviceId: 'scarlett',
   label: 'Scarlett 2i2 USB',
   channel: 1,
+  pair: false,
 }
 
 describe('Studio lane inputs', () => {
-  it('keeps a lane its own input and channel, by song and lane, and reads them back', () => {
+  it('keeps a lane its own input, channel and pair, by song and lane, and reads them back', () => {
     writeStudioLaneInput('song-1', 'lane-1', scarlett)
-    writeStudioLaneInput('song-2', 'lane-1', { ...scarlett, channel: 0 })
+    writeStudioLaneInput('song-2', 'lane-1', {
+      ...scarlett,
+      channel: 2,
+      pair: true,
+    })
 
     expect(readStudioLaneInputs('song-1')).toEqual(
       new Map([['lane-1', scarlett]]),
     )
-    expect(readStudioLaneInputs('song-2').get('lane-1')?.channel).toBe(0)
+    expect(readStudioLaneInputs('song-2').get('lane-1')).toEqual({
+      ...scarlett,
+      channel: 2,
+      pair: true,
+    })
     expect(readStudioLaneInputs('song-3').size).toBe(0)
   })
 
@@ -68,12 +77,13 @@ describe('Studio lane inputs', () => {
     ).toEqual(FOLLOW_STUDIO_INPUT)
     expect(
       sanitizeStudioLaneInput({ deviceId: 'usb', label: '', channel: 32 }),
-    ).toEqual({ deviceId: 'usb', label: null, channel: null })
+    ).toEqual({ deviceId: 'usb', label: null, channel: null, pair: false })
     // A name without an id is let go: the lane follows the Studio's input.
     expect(sanitizeStudioLaneInput({ label: 'Desk mic', channel: 0 })).toEqual({
       deviceId: null,
       label: null,
       channel: 0,
+      pair: false,
     })
     localStorage.setItem(
       LANES_KEY,
@@ -89,6 +99,34 @@ describe('Studio lane inputs', () => {
     )
   })
 
+  it('reads a row kept before pairs as one input, and a pair only where it is an aligned one', () => {
+    // As rows were kept before pairs: no pair at all.
+    localStorage.setItem(
+      LANES_KEY,
+      JSON.stringify([
+        {
+          projectId: 'song-1',
+          trackId: 'lane-1',
+          deviceId: 'scarlett',
+          label: 'Scarlett 2i2 USB',
+          channel: 1,
+        },
+      ]),
+    )
+    expect(readStudioLaneInputs('song-1').get('lane-1')).toEqual(scarlett)
+
+    const pair = (channel: unknown, value: unknown = true) =>
+      sanitizeStudioLaneInput({ deviceId: 'usb', channel, pair: value })
+    expect(pair(2)).toMatchObject({ channel: 2, pair: true })
+    expect(pair(30)).toMatchObject({ channel: 30, pair: true })
+    // Not aligned, past what a split addresses, or with no channel: the default.
+    expect(pair(1)).toMatchObject({ channel: null, pair: false })
+    expect(pair(31)).toMatchObject({ channel: null, pair: false })
+    expect(pair(null)).toMatchObject({ channel: null, pair: false })
+    // Anything but true is one input.
+    expect(pair(2, 'yes')).toMatchObject({ channel: 2, pair: false })
+  })
+
   it('keeps nothing from damaged storage, and the choice for the session when storage refuses', () => {
     localStorage.setItem(LANES_KEY, '{not json')
     expect(readStudioLaneInputs('song-1').size).toBe(0)
@@ -99,6 +137,17 @@ describe('Studio lane inputs', () => {
     expect(
       writeStudioLaneInput('song-1', 'lane-1', scarlett).get('lane-1'),
     ).toEqual(scarlett)
+  })
+})
+
+describe('laneChannelPick', () => {
+  it("is the lane's input or pair, or null for the default", () => {
+    expect(laneChannelPick(scarlett)).toEqual({ channel: 1, pair: false })
+    expect(laneChannelPick({ ...scarlett, channel: 2, pair: true })).toEqual({
+      channel: 2,
+      pair: true,
+    })
+    expect(laneChannelPick(FOLLOW_STUDIO_INPUT)).toBeNull()
   })
 })
 
@@ -194,10 +243,10 @@ describe('planStudioLaneInput', () => {
     { deviceId: 'scarlett', label: 'Scarlett 2i2 USB' },
   ]
 
-  it("opens the Studio's input, and the lane's channel of it, for a lane that follows it", () => {
+  it("opens the Studio's input, and the lane's pick of it, for a lane that follows it", () => {
     expect(
       planStudioLaneInput(
-        { ...FOLLOW_STUDIO_INPUT, channel: 1 },
+        { ...FOLLOW_STUDIO_INPUT, channel: 0, pair: true },
         'desk',
         listed,
       ),
@@ -205,7 +254,7 @@ describe('planStudioLaneInput', () => {
       deviceId: 'desk',
       own: false,
       laneInputMissing: false,
-      channel: 1,
+      pick: { channel: 0, pair: true },
     })
   })
 
@@ -214,7 +263,7 @@ describe('planStudioLaneInput', () => {
       deviceId: 'scarlett',
       own: true,
       laneInputMissing: false,
-      channel: 1,
+      pick: { channel: 1, pair: false },
     })
     expect(
       planStudioLaneInput({ ...scarlett, deviceId: 'stale' }, null, listed)
@@ -222,10 +271,10 @@ describe('planStudioLaneInput', () => {
     ).toBe('scarlett')
   })
 
-  it("opens the Studio's input, all of it, when the lane's own is not listed, and says so", () => {
+  it("opens the Studio's input and its default when the lane's own is not listed, and says so", () => {
     expect(
       planStudioLaneInput(
-        { deviceId: 'gone', label: 'Old interface', channel: 1 },
+        { deviceId: 'gone', label: 'Old interface', channel: 2, pair: true },
         'desk',
         listed,
       ),
@@ -233,7 +282,7 @@ describe('planStudioLaneInput', () => {
       deviceId: 'desk',
       own: false,
       laneInputMissing: true,
-      channel: null,
+      pick: null,
     })
   })
 
@@ -244,13 +293,13 @@ describe('planStudioLaneInput', () => {
       deviceId: 'scarlett',
       own: true,
       laneInputMissing: false,
-      channel: 1,
+      pick: { channel: 1, pair: false },
     })
   })
 })
 
 describe('sameStudioLaneInput', () => {
-  it('moves an arm between lanes only on the same input and channel', () => {
+  it('moves an arm between lanes only on the same input and channels', () => {
     expect(sameStudioLaneInput(FOLLOW_STUDIO_INPUT, FOLLOW_STUDIO_INPUT)).toBe(
       true,
     )
@@ -260,6 +309,12 @@ describe('sameStudioLaneInput', () => {
     expect(sameStudioLaneInput(scarlett, { ...scarlett, channel: 0 })).toBe(
       false,
     )
+    expect(
+      sameStudioLaneInput(
+        { ...scarlett, channel: 0 },
+        { ...scarlett, channel: 0, pair: true },
+      ),
+    ).toBe(false)
     expect(sameStudioLaneInput(FOLLOW_STUDIO_INPUT, scarlett)).toBe(false)
   })
 })

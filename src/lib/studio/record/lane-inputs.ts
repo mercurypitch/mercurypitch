@@ -2,22 +2,26 @@
 // Studio lane inputs — each lane's own input and channel, and how many channels each input has, kept on this device
 // ============================================================
 //
-// A lane can record from an input of its own and take one channel of it: a
-// guitar on input 2 of an interface, alone. The choice is this device's,
-// never the song's: a device id means nothing on another machine, and the
-// song's validator refuses a field it does not know, so a song carrying one
-// would not open in an older build. It is kept by song and lane, as the
-// device's id, the name it had (the second key, for an id that changed under
-// it: resolveDeviceId) and the channel. A lane with none follows the
-// Studio's input from the Sound panel (record-settings.ts), as every lane
-// did before. A song opened again forgets its lanes that are gone, and the
-// most recent choices are kept, so the list cannot grow for ever.
+// A lane can record from an input of its own and take one channel of it, or
+// an aligned pair mixed to mono, as a DAW's record input does: a guitar on
+// input 2 of an interface, alone, or a stereo keyboard on inputs 3 and 4.
+// The choice is this device's, never the song's: a device id means nothing
+// on another machine, and the song's validator refuses a field it does not
+// know, so a song carrying one would not open in an older build. It is kept
+// by song and lane, as the device's id, the name it had (the second key, for
+// an id that changed under it: resolveDeviceId), the channel and whether it
+// is a pair; a row kept before pairs reads as one input. A lane with none
+// follows the Studio's input from the Sound panel (record-settings.ts) and
+// takes what its count makes the default (defaultChannelPick), as every
+// lane did before. A song opened again forgets its lanes that are gone, and
+// the most recent choices are kept, so the list cannot grow for ever.
 //
 // How many channels an input has is known only once it is open, so the
 // arm says (studio-recorder.ts) and the count is kept by the device's id and
 // name, for the lane's channel picker. Storage that throws or is missing
 // keeps nothing past the session.
-import { MAX_INPUT_CHANNELS } from '@/lib/audio-input/input-channels'
+import type { ChannelPick } from '@/lib/audio-input/input-channels'
+import { isAvailablePick, MAX_INPUT_CHANNELS, } from '@/lib/audio-input/input-channels'
 import { inputsNamed } from '@/lib/audio-input/input-choices'
 import type { DeviceInfoLike } from '@/lib/audio-input/mic-roster'
 import { buildRoster, defaultInput } from '@/lib/audio-input/mic-roster'
@@ -28,15 +32,25 @@ export interface StudioLaneInput {
   readonly deviceId: string | null
   /** Its name when chosen: the second key to find it by, and what to call it when it is gone. */
   readonly label: string | null
-  /** One channel of the input to record alone, 0-based; null for all of them, mixed. */
+  /** The input to record, 0-based, or the first of a pair; null for the default its channel count makes. */
   readonly channel: number | null
+  /** `channel` and the one after it, mixed to mono: an aligned pair, `channel` even. */
+  readonly pair: boolean
 }
 
-/** A lane that follows the Studio's input and records all of it. */
+/** A lane that follows the Studio's input and takes its default. */
 export const FOLLOW_STUDIO_INPUT: StudioLaneInput = {
   deviceId: null,
   label: null,
   channel: null,
+  pair: false,
+}
+
+/** A lane's channels as a pick; null for the default. */
+export function laneChannelPick(lane: StudioLaneInput): ChannelPick | null {
+  return lane.channel === null
+    ? null
+    : { channel: lane.channel, pair: lane.pair }
 }
 
 /** How many lanes' inputs are kept at most: the ones chosen last. */
@@ -107,10 +121,19 @@ export function sanitizeStudioLaneInput(value: unknown): StudioLaneInput {
       ? (value as Record<string, unknown>)
       : {}
   const deviceId = text(raw.deviceId)
+  const channel = channelOf(raw.channel)
+  // A row kept before pairs says nothing of one: it is one input. A pair
+  // that is not aligned, or not all addressable, is no choice at all.
+  const wantsPair = raw.pair === true
+  const pair =
+    wantsPair &&
+    channel !== null &&
+    isAvailablePick({ channel, pair: true }, MAX_INPUT_CHANNELS)
   return {
     deviceId,
     label: deviceId === null ? null : text(raw.label),
-    channel: channelOf(raw.channel),
+    channel: wantsPair && !pair ? null : channel,
+    pair,
   }
 }
 
@@ -150,6 +173,7 @@ function songInputs(
         deviceId: row.deviceId,
         label: row.label,
         channel: row.channel,
+        pair: row.pair,
       })
   return lanes
 }
@@ -299,58 +323,52 @@ export interface StudioLaneInputPlan {
   readonly own: boolean
   /** The lane's own input is not in the browser's list: the Studio's opens instead. */
   readonly laneInputMissing: boolean
-  /** The channel to record alone, or null for all of them, mixed. */
-  readonly channel: number | null
+  /** The input or pair to record; null for the default the input's count makes. */
+  readonly pick: ChannelPick | null
 }
 
 /**
  * Which input an arm opens for a lane, from the device list the Studio
  * holds now: an arm opens the microphone inside the press, so nothing is
  * listed afresh. The lane's own input is found by its id, then its name;
- * one that is not listed leaves the lane on the Studio's input, all of it,
- * since a channel is a jack of the input it was chosen on. Before the page
- * may use the microphone the browser lists no ids, so the kept id is all
- * there is to ask for (MicManager.acquireFrom falls back to the default).
+ * one that is not listed leaves the lane on the Studio's input and its
+ * default, since a channel is a jack of the input it was chosen on. Before
+ * the page may use the microphone the browser lists no ids, so the kept id
+ * is all there is to ask for (MicManager.acquireFrom falls back to the
+ * default).
  */
 export function planStudioLaneInput(
   lane: StudioLaneInput,
   studioDeviceId: string | null,
   devices: readonly Pick<MediaDeviceInfo, 'deviceId' | 'label'>[],
 ): StudioLaneInputPlan {
+  const pick = laneChannelPick(lane)
   if (lane.deviceId === null)
     return {
       deviceId: studioDeviceId,
       own: false,
       laneInputMissing: false,
-      channel: lane.channel,
+      pick,
     }
   if (!inputsNamed(devices))
-    return {
-      deviceId: lane.deviceId,
-      own: true,
-      laneInputMissing: false,
-      channel: lane.channel,
-    }
+    return { deviceId: lane.deviceId, own: true, laneInputMissing: false, pick }
   const found = resolveDeviceId(lane.deviceId, lane.label, devices)
   return found === null
     ? {
         deviceId: studioDeviceId,
         own: false,
         laneInputMissing: true,
-        channel: null,
+        pick: null,
       }
-    : {
-        deviceId: found,
-        own: true,
-        laneInputMissing: false,
-        channel: lane.channel,
-      }
+    : { deviceId: found, own: true, laneInputMissing: false, pick }
 }
 
-/** Whether two lanes record from the same input and channel, so an arm can move between them. */
+/** Whether two lanes record from the same input and channels, so an arm can move between them. */
 export function sameStudioLaneInput(
   a: StudioLaneInput,
   b: StudioLaneInput,
 ): boolean {
-  return a.deviceId === b.deviceId && a.channel === b.channel
+  return (
+    a.deviceId === b.deviceId && a.channel === b.channel && a.pair === b.pair
+  )
 }

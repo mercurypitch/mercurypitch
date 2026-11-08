@@ -1,4 +1,4 @@
-// Input choices tests — the null row comes first and says what it stands for, inputs are named or numbered as devices, the browser's own routes are left out, an input that is gone stays named, and an input's channels are named by their jacks.
+// Input choices tests — the null row comes first and says what it stands for, inputs are named or numbered as devices, the browser's own routes are left out, an input that is gone stays named, and an input's channels and aligned pairs are named by their jacks, after a default that says what it takes.
 import { describe, expect, it } from 'vitest'
 import { channelChoices, inputChoices, inputsNamed } from './input-choices'
 
@@ -74,25 +74,60 @@ describe('inputChoices', () => {
 })
 
 describe('channelChoices', () => {
-  it('offers all inputs mixed, then each jack by its name from Input 1', () => {
+  const labels = (count: number | null) =>
+    channelChoices(count, null).map((choice) => choice.label)
+
+  it('offers the default by what it takes, then each input, then each aligned pair', () => {
     expect(channelChoices(2, null)).toEqual([
-      { channel: null, label: 'All inputs, mixed', present: true },
-      { channel: 0, label: 'Input 1', present: true },
-      { channel: 1, label: 'Input 2', present: true },
+      { pick: null, label: 'Default: Inputs 1 + 2', present: true },
+      { pick: { channel: 0, pair: false }, label: 'Input 1', present: true },
+      { pick: { channel: 1, pair: false }, label: 'Input 2', present: true },
+      {
+        pick: { channel: 0, pair: true },
+        label: 'Inputs 1 + 2',
+        present: true,
+      },
+    ])
+    expect(labels(4)).toEqual([
+      'Default: Input 1',
+      'Input 1',
+      'Input 2',
+      'Input 3',
+      'Input 4',
+      'Inputs 1 + 2',
+      'Inputs 3 + 4',
     ])
   })
 
-  it('keeps a chosen channel the input does not have, marked', () => {
-    expect(channelChoices(2, 3).at(-1)).toEqual({
-      channel: 3,
+  it('lists only the pairs the input has both of', () => {
+    expect(labels(1)).toEqual(['Default: Input 1', 'Input 1'])
+    expect(labels(3)).toEqual([
+      'Default: Input 1',
+      'Input 1',
+      'Input 2',
+      'Input 3',
+      'Inputs 1 + 2',
+    ])
+  })
+
+  it('keeps a chosen input or pair the input does not have, marked', () => {
+    expect(channelChoices(2, { channel: 3, pair: false }).at(-1)).toEqual({
+      pick: { channel: 3, pair: false },
       label: 'Input 4 (not on this input)',
+      present: false,
+    })
+    expect(channelChoices(2, { channel: 2, pair: true }).at(-1)).toEqual({
+      pick: { channel: 2, pair: true },
+      label: 'Inputs 3 + 4 (not on this input)',
       present: false,
     })
   })
 
-  it('offers only all inputs for an input whose channels are not known', () => {
-    expect(channelChoices(0, null)).toEqual([
-      { channel: null, label: 'All inputs, mixed', present: true },
+  it('names the default plainly, and a kept choice as it is, while the channel count is not known', () => {
+    expect(labels(null)).toEqual(['Default'])
+    expect(channelChoices(null, { channel: 1, pair: false })).toEqual([
+      { pick: null, label: 'Default', present: true },
+      { pick: { channel: 1, pair: false }, label: 'Input 2', present: true },
     ])
   })
 })

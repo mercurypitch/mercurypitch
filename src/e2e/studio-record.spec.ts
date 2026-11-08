@@ -308,8 +308,9 @@ test.describe('Studio recording', () => {
     // An empty lane, selected: the take lands on it at the playhead.
     await studio.getByRole('button', { name: 'New lane', exact: true }).click()
     await arm(page, 'Lane 2')
+    // Ready, whatever the card says the input records.
     await expect(
-      studio.getByText('Armed on Lane 2. Press Record to start.'),
+      studio.getByText(/^Armed on Lane 2\b.*\. Press Record to start\.$/),
     ).toBeVisible()
     const firstRan = await recordArmed(page, 'Take 1', 3)
     // Disarmed from its own arm button, the lane gives the microphone back.
@@ -358,7 +359,7 @@ test.describe('Studio recording', () => {
     await page.keyboard.press('Home')
     await arm(page, 'Phrase')
     await expect(
-      studio.getByText('Armed on Phrase. Press Record to start.'),
+      studio.getByText(/^Armed on Phrase\b.*\. Press Record to start\.$/),
     ).toBeVisible()
     await recordArmed(page, 'Take 2', 2)
     // Escape disarms too.

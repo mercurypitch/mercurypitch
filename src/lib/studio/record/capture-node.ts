@@ -12,9 +12,8 @@
 //
 // The node feeds a silent gain into the destination, as the guitar recorder
 // does, so every engine keeps pulling it; it adds nothing to what is heard.
-// A stereo input is folded to mono ('speakers'), so a microphone on either
-// side of an interface is heard; a lane's one channel arrives as a mono
-// node and passes as it is (capture-input.ts says what wider inputs keep).
+// It hears one channel: the lane's input or pair, taken from the capture as
+// a mono node before it arrives (lane-channel.ts, capture-input.ts).
 import workletUrl from '@/workers/studio-recorder.worklet.ts?worker&url'
 import { STUDIO_CAPTURE_INPUT } from './capture-input'
 import type { StudioCaptureMessage, StudioCaptureStop } from './pcm-capture'
