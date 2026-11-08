@@ -142,6 +142,8 @@ export interface ChannelSplit {
   open(): void
   /** Send one channel into `target`'s first input. */
   send(channel: number, target: AudioNode): void
+  /** Take `target` off `channel` again; nothing when it was not sent there. */
+  unsend(channel: number, target: AudioNode): void
   /** One channel as a node of its own: mono, never mixed with the others. */
   alone(channel: number): GainNode
   /** `channel` and the one after it as one mono node: the two summed at half each, the others left out. */
@@ -184,6 +186,13 @@ export function splitChannels(
     },
     send(channel, target) {
       splitter.connect(target, channel, 0)
+    },
+    unsend(channel, target) {
+      try {
+        splitter.disconnect(target, channel, 0)
+      } catch {
+        // Not sent there, or the split is already closed.
+      }
     },
     alone,
     pair,
